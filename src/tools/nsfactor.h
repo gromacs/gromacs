@@ -48,13 +48,13 @@
 extern "C" {
 #endif
 
-typedef struct gmx_nentron_atomic_structurefactors_t {
+typedef struct gmx_neutron_atomic_structurefactors_t {
     int     nratoms;
     int     *p; /* proton number */
     int     *n; /* neuton number */
     double  *slength; /* scattering length in fm */
     char    **atomnm; /* atom symbol */
-} gmx_nentron_atomic_structurefactors_t;
+} gmx_neutron_atomic_structurefactors_t;
 
 typedef struct gmx_sans_t {
     t_topology *top; /* topology */
@@ -68,12 +68,12 @@ typedef struct gmx_radial_distribution_histogram_t {
     double *gr; /* Probability */
 } gmx_radial_distribution_histogram_t;
 
-typedef struct gmx_static_structurefator_t {
+typedef struct gmx_static_structurefactor_t {
     int     qn; /* number of items */
     double  *s; /* scattering */
     double  *q; /* q vectors */
     double  qstep; /* q increment */
-} gmx_static_structurefator_t;
+} gmx_static_structurefactor_t;
 
 void check_binwidth(real binwidth);
 
@@ -81,9 +81,9 @@ void check_mcover(real mcover);
 
 void normalize_probability(int n, double *a);
 
-gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
+gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
 
-gmx_sans_t *gmx_sans_init(t_topology *top, gmx_nentron_atomic_structurefactors_t *gnsf);
+gmx_sans_t *gmx_sans_init(t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf);
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t *gsans,
                             rvec *x,
@@ -92,10 +92,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sa
                             int isize,
                             double binwidth,
                             gmx_bool bMC,
+                            gmx_bool bNORM,
                             real mcover,
                             unsigned int seed);
 
-gmx_static_structurefator_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step);
+gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step);
 
 
 #ifdef __cplusplus

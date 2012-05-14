@@ -65,21 +65,22 @@ int gmx_sans(int argc,char *argv[])
         "This is simple tool to compute SANS spectra using Debye formula",
         "It currently uses topology file (since it need to assigne element for each atom)",
         "[PAR]",
-        "[TT]-pr[tt] Computes normalized g(r) function",
-        "[PAR]",
-        "[TT]-sq[tt] Computes SANS intensity curve for needed q diapason",
-        "[PAR]",
-        "[TT]-startq[tt] Starting q value in nm",
-        "[PAR]",
-        "[TT]-endq[tt] Ending q value in nm",
-        "[PAR]",
-        "[TT]-qstep[tt] Stepping in q space",
-        "[PAR]",
+        "Parameters:[PAR]"
+        "[TT]-pr[tt] Computes normalized g(r) function averaged over trajectory[PAR]",
+        "[TT]-prframe[tt] Computes normalized g(r) function for each frame[PAR]",
+        "[TT]-sq[tt] Computes SANS intensity curve averaged over trajectory[PAR]",
+        "[TT]-sqframe[tt] Computes SANS intensity curve for each frame[PAR]",
+        "[TT]-startq[tt] Starting q value in nm[PAR]",
+        "[TT]-endq[tt] Ending q value in nm[PAR]",
+        "[TT]-qstep[tt] Stepping in q space[PAR]",
         "Note: When using Debye direct method computational cost increases as",
-        "1/2 * N * (N - 1) where N is atom number in group of interest"
+        "1/2 * N * (N - 1) where N is atom number in group of interest",
+        "[PAR]",
+        "WARNING: If sq or pr specified this tool can produce large number of files! Up to two times larger than number of frames!"
     };
     static gmx_bool bPBC=TRUE;
-    static real binwidth=0.2,grid=0.05; /* bins shouldnt be smaller then bond (~0.1nm) length */
+    static gmx_bool bNORM=FALSE;
+    static real binwidth=0.2,grid=0.05; /* bins shouldnt be smaller then smallest bond (~0.1nm) length */
     static real start_q=0.0, end_q=2.0, q_step=0.01;
     static real mcover=-1;
     static unsigned int  seed=0;
@@ -88,7 +89,7 @@ int gmx_sans(int argc,char *argv[])
     static const char *emode[]= { NULL, "direct", "mc", NULL };
     static const char *emethod[]={ NULL, "debye", "fft", NULL };
 
-    gmx_nentron_atomic_structurefactors_t    *gnsf;
+    gmx_neutron_atomic_structurefactors_t    *gnsf;
     gmx_sans_t              *gsans;
 
 #define NPA asize(pa)
@@ -120,7 +121,7 @@ int gmx_sans(int argc,char *argv[])
 #endif
     };
   FILE      *fp;
-  const char *fnTPX,*fnNDX,*fnDAT=NULL;
+  const char *fnTPX,*fnNDX,*fnTRX,*fnDAT=NULL;
   t_trxstatus *status;
   t_topology *top=NULL;
   t_atom    *atom=NULL;
@@ -138,24 +139,30 @@ int gmx_sans(int argc,char *argv[])
   atom_id    *index=NULL;
   int        isize;
   int         i,j;
-  gmx_radial_distribution_histogram_t  *pr=NULL;
-  gmx_static_structurefator_t  *sq=NULL;
+  char       *hdr=NULL;
+  char       *suffix=NULL;
+  t_filenm   *fnmdup=NULL;
+  gmx_radial_distribution_histogram_t  *prframecurrent=NULL, *pr=NULL;
+  gmx_static_structurefactor_t  *sqframecurrent=NULL, *sq=NULL;
   output_env_t oenv;
 
 #define NFILE asize(fnm)
 
   t_filenm   fnm[] = {
-      { efTPX,  "-s",         NULL,   ffREAD },
-      { efNDX,  NULL,         NULL,   ffOPTRD },
-      { efDAT,  "-d",   "nsfactor",   ffOPTRD },
-      { efXVG, "-sq",         "sq",   ffWRITE },
-      { efXVG, "-pr",         "pr",   ffWRITE }
+      { efTPX,  "-s",       NULL,       ffREAD },
+      { efTRX,  "-f",       NULL,       ffREAD },
+      { efNDX,  NULL,       NULL,       ffOPTRD },
+      { efDAT,  "-d",       "nsfactor", ffOPTRD },
+      { efXVG,  "-pr",      "pr",       ffWRITE },
+      { efXVG,  "-sq",       "sq",      ffWRITE },
+      { efXVG,  "-prframe", "prframe",  ffOPTWR },
+      { efXVG,  "-sqframe", "sqframe",  ffOPTWR }
   };
 
   nthreads = gmx_omp_get_max_threads();
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
   /* check that binwidth not smaller than smallers distance */
@@ -187,11 +194,22 @@ int gmx_sans(int argc,char *argv[])
       break;
   }
 
-  if (!bDEBYE && !bFFT)
-      gmx_fatal(FARGS,"Unknown method. Set pr or fft!\n");
+  if (bDEBYE) {
+      if (bMC) {
+          fprintf(stderr,"Using Monte Carlo Debye method to calculate spectrum\n");
+      } else {
+          fprintf(stderr,"Using direct Debye method to calculate spectrum\n");
+      }
+  } else if (bFFT) {
+      gmx_fatal(FARGS,"FFT method not implemented!");
+  } else {
+      gmx_fatal(FARGS,"Unknown combination for mode and method!");
+  }
+
   /* Try to read files */
   fnDAT = ftp2fn(efDAT,NFILE,fnm);
   fnTPX = ftp2fn(efTPX,NFILE,fnm);
+  fnTRX = ftp2fn(efTRX,NFILE,fnm);
 
   gnsf = gmx_neutronstructurefactors_init(fnDAT);
   fprintf(stderr,"Read %d atom names from %s with neutron scattering parameters\n\n",gnsf->nratoms,fnDAT);
@@ -213,38 +231,120 @@ int gmx_sans(int argc,char *argv[])
       gmx_rmpbc(gpbc,top->atoms.nr,box,x);
   }
 
-  natoms=top->atoms.nr;
-
-  if (bDEBYE) {
-      if (bMC) {
-          fprintf(stderr,"Using Monte Carlo Debye method to calculate spectrum\n");
-      } else {
-          fprintf(stderr,"Using direct Debye method to calculate spectrum\n");
-      }
-  } else if (bFFT) {
-      gmx_fatal(FARGS,"Not implented!");
-  } else {
-      gmx_fatal(FARGS,"Whats this!");
+  natoms=read_first_x(oenv,&status,fnTRX,&t,&x,box);
+  if (natoms != top->atoms.nr) {
+      fprintf(stderr,"\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",natoms,top->atoms.nr);
   }
 
-  /*  realy calc p(r) */
-  pr = calc_radial_distribution_histogram(gsans,x,box,index,isize,binwidth,bMC,mcover,seed);
+  do {
+      if (bPBC) {
+          gmx_rmpbc(gpbc,top->atoms.nr,box,x);
+      }
+      /* allocate memory for pr */
+      if (pr == NULL) {
+          /* in case its first frame to read */
+          snew(pr,1);
+      }
+      /*  realy calc p(r) */
+      prframecurrent = calc_radial_distribution_histogram(gsans,x,box,index,isize,binwidth,bMC,bNORM,mcover,seed);
+      /* copy prframecurrent -> pr and summ up pr->gr[i] */
+      /* allocate and/or resize memory for pr->gr[i] and pr->r[i] */
+      if (pr->gr == NULL) {
+          /* check if we use pr->gr first time */
+          snew(pr->gr,prframecurrent->grn);
+          snew(pr->r,prframecurrent->grn);
+      } else {
+          /* resize pr->gr and pr->r if needed to preven overruns */
+          if(prframecurrent->grn > pr->grn) {
+              srenew(pr->gr,prframecurrent->grn);
+              srenew(pr->r,prframecurrent->grn);
+          }
+      }
+      pr->grn = prframecurrent->grn;
+      pr->binwidth = prframecurrent->binwidth;
+      /* summ up gr and fill r */
+      for(i=0;i<prframecurrent->grn;i++) {
+          pr->gr[i] += prframecurrent->gr[i];
+          pr->r[i] = prframecurrent->r[i];
+      }
+      /* normalize histo */
+      normalize_probability(prframecurrent->grn,prframecurrent->gr);
+      /* convert p(r) to sq */
+      sqframecurrent = convert_histogram_to_intensity_curve(prframecurrent,start_q,end_q,q_step);
+      /* print frame data if needed */
+      if(opt2fn_null("-prframe",NFILE,fnm)) {
+          snew(hdr,25);
+          snew(suffix,GMX_PATH_MAX);
+          /* prepare header */
+          sprintf(hdr,"g(r), t = %f",t);
+          /* prepare output filename */
+          fnmdup = dup_tfn(NFILE,fnm);
+          sprintf(suffix,"-t%.2f",t);
+          add_suffix_to_output_names(fnmdup,NFILE,suffix);
+          fp = xvgropen(opt2fn_null("-prframe",NFILE,fnmdup),hdr,"Distance (nm)","Probability",oenv);
+          for(i=0;i<prframecurrent->grn;i++) {
+              fprintf(fp,"%10.6f%10.6f\n",prframecurrent->r[i],prframecurrent->gr[i]);
+          }
+          done_filenms(NFILE,fnmdup);
+          fclose(fp);
+          sfree(hdr);
+          sfree(suffix);
+          sfree(fnmdup);
+      }
+      if(opt2fn_null("-sqframe",NFILE,fnm)) {
+          snew(hdr,25);
+          snew(suffix,GMX_PATH_MAX);
+          /* prepare header */
+          sprintf(hdr,"I(q), t = %f",t);
+          /* prepare output filename */
+          fnmdup = dup_tfn(NFILE,fnm);
+          sprintf(suffix,"-t%.2f",t);
+          add_suffix_to_output_names(fnmdup,NFILE,suffix);
+          fp = xvgropen(opt2fn_null("-sqframe",NFILE,fnmdup),hdr,"q (nm^-1)","s(q)/s(0)",oenv);
+          for(i=0;i<sqframecurrent->qn;i++) {
+              fprintf(fp,"%10.6f%10.6f\n",sqframecurrent->q[i],sqframecurrent->s[i]);
+          }
+          done_filenms(NFILE,fnmdup);
+          fclose(fp);
+          sfree(hdr);
+          sfree(suffix);
+          sfree(fnmdup);
+      }
+      /* free pr structure */
+      sfree(prframecurrent->gr);
+      sfree(prframecurrent->r);
+      sfree(prframecurrent);
+      /* free sq structure */
+      sfree(sqframecurrent->q);
+      sfree(sqframecurrent->s);
+      sfree(sqframecurrent);
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
+  close_trj(status);
 
+  /* normalize histo */
+  normalize_probability(pr->grn,pr->gr);
+  sq = convert_histogram_to_intensity_curve(pr,start_q,end_q,q_step);
   /* prepare pr.xvg */
   fp = xvgropen(opt2fn_null("-pr",NFILE,fnm),"G(r)","Distance (nm)","Probability",oenv);
   for(i=0;i<pr->grn;i++)
-      fprintf(fp,"%10.6lf%10.6lf\n",pr->r[i],pr->gr[i]);
+      fprintf(fp,"%10.6f%10.6f\n",pr->r[i],pr->gr[i]);
   xvgrclose(fp);
 
   /* prepare sq.xvg */
-  sq = convert_histogram_to_intensity_curve(pr,start_q,end_q,q_step);
   fp = xvgropen(opt2fn_null("-sq",NFILE,fnm),"I(q)","q (nm^-1)","s(q)/s(0)",oenv);
   for(i=0;i<sq->qn;i++) {
-      fprintf(fp,"%10.6lf%10.6lf\n",sq->q[i],sq->s[i]);
+      fprintf(fp,"%10.6f%10.6f\n",sq->q[i],sq->s[i]);
   }
   xvgrclose(fp);
-
+  /*
+   * Clean up memory
+   */
+  sfree(pr->gr);
+  sfree(pr->r);
   sfree(pr);
+  sfree(sq->q);
+  sfree(sq->s);
+  sfree(sq);
 
   please_cite(stdout,"Garmay2012");
   thanx(stderr);
