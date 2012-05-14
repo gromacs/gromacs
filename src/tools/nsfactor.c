@@ -63,14 +63,14 @@ void check_mcover(real mcover) {
     }
 }
 
-void normalize_probability(int n,double *a){
+void normalize_probability(int n,double *a) {
     int i;
     double norm=0.0;
     for (i=0;i<n;i++) norm +=a[i];
     for (i=0;i<n;i++) a[i]/=norm;
 }
 
-gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn) {
+gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn) {
     /* read nsfactor.dat */
     FILE    *fp;
     char    line[STRLEN];
@@ -79,7 +79,7 @@ gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
     int     i, line_no;
     char    atomnm[8];
     double  slength;
-    gmx_nentron_atomic_structurefactors_t   *gnsf;
+    gmx_neutron_atomic_structurefactors_t   *gnsf;
 
     fp=libopen(datfn);
     line_no = 0;
@@ -119,10 +119,10 @@ gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
 
     fclose(fp);
 
-    return (gmx_nentron_atomic_structurefactors_t *) gnsf;
+    return (gmx_neutron_atomic_structurefactors_t *) gnsf;
 }
 
-gmx_sans_t *gmx_sans_init (t_topology *top, gmx_nentron_atomic_structurefactors_t *gnsf) {
+gmx_sans_t *gmx_sans_init (t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf) {
     gmx_sans_t    *gsans=NULL;
     int     i,j;
     /* Try to assing scattering length from nsfactor.dat */
@@ -156,6 +156,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
                             int isize,
                             double binwidth,
                             gmx_bool bMC,
+                            gmx_bool bNORM,
                             real mcover,
                             unsigned int seed) {
     gmx_radial_distribution_histogram_t    *pr=NULL;
@@ -280,8 +281,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
 #endif
     }
 
-    /* normalize */
-    normalize_probability(pr->grn,pr->gr);
+    /* normalize if needed */
+    if (bNORM) {
+        normalize_probability(pr->grn,pr->gr);
+    }
+
     snew(pr->r,pr->grn);
     for(i=0;i<pr->grn;i++)
         pr->r[i]=(pr->binwidth*i+pr->binwidth*0.5);
@@ -289,8 +293,8 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     return (gmx_radial_distribution_histogram_t *) pr;
 }
 
-gmx_static_structurefator_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step) {
-    gmx_static_structurefator_t    *sq=NULL;
+gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step) {
+    gmx_static_structurefactor_t    *sq=NULL;
     int         i,j;
     /* init data */
     snew(sq,1);
@@ -315,5 +319,5 @@ gmx_static_structurefator_t *convert_histogram_to_intensity_curve (gmx_radial_di
         }
     }
 
-    return (gmx_static_structurefator_t *) sq;
+    return (gmx_static_structurefactor_t *) sq;
 }
