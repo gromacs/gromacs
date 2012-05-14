@@ -66,11 +66,22 @@ void check_mcover(real mcover) {
     }
 }
 
-void normalize_probability(int n,double *a){
+void normalize_probability(int n,double *a) {
     int i;
     double norm=0.0;
     for (i=0;i<n;i++) norm +=a[i];
     for (i=0;i<n;i++) a[i]/=norm;
+}
+
+gmx_fname_t *splitfnm(const char *fnm) {
+    gmx_fname_t *name=NULL;
+    snew(name,1);
+    name->ext = strrchr(fnm,'.');
+    if (name->ext == NULL)
+        gmx_fatal(FARGS,"Output file name '%s' does not contain a '.'",fnm);
+    name->base = strdup(fnm);
+    name->base[name->ext - fnm] = '\0';
+    return (gmx_fname_t *) name;
 }
 
 gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn) {
@@ -159,6 +170,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
                             int isize,
                             double binwidth,
                             gmx_bool bMC,
+                            gmx_bool bNORM,
                             real mcover,
                             unsigned int seed) {
     gmx_radial_distribution_histogram_t    *pr=NULL;
@@ -283,8 +295,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
 #endif
     }
 
-    /* normalize */
-    normalize_probability(pr->grn,pr->gr);
+    /* normalize if needed */
+    if (bNORM) {
+        normalize_probability(pr->grn,pr->gr);
+    }
+
     snew(pr->r,pr->grn);
     for(i=0;i<pr->grn;i++)
         pr->r[i]=(pr->binwidth*i+pr->binwidth*0.5);
