@@ -86,7 +86,7 @@ void writeHelpTextForConsole(File *file, const std::string &text);
  * responsibility to check that overflows are avoided or are acceptable).
  *
  * Column definitions are first set with addColumn().
- * To format a fow, first call clear().  Then call addColumnLine() to add text
+ * To format a row, first call clear().  Then call addColumnLine() to add text
  * to each column (can be called multiple times on a single column to add
  * multiple lines), and possibly setColumnFirstLineOffset() to adjust the line
  * from which the column output should start.  Finally, call formatRow() to
@@ -142,6 +142,14 @@ class TextTableFormatter
          * The length of \p title must not exceed \p width.
          */
         void addColumn(const char *title, int width, bool bWrap);
+        /*! \brief
+         * Sets amount on indentation before the first column.
+         *
+         * \param[in]  indent  Number of spaces to use for indenting.
+         *
+         * Does not throw.
+         */
+        void setFirstColumnIndent(int indent);
 
         /*! \brief
          * Whether formatRow() has been successfully called.
@@ -202,7 +210,7 @@ class TextTableFormatter
          * addColumnLine() and setColumnFirstLineOffset().
          *
          * If this is the first line to be formatted, a header is also added to
-         * the beginning of the returned string.
+         * the beginning of the returned string if any column has a title.
          *
          * The return value always terminates with a newline.
          *

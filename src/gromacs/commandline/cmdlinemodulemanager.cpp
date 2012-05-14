@@ -44,6 +44,7 @@
 #include <utility>
 
 #include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
@@ -170,12 +171,19 @@ void CommandLineModuleManager::Impl::printModuleList() const
             maxNameLength = nameLength;
         }
     }
+    TextTableFormatter formatter;
+    formatter.addColumn(NULL, maxNameLength + 1, false);
+    formatter.addColumn(NULL, 72 - maxNameLength, true);
+    formatter.setFirstColumnIndent(4);
     fprintf(stderr, "The following commands are available:\n");
     for (module = modules_.begin(); module != modules_.end(); ++module)
     {
         const char *name = module->first.c_str();
         const char *description = module->second->shortDescription();
-        fprintf(stderr, "    %*s  %s\n", -maxNameLength, name, description);
+        formatter.clear();
+        formatter.addColumnLine(0, name);
+        formatter.addColumnLine(1, description);
+        fprintf(stderr, "%s", formatter.formatRow().c_str());
     }
 }
 

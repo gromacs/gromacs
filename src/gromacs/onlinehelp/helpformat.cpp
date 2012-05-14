@@ -178,12 +178,16 @@ class TextTableFormatter::Impl
 
         //! Container for column data.
         ColumnList              columns_;
+        //! Indentation before the first column.
+        int                     firstColumnIndent_;
         //! If true, no output has yet been produced.
         bool                    bFirstRow_;
+        //! If true, a header will be printed before the first row.
+        bool                    bPrintHeader_;
 };
 
 TextTableFormatter::Impl::Impl()
-    : bFirstRow_(true)
+    : firstColumnIndent_(0), bFirstRow_(true), bPrintHeader_(false)
 {
 }
 
@@ -202,7 +206,17 @@ TextTableFormatter::~TextTableFormatter()
 
 void TextTableFormatter::addColumn(const char *title, int width, bool bWrap)
 {
+    if (title != NULL && title[0] != '\0')
+    {
+        impl_->bPrintHeader_ = true;
+    }
     impl_->columns_.push_back(Impl::ColumnData(title, width, bWrap));
+}
+
+void TextTableFormatter::setFirstColumnIndent(int indent)
+{
+    GMX_RELEASE_ASSERT(indent >= 0, "Negative indentation not allowed");
+    impl_->firstColumnIndent_ = indent;
 }
 
 bool TextTableFormatter::didOutput() const
@@ -249,9 +263,10 @@ std::string TextTableFormatter::formatRow()
     std::string result;
     Impl::ColumnList::const_iterator column;
     // Print a header if this is the first line.
-    if (impl_->bFirstRow_)
+    if (impl_->bPrintHeader_ && impl_->bFirstRow_)
     {
         size_t totalWidth = 0;
+        result.append(impl_->firstColumnIndent_, ' ');
         for (column  = impl_->columns_.begin();
              column != impl_->columns_.end();
              ++column)
@@ -270,6 +285,7 @@ std::string TextTableFormatter::formatRow()
             result.append(title);
         }
         result.append("\n");
+        result.append(impl_->firstColumnIndent_, ' ');
         result.append(totalWidth, '-');
         result.append("\n");
     }
@@ -310,6 +326,7 @@ std::string TextTableFormatter::formatRow()
             lineResult.append(value);
             currentWidth += column->width();
         }
+        result.append(impl_->firstColumnIndent_, ' ');
         result.append(lineResult);
         result.append("\n");
     }
