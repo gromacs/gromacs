@@ -54,12 +54,12 @@ const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
 class TextTableFormatterTest : public gmx::test::StringTestBase
 {
     public:
-        TextTableFormatterTest();
+        void setupStandardColumns();
 
         gmx::TextTableFormatter formatter_;
 };
 
-TextTableFormatterTest::TextTableFormatterTest()
+void TextTableFormatterTest::setupStandardColumns()
 {
     formatter_.addColumn("Col1", 4, false);
     formatter_.addColumn("Col2", 4, false);
@@ -69,6 +69,34 @@ TextTableFormatterTest::TextTableFormatterTest()
 
 TEST_F(TextTableFormatterTest, HandlesBasicCase)
 {
+    setupStandardColumns();
+    formatter_.clear();
+    formatter_.addColumnLine(0, "foo");
+    formatter_.addColumnLine(1, "bar");
+    formatter_.addColumnLine(2, g_wrapText);
+    formatter_.addColumnLine(3, g_wrapText2);
+    checkText(formatter_.formatRow(), "FormattedTable");
+}
+
+TEST_F(TextTableFormatterTest, HandlesEmptyColumnTitles)
+{
+    formatter_.addColumn(NULL, 4, false);
+    formatter_.addColumn("", 4, false);
+    formatter_.addColumn(NULL, 14, true);
+    formatter_.addColumn("", 14, true);
+
+    formatter_.clear();
+    formatter_.addColumnLine(0, "foo");
+    formatter_.addColumnLine(1, "bar");
+    formatter_.addColumnLine(2, g_wrapText);
+    formatter_.addColumnLine(3, g_wrapText2);
+    checkText(formatter_.formatRow(), "FormattedTable");
+}
+
+TEST_F(TextTableFormatterTest, HandlesIndentation)
+{
+    setupStandardColumns();
+    formatter_.setFirstColumnIndent(4);
     formatter_.clear();
     formatter_.addColumnLine(0, "foo");
     formatter_.addColumnLine(1, "bar");
@@ -79,6 +107,7 @@ TEST_F(TextTableFormatterTest, HandlesBasicCase)
 
 TEST_F(TextTableFormatterTest, HandlesOverflowingLines)
 {
+    setupStandardColumns();
     formatter_.clear();
     formatter_.addColumnLine(0, "foobar");
     formatter_.addColumnLine(1, "barfoo");
@@ -104,6 +133,7 @@ TEST_F(TextTableFormatterTest, HandlesOverflowingLines)
 
 TEST_F(TextTableFormatterTest, HandlesEmptyColumns)
 {
+    setupStandardColumns();
     formatter_.clear();
     formatter_.addColumnLine(0, "foo");
     formatter_.addColumnLine(1, "bar");
