@@ -142,6 +142,14 @@ class TextTableFormatter
          * The length of \p title must not exceed \p width.
          */
         void addColumn(const char *title, int width, bool bWrap);
+        /*! \brief
+         * Sets amount on indentation before the first column.
+         *
+         * \param[in]  indent  Number of spaces to use for indenting.
+         *
+         * Does nto throw.
+         */
+        void setFirstColumnIndent(int indent);
 
         /*! \brief
          * Whether formatRow() has been successfully called.
@@ -202,7 +210,7 @@ class TextTableFormatter
          * addColumnLine() and setColumnFirstLineOffset().
          *
          * If this is the first line to be formatted, a header is also added to
-         * the beginning of the returned string.
+         * the beginning of the returned string if any column has a title.
          *
          * The return value always terminates with a newline.
          *
