@@ -117,16 +117,9 @@ void output_env_init(output_env_t *oenvp, int argc, char *argv[],
         argvzero=argv[0];
 
     /* set program name */
-    /* When you run a dynamically linked program before installing
-     * it, libtool uses wrapper scripts and prefixes the name with "lt-".
-     * Until libtool is fixed to set argv[0] right, rip away the prefix:
-     */
     if (argvzero)
     {
-        if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
-            oenv->program_name=strdup(argvzero+3);
-        else
-            oenv->program_name=strdup(argvzero);
+        oenv->program_name=strdup(argvzero);
     }
     if (oenv->program_name == NULL)
         oenv->program_name = strdup("GROMACS");
@@ -255,9 +248,6 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
     pr=ret=oenv->program_name; 
     if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
         ret=pr+1;
-    /* Strip away the libtool prefix if it's still there. */
-    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
-        ret = ret + 3;
     return ret;
 }
 
