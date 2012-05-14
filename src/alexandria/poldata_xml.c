@@ -91,7 +91,7 @@ enum {
     exmlGT_ANGLES, exmlANGLE_UNIT, exmlGT_ANGLE,
     exmlATOM3, exmlANGLE, 
     exmlGT_DIHEDRALS, exmlGT_DIHEDRAL,
-    exmlATOM4, exmlDIHEDRAL,  
+    exmlATOM4,   
     exmlBSATOMS, exmlBSATOM,
     exmlMILATOMS, exmlTAU_UNIT, exmlAHP_UNIT,
     exmlMILATOM, exmlMILNAME, exmlALEXANDRIA_EQUIV,
@@ -115,7 +115,7 @@ static const char *exml_names[exmlNR] = {
     "gt_angles", "angle_unit", "gt_angle",
     "atom3", "angle",
     "gt_dihedrals", "gt_dihedral",
-    "atom4", "dihedral",
+    "atom4", 
     "bsatoms", "bsatom",
     "milatoms", "tau_ahc_unit", "alpha_ahp_unit",
     "milatom", "milname", "alexandria_equiv",
@@ -248,11 +248,11 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     case exmlGT_DIHEDRAL:
         if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) && 
             NN(xbuf[exmlATOM3]) && NN(xbuf[exmlATOM4]) && 
-            NN(xbuf[exmlDIHEDRAL]) && NN(xbuf[exmlSIGMA]) &&
+            NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
             NN(xbuf[exmlPARAMS]))
             gmx_poldata_add_gt_dihedral(pd,xbuf[exmlATOM1],xbuf[exmlATOM2],
                                         xbuf[exmlATOM3],xbuf[exmlATOM4],
-                                        atof(xbuf[exmlDIHEDRAL]),atof(xbuf[exmlSIGMA]),
+                                        atof(xbuf[exmlANGLE]),atof(xbuf[exmlSIGMA]),
                                         xbuf[exmlPARAMS]);
         break;
     case exmlSYM_CHARGE:
