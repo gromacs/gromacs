@@ -38,14 +38,19 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 
 int
 main(int argc, char *argv[])
 {
+    const gmx::ProgramInfo &info =
+        gmx::ProgramInfo::init("g_ana", argc, argv);
+    // TODO: With the addition of ProgramInfo above, this no longer needs to
+    // be here, so think where it would best go.
     CopyRight(stderr, argv[0]);
     try
     {
-        gmx::CommandLineModuleManager manager("g_ana");
+        gmx::CommandLineModuleManager manager(info);
         registerTrajectoryAnalysisModules(&manager);
         return manager.run(argc, argv);
     }

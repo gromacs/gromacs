@@ -110,6 +110,8 @@ const char *ShortProgram(void)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
+    if (ret == NULL)
+        return "GROMACS";
     if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
         ret=pr+1;
     return ret;

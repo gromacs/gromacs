@@ -46,6 +46,7 @@ namespace gmx
 {
 
 class CommandLineModuleInterface;
+class ProgramInfo;
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
@@ -64,10 +65,12 @@ class CommandLineHelpModule;
 int
 main(int argc, char *argv[])
 {
+    const gmx::ProgramInfo &programInfo =
+        gmx::ProgramInfo::init("g_ana", argc, argv);
     CopyRight(stderr, argv[0]);
     try
     {
-        gmx::CommandLineModuleManager manager("g_ana");
+        gmx::CommandLineModuleManager manager(programInfo);
         // <register all necessary modules>
         return manager.run(argc, argv);
     }
@@ -88,14 +91,13 @@ class CommandLineModuleManager
         /*! \brief
          * Initializes a command-line module manager.
          *
-         * \param[in] realBinaryName  Name of the binary that this manager runs
-         *     (without Gromacs binary suffix or .exe on Windows).
+         * \param[in] programInfo  Program information for the running binary.
          * \throws    std::bad_alloc if out of memory.
          *
          * The binary name is used to detect when the binary is run through a
          * symlink, and automatically invoke a matching module in such a case.
          */
-        explicit CommandLineModuleManager(const char *realBinaryName);
+        explicit CommandLineModuleManager(const ProgramInfo &programInfo);
         ~CommandLineModuleManager();
 
         /*! \brief
