@@ -1532,6 +1532,8 @@ initialize_evalgrps(gmx_ana_selcollection_t *sc)
     root = sc->root;
     while (root)
     {
+        GMX_RELEASE_ASSERT(root->child != NULL,
+                           "Root elements should always have a child");
         if (root->child->type != SEL_SUBEXPR
             || (root->child->cdata->flags & SEL_CDATA_FULLEVAL))
         {
