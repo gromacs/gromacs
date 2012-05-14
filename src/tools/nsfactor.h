@@ -89,6 +89,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sa
                             int isize,
                             double binwidth,
                             gmx_bool bMC,
+                            gmx_bool bNORM,
                             real mcover,
                             unsigned int seed);
 
