@@ -46,6 +46,7 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/utility/programinfo.h"
 
 #include "cmdlinetest.h"
 
@@ -89,23 +90,28 @@ MockModule::MockModule(const char *name, const char *description)
 class CommandLineModuleManagerTest : public ::testing::Test
 {
     public:
-        CommandLineModuleManagerTest();
-
+        void initManager(const gmx::test::CommandLine &args);
         MockModule &addModule(const char *name, const char *description);
 
-        gmx::CommandLineModuleManager manager_;
+        gmx::CommandLineModuleManager &manager() { return *manager_; }
+
+    private:
+        boost::scoped_ptr<gmx::ProgramInfo>              programInfo_;
+        boost::scoped_ptr<gmx::CommandLineModuleManager> manager_;
 };
 
-CommandLineModuleManagerTest::CommandLineModuleManagerTest()
-    : manager_("g_test")
+void CommandLineModuleManagerTest::initManager(const gmx::test::CommandLine &args)
 {
+    manager_.reset();
+    programInfo_.reset(new gmx::ProgramInfo("g_test", args.argc(), args.argv()));
+    manager_.reset(new gmx::CommandLineModuleManager(*programInfo_));
 }
 
 MockModule &
 CommandLineModuleManagerTest::addModule(const char *name, const char *description)
 {
     MockModule *module = new MockModule(name, description);
-    manager_.addModule(gmx::CommandLineModulePointer(module));
+    manager().addModule(gmx::CommandLineModulePointer(module));
     return *module;
 }
 
@@ -119,6 +125,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
         "g_test", "module", "-flag", "yes"
     };
     gmx::test::CommandLine args(cmdline);
+    initManager(args);
     MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
@@ -127,7 +134,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager_.run(args.argc(), args.argv()));
+    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -137,6 +144,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
         "g_module", "-flag", "yes"
     };
     gmx::test::CommandLine args(cmdline);
+    initManager(args);
     MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
@@ -145,7 +153,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager_.run(args.argc(), args.argv()));
+    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -155,6 +163,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
         "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
     };
     gmx::test::CommandLine args(cmdline);
+    initManager(args);
     MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
@@ -163,7 +172,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager_.run(args.argc(), args.argv()));
+    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -173,6 +182,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
         "g_test", "test", "-flag", "yes"
     };
     gmx::test::CommandLine args(cmdline);
+    initManager(args);
     MockModule &mod1 = addModule("test", "Test module");
     addModule("other", "Second module");
     using ::testing::_;
@@ -181,7 +191,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager_.run(args.argc(), args.argv()));
+    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 

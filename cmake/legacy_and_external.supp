@@ -11,6 +11,20 @@
 }
 
 {
+   set_program_name
+   Memcheck:Leak
+   ...
+   fun:set_program_name
+}
+
+{
+   set_command_line
+   Memcheck:Leak
+   ...
+   fun:set_command_line
+}
+
+{
    read_tps_conf
    Memcheck:Leak
    ...

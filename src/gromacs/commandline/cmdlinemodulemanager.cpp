@@ -37,23 +37,15 @@
  */
 #include "cmdlinemodulemanager.h"
 
-// For GMX_BINARY_SUFFIX
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <cstdio>
-#include <cstring>
 
 #include <map>
 #include <string>
 #include <utility>
 
-#include "gromacs/legacyheaders/statutil.h"
-
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/path.h"
+#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
@@ -76,9 +68,9 @@ class CommandLineModuleManager::Impl
         /*! \brief
          * Initializes the implementation class.
          *
-         * \param[in] realBinaryName  Name of the binary that this manager runs.
+         * \param[in] programInfo  Program information for the running binary.
          */
-        explicit Impl(const char *realBinaryName);
+        explicit Impl(const ProgramInfo &programInfo);
 
         /*! \brief
          * Finds a module that matches a name.
@@ -93,16 +85,21 @@ class CommandLineModuleManager::Impl
         /*! \brief
          * Finds a module that the name of the binary.
          *
-         * \param[in] argv0  argv[0] passed to the program.
+         * \param[in] programInfo  Program information object to use.
          * \throws    std::bad_alloc if out of memory.
          * \returns   Iterator to the found module, or
          *      \c modules_.end() if not found.
          *
          * Checks whether the program is invoked through a symlink whose name
-         * is different from \a realBinaryName_, and if so, checks if a module
-         * name matches the name of the symlink.
+         * is different from ProgramInfo::realBinaryName(), and if so, checks
+         * if a module name matches the name of the symlink.
+         *
+         * Note that the \p programInfo parameter is currently not necessary
+         * (as the program info object is also contained as a member), but it
+         * clarifies the control flow.
          */
-        ModuleMap::const_iterator findModuleFromBinaryName(const std::string &argv0) const;
+        ModuleMap::const_iterator
+        findModuleFromBinaryName(const ProgramInfo &programInfo) const;
 
         //! Prints usage message to stderr.
         void printUsage(bool bModuleList) const;
@@ -115,12 +112,12 @@ class CommandLineModuleManager::Impl
          * Owns the contained modules.
          */
         ModuleMap               modules_;
-        //! Real name of the binary that is running (without suffixes).
-        std::string             realBinaryName_;
+        //! Information about the currently running program.
+        const ProgramInfo      &programInfo_;
 };
 
-CommandLineModuleManager::Impl::Impl(const char *realBinaryName)
-    : realBinaryName_(realBinaryName)
+CommandLineModuleManager::Impl::Impl(const ProgramInfo &programInfo)
+    : programInfo_(programInfo)
 {
 }
 
@@ -132,27 +129,11 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
 }
 
 CommandLineModuleManager::Impl::ModuleMap::const_iterator
-CommandLineModuleManager::Impl::findModuleFromBinaryName(const std::string &argv0) const
+CommandLineModuleManager::Impl::findModuleFromBinaryName(
+        const ProgramInfo &programInfo) const
 {
-    // TODO: Move this logic into a common place in utility/ and remove
-    // dependency on config.h from this file.
-    // (most natural place would be in a location that wraps Program() etc.)
-    std::string binaryName = Path::splitToPathAndFilename(argv0).second;
-    if (binaryName.length() >= 4
-        && binaryName.compare(binaryName.length() - 4, 4, ".exe") == 0)
-    {
-        binaryName.erase(binaryName.length() - 4);
-    }
-#ifdef GMX_BINARY_SUFFIX
-    size_t suffixLength = std::strlen(GMX_BINARY_SUFFIX);
-    if (suffixLength > 0 && binaryName.length() >= suffixLength
-        && binaryName.compare(binaryName.length() - suffixLength, suffixLength,
-                              GMX_BINARY_SUFFIX) == 0)
-    {
-        binaryName.erase(binaryName.length() - suffixLength);
-    }
-#endif
-    if (binaryName == realBinaryName_)
+    std::string binaryName = programInfo.invariantProgramName();
+    if (binaryName == programInfo.realBinaryName())
     {
         return modules_.end();
     }
@@ -165,7 +146,7 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(const std::string &argv
 
 void CommandLineModuleManager::Impl::printUsage(bool bModuleList) const
 {
-    const char *program = ShortProgram();
+    const char *program = programInfo_.programName().c_str();
     fprintf(stderr, "Usage: %s <command> [<args>]\n\n", program);
     if (bModuleList)
     {
@@ -258,8 +239,8 @@ int CommandLineHelpModule::run(int argc, char *argv[])
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager(const char *realBinaryName)
-    : impl_(new Impl(realBinaryName))
+CommandLineModuleManager::CommandLineModuleManager(const ProgramInfo &programInfo)
+    : impl_(new Impl(programInfo))
 {
     addModule(CommandLineModulePointer(new internal::CommandLineHelpModule(*this)));
 }
@@ -280,7 +261,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 {
     int argOffset = 0;
     Impl::ModuleMap::const_iterator module
-        = impl_->findModuleFromBinaryName(argv[0]);
+        = impl_->findModuleFromBinaryName(impl_->programInfo_);
     if (module == impl_->modules_.end())
     {
         if (argc < 2)
