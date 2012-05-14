@@ -40,9 +40,9 @@
 #include <string>
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
@@ -56,8 +56,8 @@ std::string formatFatalError(const char *title, const char *details,
 {
     std::string result;
     result.append("\n-------------------------------------------------------\n");
-    // TODO: Make the program name work also for unit tests
-    result.append(formatString("Program %s, %s\n", "TEST", GromacsVersion()));
+    const char *programName = ProgramInfo::getInstance().programName().c_str();
+    result.append(formatString("Program %s, %s\n", programName, GromacsVersion()));
     if (func != NULL)
     {
         result.append(formatString("In function %s\n", func));

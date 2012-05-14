@@ -30,12 +30,12 @@
  */
 /*! \libinternal \file
  * \brief
- * main() for unit tests that use Google C++ Mocking Framework.
+ * main() for unit tests that use \ref module_testutils.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_testutils
  */
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "testutils/testoptions.h"
 
@@ -45,11 +45,11 @@
 #endif
 
 /*! \brief
- * Initializes unit testing with Google C++ Mocking Framework.
+ * Initializes unit testing for \ref module_testutils.
  */
 int main(int argc, char *argv[])
 {
-    ::testing::InitGoogleMock(&argc, argv);
+    // Calls ::testing::InitGoogleMock()
     ::gmx::test::initTestUtils(TEST_DATA_PATH, &argc, argv);
     return RUN_ALL_TESTS();
 }

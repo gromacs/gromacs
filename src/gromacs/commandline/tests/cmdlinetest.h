@@ -86,6 +86,10 @@ class CommandLine
         int &argc() { return argc_; }
         //! Returns argv for passing into C-style command-line handling.
         char **argv() { return argv_; }
+        //! Returns argc for passing into C-style command-line handling.
+        int argc() const { return argc_; }
+        //! Returns argv for passing into C-style command-line handling.
+        const char *const *argv() const { return argv_; }
 
     private:
         //! Internal helper method used to implement the constructor.
