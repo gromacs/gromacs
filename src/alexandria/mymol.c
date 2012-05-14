@@ -214,7 +214,9 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     mymol->qtotal  = gmx_molprop_get_charge(mp);
     mymol->mult    = gmx_molprop_get_multiplicity(mp);
     mymol->natom   = gmx_molprop_get_natom(mp);
-
+    /* Inputrec parameters */
+    mymol->ir.tabext = 2; /* nm */
+    
     if (mymol->natom <= 0)
         imm = immAtomTypes;
     else

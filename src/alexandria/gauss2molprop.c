@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
 
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
-                      
+  
   /* Read standard atom properties */
   aps = gmx_atomprop_init();
   
@@ -382,20 +382,21 @@ int main(int argc, char *argv[])
     
   nfn = ftp2fns(&fns,efLOG,NFILE,fnm);
   nmp = 0;
-  for(i=0; (i<nfn); i++) {
+  for(i=0; (i<nfn); i++) 
+  {
       mp = gmx_molprop_read_log(aps,pd,fns[i],molnm,iupac);
-    if (NULL != mp) 
+      if (NULL != mp) 
       {
-        srenew(mps,++nmp);
-        mps[nmp-1] = mp;
+          srenew(mps,++nmp);
+          mps[nmp-1] = mp;
       }
   }
   generate_composition(nmp,mps,pd,aps,TRUE,th_toler,ph_toler);
   printf("Succesfully read %d molprops from %d Gaussian files.\n",nmp,nfn);
   if (nmp > 0)
-    {
-        gmx_molprops_write(ftp2fn(efDAT,NFILE,fnm),nmp,mps,(int)compress);
-    }
+  {
+      gmx_molprops_write(ftp2fn(efDAT,NFILE,fnm),nmp,mps,(int)compress);
+  }
       
   thanx(stderr);
   

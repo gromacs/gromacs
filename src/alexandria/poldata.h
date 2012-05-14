@@ -51,6 +51,9 @@ typedef struct gmx_poldata *gmx_poldata_t;
 extern gmx_poldata_t gmx_poldata_init();
 
 extern int gmx_poldata_get_natypes(gmx_poldata_t pd);
+extern int gmx_poldata_get_ngt_bond(gmx_poldata_t pd);
+extern int gmx_poldata_get_ngt_angle(gmx_poldata_t pd);
+extern int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd);
 
 extern void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
                                     char *gt_name,char *gt_type,
@@ -142,6 +145,7 @@ extern int gmx_poldata_get_gt_bond(gmx_poldata_t pd,char **atom1,char **atom2,
                                    double *length,double *sigma,double *bondorder,
                                    char **params);
 
+    /* Return bond-index 1-N or 0 if not found */
 extern int gmx_poldata_search_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
                                       double *length,double *sigma,char **params);
 
@@ -159,6 +163,7 @@ extern int gmx_poldata_get_gt_angle(gmx_poldata_t pd,char **atom1,char **atom2,
                                     char **atom3,double *angle,double *sigma,
                                     char **params);
 
+    /* Return angle-index 1-N or 0 if not found */
 extern int gmx_poldata_search_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
                                        char *atom3,double *angle,double *sigma,
                                        char **params);
@@ -178,6 +183,7 @@ extern int gmx_poldata_get_gt_dihedral(gmx_poldata_t pd,char **atom1,char **atom
                                        char **atom3,char **atom4,
                                        double *dihedral,double *sigma,char **params);
 
+    /* Return dihedral-index 1-N or 0 if not found */
 extern int gmx_poldata_search_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
                                           char *atom3,char *atom4,
                                           double *dihedral,double *sigma,char **params);

@@ -182,6 +182,21 @@ int gmx_poldata_get_natypes(gmx_poldata_t pd)
     return pd->nspoel;
 }
 
+int gmx_poldata_get_ngt_bond(gmx_poldata_t pd)
+{
+    return pd->ngt_bond;
+}
+
+int gmx_poldata_get_ngt_angle(gmx_poldata_t pd)
+{
+    return pd->ngt_angle;
+}
+
+int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd)
+{
+    return pd->ngt_dihedral;
+}
+
 void gmx_poldata_set_ffatype(gmx_poldata_t pd,char *gt_type,
                            double polarizability,double sig_pol)
 {
@@ -700,7 +715,7 @@ int gmx_poldata_search_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
             assign_scal(sigma,gt_b->sigma);
             assign_str(params,gt_b->params);
         
-            return 1;
+            return i+1;
         }
     }
     return 0;
@@ -796,7 +811,7 @@ int gmx_poldata_search_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
             assign_scal(sigma,gt_b->sigma);
             assign_str(params,gt_b->params);
         
-            return 1;
+            return i+1;
         }
     }
     return 0;
@@ -819,29 +834,53 @@ char *gmx_poldata_get_angle_unit(gmx_poldata_t pd)
 /*
  * gt_dihedral stuff
  */
+static int gtd_comp(const void *a,const void *b) 
+{
+    t_gt_dihedral *gt_a = (t_gt_dihedral *)a;
+    t_gt_dihedral *gt_b = (t_gt_dihedral *)b;
+    int n;
+    
+    if (0 == (n = strcasecmp(gt_a->atom1,gt_b->atom1)))
+        if (0 == (n = strcasecmp(gt_a->atom2,gt_b->atom2)))
+            if (0 == (n = strcasecmp(gt_a->atom3,gt_b->atom3)))
+                n = strcasecmp(gt_a->atom4,gt_b->atom4);
+                
+    return n;
+}   
+
+static t_gt_dihedral *search_dihedral(gmx_poldata_t pd,
+                                      char *atom1,char *atom2,
+                                      char *atom3,char *atom4)
+{
+    t_gt_dihedral gt_a,*gt_res;
+ 
+    gt_a.atom1 = atom1;
+    gt_a.atom2 = atom2;
+    gt_a.atom3 = atom3;
+    gt_a.atom4 = atom4;
+    gt_res = bsearch(&gt_a,pd->gt_dihedral,pd->ngt_dihedral,
+                     sizeof(gt_a),&gtd_comp);
+    if (NULL == gt_res) {
+        gt_a.atom1 = atom4;
+        gt_a.atom2 = atom3;
+        gt_a.atom3 = atom2;
+        gt_a.atom4 = atom1;
+        gt_res = bsearch(&gt_a,pd->gt_dihedral,pd->ngt_dihedral,
+                         sizeof(gt_a),gtd_comp);
+    }
+    return gt_res;
+}
+
 int gmx_poldata_set_gt_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                        char *atom3,char *atom4,char *params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-    t_gt_dihedral *gt_b;
-    int i;
-  
-    for(i=0; (i<pold->ngt_dihedral); i++) {
-        gt_b = &(pold->gt_dihedral[i]);
-        if (((strcasecmp(gt_b->atom1,atom1) == 0) && 
-             (strcasecmp(gt_b->atom2,atom2) == 0) &&
-             (strcasecmp(gt_b->atom3,atom3) == 0) && 
-             (strcasecmp(gt_b->atom4,atom4) == 0)) ||
-            ((strcasecmp(gt_b->atom1,atom4) == 0) && 
-             (strcasecmp(gt_b->atom2,atom3) == 0) &&
-             (strcasecmp(gt_b->atom3,atom2) == 0) && 
-             (strcasecmp(gt_b->atom4,atom1) == 0))) 
-            break;
-    }
-    if (i < pold->ngt_dihedral) {
-        if (NULL != gt_b->params)
-            sfree(gt_b->params);
-        gt_b->params = strdup(params);
+    t_gt_dihedral *gt_res;
+    
+    gt_res = search_dihedral(pd,atom1,atom2,atom3,atom4);
+    if (NULL != gt_res) {
+        if (NULL != gt_res->params)
+            sfree(gt_res->params);
+        gt_res->params = strdup(params);
         return 1;
     }
     return 0;
@@ -855,7 +894,8 @@ void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
     t_gt_dihedral *gt_b;
     int i;
 
-    if (0 == gmx_poldata_set_gt_dihedral_params(pd,atom1,atom2,atom3,atom4,params)) {  
+    if (0 == gmx_poldata_set_gt_dihedral_params(pd,atom1,atom2,
+                                                atom3,atom4,params)) {  
         pold->ngt_dihedral++;
         srenew(pold->gt_dihedral,pold->ngt_dihedral);
         gt_b = &(pold->gt_dihedral[pold->ngt_dihedral-1]);
@@ -866,6 +906,8 @@ void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
         gt_b->dihedral   = dihedral;
         gt_b->sigma   = sigma;
         gt_b->params = strdup(params);
+        qsort(pold->gt_dihedral,pold->ngt_dihedral,sizeof(pold->gt_dihedral[0]),
+              gtd_comp);
     }
 }
 
@@ -899,26 +941,15 @@ int gmx_poldata_search_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
                                    char *atom3,char *atom4,
                                    double *dihedral,double *sigma,char **params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-    t_gt_dihedral *gt_b;
-    int i;
-  
-    for(i=0; (i<pold->ngt_dihedral); i++) {
-        gt_b = &(pold->gt_dihedral[i]);
-        if (((strcasecmp(gt_b->atom1,atom1) == 0) && 
-             (strcasecmp(gt_b->atom2,atom2) == 0) &&
-             (strcasecmp(gt_b->atom3,atom3) == 0) && 
-             (strcasecmp(gt_b->atom4,atom4) == 0)) ||
-            ((strcasecmp(gt_b->atom1,atom4) == 0) && 
-             (strcasecmp(gt_b->atom2,atom3) == 0) &&
-             (strcasecmp(gt_b->atom3,atom2) == 0) && 
-             (strcasecmp(gt_b->atom4,atom1) == 0))) {
-            assign_scal(dihedral,gt_b->dihedral);
-            assign_scal(sigma,gt_b->sigma);
-            assign_str(params,gt_b->params);
+    t_gt_dihedral *gt_res;
+    
+    gt_res = search_dihedral(pd,atom1,atom2,atom3,atom4);
+    if (NULL != gt_res) {
+        assign_scal(dihedral,gt_res->dihedral);
+        assign_scal(sigma,gt_res->sigma);
+        assign_str(params,gt_res->params);
         
-            return 1;
-        }
+        return 1 + (int) (gt_res - pd->gt_dihedral);
     }
     return 0;
 }
