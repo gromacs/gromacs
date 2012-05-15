@@ -303,7 +303,7 @@ void dump_histo(t_bonds *b,double bspacing,double aspacing,double dspacing,
 }
 
 void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
-               real kb,real kt,real kp)
+               real Dm,real beta,real kt,real kp)
 {
     int i,N;
     real av,sig;
@@ -314,7 +314,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_average(b->bond[i].lsq,&av);
         gmx_stats_get_sigma(b->bond[i].lsq,&sig);
         gmx_stats_get_npoints(b->bond[i].lsq,&N);
-        sprintf(pbuf,"%g  %g",av/1000,kb);
+        sprintf(pbuf,"%g  %g  %g",av/1000,Dm,beta);
         gmx_poldata_add_gt_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,1.0,pbuf);
         fprintf(fp,"bond %s-%s len %g sigma %g (pm)\n",
                 b->bond[i].a1,b->bond[i].a2,av,sig);
@@ -361,7 +361,7 @@ int main(int argc,char *argv[])
     static gmx_bool bHisto=FALSE,bZero=TRUE,bWeighted=TRUE,bOptHfac=FALSE,bQM=FALSE,bCharged=TRUE,bGaussianBug=TRUE,bPol=FALSE,bFitZeta=TRUE;
     int minimum_data = 3;
     real watoms = 1;
-    static real kb = 4e5,kt = 400,kp = 5;
+    static real Dm = 400,kt = 400,kp = 5, beta = 20;
     static real J0_0=5,Chi0_0=1,w_0=5,step=0.01,hfac=0,rDecrZeta=-1;
     static real J0_1=30,Chi0_1=30,w_1=50,epsr=1;
     static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0;
@@ -371,8 +371,10 @@ int main(int argc,char *argv[])
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     static int  nthreads=0; /* set to determine # of threads automatically */
     t_pargs pa[] = {
-        { "-kb",    FALSE, etREAL, {&kb},
-          "Bonded force constant (kJ/mol/nm^2)" },
+        { "-Dm",    FALSE, etREAL, {&Dm},
+          "Dissociation energy (kJ/mol)" },
+        { "-beta",    FALSE, etREAL, {&beta},
+          "Steepness of the Morse potential (1/nm)" },
         { "-kt",    FALSE, etREAL, {&kt},
           "Angle force constant (kJ/mol/rad^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
@@ -492,7 +494,7 @@ int main(int argc,char *argv[])
     sort_bonds(b);
     if (bHisto)
         dump_histo(b,bspacing,aspacing,dspacing,oenv);
-    update_pd(fp,b,md->pd,md->atomprop,kb,kt,kp);
+    update_pd(fp,b,md->pd,md->atomprop,Dm,beta,kt,kp);
     
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);    
     

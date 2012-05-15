@@ -16,7 +16,7 @@ enum
 { 
     immOK, immZeroDip, immNoQuad, immCharged, immError, 
     immAtomTypes, immAtomNumber, immMolpropConv,
-    immQMInconsistency, immTest, immNR 
+    immQMInconsistency, immTest, immNoData, immNR 
 };
 
 enum { eSupportNo, eSupportLocal, eSupportRemote, eSupportNR };
@@ -25,7 +25,7 @@ typedef struct {
     char           *molname,*lot,*ref;
     int            eSupport;
     int            qtotal,mult,natom,nalloc,nshell;
-    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,ener_exp;
+    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol;
     real           *qESP;
     gmx_mtop_t     mtop;
     gmx_localtop_t *ltop;

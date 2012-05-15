@@ -134,9 +134,10 @@ extern char *gmx_poldata_get_bosque_unit(gmx_poldata_t pd);
 extern char *gmx_poldata_get_bosque(gmx_poldata_t pd,char *name,char *elem,
                                     double *polarizability);
 				  
-extern void gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                                    double length,double sigma,double bondorder,
-                                    char *params);
+    /* Return 1 on success or 0 otherwise */
+extern int gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
+                                   double length,double sigma,double bondorder,
+                                   char *params);
 				   
 extern int gmx_poldata_set_gt_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                           char *params);
@@ -153,8 +154,9 @@ extern int gmx_poldata_search_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 extern double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *atom1,char *atom2,
                                         double distance,double toler);
 				     
-extern void gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
-                                     char *atom3,double angle,double sigma,char *params);
+    /* Return 1 on success, 0 otherwise */
+extern int gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
+                                    char *atom3,double angle,double sigma,char *params);
 				   
 extern int gmx_poldata_set_gt_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                            char *atom3,char *params);
@@ -172,9 +174,10 @@ extern void gmx_poldata_set_angle_unit(gmx_poldata_t pd,char *angle_unit);
 
 extern char *gmx_poldata_get_angle_unit(gmx_poldata_t pd);
 
-extern void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
-                                        char *atom3,char *atom4,
-                                        double dihedral,double sigma,char *params);
+/* Return 1 on success or 0 otherwise */
+extern int gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+                                       char *atom3,char *atom4,
+                                       double dihedral,double sigma,char *params);
 				   
 extern int gmx_poldata_set_gt_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                               char *atom3,char *atom4,char *params);

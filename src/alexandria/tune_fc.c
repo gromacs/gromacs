@@ -556,7 +556,7 @@ static double calc_opt_deviation(opt_param_t *opt)
                          NULL,mu_tot,t,NULL,NULL,FALSE,GMX_FORCE_ALLFORCES | GMX_FORCE_STATECHANGED);
 
             }
-            ener[ermsEPOT] = 1e-6*sqr(mymol->enerd.term[F_EPOT]-mymol->ener_exp);
+            ener[ermsEPOT] = 1e-6*sqr(mymol->enerd.term[F_EPOT]-mymol->Hform);
             for(j=0; (j<ermsNR); j++)
                 etot[j] += ener[j];
         }
@@ -733,9 +733,10 @@ static void print_moldip_specs(FILE *fp,t_moldip *md)
 {
     int i;
     
-    fprintf(fp,"Nr.    %-40s  %10s\n","Molecule","Energy");
+    fprintf(fp,"Nr.   %-40s  %10s  %10s\n","Molecule","DHf@298K","Emol@0K");
     for(i=0; (i<md->nmol); i++) {
-        fprintf(fp,"%5d %-40s  %10g\n",i,md->mymol[i].molname,md->mymol[i].ener_exp);
+        fprintf(fp,"%-5d %-40s  %10g  %10g\n",i,md->mymol[i].molname,
+                md->mymol[i].Hform,md->mymol[i].Emol);
     }
     fprintf(fp,"\n");
     
@@ -899,7 +900,7 @@ int main(int argc, char *argv[])
                 TRUE,TRUE,TRUE,2,watoms,FALSE);
     print_moldip_specs(fp,md);
     analyze_idef(fp,md->nmol,md->mymol,md->pd);
-    
+    exit(1);
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,
                     md,maxiter,tol,nrun,reinit,step,seed,
                     bRandom,stol,oenv);

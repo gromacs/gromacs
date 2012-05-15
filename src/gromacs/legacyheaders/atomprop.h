@@ -45,8 +45,8 @@ extern "C" {
 /* Abstract type for the atom property database */
 typedef struct gmx_atomprop *gmx_atomprop_t;
 
-enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement, 
-       epropNR };
+enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropHatomization,
+       epropElement, epropNR };
 
 gmx_atomprop_t gmx_atomprop_init(void);
 /* Initializes and returns the atom properties struct */

@@ -33,7 +33,7 @@ const char *immsg(int imm)
     "OK", "Zero Dipole", "No Quadrupole", "Charged", "Error", 
     "Atom type problem", "Atom number problem", "Converting from molprop",
     "QM Inconsistency (ESP dipole does not match Elec)", 
-    "Not in training set"
+    "Not in training set", "No experimental data"
   };
   assert(imm >= 0);
   assert(imm < immNR);
@@ -198,14 +198,14 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                int nexcl,gmx_bool bESP,
                real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta)
 {
-  int      i,j,k,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
+    int      i,j,k,ia,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
     char     *mylot=NULL,*myref=NULL;
     char     **molnameptr;
     rvec     xmin,xmax;
     tensor   quadrupole;
     double   value,error,vec[3];
     gentop_vsite_t gvt;
-    real     btol = 0.2;
+    real     btol = 0.2,Ha;
     t_pbc    pbc;
     t_excls  *newexcls;
     t_params plist[F_NRE];
@@ -357,10 +357,24 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             }
         }
         if (mp_get_prop(mp,empENERGY,(bQM ? iqmQM : iqmBoth),
-                        lot,NULL,NULL,&value) != 0)
+                        lot,NULL,"Hform",&value) != 0)
           {
-            mymol->ener_exp = value;
+            mymol->Hform = value;
+            mymol->Emol = value;
+            for(ia=0; (ia<mymol->atoms->nr); ia++) {
+              if (gmx_atomprop_query(aps,epropHatomization,NULL,
+                                     *mymol->atoms->atomname[ia],&Ha)) {
+                mymol->Emol -= Ha;
+              }
+              else {
+                mymol->Emol = 0;
+                break;
+              }
+            }
           }
+        else {
+          imm = immNoData;
+        }
     }
     if (immOK == imm)
     {
@@ -899,7 +913,8 @@ void read_moldip(t_moldip *md,
                                  md->iModel,md->cr,&nwarn,bCharged,oenv,
                                  th_toler,ph_toler,dip_toler,md->hfac,bH14,
                                  bAllDihedrals,bRemoveDoubleDihedrals,nexcl,
-                                 (md->fc[ermsESP] > 0),watoms,md->decrzeta,md->bPol,md->bFitZeta);
+                                 (md->fc[ermsESP] > 0),watoms,md->decrzeta,
+                                 md->bPol,md->bFitZeta);
                 if (immOK == imm)
                 {
                     if (dest > 0)
