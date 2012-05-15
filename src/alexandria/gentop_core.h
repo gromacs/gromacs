@@ -49,9 +49,6 @@
 extern void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
                              matrix box);
 			     
-extern void set_force_const(t_params plist[],real kb,real kt,real kp,
-                            gmx_bool bRound,gmx_bool bParam);
-			    
 extern real calc_dip(t_atoms *atoms,rvec x[]);
 
 extern void dump_hybridization(FILE *fp,t_atoms *atoms,int nbonds[]);

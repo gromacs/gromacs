@@ -272,7 +272,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     int        i,j,natom=-1,bOK=FALSE;
     int        nexcl=1;
     char       **anames=NULL,**smnames;
-    int        *nbonds,bDone=0,calcref,atomref,atomid;
+    int        *nbonds,bDone=0,calcref,atomref,atomid,ftb;
     t_params   *plist=NULL;
     t_excls    *excls;
     double     btol=0.2;
@@ -349,10 +349,10 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         snew(plist,F_NRE);
         mk_bonds(pd,atoms,x,NULL,plist,nbonds,TRUE,TRUE,TRUE,
                  nexcl,&excls,FALSE,NULL,aps,btol);
-        
+        ftb = gmx_poldata_get_gt_bond_ftype(pd);
         /* Setting the atom types: this depends on the bonding */
         gvt = gentop_vsite_init(egvtLINEAR);
-        if ((atype = set_atom_type(NULL,molname,&symtab,atoms,&(plist[F_BONDS]),
+        if ((atype = set_atom_type(NULL,molname,&symtab,atoms,&(plist[ftb]),
                                    nbonds,smnames,
                                    pd,aps,x,&pbc,th_toler,phi_toler,gvt)) != NULL) 
             bOK = TRUE;

@@ -146,12 +146,13 @@ real morse_bonds(int nbonds,
     dr   = dr2*gmx_invsqrt(dr2);                        /*  10          */
     temp = exp(-be*(dr-b0));                        /*  12          */
     
-    if (temp == one)
+    if (temp == one) {
+        vtot -= cb;
       continue;
-
+    }
     omtemp   = one-temp;                               /*   1          */
     cbomtemp = cb*omtemp;                              /*   1          */
-    vbond    = cbomtemp*omtemp;                        /*   1          */
+    vbond    = cbomtemp*omtemp-cb;                        /*   1          */
     fbond    = -two*be*temp*cbomtemp*gmx_invsqrt(dr2);      /*   9          */
     vtot    += vbond;       /* 1 */
     

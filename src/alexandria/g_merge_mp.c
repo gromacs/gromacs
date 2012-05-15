@@ -56,6 +56,69 @@
 #include "poldata_xml.h"
 #include "molprop_xml.h"
 
+typedef struct {
+    char *iupac;
+    char *prop;
+    char *value;
+    char *ref;
+} t_prop;
+
+static int tp_comp(const void *a,const void *b)
+{
+    t_prop *ta = (t_prop *)a;
+    t_prop *tb = (t_prop *)b;
+    
+    return strcasecmp(ta->iupac,tb->iupac);
+}
+
+static void add_properties(const char *fn,int nmp,gmx_molprop_t mp[])
+{
+    FILE   *fp;
+    int    nprop=0;
+    t_prop *tp=NULL,key,*tpp;
+    char   buf[STRLEN];
+    char   **ptr;
+    int    i,expref,nadd=0;
+    
+    if (NULL != fn) {
+        fp = ffopen(fn,"r"); 
+        while (!feof(fp)) {
+            fgets2(buf,STRLEN-1,fp);
+            ptr = split('|',buf);
+            if ((NULL != ptr) &&
+                (NULL != ptr[0]) && (NULL != ptr[1]) &&
+                (NULL != ptr[2]) && (NULL != ptr[3])) {
+                srenew(tp,++nprop);
+                tp[nprop-1].iupac = strdup(ptr[0]);
+                tp[nprop-1].prop = strdup(ptr[1]);
+                tp[nprop-1].value = strdup(ptr[2]);
+                tp[nprop-1].ref = strdup(ptr[3]);
+                sfree(ptr[0]);
+                sfree(ptr[1]);
+                sfree(ptr[2]);
+                sfree(ptr[3]);
+                sfree(ptr);
+            }
+        }
+        printf("Read in %d properties from %s.\n",nprop,fn);
+        qsort(tp,nprop,sizeof(tp[0]),tp_comp);
+        fclose(fp);
+        for(i=0; (i<nmp); i++) {
+            key.iupac = gmx_molprop_get_iupac(mp[i]);
+            if (strcmp(key.iupac,"1-bromobutane") == 0)
+                printf("Gotcha!\n");
+            tpp = bsearch(&key,tp,nprop,sizeof(tp[0]),tp_comp);
+            if (NULL != tpp) {
+                gmx_molprop_add_experiment(mp[i],tpp->ref,"minimum",&expref);
+                gmx_molprop_add_energy(mp[i],expref,tpp->prop,"kJ/mol",
+                                       atof(tpp->value),0);
+                nadd++;
+            }
+        }
+        printf("Added properties for %d out of %d molecules.\n",nadd,nmp);
+    }
+}
+
 int main(int argc,char *argv[])
 {
     static const char *desc[] = 
@@ -67,7 +130,8 @@ int main(int argc,char *argv[])
     {
         { efDAT, "-f",  "data",      ffRDMULT },
         { efDAT, "-o",  "allmols",   ffWRITE },
-        { efDAT, "-di", "gentop",    ffOPTRD }
+        { efDAT, "-di", "gentop",    ffOPTRD },
+        { efDAT, "-x",  "extra",     ffOPTRD }
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     static char *sort[] = { NULL, "molname", "formula", "composition", NULL };
@@ -106,6 +170,8 @@ int main(int argc,char *argv[])
       gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
     nfiles = opt2fns(&fns,"-f",NFILE,fnm);
     mp = merge_xml(nfiles,fns,NULL,NULL,"double_dip.dat",&np,ap,pd,TRUE,TRUE,th_toler,ph_toler);
+    
+    add_properties(opt2fn_null("-x",NFILE,fnm),np,mp);
     
     gmx_molprops_write(opt2fn("-o",NFILE,fnm),np,mp,compress);
   

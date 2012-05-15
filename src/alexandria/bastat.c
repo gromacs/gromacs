@@ -303,7 +303,7 @@ void dump_histo(t_bonds *b,double bspacing,double aspacing,double dspacing,
 }
 
 void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
-               real kb,real kt,real kp)
+               real Dm,real beta,real kt,real kp)
 {
     int i,N;
     real av,sig;
@@ -314,7 +314,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_average(b->bond[i].lsq,&av);
         gmx_stats_get_sigma(b->bond[i].lsq,&sig);
         gmx_stats_get_npoints(b->bond[i].lsq,&N);
-        sprintf(pbuf,"%g  %g",av/1000,kb);
+        sprintf(pbuf,"%g  %g",Dm,beta);
         gmx_poldata_add_gt_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,1.0,pbuf);
         fprintf(fp,"bond %s-%s len %g sigma %g (pm)\n",
                 b->bond[i].a1,b->bond[i].a2,av,sig);
@@ -323,7 +323,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_average(b->angle[i].lsq,&av);
         gmx_stats_get_sigma(b->angle[i].lsq,&sig);
         gmx_stats_get_npoints(b->angle[i].lsq,&N);
-        sprintf(pbuf,"%g  %g",av,kt);
+        sprintf(pbuf,"%g",kt);
         gmx_poldata_add_gt_angle(pd,b->angle[i].a1,b->angle[i].a2,
                                  b->angle[i].a3,av,sig,pbuf);
         fprintf(fp,"angle %s-%s-%s angle %g sigma %g (deg)\n",
@@ -333,7 +333,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_average(b->dih[i].lsq,&av);
         gmx_stats_get_sigma(b->dih[i].lsq,&sig);
         gmx_stats_get_npoints(b->dih[i].lsq,&N);
-        sprintf(pbuf,"%g  %g",av,kp);
+        sprintf(pbuf,"%g",kp);
         gmx_poldata_add_gt_dihedral(pd,b->dih[i].a1,b->dih[i].a2,
                                     b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
         fprintf(fp,"dihedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
@@ -361,7 +361,7 @@ int main(int argc,char *argv[])
     static gmx_bool bHisto=FALSE,bZero=TRUE,bWeighted=TRUE,bOptHfac=FALSE,bQM=FALSE,bCharged=TRUE,bGaussianBug=TRUE,bPol=FALSE,bFitZeta=TRUE;
     int minimum_data = 3;
     real watoms = 1;
-    static real kb = 4e5,kt = 400,kp = 5;
+    static real Dm = 400,kt = 400,kp = 5, beta = 20;
     static real J0_0=5,Chi0_0=1,w_0=5,step=0.01,hfac=0,rDecrZeta=-1;
     static real J0_1=30,Chi0_1=30,w_1=50,epsr=1;
     static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0;
@@ -371,8 +371,10 @@ int main(int argc,char *argv[])
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     static int  nthreads=0; /* set to determine # of threads automatically */
     t_pargs pa[] = {
-        { "-kb",    FALSE, etREAL, {&kb},
-          "Bonded force constant (kJ/mol/nm^2)" },
+        { "-Dm",    FALSE, etREAL, {&Dm},
+          "Dissociation energy (kJ/mol)" },
+        { "-beta",    FALSE, etREAL, {&beta},
+          "Steepness of the Morse potential (1/nm)" },
         { "-kt",    FALSE, etREAL, {&kt},
           "Angle force constant (kJ/mol/rad^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
@@ -398,6 +400,7 @@ int main(int argc,char *argv[])
     rvec *x,dx,dx2,r_ij,r_kj,r_kl,mm,nn;
     t_pbc pbc;
     int t1,t2,t3;
+    int ftb,fta,ftd;
     matrix box;
     real sign;
     gmx_conect conect;
@@ -447,21 +450,24 @@ int main(int argc,char *argv[])
                 TRUE,TRUE,TRUE,2,watoms,FALSE);
                     
 #define ATP(ii) get_atomtype_name(md->mymol[i].atoms->atom[ii].type,md->mymol[i].atype)
+    ftb = gmx_poldata_get_gt_bond_ftype(md->pd);
+    fta = gmx_poldata_get_gt_angle_ftype(md->pd);
+    ftd = gmx_poldata_get_gt_dihedral_ftype(md->pd);
     snew(b,1);
     for(i=0; (i<md->nmol); i++) {
         molname = md->mymol[i].molname;
-        for(j=0; (j<md->mymol[i].ltop->idef.il[F_BONDS].nr); j+=interaction_function[F_BONDS].nratoms+1) {
-            ai = md->mymol[i].ltop->idef.il[F_BONDS].iatoms[j+1];
-            aj = md->mymol[i].ltop->idef.il[F_BONDS].iatoms[j+2];
+        for(j=0; (j<md->mymol[i].ltop->idef.il[ftb].nr); j+=interaction_function[ftb].nratoms+1) {
+            ai = md->mymol[i].ltop->idef.il[ftb].iatoms[j+1];
+            aj = md->mymol[i].ltop->idef.il[ftb].iatoms[j+2];
             rvec_sub(md->mymol[i].x[ai],md->mymol[i].x[aj],dx);
             cai = ATP(ai);
             caj = ATP(aj);
             add_bond(molname,b,cai,caj,1000*norm(dx),bspacing);
         }
-        for(j=0; (j<md->mymol[i].ltop->idef.il[F_ANGLES].nr); j+=interaction_function[F_ANGLES].nratoms+1) {
-            ai = md->mymol[i].ltop->idef.il[F_ANGLES].iatoms[j+1];
-            aj = md->mymol[i].ltop->idef.il[F_ANGLES].iatoms[j+2];
-            ak = md->mymol[i].ltop->idef.il[F_ANGLES].iatoms[j+3];
+        for(j=0; (j<md->mymol[i].ltop->idef.il[fta].nr); j+=interaction_function[fta].nratoms+1) {
+            ai = md->mymol[i].ltop->idef.il[fta].iatoms[j+1];
+            aj = md->mymol[i].ltop->idef.il[fta].iatoms[j+2];
+            ak = md->mymol[i].ltop->idef.il[fta].iatoms[j+3];
             rvec_sub(md->mymol[i].x[ai],md->mymol[i].x[aj],dx);
             rvec_sub(md->mymol[i].x[ak],md->mymol[i].x[aj],dx2);
             ang = RAD2DEG*gmx_angle(dx,dx2);
@@ -473,11 +479,11 @@ int main(int argc,char *argv[])
         clear_mat(box);
         set_pbc(&pbc,epbcNONE,box);
         
-        for(j=0; (j<md->mymol[i].ltop->idef.il[F_PDIHS].nr); j+=interaction_function[F_PDIHS].nratoms+1) {
-            ai = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+1];
-            aj = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+2];
-            ak = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+3];
-            al = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+4];
+        for(j=0; (j<md->mymol[i].ltop->idef.il[ftd].nr); j+=interaction_function[ftd].nratoms+1) {
+            ai = md->mymol[i].ltop->idef.il[ftd].iatoms[j+1];
+            aj = md->mymol[i].ltop->idef.il[ftd].iatoms[j+2];
+            ak = md->mymol[i].ltop->idef.il[ftd].iatoms[j+3];
+            al = md->mymol[i].ltop->idef.il[ftd].iatoms[j+4];
             ang = RAD2DEG*dih_angle(md->mymol[i].x[ai],md->mymol[i].x[aj],
                                     md->mymol[i].x[ak],md->mymol[i].x[al],
                                     &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
@@ -492,7 +498,7 @@ int main(int argc,char *argv[])
     sort_bonds(b);
     if (bHisto)
         dump_histo(b,bspacing,aspacing,dspacing,oenv);
-    update_pd(fp,b,md->pd,md->atomprop,kb,kt,kp);
+    update_pd(fp,b,md->pd,md->atomprop,Dm,beta,kt,kp);
     
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);    
     

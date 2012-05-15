@@ -215,9 +215,9 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
 static void set_prop(gmx_atomprop_t aps,int eprop) 
 {
   gmx_atomprop *ap2 = (gmx_atomprop*) aps;
-  const char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
-  double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0 };
-  double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
+  const char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "atomization-energy.dat", "elements.dat" };
+  double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0, 1.0 };
+  double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, 0, -1 };
   aprop_t *ap;
 
   ap = &ap2->prop[eprop];
@@ -301,6 +301,10 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
   char atomname[MAXQ],resname[MAXQ];
   gmx_bool bExact;
 
+  if (NULL == resnm)
+    resnm = "";
+  if (NULL == atomnm)
+    return FALSE;
   set_prop(aps,eprop);
   if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1)) {
     if (debug)

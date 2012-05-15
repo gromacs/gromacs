@@ -102,13 +102,16 @@ typedef struct gmx_poldata {
     t_ffatype *spoel;
     char *alexandria_polar_unit;
     char *alexandria_forcefield;
-    int ngt_bond,ngt_bond_c;
+    char *gt_bond_function;
+    int ngt_bond,ngt_bond_c,gt_bond_ftype;
     char *gt_length_unit;
     t_gt_bond *gt_bond;
-    int ngt_angle,ngt_angle_c;
+    char *gt_angle_function;
+    int ngt_angle,ngt_angle_c,gt_angle_ftype;
     char *gt_angle_unit;
     t_gt_angle *gt_angle;
-    int ngt_dihedral,ngt_dihedral_c;
+    char *gt_dihedral_function;
+    int ngt_dihedral,ngt_dihedral_c,gt_dihedral_ftype;
     t_gt_dihedral *gt_dihedral;
     int nmiller,nmiller_c;
     t_miller *miller;
@@ -129,11 +132,16 @@ typedef struct gmx_poldata {
 
 gmx_poldata_t gmx_poldata_init()
 {
-    gmx_poldata *pold;
+    gmx_poldata_t pd;
   
-    snew(pold,1);
-  
-    return (gmx_poldata_t) pold;
+    snew(pd,1);
+    
+    /* Initiate some crucial variables */
+    pd->gt_bond_ftype = NOTSET;
+    pd->gt_angle_ftype = NOTSET;
+    pd->gt_dihedral_ftype = NOTSET;
+    
+    return pd;
 }
 
 void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
@@ -195,6 +203,81 @@ int gmx_poldata_get_ngt_angle(gmx_poldata_t pd)
 int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd)
 {
     return pd->ngt_dihedral;
+}
+
+void gmx_poldata_set_gt_bond_function(gmx_poldata_t pd,char *fn)
+{
+    int i;
+    
+    if (NULL != pd->gt_bond_function)
+        sfree(pd->gt_bond_function);
+    for(i=0; (i<F_NRE); i++)
+        if (strcasecmp(interaction_function[i].name,fn) == 0)
+            break;
+    if (i == F_NRE)
+        gmx_fatal(FARGS,"Bond function '%s' does not exist in gromacs",fn);
+    pd->gt_bond_ftype = i;
+    pd->gt_bond_function = strdup(fn);
+}
+
+char *gmx_poldata_get_gt_bond_function(gmx_poldata_t pd)
+{
+    return pd->gt_bond_function;
+}
+
+void gmx_poldata_set_gt_angle_function(gmx_poldata_t pd,char *fn)
+{
+    int i;
+    
+    if (NULL != pd->gt_angle_function)
+        sfree(pd->gt_angle_function);
+    for(i=0; (i<F_NRE); i++)
+        if (strcasecmp(interaction_function[i].name,fn) == 0)
+            break;
+    if (i == F_NRE)
+        gmx_fatal(FARGS,"Angle function '%s' does not exist in gromacs",fn);
+    pd->gt_angle_ftype = i;
+    pd->gt_angle_function = strdup(fn);
+}
+
+char *gmx_poldata_get_gt_angle_function(gmx_poldata_t pd)
+{
+    return pd->gt_angle_function;
+}
+
+int gmx_poldata_get_gt_bond_ftype(gmx_poldata_t pd)
+{
+    return pd->gt_bond_ftype;
+}
+
+int gmx_poldata_get_gt_angle_ftype(gmx_poldata_t pd)
+{
+    return pd->gt_angle_ftype;
+}
+
+int gmx_poldata_get_gt_dihedral_ftype(gmx_poldata_t pd)
+{
+    return pd->gt_dihedral_ftype;
+}
+
+void gmx_poldata_set_gt_dihedral_function(gmx_poldata_t pd,char *fn)
+{
+    int i;
+
+    if (NULL != pd->gt_dihedral_function)
+        sfree(pd->gt_dihedral_function);
+    for(i=0; (i<F_NRE); i++)
+        if (strcasecmp(interaction_function[i].name,fn) == 0)
+            break;
+    if (i == F_NRE)
+        gmx_fatal(FARGS,"Dihedral function '%s' does not exist in gromacs",fn);
+    pd->gt_dihedral_ftype = i;
+    pd->gt_dihedral_function = strdup(fn);
+}
+
+char *gmx_poldata_get_gt_dihedral_function(gmx_poldata_t pd)
+{
+    return pd->gt_dihedral_function;
 }
 
 void gmx_poldata_set_ffatype(gmx_poldata_t pd,char *gt_type,
@@ -614,6 +697,16 @@ char *gmx_poldata_get_bosque_unit(gmx_poldata_t pd)
     return pold->bosque_polar_unit;
 }
 
+static int search_atomtype(gmx_poldata_t pd,char *atom)
+{
+    int j;
+    
+    for(j=0; (j<pd->nspoel); j++) 
+        if (strcasecmp(pd->spoel[j].type,atom) == 0) 
+            return j;
+    return -1;
+}
+
 /* 
  * gt_bond stuff 
  */
@@ -641,37 +734,31 @@ int gmx_poldata_set_gt_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
     return 0;
 }
 
-void gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                             double length,double sigma,double bondorder,char *params)
+int gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
+                            double length,double sigma,double bondorder,char *params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
-    int j;
+    int j,a1,a2;
 
+    if (-1 == (a1 = search_atomtype(pd,atom1)))
+        return 0;
+    if (-1 == (a2 = search_atomtype(pd,atom2)))
+        return 0;
     if (gmx_poldata_set_gt_bond_params(pd,atom1,atom2,params) == 0) {
         pold->ngt_bond++;
         srenew(pold->gt_bond,pold->ngt_bond);
         gt_b = &(pold->gt_bond[pold->ngt_bond-1]);
-        gt_b->atom1 = NULL;
-        gt_b->atom2 = NULL;
-        for(j=0; (j<pold->nspoel); j++) {
-            if (strcasecmp(pold->spoel[j].type,atom1) == 0) {
-                gt_b->atom1     = strdup(atom1);
-                gt_b->elem1     = strdup(pold->spoel[j].elem);
-            }
-            if (strcasecmp(pold->spoel[j].type,atom2) == 0) {
-                gt_b->atom2     = strdup(atom2);
-                gt_b->elem2     = strdup(pold->spoel[j].elem);
-            }
-        }
-        if ((NULL == gt_b->atom1) || (NULL == gt_b->atom2))
-            gmx_fatal(FARGS,"Either atomtype %s or atomtype %s unknown when trying to define a bond.",
-                      atom1,atom2);
+        gt_b->atom1     = strdup(atom1);
+        gt_b->elem1     = strdup(pold->spoel[a1].elem);
+        gt_b->atom2     = strdup(atom2);
+        gt_b->elem2     = strdup(pold->spoel[a2].elem);
         gt_b->length    = length;
         gt_b->sigma     = sigma;
         gt_b->bondorder = bondorder;
         gt_b->params    = strdup(params);
     }
+    return 1;
 }
 
 int gmx_poldata_get_gt_bond(gmx_poldata_t pd,char **atom1,char **atom2,
@@ -749,13 +836,18 @@ int gmx_poldata_set_gt_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
     return 0;
 }
 				   
-void gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
-                              char *atom3,double angle,double sigma,char *params)
+int gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
+                             char *atom3,double angle,double sigma,char *params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_angle *gt_b;
     int i;
   
+    if ((-1 == search_atomtype(pd,atom1)) ||
+        (-1 == search_atomtype(pd,atom2)) ||
+        (-1 == search_atomtype(pd,atom3)))
+        return 0;
+
     if (0 == gmx_poldata_set_gt_angle_params(pd,atom1,atom2,atom3,params)) {
         pold->ngt_angle++;
         srenew(pold->gt_angle,pold->ngt_angle);
@@ -767,8 +859,9 @@ void gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
         gt_b->sigma   = sigma;
         gt_b->params  = strdup(params);
     }
+    return 1;
 }
-				   
+
 int gmx_poldata_get_gt_angle(gmx_poldata_t pd,char **atom1,char **atom2,
                              char **atom3,double *angle,double *sigma,char **params)
 {
@@ -886,13 +979,19 @@ int gmx_poldata_set_gt_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
     return 0;
 }
 
-void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
-                                 char *atom3,char *atom4,double dihedral,
-                                 double sigma,char *params)
+int gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+                                char *atom3,char *atom4,double dihedral,
+                                double sigma,char *params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_dihedral *gt_b;
     int i;
+
+    if ((-1 == search_atomtype(pd,atom1)) ||
+        (-1 == search_atomtype(pd,atom2)) ||
+        (-1 == search_atomtype(pd,atom3)) ||
+        (-1 == search_atomtype(pd,atom4)))
+        return 0;
 
     if (0 == gmx_poldata_set_gt_dihedral_params(pd,atom1,atom2,
                                                 atom3,atom4,params)) {  
@@ -909,6 +1008,7 @@ void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
         qsort(pold->gt_dihedral,pold->ngt_dihedral,sizeof(pold->gt_dihedral[0]),
               gtd_comp);
     }
+    return 1;
 }
 
 int gmx_poldata_get_gt_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
