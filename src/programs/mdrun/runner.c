@@ -429,7 +429,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      * (in case we ever want to make it run in parallel) */
     if (opt2bSet("-membed",nfile,fnm))
     {
-	fprintf(stderr,"Entering membed code");
+        fprintf(stderr,"Initializing membed");
         snew(membed,1);
         init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
     }
@@ -949,7 +949,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
-    
+
     if (opt2bSet("-membed",nfile,fnm))
     {
         sfree(membed);
