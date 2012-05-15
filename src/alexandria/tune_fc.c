@@ -412,14 +412,15 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd)
         aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
         aai = *mymol->atoms->atomtype[ai];
         aaj = *mymol->atoms->atomtype[aj];
+        /* Here unfortunately we need a case statement for the types */
         if ((gt = gmx_poldata_search_gt_bond(pd,aai,aaj,NULL,NULL,&params)) != 0) {
             ptr = split(' ',params);
             if (NULL != ptr[0]) {
-                mymol->mtop.ffparams.iparams[tp].harmonic.rA = atof(ptr[0]);
+                mymol->mtop.ffparams.iparams[tp].morse.cb = atof(ptr[0]);
                 sfree(ptr[0]);
             }
             if (NULL != ptr[1]) {
-                mymol->mtop.ffparams.iparams[tp].harmonic.krA = atof(ptr[1]);
+                mymol->mtop.ffparams.iparams[tp].morse.beta = atof(ptr[1]);
                 sfree(ptr[1]);
             }
             sfree(ptr);
