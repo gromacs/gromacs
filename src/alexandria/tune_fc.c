@@ -290,7 +290,7 @@ static void xvgr_symbolize(FILE *xvgf,int nsym,const char *leg[],
 
 static void analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd)
 {
-    int  gt,i,n,tp,ai,aj,ak,al;
+    int  gt,i,n,tp,ai,aj,ak,al,ftb,fta,ftd;
     char *aai,*aaj,*aak,*aal,*params,**ptr;
     t_mymol *mymol;
     int  NGTB,NGTA,NGTD,nbtot,natot,ndtot;
@@ -308,13 +308,16 @@ static void analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd)
     snew(cgtd,NGTD);
 
     nbtot = natot = ndtot = 0;
+    ftb = gmx_poldata_get_gt_bond_ftype(pd);
+    fta = gmx_poldata_get_gt_angle_ftype(pd);
+    ftd = gmx_poldata_get_gt_dihedral_ftype(pd);
     for(n=0; (n<nmol); n++) { 
         mymol = &(mm[n]);
         
-        for(i=0; (i<mymol->ltop->idef.il[F_BONDS].nr); i+=interaction_function[F_BONDS].nratoms+1) {
-            tp = mymol->ltop->idef.il[F_BONDS].iatoms[i];
-            ai = mymol->ltop->idef.il[F_BONDS].iatoms[i+1];
-            aj = mymol->ltop->idef.il[F_BONDS].iatoms[i+2];
+        for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
+            tp = mymol->ltop->idef.il[ftb].iatoms[i];
+            ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
+            aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             if ((gt = gmx_poldata_search_gt_bond(pd,aai,aaj,NULL,NULL,&params)) != 0) {
@@ -326,11 +329,11 @@ static void analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd)
                 nbtot++;
             }
         }
-        for(i=0; (i<mymol->ltop->idef.il[F_ANGLES].nr); i+=interaction_function[F_ANGLES].nratoms+1) {
-            tp = mymol->ltop->idef.il[F_ANGLES].iatoms[i];
-            ai = mymol->ltop->idef.il[F_ANGLES].iatoms[i+1];
-            aj = mymol->ltop->idef.il[F_ANGLES].iatoms[i+2];
-            ak = mymol->ltop->idef.il[F_ANGLES].iatoms[i+3];
+        for(i=0; (i<mymol->ltop->idef.il[fta].nr); i+=interaction_function[fta].nratoms+1) {
+            tp = mymol->ltop->idef.il[fta].iatoms[i];
+            ai = mymol->ltop->idef.il[fta].iatoms[i+1];
+            aj = mymol->ltop->idef.il[fta].iatoms[i+2];
+            ak = mymol->ltop->idef.il[fta].iatoms[i+3];
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             aak = *mymol->atoms->atomtype[ak];
@@ -343,12 +346,12 @@ static void analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd)
                 natot++;
             }
         }
-        for(i=0; (i<mymol->ltop->idef.il[F_PDIHS].nr); i+=interaction_function[F_PDIHS].nratoms+1) {
-            tp = mymol->ltop->idef.il[F_PDIHS].iatoms[i];
-            ai = mymol->ltop->idef.il[F_PDIHS].iatoms[i+1];
-            aj = mymol->ltop->idef.il[F_PDIHS].iatoms[i+2];
-            ak = mymol->ltop->idef.il[F_PDIHS].iatoms[i+3];
-            al = mymol->ltop->idef.il[F_PDIHS].iatoms[i+4];
+        for(i=0; (i<mymol->ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
+            tp = mymol->ltop->idef.il[ftd].iatoms[i];
+            ai = mymol->ltop->idef.il[ftd].iatoms[i+1];
+            aj = mymol->ltop->idef.il[ftd].iatoms[i+2];
+            ak = mymol->ltop->idef.il[ftd].iatoms[i+3];
+            al = mymol->ltop->idef.il[ftd].iatoms[i+4];
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             aak = *mymol->atoms->atomtype[ak];
@@ -397,12 +400,16 @@ static void analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd)
 static void update_idef(t_mymol *mymol,gmx_poldata_t pd)
 {
     int  gt,i,tp,ai,aj,ak,al;
+    int  ftb,fta,ftd;
     char *aai,*aaj,*aak,*aal,*params,**ptr;
     
-    for(i=0; (i<mymol->ltop->idef.il[F_BONDS].nr); i+=interaction_function[F_BONDS].nratoms+1) {
-        tp = mymol->ltop->idef.il[F_BONDS].iatoms[i];
-        ai = mymol->ltop->idef.il[F_BONDS].iatoms[i+1];
-        aj = mymol->ltop->idef.il[F_BONDS].iatoms[i+2];
+    ftb = gmx_poldata_get_gt_bond_ftype(pd);
+    fta = gmx_poldata_get_gt_angle_ftype(pd);
+    ftd = gmx_poldata_get_gt_dihedral_ftype(pd);
+    for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
+        tp = mymol->ltop->idef.il[ftb].iatoms[i];
+        ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
+        aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
         aai = *mymol->atoms->atomtype[ai];
         aaj = *mymol->atoms->atomtype[aj];
         if ((gt = gmx_poldata_search_gt_bond(pd,aai,aaj,NULL,NULL,&params)) != 0) {
@@ -421,11 +428,11 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd)
             gmx_fatal(FARGS,"There are no parameters for bond %s-%s in the force field",aai,aaj);
         }
     }
-    for(i=0; (i<mymol->ltop->idef.il[F_ANGLES].nr); i+=interaction_function[F_ANGLES].nratoms+1) {
-        tp = mymol->ltop->idef.il[F_ANGLES].iatoms[i];
-        ai = mymol->ltop->idef.il[F_ANGLES].iatoms[i+1];
-        aj = mymol->ltop->idef.il[F_ANGLES].iatoms[i+2];
-        ak = mymol->ltop->idef.il[F_ANGLES].iatoms[i+3];
+    for(i=0; (i<mymol->ltop->idef.il[fta].nr); i+=interaction_function[fta].nratoms+1) {
+        tp = mymol->ltop->idef.il[fta].iatoms[i];
+        ai = mymol->ltop->idef.il[fta].iatoms[i+1];
+        aj = mymol->ltop->idef.il[fta].iatoms[i+2];
+        ak = mymol->ltop->idef.il[fta].iatoms[i+3];
         aai = *mymol->atoms->atomtype[ai];
         aaj = *mymol->atoms->atomtype[aj];
         aak = *mymol->atoms->atomtype[ak];
@@ -445,12 +452,12 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd)
             gmx_fatal(FARGS,"There are no parameters for angle %s-%s-%s in the force field",aai,aaj,aak);
         }
     }
-    for(i=0; (i<mymol->ltop->idef.il[F_PDIHS].nr); i+=interaction_function[F_PDIHS].nratoms+1) {
-        tp = mymol->ltop->idef.il[F_PDIHS].iatoms[i];
-        ai = mymol->ltop->idef.il[F_PDIHS].iatoms[i+1];
-        aj = mymol->ltop->idef.il[F_PDIHS].iatoms[i+2];
-        ak = mymol->ltop->idef.il[F_PDIHS].iatoms[i+3];
-        al = mymol->ltop->idef.il[F_PDIHS].iatoms[i+4];
+    for(i=0; (i<mymol->ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
+        tp = mymol->ltop->idef.il[ftd].iatoms[i];
+        ai = mymol->ltop->idef.il[ftd].iatoms[i+1];
+        aj = mymol->ltop->idef.il[ftd].iatoms[i+2];
+        ak = mymol->ltop->idef.il[ftd].iatoms[i+3];
+        al = mymol->ltop->idef.il[ftd].iatoms[i+4];
         aai = *mymol->atoms->atomtype[ai];
         aaj = *mymol->atoms->atomtype[aj];
         aak = *mymol->atoms->atomtype[ak];
@@ -556,7 +563,7 @@ static double calc_opt_deviation(opt_param_t *opt)
                          NULL,mu_tot,t,NULL,NULL,FALSE,GMX_FORCE_ALLFORCES | GMX_FORCE_STATECHANGED);
 
             }
-            ener[ermsEPOT] = 1e-6*sqr(mymol->enerd.term[F_EPOT]-mymol->Hform);
+            ener[ermsEPOT] = 1e-6*sqr(mymol->enerd.term[F_EPOT]-mymol->Emol);
             for(j=0; (j<ermsNR); j++)
                 etot[j] += ener[j];
         }
@@ -900,7 +907,7 @@ int main(int argc, char *argv[])
                 TRUE,TRUE,TRUE,2,watoms,FALSE);
     print_moldip_specs(fp,md);
     analyze_idef(fp,md->nmol,md->mymol,md->pd);
-    exit(1);
+
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,
                     md,maxiter,tol,nrun,reinit,step,seed,
                     bRandom,stol,oenv);

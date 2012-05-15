@@ -86,6 +86,7 @@ enum {
     exmlGT_NAME, exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE,
     exmlNEIGHBORS, 
     exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS,
+    exmlFUNCTION,
     exmlGT_BONDS, exmlLENGTH_UNIT, exmlGT_BOND, exmlPARAMS,
     exmlATOM1, exmlATOM2, exmlLENGTH, exmlSIGMA, exmlBONDORDER,
     exmlGT_ANGLES, exmlANGLE_UNIT, exmlGT_ANGLE,
@@ -110,6 +111,7 @@ static const char *exml_names[exmlNR] = {
     "gt_name", "gt_type", "miller_equiv", "charge",
     "neighbors", 
     "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams",
+    "function",
     "gt_bonds", "length_unit", "gt_bond", "params",
     "atom1", "atom2", "length", "sigma", "bondorder",
     "gt_angles", "angle_unit", "gt_angle",
@@ -187,13 +189,21 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         if (NN(xbuf[exmlPOLAR_UNIT])) 
             gmx_poldata_set_bosque_unit(pd,xbuf[exmlPOLAR_UNIT]);
         break;
+    case exmlGT_DIHEDRALS:
+        if (NN(xbuf[exmlFUNCTION]))
+            gmx_poldata_set_gt_dihedral_function(pd,xbuf[exmlFUNCTION]);
+        break;
     case exmlGT_ANGLES:
         if (NN(xbuf[exmlANGLE_UNIT])) 
             gmx_poldata_set_angle_unit(pd,xbuf[exmlANGLE_UNIT]);
+        if (NN(xbuf[exmlFUNCTION]))
+            gmx_poldata_set_gt_angle_function(pd,xbuf[exmlFUNCTION]);
         break;
     case exmlGT_BONDS:
         if (NN(xbuf[exmlLENGTH_UNIT])) 
             gmx_poldata_set_length_unit(pd,xbuf[exmlLENGTH_UNIT]);
+        if (NN(xbuf[exmlFUNCTION]))
+            gmx_poldata_set_gt_bond_function(pd,xbuf[exmlFUNCTION]);
         break;
     case exmlMILATOMS:
         if (NN(xbuf[exmlTAU_UNIT]) && NN(xbuf[exmlAHP_UNIT]))
@@ -369,7 +379,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         numattach,element,model;
     char *elem,*miller_equiv,*geometry,*name,*gt_type,*alexandria_equiv,*vdwparams,*blu,*charge,
         *atom1,*atom2,*atom3,*atom4,*tmp,*central,*attached,*tau_unit,*ahp_unit,
-        *epref,*desc,*params;
+        *epref,*desc,*params,*func;
     char *neighbors,*zeta,*qstr,*rowstr;
     double polarizability,sig_pol,length,tau_ahc,alpha_ahp,angle,J0,chi0,
         bondorder,sigma;
@@ -401,8 +411,10 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     }
 
     child = add_xml_child(parent,exml_names[exmlGT_BONDS]);
-    if ((blu = gmx_poldata_get_length_unit(pd)) != NULL)
+    if ((blu = gmx_poldata_get_length_unit(pd)) != NULL) 
         add_xml_char(child,exml_names[exmlLENGTH_UNIT],blu);
+    if ((func = gmx_poldata_get_gt_bond_function(pd)) != NULL)
+        add_xml_char(child,exml_names[exmlFUNCTION],func);
     while (gmx_poldata_get_gt_bond(pd,&atom1,&atom2,&length,&sigma,
                                    &bondorder,&params) == 1) {
         grandchild = add_xml_child(child,exml_names[exmlGT_BOND]);
@@ -417,6 +429,8 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     child = add_xml_child(parent,exml_names[exmlGT_ANGLES]);
     if ((blu = gmx_poldata_get_angle_unit(pd)) != NULL)
         add_xml_char(child,exml_names[exmlANGLE_UNIT],blu);
+    if ((func = gmx_poldata_get_gt_angle_function(pd)) != NULL)
+        add_xml_char(child,exml_names[exmlFUNCTION],func);
     while (gmx_poldata_get_gt_angle(pd,&atom1,&atom2,&atom3,&angle,&sigma,&params) == 1) {
         grandchild = add_xml_child(child,exml_names[exmlGT_ANGLE]);
         add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
@@ -430,6 +444,8 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     child = add_xml_child(parent,exml_names[exmlGT_DIHEDRALS]);
     if ((blu = gmx_poldata_get_angle_unit(pd)) != NULL)
         add_xml_char(child,exml_names[exmlANGLE_UNIT],blu);
+    if ((func = gmx_poldata_get_gt_dihedral_function(pd)) != NULL)
+        add_xml_char(child,exml_names[exmlFUNCTION],func);
     while (gmx_poldata_get_gt_dihedral(pd,&atom1,&atom2,&atom3,&atom4,
                                        &angle,&sigma,&params) == 1) {
         grandchild = add_xml_child(child,exml_names[exmlGT_DIHEDRAL]);

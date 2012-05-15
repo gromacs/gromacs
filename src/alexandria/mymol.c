@@ -198,7 +198,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                int nexcl,gmx_bool bESP,
                real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta)
 {
-    int      i,j,k,ia,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
+    int      ftb,i,j,k,ia,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
     char     *mylot=NULL,*myref=NULL;
     char     **molnameptr;
     rvec     xmin,xmax;
@@ -214,6 +214,9 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     mymol->qtotal  = gmx_molprop_get_charge(mp);
     mymol->mult    = gmx_molprop_get_multiplicity(mp);
     mymol->natom   = gmx_molprop_get_natom(mp);
+    
+    ftb = gmx_poldata_get_gt_bond_ftype(pd);
+        
     /* Inputrec parameters */
     mymol->ir.tabext = 2; /* nm */
     
@@ -306,7 +309,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         set_pbc(&pbc,epbcNONE,mymol->box);
         gvt = gentop_vsite_init(egvtLINEAR);
         if ((mymol->atype = set_atom_type(NULL,mymol->molname,&(mymol->symtab),mymol->atoms,
-                                          &(plist[F_BONDS]),nbonds,mymol->smnames,pd,aps,
+                                          &(plist[ftb]),nbonds,mymol->smnames,pd,aps,
                                           mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
             imm = immAtomTypes;
         gentop_vsite_done(&gvt);

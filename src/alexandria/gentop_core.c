@@ -69,6 +69,22 @@
 #include "gentop_core.h"
 #include "gentop_vsite.h"
 
+static void mv_plist(t_params *dst,t_params *src)
+{
+    int i;
+    
+    if (dst->maxnr < src->nr) {
+        srenew(dst->param,src->nr);
+        dst->maxnr = src->nr;
+    }
+    for(i=0; (i<src->nr); i++) {
+        cp_param(&dst->param[i],&src->param[i]);
+    }
+    dst->nr=src->nr;
+    
+    src->nr = 0;
+}
+
 void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
               gmx_conect gc,t_params plist[],int nbond[],
               gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
@@ -76,7 +92,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
               gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol)
 {
     t_param  b;
-    int      i,j;
+    int      i,j,ft;
     t_pbc    pbc;
     rvec     dx;
     real     dx1;
@@ -152,6 +168,18 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
             bAllDihedrals,bRemoveDoubleDihedrals,TRUE);
     generate_excls(&nnb,nexcl,*excls);
     done_nnb(&nnb);
+    
+    /* Now move over to the appropriate function types */
+    if (NOTSET == (ft = gmx_poldata_get_gt_bond_ftype(pd)))
+        gmx_fatal(FARGS,"Bond function type not set in force field file");
+    mv_plist(&plist[F_MORSE],&plist[F_BONDS]);
+    
+    if (NOTSET == (ft = gmx_poldata_get_gt_angle_ftype(pd)))
+        gmx_fatal(FARGS,"Angle function type not set in force field file");
+        
+    if (NOTSET == (ft = gmx_poldata_get_gt_dihedral_ftype(pd)))
+        gmx_fatal(FARGS,"Dihedral function type not set in force field file");
+        
 }
 
 gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
@@ -186,9 +214,10 @@ gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
     return atype;
 }
 
-void lo_set_force_const(t_params *plist,real c[],int nrfp,gmx_bool bRound,
-                        gmx_bool bDih,gmx_bool bParam)
+static void lo_set_force_const(t_params *plist,real c[],int nrfp,gmx_bool bRound,
+                               gmx_bool bDih,gmx_bool bParam)
 {
+/* OBSOLETE ? */
     int    i,j;
     double cc;
     char   buf[32];
@@ -227,9 +256,10 @@ void lo_set_force_const(t_params *plist,real c[],int nrfp,gmx_bool bRound,
     }
 }
 
-void set_force_const(t_params plist[],real kb,real kt,real kp,gmx_bool bRound,
-                     gmx_bool bParam)
+static void set_force_const(t_params plist[],real kb,real kt,real kp,gmx_bool bRound,
+                            gmx_bool bParam)
 {
+/* OBSOLETE ? */
     int i;
     real c[MAXFORCEPARAM];
   
@@ -333,11 +363,9 @@ void print_rtp(char *filenm,char *title,t_atoms *atoms,
                 *atoms->atomname[i],*atoms->atomtype[i],
                 atoms->atom[i].q,cgnr[i]);
     }
-    print_pl(fp,plist,F_BONDS,interaction_function[F_BONDS].name,atoms->atomname);
-    print_pl(fp,plist,F_ANGLES,interaction_function[F_ANGLES].name,atoms->atomname);
-    print_pl(fp,plist,F_PDIHS,interaction_function[F_PDIHS].name,atoms->atomname);
-    print_pl(fp,plist,F_IDIHS,interaction_function[F_IDIHS].name,atoms->atomname);
-  
+    for(i=0; (i<nbts); i++) {
+        print_pl(fp,plist,bts[i],interaction_function[bts[i]].name,atoms->atomname);
+    }  
     fclose(fp);
 }
 
@@ -438,6 +466,7 @@ static void delete_shell_interactions(gmx_poldata_t pd,
                                       gpp_atomtype_t atype,t_nextnb *nnb,
                                       t_excls excls[])
 {
+/* OBSOLETE */
     int atp,jtp,jid,i,j,k,l,m,ftype,nb,nra,npol=0;
     gmx_bool *bRemove,*bHaveShell,bShell;
     int  *shell_index;
