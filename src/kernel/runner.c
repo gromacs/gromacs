@@ -632,9 +632,18 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             convert_to_verlet_scheme(fplog,inputrec,mtop,det(state->box));
         }
 
+#if defined GMX_THREAD_MPI
         /* NOW the threads will be started: */
-#ifdef GMX_THREAD_MPI
-        nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
+        if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
+        {
+            /* With OpenMP we effectively have particle decomposition */
+            Flags &= ~MD_PARTDEC;
+            nthreads_mpi = 1;
+        }
+        else
+        {
+            nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
+        }
 
         if (nthreads_mpi > 1)
         {
@@ -661,6 +670,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     if (PAR(cr))
     {
+        if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
+        {
+            gmx_fatal_collective(FARGS,cr,NULL,
+                                 "The Verlet cut-off scheme is not supported with domain decomposition");
+        }
+
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(fplog, cr, inputrec, mtop);
     }
@@ -697,7 +712,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
     }
 
-    if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
+    if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog) && PAR(cr))
     {
         /* All-vs-all loops do not work with domain decomposition */
         Flags |= MD_PARTDEC;
