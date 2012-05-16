@@ -41,35 +41,12 @@
 extern "C" {
 #endif
 
-/* information about scaling center */
-typedef struct {
-    rvec    xmin;         /* smallest coordinates of all embedded molecules */
-    rvec    xmax;         /* largest coordinates of all embedded molecules */
-    rvec    *geom_cent;   /* scaling center of each independent molecule to embed */
-    int     pieces;       /* number of molecules to embed independently */
-    int     *nidx;        /* n atoms for every independent embedded molecule (index in subindex) */
-    atom_id **subindex;   /* atomids for independent molecule *
-                           * atoms of piece i run from subindex[i][0] to subindex[i][nidx[i]] */
-} pos_ins_t;
-
-/* variables needed in do_md */
-typedef struct {
-    int   it_xy;          /* number of iterations (steps) used to grow something in the xy-plane */
-    int   it_z;           /* same, but for z */
-    real  xy_step;        /* stepsize used during resize in xy-plane */
-    real  z_step;         /* same, but in z */
-    rvec  fac;            /* initial scaling of the molecule to grow into the membrane */
-    rvec  *r_ins;         /* final coordinates of the molecule to grow  */
-    pos_ins_t *pos_ins;   /* scaling center for each piece to embed */
-} gmx_membed_t;
-
 /* initialisation of membed code */
-void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fnm[],
-                        gmx_mtop_t *mtop, t_inputrec *inputrec, t_state *state, t_commrec *cr,
-                        real *cpt);
+gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
+                         t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt);
 
 /* rescaling the coordinates voor de membed code */
-void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x);
+void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x);
 
 #ifdef __cplusplus
 }

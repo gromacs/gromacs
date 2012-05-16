@@ -372,7 +372,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_commrec   *cr_old=cr; 
     int         nthreads_mpi=1;
     int         nthreads_pme=1;
-    gmx_membed_t *membed=NULL;
+    gmx_membed_t membed=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -426,9 +426,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      * (in case we ever want to make it run in parallel) */
     if (opt2bSet("-membed",nfile,fnm))
     {
-        fprintf(stderr,"Initializing membed");
-        snew(membed,1);
-        init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
+        if (MASTER(cr))
+        {
+            fprintf(stderr,"Initializing membed");
+        }
+        membed = init_membed(fplog,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
     }
 
     if (PAR(cr))

@@ -59,6 +59,28 @@
 #include "readinp.h"
 #include "readir.h"
 
+/* information about scaling center */
+typedef struct {
+    rvec    xmin;         /* smallest coordinates of all embedded molecules */
+    rvec    xmax;         /* largest coordinates of all embedded molecules */
+    rvec    *geom_cent;   /* scaling center of each independent molecule to embed */
+    int     pieces;       /* number of molecules to embed independently */
+    int     *nidx;        /* n atoms for every independent embedded molecule (index in subindex) */
+    atom_id **subindex;   /* atomids for independent molecule *
+                           * atoms of piece i run from subindex[i][0] to subindex[i][nidx[i]] */
+} pos_ins_t;
+
+/* variables needed in do_md */
+struct membed {
+    int   it_xy;          /* number of iterations (steps) used to grow something in the xy-plane */
+    int   it_z;           /* same, but for z */
+    real  xy_step;        /* stepsize used during resize in xy-plane */
+    real  z_step;         /* same, but in z */
+    rvec  fac;            /* initial scaling of the molecule to grow into the membrane */
+    rvec  *r_ins;         /* final coordinates of the molecule to grow  */
+    pos_ins_t *pos_ins;   /* scaling center for each piece to embed */
+};
+
 /* membrane related variables */
 typedef struct {
     char      *name;     /* name of index group to embed molecule into (usually membrane) */
@@ -926,7 +948,7 @@ static void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *m
 #undef TEMP_FILENM
 }
 
-void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)
+void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
 {
     /* Set new positions for the group to embed */
     if(step_rel<=membed->it_xy)
@@ -941,7 +963,7 @@ void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)
     resize(membed->r_ins,x,membed->pos_ins,membed->fac);
 }
 
-void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
+gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
                  t_inputrec *inputrec, t_state *state, t_commrec *cr,real *cpt)
 {
     char                    *ins,**gnames;
@@ -958,6 +980,7 @@ void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fn
     t_atoms                 atoms;
     t_pbc                   *pbc;
     char                    **piecename=NULL;
+    gmx_membed_t            membed=NULL;
 
     /* input variables */
     const char *membed_input;
@@ -983,6 +1006,7 @@ void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fn
     const real prot_vs_box=7.5;          /* molecule to embed is large (more then prot_vs_box) with respect */
     const real box_vs_prot=50;           /* to the box size (less than box_vs_prot) */
 
+    snew(membed,1);
     snew(ins_at,1);
     snew(pos_ins,1);
 
@@ -1265,4 +1289,6 @@ void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fn
         membed->pos_ins=pos_ins;
         membed->r_ins=r_ins;
     }
+
+    return membed;
 }
