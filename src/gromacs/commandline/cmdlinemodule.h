@@ -42,6 +42,8 @@
 namespace gmx
 {
 
+class File;
+
 /*! \brief
  * Module that can be run from command line using CommandLineModuleManager.
  *
@@ -73,6 +75,13 @@ class CommandLineModuleInterface
          * the module was run as a standalone executable.
          */
         virtual int run(int argc, char *argv[]) = 0;
+        /*! \brief
+         * Prints help for the module.
+         *
+         * \param[in] file  File to write the help to.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        virtual void writeHelp(File *file) const = 0;
 };
 
 } // namespace gmx

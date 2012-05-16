@@ -48,10 +48,14 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/utility/programinfo.h"
 
+#include "testutils/mock_helptopic.h"
+
 #include "cmdlinetest.h"
 
 namespace
 {
+
+using gmx::test::MockHelpTopic;
 
 /********************************************************************
  * MockModule
@@ -72,6 +76,7 @@ class MockModule : public gmx::CommandLineModuleInterface
         virtual const char *shortDescription() const { return descr_; }
 
         MOCK_METHOD2(run, int(int argc, char *argv[]));
+        MOCK_CONST_METHOD1(writeHelp, void(gmx::File *));
 
     private:
         const char             *name_;
@@ -92,6 +97,7 @@ class CommandLineModuleManagerTest : public ::testing::Test
     public:
         void initManager(const gmx::test::CommandLine &args);
         MockModule &addModule(const char *name, const char *description);
+        MockHelpTopic &addHelpTopic(const char *name, const char *title);
 
         gmx::CommandLineModuleManager &manager() { return *manager_; }
 
@@ -115,6 +121,14 @@ CommandLineModuleManagerTest::addModule(const char *name, const char *descriptio
     return *module;
 }
 
+MockHelpTopic &
+CommandLineModuleManagerTest::addHelpTopic(const char *name, const char *title)
+{
+    MockHelpTopic *topic = new MockHelpTopic(name, title, "Help text");
+    manager().addHelpTopic(gmx::HelpTopicPointer(topic));
+    return *topic;
+}
+
 /********************************************************************
  * Actual tests
  */
@@ -133,6 +147,38 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+    int rc = 0;
+    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
+{
+    const char *const cmdline[] = {
+        "g_test", "help", "module"
+    };
+    gmx::test::CommandLine args(cmdline);
+    initManager(args);
+    MockModule &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    EXPECT_CALL(mod1, writeHelp(_));
+    int rc = 0;
+    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
+{
+    const char *const cmdline[] = {
+        "g_test", "help", "topic"
+    };
+    gmx::test::CommandLine args(cmdline);
+    initManager(args);
+    addModule("module", "First module");
+    MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
+    using ::testing::_;
+    EXPECT_CALL(topic, writeHelp(_));
     int rc = 0;
     ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);

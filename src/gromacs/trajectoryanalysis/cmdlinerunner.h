@@ -44,6 +44,7 @@
 namespace gmx
 {
 
+class File;
 class TrajectoryAnalysisModule;
 
 /*! \brief
@@ -102,6 +103,13 @@ class TrajectoryAnalysisCommandLineRunner
          * \returns Zero on success.
          */
         int run(int argc, char *argv[]);
+        /*! \brief
+         * Prints help for the module, including common options from the runner.
+         *
+         * \param[in] file  File to write the help to.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        void writeHelp(File *file);
 
     private:
         class Impl;
