@@ -66,10 +66,11 @@ class AbstractTrajAnalysisCmdLineWrapper : public CommandLineModuleInterface
         virtual const char *shortDescription() const = 0;
 
         virtual int run(int argc, char *argv[]);
+        virtual void writeHelp(File *file) const;
 
     protected:
         //! Creates the analysis module for this wrapper.
-        virtual TrajectoryAnalysisModulePointer createModule() = 0;
+        virtual TrajectoryAnalysisModulePointer createModule() const = 0;
 };
 
 int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
@@ -78,6 +79,13 @@ int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.setPrintCopyright(false);
     return runner.run(argc, argv);
+}
+
+void AbstractTrajAnalysisCmdLineWrapper::writeHelp(File *file) const
+{
+    TrajectoryAnalysisModulePointer module(createModule());
+    TrajectoryAnalysisCommandLineRunner runner(module.get());
+    runner.writeHelp(file);
 }
 
 /*! \internal \brief
@@ -103,7 +111,7 @@ class TrajAnalysisCmdLineWrapper : public AbstractTrajAnalysisCmdLineWrapper
         {
             return Module::shortDescription;
         }
-        virtual TrajectoryAnalysisModulePointer createModule()
+        virtual TrajectoryAnalysisModulePointer createModule() const
         {
             return TrajectoryAnalysisModulePointer(new Module);
         }

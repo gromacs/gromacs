@@ -49,6 +49,7 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
@@ -81,7 +82,9 @@ void writeHelpTextForConsole(File *file, const std::string &text)
 {
     TextLineWrapper wrapper;
     wrapper.setLineLength(78);
-    file->writeLine(wrapper.wrapToString(substituteMarkupForConsole(text)));
+    const char *program = ProgramInfo::getInstance().programName().c_str();
+    std::string newText = replaceAll(text, "[PROGRAM]", program);
+    file->writeLine(wrapper.wrapToString(substituteMarkupForConsole(newText)));
 }
 //! \endcond
 

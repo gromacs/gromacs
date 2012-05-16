@@ -36,6 +36,7 @@
 #include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programinfo.h"
@@ -52,6 +53,7 @@ main(int argc, char *argv[])
     {
         gmx::CommandLineModuleManager manager(info);
         registerTrajectoryAnalysisModules(&manager);
+        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
         return manager.run(argc, argv);
     }
     catch (const std::exception &ex)

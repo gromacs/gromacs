@@ -208,6 +208,13 @@ void File::writeLine()
 }
 
 // static
+File &File::standardOutput()
+{
+    static File stdoutObject(stdout, false);
+    return stdoutObject;
+}
+
+// static
 File &File::standardError()
 {
     static File stderrObject(stderr, false);
