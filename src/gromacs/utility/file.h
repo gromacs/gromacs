@@ -154,9 +154,15 @@ class File
         void writeLine();
 
         /*! \brief
+         * Returns a File object for accessing stdout.
+         *
+         * \throws    std::bad_alloc if out of memory (only on first call).
+         */
+        static File &standardOutput();
+        /*! \brief
          * Returns a File object for accessing stderr.
          *
-         * \throws    std::bad_alloc if out of memory.
+         * \throws    std::bad_alloc if out of memory (only on first call).
          */
         static File &standardError();
 
