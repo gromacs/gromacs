@@ -60,6 +60,7 @@
 #include "scanner.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+#include "selhelp.h"
 #include "selmethod.h"
 #include "symrec.h"
 
@@ -511,6 +512,13 @@ SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
         }
         std::fprintf(out, "#\n");
     }
+}
+
+// static
+HelpTopicPointer
+SelectionCollection::createDefaultHelpTopic()
+{
+    return createSelectionHelpTopic();
 }
 
 } // namespace gmx

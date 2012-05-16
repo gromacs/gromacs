@@ -282,4 +282,32 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     return 0;
 }
 
+
+void
+TrajectoryAnalysisCommandLineRunner::writeHelp(File *file)
+{
+    // TODO: This method duplicates some code from run() and Impl::printHelp().
+    // See how to best refactor it to share the common code.
+    SelectionCollection             selections;
+    SelectionOptionManager          seloptManager(&selections);
+    TrajectoryAnalysisSettings      settings;
+    TrajectoryAnalysisRunnerCommon  common(&settings);
+    Options                         options(NULL, NULL);
+
+    Options &moduleOptions    = _impl->_module->initOptions(&settings);
+    Options &commonOptions    = common.initOptions();
+    Options &selectionOptions = selections.initOptions();
+
+    options.addSubSection(&commonOptions);
+    options.addSubSection(&selectionOptions);
+    options.addSubSection(&moduleOptions);
+
+    setManagerForSelectionOptions(&options, &seloptManager);
+
+    CommandLineHelpWriter(options)
+        .setShowDescriptions(true)
+        .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
+        .writeHelp(file);
+}
+
 } // namespace gmx

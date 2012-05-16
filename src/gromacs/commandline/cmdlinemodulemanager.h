@@ -39,6 +39,7 @@
 #ifndef GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 #define GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 
+#include "../onlinehelp/helptopicinterface.h"
 #include "../utility/common.h"
 #include "../utility/uniqueptr.h"
 
@@ -51,11 +52,6 @@ class ProgramInfo;
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
         CommandLineModulePointer;
-
-namespace internal
-{
-class CommandLineHelpModule;
-}
 
 /*! \brief
  * Implements a wrapper command-line interface for multiple modules.
@@ -135,6 +131,16 @@ class CommandLineModuleManager
         }
 
         /*! \brief
+         * Make given help topic available through the manager's help module.
+         *
+         * \param[in]  topic  Help topic to add.
+         * \throws     std::bad_alloc if out of memory.
+         *
+         * The manager takes ownership of the help topic.
+         */
+        void addHelpTopic(HelpTopicPointer topic);
+
+        /*! \brief
          * Runs a module based on given command line.
          *
          * \param[in] argc  Number of elements in \p argv.
@@ -153,11 +159,6 @@ class CommandLineModuleManager
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
-
-        /*! \brief
-         * Needed to access information about registered modules etc.
-         */
-        friend class internal::CommandLineHelpModule;
 };
 
 } // namespace gmx

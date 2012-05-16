@@ -44,6 +44,7 @@
 
 #include "../legacyheaders/typedefs.h"
 
+#include "../onlinehelp/helptopicinterface.h"
 #include "../utility/common.h"
 #include "selection.h" // For gmx::SelectionList
 
@@ -102,6 +103,14 @@ class SelectionEvaluator;
 class SelectionCollection
 {
     public:
+        /*! \brief
+         * Creates a help tree for selections.
+         *
+         * \throws   std::bad_alloc if out of memory.
+         * \returns  Root topic of the created selection tree.
+         */
+        static HelpTopicPointer createDefaultHelpTopic();
+
         /*! \brief
          * Creates an empty selection collection.
          *
