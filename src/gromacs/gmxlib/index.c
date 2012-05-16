@@ -38,6 +38,7 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 #include "sysstuff.h"
 #include "strdb.h"
 #include "futil.h"
@@ -723,7 +724,7 @@ gmx_residuetype_get_name(gmx_residuetype_t rt, int index)
 
 void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
-    gmx_residuetype_t rt;
+    gmx_residuetype_t rt=NULL;
     char    *resnm;
     atom_id *aid;
     const char **  restype;
@@ -752,6 +753,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb
 
     /* For every residue, get a pointer to the residue type name */
     gmx_residuetype_init(&rt);
+    assert(rt);
 
     snew(restype,atoms->nres);
     ntypes = 0;

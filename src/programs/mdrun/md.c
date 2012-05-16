@@ -79,8 +79,8 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
-#include "membed.h"
 #include "string2.h"
+#include "membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

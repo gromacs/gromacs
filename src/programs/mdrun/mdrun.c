@@ -388,10 +388,10 @@ int main(int argc,char *argv[])
     { efLOG, "-rt",     "rottorque",ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR },
+    { efRND, "-multidir",NULL,      ffOPTRDMULT},
     { efDAT, "-membed", "membed",   ffOPTRD },
     { efTOP, "-mp",     "membed",   ffOPTRD },
-    { efNDX, "-mn",     "membed",   ffOPTRD },
-    { efRND, "-multidir",NULL,      ffOPTRDMULT}
+    { efNDX, "-mn",     "membed",   ffOPTRD }
   };
 #define NFILE asize(fnm)
 

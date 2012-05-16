@@ -261,7 +261,8 @@ static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
             }
         }
     }
-    if (!bCanTime || select == NULL || strcmp(time_list[i], select) != 0)
+    if (!bCanTime || select == NULL || 
+        time_list[i]==NULL || strcmp(time_list[i], select) != 0)
     {
         /* Set it to the default: ps */
         i = 1;

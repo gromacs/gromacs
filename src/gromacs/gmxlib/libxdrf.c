@@ -746,7 +746,7 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
     int bytes[32];
     int i, j, num_of_bytes, p, num;
     
-    bytes[1] = bytes[2] = bytes[3] = 0;
+    bytes[0] = bytes[1] = bytes[2] = bytes[3] = 0;
     num_of_bytes = 0;
     while (num_of_bits > 8) {
 	bytes[num_of_bytes++] = receivebits(buf, 8);
