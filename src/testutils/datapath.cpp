@@ -30,12 +30,17 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in datapath.h.
+ * Implements functions and classes in datapath.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_testutils
  */
 #include "datapath.h"
+
+#include <set>
+#include <string>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
@@ -63,6 +68,67 @@ void setTestDataPath(const char *path)
     GMX_RELEASE_ASSERT(Directory::exists(path),
                        "Test data directory does not exist");
     g_testDataPath = path;
+}
+
+/********************************************************************
+ * TestTemporaryFileManager::Impl
+ */
+
+class TestTemporaryFileManager::Impl
+{
+    public:
+        //! Container type for names of temporary files.
+        typedef std::set<std::string> FileNameList;
+
+        /*! \brief
+         * Try to remove all temporary files.
+         *
+         * Does not throw; errors (e.g., missing files) are silently ignored.
+         */
+        void removeFiles();
+
+        //! List of unique paths returned by getTemporaryFilePath().
+        FileNameList            files_;
+};
+
+void TestTemporaryFileManager::Impl::removeFiles()
+{
+    FileNameList::const_iterator i;
+    for (i = files_.begin(); i != files_.end(); ++i)
+    {
+        std::remove(i->c_str());
+    }
+    files_.clear();
+}
+
+/********************************************************************
+ * TestTemporaryFileManager
+ */
+
+TestTemporaryFileManager::TestTemporaryFileManager()
+    : impl_(new Impl)
+{
+}
+
+TestTemporaryFileManager::~TestTemporaryFileManager()
+{
+    impl_->removeFiles();
+}
+
+std::string TestTemporaryFileManager::getTemporaryFilePath(const char *suffix)
+{
+    const ::testing::TestInfo *test_info =
+        ::testing::UnitTest::GetInstance()->current_test_info();
+    // TODO: Add the path of the test binary
+    std::string filename = std::string(test_info->test_case_name())
+        + "_" + test_info->name();
+    if (suffix[0] != '.')
+    {
+        filename.append("_");
+    }
+    filename.append(suffix);
+    impl_->files_.insert(filename);
+    return filename;
 }
 
 } // namespace test
