@@ -30,11 +30,14 @@
  */
 /*! \libinternal \file
  * \brief
- * Functions for accessing test input files.
+ * Functions for constructing file names for test files.
  *
- * Functions in this header provide methods to access data files that are
- * located in the test source directory.  This is typically used to provide
- * input files for the tests.
+ * Functions getTestFilePath() and getTestDataPath() provide means to access
+ * data files that are located in the test source directory.  This is typically
+ * used to provide input files for the tests.
+ *
+ * For temporary files used within a single test (typically in testing code
+ * that writes into files), gmx::test::TestTemporaryFileManager is provided.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
@@ -52,6 +55,8 @@
 #define GMX_TESTUTILS_DATAPATH_H
 
 #include <string>
+
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {
@@ -98,6 +103,52 @@ const char *getTestDataPath();
  * \inlibraryapi
  */
 void setTestDataPath(const char *path);
+
+/*! \libinternal \brief
+ * Helper for tests that need temporary output files.
+ *
+ * To be used as a member in a test fixture class, this class provides
+ * getTemporaryFilePath() method that returns a path for creating file names
+ * for temporary files.  The returned path contains the name of the running
+ * test, making it unique across tests.  Additionally, this class takes care of
+ * removing any temporary files (i.e., all paths returned by
+ * getTemporaryFilePath()) at test teardown (i.e., when the
+ * TestTemporaryFileManager is desctructed).
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
+ */
+class TestTemporaryFileManager
+{
+    public:
+        TestTemporaryFileManager();
+        /*! \brief
+         * Frees internal storage and deletes any accessed file paths.
+         *
+         * Any errors (e.g., missing files) encountered while deleting the
+         * files are ignored.
+         */
+        ~TestTemporaryFileManager();
+
+        /*! \brief
+         * Creates a name for a temporary file within a single unit test.
+         *
+         * \param[in] suffix  Suffix to add to the file name (should contain an
+         *      extension if one is desired).
+         * \returns   Temporary file name that includes the test name and
+         *      \p suffix.
+         *
+         * This method should only be called from within a Google Test test.
+         * Two calls with the same \p suffix return the same string within the
+         * same test.
+         */
+        std::string getTemporaryFilePath(const char *suffix);
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
 
 } // namespace test
 } // namespace gmx

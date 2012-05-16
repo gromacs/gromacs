@@ -55,6 +55,7 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/file.h"
 
+#include "testutils/datapath.h"
 #include "testutils/stringtest.h"
 
 namespace
@@ -63,35 +64,19 @@ namespace
 class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 {
     public:
-        CommandLineHelpWriterTest();
-        ~CommandLineHelpWriterTest();
-
         void checkHelp(gmx::CommandLineHelpWriter *writer);
 
-        std::string                     helpfile_;
+        gmx::test::TestTemporaryFileManager tempFiles_;
 };
-
-CommandLineHelpWriterTest::CommandLineHelpWriterTest()
-{
-    const ::testing::TestInfo *test_info =
-        ::testing::UnitTest::GetInstance()->current_test_info();
-    // TODO: Make a common helper method, which would also specify directory
-    helpfile_ = std::string(test_info->test_case_name())
-        + "_" + test_info->name() + ".txt";
-}
-
-CommandLineHelpWriterTest::~CommandLineHelpWriterTest()
-{
-    std::remove(helpfile_.c_str());
-}
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
-    gmx::File file(helpfile_, "w");
+    std::string filename = tempFiles_.getTemporaryFilePath("helptext.txt");
+    gmx::File file(filename, "w");
     writer->writeHelp(&file);
     file.close();
 
-    checkFileContents(helpfile_, "HelpText");
+    checkFileContents(filename, "HelpText");
 }
 
 
