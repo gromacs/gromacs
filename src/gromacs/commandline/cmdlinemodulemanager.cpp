@@ -45,11 +45,248 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/helpformat.h"
+#include "gromacs/onlinehelp/helpmanager.h"
+#include "gromacs/onlinehelp/helptopic.h"
+#include "gromacs/utility/file.h"
+#include "gromacs/utility/format.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
+
+//! Container type for mapping module names to module objects.
+typedef std::map<std::string, CommandLineModulePointer> CommandLineModuleMap;
+
+namespace
+{
+
+/********************************************************************
+ * RootHelpTopic
+ */
+
+struct RootHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
+
+// The first two are not used.
+const char RootHelpText::name[] = "";
+const char RootHelpText::title[] = "";
+const char *const RootHelpText::text[] = {
+    "Usage: [PROGRAM] <command> [<args>]",
+};
+
+/*! \internal \brief
+ * Help topic that forms the root of the help tree for the help subcommand.
+ *
+ * \ingroup module_commandline
+ */
+class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
+{
+    public:
+        /*! \brief
+         * Creates a root help topic.
+         *
+         * \param[in] modules  List of modules for to use for module listings.
+         *
+         * Does not throw.
+         */
+        explicit RootHelpTopic(const CommandLineModuleMap &modules)
+            : modules_(modules)
+        {
+        }
+
+        virtual void writeHelp(File *file) const;
+
+    private:
+        void printModuleList(File *file) const;
+
+        const CommandLineModuleMap &modules_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
+};
+
+void RootHelpTopic::writeHelp(File *file) const
+{
+    writeBasicHelpTopic(file, *this, helpText());
+    // TODO: If/when this list becomes long, it may be better to only print
+    // "common" commands here, and have a separate topic (e.g.,
+    // "help commands") that prints the full list.
+    printModuleList(file);
+    writeHelpTextForConsole(file,
+            "For additional help on a command, use '[PROGRAM] help <command>'");
+    writeSubTopicList(file, "\nAdditional help is available on the following topics:");
+    writeHelpTextForConsole(file,
+            "To access the help, use '[PROGRAM] help <topic>'.");
+}
+
+void RootHelpTopic::printModuleList(File *file) const
+{
+    int maxNameLength = 0;
+    CommandLineModuleMap::const_iterator module;
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        int nameLength = static_cast<int>(module->first.length());
+        if (nameLength > maxNameLength)
+        {
+            maxNameLength = nameLength;
+        }
+    }
+    TextTableFormatter formatter;
+    formatter.addColumn(NULL, maxNameLength + 1, false);
+    formatter.addColumn(NULL, 72 - maxNameLength, true);
+    formatter.setFirstColumnIndent(4);
+    file->writeLine();
+    file->writeLine("Available commands:");
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        const char *name = module->first.c_str();
+        const char *description = module->second->shortDescription();
+        formatter.clear();
+        formatter.addColumnLine(0, name);
+        formatter.addColumnLine(1, description);
+        file->writeString(formatter.formatRow());
+    }
+}
+
+/********************************************************************
+ * ModuleHelpTopic
+ */
+
+/*! \internal \brief
+ * Help topic wrapper for a command-line module.
+ *
+ * This class implements HelpTopicInterface such that it wraps a
+ * CommandLineModuleInterface, allowing subcommand "help <command>"
+ * to produce the help for "<command>".
+ *
+ * \ingroup module_commandline
+ */
+class ModuleHelpTopic : public HelpTopicInterface
+{
+    public:
+        //! Constructs a help topic for a specific module.
+        explicit ModuleHelpTopic(const CommandLineModuleInterface &module)
+            : module_(module)
+        {
+        }
+
+        virtual const char *name() const { return module_.name(); }
+        virtual const char *title() const { return NULL; }
+        virtual bool hasSubTopics() const { return false; }
+        virtual const HelpTopicInterface *findSubTopic(const char * /*name*/) const
+        {
+            return NULL;
+        }
+        virtual void writeHelp(File *file) const;
+
+    private:
+        const CommandLineModuleInterface &module_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
+};
+
+void ModuleHelpTopic::writeHelp(File *file) const
+{
+    module_.writeHelp(file);
+}
+
+} // namespace
+
+/********************************************************************
+ * CommandLineHelpModule
+ */
+
+/*! \internal \brief
+ * Command-line module for producing help.
+ *
+ * This module implements the 'help' subcommand that is automatically added by
+ * CommandLineModuleManager.
+ *
+ * \ingroup module_commandline
+ */
+class CommandLineHelpModule : public CommandLineModuleInterface
+{
+    public:
+        /*! \brief
+         * Creates a command-line help module.
+         *
+         * \param[in] modules  List of modules for to use for module listings.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        explicit CommandLineHelpModule(const CommandLineModuleMap &modules);
+
+        /*! \brief
+         * Adds a top-level help topic.
+         *
+         * \param[in] topic  Help topic to add.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        void addTopic(HelpTopicPointer topic);
+
+        virtual const char *name() const { return "help"; }
+        virtual const char *shortDescription() const
+        {
+            return "Print help information";
+        }
+
+        virtual int run(int argc, char *argv[]);
+        virtual void writeHelp(File *file) const;
+
+        //! Prints usage message to stderr.
+        void printUsage() const;
+
+    private:
+        CompositeHelpTopicPointer   rootTopic_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
+};
+
+CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleMap &modules)
+    : rootTopic_(new RootHelpTopic(modules))
+{
+}
+
+void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
+{
+    rootTopic_->addSubTopic(move(topic));
+}
+
+int CommandLineHelpModule::run(int argc, char *argv[])
+{
+    HelpManager helpManager(*rootTopic_);
+    try
+    {
+        for (int i = 1; i < argc; ++i)
+        {
+            helpManager.enterTopic(argv[i]);
+        }
+    }
+    catch (const InvalidInputError &ex)
+    {
+        fprintf(stderr, "%s\n", ex.what());
+        return 2;
+    }
+    helpManager.writeCurrentTopic(&File::standardOutput());
+    fprintf(stderr, "\n");
+    return 0;
+}
+
+void CommandLineHelpModule::writeHelp(File *file) const
+{
+    writeHelpTextForConsole(file,
+            "Usage: [PROGRAM] help [<command>|<topic> [<subtopic> [...]]]");
+    // TODO: More information.
+}
+
+void CommandLineHelpModule::printUsage() const
+{
+    rootTopic_->writeHelp(&File::standardError());
+}
 
 /********************************************************************
  * CommandLineModuleManager::Impl
@@ -63,8 +300,6 @@ namespace gmx
 class CommandLineModuleManager::Impl
 {
     public:
-        //! Container for mapping module names to module objects.
-        typedef std::map<std::string, CommandLineModulePointer> ModuleMap;
 
         /*! \brief
          * Initializes the implementation class.
@@ -82,7 +317,8 @@ class CommandLineModuleManager::Impl
          *
          * Does not throw.
          */
-        ModuleMap::const_iterator findModuleByName(const std::string &name) const;
+        CommandLineModuleMap::const_iterator
+        findModuleByName(const std::string &name) const;
         /*! \brief
          * Finds a module that the name of the binary.
          *
@@ -99,7 +335,7 @@ class CommandLineModuleManager::Impl
          * (as the program info object is also contained as a member), but it
          * clarifies the control flow.
          */
-        ModuleMap::const_iterator
+        CommandLineModuleMap::const_iterator
         findModuleFromBinaryName(const ProgramInfo &programInfo) const;
 
         //! Prints usage message to stderr.
@@ -112,9 +348,15 @@ class CommandLineModuleManager::Impl
          *
          * Owns the contained modules.
          */
-        ModuleMap               modules_;
+        CommandLineModuleMap    modules_;
         //! Information about the currently running program.
         const ProgramInfo      &programInfo_;
+        /*! \brief
+         * Module that implements help for the binary.
+         *
+         * The pointed module is owned by the \a modules_ container.
+         */
+        CommandLineHelpModule  *helpModule_;
 };
 
 CommandLineModuleManager::Impl::Impl(const ProgramInfo &programInfo)
@@ -122,14 +364,14 @@ CommandLineModuleManager::Impl::Impl(const ProgramInfo &programInfo)
 {
 }
 
-CommandLineModuleManager::Impl::ModuleMap::const_iterator
+CommandLineModuleMap::const_iterator
 CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
 {
     // TODO: Accept unambiguous prefixes?
     return modules_.find(name);
 }
 
-CommandLineModuleManager::Impl::ModuleMap::const_iterator
+CommandLineModuleMap::const_iterator
 CommandLineModuleManager::Impl::findModuleFromBinaryName(
         const ProgramInfo &programInfo) const
 {
@@ -145,104 +387,6 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
     return findModuleByName(binaryName);
 }
 
-void CommandLineModuleManager::Impl::printUsage(bool bModuleList) const
-{
-    const char *program = programInfo_.programName().c_str();
-    fprintf(stderr, "Usage: %s <command> [<args>]\n\n", program);
-    if (bModuleList)
-    {
-        printModuleList();
-    }
-    else
-    {
-        fprintf(stderr, "See '%s help' for list of commands.\n", program);
-    }
-}
-
-void CommandLineModuleManager::Impl::printModuleList() const
-{
-    int maxNameLength = 0;
-    ModuleMap::const_iterator module;
-    for (module = modules_.begin(); module != modules_.end(); ++module)
-    {
-        int nameLength = static_cast<int>(module->first.length());
-        if (nameLength > maxNameLength)
-        {
-            maxNameLength = nameLength;
-        }
-    }
-    TextTableFormatter formatter;
-    formatter.addColumn(NULL, maxNameLength + 1, false);
-    formatter.addColumn(NULL, 72 - maxNameLength, true);
-    formatter.setFirstColumnIndent(4);
-    fprintf(stderr, "The following commands are available:\n");
-    for (module = modules_.begin(); module != modules_.end(); ++module)
-    {
-        const char *name = module->first.c_str();
-        const char *description = module->second->shortDescription();
-        formatter.clear();
-        formatter.addColumnLine(0, name);
-        formatter.addColumnLine(1, description);
-        fprintf(stderr, "%s", formatter.formatRow().c_str());
-    }
-}
-
-
-/********************************************************************
- * CommandLineHelpModule
- */
-
-namespace internal
-{
-
-/*! \internal \brief
- * Command-line module for producing help.
- *
- * This module implements the 'help' subcommand that is automatically added by
- * CommandLineModuleManager.
- *
- * \ingroup module_commandline
- */
-class CommandLineHelpModule : public CommandLineModuleInterface
-{
-    public:
-        /*! \brief
-         * Creates a help module for the given module manager.
-         *
-         * \param[in] manager  Manager for which this module provides help.
-         *
-         * Does not throw.
-         */
-        explicit CommandLineHelpModule(const CommandLineModuleManager &manager);
-
-        virtual const char *name() const { return "help"; }
-        virtual const char *shortDescription() const
-        {
-            return "Print help information";
-        }
-
-        virtual int run(int argc, char *argv[]);
-
-    private:
-        const CommandLineModuleManager &manager_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
-};
-
-CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleManager &manager)
-    : manager_(manager)
-{
-}
-
-int CommandLineHelpModule::run(int argc, char *argv[])
-{
-    manager_.impl_->printUsage(true);
-    return 0;
-}
-
-} // namespace internal
-
-
 /********************************************************************
  * CommandLineModuleManager
  */
@@ -250,7 +394,8 @@ int CommandLineHelpModule::run(int argc, char *argv[])
 CommandLineModuleManager::CommandLineModuleManager(const ProgramInfo &programInfo)
     : impl_(new Impl(programInfo))
 {
-    addModule(CommandLineModulePointer(new internal::CommandLineHelpModule(*this)));
+    impl_->helpModule_ = new CommandLineHelpModule(impl_->modules_);
+    addModule(CommandLineModulePointer(impl_->helpModule_));
 }
 
 CommandLineModuleManager::~CommandLineModuleManager()
@@ -261,21 +406,27 @@ void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 {
     GMX_ASSERT(impl_->modules_.find(module->name()) == impl_->modules_.end(),
                "Attempted to register a duplicate module name");
+    HelpTopicPointer helpTopic(new ModuleHelpTopic(*module));
     impl_->modules_.insert(std::make_pair(std::string(module->name()),
                                           move(module)));
+    addHelpTopic(move(helpTopic));
+}
+
+void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
+{
+    impl_->helpModule_->addTopic(move(topic));
 }
 
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
     int argOffset = 0;
-    Impl::ModuleMap::const_iterator module
+    CommandLineModuleMap::const_iterator module
         = impl_->findModuleFromBinaryName(impl_->programInfo_);
     if (module == impl_->modules_.end())
     {
         if (argc < 2)
         {
-            fprintf(stderr, "\n");
-            impl_->printUsage(false);
+            impl_->helpModule_->printUsage();
             return 2;
         }
         module = impl_->findModuleByName(argv[1]);
@@ -283,9 +434,8 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (module == impl_->modules_.end())
     {
-        fprintf(stderr, "\n");
-        fprintf(stderr, "Unknown command: '%s'\n", argv[1]);
-        impl_->printUsage(true);
+        fprintf(stderr, "Unknown command: '%s'\n\n", argv[1]);
+        impl_->helpModule_->printUsage();
         return 2;
     }
     return module->second->run(argc - argOffset, argv + argOffset);
