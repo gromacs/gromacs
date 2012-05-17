@@ -39,12 +39,12 @@
  */ 
 
 #include "atoms.h"
-#include "../molfile_plugin.h"
-#include "../vmdio.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct gmxvmdplugin t_gmxvmdplugin;
 
 typedef struct trxframe
 {
@@ -81,7 +81,7 @@ typedef struct trxframe
   matrix box;     /* the 3 box vectors                */
   gmx_bool bPBC;
   int  ePBC;      /* the type of pbc                  */
-  t_gmxvmdplugin vmdplugin;
+  t_gmxvmdplugin* vmdplugin;
 } t_trxframe;
 
 #ifdef __cplusplus
