@@ -333,12 +333,8 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
             }
 #ifdef PRUNE_NBL
             /* Update the imask with the new one which does not contain the 
-               out of range clusters anymore. Only the first thread in the 
-               warp writes. ATM this gives a minor, but consistent improvement. */
-            if (tidx & (WARP_SIZE - 1))
-            {
-                pl_cj4[j4].imei[widx].imask = imask_prune;
-            }
+               out of range clusters anymore. */
+            pl_cj4[j4].imei[widx].imask = imask_prune;
 #endif
         }
     }
