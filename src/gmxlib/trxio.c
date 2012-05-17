@@ -38,6 +38,8 @@
 
 #include <ctype.h>
 #include "sysstuff.h"
+#include "typedefs.h"
+#include "vmdio.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
@@ -53,7 +55,6 @@
 #include "confio.h"
 #include "checkpoint.h"
 #include "wgms.h"
-#include "vmdio.h"
 #include <math.h>
 
 /* defines for frame counter output */
