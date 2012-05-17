@@ -21,6 +21,7 @@
 #endif
 
 #include <stdio.h>
+#include <assert.h>
 #include "domdec.h"
 #include "network.h"
 #include "perf_est.h"
@@ -318,6 +319,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     {
         return -1;
     }
+
+    assert(ddbox->npbcdim<=DIM);
 
     /* Check if the triclinic requirements are met */
     for(i=0; i<DIM; i++)
