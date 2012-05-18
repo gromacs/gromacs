@@ -39,6 +39,7 @@
 
 
 #include <ctype.h>
+#include <assert.h>
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
@@ -114,8 +115,10 @@ void output_env_init(output_env_t *oenvp, int argc, char *argv[],
     oenv->program_name=NULL;
 
     if (argv)
+    {
         argvzero=argv[0];
-
+        assert(argvzero);
+    }
     /* set program name */
     if (argvzero)
     {
