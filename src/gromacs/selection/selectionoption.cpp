@@ -46,11 +46,11 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
 
-#include "selectioncollection-impl.h"
 #include "selectionfileoptionstorage.h"
 #include "selectionoptionstorage.h"
 
@@ -63,13 +63,13 @@ namespace gmx
 
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
     : MyBase(settings, OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
-      _info(this), _sc(NULL), _selectionFlags(settings._selectionFlags)
+      info_(this), manager_(NULL), selectionFlags_(settings._selectionFlags)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efMulti),
                        "allowMultiple() is not supported for selection options");
     if (settings._infoPtr != NULL)
     {
-        *settings._infoPtr = &_info;
+        *settings._infoPtr = &info_;
     }
 }
 
@@ -97,7 +97,7 @@ void SelectionOptionStorage::addSelections(
     {
         // TODO: Having this check in the parser would make interactive input
         // behave better.
-        if (_selectionFlags.test(efOnlyStatic) && i->isDynamic())
+        if (selectionFlags_.test(efOnlyStatic) && i->isDynamic())
         {
             GMX_THROW(InvalidInputError("Dynamic selections not supported"));
         }
@@ -112,20 +112,20 @@ void SelectionOptionStorage::addSelections(
 
 void SelectionOptionStorage::convertValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
+    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
     SelectionList selections;
-    _sc->parseFromString(value, &selections);
+    manager_->selectionCollection().parseFromString(value, &selections);
     addSelections(selections, false);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
 {
-    GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
+    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
     if (values->size() == 0)
     {
-        _sc->_impl->requestSelections(name(), description(), this);
+        manager_->requestDelayedParsing(this);
     }
     else if (values->size() < static_cast<size_t>(minValueCount()))
     {
@@ -134,7 +134,7 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
     ValueList::iterator i;
     for (i = values->begin(); i != values->end(); ++i)
     {
-        i->data().setFlags(_selectionFlags);
+        i->data().setFlags(selectionFlags_);
     }
 }
 
@@ -142,9 +142,9 @@ void SelectionOptionStorage::processAll()
 {
     if (isRequired() && !isSet())
     {
-        GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
+        GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
-        _sc->_impl->requestSelections(name(), description(), this);
+        manager_->requestDelayedParsing(this);
         setFlag(efSet);
     }
 }
@@ -192,10 +192,10 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
             GMX_THROW(InvalidInputError(errors.toString()));
         }
     }
-    _selectionFlags.set(flag, bSet);
+    selectionFlags_.set(flag, bSet);
     for (i = values().begin(); i != values().end(); ++i)
     {
-        i->data().setFlags(_selectionFlags);
+        i->data().setFlags(selectionFlags_);
     }
 }
 
@@ -219,9 +219,9 @@ const SelectionOptionStorage &SelectionOptionInfo::option() const
     return static_cast<const SelectionOptionStorage &>(OptionInfo::option());
 }
 
-void SelectionOptionInfo::setSelectionCollection(SelectionCollection *selections)
+void SelectionOptionInfo::setManager(SelectionOptionManager *manager)
 {
-    option().setSelectionCollection(selections);
+    option().setManager(manager);
 }
 
 void SelectionOptionInfo::setValueCount(int count)
@@ -276,7 +276,7 @@ AbstractOptionStoragePointer SelectionOption::createStorage() const
 
 SelectionFileOptionStorage::SelectionFileOptionStorage(const SelectionFileOption &settings)
     : AbstractOptionStorage(settings, OptionFlags() | efMulti | efDontCheckMinimumCount),
-      info_(this), sc_(NULL), bValueParsed_(false)
+      info_(this), manager_(NULL), bValueParsed_(false)
 {
 }
 
@@ -287,7 +287,7 @@ void SelectionFileOptionStorage::clearSet()
 
 void SelectionFileOptionStorage::convertValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(sc_ != NULL, "Selection collection is not set");
+    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
     if (bValueParsed_)
     {
@@ -295,7 +295,7 @@ void SelectionFileOptionStorage::convertValue(const std::string &value)
     }
     bValueParsed_ = true;
     // TODO: Should we throw an InvalidInputError if the file does not exist?
-    sc_->parseRequestedFromFile(value);
+    manager_->parseRequestedFromFile(value);
 }
 
 void SelectionFileOptionStorage::processSet()
@@ -326,9 +326,9 @@ const SelectionFileOptionStorage &SelectionFileOptionInfo::option() const
     return static_cast<const SelectionFileOptionStorage &>(OptionInfo::option());
 }
 
-void SelectionFileOptionInfo::setSelectionCollection(SelectionCollection *selections)
+void SelectionFileOptionInfo::setManager(SelectionOptionManager *manager)
 {
-    option().setSelectionCollection(selections);
+    option().setManager(manager);
 }
 
 
@@ -356,16 +356,16 @@ namespace
 {
 
 /*! \internal \brief
- * Visitor that sets the selection collection for each selection option.
+ * Visitor that sets the manager for each selection option.
  *
  * \ingroup module_selection
  */
-class SelectionCollectionSetter : public OptionsModifyingVisitor
+class SelectionOptionManagerSetter : public OptionsModifyingVisitor
 {
     public:
-        //! Construct a visitor that sets given selection collection.
-        explicit SelectionCollectionSetter(SelectionCollection *selections)
-            : selections_(selections)
+        //! Construct a visitor that sets given manager.
+        explicit SelectionOptionManagerSetter(SelectionOptionManager *manager)
+            : manager_(manager)
         {
         }
 
@@ -382,26 +382,26 @@ class SelectionCollectionSetter : public OptionsModifyingVisitor
                 = option->toType<SelectionOptionInfo>();
             if (selOption != NULL)
             {
-                selOption->setSelectionCollection(selections_);
+                selOption->setManager(manager_);
             }
             SelectionFileOptionInfo *selFileOption
                 = option->toType<SelectionFileOptionInfo>();
             if (selFileOption != NULL)
             {
-                selFileOption->setSelectionCollection(selections_);
+                selFileOption->setManager(manager_);
             }
         }
 
     private:
-        SelectionCollection    *selections_;
+        SelectionOptionManager *manager_;
 };
 
 } // namespace
 
-void setSelectionCollectionForOptions(Options *options,
-                                      SelectionCollection *selections)
+void setManagerForSelectionOptions(Options *options,
+                                   SelectionOptionManager *manager)
 {
-    SelectionCollectionSetter(selections).visitSubSection(options);
+    SelectionOptionManagerSetter(manager).visitSubSection(options);
 }
 
 } // namespace gmx

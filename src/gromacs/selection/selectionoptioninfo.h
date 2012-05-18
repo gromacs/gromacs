@@ -45,7 +45,7 @@ namespace gmx
 {
 
 class Options;
-class SelectionCollection;
+class SelectionOptionManager;
 class SelectionOptionStorage;
 
 /*! \brief
@@ -103,19 +103,20 @@ class SelectionOptionInfo : public OptionInfo
         explicit SelectionOptionInfo(SelectionOptionStorage *option);
 
         /*! \brief
-         * Set selection collection into which this option adds selections.
+         * Set manager for handling interaction with other options and the
+         * selection collection.
          *
-         * \param   selections  Selection collection to set.
+         * \param   manager  Selection manager to set.
          *
          * This must be called before the values are added.
          *
-         * Typically it is called through setSelectionCollectionForOptions(),
-         * which recursively sets the collection for all selection options in
+         * Typically it is called through setManagerForSelectionOptions(),
+         * which recursively sets the manager for all selection options in
          * an Options object.
          *
          * Does not throw.
          */
-        void setSelectionCollection(SelectionCollection *selections);
+        void setManager(SelectionOptionManager *manager);
 
         /*! \brief
          * Sets the number of selections allowed for the option.
@@ -201,18 +202,18 @@ class SelectionOptionInfo : public OptionInfo
 };
 
 /*! \brief
- * Set selection collection for all selection options.
+ * Set manager for all selection options.
  *
- * Recursively sets the selection collection to \p selections for all selection
- * options in \p options.
+ * Recursively sets the manager to \p manager for all selection options in
+ * \p options.
  * Must be called before value assignment starts for \p options.
  *
  * Does not throw.
  *
  * \inpublicapi
  */
-void setSelectionCollectionForOptions(Options *options,
-                                      SelectionCollection *selections);
+void setManagerForSelectionOptions(Options *options,
+                                   SelectionOptionManager *manager);
 
 } // namespace gmx
 

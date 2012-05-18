@@ -50,6 +50,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
@@ -77,6 +78,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
+                          SelectionOptionManager *seloptManager,
                           Options *options,
                           int *argc, char *argv[]);
 
@@ -121,6 +123,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         TrajectoryAnalysisSettings *settings,
         TrajectoryAnalysisRunnerCommon *common,
         SelectionCollection *selections,
+        SelectionOptionManager *seloptManager,
         Options *options,
         int *argc, char *argv[])
 {
@@ -132,7 +135,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     options->addSubSection(&selectionOptions);
     options->addSubSection(&moduleOptions);
 
-    setSelectionCollectionForOptions(options, selections);
+    setManagerForSelectionOptions(options, seloptManager);
 
     {
         CommandLineParser  parser(options);
@@ -160,7 +163,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     // TODO: Check whether the input is a pipe.
     bool bInteractive = true;
-    selections->parseRequestedFromStdin(bInteractive);
+    seloptManager->parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
 
     return true;
@@ -209,13 +212,14 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     SelectionCollection  selections;
     selections.setDebugLevel(_impl->_debugLevel);
+    SelectionOptionManager seloptManager(&selections);
 
     TrajectoryAnalysisSettings  settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
     Options  options(NULL, NULL);
-    if (!_impl->parseOptions(&settings, &common, &selections, &options,
-                             &argc, argv))
+    if (!_impl->parseOptions(&settings, &common, &selections, &seloptManager,
+                             &options, &argc, argv))
     {
         return 0;
     }

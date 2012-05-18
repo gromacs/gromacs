@@ -50,6 +50,12 @@
  * module_options for general explanation of the options mechanism).  These
  * classes provide the main interface to obtain gmx::Selection objects in
  * trajectory analysis using gmx::TrajectoryAnalysisModule.
+ * To use these classes outside the trajectory analysis framework,
+ * a gmx::SelectionOptionManager needs to be created to serve as a bridge
+ * between the selection option classes and the gmx::SelectionCollection
+ * object.
+ * gmx::SelectionFileOption can be used to implement generic file input for
+ * selection options (done internally in the trajectory analysis framework).
  *
  * \if libapi
  * The selection module contains some lower-level functionality that is

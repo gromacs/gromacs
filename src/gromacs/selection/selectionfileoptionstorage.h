@@ -44,8 +44,8 @@
 namespace gmx
 {
 
-class SelectionCollection;
 class SelectionFileOption;
+class SelectionOptionManager;
 
 /*! \internal \brief
  * Implementation for a special option for reading selections from files.
@@ -68,9 +68,9 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         virtual std::string formatValue(int /*i*/) const { return ""; }
 
         //! \copydoc SelectionFileOptionInfo::setSelectionCollection()
-        void setSelectionCollection(SelectionCollection *selections)
+        void setManager(SelectionOptionManager *manager)
         {
-            sc_ = selections;
+            manager_ = manager;
         }
 
     private:
@@ -80,7 +80,7 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         virtual void processAll() {}
 
         SelectionFileOptionInfo info_;
-        SelectionCollection    *sc_;
+        SelectionOptionManager *manager_;
         bool                    bValueParsed_;
 };
 

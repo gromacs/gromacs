@@ -44,8 +44,8 @@
 namespace gmx
 {
 
-class SelectionCollection;
 class SelectionFileOptionStorage;
+class SelectionOptionManager;
 
 /*! \libinternal \brief
  * Wrapper class for accessing and modifying selection file option information.
@@ -63,20 +63,8 @@ class SelectionFileOptionInfo : public OptionInfo
          */
         explicit SelectionFileOptionInfo(SelectionFileOptionStorage *option);
 
-        /*! \brief
-         * Set selection collection into which this option adds selections.
-         *
-         * \param   selections  Selection collection to set.
-         *
-         * This must be called before values are added.
-         *
-         * Typically it is called through setSelectionCollectionForOptions(),
-         * which recursively sets the collection for all selection options in
-         * an Options object.
-         *
-         * Does not throw.
-         */
-        void setSelectionCollection(SelectionCollection *selections);
+        //! \copydoc SelectionOptionInfo::setManager()
+        void setManager(SelectionOptionManager *manager);
 
     private:
         SelectionFileOptionStorage &option();
