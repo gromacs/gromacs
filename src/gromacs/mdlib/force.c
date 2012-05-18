@@ -39,6 +39,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <assert.h>
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -423,6 +424,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         case eelP3M_AD:
             if (cr->duty & DUTY_PME)
             {
+                assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
                     pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;

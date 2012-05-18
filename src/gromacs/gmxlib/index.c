@@ -921,6 +921,10 @@ t_blocka *init_index(const char *gfile, char ***grpname)
 	b->index[b->nr]=b->index[b->nr-1];
 	(*grpname)[b->nr-1]=strdup(str);
       } else {
+          if (b->nr==0)
+          {
+              gmx_fatal(FARGS,"The first header of your indexfile is invalid");
+          }
 	pt=line;
 	while (sscanf(pt,"%s",str) == 1) {
 	  i=b->index[b->nr];

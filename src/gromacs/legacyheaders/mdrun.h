@@ -50,7 +50,6 @@
 #include "vsite.h"
 #include "pull.h"
 #include "update.h"
-#include "membed.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -165,7 +164,7 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				gmx_edsam_t ed, 
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
-                                gmx_membed_t *membed,
+                                gmx_membed_t membed,
 				real cpt_period,real max_hours,
 				const char *deviceOptions,
 				unsigned long Flags,

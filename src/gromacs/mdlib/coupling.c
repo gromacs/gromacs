@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <assert.h>
 
 #include "typedefs.h"
 #include "smalloc.h"
@@ -706,6 +707,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     dtc = ir->nsttcouple*ir->delta_t;
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
+    assert(ngtc>0);
     snew(scalefac,opts->ngtc);
     for (i=0;i<ngtc;i++) 
     {
