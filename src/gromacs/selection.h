@@ -50,8 +50,14 @@
  * module_options for general explanation of the options mechanism).  These
  * classes provide the main interface to obtain gmx::Selection objects in
  * trajectory analysis using gmx::TrajectoryAnalysisModule.
- *
+ * To use these classes outside the trajectory analysis framework,
+ * a gmx::SelectionOptionManager needs to be created to serve as a bridge
+ * between the selection option classes and the gmx::SelectionCollection
+ * object.
  * \if libapi
+ * gmx::SelectionFileOption can be used to implement generic file input for
+ * selection options (done internally in the trajectory analysis framework).
+ *
  * The selection module contains some lower-level functionality that is
  * currently internal to it (centerofmass.h, indexutil.h, poscalc.h,
  * position.h), but could possibly be useful also outside the module.
@@ -84,5 +90,6 @@
 #include "selection/selectioncollection.h"
 #include "selection/selectionoption.h"
 #include "selection/selectionoptioninfo.h"
+#include "selection/selectionoptionmanager.h"
 
 #endif

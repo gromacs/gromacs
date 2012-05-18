@@ -49,10 +49,11 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
-#include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/file.h"
 
 #include "testutils/datapath.h"
@@ -219,9 +220,10 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
     options.addOption(SelectionOption("sel").required().valueCount(2)
                         .description("Selection option"));
     gmx::SelectionCollection selections;
-    setSelectionCollectionForOptions(&options, &selections);
+    gmx::SelectionOptionManager manager(&selections);
+    setManagerForSelectionOptions(&options, &manager);
     options.finish();
-    selections.parseRequestedFromString(
+    manager.parseRequestedFromString(
             "resname SOL;"
             "surface = within 0.5 of resname SOL;"
             "group \"Protein\" and surface;"
