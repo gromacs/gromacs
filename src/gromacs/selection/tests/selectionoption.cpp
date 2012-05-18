@@ -339,9 +339,13 @@ SelectionFileOptionTest::SelectionFileOptionTest()
 TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
 {
     gmx::SelectionList sel;
+    gmx::SelectionList reqsel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").storeVector(&sel).multiValue()));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("reqsel").storeVector(&reqsel)
+                            .multiValue().required()));
     setManager();
 
     gmx::OptionsAssigner assigner(&_options);
@@ -358,6 +362,7 @@ TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
     ASSERT_EQ(2U, sel.size());
     EXPECT_STREQ("resname RA RB", sel[0].selectionText());
     EXPECT_STREQ("resname RB RC", sel[1].selectionText());
+    ASSERT_EQ(0U, reqsel.size());
 }
 
 
@@ -416,6 +421,101 @@ TEST_F(SelectionFileOptionTest, HandlesTwoSelectionOptionsFromSingleFile)
     EXPECT_NO_THROW(assigner.finishOption());
     ASSERT_NO_THROW(assigner.startOption("sel2"));
     EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(value));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+
+    // These should match the contents of selfile.dat
+    ASSERT_EQ(1U, sel1.size());
+    EXPECT_STREQ("resname RA RB", sel1[0].selectionText());
+    ASSERT_EQ(1U, sel2.size());
+    EXPECT_STREQ("resname RB RC", sel2[0].selectionText());
+}
+
+
+TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFile)
+{
+    gmx::SelectionList sel;
+    gmx::SelectionList optsel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel)
+                            .multiValue().required()));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("optsel").storeVector(&optsel)
+                            .multiValue()));
+    setManager();
+
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.startOption("optsel"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_NO_THROW(_manager.parseRequestedFromString("resname RC RD"));
+
+    // These should match the contents of selfile.dat
+    ASSERT_EQ(2U, sel.size());
+    EXPECT_STREQ("resname RA RB", sel[0].selectionText());
+    EXPECT_STREQ("resname RB RC", sel[1].selectionText());
+    ASSERT_EQ(1U, optsel.size());
+    EXPECT_STREQ("resname RC RD", optsel[0].selectionText());
+}
+
+
+// TODO: Is this the best possible behavior, or should it error out?
+TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFileWithOtherOptionSet)
+{
+    gmx::SelectionList sel1;
+    gmx::SelectionList sel2;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel1").storeVector(&sel1)
+                            .multiValue().required()));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel2").storeVector(&sel2)
+                            .multiValue().required()));
+    setManager();
+
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.startOption("sel1"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RC RD"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+
+    // These should match the contents of selfile.dat
+    ASSERT_EQ(2U, sel2.size());
+    EXPECT_STREQ("resname RA RB", sel2[0].selectionText());
+    EXPECT_STREQ("resname RB RC", sel2[1].selectionText());
+    ASSERT_EQ(1U, sel1.size());
+    EXPECT_STREQ("resname RC RD", sel1[0].selectionText());
+}
+
+
+TEST_F(SelectionFileOptionTest, HandlesTwoRequiredOptionsFromSingleFile)
+{
+    gmx::SelectionList sel1;
+    gmx::SelectionList sel2;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel1").storeVector(&sel1).required()));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel2").storeVector(&sel2).required()));
+    setManager();
+
+    gmx::OptionsAssigner assigner(&_options);
+    std::string value(gmx::test::getTestFilePath("selfile.dat"));
+    EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("sf"));
     EXPECT_NO_THROW(assigner.appendValue(value));
     EXPECT_NO_THROW(assigner.finishOption());

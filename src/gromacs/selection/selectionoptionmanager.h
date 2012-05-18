@@ -88,6 +88,19 @@ class SelectionOptionManager
          */
         SelectionCollection &selectionCollection();
         /*! \brief
+         * Adds a selection option to be managed.
+         *
+         * \param     storage  Storage object for the option to register.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This is only for internal use by the selection module.
+         * It is not possible to obtain a SelectionOptionStorage pointer
+         * through any public or library API.
+         *
+         * Strong exception safety.
+         */
+        void registerOption(SelectionOptionStorage *storage);
+        /*! \brief
          * Adds a selection option for delayed user input.
          *
          * \param     storage  Storage object for the option to request.
@@ -136,9 +149,13 @@ class SelectionOptionManager
          *        not the last (in which case it is not possible to determine
          *        which selections belong to which request).
          *
-         * This method behaves as parseRequestedFromStdin(), but reads the
-         * selections from a file instead of standard input.
-         * This is used to implement SelectionFileOption.
+         * This method behaves as parseRequestedFromStdin(), with two
+         * exceptions:
+         *  -# It reads the selections from a file instead of standard input.
+         *  -# If no requests are pending, assigns values to all required
+         *     options that have not yet been set.
+         *
+         * This method used to implement SelectionFileOption.
          *
          * \see parseRequestedFromStdin()
          */

@@ -74,6 +74,18 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
 }
 
 
+void SelectionOptionStorage::setManager(SelectionOptionManager *manager)
+{
+    GMX_RELEASE_ASSERT(manager_ == NULL || manager_ == manager,
+                       "Manager cannot be changed once set");
+    if (manager_ == NULL)
+    {
+        manager->registerOption(this);
+        manager_ = manager;
+    }
+}
+
+
 std::string SelectionOptionStorage::formatSingleValue(const Selection &value) const
 {
     return value.selectionText();
@@ -106,6 +118,7 @@ void SelectionOptionStorage::addSelections(
     if (bFullValue)
     {
         commitValues();
+        setFlag(efSet);
     }
 }
 
