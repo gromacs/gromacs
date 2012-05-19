@@ -416,7 +416,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     if ((func = gmx_poldata_get_gt_bond_function(pd)) != NULL)
         add_xml_char(child,exml_names[exmlFUNCTION],func);
     while (gmx_poldata_get_gt_bond(pd,&atom1,&atom2,&length,&sigma,
-                                   &bondorder,&params) == 1) {
+                                   &bondorder,&params) > 0) {
         grandchild = add_xml_child(child,exml_names[exmlGT_BOND]);
         add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
         add_xml_char(grandchild,exml_names[exmlATOM2],atom2);
@@ -431,7 +431,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_char(child,exml_names[exmlANGLE_UNIT],blu);
     if ((func = gmx_poldata_get_gt_angle_function(pd)) != NULL)
         add_xml_char(child,exml_names[exmlFUNCTION],func);
-    while (gmx_poldata_get_gt_angle(pd,&atom1,&atom2,&atom3,&angle,&sigma,&params) == 1) {
+    while (gmx_poldata_get_gt_angle(pd,&atom1,&atom2,&atom3,&angle,&sigma,&params) > 0) {
         grandchild = add_xml_child(child,exml_names[exmlGT_ANGLE]);
         add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
         add_xml_char(grandchild,exml_names[exmlATOM2],atom2);
@@ -447,7 +447,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     if ((func = gmx_poldata_get_gt_dihedral_function(pd)) != NULL)
         add_xml_char(child,exml_names[exmlFUNCTION],func);
     while (gmx_poldata_get_gt_dihedral(pd,&atom1,&atom2,&atom3,&atom4,
-                                       &angle,&sigma,&params) == 1) {
+                                       &angle,&sigma,&params) > 0) {
         grandchild = add_xml_child(child,exml_names[exmlGT_DIHEDRAL]);
         add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
         add_xml_char(grandchild,exml_names[exmlATOM2],atom2);

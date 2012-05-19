@@ -25,7 +25,7 @@ typedef struct {
     char           *molname,*lot,*ref;
     int            eSupport;
     int            qtotal,mult,natom,nalloc,nshell;
-    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol;
+    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol,Ecalc;
     real           *qESP;
     gmx_mtop_t     mtop;
     gmx_localtop_t *ltop;
