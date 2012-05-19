@@ -35,20 +35,15 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <gtest/gtest.h>
 
-#include "smalloc.h"
-#include "statutil.h"
-#include "tpxio.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/tpxio.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"

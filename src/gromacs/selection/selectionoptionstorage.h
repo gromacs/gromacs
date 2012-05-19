@@ -52,6 +52,8 @@ class SelectionOptionManager;
 /*! \internal \brief
  * Converts, validates, and stores selection values.
  *
+ * \see SelectionOptionManager
+ *
  * \ingroup module_selection
  */
 class SelectionOptionStorage : public OptionStorageTemplate<Selection>
@@ -83,9 +85,10 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          *      - Any selection in \p selections is not allowed for this
          *        option.
          *
-         * This function is used to add selections from SelectionOptionManager
-         * (called with \p bFullValue set to true), as well as internally by
-         * the storage class (called with \p bFullValue set to false).
+         * This function is used to add selections from SelectionOptionManager.
+         * It is called with \p bFullValue set to false from
+         * SelectionOptionManager::convertOptionValue(), and \p bFullValue set
+         * to true when parsing requested selections.
          */
         void addSelections(const SelectionList &selections,
                            bool bFullValue);
