@@ -232,58 +232,46 @@ class SelectionCollection
          *      (if -1, parse as many as provided by the user).
          * \param[in]  bInteractive Whether the parser should behave
          *      interactively.
-         * \param[out] output   Vector to which parsed selections are appended.
+         * \returns    Vector of parsed selections.
          * \throws     std::bad_alloc if out of memory.
          * \throws     InvalidInputError if there is a parsing error
          *      (an interactive parser only throws this if too few selections
          *      are provided and the user forced the end of input).
          *
-         * Parsed selections are appended to \p output without clearing it
-         * first.  If parsing fails, \p output is not modified.
-         *
-         * The objects returned in \p output remain valid for the lifetime of
+         * The returned objects remain valid for the lifetime of
          * the selection collection.
          * Some information about the selections only becomes available once
          * compile() has been called; see \ref Selection.
          */
-        void parseFromStdin(int count, bool bInteractive,
-                            SelectionList *output);
+        SelectionList parseFromStdin(int count, bool bInteractive);
         /*! \brief
          * Parses selection(s) from a file.
          *
          * \param[in]  filename Name of the file to parse selections from.
-         * \param[out] output   Vector to which parsed selections are appended.
+         * \returns    Vector of parsed selections.
          * \throws     std::bad_alloc if out of memory.
          * \throws     InvalidInputError if there is a parsing error.
          *
-         * Parsed selections are appended to \p output without clearing it
-         * first.  If parsing fails, \p output is not modified.
-         *
-         * The objects returned in \p output remain valid for the lifetime of
+         * The returned objects remain valid for the lifetime of
          * the selection collection.
          * Some information about the selections only becomes available once
          * compile() has been called; see \ref Selection.
          */
-        void parseFromFile(const std::string &filename,
-                           SelectionList *output);
+        SelectionList parseFromFile(const std::string &filename);
         /*! \brief
          * Parses selection(s) from a string.
          *
          * \param[in]  str      String to parse selections from.
-         * \param[out] output   Vector to which parsed selections are appended.
+         * \returns    Vector of parsed selections.
          * \throws     std::bad_alloc if out of memory.
          * \throws     InvalidInputError if there is a parsing error.
          *
-         * Parsed selections are appended to \p output without clearing it
-         * first.  If parsing fails, \p output is not modified.
-         *
-         * The objects returned in \p output remain valid for the lifetime of
+         * The returned objects remain valid for the lifetime of
          * the selection collection.
          * Some information about the selections only becomes available once
          * compile() has been called; see \ref Selection.
          */
-        void parseFromString(const std::string &str,
-                             SelectionList *output);
+        SelectionList parseFromString(const std::string &str);
         /*! \brief
          * Prepares the selections for evaluation and performs optimizations.
          *

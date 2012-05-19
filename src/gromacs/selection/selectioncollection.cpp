@@ -123,9 +123,8 @@ SelectionCollection::Impl::clearSymbolTable()
 }
 
 
-void
-SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
-                                     SelectionList *output)
+SelectionList
+SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr)
 {
     gmx_ana_selcollection_t *sc = &_sc;
     GMX_ASSERT(sc == _gmx_sel_lexer_selcollection(scanner),
@@ -144,22 +143,21 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
         errors.append("Too few selections provided");
     }
 
-    if (bOk)
-    {
-        SelectionDataList::const_iterator i;
-        output->reserve(output->size() + nr);
-        for (i = _sc.sel.begin() + oldCount; i != _sc.sel.end(); ++i)
-        {
-            output->push_back(Selection(i->get()));
-        }
-    }
     // TODO: Remove added selections from the collection if parsing failed?
-
     if (!bOk || !errors.isEmpty())
     {
         GMX_ASSERT(!bOk && !errors.isEmpty(), "Inconsistent error reporting");
         GMX_THROW(InvalidInputError(errors.toString()));
     }
+
+    SelectionList result;
+    SelectionDataList::const_iterator i;
+    result.reserve(nr);
+    for (i = _sc.sel.begin() + oldCount; i != _sc.sel.end(); ++i)
+    {
+        result.push_back(Selection(i->get()));
+    }
+    return result;
 }
 
 
@@ -380,9 +378,8 @@ SelectionCollection::requiresTopology() const
 }
 
 
-void
-SelectionCollection::parseFromStdin(int nr, bool bInteractive,
-                                    SelectionList *output)
+SelectionList
+SelectionCollection::parseFromStdin(int nr, bool bInteractive)
 {
     yyscan_t scanner;
 
@@ -391,13 +388,12 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive,
                         _impl->_grps);
     /* We don't set the lexer input here, which causes it to use a special
      * internal implementation for reading from stdin. */
-    _impl->runParser(scanner, nr, output);
+    return _impl->runParser(scanner, nr);
 }
 
 
-void
-SelectionCollection::parseFromFile(const std::string &filename,
-                                   SelectionList *output)
+SelectionList
+SelectionCollection::parseFromFile(const std::string &filename)
 {
     yyscan_t scanner;
 
@@ -407,14 +403,12 @@ SelectionCollection::parseFromFile(const std::string &filename,
                         _impl->_bExternalGroupsSet,
                         _impl->_grps);
     _gmx_sel_set_lex_input_file(scanner, file.handle());
-    _impl->runParser(scanner, -1, output);
-    file.close();
+    return _impl->runParser(scanner, -1);
 }
 
 
-void
-SelectionCollection::parseFromString(const std::string &str,
-                                     SelectionList *output)
+SelectionList
+SelectionCollection::parseFromString(const std::string &str)
 {
     yyscan_t scanner;
 
@@ -422,7 +416,7 @@ SelectionCollection::parseFromString(const std::string &str,
                         _impl->_bExternalGroupsSet,
                         _impl->_grps);
     _gmx_sel_set_lex_input_str(scanner, str.c_str());
-    _impl->runParser(scanner, -1, output);
+    return _impl->runParser(scanner, -1);
 }
 
 
