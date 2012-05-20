@@ -778,7 +778,7 @@ int gmx_poldata_get_gt_bond(gmx_poldata_t pd,char **atom1,char **atom2,
         assign_str(params,gt_b->params);
         pold->ngt_bond_c++;
     
-        return 1;
+        return pold->ngt_bond_c;
     }
     pold->ngt_bond_c = 0;
   
@@ -879,7 +879,7 @@ int gmx_poldata_get_gt_angle(gmx_poldata_t pd,char **atom1,char **atom2,
         assign_str(params,gt_b->params);
         pold->ngt_angle_c++;
     
-        return 1;
+        return pold->ngt_angle_c;
     }
     pold->ngt_angle_c = 0;
   
@@ -1030,7 +1030,7 @@ int gmx_poldata_get_gt_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
         assign_str(params,gt_b->params);
         pold->ngt_dihedral_c++;
     
-        return 1;
+        return pold->ngt_dihedral_c;
     }
     pold->ngt_dihedral_c = 0;
   

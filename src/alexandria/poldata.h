@@ -142,6 +142,7 @@ extern int gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 extern int gmx_poldata_set_gt_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                           char *params);
 				   
+    /* Return bond-index 1-N or 0 if not found */
 extern int gmx_poldata_get_gt_bond(gmx_poldata_t pd,char **atom1,char **atom2,
                                    double *length,double *sigma,double *bondorder,
                                    char **params);
@@ -169,6 +170,7 @@ extern int gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
 extern int gmx_poldata_set_gt_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                            char *atom3,char *params);
 				   
+    /* Return angle-index 1-N or 0 if not found */
 extern int gmx_poldata_get_gt_angle(gmx_poldata_t pd,char **atom1,char **atom2,
                                     char **atom3,double *angle,double *sigma,
                                     char **params);
@@ -194,6 +196,7 @@ extern int gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
 extern int gmx_poldata_set_gt_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                               char *atom3,char *atom4,char *params);
 				   
+    /* Return dihedral-index 1-N or 0 if not found */
 extern int gmx_poldata_get_gt_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
                                        char **atom3,char **atom4,
                                        double *dihedral,double *sigma,char **params);
