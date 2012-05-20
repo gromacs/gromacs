@@ -286,11 +286,6 @@ check_include_files(dirent.h     HAVE_DIRENT_H)
 check_include_files(regex.h      HAVE_REGEX_H)
 check_include_files(sys/types.h  HAVE_SYS_TYPES_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
-# SSE support
-check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
-check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
-check_include_files(pmmintrin.h  HAVE_PMMINTRIN_H)
-check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
 check_include_files(io.h  		 HAVE_IO_H)
 
 
@@ -536,9 +531,6 @@ gmx_test_sigusr1(HAVE_SIGUSR1)
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
 
-include(gmxTestRestrict)
-gmx_test_inline(RESTRICT_KEYWORD)
-
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
@@ -615,13 +607,6 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
       endif()
     endif()
 
-#    if(HAVE_PMMINTRIN_H)
-#        set(GMX_SSE3 1)
-#    endif(HAVE_PMMINTRIN_H)
-#    if(HAVE_SMMINTRIN_H)
-#        set(GMX_SSE4_1 1)
-#    endif(HAVE_SMMINTRIN_H)
-
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
     set(GMX_FORTRAN 1)
     #these are switch on by default sometimes
@@ -684,14 +669,15 @@ if(GMX_FORTRAN OR GMX_POWER6)
 
     if(isupper)
         set(F77_FUNCDEF   "${prefix} NAME ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} NAME ${extrasuffix}")
+        # The underscored versions are not currently used.
+        #set(F77_FUNCDEF_  "${prefix} NAME ${extrasuffix}")
     else(isupper)
         set(F77_FUNCDEF   "${prefix} name ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} name ${extrasuffix}")
+        #set(F77_FUNCDEF_  "${prefix} name ${extrasuffix}")
     endif(isupper)
 else(GMX_FORTRAN OR GMX_POWER6)
         set(F77_FUNCDEF   "name ## _")
-        set(F77_FUNCDEF_  "name ## _")
+        #set(F77_FUNCDEF_  "name ## _")
 endif(GMX_FORTRAN OR GMX_POWER6)
 
 # Process QM/MM Settings

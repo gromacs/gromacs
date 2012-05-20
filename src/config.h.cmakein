@@ -47,9 +47,6 @@
    case), which must not contain underscores, for linking with Fortran. */
 #define F77_FUNC(name,NAME)     @F77_FUNCDEF@
 
-/* As F77_FUNC, but for C identifiers containing underscores. */
-#define F77_FUNC_(name,NAME)    @F77_FUNCDEF_@
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
@@ -164,9 +161,6 @@
 /* Define for Linux pthread_setaffinity */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
-/* Define for Windows NUMA-aware allocator functions*/
-#cmakedefine TMPI_WINDOWS_NUMA_API
-
 /* Define for sysconf() */
 #cmakedefine HAVE_SYSCONF
 
@@ -196,9 +190,6 @@
 
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
 #cmakedefine HAVE__FSEEKI64
-
-/* Define to 1 if you have the m library (-lm). */
-#cmakedefine HAVE_LIBM
 
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
@@ -272,18 +263,6 @@
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
 
-/* Define to 1 if yo have the <xmmintrin.h> header file. */
-#cmakedefine HAVE_XMMINTRIN_H
-
-/* Define to 1 if yo have the <emmintrin.h> header file. */
-#cmakedefine HAVE_EMMINTRIN_H
-
-/* Define to 1 if yo have the <pmmintrin.h> header file. */
-#cmakedefine HAVE_PMMINTRIN_H
-
-/* Define to 1 if yo have the <smmintrin.h> header file. */
-#cmakedefine HAVE_SMMINTRIN_H
-
 /* Define for sched.h (this is for thread_mpi)*/
 #define HAVE_SCHED_H
 
@@ -323,9 +302,6 @@
 /* Some systems requires this to be set to 64 for large file support */
 #cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
-/* Gromacs shortcut define for fseeko & ftello being present with 64-bit support */
-#cmakedefine GMX_LARGEFILES
-
 /* Define to int if <sys/types.h> does not define. */
 #cmakedefine gid_t int
 
@@ -335,15 +311,8 @@
 #define inline ${INLINE_KEYWORD}
 #endif
 
-/* Define to __restrict__ or __restrict if that is what the C compiler
-   calls it, or to nothing if restrict is not supported under any name.  */
-#define restrict ${RESTRICT_KEYWORD}
-
 /* Define to long int if <sys/types.h> does not define. */                    
 #cmakedefine off_t int                                                                
-                                                                                
-/* Define to unsigned int if <sys/types.h> does not define. */
-#cmakedefine size_t int                                                                
 
 /* Define to int if <sys/types.h> does not define. */
 #cmakedefine uid_t int
