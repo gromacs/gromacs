@@ -176,12 +176,6 @@
 /* Double-precision SSE2 instructions on X86_64 */
 #cmakedefine GMX_X86_64_SSE2
 
-/* Enable x86 gcc inline assembly */
-#cmakedefine GMX_X86_GCC_INLINE_ASM
-
-/* Enable x86 MSVC inline assembly */
-#cmakedefine GMX_X86_MSVC_INLINE_ASM
-
 /* Support for SSE intrinsics */
 #cmakedefine GMX_SSE
 
@@ -197,9 +191,6 @@
 /* Define to 1 if you have the <altivec.h> header file. */
 #cmakedefine HAVE_ALTIVEC_H
 
-/* Define to 1 if the system has the type gmx_bool. */
-#cmakedefine HAVE_BOOL
-
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
 
@@ -212,20 +203,11 @@
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
 
-/* Define to 1 if you have the xml2 library (-lxml2). */
-#cmakedefine HAVE_LIBXML2
-
 /* Have io.h (windows)*/
 #cmakedefine HAVE_IO_H
 
-/* Define to 1 if you have the strcasecmp() function. */
-#cmakedefine HAVE_STRCASECMP
-
 /* Define to 1 if you have the strdup() function. */
 #cmakedefine HAVE_STRDUP
-
-/* Define to 1 if you have the memcmp() function. */
-#cmakedefine HAVE_MEMCMP
 
 /* Define to 1 if you have the posix_memalign() function. */
 #cmakedefine HAVE_POSIX_MEMALIGN
@@ -241,12 +223,6 @@
 
 /* Define to 1 if you have the cbrt() function. */
 #cmakedefine HAVE_CBRT
-
-/* Define to 1 if you have the isnan() function. */
-#cmakedefine HAVE_ISNAN
-
-/* Define to 1 if you have the _isnan() function. */
-#cmakedefine HAVE__ISNAN
 
 /* Define to 1 if you have the isfinite() function. */
 #cmakedefine HAVE_ISFINITE
@@ -275,32 +251,11 @@
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine HAVE_SIGACTION
 
-/* Define to 1 if you have the <string.h> header file. */
-#cmakedefine HAVE_STRING_H
-
-/* Define to 1 if yo have the <math.h> header file. */
-#cmakedefine HAVE_MATH_H
-
-/* Define to 1 if yo have the <limits.h> header file. */
-#cmakedefine HAVE_LIMITS_H
-
-/* Define to 1 if yo have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H
-
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
-/* Define to 1 if yo have the <direct.h> header file. */
-#cmakedefine HAVE_DIRECT_H
-
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H
-
-/* Define to 1 if yo have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H
-
-/* Define to 1 if yo have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H
 
 /* Define to 1 if yo have the <pthread.h> header file. */
 #cmakedefine HAVE_PTHREAD_H
@@ -308,26 +263,14 @@
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H
 
-/* Define to 1 if yo have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H
-
 /* Define to 1 if yo have the <regex.h> header file. */
 #cmakedefine HAVE_REGEX_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
 
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine HAVE_SYS_STAT_H
-
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
-
-/* Define to 1 if you have the <rpc/rpc.h> header file. */
-#cmakedefine HAVE_RPC_RPC_H
-
-/* Define to 1 if you have the <rpc/xdr.h> header file. */
-#cmakedefine HAVE_RPC_XDR_H
 
 /* Define to 1 if yo have the <xmmintrin.h> header file. */
 #cmakedefine HAVE_XMMINTRIN_H
@@ -343,9 +286,6 @@
 
 /* Define for sched.h (this is for thread_mpi)*/
 #define HAVE_SCHED_H
-
-/* Define to 1 if you have the vprintf() function. */
-#cmakedefine HAVE_VPRINTF
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
