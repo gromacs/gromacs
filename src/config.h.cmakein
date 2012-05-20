@@ -170,9 +170,6 @@
 /* Define for sysconf() */
 #cmakedefine HAVE_SYSCONF
 
-/* Define for GetSystemInfo() */
-#cmakedefine HAVE_SYSTEM_INFO
-
 /* Single-precision SSE instructions on X86_64 */
 #cmakedefine GMX_X86_64_SSE
 
@@ -212,9 +209,6 @@
 /* Define to 1 if you have the m library (-lm). */
 #cmakedefine HAVE_LIBM
 
-/* Define to 1 if you have the mkl library (-lmkl). */
-#cmakedefine HAVE_LIBMKL
-
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
 
@@ -232,9 +226,6 @@
 
 /* Define to 1 if you have the strdup() function. */
 #cmakedefine HAVE_STRDUP
-
-/* Define to 1 if you have the vfprintf() function. */
-#cmakedefine HAVE_VFPRINTF
 
 /* Define to 1 if you have the memcmp() function. */
 #cmakedefine HAVE_MEMCMP
@@ -410,12 +401,6 @@
 /* Define to __restrict__ or __restrict if that is what the C compiler
    calls it, or to nothing if restrict is not supported under any name.  */
 #define restrict ${RESTRICT_KEYWORD}
-
-#ifndef CPLUSPLUS
-#ifdef __cplusplus
-#define CPLUSPLUS
-#endif
-#endif  
 
 /* Define to long int if <sys/types.h> does not define. */                    
 #cmakedefine off_t int                                                                
