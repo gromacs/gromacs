@@ -204,7 +204,7 @@ void make_shake (t_params plist[],t_atoms *atoms,gpp_atomtype_t at,int nshake)
 	    p.C1 = pr->param[i].C2;
 	    add_param_to_list (&(plist[F_CONSTR]),&p);
 	  } else {
-	     copy_bond(pr,i,j++); 
+	      copy_bond(pr,j++,i); 
 	  }
 	}
 	pr->nr = j;
