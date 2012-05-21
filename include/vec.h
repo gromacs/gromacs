@@ -505,14 +505,23 @@ static gmx_inline double dnorm2(const dvec a)
   return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
 
-static gmx_inline real norm(const rvec a)
-{
-  return (real)sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
-}
-
 static gmx_inline double dnorm(const dvec a)
 {
-  return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
+  return sqrt(diprod(a, a));
+}
+
+/* WARNING:
+ * Do _not_ use norm() unless you're sure that you don't need 1/norm() as it
+ * uses sqrt() which is slow! */
+static gmx_inline real norm(const rvec a)
+{
+  /* We deliberately do not define gmx_sqrt but handle the float/double case
+   * here to avoid norm() being "accidentally" used. */
+#ifdef GMX_DOUBLE
+  return dnorm(a);
+#else
+  return sqrtf(iprod(a, a));
+#endif
 }
 
 /* WARNING:
