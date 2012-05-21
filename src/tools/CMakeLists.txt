@@ -1,8 +1,7 @@
 add_library(gmxana 
             autocorr.c      expfit.c        polynomials.c   levenmar.c      
             anadih.c        pp2shift.c      dlist.c         
-            eigio.c         cmat.c          
-            eigensolver.c   nsc.c           
+            eigio.c         cmat.c          nsc.c
             hxprops.c       fitahx.c        
             geminate.c      nsfactor.c
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      

@@ -16,6 +16,10 @@ INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src \
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
 
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = F77_FUNC(name,NAME)=name
+
 ENABLED_SECTIONS       = libapi internal
 INTERNAL_DOCS          = YES
 HIDE_UNDOC_CLASSES     = YES
