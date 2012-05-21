@@ -79,9 +79,7 @@ void reduce_force_j_generic(float *f_buf, float4 *fout,
             f.z += f_buf[2 * STRIDE_DIM + j];
         }
 
-        atomicAdd(&fout[aidx].x, f.x);
-        atomicAdd(&fout[aidx].y, f.y);
-        atomicAdd(&fout[aidx].z, f.z);
+        atomicAdd3(&fout[aidx], f);
     }
 }
 
@@ -103,15 +101,11 @@ void reduce_force_i_generic(float *f_buf, float4 *fout,
             f.z += f_buf[2 * STRIDE_DIM + j];
         }
 
-        atomicAdd(&fout[aidx].x, f.x);
-        atomicAdd(&fout[aidx].y, f.y);
-        atomicAdd(&fout[aidx].z, f.z);
+        atomicAdd3(&fout[aidx], f);
 
         if (calc_fshift)
         {
-            fshift_buf->x += f.x;
-            fshift_buf->y += f.y;
-            fshift_buf->z += f.z;
+            *fshift_buf += f;
         }
     }
 }
@@ -150,15 +144,11 @@ void reduce_force_i_pow2(volatile float *f_buf, float4 *fout,
         f.y = f_buf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
         f.z = f_buf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
 
-        atomicAdd(&fout[aidx].x, f.x);
-        atomicAdd(&fout[aidx].y, f.y);
-        atomicAdd(&fout[aidx].z, f.z);
+        atomicAdd3(&fout[aidx], f);
 
         if (calc_fshift)
         {
-            fshift_buf->x += f.x;
-            fshift_buf->y += f.y;
-            fshift_buf->z += f.z;
+            *fshift_buf += f;
         }
     }
 }

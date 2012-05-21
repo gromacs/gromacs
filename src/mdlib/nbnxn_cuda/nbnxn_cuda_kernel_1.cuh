@@ -120,7 +120,8 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
     float4  xqbuf;
     float3  xi, xj, rv;
     float3  shift;
-    float3  f_ij, fcj_buf, fshift_buf;
+    float3  f_ij, fcj_buf;
+    float3  fshift_buf;
     nbnxn_sci_t nb_sci;
     unsigned int wexcl, int_bit;
     int wexcl_idx;
@@ -352,9 +353,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
     /* add up local shift forces */
     if (calc_fshift && tidxj == 0)
     {
-        atomicAdd(&atdat.fshift[nb_sci.shift].x, fshift_buf.x);
-        atomicAdd(&atdat.fshift[nb_sci.shift].y, fshift_buf.y);
-        atomicAdd(&atdat.fshift[nb_sci.shift].z, fshift_buf.z);
+        atomicAdd(&atdat.fshift[nb_sci.shift], fshift_buf);
     }
 
 #ifdef CALC_ENERGIES

@@ -2042,6 +2042,7 @@ static void init_nb_verlet(FILE *fp,
     if (nbv->useGPU)
     {
 #ifdef GMX_GPU
+        /* need to move this  */
         nbnxn_cuda_init(fp, &(nbv->cu_nbv), DOMAINDECOMP(cr));
         env = getenv("GMX_NB_MIN_CI");
         if (env)

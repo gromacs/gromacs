@@ -69,6 +69,10 @@ inline __host__ __device__ void operator+=(float3 &a, float3 b)
 {
     a.x += b.x; a.y += b.y; a.z += b.z;
 }
+inline __host__ __device__ void operator+=(float3 &a, float4 b)
+{
+    a.x += b.x; a.y += b.y; a.z += b.z;
+}
 inline __host__ __device__ void operator-=(float3 &a, float3 b)
 {
     a.x -= b.x; a.y -= b.y; a.z -= b.z;
@@ -137,6 +141,18 @@ inline __host__ __device__ float norm(float4 a)
 inline __host__ __device__ float dist3(float4 a, float4 b)
 {
     return norm(b - a);
+}
+inline __device__ void atomicAdd3(float4 *addr, float4 val)
+{
+    atomicAdd(&addr->x, val.x);
+    atomicAdd(&addr->y, val.y);
+    atomicAdd(&addr->z, val.z);
+}
+inline __device__ void atomicAdd(float4 *addr, float3 val)
+{
+    atomicAdd(&addr->x, val.x);
+    atomicAdd(&addr->y, val.y);
+    atomicAdd(&addr->z, val.z);
 }
 
 #endif /* VECTYPE_OPS_CUH */
