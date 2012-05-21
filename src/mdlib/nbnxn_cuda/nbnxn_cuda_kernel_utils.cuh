@@ -83,6 +83,32 @@ void reduce_force_j_generic(float *f_buf, float4 *fout,
     }
 }
 
+/*! Final j-force reduction; this implementation only with power of two
+ *  array sizes and with sm >= 3.0
+ */
+#if __CUDA_ARCH__ >= 300
+static inline __device__ 
+void reduce_force_j_warp_shfl(float3 f, float4 *fout,
+                              int tidxi, int aidx)
+{
+    int i;
+
+#pragma unroll 3
+    for (i = 0; i < 3; i++)
+    {
+        f.x += __shfl_down(f.x, 1<<i);
+        f.y += __shfl_down(f.y, 1<<i);
+        f.z += __shfl_down(f.z, 1<<i);
+    }
+
+    /* Write the reduced j-force on one thread for each j */
+    if (tidxi == 0)
+    {
+        atomicAdd(&fout[aidx], f);
+    }
+}
+#endif
+
 /*! Final i-force reduction; this generic implementation works with 
  *  arbitrary array sizes. 
  */
@@ -171,6 +197,40 @@ void reduce_force_i(float *f_buf, float4 *f,
     }
 }
 
+/*! Final i-force reduction; this implementation works only with power of two
+ *  array sizes and with sm >= 3.0
+ */
+#if __CUDA_ARCH__ >= 300
+static inline __device__ 
+void reduce_force_i_warp_shfl(float3 fin, float4 *fout,
+                              float3 *fshift_buf, gmx_bool calc_fshift,
+                              int tidxj, int aidx)
+{
+    int j;
+
+#pragma unroll 2
+    for (j = 0; j < 2; j++)
+    {
+        fin.x += __shfl_down(fin.x,  CLUSTER_SIZE<<j);
+        fin.y += __shfl_down(fin.y,  CLUSTER_SIZE<<j);
+        fin.z += __shfl_down(fin.z,  CLUSTER_SIZE<<j);
+    }
+
+    /* The first thread in the warp writes the reduced force */
+    if (tidxj == 0 || tidxj == 4)
+    {
+        atomicAdd(&fout[aidx], fin);
+
+        if (calc_fshift)
+        {
+            fshift_buf->x += fin.x;
+            fshift_buf->y += fin.y;
+            fshift_buf->z += fin.z;
+        }
+    }
+}
+#endif
+
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes. 
  */
@@ -205,6 +265,35 @@ void reduce_energy_pow2(volatile float *buf,
         atomicAdd(e_el, e2); 
     }
 }
+
+/*! Energy reduction; this implementation works only with power of two
+ *  array sizes and with sm >= 3.0
+ */
+#if __CUDA_ARCH__ >= 300
+static inline __device__ 
+void reduce_energy_warp_shfl(float E_lj, float E_el,
+                             float *e_lj, float *e_el,
+                             int tidx)
+{
+    int i, sh;
+    
+    sh = 1;
+#pragma unroll 5
+    for (i = 0; i < 5; i++)
+    {
+        E_lj += __shfl_down(E_lj,sh);
+        E_el += __shfl_down(E_el,sh);
+        sh += sh;
+    }
+
+    /* The first thread in the warp writes the reduced energies */
+    if (tidx == 0 || tidx == WARP_SIZE)
+    {
+        atomicAdd(e_lj,E_lj);
+        atomicAdd(e_el,E_el);
+    }
+}
+#endif
 
 /*********************************************************************************/
 /* Old stuff  */
