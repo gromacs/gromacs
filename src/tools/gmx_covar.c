@@ -64,10 +64,11 @@
 #include "txtdump.h"
 #include "matio.h"
 #include "eigio.h"
-#include "eigensolver.h"
 #include "physics.h"
 #include "gmx_ana.h"
 #include "string2.h"
+
+#include "gromacs/linearalgebra/eigensolver.h"
 
 /* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
 char *

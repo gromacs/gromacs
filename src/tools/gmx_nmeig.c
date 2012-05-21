@@ -54,14 +54,15 @@
 #include "xvgr.h"
 #include "gstat.h"
 #include "txtdump.h"
-#include "eigensolver.h"
 #include "eigio.h"
-#include "mtxio.h"
 #include "mtop_util.h"
-#include "sparsematrix.h"
 #include "physics.h"
 #include "main.h"
 #include "gmx_ana.h"
+
+#include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/linearalgebra/mtxio.h"
+#include "gromacs/linearalgebra/sparsematrix.h"
 
 static double cv_corr(double nu,double T)
 {

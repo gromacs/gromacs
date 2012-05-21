@@ -55,9 +55,9 @@
 #include "princ.h"
 #include "rmpbc.h"
 #include "confio.h"
-#include "eigensolver.h"
 #include "gmx_ana.h"
 
+#include "gromacs/linearalgebra/eigensolver.h"
 
 static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
 {
