@@ -244,6 +244,12 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     calc_ener = (calc_ener || always_ener) && !never_ener; 
 
+    /* don't launch the kernel if there is no work to do */
+    if (plist->nsci == 0)
+    {
+        return;
+    }
+
     /* calculate the atom data index range based on locality */
     if (LOCAL_I(iloc))
     {
@@ -359,6 +365,12 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 
     gmx_bool calc_ener   = flags & GMX_FORCE_VIRIAL;
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
+
+    /* don't launch copy-back if there was no work to do */
+    if (cu_nb->plist[iloc]->nsci == 0)
+    {
+        return;
+    }
 
     /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
@@ -488,6 +500,19 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     calc_ener = (calc_ener || always_ener) && !never_ener; 
 
+    /* turn off pruning (doesn't matter if this is pair-search step or not) */
+    plist->do_prune = FALSE;
+
+    /* don't launch wait/update timers & counters if there was no work to do
+
+       NOTE: if timing with multiple GPUs (streams) becomes possible, the
+       counters could end up being inconsistent due to not being incremented
+       on some of the nodes! */
+    if (cu_nb->plist[iloc]->nsci == 0)
+    {
+        return;
+    }
+
     /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
     {
@@ -508,7 +533,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         /* Busy-wait until we get the signalling pattern set in last 4-bytes 
            of the l/nl float vector. */
         signal_bytes    = (unsigned int*)&nbatom->out[0].f[adat_last*4 + 3];
-        signal_pattern  = 0xAAAAAAAA;
+        signal_pattern  = 0xAAAAAAAA; /* FIXME move this to a module-global constant */
         while (*signal_bytes != signal_pattern) 
         {
             /* back off, otherwise we get stuck. why??? */
@@ -551,9 +576,6 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                                                      timers->stop_pl_h2d[iloc]);
         }
     }
-   
-    /* turn off pruning (doesn't matter if this is pair-search step or not) */
-    plist->do_prune = FALSE;
 
     /* add up enegies and shift forces (only once at local F wait) */
     if (LOCAL_I(iloc))
