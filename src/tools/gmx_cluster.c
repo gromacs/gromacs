@@ -54,12 +54,13 @@
 #include "xvgr.h"
 #include "futil.h"
 #include "matio.h"
-#include "eigensolver.h"
 #include "cmat.h"
 #include "do_fit.h"
 #include "trnio.h"
 #include "viewit.h"
 #include "gmx_ana.h"
+
+#include "gromacs/linearalgebra/eigensolver.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
 static inline

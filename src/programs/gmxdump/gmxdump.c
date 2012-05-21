@@ -59,8 +59,9 @@
 #include "gmxcpp.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
-#include "sparsematrix.h"
-#include "mtxio.h"
+
+#include "gromacs/linearalgebra/mtxio.h"
+#include "gromacs/linearalgebra/sparsematrix.h"
 
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,

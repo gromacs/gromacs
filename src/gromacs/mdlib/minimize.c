@@ -67,14 +67,15 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "trnio.h"
-#include "sparsematrix.h"
-#include "mtxio.h"
 #include "mdatoms.h"
 #include "ns.h"
 #include "gmx_wallcycle.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+
+#include "gromacs/linearalgebra/mtxio.h"
+#include "gromacs/linearalgebra/sparsematrix.h"
 
 typedef struct {
   t_state s;
