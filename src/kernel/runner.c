@@ -97,10 +97,8 @@
 #include <omp.h>
 #endif
 
-#ifdef GMX_GPU
 #include "gpu_utils.h"
 #include "nbnxn_cuda_data_mgmt.h"
-#endif /* GMX_GPU */
 
 
 typedef struct { 
@@ -1271,15 +1269,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      */
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
-#ifdef GMX_GPU
                fr != NULL && fr->nbv != NULL && fr->nbv->useGPU ?
-                 nbnxn_cuda_get_timings(fr->nbv->cu_nbv) :
-#endif
-               NULL,
+                 nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
                nthreads_pp, 
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
-#ifdef GMX_GPU
     if (cr->duty & DUTY_PP && fr->nbv != NULL && fr->nbv->useGPU)
     {
         int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
@@ -1292,7 +1286,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             gmx_warning("Failed to uninitialize GPU.");
         }
     }
-#endif
 
     /* Does what it says */  
     print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);

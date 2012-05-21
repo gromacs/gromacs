@@ -107,10 +107,8 @@
 #include "no_omp.h"
 #endif
 
-#ifdef GMX_GPU
 #include "gpu_utils.h"
 #include "nbnxn_cuda_data_mgmt.h"
-#endif
 
 /* afm stuf */
 #include "pull.h"
@@ -3464,10 +3462,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
      */
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
-#ifdef GMX_GPU
-               fr->nbv->useGPU ? nbnxn_cuda_get_timings(fr->nbv->cu_nbv) :
-#endif
-               NULL,
+               fr->nbv->useGPU ? nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr),
                omp_nthreads_pp);
 
@@ -3485,7 +3480,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     	sfree(piecename);
     }
 
-#ifdef GMX_GPU
     if (fr->nbv->useGPU)
     {
         int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
@@ -3497,7 +3491,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gmx_warning("Failed to uninitialize GPU.");
         }
     }
-#endif
 
     rc=(int)gmx_get_stop_condition();
 

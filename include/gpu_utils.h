@@ -36,23 +36,42 @@
 #ifndef _GMX_GPU_UTILS_H_
 #define _GMX_GPU_UTILS_H_
 
-int do_quick_memtest(int /*dev_id*/);
-
-int do_full_memtest(int /*dev_id*/);
-
-int do_timed_memtest(int /*dev_id*/, int /*time_limit*/);
-
-int is_supported_cuda_gpu(int /*dev_id*/, char* /*gpu_name*/);
+#ifdef GMX_GPU
+#define FUNC_TERM ;
+#define FUNC_QUALIFIER
+#else
+#define FUNC_TERM {return -1;}
+#define FUNC_QUALIFIER static
+#endif
 
 #ifdef __cplusplus
-extern "C" 
+extern "C" {
 #endif
-int init_gpu(FILE * /*fplog*/, int /*dev_id*/);
+
+FUNC_QUALIFIER
+int do_quick_memtest(int dev_id) FUNC_TERM
+
+FUNC_QUALIFIER
+int do_full_memtest(int dev_id) FUNC_TERM
+
+FUNC_QUALIFIER
+int do_timed_memtest(int dev_id, int time_limit) FUNC_TERM
+
+FUNC_QUALIFIER
+int is_supported_cuda_gpu(int dev_id, char *gpu_name) FUNC_TERM
+
+FUNC_QUALIFIER
+int init_gpu(FILE *fplog, int dev_id) FUNC_TERM
+
+FUNC_QUALIFIER
+int uninit_gpu(FILE *fplog, int dev_id) FUNC_TERM
 
 #ifdef __cplusplus
-extern "C" 
+}
 #endif
-int uninit_gpu(FILE * /*fplog*/, int /*dev_id*/);
+
+#undef FUNC_TERM
+#undef FUNC_QUALIFIER
 
 #endif // _GMX_GPU_UTILS_H_
 

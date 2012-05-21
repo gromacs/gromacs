@@ -38,6 +38,12 @@
 
 #include "types/nbnxn_cuda_types_ext.h"
 
+#ifdef GMX_GPU
+#define FUNC_TERM ;
+#else
+#define FUNC_TERM {}
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -50,30 +56,32 @@ extern "C" {
  *  The local and non-local interation calculations are launched in two 
  *  separate streams.
  */
-void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t /*cu_nb*/,
-                              const nbnxn_atomdata_t * /*nbdata*/,
-                              int /*flags*/,
-                              int /*iloc*/);
+void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
+                              const nbnxn_atomdata_t *nbdata,
+                              int flags,
+                              int iloc) FUNC_TERM
 
 /*! Launch asynchronously the dowload of nonbonded forces from the GPU 
  *  (and energies/shift forces if required). 
  */
-void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t /*cu_nb*/,
-                               const nbnxn_atomdata_t * /*nbatom*/,
-                               int /*flags*/,
-                               int /*aloc*/);
+void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
+                               const nbnxn_atomdata_t *nbatom,
+                               int flags,
+                               int aloc) FUNC_TERM
 
 /*! Wait for the asynchrounously launched nonbonded calculations and data 
  *  transfers to finish. 
  */
-void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t /*cu_nb*/,
-                         const nbnxn_atomdata_t * /*nbatom*/,
-                         int /*flags*/, int /*aloc*/,
-                         float * /*e_lj*/, float * /*e_el*/,
-                         rvec * /*fshift*/);
+void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
+                         const nbnxn_atomdata_t * nbatom,
+                         int flags, int aloc,
+                         float *e_lj, float *e_el,
+                         rvec *fshift) FUNC_TERM
 
 #ifdef __cplusplus
 }
 #endif
+
+#undef FUNC_TERM
 
 #endif /* NBNXN_CUDA_H */

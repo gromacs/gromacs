@@ -47,9 +47,7 @@
 #include "vcm.h"
 #include "nrnb.h"
 
-#ifdef GMX_GPU
 #include "nbnxn_cuda_data_mgmt.h"
-#endif
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
@@ -531,12 +529,10 @@ void reset_all_counters(FILE *fplog,t_commrec *cr,
             gmx_step_str(step,sbuf));
     md_print_warning(cr,fplog,buf);
 
-#ifdef GMX_GPU
     if (cu_nbv)
     {
         nbnxn_cuda_reset_timings(cu_nbv);
     }
-#endif 
 
     wallcycle_stop(wcycle,ewcRUN);
     wallcycle_reset_all(wcycle);

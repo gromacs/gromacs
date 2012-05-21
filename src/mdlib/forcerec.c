@@ -75,13 +75,10 @@
 #include <intrin.h>
 #endif
 
-#ifdef GMX_GPU
 #include "types/nbnxn_cuda_types_ext.h"
 #include "gpu_utils.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
-#endif
-
 
 t_forcerec *mk_forcerec(void)
 {
@@ -1609,11 +1606,9 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
         /* If you set this env.var, you want to use a GPU */
         forceGPU = TRUE;
     }
-#ifdef GMX_GPU
+
     GPU_OK = (init_gpu(fp, gpu_device_id) == 0);
-#else
-    GPU_OK = FALSE;
-#endif
+
     if (PAR(cr))
     {
         nnodes = cr->dd->nnodes;
@@ -1959,9 +1954,7 @@ void init_interaction_const(FILE *fp,
 
     if (fr->nbv != NULL && fr->nbv->useGPU)
     {
-#ifdef GMX_GPU
         nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
-#endif
     }
 
     if (fr->cutoff_scheme == ecutsVERLET)
@@ -2041,7 +2034,6 @@ static void init_nb_verlet(FILE *fp,
 
     if (nbv->useGPU)
     {
-#ifdef GMX_GPU
         /* need to move this  */
         nbnxn_cuda_init(fp, &(nbv->cu_nbv), DOMAINDECOMP(cr));
         env = getenv("GMX_NB_MIN_CI");
@@ -2063,7 +2055,6 @@ static void init_nb_verlet(FILE *fp,
                         nbv->min_ci_balanced);
             }
         }
-#endif
     }
     else
     {
@@ -2081,14 +2072,12 @@ static void init_nb_verlet(FILE *fp,
 
     for(i=0; i<nbv->nloc; i++)
     {
-#ifdef GMX_GPU
         if (nbv->grp[0].kernel_type == nbk8x8x8CUDA)
         {
             nb_alloc = &pmalloc;
             nb_free  = &pfree;
         }
         else
-#endif
         {
             nb_alloc = NULL;
             nb_free  = NULL;

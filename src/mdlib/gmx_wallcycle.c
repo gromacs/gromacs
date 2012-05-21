@@ -51,10 +51,6 @@
 #include "tmpi.h"
 #endif
 
-#ifdef GMX_GPU
-#include "nbnxn_cuda_data_mgmt.h"
-#endif
-
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last
  * one that was opened and if you do nest too deep.

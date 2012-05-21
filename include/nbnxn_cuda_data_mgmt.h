@@ -40,58 +40,90 @@
 #include "types/interaction_const.h"
 #include "types/nbnxn_cuda_types_ext.h"
 
+#ifdef GMX_GPU
+#define FUNC_TERM ;
+#define FUNC_QUALIFIER
+#else
+#define FUNC_TERM {}
+#define FUNC_QUALIFIER static
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*! Initializes the data structures related to CUDA nonbonded calculations. */
-void nbnxn_cuda_init(FILE * /*fplog*/,
-                     nbnxn_cuda_ptr_t * /*p_cu_nb*/,
-                     gmx_bool /*bDomDec*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_init(FILE *fplog,
+                     nbnxn_cuda_ptr_t *p_cu_nb,
+                     gmx_bool bDomDec) FUNC_TERM
 
 /*! Initilizes simulation constant data. */
-void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t /*p_cu_nb*/,
-                           const interaction_const_t * /*ic*/,
-                           const nonbonded_verlet_t * /*nbv*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t p_cu_nb,
+                           const interaction_const_t *ic,
+                           const nonbonded_verlet_t *nbv) FUNC_TERM
 
 /*! Initilizes pair-list data for GPU, called at every pair search step. */
-void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t /*cu_nb*/,
-                              const nbnxn_pairlist_t * /*h_nblist*/,
-                              int /*iloc*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
+                              const nbnxn_pairlist_t *h_nblist,
+                              int iloc) FUNC_TERM
 
 /*! Initilizes atom-data on the GPU, called at every pair search step. */
-void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t /*cu_nb*/,
-                              const nbnxn_atomdata_t * /*atomdata*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
+                              const nbnxn_atomdata_t *atomdata) FUNC_TERM
 
 /*! Re-generates the GPU Ewald force table and resets rlist - used with PME auto-tuning. */
-void reset_gpu_rlist_ewaldtab(nbnxn_cuda_ptr_t /*cu_nb*/,
-                              const interaction_const_t * /*ic*/);
+FUNC_QUALIFIER
+void reset_gpu_rlist_ewaldtab(nbnxn_cuda_ptr_t cu_nb,
+                              const interaction_const_t *ic) FUNC_TERM
 
 /*! Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
-void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t /*cu_nb*/,
-                                const nbnxn_atomdata_t * /*nbatom*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
+                                const nbnxn_atomdata_t *nbatom) FUNC_TERM
 
 /*! Clears GPU outputs: nonbonded force, shift force and energy. */
-void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t /*cu_nb*/,
-                              int /*flags*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb,
+                              int flags) FUNC_TERM
 
 /*! Frees all GPU resources used for the nonbonded calculations. */
-void nbnxn_cuda_free(FILE * /*fplog*/,
-                     nbnxn_cuda_ptr_t /*cu_nb*/,
-                     gmx_bool /*bDomDec*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_free(FILE *fplog,
+                     nbnxn_cuda_ptr_t cu_nb,
+                     gmx_bool bDomDec) FUNC_TERM
 
 /*! Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
-wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t /*cu_nb*/);
+FUNC_QUALIFIER
+wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
+#ifdef GMX_GPU
+;
+#else
+{ return NULL; }
+#endif
 
 /*! Resets nonbonded GPU timings. */
-void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t /*cu_nb*/);
+FUNC_QUALIFIER
+void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
 
 /*! Calculates the minimum size of proximity lists to improve SM load balance 
     with CUDA non-bonded kernels. */
-int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t /*cu_nb*/);
+FUNC_QUALIFIER
+int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
+#ifdef GMX_GPU
+;
+#else
+{ return -1; }
+#endif
 
 #ifdef __cplusplus
 }
 #endif
+
+#undef FUNC_TERM
+#undef FUNC_QUALIFIER
 
 #endif /* NBNXN_CUDA_DATA_MGMT_H */

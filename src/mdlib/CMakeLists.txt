@@ -2,10 +2,10 @@
 file(GLOB MDLIB_SOURCES *.c nbnxn_kernels/*.c)
 
 include_directories(nbnxn_kernels)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/gmxlib/cuda_tools nbnxn_cuda)
 
 if(GMX_GPU)
     add_subdirectory(nbnxn_cuda)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/gmxlib/cuda_tools nbnxn_cuda)
     set(GMX_GPU_LIBRARIES nbnxn_cuda)
 endif()
 

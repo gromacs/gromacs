@@ -91,10 +91,6 @@
 #include "tmpi.h"
 #endif
 
-#ifdef GMX_GPU
-#include "nbnxn_cuda_data_mgmt.h"
-#endif
-
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
