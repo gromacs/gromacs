@@ -383,7 +383,7 @@ void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
 
   fprintf(out,"\n");
 
-  if ((nodetime > 0) && (realtime > 0)) 
+  if (realtime > 0) 
   {
     fprintf(out,"%12s %12s %12s %10s\n","","Core t (s)","Wall t (s)","(%)");
     fprintf(out,"%12s %12.3f %12.3f %10.1f\n","Time:",
