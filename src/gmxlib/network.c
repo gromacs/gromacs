@@ -380,7 +380,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 void gmx_init_intra_counters(t_commrec *cr)
 {
     /* counters for PP+PME and PP-only processes on my node */
-    int nnodes, nnodes_pp, id_mynode, id_mynode_group, nproc_mynode, nproc_mynode_pp;
+    int nnodes, nnodes_pp, id_mynode=-1, id_mynode_group=-1, nproc_mynode, nproc_mynode_pp;
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     int i, mynum, *num, *num_pp;
 #endif
