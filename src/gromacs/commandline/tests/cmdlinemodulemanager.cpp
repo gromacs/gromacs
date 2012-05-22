@@ -48,7 +48,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/utility/programinfo.h"
 
-#include "cmdlinetest.h"
+#include "testutils/cmdlinetest.h"
 
 namespace
 {

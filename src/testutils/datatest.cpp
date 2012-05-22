@@ -33,7 +33,7 @@
  * Implements classes in datatest.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_analysisdata
+ * \ingroup module_testutils
  */
 #include "datatest.h"
 
@@ -45,9 +45,8 @@
 #include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "testutils/mock_datamodule.h"
 #include "testutils/refdata.h"
-
-#include "mock_module.h"
 
 namespace gmx
 {
@@ -183,7 +182,7 @@ void
 AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &data,
                                                 AbstractAnalysisData *source)
 {
-    MockAnalysisModulePointer module(new MockAnalysisModule(0));
+    MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticCheck(data, source);
     source->addModule(module);
 }
@@ -194,7 +193,7 @@ AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInpu
                                                       int firstcol, int n,
                                                       AbstractAnalysisData *source)
 {
-    MockAnalysisModulePointer module(new MockAnalysisModule(0));
+    MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticColumnCheck(data, firstcol, n, source);
     source->addColumnModule(firstcol, n, module);
 }
@@ -205,7 +204,7 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
                                                        int storageCount,
                                                        AbstractAnalysisData *source)
 {
-    MockAnalysisModulePointer module(new MockAnalysisModule(0));
+    MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticStorageCheck(data, storageCount, source);
     source->addModule(module);
 }
@@ -215,7 +214,7 @@ void
 AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker &checker,
                                                    AbstractAnalysisData *source)
 {
-    MockAnalysisModulePointer module(new MockAnalysisModule(0));
+    MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupReferenceCheck(checker, source);
     source->addModule(module);
 }

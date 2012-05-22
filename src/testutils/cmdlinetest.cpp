@@ -30,10 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::test::CommandLineTestBase.
+ * Implements gmx::test::CommandLine.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_commandline
+ * \ingroup module_testutils.
  */
 #include "cmdlinetest.h"
 

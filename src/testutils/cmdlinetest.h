@@ -28,15 +28,16 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::test::CommandLine.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_commandline
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-#ifndef GMX_COMMANDLINE_TESTS_CMDLINETEST_H
-#define GMX_COMMANDLINE_TESTS_CMDLINETEST_H
+#ifndef GMX_TESTUTILS_CMDLINETEST_H
+#define GMX_TESTUTILS_CMDLINETEST_H
 
 #include <cstddef>
 
@@ -45,7 +46,7 @@ namespace gmx
 namespace test
 {
 
-/*! \internal \brief
+/*! \libinternal \brief
  * Helper class for tests that check command-line handling.
  *
  * This class helps in writing tests for command-line handling.
@@ -60,7 +61,8 @@ namespace test
  * Currently, the C++ methods with this signature do not modify their
  * parameters, so this is not yet a problem.
  *
- * \ingroup module_commandline
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
 class CommandLine
 {

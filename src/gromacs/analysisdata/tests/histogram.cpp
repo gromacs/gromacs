@@ -47,7 +47,7 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 
-#include "datatest.h"
+#include "testutils/datatest.h"
 
 namespace
 {
