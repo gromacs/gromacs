@@ -123,7 +123,7 @@ option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
+    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, SSE4.1, AVX, BlueGene, Power6, ia64, altivec, fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -322,6 +322,7 @@ check_include_files(io.h  		 HAVE_IO_H)
 # immintrin.h: AVX, SSE4_2 + SSE4_1 + SSSE3 + SSE3 + SSE2 + SSE + MMX (Core i7 Sandy Bridge, Bulldozer)
 check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
 check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
+check_include_files(immintrin.h  HAVE_IMMINTRIN_H)
 
 include(CheckFunctionExists)
 check_function_exists(strcasecmp        HAVE_STRCASECMP)
@@ -586,11 +587,11 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)" OR CYGWIN)
 
-    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
+    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, SSE4.1, AVX, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
     # Determine the assembler/compiler to use
   else()
-    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
+    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, SSE4.1, AVX, BlueGene, Power6, ia64, altivec, fortran" FORCE)
   endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
@@ -605,7 +606,7 @@ endif(NOT GMX_SYSTEM_XDR)
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
-elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+elseif(${GMX_ACCELERATION} MATCHES "^(SSE|SSE4.1|AVX)$")
     
     if (GMX_64_BIT)
       set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
@@ -636,6 +637,54 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
         endif()
     endif(HAVE_EMMINTRIN_H)
 
+    if (${GMX_ACCELERATION} STREQUAL "AVX" AND NOT GMX_ACCELERATION_CONFIGURED)
+        if (NOT HAVE_IMMINTRIN_H)
+            message(FATAL_ERROR "AVX acceleration selected, but the compiler doesn't seem to support it, try using SSE or SSE4.1 instead.")
+        endif()
+
+        # TODO this code needs to be more robust
+        if (NOT WIN32)
+            GMX_TEST_CFLAG(CFLAG_AVX "-mavx" _AVX_FLAG)
+        else()
+            GMX_TEST_CFLAG(CFLAG_AVX "/arch:AVX" _AVX_FLAG)
+        endif()
+
+        if (NOT CFLAG_AVX)
+            message(WARNING "AVX acceleration selected, but couldn't find the right compiler flag to enable it.
+                Will turn on AVX acceleration, but you'll have to make sure that you manually
+                add the appropriate flag!")
+        endif()
+
+        message(STATUS "Enabling SSE4.1 accelerated kernels and compiler optimizations")
+        add_definitions(-DGMX_AVX)
+        set(GROMACS_C_FLAGS "${GROMACS_C_FLAGS} ${_AVX_FLAG}")
+    endif()
+
+    if (${GMX_ACCELERATION} STREQUAL "SSE4.1" AND NOT GMX_ACCELERATION_CONFIGURED)
+        if (NOT HAVE_IMMINTRIN_H)
+            message(FATAL_ERROR "SSE4.1 acceleration selected, but the compiler doesn't seem to support it; try using SSE instread.")
+        endif()
+
+        # TODO this code needs to be more robust
+        if (NOT WIN32)
+            GMX_TEST_CFLAG(CFLAG_SSE41 "-msse4.1" _SSE41_FLAG)
+        else()
+            GMX_TEST_CFLAG(CFLAG_SSE41 "/arch:SSE4.1" _SSE41_FLAG)
+        endif()
+
+        if (NOT CFLAG_SSE41)
+            message(WARNING "SSE4.1 acceleration selected, but couldn't find the right compiler flag to enable it.
+                Will turn on SSE4.1 acceleration, but you'll have to make sure that you manually
+                add the appropriate flag!")
+        endif()
+
+        message(STATUS "Enabling SSE4.1 accelerated kernels and compiler optimizations")
+        add_definitions(-DGMX_SSE4_1)
+        set(GROMACS_C_FLAGS "${GROMACS_C_FLAGS} ${_SSE41_FLAG}")
+    endif()
+
+    set(GMX_ACCELERATION_CONFIGURED ${GMX_ACCELERATION}
+        CACHE INTERNAL "The value GMX_ACCELERATION is configured to")
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
     set(GMX_FORTRAN 1)
