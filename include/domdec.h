@@ -27,7 +27,7 @@
 #include <mpi.h>
 #endif
 #ifdef GMX_THREADS
-#include "tmpi.h"
+#include "thread_mpi/tmpi.h"
 #endif
 
 #ifdef __cplusplus
