@@ -53,7 +53,7 @@
 #include "gmxfio.h"
 
 #ifdef GMX_THREADS
-#include "thread_mpi.h"
+#include "thread_mpi/threads.h"
 #endif
 
 #define p2(x) ((x)*(x))
