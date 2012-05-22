@@ -1,10 +1,7 @@
 include_directories(${GMOCK_INCLUDE_DIRS})
-set(COMMON_SOURCES datapath.cpp
-                   refdata.cpp
-                   stringtest.cpp
-                   testoptions.cpp)
+file(GLOB TESTUTILS_SOURCES *.cpp)
 
-add_library(testutils STATIC ${COMMON_SOURCES})
+add_library(testutils STATIC ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
 target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
 

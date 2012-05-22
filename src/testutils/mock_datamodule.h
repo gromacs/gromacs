@@ -28,17 +28,18 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
  * Declares mock implementation of gmx::AnalysisDataModuleInterface.
  *
  * Requires Google Mock.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_analysisdata
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-#ifndef GMX_ANALYSISDATA_TESTS_MOCK_MODULE_H
-#define GMX_ANALYSISDATA_TESTS_MOCK_MODULE_H
+#ifndef GMX_TESTUTILS_MOCK_DATAMODULE_H
+#define GMX_TESTUTILS_MOCK_DATAMODULE_H
 
 #include <boost/shared_ptr.hpp>
 #include <gmock/gmock.h>
@@ -55,11 +56,11 @@ namespace test
 class AnalysisDataTestInput;
 class TestReferenceChecker;
 
-class MockAnalysisModule : public AnalysisDataModuleInterface
+class MockAnalysisDataModule : public AnalysisDataModuleInterface
 {
     public:
-        explicit MockAnalysisModule(int flags);
-        virtual ~MockAnalysisModule();
+        explicit MockAnalysisDataModule(int flags);
+        virtual ~MockAnalysisDataModule();
 
         virtual int flags() const;
 
@@ -86,8 +87,9 @@ class MockAnalysisModule : public AnalysisDataModuleInterface
         PrivateImplPointer<Impl> impl_;
 };
 
-//! Smart pointer to manage an MockAnalysisModule object.
-typedef boost::shared_ptr<MockAnalysisModule> MockAnalysisModulePointer;
+//! Smart pointer to manage an MockAnalysisDataModule object.
+typedef boost::shared_ptr<MockAnalysisDataModule>
+        MockAnalysisDataModulePointer;
 
 } // namespace test
 } // namespace gmx

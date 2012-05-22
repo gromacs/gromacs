@@ -46,7 +46,7 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 
-#include "datatest.h"
+#include "testutils/datatest.h"
 
 namespace
 {
