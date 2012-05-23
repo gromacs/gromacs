@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">select -select 'y &lt; 2.5' -dump</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="index">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">0</Int>
+          <Int Name="LastColumn">0</Int>
+          <DataValue>
+            <Real Name="Value">8.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">2.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">5.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">6.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">9.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">10.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">13.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">14.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <String Name="-oi"><![CDATA[
+    1    2    5    6    9   10   13   14
+]]></String>
+  </OutputFiles>
+</ReferenceData>

@@ -322,19 +322,21 @@ class AnalysisDataTestFixture : public ::testing::Test
          * Adds a mock module that verifies output against reference data.
          *
          * \param[in]  checker  Reference data checker to use for comparison.
+         * \param[in]  id       Identifier for reference data compound to use.
          * \param      source   Data object to verify.
          *
          * Creates a mock module that verifies that the
          * AnalysisDataModuleInterface methods are called correctly by
          * \p source.  Parameters for the calls are verified against reference
-         * data using \p checker.
+         * data using a child compound \p id of \p checker.
          * Adds the created module to \p source using \p data->addModule().
          * Any exceptions from the called functions should be caught by the
          * caller.
          *
          * \see TestReferenceData
          */
-        static void addReferenceCheckerModule(const TestReferenceChecker &checker,
+        static void addReferenceCheckerModule(TestReferenceChecker checker,
+                                              const char *id,
                                               AbstractAnalysisData *source);
 
         /*! \brief
