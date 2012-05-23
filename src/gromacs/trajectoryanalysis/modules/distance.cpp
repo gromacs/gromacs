@@ -68,6 +68,8 @@ const char Distance::shortDescription[] =
 Distance::Distance()
     : _options(name, shortDescription), _avem(new AnalysisDataAverageModule())
 {
+    _data.setColumnCount(4);
+    registerAnalysisDataset(&_data, "distance");
 }
 
 
@@ -107,8 +109,6 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         GMX_THROW(InvalidInputError("The second selection does not define a single position"));
     }
-    _data.setColumnCount(4);
-    registerAnalysisDataset(&_data, "distance");
 
     _data.addModule(_avem);
     AnalysisDataPlotModulePointer _plotm(new AnalysisDataPlotModule());
