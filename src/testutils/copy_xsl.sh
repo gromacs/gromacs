@@ -5,12 +5,12 @@
 cd `dirname $0`
 cd ../../
 
-for destdir in analysisdata selection ; do
+for destdir in analysisdata selection trajectoryanalysis ; do
     cp -f src/testutils/common-referencedata.xsl \
           src/gromacs/$destdir/tests/refdata/
 done
 
-for destdir in analysisdata ; do
+for destdir in analysisdata trajectoryanalysis ; do
     cp -f src/testutils/analysisdata-referencedata.xsl \
           src/gromacs/$destdir/tests/refdata/
 done
