@@ -73,6 +73,7 @@ Angle::Angle()
       _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
       _bDumpDist(false), _natoms1(0), _natoms2(0), _vt0(NULL)
 {
+    registerAnalysisDataset(&_data, "angle");
 }
 
 
@@ -359,8 +360,6 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         _vt0 = new rvec[na];
     }
-
-    registerAnalysisDataset(&_data, "angle");
 
     AnalysisDataPlotModulePointer plotm(
         new AnalysisDataPlotModule(settings.plotSettings()));
