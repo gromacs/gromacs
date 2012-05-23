@@ -682,8 +682,7 @@ int main(int argc,char *argv[])
                 nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
                 pforce, cpt_period,max_hours,deviceOptions,Flags);
 
-  if (gmx_parallel_env_initialized())
-      gmx_finalize();
+  gmx_finalize_par();
 
   if (MULTIMASTER(cr)) {
       thanx(stderr);

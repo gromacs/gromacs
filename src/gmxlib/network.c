@@ -738,18 +738,26 @@ void gmx_sumli_sim(int nr,gmx_large_int_t r[], const gmx_multisim_t *ms)
 }
 
 
-void gmx_finalize(void)
+void gmx_finalize_par(void)
 {
 #ifndef GMX_MPI
-  gmx_call("gmx_finalize");
+    /* Compiled without MPI, no MPI finalizing needed */
+    return;
 #else
-  int ret;
+    int initialized,finalized;
+    int ret;
 
-  /* just as a check; we don't want to finalize twice */
-  int finalized;
-  MPI_Finalized(&finalized);
-  if (finalized)
-      return;
+    MPI_Initialized(&initialized);
+    if (!initialized)
+    {
+        return;
+    }
+    /* just as a check; we don't want to finalize twice */
+    MPI_Finalized(&finalized);
+    if (finalized)
+    {
+	return;
+    }
 
   /* We sync the processes here to try to avoid problems
    * with buggy MPI implementations that could cause
