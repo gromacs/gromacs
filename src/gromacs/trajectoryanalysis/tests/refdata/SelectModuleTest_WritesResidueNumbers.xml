@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">select -select 'res_com of resname RA RD'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="index">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">0</Int>
+          <Int Name="LastColumn">0</Int>
+          <DataValue>
+            <Real Name="Value">3.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">2.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">4.000000</Real>
+          </DataValue>
+        </Sequence>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>

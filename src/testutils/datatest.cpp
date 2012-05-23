@@ -211,11 +211,12 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
 
 
 void
-AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker &checker,
+AnalysisDataTestFixture::addReferenceCheckerModule(TestReferenceChecker checker,
+                                                   const char *id,
                                                    AbstractAnalysisData *source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
-    module->setupReferenceCheck(checker, source);
+    module->setupReferenceCheck(checker.checkCompound("AnalysisData", id), source);
     source->addModule(module);
 }
 
@@ -224,8 +225,7 @@ void
 AnalysisDataTestFixture::addReferenceCheckerModule(const char *id,
                                                    AbstractAnalysisData *source)
 {
-    TestReferenceChecker checker(data_.rootChecker().checkCompound("AnalysisData", id));
-    addReferenceCheckerModule(checker, source);
+    addReferenceCheckerModule(data_.rootChecker(), id, source);
 }
 
 } // namespace test
