@@ -43,8 +43,11 @@
 #ifdef NOGMX
 #define GMX_PARALLEL_ENV_INITIALIZED 1
 #else 
-#include "main.h"
-#define GMX_PARALLEL_ENV_INITIALIZED gmx_parallel_env_initialized()
+#ifdef GMX_MPI
+#define GMX_PARALLEL_ENV_INITIALIZED 1
+#else
+#define GMX_PARALLEL_ENV_INITIALIZED 0
+#endif
 #endif
 
 #ifdef GMX_LIB_MPI
