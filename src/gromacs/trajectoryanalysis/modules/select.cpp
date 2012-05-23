@@ -248,6 +248,12 @@ Select::Select()
       _bDump(false), _bTotNorm(false), _bFracNorm(false), _bResInd(false),
       _top(NULL)
 {
+    registerAnalysisDataset(&_sdata, "size");
+    registerAnalysisDataset(&_cdata, "cfrac");
+    _idata.setColumnCount(2);
+    _idata.setMultipoint(true);
+    registerAnalysisDataset(&_idata, "index");
+    registerAnalysisDataset(&_mdata, "mask");
 }
 
 
@@ -354,7 +360,6 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     // TODO: For large systems, a float may not have enough precision
     _sdata.setColumnCount(_sel.size());
-    registerAnalysisDataset(&_sdata, "size");
     _totsize.reserve(_sel.size());
     for (size_t g = 0; g < _sel.size(); ++g)
     {
@@ -372,7 +377,6 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     _cdata.setColumnCount(_sel.size());
-    registerAnalysisDataset(&_cdata, "cfrac");
     if (!_fnFrac.empty())
     {
         AnalysisDataPlotModulePointer plot(
@@ -386,9 +390,6 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     // TODO: For large systems, a float may not have enough precision
-    _idata.setColumnCount(2);
-    _idata.setMultipoint(true);
-    registerAnalysisDataset(&_idata, "index");
     if (!_fnIndex.empty())
     {
         AnalysisDataPlotModulePointer plot(
@@ -418,7 +419,6 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     _mdata.setColumnCount(_sel[0].posCount());
-    registerAnalysisDataset(&_mdata, "mask");
     if (!_fnMask.empty())
     {
         if (_sel.size() > 1U)

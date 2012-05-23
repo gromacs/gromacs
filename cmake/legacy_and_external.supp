@@ -126,3 +126,14 @@
    fun:malloc
    fun:__cilkrts_os_mutex_create
 }
+
+{
+    __intel_sse2_strncpy
+    Memcheck:Addr4
+    fun:__intel_sse2_strncpy
+}
+{
+    __intel_sse2_strncpy
+    Memcheck:Addr8
+    fun:__intel_sse2_strncpy
+}
