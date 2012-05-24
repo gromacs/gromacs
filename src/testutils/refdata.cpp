@@ -270,25 +270,29 @@ TestReferenceChecker::Impl::appendPath(const char *id) const
 
 
 xmlNodePtr
-TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id)
+TestReferenceChecker::Impl::findNode(const xmlChar *name, const char *id) const
 {
     const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
     xmlNodePtr node = _nextSearchNode;
-    while (node != NULL && node->next != _nextSearchNode)
+    if (node == NULL)
     {
-        if (xmlStrcmp(node->name, name) == 0)
+        return NULL;
+    }
+    do
+    {
+        if (name == NULL || xmlStrcmp(node->name, name) == 0)
         {
             xmlChar *refId = xmlGetProp(node, cIdAttrName);
             if (xmlId == NULL && refId == NULL)
             {
-                break;
+                return node;
             }
             if (refId != NULL)
             {
                 if (xmlId != NULL && xmlStrcmp(refId, xmlId) == 0)
                 {
                     xmlFree(refId);
-                    break;
+                    return node;
                 }
                 xmlFree(refId);
             }
@@ -299,13 +303,23 @@ TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id
             node = _currNode->xmlChildrenNode;
         }
     }
-    if (node == NULL || node->next == _nextSearchNode)
+    while (node != NULL && node != _nextSearchNode);
+    return NULL;
+}
+
+
+xmlNodePtr
+TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id)
+{
+    xmlNodePtr node = findNode(name, id);
+    if (node == NULL)
     {
         if (_bWrite)
         {
             node = xmlNewTextChild(_currNode, NULL, name, NULL);
-            if (node != NULL && xmlId != NULL)
+            if (node != NULL && id != NULL)
             {
+                const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
                 xmlAttrPtr prop = xmlNewProp(node, cIdAttrName, xmlId);
                 if (prop == NULL)
                 {
@@ -458,6 +472,30 @@ TestReferenceChecker::~TestReferenceChecker()
 bool TestReferenceChecker::isWriteMode() const
 {
     return _impl->_bWrite;
+}
+
+
+bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
+{
+    if (isWriteMode())
+    {
+        return bPresent;
+    }
+    xmlNodePtr node = _impl->findNode(NULL, id);
+    bool bFound = (node != NULL);
+    if (bFound != bPresent)
+    {
+        ADD_FAILURE() << "Mismatch while checking reference data item'"
+                          << _impl->appendPath(id) << "'\n"
+                      << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
+                      << "  Actual: " << (bFound ? "it is present." : "it is absent.");
+    }
+    if (bFound && bPresent)
+    {
+        _impl->_nextSearchNode = node;
+        return true;
+    }
+    return false;
 }
 
 

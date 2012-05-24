@@ -62,19 +62,21 @@ namespace test
 namespace
 {
 
-/*! \brief
- * Helper callback function for TestReferenceData::checkCompound().
+/*! \internal \brief
+ * Checks a single AnalysisDataValue.
+ *
+ * \ingroup module_testutils
  */
 void checkReferenceDataPoint(TestReferenceChecker *checker,
                              const AnalysisDataValue &value)
 {
     TestReferenceChecker compound(checker->checkCompound("DataValue", NULL));
     compound.checkReal(value.value(), "Value");
-    if (value.hasError())
+    if (compound.checkPresent(value.hasError(), "Error"))
     {
         compound.checkReal(value.error(), "Error");
     }
-    if (!value.isPresent())
+    if (compound.checkPresent(!value.isPresent(), "Present"))
     {
         compound.checkBoolean(value.isPresent(), "Present");
     }
@@ -83,8 +85,15 @@ void checkReferenceDataPoint(TestReferenceChecker *checker,
 } // namespace
 
 MockAnalysisDataModule::Impl::Impl(int flags)
-    : flags_(flags), frameIndex_(0)
+    : flags_(flags), frameIndex_(0), columnCount_(-1)
 {
+}
+
+
+void
+MockAnalysisDataModule::Impl::startReferenceData(AbstractAnalysisData *data)
+{
+    columnCount_ = data->columnCount();
 }
 
 
@@ -110,8 +119,21 @@ MockAnalysisDataModule::Impl::checkReferencePoints(
     EXPECT_TRUE(frameChecker_.get() != NULL);
     if (frameChecker_.get() != NULL)
     {
-        frameChecker_->checkSequence(points.values().begin(), points.values().end(), "Y",
-                                     &checkReferenceDataPoint);
+        TestReferenceChecker checker(
+                frameChecker_->checkSequenceCompound("Y",
+                                                     points.columnCount()));
+        bool bAllColumns = (points.firstColumn() == 0
+                            && points.columnCount() == columnCount_);
+        if (checker.checkPresent(!bAllColumns, "FirstColumn"))
+        {
+            checker.checkInteger(points.firstColumn(), "FirstColumn");
+            checker.checkInteger(points.lastColumn(),  "LastColumn");
+        }
+        AnalysisDataValuesRef::const_iterator value;
+        for (value = points.values().begin(); value != points.values().end(); ++value)
+        {
+            checkReferenceDataPoint(&checker, *value);
+        }
     }
 }
 
@@ -465,7 +487,8 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     using ::testing::Expectation;
     using ::testing::Invoke;
 
-    Expectation dataStart = EXPECT_CALL(*this, dataStarted(source));
+    Expectation dataStart = EXPECT_CALL(*this, dataStarted(source))
+        .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
     Expectation frameStart = EXPECT_CALL(*this, frameStarted(_))
         .After(dataStart)
         .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));

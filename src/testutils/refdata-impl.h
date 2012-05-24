@@ -126,6 +126,22 @@ class TestReferenceChecker::Impl
         std::string appendPath(const char *id) const;
 
         /*! \brief
+         * Finds a reference data node.
+         *
+         * \param[in]  name   Type of node to find (can be NULL, in which case
+         *      any type is matched).
+         * \param[in]  id     Unique identifier of the node (can be NULL, in
+         *      which case the next node without an id is matched).
+         * \returns    Matching node, or NULL if no matching node found.
+         *
+         * Searches for a node in the reference data that matches the given
+         * \p name and \p id.  Searching starts from the node that follows the
+         * previously matched node (relevant for performance, and if there are
+         * duplicate ids or nodes without ids).  Note that the match pointer is
+         * not updated by this method.
+         */
+        xmlNodePtr findNode(const xmlChar *name, const char *id) const;
+        /*! \brief
          * Finds/creates a reference data node to match against.
          *
          * \param[in]  name   Type of node to find.
@@ -135,12 +151,10 @@ class TestReferenceChecker::Impl
          *      (NULL is never returned in write mode).
          * \throws  TestException if node creation fails in write mode.
          *
-         * Searches for a node in the reference data that matches the given
-         * \p name and \p id.  Searching starts from the node that follows the
-         * previously matched node (relevant for performance, and if there are
-         * duplicate ids or nodes without ids).  If a match is not found, the
-         * method returns NULL in read mode and creates a new node in write
-         * mode.  If the creation fails in write mode, throws.
+         * Finds a node using findNode() and updates the match pointer is a
+         * match is found.  If a match is not found, the method returns NULL in
+         * read mode and creates a new node in write mode.  If the creation
+         * fails in write mode, throws.
          */
         xmlNodePtr findOrCreateNode(const xmlChar *name, const char *id);
         /*! \brief
