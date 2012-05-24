@@ -39,7 +39,9 @@
 #ifndef GMX_TESTUTILS_CMDLINETEST_H
 #define GMX_TESTUTILS_CMDLINETEST_H
 
-#include <cstddef>
+#include <string>
+
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {
@@ -50,16 +52,20 @@ namespace test
  * Helper class for tests that check command-line handling.
  *
  * This class helps in writing tests for command-line handling.
- * The constructor takes an array of const char pointers, specifying the
+ * The create() method takes an array of const char pointers, specifying the
  * command-line arguments, each as one array element.
  * The argc() and argv() methods can then be used to obtain the argc and argv
  * (non-const char pointers) arrays for passing into methods that expect these.
  *
  * Note that although the interface allows passing the argc and argv pointers
  * to methods that modify them (typically as \p f(&argc(), argv())), currently
- * memory leaks occur if the parameters are actually modified.
+ * the CommandLine object is not in a consistent state internally if the
+ * parameters are actually modified.
  * Currently, the C++ methods with this signature do not modify their
  * parameters, so this is not yet a problem.
+ *
+ * All constructors and methods that modify this class may throw an
+ * std::bad_alloc.  Const methods and accessors do not throw.
  *
  * \inlibraryapi
  * \ingroup module_testutils
@@ -68,37 +74,68 @@ class CommandLine
 {
     public:
         /*! \brief
+         * Initializes a command-line object from a const C array.
+         *
+         * \param[in] cmdline  Array of command-line arguments.
+         * \tparam    count    Deduced number of elements in \p cmdline.
+         *
+         * \p cmdline should include the binary name as the first element if
+         * that is desired in the output.
+         *
+         * This is not a constructor, because template constructors are not
+         * possible with a private implementation class.
+         */
+        template <size_t count> static
+        CommandLine create(const char *const (&cmdline)[count])
+        {
+            return CommandLine(cmdline, count);
+        }
+
+        //! Initializes an empty command-line object.
+        CommandLine();
+        /*! \brief
          * Initializes a command-line object.
          *
          * \param[in] cmdline  Array of command-line arguments.
-         * \tparam    count Deduced number of elements in \p cmdline.
-         * \throws    std::bad_alloc if out of memory.
+         * \param[in] count    Number of elements in \p cmdline.
          *
          * \p cmdline should include the binary name as the first element if
          * that is desired in the output.
          */
-        template <size_t count>
-        explicit CommandLine(const char *const (&cmdline)[count])
-        {
-            initCommandLine(cmdline, count);
-        }
+        CommandLine(const char *const cmdline[], size_t count);
+        //! Creates a deep copy of a command-line object.
+        CommandLine(const CommandLine &other);
         ~CommandLine();
 
+        /*! \brief
+         * Append an argument to the command line.
+         *
+         * \param[in] arg  Argument to append.
+         *
+         * Strong exception safety.
+         */
+        void append(const char *arg);
+        //! Convenience overload taking a std::string.
+        void append(const std::string &arg) { append(arg.c_str()); }
+
         //! Returns argc for passing into C-style command-line handling.
-        int &argc() { return argc_; }
+        int &argc();
         //! Returns argv for passing into C-style command-line handling.
-        char **argv() { return argv_; }
+        char **argv();
         //! Returns argc for passing into C-style command-line handling.
-        int argc() const { return argc_; }
+        int argc() const;
         //! Returns argv for passing into C-style command-line handling.
-        const char *const *argv() const { return argv_; }
+        const char *const *argv() const;
+        //! Returns a single argument.
+        const char *arg(int i) const;
+
+        //! Returns the command line formatted as a single string.
+        std::string toString() const;
 
     private:
-        //! Internal helper method used to implement the constructor.
-        void initCommandLine(const char *const cmdline[], size_t count);
+        class Impl;
 
-        int                     argc_;
-        char                  **argv_;
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

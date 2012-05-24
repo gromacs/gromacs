@@ -51,6 +51,8 @@
 namespace
 {
 
+using gmx::test::CommandLine;
+
 class CommandLineParserTest : public ::testing::Test
 {
     public:
@@ -80,7 +82,7 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
     const char *const cmdline[] = {
         "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
     };
-    gmx::test::CommandLine args(cmdline);
+    CommandLine args(CommandLine::create(cmdline));
     ASSERT_NO_THROW(_parser.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW(_options.finish());
 
@@ -96,7 +98,7 @@ TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
     const char *const cmdline[] = {
         "test", "-mvi", "1", "-2", "-mvd", "-2.7"
     };
-    gmx::test::CommandLine args(cmdline);
+    CommandLine args(CommandLine::create(cmdline));
     ASSERT_NO_THROW(_parser.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW(_options.finish());
 
