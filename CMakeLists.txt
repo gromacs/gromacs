@@ -75,39 +75,38 @@ endif()
 # Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
-IF( (CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES "NMake") AND MSVC )
+IF( WIN32 AND NOT CYGWIN)
+  option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
+  mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+  SET(SHARED_LIBS_DEFAULT OFF)  #is currently not working on Windows
+
+  IF (GMX_PREFER_STATIC_LIBS)
+    #Only setting Debug and Release flags. Others configurations current not used.
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
-    SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF()
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
+  ENDIF()
 
-IF(CMAKE_GENERATOR MATCHES "NMake" AND CMAKE_C_COMPILER_ID MATCHES "Intel")
-    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+  #Workaround for cmake bug 13174. Replace deprecated options.
+  IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
     STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
-    SET(SHARED_LIBS_DEFAULT OFF)	
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+  ENDIF()
+  IF( CMAKE_CXX_COMPILER_ID MATCHES "Intel" )
+    STRING(REPLACE /GZ /RTC1 CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    STRING(REPLACE /GX /EHsc CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
+
+    STRING(REPLACE /GX /EHsc CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
+  ENDIF()
 ENDIF()
 
-set(GMX_EXTRA_LIBRARIES)
-
-
-
-######################################################################
-# compiler tests
-# these need ot be done early (before further tests).
-#####################################################################
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-include(gmxCFlags)
-gmx_c_flags()
-
-include(gmxGetCompilerVersion)
-get_compiler_version()
 
 ########################################################################
 # User input options                                                   #
@@ -180,6 +179,9 @@ include(CheckCXXCompilerFlag)
 
 include(gmxCFlags)
 gmx_c_flags()
+
+include(gmxGetCompilerVersion)
+get_compiler_version()
 
 
 ########################################################################
@@ -512,7 +514,7 @@ endif()
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
-        # We need at least git v1.5.1 be able to parse git's date output. If not 
+        # We need at least git v1.5.3 be able to parse git's date output. If not
         # found or the version is too small, we can't generate version information.
         find_package(Git)
 
@@ -526,7 +528,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
 	  mark_as_advanced(GIT_VERSION)
 	endif()
 
-        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.1")
+        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
           message("No compatible git version found, won't be able to generate proper development version information.")
           set(USE_VERSION_H OFF)
         endif()
@@ -614,7 +616,7 @@ elseif(${GMX_ACCELERATION} MATCHES "^(SSE|SSE4.1|AVX)$")
       set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
     endif (GMX_64_BIT)
 
-    if(CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES NMake )
+    if( WIN32 AND NOT CYGWIN )
       option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else()
       option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)

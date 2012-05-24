@@ -306,7 +306,7 @@ typedef struct {
   /* #define MASTERTHREAD(cr)   ((cr)->threadid == 0) */
   /* #define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr)) */
 #define MASTER(cr)         MASTERNODE(cr)
-#define SIMMASTER(cr)      (MASTER(cr) && ((cr)->duty & DUTY_PP))
+#define SIMMASTER(cr)      ((MASTER(cr) && ((cr)->duty & DUTY_PP)) || !PAR(cr))
 #define NODEPAR(cr)        ((cr)->nnodes > 1)
   /* #define THREADPAR(cr)      ((cr)->nthreads > 1) */
   /* #define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr)) */

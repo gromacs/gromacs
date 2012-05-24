@@ -30,6 +30,17 @@ MACRO(gmx_c_flags)
 
     # gcc
     if(CMAKE_COMPILER_IS_GNUCC)
+
+        #Fix for LLVM OpenMP bug (redmine 900). Needs to run before OpenMP flags are set below.
+        if(GMX_OPENMP)
+            exec_program(${CMAKE_C_COMPILER} ARGS --version OUTPUT_VARIABLE _compiler_output)
+            if(_compiler_output MATCHES "llvm.*4\\.2")
+                message(STATUS "OpenMP multithreading not supported with llvm-gcc 4.2, disabled")
+                set(GMX_OPENMP OFF CACHE BOOL
+                    "OpenMP multithreading not not supported with llvm-gcc 4.2, disabled!" FORCE)
+            endif()
+        endif()
+
         #flags are added in reverse order and -Wno* need to appear after -Wall
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
@@ -38,7 +49,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wextra -Wno-missing-field-initializers -Wno-sign-compare" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
-        GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops"
+        GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
                        GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
     endif()
@@ -51,7 +62,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wextra -Wno-missing-field-initializers -Wno-sign-compare" GMXC_CXXFLAGS)
       # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
-        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops"
+        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
                          GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
     endif()

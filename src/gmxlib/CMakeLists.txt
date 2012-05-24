@@ -111,7 +111,7 @@ file(GLOB SELECTION_TEST selection/test*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
-if(NOT GMX_OPENMM) 
+if(GMX_SSEKERNEL_ASM_SRC AND NOT GMX_OPENMM)
 if(GMX_ASM_USEASM_NASM)
   enable_language(ASM_NASM)
 
@@ -139,7 +139,7 @@ else(GMX_ASM_USEASM_NASM)
   endif()
 
 endif(GMX_ASM_USEASM_NASM)
-endif(NOT GMX_OPENMM)
+endif(GMX_SSEKERNEL_ASM_SRC AND NOT GMX_OPENMM)
 
 # gpu utils + cuda tools module
 if(GMX_GPU)

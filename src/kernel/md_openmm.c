@@ -84,6 +84,7 @@
 #include "genborn.h"
 #include "string2.h"
 #include "copyrite.h"
+#include "membed.h"
 
 #ifdef GMX_THREAD_MPI
 #include "tmpi.h"
@@ -104,6 +105,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                     gmx_edsam_t ed,t_forcerec *fr,
                     int repl_ex_nst,int repl_ex_seed,
+                    gmx_membed_t membed,
                     real cpt_period,real max_hours,
                     const char *deviceOptions,
                     unsigned long Flags,

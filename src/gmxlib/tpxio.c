@@ -375,7 +375,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
-    if (file_version >= 78)
+    if (file_version >= 79)
     {
         gmx_fio_do_int(fio,ir->cutoff_scheme);
     }
@@ -530,7 +530,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
 
 	 
-    if (file_version >= 78)
+    if (file_version >= 79)
     {
         gmx_fio_do_real(fio,ir->fourier_spacing); 
     }
@@ -2167,6 +2167,11 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
                           gmx_fio_getname(fio),fver,file_tag,
                           tpx_version,tpx_tag);
             }
+        }
+        else if (fver == 78)
+        {
+            /* TODO this check should be removed before merging into release-4.6! */
+            gmx_fatal(FARGS,"tpx version %d tag %s unsupported",fver,file_tag);
         }
     }
 

@@ -1777,7 +1777,6 @@ static void realloc_work(pme_work_t *work,int nkx)
         srenew(work->mhy  ,work->nalloc);
         srenew(work->mhz  ,work->nalloc);
         srenew(work->m2   ,work->nalloc);
-        srenew(work->denom,work->nalloc);
         /* Allocate an aligned pointer for SSE operations, including 3 extra
          * elements at the end since SSE operates on 4 elements at a time.
          */
@@ -2145,10 +2144,10 @@ for(ithx=0; (ithx<order); ithx++)              \
 }
 
 
-void gather_f_bsplines(gmx_pme_t pme,real *grid,
-                       gmx_bool bClearF,pme_atomcomm_t *atc,
-                       splinedata_t *spline,
-                       real scale)
+static void gather_f_bsplines(gmx_pme_t pme,real *grid,
+                              gmx_bool bClearF,pme_atomcomm_t *atc,
+                              splinedata_t *spline,
+                              real scale)
 {
     /* sum forces for local particles */
     int     nn,n,ithx,ithy,ithz,i0,j0,k0;
@@ -2191,7 +2190,7 @@ void gather_f_bsplines(gmx_pme_t pme,real *grid,
     for(nn=0; nn<spline->n; nn++)
     {
         n  = spline->ind[nn];
-        qn = atc->q[n];
+        qn = scale*atc->q[n];
 
         if (bClearF)
         {
@@ -2944,12 +2943,20 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->nnodes_minor        = nnodes_minor;
 
 #ifdef GMX_MPI
-    if (PAR(cr))
+    if (nnodes_major*nnodes_minor > 1)
     {
-        pme->mpi_comm        = cr->mpi_comm_mygroup;
+        pme->mpi_comm = cr->mpi_comm_mygroup;
 
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
+        if (pme->nnodes != nnodes_major*nnodes_minor)
+        {
+            gmx_incons("PME node count mismatch");
+        }
+    }
+    else
+    {
+        pme->mpi_comm = MPI_COMM_NULL;
     }
 #endif
 
@@ -3775,6 +3782,7 @@ static void spread_on_grid(gmx_pme_t pme,
 #endif
 
     nthread = pme->nthread;
+    assert(nthread>0);
 
 #ifdef PME_TIME_THREADS
     c1 = omp_cyc_start();
@@ -3810,7 +3818,7 @@ static void spread_on_grid(gmx_pme_t pme,
         pmegrid_t *grid;
 
         /* make local bsplines  */
-        if (grids->nthread == 1)
+        if (grids == NULL || grids->nthread == 1)
         {
             spline = &atc->spline[0];
 
@@ -3856,7 +3864,7 @@ static void spread_on_grid(gmx_pme_t pme,
     cs2 += (double)c2;
 #endif
 
-    if (grids->nthread > 1)
+    if (bSpread && grids->nthread > 1)
     {
 #ifdef PME_TIME_THREADS
         c3 = omp_cyc_start();
@@ -3956,6 +3964,11 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
     }
 
     atc = &pme->atc_energy;
+    atc->nthread   = 1;
+    if (atc->spline == NULL)
+    {
+        snew(atc->spline,atc->nthread);
+    }
     atc->nslab     = 1;
     atc->bSpread   = TRUE;
     atc->pme_order = pme->pme_order;
@@ -4089,8 +4102,8 @@ int gmx_pme_do(gmx_pme_t pme,
     real *  fftgrid;
     t_complex * cfftgrid;
     int     thread;
-    gmx_bool bCalcEnerVir = flags & GMX_PME_CALC_ENER_VIR;
-    gmx_bool bCalcF = flags & GMX_PME_CALC_F;
+    const gmx_bool bCalcEnerVir = flags & GMX_PME_CALC_ENER_VIR;
+    const gmx_bool bCalcF = flags & GMX_PME_CALC_F;
 
     assert(pme->nnodes > 0);
     assert(pme->nnodes == 1 || pme->ndecompdim > 0);

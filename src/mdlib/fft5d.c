@@ -898,7 +898,7 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
         for (s=0;s<2;s++) {  /*loop over first two FFT steps (corner rotations)*/
 
 #ifdef GMX_MPI
-        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] !=0 && P[s]>1 )
+        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s]!=MPI_COMM_NULL && P[s]>1)
         {
             bParallelDim = 1;
         }

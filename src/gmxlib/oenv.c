@@ -39,6 +39,7 @@
 
 
 #include <ctype.h>
+#include <assert.h>
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
@@ -101,8 +102,10 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
     oenv->program_name=NULL;
 
     if (argv)
+    {
         argvzero=argv[0];
-
+        assert(argvzero);
+    }
     /* set program name */
     /* When you run a dynamically linked program before installing
      * it, libtool uses wrapper scripts and prefixes the name with "lt-".

@@ -1446,7 +1446,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
 {
     char  buf[STRLEN],buf2[22],buf3[STRLEN];
     int   i,warn=0,p_imax,error;
-    real  ncons_loc,p_ssd,p_max;
+    real  ncons_loc,p_ssd,p_max=0;
     rvec  dx;
     gmx_bool  bOK;
     

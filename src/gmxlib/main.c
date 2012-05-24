@@ -379,7 +379,7 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
 {
   int i,len;
   
-  if ((cr) && PAR(cr))
+  if (PAR(cr))
     gmx_bcast(sizeof(*argc),argc,cr);
   
   if (!MASTER(cr))

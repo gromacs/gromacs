@@ -73,6 +73,7 @@
 #include "types/globsig.h"
 #include "types/nlistheuristics.h"
 #include "types/iteratedconstraints.h"
+#include "types/membedt.h"
 
 #ifdef __cplusplus
 extern "C" {

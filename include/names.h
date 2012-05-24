@@ -97,7 +97,7 @@ extern const char *eAdressSITEtype_names[eAdressSITENR+1];
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
 
-#define BOOL(e)        ENUM_NAME(e,BOOL_NR,bool_names)
+#define EBOOL(e)       ENUM_NAME(e,BOOL_NR,bool_names)
 #define ECUTSCHEME(e)  ENUM_NAME(e,ecutsNR,ecutscheme_names)
 #define ENS(e)         ENUM_NAME(e,ensNR,ens_names)
 #define EI(e)          ENUM_NAME(e,eiNR,ei_names)
