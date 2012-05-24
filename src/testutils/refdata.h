@@ -235,6 +235,31 @@ class TestReferenceChecker
         bool isWriteMode() const;
 
         /*! \brief
+         * Checks whether a data item is present.
+         *
+         * \param[in] bPresent  Whether to check for presence or absence.
+         * \param[in] id        Unique identifier of the item to check.
+         * \returns   true if bPresent was true and the data item was found.
+         *
+         * If \p bPresent is true, checks that a data item with \p id is
+         * present, otherwise checks that the data item is absent.
+         * If the check fails, a non-fatal Google Test assertion is generated.
+         *
+         * If isWriteMode() returns true, the check always succeeds and the
+         * return value is \p bPresent.
+         *
+         * The main use of this method is to assign meaning for missing
+         * reference data.  Example use:
+         * \code
+if (checker.checkPresent(bHaveVelocities, "Velocities"))
+{
+    // <check the velocities>
+}
+         * \endcode
+         */
+        bool checkPresent(bool bPresent, const char *id);
+
+        /*! \brief
          * Initializes comparison of a group of related data items.
          *
          * \param[in] type Informational type for the compound.

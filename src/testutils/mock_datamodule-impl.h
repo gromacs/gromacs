@@ -59,6 +59,13 @@ class MockAnalysisDataModule::Impl
         explicit Impl(int flags);
 
         /*! \brief
+         * Callback used to initialize reference data checks
+         *
+         * Called in response to dataStarted().
+         * Records information about the source data for later use.
+         */
+        void startReferenceData(AbstractAnalysisData *data);
+        /*! \brief
          * Callback used to check frame start against reference data.
          *
          * Called to check parameters and order of calls to frameStarted().
@@ -97,6 +104,8 @@ class MockAnalysisDataModule::Impl
         int                     flags_;
         //! Index of the current/next frame.
         int                     frameIndex_;
+        //! Number of columns in the source data (for reference checking only).
+        int                     columnCount_;
 };
 
 } // namespace test
