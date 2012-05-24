@@ -1,0 +1,8 @@
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Code-Review+1: Szilárd Páll <pszilard@cbr.su.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Thu, 24 May 2012 19:02:36 +0200
+Reviewed-on: https://gerrit.gromacs.org/994
+Project: gromacs
+Branch: refs/heads/release-4-6
