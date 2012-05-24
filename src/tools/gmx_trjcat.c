@@ -57,7 +57,6 @@
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "wgms.h"
-#include "magic.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "xdrf.h"

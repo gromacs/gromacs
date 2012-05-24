@@ -727,7 +727,7 @@ static void joinAxesTrans12(t_complex* lout,const t_complex* lin,int maxN,int ma
 }
 
 
-static void rotate(int x[]) {
+static void rotate_offsets(int x[]) {
     int t=x[0];
 /*    x[0]=x[2];
     x[2]=x[1];
@@ -789,15 +789,15 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
     /*input order is different for test program to match FFTW order 
       (important for complex to real)*/
     if (plan->flags&FFT5D_BACKWARD) {
-        rotate(xs);
-        rotate(xl);
-        rotate(xc);
-        rotate(NG);
+        rotate_offsets(xs);
+        rotate_offsets(xl);
+        rotate_offsets(xc);
+        rotate_offsets(NG);
         if (plan->flags&FFT5D_ORDER_YZ) {
-            rotate(xs);
-            rotate(xl);
-            rotate(xc);
-            rotate(NG);            
+            rotate_offsets(xs);
+            rotate_offsets(xl);
+            rotate_offsets(xc);
+            rotate_offsets(NG);
         }
     }
     if ((plan->flags&FFT5D_REALCOMPLEX) && ((!(plan->flags&FFT5D_BACKWARD) && s==0) || ((plan->flags&FFT5D_BACKWARD) && s==2))) {
