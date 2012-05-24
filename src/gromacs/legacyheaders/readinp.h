@@ -106,8 +106,8 @@ int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
 #define RTYPE(name,var,def)  var=get_ereal(&ninp,&inp,name,def,wi)
 #define ETYPE(name,var,defs) var=get_eenum(&ninp,&inp,name,defs)
 #define EETYPE(name,var,defs) var=get_eeenum(&ninp,&inp,name,defs,wi)
-#define CCTYPE(s) STYPENC("\n; "s,NULL)
-#define CTYPE(s)  STYPENC("; "s,NULL)
+#define CCTYPE(_s) STYPENC("\n; "_s,NULL)
+#define CTYPE(_s)  STYPENC("; "_s,NULL)
 /* This last one prints a comment line where you can add some explanation */
 
 /* This structure is used for parsing arguments off the comand line */
