@@ -361,6 +361,7 @@ gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps)
         return NULL;
     }
     pd = gmx_poldata_init();
+    gmx_poldata_set_filename(pd,fn2);
     process_tree(debug,doc->children,0,0,pd,aps);
 
     xmlFreeDoc(doc);

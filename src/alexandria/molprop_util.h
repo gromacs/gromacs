@@ -75,7 +75,7 @@ extern gmx_molprop_t atoms_2_molprop(char *molname,t_atoms*atoms,char **smnames,
 				     gmx_atomprop_t ap,gmx_poldata_t pd,gmx_bool bForce,
 				     double th_toler,double ph_toler);
 
-/* Return 1 on success, 0 on failure */
+/* Return number of atoms, 0 means failure */
 extern int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
 			   t_symtab *tab,const char *lot,
 			   t_atoms *atoms,const char *q_algorithm,

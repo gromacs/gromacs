@@ -879,13 +879,70 @@ static void guess_all_param(FILE *fplog,opt_param_t *opt,int iter,real stepsize,
     }
 }
 
+void bayes(char *xvg,
+           void *data,
+           nm_target_func func,
+           double start[],
+           int n,
+           int nprint,
+           double step,
+           unsigned int seed,
+           int    maxiter,
+           double *chi2,
+           output_env_t oenv)
+{
+    int iter,j,k,cur=0;
+    double ds,sorig,DE,E[2],beta=100;
+#define prev (1-cur)
+    gmx_rng_t rng;
+    real r;
+    FILE *fp;
+  
+    if (NULL != xvg) {
+        fp = xvgropen(xvg,"Parameter convergence","iteration","",oenv);
+    }
+    rng = gmx_rng_init(seed);
+    
+    E[prev] = func(data,start);
+    *chi2 = E[prev];
+    
+    for(j=iter=0; (iter<maxiter); iter++) {
+        if ((NULL != xvg) && ((j % nprint) == 0)) {
+          fprintf(fp,"%5d",iter);
+          for(k=0; (k<n); k++) 
+              fprintf(fp,"  %10g",start[k]);
+          fprintf(fp,"\n");
+        }
+        ds = (2*gmx_rng_uniform_real(rng)-1)*step*fabs(start[j]);
+        sorig = start[j];
+        start[j] += ds;
+        E[cur] = func(data,start);
+        DE = E[cur]-E[prev];
+        if ((DE < 0) || (exp(beta*DE) < gmx_rng_uniform_real(rng))) {
+            cur = prev;
+            if (NULL != debug) {
+                fprintf(debug,"Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
+                        j,sorig,start[j],beta*DE);
+            }
+            *chi2 = E[cur];
+        }
+        else 
+            start[j] = sorig;
+        j = (j+1) % n;
+    }
+    gmx_rng_destroy(rng);
+    if (NULL != xvg)
+        xvgrclose(fp);
+}
+
 static void optimize_moldip(FILE *fp,FILE *fplog,
                             t_moldip *md,int maxiter,real tol,
                             int nrun,int reinit,real stepsize,int seed,
                             gmx_bool bRandom,real stol,output_env_t oenv,
                             gmx_bool bBonds,gmx_bool bAngles,gmx_bool bDihs,
                             real D0,real beta0,real D0_min,real beta_min,
-                            opt_mask_t *omt,real factor)
+                            opt_mask_t *omt,real factor,int nprint,
+                            char *xvgconv)
 {
     double chi2,chi2_min,wj,rms_nw;
     int    status = 0;
@@ -911,8 +968,8 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
                     
             guess_all_param(fplog,opt,n,stepsize,bRandom,rng);
             
-            nmsimplex(NULL,(void *)opt,energy_function,opt->param,nparam,
-                      tol,1.0,maxiter,&chi2);
+            bayes(xvgconv,(void *)opt,energy_function,opt->param,nparam,nprint,
+                  stepsize,seed,maxiter,&chi2,oenv);
                 
             if (chi2 < chi2_min) {
                 bMinimum = TRUE;
@@ -1041,7 +1098,8 @@ int main(int argc, char *argv[])
         { efDAT, "-o", "tune_fc",    ffWRITE },
         { efDAT, "-sel", "molselect",ffREAD },
         { efLOG, "-g", "tune_fc",    ffWRITE },
-        { efXVG, "-x", "hform-corr", ffWRITE }
+        { efXVG, "-x", "hform-corr", ffWRITE },
+        { efXVG, "-conv", "param-conv", ffWRITE }
     };
 #define NFILE asize(fnm)
     static int  nrun=1,maxiter=100,reinit=0,seed=1993;
@@ -1058,12 +1116,15 @@ int main(int argc, char *argv[])
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     static gmx_bool bBonds=TRUE,bAngles=FALSE,bDihs=FALSE;
     static real beta0=0,D0=0,beta_min=10,D0_min=50;
+    static int nprint=10;
     static int  nthreads=0; /* set to determine # of threads automatically */
     t_pargs pa[] = {
         { "-tol",   FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
         { "-maxiter",FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
+        { "-nprint",FALSE, etINT, {&nprint},
+          "How often to print the parameters during the simulation" },
         { "-reinit", FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
         { "-stol",   FALSE, etREAL, {&stol},
@@ -1177,7 +1238,8 @@ int main(int argc, char *argv[])
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,
                     md,maxiter,tol,nrun,reinit,step,seed,
                     bRandom,stol,oenv,bBonds,bAngles,bDihs,D0,beta0,
-                    D0_min,beta_min,omt,factor);
+                    D0_min,beta_min,omt,factor,nprint,
+                    opt2fn("-conv",NFILE,fnm));
     print_moldip_specs(fp,md,"After optimization",opt2fn("-x",NFILE,fnm),oenv);
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);
     

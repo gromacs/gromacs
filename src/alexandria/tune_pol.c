@@ -83,7 +83,7 @@ static int decompose_frag(FILE *fp,int bTrain,
         iupac = gmx_molprop_get_iupac(mp[j]);
         name  = gmx_molprop_get_molname(mp[j]);
         pol  = 0;
-        ims  = gmx_molselect_status(gms,gmx_molprop_get_iupac(mp[j]));
+        ims  = gmx_molselect_status(gms,iupac);
         bPol = (mp_get_prop(mp[j],empPOLARIZABILITY,iQM,lot,NULL,NULL,&pol) > 0);
         bUseMol[j] = ((imsTrain == ims) && bPol && (pol > 0));
 

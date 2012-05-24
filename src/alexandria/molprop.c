@@ -1100,8 +1100,8 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
     char *stmp,*dtmp;
     double mass,x,y,z,q,sq;
     
-    gmx_molprop_reset_experiment(src);
-    gmx_molprop_reset_category(src);
+    gmx_molprop_reset(src);
+    gmx_molprop_reset(dst);
     
     while ((tmp = gmx_molprop_get_category(src)) != NULL) 
     {

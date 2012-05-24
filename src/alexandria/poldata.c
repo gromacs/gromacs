@@ -53,7 +53,7 @@ typedef struct {
 
 typedef struct {
     char   *atom1,*atom2,*params;
-    char   *elem1,*elem2;
+    char   elem1[4],elem2[4];
     double length,sigma,bondorder; 
 } t_gt_bond;
 
@@ -98,6 +98,7 @@ typedef struct {
 } t_epref;
 
 typedef struct gmx_poldata {
+    char *filename;
     int nspoel,nalexandria_c;
     t_ffatype *spoel;
     char *alexandria_polar_unit;
@@ -144,6 +145,20 @@ gmx_poldata_t gmx_poldata_init()
     return pd;
 }
 
+void gmx_poldata_set_filename(gmx_poldata_t pd,char *fn2)
+{
+    if (NULL == fn2) {
+        fprintf(stderr,"Trying to set poldata filename to NULL\n");
+        return;
+    }
+    if (NULL != pd->filename) {
+        fprintf(stderr,"Overwriting poldata filename from %s to %s\n",
+                pd->filename,fn2);
+        sfree(pd->filename);
+    }
+    pd->filename = strdup(fn2);
+}
+    
 void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
                              char *gt_name,char *gt_type,
                              char *miller_equiv,char *charge,
@@ -305,9 +320,11 @@ char *gmx_poldata_get_ffatype_unit(gmx_poldata_t pd)
 
 char *gmx_poldata_get_length_unit(gmx_poldata_t pd)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
+    if (NULL == pd->gt_length_unit)
+        gmx_fatal(FARGS,"No length unit in %s",
+                  (NULL != pd->filename) ? pd->filename : "unknown");
 
-    return pold->gt_length_unit;
+    return pd->gt_length_unit;
 }
 
 void gmx_poldata_set_ffatype_unit(gmx_poldata_t pd,char *polar_unit)
@@ -544,18 +561,20 @@ double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *elem1,char *elem2,
     if ((NULL == elem1) || (NULL == elem2))
         return 0.0;
     for(i=0; (i<pold->ngt_bond); i++) {
-        if (NULL == pold->gt_bond[i].elem1) {
-        }
-        if (NULL == pold->gt_bond[i].elem2) {
+        if (0 == strlen(pold->gt_bond[i].elem1)) {
             for(j=0; (j<pold->nspoel); j++) 
                 if (strcasecmp(pold->spoel[j].name,pold->gt_bond[i].atom2) == 0)
-                    pold->gt_bond[i].elem2 = strdup(pold->spoel[j].elem);
+                    strcmp(pold->gt_bond[i].elem1,pold->spoel[j].elem);
+        }
+        if (0 == strlen(pold->gt_bond[i].elem2)) {
+            for(j=0; (j<pold->nspoel); j++) 
+                if (strcasecmp(pold->spoel[j].name,pold->gt_bond[i].atom2) == 0)
+                    strcmp(pold->gt_bond[i].elem2,pold->spoel[j].elem);
         }
         ba1 = pold->gt_bond[i].elem1;
         ba2 = pold->gt_bond[i].elem2;
-        if (((NULL != ba1) && (NULL != ba2)) &&
-            (((strcasecmp(ba1,elem1) == 0) && (strcasecmp(ba2,elem2) == 0)) ||
-             ((strcasecmp(ba1,elem2) == 0) && (strcasecmp(ba2,elem1) == 0)))) {
+        if (((strcasecmp(ba1,elem1) == 0) && (strcasecmp(ba2,elem2) == 0)) ||
+            ((strcasecmp(ba1,elem2) == 0) && (strcasecmp(ba2,elem1) == 0))) {
             dev = fabs((pold->gt_bond[i].length - distance)/pold->gt_bond[i].length);
             if (dev < dev_best) {
                 dev_best = dev;
@@ -750,9 +769,9 @@ int gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
         srenew(pold->gt_bond,pold->ngt_bond);
         gt_b = &(pold->gt_bond[pold->ngt_bond-1]);
         gt_b->atom1     = strdup(atom1);
-        gt_b->elem1     = strdup(pold->spoel[a1].elem);
+        strncpy(gt_b->elem1,pold->spoel[a1].elem,sizeof(gt_b->elem1)-1);
         gt_b->atom2     = strdup(atom2);
-        gt_b->elem2     = strdup(pold->spoel[a2].elem);
+        strncpy(gt_b->elem2,pold->spoel[a2].elem,sizeof(gt_b->elem2)-1);
         gt_b->length    = length;
         gt_b->sigma     = sigma;
         gt_b->bondorder = bondorder;
@@ -1398,6 +1417,47 @@ void gmx_poldata_comm_eemprops(gmx_poldata_t pd,t_commrec *cr)
     
     if (NULL != debug)
         fprintf(debug,"Going to update eemprops on node %d\n",cr->nodeid);
+    if (MASTER(cr))
+    {
+        for(i=1; (i<cr->nnodes); i++) 
+        {
+            gmx_send_int(cr,i,pd->nep);
+            gmx_send(cr,i,pd->eep,pd->nep*sizeof(pd->eep[0]));
+        }
+    }
+    else 
+    {
+        nep = gmx_recv_int(cr,0);
+        if (nep != pd->nep)
+            gmx_fatal(FARGS,"Inconsistency in number of EEM parameters");
+        snew(ep,pd->nep);
+        gmx_recv(cr,0,ep,pd->nep*sizeof(ep[0]));
+        for(i=0; (i<pd->nep); i++) 
+            pd->eep[i] = ep[i];
+        sfree(ep);
+    }
+    if (NULL != debug) 
+    {
+        fprintf(debug,"  EEP  Atom      Chi      J00     Zeta\n");
+        for(i=0; (i<pd->nep); i++)
+        {
+            fprintf(debug,"%5s %5s %8.3f %8.3f",
+                    get_eemtype_name(pd->eep[i].eqg_model),
+                    pd->eep[i].name,pd->eep[i].chi0,pd->eep[i].J0);
+            for(j=0; (j<pd->eep[i].nzeta); j++)
+                fprintf(debug," %8.3f",pd->eep[i].zeta[j]);
+            fprintf(debug,"\n");
+        }
+    }
+}
+
+void gmx_poldata_comm_force_parameters(gmx_poldata_t pd,t_commrec *cr)
+{
+    int i,j,nep;
+    t_eemprops *ep;
+    
+    if (NULL != debug)
+        fprintf(debug,"Going to update force parameters on node %d\n",cr->nodeid);
     if (MASTER(cr))
     {
         for(i=1; (i<cr->nnodes); i++) 

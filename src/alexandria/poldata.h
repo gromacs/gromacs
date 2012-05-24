@@ -50,6 +50,8 @@ typedef struct gmx_poldata *gmx_poldata_t;
 
 extern gmx_poldata_t gmx_poldata_init();
 
+extern void gmx_poldata_set_filename(gmx_poldata_t pd,char *fn2);
+
 extern int gmx_poldata_get_natypes(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_bond(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_angle(gmx_poldata_t pd);

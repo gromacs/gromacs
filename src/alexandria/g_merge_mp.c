@@ -105,14 +105,16 @@ static void add_properties(const char *fn,int nmp,gmx_molprop_t mp[])
         fclose(fp);
         for(i=0; (i<nmp); i++) {
             key.iupac = gmx_molprop_get_iupac(mp[i]);
-            if (strcmp(key.iupac,"1-bromobutane") == 0)
-                printf("Gotcha!\n");
-            tpp = bsearch(&key,tp,nprop,sizeof(tp[0]),tp_comp);
-            if (NULL != tpp) {
-                gmx_molprop_add_experiment(mp[i],tpp->ref,"minimum",&expref);
-                gmx_molprop_add_energy(mp[i],expref,tpp->prop,"kJ/mol",
-                                       atof(tpp->value),0);
-                nadd++;
+            if (NULL != key.iupac) {
+                if (strcmp(key.iupac,"1-bromobutane") == 0)
+                    printf("Gotcha!\n");
+                tpp = bsearch(&key,tp,nprop,sizeof(tp[0]),tp_comp);
+                if (NULL != tpp) {
+                    gmx_molprop_add_experiment(mp[i],tpp->ref,"minimum",&expref);
+                    gmx_molprop_add_energy(mp[i],expref,tpp->prop,"kJ/mol",
+                                           atof(tpp->value),0);
+                    nadd++;
+                }
             }
         }
         printf("Added properties for %d out of %d molecules.\n",nadd,nmp);

@@ -630,8 +630,9 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
   
     (*x)  = NULL;
     ptr1  = split(':',lot);
-    done  = 0;
     nn    = 0;
+    done  = 0;
+    natom = 0;
     molnm = gmx_molprop_get_molname(mp);
     while ((done == 0) && (ptr1[nn] != NULL))
     {
@@ -698,9 +699,9 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
         gmx_molprop_reset_calculation(mp);
     }
     if (NULL != debug)
-        fprintf(debug,"Tried to convert %s to gromacs. LOT is %s. Done is %d\n",
-                molnm,lot,done);
-    return done;
+        fprintf(debug,"Tried to convert %s to gromacs. LOT is %s. Natoms is %d\n",
+                molnm,lot,natom);
+    return natom;
 }
 
 static void gmx_molprop_dump(gmx_molprop_t mp,int i,FILE *fp)
@@ -753,6 +754,8 @@ static void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles,
         bDouble = FALSE;
         gmx_molprop_dump(*(mymp[i]),i,debug);
         molname[cur] = gmx_molprop_get_molname(*(mymp[i]));
+        if (strcmp(molname[cur],"benzene") == 0)
+            printf("KOEKOEK\n");
         form[cur]    = gmx_molprop_get_formula(*(mymp[i]));
         if (i > 0) {
             bForm = (my_strcmp(form[prev],form[cur]) == 0);

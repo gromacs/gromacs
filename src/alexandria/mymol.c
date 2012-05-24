@@ -238,6 +238,8 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         /* Read coordinates */
         open_symtab(&(mymol->symtab));
         molnameptr = put_symtab(&(mymol->symtab),mymol->molname);
+        if (strcmp(mymol->molname,"benzene") == 0)
+          printf("BOE\n");
         do_init_mtop(&mymol->mtop,1,1,molnameptr,
                      mymol->natom,&(mymol->atoms));
         if (molprop_2_atoms(mp,aps,&(mymol->symtab),lot,mymol->atoms,
