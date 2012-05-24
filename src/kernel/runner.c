@@ -564,6 +564,129 @@ static void convert_to_verlet_scheme(FILE *fplog,
     gmx_mtop_remove_chargegroups(mtop);
 }
 
+
+static void set_cpu_affinity(FILE *fplog,
+                             const t_commrec *cr,
+                             int nthreads_pme,
+                             const t_inputrec *inputrec)
+{
+        /* Set CPU affinity. Can be important for performance.
+           On some systems (e.g. Cray) CPU Affinity is set by default.
+           But default assigning doesn't work (well) with only some ranks
+           having threads. This causes very low performance.
+           External tools have cumbersome syntax for setting affinity
+           in the case that only some ranks have threads.
+           Thus it is important that GROMACS sets the affinity internally at
+           if only PME is using threads.
+        */
+
+#ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP! */
+#ifdef __linux
+    if (getenv("GMX_NO_THREAD_PINNING") == NULL)
+    {
+        int thread, local_nthreads, offset, n_ht_pc;
+        char *env;
+
+        if (inputrec->cutoff_scheme == ecutsVERLET)
+        {
+            local_nthreads = gmx_omp_nthreads_get(emntNonbonded);
+        }
+        else
+        {
+            /* threads on this node */
+            local_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1;
+        }
+
+        /* map the current process to cores */
+        if (PAR(cr) || MULTISIM(cr))
+        {
+            thread = cr->nodeid_intra*local_nthreads;
+        }
+        else
+        {
+            thread = 0;
+        }
+
+        offset = 0;
+        if ((env = getenv("GMX_CORE_PINNING_OFFSET")) != NULL)
+        {
+            char *end;
+            offset = strtol(env, &end, 10);
+            if (!end || (*end != 0))
+            {
+                gmx_fatal(FARGS, "Invalid core pinning offset: %s", env);
+            }
+
+            fprintf(stderr, "Applying core pinning offset %d\n", offset);
+            if (fplog)
+            {
+                fprintf(fplog, "Applying core pinning offset %d\n", offset);
+            }
+        }
+
+        n_ht_pc = -1;
+        if ((env = getenv("GMX_HT_PINNING")) != NULL)
+        {
+            char *end;
+
+            /* This should ONLY be used with hyperthreading turned on */
+            n_ht_pc = strtol(env, &end, 10);
+            if (!end || (*end != 0))
+            {
+                gmx_fatal(FARGS, "Invalid core pinning offset: %s", env);
+            }
+
+            fprintf(stderr, "Assuming HT with %d physical cores\n", n_ht_pc);
+            if (fplog)
+            {
+                fprintf(fplog, "Assuming HT with %d physical cores\n", n_ht_pc);
+            }
+            if (offset % 1 == 1)
+            {
+                gmx_fatal(FARGS,"Can not have an odd pinning offset with HT");
+            }
+        }
+
+        /* set the per-thread affinity */
+#pragma omp parallel firstprivate(thread) num_threads(local_nthreads)
+        {
+            cpu_set_t mask;
+            int core;
+
+            CPU_ZERO(&mask);
+            thread += omp_get_thread_num();
+            if (n_ht_pc <= 0)
+            {
+                core = offset + thread;
+            }
+            else
+            {
+                /* Lock pairs of threads to the same hyperthreaded core */
+                core = offset + thread/2 + (thread % 2)*n_ht_pc;
+            }
+            CPU_SET(core, &mask);
+            sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
+        }
+    }
+    else
+    {
+        char sbuf[STRLEN];
+        sprintf(sbuf, "NOTE: Thread pinning turned off by the "
+                "GMX_NO_THREAD_PINNING environment variable");
+        if (SIMMASTER(cr))
+        {
+            fprintf(stderr, "%s\n\n", sbuf);
+        }
+        if (fplog)
+        {
+            fprintf(fplog, "\n%s\n", sbuf);
+        }
+    }
+#endif /* __linux    */
+#endif /* GMX_OPENMP */
+}
+
+
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm,
@@ -1067,83 +1190,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         snew(pmedata,1);
     }
 
-        /* Set CPU affinity. Can be important for performance.
-           On some systems (e.g. Cray) CPU Affinity is set by default.
-           But default assigning doesn't work (well) with only some ranks
-           having threads. This causes very low performance.
-           External tools have cumbersome syntax for setting affinity
-           in the case that only some ranks have threads.
-           Thus it is important that GROMACS sets the affinity internally at
-           if only PME is using threads.
-        */
-
-#ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP! */
-#ifdef __linux
-    if (getenv("GMX_NO_THREAD_PINNING") == NULL)
-    {
-        int core, local_nthreads, offset;
-
-        if (inputrec->cutoff_scheme == ecutsVERLET)
-        {
-            local_nthreads = gmx_omp_nthreads_get(emntNonbonded);
-        }
-        else
-        {
-            /* threads on this node */
-            local_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1;
-        }
-
-        /* map the current process to cores */
-        if (PAR(cr) || MULTISIM(cr))
-        {
-            core = cr->nodeid_intra*local_nthreads;
-        }
-        else
-        {
-            core = 0;
-        }
-
-        char *env;
-        if ((env = getenv("GMX_THREAD_PINNING_OFFSET")) != NULL)
-        {
-            char *end;
-            offset = strtol(env, &end, 10);
-            if (!end || (*end != 0))
-            {
-                gmx_fatal(FARGS, "Invalid thread pinning offset: %s", env);
-            }
-
-            fprintf(stderr, "Applying thread pinning offset %d\n", offset);
-            core += offset;
-        }
-
-        /* set the per-thread affinity */
-#pragma omp parallel firstprivate(core) num_threads(local_nthreads)
-        {
-            cpu_set_t mask;
-            CPU_ZERO(&mask);
-            core += omp_get_thread_num();
-            CPU_SET(core, &mask);
-            sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
-        }
-    }
-    else
-    {
-        char sbuf[STRLEN];
-        sprintf(sbuf, "NOTE: Thread pinning turned off by the "
-                "GMX_NO_THREAD_PINNING environment variable");
-        if (SIMMASTER(cr))
-        {
-            fprintf(stderr, "%s\n\n", sbuf);
-        }
-        if (fplog)
-        {
-            fprintf(fplog, "\n%s\n", sbuf);
-        }
-    }
-#endif /* __linux    */
-#endif /* GMX_OPENMP */
-
+    /* Set the CPU affinity */
+    set_cpu_affinity(fplog,cr,nthreads_pme,inputrec);
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
