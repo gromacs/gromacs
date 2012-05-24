@@ -879,7 +879,9 @@ static void guess_all_param(FILE *fplog,opt_param_t *opt,int iter,real stepsize,
     }
 }
 
-void bayes(char *xvg,
+void bayes(FILE *fplog,
+           char *xvgconv,
+           char *xvgepot,
            void *data,
            nm_target_func func,
            double start[],
@@ -887,38 +889,49 @@ void bayes(char *xvg,
            int nprint,
            double step,
            unsigned int seed,
+           real temperature,
            int    maxiter,
            double *chi2,
            output_env_t oenv)
 {
-    int iter,j,k,cur=0;
-    double ds,sorig,DE,E[2],beta=100;
+    int iter,j,k,nsum,cur=0;
+    double ds,sorig,DE,E[2],beta;
+    double *ssum,*s2sum;
 #define prev (1-cur)
     gmx_rng_t rng;
     real r;
-    FILE *fp;
+    FILE *fpc,*fpe;
   
-    if (NULL != xvg) {
-        fp = xvgropen(xvg,"Parameter convergence","iteration","",oenv);
+    beta = 1/(BOLTZ*temperature);
+    if (NULL != xvgconv) {
+        fpc = xvgropen(xvgconv,"Parameter convergence","iteration","",oenv);
+    }
+    if (NULL != xvgepot) {
+        fpe = xvgropen(xvgepot,"Parameter energy","iteration","kT",oenv);
     }
     rng = gmx_rng_init(seed);
     
     E[prev] = func(data,start);
     *chi2 = E[prev];
-    
+    snew(ssum,n);
+    snew(s2sum,n);
+    nsum = 0;
     for(j=iter=0; (iter<maxiter); iter++) {
-        if ((NULL != xvg) && ((j % nprint) == 0)) {
-          fprintf(fp,"%5d",iter);
+        if ((NULL != xvgconv) && ((j % nprint) == 0)) {
+          fprintf(fpc,"%5d",iter);
           for(k=0; (k<n); k++) 
-              fprintf(fp,"  %10g",start[k]);
-          fprintf(fp,"\n");
+              fprintf(fpc,"  %10g",start[k]);
+          fprintf(fpc,"\n");
+        }
+        if ((NULL != xvgepot) && ((j % nprint) == 0)) {
+            fprintf(fpe,"%5d  %10g\n",iter,E[prev]);
         }
         ds = (2*gmx_rng_uniform_real(rng)-1)*step*fabs(start[j]);
         sorig = start[j];
         start[j] += ds;
         E[cur] = func(data,start);
         DE = E[cur]-E[prev];
-        if ((DE < 0) || (exp(beta*DE) < gmx_rng_uniform_real(rng))) {
+        if ((DE < 0) || (exp(-beta*DE) > gmx_rng_uniform_real(rng))) {
             cur = prev;
             if (NULL != debug) {
                 fprintf(debug,"Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
@@ -928,11 +941,34 @@ void bayes(char *xvg,
         }
         else 
             start[j] = sorig;
+        if (iter >= maxiter/2) {
+            for(k=0; (k<n); k++) {
+                ssum[k] += start[k];
+                s2sum[k] += sqr(start[k]);
+            }
+            nsum++;
+        }
         j = (j+1) % n;
     }
     gmx_rng_destroy(rng);
-    if (NULL != xvg)
-        xvgrclose(fp);
+    if (NULL != xvgconv)
+        xvgrclose(fpc);
+    if (NULL != xvgepot)
+        xvgrclose(fpe);
+    if (nsum > 0) {
+        for(k=0; (k<n); k++) {
+            ssum[k] /= nsum;
+            s2sum[k] /= nsum;
+        }
+    }
+    if (NULL != fplog) {
+        fprintf(fplog,"Average and standard deviation of parameters\n");
+        for(k=0; (k<n); k++) {
+            fprintf(fplog,"%5d  %10g  %10g\n",
+                    k,ssum[k],sqrt(s2sum[k]-sqr(ssum[k])));
+            start[k] = ssum[k];
+        }
+    }
 }
 
 static void optimize_moldip(FILE *fp,FILE *fplog,
@@ -942,7 +978,7 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
                             gmx_bool bBonds,gmx_bool bAngles,gmx_bool bDihs,
                             real D0,real beta0,real D0_min,real beta_min,
                             opt_mask_t *omt,real factor,int nprint,
-                            char *xvgconv)
+                            char *xvgconv,char *xvgepot,real temperature)
 {
     double chi2,chi2_min,wj,rms_nw;
     int    status = 0;
@@ -968,8 +1004,9 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
                     
             guess_all_param(fplog,opt,n,stepsize,bRandom,rng);
             
-            bayes(xvgconv,(void *)opt,energy_function,opt->param,nparam,nprint,
-                  stepsize,seed,maxiter,&chi2,oenv);
+            bayes(fplog,xvgconv,xvgepot,
+                  (void *)opt,energy_function,opt->param,nparam,nprint,
+                  stepsize,seed,temperature,maxiter,&chi2,oenv);
                 
             if (chi2 < chi2_min) {
                 bMinimum = TRUE;
@@ -1099,7 +1136,8 @@ int main(int argc, char *argv[])
         { efDAT, "-sel", "molselect",ffREAD },
         { efLOG, "-g", "tune_fc",    ffWRITE },
         { efXVG, "-x", "hform-corr", ffWRITE },
-        { efXVG, "-conv", "param-conv", ffWRITE }
+        { efXVG, "-conv", "param-conv", ffWRITE },
+        { efXVG, "-epot", "param-epot", ffWRITE }
     };
 #define NFILE asize(fnm)
     static int  nrun=1,maxiter=100,reinit=0,seed=1993;
@@ -1115,7 +1153,7 @@ int main(int argc, char *argv[])
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     static gmx_bool bBonds=TRUE,bAngles=FALSE,bDihs=FALSE;
-    static real beta0=0,D0=0,beta_min=10,D0_min=50;
+    static real beta0=0,D0=0,beta_min=10,D0_min=50,temperature;
     static int nprint=10;
     static int  nthreads=0; /* set to determine # of threads automatically */
     t_pargs pa[] = {
@@ -1125,6 +1163,8 @@ int main(int argc, char *argv[])
           "Max number of iterations for optimization" },
         { "-nprint",FALSE, etINT, {&nprint},
           "How often to print the parameters during the simulation" },
+        { "-temp",  FALSE, etREAL, {&temperature},
+          "'Temperature' for the Monte Carlo simulation" },
         { "-reinit", FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
         { "-stol",   FALSE, etREAL, {&stol},
@@ -1239,7 +1279,8 @@ int main(int argc, char *argv[])
                     md,maxiter,tol,nrun,reinit,step,seed,
                     bRandom,stol,oenv,bBonds,bAngles,bDihs,D0,beta0,
                     D0_min,beta_min,omt,factor,nprint,
-                    opt2fn("-conv",NFILE,fnm));
+                    opt2fn("-conv",NFILE,fnm),
+                    opt2fn("-epot",NFILE,fnm),temperature);
     print_moldip_specs(fp,md,"After optimization",opt2fn("-x",NFILE,fnm),oenv);
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);
     
