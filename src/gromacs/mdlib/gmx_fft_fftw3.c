@@ -41,7 +41,6 @@
 /* none of the fftw3 calls, except execute(), are thread-safe, so 
    we need to serialize them with this mutex. */
 static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-static gmx_bool gmx_fft_threads_initialized=FALSE;
 #define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex)
 #define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex)
 #else /* GMX_THREAD_MPI */
@@ -977,6 +976,14 @@ void
 gmx_many_fft_destroy(gmx_fft_t    fft)
 {
     gmx_fft_destroy(fft);
+}
+
+void gmx_fft_cleanup()
+{
+    FFTWPREFIX(cleanup)();
+#ifdef GMX_THREAD_MPI
+    tMPI_Thread_mutex_destroy(&big_fftw_mutex);
+#endif
 }
 
 #else
