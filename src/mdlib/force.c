@@ -446,9 +446,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 ir->ewald_geometry != eewg3D ||
                 ir->epsilon_surface != 0)
             {
-                wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
-
                 int nthreads,t;
+
+                wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
 
                 if (fr->n_tpi > 0)
                 {

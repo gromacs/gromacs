@@ -34,7 +34,10 @@
  */
 
 #include <stdlib.h>
-#include <unistd.h>
+
+#if defined(_MSVC)
+#include <limits>
+#endif
 
 #include "smalloc.h"
 #include "types/simple.h" 
@@ -406,7 +409,20 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
            polling "hack" fails with some future NVIDIA driver we'll get a crash. */
         for (int i = adat_begin; i < 4*adat_last + 2; i += (adat_last - adat_begin)/20)
         {
+#ifdef NAN
             nbatom->out[0].f[i] = NAN;
+#else
+#  ifdef _MSVC
+            if (numeric_limits<float>::has_quiet_NaN)
+            {
+                nbatom->out[0].f[i] = numeric_limits<float>::quiet_NaN();
+            }
+            else
+#  endif
+            {
+                nbatom->out[0].f[i] = GMX_REAL_MAX;
+            }
+#endif
         }
 
         /* Clear the bits in the force array (on the CPU) that we are going to poll. */
@@ -536,8 +552,8 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         signal_pattern  = 0xAAAAAAAA; /* FIXME move this to a module-global constant */
         while (*signal_bytes != signal_pattern) 
         {
-            /* back off, otherwise we get stuck. why??? */
-            usleep(0); 
+            /* back off, otherwise we get stuck */
+            CUTHREAD_YIELD;
         }
     }
 

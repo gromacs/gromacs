@@ -344,6 +344,33 @@ check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 
+if(GMX_GPU)
+    # we need some sort of sleep with CUDA:
+    # sleep() from unistd.h on POSIX or Sleep() from windows.h
+    if (WIN32 AND NOT CYGWIN)
+        set(CMAKE_REQUIRED_INCLUDES windows.h)
+        check_function_exists(Sleep     HAVE_WIN_SLEEP)
+        if(HAVE_WIN_SLEEP)
+            add_definitions(-DHAVE_WIN_SLEEP)
+        else()
+            message(WARNING "Sleep() from windows.h is needed when running on GPUs with ECC turned on, but it
+                could not be found. This could lead to GPU synchronization inefficiencies.")
+        endif()
+    else()
+        if (HAVE_UNISTD_H)
+            set(CMAKE_REQUIRED_INCLUDES unistd.h)
+            check_function_exists(sleep     HAVE_UNISTD_SLEEP)
+            if(HAVE_UNISTD_SLEEP)
+                add_definitions(-DHAVE_UNISTD_SLEEP)
+            endif()
+        endif (HAVE_UNISTD_H)
+        if (NOT HAVE_UNISTD_H OR NOT HAVE_UNISTD_SLEEP)
+            message(WARNING "sleep() from unistd.h is needed when running on GPUs with ECC turned on, but it
+                could not be found. This could lead to GPU synchronization inefficiencies.")
+        endif()
+    endif (WIN32 AND NOT CYGWIN)
+endif()
+
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(m cbrt "" HAVE_CBRT)
@@ -463,7 +490,13 @@ if(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 if(GMX_GPU)
-    find_package(CUDA 3.2)
+    if(MSVC)
+        # CUDA <=v4.1 doesn't work with MSVC
+        # TODO: tested only with MSVC 2010, test with icc on Win + cygwin
+        find_package(CUDA 4.1)
+    else()
+        find_package(CUDA 3.2)
+    endif()
     if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
         message(FATAL_ERROR "
     mdrun supports native GPU acceleration on NVIDIA hardware with compute
@@ -477,12 +510,12 @@ if(GMX_GPU)
     add_definitions(-DGMX_GPU)
     set(CUDA_BUILD_EMULATION OFF)
     include(gmxManageNvccConfig)
+
     # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
     # but it's too cumbersome to check the ld version and the flag should not hurt
     if(CMAKE_COMPILER_IS_GNUCC)
         set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
     endif()
-    set(GROMACS_CXX_FLAGS "-fPIC ${GROMACS_CXX_FLAGS}")
 endif()
 
 if(GMX_OPENMP)

@@ -8,12 +8,14 @@
 #   * CUDA_NVCC_HOST_COMPILER_OPTIONS   - the full host-compiler related option list passed to nvcc
 if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     set(CUDA_NVCC_FLAGS_SET TRUE CACHE INTERNAL "True if NVCC flags have been set" FORCE)
-    if (NOT DEFINED CUDA_NVCC_HOST_COMPILER)
-        # explicitly set the host compiler for nvcc if the current one is supported,
-        # otherwise warn if the host compiler is not supported.
+
+    # Set the host compiler for nvcc explicitly if the current cimpiler is
+    # supported, otherwise warn if the host compiler is not supported.
+    # Note that with MSVC nvcc sets the -compiler-bindir option behind the
+    # scenes; to avoid conflicts we shouldn't set -ccbin automatically.
+    if (NOT DEFINED CUDA_NVCC_HOST_COMPILER AND NOT MSVC)
         if (NOT CMAKE_COMPILER_IS_GNUCC AND
-            NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE) AND
-            NOT MSVC)
+            NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE))
             message(WARNING "
             Will not set the nvcc host compiler because the current C compiler (ID: ${CMAKE_C_COMPILER_ID}): 
             ${CMAKE_C_COMPILER}
@@ -57,8 +59,17 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         mark_as_advanced(CUDA_NVCC_HOST_COMPILER CUDA_NVCC_HOST_COMPILER_OPTIONS)
     endif()
 
+    # on Linux we need to add -fPIC when building shared gmx libs
+    # Note: will add -fPIC for any compiler that supports it as it shouldn't hurt
+    if(BUILD_SHARED_LIBS)
+        GMX_TEST_CXXFLAG(CXXFLAG_FPIC "-fPIC" _FPIC_NVCC_FLAG)
+        if(_FPIC_NVCC_FLAG)
+            set(_FPIC_NVCC_FLAG "-Xcompiler;${_FPIC_NVCC_FLAG};")
+        endif()
+    endif()
+
     # finally set the damn flags
     set(CUDA_NVCC_FLAGS
-        "-arch=sm_20;-use_fast_math;${CUDA_NVCC_HOST_COMPILER_OPTIONS}"
+        "${_FPIC_NVCC_FLAG}-arch=sm_20;-use_fast_math;${CUDA_NVCC_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Compiler flags for nvcc." FORCE)
 endif()

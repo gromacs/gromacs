@@ -42,6 +42,19 @@
 
 #include "cuda.h"
 
+/*! Yield op for posix/win platforms. If sleep() from unistd.h / Sleep() from windows.h
+    is not available we can't yield. */
+#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__
+/* On Windows we assume that we always have windows.h */
+#include <windows.h>
+#define CUTHREAD_YIELD    Sleep(0)
+#else /* Posix case */
+#if defined(HAVE_UNISTD_H) && defined(HAVE_UNISTD_SLEEP)
+#include <unistd.h>
+#define CUTHREAD_YIELD    sleep(0)
+#endif
+#endif
+
 /* CUDA library and hardware related defines */
 
 

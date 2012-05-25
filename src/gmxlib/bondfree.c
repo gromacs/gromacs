@@ -3149,7 +3149,7 @@ void init_bonded_thread_force_reduction(t_forcerec *fr,
      * Minimum force block reduction size is 2^6=64.
      */
     fr->red_ashift = 6;
-    while (fr->natoms_force > MAX_BLOCK_BITS*(1U<<fr->red_ashift))
+    while (fr->natoms_force > (int)(MAX_BLOCK_BITS*(1U<<fr->red_ashift)))
     {
         fr->red_ashift++;
     }

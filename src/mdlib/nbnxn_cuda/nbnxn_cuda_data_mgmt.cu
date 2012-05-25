@@ -377,8 +377,18 @@ void nbnxn_cuda_init(FILE *fplog,
     if (nb->dev_info->dev_prop.ECCEnabled == 1 ||
         (getenv("GMX_NO_CUDA_STREAMSYNC") != NULL))
     {
+        /* if we can't yield while poll-waiting, we need to use cudaStreamSynchronize */
+#ifdef CANT_CUTHREAD_YIELD
+        if (nb->dev_info->dev_prop.ECCEnabled == 1)
+        {
+            gmx_warning("Can't yield as sleep(0)/Sleep(0) (posix/win) is not available.\n"
+                        "         Will use the standard cudaStreamSynchronize-based waiting.\n"
+                        "         Note that with ECC enabled this causes considerable performance loss.");
+        }
+#else
         nb->use_stream_sync = FALSE;
         nb->do_time         = FALSE;
+#endif
     }
 
     if (nb->do_time)
