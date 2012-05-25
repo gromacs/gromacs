@@ -1112,8 +1112,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                               EEL_FULL(inputrec->coulombtype),
                               &nbnxn_kernel);
             if ((EI_DYNAMICS(inputrec->eI) &&
-                 (nbnxn_kernel == nbk8x8x8CUDA ||
-                  nbnxn_kernel == nbk8x8x8PlainC) &&
+                 (nbnxn_kernel == nbk8x8x8_CUDA ||
+                  nbnxn_kernel == nbk8x8x8_PlainC) &&
                  inputrec->nstlist < NSTLIST_GPU_ENOUGH) ||
                 getenv(NSTLIST_ENVVAR) != NULL)
             {

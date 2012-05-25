@@ -460,18 +460,18 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 
     switch (nb_kernel_type)
     {
-        case nbk8x8x8CUDA:
-        case nbk8x8x8PlainC:
-            return FALSE;
+    case nbk8x8x8_CUDA:
+    case nbk8x8x8_PlainC:
+        return FALSE;
 
-        case nbk4x4PlainC:
-        case nbk4xNSSE:
-        case nbk4xNAVX:
-            return TRUE;
+    case nbk4x4_PlainC:
+    case nbk4xN_S128:
+    case nbk4xN_S256:
+        return TRUE;
 
-        default:
-            gmx_incons("Invalid nonbonded kernel type passed!");
-            return FALSE;
+    default:
+        gmx_incons("Invalid nonbonded kernel type passed!");
+        return FALSE;
     }
 }
 
@@ -4910,7 +4910,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                 {
                                     switch (nb_kernel_type)
                                     {
-                                    case nbk4x4PlainC:
+                                    case nbk4x4_PlainC:
                                         check_subcell_list_space_simple(nbl,cl-cf+1);
 
                                         make_cluster_list_simple(gridj,
@@ -4921,7 +4921,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                                  &ndistc);
                                         break;
 #ifdef NBNXN_SEARCH_SSE
-                                    case nbk4xNSSE:
+                                    case nbk4xN_S128:
                                         check_subcell_list_space_simple(nbl,ci_to_cj(na_cj_2log,cl-cf)+2);
                                         make_cluster_list_simple_sse(gridj,
                                                                      nbl,ci,cf,cl,
@@ -4931,7 +4931,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                                      &ndistc);
                                         break;
 #ifdef GMX_AVX
-                                    case nbk4xNAVX:
+                                    case nbk4xN_S256:
                                         check_subcell_list_space_simple(nbl,ci_to_cj(na_cj_2log,cl-cf)+2);
                                         make_cluster_list_simple_avx(gridj,
                                                                      nbl,ci,cf,cl,
@@ -4942,8 +4942,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                         break;
 #endif
 #endif
-                                    case nbk8x8x8PlainC:
-                                    case nbk8x8x8CUDA:
+                                    case nbk8x8x8_PlainC:
+                                    case nbk8x8x8_CUDA:
                                         check_subcell_list_space_supersub(nbl,cl-cf+1);
                                         for(cj=cf; cj<=cl; cj++)
                                         {
@@ -5057,11 +5057,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
         switch (nb_kernel_type)
         {
 #ifdef NBNXN_SEARCH_SSE
-        case nbk4xNSSE:
+        case nbk4xN_S128:
             nbs->icell_set_x = icell_set_x_simple_sse;
             break;
 #ifdef GMX_AVX
-        case nbk4xNAVX:
+        case nbk4xN_S256:
             nbs->icell_set_x = icell_set_x_simple_avx;
             break;
 #endif
@@ -5244,8 +5244,8 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
     ma((void **)&out->Vvdw,out->nV*sizeof(*out->Vvdw));
     ma((void **)&out->Vc  ,out->nV*sizeof(*out->Vc  ));
 
-    if (nb_kernel_type == nbk4xNSSE ||
-        nb_kernel_type == nbk4xNAVX)
+    if (nb_kernel_type == nbk4xN_S128 ||
+        nb_kernel_type == nbk4xN_S256)
     {
         cj_size = simple_XFormat_cj_size(XFormat,
                                          kernel_cj_half_ci(nb_kernel_type));
@@ -5440,8 +5440,7 @@ void nbnxn_atomdata_init(FILE *fp,
                 bCombGeom,bCombLB);
     }
 
-    simple = !(nb_kernel_type == nbk8x8x8PlainC ||
-               nb_kernel_type == nbk8x8x8CUDA);
+    simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
     if (simple)
     {
@@ -5492,10 +5491,10 @@ void nbnxn_atomdata_init(FILE *fp,
     {
         switch (nb_kernel_type)
         {
-        case nbk4xNSSE:
+        case nbk4xN_S128:
             nbat->XFormat = nbatX4;
             break;
-        case nbk4xNAVX:
+        case nbk4xN_S256:
 #ifndef GMX_DOUBLE
             nbat->XFormat = nbatX8;
 #else

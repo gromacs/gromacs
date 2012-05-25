@@ -1659,7 +1659,7 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   int *kernel_type)
 {
 #if defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2)
-    /* by default we'll use the 4xN SSE kernels */
+    /* by default we'll use the 4xN SSE/AVX 128-bit kernels */
     if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
     {
         cpuinfo_t cpuinfo;
@@ -1679,30 +1679,30 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
             (double_prec || !tabulated_force))
         {
 #ifdef GMX_AVX
-            *kernel_type = nbk4xNAVX;
+            *kernel_type = nbk4xN_S256;
 #else
             md_print_warning(cr,fp,"NOTE: Gromacs was compiled without AVX support,\n      can not use the faster AVX kernels\n");
-            *kernel_type = nbk4xNSSE;
+            *kernel_type = nbk4xN_S128;
 #endif
         }
         else
         {
-            *kernel_type = nbk4xNSSE;
+            *kernel_type = nbk4xN_S128;
         }
 
-        if (getenv("GMX_NBNXN_SSE") != NULL)
+        if (getenv("GMX_NBNXN_AVX128") != NULL)
         {
-            *kernel_type = nbk4xNSSE;
+            *kernel_type = nbk4xN_S128;
         }
 #ifdef GMX_AVX
-        if (getenv("GMX_NBNXN_AVX") != NULL)
+        if (getenv("GMX_NBNXN_AVX256") != NULL)
         {
-            *kernel_type = nbk4xNAVX;
+            *kernel_type = nbk4xN_S256;
         }
 #endif
 
 #ifndef GMX_SSE4_1
-        if (*kernel_type == nbk4xNSSE && cpuinfo.sse4_1)
+        if (*kernel_type == nbk4xN_S128 && cpuinfo.sse4_1)
         {
             md_print_warning(cr,fp,"NOTE: Gromacs was compiled without SSE4.1 support,\n      can not use the faster SSE4.1 kernels\n");
         }
@@ -1711,7 +1711,7 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
     else
 #endif
     {
-        *kernel_type = nbk4x4PlainC;
+        *kernel_type = nbk4x4_PlainC;
     }
 }
 
@@ -1757,7 +1757,7 @@ void pick_nbnxn_kernel(FILE *fp,
     }
     if (emulateGPU)
     {
-        *kernel_type = nbk8x8x8PlainC;
+        *kernel_type = nbk8x8x8_PlainC;
 
         if (fp != NULL)
         {
@@ -1771,7 +1771,7 @@ void pick_nbnxn_kernel(FILE *fp,
 
         if (*useGPU)
         {
-            *kernel_type = nbk8x8x8CUDA;
+            *kernel_type = nbk8x8x8_CUDA;
         }
     }
 
@@ -1817,7 +1817,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
         ic->tabq_size = GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE;
         /* Subtract 2 iso 1 to avoid access out of range due to rounding */
         ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
-        if (verlet_kernel_type == nbk8x8x8CUDA)
+        if (verlet_kernel_type == nbk8x8x8_CUDA)
         {
             /* This case is handled in the nbnxn CUDA module */
             ic->tabq_format = tableformatNONE;
@@ -2012,7 +2012,7 @@ static void init_nb_verlet(FILE *fp,
             }
             else
             {
-                nbv->useGPU = (nbnxn_kernel_preset == nbk8x8x8CUDA);
+                nbv->useGPU = (nbnxn_kernel_preset == nbk8x8x8_CUDA);
                 nbv->grp[i].kernel_type = nbnxn_kernel_preset;
             }
         }
@@ -2072,7 +2072,7 @@ static void init_nb_verlet(FILE *fp,
 
     for(i=0; i<nbv->nloc; i++)
     {
-        if (nbv->grp[0].kernel_type == nbk8x8x8CUDA)
+        if (nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
         {
             nb_alloc = &pmalloc;
             nb_free  = &pfree;

@@ -598,13 +598,13 @@ static void do_nb_verlet(t_forcerec *fr,
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    if (nbvg->kernel_type != nbk8x8x8CUDA)
+    if (nbvg->kernel_type != nbk8x8x8_CUDA)
     {
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
     switch (nbvg->kernel_type)
     {
-        case nbk4x4PlainC:
+        case nbk4x4_PlainC:
             nbnxn_kernel_ref(&nbvg->nbl_lists,
                              nbvg->nbat, ic,
                              fr->shift_vec,
@@ -617,7 +617,7 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egLJSR]);
             break;
         
-        case nbk4xNSSE:
+        case nbk4xN_S128:
             nbnxn_kernel_sse(&nbvg->nbl_lists,
                              nbvg->nbat, ic,
                              fr->shift_vec,
@@ -629,7 +629,7 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egBHAMSR] :
                              enerd->grpp.ener[egLJSR]);
             break;
-        case nbk4xNAVX:
+        case nbk4xN_S256:
             nbnxn_kernel_avx(&nbvg->nbl_lists,
                              nbvg->nbat, ic,
                              fr->shift_vec,
@@ -642,11 +642,11 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egLJSR]);
             break;
 
-        case nbk8x8x8CUDA:
+        case nbk8x8x8_CUDA:
             nbnxn_cuda_launch_kernel(fr->nbv->cu_nbv, nbvg->nbat, flags, ilocality);
             break;
 
-        case nbk8x8x8PlainC:
+        case nbk8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],
                                  nbvg->nbat, ic,
                                  fr->shift_vec,
@@ -664,7 +664,7 @@ static void do_nb_verlet(t_forcerec *fr,
             gmx_incons("Invalid nonbonded kernel type passed!");
 
     }
-    if (nbvg->kernel_type != nbk8x8x8CUDA)
+    if (nbvg->kernel_type != nbk8x8x8_CUDA)
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -746,7 +746,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
     bUseGPU       = fr->nbv->useGPU;
-    bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbk8x8x8PlainC);
+    bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbk8x8x8_PlainC);
 
     if (bStateChanged)
     {
@@ -952,7 +952,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);
 
-            if (nbv->grp[eintNonlocal].kernel_type == nbk8x8x8CUDA)
+            if (nbv->grp[eintNonlocal].kernel_type == nbk8x8x8_CUDA)
             {
                 /* initialize non-local pair-list on the GPU */
                 nbnxn_cuda_init_pairlist(nbv->cu_nbv,
@@ -1122,7 +1122,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       lambda,graph,&(top->excls),fr->mu_tot,
-                      ((nb_kernel_type == nbk8x8x8CUDA || nb_kernel_type == nbk8x8x8PlainC) 
+                      ((nb_kernel_type == nbk8x8x8_CUDA || nb_kernel_type == nbk8x8x8_PlainC) 
                         ? flags&~GMX_FORCE_NONBONDED : flags),
                       &cycles_pme);
 

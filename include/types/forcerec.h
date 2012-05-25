@@ -105,20 +105,41 @@ typedef struct {
  */
 #define GMX_CUTOFF_INF 1E+18
 
-/*! Nonbonded kernel types: SSE, GPU CUDA, GPU emulation, etc */
-enum { nbkNotSet = 0, nbk4x4PlainC, nbk4xNSSE, nbk4xNAVX, nbk8x8x8CUDA, nbk8x8x8PlainC };
+/*! Nonbonded kernel types: C, SSE/AVX, GPU CUDA, GPU emulation, etc */
+enum { nbkNotSet = 0, nbk4x4_PlainC, nbk4xN_S128, nbk4xN_S256, nbk8x8x8_CUDA, nbk8x8x8_PlainC };
 
+/* Note that _mm_... intrinsics can be converted to either SSE or AVX
+ * depending on compiler flags.
+ * For gcc we check for __AVX__
+ * At least a check for icc should be added (if there is a macro)
+ */
 static const char *nbk_name[] =
   { "not set", "plain C 4x4",
+#if !(defined GMX_AVX || defined __AVX__)
+#ifndef GMX_SSE4_1
 #ifndef GMX_DOUBLE
-    "SSE 4x4",
+    "SSE2 4x4",
 #else
-    "SSE 4x2",
+    "SSE2 4x2",
+#endif
+#else
+#ifndef GMX_DOUBLE
+    "SSE4.1 4x4",
+#else
+    "SSE4.1 4x2",
+#endif
+#endif
+#else
+#ifndef GMX_DOUBLE
+    "AVX-128 4x4",
+#else
+    "AVX-128 4x2",
+#endif
 #endif
 #ifndef GMX_DOUBLE
-    "AVX 4x8",
+    "AVX-256 4x8",
 #else
-    "AVX 4x4",
+    "AVX-256 4x4",
 #endif
     "CUDA 8x8x8", "plain C 8x8x8" };
 
