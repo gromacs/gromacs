@@ -979,6 +979,11 @@ gmx_many_fft_destroy(gmx_fft_t    fft)
     gmx_fft_destroy(fft);
 }
 
+void gmx_fft_cleanup()
+{
+    FFTWPREFIX(cleanup)();
+}
+
 #else
 int
 gmx_fft_fftw3_empty;
