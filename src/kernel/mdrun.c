@@ -289,7 +289,7 @@ int main(int argc,char *argv[])
     "appropriate options have been given. Currently under",
     "investigation are: polarizability and X-ray bombardments.",
     "[PAR]",
-    "The option [TT]-membed[dd] does what used to be g_membed, i.e. embed",
+    "The option [TT]-membed[tt] does what used to be g_membed, i.e. embed",
     "a protein into a membrane. The data file should contain the options",
     "that where passed to g_membed before. The [TT]-mn[tt] and [TT]-mp[tt]",
     "both apply to this as well.",
