@@ -102,6 +102,7 @@ static void gmx_signal(int signum)
 #ifdef HAVE_SIGACTION
     struct sigaction act;
     act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
     act.sa_flags = SA_RESTART;
     sigaction(signum,&act,NULL);
 #else
