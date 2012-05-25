@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="forward">
+    <Int Name="Length">36</Int>
+    <Real>-16.999998</Real>
+    <Real>-3.800000</Real>
+    <Real>-10.385332</Real>
+    <Real>-3.061047</Real>
+    <Real>-6.709397</Real>
+    <Real>5.757677</Real>
+    <Real>-36.998520</Real>
+    <Real>-1.406923</Real>
+    <Real>3.047890</Real>
+    <Real>-6.056745</Real>
+    <Real>-1.119863</Real>
+    <Real>3.892806</Real>
+    <Real>34.836723</Real>
+    <Real>-8.053847</Real>
+    <Real>11.568946</Real>
+    <Real>47.403282</Real>
+    <Real>11.824178</Real>
+    <Real>-8.948942</Real>
+    <Real>-44.599998</Real>
+    <Real>-18.399998</Real>
+    <Real>-13.862258</Real>
+    <Real>44.496178</Real>
+    <Real>23.725883</Real>
+    <Real>1.871017</Real>
+    <Real>-28.036722</Real>
+    <Real>-18.446152</Real>
+    <Real>11.296582</Real>
+    <Real>24.134483</Real>
+    <Real>-18.558046</Real>
+    <Real>20.289154</Real>
+    <Real>-15.001477</Real>
+    <Real>6.906924</Real>
+    <Real>15.557633</Real>
+    <Real>-0.037325</Real>
+    <Real>17.413778</Real>
+    <Real>26.859457</Real>
+  </Sequence>
+  <Sequence Name="backward">
+    <Int Name="Length">36</Int>
+    <Real>-16.999998</Real>
+    <Real>-3.800000</Real>
+    <Real>17.413778</Real>
+    <Real>26.859459</Real>
+    <Real>15.557634</Real>
+    <Real>-0.037323</Real>
+    <Real>-15.001478</Real>
+    <Real>6.906922</Real>
+    <Real>-18.558046</Real>
+    <Real>20.289154</Real>
+    <Real>11.296580</Real>
+    <Real>24.134480</Real>
+    <Real>-28.036722</Real>
+    <Real>-18.446152</Real>
+    <Real>23.725887</Real>
+    <Real>1.871018</Real>
+    <Real>-13.862257</Real>
+    <Real>44.496181</Real>
+    <Real>-44.600002</Real>
+    <Real>-18.400000</Real>
+    <Real>11.824177</Real>
+    <Real>-8.948946</Real>
+    <Real>11.568948</Real>
+    <Real>47.403282</Real>
+    <Real>34.836723</Real>
+    <Real>-8.053847</Real>
+    <Real>-1.119863</Real>
+    <Real>3.892805</Real>
+    <Real>3.047890</Real>
+    <Real>-6.056747</Real>
+    <Real>-36.998524</Real>
+    <Real>-1.406923</Real>
+    <Real>-6.709396</Real>
+    <Real>5.757679</Real>
+    <Real>-10.385331</Real>
+    <Real>-3.061043</Real>
+  </Sequence>
+</ReferenceData>

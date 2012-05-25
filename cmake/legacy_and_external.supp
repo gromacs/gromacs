@@ -126,3 +126,10 @@
    fun:malloc
    fun:__cilkrts_os_mutex_create
 }
+# Intel compiler with MKL
+{
+   dlerror
+   Memcheck:Leak
+   ...
+   fun:_dlerror_run
+}
