@@ -112,7 +112,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * When set >0 ci lists will be chopped up when the estimate
  * for the number of equally sized lists is below min_ci_balanced.
  */
-void nbnxn_make_pairlist(nbnxn_search_t nbs,
+void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                          const nbnxn_atomdata_t *nbat,
                          const t_blocka *excl,
                          real rlist,
