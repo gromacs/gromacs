@@ -152,6 +152,12 @@ gmx_many_fft_destroy(gmx_fft_t    fft)
     }
 }
 
+
+void gmx_fft_cleanup()
+{
+
+}
+
 #endif
 
 int gmx_fft_transpose_2d(t_complex *          in_data,
