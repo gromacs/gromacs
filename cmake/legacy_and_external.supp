@@ -126,3 +126,19 @@
    fun:malloc
    fun:__cilkrts_os_mutex_create
 }
+# Intel compiler with MKL
+{
+   dlerror
+   Memcheck:Leak
+   ...
+   fun:_dlerror_run
+}
+# Thread MPI - FIXME: TMPI should have a proper way to delete all mutexes 
+# to make this unnessary. 
+{
+   tmpi_once
+   Memcheck:Leak
+   fun:malloc
+   fun:tMPI_Malloc
+   fun:tMPI_Thread_mutex_init_once
+}
