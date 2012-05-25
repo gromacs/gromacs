@@ -1,2 +1,5 @@
 file(GLOB MDLIB_SOURCES *.c)
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)
