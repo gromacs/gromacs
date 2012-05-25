@@ -229,7 +229,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   FILE     *fplog;
   
   /* Initiate */
-  *cr = init_cr_nopar();
+  *cr = init_par(NULL,NULL);
   gmx_log_open(log,*cr,FALSE,0,&fplog);
 
   init_nrnb(&nrnb);

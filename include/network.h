@@ -121,8 +121,7 @@ void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
 void gmx_abort(int nodeid,int nnodes,int errorno);
 /* Abort the parallel run */
 
-void gmx_finalize(void);
-
+void gmx_finalize_par(void);
 /* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE

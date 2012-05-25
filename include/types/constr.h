@@ -33,8 +33,8 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
-#ifndef _constr_h
-#define _constr_h
+#ifndef _types_constr_h
+#define _types_constr_h
 
 #ifdef __cplusplus
 extern "C" {

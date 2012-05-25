@@ -216,7 +216,6 @@ static void quit_gmx(const char *msg)
     }
 
 #ifndef GMX_THREAD_MPI
-    if (gmx_parallel_env_initialized())
     {
         int  nnodes;
         int  noderank;
@@ -225,20 +224,25 @@ static void quit_gmx(const char *msg)
         noderank = gmx_node_rank();
 
         if (nnodes > 1) 
+        {
             fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",
                     noderank);
+        }
         gmx_abort(noderank,nnodes,-1);
     } 
-    else 
 #endif
+
+    if (debug)
     {
-        if (debug)
-            fflush(debug);
-        if (bDebugMode()) {
-            fprintf(stderr,"dump core (y/n):"); 
-            fflush(stderr);
-            if (toupper(getc(stdin))!='N') 
-                (void) abort(); 
+        fflush(debug);
+    }
+    if (bDebugMode())
+    {
+        fprintf(stderr,"dump core (y/n):"); 
+        fflush(stderr);
+        if (toupper(getc(stdin))!='N') 
+        {
+            (void) abort();
         }
     }
 
@@ -272,17 +276,21 @@ static void quit_gmx_noquit(const char *msg)
         perror(msg);
     }
 
-    if (!gmx_parallel_env_initialized())
+#ifdef GMX_THREAD_MPI
+    if (debug)
     {
-        if (debug)
-            fflush(debug);
-        if (bDebugMode()) {
-            fprintf(stderr,"dump core (y/n):"); 
-            fflush(stderr);
-            if (toupper(getc(stdin))!='N') 
-                (void) abort(); 
+        fflush(debug);
+    }
+    if (bDebugMode())
+    {
+        fprintf(stderr,"dump core (y/n):"); 
+        fflush(stderr);
+        if (toupper(getc(stdin))!='N') 
+        {
+            (void) abort(); 
         }
     }
+#endif
 
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
@@ -454,20 +462,17 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
     bFinalize = TRUE;
 
 #ifdef GMX_MPI
-    if (gmx_parallel_env_initialized())
+    /* Check if we are calling on all processes in MPI_COMM_WORLD */ 
+    if (cr != NULL)
     {
-        /* Check if we are calling on all processes in MPI_COMM_WORLD */ 
-        if (cr != NULL)
-        {
-            MPI_Comm_compare(cr->mpi_comm_mysim,MPI_COMM_WORLD,&result);
-        }
-        else
-        {
-            MPI_Comm_compare(dd->mpi_comm_all,MPI_COMM_WORLD,&result);
-        }
-        /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
-        bFinalize = (result != MPI_UNEQUAL);
+        MPI_Comm_compare(cr->mpi_comm_mysim,MPI_COMM_WORLD,&result);
     }
+    else
+    {
+        MPI_Comm_compare(dd->mpi_comm_all,MPI_COMM_WORLD,&result);
+    }
+    /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
+    bFinalize = (result != MPI_UNEQUAL);
 #endif
 
     if ((cr != NULL && MASTER(cr)  ) ||
@@ -501,28 +506,25 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
     }
 
 #ifdef GMX_MPI
-    if (gmx_parallel_env_initialized())
+    if (bFinalize)
     {
-        if (bFinalize)
-        {
-            /* Broadcast the fatal error number possibly modified
-             * on the master process, in case the user would like
-             * to use the return status on a non-master process.
-             * The master process in cr and dd always has global rank 0.
-             */
-            MPI_Bcast(&fatal_errno,sizeof(fatal_errno),MPI_BYTE,
-                      0,MPI_COMM_WORLD);
+        /* Broadcast the fatal error number possibly modified
+         * on the master process, in case the user would like
+         * to use the return status on a non-master process.
+         * The master process in cr and dd always has global rank 0.
+         */
+        MPI_Bcast(&fatal_errno,sizeof(fatal_errno),MPI_BYTE,
+                  0,MPI_COMM_WORLD);
 
-            /* Finalize nicely instead of aborting */
-            MPI_Finalize();
-        }
-        else
-        {
-            /* Let all other processes wait till the master has printed
-             * the error message and issued MPI_Abort.
-             */
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
+        /* Finalize nicely instead of aborting */
+        MPI_Finalize();
+    }
+    else
+    {
+        /* Let all other processes wait till the master has printed
+         * the error message and issued MPI_Abort.
+         */
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 #endif
 

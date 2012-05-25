@@ -44,16 +44,6 @@
 extern "C" {
 #endif
 
-gmx_bool gmx_parallel_env_initialized(void); 
-/* 1 when running in a parallel environment, so could also be 1 if
-   mdrun was started with: mpirun -np 1.
-  
-   Use this function only to check whether a parallel environment has
-   been initialized, for example when checking whether gmx_finalize()
-   needs to be called. Use PAR(cr) to check whether the simulation actually
-   has more than one node/thread. */
-
-
 void gmx_log_open(const char *fn,const t_commrec *cr,
                           gmx_bool bMasterOnly, unsigned long Flags, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
@@ -85,7 +75,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr);
  * (see network.h). The command line arguments are communicated so that they can be
  * parsed on each processor.
  * Arguments are the number of command line arguments, and a pointer to the
- * array of argument strings.
+ * array of argument strings. Both are allowed to be NULL.
  */
 
 t_commrec *init_par_threads(const t_commrec *cro);
@@ -94,9 +84,6 @@ t_commrec *init_par_threads(const t_commrec *cro);
    the individual threads. Copies the original commrec to 
    thread-local versions (a small memory leak results because we don't 
    deallocate the old shared version).  */
-
-t_commrec *init_cr_nopar(void);
-/* Returns t_commrec for non-parallel functionality */
 
 #ifdef __cplusplus
 }
