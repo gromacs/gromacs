@@ -15,10 +15,6 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 /***************************************************************************
  *cr
@@ -77,12 +73,6 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <string.h>
 #include "vmddlopen.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
-#ifdef GMX_USE_PLUGINS
 #if defined(__hpux)
 
 #include <dl.h>
@@ -206,17 +196,3 @@ int vmddlclose(void *h) {
   return dlclose(h);
 }
 #endif 
-#else
-void *vmddlopen(const char *fname) {
-  return NULL;
-}
-const char *vmddlerror(void) {
-  return NULL;
-}
-void *vmddlsym(void *h, const char *sym) {
-  return NULL;
-}
-int vmddlclose(void *h) {
-  return 0;
-}
-#endif

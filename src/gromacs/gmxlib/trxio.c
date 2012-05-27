@@ -38,6 +38,8 @@
 
 #include <ctype.h>
 #include "sysstuff.h"
+#include "typedefs.h"
+#include "vmdio.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
@@ -53,7 +55,6 @@
 #include "confio.h"
 #include "checkpoint.h"
 #include "wgms.h"
-#include "vmdio.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -436,7 +437,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
   return bRet;    
 }
 
-static void choose_ff(FILE *fp)
+static void choose_file_format(FILE *fp)
 {
   int i,m,c;
   int rc;
@@ -585,7 +586,7 @@ static int xyz_first_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
   initcount(status);
 
   clear_mat(box);
-  choose_ff(fp);
+  choose_file_format(fp);
 
   for(m=0; (m<DIM); m++)
     box[m][m]=status->BOX[m];

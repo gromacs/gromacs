@@ -712,7 +712,7 @@ void ionize(FILE *fp,const output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
 	}
 	if (debug)
 	  fprintf(debug,"i = %d, nK = %d, nL = %d, bL = %s, bKHole = %s\n",
-		  i,nK,nL,BOOL(bL),BOOL(bKHole));
+		  i,nK,nL,EBOOL(bL),EBOOL(bKHole));
 	if (E_lost < 0) {
 	  E_lost  = 0.0;
 	  bIonize = FALSE;

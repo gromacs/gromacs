@@ -70,6 +70,12 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
 
+if(GMX_USE_PLUGINS)
+  set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
+else()
+  list(REMOVE_ITEM GMXLIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vmdio.c)
+endif()
+
 # An ugly hack to get absolute paths...
 file(GLOB THREAD_MPI_SOURCES ${THREAD_MPI_SRC})
 
