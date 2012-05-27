@@ -158,7 +158,7 @@ void pr_bvec(FILE *fp,int indent,const char *title,gmx_bool vec[],int n, gmx_boo
         {
           (void) pr_indent(fp,indent);
           (void) fprintf(fp,"%s[%d]=%s\n",title,bShowNumbers?i:-1,
-			 BOOL(vec[i]));
+			 EBOOL(vec[i]));
         }
     }
 }
@@ -515,7 +515,7 @@ static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
   fprintf(fp,"rotation_group %d:\n",g);
   indent += 2;
   PS("type",EROTGEOM(rotg->eType));
-  PS("massw",BOOL(rotg->bMassW));
+  PS("massw",EBOOL(rotg->bMassW));
   pr_ivec_block(fp,indent,"atom",rotg->ind,rotg->nat,TRUE);
   pr_rvecs(fp,indent,"x_ref",rotg->x_ref,rotg->nat);
   pr_rvec(fp,indent,"vec",rotg->vec,DIM,TRUE);
@@ -576,11 +576,11 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("ewald-rtol",ir->ewald_rtol);
     PR("ewald-geometry",ir->ewald_geometry);
     PR("epsilon-surface",ir->epsilon_surface);
-    PS("optimize-fft",BOOL(ir->bOptFFT));
+    PS("optimize-fft",EBOOL(ir->bOptFFT));
     PS("ePBC",EPBC(ir->ePBC));
-    PS("bPeriodicMols",BOOL(ir->bPeriodicMols));
-    PS("bContinuation",BOOL(ir->bContinuation));
-    PS("bShakeSOR",BOOL(ir->bShakeSOR));
+    PS("bPeriodicMols",EBOOL(ir->bPeriodicMols));
+    PS("bContinuation",EBOOL(ir->bContinuation));
+    PS("bShakeSOR",EBOOL(ir->bShakeSOR));
     PS("etc",ETCOUPLTYPE(ir->etc));
     PI("nsttcouple",ir->nsttcouple);
     PS("epc",EPCOUPLTYPE(ir->epc));
@@ -672,13 +672,13 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     if (ir->ePull != epullNO)
       pr_pull(fp,indent,ir->pull);
     
-    PS("rotation",BOOL(ir->bRot));
+    PS("rotation",EBOOL(ir->bRot));
     if (ir->bRot)
       pr_rot(fp,indent,ir->rot);
 
     PS("disre",EDISRETYPE(ir->eDisre));
     PS("disre-weighting",EDISREWEIGHTING(ir->eDisreWeighting));
-    PS("disre-mixed",BOOL(ir->bDisreMixed));
+    PS("disre-mixed",EBOOL(ir->bDisreMixed));
     PR("dr-fc",ir->dr_fc);
     PR("dr-tau",ir->dr_tau);
     PR("nstdisreout",ir->nstdisreout);
@@ -705,7 +705,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("cos-accel",ir->cos_accel);
     pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
 
-    PS("adress",BOOL(ir->bAdress));
+    PS("adress",EBOOL(ir->bAdress));
     if (ir->bAdress){
         PS("adress_type",EADRESSTYPE(ir->adress->type));
         PR("adress_const_wf",ir->adress->const_wf);
@@ -714,7 +714,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
         PS("adress_interface_correction",EADRESSICTYPE(ir->adress->icor));
         PS("adress_site",EADRESSSITETYPE(ir->adress->site));
         PR("adress_ex_force_cap",ir->adress->ex_forcecap);
-        PS("adress_do_hybridpairs", BOOL(ir->adress->do_hybridpairs));
+        PS("adress_do_hybridpairs", EBOOL(ir->adress->do_hybridpairs));
 
         pr_rvec(fp,indent,"adress_reference_coords",ir->adress->refs,DIM,TRUE);
     }
@@ -733,7 +733,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     pr_cosine(fp,indent,"efield-yt",&(ir->et[YY]),bMDPformat);
     pr_cosine(fp,indent,"efield-z",&(ir->ex[ZZ]),bMDPformat);
     pr_cosine(fp,indent,"efield-zt",&(ir->et[ZZ]),bMDPformat);
-    PS("bQMMM",BOOL(ir->bQMMM));
+    PS("bQMMM",EBOOL(ir->bQMMM));
     PI("QMconstraints",ir->QMconstraints);
     PI("QMMMscheme",ir->QMMMscheme);
     PR("scalefactor",ir->scalefactor);

@@ -1154,10 +1154,7 @@ int gmx_pme_error(int argc,char *argv[])
         fclose(fp);
     }
     
-    if (gmx_parallel_env_initialized())
-    {
-        gmx_finalize();
-    }
+    gmx_finalize_par();
     
     return 0;
 }
