@@ -139,9 +139,9 @@ int get_val(gmx_molprop_t mp,int expref,char *type,int emp,
 }
 
 int mp_get_prop_ref(gmx_molprop_t mp,int emp,int iQM,char *lot,
-                      char *conf,char *type,double *value,double *error,
-                      char **ref,char **mylot,
-                      double vec[3],tensor quadrupole)
+                    char *conf,char *type,double *value,double *error,
+                    char **ref,char **mylot,
+                    double vec[3],tensor quadrupole)
 {
     char *buf,*method,*reference,*name,*basisset,*program,*conformation,*expconf;
     int expref,n,k,done=0;
@@ -150,6 +150,7 @@ int mp_get_prop_ref(gmx_molprop_t mp,int emp,int iQM,char *lot,
     if ((iQM == iqmExp) || (iQM == iqmBoth)) 
     {
         gmx_molprop_reset_experiment(mp);
+        reference = NULL;
         while ((done == 0) &&
                (gmx_molprop_get_experiment(mp,&reference,
                                            &expconf,&expref) == 1)) 
@@ -159,11 +160,17 @@ int mp_get_prop_ref(gmx_molprop_t mp,int emp,int iQM,char *lot,
             sfree(expconf);
         }
         gmx_molprop_reset_experiment(mp);
-        if ((done != 0) && (NULL != ref))
-        {
-            *ref   = strdup(reference);
+        if (done != 0) {
+            if (NULL != ref)
+                *ref   = strdup(reference);
+            else
+                sfree(reference);
             if (NULL != mylot)
                 *mylot = strdup("Experiment");
+        }
+        else {
+            if (NULL != reference)
+                sfree(reference);
         }
     }
     

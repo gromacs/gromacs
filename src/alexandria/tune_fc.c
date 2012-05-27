@@ -118,7 +118,7 @@ typedef struct {
     opt_bad_t *bad[ebadNR];
     int *inv_gt[ebadNR];
     int nparam;
-    double *param,*orig,*best,*lower,*upper;
+    double *param,*orig,*best,*lower,*upper,*psigma;
 } opt_param_t;
 
 static void add_obt(opt_bad_t *obt,int natom,char **ai,
@@ -168,7 +168,7 @@ static void list2opt(opt_param_t *opt)
 {
     gmx_poldata_t pd = opt->md->pd;
     int i,j,p,n,nparam;
-    char buf[STRLEN];
+    char buf[STRLEN],*ptr;
     
     for(i=n=0; (i<ebadNR); i++) {
         for(j=0; (j<opt->nbad[i]); j++) {
@@ -176,7 +176,9 @@ static void list2opt(opt_param_t *opt)
             for(p=0; (p<opt->bad[i][j].nparam); p++) {
                 opt->bad[i][j].param[p] = opt->param[n++];
                 strcat(buf," ");
-                strcat(buf,gmx_ftoa(opt->bad[i][j].param[p]));
+                ptr = gmx_ftoa(opt->bad[i][j].param[p]);
+                strcat(buf,ptr);
+                sfree(ptr);
             }
             switch (i) {
             case ebadBOND:
@@ -293,8 +295,6 @@ static void get_dissociation_energy(FILE *fplog,opt_param_t *opt)
         gmx_fatal(FARGS,"Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
                   row);
     }
-    snew(atx,nD);
-    snew(fpp,nD);
     a0 = 0;
     do {
         for(i=0; (i<nD); i++)  
@@ -335,10 +335,16 @@ static void get_dissociation_energy(FILE *fplog,opt_param_t *opt)
         if (fplog)
             fprintf(fplog,"Optimized dissociation energy for %8s with %4d copies to %g\n",
                     ctest[i],test[i],fpp[i]);
+        sfree(ctest[i]);
     }
-
+    sfree(ctest);
     sfree(test);
     sfree(fpp);
+    sfree(atx);
+    sfree(x);
+    free_matrix(a,nMol);
+    free_matrix(at,nD);
+    free_matrix(ata,nD);
 }
 
 static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
@@ -367,6 +373,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                         srenew(fc,++maxfc);
                     }
                     fc[n] = atof(ptr[n]);
+                    sfree(ptr[n]);
                 }
                 if (D0 > 0)
                     fc[0] = D0;
@@ -374,7 +381,13 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                     fc[1] = beta0;
                 add_opt(opt,ebadBOND,2,ai,n,fc,gt);
                 *nparam += n;
+                sfree(ptr);
             }
+            if (NULL != params)
+                sfree(params);
+            for(n=0; (n<2); n++) 
+                if (NULL != ai[n])
+                    sfree(ai[n]);
         }
     }
     if (bAngles) {
@@ -390,6 +403,11 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                 add_opt(opt,ebadANGLE,3,ai,n,fc,gt);
                 *nparam += n;
             }
+            if (NULL != params)
+                sfree(params);
+            for(n=0; (n<3); n++) 
+                if (NULL != ai[n])
+                    sfree(ai[n]);
         }
     }
     if (bDihs) {
@@ -406,6 +424,11 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                 add_opt(opt,ebadDIH,4,ai,n,fc,gt);
                 *nparam += n;
             }
+            if (NULL != params)
+                sfree(params);
+            for(n=0; (n<4); n++) 
+                if (NULL != ai[n])
+                    sfree(ai[n]);
         }
     }
     sfree(fc);
@@ -419,6 +442,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
     snew(opt->orig,opt->nparam);
     snew(opt->lower,opt->nparam);
     snew(opt->upper,opt->nparam);
+    snew(opt->psigma,opt->nparam);
     if (factor < 1)
         factor = 1/factor;
     for(i=0; (i<opt->nparam); i++) {
@@ -484,6 +508,15 @@ static void xvgr_symbolize(FILE *xvgf,int nsym,const char *leg[],
     }        
 }
 
+static void done_opt_mask(opt_mask_t **omt)
+{
+    sfree((*omt)->ngtb);
+    sfree((*omt)->ngta);
+    sfree((*omt)->ngtd);
+    sfree(*omt);
+    *omt = NULL;
+}
+
 static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                                 gmx_bool bBonds,gmx_bool bAngles,gmx_bool bDihs)
 {
@@ -517,6 +550,8 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                         sprintf(cgtb[gt-1],"%s-%s",aai,aaj);
                     }
                     nbtot++;
+                    if (NULL != params)
+                        sfree(params);
                 }
             }
         }
@@ -551,6 +586,8 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                         sprintf(cgta[gt-1],"%s-%s-%s",aai,aaj,aak);
                     }
                     natot++;
+                    if (NULL != params)
+                        sfree(params);
                 }
             }
         }
@@ -587,6 +624,8 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                         snew(cgtd[gt-1],strlen(aai)+strlen(aaj)+strlen(aak)+strlen(aal)+4);
                         sprintf(cgtd[gt-1],"%s-%s-%s-%s",aai,aaj,aak,aal);
                     }
+                    if (NULL != params)
+                        sfree(params);
                 }
                 ndtot++;
             }
@@ -641,6 +680,8 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
+                if (NULL != params)
+                    sfree(params);
             }
             else {
                 gmx_fatal(FARGS,"There are no parameters for bond %s-%s in the force field",aai,aaj);
@@ -668,6 +709,8 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
+                if (NULL != params)
+                    sfree(params);
             }
             else {
                 gmx_fatal(FARGS,"There are no parameters for angle %s-%s-%s in the force field",aai,aaj,aak);
@@ -703,6 +746,8 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,
                     sfree(ptr[2]);
                 }
                 sfree(ptr);
+                if (NULL != params)
+                    sfree(params);
             }
             else {
                 gmx_fatal(FARGS,"There are no parameters for angle %s-%s-%s in the force field",aai,aaj,aak);
@@ -879,12 +924,9 @@ static void guess_all_param(FILE *fplog,opt_param_t *opt,int iter,real stepsize,
     }
 }
 
-void bayes(FILE *fplog,
-           char *xvgconv,
-           char *xvgepot,
-           void *data,
-           nm_target_func func,
-           double start[],
+void bayes(FILE *fplog,char *xvgconv,char *xvgepot,
+           void *data,nm_target_func func,
+           double start[],double sig[],
            int n,
            int nprint,
            double step,
@@ -964,11 +1006,14 @@ void bayes(FILE *fplog,
     if (NULL != fplog) {
         fprintf(fplog,"Average and standard deviation of parameters\n");
         for(k=0; (k<n); k++) {
+            sig[k] = sqrt(s2sum[k]-sqr(ssum[k]));
             fprintf(fplog,"%5d  %10g  %10g\n",
-                    k,ssum[k],sqrt(s2sum[k]-sqr(ssum[k])));
+                    k,ssum[k],sig[k]);
             start[k] = ssum[k];
         }
     }
+    sfree(ssum);
+    sfree(s2sum);
 }
 
 static void optimize_moldip(FILE *fp,FILE *fplog,
@@ -978,7 +1023,8 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
                             gmx_bool bBonds,gmx_bool bAngles,gmx_bool bDihs,
                             real D0,real beta0,real D0_min,real beta_min,
                             opt_mask_t *omt,real factor,int nprint,
-                            char *xvgconv,char *xvgepot,real temperature)
+                            const char *xvgconv,const char *xvgepot,
+                            real temperature)
 {
     double chi2,chi2_min,wj,rms_nw;
     int    status = 0;
@@ -1005,7 +1051,7 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
             guess_all_param(fplog,opt,n,stepsize,bRandom,rng);
             
             bayes(fplog,xvgconv,xvgepot,
-                  (void *)opt,energy_function,opt->param,nparam,nprint,
+                  (void *)opt,energy_function,opt->param,opt->psigma,nparam,nprint,
                   stepsize,seed,temperature,maxiter,&chi2,oenv);
                 
             if (chi2 < chi2_min) {
@@ -1042,7 +1088,7 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
         }
         calc_opt_deviation(opt);
         md->bDone = TRUE;
-        
+        gmx_rng_destroy(rng);
     }
     else 
     {
@@ -1280,12 +1326,15 @@ int main(int argc, char *argv[])
                     bRandom,stol,oenv,bBonds,bAngles,bDihs,D0,beta0,
                     D0_min,beta_min,omt,factor,nprint,
                     opt2fn("-conv",NFILE,fnm),
-                    opt2fn("-epot",NFILE,fnm),temperature);
+                    opt2fn("-epot",NFILE,fnm),
+                    temperature);
+    done_opt_mask(&omt);
     print_moldip_specs(fp,md,"After optimization",opt2fn("-x",NFILE,fnm),oenv);
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);
     
     if (MASTER(cr)) 
     {
+        gmx_molselect_done(gms);
         ffclose(fp);
   
         thanx(stdout);

@@ -358,6 +358,7 @@ gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps)
     if ((doc = xmlParseFile(fn2)) == NULL) {
         fprintf(stderr,"\nError reading XML file %s. Run a syntax checker such as nsgmls.\n",
                 fn2);
+        sfree(fn2);
         return NULL;
     }
     pd = gmx_poldata_init();
@@ -368,7 +369,8 @@ gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps)
   
     if (NULL != debug)
         gmx_poldata_write("pdout.dat",pd,aps,0);
-  
+    sfree(fn2);
+      
     return pd;
 }
 
@@ -387,11 +389,15 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
   
     child = add_xml_child(parent,exml_names[exmlGT_ATOMS]);
     tmp = gmx_poldata_get_ffatype_unit(pd);
-    if (tmp)
+    if (tmp) {
         add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);
+        sfree(tmp);
+    }
     tmp = gmx_poldata_get_ffatype_ff(pd);
-    if (tmp)
+    if (tmp) {
         add_xml_char(child,exml_names[exmlGT_FORCEFIELD],tmp);
+        sfree(tmp);
+    }
     while ((name = gmx_poldata_get_ffatype(pd,NULL,&elem,&desc,&gt_type,&miller_equiv,
                                            &charge,&geometry,
                                            &numbonds,&neighbors,
@@ -409,6 +415,15 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
         add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
         add_xml_char(grandchild,exml_names[exmlVDWPARAMS],vdwparams);
+        sfree(elem);
+        sfree(desc);
+        sfree(name);
+        sfree(gt_type);
+        sfree(miller_equiv);
+        sfree(geometry);
+        sfree(neighbors);
+        sfree(charge);
+        sfree(vdwparams);
     }
 
     child = add_xml_child(parent,exml_names[exmlGT_BONDS]);
@@ -425,6 +440,9 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_double(grandchild,exml_names[exmlSIGMA],sigma);
         add_xml_double(grandchild,exml_names[exmlBONDORDER],bondorder);
         add_xml_char(grandchild,exml_names[exmlPARAMS],params);
+        sfree(atom1);
+        sfree(atom2);
+        sfree(params);
     }
   
     child = add_xml_child(parent,exml_names[exmlGT_ANGLES]);
@@ -440,6 +458,10 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_double(grandchild,exml_names[exmlANGLE],angle);
         add_xml_double(grandchild,exml_names[exmlSIGMA],sigma);
         add_xml_char(grandchild,exml_names[exmlPARAMS],params);
+        sfree(atom1);
+        sfree(atom2);
+        sfree(atom3);
+        sfree(params);
     }
   
     child = add_xml_child(parent,exml_names[exmlGT_DIHEDRALS]);
@@ -457,6 +479,11 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_double(grandchild,exml_names[exmlANGLE],angle);
         add_xml_double(grandchild,exml_names[exmlSIGMA],sigma);
         add_xml_char(grandchild,exml_names[exmlPARAMS],params);    
+        sfree(atom1);
+        sfree(atom2);
+        sfree(atom3);
+        sfree(atom4);
+        sfree(params);
     }
   
     child = add_xml_child(parent,exml_names[exmlBSATOMS]);
@@ -470,10 +497,14 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     }
     child = add_xml_child(parent,exml_names[exmlMILATOMS]);
     gmx_poldata_get_miller_units(pd,&tau_unit,&ahp_unit);
-    if (tau_unit)
+    if (tau_unit) {
         add_xml_char(child,exml_names[exmlTAU_UNIT],tau_unit);
-    if (ahp_unit)
+        sfree(tau_unit);
+    }
+    if (ahp_unit) {
         add_xml_char(child,exml_names[exmlAHP_UNIT],ahp_unit);
+        sfree(ahp_unit);
+    }
   
     while ((name = gmx_poldata_get_miller(pd,NULL,&atomnumber,&tau_ahc,&alpha_ahp,&alexandria_equiv)) != NULL) {
         grandchild = add_xml_child(child,exml_names[exmlMILATOM]);
@@ -481,8 +512,10 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_int(grandchild,exml_names[exmlATOMNUMBER],atomnumber);
         add_xml_double(grandchild,exml_names[exmlTAU_AHC],tau_ahc);
         add_xml_double(grandchild,exml_names[exmlALPHA_AHP],alpha_ahp);
-        if (alexandria_equiv)
+        if (alexandria_equiv) {
             add_xml_char(grandchild,exml_names[exmlALEXANDRIA_EQUIV],alexandria_equiv);
+            sfree(alexandria_equiv);
+        }
     }
 
     child = add_xml_child(parent,exml_names[exmlSYMMETRIC_CHARGES]);
@@ -492,6 +525,8 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_char(grandchild,exml_names[exmlCENTRAL],central);
         add_xml_char(grandchild,exml_names[exmlATTACHED],attached);
         add_xml_int(grandchild,exml_names[exmlNUMATTACH],numattach);
+        sfree(central);
+        sfree(attached);
     }
   
     child = add_xml_child(parent,exml_names[exmlEEMPROPS]);
@@ -504,11 +539,15 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_char(grandchild,exml_names[exmlZETA],zeta);
         add_xml_char(grandchild,exml_names[exmlCHARGE],qstr);
         add_xml_char(grandchild,exml_names[exmlROW],rowstr);
+        sfree(zeta);
+        sfree(qstr);
+        sfree(rowstr);
     }
     while (gmx_poldata_list_epref(pd,&model,&epref) == 1) {
         grandchild = add_xml_child(child,exml_names[exmlEEMPROP_REF]);
         add_xml_char(grandchild,exml_names[exmlMODEL],get_eemtype_name(model));
         add_xml_char(grandchild,exml_names[exmlEPREF],epref);
+        sfree(epref);
     }
 }
 
