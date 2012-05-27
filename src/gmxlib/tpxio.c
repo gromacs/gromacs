@@ -1898,7 +1898,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop,gmx_bool bRead,
   else
   {
       mtop->ffparams.cmap_grid.ngrid        = 0;
-      mtop->ffparams.cmap_grid.grid_spacing = 0.1;
+      mtop->ffparams.cmap_grid.grid_spacing = 0;
       mtop->ffparams.cmap_grid.cmapdata     = NULL;
   }
 	  
