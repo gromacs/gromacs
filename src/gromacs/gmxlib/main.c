@@ -83,50 +83,6 @@ gmx_ctime_r(const time_t *clock,char *buf, int n);
 
 #define BUFSIZE	1024
 
-/* this is not strictly thread-safe, but it's only written to at the beginning
-   of the simulation, once by each thread with the same value. We assume
-   that writing to an int is atomic.*/
-static gmx_bool parallel_env_val;
-#ifdef GMX_THREAD_MPI
-tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
-
-
-/* returns 1 when running in a parallel environment, so could also be 1 if
-   mdrun was started with: mpirun -np 1.
-     
-   Use this function only to check whether a parallel environment has   
-   been initialized, for example when checking whether gmx_finalize()   
-   needs to be called. Use PAR(cr) to check whether the simulation actually
-   has more than one node/thread.  */
-gmx_bool gmx_parallel_env_initialized(void)
-{
-    gmx_bool ret;
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&parallel_env_mutex);
-#endif
-    ret=parallel_env_val;
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_unlock(&parallel_env_mutex);
-#endif
-    return ret;
-}
-
-static void set_parallel_env(gmx_bool val)
-{
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&parallel_env_mutex);
-#endif
-    if (!parallel_env_val)
-    {
-        /* we only allow it to be set, not unset */
-        parallel_env_val=val;
-    }
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_unlock(&parallel_env_mutex);
-#endif
-}
-
 
 static void par_fn(char *base,int ftp,const t_commrec *cr,
 		   gmx_bool bAppendSimId,gmx_bool bAppendNodeId,
@@ -516,39 +472,24 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 
     argv = *argv_ptr;
 
-#ifdef GMX_MPI
-#ifdef GMX_LIB_MPI
-    pe = TRUE;
-#ifdef GMX_CHECK_MPI_ENV
-    /* Do not use MPI calls when env.var. GMX_CHECK_MPI_ENV is not set */
-    if (getenv(GMX_CHECK_MPI_ENV) == NULL)
-        pe = FALSE;
-#endif /* GMX_CHECK_MPI_ENV */
-#endif /* GMX_LIB_MPI  */
-    set_parallel_env(pe);
-    if (pe) {
-        cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
-    } else {
-        cr->nnodes     = 1;
-        cr->sim_nodeid = 0;
-    }
-#else /* GMX_MPI */
-    pe=FALSE;
-    set_parallel_env(pe);
-    cr->sim_nodeid   = 0;
-    cr->nnodes       = 1;
-#endif /* GMX_MPI */
+#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
 
     if (!PAR(cr) && (cr->sim_nodeid != 0))
-        gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
-
-    if (PAR(cr)) 
     {
-#ifdef GMX_MPI
-        cr->mpi_comm_mysim = MPI_COMM_WORLD;
-        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-#endif /* GMX_MPI */
+        gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
     }
+
+    cr->mpi_comm_mysim   = MPI_COMM_WORLD;
+    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+#else
+    /* These should never be accessed */
+    cr->mpi_comm_mysim   = NULL;
+    cr->mpi_comm_mygroup = NULL;
+    cr->nnodes           = 1;
+    cr->sim_nodeid       = 0;
+#endif
+
     cr->nodeid = cr->sim_nodeid;
 
     cr->duty = (DUTY_PP | DUTY_PME);
@@ -556,7 +497,9 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     /* Communicate arguments if parallel */
 #ifndef GMX_THREAD_MPI
     if (PAR(cr))
+    {
         comm_args(cr,argc,argv_ptr);
+    }
 #endif /* GMX_THREAD_MPI */
 
 #ifdef GMX_MPI
@@ -592,8 +535,9 @@ t_commrec *init_par_threads(const t_commrec *cro)
     /* and we start setting our own thread-specific values for things */
     MPI_Initialized(&initialized);
     if (!initialized)
+    {
         gmx_comm("Initializing threads without comm");
-    set_parallel_env(TRUE);
+    }
     /* once threads will be used together with MPI, we'll
        fill the cr structure with distinct data here. This might even work: */
     cr->sim_nodeid = gmx_setup(0,NULL, &cr->nnodes);
@@ -607,21 +551,4 @@ t_commrec *init_par_threads(const t_commrec *cro)
 #else
     return NULL;
 #endif
-}
-
-
-t_commrec *init_cr_nopar(void)
-{
-    t_commrec *cr;
-
-    snew(cr,1);
-
-    cr->nnodes     = 1; 
-    /* cr->nthreads   = 1; */
-    cr->sim_nodeid = 0;
-    cr->nodeid     = 0;
-    /* cr->threadid   = 0; */
-    cr->duty       = (DUTY_PP | DUTY_PME);
-
-    return cr;
 }
