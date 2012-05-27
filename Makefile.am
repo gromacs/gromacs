@@ -38,6 +38,7 @@ EXTRA_DIST = config/depcomp \
 			 src/CMakeLists.txt \
 			 src/tools/CMakeLists.txt \
 			 COPYING-GPU \
+			 COPYING-OTHER \
 			 INSTALL-GPU \
 			 INSTALL.cmake \
 			 INSTALL.automake
