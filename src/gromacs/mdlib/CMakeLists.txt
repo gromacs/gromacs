@@ -1,2 +1,5 @@
 file(GLOB MDLIB_SOURCES *.c)
+if(GMX_FFT_FFTPACK)
+list(APPEND MDLIB_SOURCES ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
+endif()
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
