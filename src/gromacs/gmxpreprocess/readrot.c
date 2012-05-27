@@ -194,7 +194,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
 
 
 /* Check whether the box is unchanged */
-static void check_box(matrix f_box, matrix box, char fn[], warninp_t wi)
+static void check_box_unchanged(matrix f_box, matrix box, char fn[], warninp_t wi)
 {
     int i,ii;
     gmx_bool bSame=TRUE;
@@ -265,7 +265,7 @@ extern void set_reference_positions(
              read_trn(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL);
 
              /* Check whether the box is unchanged and output a warning if not: */
-             check_box(f_box,box,reffile,wi);
+             check_box_unchanged(f_box,box,reffile,wi);
          }
          else
          {
