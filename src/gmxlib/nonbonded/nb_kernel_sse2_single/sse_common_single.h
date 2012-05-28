@@ -31,17 +31,7 @@
 #include <config.h>
 #endif
 
-#include <xmmintrin.h> /* SSE */
-#ifdef GMX_SSE2
-#  include <emmintrin.h> /* SSE2 */
-#endif
-#ifdef GMX_SSE3
-#  include <pmmintrin.h> /* SSE3 */
-#endif
-#ifdef GMX_SSE4
-#  include <smmintrin.h> /* SSE4.1 */
-#endif
-
+#include <emmintrin.h>
 
 #include <stdio.h>
   
@@ -1029,11 +1019,7 @@ gmx_mm_int_lj_potonly_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
 	return;
 }
 
-#ifdef GMX_SSE4
-#  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
-#else
-#  define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
-#endif
+#define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
 
 /* Return force should be multiplied by -rinv to get fscal */
@@ -1902,18 +1888,11 @@ gmx_mm_update_iforce_1atom_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 {
 	__m128 t1,t2,t3;
 	
-#ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fix1);   
-	fiy1 = _mm_hadd_ps(fiy1,fiz1);
-	
-	fix1 = _mm_hadd_ps(fix1,fiy1); /* fiz1 fiy1 fix1 fix1 */ 
-#else
-	/* SSE2 */
 	/* transpose data */
 	t1 = fix1;
 	_MM_TRANSPOSE4_PS(fix1,t1,fiy1,fiz1);  
 	fix1 = _mm_add_ps(_mm_add_ps(fix1,t1), _mm_add_ps(fiy1,fiz1));
-#endif
+
 	t2 = _mm_load_ss(fptr);
 	t2 = _mm_loadh_pi(t2,(__m64 *)(fptr+1));
 	t3 = _mm_load_ss(fshiftptr);
@@ -1936,15 +1915,6 @@ gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 {
 	__m128 t1,t2,t3,t4;
 	
-#ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fiy2); /*  -    -   fiz2 fiy2 */
-#else
-	/* SSE2 */
 	/* transpose data */
 	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
 	t1 = _mm_unpacklo_ps(fiy2,fiz2);
@@ -1954,7 +1924,7 @@ gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	t1   = _mm_add_ps(t1,t2);
 	t2   = _mm_movehl_ps(t2,t1);
 	fiy2 = _mm_add_ps(t1,t2);
-#endif
+
 	_mm_storeu_ps(fptr,   _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
 	t1 = _mm_loadl_pi(t1,(__m64 *)(fptr+4));
 	_mm_storel_pi((__m64 *)(fptr+4), _mm_add_ps(fiy2,t1));
@@ -1985,18 +1955,6 @@ gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 {
 	__m128 t1,t2,t3,t4;
 	
-#ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	fix3 = _mm_hadd_ps(fix3,fiy3);
-	fiz3 = _mm_hadd_ps(fiz3,fiz3);
-	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fix3); /* fiy3 fix3 fiz2 fiy2 */
-	fiz3 = _mm_hadd_ps(fiz3,fiz3); /*  -    -    -   fiz3 */
-#else
-	/* SSE2 */
 	/* transpose data */
 	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
 	_MM_TRANSPOSE4_PS(fiy2,fiz2,fix3,fiy3);
@@ -2007,7 +1965,7 @@ gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
 	fiy2 = _mm_add_ps(_mm_add_ps(fiy2,fiz2), _mm_add_ps(fix3,fiy3));
 	fiz3 = _mm_add_ss(_mm_add_ps(fiz3,t1)  , _mm_add_ps(t2,t3));
-#endif
+
 	_mm_storeu_ps(fptr,  _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
 	_mm_storeu_ps(fptr+4,_mm_add_ps(fiy2,_mm_loadu_ps(fptr+4)));
 	_mm_store_ss (fptr+8,_mm_add_ss(fiz3,_mm_load_ss(fptr+8) ));
@@ -2038,19 +1996,6 @@ gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 {
 	__m128 t1,t2,t3,t4,t5;
 	
-#ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	fix3 = _mm_hadd_ps(fix3,fiy3);
-	fiz3 = _mm_hadd_ps(fiz3,fix4);
-	fiy4 = _mm_hadd_ps(fiy4,fiz4);
-	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fix3); /* fiy3 fix3 fiz2 fiy2 */
-	fiz3 = _mm_hadd_ps(fiz3,fiy4); /* fiz4 fiy4 fix4 fiz3 */
-#else
-	/* SSE2 */
 	/* transpose data */
 	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
 	_MM_TRANSPOSE4_PS(fiy2,fiz2,fix3,fiy3);
@@ -2059,7 +2004,7 @@ gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
 	fiy2 = _mm_add_ps(_mm_add_ps(fiy2,fiz2), _mm_add_ps(fix3,fiy3));
 	fiz3 = _mm_add_ps(_mm_add_ps(fiz3,fix4), _mm_add_ps(fiy4,fiz4));
-#endif
+
 	_mm_storeu_ps(fptr,  _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
 	_mm_storeu_ps(fptr+4,_mm_add_ps(fiy2,_mm_loadu_ps(fptr+4)));
 	_mm_storeu_ps(fptr+8,_mm_add_ps(fiz3,_mm_loadu_ps(fptr+8)));
@@ -2086,26 +2031,15 @@ gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 static inline void
 gmx_mm_update_1pot_ps(__m128 pot1, float *ptr1)
 {
-#ifdef GMX_SSE3
-	pot1 = _mm_hadd_ps(pot1,pot1);
-	pot1 = _mm_hadd_ps(pot1,pot1);
-#else
-	/* SSE2 */
 	pot1 = _mm_add_ps(pot1,_mm_movehl_ps(pot1,pot1));
 	pot1 = _mm_add_ps(pot1,_mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1)));
-#endif
+
 	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
 }
 				   
 static inline void
 gmx_mm_update_2pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2)
 {
-#ifdef GMX_SSE3
-	pot1 = _mm_hadd_ps(pot1,pot2); 
-	pot1 = _mm_hadd_ps(pot1,pot1); 
-	pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1));
-#else
-	/* SSE2 */
 	__m128 t1,t2;
 	t1   = _mm_movehl_ps(pot2,pot1); /* 2d 2c 1d 1c */
 	t2   = _mm_movelh_ps(pot1,pot2); /* 2b 2a 1b 1a */
@@ -2113,7 +2047,7 @@ gmx_mm_update_2pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2)
 	t2   = _mm_shuffle_ps(t1,t1,_MM_SHUFFLE(3,3,1,1));
 	pot1 = _mm_add_ps(t1,t2);       /* -  2  -  1  */
 	pot2 = _mm_movehl_ps(t2,t1);    /* -  -  -  2  */
-#endif
+
 	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
 	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));
 }

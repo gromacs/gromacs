@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-void gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly);
+void gmx_setup_kernels(FILE *fplog,t_forcerec *fr,gmx_bool bGenericKernelOnly);
 void gmx_setup_adress_kernels(FILE *fplog,gmx_bool bGenericKernelOnly);
 
 #define GMX_DONB_LR             (1<<0)
