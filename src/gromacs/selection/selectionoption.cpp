@@ -35,17 +35,15 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#include "gromacs/selection/selectionoption.h"
+#include "selectionfileoption.h"
+#include "selectionfileoptioninfo.h"
+#include "selectionoption.h"
+#include "selectionoptioninfo.h"
 
 #include <string>
-#include <vector>
 
-#include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/selection/selection.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionfileoption.h"
-#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -127,9 +125,7 @@ void SelectionOptionStorage::convertValue(const std::string &value)
 {
     GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
-    SelectionList selections;
-    manager_->selectionCollection().parseFromString(value, &selections);
-    addSelections(selections, false);
+    manager_->convertOptionValue(this, value);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
@@ -138,7 +134,7 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
 
     if (values->size() == 0)
     {
-        manager_->requestDelayedParsing(this);
+        manager_->requestOptionDelayedParsing(this);
     }
     else if (values->size() < static_cast<size_t>(minValueCount()))
     {
@@ -157,7 +153,7 @@ void SelectionOptionStorage::processAll()
     {
         GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
-        manager_->requestDelayedParsing(this);
+        manager_->requestOptionDelayedParsing(this);
         setFlag(efSet);
     }
 }

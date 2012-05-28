@@ -52,18 +52,21 @@ class SelectionOptionStorage;
 /*! \brief
  * Handles interaction of selection options with other options and user input.
  *
- * This class implements features of SelectionOption that require actions
- * outside options parsing.  It is also used to pass the selection collection
- * to the selection options, and to implement the coupling between
- * SelectionOption and SelectionFileOption.
+ * This class implements interaction of SelectionOption with
+ * SelectionCollection, and also implements features of SelectionOption that
+ * require actions outside options parsing.
+ * It also implements the coupling between SelectionOption and
+ * SelectionFileOption.
  *
- * The main feature of this class (in addition to passing the
- * selectionCollection() method) is that the internal implementation of
- * selection options calls requestDelayedParsing() when an option is provided
- * on the command line without a value.  Such calls are remembered, and
- * the value for all requested options can be later provided by calling one of
- * parseRequestedFromStdin(), parseRequestedFromFile() or
- * parseRequstedFromString().
+ * The main features of this class are:
+ *  - convertOptionValue(), which is used to convert string values into
+ *    selections for options.
+ *  - requestOptionDelayedParsing(), which is called by the internal
+ *    implementation of selection options when an option is provided on the
+ *    command line without a value.  Such calls are remembered, and the value
+ *    for all requested options can be later provided by calling one of
+ *    parseRequestedFromStdin(), parseRequestedFromFile() or
+ *    parseRequstedFromString().
  *
  * \see setManagerForSelectionOptions()
  *
@@ -82,12 +85,6 @@ class SelectionOptionManager
         ~SelectionOptionManager();
 
         /*! \brief
-         * Returns the selection collection for this manager.
-         *
-         * Does not throw.
-         */
-        SelectionCollection &selectionCollection();
-        /*! \brief
          * Adds a selection option to be managed.
          *
          * \param     storage  Storage object for the option to register.
@@ -101,6 +98,21 @@ class SelectionOptionManager
          */
         void registerOption(SelectionOptionStorage *storage);
         /*! \brief
+         * Converts a string value to selections for an option.
+         *
+         * \param     storage  Storage object to receive the selections.
+         * \param[in] value    Value to convert.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InvalidInputError if the selection string is not valid,
+         *      or uses a feature not supported by the option.
+         *
+         * This is only for internal use by the selection module.
+         * It is not possible to obtain a SelectionOptionStorage pointer
+         * through any public or library API.
+         */
+        void convertOptionValue(SelectionOptionStorage *storage,
+                                const std::string &value);
+        /*! \brief
          * Adds a selection option for delayed user input.
          *
          * \param     storage  Storage object for the option to request.
@@ -112,7 +124,7 @@ class SelectionOptionManager
          *
          * Strong exception safety.
          */
-        void requestDelayedParsing(SelectionOptionStorage *storage);
+        void requestOptionDelayedParsing(SelectionOptionStorage *storage);
 
         /*! \brief
          * Parses selection(s) from standard input for options not yet

@@ -237,12 +237,6 @@ SelectionOptionManager::~SelectionOptionManager()
 {
 }
 
-SelectionCollection &
-SelectionOptionManager::selectionCollection()
-{
-    return impl_->collection_;
-}
-
 void
 SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
 {
@@ -251,7 +245,17 @@ SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
 }
 
 void
-SelectionOptionManager::requestDelayedParsing(SelectionOptionStorage *storage)
+SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
+                                           const std::string &value)
+{
+    SelectionList selections;
+    impl_->collection_.parseFromString(value, &selections);
+    storage->addSelections(selections, false);
+}
+
+void
+SelectionOptionManager::requestOptionDelayedParsing(
+        SelectionOptionStorage *storage)
 {
     impl_->requests_.push_back(Impl::SelectionRequest(storage));
 }
