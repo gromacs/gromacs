@@ -248,8 +248,7 @@ void
 SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
                                            const std::string &value)
 {
-    SelectionList selections;
-    impl_->collection_.parseFromString(value, &selections);
+    SelectionList selections = impl_->collection_.parseFromString(value);
     storage->addSelections(selections, false);
 }
 
@@ -289,8 +288,8 @@ SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
             std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
                          request.count() < 0 ? ", Ctrl-D to end" : "");
         }
-        SelectionList selections;
-        impl_->collection_.parseFromStdin(request.count(), bInteractive, &selections);
+        SelectionList selections
+            = impl_->collection_.parseFromStdin(request.count(), bInteractive);
         request.storage_->addSelections(selections, true);
     }
 }
@@ -298,16 +297,14 @@ SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
 void
 SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
 {
-    SelectionList selections;
-    impl_->collection_.parseFromFile(filename, &selections);
+    SelectionList selections = impl_->collection_.parseFromFile(filename);
     impl_->placeSelectionsInRequests(selections);
 }
 
 void
 SelectionOptionManager::parseRequestedFromString(const std::string &str)
 {
-    SelectionList selections;
-    impl_->collection_.parseFromString(str, &selections);
+    SelectionList selections = impl_->collection_.parseFromString(str);
     impl_->placeSelectionsInRequests(selections);
 }
 

@@ -129,19 +129,14 @@ class SelectionCollection::Impl
          * \param[in,out] scanner Scanner data structure.
          * \param[in]     maxnr   Maximum number of selections to parse
          *      (if -1, parse as many as provided by the user).
-         * \param[out]    output  Vector to which parsed selections are
-         *      appended.
+         * \returns       Vector of parsed selections.
          * \throws        std::bad_alloc if out of memory.
          * \throws        InvalidInputError if there is a parsing error.
-         *
-         * Parsed selections are appended to \p output without clearing it
-         * first.  If parsing fails, \p output is not modified.
          *
          * Used internally to implement parseFromStdin(), parseFromFile() and
          * parseFromString().
          */
-        void runParser(void *scanner, int maxnr,
-                       SelectionList *output);
+        SelectionList runParser(void *scanner, int maxnr);
         /*! \brief
          * Replace group references by group contents.
          *
