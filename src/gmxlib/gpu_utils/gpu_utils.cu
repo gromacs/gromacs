@@ -41,6 +41,8 @@
 
 #include "memtestG80_core.h"
 
+#include "gpu_utils.h"
+
 /*! \cond  TEST */
 #ifdef _DEBUG_
 #undef _DEBUG_
@@ -562,6 +564,53 @@ int do_timed_memtest(int dev_id, int time_constr)
     /* destroy context only if we created it */
     if (dev_id != -1) cudaThreadExit();
     return res;
+}
+
+int init_gpu(FILE *fplog, int dev_id)
+{
+    cudaDeviceProp  dev_prop;
+
+    if (do_sanity_checks(dev_id, &dev_prop) != 0)
+    {
+        if (fplog)
+        {
+            fprintf(fplog, "Failed to initilize CUDA device #%d.\n", dev_id);
+        }
+
+        return -1;
+    }
+    else 
+    {
+        if (fplog)
+        {
+            /* TODO: this print is only relevant in the single-node case... */
+            fprintf(fplog, "Using CUDA device #%d, %s.\n", dev_id, dev_prop.name);
+        }
+
+        return 0;
+    }
+    
+}
+
+int uninit_gpu(FILE *fplog, int dev_id)
+{
+    cudaError_t err;
+
+    err = cudaThreadExit();
+    if (err != cudaSuccess)
+    {
+        if (fplog)
+        {
+            fprintf(fplog, "Error %d while cleaning up CUDA runtime: %s.\n", err,
+                    cudaGetErrorString(err));
+        }
+        return -1;
+    }
+    if (debug)
+    {
+        fprintf(debug, "Succesfully cleaned up CUDA runtime.\n");
+    }
+    return 0;
 }
 
 /*! \cond TEST */
