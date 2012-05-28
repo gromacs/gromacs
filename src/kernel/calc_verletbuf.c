@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#include "assert.h"
+
 #include <sys/types.h>
 #include <math.h>
 #include "typedefs.h"
@@ -206,6 +208,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
                          * construction, so even there the total drift
                          * estimation shouldn't be far off.
                          */
+                        assert(j>=1);
                         vsite_m[a1] = cam[1];
                         for(j=2; j<NRAL(ft); j++)
                         {
@@ -385,8 +388,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
     real nb_cell_rel_pairs_not_in_list_at_cutoff;
 
-    att_t *att;
-    int  natt,i;
+    att_t *att=NULL;
+    int  natt=-1,i;
     double reppow;
     real md_ljd,md_ljr,md_el,dd_el;
     real elfac;
@@ -430,6 +433,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     nb_cell_rel_pairs_not_in_list_at_cutoff = 0.1;
 
     get_verlet_buffer_atomtypes(mtop,&att,&natt,n_nonlin_vsite);
+    assert(att != NULL && natt >= 0);
 
     if (debug)
     {

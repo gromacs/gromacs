@@ -39,6 +39,7 @@
 
 #include <math.h>
 #include <string.h>
+#include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "maths.h"
@@ -1959,6 +1960,7 @@ void init_interaction_const(FILE *fp,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
+        assert(fr->nbv != NULL && fr->nbv->grp != NULL);
         init_interaction_const_tables(fp,ic,fr->nbv->grp[fr->nbv->nloc-1].kernel_type);
     }
 }
