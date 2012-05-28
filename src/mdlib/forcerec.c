@@ -1240,56 +1240,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
 }
 
 
-/* Return 1 if SSE2 support is present, otherwise 0. */
-static int 
-forcerec_check_sse2()
-{
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
-	unsigned int level;
-	unsigned int _eax,_ebx,_ecx,_edx;
-	int status;
-	int CPUInfo[4];
-	
-	level = 1;
-#ifdef _MSC_VER
-	__cpuid(CPUInfo,1);
-	
-	_eax=CPUInfo[0];
-	_ebx=CPUInfo[1];
-	_ecx=CPUInfo[2];
-	_edx=CPUInfo[3];
-	
-#elif defined(__x86_64__)
-	/* GCC 64-bit inline asm */
-	__asm__ ("push %%rbx\n\tcpuid\n\tpop %%rbx\n"                 \
-			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
-			 : "0" (level));
-#elif defined(__i386__)
-	__asm__ ("push %%ebx\n\tcpuid\n\tpop %%ebx\n"                 \
-			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
-			 : "0" (level));
-#else
-	_eax=_ebx=_ecx=_edx=0;
-#endif
-    
-	/* Features:                                                                                                       
-	 *                                                                                                                 
-	 * SSE      Bit 25 of edx should be set                                                                            
-	 * SSE2     Bit 26 of edx should be set                                                                            
-	 * SSE3     Bit  0 of ecx should be set                                                                            
-	 * SSE4.1   Bit 19 of ecx should be set                                                                            
-	 */
-	status =  (_edx & (1 << 26)) != 0;
-    
-#else
-        int status = 0;
-#endif
-	/* Return SSE2 status */
-	return status;
-}
-
-
-
 
 void init_forcerec(FILE *fp,
                    const output_env_t oenv,
@@ -1318,6 +1268,16 @@ void init_forcerec(FILE *fp,
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
     
+    gmxDetectCpu(&fr->cpuInformation);
+    if(MASTER(cr))
+    {
+        /* Only print warnings from master */
+        gmxDetectCpuCheckAcceleration(fr->cpuInformation,fp);
+    }
+
+    /* By default we turn acceleration on, but it might be turned off further down... */
+    fr->useAcceleration = TRUE;
+
     fr->bDomDec = DOMAINDECOMP(cr);
 
     natoms = mtop->natoms;
@@ -1414,21 +1374,14 @@ void init_forcerec(FILE *fp,
         bNoSolvOpt         = TRUE;
     }
     
-    fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
-    if(fp && fr->UseOptimizedKernels==FALSE)
+    if( (getenv("GMX_DISABLE_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
     {
+        fr->useAcceleration = FALSE;
         fprintf(fp,
-                "\nFound environment variable GMX_NOOPTIMIZEDKERNELS.\n"
-                "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
-    }    
-
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
-    if( forcerec_check_sse2() == 0 )
-    {
-        fr->UseOptimizedKernels = FALSE;
+                "\nFound environment variable GMX_DISABLE_ACCELERATION.\n"
+                "Disabling all architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
     }
-#endif
-    
+
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir,mtop,FALSE,NULL,NULL);
     fr->AllvsAll_work   = NULL;
@@ -1831,7 +1784,7 @@ void init_forcerec(FILE *fp,
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
     
     if (cr->duty & DUTY_PP){
-        gmx_setup_kernels(fp,bGenericKernelOnly);
+        gmx_setup_kernels(fp,fr,bGenericKernelOnly);
         if (ir->bAdress)
             gmx_setup_adress_kernels(fp,bGenericKernelOnly);
     }
