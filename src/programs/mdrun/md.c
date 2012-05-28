@@ -920,11 +920,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             if (update_forcefield(fplog,
                                   nfile,fnm,fr,
-                                  mdatoms->nr,state->x,state->box)) {
-                if (gmx_parallel_env_initialized())
-                {
-                    gmx_finalize();
-                }
+                                  mdatoms->nr,state->x,state->box))
+            {
+                gmx_finalize_par();
+
                 exit(0);
             }
         }
@@ -1598,10 +1597,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                  f,NULL,xcopy,
                                  &(top_global->mols),mdatoms->massT,pres))
             {
-                if (gmx_parallel_env_initialized())
-                {
-                    gmx_finalize();
-                }
+                gmx_finalize_par();
+
                 fprintf(stderr,"\n");
                 exit(0);
             }

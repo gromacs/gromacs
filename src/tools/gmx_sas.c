@@ -361,7 +361,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      ii+1,*(atoms->resinfo[atoms->atom[ii].resind].name),
 	      *(atoms->atomname[ii]),
 	      atoms->atom[ii].q,radius[ii]-solsize,dgs_factor[i],
-	      BOOL(bPhobic[i]));
+	      EBOOL(bPhobic[i]));
   }
   fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
 	  nphobic,nx[1]);
