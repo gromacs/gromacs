@@ -37,6 +37,7 @@
 #include "genborn.h"
 #include "qmmmrec.h"
 #include "idef.h"
+#include "../gmxDetectCpu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,8 +141,9 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
-  gmx_bool UseOptimizedKernels;
-
+  gmxDetectCpu_t cpuInformation;
+  gmx_bool       useAcceleration;
+    
   /* Use special N*N kernels? */
   gmx_bool bAllvsAll;
   /* Private work data */
