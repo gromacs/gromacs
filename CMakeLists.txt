@@ -125,7 +125,7 @@ include(gmxDetectAcceleration)
 gmx_detect_acceleration(GMX_SUGGESTED_ACCELERATION)
 
 set(GMX_ACCELERATION "@GMX_SUGGESTED_ACCELERATION@" 
-    CACHE STRING "Accelerated kernels. Pick one of: None, SSE2, SSE4_1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
+    CACHE STRING "Accelerated kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -557,7 +557,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
     
     set(GMX_ACC_X86_SSE2 1)
 
-elseif(${GMX_ACCELERATION} STREQUAL "SSE4_1")
+elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
 
     CHECK_C_COMPILER_FLAG("-msse4.1" XFLAGS_SSE4)
     if (XFLAGS_SSE4)
@@ -617,7 +617,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
 else(${GMX_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4_1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 if(GMX_FORTRAN OR GMX_POWER6)
@@ -692,9 +692,9 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(GMX_FFT_FFTW3 1)
 
-    if (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
+    if (${GMX_ACCELERATION} MATCHES "SSE" AND NOT FFTW_HAVE_SSE)
       message(WARNING "The fftw library found is compiled without SSE support, which makes it slow. Consider recompiling it or contact your admin")
-    endif (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
+    endif (${GMX_ACCELERATION} MATCHES "SSE" AND NOT FFTW_HAVE_SSE)
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
