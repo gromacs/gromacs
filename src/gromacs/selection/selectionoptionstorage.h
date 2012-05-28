@@ -46,8 +46,8 @@
 namespace gmx
 {
 
-class SelectionCollection;
 class SelectionOption;
+class SelectionOptionManager;
 
 /*! \internal \brief
  * Converts, validates, and stores selection values.
@@ -64,14 +64,14 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          */
         SelectionOptionStorage(const SelectionOption &settings);
 
-        virtual OptionInfo &optionInfo() { return _info; }
+        virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const { return "sel"; }
         virtual std::string formatSingleValue(const Selection &value) const;
 
-        //! \copydoc SelectionOptionInfo::setSelectionCollection()
-        void setSelectionCollection(SelectionCollection *selections)
+        //! \copydoc SelectionOptionInfo::setManager()
+        void setManager(SelectionOptionManager *manager)
         {
-            _sc = selections;
+            manager_ = manager;
         }
 
         /*! \brief
@@ -86,11 +86,9 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          *      - Any selection in \p selections is not allowed for this
          *        option.
          *
-         * This function is used to implement the methods
-         * SelectionCollection::parseRequestedFromStdin() and
-         * SelectionCollection::parseRequestedFromString() (called with
-         * \p bFullValue set to true), as well as internally by the storage
-         * class (called with \p bFullValue set to false).
+         * This function is used to add selections from SelectionOptionManager
+         * (called with \p bFullValue set to true), as well as internally by
+         * the storage class (called with \p bFullValue set to false).
          */
         void addSelections(const SelectionList &selections,
                            bool bFullValue);
@@ -122,9 +120,9 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
-        SelectionOptionInfo     _info;
-        SelectionCollection    *_sc;
-        SelectionFlags          _selectionFlags;
+        SelectionOptionInfo     info_;
+        SelectionOptionManager *manager_;
+        SelectionFlags          selectionFlags_;
 };
 
 } // namespace gmx

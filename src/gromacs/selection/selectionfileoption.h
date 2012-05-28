@@ -49,7 +49,7 @@ namespace gmx
  *
  * This option is used internally by the command-line framework to implement
  * file input for selections.  The option takes a file name, and reads it in
- * using SelectionCollection::parseRequestedFromFile().  This means that
+ * using SelectionOptionManager::parseRequestedFromFile().  This means that
  * selections from the file are assigned to selection options that have been
  * explicitly provided without values earlier on the command line.
  *

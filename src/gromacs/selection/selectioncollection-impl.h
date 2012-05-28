@@ -99,7 +99,6 @@ namespace gmx
 {
 
 class MessageStringCollector;
-class SelectionOptionStorage;
 
 /*! \internal \brief
  * Private implemention class for SelectionCollection.
@@ -109,62 +108,6 @@ class SelectionOptionStorage;
 class SelectionCollection::Impl
 {
     public:
-        /*! \brief
-         * Request for postponed parsing of selections.
-         *
-         * Used to communicate what needs to be parsed with
-         * parseRequestedFromStdin() or parseRequstedFromString().
-         */
-        struct SelectionRequest
-        {
-            //! Initializes a request for the given option.
-            SelectionRequest(const std::string &name, const std::string &descr,
-                             SelectionOptionStorage *storage)
-                : name(name), descr(descr), storage(storage)
-            {
-            }
-
-            /*! \brief
-             * Returns the number of selections requested in this request.
-             *
-             * -1 indicates no upper limit.
-             */
-            int count() const;
-
-            //! Name of the option to which this request relates to.
-            std::string                 name;
-            //! Description of the option to which this request relates to.
-            std::string                 descr;
-            //! Storage object to which the selections will be added.
-            SelectionOptionStorage     *storage;
-        };
-
-        //! Collection for a list of selection requests.
-        typedef std::vector<SelectionRequest> RequestList;
-
-        /*! \brief
-         * Helper class that clears a request list on scope exit.
-         *
-         * Methods in this class do not throw.
-         */
-        class RequestsClearer
-        {
-            public:
-                //! Constructs an object that clears given list on scope exit.
-                explicit RequestsClearer(RequestList *requests)
-                    : requests_(requests)
-                {
-                }
-                //! Clears the request list given to the constructor.
-                ~RequestsClearer()
-                {
-                    requests_->clear();
-                }
-
-            private:
-                RequestList    *requests_;
-        };
-
         /*! \brief
          * Creates a new selection collection.
          *
@@ -199,37 +142,6 @@ class SelectionCollection::Impl
          */
         void runParser(void *scanner, int maxnr,
                        SelectionList *output);
-        /*! \brief
-         * Adds a selection request for delayed user input.
-         *
-         * \param[in] name    Name for the requested selections.
-         * \param[in] descr   Description of the requested selections.
-         * \param     storage Storage object to receive the selections.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * Strong exception safety.
-         *
-         * \see parseRequestedFromStdin()
-         */
-        void requestSelections(const std::string &name,
-                               const std::string &descr,
-                               SelectionOptionStorage *storage);
-        /*! \brief
-         * Assign selections from a list to pending requests.
-         *
-         * \param[in] selections  List of selections to assign.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if the assignment cannot be done
-         *      (see parseRequestedFromFile() for documented conditions).
-         *
-         * Loops through \p selections and the pending requests lists in order,
-         * and for each requests, assigns the first yet unassigned selections
-         * from the list.
-         *
-         * Used to implement parseRequestedFromFile() and
-         * parseRequestedFromStdin().
-         */
-        void placeSelectionsInRequests(const SelectionList &selections);
         /*! \brief
          * Replace group references by group contents.
          *
@@ -271,8 +183,6 @@ class SelectionCollection::Impl
         bool                    _bExternalGroupsSet;
         //! External index groups (can be NULL).
         gmx_ana_indexgrps_t    *_grps;
-        //! List of selections requested for later parsing.
-        RequestList             _requests;
 };
 
 /*! \internal \brief

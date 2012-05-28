@@ -55,7 +55,6 @@ namespace gmx
 class Options;
 class SelectionCompiler;
 class SelectionEvaluator;
-class SelectionOptionStorage;
 
 /*! \brief
  * Collection of selections.
@@ -73,10 +72,9 @@ class SelectionOptionStorage;
  *
  * After setting the default values, one or more selections can be parsed with
  * one or more calls to parseFromStdin(), parseFromFile(), and/or
- * parseFromString().  parseRequestedFromStdin() and parseRequestedFromString()
- * are provided for integration with SelectionOption.  After all selections are
- * parsed, the topology must be set with setTopology() unless
- * requiresTopology() returns false (the topology can also be set earlier).
+ * parseFromString().  After all selections are parsed, the topology must be
+ * set with setTopology() unless requiresTopology() returns false (the topology
+ * can also be set earlier).
  * setIndexGroups() must also be called if external index group references are
  * used in the selections; it can be called at any point before compile().
  * Once all selections are parsed, they must be compiled all at once using
@@ -228,65 +226,6 @@ class SelectionCollection
          */
         void setIndexGroups(gmx_ana_indexgrps_t *grps);
         /*! \brief
-         * Parses selection(s) from standard input for options not yet
-         * provided.
-         *
-         * \param[in]  bInteractive Whether the parser should behave
-         *      interactively.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      parseFromStdin().
-         * \throws     std::bad_alloc if out of memory.
-         *
-         * This method cooperates with SelectionOption to allow interactive
-         * input of missing selections after all options have been processed.
-         * It should be called after the Options::finish() method has been
-         * called on all options that add selections to this collection.
-         * For each required selection option that has not been given, as well
-         * as for optional selection options that have been specified without
-         * values, it will prompt the user to input the necessary selections.
-         */
-        void parseRequestedFromStdin(bool bInteractive);
-        /*! \brief
-         * Parses selection(s) from a file for options not yet provided.
-         *
-         * \param[in]  filename Name of the file to parse selections from.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      parseFromFile().
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     InvalidInputError if
-         *      - the number of selections in \p filename doesn't match the
-         *        number requested.
-         *      - any selection uses a feature that is not allowed for the
-         *        corresponding option.
-         *      - if there is a request for any number of selections that is
-         *        not the last (in which case it is not possible to determine
-         *        which selections belong to which request).
-         *
-         * This method behaves as parseRequestedFromStdin(), but reads the
-         * selections from a file instead of standard input.
-         * This is used to implement SelectionFileOption.
-         *
-         * \see parseRequestedFromStdin()
-         */
-        void parseRequestedFromFile(const std::string &filename);
-        /*! \brief
-         * Parses selection(s) from a string for options not yet provided.
-         *
-         * \param[in]  str     String to parse.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      parseFromString().
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     InvalidInputError in same conditions as
-         *      parseRequestedFromFile().
-         *
-         * This method behaves as parseRequestedFromFile(), but reads the
-         * selections from a string instead of a file.
-         * This method is mainly used for testing.
-         *
-         * \see parseRequestedFromFile()
-         */
-        void parseRequestedFromString(const std::string &str);
-        /*! \brief
          * Parses selection(s) from standard input.
          *
          * \param[in]  count    Number of selections to parse
@@ -427,10 +366,6 @@ class SelectionCollection
          * Needed for the evaluator to freely modify the collection.
          */
         friend class SelectionEvaluator;
-        /*! \brief
-         * Needed for handling delayed selection parsing requests.
-         */
-        friend class SelectionOptionStorage;
 };
 
 } // namespace gmx

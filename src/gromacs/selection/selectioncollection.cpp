@@ -41,10 +41,9 @@
 
 #include <cstdio>
 
-#include "futil.h"
-#include "oenv.h"
-#include "smalloc.h"
-#include "xvgr.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/xvgr.h"
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -52,7 +51,6 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
 
@@ -61,7 +59,6 @@
 #include "poscalc.h"
 #include "scanner.h"
 #include "selectioncollection-impl.h"
-#include "selectionoptionstorage.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
@@ -79,11 +76,6 @@ namespace gmx
 /********************************************************************
  * SelectionCollection::Impl
  */
-
-int SelectionCollection::Impl::SelectionRequest::count() const
-{
-    return storage->maxValueCount();
-}
 
 SelectionCollection::Impl::Impl()
     : _options("selection", "Common selection control"),
@@ -167,56 +159,6 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
     {
         GMX_ASSERT(!bOk && !errors.isEmpty(), "Inconsistent error reporting");
         GMX_THROW(InvalidInputError(errors.toString()));
-    }
-}
-
-
-void SelectionCollection::Impl::requestSelections(
-        const std::string &name, const std::string &descr,
-        SelectionOptionStorage *storage)
-{
-    _requests.push_back(SelectionRequest(name, descr, storage));
-}
-
-
-void SelectionCollection::Impl::placeSelectionsInRequests(
-        const SelectionList &selections)
-{
-    RequestsClearer clearRequestsOnExit(&_requests);
-
-    SelectionList::const_iterator first = selections.begin();
-    SelectionList::const_iterator last = first;
-    RequestList::const_iterator i;
-    // TODO: Improve error messages.
-    for (i = _requests.begin(); i != _requests.end(); ++i)
-    {
-        const SelectionRequest &request = *i;
-        if (request.count() > 0)
-        {
-            if (selections.end() - first < request.count())
-            {
-                GMX_THROW(InvalidInputError("Too few selections provided"));
-            }
-            last = first + request.count();
-        }
-        else
-        {
-            if (i != _requests.end() - 1)
-            {
-                GMX_THROW(InvalidInputError(
-                            formatString("Request for selection '%s' must "
-                                         "not be followed by others",
-                                         request.name.c_str())));
-            }
-            last = selections.end();
-        }
-        SelectionList curr(first, last);
-        request.storage->addSelections(curr, true);
-        first = last;
-    }
-    if (last != selections.end())
-    {
-        GMX_THROW(InvalidInputError("Too many selections provided"));
     }
 }
 
@@ -435,60 +377,6 @@ SelectionCollection::requiresTopology() const
         sel = sel->next;
     }
     return false;
-}
-
-
-void
-SelectionCollection::parseRequestedFromStdin(bool bInteractive)
-{
-    Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
-
-    Impl::RequestList::const_iterator i;
-    for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
-    {
-        const Impl::SelectionRequest &request = *i;
-        if (bInteractive)
-        {
-            std::fprintf(stderr, "\nSpecify ");
-            if (request.count() < 0)
-            {
-                std::fprintf(stderr, "any number of selections");
-            }
-            else if (request.count() == 1)
-            {
-                std::fprintf(stderr, "a selection");
-            }
-            else
-            {
-                std::fprintf(stderr, "%d selections", request.count());
-            }
-            std::fprintf(stderr, " for option '%s' (%s):\n",
-                         request.name.c_str(), request.descr.c_str());
-            std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
-                         request.count() < 0 ? ", Ctrl-D to end" : "");
-        }
-        SelectionList selections;
-        parseFromStdin(request.count(), bInteractive, &selections);
-        request.storage->addSelections(selections, true);
-    }
-}
-
-
-void
-SelectionCollection::parseRequestedFromFile(const std::string &filename)
-{
-    SelectionList selections;
-    parseFromFile(filename, &selections);
-    _impl->placeSelectionsInRequests(selections);
-}
-
-
-void
-SelectionCollection::parseRequestedFromString(const std::string &str)
-{
-    SelectionList selections;
-    parseFromString(str, &selections);
-    _impl->placeSelectionsInRequests(selections);
 }
 
 
