@@ -141,8 +141,15 @@ else(GMX_ASM_USEASM_NASM)
 endif(GMX_ASM_USEASM_NASM)
 endif(GMX_SSEKERNEL_ASM_SRC AND NOT GMX_OPENMM)
 
+# gpu utils + cuda tools module
+if(GMX_GPU)
+    add_subdirectory(cuda_tools)
+    add_subdirectory(gpu_utils)   
+    set(GMX_GPU_LIBRARIES gpu_utils cuda_tools)
+endif()
+
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${FORTRAN_SOURCES} ${GMX_BLUEGENE_C_SRC} ${GMX_PPC_ALTIVEC_SRC} ${THREAD_MPI_SRC})
-target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
+target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_LIB})
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
 endif()
