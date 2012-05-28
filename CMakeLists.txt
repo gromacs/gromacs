@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 # Keep CMake suitably quiet on Cygwin
 set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 
+# override bugs on OS X where Cmake picks gcc (GNU) for C instead of system default cc (Clang).
+if(APPLE)
+    set(CMAKE_C_COMPILER_INIT "cc")
+endif(APPLE)
+
 project(Gromacs)
 include(Dart)
 mark_as_advanced(DART_ROOT)
@@ -120,8 +125,12 @@ mark_as_advanced(GMX_POWERPC_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
-set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
+
+include(gmxDetectAcceleration)
+gmx_detect_acceleration(GMX_SUGGESTED_ACCELERATION)
+
+set(GMX_ACCELERATION "@GMX_SUGGESTED_ACCELERATION@"
+    CACHE STRING "Accelerated kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -137,12 +146,6 @@ option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
-
-
-option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
-mark_as_advanced(GMX_IA32_ASM)
-option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
-mark_as_advanced(GMX_X86_64_ASM)
 
 option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
 
@@ -170,9 +173,25 @@ endif()
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
+# OpenMP check must come before other CFLAGS!
+if(GMX_OPENMP)
+    find_package(OpenMP)
+    if(OPENMP_FOUND)
+        set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
+        set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
+        add_definitions(-DGMX_OPENMP)
+    else(OPENMP_FOUND)
+        message(WARNING
+                "Compiler not supporting OpenMP. This might hurt your performance a lot, "
+                "in particular with GPUs. Try using a different compiler (Intel is good on x86) "
+                "if you can - for now we are proceeding by turning off OpenMP.")
+        set(GMX_OPENMP OFF CACHE STRING "Compiler does not support OpenMP." FORCE)
+    endif(OPENMP_FOUND)
+endif()
+
+
 include(gmxCFlags)
 gmx_c_flags()
-
 
 ########################################################################
 # Set up binary and library suffixing 
@@ -192,8 +211,8 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
   if (GMX_OPENMM)
-    set (GMX_BINARY_SUFFIX "-gpu")
-    set (GMX_LIBS_SUFFIX "_gpu")
+    set (GMX_BINARY_SUFFIX "-openmm")
+    set (GMX_LIBS_SUFFIX "_openmm")
   endif(GMX_OPENMM)
   mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
   if (NOT SUFFIX_QUIETLY)
@@ -274,6 +293,8 @@ else(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 
+
+
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -296,11 +317,6 @@ check_include_files(sys/stat.h   HAVE_SYS_STAT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(rpc/rpc.h    HAVE_RPC_RPC_H)
 check_include_files("rpc/rpc.h;rpc/xdr.h"    HAVE_RPC_XDR_H)
-# SSE support
-check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
-check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
-check_include_files(pmmintrin.h  HAVE_PMMINTRIN_H)
-check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
 check_include_files(io.h  		 HAVE_IO_H)
 
 
@@ -440,12 +456,6 @@ if(GMX_OPENMM)
     find_package(OpenMM) 
 endif(GMX_OPENMM)
 
-if(GMX_OPENMP)
-    find_package(OpenMP REQUIRED)
-    set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
-    set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
-    add_definitions(-DGMX_OPENMP)
-endif()
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -501,8 +511,15 @@ include_directories(${CMAKE_BINARY_DIR}/src)
 include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-include(gmxCheckBuildUserTime)
-gmx_check_build_user_time(BUILD_TIME BUILD_USER BUILD_MACHINE)
+include(gmxTestInlineASM)
+gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
+
+include(gmxSetBuildInformation)
+gmx_set_build_information()
+if(BUILD_CPU_FEATURES MATCHES "rdtscp")
+    # The timestep counter headers do not include config.h
+    add_definitions(-DHAVE_RDTSCP)
+endif(BUILD_CPU_FEATURES MATCHES "rdtscp")
 
 include(gmxTestFloatFormat)
 gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754 
@@ -530,22 +547,6 @@ gmx_test_isfinite(HAVE_ISFINITE)
 gmx_test__isfinite(HAVE__ISFINITE)
 gmx_test__finite(HAVE__FINITE)
 
-include(gmxTestInlineASM)
-gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
-gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
-
-# turn on SSE if supported with reasonable defaults.
-if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)" OR CYGWIN)
-
-    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
-    
-    # Determine the assembler/compiler to use
-  else()
-    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
-  endif()
-endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
-
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
@@ -556,60 +557,120 @@ endif(NOT GMX_SYSTEM_XDR)
 # Process nonbonded accelerated kernels settings
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
-  # nothing to do
-elseif(${GMX_ACCELERATION} STREQUAL "SSE")
-    
-    if (GMX_64_BIT)
-      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
-    else (GMX_64_BIT)
-      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
-    endif (GMX_64_BIT)
+    # nothing to do
+elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
 
-    if( WIN32 AND NOT CYGWIN )
-      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
+    GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" GROMACS_C_FLAGS)
+    if(NOT GNU_SSE2_CFLAG)
+        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+    endif(NOT GNU_SSE2_CFLAG)
+
+    GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" GROMACS_CXX_FLAGS)
+    if(NOT GNU_SSE2_CXXFLAG)
+        GMX_TEST_CFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+    endif(NOT GNU_SSE2_CXXFLAG)
+
+    # We dont warn for lacking SSE2 flag support, since that is probably standard today.
+
+    # Only test the include after we have tried to add the correct flag for SSE2 support
+    check_include_file(emmintrin.h  HAVE_EMMINTRIN_H ${GROMACS_C_FLAGS})
+
+    if(NOT HAVE_EMMINTRIN_H)
+        message(FATAL_ERROR "Cannot find emmintrin.h, which is required for SSE2 intrinsics support.")
+    endif(NOT HAVE_EMMINTRIN_H)
+
+    # The user should not be able to set this orthogonally to the acceleration
+    set(GMX_X86_SSE2 1)
+
+    message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+
+elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
+
+    GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" GROMACS_C_FLAGS)
+    if (NOT GNU_SSE4_CFLAG)
+        GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" GROMACS_C_FLAGS)
+    endif(NOT GNU_SSE4_CFLAG)
+    if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
+        message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
+        # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
+        # intrinsics when SSE2 support is enabled, so we try that instead.
+        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+    endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
+
+    GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" GROMACS_CXX_FLAG)
+    if (NOT GNU_SSE4_CXXFLAG)
+       GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" GROMACS_CXX_FLAGS)
+    endif(NOT GNU_SSE4_CXXFLAG)
+    if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
+        message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
+        # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
+        # intrinsics when SSE2 support is enabled, so we try that instead.
+        GMX_TEST_CFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+    endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
+
+    # This must come after we have added the -msse4.1 flag on some platforms.
+    check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${GROMACS_C_FLAGS})
+
+    if(NOT HAVE_SMMINTRIN_H)
+        message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
+    endif(NOT HAVE_SMMINTRIN_H)
+
+    # The user should not be able to set this orthogonally to the acceleration
+    set(GMX_X86_SSE4_1 1)
+    set(GMX_X86_SSE2   1)
+
+    message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+
+elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUAL "AVX_256")
+
+    # Set the AVX compiler flag for both these choices!
+
+    GMX_TEST_CFLAG(GNU_AVX_CFLAG "-mavx" GROMACS_C_FLAGS)
+    if (NOT GNU_AVX_CFLAG)
+        GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" GROMACS_C_FLAGS)
+    endif (NOT GNU_AVX_CFLAG)
+    if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
+        message(WARNING "No C AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
+    endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
+
+    GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" GROMACS_CXX_FLAGS)
+    if (NOT GNU_AVX_CXXFLAG)
+       GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" GROMACS_CXX_FLAGS)
+    endif (NOT GNU_AVX_CXXFLAG)
+    if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+       message(WARNING "No C++ AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
+    endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+
+    # Only test the header after we have tried to add the flag for AVX support
+    check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${GROMACS_C_FLAGS})
+
+    if(NOT HAVE_IMMINTRIN_H)
+        message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
+    endif(NOT HAVE_IMMINTRIN_H)
+
+    # AMD says we should include x86intrin.h for FMA support, but MSVC seems to do fine without it, so don't require it.
+    check_include_file(x86intrin.h HAVE_X86INTRIN_H ${GROMACS_C_FLAGS})
+
+    # The user should not be able to set this orthogonally to the acceleration
+    set(GMX_X86_SSE4_1 1)
+    set(GMX_X86_SSE2   1)
+
+    # But just enable one of the choices internally...
+    if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA")
+        set(GMX_X86_AVX_128_FMA 1)
+        message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
     else()
-      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
+        # If we are not doing AVX_128, it must be AVX_256...
+        set(GMX_X86_AVX_256 1)
+        message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
     endif()
-	mark_as_advanced(GMX_ASM_USEASM_NASM)
-
-    if (NOT GMX_64_BIT)
-        # for 32-bit compiles, we might need to turn on sse 
-        CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
-        if (XFLAGS_SSE)
-            set(GROMACS_C_FLAGS "-msse2 ${GROMACS_C_FLAGS}")
-        endif (XFLAGS_SSE)
-        CHECK_CXX_COMPILER_FLAG("-msse2" XXFLAGS_SSE)
-        if (XXFLAGS_SSE)
-            set(GROMACS_CXX_FLAGS "-msse2 ${GROMACS_CXX_FLAGS}")
-        endif (XXFLAGS_SSE)
-    endif (NOT GMX_64_BIT)
-
-    if(GMX_IA32_ASM)
-      if(GMX_DOUBLE)
-        set(GMX_IA32_SSE2 1)
-      else()
-       set(GMX_IA32_SSE 1)
-      endif()
-    elseif(GMX_X86_64_ASM)
-      if(GMX_DOUBLE)
-       set(GMX_X86_64_SSE2 1)
-      else()
-        set(GMX_X86_64_SSE 1)
-      endif()
-    endif()
-
-#    if(HAVE_PMMINTRIN_H)
-#        set(GMX_SSE3 1)
-#    endif(HAVE_PMMINTRIN_H)
-#    if(HAVE_SMMINTRIN_H)
-#        set(GMX_SSE4_1 1)
-#    endif(HAVE_SMMINTRIN_H)
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
-    set(GMX_FORTRAN 1)
-    #these are switch on by default sometimes
-    set(GMX_IA32_ASM 0)
-    set(GMX_GMX_X86_64_ASM 0)
+
+#    Fortran is temporarily disabled while we push in nbNxN kernels.
+#    We need to fake it a bit here to avoid jenkins build errors!
+#    add_definitions(-DGMX_FORTRAN)
+
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
     message(STATUS "Configuring for BlueGene")
@@ -627,17 +688,8 @@ elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
-elseif(${GMX_ACCELERATION} STREQUAL "IA64")
-    set(GMX_IA64_ASM 1)
-    set(DISABLE_WATERWATER_NLIST 1)
-    set(DISABLE_WATER_NLIST 1)
-elseif(${GMX_ACCELERATION} STREQUAL "ALTIVEC")
-    check_include_files(altivec.h HAVE_ALTIVEC_H)
-    if(HAVE_ALTIVEC_H)
-        set(GMX_PPC_ALTIVEC 1)
-    endif(HAVE_ALTIVEC_H)
 else(${GMX_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of auto, none, SSE, Fortran, BlueGene, Power6, ia64, altivec")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 if(GMX_FORTRAN OR GMX_POWER6)
@@ -860,6 +912,32 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
         CACHE STRING "Linker flags" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
+
+######################################
+# Output compiler and CFLAGS used
+######################################
+execute_process(COMMAND ${CMAKE_C_COMPILER} --version RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
+#try executing just the compiler command if that failed...
+if(TMP_RESULT)
+    execute_process(COMMAND ${CMAKE_C_COMPILER} RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
+endif()
+string(LENGTH "${CC_VERSION}" len)
+if(len)
+    string(REGEX MATCH "[^\n]*" CC_VERSION "${CC_VERSION}")
+endif()
+
+set(BUILD_COMPILER "@CMAKE_C_COMPILER@ @CMAKE_C_COMPILER_ID@ @CC_VERSION@")
+set(BUILD_CFLAGS "@CMAKE_C_FLAGS@")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_DEBUG@")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELEASE@")
+elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_MINSIZEREL@")
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELWITHDEBINFO@")
+endif()
+
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
