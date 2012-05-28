@@ -499,15 +499,13 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     idh.finishFrame();
 
     mdh.startFrame(frnr, fr.time);
-    int nextRefId = sel[0].position(0).refId();
-    for (int b = 0, i = 0; b < _totsize[0]; ++b)
+    for (int i = 0; i < _totsize[0]; ++i)
     {
-        mdh.setPoint(b, b == nextRefId ? 1 : 0);
-        if (b == nextRefId)
-        {
-            ++i;
-            nextRefId = sel[0].position(i).refId();
-        }
+        mdh.setPoint(i, 0);
+    }
+    for (int i = 0; i < sel[0].posCount(); ++i)
+    {
+        mdh.setPoint(sel[0].position(i).refId(), 1);
     }
     mdh.finishFrame();
 }
