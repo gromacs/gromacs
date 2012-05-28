@@ -69,10 +69,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         virtual std::string formatSingleValue(const Selection &value) const;
 
         //! \copydoc SelectionOptionInfo::setManager()
-        void setManager(SelectionOptionManager *manager)
-        {
-            manager_ = manager;
-        }
+        void setManager(SelectionOptionManager *manager);
 
         /*! \brief
          * Adds selections to the storage.

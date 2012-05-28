@@ -98,6 +98,8 @@ class SelectionOptionManager::Impl
 
         //! Collection for a list of selection requests.
         typedef std::vector<SelectionRequest> RequestList;
+        //! Collection for list of option storage objects.
+        typedef std::vector<SelectionOptionStorage *> OptionList;
 
         /*! \brief
          * Helper class that clears a request list on scope exit.
@@ -142,9 +144,17 @@ class SelectionOptionManager::Impl
          * from the list.
          */
         void placeSelectionsInRequests(const SelectionList &selections);
+        /*! \brief
+         * Adds a request for each required option that is not yet set.
+         *
+         * \throws    std::bad_alloc if out of memory.
+         */
+        void requestUnsetRequiredOptions();
 
         //! Selection collection to which selections are stored.
         SelectionCollection    &collection_;
+        //! List of selection options (storage objects) this manager manages.
+        OptionList              options_;
         //! List of selections requested for later parsing.
         RequestList             requests_;
 };
@@ -157,6 +167,11 @@ SelectionOptionManager::Impl::Impl(SelectionCollection *collection)
 void SelectionOptionManager::Impl::placeSelectionsInRequests(
         const SelectionList &selections)
 {
+    if (requests_.empty())
+    {
+        requestUnsetRequiredOptions();
+    }
+
     RequestsClearer clearRequestsOnExit(&requests_);
 
     SelectionList::const_iterator first = selections.begin();
@@ -195,6 +210,19 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
     }
 }
 
+void SelectionOptionManager::Impl::requestUnsetRequiredOptions()
+{
+    OptionList::const_iterator i;
+    for (i = options_.begin(); i != options_.end(); ++i)
+    {
+        SelectionOptionStorage &storage = **i;
+        if (storage.isRequired() && !storage.isSet())
+        {
+            requests_.push_back(SelectionRequest(&storage));
+        }
+    }
+}
+
 
 /********************************************************************
  * SelectionOptionManager
@@ -213,6 +241,13 @@ SelectionCollection &
 SelectionOptionManager::selectionCollection()
 {
     return impl_->collection_;
+}
+
+void
+SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
+{
+    impl_->requests_.reserve(impl_->options_.size() + 1);
+    impl_->options_.push_back(storage);
 }
 
 void
