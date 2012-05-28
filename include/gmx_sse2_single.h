@@ -41,7 +41,7 @@
 #ifdef GMX_SSE3
 #  include <pmmintrin.h> /* SSE3 */
 #endif
-#ifdef GMX_SSE4
+#ifdef GMX_SSE4_1
 #  include <smmintrin.h> /* SSE4.1 */
 #endif
 
@@ -74,7 +74,7 @@
  *                                                 *
  ***************************************************/
 
-#ifdef GMX_SSE4
+#ifdef GMX_SSE4_1
 #  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
 #else
 #  define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
@@ -707,6 +707,22 @@ gmx_mm_atan2_ps(__m128 y, __m128 x)
     
     return z;
 }
+
+
+/* Macros for SSE vector operations */
+
+#define GMX_MM_IPROD_PS(ax,ay,az,bx,by,bz)                 \
+    _mm_add_ps(_mm_add_ps(_mm_mul_ps(ax,bx),_mm_mul_ps(ay,by)),_mm_mul_ps(az,bz))
+
+#define GMX_MM_NORM2_PS(ax,ay,az) GMX_MM_IPROD_PS(ax,ay,az,ax,ay,az)
+
+#define GMX_MM_CPROD_PS(ax,ay,az,bx,by,bz,cx,cy,cz)        \
+{                                                          \
+    cx = _mm_sub_ps(_mm_mul_ps(ay,bz),_mm_mul_ps(az,by));  \
+    cy = _mm_sub_ps(_mm_mul_ps(az,bx),_mm_mul_ps(ax,bz));  \
+    cz = _mm_sub_ps(_mm_mul_ps(ax,by),_mm_mul_ps(ay,bx));  \
+}
+
 
 /* Load a single value from 1-4 places, merge into xmm register */
 
