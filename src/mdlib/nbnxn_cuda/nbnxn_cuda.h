@@ -75,7 +75,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                          const nbnxn_atomdata_t * nbatom,
                          int flags, int aloc,
-                         float *e_lj, float *e_el,
+                         real *e_lj, real *e_el,
                          rvec *fshift) FUNC_TERM
 
 #ifdef __cplusplus
