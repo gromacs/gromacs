@@ -406,7 +406,7 @@ static gmx_bool kernel_cj_half_ci(int nb_kernel_type)
     return FALSE;
 #else
     /* With double precision SSE is only 2-wide and we use 4x2 atom kernels */
-    return (nb_kernel_type == nbk4xNSSE);
+    return (nb_kernel_type == nbk4xN_S128);
 #endif
 }
 
