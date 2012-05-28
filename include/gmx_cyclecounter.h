@@ -323,7 +323,11 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     gmx_cycles_t   cycle;
     unsigned       low,high;
     
+#ifdef GMX_X86_HAVE_RDTSCP
+    __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
+#else
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
+#endif
     
     cycle = ((unsigned long long)low) | (((unsigned long long)high)<<32); 
     
@@ -332,7 +336,12 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 #elif defined(_MSC_VER)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 { 
+#ifdef GMX_X86_HAVE_RDTSCP
+    unsigned int ui;
+    return __rdtscp(&ui);
+#else
 	return __rdtsc();
+#endif
 }
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 static inline gmx_cycles_t gmx_cycles_read(void)

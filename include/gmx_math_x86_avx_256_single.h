@@ -1,0 +1,1030 @@
+/*
+ *                This source code is part of
+ *
+ *                 G   R   O   M   A   C   S
+ *
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2009, The GROMACS Development Team
+ *
+ * Gromacs is a library for molecular simulation and trajectory analysis,
+ * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
+ * a full list of developers and information, check out http://www.gromacs.org
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option) any
+ * later version.
+ * As a special exception, you may use this file as part of a free software
+ * library without restriction.  Specifically, if other files instantiate
+ * templates or use macros or inline functions from this file, or you compile
+ * this file and link it with other files to produce an executable, this
+ * file does not by itself cause the resulting executable to be covered by
+ * the GNU Lesser General Public License.
+ *
+ * In plain-speak: do not worry about classes/macros/templates either - only
+ * changes to the library have to be LGPL, not an application linking with it.
+ *
+ * To help fund GROMACS development, we humbly ask that you cite
+ * the papers people have written on it - you can find them on the website!
+ */
+#ifndef _gmx_math_x86_avx_256_single_h_
+#define _gmx_math_x86_avx_256_single_h_
+
+#include "gmx_x86_avx_256.h"
+
+
+#ifndef M_PI
+#  define M_PI 3.14159265358979323846264338327950288
+#endif
+
+
+
+/************************
+ *                      *
+ * Simple math routines *
+ *                      *
+ ************************/
+
+/* 1.0/sqrt(x) */
+static gmx_inline __m256
+gmx_mm256_invsqrt_ps(__m256 x)
+{
+    const __m256 half  = _mm256_set1_ps(0.5f);
+    const __m256 three = _mm256_set1_ps(3.0f);
+
+    __m256 lu = _mm256_rsqrt_ps(x);
+
+    return _mm256_mul_ps(half,_mm256_mul_ps(_mm256_sub_ps(three,_mm256_mul_ps(_mm256_mul_ps(lu,lu),x)),lu));
+}
+
+/* sqrt(x) - Do NOT use this (but rather invsqrt) if you actually need 1.0/sqrt(x) */
+static gmx_inline __m256
+gmx_mm256_sqrt_ps(__m256 x)
+{
+    __m256 mask;
+    __m256 res;
+
+    mask = _mm256_cmp_ps(x,_mm256_setzero_ps(),_CMP_EQ_OQ);
+    res  = _mm256_andnot_ps(mask,gmx_mm256_invsqrt_ps(x));
+
+    res  = _mm256_mul_ps(x,res);
+
+    return res;
+}
+
+/* 1.0/x */
+static gmx_inline __m256
+gmx_mm256_inv_ps(__m256 x)
+{
+    const __m256 two = _mm256_set1_ps(2.0f);
+
+    __m256 lu = _mm256_rcp_ps(x);
+
+    return _mm256_mul_ps(lu,_mm256_sub_ps(two,_mm256_mul_ps(lu,x)));
+}
+
+static gmx_inline __m256
+gmx_mm256_abs_ps(__m256 x)
+{
+    const __m256 signmask  = _mm256_castsi256_ps( _mm256_set1_epi32(0x7FFFFFFF) );
+
+    return _mm256_and_ps(x,signmask);
+}
+
+static __m256
+gmx_mm256_log_ps(__m256 x)
+{
+    const __m256  expmask    = _mm256_castsi256_ps( _mm256_set1_epi32(0x7F800000) );
+    const __m128i expbase_m1 = _mm_set1_epi32(127-1); /* We want non-IEEE format */
+    const __m256  half       = _mm256_set1_ps(0.5f);
+    const __m256  one        = _mm256_set1_ps(1.0f);
+    const __m256  invsq2     = _mm256_set1_ps(1.0f/sqrt(2.0f));
+    const __m256  corr1      = _mm256_set1_ps(-2.12194440e-4f);
+    const __m256  corr2      = _mm256_set1_ps(0.693359375f);
+
+    const __m256 CA_1        = _mm256_set1_ps(0.070376836292f);
+    const __m256 CB_0        = _mm256_set1_ps(1.6714950086782716f);
+    const __m256 CB_1        = _mm256_set1_ps(-2.452088066061482f);
+    const __m256 CC_0        = _mm256_set1_ps(1.5220770854701728f);
+    const __m256 CC_1        = _mm256_set1_ps(-1.3422238433233642f);
+    const __m256 CD_0        = _mm256_set1_ps(1.386218787509749f);
+    const __m256 CD_1        = _mm256_set1_ps(0.35075468953796346f);
+    const __m256 CE_0        = _mm256_set1_ps(1.3429983063133937f);
+    const __m256 CE_1        = _mm256_set1_ps(1.807420826584643f);
+
+    __m256  fexp,fexp1;
+    __m256i iexp;
+    __m128i iexp128a,iexp128b;
+    __m256  mask;
+    __m256i imask;
+    __m128i imask128a,imask128b;
+    __m256  x1,x2;
+    __m256  y;
+    __m256  pA,pB,pC,pD,pE,tB,tC,tD,tE;
+
+    /* Separate x into exponent and mantissa, with a mantissa in the range [0.5..1[ (not IEEE754 standard!) */
+    fexp  = _mm256_and_ps(x,expmask);
+    iexp  = _mm256_castps_si256(fexp);
+
+    iexp128b = _mm256_extractf128_si256(iexp,0x1);
+    iexp128a = _mm256_castsi256_si128(iexp);
+
+    iexp128a  = _mm_srli_epi32(iexp128a,23);
+    iexp128b  = _mm_srli_epi32(iexp128b,23);
+    iexp128a  = _mm_sub_epi32(iexp128a,expbase_m1);
+    iexp128b  = _mm_sub_epi32(iexp128b,expbase_m1);
+
+    x     = _mm256_andnot_ps(expmask,x);
+    x     = _mm256_or_ps(x,one);
+    x     = _mm256_mul_ps(x,half);
+
+    mask  = _mm256_cmp_ps(x,invsq2,_CMP_LT_OQ);
+
+    x     = _mm256_add_ps(x,_mm256_and_ps(mask,x));
+    x     = _mm256_sub_ps(x,one);
+
+    imask = _mm256_castps_si256(mask);
+
+    imask128b = _mm256_extractf128_si256(imask,0x1);
+    imask128a = _mm256_castsi256_si128(imask);
+
+    iexp128a  = _mm_add_epi32(iexp128a,imask128a);
+    iexp128b  = _mm_add_epi32(iexp128b,imask128b);
+
+    iexp  = _mm256_castsi128_si256(iexp128a);
+    iexp  = _mm256_insertf128_si256(iexp,iexp128b,0x1);
+
+    x2    = _mm256_mul_ps(x,x);
+
+    pA    = _mm256_mul_ps(CA_1,x);
+    pB    = _mm256_mul_ps(CB_1,x);
+    pC    = _mm256_mul_ps(CC_1,x);
+    pD    = _mm256_mul_ps(CD_1,x);
+    pE    = _mm256_mul_ps(CE_1,x);
+    tB    = _mm256_add_ps(CB_0,x2);
+    tC    = _mm256_add_ps(CC_0,x2);
+    tD    = _mm256_add_ps(CD_0,x2);
+    tE    = _mm256_add_ps(CE_0,x2);
+    pB    = _mm256_add_ps(pB,tB);
+    pC    = _mm256_add_ps(pC,tC);
+    pD    = _mm256_add_ps(pD,tD);
+    pE    = _mm256_add_ps(pE,tE);
+
+    pA    = _mm256_mul_ps(pA,pB);
+    pC    = _mm256_mul_ps(pC,pD);
+    pE    = _mm256_mul_ps(pE,x2);
+    pA    = _mm256_mul_ps(pA,pC);
+    y     = _mm256_mul_ps(pA,pE);
+
+    fexp  = _mm256_cvtepi32_ps(iexp);
+    y     = _mm256_add_ps(y,_mm256_mul_ps(fexp,corr1));
+
+    y     = _mm256_sub_ps(y, _mm256_mul_ps(half,x2));
+    x2    = _mm256_add_ps(x,y);
+
+    x2    = _mm256_add_ps(x2,_mm256_mul_ps(fexp,corr2));
+
+    return x2;
+}
+
+
+/*
+ * 2^x function.
+ *
+ * The 2^w term is calculated from a (6,0)-th order (no denominator) Minimax polynomia on the interval
+ * [-0.5,0.5]. The coefficiencts of this was derived in Mathematica using the command:
+ *
+ * MiniMaxApproximation[(2^x), {x, {-0.5, 0.5}, 6, 0}, WorkingPrecision -> 15]
+ *
+ * The largest-magnitude exponent we can represent in IEEE single-precision binary format
+ * is 2^-126 for small numbers and 2^127 for large ones. To avoid wrap-around problems, we set the
+ * result to zero if the argument falls outside this range. For small numbers this is just fine, but
+ * for large numbers you could be fancy and return the smallest/largest IEEE single-precision
+ * number instead. That would take a few extra cycles and not really help, since something is
+ * wrong if you are using single precision to work with numbers that cannot really be represented
+ * in single precision.
+ *
+ * The accuracy is at least 23 bits.
+ */
+static __m256
+gmx_mm256_exp2_ps(__m256 x)
+{
+    /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
+    const __m256  arglimit = _mm256_set1_ps(126.0f);
+
+    const __m128i expbase  = _mm_set1_epi32(127);
+    const __m256  CC6      = _mm256_set1_ps(1.535336188319500E-004);
+    const __m256  CC5      = _mm256_set1_ps(1.339887440266574E-003);
+    const __m256  CC4      = _mm256_set1_ps(9.618437357674640E-003);
+    const __m256  CC3      = _mm256_set1_ps(5.550332471162809E-002);
+    const __m256  CC2      = _mm256_set1_ps(2.402264791363012E-001);
+    const __m256  CC1      = _mm256_set1_ps(6.931472028550421E-001);
+    const __m256  CC0      = _mm256_set1_ps(1.0f);
+
+    __m256  p0,p1;
+    __m256  valuemask;
+    __m256i iexppart;
+    __m128i iexppart128a,iexppart128b;
+    __m256  fexppart;
+    __m256  intpart;
+    __m256  x2;
+
+
+    iexppart  = _mm256_cvtps_epi32(x);
+    intpart   = _mm256_round_ps(x,_MM_FROUND_TO_NEAREST_INT);
+
+    iexppart128b = _mm256_extractf128_si256(iexppart,0x1);
+    iexppart128a = _mm256_castsi256_si128(iexppart);
+
+    iexppart128a = _mm_slli_epi32(_mm_add_epi32(iexppart128a,expbase),23);
+    iexppart128b = _mm_slli_epi32(_mm_add_epi32(iexppart128b,expbase),23);
+
+    iexppart  = _mm256_castsi128_si256(iexppart128a);
+    iexppart  = _mm256_insertf128_si256(iexppart,iexppart128b,0x1);
+    valuemask = _mm256_cmp_ps(arglimit,gmx_mm256_abs_ps(x),_CMP_GE_OQ);
+    fexppart  = _mm256_and_ps(valuemask,_mm256_castsi256_ps(iexppart));
+
+    x         = _mm256_sub_ps(x,intpart);
+    x2        = _mm256_mul_ps(x,x);
+
+    p0        = _mm256_mul_ps(CC6,x2);
+    p1        = _mm256_mul_ps(CC5,x2);
+    p0        = _mm256_add_ps(p0,CC4);
+    p1        = _mm256_add_ps(p1,CC3);
+    p0        = _mm256_mul_ps(p0,x2);
+    p1        = _mm256_mul_ps(p1,x2);
+    p0        = _mm256_add_ps(p0,CC2);
+    p1        = _mm256_add_ps(p1,CC1);
+    p0        = _mm256_mul_ps(p0,x2);
+    p1        = _mm256_mul_ps(p1,x);
+    p0        = _mm256_add_ps(p0,CC0);
+    p0        = _mm256_add_ps(p0,p1);
+    x         = _mm256_mul_ps(p0,fexppart);
+
+    return  x;
+}
+
+
+/* Exponential function. This could be calculated from 2^x as Exp(x)=2^(y), where y=log2(e)*x,
+ * but there will then be a small rounding error since we lose some precision due to the
+ * multiplication. This will then be magnified a lot by the exponential.
+ *
+ * Instead, we calculate the fractional part directly as a minimax approximation of
+ * Exp(z) on [-0.5,0.5]. We use extended precision arithmetics to calculate the fraction
+ * remaining after 2^y, which avoids the precision-loss.
+ * The final result is correct to within 1 LSB over the entire argument range.
+ */
+static __m256
+gmx_mm256_exp_ps(__m256 exparg)
+{
+    const __m256  argscale      = _mm256_set1_ps(1.44269504088896341f);
+    /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
+    const __m256  arglimit      = _mm256_set1_ps(126.0f);
+    const __m128i expbase       = _mm_set1_epi32(127);
+
+    const __m256  invargscale0  = _mm256_set1_ps(0.693359375f);
+    const __m256  invargscale1  = _mm256_set1_ps(-2.12194440e-4f);
+
+    const __m256  CE5           = _mm256_set1_ps(1.9875691500e-4f);
+    const __m256  CE4           = _mm256_set1_ps(1.3981999507e-3f);
+    const __m256  CE3           = _mm256_set1_ps(8.3334519073e-3f);
+    const __m256  CE2           = _mm256_set1_ps(4.1665795894e-2f);
+    const __m256  CE1           = _mm256_set1_ps(1.6666665459e-1f);
+    const __m256  CE0           = _mm256_set1_ps(5.0000001201e-1f);
+    const __m256  one           = _mm256_set1_ps(1.0f);
+
+    __m256  exparg2,exp2arg;
+    __m256  pE0,pE1;
+    __m256  valuemask;
+    __m256i iexppart;
+    __m128i iexppart128a,iexppart128b;
+    __m256  fexppart;
+    __m256  intpart;
+
+    exp2arg = _mm256_mul_ps(exparg,argscale);
+
+    iexppart  = _mm256_cvtps_epi32(exp2arg);
+    intpart   = _mm256_round_ps(exp2arg,_MM_FROUND_TO_NEAREST_INT);
+
+    iexppart128b = _mm256_extractf128_si256(iexppart,0x1);
+    iexppart128a = _mm256_castsi256_si128(iexppart);
+
+    iexppart128a = _mm_slli_epi32(_mm_add_epi32(iexppart128a,expbase),23);
+    iexppart128b = _mm_slli_epi32(_mm_add_epi32(iexppart128b,expbase),23);
+
+    iexppart  = _mm256_castsi128_si256(iexppart128a);
+    iexppart  = _mm256_insertf128_si256(iexppart,iexppart128b,0x1);
+    valuemask = _mm256_cmp_ps(arglimit,gmx_mm256_abs_ps(exp2arg),_CMP_GE_OQ);
+    fexppart  = _mm256_and_ps(valuemask,_mm256_castsi256_ps(iexppart));
+
+    /* Extended precision arithmetics */
+    exparg    = _mm256_sub_ps(exparg,_mm256_mul_ps(invargscale0,intpart));
+    exparg    = _mm256_sub_ps(exparg,_mm256_mul_ps(invargscale1,intpart));
+
+    exparg2   = _mm256_mul_ps(exparg,exparg);
+
+    pE1       = _mm256_mul_ps(CE5,exparg2);
+    pE0       = _mm256_mul_ps(CE4,exparg2);
+    pE1       = _mm256_add_ps(pE1,CE3);
+    pE0       = _mm256_add_ps(pE0,CE2);
+    pE1       = _mm256_mul_ps(pE1,exparg2);
+    pE0       = _mm256_mul_ps(pE0,exparg2);
+    pE1       = _mm256_add_ps(pE1,CE1);
+    pE0       = _mm256_add_ps(pE0,CE0);
+    pE1       = _mm256_mul_ps(pE1,exparg);
+    pE0       = _mm256_add_ps(pE0,pE1);
+    pE0       = _mm256_mul_ps(pE0,exparg2);
+    exparg    = _mm256_add_ps(exparg,one);
+    exparg    = _mm256_add_ps(exparg,pE0);
+
+    exparg    = _mm256_mul_ps(exparg,fexppart);
+
+    return exparg;
+}
+
+
+
+/* FULL precision. Only errors in LSB */
+static __m256
+gmx_mm256_erf_ps(__m256 x)
+{
+    /* Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1] */
+    const __m256  CA6      = _mm256_set1_ps(7.853861353153693e-5f);
+    const __m256  CA5      = _mm256_set1_ps(-8.010193625184903e-4f);
+    const __m256  CA4      = _mm256_set1_ps(5.188327685732524e-3f);
+    const __m256  CA3      = _mm256_set1_ps(-2.685381193529856e-2f);
+    const __m256  CA2      = _mm256_set1_ps(1.128358514861418e-1f);
+    const __m256  CA1      = _mm256_set1_ps(-3.761262582423300e-1f);
+    const __m256  CA0      = _mm256_set1_ps(1.128379165726710f);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2] */
+    const __m256  CB9      = _mm256_set1_ps(-0.0018629930017603923f);
+    const __m256  CB8      = _mm256_set1_ps(0.003909821287598495f);
+    const __m256  CB7      = _mm256_set1_ps(-0.0052094582210355615f);
+    const __m256  CB6      = _mm256_set1_ps(0.005685614362160572f);
+    const __m256  CB5      = _mm256_set1_ps(-0.0025367682853477272f);
+    const __m256  CB4      = _mm256_set1_ps(-0.010199799682318782f);
+    const __m256  CB3      = _mm256_set1_ps(0.04369575504816542f);
+    const __m256  CB2      = _mm256_set1_ps(-0.11884063474674492f);
+    const __m256  CB1      = _mm256_set1_ps(0.2732120154030589f);
+    const __m256  CB0      = _mm256_set1_ps(0.42758357702025784f);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19] */
+    const __m256  CC10     = _mm256_set1_ps(-0.0445555913112064f);
+    const __m256  CC9      = _mm256_set1_ps(0.21376355144663348f);
+    const __m256  CC8      = _mm256_set1_ps(-0.3473187200259257f);
+    const __m256  CC7      = _mm256_set1_ps(0.016690861551248114f);
+    const __m256  CC6      = _mm256_set1_ps(0.7560973182491192f);
+    const __m256  CC5      = _mm256_set1_ps(-1.2137903600145787f);
+    const __m256  CC4      = _mm256_set1_ps(0.8411872321232948f);
+    const __m256  CC3      = _mm256_set1_ps(-0.08670413896296343f);
+    const __m256  CC2      = _mm256_set1_ps(-0.27124782687240334f);
+    const __m256  CC1      = _mm256_set1_ps(-0.0007502488047806069f);
+    const __m256  CC0      = _mm256_set1_ps(0.5642114853803148f);
+
+    /* Coefficients for expansion of exp(x) in [0,0.1] */
+    /* CD0 and CD1 are both 1.0, so no need to declare them separately */
+    const __m256  CD2      = _mm256_set1_ps(0.5000066608081202f);
+    const __m256  CD3      = _mm256_set1_ps(0.1664795422874624f);
+    const __m256  CD4      = _mm256_set1_ps(0.04379839977652482f);
+
+    const __m256  sieve    = _mm256_castsi256_ps( _mm256_set1_epi32(0xfffff000) );
+    const __m256  signbit  = _mm256_castsi256_ps( _mm256_set1_epi32(0x80000000) );
+    const __m256  one      = _mm256_set1_ps(1.0f);
+    const __m256  two      = _mm256_set1_ps(2.0f);
+
+    __m256 x2,x4,y;
+    __m256 z,q,t,t2,w,w2;
+    __m256 pA0,pA1,pB0,pB1,pC0,pC1;
+    __m256 expmx2,corr;
+    __m256 res_erf,res_erfc,res;
+    __m256 mask;
+
+    /* Calculate erf() */
+    x2     = _mm256_mul_ps(x,x);
+    x4     = _mm256_mul_ps(x2,x2);
+
+    pA0  = _mm256_mul_ps(CA6,x4);
+    pA1  = _mm256_mul_ps(CA5,x4);
+    pA0  = _mm256_add_ps(pA0,CA4);
+    pA1  = _mm256_add_ps(pA1,CA3);
+    pA0  = _mm256_mul_ps(pA0,x4);
+    pA1  = _mm256_mul_ps(pA1,x4);
+    pA0  = _mm256_add_ps(pA0,CA2);
+    pA1  = _mm256_add_ps(pA1,CA1);
+    pA0  = _mm256_mul_ps(pA0,x4);
+    pA1  = _mm256_mul_ps(pA1,x2);
+    pA0  = _mm256_add_ps(pA0,pA1);
+    pA0  = _mm256_add_ps(pA0,CA0);
+
+    res_erf = _mm256_mul_ps(x,pA0);
+
+    /* Calculate erfc */
+
+    y       = gmx_mm256_abs_ps(x);
+    t       = gmx_mm256_inv_ps(y);
+    w       = _mm256_sub_ps(t,one);
+    t2      = _mm256_mul_ps(t,t);
+    w2      = _mm256_mul_ps(w,w);
+    /*
+     * We cannot simply calculate exp(-x2) directly in single precision, since
+     * that will lose a couple of bits of precision due to the multiplication.
+     * Instead, we introduce x=z+w, where the last 12 bits of precision are in w.
+     * Then we get exp(-x2) = exp(-z2)*exp((z-x)*(z+x)).
+     *
+     * The only drawback with this is that it requires TWO separate exponential
+     * evaluations, which would be horrible performance-wise. However, the argument
+     * for the second exp() call is always small, so there we simply use a
+     * low-order minimax expansion on [0,0.1].
+     */
+
+    z       = _mm256_and_ps(y,sieve);
+    q       = _mm256_mul_ps( _mm256_sub_ps(z,y) , _mm256_add_ps(z,y) );
+
+    corr    = _mm256_mul_ps(CD4,q);
+    corr    = _mm256_add_ps(corr,CD3);
+    corr    = _mm256_mul_ps(corr,q);
+    corr    = _mm256_add_ps(corr,CD2);
+    corr    = _mm256_mul_ps(corr,q);
+    corr    = _mm256_add_ps(corr,one);
+    corr    = _mm256_mul_ps(corr,q);
+    corr    = _mm256_add_ps(corr,one);
+
+    expmx2  = gmx_mm256_exp_ps( _mm256_or_ps( signbit , _mm256_mul_ps(z,z) ) );
+    expmx2  = _mm256_mul_ps(expmx2,corr);
+
+    pB1  = _mm256_mul_ps(CB9,w2);
+    pB0  = _mm256_mul_ps(CB8,w2);
+    pB1  = _mm256_add_ps(pB1,CB7);
+    pB0  = _mm256_add_ps(pB0,CB6);
+    pB1  = _mm256_mul_ps(pB1,w2);
+    pB0  = _mm256_mul_ps(pB0,w2);
+    pB1  = _mm256_add_ps(pB1,CB5);
+    pB0  = _mm256_add_ps(pB0,CB4);
+    pB1  = _mm256_mul_ps(pB1,w2);
+    pB0  = _mm256_mul_ps(pB0,w2);
+    pB1  = _mm256_add_ps(pB1,CB3);
+    pB0  = _mm256_add_ps(pB0,CB2);
+    pB1  = _mm256_mul_ps(pB1,w2);
+    pB0  = _mm256_mul_ps(pB0,w2);
+    pB1  = _mm256_add_ps(pB1,CB1);
+    pB1  = _mm256_mul_ps(pB1,w);
+    pB0  = _mm256_add_ps(pB0,pB1);
+    pB0  = _mm256_add_ps(pB0,CB0);
+
+    pC0  = _mm256_mul_ps(CC10,t2);
+    pC1  = _mm256_mul_ps(CC9,t2);
+    pC0  = _mm256_add_ps(pC0,CC8);
+    pC1  = _mm256_add_ps(pC1,CC7);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t2);
+    pC0  = _mm256_add_ps(pC0,CC6);
+    pC1  = _mm256_add_ps(pC1,CC5);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t2);
+    pC0  = _mm256_add_ps(pC0,CC4);
+    pC1  = _mm256_add_ps(pC1,CC3);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t2);
+    pC0  = _mm256_add_ps(pC0,CC2);
+    pC1  = _mm256_add_ps(pC1,CC1);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t);
+    pC0  = _mm256_add_ps(pC0,pC1);
+    pC0  = _mm256_add_ps(pC0,CC0);
+    pC0  = _mm256_mul_ps(pC0,t);
+
+    /* SELECT pB0 or pC0 for erfc() */
+    mask = _mm256_cmp_ps(two,y,_CMP_LT_OQ);
+    res_erfc = _mm256_blendv_ps(pB0,pC0,mask);
+    res_erfc = _mm256_mul_ps(res_erfc,expmx2);
+
+    /* erfc(x<0) = 2-erfc(|x|) */
+    mask = _mm256_cmp_ps(x,_mm256_setzero_ps(),_CMP_LT_OQ);
+    res_erfc = _mm256_blendv_ps(res_erfc,_mm256_sub_ps(two,res_erfc),mask);
+
+    /* Select erf() or erfc() */
+    mask = _mm256_cmp_ps(y,_mm256_set1_ps(0.75f),_CMP_LT_OQ);
+    res  = _mm256_blendv_ps(_mm256_sub_ps(one,res_erfc),res_erf,mask);
+
+    return res;
+}
+
+
+/* FULL precision. Only errors in LSB */
+static __m256
+gmx_mm256_erfc_ps(__m256 x)
+{
+    /* Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1] */
+    const __m256  CA6      = _mm256_set1_ps(7.853861353153693e-5f);
+    const __m256  CA5      = _mm256_set1_ps(-8.010193625184903e-4f);
+    const __m256  CA4      = _mm256_set1_ps(5.188327685732524e-3f);
+    const __m256  CA3      = _mm256_set1_ps(-2.685381193529856e-2f);
+    const __m256  CA2      = _mm256_set1_ps(1.128358514861418e-1f);
+    const __m256  CA1      = _mm256_set1_ps(-3.761262582423300e-1f);
+    const __m256  CA0      = _mm256_set1_ps(1.128379165726710f);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2] */
+    const __m256  CB9      = _mm256_set1_ps(-0.0018629930017603923f);
+    const __m256  CB8      = _mm256_set1_ps(0.003909821287598495f);
+    const __m256  CB7      = _mm256_set1_ps(-0.0052094582210355615f);
+    const __m256  CB6      = _mm256_set1_ps(0.005685614362160572f);
+    const __m256  CB5      = _mm256_set1_ps(-0.0025367682853477272f);
+    const __m256  CB4      = _mm256_set1_ps(-0.010199799682318782f);
+    const __m256  CB3      = _mm256_set1_ps(0.04369575504816542f);
+    const __m256  CB2      = _mm256_set1_ps(-0.11884063474674492f);
+    const __m256  CB1      = _mm256_set1_ps(0.2732120154030589f);
+    const __m256  CB0      = _mm256_set1_ps(0.42758357702025784f);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19] */
+    const __m256  CC10     = _mm256_set1_ps(-0.0445555913112064f);
+    const __m256  CC9      = _mm256_set1_ps(0.21376355144663348f);
+    const __m256  CC8      = _mm256_set1_ps(-0.3473187200259257f);
+    const __m256  CC7      = _mm256_set1_ps(0.016690861551248114f);
+    const __m256  CC6      = _mm256_set1_ps(0.7560973182491192f);
+    const __m256  CC5      = _mm256_set1_ps(-1.2137903600145787f);
+    const __m256  CC4      = _mm256_set1_ps(0.8411872321232948f);
+    const __m256  CC3      = _mm256_set1_ps(-0.08670413896296343f);
+    const __m256  CC2      = _mm256_set1_ps(-0.27124782687240334f);
+    const __m256  CC1      = _mm256_set1_ps(-0.0007502488047806069f);
+    const __m256  CC0      = _mm256_set1_ps(0.5642114853803148f);
+
+    /* Coefficients for expansion of exp(x) in [0,0.1] */
+    /* CD0 and CD1 are both 1.0, so no need to declare them separately */
+    const __m256  CD2      = _mm256_set1_ps(0.5000066608081202f);
+    const __m256  CD3      = _mm256_set1_ps(0.1664795422874624f);
+    const __m256  CD4      = _mm256_set1_ps(0.04379839977652482f);
+
+    const __m256  sieve    = _mm256_castsi256_ps( _mm256_set1_epi32(0xfffff000) );
+    const __m256  signbit  = _mm256_castsi256_ps( _mm256_set1_epi32(0x80000000) );
+    const __m256  one      = _mm256_set1_ps(1.0f);
+    const __m256  two      = _mm256_set1_ps(2.0f);
+
+    __m256 x2,x4,y;
+    __m256 z,q,t,t2,w,w2;
+    __m256 pA0,pA1,pB0,pB1,pC0,pC1;
+    __m256 expmx2,corr;
+    __m256 res_erf,res_erfc,res;
+    __m256 mask;
+
+    /* Calculate erf() */
+    x2     = _mm256_mul_ps(x,x);
+    x4     = _mm256_mul_ps(x2,x2);
+
+    pA0  = _mm256_mul_ps(CA6,x4);
+    pA1  = _mm256_mul_ps(CA5,x4);
+    pA0  = _mm256_add_ps(pA0,CA4);
+    pA1  = _mm256_add_ps(pA1,CA3);
+    pA0  = _mm256_mul_ps(pA0,x4);
+    pA1  = _mm256_mul_ps(pA1,x4);
+    pA0  = _mm256_add_ps(pA0,CA2);
+    pA1  = _mm256_add_ps(pA1,CA1);
+    pA0  = _mm256_mul_ps(pA0,x4);
+    pA1  = _mm256_mul_ps(pA1,x2);
+    pA0  = _mm256_add_ps(pA0,pA1);
+    pA0  = _mm256_add_ps(pA0,CA0);
+
+    res_erf = _mm256_mul_ps(x,pA0);
+
+    /* Calculate erfc */
+    y       = gmx_mm256_abs_ps(x);
+    t       = gmx_mm256_inv_ps(y);
+    w       = _mm256_sub_ps(t,one);
+    t2      = _mm256_mul_ps(t,t);
+    w2      = _mm256_mul_ps(w,w);
+    /*
+     * We cannot simply calculate exp(-x2) directly in single precision, since
+     * that will lose a couple of bits of precision due to the multiplication.
+     * Instead, we introduce x=z+w, where the last 12 bits of precision are in w.
+     * Then we get exp(-x2) = exp(-z2)*exp((z-x)*(z+x)).
+     *
+     * The only drawback with this is that it requires TWO separate exponential
+     * evaluations, which would be horrible performance-wise. However, the argument
+     * for the second exp() call is always small, so there we simply use a
+     * low-order minimax expansion on [0,0.1].
+     */
+
+    z       = _mm256_and_ps(y,sieve);
+    q       = _mm256_mul_ps( _mm256_sub_ps(z,y) , _mm256_add_ps(z,y) );
+
+    corr    = _mm256_mul_ps(CD4,q);
+    corr    = _mm256_add_ps(corr,CD3);
+    corr    = _mm256_mul_ps(corr,q);
+    corr    = _mm256_add_ps(corr,CD2);
+    corr    = _mm256_mul_ps(corr,q);
+    corr    = _mm256_add_ps(corr,one);
+    corr    = _mm256_mul_ps(corr,q);
+    corr    = _mm256_add_ps(corr,one);
+
+    expmx2  = gmx_mm256_exp_ps( _mm256_or_ps( signbit , _mm256_mul_ps(z,z) ) );
+    expmx2  = _mm256_mul_ps(expmx2,corr);
+
+    pB1  = _mm256_mul_ps(CB9,w2);
+    pB0  = _mm256_mul_ps(CB8,w2);
+    pB1  = _mm256_add_ps(pB1,CB7);
+    pB0  = _mm256_add_ps(pB0,CB6);
+    pB1  = _mm256_mul_ps(pB1,w2);
+    pB0  = _mm256_mul_ps(pB0,w2);
+    pB1  = _mm256_add_ps(pB1,CB5);
+    pB0  = _mm256_add_ps(pB0,CB4);
+    pB1  = _mm256_mul_ps(pB1,w2);
+    pB0  = _mm256_mul_ps(pB0,w2);
+    pB1  = _mm256_add_ps(pB1,CB3);
+    pB0  = _mm256_add_ps(pB0,CB2);
+    pB1  = _mm256_mul_ps(pB1,w2);
+    pB0  = _mm256_mul_ps(pB0,w2);
+    pB1  = _mm256_add_ps(pB1,CB1);
+    pB1  = _mm256_mul_ps(pB1,w);
+    pB0  = _mm256_add_ps(pB0,pB1);
+    pB0  = _mm256_add_ps(pB0,CB0);
+
+    pC0  = _mm256_mul_ps(CC10,t2);
+    pC1  = _mm256_mul_ps(CC9,t2);
+    pC0  = _mm256_add_ps(pC0,CC8);
+    pC1  = _mm256_add_ps(pC1,CC7);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t2);
+    pC0  = _mm256_add_ps(pC0,CC6);
+    pC1  = _mm256_add_ps(pC1,CC5);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t2);
+    pC0  = _mm256_add_ps(pC0,CC4);
+    pC1  = _mm256_add_ps(pC1,CC3);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t2);
+    pC0  = _mm256_add_ps(pC0,CC2);
+    pC1  = _mm256_add_ps(pC1,CC1);
+    pC0  = _mm256_mul_ps(pC0,t2);
+    pC1  = _mm256_mul_ps(pC1,t);
+    pC0  = _mm256_add_ps(pC0,pC1);
+    pC0  = _mm256_add_ps(pC0,CC0);
+    pC0  = _mm256_mul_ps(pC0,t);
+
+    /* SELECT pB0 or pC0 for erfc() */
+    mask = _mm256_cmp_ps(two,y,_CMP_LT_OQ);
+    res_erfc = _mm256_blendv_ps(pB0,pC0,mask);
+    res_erfc = _mm256_mul_ps(res_erfc,expmx2);
+
+    /* erfc(x<0) = 2-erfc(|x|) */
+    mask = _mm256_cmp_ps(x,_mm256_setzero_ps(),_CMP_LT_OQ);
+    res_erfc = _mm256_blendv_ps(res_erfc,_mm256_sub_ps(two,res_erfc),mask);
+
+    /* Select erf() or erfc() */
+    mask = _mm256_cmp_ps(y,_mm256_set1_ps(0.75f),_CMP_LT_OQ);
+    res  = _mm256_blendv_ps(res_erfc,_mm256_sub_ps(one,res_erf),mask);
+
+    return res;
+}
+
+
+
+
+static int
+gmx_mm256_sincos_ps(__m256 x,
+                    __m256 *sinval,
+                    __m256 *cosval)
+{
+    const __m256 two_over_pi = _mm256_set1_ps(2.0f/(float)M_PI);
+    const __m256 half        = _mm256_set1_ps(0.5f);
+    const __m256 one         = _mm256_set1_ps(1.0f);
+    const __m256 zero        = _mm256_setzero_ps();
+
+    const __m128i ione       = _mm_set1_epi32(1);
+
+    const __m256 mask_one    = _mm256_castsi256_ps(_mm256_set1_epi32(1));
+    const __m256 mask_two    = _mm256_castsi256_ps(_mm256_set1_epi32(2));
+    const __m256 mask_three  = _mm256_castsi256_ps(_mm256_set1_epi32(3));
+
+    const __m256 CA1         = _mm256_set1_ps(1.5703125f);
+    const __m256 CA2         = _mm256_set1_ps(4.837512969970703125e-4f);
+    const __m256 CA3         = _mm256_set1_ps(7.54978995489188216e-8f);
+
+    const __m256 CC0         = _mm256_set1_ps(-0.0013602249f);
+    const __m256 CC1         = _mm256_set1_ps(0.0416566950f);
+    const __m256 CC2         = _mm256_set1_ps(-0.4999990225f);
+    const __m256 CS0         = _mm256_set1_ps(-0.0001950727f);
+    const __m256 CS1         = _mm256_set1_ps(0.0083320758f);
+    const __m256 CS2         = _mm256_set1_ps(-0.1666665247f);
+
+    const __m256  signbit    = _mm256_castsi256_ps( _mm256_set1_epi32(0x80000000) );
+
+    __m256 y,y2;
+    __m256 z;
+    __m256i iz;
+    __m128i iz_high,iz_low;
+    __m256 offset_sin,offset_cos;
+    __m256 mask_sin,mask_cos;
+    __m256 tmp1,tmp2;
+    __m256 tmp_sin,tmp_cos;
+
+    y               = _mm256_mul_ps(x,two_over_pi);
+    y               = _mm256_add_ps(y,_mm256_or_ps(_mm256_and_ps(y,signbit),half));
+
+    iz              = _mm256_cvttps_epi32(y);
+    z               = _mm256_round_ps(y,_MM_FROUND_TO_ZERO);
+
+    offset_sin      = _mm256_and_ps(_mm256_castsi256_ps(iz),mask_three);
+
+    iz_high         = _mm256_extractf128_si256(iz,0x1);
+    iz_low          = _mm256_castsi256_si128(iz);
+    iz_low          = _mm_add_epi32(iz_low,ione);
+    iz_high         = _mm_add_epi32(iz_high,ione);
+    iz              = _mm256_castsi128_si256(iz_low);
+    iz              = _mm256_insertf128_si256(iz,iz_high,0x1);
+    offset_cos      = _mm256_castsi256_ps(iz);
+
+    /* Extended precision arithmethic to achieve full precision */
+    y               = _mm256_mul_ps(z,CA1);
+    tmp1            = _mm256_mul_ps(z,CA2);
+    tmp2            = _mm256_mul_ps(z,CA3);
+    y               = _mm256_sub_ps(x,y);
+    y               = _mm256_sub_ps(y,tmp1);
+    y               = _mm256_sub_ps(y,tmp2);
+
+    y2              = _mm256_mul_ps(y,y);
+
+    tmp1            = _mm256_mul_ps(CC0,y2);
+    tmp1            = _mm256_add_ps(tmp1,CC1);
+    tmp2            = _mm256_mul_ps(CS0,y2);
+    tmp2            = _mm256_add_ps(tmp2,CS1);
+    tmp1            = _mm256_mul_ps(tmp1,y2);
+    tmp1            = _mm256_add_ps(tmp1,CC2);
+    tmp2            = _mm256_mul_ps(tmp2,y2);
+    tmp2            = _mm256_add_ps(tmp2,CS2);
+
+    tmp1            = _mm256_mul_ps(tmp1,y2);
+    tmp1            = _mm256_add_ps(tmp1,one);
+
+    tmp2            = _mm256_mul_ps(tmp2,_mm256_mul_ps(y,y2));
+    tmp2            = _mm256_add_ps(tmp2,y);
+
+#ifdef __INTEL_COMPILER
+    /* Intel Compiler version 12.1.3 20120130 is buggy if optimization is enabled unless we cast explicitly! */
+    mask_sin        = _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(offset_sin,mask_one))),zero,_CMP_EQ_OQ);
+    mask_cos        = _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(offset_cos,mask_one))),zero,_CMP_EQ_OQ);
+#else
+    mask_sin        = _mm256_cmp_ps( _mm256_and_ps(offset_sin,mask_one), zero, _CMP_EQ_OQ);
+    mask_cos        = _mm256_cmp_ps( _mm256_and_ps(offset_cos,mask_one), zero, _CMP_EQ_OQ);
+#endif
+    tmp_sin         = _mm256_blendv_ps(tmp1,tmp2,mask_sin);
+    tmp_cos         = _mm256_blendv_ps(tmp1,tmp2,mask_cos);
+
+    tmp1            = _mm256_xor_ps(signbit,tmp_sin);
+    tmp2            = _mm256_xor_ps(signbit,tmp_cos);
+
+#ifdef __INTEL_COMPILER
+    /* Intel Compiler version 12.1.3 20120130 is buggy if optimization is enabled unless we cast explicitly! */
+    mask_sin        = _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(offset_sin,mask_two))),zero,_CMP_EQ_OQ);
+    mask_cos        = _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(offset_cos,mask_two))),zero,_CMP_EQ_OQ);
+#else
+    mask_sin        = _mm256_cmp_ps( _mm256_and_ps(offset_sin,mask_two), zero, _CMP_EQ_OQ);
+    mask_cos        = _mm256_cmp_ps( _mm256_and_ps(offset_cos,mask_two), zero, _CMP_EQ_OQ);
+
+#endif
+    *sinval         = _mm256_blendv_ps(tmp1,tmp_sin,mask_sin);
+    *cosval         = _mm256_blendv_ps(tmp2,tmp_cos,mask_cos);
+
+    return 0;
+}
+
+/*
+ * IMPORTANT: Do NOT call both sin & cos if you need both results, since each of them
+ * will then call the sincos() routine and waste a factor 2 in performance!
+ */
+static __m256
+gmx_mm256_sin_ps(__m256 x)
+{
+    __m256 s,c;
+    gmx_mm256_sincos_ps(x,&s,&c);
+    return s;
+}
+
+/*
+ * IMPORTANT: Do NOT call both sin & cos if you need both results, since each of them
+ * will then call the sincos() routine and waste a factor 2 in performance!
+ */
+static __m256
+gmx_mm256_cos_ps(__m256 x)
+{
+    __m256 s,c;
+    gmx_mm256_sincos_ps(x,&s,&c);
+    return c;
+}
+
+
+static __m256
+gmx_mm256_tan_ps(__m256 x)
+{
+    __m256 sinval,cosval;
+    __m256 tanval;
+
+    gmx_mm256_sincos_ps(x,&sinval,&cosval);
+
+    tanval = _mm256_mul_ps(sinval,gmx_mm256_inv_ps(cosval));
+
+    return tanval;
+}
+
+static __m256
+gmx_mm256_asin_ps(__m256 x)
+{
+    const __m256 signmask  = _mm256_castsi256_ps( _mm256_set1_epi32(0x7FFFFFFF) );
+    const __m256 limitlow  = _mm256_set1_ps(1e-4f);
+    const __m256 half      = _mm256_set1_ps(0.5f);
+    const __m256 one       = _mm256_set1_ps(1.0f);
+    const __m256 halfpi    = _mm256_set1_ps((float)M_PI/2.0f);
+
+    const __m256 CC5        = _mm256_set1_ps(4.2163199048E-2f);
+    const __m256 CC4        = _mm256_set1_ps(2.4181311049E-2f);
+    const __m256 CC3        = _mm256_set1_ps(4.5470025998E-2f);
+    const __m256 CC2        = _mm256_set1_ps(7.4953002686E-2f);
+    const __m256 CC1        = _mm256_set1_ps(1.6666752422E-1f);
+
+    __m256 sign;
+    __m256 mask;
+    __m256 xabs;
+    __m256 z,z1,z2,q,q1,q2;
+    __m256 pA,pB;
+
+    sign  = _mm256_andnot_ps(signmask,x);
+    xabs  = _mm256_and_ps(x,signmask);
+
+    mask  = _mm256_cmp_ps(xabs,half,_CMP_GT_OQ);
+
+    z1    = _mm256_mul_ps(half, _mm256_sub_ps(one,xabs));
+    q1    = _mm256_mul_ps(z1,gmx_mm256_invsqrt_ps(z1));
+    q1    = _mm256_andnot_ps(_mm256_cmp_ps(xabs,one,_CMP_EQ_OQ),q1);
+
+    q2    = xabs;
+    z2    = _mm256_mul_ps(q2,q2);
+
+    z     = _mm256_blendv_ps(z2,z1,mask);
+    q     = _mm256_blendv_ps(q2,q1,mask);
+
+    z2    = _mm256_mul_ps(z,z);
+
+    pA    = _mm256_mul_ps(CC5,z2);
+    pB    = _mm256_mul_ps(CC4,z2);
+
+    pA    = _mm256_add_ps(pA,CC3);
+    pB    = _mm256_add_ps(pB,CC2);
+
+    pA    = _mm256_mul_ps(pA,z2);
+    pB    = _mm256_mul_ps(pB,z2);
+
+    pA    = _mm256_add_ps(pA,CC1);
+    pA    = _mm256_mul_ps(pA,z);
+
+    z     = _mm256_add_ps(pA,pB);
+    z     = _mm256_mul_ps(z,q);
+    z     = _mm256_add_ps(z,q);
+
+    q2    = _mm256_sub_ps(halfpi,z);
+    q2    = _mm256_sub_ps(q2,z);
+
+    z     = _mm256_blendv_ps(z,q2,mask);
+
+    mask  = _mm256_cmp_ps(xabs,limitlow,_CMP_GT_OQ);
+    z     = _mm256_blendv_ps(xabs,z,mask);
+
+    z     = _mm256_xor_ps(z,sign);
+
+    return z;
+}
+
+
+
+static __m256
+gmx_mm256_acos_ps(__m256 x)
+{
+    const __m256 signmask  = _mm256_castsi256_ps( _mm256_set1_epi32(0x7FFFFFFF) );
+    const __m256 one_ps    = _mm256_set1_ps(1.0f);
+    const __m256 half_ps   = _mm256_set1_ps(0.5f);
+    const __m256 pi_ps     = _mm256_set1_ps((float)M_PI);
+    const __m256 halfpi_ps = _mm256_set1_ps((float)M_PI/2.0f);
+
+    __m256 mask1;
+    __m256 mask2;
+    __m256 xabs;
+    __m256 z,z1,z2,z3;
+
+    xabs  = _mm256_and_ps(x,signmask);
+    mask1 = _mm256_cmp_ps(xabs,half_ps,_CMP_GT_OQ);
+    mask2 = _mm256_cmp_ps(x,_mm256_setzero_ps(),_CMP_GT_OQ);
+
+    z     = _mm256_mul_ps(half_ps,_mm256_sub_ps(one_ps,xabs));
+    z     = _mm256_mul_ps(z,gmx_mm256_invsqrt_ps(z));
+    z     = _mm256_andnot_ps(_mm256_cmp_ps(xabs,one_ps,_CMP_EQ_OQ),z);
+
+    z     = _mm256_blendv_ps(x,z,mask1);
+    z     = gmx_mm256_asin_ps(z);
+
+    z2    = _mm256_add_ps(z,z);
+    z1    = _mm256_sub_ps(pi_ps,z2);
+    z3    = _mm256_sub_ps(halfpi_ps,z);
+
+    z     = _mm256_blendv_ps(z1,z2,mask2);
+    z     = _mm256_blendv_ps(z3,z,mask1);
+
+    return z;
+}
+
+
+static __m256
+gmx_mm256_atan_ps(__m256 x)
+{
+    const __m256 signmask  = _mm256_castsi256_ps( _mm256_set1_epi32(0x7FFFFFFF) );
+    const __m256 limit1    = _mm256_set1_ps(0.414213562373095f);
+    const __m256 limit2    = _mm256_set1_ps(2.414213562373095f);
+    const __m256 quarterpi = _mm256_set1_ps(0.785398163397448f);
+    const __m256 halfpi    = _mm256_set1_ps(1.570796326794896f);
+    const __m256 mone      = _mm256_set1_ps(-1.0f);
+    const __m256 CC3       = _mm256_set1_ps(-3.33329491539E-1f);
+    const __m256 CC5       = _mm256_set1_ps(1.99777106478E-1f);
+    const __m256 CC7       = _mm256_set1_ps(-1.38776856032E-1);
+    const __m256 CC9       = _mm256_set1_ps(8.05374449538e-2f);
+
+    __m256 sign;
+    __m256 mask1,mask2;
+    __m256 y,z1,z2;
+    __m256 x2,x4;
+    __m256 sum1,sum2;
+
+    sign  = _mm256_andnot_ps(signmask,x);
+    x     = _mm256_and_ps(x,signmask);
+
+    mask1 = _mm256_cmp_ps(x,limit1,_CMP_GT_OQ);
+    mask2 = _mm256_cmp_ps(x,limit2,_CMP_GT_OQ);
+
+    z1    = _mm256_mul_ps(_mm256_add_ps(x,mone),gmx_mm256_inv_ps(_mm256_sub_ps(x,mone)));
+    z2    = _mm256_mul_ps(mone,gmx_mm256_inv_ps(x));
+
+    y     = _mm256_and_ps(mask1,quarterpi);
+    y     = _mm256_blendv_ps(y,halfpi,mask2);
+
+    x     = _mm256_blendv_ps(x,z1,mask1);
+    x     = _mm256_blendv_ps(x,z2,mask2);
+
+    x2    = _mm256_mul_ps(x,x);
+    x4    = _mm256_mul_ps(x2,x2);
+
+    sum1  = _mm256_mul_ps(CC9,x4);
+    sum2  = _mm256_mul_ps(CC7,x4);
+    sum1  = _mm256_add_ps(sum1,CC5);
+    sum2  = _mm256_add_ps(sum2,CC3);
+    sum1  = _mm256_mul_ps(sum1,x4);
+    sum2  = _mm256_mul_ps(sum2,x2);
+
+    sum1  = _mm256_add_ps(sum1,sum2);
+    sum1  = _mm256_sub_ps(sum1,mone);
+    sum1  = _mm256_mul_ps(sum1,x);
+    y     = _mm256_add_ps(y,sum1);
+
+    y     = _mm256_xor_ps(y,sign);
+
+    return y;
+}
+
+static __m256
+gmx_mm256_atan2_ps(__m256 y, __m256 x)
+{
+    const __m256 pi          = _mm256_set1_ps( (float) M_PI);
+    const __m256 minuspi     = _mm256_set1_ps( (float) -M_PI);
+    const __m256 halfpi      = _mm256_set1_ps( (float) M_PI/2.0f);
+    const __m256 minushalfpi = _mm256_set1_ps( (float) -M_PI/2.0f);
+
+    __m256 z,z1,z3,z4;
+    __m256 w;
+    __m256 maskx_lt,maskx_eq;
+    __m256 masky_lt,masky_eq;
+    __m256 mask1,mask2,mask3,mask4,maskall;
+
+    maskx_lt  = _mm256_cmp_ps(x,_mm256_setzero_ps(),_CMP_LT_OQ);
+    masky_lt  = _mm256_cmp_ps(y,_mm256_setzero_ps(),_CMP_LT_OQ);
+    maskx_eq  = _mm256_cmp_ps(x,_mm256_setzero_ps(),_CMP_EQ_OQ);
+    masky_eq  = _mm256_cmp_ps(y,_mm256_setzero_ps(),_CMP_EQ_OQ);
+
+    z         = _mm256_mul_ps(y,gmx_mm256_inv_ps(x));
+    z         = gmx_mm256_atan_ps(z);
+
+    mask1     = _mm256_and_ps(maskx_eq,masky_lt);
+    mask2     = _mm256_andnot_ps(maskx_lt,masky_eq);
+    mask3     = _mm256_andnot_ps( _mm256_or_ps(masky_lt,masky_eq) , maskx_eq);
+    mask4     = _mm256_and_ps(maskx_lt,masky_eq);
+    maskall   = _mm256_or_ps( _mm256_or_ps(mask1,mask2), _mm256_or_ps(mask3,mask4) );
+
+    z         = _mm256_andnot_ps(maskall,z);
+    z1        = _mm256_and_ps(mask1,minushalfpi);
+    z3        = _mm256_and_ps(mask3,halfpi);
+    z4        = _mm256_and_ps(mask4,pi);
+
+    z         = _mm256_or_ps( _mm256_or_ps(z,z1), _mm256_or_ps(z3,z4) );
+
+    w         = _mm256_blendv_ps(pi,minuspi,masky_lt);
+    w         = _mm256_and_ps(w,maskx_lt);
+
+    w         = _mm256_andnot_ps(maskall,w);
+
+    z         = _mm256_add_ps(z,w);
+
+    return z;
+}
+
+
+#endif /* _gmx_math_x86_avx_256_single_h_ */

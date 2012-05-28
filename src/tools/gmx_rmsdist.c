@@ -64,6 +64,7 @@ static void calc_dist(int nind,atom_id index[],rvec x[],int ePBC,matrix box,
   int     i,j;
   real    *xi;
   rvec    dx;
+  real    temp2;
   t_pbc   pbc;
 
   set_pbc(&pbc,ePBC,box);
@@ -71,7 +72,8 @@ static void calc_dist(int nind,atom_id index[],rvec x[],int ePBC,matrix box,
     xi=x[index[i]];
     for(j=i+1; (j<nind); j++) {
       pbc_dx(&pbc,xi,x[index[j]],dx);
-      d[i][j]=norm(dx);
+      temp2=dx[XX]*dx[XX]+dx[YY]*dx[YY]+dx[ZZ]*dx[ZZ];
+      d[i][j]=sqrt(temp2);
     }
   }
 }
