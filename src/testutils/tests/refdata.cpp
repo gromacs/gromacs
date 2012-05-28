@@ -68,6 +68,33 @@ TEST(ReferenceDataTest, HandlesSimpleData)
     }
 }
 
+TEST(ReferenceDataTest, HandlesPresenceChecks)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+
+    {
+        TestReferenceData data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_TRUE(checker.checkPresent(true, "present"));
+        checker.checkInteger(1, "present");
+        EXPECT_FALSE(checker.checkPresent(false, "absent"));
+    }
+    {
+        TestReferenceData data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        // Assigned to avoid warnings about potentially uninitialized value.
+        bool bRet = true;
+        EXPECT_TRUE(checker.checkPresent(true, "present"));
+        checker.checkInteger(1, "present");
+        EXPECT_NONFATAL_FAILURE(bRet = checker.checkPresent(false, "present"), "");
+        EXPECT_FALSE(bRet);
+        EXPECT_NONFATAL_FAILURE(bRet = checker.checkPresent(true, "absent"), "");
+        EXPECT_FALSE(bRet);
+        EXPECT_FALSE(checker.checkPresent(false, "absent"));
+    }
+}
+
 
 TEST(ReferenceDataTest, HandlesStringBlockData)
 {

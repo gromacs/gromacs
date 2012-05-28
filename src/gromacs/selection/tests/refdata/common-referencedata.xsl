@@ -3,7 +3,9 @@
 <!--
 This file is currently duplicated to each directory containing reference data
 XML files. This is to make it compatible with more browsers.
-If you modify one of these files, please keep others in sync.
+To keep these files in sync, please only modify the version in
+  src/testutils/
+and use the copy_xsl.sh script to copy it to relevant locations.
 -->
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -42,9 +44,11 @@ If you modify one of these files, please keep others in sync.
 
 <xsl:template name="SequenceAsCSV">
     <xsl:param name="root" select="."/>
-    <xsl:for-each select="$root/*[position() &gt; 1]">
-        <xsl:apply-templates select="."/>
-        <xsl:if test="position() &lt; last()">, </xsl:if>
+    <xsl:for-each select="$root/*">
+        <xsl:if test="not(.[@Name])">
+            <xsl:apply-templates select="."/>
+            <xsl:if test="position() &lt; last()">, </xsl:if>
+        </xsl:if>
     </xsl:for-each>
 </xsl:template>
 
