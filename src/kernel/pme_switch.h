@@ -7,9 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
+ *                        VERSION 4.6.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
+ * Copyright (c) 2001-2011, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -33,24 +34,28 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _GMX_GPU_UTILS_H_
-#define _GMX_GPU_UTILS_H_
+#ifndef _pme_switch_h
+#define _pme_switch_h
 
-#ifndef __cplusplus
-extern "C" {
-#endif
+typedef struct pme_switch *pme_switch_t;
 
-int do_quick_memtest(int /*dev_id*/);
+void switch_pme_init(pme_switch_t *pmes_p,
+                     const t_inputrec *ir,matrix box,
+		     const interaction_const_t *ic,
+                     gmx_pme_t pmedata);
 
-int do_full_memtest(int /*dev_id*/);
+gmx_bool switch_pme(pme_switch_t pmes,
+                    t_commrec *cr,
+                    FILE *fp_err,
+                    FILE *fp_log,
+                    t_inputrec *ir,
+                    t_state *state,
+                    double cycles,
+                    interaction_const_t *ic,
+                    nonbonded_verlet_t *nbv,
+                    gmx_pme_t *pmedata,
+                    int step);
 
-int do_timed_memtest(int /*dev_id*/, int /*time_limit*/);
+void restart_switch_pme(pme_switch_t pmes, int n);
 
-int is_supported_cuda_gpu(int /*dev_id*/, char* /*gpu_name*/);
-
-#ifndef __cplusplus
-}  /* extern "C" */
-#endif
-
-#endif // _GMX_GPU_UTILS_H_
-
+#endif /* _pme_switch_h */
