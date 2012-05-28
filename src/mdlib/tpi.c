@@ -79,12 +79,8 @@
 #include "pme.h"
 #include "gbutil.h"
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
-#if defined(GMX_DOUBLE)
-#include "gmx_sse2_double.h"
-#else
-#include "gmx_sse2_single.h"
-#endif
+#ifdef GMX_X86_SSE2
+#include "gmx_x86_sse2.h"
 #endif
 
 
@@ -397,7 +393,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
 
   refvolshift = log(det(rerun_fr.box));
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#ifdef GMX_X86_SSE2
     /* Make sure we don't detect SSE overflow generated before this point */
     gmx_mm_check_and_reset_overflow();
 #endif
@@ -587,7 +583,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
 
                 epot = enerd->term[F_EPOT];
                 bEnergyOutOfBounds = FALSE;
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#ifdef GMX_X86_SSE2
                 /* With SSE the energy can overflow, check for this */
                 if (gmx_mm_check_and_reset_overflow())
                 {
