@@ -43,7 +43,7 @@
 #include "genborn.h"
 #include "genborn_allvsall.h"
 
-#if ( (defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2)) && !defined(GMX_DOUBLE) )
+#if 0 && (defined GMX_ACC_X86_SSE2 || defined GMX_ACC_X86_SSE4_1 || defined GMX_ACC_X86_AVX_128_FMA || defined GMX_ACC_X86_AVX_256)
 
 #include <gmx_sse2_single.h>
 
