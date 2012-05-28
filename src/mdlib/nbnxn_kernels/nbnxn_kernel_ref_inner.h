@@ -189,10 +189,9 @@
                                    -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
                     /* 7 flops for float 1/r-table energy */
 #else
-                    vcoul  = qq*(interact*rinv
+                    vcoul  = qq*(interact*(rinv - ic->sh_ewald)
                                  -(tab_coul_V[ri]
-                                   -halfsp*frac*(tab_coul_F[ri] + fexcl))
-                                 - ic->sh_ewald);
+                                   -halfsp*frac*(tab_coul_F[ri] + fexcl)));
 #endif
 #endif
                     fcoul *= qq*rinv;
