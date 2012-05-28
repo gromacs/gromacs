@@ -30,15 +30,15 @@
  */
 /*! \internal \file
  * \brief
- * Declares private implementation class for gmx::test::MockAnalysisModule.
+ * Declares private implementation class for gmx::test::MockAnalysisDataModule.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_analysisdata
+ * \ingroup module_testutils
  */
-#ifndef GMX_ANALYSISDATA_TESTS_MOCK_MODULE_IMPL_H
-#define GMX_ANALYSISDATA_TESTS_MOCK_MODULE_IMPL_H
+#ifndef GMX_TESTUTILS_MOCK_DATAMODULE_IMPL_H
+#define GMX_TESTUTILS_MOCK_DATAMODULE_IMPL_H
 
-#include "mock_module.h"
+#include "mock_datamodule.h"
 
 #include <boost/scoped_ptr.hpp>
 
@@ -48,11 +48,11 @@ namespace test
 {
 
 /*! \internal \brief
- * Private implementation class for gmx::test::MockAnalysisModule.
+ * Private implementation class for gmx::test::MockAnalysisDataModule.
  *
- * \ingroup module_analysisdata
+ * \ingroup module_testutils
  */
-class MockAnalysisModule::Impl
+class MockAnalysisDataModule::Impl
 {
     public:
         //! Initializes a mock object with the given flags.

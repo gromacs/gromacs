@@ -30,12 +30,12 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in mock_module.h.
+ * Implements classes in mock_datamodule.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_analysisdata
+ * \ingroup module_testutils
  */
-#include "mock_module.h"
+#include "mock_datamodule.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -45,10 +45,10 @@
 #include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "testutils/datatest.h"
 #include "testutils/refdata.h"
 
-#include "datatest.h"
-#include "mock_module-impl.h"
+#include "mock_datamodule-impl.h"
 
 namespace gmx
 {
@@ -56,7 +56,7 @@ namespace test
 {
 
 /********************************************************************
- * MockAnalysisModule::Impl
+ * MockAnalysisDataModule::Impl
  */
 
 namespace
@@ -82,14 +82,15 @@ void checkReferenceDataPoint(TestReferenceChecker *checker,
 
 } // namespace
 
-MockAnalysisModule::Impl::Impl(int flags)
+MockAnalysisDataModule::Impl::Impl(int flags)
     : flags_(flags), frameIndex_(0)
 {
 }
 
 
 void
-MockAnalysisModule::Impl::startReferenceFrame(const AnalysisDataFrameHeader &header)
+MockAnalysisDataModule::Impl::startReferenceFrame(
+        const AnalysisDataFrameHeader &header)
 {
     GMX_RELEASE_ASSERT(rootChecker_.get() != NULL,
                        "Root checker not set, but reference data used");
@@ -103,7 +104,8 @@ MockAnalysisModule::Impl::startReferenceFrame(const AnalysisDataFrameHeader &hea
 
 
 void
-MockAnalysisModule::Impl::checkReferencePoints(const AnalysisDataPointSetRef &points)
+MockAnalysisDataModule::Impl::checkReferencePoints(
+        const AnalysisDataPointSetRef &points)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     if (frameChecker_.get() != NULL)
@@ -115,7 +117,8 @@ MockAnalysisModule::Impl::checkReferencePoints(const AnalysisDataPointSetRef &po
 
 
 void
-MockAnalysisModule::Impl::finishReferenceFrame(const AnalysisDataFrameHeader &header)
+MockAnalysisDataModule::Impl::finishReferenceFrame(
+        const AnalysisDataFrameHeader &header)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     EXPECT_EQ(frameIndex_, header.index());
@@ -125,7 +128,7 @@ MockAnalysisModule::Impl::finishReferenceFrame(const AnalysisDataFrameHeader &he
 
 
 /********************************************************************
- * MockAnalysisModule
+ * MockAnalysisDataModule
  */
 
 namespace
@@ -331,26 +334,26 @@ class StaticDataPointsStorageChecker
 } // anonymous namespace
 
 
-MockAnalysisModule::MockAnalysisModule(int flags)
+MockAnalysisDataModule::MockAnalysisDataModule(int flags)
     : impl_(new Impl(flags))
 {
 }
 
 
-MockAnalysisModule::~MockAnalysisModule()
+MockAnalysisDataModule::~MockAnalysisDataModule()
 {
 }
 
 
-int MockAnalysisModule::flags() const
+int MockAnalysisDataModule::flags() const
 {
     return impl_->flags_;
 }
 
 
 void
-MockAnalysisModule::setupStaticCheck(const AnalysisDataTestInput &data,
-                                     AbstractAnalysisData *source)
+MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
+                                         AbstractAnalysisData *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -381,9 +384,9 @@ MockAnalysisModule::setupStaticCheck(const AnalysisDataTestInput &data,
 
 
 void
-MockAnalysisModule::setupStaticColumnCheck(const AnalysisDataTestInput &data,
-                                           int firstcol, int n,
-                                           AbstractAnalysisData *source)
+MockAnalysisDataModule::setupStaticColumnCheck(
+        const AnalysisDataTestInput &data,
+        int firstcol, int n, AbstractAnalysisData *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -415,9 +418,9 @@ MockAnalysisModule::setupStaticColumnCheck(const AnalysisDataTestInput &data,
 
 
 void
-MockAnalysisModule::setupStaticStorageCheck(const AnalysisDataTestInput &data,
-                                            int storageCount,
-                                            AbstractAnalysisData *source)
+MockAnalysisDataModule::setupStaticStorageCheck(
+        const AnalysisDataTestInput &data,
+        int storageCount, AbstractAnalysisData *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -447,8 +450,8 @@ MockAnalysisModule::setupStaticStorageCheck(const AnalysisDataTestInput &data,
 
 
 void
-MockAnalysisModule::setupReferenceCheck(const TestReferenceChecker &checker,
-                                        AbstractAnalysisData *source)
+MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
+                                            AbstractAnalysisData *source)
 {
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
 

@@ -34,10 +34,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
- * \ingroup module_analysisdata
+ * \ingroup module_testutils
  */
-#ifndef GMX_ANALYSISDATA_TESTS_DATATEST_H
-#define GMX_ANALYSISDATA_TESTS_DATATEST_H
+#ifndef GMX_TESTUTILS_DATATEST_H
+#define GMX_TESTUTILS_DATATEST_H
 
 #include <limits>
 #include <vector>
@@ -60,8 +60,6 @@ class AnalysisDataHandle;
 namespace test
 {
 
-class MockAnalysisModule;
-
 //! Constant to use to signify end of data for AnalysisDataTestInput.
 const real END_OF_DATA = std::numeric_limits<real>::max();
 //! Constant to use to signify end of one data frame for AnalysisDataTestInput.
@@ -77,7 +75,8 @@ const real MPSTOP = -std::numeric_limits<real>::max();
  * passed separately and AnalysisDataHandle::finishPointSet() called in
  * between.
  *
- * \ingroup module_analysisdata
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
 class AnalysisDataTestInputPointSet
 {
@@ -105,7 +104,8 @@ class AnalysisDataTestInputPointSet
 /*! \libinternal \brief
  * Represents a single frame in AnalysisDataTestInput structure.
  *
- * \ingroup module_analysisdata
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
 class AnalysisDataTestInputFrame
 {
@@ -146,7 +146,8 @@ class AnalysisDataTestInputFrame
  *
  * \see AnalysisDataTestFixture
  *
- * \ingroup module_analysisdata
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
 class AnalysisDataTestInput
 {
@@ -221,7 +222,8 @@ class AnalysisDataTestInput
  *
  * \see AnalysisDataTestInput
  *
- * \ingroup module_analysisdata
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
 class AnalysisDataTestFixture : public ::testing::Test
 {

@@ -44,7 +44,7 @@
 
 #include "gromacs/analysisdata/arraydata.h"
 
-#include "datatest.h"
+#include "testutils/datatest.h"
 
 namespace
 {

@@ -46,7 +46,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 
-#include "cmdlinetest.h"
+#include "testutils/cmdlinetest.h"
 
 namespace
 {
