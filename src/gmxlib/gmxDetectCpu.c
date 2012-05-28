@@ -1,0 +1,532 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#ifdef _MSC_VER
+/* MSVC definition for __cpuid() */
+#include <intrin.h>
+#endif
+
+
+#include "gmxDetectCpu.h"
+
+
+const char *
+gmxDetectCpuVendorIdString[GMX_DETECTCPU_NVENDORS] =
+{
+    "Unknown",
+    "GenuineIntel",
+    "AuthenticAMD"
+};
+                           
+const char *
+gmxDetectCpuFeatureString[GMX_DETECTCPU_NFEATURES] =
+{
+    "CannotDetect",
+    "htt",
+    "sse2",
+    "sse4.1",
+    "rdrand",
+    "aes",
+    "avx",
+    "fma",
+    "fma4",
+    "xop",
+    "avx2"
+};
+
+const char *
+gmxDetectCpuAccelerationString[GMX_DETECTCPU_NACCELERATIONS] =
+{
+    "None",
+    "SSE2",
+    "SSE4.1",
+    "AVX_128_FMA",
+    "AVX_256"
+};
+    
+
+
+/* What type of acceleration was compiled in, if any? */
+#ifdef GMX_ACC_X86_SSE2
+static const 
+gmxDetectCpuAcceleration_t compiledAcc = GMX_DETECTCPU_ACCELERATION_X86_SSE2;
+#elif defined GMX_ACC_X86_SSE_4_1
+static const 
+gmxDetectCpuAcceleration_t compiledAcc = GMX_DETECTCPU_ACCELERATION_X86_SSE4_1;
+#elif defined GMX_ACC_X86_AVX_128_FMA
+static const 
+gmxDetectCpuAcceleration_t compiledAcc = GMX_DETECTCPU_ACCELERATION_X86_AVX_128_FMA;
+#elif defined GMX_ACC_X86_AVX_256
+static const 
+gmxDetectCpuAcceleration_t compiledAcc = GMX_DETECTCPU_ACCELERATION_X86_AVX_256;
+#else
+static const 
+gmxDetectCpuAcceleration_t compiledAcc = GMX_DETECTCPU_ACCELERATION_NONE;
+#endif
+
+
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+static int
+executeCpuidX86(unsigned int level,
+                unsigned int * eax,
+                unsigned int * ebx,
+                unsigned int * ecx,
+                unsigned int * edx)
+{
+    unsigned int _eax,_ebx,_ecx,_edx;
+    int CPUInfo[4];
+    int rc;
+    
+#ifdef _MSC_VER
+    /* MSVC */
+    __cpuid(CPUInfo,level);
+    
+    _eax=CPUInfo[0];
+    _ebx=CPUInfo[1];
+    _ecx=CPUInfo[2];
+    _edx=CPUInfo[3];
+    
+    rc = 0;
+    
+#else
+    /* tested on 32 & 64 GCC, and Intel icc. */
+    __asm__("cpuid" : "=a"(_eax), "=b"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
+
+    rc = 0;
+#endif
+    /* If you end up having a compiler that really doesn't understand this and
+     * you can't fix it, create a separate ifdef and set the results to:
+     *
+     * _eax=_ebx=_ecx=_edx=0;
+     * rc = -1;
+     *
+     * However, this will lose you ALL Gromacs x86 acceleration, so you want to
+     * try really hard before giving up!
+     */
+
+    *eax = _eax;
+    *ebx = _ebx;
+    *ecx = _ecx;
+    *edx = _edx;
+    
+    return rc;
+}
+#endif
+
+
+static int
+detectCpuCommonX86(gmxDetectCpu_t *              data)
+{
+    int                       fn,maxStdFn,maxExtFn;
+    unsigned int              eax,ebx,ecx,edx;
+    char                      str[GMX_DETECTCPU_STRLEN];
+    char *                    p;
+    
+    /* Find largest standard/extended function input value */
+    executeCpuidX86(0x0,&eax,&ebx,&ecx,&edx);
+    maxStdFn = eax;
+    executeCpuidX86(0x80000000,&eax,&ebx,&ecx,&edx);
+    maxExtFn = eax;
+    
+    p = str;    
+    if(maxExtFn>=0x80000005)
+    {
+        /* Get CPU brand string */
+        for(fn=0x80000002;fn<0x80000005;fn++)
+        {
+            executeCpuidX86(fn,&eax,&ebx,&ecx,&edx);
+            memcpy(p,&eax,4);
+            memcpy(p+4,&ebx,4);
+            memcpy(p+8,&ecx,4);
+            memcpy(p+12,&edx,4);
+            p+=16;
+        }
+        *p='\0';
+        
+        /* Remove empty initial space */
+        p = str;
+        while(isspace(*(p)))
+        {
+            p++;
+        }
+    }
+    else
+    {
+        *p='\0';
+    }
+    strncpy(data->brand,p,GMX_DETECTCPU_STRLEN);
+    
+    /* Find basic CPU properties */
+    if(maxStdFn>=1)
+    {
+        executeCpuidX86(1,&eax,&ebx,&ecx,&edx);
+        
+        data->family   = ((eax & 0x0FF00000) >> 20) + ((eax & 0x00000F00) >> 8);
+        /* Note that extended model should be shifted left 4, so only shift right 12 iso 16. */
+        data->model    = ((eax & 0x000F0000) >> 12) + ((eax & 0x000000F0) >> 4);
+        data->stepping = (eax & 0x0000000F);
+        
+        /* Feature flags common to AMD and intel */
+        data->feature[GMX_DETECTCPU_FEATURE_X86_FMA]     = (ecx & (1 << 12)) != 0;
+        data->feature[GMX_DETECTCPU_FEATURE_X86_SSE4_1]  = (ecx & (1 << 19)) != 0;
+        data->feature[GMX_DETECTCPU_FEATURE_X86_AES]     = (ecx & (1 << 25)) != 0;
+        data->feature[GMX_DETECTCPU_FEATURE_X86_AVX]     = (ecx & (1 << 28)) != 0;
+        data->feature[GMX_DETECTCPU_FEATURE_X86_RDRAND]  = (ecx & (1 << 30)) != 0;
+        
+        data->feature[GMX_DETECTCPU_FEATURE_X86_SSE2]    = (edx & (1 << 26)) != 0;
+        data->feature[GMX_DETECTCPU_FEATURE_X86_HTT]     = (edx & (1 << 28)) != 0;
+    }
+    
+    return 0;
+}
+
+
+static int
+detectCpuAMD(gmxDetectCpu_t *              data)
+{
+    int                       maxExtFn;
+    unsigned int              eax,ebx,ecx,edx;
+    char                      str[GMX_DETECTCPU_STRLEN];
+    char *                    p;
+
+    detectCpuCommonX86(data);
+    
+    executeCpuidX86(0x80000000,&eax,&ebx,&ecx,&edx);
+    maxExtFn = eax;
+
+    if(maxExtFn>=0x80000001)
+    {
+        executeCpuidX86(0x80000001,&eax,&ebx,&ecx,&edx);
+        
+        data->feature[GMX_DETECTCPU_FEATURE_X86_XOP]     = (ecx & (1 << 11)) != 0;
+        data->feature[GMX_DETECTCPU_FEATURE_X86_FMA4]    = (ecx & (1 << 16)) != 0;
+    }
+    
+    return 0;
+}
+
+static int
+detectCpuIntel(gmxDetectCpu_t *              data)
+{
+    int                       maxStdFn;
+    unsigned int              eax,ebx,ecx,edx;
+    char                      str[GMX_DETECTCPU_STRLEN];
+    char *                    p;
+    
+    detectCpuCommonX86(data);
+    
+    executeCpuidX86(0x0,&eax,&ebx,&ecx,&edx);
+    maxStdFn = eax;
+    
+    if(maxStdFn>=7)
+    {
+        executeCpuidX86(0x7,&eax,&ebx,&ecx,&edx);
+        data->feature[GMX_DETECTCPU_FEATURE_X86_AVX2]    = (ebx & (1 << 5)) != 0;
+
+    }
+    
+    return 0;
+}
+
+
+static gmxDetectCpuVendorId_t
+detectCpuVendor(void)
+{
+    gmxDetectCpuVendorId_t    i,vendor;
+    /* Register data used on x86 */
+    unsigned int              eax,ebx,ecx,edx;
+    unsigned int *            p;
+    char                      vendorstring[13];
+    
+    /* Set default first */
+    vendor = GMX_DETECTCPU_VENDOR_UNKNOWN;
+    
+#if defined(__x86_64__) || defined (__i386__) || defined (_M_IX86) || defined (_M_X64)
+    
+    executeCpuidX86(0,&eax,&ebx,&ecx,&edx);
+    
+    memcpy(vendorstring,&ebx,4);
+    memcpy(vendorstring+4,&edx,4);
+    memcpy(vendorstring+8,&ecx,4);
+
+    vendorstring[12]='\0';
+        
+    for(i=GMX_DETECTCPU_VENDOR_UNKNOWN;i<GMX_DETECTCPU_NVENDORS;i++)
+    {
+        if(!strncmp(vendorstring,gmxDetectCpuVendorIdString[i],12))
+        {
+            vendor = i;
+        }
+    }    
+#endif
+    
+    return vendor;
+}
+
+int
+gmxDetectCpu                   (gmxDetectCpu_t *              data)
+{
+    int i;
+    
+    data->vendorId = detectCpuVendor();
+    
+    switch(data->vendorId)
+    {
+        case GMX_DETECTCPU_VENDOR_INTEL:
+            detectCpuIntel(data);
+            break;
+        case GMX_DETECTCPU_VENDOR_AMD:
+            detectCpuAMD(data);
+            break;
+        default:
+            /* Could not find vendor */
+            data->brand[0]       = '\0';
+            data->family         = 0;
+            data->model          = 0;
+            data->stepping       = 0;
+            
+            for(i=0;i<GMX_DETECTCPU_NFEATURES;i++)
+            {
+                data->feature[i]=0;
+            }
+            data->feature[GMX_DETECTCPU_FEATURE_CANNOTDETECT] = 1;
+    }
+    
+    detectCpuIntel(data);
+
+    return 0;
+}
+
+
+
+
+int
+gmxDetectCpuFormatString       (gmxDetectCpu_t                data,
+                                char *                        str,
+                                int                           n)
+{
+    int c;
+    int i;
+    
+#ifdef _MSC_VER
+    _snprintf(str,n,
+              "Vendor: %s\n"
+              "Brand:  %s\n"
+              "Family: %2d  Model: %2d  Stepping: %2d\n"
+              "Features:",
+              gmxDetectCpuVendorIdString[data.vendorId],
+              data.brand,
+              data.family,data.model,data.stepping);
+#else
+    snprintf(str,n,
+             "Vendor: %s\n"
+             "Brand:  %s\n"
+             "Family: %2d  Model: %2d  Stepping: %2d\n"
+             "Features:",
+             gmxDetectCpuVendorIdString[data.vendorId],
+             data.brand,
+             data.family,data.model,data.stepping);
+#endif
+    
+    str[n-1] = '\0';
+    c = strlen(str);
+    n   -= c;
+    str += c;
+    
+    for(i=0;i<GMX_DETECTCPU_NFEATURES;i++)
+    {
+        if(data.feature[i]==1)
+        {
+#ifdef _MSC_VER
+            _snprintf(str,n," %s",gmxDetectCpuFeatureString[i]);
+#else
+            snprintf(str,n," %s",gmxDetectCpuFeatureString[i]);
+#endif
+            str[n-1] = '\0';
+            c = strlen(str);
+            n   -= c;
+            str += c;
+        }
+    }
+#ifdef _MSC_VER
+    _snprintf(str,n,"\n");
+#else
+    snprintf(str,n,"\n");
+#endif
+    str[n-1] = '\0';
+
+    return 0;
+}
+
+
+
+int
+gmxDetectCpuSuggestAcceleration  (gmxDetectCpu_t                data,
+                                  gmxDetectCpuAcceleration_t *  acc)
+{
+    gmxDetectCpuAcceleration_t tmpacc;
+    
+    tmpacc = GMX_DETECTCPU_ACCELERATION_NONE;
+    
+    if(data.vendorId==GMX_DETECTCPU_VENDOR_INTEL)
+    {
+        if(data.feature[GMX_DETECTCPU_FEATURE_X86_AVX]==1)
+        {
+            tmpacc = GMX_DETECTCPU_ACCELERATION_X86_AVX_256;
+        }
+        else if(data.feature[GMX_DETECTCPU_FEATURE_X86_SSE4_1]==1)
+        {
+            tmpacc = GMX_DETECTCPU_ACCELERATION_X86_SSE4_1;
+        }
+        else if(data.feature[GMX_DETECTCPU_FEATURE_X86_SSE2]==1)
+        {
+            tmpacc = GMX_DETECTCPU_ACCELERATION_X86_SSE2;
+        }
+    }
+    else if(data.vendorId==GMX_DETECTCPU_VENDOR_AMD)
+    {
+        if(data.feature[GMX_DETECTCPU_FEATURE_X86_AVX]==1)
+        {
+            tmpacc = GMX_DETECTCPU_ACCELERATION_X86_AVX_128_FMA;
+        }
+        else if(data.feature[GMX_DETECTCPU_FEATURE_X86_SSE4_1]==1)
+        {
+            tmpacc = GMX_DETECTCPU_ACCELERATION_X86_SSE4_1;
+        }
+        else if(data.feature[GMX_DETECTCPU_FEATURE_X86_SSE2]==1)
+        {
+            tmpacc = GMX_DETECTCPU_ACCELERATION_X86_SSE2;
+        }        
+    }
+    
+    *acc = tmpacc;
+    
+    return 0;
+}
+
+
+
+int
+gmxDetectCpuCheckAcceleration(gmxDetectCpu_t   data,
+                              FILE *           log)
+{
+    int                         rc;
+    char                        str[1024];
+    gmxDetectCpuAcceleration_t  acc;
+    
+    
+    gmxDetectCpuSuggestAcceleration(data,&acc);
+    rc = (acc != compiledAcc);
+    
+    gmxDetectCpuFormatString(data,str,1023);
+    str[1023] = '\0';
+
+    if(log!=NULL)
+    {
+        fprintf(log,
+                "Detecting CPU-specific acceleration. Present hardware specification:\n"
+                "%s"
+                "Acceleration most likely to fit this hardware: %s\n"
+                "Acceleration selected at Gromacs compile time: %s\n\n",
+                str,
+                gmxDetectCpuAccelerationString[acc],
+                gmxDetectCpuAccelerationString[compiledAcc]);
+    }
+    
+    if(rc!=0)
+    {
+        if(log!=NULL)
+        {
+            fprintf(log,"WARNING! Binary not matching hardware - you are likely losing performance.\n\n");
+        }
+        printf("\nWARNING! Binary not matching hardware - you are likely losing performance.\n"
+               "Acceleration most likely to fit this hardware: %s\n"
+               "Acceleration selected at Gromacs compile time: %s\n\n",
+               gmxDetectCpuAccelerationString[acc],
+               gmxDetectCpuAccelerationString[compiledAcc]);
+    }
+    
+    return rc;
+}
+
+
+
+
+#ifdef GMX_DETECTCPU_STANDALONE
+int
+main(int argc, char **argv)
+{
+    gmxDetectCpu_t              data;
+    gmxDetectCpuAcceleration_t  acc;
+    char                        str[1024];
+    int                         i,cnt;
+    
+    if(argc<2)
+    {
+        fprintf(stdout,
+                "Usage:\n\n%s [flags]\n\n"
+                "Available flags:\n"
+                "-vendor        Print CPU vendor.\n"
+                "-brand         Print CPU brand string.\n"
+                "-family        Print CPU family version.\n"
+                "-model         Print CPU model version.\n"
+                "-stepping      Print CPU stepping version.\n"
+                "-features      Print CPU feature flags.\n"
+                "-acceleration  Print suggested Gromacs acceleration.\n"
+                ,argv[0]);
+        exit(0);
+    }
+
+    gmxDetectCpu(&data);
+
+    if(!strncmp(argv[1],"-vendor",3))
+    {
+        printf("%s\n",gmxDetectCpuVendorIdString[data.vendorId]);
+    }
+    else if(!strncmp(argv[1],"-brand",3))
+    {
+        printf("%s\n",data.brand);
+    }
+    else if(!strncmp(argv[1],"-family",3))
+    {
+        printf("%d\n",data.family);
+    }
+    else if(!strncmp(argv[1],"-model",3))
+    {
+        printf("%d\n",data.model);
+    }
+    else if(!strncmp(argv[1],"-stepping",3))
+    {
+        printf("%d\n",data.stepping);
+    }
+    else if(!strncmp(argv[1],"-features",3))
+    {
+        cnt = 0;
+        for(i=0;i<GMX_DETECTCPU_NFEATURES;i++)
+        {
+            if(data.feature[i]==1)
+            {
+                if(cnt++ > 0)
+                {
+                    printf(" ");
+                }
+                printf("%s",gmxDetectCpuFeatureString[i]);
+            }
+        }
+        printf("\n");
+    }
+    else if(!strncmp(argv[1],"-acceleration",3))
+    {
+        gmxDetectCpuSuggestAcceleration(data,&acc);
+        fprintf(stdout,"%s\n",gmxDetectCpuAccelerationString[acc]);
+    }
+ 
+    return 0;
+}
+
+#endif

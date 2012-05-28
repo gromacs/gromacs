@@ -75,27 +75,9 @@
 #include "nb_kernel_c/nb_kernel330.h" 
 #include "nb_kernel_adress_c/nb_kernel330_adress.h"
 
-#ifdef GMX_PPC_ALTIVEC   
-#include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
-#endif
 
-#if defined(GMX_IA32_SSE) 
-#include "nb_kernel_ia32_sse/nb_kernel_ia32_sse.h"
-#endif
 
-#if defined(GMX_IA32_SSE2) 
-#include "nb_kernel_ia32_sse2/nb_kernel_ia32_sse2.h"
-#endif
- 
-#if defined(GMX_X86_64_SSE)
-#include "nb_kernel_x86_64_sse/nb_kernel_x86_64_sse.h"
-#endif
-
-#if defined(GMX_X86_64_SSE2)
-#include "nb_kernel_x86_64_sse2/nb_kernel_x86_64_sse2.h"
-#endif
-
-#if defined(GMX_SSE2)
+#if 0 && (defined GMX_ACC_X86_SSE2 || defined GMX_ACC_X86_SSE4_1 || defined GMX_ACC_X86_AVX_128_FMA || defined GMX_ACC_X86_AVX_256)
 #  ifdef GMX_DOUBLE
 #    include "nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #  else
@@ -111,13 +93,6 @@
 #  endif
 #endif
 
-#if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
-#include "nb_kernel_ia64_double/nb_kernel_ia64_double.h"
-#endif
-
-#if (defined GMX_IA64_ASM && !defined GMX_DOUBLE)
-#include "nb_kernel_ia64_single/nb_kernel_ia64_single.h"
-#endif
 
 #ifdef GMX_POWER6
 #include "nb_kernel_power6/nb_kernel_power6.h"
@@ -214,7 +189,7 @@ static nb_adress_kernel_t **
 nb_kernel_list_adress = NULL;
 
 void
-gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
+gmx_setup_kernels(FILE *fplog,t_forcerec *fr,gmx_bool bGenericKernelOnly)
 {
     int i;
         
@@ -241,7 +216,7 @@ gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
 	
     nb_kernel_setup(fplog,nb_kernel_list);
     
-    if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
+    if(fr->useAcceleration==FALSE)
     {
         return;
     }
@@ -265,34 +240,6 @@ gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
 	
 #ifdef GMX_POWER6
     nb_kernel_setup_power6(fplog,nb_kernel_list);
-#endif
-    
-#ifdef GMX_PPC_ALTIVEC   
-    nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_IA32_SSE)
-    nb_kernel_setup_ia32_sse(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_IA32_SSE2)
-    nb_kernel_setup_ia32_sse2(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_X86_64_SSE)
-    nb_kernel_setup_x86_64_sse(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_X86_64_SSE2)
-    nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
-#endif
-
-#if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
-    nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
-#endif
-	
-#if (defined GMX_IA64_ASM && !defined GMX_DOUBLE)
-    nb_kernel_setup_ia64_single(fplog,nb_kernel_list);
 #endif
 	
 	if(fplog)
@@ -363,9 +310,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
     {
         if(fr->bGB)
         {
-#if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
+#if 0 && (defined GMX_ACC_X86_SSE2 || defined GMX_ACC_X86_SSE4_1 || defined GMX_ACC_X86_AVX_128_FMA || defined GMX_ACC_X86_AVX_256)
 # ifdef GMX_DOUBLE
-            if(fr->UseOptimizedKernels)
+            if(fr->useAcceleration)
             {
                 nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                                  &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -376,7 +323,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                      &outeriter,&inneriter,&fr->AllvsAll_work);        
             }
 #  else /* not double */
-            if(fr->UseOptimizedKernels)
+            if(fr->useAcceleration)
             {
                 nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                                  &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -395,9 +342,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         }
         else
         { 
-#if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
+#if 0 && (defined GMX_ACC_X86_SSE2 || defined GMX_ACC_X86_SSE4_1 || defined GMX_ACC_X86_AVX_128_FMA || defined GMX_ACC_X86_AVX_256)
 # ifdef GMX_DOUBLE
-            if(fr->UseOptimizedKernels)
+            if(fr->useAcceleration)
             {
                 nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                                &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -409,7 +356,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
             }
             
 #  else /* not double */
-            if(fr->UseOptimizedKernels)
+            if(fr->useAcceleration)
             {
                 nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                                &outeriter,&inneriter,&fr->AllvsAll_work);
