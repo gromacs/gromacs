@@ -489,14 +489,22 @@ if(GMX_OPENMM)
     find_package(OpenMM) 
 endif(GMX_OPENMM)
 
+if(GMX_OPENMP)
+    find_package(OpenMP REQUIRED)
+    set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
+    set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
+    add_definitions(-DGMX_OPENMP)
+endif()
+
 if(GMX_GPU)
+    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    # TODO: tested only with MSVC 2010, needs testing test with msvc+icc & cygwin
     if(MSVC)
-        # CUDA <=v4.1 doesn't work with MSVC
-        # TODO: tested only with MSVC 2010, test with icc on Win + cygwin
         find_package(CUDA 4.1)
     else()
         find_package(CUDA 3.2)
     endif()
+
     if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
         message(FATAL_ERROR "
     mdrun supports native GPU acceleration on NVIDIA hardware with compute
@@ -507,6 +515,15 @@ if(GMX_GPU)
     sure you can not make use of GPU acceleration, disable it by setting 
     the CMake variable GMX_GPU=OFF.")
     endif()
+
+    if(NOT GMX_OPENMP)
+        message(WARNING "
+    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreding.
+    Without OpenMP only a single CPU core per GPU can be used which is suboptimal.
+    Note that with MPI multiple processes can be forced to use a single GPU, but this
+    typically inefficient.")
+    endif()
+
     add_definitions(-DGMX_GPU)
     set(CUDA_BUILD_EMULATION OFF)
     include(gmxManageNvccConfig)
@@ -516,13 +533,6 @@ if(GMX_GPU)
     if(CMAKE_COMPILER_IS_GNUCC)
         set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
     endif()
-endif()
-
-if(GMX_OPENMP)
-    find_package(OpenMP REQUIRED)
-    set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
-    set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
-    add_definitions(-DGMX_OPENMP)
 endif()
 
 if(APPLE)
