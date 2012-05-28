@@ -62,10 +62,9 @@
 
 
 /* Only compile this file if SSE intrinsics are available */
-#if ( (defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2)) && !defined(GMX_DOUBLE) )
+#if 0 && defined (GMX_X86_SSE2)
 
 #include <gmx_sse2_single.h>
-#include <xmmintrin.h>
 #include <emmintrin.h>
 
 #include "genborn_sse2_single.h"
