@@ -1,62 +1,89 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes polarizability_unit="A3" function="LJ" combination_rule="GeomSigEps">
-    <atype elem="Br" description="Bromine" gt_name="Bra" gt_type="Br" miller_equiv="Br" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Br" description="Bromine" gt_name="Brb" gt_type="Br" miller_equiv="Br" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Carbon with sp1" gt_name="C1c" gt_type="CDI" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="" charge="0" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Carbon with C=O" gt_name="C2o" gt_type="CRP" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="O2" charge="0" polarizability="1.456" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Carbon sp2" gt_name="C2c" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Carbon with C=S" gt_name="C2s" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="S2" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Aromatic Carbon" gt_name="C2d" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C Cl" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Aromatic Carbon" gt_name="C2h" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C H" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Aromatic Carbon" gt_name="C2i" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C F" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Aromatic Carbon" gt_name="C2j" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C Br" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Aromatic Carbon" gt_name="C2k" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C I" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Tetrahedral Carbon" gt_name="C3a" gt_type="CTP" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="O" charge="0" polarizability="1.49715" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Tetrahedral Carbon" gt_name="C3b" gt_type="CTA" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="1.26585" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Condensed Aromatic Carbon" gt_name="C2e" gt_type="CBR" miller_equiv="CBR" geometry="planar" numbonds="3" neighbors="C2 C2 C2" charge="0" polarizability="1.76736" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Cl" description="Chlorine" gt_name="Cla" gt_type="Cl" miller_equiv="Cl" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Cl" description="Chlorine" gt_name="Clb" gt_type="Cl" miller_equiv="Cl" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Cl" description="Chlorine" gt_name="Clc" gt_type="Cl" miller_equiv="Cl" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="F" description="Fluorine" gt_name="F" gt_type="F" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.348558" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="Hydrogen bound to Carbon" gt_name="HA" gt_type="HA" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C" charge="0" polarizability="0.293428" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="Other Hydrogen" gt_name="HP" gt_type="HP" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.355658" sigma_pol="0" vdwparams="1e-5 1e-10"/>
-    <atype elem="I" description="Iodine" gt_name="Ia" gt_type="I" miller_equiv="I" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="I" description="Iodine" gt_name="Ib" gt_type="I" miller_equiv="I" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Nitrogen in sp1" gt_name="N1a" gt_type="NDI" miller_equiv="NDI" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Nitrogen in sp1" gt_name="N1b" gt_type="NDI" miller_equiv="NDI" geometry="linear" numbonds="2" neighbors="" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Nitrogen in sp2" gt_name="N2a" gt_type="NTR2" miller_equiv="NTR2" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="0.761262" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2h2" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H H" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2h" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2b" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2o" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2c2" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2 C2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2c23" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2 C3" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2q" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2s" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Nitro Nitrogen" gt_name="N2d" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="O2 O2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2e" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="2 2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Tetahedral Nitrogen" gt_name="N3a" gt_type="NTE" miller_equiv="NTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Tetahedral Nitrogen" gt_name="N3b" gt_type="NTE" miller_equiv="NTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen with double bond" gt_name="O2" gt_type="OTR4" miller_equiv="OTR4" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen in Water" gt_name="OW" gt_type="OW" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="H H" charge="0" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
-    <atype elem="O" description="Oxygen with O-H" gt_name="OTH" gt_type="OTH" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="H" charge="0" polarizability="0.419881" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen" gt_name="O3a" gt_type="OTE" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen" gt_name="O3b" gt_type="OTE" miller_equiv="OTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Aromatic Oxygen" gt_name="OPI2" gt_type="OPI2" miller_equiv="OPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2" charge="0" polarizability="0.505675" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_name="P1" gt_type="PTE" miller_equiv="PTE" geometry="linear" numbonds="1" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_name="P2a" gt_type="PTE" miller_equiv="PTE" geometry="planar" numbonds="2" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_name="P3a" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_name="P3b" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_name="P3c" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_name="P3d" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="6" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur with S=X" gt_name="S2a" gt_type="STR4" miller_equiv="STR4" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="3.43911" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur" gt_name="S3a" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur" gt_name="S3b" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur" gt_name="S3q" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur" gt_name="S3d" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="6" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur" gt_name="SPI2a" gt_type="SPI2" miller_equiv="SPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2" charge="0" polarizability="2.7958" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur" gt_name="SPI2b" gt_type="SPI2" miller_equiv="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2" charge="0" polarizability="2.7958" sigma_pol="0" vdwparams="1 1"/>
+  <atomtypes polarizability_unit="A3" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="0" fudgeLJ="0">
+    <atype elem="Br" description="Bromine" gt_type="Br" miller_equiv="Br" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Carbon with sp1" gt_type="CDI" miller_equiv="CDI" charge="0" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Carbon with C=O" gt_type="CRP" miller_equiv="CTR" charge="0" polarizability="1.456" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Carbon sp2" gt_type="CTR" miller_equiv="CTR" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Tetrahedral Carbon" gt_type="CTP" miller_equiv="CTE" charge="0" polarizability="1.49715" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Tetrahedral Carbon" gt_type="CTA" miller_equiv="CTE" charge="0" polarizability="1.26585" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Condensed Aromatic Carbon" gt_type="CBR" miller_equiv="CBR" charge="0" polarizability="1.76736" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="Cl" description="Chlorine" gt_type="Cl" miller_equiv="Cl" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="F" description="Fluorine" gt_type="F" miller_equiv="F" charge="0" polarizability="0.348558" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="Hydrogen bound to Carbon" gt_type="HA" miller_equiv="H" charge="0" polarizability="0.293428" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="Other Hydrogen" gt_type="HP" miller_equiv="H" charge="0" polarizability="0.355658" sigma_pol="0" vdwparams="1e-5 1e-10"/>
+    <atype elem="I" description="Iodine" gt_type="I" miller_equiv="I" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Nitrogen in sp1" gt_type="NDI" miller_equiv="NDI" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Nitrogen in sp2" gt_type="NTR2" miller_equiv="NTR2" charge="0" polarizability="0.761262" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_type="NPI2" miller_equiv="NPI2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Tetahedral Nitrogen" gt_type="NTE" miller_equiv="NTE" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Oxygen with double bond" gt_type="OTR4" miller_equiv="OTR4" charge="0" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Oxygen in Water" gt_type="OW" miller_equiv="OTE" charge="0" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
+    <atype elem="O" description="Oxygen with O-H" gt_type="OTH" miller_equiv="OTE" charge="0" polarizability="0.419881" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Oxygen" gt_type="OTE" miller_equiv="OTE" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Aromatic Oxygen" gt_type="OPI2" miller_equiv="OPI2" charge="0" polarizability="0.505675" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="Phosphor" gt_type="PTE" miller_equiv="PTE" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="Sulphur with S=X" gt_type="STR4" miller_equiv="STR4" charge="0" polarizability="3.43911" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="Sulphur" gt_type="STE" miller_equiv="STE" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="Sulphur" gt_type="SPI2" miller_equiv="SPI2" charge="0" polarizability="2.7958" sigma_pol="0" vdwparams="1 1"/>
   </atomtypes>
+  <bonding_rules>
+    <bonding_rule name="Bra" gt_type="Br" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Brb" gt_type="Br" geometry="tetrahedral" numbonds="5" neighbors=""/>
+    <bonding_rule name="C1c" gt_type="CDI" geometry="linear" numbonds="2" neighbors=""/>
+    <bonding_rule name="C2o" gt_type="CRP" geometry="planar" numbonds="3" neighbors="O2"/>
+    <bonding_rule name="C2c" gt_type="CTR" geometry="planar" numbonds="3" neighbors=""/>
+    <bonding_rule name="C2s" gt_type="CTR" geometry="planar" numbonds="3" neighbors="S2"/>
+    <bonding_rule name="C2d" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C Cl"/>
+    <bonding_rule name="C2h" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C H"/>
+    <bonding_rule name="C2i" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C F"/>
+    <bonding_rule name="C2j" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C Br"/>
+    <bonding_rule name="C2k" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C I"/>
+    <bonding_rule name="C3a" gt_type="CTP" geometry="tetrahedral" numbonds="4" neighbors="O"/>
+    <bonding_rule name="C3b" gt_type="CTA" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="C2e" gt_type="CBR" geometry="planar" numbonds="3" neighbors="C2 C2 C2"/>
+    <bonding_rule name="Cla" gt_type="Cl" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Clb" gt_type="Cl" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="Clc" gt_type="Cl" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="F" gt_type="F" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="HA" gt_type="HA" geometry="tetrahedral" numbonds="1" neighbors="C"/>
+    <bonding_rule name="HP" gt_type="HP" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Ia" gt_type="I" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Ib" gt_type="I" geometry="tetrahedral" numbonds="5" neighbors=""/>
+    <bonding_rule name="N1a" gt_type="NDI" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="N1b" gt_type="NDI" geometry="linear" numbonds="2" neighbors=""/>
+    <bonding_rule name="N2a" gt_type="NTR2" geometry="tetrahedral" numbonds="2" neighbors=""/>
+    <bonding_rule name="N2h2" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="H H"/>
+    <bonding_rule name="N2h" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="H"/>
+    <bonding_rule name="N2b" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2o"/>
+    <bonding_rule name="N2c2" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2 C2"/>
+    <bonding_rule name="N2c23" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2 C3"/>
+    <bonding_rule name="N2q" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2s"/>
+    <bonding_rule name="N2d" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="O2 O2"/>
+    <bonding_rule name="N2e" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="2 2"/>
+    <bonding_rule name="N3a" gt_type="NTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="N3b" gt_type="NTE" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="O2" gt_type="OTR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="OW" gt_type="OW" geometry="tetrahedral" numbonds="2" neighbors="H H"/>
+    <bonding_rule name="OTH" gt_type="OTH" geometry="tetrahedral" numbonds="2" neighbors="H"/>
+    <bonding_rule name="O3a" gt_type="OTE" geometry="tetrahedral" numbonds="2" neighbors=""/>
+    <bonding_rule name="O3b" gt_type="OTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="OPI2" gt_type="OPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/>
+    <bonding_rule name="P1" gt_type="PTE" geometry="linear" numbonds="1" neighbors=""/>
+    <bonding_rule name="P2a" gt_type="PTE" geometry="planar" numbonds="2" neighbors=""/>
+    <bonding_rule name="P3a" gt_type="PTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="P3b" gt_type="PTE" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="P3c" gt_type="PTE" geometry="tetrahedral" numbonds="5" neighbors=""/>
+    <bonding_rule name="P3d" gt_type="PTE" geometry="tetrahedral" numbonds="6" neighbors=""/>
+    <bonding_rule name="S2a" gt_type="STR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="S3a" gt_type="STE" geometry="tetrahedral" numbonds="2" neighbors=""/>
+    <bonding_rule name="S3b" gt_type="STE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="S3q" gt_type="STE" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="S3d" gt_type="STE" geometry="tetrahedral" numbonds="6" neighbors=""/>
+    <bonding_rule name="SPI2a" gt_type="SPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/>
+    <bonding_rule name="SPI2b" gt_type="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2"/>
+  </bonding_rules>
   <gt_bonds length_unit="pm" function="morse">
     <gt_bond atom1="F" atom2="F" length="139.8" sigma="0" bondorder="1" params="400  20"/>
     <gt_bond atom1="F" atom2="Cl" length="165.9" sigma="1" bondorder="1" params="400  20"/>

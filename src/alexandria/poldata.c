@@ -668,7 +668,7 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,char **elem,char **desc,
     int i;
     
     if (pd->nalexandria_c < pd->nalexandria) {
-        sp = &(pd->alexandria[i]);
+        sp = &(pd->alexandria[pd->nalexandria_c]);
         assign_str(charge,sp->charge);
         assign_scal(polarizability,sp->polarizability);
         assign_scal(sig_pol,sp->sig_pol);
