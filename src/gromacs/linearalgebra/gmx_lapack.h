@@ -66,7 +66,6 @@
 #ifndef F77_FUNC
 #define F77_FUNC(name,NAME) name ## _
 #endif
-#include "gromacs/utility/gmx_header_config.h"
 
 /* Suppress Cygwin compiler warnings from using newlib version of
  * ctype.h */

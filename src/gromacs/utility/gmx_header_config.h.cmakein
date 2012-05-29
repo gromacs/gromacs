@@ -12,3 +12,33 @@
 
 /* Define if we have sufficient C++11 support */
 #cmakedefine GMX_CXX11
+
+/* Use our own instead of system XDR libraries */
+#cmakedefine GMX_INTERNAL_XDR
+
+/* Use the GROMACS software 1/sqrt(x) */
+#cmakedefine GMX_SOFTWARE_INVSQRT
+
+/* Use the PowerPC hardware 1/sqrt(x) */
+#cmakedefine GMX_POWERPC_INVSQRT
+
+/* Enable special hacks for Cray XT3 */
+#cmakedefine GMX_CRAY_XT3
+
+/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+#cmakedefine HAVE_FSEEKO
+
+/* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
+#cmakedefine HAVE__FSEEKI64
+
+/* The size of off_t, as computed by sizeof. */
+#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+
+/* Define for busy wait option  */
+#cmakedefine TMPI_WAIT_FOR_NO_ONE
+
+/* Define to 1 if yo have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/* Define for sched.h (this is for thread_mpi) */
+#define HAVE_SCHED_H
