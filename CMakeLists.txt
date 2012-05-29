@@ -497,6 +497,10 @@ if(GMX_OPENMP)
 endif()
 
 if(GMX_GPU)
+    if(GMX_DOUBLE)
+        message(FATAL_ERROR "GPU acceleration is not available in double precision!")
+    endif()
+
     # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
     # TODO: tested only with MSVC 2010, needs testing test with msvc+icc & cygwin
     if(MSVC)
