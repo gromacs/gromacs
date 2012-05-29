@@ -260,10 +260,6 @@ typedef struct {
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
 
-#ifdef GMX_THREAD_SHM_FDECOMP
-  gmx_commrec_thread_t thread;
-#endif
-
   gmx_nodecomm_t nc;
   
   /* For domain decomposition */
