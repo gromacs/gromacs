@@ -217,12 +217,6 @@ set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
 endif(GMX_DOUBLE)
-if(GMX_SOFTWARE_INVSQRT)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
-endif(GMX_SOFTWARE_INVSQRT)
-if(GMX_POWERPC_INVSQRT)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_POWERPC_INVSQRT")
-endif(GMX_POWERPC_INVSQRT)
 
 ########################################################################
 #Process MPI settings
@@ -534,7 +528,6 @@ include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
 # Process nonbonded accelerated kernels settings
