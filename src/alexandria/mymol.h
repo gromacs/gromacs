@@ -25,7 +25,7 @@ typedef struct {
     char           *molname,*lot,*ref;
     int            eSupport;
     int            qtotal,mult,natom,nalloc,nshell;
-    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol,Ecalc;
+    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol,Ecalc,Force2;
     real           *qESP;
     gmx_mtop_t     mtop;
     gmx_localtop_t *ltop;
@@ -56,7 +56,8 @@ typedef struct {
     gmx_bool *bConst;
 } t_index_count;
 
-enum { ermsBOUNDS, ermsMU, ermsQUAD, ermsCHARGE, ermsESP, ermsEPOT, ermsTOT, ermsNR };
+enum { ermsBOUNDS, ermsMU, ermsQUAD, ermsCHARGE, ermsESP, 
+       ermsEPOT, ermsForce2, ermsTOT, ermsNR };
 
 typedef struct {
     gmx_bool    bDone,bFinal,bGaussianBug,bFitZeta;
@@ -92,7 +93,7 @@ extern void read_moldip(t_moldip *md,
                         output_env_t oenv,gmx_molselect_t gms,
                         real th_toler,real ph_toler,real dip_toler,
                         gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
-                        int nexcl,real watoms,gmx_bool bCheckSupport);
+                        real watoms,gmx_bool bCheckSupport);
 
 extern char *opt_index_count(t_index_count *ic);
 

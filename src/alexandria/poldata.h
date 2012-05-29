@@ -57,54 +57,90 @@ extern int gmx_poldata_get_ngt_bond(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_angle(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd);
 
-extern void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
-                                    char *gt_name,char *gt_type,
-                                    char *miller_equiv,
-                                    char *charge,char *geometry,int numbonds,
-                                    char *neighbors,
-                                    double polarizability,double sig_pol,
-                                    char *vdwparams);
+extern void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
+                                         char *gt_name,char *gt_type,
+                                         char *geometry,int numbonds,
+                                         char *neighbors);
 
-extern void gmx_poldata_set_ffatype(gmx_poldata_t pd,char *gt_type,
-                                    double polarizability,double sig_pol);
+extern int gmx_poldata_get_bonding_rule(gmx_poldata_t pd,
+                                        char **gt_name,char **gt_type,
+                                        char **geometry,int *numbonds,
+                                        char **neighbors);
+
+extern void gmx_poldata_add_atype(gmx_poldata_t pd,char *elem,char *desc,
+                                  char *gt_type,char *miller_equiv,
+                                  char *charge,double polarizability,double sig_pol,
+                                  char *vdwparams);
+    
+extern void gmx_poldata_set_atype_polarizability(gmx_poldata_t pd,char *gt_type,
+                                                 double polarizability,double sig_pol);
 		
-extern void gmx_poldata_set_ffatype_ff(gmx_poldata_t pd,char *forcefield);
+extern void gmx_poldata_set_force_field(gmx_poldata_t pd,char *forcefield);
 
-extern void gmx_poldata_set_ffatype_unit(gmx_poldata_t pd,char *polar_unit);
+extern void gmx_poldata_set_polar_unit(gmx_poldata_t pd,char *polar_unit);
 
 extern void gmx_poldata_set_length_unit(gmx_poldata_t pd,char *length_unit);
 
-extern char *gmx_poldata_get_ffatype_unit(gmx_poldata_t pd);
+extern void gmx_poldata_set_vdw_function(gmx_poldata_t pd,char *func);
 
-extern char *gmx_poldata_get_ffatype_ff(gmx_poldata_t pd);
+extern char *gmx_poldata_get_vdw_function(gmx_poldata_t pd);
+
+extern int gmx_poldata_get_vdw_ftype(gmx_poldata_t pd);
+
+extern void gmx_poldata_set_nexcl(gmx_poldata_t pd,int nexcl);
+
+extern int gmx_poldata_get_nexcl(gmx_poldata_t pd);
+
+extern void gmx_poldata_set_fudgeQQ(gmx_poldata_t pd,double fudgeQQ);
+
+extern double gmx_poldata_get_fudgeQQ(gmx_poldata_t pd);
+
+extern void gmx_poldata_set_fudgeLJ(gmx_poldata_t pd,double fudgeLJ);
+
+extern double gmx_poldata_get_fudgeLJ(gmx_poldata_t pd);
+
+extern void gmx_poldata_set_combination_rule(gmx_poldata_t pd,char *func);
+
+extern char *gmx_poldata_get_combination_rule(gmx_poldata_t pd);
+
+extern int gmx_poldata_get_comb_rule(gmx_poldata_t pd);
+
+extern char *gmx_poldata_get_polar_unit(gmx_poldata_t pd);
+
+extern char *gmx_poldata_get_force_field(gmx_poldata_t pd);
 
 extern char *gmx_poldata_get_length_unit(gmx_poldata_t pd);
 
-extern char *gmx_poldata_get_gt_atom(gmx_poldata_t pd,char *elem,
-                                    int nbond,char *neighbors[],
-                                    const char *geometry);
+extern char *gmx_poldata_get_atom(gmx_poldata_t pd,char *elem,
+                                  int nbond,char *neighbors[],
+                                  const char *geometry);
 				    
 extern char *gmx_poldata_get_geometry(gmx_poldata_t pd,char *gt_atom);
 
-extern char *gmx_poldata_get_gt_type(gmx_poldata_t pd,char *gt_atom);
+extern char *gmx_poldata_get_type(gmx_poldata_t pd,char *gt_atom);
 
-extern char *gmx_poldata_get_desc(gmx_poldata_t pd,char *gt_atom);
+extern char *gmx_poldata_get_desc(gmx_poldata_t pd,char *gt_type);
 
 /* Get the charge from the gentop.dat file */
-extern char *gmx_poldata_get_charge(gmx_poldata_t pd,char *gt_atom);
+extern char *gmx_poldata_get_charge(gmx_poldata_t pd,char *gt_type);
 
-/* Returns name or NULL if last or not found */
-extern char *gmx_poldata_get_ffatype(gmx_poldata_t pd,char *name,
-                                     char **elem,char **desc,
-                                     char **gt_type,char **miller_equiv,
-                                     char **charge,char **geometry,
-                                     int *numbonds,char **neighbors,
-                                     double *polarizability,double *sig_pol,
-                                     char **vdwparams);
+/* Returns 1 if OK, 0 if last */
+extern int gmx_poldata_get_atype(gmx_poldata_t pd,
+                                 char **elem,char **desc,
+                                 char **gt_type,char **miller_equiv,
+                                 char **charge,double *polarizability,double *sig_pol,
+                                 char **vdwparams);
 
 /* Return 1 if OK, 0 if not found */				 
-extern int gmx_poldata_gt_type_polarizability(gmx_poldata_t pd,char *gt_type,
-                                              double *polarizability,double *sig_pol);
+extern int gmx_poldata_search_atype(gmx_poldata_t pd,char *key,
+                                    char **elem,char **desc,
+                                    char **gt_type,char **miller_equiv,
+                                    char **charge,double *polarizability,double *sig_pol,
+                                    char **vdwparams);
+
+/* Return 1 if OK, 0 if not found */				 
+extern int gmx_poldata_type_polarizability(gmx_poldata_t pd,char *gt_type,
+                                           double *polarizability,double *sig_pol);
  
 extern void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
                                    int atomnumber,
@@ -123,7 +159,7 @@ extern char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
                                     double *tau_ahc,double *alpha_ahp,
                                     char **alexandria_equiv);
 
-extern char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,char *gt_name);
+extern char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,char *gt_type);
 
 extern void gmx_poldata_add_bosque(gmx_poldata_t pd,char *elem,
                                    double polarizability);
@@ -137,76 +173,76 @@ extern char *gmx_poldata_get_bosque(gmx_poldata_t pd,char *name,char *elem,
                                     double *polarizability);
 				  
     /* Return 1 on success or 0 otherwise */
-extern int gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                                   double length,double sigma,double bondorder,
-                                   char *params);
+extern int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
+                                double length,double sigma,double bondorder,
+                                char *params);
 				   
-extern int gmx_poldata_set_gt_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
-                                          char *params);
+extern int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
+                                       char *params);
 				   
     /* Return bond-index 1-N or 0 if not found */
-extern int gmx_poldata_get_gt_bond(gmx_poldata_t pd,char **atom1,char **atom2,
-                                   double *length,double *sigma,double *bondorder,
-                                   char **params);
+extern int gmx_poldata_get_bond(gmx_poldata_t pd,char **atom1,char **atom2,
+                                double *length,double *sigma,double *bondorder,
+                                char **params);
                                    
-extern void gmx_poldata_set_gt_bond_function(gmx_poldata_t pd,char *fn);
-extern char *gmx_poldata_get_gt_bond_function(gmx_poldata_t pd);
-extern int gmx_poldata_get_gt_bond_ftype(gmx_poldata_t pd);
+extern void gmx_poldata_set_bond_function(gmx_poldata_t pd,char *fn);
+extern char *gmx_poldata_get_bond_function(gmx_poldata_t pd);
+extern int gmx_poldata_get_bond_ftype(gmx_poldata_t pd);
     
     /* Return bond-index 1-N or 0 if not found */
-extern int gmx_poldata_search_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                                      double *length,double *sigma,char **params);
+extern int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
+                                   double *length,double *sigma,char **params);
 
 /* Returns the bondorder */
 extern double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *atom1,char *atom2,
                                         double distance,double toler);
 				     
-extern void gmx_poldata_set_gt_angle_function(gmx_poldata_t pd,char *fn);
-extern char *gmx_poldata_get_gt_angle_function(gmx_poldata_t pd);
-extern int gmx_poldata_get_gt_angle_ftype(gmx_poldata_t pd);
+extern void gmx_poldata_set_angle_function(gmx_poldata_t pd,char *fn);
+extern char *gmx_poldata_get_angle_function(gmx_poldata_t pd);
+extern int gmx_poldata_get_angle_ftype(gmx_poldata_t pd);
     
     /* Return 1 on success, 0 otherwise */
-extern int gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
-                                    char *atom3,double angle,double sigma,char *params);
+extern int gmx_poldata_add_angle(gmx_poldata_t pd,char *atom1,char *atom2,
+                                 char *atom3,double angle,double sigma,char *params);
 				   
-extern int gmx_poldata_set_gt_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
-                                           char *atom3,char *params);
+extern int gmx_poldata_set_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
+                                        char *atom3,char *params);
 				   
     /* Return angle-index 1-N or 0 if not found */
-extern int gmx_poldata_get_gt_angle(gmx_poldata_t pd,char **atom1,char **atom2,
-                                    char **atom3,double *angle,double *sigma,
-                                    char **params);
+extern int gmx_poldata_get_angle(gmx_poldata_t pd,char **atom1,char **atom2,
+                                 char **atom3,double *angle,double *sigma,
+                                 char **params);
 
     /* Return angle-index 1-N or 0 if not found */
-extern int gmx_poldata_search_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
-                                       char *atom3,double *angle,double *sigma,
-                                       char **params);
+extern int gmx_poldata_search_angle(gmx_poldata_t pd,char *atom1,char *atom2,
+                                    char *atom3,double *angle,double *sigma,
+                                    char **params);
 
 extern void gmx_poldata_set_angle_unit(gmx_poldata_t pd,char *angle_unit);
 
 extern char *gmx_poldata_get_angle_unit(gmx_poldata_t pd);
 
-extern void gmx_poldata_set_gt_dihedral_function(gmx_poldata_t pd,char *fn);
-extern char *gmx_poldata_get_gt_dihedral_function(gmx_poldata_t pd);
-extern int gmx_poldata_get_gt_dihedral_ftype(gmx_poldata_t pd);
+extern void gmx_poldata_set_dihedral_function(gmx_poldata_t pd,char *fn);
+extern char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd);
+extern int gmx_poldata_get_dihedral_ftype(gmx_poldata_t pd);
     
 /* Return 1 on success or 0 otherwise */
-extern int gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
-                                       char *atom3,char *atom4,
-                                       double dihedral,double sigma,char *params);
+extern int gmx_poldata_add_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+                                    char *atom3,char *atom4,
+                                    double dihedral,double sigma,char *params);
 				   
-extern int gmx_poldata_set_gt_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
-                                              char *atom3,char *atom4,char *params);
+extern int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
+                                           char *atom3,char *atom4,char *params);
 				   
     /* Return dihedral-index 1-N or 0 if not found */
-extern int gmx_poldata_get_gt_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
-                                       char **atom3,char **atom4,
-                                       double *dihedral,double *sigma,char **params);
+extern int gmx_poldata_get_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
+                                    char **atom3,char **atom4,
+                                    double *dihedral,double *sigma,char **params);
 
     /* Return dihedral-index 1-N or 0 if not found */
-extern int gmx_poldata_search_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
-                                          char *atom3,char *atom4,
-                                          double *dihedral,double *sigma,char **params);
+extern int gmx_poldata_search_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+                                       char *atom3,char *atom4,
+                                       double *dihedral,double *sigma,char **params);
 
 extern void gmx_poldata_set_dihedral_unit(gmx_poldata_t pd,char *dihedral_unit);
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes polarizability_unit="A3">
+  <atomtypes polarizability_unit="A3" function="LJ" combination_rule="GeomSigEps">
     <atype elem="Br" description="Bromine" gt_name="Bra" gt_type="Br" miller_equiv="Br" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="Br" description="Bromine" gt_name="Brb" gt_type="Br" miller_equiv="Br" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="C" description="Carbon with sp1" gt_name="C1c" gt_type="CDI" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="" charge="0" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>

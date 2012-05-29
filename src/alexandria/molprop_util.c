@@ -356,7 +356,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         snew(plist,F_NRE);
         mk_bonds(pd,atoms,x,NULL,plist,nbonds,TRUE,TRUE,TRUE,
                  nexcl,&excls,FALSE,NULL,aps,btol);
-        ftb = gmx_poldata_get_gt_bond_ftype(pd);
+        ftb = gmx_poldata_get_bond_ftype(pd);
         /* Setting the atom types: this depends on the bonding */
         gvt = gentop_vsite_init(egvtLINEAR);
         if ((atype = set_atom_type(NULL,molname,&symtab,atoms,&(plist[ftb]),
@@ -460,9 +460,8 @@ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
                                                     &catom,&cnumber) == 1) {
                 if (miller_equiv)
                     miller_equiv = NULL;
-                if (gmx_poldata_get_ffatype(pd,catom,&elem,NULL,NULL,&miller_equiv,
-                                            NULL,NULL,NULL,
-                                            NULL,NULL,NULL,NULL) != NULL) 
+                if (1 == gmx_poldata_search_atype(pd,catom,&elem,NULL,NULL,&miller_equiv,
+                                                  NULL,NULL,NULL,NULL)) 
                 {
                     (void) gmx_atomprop_query(ap,epropMass,"???",elem,&mm);
                     mass += mm*cnumber;

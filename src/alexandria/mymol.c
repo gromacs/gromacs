@@ -1,3 +1,38 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ * $Id: molprop_xml.c,v 1.23 2009/06/01 06:13:18 spoel Exp $
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 4.0.99
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2008, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Groningen Machine for Chemical Simulation
+ */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -17,6 +52,7 @@
 #include "mdatoms.h"
 #include "symtab.h"
 #include "mymol.h"
+#include "gpp_nextnb.h"
 #include "statutil.h"
 #include "string2.h"
 #include "gpp_atomtype.h"
@@ -29,23 +65,62 @@
 
 const char *immsg(int imm)  
 { 
-  static const char *msg[immNR] = {
-    "OK", "Zero Dipole", "No Quadrupole", "Charged", "Error", 
-    "Atom type problem", "Atom number problem", "Converting from molprop",
-    "QM Inconsistency (ESP dipole does not match Elec)", 
-    "Not in training set", "No experimental data"
-  };
-  assert(imm >= 0);
-  assert(imm < immNR);
+    static const char *msg[immNR] = {
+        "OK", "Zero Dipole", "No Quadrupole", "Charged", "Error", 
+        "Atom type problem", "Atom number problem", "Converting from molprop",
+        "QM Inconsistency (ESP dipole does not match Elec)", 
+        "Not in training set", "No experimental data"
+    };
+    assert(imm >= 0);
+    assert(imm < immNR);
   
-  return msg[imm];
+    return msg[imm];
 }
 
-static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,char **molname,
-                         int natoms,t_atoms **atoms)
+static void generate_nbparam(int ftype,int comb,double ci[],double cj[],
+                             t_iparams *ip)
+{
+    double sig,eps;
+    
+    switch(ftype) {
+    case F_LJ:
+        switch (comb) {
+        case eCOMB_GEOMETRIC:
+            /* Gromos rules */
+            ip->lj.c6  = sqrt(ci[0] * cj[0]);
+            ip->lj.c12 = sqrt(ci[1] * cj[1]);
+            break;
+            
+        case eCOMB_ARITHMETIC:
+            /* c0 and c1 are epsilon and sigma */
+            sig = (ci[0]+cj[0])*0.5;
+            eps = sqrt(ci[1]*cj[1]);
+            ip->lj.c6  = 4*eps*pow(sig,6);
+            ip->lj.c12 = 4*eps*pow(sig,12);
+            
+            break;
+        case eCOMB_GEOM_SIG_EPS:
+            /* c0 and c1 are epsilon and sigma */
+            sig = sqrt(ci[0]*cj[0]);
+            eps = sqrt(ci[1]*cj[1]);
+            ip->lj.c6  = 4*eps*pow(sig,6);
+            ip->lj.c12 = 4*eps*pow(sig,12);
+            
+            break;
+        default:
+            gmx_fatal(FARGS,"No such combination rule %d",comb);
+        }
+        break;
+    default:
+        gmx_fatal(FARGS,"No such function type supported %s",
+                  interaction_function[ftype].name);
+    }
+}
+
+static void do_init_mtop(gmx_mtop_t *mtop,int nmoltype,char **molname,
+                         int natoms,t_atoms **atoms,gmx_poldata_t pd)
 {
     init_mtop(mtop);
-
     if (nmoltype <= 0)
     {
         gmx_incons("Number of moltypes less than 1 in do_init_mtop");
@@ -61,23 +136,65 @@ static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,char **molname,
     
     /* Create a charge group block */
     stupid_fill_block(&(mtop->moltype[0].cgs),natoms,FALSE);
-    /* Create an exclusion block */
-    stupid_fill_blocka(&(mtop->moltype[0].excls),natoms);
     
     mtop->natoms = natoms;
     init_t_atoms(&(mtop->moltype[0].atoms),natoms,FALSE);
     *atoms = &(mtop->moltype[0].atoms);
+}
 
+static void mk_ff_mtop(gmx_mtop_t *mtop,gmx_poldata_t pd)
+{
+    int i,j,tp,ftype,nrfp,comb_rule,ntype;
+    char **ptr;
+    char *params;
+    double **c;
+
+    ntype = gmx_poldata_get_natypes(pd);
+    
     if (ntype <= 0)
     {
-        gmx_incons("Number of atomtypes less than 1 in do_init_mtop");
+        gmx_incons("Number of atomtypes less than 1 in mk_ff_mtop");
     } 
+    mtop->ffparams.reppow=12;
     mtop->ffparams.atnr=ntype;
-    snew(mtop->ffparams.functype,mtop->ffparams.atnr);
+    mtop->ffparams.fudgeQQ=gmx_poldata_get_fudgeQQ(pd);
+    mtop->ffparams.ntypes=ntype*ntype;
+    snew(mtop->ffparams.functype,ntype*ntype);
     snew(mtop->ffparams.iparams,ntype*ntype);
-    mtop->ffparams.functype[0] = F_LJ;
-    /* Add more initiation stuff here */
     
+    comb_rule = gmx_poldata_get_comb_rule(pd);
+    ftype = gmx_poldata_get_vdw_ftype(pd);
+    nrfp  = NRFPA(ftype);
+    
+    /* Derive table of Van der Waals force field parameters */
+    snew(c,ntype);
+    i = 0;
+    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,NULL,NULL,&params)) {
+        ptr = split(' ',params);
+        snew(c[i],MAXFORCEPARAM);
+        j=0;
+        while ((j<MAXFORCEPARAM) && (NULL != ptr[j])) {
+            c[i][j] = atof(ptr[j]);
+            sfree(ptr[j]);
+            j++;
+        }
+        sfree(ptr);
+        sfree(params);
+        i++;
+        if (i > ntype)
+            gmx_fatal(FARGS,"Number of atom types apparently larger than %d",ntype);
+    }
+    /* Generate nonbonded matrix */
+    for(i=tp=0; (i<ntype); i++) {
+        for(j=0; (j<ntype); j++) {
+            mtop->ffparams.functype[tp] = ftype;
+            generate_nbparam(ftype,comb_rule,c[i],c[j],&mtop->ffparams.iparams[tp]);
+            tp++;
+        }
+    }
+    for(i=0; (i<ntype); i++) 
+        sfree(c[i]);
+    sfree(c);
 }
 
 static void excls_to_blocka(int natom,t_excls excls[],t_blocka *blocka)
@@ -101,22 +218,44 @@ static void excls_to_blocka(int natom,t_excls excls[],t_blocka *blocka)
         nra += excls[i].nr;
     }
     blocka->index[natom] = nra;
+    blocka->nr = natom;
+    blocka->nra = nra;
 }
 
-static void plist_to_mtop(t_params plist[],gmx_mtop_t *mtop)
+static void plist_to_mtop(gmx_poldata_t pd,t_params plist[],gmx_mtop_t *mtop)
 {
-    int i,j,k,l,nra,n=0;
+    int i,j,k,l,nra,n=0,nrfp,ati,atj,tp;
+    real c[MAXFORCEPARAM];
+    double fudgeLJ;
     
+    /* Generate pairs */
+    fudgeLJ=gmx_poldata_get_fudgeLJ(pd);
+
     for(i=0; (i<F_NRE); i++)
     {
-        nra = interaction_function[i].nratoms;
+        nra = NRAL(i);
+        nrfp = NRFPA(i);
         snew(mtop->moltype[0].ilist[i].iatoms,plist[i].nr*(nra+1));
         srenew(mtop->ffparams.functype,mtop->ffparams.ntypes+plist[i].nr);
         srenew(mtop->ffparams.iparams,mtop->ffparams.ntypes+plist[i].nr);
         k = 0;
         for(j=0; (j<plist[i].nr); j++)
         {
-            n = enter_params(&mtop->ffparams,i,plist[i].param[j].c,0,12,n,TRUE);
+            if (i == F_LJ14) {
+                ati = mtop->moltype[0].atoms.atom[plist[i].param[j].a[0]].type;
+                atj = mtop->moltype[0].atoms.atom[plist[i].param[j].a[1]].type;
+                tp = ati*mtop->ffparams.atnr+atj;
+                c[0] = mtop->ffparams.iparams[tp].lj.c6*fudgeLJ;
+                c[1] = mtop->ffparams.iparams[tp].lj.c12*fudgeLJ;
+            }
+            else {
+                for(l=0; (l<nrfp); l++) {
+                    c[l] = plist[i].param[j].c[l];
+                    if (NOTSET == c[l])
+                        c[l] = 0;
+                }
+            }
+            n = enter_params(&mtop->ffparams,i,c,0,12,n,TRUE);
             mtop->moltype[0].ilist[i].iatoms[k++] = n;
             for(l=0; (l<nra); l++)
                 mtop->moltype[0].ilist[i].iatoms[k++] = plist[i].param[j].a[l];
@@ -159,8 +298,8 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
         }
     }
     if (tm > 0) {
-      for(m=0; (m<DIM); m++) 
-        com[m] /= tm;
+        for(m=0; (m<DIM); m++) 
+            com[m] /= tm;
     }
     for(i=0; (i<mymol->atoms->nr); i++) 
         rvec_dec(mymol->x[i],com);
@@ -182,7 +321,7 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
     }
     sfree(bSymm);
     for(i=0; (i<mymol->atoms->nr); i++) 
-      rvec_inc(mymol->x[i],com);
+        rvec_inc(mymol->x[i],com);
   
     return bSymmAll;
 }
@@ -207,18 +346,22 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     gentop_vsite_t gvt;
     real     btol = 0.2,Ha;
     t_pbc    pbc;
-    t_excls  *newexcls;
+    t_excls  *newexcls=NULL;
     t_params plist[F_NRE];
       
     init_plist(plist);
     mymol->qtotal  = gmx_molprop_get_charge(mp);
     mymol->mult    = gmx_molprop_get_multiplicity(mp);
     mymol->natom   = gmx_molprop_get_natom(mp);
-    
-    ftb = gmx_poldata_get_gt_bond_ftype(pd);
+    init_enerdata(1,0,&mymol->enerd);
+    ftb = gmx_poldata_get_bond_ftype(pd);
         
     /* Inputrec parameters */
-    mymol->ir.tabext = 2; /* nm */
+    mymol->ir.tabext      = 2; /* nm */
+    mymol->ir.ePBC        = epbcNONE;
+    mymol->ir.epsilon_r   = 1;
+    mymol->ir.vdwtype     = evdwCUT;
+    mymol->ir.coulombtype = eelCUT;
     
     if (mymol->natom <= 0)
         imm = immAtomTypes;
@@ -239,9 +382,9 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         open_symtab(&(mymol->symtab));
         molnameptr = put_symtab(&(mymol->symtab),mymol->molname);
         if (strcmp(mymol->molname,"benzene") == 0)
-          printf("BOE\n");
-        do_init_mtop(&mymol->mtop,1,1,molnameptr,
-                     mymol->natom,&(mymol->atoms));
+            printf("BOE\n");
+        do_init_mtop(&mymol->mtop,1,molnameptr,
+                     mymol->natom,&(mymol->atoms),pd);
         if (molprop_2_atoms(mp,aps,&(mymol->symtab),lot,mymol->atoms,
                             (const char *)"ESP",&(mymol->x)) == 0)
             imm = immMolpropConv;
@@ -297,15 +440,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                  bH14,bAllDihedrals,bRemoveDoubleDihedrals,
                  nexcl,&mymol->excls,
                  TRUE,mymol->box,aps,btol);
-        
-        /* Set the generated FF params to zero */
-        for(i=0; (i<F_NRE); i++) {
-          for(j=0; (j<plist[i].nr); j++) {
-            for(k=0; (k<MAXFORCEPARAM); k++) {
-              plist[i].param[j].c[k] = 0;
-            }
-          }
-        }
+        mk_ff_mtop(&mymol->mtop,pd);
         
         /* Setting the atom types: this depends on the bonding */
         set_pbc(&pbc,epbcNONE,mymol->box);
@@ -327,11 +462,11 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                             vec,quadrupole) == 0)
         {
             if (!bZero)
-              imm = immZeroDip;
+                imm = immZeroDip;
             if (NULL != myref)
-              sfree(myref);
+                sfree(myref);
             if (NULL != mylot)
-              sfree(mylot);
+                sfree(mylot);
         }
         else
         {
@@ -354,7 +489,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             mymol->dip_weight = sqr(1.0/error);
         }
         if (mp_get_prop_ref(mp,empDIPOLE,iqmQM,
-                        lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole) != 0)
+                            lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole) != 0)
         {
             for(m=0; (m<DIM); m++)
             {
@@ -363,22 +498,22 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         }
         if (mp_get_prop(mp,empENERGY,(bQM ? iqmQM : iqmBoth),
                         lot,NULL,"Hform",&value) != 0)
-          {
+        {
             mymol->Hform = value;
             mymol->Emol = value;
             for(ia=0; (ia<mymol->atoms->nr); ia++) {
-              if (gmx_atomprop_query(aps,epropHatomization,NULL,
-                                     *mymol->atoms->atomname[ia],&Ha)) {
-                mymol->Emol -= Ha;
-              }
-              else {
-                mymol->Emol = 0;
-                break;
-              }
+                if (gmx_atomprop_query(aps,epropHatomization,NULL,
+                                       *mymol->atoms->atomname[ia],&Ha)) {
+                    mymol->Emol -= Ha;
+                }
+                else {
+                    mymol->Emol = 0;
+                    break;
+                }
             }
-          }
+        }
         else {
-          imm = immNoData;
+            imm = immNoData;
         }
     }
     if (immOK == imm)
@@ -467,16 +602,17 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                        &newexcls,mymol->smnames);
             mymol->mtop.natoms = mymol->mtop.moltype[0].atoms.nr;
             mymol->mtop.molblock[0].natoms_mol = mymol->mtop.natoms;
-            excls_to_blocka(mymol->nalloc,newexcls,&(mymol->mtop.moltype[0].excls));
+            excls_to_blocka(mymol->nalloc,newexcls,
+                            &(mymol->mtop.moltype[0].excls));
             mtop_update_cgs(&mymol->mtop);
-            plist_to_mtop(plist,&mymol->mtop);
             reset_q(mymol->atoms);
             mymol->shell = init_shell_flexcon(debug,&mymol->mtop,0,mymol->x);
         }
         else {
             mymol->shell = NULL;
-            plist_to_mtop(plist,&mymol->mtop);
+            excls_to_blocka(mymol->nalloc,mymol->excls,&(mymol->mtop.moltype[0].excls));
         }
+        plist_to_mtop(pd,plist,&mymol->mtop);
         snew(mymol->f,mymol->nalloc);
         mymol->fr = mk_forcerec();
         init_forcerec(debug,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
@@ -811,37 +947,38 @@ t_moldip *init_moldip(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
                       gmx_bool bOptHfac,real hfac,
                       gmx_bool bPol,gmx_bool bFitZeta)
 {
-  t_moldip *md;
+    t_moldip *md;
     
-  snew(md,1);
-  md->cr       = cr;
-  md->bQM      = bQM;
-  md->bDone    = FALSE;
-  md->bFinal   = FALSE;
-  md->bGaussianBug = bGaussianBug;
-  md->bFitZeta = bFitZeta;
-  md->iModel   = iModel;
-  md->decrzeta = rDecrZeta;
-  md->epsr     = epsr;
-  md->J0_0       = J0_0;
-  md->Chi0_0     = Chi0_0;
-  md->w_0        = w_0;
-  md->J0_1       = J0_1;
-  md->Chi0_1     = Chi0_1;
-  md->w_1        = w_1;
-  md->fc[ermsMU]     = fc_mu;
-  md->fc[ermsBOUNDS] = fc_bound;
-  md->fc[ermsQUAD]   = fc_quad;
-  md->fc[ermsCHARGE] = fc_charge;
-  md->fc[ermsESP]    = fc_esp;
-  md->fc[ermsEPOT]   = 1;
-  md->fixchi     = strdup(fixchi);
-  md->hfac       = hfac;	  
-  md->hfac0      = hfac;	  
-  md->bOptHfac   = bOptHfac;
-  md->bPol       = bPol;
+    snew(md,1);
+    md->cr       = cr;
+    md->bQM      = bQM;
+    md->bDone    = FALSE;
+    md->bFinal   = FALSE;
+    md->bGaussianBug = bGaussianBug;
+    md->bFitZeta = bFitZeta;
+    md->iModel   = iModel;
+    md->decrzeta = rDecrZeta;
+    md->epsr     = epsr;
+    md->J0_0       = J0_0;
+    md->Chi0_0     = Chi0_0;
+    md->w_0        = w_0;
+    md->J0_1       = J0_1;
+    md->Chi0_1     = Chi0_1;
+    md->w_1        = w_1;
+    md->fc[ermsMU]     = fc_mu;
+    md->fc[ermsBOUNDS] = fc_bound;
+    md->fc[ermsQUAD]   = fc_quad;
+    md->fc[ermsCHARGE] = fc_charge;
+    md->fc[ermsESP]    = fc_esp;
+    md->fc[ermsForce2] = 1e-4;
+    md->fc[ermsEPOT]   = 1;
+    md->fixchi     = strdup(fixchi);
+    md->hfac       = hfac;	  
+    md->hfac0      = hfac;	  
+    md->bOptHfac   = bOptHfac;
+    md->bPol       = bPol;
   
-  return md;
+    return md;
 }
 
 void read_moldip(t_moldip *md,
@@ -853,13 +990,13 @@ void read_moldip(t_moldip *md,
                  output_env_t oenv,gmx_molselect_t gms,
                  real th_toler,real ph_toler,real dip_toler,
                  gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
-                 int nexcl,real watoms,gmx_bool bCheckSupport)
+                 real watoms,gmx_bool bCheckSupport)
 {
     char     **strings,buf[STRLEN];
     int      i,j,n,kk,nstrings,nwarn=0,nzero=0,nmol_cpu;
     double   dip,dip_err,dx,dy,dz;
     rvec     mu;
-    int      nmol,imm,imm_count[immNR];
+    int      nmol,nexcl,imm,imm_count[immNR];
     gmx_molprop_t *mp=NULL;
     char     *molname;
 #ifdef GMX_MPI
@@ -877,7 +1014,8 @@ void read_moldip(t_moldip *md,
         gmx_fatal(FARGS,"Can not read the force field information. File %s missing or incorrect.",pd_fn);
     
     if ((n = gmx_poldata_get_numprops(md->pd,md->iModel)) == 0)
-      gmx_fatal(FARGS,"File %s does not contain the requested parameters for model %d",pd_fn,md->iModel);
+        gmx_fatal(FARGS,"File %s does not contain the requested parameters for model %d",pd_fn,md->iModel);
+    nexcl = gmx_poldata_get_nexcl(md->pd);
     
     if (NULL != fp)
     {  
@@ -953,7 +1091,7 @@ void read_moldip(t_moldip *md,
         /* Send signal done with transferring molecules */
         for(i=1; (i<md->cr->nnodes); i++) 
         {
-          gmx_send_int(md->cr,i,0);
+            gmx_send_int(md->cr,i,0);
         }
     }
     else 
@@ -993,22 +1131,22 @@ void read_moldip(t_moldip *md,
                 fprintf(fp,"%d molecules - %s.\n",imm_count[i],immsg(i));
         if (imm_count[immOK] != nmol)
         {
-          fprintf(fp,"Check %s.debug for more information.\nYou may have to use the -debug 1 flag.\n\n",ShortProgram());
+            fprintf(fp,"Check %s.debug for more information.\nYou may have to use the -debug 1 flag.\n\n",ShortProgram());
         }
     }
     snew(md->ic,1);
     if (bCheckSupport) 
-      {
+    {
         md->nmol_support =
-          check_data_sufficiency(MASTER(md->cr) ? fp : NULL,md->nmol,md->mymol,
-                                 minimum_data,md->pd,md->ic,md->atomprop,
-                                 md->iModel,opt_elem,const_elem,md->cr,
-                                 md->bPol,md->bFitZeta);
+            check_data_sufficiency(MASTER(md->cr) ? fp : NULL,md->nmol,md->mymol,
+                                   minimum_data,md->pd,md->ic,md->atomprop,
+                                   md->iModel,opt_elem,const_elem,md->cr,
+                                   md->bPol,md->bFitZeta);
         if (md->nmol_support == 0)
-          gmx_fatal(FARGS,"No support for any molecule!");
-      }
+            gmx_fatal(FARGS,"No support for any molecule!");
+    }
     else {
-      md->nmol_support = md->nmol;
+        md->nmol_support = md->nmol;
     }
 }
 

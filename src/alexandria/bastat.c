@@ -315,7 +315,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_sigma(b->bond[i].lsq,&sig);
         gmx_stats_get_npoints(b->bond[i].lsq,&N);
         sprintf(pbuf,"%g  %g",Dm,beta);
-        gmx_poldata_add_gt_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,1.0,pbuf);
+        gmx_poldata_add_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,1.0,pbuf);
         fprintf(fp,"bond %s-%s len %g sigma %g (pm)\n",
                 b->bond[i].a1,b->bond[i].a2,av,sig);
     }
@@ -324,7 +324,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_sigma(b->angle[i].lsq,&sig);
         gmx_stats_get_npoints(b->angle[i].lsq,&N);
         sprintf(pbuf,"%g",kt);
-        gmx_poldata_add_gt_angle(pd,b->angle[i].a1,b->angle[i].a2,
+        gmx_poldata_add_angle(pd,b->angle[i].a1,b->angle[i].a2,
                                  b->angle[i].a3,av,sig,pbuf);
         fprintf(fp,"angle %s-%s-%s angle %g sigma %g (deg)\n",
                 b->angle[i].a1,b->angle[i].a2,b->angle[i].a3,av,sig);
@@ -334,7 +334,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_sigma(b->dih[i].lsq,&sig);
         gmx_stats_get_npoints(b->dih[i].lsq,&N);
         sprintf(pbuf,"%g",kp);
-        gmx_poldata_add_gt_dihedral(pd,b->dih[i].a1,b->dih[i].a2,
+        gmx_poldata_add_dihedral(pd,b->dih[i].a1,b->dih[i].a2,
                                     b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
         fprintf(fp,"dihedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4,av,sig);
@@ -447,12 +447,12 @@ int main(int argc,char *argv[])
                 minimum_data,bZero,bWeighted,
                 opt_elem,const_elem,
                 lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
-                TRUE,TRUE,TRUE,2,watoms,FALSE);
+                TRUE,TRUE,TRUE,watoms,FALSE);
                     
 #define ATP(ii) get_atomtype_name(md->mymol[i].atoms->atom[ii].type,md->mymol[i].atype)
-    ftb = gmx_poldata_get_gt_bond_ftype(md->pd);
-    fta = gmx_poldata_get_gt_angle_ftype(md->pd);
-    ftd = gmx_poldata_get_gt_dihedral_ftype(md->pd);
+    ftb = gmx_poldata_get_bond_ftype(md->pd);
+    fta = gmx_poldata_get_angle_ftype(md->pd);
+    ftd = gmx_poldata_get_dihedral_ftype(md->pd);
     snew(b,1);
     for(i=0; (i<md->nmol); i++) {
         molname = md->mymol[i].molname;

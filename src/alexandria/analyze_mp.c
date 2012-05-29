@@ -99,7 +99,7 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
                 {
                     if (strcasecmp(comp,"spoel") == 0) 
                     {
-                        if (gmx_poldata_gt_type_polarizability(pd,atomname,&polar,&sig_pol) == 1) 
+                        if (gmx_poldata_type_polarizability(pd,atomname,&polar,&sig_pol) == 1) 
                         {
                             spoel     += polar*natom;
                             sig_alexandria += sqr(sig_pol)*natom;

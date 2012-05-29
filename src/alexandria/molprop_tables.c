@@ -475,10 +475,9 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
      */
     for(pp = 0; (pp<npd); pp++) 
     {
-        while((name = gmx_poldata_get_ffatype(pd[pp],NULL,&elem,&desc,&(gt_type[cur]),
-                                              &miller_equiv,&charge,&geometry,
-                                              &numbonds,&neighbors,
-                                              &alexandria_pol,&sig_pol,&spref)) != NULL)
+        while(1 == gmx_poldata_get_atype(pd[pp],&elem,&desc,&(gt_type[cur]),
+                                         &miller_equiv,&charge,
+                                         &alexandria_pol,&sig_pol,&spref))
         {
             if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur],gt_type[prev]) != 0)) &&
                 (alexandria_pol > 0))
@@ -566,8 +565,8 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
         /* Store average values */
         if (NULL != pd_aver) 
         {
-            gmx_poldata_set_ffatype(pd_aver,smlsq[j].gt_type,
-                                    alexandria_aver,alexandria_sigma);
+            gmx_poldata_set_atype_polarizability(pd_aver,smlsq[j].gt_type,
+                                                 alexandria_aver,alexandria_sigma);
         }
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nexp,&nnn)))
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
@@ -656,10 +655,9 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
         for(m=0; (m<npcol[i]); m++)
             fprintf(fp," & %s",clab[m]);
     fprintf(fp,"\\\\\n\\hline\n");
-    while((name = gmx_poldata_get_ffatype(pd,NULL,&elem,&desc,&(gt_type[cur]),
-                                          &miller_equiv,&charge,&geometry,
-                                          &numbonds,&neighbors,
-                                          &alexandria_pol,&sig_pol,&spref)) != NULL)
+    while(1 == gmx_poldata_get_atype(pd,&elem,&desc,&(gt_type[cur]),
+                                     &miller_equiv,&charge,
+                                     &alexandria_pol,&sig_pol,&spref))
     {
         if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur],gt_type[prev]) != 0)))
         {

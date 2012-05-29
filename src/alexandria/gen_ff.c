@@ -34,11 +34,9 @@ int main(int argc,char *argv[])
   fprintf(fp,"; name      at.num  mass     charge ptype  repulsion  dispersion\n");
 
   gt_old = NULL;
-  while ((smname = gmx_poldata_get_ffatype(pd,NULL,&elem,&desc,&gt_type,
-					   NULL,&charge,&geometry,
-					   &numbonds,&neighbors,
-					   &polarizability,&sig_pol,
-					   &vdwparams)) != NULL)
+  while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,
+                                    NULL,&charge,&polarizability,&sig_pol,
+                                    &vdwparams))
     {
       if (gmx_atomprop_query(aps,epropMass,"",elem,&mass)) 
 	{
@@ -55,21 +53,21 @@ int main(int argc,char *argv[])
   /* Bondtypes */
   fprintf(fp,"\n[ bondtypes ]\n");
   fprintf(fp,"; ; i    j  func       parameters\n");
-  while (1 == gmx_poldata_get_gt_bond(pd,&ai,&aj,NULL,NULL,NULL,&params)) {
+  while (1 == gmx_poldata_get_bond(pd,&ai,&aj,NULL,NULL,NULL,&params)) {
     fprintf(fp,"%-5s  %-5s   %d  %s\n",ai,aj,btp,params);
   }
 
   /* Angletypes */
   fprintf(fp,"\n[ angletypes ]\n");
   fprintf(fp,"; ; i    j   k  func       parameters\n");
-  while (1 == gmx_poldata_get_gt_angle(pd,&ai,&aj,&ak,NULL,NULL,&params)) {
+  while (1 == gmx_poldata_get_angle(pd,&ai,&aj,&ak,NULL,NULL,&params)) {
     fprintf(fp,"%-5s  %-5s  %-5s  %d  %s\n",ai,aj,ak,atp,params);
   }
   
   /* Dihedraltypes */
   fprintf(fp,"\n[ dihedraltypes ]\n");
   fprintf(fp,"; ; i    j   k    l  func       parameters\n");
-  while (1 == gmx_poldata_get_gt_dihedral(pd,&ai,&aj,&ak,&al,NULL,NULL,&params)) {
+  while (1 == gmx_poldata_get_dihedral(pd,&ai,&aj,&ak,&al,NULL,NULL,&params)) {
     fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %s\n",ai,aj,ak,al,dtp,params);
   }
   

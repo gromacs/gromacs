@@ -118,9 +118,8 @@ static int decompose_frag(FILE *fp,int bTrain,
             nusemol++;
         }
     }        
-    while ((name = gmx_poldata_get_ffatype(pd,NULL,&elem,&desc,&gt_type,&miller_equiv,
-                                           &charge,&geometry,&numbonds,
-                                           &neighbors,&pol,&sig_pol,&spref)) != NULL) 
+    while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
+                                      &charge,&pol,&sig_pol,&spref)) 
     {
         if ((pol == 0) || bForceFit) {
             ntp = 0;
@@ -233,13 +232,11 @@ static int decompose_frag(FILE *fp,int bTrain,
     
     for(i=0; (i<ntest); i++) 
     {
-        gmx_poldata_set_ffatype(pd,atype[i],fpp[i],sigma*sqrt(ata[i][i]));
+        gmx_poldata_set_atype_polarizability(pd,atype[i],fpp[i],sigma*sqrt(ata[i][i]));
     }
     if (bZero)
-        gmx_poldata_add_ffatype(pd,(char *)"0",(char *)"NUL",(char *)"NUL",(char *)"NUL",
-                                (char *)"",(char *)"",
-                                (char *)"",0,(char *)"",a0,0,
-                                (char *)"");
+        gmx_poldata_add_atype(pd,(char *)"0",(char *)"NUL",(char *)"NUL",(char *)"NUL",
+                              (char *)"",a0,0,(char *)"");
 
     sfree(bUseMol);
     sfree(fpp);

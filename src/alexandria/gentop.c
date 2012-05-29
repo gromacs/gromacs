@@ -123,9 +123,9 @@ static void print_qpol(t_atoms *atoms,char **smnames,gmx_poldata_t pd)
     np     = 0;
     for(i=0; (i<atoms->nr); i++) 
     {
-        gt_type = gmx_poldata_get_gt_type(pd,smnames[i]);  
+        gt_type = gmx_poldata_get_type(pd,smnames[i]);  
         if ((NULL != gt_type) && 
-            gmx_poldata_gt_type_polarizability(pd,gt_type,&pol,&sigpol))
+            gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol))
         {
             np++;
             poltot += pol;
@@ -261,7 +261,7 @@ static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms
     
     length = string2unit(gmx_poldata_get_length_unit(pd));
     for(j=0; (j<plist[F_BONDS].nr); j++) {
-        if (1 == gmx_poldata_search_gt_bond(pd,
+        if (1 == gmx_poldata_search_bond(pd,
                                             *atoms->atomtype[plist[F_BONDS].param[j].a[0]],
                                             *atoms->atomtype[plist[F_BONDS].param[j].a[1]],
                                             &xx,&sx,&params)) {
@@ -276,7 +276,7 @@ static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms
         }
     }
     for(j=0; (j<plist[F_ANGLES].nr); j++) {
-        if (1 == gmx_poldata_search_gt_angle(pd,
+        if (1 == gmx_poldata_search_angle(pd,
                                              *atoms->atomtype[plist[F_ANGLES].param[j].a[0]],
                                              *atoms->atomtype[plist[F_ANGLES].param[j].a[1]],
                                              *atoms->atomtype[plist[F_ANGLES].param[j].a[2]],
@@ -292,7 +292,7 @@ static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms
         }
     }
     for(j=0; (j<plist[F_PDIHS].nr); j++) {
-        if (1 == gmx_poldata_search_gt_dihedral(pd,
+        if (1 == gmx_poldata_search_dihedral(pd,
                                                 *atoms->atomtype[plist[F_PDIHS].param[j].a[0]],
                                                 *atoms->atomtype[plist[F_PDIHS].param[j].a[1]],
                                                 *atoms->atomtype[plist[F_PDIHS].param[j].a[2]],

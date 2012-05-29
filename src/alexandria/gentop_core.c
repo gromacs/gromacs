@@ -170,16 +170,20 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     done_nnb(&nnb);
     
     /* Now move over to the appropriate function types */
-    if (NOTSET == (ft = gmx_poldata_get_gt_bond_ftype(pd)))
+    if (NOTSET == (ft = gmx_poldata_get_bond_ftype(pd)))
         gmx_fatal(FARGS,"Bond function type not set in force field file");
-    mv_plist(&plist[F_MORSE],&plist[F_BONDS]);
+    if (F_BONDS != ft)
+        mv_plist(&plist[ft],&plist[F_BONDS]);
     
-    if (NOTSET == (ft = gmx_poldata_get_gt_angle_ftype(pd)))
+    if (NOTSET == (ft = gmx_poldata_get_angle_ftype(pd)))
         gmx_fatal(FARGS,"Angle function type not set in force field file");
+    if (F_ANGLES != ft)
+        mv_plist(&plist[ft],&plist[F_ANGLES]);
         
-    if (NOTSET == (ft = gmx_poldata_get_gt_dihedral_ftype(pd)))
+    if (NOTSET == (ft = gmx_poldata_get_dihedral_ftype(pd)))
         gmx_fatal(FARGS,"Dihedral function type not set in force field file");
-        
+    if (F_PDIHS != ft)
+        mv_plist(&plist[ft],&plist[F_PDIHS]);
 }
 
 gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
@@ -256,8 +260,8 @@ static void lo_set_force_const(t_params *plist,real c[],int nrfp,gmx_bool bRound
     }
 }
 
-static void set_force_const(t_params plist[],real kb,real kt,real kp,gmx_bool bRound,
-                            gmx_bool bParam)
+void set_force_const(t_params plist[],real kb,real kt,real kp,gmx_bool bRound,
+                     gmx_bool bParam)
 {
 /* OBSOLETE ? */
     int i;
@@ -494,7 +498,7 @@ static void delete_shell_interactions(gmx_poldata_t pd,
                         memcpy(&plist[F_POLARIZATION].param[npol],
                                &plist[F_BONDS].param[j],
                                sizeof(plist[F_BONDS].param[j]));
-                        gmx_poldata_gt_type_polarizability(pd,get_atomtype_name(atp,atype),
+                        gmx_poldata_type_polarizability(pd,get_atomtype_name(atp,atype),
                                                           &pp,&sp); 
                         plist[F_POLARIZATION].param[npol].C0 = pp;
                         npol++;
@@ -756,9 +760,9 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
     for(i=0; (i<atoms->nr); i++) 
     {
         renum[i] = i+ns;
-        gt_type = gmx_poldata_get_gt_type(pd,smnames[i]);
+        gt_type = gmx_poldata_get_type(pd,smnames[i]);
         if ((NULL != gt_type) &&
-            (1 == gmx_poldata_gt_type_polarizability(pd,gt_type,&pol,&sigpol)))
+            (1 == gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol)))
         { 
             ns++;
             p.AI = renum[i];
