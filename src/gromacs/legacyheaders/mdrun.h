@@ -51,6 +51,8 @@
 #include "pull.h"
 #include "update.h"
 
+#include "../utility/gmx_header_config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
