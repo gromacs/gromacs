@@ -1476,7 +1476,7 @@ void fill_cell(const nbnxn_search_t nbs,
         offset = ((a0 - grid->cell0*grid->na_sc)>>grid->na_c_2log)*NNBSBB_B;
         bb_ptr = grid->bb + offset;
 
-#ifdef GMX_DOUBLE
+#if defined GMX_DOUBLE && defined NBNXN_SEARCH_SSE
         if (grid->cj_half_ci)
         {
             calc_bounding_box_x_x4_halves(na,nbat->x+X4_IND_A(a0),bb_ptr,
