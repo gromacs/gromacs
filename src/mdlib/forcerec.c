@@ -2069,7 +2069,6 @@ static void init_nb_verlet(FILE *fp,
                       DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
                       nbv->grp[0].kernel_type,
-                      NBNXN_GPU_CLUSTER_SIZE,
                       gmx_omp_nthreads_get(emntNonbonded));
 
     for(i=0; i<nbv->nloc; i++)

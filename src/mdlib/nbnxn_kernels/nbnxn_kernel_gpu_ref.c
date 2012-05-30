@@ -73,7 +73,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     int           sci;
     int           cj4_ind0,cj4_ind1,cj4_ind;
     int           ci,cj;
-    int           ic,jc,ia,ja,is,js,im,jm;
+    int           ic,jc,ia,ja,is,ifs,js,jfs,im,jm;
     int           n0;
     int           ggid;
     real          shX,shY,shZ;
@@ -110,7 +110,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     if (clearF)
     {
         /* Zero the output force array */
-        for(n=0; n<nbat->natoms*nbat->xstride; n++)
+        for(n=0; n<nbat->natoms*nbat->fstride; n++)
         {
             f[n] = 0;
         }
@@ -208,6 +208,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             ia               = ci*NA_C + ic;
                     
                             is               = ia*nbat->xstride;
+                            ifs              = ia*nbat->fstride;
                             ix               = shX + x[is+0];
                             iy               = shY + x[is+1];
                             iz               = shZ + x[is+2];
@@ -231,6 +232,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 int_bit = ((excl[jc>>2]->pair[(jc & 3)*NA_C+ic] >> (jm*NSUBCELL+im)) & 1); 
 
                                 js               = ja*nbat->xstride;
+                                jfs              = ja*nbat->fstride;
                                 jx               = x[js+0];      
                                 jy               = x[js+1];      
                                 jz               = x[js+2];      
@@ -309,14 +311,14 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 fix       = fix + tx;
                                 fiy       = fiy + ty;
                                 fiz       = fiz + tz;
-                                f[js+0]  -= tx;
-                                f[js+1]  -= ty;
-                                f[js+2]  -= tz;
+                                f[jfs+0] -= tx;
+                                f[jfs+1] -= ty;
+                                f[jfs+2] -= tz;
                             }
-                    
-                            f[is+0]          = f[is+0] + fix;
-                            f[is+1]          = f[is+1] + fiy;
-                            f[is+2]          = f[is+2] + fiz;
+                            
+                            f[ifs+0]        += fix;
+                            f[ifs+1]        += fiy;
+                            f[ifs+2]        += fiz;
                             fshift[ish3]     = fshift[ish3]   + fix;
                             fshift[ish3+1]   = fshift[ish3+1] + fiy;
                             fshift[ish3+2]   = fshift[ish3+2] + fiz;

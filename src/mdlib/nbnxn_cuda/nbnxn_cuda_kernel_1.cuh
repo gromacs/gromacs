@@ -69,7 +69,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
     const int *atom_types       = atdat.atom_types;
     int ntypes                  = atdat.ntypes;
     const float4 *xq            = atdat.xq;
-    float4 *f                   = atdat.f;
+    float3 *f                   = atdat.f;
     const float3 *shift_vec     = atdat.shift_vec;
     float rcoulomb_sq           = nbparam.rcoulomb_sq;
 #ifdef EL_EWALD

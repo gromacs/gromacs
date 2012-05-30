@@ -340,9 +340,9 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
                                int aloc)
 {
     cudaError_t stat;
-    int adat_begin, adat_len, adat_last;  /* local/nonlocal offset and length used for xq and f */
+    int adat_begin, adat_len, adat_end;  /* local/nonlocal offset and length used for xq and f */
     int iloc = -1;
-    float4 *signal_field;
+    float3 *signal_field;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -380,13 +380,13 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     {
         adat_begin  = 0;
         adat_len    = adat->natoms_local;
-        adat_last   = cu_nb->atdat->natoms_local - 1;
+        adat_end    = cu_nb->atdat->natoms_local;
     }
     else
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
-        adat_last   = cu_nb->atdat->natoms - 1;
+        adat_end    = cu_nb->atdat->natoms;
     }
 
     /* beginning of timed D2H section */
@@ -398,16 +398,16 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 
     if (!cu_nb->use_stream_sync)
     {
-        /* Set the 4th unsused component of the last element in the GPU force array
+        /* Set the z component of the extra element in the GPU force array
            (separately for l/nl parts) to a specific bit-pattern that we can check 
            for while waiting for the transfer to be done. */
-        signal_field = adat->f + adat_last;
-        stat = cudaMemsetAsync(&signal_field->w, 0xAA, sizeof(signal_field->z), stream);
+        signal_field = adat->f + adat_end;
+        stat = cudaMemsetAsync(&signal_field->z, 0xAA, sizeof(signal_field->z), stream);
         CU_RET_ERR(stat, "cudaMemsetAsync of the signal_field failed");
 
         /* For safety reasons set a few (5%) forces to NaN. This way even if the
            polling "hack" fails with some future NVIDIA driver we'll get a crash. */
-        for (int i = adat_begin; i < 4*adat_last + 2; i += (adat_last - adat_begin)/20)
+        for (int i = adat_begin; i < 3*adat_end + 2; i += adat_len/20)
         {
 #ifdef NAN
             nbatom->out[0].f[i] = NAN;
@@ -426,7 +426,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
         }
 
         /* Clear the bits in the force array (on the CPU) that we are going to poll. */
-        nbatom->out[0].f[adat_last*4 + 3] = 0;
+        nbatom->out[0].f[adat_end*3 + 2] = 0;
     }
 
     /* With DD the local D2H transfer can only start after the non-local 
@@ -438,8 +438,8 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* DtoH f */
-    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 4, adat->f + adat_begin, 
-                      adat_len * sizeof(*adat->f), stream);
+    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin, 
+                      (adat_len + 1) * sizeof(*adat->f), stream);
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -484,7 +484,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                          float *e_lj, float *e_el, rvec *fshift)
 {
     cudaError_t stat;
-    int i, adat_last, iloc = -1;
+    int i, adat_end, iloc = -1;
     unsigned int *signal_bytes;
     unsigned int signal_pattern;
 
@@ -532,11 +532,11 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
     {
-        adat_last = cu_nb->atdat->natoms_local - 1;
+        adat_end = cu_nb->atdat->natoms_local;
     }
     else
     {
-        adat_last = cu_nb->atdat->natoms - 1;
+        adat_end = cu_nb->atdat->natoms;
     }
 
     if (cu_nb->use_stream_sync)
@@ -548,7 +548,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     {
         /* Busy-wait until we get the signalling pattern set in last 4-bytes 
            of the l/nl float vector. */
-        signal_bytes    = (unsigned int*)&nbatom->out[0].f[adat_last*4 + 3];
+        signal_bytes    = (unsigned int*)&nbatom->out[0].f[adat_end*3 + 2];
         signal_pattern  = 0xAAAAAAAA; /* FIXME move this to a module-global constant */
         while (*signal_bytes != signal_pattern) 
         {

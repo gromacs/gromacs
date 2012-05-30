@@ -532,7 +532,7 @@ static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb)
 
 void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb, int flags)
 {
-    nbnxn_cuda_clear_f(cu_nb, cu_nb->atdat->natoms);
+    nbnxn_cuda_clear_f(cu_nb, cu_nb->atdat->natoms + 1);
     /* clear shift force array and energies if the outputs were 
        used in the current step */
     if (flags & GMX_FORCE_VIRIAL)
@@ -565,9 +565,10 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
 
     /* need to reallocate if we have to copy more atoms than the amount of space
        available and only allocate if we haven't initilzed yet, i.e d_atdat->natoms == -1 */
-    if (natoms > d_atdat->nalloc)
+    /* Add one element to f for possible signalling */
+    if (natoms + 1 > d_atdat->nalloc)
     {
-        nalloc = natoms * 1.2 + 100;
+        nalloc = (natoms + 1) * 1.2 + 100;
     
         /* free up first if the arrays have already been initialized */
         if (d_atdat->nalloc != -1)
@@ -577,6 +578,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
             cu_free_buffered(d_atdat->atom_types);
         }
         
+        /* Add one element for possible signalling */
         stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
         stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));

@@ -165,7 +165,7 @@
 /* This define is a lazy way to avoid interdependence of the grid
  * and searching data structures.
  */
-#define NBNXN_NA_SC_MAX (NSUBCELL*16)
+#define NBNXN_NA_SC_MAX (NSUBCELL*8)
 
 #ifdef NBNXN_SEARCH_SSE
 #define GMX_SSE_HERE
@@ -400,16 +400,6 @@ static void nbs_cycle_print(FILE *fp,const nbnxn_search_t nbs)
     fprintf(fp,"\n");
 }
 
-static gmx_bool kernel_cj_half_ci(int nb_kernel_type)
-{
-#ifndef GMX_DOUBLE
-    return FALSE;
-#else
-    /* With double precision SSE is only 2-wide and we use 4x2 atom kernels */
-    return (nb_kernel_type == nbk4xN_S128);
-#endif
-}
-
 static void nbnxn_grid_init(nbnxn_grid_t * grid,
                             gmx_bool cj_half_ci)
 {
@@ -437,6 +427,60 @@ static int get_2log(int n)
     }
 
     return log2;
+}
+static int kernel_to_ci_size(nb_kernel_type)
+{
+    switch (nb_kernel_type)
+    {
+    case nbk4x4_PlainC:
+    case nbk4xN_S128:
+    case nbk4xN_S256:
+        return NBNXN_CPU_CLUSTER_I_SIZE;
+    case nbk8x8x8_CUDA:
+    case nbk8x8x8_PlainC:
+        /* The cluster size for super/sub lists is only set here.
+         * Any value should work for the pair-search and atomdata code.
+         * The kernels, of course, might require a particular value.
+         */
+        return NBNXN_GPU_CLUSTER_SIZE;
+    default:
+        gmx_incons("unknown kernel type");
+    }
+
+    return 0;
+}
+
+static int kernel_to_cj_size(nb_kernel_type)
+{
+    switch (nb_kernel_type)
+    {
+    case nbk4x4_PlainC:
+        return 4;
+#ifndef GMX_DOUBLE
+    case nbk4xN_S128:
+        return 4;
+    case nbk4xN_S256:
+        return 8;
+#else
+    case nbk4xN_S128:
+        return 2;
+    case nbk4xN_S256:
+        return 4;
+#endif
+    case nbk8x8x8_CUDA:
+    case nbk8x8x8_PlainC:
+        return kernel_to_ci_size(nb_kernel_type);
+    default:
+        gmx_incons("unknown kernel type");
+    }
+
+    return 0;
+}
+
+static gmx_bool kernel_cj_half_ci(int nb_kernel_type)
+{
+    return (kernel_to_cj_size(nb_kernel_type)*2 ==
+            kernel_to_ci_size(nb_kernel_type));
 }
 
 static int ci_to_cj(int na_cj_2log,int ci)
@@ -479,7 +523,6 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
                        int nb_kernel_type_loc,
-                       int natoms_cluster,
                        int nthread_max)
 {
     nbnxn_search_t nbs;
@@ -513,7 +556,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
 
     if (!nbnxn_kernel_pairlist_simple(nb_kernel_type_loc))
     {
-        nbs->na_c = natoms_cluster;
+        nbs->na_c = kernel_to_ci_size(nb_kernel_type_loc);
 
         if (nbs->na_c*NSUBCELL > NBNXN_NA_SC_MAX)
         {
@@ -573,26 +616,6 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     }
 }
 
-static int simple_XFormat_cj_size(int XFormat,gmx_bool cj_half_ci)
-{
-    int cj_size;
-
-    if (XFormat != nbatX8)
-    {
-        cj_size = 4;
-    }
-    else
-    {
-        cj_size = 8;
-    }
-    if (cj_half_ci)
-    {
-        cj_size /= 2;
-    }
-
-    return cj_size;
-}
-
 static real grid_atom_density(int n,rvec corner0,rvec corner1)
 {
     rvec size;
@@ -614,9 +637,10 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
     real adens,tlen,tlen_x,tlen_y,nc_max;
     int  t;
 
-    if (grid->simple)
+    cj_size = grid->na_c;
+    if (grid->cj_half_ci)
     {
-        cj_size = simple_XFormat_cj_size(XFormat,grid->cj_half_ci);
+        cj_size /= 2;
     }
 
     rvec_sub(corner1,corner0,size);
@@ -1183,11 +1207,11 @@ static void copy_int_to_nbat_int(const int *a,int na,int na_round,
     }
 }
 
-static void clear_nbat_real(int na,int nbatXFormat,real *xnb,int a0)
+static void clear_nbat_real(int na,int nbatFormat,real *xnb,int a0)
 {
     int a,d,j,c;
 
-    switch (nbatXFormat)
+    switch (nbatFormat)
     {
     case nbatXYZ:
         for(a=0; a<na; a++)
@@ -1245,7 +1269,7 @@ static void clear_nbat_real(int na,int nbatXFormat,real *xnb,int a0)
 }
 
 static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
-                                   rvec *x,int nbatXFormat,real *xnb,int a0,
+                                   rvec *x,int nbatFormat,real *xnb,int a0,
                                    int cx,int cy,int cz)
 {
     int i,j,c;
@@ -1258,7 +1282,7 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
  */
 #define NBAT_FAR_AWAY 107
 
-    switch (nbatXFormat)
+    switch (nbatFormat)
     {
     case nbatXYZ:
         j = a0*3;
@@ -2056,9 +2080,10 @@ static void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat,int n)
                     nbat->alloc,nbat->free);
     for(t=0; t<nbat->nout; t++)
     {
+        /* Allocate one element extra for possible signaling with CUDA */
         nb_realloc_void((void **)&nbat->out[t].f,
-                        nbat->natoms*nbat->xstride*sizeof(*nbat->out[t].f),
-                        n*nbat->xstride*sizeof(*nbat->out[t].f),
+                        nbat->natoms*nbat->fstride*sizeof(*nbat->out[t].f),
+                        (n+1)*nbat->fstride*sizeof(*nbat->out[t].f),
                         nbat->alloc,nbat->free);
     }
     nbat->nalloc = n;
@@ -4499,15 +4524,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     nbl->na_sc = gridj->na_sc;
     nbl->na_ci = gridj->na_c;
-    if (nbl->simple)
-    {
-        nbl->na_cj = simple_XFormat_cj_size(nbat->XFormat,gridj->cj_half_ci);
-    }
-    else
-    {
-        /* Not used, only set for completeness */
-        nbl->na_cj = 8;
-    }
+    nbl->na_cj = kernel_to_cj_size(nb_kernel_type);
     na_cj_2log = get_2log(nbl->na_cj);
 
     nbl->rlist  = rlist;
@@ -5231,7 +5248,6 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
 /* Initializes an nbnxn_atomdata_output_t data structure */
 static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
-                                       int XFormat,
                                        int nb_kernel_type,
                                        int nenergrp,int stride,
                                        gmx_nbat_alloc_t *ma)
@@ -5247,8 +5263,7 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
     if (nb_kernel_type == nbk4xN_S128 ||
         nb_kernel_type == nbk4xN_S256)
     {
-        cj_size = simple_XFormat_cj_size(XFormat,
-                                         kernel_cj_half_ci(nb_kernel_type));
+        cj_size = kernel_to_cj_size(nb_kernel_type);
         out->nVS = nenergrp*nenergrp*stride*(cj_size>>1)*cj_size;
         ma((void **)&out->VSvdw,out->nVS*sizeof(*out->VSvdw));
         ma((void **)&out->VSc  ,out->nVS*sizeof(*out->VSc  ));
@@ -5505,10 +5520,13 @@ void nbnxn_atomdata_init(FILE *fp,
             nbat->XFormat = nbatXYZ;
             break;
         }
+
+        nbat->FFormat = nbat->XFormat;
     }
     else
     {
         nbat->XFormat = nbatXYZQ;
+        nbat->FFormat = nbatXYZ;
     }
     nbat->q       = NULL;
     nbat->nenergrp = n_energygroups;
@@ -5530,6 +5548,7 @@ void nbnxn_atomdata_init(FILE *fp,
     nbat->energrp = NULL;
     nbat->alloc((void **)&nbat->shift_vec,SHIFTS*sizeof(*nbat->shift_vec));
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? 4 : 3);
+    nbat->fstride = (nbat->FFormat == nbatXYZQ ? 4 : 3);
     nbat->x       = NULL;
     nbat->nout    = nout;
     snew(nbat->out,nbat->nout);
@@ -5537,7 +5556,7 @@ void nbnxn_atomdata_init(FILE *fp,
     for(i=0; i<nbat->nout; i++)
     {
         nbnxn_atomdata_output_init(&nbat->out[i],
-                                   nbat->XFormat,nb_kernel_type,
+                                   nb_kernel_type,
                                    nbat->nenergrp,1<<nbat->neg_2log,
                                    nbat->alloc);
     }
@@ -5869,7 +5888,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
     cell = nbs->cell;
 
     /* Loop over all columns and copy and fill */
-    switch (nbat->XFormat)
+    switch (nbat->FFormat)
     {
     case nbatXYZ:
     case nbatXYZQ:
@@ -5879,7 +5898,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
 
             for(a=a0; a<a1; a++)
             {
-                i = cell[a]*nbat->xstride;
+                i = cell[a]*nbat->fstride;
                 
                 f[a][XX] += fnb[i];
                 f[a][YY] += fnb[i+1];
@@ -5890,7 +5909,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
         {
             for(a=a0; a<a1; a++)
             {
-                i = cell[a]*nbat->xstride;
+                i = cell[a]*nbat->fstride;
                 
                 for(fa=0; fa<nfa; fa++)
                 {

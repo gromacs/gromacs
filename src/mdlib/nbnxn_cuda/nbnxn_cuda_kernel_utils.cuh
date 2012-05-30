@@ -66,12 +66,12 @@ float interpolate_coulomb_force_r(float r, float scale)
  *  arbitrary array sizes. 
  */
 static inline __device__ 
-void reduce_force_j_generic(float *f_buf, float4 *fout,
+void reduce_force_j_generic(float *f_buf, float3 *fout,
                             int tidxi, int tidxj, int aidx)
 {
     if (tidxi == 0)
     {
-        float4 f = make_float4(0.0f);
+        float3 f = make_float3(0.0f);
         for (int j = tidxj * CLUSTER_SIZE; j < (tidxj + 1) * CLUSTER_SIZE; j++)
         {
             f.x += f_buf[                 j];
@@ -79,7 +79,7 @@ void reduce_force_j_generic(float *f_buf, float4 *fout,
             f.z += f_buf[2 * STRIDE_DIM + j];
         }
 
-        atomicAdd3(&fout[aidx], f);
+        atomicAdd(&fout[aidx], f);
     }
 }
 
@@ -88,7 +88,7 @@ void reduce_force_j_generic(float *f_buf, float4 *fout,
  */
 #if __CUDA_ARCH__ >= 300
 static inline __device__ 
-void reduce_force_j_warp_shfl(float3 f, float4 *fout,
+void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx)
 {
     int i;
@@ -113,13 +113,13 @@ void reduce_force_j_warp_shfl(float3 f, float4 *fout,
  *  arbitrary array sizes. 
  */
 static inline __device__ 
-void reduce_force_i_generic(float *f_buf, float4 *fout,
+void reduce_force_i_generic(float *f_buf, float3 *fout,
                             float3 *fshift_buf, gmx_bool calc_fshift,
                             int tidxi, int tidxj, int aidx)
 {
     if (tidxj == 0)
     {
-        float4 f = make_float4(0.0f);
+        float3 f = make_float3(0.0f);
         for (int j = tidxi; j < CLUSTER_SIZE_2; j += CLUSTER_SIZE)
         {
             f.x += f_buf[                 j];
@@ -127,7 +127,7 @@ void reduce_force_i_generic(float *f_buf, float4 *fout,
             f.z += f_buf[2 * STRIDE_DIM + j];
         }
 
-        atomicAdd3(&fout[aidx], f);
+        atomicAdd(&fout[aidx], f);
 
         if (calc_fshift)
         {
@@ -140,12 +140,12 @@ void reduce_force_i_generic(float *f_buf, float4 *fout,
  *  array sizes. 
  */
 static inline __device__ 
-void reduce_force_i_pow2(volatile float *f_buf, float4 *fout,
+void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
                          float3 *fshift_buf, gmx_bool calc_fshift,
                          int tidxi, int tidxj, int aidx)
 {
     int     i, j; 
-    float4  f = make_float4(0.0f);
+    float3  f = make_float3(0.0f);
 
     /* Reduce the initial CLUSTER_SIZE values for each i atom to half
        every step by using CLUSTER_SIZE * i threads. */
@@ -170,7 +170,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float4 *fout,
         f.y = f_buf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
         f.z = f_buf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
 
-        atomicAdd3(&fout[aidx], f);
+        atomicAdd(&fout[aidx], f);
 
         if (calc_fshift)
         {
@@ -183,7 +183,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float4 *fout,
  *  on whether the size of the array to be reduced is power of two or not.
  */
 static inline __device__ 
-void reduce_force_i(float *f_buf, float4 *f,
+void reduce_force_i(float *f_buf, float3 *f,
                     float3 *fshift_buf, gmx_bool calc_fshift,
                     int tidxi, int tidxj, int ai)
 {
@@ -202,7 +202,7 @@ void reduce_force_i(float *f_buf, float4 *f,
  */
 #if __CUDA_ARCH__ >= 300
 static inline __device__ 
-void reduce_force_i_warp_shfl(float3 fin, float4 *fout,
+void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float3 *fshift_buf, gmx_bool calc_fshift,
                               int tidxj, int aidx)
 {

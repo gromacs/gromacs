@@ -52,7 +52,6 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
 		       int nb_kernel_type_loc,
-                       int natoms_cluster,
                        int nthread_max);
 
 /* Put the atoms on the pair search grid.

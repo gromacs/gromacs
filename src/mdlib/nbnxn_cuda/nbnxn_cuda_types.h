@@ -63,7 +63,7 @@ struct nb_staging
 {
     float   *e_lj;      /* LJ energy */
     float   *e_el;      /* electrostatic energy */
-    float4  *fshift;    /* shift forces */
+    float3  *fshift;    /* shift forces */
 };
 
 /*! Nonbonded atom data -- both inputs and outputs. */
@@ -74,12 +74,12 @@ struct cu_atomdata
     int     nalloc;             /* allocation size for the atom data (xq, f) */
     
     float4  *xq;                /* atom coordinates + charges, size natoms  */
-    float4  *f;                 /* force output array, size natoms          */
+    float3  *f;                 /* force output array, size natoms          */
     /* TODO: try float2 for the energies */
     float   *e_lj,              /* LJ energy output, size 1                 */
             *e_el;              /* Electrostatics energy intput, size 1     */
 
-    float4  *fshift;            /* shift forces */
+    float3  *fshift;            /* shift forces */
 
     int     ntypes;             /* number of atom types             */
     int     *atom_types;        /* atom type indices, size natoms   */
