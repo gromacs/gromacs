@@ -551,8 +551,9 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
       indent=pr_title(fp,indent,title);
     PS("integrator",EI(ir->eI));
     PSTEP("nsteps",ir->nsteps);
-    PSTEP("init-step",ir->init_step);
-    PS("ns-type",ENS(ir->ns_type));
+    PSTEP("init_step",ir->init_step);
+    PS("cutoff-scheme",ECUTSCHEME(ir->cutoff_scheme));
+    PS("ns_type",ENS(ir->ns_type));
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
     PI("nstcomm",ir->nstcomm);
@@ -568,6 +569,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("delta-t",ir->delta_t);
     
     PR("xtcprec",ir->xtcprec);
+    PR("fourierspacing",ir->fourier_spacing);
     PI("nkx",ir->nkx);
     PI("nky",ir->nky);
     PI("nkz",ir->nkz);
@@ -600,6 +602,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     else
       pr_rvec(fp,indent,"posres-comB",ir->posres_comB,DIM,TRUE);
     PI("andersen-seed",ir->andersen_seed);
+    PR("verlet-buffer-drift",ir->verletbuf_drift);
     PR("rlist",ir->rlist);
     PR("rlistlong",ir->rlistlong);
     PR("rtpi",ir->rtpi);
@@ -1434,6 +1437,7 @@ void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
         (void) pr_indent(fp,indent);
         (void) fprintf(fp,"name=\"%s\"\n",*(mtop->name));
         pr_int(fp,indent,"#atoms",mtop->natoms);
+        pr_int(fp,indent,"#molblock",mtop->nmolblock);
         for(mb=0; mb<mtop->nmolblock; mb++) {
             pr_molblock(fp,indent,"molblock",&mtop->molblock[mb],mb,
                         mtop->moltype,bShowNumbers);

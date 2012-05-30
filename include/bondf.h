@@ -63,6 +63,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 const t_mdatoms *md,
                 t_fcdata *fcd,int *ddgatindex,
                 t_atomtypes *atype, gmx_genborn_t *born,
+		gmx_bool bCalcEnerVir,
                 gmx_bool bPrintSepPot,gmx_large_int_t step);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
@@ -142,6 +143,13 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   t_ifunc pdihs,idihs,rbdihs;
   t_ifunc tab_bonds,tab_angles,tab_dihs;
   t_ifunc polarize,anharm_polarize,water_pol,thole_pol,angres,angresz,unimplemented;
+
+/* Initialize the setup for the bonded force buffer reduction
+ * over threads. This should be called each time the bonded setup
+ * changes; i.e. at start-up without domain decomposition and at DD.
+ */ 
+void init_bonded_thread_force_reduction(t_forcerec *fr,
+                                        const t_idef *idef);
 
 #ifdef __cplusplus
 }

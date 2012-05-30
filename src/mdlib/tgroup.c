@@ -50,6 +50,7 @@
 #include "update.h"
 #include "rbin.h"
 #include "mtop_util.h"
+#include "gmx_omp_nthreads.h"
 
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 { 
@@ -93,6 +94,7 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
   int i;
+  int nthread,thread;
 #ifdef DEBUG
   fprintf(log,"ngtc: %d, ngacc: %d, ngener: %d\n",opts->ngtc,opts->ngacc,
 	  opts->ngener);
@@ -119,6 +121,21 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
       ekind->tcstat[i].ekinscalef_nhc = 1.0;
   }
   
+    nthread = gmx_omp_nthreads_get(emntUpdate);
+
+    snew(ekind->ekin_work_alloc,nthread);
+    snew(ekind->ekin_work,nthread);
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
+    {
+        /* Allocate 2 elements extra on both sides,
+         * so in single precision we have 2*3*3*4=72 bytes buffer
+         * on both sides to avoid cache pollution.
+         */
+        snew(ekind->ekin_work_alloc[thread],ekind->ngtc+4);
+        ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + 2;
+    }
+
   ekind->ngacc = opts->ngacc;
   snew(ekind->grpstat,opts->ngacc);
   init_grpstat(log,mtop,opts->ngacc,ekind->grpstat);
