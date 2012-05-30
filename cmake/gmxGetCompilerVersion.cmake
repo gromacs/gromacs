@@ -10,6 +10,7 @@ macro(get_compiler_version)
         execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
             RESULT_VARIABLE _cc_dumpversion_res
             OUTPUT_VARIABLE _cc_dumpversion_out
+	    ERROR_VARIABLE  _cc_dumpversion_err
             OUTPUT_STRIP_TRAILING_WHITESPACE)
 
         if (${_cc_dumpversion_res} EQUAL 0)
@@ -25,6 +26,7 @@ macro(get_compiler_version)
         execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
             RESULT_VARIABLE _cxx_dumpversion_res
             OUTPUT_VARIABLE _cxx_dumpversion_out
+	    ERROR_VARIABLE  _cxx_dumpversion_err
             OUTPUT_STRIP_TRAILING_WHITESPACE)
 
         if (${_cxx_dumpversion_res} EQUAL 0)
