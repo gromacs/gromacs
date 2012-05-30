@@ -336,6 +336,11 @@ pd_move_x_constraints(t_commrec *  cr,
         pd  = cr->pd;
         pdc = pd->constraints;
         
+       if (pdc == NULL)
+       {
+	        return;		
+       }
+
         thisnode  = cr->nodeid;
         
         /* First pulse to right */

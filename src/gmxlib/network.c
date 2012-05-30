@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  * 
  *                This source code is part of
  * 
@@ -294,44 +294,43 @@ int gmx_hostname_num()
 
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 {
-  gmx_nodecomm_t *nc;
-  int  n,rank,hostnum,ng,ni;
+    gmx_nodecomm_t *nc;
+    int  n,rank,hostnum,ng,ni;
 
-  /* Many MPI implementations do not optimize MPI_Allreduce
-   * (and probably also other global communication calls)
-   * for multi-core nodes connected by a network.
-   * We can optimize such communication by using one MPI call
-   * within each node and one between the nodes.
-   * For MVAPICH2 and Intel MPI this reduces the time for
-   * the global_stat communication by 25%
-   * for 2x2-core 3 GHz Woodcrest connected by mixed DDR/SDR Infiniband.
-   * B. Hess, November 2007
-   */
+    /* Many MPI implementations do not optimize MPI_Allreduce
+     * (and probably also other global communication calls)
+     * for multi-core nodes connected by a network.
+     * We can optimize such communication by using one MPI call
+     * within each node and one between the nodes.
+     * For MVAPICH2 and Intel MPI this reduces the time for
+     * the global_stat communication by 25%
+     * for 2x2-core 3 GHz Woodcrest connected by mixed DDR/SDR Infiniband.
+     * B. Hess, November 2007
+     */
 
-  nc = &cr->nc;
+    nc = &cr->nc;
 
-  nc->bUse = FALSE;
+    nc->bUse = FALSE;
 #ifndef GMX_THREAD_MPI
-  if (getenv("GMX_NO_NODECOMM") == NULL) {
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
     MPI_Comm_rank(cr->mpi_comm_mygroup,&rank);
 
     hostnum = gmx_hostname_num();
 
-    if (debug) {
-      fprintf(debug,
-              "In gmx_setup_nodecomm: splitting communicator of size %d\n",
-              n);
+    if (debug)
+    {
+        fprintf(debug,"In gmx_setup_nodecomm: splitting communicator of size %d\n",n);
     }
 
 
     /* The intra-node communicator, split on node number */
     MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
     MPI_Comm_rank(nc->comm_intra,&nc->rank_intra);
-    if (debug) {
-      fprintf(debug,"In gmx_setup_nodecomm: node rank %d rank_intra %d\n",
-	      rank,nc->rank_intra);
+    if (debug)
+    {
+        fprintf(debug,"In gmx_setup_nodecomm: node rank %d rank_intra %d\n",
+                rank,nc->rank_intra);
     }
     /* The inter-node communicator, split on rank_intra.
      * We actually only need the one for rank=0,
@@ -341,25 +340,128 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     /* Check if this really created two step communication */
     MPI_Comm_size(nc->comm_inter,&ng);
     MPI_Comm_size(nc->comm_intra,&ni);
-    if (debug) {
-      fprintf(debug,"In gmx_setup_nodecomm: groups %d, my group size %d\n",
-	      ng,ni);
+    if (debug)
+    {
+        fprintf(debug,"In gmx_setup_nodecomm: groups %d, my group size %d\n",
+                ng,ni);
     }
-    if ((ng > 1 && ng < n) || (ni > 1 && ni < n)) {
-      nc->bUse = TRUE;
-      if (fplog)
-	fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
-      if (nc->rank_intra > 0)
-	MPI_Comm_free(&nc->comm_inter);
-    } else {
-      /* One group or all processes in a separate group, use normal summing */
-      MPI_Comm_free(&nc->comm_inter);
-      MPI_Comm_free(&nc->comm_intra);
+
+    if (getenv("GMX_NO_NODECOMM") == NULL &&
+        ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
+    {
+        nc->bUse = TRUE;
+        if (fplog)
+        {
+            fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",
+                    ng,(real)n/(real)ng);
+        }
+        if (nc->rank_intra > 0)
+        {
+            MPI_Comm_free(&nc->comm_inter);
+        }
+    }
+    else
+    {
+        /* One group or all processes in a separate group, use normal summing */
+        MPI_Comm_free(&nc->comm_inter);
+        MPI_Comm_free(&nc->comm_intra);
+        if (debug)
+        {
+            fprintf(debug,"In gmx_setup_nodecomm: not unsing separate inter- and intra-node communicators.\n");
+        }
     }
 #endif
-  }
+#else
+    /* tMPI runs only on a single node so just use the nodeid */
+    nc->rank_intra = cr->nodeid;
 #endif
 }
+
+void gmx_init_intra_counters(t_commrec *cr)
+{
+    /* counters for PP+PME and PP-only processes on my node */
+    int nnodes, nnodes_pp, id_mynode=-1, id_mynode_group=-1, nproc_mynode, nproc_mynode_pp;
+#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    int i, mynum, *num, *num_pp;
+#endif
+
+    nnodes    = cr->nnodes;
+    nnodes_pp = nnodes - cr->npmenodes;
+
+#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    /* We have MPI and can expect to have different compute nodes */
+    mynum = gmx_hostname_num();
+
+    snew(num, nnodes);
+    snew(num_pp, nnodes_pp);
+
+    num[cr->sim_nodeid] = mynum;
+    if (cr->duty & DUTY_PP)
+    {
+        num_pp[cr->nodeid] = mynum;
+    }
+
+    MPI_Allreduce(MPI_IN_PLACE, num, nnodes, MPI_INT, MPI_SUM, cr->mpi_comm_mysim);
+    MPI_Allreduce(MPI_IN_PLACE, num_pp, nnodes_pp, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
+
+    id_mynode       = 0;
+    id_mynode_group = 0;
+    nproc_mynode    = 0;
+    nproc_mynode_pp = 0;
+    for(i=0; i<nnodes; i++)
+    {
+        if (num[i] == mynum)
+        {
+            nproc_mynode++;
+            if (i < cr->sim_nodeid)
+            {
+                id_mynode++;
+            }
+            if (i < cr->nodeid)
+            {
+                id_mynode_group++;
+            }
+        }
+    }
+    for(i=0; i<nnodes_pp; i++)
+    {
+        if (num_pp[i] == mynum)
+        {
+            nproc_mynode_pp++;
+        }
+    }
+    sfree(num);
+    sfree(num_pp);
+#else
+    /* Serial or thread-MPI code, we are running within a node */
+    id_mynode       = cr->sim_nodeid;
+    id_mynode_group = cr->nodeid;
+    nproc_mynode    = cr->nnodes;
+    nproc_mynode_pp = cr->nnodes - cr->npmenodes;
+#endif
+
+    if (debug)
+    {
+        char sbuf[STRLEN];
+        if (cr->duty & DUTY_PP && cr->duty & DUTY_PME)
+        {
+            sprintf(sbuf, "PP+PME");
+        }
+        else
+        {
+            sprintf(sbuf, "%s", cr->duty & DUTY_PP ? "PP" : "PME");
+        }
+        fprintf(debug, "On %3s node %d: nodeid_intra=%d, nodeid_group_intra=%d, "
+                "nnodes_intra=%d, nnodes_pp_intra=%d\n", sbuf, cr->sim_nodeid,
+                id_mynode, id_mynode_group, nproc_mynode, nproc_mynode_pp);
+    }
+
+    cr->nodeid_intra        = id_mynode;
+    cr->nodeid_group_intra  = id_mynode_group;
+    cr->nnodes_intra        = nproc_mynode;
+    cr->nnodes_pp_intra     = nproc_mynode_pp;
+}
+
 
 void gmx_barrier(const t_commrec *cr)
 {

@@ -43,18 +43,36 @@
 extern "C" {
 #endif
 
-  enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcTEST, ewcNR };
+enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
+       ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
+       ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
+       ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE,
+       ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
+       ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd,
+       ewcTEST, ewcNR };
+
+enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
+       ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
+       ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
+       ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
+       ewcsBONDED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
+       ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
+       ewcsNR };
 
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr, int omp_nthreads);
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr, 
+                               int nthreads_pp, int nthreads_pme);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
 
 void wallcycle_start(gmx_wallcycle_t wc, int ewc);
-/* Set the start cycle count for ewc */
+/* Starts the cycle counter (and increases the call count) */
+
+void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
+/* Starts the cycle counter without increasing the call count */
 
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
@@ -62,11 +80,11 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 void wallcycle_reset_all(gmx_wallcycle_t wc);
 /* Resets all cycle counters to zero */
 
-void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[]);
+void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-			    gmx_wallcycle_t wc, double cycles[]);
+			    gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
@@ -74,6 +92,23 @@ gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 
 void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
 /* Set reset_counters */
+
+/* Uncomment the next line to get extra cycle counters of sub parts */
+/* #define GMX_CYCLE_SUB */
+
+#ifdef GMX_CYCLE_SUB
+
+void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
+/* Set the start sub cycle count for ewcs */
+
+void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
+/* Stop the sub cycle count for ewcs */
+
+#else
+/* Define the counter call to nothing to avoid any effect on performance */
+#define wallcycle_sub_start(wc, ewcs)
+#define wallcycle_sub_stop(wc, ewcs)
+#endif
 
 #ifdef __cplusplus
 }
