@@ -614,6 +614,7 @@ int gmx_fio_close(t_fileio *fio)
     rc=gmx_fio_close_locked(fio);
     gmx_fio_unlock(fio);
 
+    sfree(fio->fn);
     sfree(fio);
 
 #ifdef GMX_THREAD_MPI
@@ -665,6 +666,8 @@ int gmx_fio_fclose(FILE *fp)
             rc=gmx_fio_close_locked(cur);
             gmx_fio_remove(cur);
             gmx_fio_stop_getting_next(cur);
+            sfree(cur->fn);
+            sfree(cur);
             break;
         }
         cur=gmx_fio_get_next(cur);

@@ -143,6 +143,7 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
         {
             sfree(gpbc->graph);
         }
+        sfree(gpbc);
     }
 }
 
