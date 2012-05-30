@@ -34,6 +34,12 @@
 /* Binary suffix for the created binaries */
 #define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
 
+/* Source directory for the build */
+#cmakedefine CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@"
+
+/* Binary directory for the build */
+#cmakedefine CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@"
+
 /* Turn off water-water neighborlist optimization only */
 #cmakedefine DISABLE_WATERWATER_NLIST
 

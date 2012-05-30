@@ -728,9 +728,7 @@ gmx_directory_close(gmx_directory_t gmxdir)
 }
 
 
-
-
-gmx_bool search_subdirs(const char *parent, char *libdir)
+static gmx_bool search_subdirs(const char *parent, char *libdir)
 {
     char *ptr;
     gmx_bool found;
@@ -857,6 +855,19 @@ gmx_bool get_libdir(char *libdir)
                 strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,GMX_PATH_MAX);
             } else
                 strncpy(full_path,buf,GMX_PATH_MAX);
+        }
+#endif
+
+        /* If running directly from the build tree, try to use the source
+         * directory.
+         */
+#if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
+        if (strncmp(full_path, CMAKE_BINARY_DIR, strlen(CMAKE_BINARY_DIR)) == 0)
+        {
+            if (search_subdirs(CMAKE_SOURCE_DIR, libdir))
+            {
+                return TRUE;
+            }
         }
 #endif
 
