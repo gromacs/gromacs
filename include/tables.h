@@ -43,7 +43,7 @@ extern "C" {
 
 
 void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
-				 int ntab,int tableformat,
+                                 int ntab,int tableformat,
                                  real dr,real beta);
 /* Fill table tab of size ntab with spacing dr with the ewald long-range
  * (mesh) force and optionally energy.

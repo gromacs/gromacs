@@ -129,7 +129,14 @@ typedef struct {
 
 static double v_ewald_lr(double beta,double r)
 {
-    return gmx_erf(beta*r)/r;
+    if (r == 0)
+    {
+        return beta*2/sqrt(M_PI);
+    }
+    else
+    {
+        return gmx_erfd(beta*r)/r;
+    }
 }
 
 void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
@@ -177,7 +184,7 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
         x_r0 = i*dx;
 
         v_r0 = v_ewald_lr(beta,x_r0);
-        v_r1 = v_ewald_lr(beta,x_r0-dx);
+        v_r1 = v_ewald_lr(beta,(i-1)*dx);
 
         if (!OutOfRange)
         {
@@ -264,24 +271,6 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
     }
     /* Currently the last value only contains half the force: double it */
     tabf[0] *= 2;
-
-    /* The potential should be 0 at 0 to avoid extra operations
-     * for exclusions in SSE.
-     */
-    switch (tableformat)
-    {
-    case tableformatF:
-        if (tabv != NULL)
-        {
-            tabv[0] = 0;
-        }
-        break;
-    case tableformatFDV0:
-        tabf[2] = 0;
-        break;
-    default:
-        gmx_incons("Unknown table format");
-    }
 
     if (tableformat == tableformatFDV0)
     {
