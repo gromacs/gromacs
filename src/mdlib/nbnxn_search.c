@@ -450,7 +450,7 @@ static int kernel_to_ci_size(nb_kernel_type)
     return 0;
 }
 
-static int kernel_to_cj_size(nb_kernel_type)
+static int kernel_to_cj_size(int nb_kernel_type)
 {
     switch (nb_kernel_type)
     {
