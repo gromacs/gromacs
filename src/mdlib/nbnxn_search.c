@@ -428,7 +428,8 @@ static int get_2log(int n)
 
     return log2;
 }
-static int kernel_to_ci_size(nb_kernel_type)
+
+static int kernel_to_ci_size(int nb_kernel_type)
 {
     switch (nb_kernel_type)
     {
