@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_H_
-#define _TMPI_H_
+#ifndef TMPI_TMPI_H_
+#define TMPI_TMPI_H_
 
 /** \file 
  *
@@ -1244,4 +1244,4 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 } /* closing extern "C" */
 #endif
 
-#endif /* _TMPI_H_ */
+#endif /* TMPI_TMPI_H_ */

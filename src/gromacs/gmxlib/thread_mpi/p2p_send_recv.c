@@ -80,7 +80,7 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    send_dst = tMPI_Get_thread(comm, dest);
+    send_dst=tMPI_Get_thread(comm, dest);
     if (!send_dst)
     {
         return tMPI_Error(comm, TMPI_ERR_SEND_DEST);

@@ -36,8 +36,8 @@ files.
 */
 
 
-#ifndef _TMPI_THREAD_H_
-#define _TMPI_THREAD_H_
+#ifndef TMPI_THREADS_H_
+#define TMPI_THREADS_H_
 
 /*! \file threads.h
  *
@@ -367,10 +367,10 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
  *
  *  This routine always return directly. If the mutex was available and
  *  we successfully locked it we return 0, otherwise a non-zero
- *  error code (usually meaning the mutex was already locked).
+ *  return code (usually meaning the mutex was already locked).
  *
  *  \param mtx  Pointer to the mutex to try and lock
- *  \return 0 or a non-zero error code.
+ *  \return 0 or a non-zero return error code.
  */
 int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
 
@@ -600,5 +600,5 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 }
 #endif
 
-#endif /* _TMPI_THREAD_H_ */
+#endif /* TMPI_THREADS_H_ */
 
