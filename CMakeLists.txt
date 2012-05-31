@@ -324,35 +324,6 @@ else (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
     set(GMX_64_BIT FALSE)
 endif (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
 
-# Check for some basic types that we *need*, so set these to int if they are not present 
-check_type_size(uid_t uid_t)
-if(NOT uid_t)
-  set(uid_t int)
-else(NOT uid_t)
-  set(uid_t 0)
-endif(NOT uid_t)
-
-check_type_size(gid_t gid_t)
-if(NOT gid_t)
-  set(gid_t 1)
-else(NOT gid_t)
-  set(gid_t 0)
-endif(NOT gid_t)
-
-check_type_size(size_t size_t)
-if(NOT size_t)
-  set(size_t int)
-else(NOT size_t)
-  set(size_t 0)
-endif(NOT size_t)
-
-check_type_size(off_t off_t)
-if(NOT off_t)
-  set(off_t int)
-else(NOT off_t)
-  set(off_t 0)
-endif(NOT off_t)
-
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 

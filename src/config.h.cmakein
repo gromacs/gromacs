@@ -302,21 +302,12 @@
 /* Some systems requires this to be set to 64 for large file support */
 #cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
-/* Define to int if <sys/types.h> does not define. */
-#cmakedefine gid_t int
-
 /* Define to __inline__ or __inline if that is what the C compiler
    calls it, or to nothing if inline is not supported under any name.  */
 #ifndef __cplusplus
 #define inline ${INLINE_KEYWORD}
 #endif
 
-/* Define to long int if <sys/types.h> does not define. */                    
-#cmakedefine off_t int                                                                
-
-/* Define to int if <sys/types.h> does not define. */
-#cmakedefine uid_t int
-                                                                
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 

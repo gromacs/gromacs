@@ -203,7 +203,11 @@ void nice_header (FILE *out,const char *fn)
   time_t clock;
   const char *user=unk;
   int    gh;
+#ifdef HAVE_PWD_H
   uid_t  uid;
+#else
+  int    uid;
+#endif
   char   buf[256]="";
   char   timebuf[STRLEN];
 #ifdef HAVE_PWD_H
