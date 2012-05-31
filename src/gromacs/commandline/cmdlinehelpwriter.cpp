@@ -50,8 +50,6 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/format.h"
 
-#include "cmdlinehelpwriter-impl.h"
-
 namespace gmx
 {
 
@@ -389,6 +387,27 @@ void SelectionParameterWriter::visitOption(const OptionInfo &option)
 /********************************************************************
  * CommandLineHelpWriter::Impl
  */
+
+/*! \internal \brief
+ * Private implementation class for CommandLineHelpWriter.
+ *
+ * \ingroup module_commandline
+ */
+class CommandLineHelpWriter::Impl
+{
+    public:
+        //! Sets the Options object to use for generating help.
+        explicit Impl(const Options &options);
+
+        //! Options object to use for generating help.
+        const Options          &options_;
+        //! Time unit to show in descriptions.
+        std::string             timeUnit_;
+        //! Whether to write descriptions to output.
+        bool                    bShowDescriptions_;
+        //! Whether to write hidden options to output.
+        bool                    bShowHidden_;
+};
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
     : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString()),
