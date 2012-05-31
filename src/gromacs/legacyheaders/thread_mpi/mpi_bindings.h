@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _MPI_BINDINGS_H_
-#define _MPI_BINDINGS_H_
+#ifndef TMPI_MPI_BINDINGS_H_
+#define TMPI_MPI_BINDINGS_H_
 
 /** \file
   \brief MPI bindings for thread_mpi/tmpi.h
@@ -257,5 +257,5 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 
 #endif
 
-#endif /* _MPI_BINDINGS_H_ */
+#endif /* TMPI_MPI_BINDINGS_H_ */
 

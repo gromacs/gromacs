@@ -415,7 +415,7 @@ struct tmpi_thread
     /* the p2p communication events (incoming envelopes + finished send 
        envelopes generate events) */
     tMPI_Event p2p_event;
-    TMPI_YIELD_WAIT_DATA; /* data associated with waiting */
+    TMPI_YIELD_WAIT_DATA /* data associated with waiting */
     struct req_list rql;  /* list of pre-allocated requests */
 
     /* collective communication structures: */
