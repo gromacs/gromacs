@@ -37,10 +37,13 @@
  */
 #include "gromacs/analysisdata/abstractdata.h"
 
+#include <vector>
+
+#include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/uniqueptr.h"
 
-#include "abstractdata-impl.h"
 #include "dataframe.h"
 #include "dataproxy.h"
 
@@ -51,16 +54,63 @@ namespace gmx
  * AbstractAnalysisData::Impl
  */
 
+/*! \internal \brief
+ * Private implementation class for AbstractAnalysisData.
+ *
+ * \ingroup module_analysisdata
+ */
+class AbstractAnalysisData::Impl
+{
+    public:
+        //! Shorthand for list of modules added to the data.
+        typedef std::vector<AnalysisDataModulePointer> ModuleList;
+
+        Impl();
+
+        /*! \brief
+         * Present data already added to the data object to a module.
+         *
+         * \param[in] data   Data object to read data from.
+         * \param[in] module Module to present the data to.
+         * \throws    APIError if \p module is not compatible with the data
+         *      object.
+         * \throws    APIError if all data is not available through
+         *      getDataFrame().
+         * \throws    unspecified Any exception thrown by \p module in its data
+         *      notification methods.
+         *
+         * Uses getDataFrame() in \p data to access all data in the object, and
+         * calls the notification functions in \p module as if the module had
+         * been registered to the data object when the data was added.
+         */
+        void presentData(AbstractAnalysisData *data,
+                         AnalysisDataModuleInterface *module);
+
+        //! List of modules added to the data.
+        ModuleList              _modules;
+        //! true if all modules support missing data.
+        bool                    _bAllowMissing;
+        //! Whether notifyDataStart() has been called.
+        mutable bool            _bDataStart;
+        //! Whether new data is being added.
+        mutable bool            _bInData;
+        //! Whether data for a frame is being added.
+        mutable bool            _bInFrame;
+        //! Index of the currently active frame.
+        mutable int             _currIndex;
+        /*! \brief
+         * Total number of frames in the data.
+         *
+         * The counter is incremented in notifyFrameFinish().
+         */
+        int                     _nframes;
+};
+
 AbstractAnalysisData::Impl::Impl()
     : _bAllowMissing(true), _bDataStart(false), _bInData(false), _bInFrame(false),
       _currIndex(-1), _nframes(0)
 {
 }
-
-AbstractAnalysisData::Impl::~Impl()
-{
-}
-
 
 void
 AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,

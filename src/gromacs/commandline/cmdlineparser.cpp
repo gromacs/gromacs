@@ -43,14 +43,27 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/messagestringcollector.h"
 
-#include "cmdlineparser-impl.h"
-
 namespace gmx
 {
 
 /********************************************************************
  * CommandLineParser::Impl
  */
+
+/*! \internal \brief
+ * Private implementation class for CommandLineParser.
+ *
+ * \ingroup module_commandline
+ */
+class CommandLineParser::Impl
+{
+    public:
+        //! Sets the options object to parse to.
+        explicit Impl(Options *options);
+
+        //! Helper object for assigning the options.
+        OptionsAssigner         _assigner;
+};
 
 CommandLineParser::Impl::Impl(Options *options)
     : _assigner(options)
