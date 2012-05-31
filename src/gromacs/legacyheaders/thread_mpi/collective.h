@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _THREAD_MPI_COLLECTIVE_H_
-#define _THREAD_MPI_COLLECTIVE_H_
+#ifndef TMPI_COLLECTIVE_H_
+#define TMPI_COLLECTIVE_H_
 
 /** \file 
  *
@@ -146,4 +146,4 @@ void tMPI_Reduce_wait_results(tMPI_Reduce_req *req, void *res);
 } /* closing extern "C" */
 #endif
 
-#endif /* _THREAD_MPI_COLLECTIVE_H_ */
+#endif /* TMPI_COLLECTIVE_H_ */

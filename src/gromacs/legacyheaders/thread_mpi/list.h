@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_LIST_H_
-#define _TMPI_LIST_H_
+#ifndef TMPI_LIST_H_
+#define TMPI_LIST_H_
 
 #include "atomic.h"
 
@@ -155,4 +155,4 @@ void tMPI_List_remove(tMPI_List *l, tMPI_List_element *le);
 } /* closing extern "C" */
 #endif
 
-#endif /* _TMPI_H_ */
+#endif /* TMPI_LIST_H_ */

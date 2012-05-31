@@ -36,8 +36,8 @@ files.
 */
 
 
-#ifndef _TMPI_NUMA_MALLOC_H_
-#define _TMPI_NUMA_MALLOC_H_
+#ifndef TMPI_NUMA_MALLOC_H_
+#define TMPI_NUMA_MALLOC_H_
 
 /*! \file numa_alloc.h
   
@@ -126,5 +126,5 @@ int tMPI_Free_numa(void *ptr);
 }
 #endif
 
-#endif /* _TMPI_NUMA_MALLOC_H_ */
+#endif /* TMPI_NUMA_MALLOC_H_ */
 
