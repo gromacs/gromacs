@@ -208,7 +208,8 @@ typedef struct {
   gmx_large_int_t nsteps;	/* number of steps to be taken			*/
   int  simulation_part; /* Used in checkpointing to separate chunks */
   gmx_large_int_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
-  int  nstcalcenergy;	/* fequency of energy calc. and T/P coupl. upd.	*/
+  int  nstcalcenergy;	/* frequency of energy calc. and T/P coupl. upd.	*/
+  int  cutoff_scheme;   /* cut-off scheme: group or verlet              */
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/
@@ -225,6 +226,7 @@ typedef struct {
   double init_t;	/* initial time (ps) 				*/
   double delta_t;	/* time step (ps)				*/
   real xtcprec;         /* precision of xtc file                        */
+  real fourier_spacing; /* requested fourier_spacing, when nk? not set  */
   int  nkx,nky,nkz;     /* number of k vectors in each spatial dimension*/
                         /* for fourier methods for long range electrost.*/
   int  pme_order;       /* interpolation order for PME                  */
@@ -248,6 +250,7 @@ typedef struct {
   rvec posres_com;      /* The COM of the posres atoms                  */
   rvec posres_comB;     /* The B-state COM of the posres atoms          */
   int  andersen_seed;   /* Random seed for Andersen thermostat.         */
+  real verletbuf_drift; /* Max. drift (kJ/mol/ps/atom) for list buffer  */
   real rlist;		/* short range pairlist cut-off (nm)		*/
   real rlistlong;	/* long range pairlist cut-off (nm)		*/
   real rtpi;            /* Radius for test particle insertion           */

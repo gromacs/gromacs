@@ -38,11 +38,13 @@
 
 
 #include "typedefs.h"
+#include "types/force_flags.h"
 #include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
 #include "vsite.h"
 #include "genborn.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -136,6 +138,36 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
+/* Selects the nbnxn (Verlet) kernel to be used.
+ * tryGPU: should we try to use a GPU/emulation?
+ * useGPU: return if a are using a real GPU
+ * forceGPU: force the use of a GPU
+ * tabulated_force: do we use tables for the force calculation
+ * kernel_type: return the selected kernel type
+ */
+void pick_nbnxn_kernel(FILE *fp,
+                       const t_commrec *cr,
+                       gmx_bool tryGPU, gmx_bool *useGPU,
+                       gmx_bool forceGPU,
+		       gmx_bool tabulated_force,
+                       int *kernel_type);
+
+void init_interaction_const_tables(FILE *fp, 
+                                   interaction_const_t *ic,
+                                   int verlet_kernel_type);
+/* Initializes the tables in the interaction constant data structure.
+ */
+
+void init_interaction_const(FILE *fp, 
+                            interaction_const_t **interaction_const,
+                            const t_forcerec *fr);
+/* Initializes the interaction constant data structure. Currently it 
+ * uses forcerec as input. 
+ */
+
+gmx_bool nb_kernel_pmetune_support(const nonbonded_verlet_t *nbv);
+/* Return TRUE if the kernels support PME tuning (rcoulomb > rvdw) */
+
 void init_forcerec(FILE       *fplog,     
                           const output_env_t oenv,
 			  t_forcerec *fr,   
@@ -149,7 +181,9 @@ void init_forcerec(FILE       *fplog,
 			  const char *tabafn,
 			  const char *tabpfn,
 			  const char *tabbfn,
-			  gmx_bool       bNoSolvOpt,
+		          const char *nbpu_opt,
+		   int nbnxn_kernel_preset,
+			  gmx_bool   bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 
  * The gmx_booleans have the following meaning:
@@ -157,6 +191,10 @@ void init_forcerec(FILE       *fplog,
  * bMolEpot: Use the free energy stuff per molecule
  * print_force >= 0: print forces for atoms with force >= print_force
  */
+
+void forcerec_set_excl_load(t_forcerec *fr,
+			    const gmx_localtop_t *top,const t_commrec *cr);
+  /* Set the exclusion load for the local exclusions and possibly threads */
 
 void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
@@ -183,30 +221,7 @@ void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const gmx_mtop_t *mtop);
 
-/* The state has changed */
-#define GMX_FORCE_STATECHANGED (1<<0)
-/* The box might have changed */
-#define GMX_FORCE_DYNAMICBOX   (1<<1)
-/* Do neighbor searching */
-#define GMX_FORCE_NS           (1<<2)
-/* Calculate bonded energies/forces */
-#define GMX_FORCE_DOLR         (1<<3)
-/* Calculate long-range energies/forces */
-#define GMX_FORCE_BONDED       (1<<4)
-/* Store long-range forces in a separate array */
-#define GMX_FORCE_SEPLRF       (1<<5)
-/* Calculate non-bonded energies/forces */
-#define GMX_FORCE_NONBONDED    (1<<6)
-/* Calculate forces (not only energies) */
-#define GMX_FORCE_FORCES       (1<<7)
-/* Calculate the virial */
-#define GMX_FORCE_VIRIAL       (1<<8)
-/* Calculate dHdl */
-#define GMX_FORCE_DHDL         (1<<9)
-/* Normally one want all energy terms and forces */
-#define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
-
-void do_force(FILE *log,t_commrec *cr,
+extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,
 		     gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		     gmx_localtop_t *top,
@@ -218,10 +233,12 @@ void do_force(FILE *log,t_commrec *cr,
 		     t_mdatoms *mdatoms,
 		     gmx_enerdata_t *enerd,t_fcdata *fcd,
 		     real lambda,t_graph *graph,
-		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+		     t_forcerec *fr,
+                     gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
 		     gmx_bool bBornRadii,
 		     int flags);
+
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
  * Calculate forces.
@@ -250,7 +267,7 @@ void ns(FILE       *fplog,
 	       rvec       *f);
 /* Call the neighborsearcher */
 
-void do_force_lowlevel(FILE         *fplog,  
+extern void do_force_lowlevel(FILE         *fplog,  
 			      gmx_large_int_t   step,
 			      t_forcerec   *fr,
 			      t_inputrec   *ir,

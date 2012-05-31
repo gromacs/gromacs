@@ -54,9 +54,9 @@ t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
 void done_grid(t_grid *grid);
 
-void get_nsgrid_boundaries(t_grid *grid,
-				  gmx_domdec_t *dd,
-				  matrix box,gmx_ddbox_t *ddbox,
+void get_nsgrid_boundaries(int nboundeddim,matrix box,
+			          gmx_domdec_t *dd,
+				  gmx_ddbox_t *ddbox,
 				  rvec *gr0,rvec *gr1,
 				  int ncg,rvec *cgcm,
 				  rvec grid_x0,rvec grid_x1,
