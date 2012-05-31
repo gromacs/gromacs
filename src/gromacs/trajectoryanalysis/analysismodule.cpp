@@ -44,14 +44,64 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "analysismodule-impl.h"
-
 namespace gmx
 {
 
 /********************************************************************
+ * TrajectoryAnalysisModule::Impl
+ */
+
+/*! \internal \brief
+ * Private implementation class for TrajectoryAnalysisModule.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class TrajectoryAnalysisModule::Impl
+{
+    public:
+        //! Container that associates a data set with its name.
+        typedef std::map<std::string, AbstractAnalysisData *> DatasetContainer;
+        //! Container that associates a AnalysisData object with its name.
+        typedef std::map<std::string, AnalysisData *> AnalysisDatasetContainer;
+
+        //! List of registered data set names.
+        std::vector<std::string>        _datasetNames;
+        /*! \brief
+         * Keeps all registered data sets.
+         *
+         * This container also includes datasets from \a _analysisDatasets.
+         */
+        DatasetContainer                _datasets;
+        //! Keeps registered AnalysisData objects.
+        AnalysisDatasetContainer        _analysisDatasets;
+};
+
+/********************************************************************
  * TrajectoryAnalysisModuleData::Impl
  */
+
+/*! \internal \brief
+ * Private implementation class for TrajectoryAnalysisModuleData.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class TrajectoryAnalysisModuleData::Impl
+{
+    public:
+        //! Container that associates a data handle to its AnalysisData object.
+        typedef std::map<const AnalysisData *, AnalysisDataHandle>
+                HandleContainer;
+
+        //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
+        Impl(TrajectoryAnalysisModule *module,
+             const AnalysisDataParallelOptions &opt,
+             const SelectionCollection &selections);
+
+        //! Keeps a data handle for each AnalysisData object.
+        HandleContainer         _handles;
+        //! Stores thread-local selections.
+        const SelectionCollection &_selections;
+};
 
 TrajectoryAnalysisModuleData::Impl::Impl(
         TrajectoryAnalysisModule *module,
@@ -65,10 +115,6 @@ TrajectoryAnalysisModuleData::Impl::Impl(
     {
         _handles.insert(std::make_pair(i->second, i->second->startData(opt)));
     }
-}
-
-TrajectoryAnalysisModuleData::Impl::~Impl()
-{
 }
 
 
@@ -137,6 +183,35 @@ TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections
 /********************************************************************
  * TrajectoryAnalysisModuleDataBasic
  */
+
+namespace
+{
+
+/*! \internal \brief
+ * Basic thread-local trajectory analysis data storage class.
+ *
+ * Most simple tools should only require data handles and selections to be
+ * thread-local, so this class implements just that.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
+{
+    public:
+        /*! \brief
+         * Initializes thread-local storage for data handles and selections.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         */
+        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *module,
+                                          const AnalysisDataParallelOptions &opt,
+                                          const SelectionCollection &selections);
+
+        virtual void finish();
+};
+
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
         TrajectoryAnalysisModule *module,
         const AnalysisDataParallelOptions &opt,
@@ -151,6 +226,8 @@ TrajectoryAnalysisModuleDataBasic::finish()
 {
     finishDataHandles();
 }
+
+} // namespace
 
 
 /********************************************************************

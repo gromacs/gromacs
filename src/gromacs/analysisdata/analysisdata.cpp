@@ -42,25 +42,68 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-
-#include "analysisdata-impl.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
 
 /********************************************************************
+ * AnalysisDataHandleImpl
+ */
+
+namespace internal
+{
+
+/*! \internal \brief
+ * Private implementation class for AnalysisDataHandle.
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataHandleImpl
+{
+    public:
+        //! Creates a handle associated with the given data object.
+        explicit AnalysisDataHandleImpl(AnalysisData *data)
+            : data_(*data), currentFrame_(NULL)
+        {
+        }
+
+        //! The data object that this handle belongs to.
+        AnalysisData             &data_;
+        //! Current storage frame object, or NULL if no current frame.
+        AnalysisDataStorageFrame *currentFrame_;
+};
+
+} // namespace internal
+
+/********************************************************************
  * AnalysisData::Impl
  */
 
-AnalysisData::Impl::Impl()
+/*! \internal \brief
+ * Private implementation class for AnalysisData.
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisData::Impl
 {
-}
+    public:
+        //! Smart pointer type to manage a data handle implementation.
+        typedef gmx_unique_ptr<internal::AnalysisDataHandleImpl>::type
+                HandlePointer;
+        //! Shorthand for a list of data handles.
+        typedef std::vector<HandlePointer> HandleList;
 
-
-AnalysisData::Impl::~Impl()
-{
-}
-
+        //! Storage implementation.
+        AnalysisDataStorage     storage_;
+        /*! \brief
+         * List of handles for this data object.
+         *
+         * Note that AnalysisDataHandle objects also contain (raw) pointers
+         * to these objects.
+         */
+        HandleList              handles_;
+};
 
 /********************************************************************
  * AnalysisData
@@ -154,16 +197,6 @@ bool
 AnalysisData::requestStorageInternal(int nframes)
 {
     return impl_->storage_.requestStorage(nframes);
-}
-
-
-/********************************************************************
- * AnalysisDataHandleImpl
- */
-
-internal::AnalysisDataHandleImpl::AnalysisDataHandleImpl(AnalysisData *data)
-    : data_(*data), currentFrame_(NULL)
-{
 }
 
 
