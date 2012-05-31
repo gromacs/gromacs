@@ -96,8 +96,11 @@ extern "C"
    too */
 #if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
 
+
+
+
 /* now check specifically for several architectures: */
-#if (defined(i386) || defined(__x86_64__)) 
+#if ((defined(i386) || defined(__x86_64__)) && ! defined(__OPEN64__))
 /* first x86: */
 #include "atomic/gcc_x86.h"
 /*#include "atomic/gcc.h"*/

@@ -35,67 +35,17 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef __cplusplus
 
-#ifndef _TMPI_WAIT_H_
-#define _TMPI_WAIT_H_
+#include <cerrno>
+#include <cstring>
+#include <cstdlib>
+#include "thread_mpi/system_error.h"
 
-#ifndef TMPI_WAIT_FOR_NO_ONE
-
-#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SCHED_H
-#include <sched.h>
-#endif
-
-/* for now we just do sched_yield(). It's in POSIX. */
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data)
-
-/* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  sched_yield()
-
-#else
-/* and in Windows, we do SwitchToThread() alternated with Sleep(0). This
-   is apparently recommende practice (SwitchToThread() alone just gives
-   up the slice for threads on the current core, and Sleep(0) alone could
-   lead to starvation. This mixed approach actually gives better real-world 
-   performance in the test program.*/
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA  int yield_wait_counter;
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data) { (data)->yield_wait_counter=0; }
-
-/* the waiting macro is so complicated because using SwitchToThread only schedules */
-#define TMPI_YIELD_WAIT(data)  { \
-    if ( ((data)->yield_wait_counter++)%100 == 0 ) \
-    {\
-        SwitchToThread();\
-    }\
-    else\
-    {\
-        Sleep(0);\
-    }\
+const char *tMPI::system_error::what() const
+{
+    return std::strerror(ec_);
 }
 
-#endif
-
-
-#else /* !TMPI_WAIT_FOR_NO_ONE */
-
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA 
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data) 
-
-/* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  tMPI_Atomic_memory_barrier()
-
-
-#endif /* !TMPI_WAIT_FOR_NO_ONE */
-
-#endif
+#endif /* __cplusplus */
 

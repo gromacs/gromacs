@@ -35,67 +35,46 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+/** \file 
+  * \brief A C++11 compatible system_error class for reporting exceptions
+  *
+  * This header contains class definitions for system_error.
+  */
 
-#ifndef _TMPI_WAIT_H_
-#define _TMPI_WAIT_H_
+#ifndef _TMPI_THREAD_
+#define _TMPI_THREAD_
 
-#ifndef TMPI_WAIT_FOR_NO_ONE
+#include <string>
 
-#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SCHED_H
-#include <sched.h>
-#endif
+#ifdef __cplusplus
 
-/* for now we just do sched_yield(). It's in POSIX. */
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data)
 
-/* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  sched_yield()
+namespace tMPI
+{
+    /*! \brief Subset of the C++11 system_error class 
 
-#else
-/* and in Windows, we do SwitchToThread() alternated with Sleep(0). This
-   is apparently recommende practice (SwitchToThread() alone just gives
-   up the slice for threads on the current core, and Sleep(0) alone could
-   lead to starvation. This mixed approach actually gives better real-world 
-   performance in the test program.*/
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA  int yield_wait_counter;
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data) { (data)->yield_wait_counter=0; }
+      Only contains the errno-based constructor. */
+    class system_error
+    {
+        typedef int error_code;
+    public:
+        //system_error(error_code ec, const std::string& what_arg);
+        //system_error(error_code ec, const char* what_arg);
+        /*! \brief Constuctor that takes an system error number */
+        system_error(error_code ec) : ec_(ec) { }
 
-/* the waiting macro is so complicated because using SwitchToThread only schedules */
-#define TMPI_YIELD_WAIT(data)  { \
-    if ( ((data)->yield_wait_counter++)%100 == 0 ) \
-    {\
-        SwitchToThread();\
-    }\
-    else\
-    {\
-        Sleep(0);\
-    }\
+        /*! \brief Returns the error code */
+        const error_code& code() const 
+        {
+            return ec_;
+        }
+        /*! \brief Returns the error string associated with the error code. */
+        const char *what() const;
+    private:
+        error_code ec_;
+    };
 }
 
-#endif
+#endif /* __cplusplus */
 
-
-#else /* !TMPI_WAIT_FOR_NO_ONE */
-
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA 
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data) 
-
-/* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  tMPI_Atomic_memory_barrier()
-
-
-#endif /* !TMPI_WAIT_FOR_NO_ONE */
-
-#endif
-
+#endif  /* _TMPI_THREAD_ */

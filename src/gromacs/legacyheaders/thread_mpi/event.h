@@ -66,7 +66,7 @@ struct tMPI_Event_t
 {
     tMPI_Atomic_t sync; /* the event sync counter */
     int last_sync; /* the last sync event looked at */
-    TMPI_YIELD_WAIT_DATA;   /* data associated with yielding */
+    TMPI_YIELD_WAIT_DATA   /* data associated with yielding */
 };
 
 

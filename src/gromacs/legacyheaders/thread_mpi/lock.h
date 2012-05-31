@@ -59,7 +59,7 @@ typedef struct tMPI_Lock tMPI_Lock_t;
 struct tMPI_Lock
 {
     tMPI_Spinlock_t   lock;      /*!< The underlying spin lock */
-    TMPI_YIELD_WAIT_DATA;
+    TMPI_YIELD_WAIT_DATA
 };
 
 
