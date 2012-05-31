@@ -2772,24 +2772,23 @@ void forcerec_set_excl_load(t_forcerec *fr,
                             const gmx_localtop_t *top,const t_commrec *cr)
 {
     const int *ind,*a;
-    int start,end;
     int t,i,j,ntot,n,ntarget;
+
+    if (cr != NULL && PARTDECOMP(cr))
+    {
+        /* No OpenMP with particle decomposition */
+        pd_at_range(cr,
+                    &fr->excl_load[0],
+                    &fr->excl_load[1]);
+
+        return;
+    }
 
     ind = top->excls.index;
     a   = top->excls.a;
 
-    if (cr != NULL && PARTDECOMP(cr))
-    {
-        pd_at_range(cr,&start,&end);
-    }
-    else
-    {
-        start = 0;
-        end   = top->excls.nr;
-    }
-
     ntot = 0;
-    for(i=start; i<end; i++)
+    for(i=0; i<top->excls.nr; i++)
     {
         for(j=ind[i]; j<ind[i+1]; j++)
         {
@@ -2802,11 +2801,11 @@ void forcerec_set_excl_load(t_forcerec *fr,
 
     fr->excl_load[0] = 0;
     n = 0;
-    i = start;
+    i = 0;
     for(t=1; t<=fr->nthreads; t++)
     {
         ntarget = (ntot*t)/fr->nthreads;
-        while(i < end && n < ntarget)
+        while(i < top->excls.nr && n < ntarget)
         {
             for(j=ind[i]; j<ind[i+1]; j++)
             {
