@@ -47,7 +47,7 @@
     out1 = _mm_shuffle_pd(in0,in1,_MM_SHUFFLE2(1,1));                   \
 }
 
-#if defined GMX_SSE_HERE || !defined GMX_DOUBLE
+#if defined GMX_MM128_HERE || !defined GMX_DOUBLE
 #define GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(in0,in1,in2,in3,out0,out1)    \
 {                                                                       \
     __m128 _c01,_c23;                                                   \
@@ -75,7 +75,7 @@
     out  = _mm_shuffle_ps(_c01,_c23,_MM_SHUFFLE(2,0,2,0));              \
 }
 
-#ifndef GMX_AVX_HERE
+#ifndef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
 #define GMX_MM_TRANSPOSE_SUM4_PR(i_SSE0,i_SSE1,i_SSE2,i_SSE3,o_SSE)     \
 {                                                                       \
@@ -110,7 +110,7 @@
 #endif
 #endif
 
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
 
 static inline __m128
 gmx_mm128_invsqrt_ps_single(__m128 x)
@@ -147,7 +147,7 @@ gmx_mm128_invsqrt_ps_single(__m128 x)
 
 #endif
 
-#ifdef GMX_AVX_HERE
+#ifdef GMX_MM256_HERE
 
 static inline __m256
 gmx_mm256_invsqrt_ps_single(__m256 x)
@@ -181,7 +181,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 /* Force and energy table load and interpolation routines */
 
-#if defined GMX_SSE_HERE && !defined GMX_DOUBLE
+#if defined GMX_MM128_HERE && !defined GMX_DOUBLE
 
 #define load_lj_pair_params(nbfp,type,aj,c6_SSE,c12_SSE)                \
 {                                                                       \
@@ -197,7 +197,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if defined GMX_AVX_HERE && !defined GMX_DOUBLE
+#if defined GMX_MM256_HERE && !defined GMX_DOUBLE
 
 /* Put two 128-bit 4-float registers into one 256-bit 8-float register */
 #define GMX_2_MM_TO_M256(in0,in1,out)                                   \
@@ -223,7 +223,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if defined GMX_SSE_HERE && defined GMX_DOUBLE
+#if defined GMX_MM128_HERE && defined GMX_DOUBLE
 
 #define load_lj_pair_params(nbfp,type,aj,c6_SSE,c12_SSE)                \
 {                                                                       \
@@ -239,7 +239,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if defined GMX_AVX_HERE && defined GMX_DOUBLE
+#if defined GMX_MM256_HERE && defined GMX_DOUBLE
 
 #define load_lj_pair_params(nbfp,type,aj,c6_SSE,c12_SSE)                \
 {                                                                       \
@@ -271,7 +271,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
  * but it is only used with AVX.
  */
 
-#if defined GMX_SSE_HERE && !defined GMX_DOUBLE
+#if defined GMX_MM128_HERE && !defined GMX_DOUBLE
 
 #define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
 {                                                                       \
@@ -319,7 +319,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if defined GMX_AVX_HERE && !defined GMX_DOUBLE
+#if defined GMX_MM256_HERE && !defined GMX_DOUBLE
 
 #define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
 {                                                                       \
@@ -364,7 +364,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if defined GMX_SSE_HERE && defined GMX_DOUBLE
+#if defined GMX_MM128_HERE && defined GMX_DOUBLE
 
 #define load_table_f(tab_coul_F, ti_SSE, ti, ctab0_SSE, ctab1_SSE)      \
 {                                                                       \
@@ -408,7 +408,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if defined GMX_AVX_HERE && defined GMX_DOUBLE
+#if defined GMX_MM256_HERE && defined GMX_DOUBLE
 
 /* Put two 128-bit 2-double registers into one 256-bit 4-ouble register */
 #define GMX_2_M128D_TO_M256D(in0,in1,out)                               \

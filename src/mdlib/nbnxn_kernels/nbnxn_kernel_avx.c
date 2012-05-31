@@ -48,9 +48,9 @@
 
 #include "nbnxn_kernel_avx.h"
 
-/* Include all flavors of the AVX kernel loops */
+/* Include all flavors of the 256-bit AVX kernel loops */
 
-#define GMX_AVX_HERE
+#define GMX_MM256_HERE
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF

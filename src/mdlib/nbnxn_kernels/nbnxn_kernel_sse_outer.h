@@ -43,7 +43,7 @@
 
 #include "typedefs.h"
 
-/* GMX_SSE_HERE or GMX_AVX_HERE should be set before including this file */
+/* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file */
 #include "gmx_sse_or_avx.h"
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
@@ -51,13 +51,13 @@
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    SSE_OR_AVX_WIDTH
 
-#if defined GMX_AVX_HERE && !defined GMX_DOUBLE
+#if defined GMX_MM256_HERE && !defined GMX_DOUBLE
 #define STRIDE     8
 #else
 #define STRIDE     4
 #endif 
 
-#ifndef GMX_AVX_HERE
+#ifndef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
 /* SSE single precision 4x4 kernel */
 #define SUM_SIMD(x) SUM_SIMD4(x)
@@ -114,7 +114,7 @@
 #define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab,e)
 #endif
 
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
 #define NBK_FUNC_NAME_SSE_OR_AVX(b,e) NBK_FUNC_NAME(b,sse,e)
 #else
 #define NBK_FUNC_NAME_SSE_OR_AVX(b,e) NBK_FUNC_NAME(b,avx,e)
@@ -197,7 +197,7 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
     __m128d    fix2_SSE,fiy2_SSE,fiz2_SSE;
 #endif
 
-#ifndef GMX_AVX_HERE
+#ifndef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
     __m128i    mask0 = _mm_set_epi32( 0x0008, 0x0004, 0x0002, 0x0001 );
     __m128i    mask1 = _mm_set_epi32( 0x0080, 0x0040, 0x0020, 0x0010 );
@@ -223,7 +223,7 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
 #endif
 #endif
 
-#ifndef GMX_AVX_HERE
+#ifndef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
     __m128     diag_SSE0 = gmx_mm_castsi128_pr( _mm_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
     __m128     diag_SSE1 = gmx_mm_castsi128_pr( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
@@ -239,7 +239,7 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
     __m128d    diag1_SSE2 = gmx_mm_castsi128_pd( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
     __m128d    diag1_SSE3 = gmx_mm_castsi128_pd( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
 #endif
-#else /* GMX_AVX_HERE */
+#else /* GMX_MM256_HERE */
 #ifndef GMX_DOUBLE
     gmx_mm_pr  diag0_SSE0 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
     gmx_mm_pr  diag0_SSE1 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
@@ -257,10 +257,10 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
 #endif
 #endif
 
-#ifndef GMX_AVX_HERE
+#ifndef GMX_MM256_HERE
     __m128i    zeroi_SSE = _mm_setzero_si128();
 #endif
-#if defined GMX_SSE4_1 || defined GMX_AVX_HERE
+#if defined GMX_SSE4_1 || defined GMX_MM256_HERE
     gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
 #endif
 
@@ -280,7 +280,7 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-#ifdef GMX_AVX_HERE
+#ifdef GMX_MM256_HERE
     int        ti0_array[2*UNROLLJ-1],*ti0;
     int        ti1_array[2*UNROLLJ-1],*ti1;
     int        ti2_array[2*UNROLLJ-1],*ti2;
@@ -355,7 +355,7 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
 #endif
 
 #ifndef CALC_COUL_RF
-#ifdef GMX_AVX_HERE
+#ifdef GMX_MM256_HERE
     ti0 = (int *)(((size_t)(ti0_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
     ti1 = (int *)(((size_t)(ti1_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
     ti2 = (int *)(((size_t)(ti2_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));

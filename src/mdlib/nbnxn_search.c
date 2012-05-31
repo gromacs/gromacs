@@ -168,7 +168,7 @@
 #define NBNXN_NA_SC_MAX (NSUBCELL*8)
 
 #ifdef NBNXN_SEARCH_SSE
-#define GMX_SSE_HERE
+#define GMX_MM128_HERE
 #include "gmx_sse_or_avx.h"
 typedef struct nbnxn_x_ci_sse {
     /* The i-cluster coordinates for simple search */
@@ -177,9 +177,9 @@ typedef struct nbnxn_x_ci_sse {
     gmx_mm_pr ix_SSE2,iy_SSE2,iz_SSE2;
     gmx_mm_pr ix_SSE3,iy_SSE3,iz_SSE3;
 } nbnxn_x_ci_sse_t;
-#undef GMX_SSE_HERE
+#undef GMX_MM128_HERE
 #ifdef GMX_AVX
-#define GMX_AVX_HERE
+#define GMX_MM256_HERE
 #include "gmx_sse_or_avx.h"
 typedef struct nbnxn_x_ci_avx {
     /* The i-cluster coordinates for simple search */
@@ -188,7 +188,7 @@ typedef struct nbnxn_x_ci_avx {
     gmx_mm_pr ix_SSE2,iy_SSE2,iz_SSE2;
     gmx_mm_pr ix_SSE3,iy_SSE3,iz_SSE3;
 } nbnxn_x_ci_avx_t;
-#undef GMX_AVX_HERE
+#undef GMX_MM256_HERE
 #endif
 #endif
 
@@ -3290,20 +3290,20 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 
 #ifdef NBNXN_SEARCH_SSE
 /* Include make_cluster_list_simple_sse and icell_set_x_simple_sse */
-#define GMX_SSE_HERE
+#define GMX_MM128_HERE
 #include "gmx_sse_or_avx.h"
 #define STRIDE_S  STRIDE4
 #include "nbnxn_search_sse.h"
 #undef STRIDE_S
-#undef GMX_SSE_HERE
+#undef GMX_MM128_HERE
 #ifdef GMX_AVX
 /* Include make_cluster_list_simple_avx and icell_set_x_simple_avx */
-#define GMX_AVX_HERE
+#define GMX_MM256_HERE
 #include "gmx_sse_or_avx.h"
 #define STRIDE_S  SSE_OR_AVX_WIDTH
 #include "nbnxn_search_sse.h"
 #undef STRIDE_S
-#undef GMX_AVX_HERE
+#undef GMX_MM256_HERE
 #endif
 #endif
 

@@ -45,7 +45,7 @@
 #define EXCL_FORCES
 #endif
 
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && (defined GMX_SSE4_1 || defined GMX_AVX_HERE) && !defined COUNT_PAIRS
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && (defined GMX_SSE4_1 || defined GMX_MM256_HERE) && !defined COUNT_PAIRS
 /* Without exclusions and energies we only need to mask the cut-off,
  * this is faster with blendv (only available with SSE4.1).
  */
@@ -121,7 +121,7 @@
             gmx_mm_pr  r_SSE2,rs_SSE2,rf_SSE2,frac_SSE2;
             gmx_mm_pr  r_SSE3,rs_SSE3,rf_SSE3,frac_SSE3;
             /* Table index: rs converted to an int */ 
-#if !(defined GMX_AVX_HERE && defined GMX_DOUBLE)
+#if !(defined GMX_MM256_HERE && defined GMX_DOUBLE)
             gmx_epi32  ti_SSE0,ti_SSE1,ti_SSE2,ti_SSE3;
 #else
             __m128i    ti_SSE0,ti_SSE1,ti_SSE2,ti_SSE3;
@@ -252,7 +252,7 @@
             ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-#ifndef GMX_AVX_HERE
+#ifndef GMX_MM256_HERE
             {
                 /* Load integer interaction mask */
                 __m128i mask_int = _mm_set1_epi32(l_cj[cjind].excl);
@@ -517,7 +517,7 @@
             ti_SSE1       = gmx_cvttpr_epi32(rs_SSE1);
             ti_SSE2       = gmx_cvttpr_epi32(rs_SSE2);
             ti_SSE3       = gmx_cvttpr_epi32(rs_SSE3);
-#if defined GMX_SSE4_1 || defined GMX_AVX_HERE
+#if defined GMX_SSE4_1 || defined GMX_MM256_HERE
             /* SSE4.1 floor is faster than gmx_cvtepi32_ps int->float cast */
             rf_SSE0       = gmx_floor_pr(rs_SSE0);
             rf_SSE1       = gmx_floor_pr(rs_SSE1);

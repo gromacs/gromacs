@@ -33,18 +33,18 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-/* GMX_SSE_HERE or GMX_AVX_HERE should be set before including this file.
+/* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file.
  * gmx_sse_or_avh.h should be included before including this file.
  */
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
 static void icell_set_x_simple_sse
 #else
-#ifdef GMX_AVX_HERE
+#ifdef GMX_MM256_HERE
 static void icell_set_x_simple_avx
 #else
-"error: GMX_SSE_HERE or GMX_AVX_HERE not defined"
+"error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
 #endif
 #endif
                                    (int ci,
@@ -54,7 +54,7 @@ static void icell_set_x_simple_avx
                                     nbnxn_list_work_t *work)
 {
     int  ia;
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
     nbnxn_x_ci_sse_t *x_ci;
 
     x_ci = work->x_ci_sse;
@@ -87,13 +87,13 @@ static void icell_set_x_simple_avx
  * Checks bouding box distances and possibly atom pair distances.
  * This is an accelerated version of make_cluster_list_simple.
  */
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
 static void make_cluster_list_simple_sse
 #else
-#ifdef GMX_AVX_HERE
+#ifdef GMX_MM256_HERE
 static void make_cluster_list_simple_avx
 #else
-"error: GMX_SSE_HERE or GMX_AVX_HERE not defined"
+"error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
 #endif
 #endif
                                         (const nbnxn_grid_t *gridj,
@@ -104,7 +104,7 @@ static void make_cluster_list_simple_avx
                                          real rl2,float rbb2,
                                          int *ndistc)
 {
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
     const nbnxn_x_ci_sse_t *work;
 #else
     const nbnxn_x_ci_avx_t *work;
@@ -136,7 +136,7 @@ static void make_cluster_list_simple_avx
     float      d2;
     int        xind_f,xind_l,cj;
 
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
     cjf = CI_TO_CJ_SSE(cjf);
     cjl = CI_TO_CJ_SSE(cjl+1) - 1;
 
@@ -169,7 +169,7 @@ static void make_cluster_list_simple_avx
         }
         else if (d2 < rl2)
         {
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
             xind_f  = X_IND_CJ_SSE(CI_TO_CJ_SSE(gridj->cell0) + cjf);
 #else
             xind_f  = X_IND_CJ_AVX(CI_TO_CJ_AVX(gridj->cell0) + cjf);
@@ -239,7 +239,7 @@ static void make_cluster_list_simple_avx
         }
         else if (d2 < rl2)
         {
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
             xind_l  = X_IND_CJ_SSE(CI_TO_CJ_SSE(gridj->cell0) + cjl);
 #else
             xind_l  = X_IND_CJ_AVX(CI_TO_CJ_AVX(gridj->cell0) + cjl);
@@ -292,7 +292,7 @@ static void make_cluster_list_simple_avx
         for(cj=cjf; cj<=cjl; cj++)
         {
             /* Store cj and the interaction mask */
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SSE(gridj->cell0) + cj;
             nbl->cj[nbl->ncj].excl = get_imask_sse(remove_sub_diag,ci,cj);
 #else

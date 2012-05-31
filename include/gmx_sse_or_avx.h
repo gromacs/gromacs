@@ -68,21 +68,24 @@
 #undef gmx_sum4_pr
 
 
-/* By defining GMX_SSE_HERE or GMX_AVX_HERE before including this file
- * the same intrinsics, with defines, can be compiled for either SSE or AVX.
+/* By defining GMX_MM128_HERE or GMX_MM256_HERE before including this file
+ * the same intrinsics, with defines, can be compiled for either 128 or 256
+ * bit wide SSE or AVX instructions.
  * The gmx_ prefix is replaced by _mm_ or _mm256_ (SSE or AVX).
  * The _pr suffix is replaced by _ps or _pd (single or double precision).
+ * Note that compiler settings will decide if 128-bit intrinsics will
+ * be translated into SSE or AVX instructions.
  */
 
-#if !defined GMX_SSE_HERE && !defined GMX_AVX_HERE
-"You should define GMX_SSE_HERE or GMX_AVX_HERE"
+#if !defined GMX_MM128_HERE && !defined GMX_MM256_HERE
+"You should define GMX_MM128_HERE or GMX_MM256_HERE"
 #endif
 
-#if defined GMX_SSE_HERE && defined GMX_AVX_HERE
-"You should not define both GMX_SSE_HERE and GMX_AVX_HERE"
+#if defined GMX_MM128_HERE && defined GMX_MM256_HERE
+"You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
 #endif
 
-#ifdef GMX_SSE_HERE
+#ifdef GMX_MM128_HERE
 
 #define gmx_epi32  __m128i
 
@@ -162,9 +165,9 @@
 
 #endif /* ifndef GMX_DOUBLE */
 
-#endif /* GMX_SSE_HERE */
+#endif /* GMX_MM128_HERE */
 
-#ifdef GMX_AVX_HERE
+#ifdef GMX_MM256_HERE
 
 #define gmx_epi32 __m256i
 
@@ -248,4 +251,4 @@
 
 #endif
 
-#endif /* GMX_AVX_HERE */
+#endif /* GMX_MM256_HERE */

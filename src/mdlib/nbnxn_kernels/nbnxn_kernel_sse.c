@@ -48,9 +48,9 @@
 
 #include "nbnxn_kernel_sse.h"
 
-/* Include all flavors of the SSE kernel loops */
+/* Include all flavors of the 128-bit SSE or AVX kernel loops */
 
-#define GMX_SSE_HERE
+#define GMX_MM128_HERE
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
