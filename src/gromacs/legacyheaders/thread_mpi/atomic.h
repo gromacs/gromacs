@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_ATOMIC_H_
-#define _TMPI_ATOMIC_H_
+#ifndef TMPI_ATOMIC_H_
+#define TMPI_ATOMIC_H_
 
 /*! \file atomic.h
  *
@@ -96,8 +96,11 @@ extern "C"
    too */
 #if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
 
+
+
+
 /* now check specifically for several architectures: */
-#if (defined(i386) || defined(__x86_64__)) 
+#if ((defined(i386) || defined(__x86_64__)) && ! defined(__OPEN64__))
 /* first x86: */
 #include "atomic/gcc_x86.h"
 /*#include "atomic/gcc.h"*/
@@ -690,4 +693,4 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 #endif
 
 
-#endif /* _TMPI_ATOMIC_H_ */
+#endif /* TMPI_ATOMIC_H_ */

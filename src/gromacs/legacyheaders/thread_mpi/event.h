@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_EVENT_H_
-#define _TMPI_EVENT_H_
+#ifndef TMPI_EVENT_H_
+#define TMPI_EVENT_H_
 
 #include "wait.h"
 
@@ -66,7 +66,7 @@ struct tMPI_Event_t
 {
     tMPI_Atomic_t sync; /* the event sync counter */
     int last_sync; /* the last sync event looked at */
-    TMPI_YIELD_WAIT_DATA;   /* data associated with yielding */
+    TMPI_YIELD_WAIT_DATA   /* data associated with yielding */
 };
 
 
@@ -119,5 +119,5 @@ void tMPI_Event_process(tMPI_Event *ev, int N);
 }
 #endif
 
-#endif
+#endif /* TMPI_EVENT_H_ */
 
