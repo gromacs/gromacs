@@ -447,8 +447,6 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     
     if (top)
       gpbc = gmx_rmpbc_init(&top->idef,ePBC,nat,box);
-    if (top)
-    gmx_rmpbc_done(gpbc);
 
     for(i=0; i<nat; i++)
       all_at[i]=i;
