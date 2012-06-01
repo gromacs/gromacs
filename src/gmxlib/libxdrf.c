@@ -1683,7 +1683,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
 
      
 
-int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
+int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms,gmx_bool bSeekForwardOnly)
 {
     float t;
     float dt;
@@ -1693,6 +1693,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     int res;
     int dt_sign = 0;
 
+    if (bSeekForwardOnly)
+    {
+        low = gmx_ftell(fp);
+    }
     if (gmx_fseek(fp,0,SEEK_END))
     {
         return -1;
@@ -1705,7 +1709,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     /* round to int  */
     high /= XDR_INT_SIZE;
     high *= XDR_INT_SIZE;
-    offset = ((high / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
+    offset = (((high-low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp,offset,SEEK_SET))
     {

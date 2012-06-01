@@ -712,8 +712,9 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
        * accuracy of the control over -b and -e options.
        */
         if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
-            if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms)) {
-                gmx_fatal(FARGS,"Specified frame doesn't exist or file not seekable");
+          if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms,TRUE)) {
+            gmx_fatal(FARGS,"Specified frame (time %f) doesn't exist or file corrupt/inconsistent.",
+                      rTimeValue(TBEGIN));
             }
             initcount(status);
         }
