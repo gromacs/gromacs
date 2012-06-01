@@ -632,7 +632,7 @@ int gmx_editconf(int argc, char *argv[])
                         "-rvdw", FALSE, etREAL,
                          { &rvdw },
                         "Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file" },
-                    { "-sig56", FALSE, etREAL,
+                    { "-sig56", FALSE, etBOOL,
                         { &bSig56 },
                         "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
                     {

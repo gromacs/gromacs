@@ -39,7 +39,8 @@
 #include <mpi.h>
 #else
 #ifdef GMX_THREAD_MPI
-#include "../tmpi.h"
+#include "../thread_mpi/tmpi.h"
+#include "../thread_mpi/mpi_bindings.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
