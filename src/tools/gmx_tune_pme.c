@@ -2006,7 +2006,7 @@ int gmx_tune_pme(int argc,char *argv[])
 
     seconds = gettime();
 
-    parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,
+    parse_common_args(&argc,argv,0,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,
                       0,NULL,&oenv);
 

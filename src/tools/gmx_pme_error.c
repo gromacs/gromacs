@@ -1086,8 +1086,7 @@ int gmx_pme_error(int argc,char *argv[])
     if (MASTER(cr))
       CopyRight(stderr,argv[0]);
     
-    PCA_Flags = PCA_NOEXIT_ON_ARGS;
-    PCA_Flags |= (MASTER(cr) ? 0 : PCA_QUIET);
+    PCA_Flags = (MASTER(cr) ? 0 : PCA_QUIET);
     
     parse_common_args(&argc,argv,PCA_Flags,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,
