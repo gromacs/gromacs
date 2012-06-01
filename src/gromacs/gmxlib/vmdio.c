@@ -231,7 +231,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     return 1;
 }
 
-int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
+static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 {
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
     const char *pathenv;
