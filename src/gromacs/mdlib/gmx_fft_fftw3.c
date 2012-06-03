@@ -35,6 +35,9 @@
 #define FFTWPREFIX(name) fftwf_ ## name
 #endif
 
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi/threads.h"
+#endif
 
 
 #ifdef GMX_THREAD_MPI

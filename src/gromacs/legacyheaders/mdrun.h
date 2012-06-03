@@ -51,6 +51,11 @@
 #include "pull.h"
 #include "update.h"
 
+
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi/threads.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
