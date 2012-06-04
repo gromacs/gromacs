@@ -36,7 +36,8 @@
 #ifndef _oenv_h
 #define _oenv_h
 
-#include "typedefs.h"
+#include "types/simple.h"
+#include "types/oenv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,7 +111,6 @@ void output_env_conv_times(const output_env_t oenv, int n, real *time);
 gmx_bool output_env_get_view(const output_env_t oenv);
 /* Return TRUE when user requested viewing of the file */
 
-
 xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
 /* Returns enum (see above) for xvg output formatting */
 
@@ -122,8 +122,6 @@ const char *output_env_get_cmd_line(const output_env_t oenv);
 
 const char *output_env_get_short_program_name(const output_env_t oenv);
 /* get the short version (without path component) of the program name */
-
-
 
 #ifdef __cplusplus
 }
