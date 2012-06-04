@@ -41,6 +41,7 @@
 
 #include <set>
 #include <string>
+#include <algorithm>
 
 #include <gtest/gtest.h>
 
@@ -97,7 +98,6 @@ class TestTemporaryFileManager::Impl
         //! List of unique paths returned by getTemporaryFilePath().
         FileNameList            files_;
 };
-
 void TestTemporaryFileManager::Impl::removeFiles()
 {
     FileNameList::const_iterator i;
@@ -124,9 +124,16 @@ TestTemporaryFileManager::~TestTemporaryFileManager()
 
 std::string TestTemporaryFileManager::getTemporaryFilePath(const char *suffix)
 {
+    // TODO: Add the path of the test binary
+    std::string filename = getTestSpecificFileName(suffix);
+    impl_->files_.insert(filename);
+    return filename;
+}
+
+std::string TestTemporaryFileManager::getTestSpecificFileName(const char *suffix)
+{
     const ::testing::TestInfo *test_info =
         ::testing::UnitTest::GetInstance()->current_test_info();
-    // TODO: Add the path of the test binary
     std::string filename = std::string(test_info->test_case_name())
         + "_" + test_info->name();
     if (suffix[0] != '.')
@@ -134,7 +141,7 @@ std::string TestTemporaryFileManager::getTemporaryFilePath(const char *suffix)
         filename.append("_");
     }
     filename.append(suffix);
-    impl_->files_.insert(filename);
+    std::replace( filename.begin(), filename.end(), '/', '_' );
     return filename;
 }
 

@@ -121,7 +121,7 @@ class TestReferenceChecker::Impl
         Impl(const std::string &path, xmlNodePtr rootNode, bool bWrite);
 
         //! Returns a string for SCOPED_TRACE() for checking element \p id.
-        std::string traceString(const char *id) const;
+        std::string traceString(const char *id);
         //! Returns the path of this checker with \p id appended.
         std::string appendPath(const char *id) const;
 
@@ -228,6 +228,12 @@ class TestReferenceChecker::Impl
          * (false).
          */
         bool                    _bWrite;
+        /*! \brief
+         * Current number of unnamed elements in a sequence
+         *
+         * It is the index of the next added unnamed element
+         */
+        int                     _seqIndex;
 };
 
 } // namespace test
