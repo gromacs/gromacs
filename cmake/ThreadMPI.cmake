@@ -23,49 +23,56 @@ ENDMACRO(TEST_TMPI_ATOMICS VARIABLE)
 
 MACRO(TMPI_MAKE_CXX_LIB)
     set(TMPI_CXX_LIB 1)
-    # the C++ library
-    set(THREAD_MPI_CXX_SRC
-        thread_mpi/system_error.cpp )
 ENDMACRO(TMPI_MAKE_CXX_LIB)
+
+MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
+    foreach (_option IN ITEMS ${ARGN})
+        if (_option STREQUAL "CXX")
+            set(TMPI_CXX_LIB 1)
+        elseif (_option STREQUAL "NOMPI")
+            set(TMPI_NO_MPI_LIB 1)
+        else ()
+            message(FATAL_ERROR "Unknown thread_mpi option '${_option}'")
+        endif ()
+    endforeach ()
+    set(${SRC_VARIABLE}
+        thread_mpi/errhandler.c
+        thread_mpi/tmpi_malloc.c)
+    if (THREAD_PTHREADS)
+        list(APPEND ${SRC_VARIABLE} thread_mpi/pthreads.c)
+    elseif (THREAD_WINDOWS)
+        list(APPEND ${SRC_VARIABLE} thread_mpi/winthreads.c)
+    endif (THREAD_PTHREADS)
+    if (TMPI_CXX_LIB)
+        list(APPEND ${SRC_VARIABLE} thread_mpi/system_error.cpp)
+    endif (TMPI_CXX_LIB)
+    if (NOT TMPI_NO_MPI_LIB)
+        list(APPEND ${SRC_VARIABLE}
+             thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
+             thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
+             thread_mpi/bcast.c         thread_mpi/p2p_wait.c
+             thread_mpi/collective.c    thread_mpi/profile.c
+             thread_mpi/comm.c          thread_mpi/reduce.c
+             thread_mpi/event.c         thread_mpi/reduce_fast.c
+             thread_mpi/gather.c        thread_mpi/scatter.c
+             thread_mpi/group.c         thread_mpi/tmpi_init.c
+             thread_mpi/topology.c      thread_mpi/list.c
+             thread_mpi/type.c          thread_mpi/lock.c
+             thread_mpi/numa_malloc.c   thread_mpi/once.c )
+    endif ()
+ENDMACRO(TMPI_GET_SOURCE_LIST)
 
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
     set(THREAD_PTHREADS 1)
     #add_definitions(-DTHREAD_PTHREADS)
-    set(THREAD_MPI_SRC 
-        thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
-        thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
-        thread_mpi/bcast.c         thread_mpi/p2p_wait.c
-        thread_mpi/collective.c    thread_mpi/profile.c
-        thread_mpi/comm.c          thread_mpi/pthreads.c
-        thread_mpi/errhandler.c    thread_mpi/reduce.c
-        thread_mpi/event.c         thread_mpi/reduce_fast.c
-        thread_mpi/gather.c        thread_mpi/scatter.c
-        thread_mpi/group.c         thread_mpi/tmpi_init.c
-        thread_mpi/topology.c      thread_mpi/list.c          
-        thread_mpi/type.c          thread_mpi/lock.c
-        thread_mpi/numa_malloc.c   thread_mpi/once.c )
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else (CMAKE_USE_PTHREADS_INIT)
     if (CMAKE_USE_WIN32_THREADS_INIT)
         set(THREAD_WINDOWS 1)
         #add_definitions(-DTHREAD_WINDOWS)
-        set(THREAD_MPI_SRC 
-            thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
-            thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
-            thread_mpi/bcast.c         thread_mpi/p2p_wait.c
-            thread_mpi/collective.c    thread_mpi/profile.c
-            thread_mpi/comm.c          
-            thread_mpi/errhandler.c    thread_mpi/reduce.c
-            thread_mpi/event.c         thread_mpi/reduce_fast.c
-            thread_mpi/gather.c        thread_mpi/scatter.c
-            thread_mpi/group.c         thread_mpi/tmpi_init.c
-            thread_mpi/topology.c      thread_mpi/list.c
-            thread_mpi/type.c          thread_mpi/lock.c
-            thread_mpi/winthreads.c    thread_mpi/once.c
-            thread_mpi/numa_malloc.c)
-        set(THREAD_LIBRARY )
+        set(THREAD_LIB)
     endif (CMAKE_USE_WIN32_THREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
 

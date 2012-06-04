@@ -8,7 +8,7 @@ set(THREAD_MPI_LIB_SOURCE
     collective.c    once.c          tmpi_init.c
     comm.c          p2p_protocol.c  topology.c
     errhandler.c    p2p_send_recv.c type.c
-    event.c         p2p_wait.c      
+    event.c         p2p_wait.c      tmpi_malloc.c
     gather.c        profile.c
     group.c         numa_malloc.c   )
 
