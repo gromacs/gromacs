@@ -37,9 +37,9 @@
  */
 #include "gromacs/utility/errorcodes.h"
 
-#include <cstdarg>
-#include <cstdio>
 #include <cstdlib>
+
+#include "gromacs/legacyheaders/thread_mpi/mutex.h"
 
 #include "errorformat.h"
 
@@ -81,19 +81,18 @@ static void standardErrorHandler(int retcode, const char *msg,
                                  const char *file, int line)
 {
     const char *title = getErrorCodeString(retcode);
-    fprintf(stderr, "%s",
-            internal::formatFatalError(title, msg, NULL, file, line).c_str());
+    internal::printFatalError(stderr, title, msg, NULL, file, line);
     std::exit(1);
 }
 
 static ErrorHandlerFunc error_handler = standardErrorHandler;
+static tMPI::mutex handler_mutex;
 
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
 {
-    // TODO: Acquire a mutex here
+    tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
     ErrorHandlerFunc old_handler = error_handler;
     error_handler = handler;
-    // TODO: Release the mutex here
     return old_handler;
 }
 
@@ -103,9 +102,11 @@ namespace internal
 
 void fatalError(int retcode, const char *msg, const char *file, int line)
 {
-    // TODO: Acquire a mutex here
-    ErrorHandlerFunc handler = error_handler;
-    // TODO: Release the mutex here
+    ErrorHandlerFunc handler = NULL;
+    {
+        tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
+        handler = error_handler;
+    }
     if (handler != NULL)
     {
         handler(retcode, msg, file, line);

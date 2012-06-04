@@ -39,6 +39,9 @@
 #ifndef GMX_UTILITY_EXCEPTIONS_H
 #define GMX_UTILITY_EXCEPTIONS_H
 
+#include <cstdio>
+#include <cstdlib>
+
 #include <exception>
 #include <string>
 
@@ -283,12 +286,16 @@ if (fp == NULL)
     } while(0)
 
 /*! \brief
- * Formats a standard error message for reporting an error.
+ * Formats a standard fatal error message for reporting an exception.
+ *
+ * Does not throw.  If memory allocation fails or some other error occurs
+ * while formatting the error, tries to print a reasonable alternative message.
  *
  * Normal usage in Gromacs command-line programs is like this:
  * \code
 int main(int argc, char *argv[])
 {
+    gmx::ProgramInfo::init(argc, argv);
     try
     {
         // The actual code for the program
@@ -296,13 +303,13 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception &ex)
     {
-        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        gmx::printFatalErrorMessage(stderr, ex);
         return 1;
     }
 }
  * \endcode
  */
-std::string formatErrorMessage(const std::exception &ex);
+void printFatalErrorMessage(FILE *fp, const std::exception &ex);
 
 /*! \brief
  * Converts an exception into a return code.
@@ -310,6 +317,38 @@ std::string formatErrorMessage(const std::exception &ex);
 int translateException(const std::exception &ex);
 
 /*!\}*/
+
+/*! \cond libapi */
+/*! \libinternal \brief
+ * Macro for catching exceptions at C++ -> C boundary.
+ *
+ * This macro is intended for uniform handling of exceptions when C++ code is
+ * called from C code within Gromacs.  Since most existing code is written
+ * using the assumption that fatal errors terminate the program, this macro
+ * implements this behavior for exceptions.  It should only be used in cases
+ * where the error cannot be propagated upwards using return values or such.
+ *
+ * Having this as a macro instead of having the same code in each place makes
+ * it easy to 1) find all such locations in the code, and 2) change the exact
+ * behavior if needed.
+ *
+ * Usage:
+ * \code
+try
+{
+    // C++ code
+}
+GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+ * \endcode
+ *
+ * \inlibraryapi
+ */
+#define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR \
+    catch (const std::exception &ex) { \
+        ::gmx::printFatalErrorMessage(stderr, ex); \
+        std::exit(1); \
+    }
+//! \endcond
 
 } // namespace gmx
 

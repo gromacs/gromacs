@@ -45,13 +45,13 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <new>
 #include <string>
 
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/legacyheaders/statutil.h"
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -136,9 +136,9 @@ const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
         g_programInfo.reset(new ProgramInfo(realBinaryName, argc, argv));
         return *g_programInfo;
     }
-    catch (const std::bad_alloc &)
+    catch (const std::exception &ex)
     {
-        // TODO: Report error.
+        printFatalErrorMessage(stderr, ex);
         std::exit(1);
     }
 }
