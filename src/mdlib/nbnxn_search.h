@@ -51,7 +51,6 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
 void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
-		       int nb_kernel_type_loc,
                        int nthread_max);
 
 /* Put the atoms on the pair search grid.
@@ -72,7 +71,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        const int *atinfo,
                        rvec *x,
                        int nmoved,int *move,
-                       gmx_bool simple,
+                       int nb_kernel_type,
                        nbnxn_atomdata_t *nbat);
 
 /* As nbnxn_put_on_grid, but for the non-local atoms
@@ -83,7 +82,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
                                 const gmx_domdec_zones_t *zones,
                                 const int *atinfo,
                                 rvec *x,
-                                gmx_bool simple,
+				int nb_kernel_type,
                                 nbnxn_atomdata_t *nbat);
 
 /* Add simple grid type information to the local super/sub grid */

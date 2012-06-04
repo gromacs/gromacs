@@ -165,7 +165,7 @@
 /* This define is a lazy way to avoid interdependence of the grid
  * and searching data structures.
  */
-#define NBNXN_NA_SC_MAX (NSUBCELL*8)
+#define NBNXN_NA_SC_MAX (NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 #ifdef NBNXN_SEARCH_SSE
 #define GMX_MM128_HERE
@@ -259,6 +259,7 @@ typedef struct {
 
     gmx_bool simple;
     int  na_c;       /* Number of atoms per cluster          */
+    int  na_cj;      /* Number of atoms for list j-clusters  */
     int  na_sc;      /* Number of atoms per super-cluster    */
     int  na_c_2log;  /* 2log of na_c                         */
 
@@ -280,7 +281,6 @@ typedef struct {
     int   *nsubc;        /* The number of sub cells for each super cell */
     float *bbcz;         /* Bounding boxes in z for the super cells     */
     float *bb;           /* 3D bounding boxes for the sub cells         */
-    gmx_bool cj_half_ci; /* j-cluster size half of i-cluster size?      */
     float *bbj;          /* 3D j-b.boxes for SSE-double or AVX-single   */
     int   *flags;        /* Flag for the super cells                    */
     int   nc_nalloc;
@@ -316,9 +316,6 @@ typedef struct nbnxn_search {
     gmx_bool DomDec;
     ivec dd_dim;
     gmx_domdec_zones_t *zones;
-
-    int  na_c;      /* Number of atoms per cluster for non-simple */
-    int  na_c_2log; /* 2log of na_c                               */
 
     int  ngrid;
     nbnxn_grid_t *grid;
@@ -400,14 +397,12 @@ static void nbs_cycle_print(FILE *fp,const nbnxn_search_t nbs)
     fprintf(fp,"\n");
 }
 
-static void nbnxn_grid_init(nbnxn_grid_t * grid,
-                            gmx_bool cj_half_ci)
+static void nbnxn_grid_init(nbnxn_grid_t * grid)
 {
     grid->cxy_na      = NULL;
     grid->cxy_ind     = NULL;
     grid->cxy_nalloc  = 0;
     grid->bb          = NULL;
-    grid->cj_half_ci  = cj_half_ci;
     grid->bbj         = NULL;
     grid->nc_nalloc   = 0;
 }
@@ -478,12 +473,6 @@ static int kernel_to_cj_size(int nb_kernel_type)
     return 0;
 }
 
-static gmx_bool kernel_cj_half_ci(int nb_kernel_type)
-{
-    return (kernel_to_cj_size(nb_kernel_type)*2 ==
-            kernel_to_ci_size(nb_kernel_type));
-}
-
 static int ci_to_cj(int na_cj_2log,int ci)
 {
     switch (na_cj_2log)
@@ -523,7 +512,6 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
-                       int nb_kernel_type_loc,
                        int nthread_max)
 {
     nbnxn_search_t nbs;
@@ -551,23 +539,10 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
         }
     }
 
-    if (!nbnxn_kernel_pairlist_simple(nb_kernel_type_loc))
-    {
-        nbs->na_c = kernel_to_ci_size(nb_kernel_type_loc);
-
-        if (nbs->na_c*NSUBCELL > NBNXN_NA_SC_MAX)
-        {
-            gmx_fatal(FARGS,
-                      "na_c (%d) is larger than the maximum allowed value (%d)",
-                      nbs->na_c,NBNXN_NA_SC_MAX/NSUBCELL);
-        }
-        nbs->na_c_2log = get_2log(nbs->na_c);
-    }
-
     snew(nbs->grid,nbs->ngrid);
     for(g=0; g<nbs->ngrid; g++)
     {
-        nbnxn_grid_init(&nbs->grid[g],kernel_cj_half_ci(nb_kernel_type_loc));
+        nbnxn_grid_init(&nbs->grid[g]);
     }
     nbs->cell        = NULL;
     nbs->cell_nalloc = 0;
@@ -628,17 +603,10 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
                             real atom_density,
                             int XFormat)
 {
-    int  cj_size=-1;
     rvec size;
     int  na_c;
     real adens,tlen,tlen_x,tlen_y,nc_max;
     int  t;
-
-    cj_size = grid->na_c;
-    if (grid->cj_half_ci)
-    {
-        cj_size /= 2;
-    }
 
     rvec_sub(corner1,corner0,size);
 
@@ -647,11 +615,10 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         /* target cell length */
         if (grid->simple)
         {
-            na_c = grid->na_c;
             /* To minimize the zero interactions, we should make
              * the largest of the i/j cell cubic.
              */
-            na_c = max(na_c,cj_size);
+            na_c = max(grid->na_c,grid->na_cj);
 
             /* Approximately cubic cells */
             tlen   = pow(na_c/atom_density,1.0/3.0);
@@ -695,13 +662,13 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
     }
 
     /* Worst case scenario of 1 atom in each last cell */
-    if (!grid->simple || cj_size <= 4)
+    if (grid->na_cj <= grid->na_c)
     {
         nc_max = n/grid->na_sc + grid->ncx*grid->ncy;
     }
     else
     {
-        nc_max = n/grid->na_sc + grid->ncx*grid->ncy*cj_size/4;
+        nc_max = n/grid->na_sc + grid->ncx*grid->ncy*grid->na_cj/grid->na_c;
     }
 
     if (nc_max > grid->nc_nalloc)
@@ -728,14 +695,14 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 
         if (grid->simple)
         {
-            if (cj_size == 4)
+            if (grid->na_cj == grid->na_c)
             {
                 grid->bbj = grid->bb;
             }
             else
             {
                 sfree_aligned(grid->bbj);
-                snew_aligned(grid->bbj,bb_nalloc*4/cj_size,16);
+                snew_aligned(grid->bbj,bb_nalloc*4/grid->na_cj,16);
             }
         }
 
@@ -1498,7 +1465,7 @@ void fill_cell(const nbnxn_search_t nbs,
         bb_ptr = grid->bb + offset;
 
 #if defined GMX_DOUBLE && defined NBNXN_SEARCH_SSE
-        if (grid->cj_half_ci)
+        if (2*grid->na_cj == grid->na_c)
         {
             calc_bounding_box_x_x4_halves(na,nbat->x+X4_IND_A(a0),bb_ptr,
                                           grid->bbj+offset*2);
@@ -2099,7 +2066,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        const int *atinfo,
                        rvec *x,
                        int nmoved,int *move,
-                       gmx_bool simple,
+                       int nb_kernel_type,
                        nbnxn_atomdata_t *nbat)
 {
     nbnxn_grid_t *grid;
@@ -2110,20 +2077,12 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     nbs_cycle_start(&nbs->cc[enbsCCgrid]);
 
-    grid->simple = simple;
+    grid->simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
-    if (grid->simple)
-    {
-        grid->na_c      = SSE_WIDTH;
-        grid->na_sc     = SSE_WIDTH;
-        grid->na_c_2log = SSE_WIDTH_2LOG;
-    }
-    else
-    {
-        grid->na_c      = nbs->na_c;
-        grid->na_sc     = NSUBCELL*nbs->na_c;
-        grid->na_c_2log = nbs->na_c_2log;
-    }
+    grid->na_c      = kernel_to_ci_size(nb_kernel_type);
+    grid->na_cj     = kernel_to_cj_size(nb_kernel_type);
+    grid->na_sc     = (grid->simple ? 1 : NSUBCELL)*grid->na_c;
+    grid->na_c_2log = get_2log(grid->na_c);
 
     nbat->na_c = grid->na_c;
 
@@ -2208,7 +2167,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
                                 const gmx_domdec_zones_t *zones,
                                 const int *atinfo,
                                 rvec *x,
-                                gmx_bool simple,
+                                int nb_kernel_type,
                                 nbnxn_atomdata_t *nbat)
 {
     int  zone,d;
@@ -2230,7 +2189,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
                           atinfo,
                           x,
                           0,NULL,
-                          simple,
+                          nb_kernel_type,
                           nbat);
     }
 }

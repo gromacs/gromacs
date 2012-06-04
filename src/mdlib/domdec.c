@@ -9239,7 +9239,7 @@ void dd_partition_system(FILE            *fplog,
                               fr->cginfo,
                               state_local->x,
                               ncg_moved,comm->moved,
-                              fr->nbv->grp[eintLocal].nbl_lists.simple,
+                              fr->nbv->grp[eintLocal].kernel_type,
                               fr->nbv->grp[eintLocal].nbat);
 
             nbnxn_get_ncells(fr->nbv->nbs,&ncells_new[XX],&ncells_new[YY]);
