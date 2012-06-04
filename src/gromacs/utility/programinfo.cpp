@@ -45,11 +45,13 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <string>
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/legacyheaders/thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/path.h"
@@ -60,6 +62,7 @@ namespace gmx
 
 namespace
 {
+tMPI::mutex g_programInfoMutex;
 boost::scoped_ptr<ProgramInfo> g_programInfo;
 } // namespace
 
@@ -77,20 +80,34 @@ class ProgramInfo::Impl
         std::string fullInvokedProgram_;
         std::string programName_;
         std::string invariantProgramName_;
+        std::string commandLine_;
+        bool        bIncomplete_;
 };
 
 ProgramInfo::Impl::Impl()
-    : realBinaryName_("GROMACS"), fullInvokedProgram_("GROMACS")
+    : realBinaryName_("GROMACS"), fullInvokedProgram_("GROMACS"),
+      bIncomplete_(true)
 {
 }
 
 ProgramInfo::Impl::Impl(const char *realBinaryName,
                         int argc, const char *const argv[])
     : realBinaryName_(realBinaryName != NULL ? realBinaryName : ""),
-      fullInvokedProgram_(argv[0]),
+      fullInvokedProgram_(argc != 0 ? argv[0] : ""),
       programName_(Path::splitToPathAndFilename(fullInvokedProgram_).second),
-      invariantProgramName_(programName_)
+      invariantProgramName_(programName_),
+      bIncomplete_(argc <= 0)
 {
+    // Temporary hack to make things work on Windows while waiting for #950.
+    // Some places in the existing code expect to have DIR_SEPARATOR in all
+    // input paths, but Windows may also give '/' (and does that, e.g., for
+    // tests invoked through CTest).
+    // When removing this, remove also the #include "futil.h".
+    if (DIR_SEPARATOR == '\\')
+    {
+        std::replace(fullInvokedProgram_.begin(), fullInvokedProgram_.end(),
+                     '/', '\\');
+    }
     invariantProgramName_ = stripSuffixIfPresent(invariantProgramName_, ".exe");
 #ifdef GMX_BINARY_SUFFIX
     invariantProgramName_ =
@@ -99,6 +116,31 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
     if (realBinaryName == NULL)
     {
         realBinaryName_ = invariantProgramName_;
+    }
+
+    // TODO: Remove this hack with negative argc once there is no need for
+    // set_program_name().
+    if (argc < 0)
+    {
+        argc = -argc;
+    }
+    for (int i = 0; i < argc; ++i)
+    {
+        if (i > 0)
+        {
+            commandLine_.append(" ");
+        }
+        const char *arg = argv[i];
+        bool bSpaces = (std::strchr(arg, ' ') != NULL);
+        if (bSpaces)
+        {
+            commandLine_.append("'");
+        }
+        commandLine_.append(arg);
+        if (bSpaces)
+        {
+            commandLine_.append("'");
+        }
     }
 }
 
@@ -109,7 +151,7 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
 // static
 const ProgramInfo &ProgramInfo::getInstance()
 {
-    // TODO: For completeness, this should be thread-safe.
+    tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
     if (g_programInfo.get() == NULL)
     {
         g_programInfo.reset(new ProgramInfo());
@@ -129,11 +171,11 @@ const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
 {
     try
     {
-        set_program_name(argv[0]);
-        // TODO: Constness should not be cast away.
-        set_command_line(argc, const_cast<char **>(argv));
-        // TODO: For completeness, this should be thread-safe.
-        g_programInfo.reset(new ProgramInfo(realBinaryName, argc, argv));
+        tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
+        if (g_programInfo.get() == NULL || g_programInfo->impl_->bIncomplete_)
+        {
+            g_programInfo.reset(new ProgramInfo(realBinaryName, argc, argv));
+        }
         return *g_programInfo;
     }
     catch (const std::exception &ex)
@@ -168,24 +210,29 @@ ProgramInfo::~ProgramInfo()
 {
 }
 
-std::string ProgramInfo::realBinaryName() const
+const std::string &ProgramInfo::realBinaryName() const
 {
     return impl_->realBinaryName_;
 }
 
-std::string ProgramInfo::programNameWithPath() const
+const std::string &ProgramInfo::programNameWithPath() const
 {
     return impl_->fullInvokedProgram_;
 }
 
-std::string ProgramInfo::programName() const
+const std::string &ProgramInfo::programName() const
 {
     return impl_->programName_;
 }
 
-std::string ProgramInfo::invariantProgramName() const
+const std::string &ProgramInfo::invariantProgramName() const
 {
     return impl_->invariantProgramName_;
+}
+
+const std::string &ProgramInfo::commandLine() const
+{
+    return impl_->commandLine_;
 }
 
 } // namespace gmx

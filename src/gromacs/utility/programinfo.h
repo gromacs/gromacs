@@ -77,6 +77,7 @@ class ProgramInfo
          * \returns The same object as initialized with the last call to init().
          * \throws  std::bad_alloc if out of memory (only if this is the first
          *      call and init() has not been called either).
+         * \throws  tMPI::system_error on thread synchronization errors.
          */
         static const ProgramInfo &getInstance();
         /*! \brief
@@ -152,23 +153,37 @@ class ProgramInfo
          *
          * The returned value is comparable to invariantProgramName(), i.e., it
          * has suffixes and OS-specific extensions removed.
+         *
+         * Does not throw.
          */
-        std::string realBinaryName() const;
+        const std::string &realBinaryName() const;
         /*! \brief
          * Returns the path and name of the binary as it was invoked.
+         *
+         * Does not throw.
          */
-        std::string programNameWithPath() const;
+        const std::string &programNameWithPath() const;
         /*! \brief
          * Returns the name of the binary as it was invoked without any path.
+         *
+         * Does not throw.
          */
-        std::string programName() const;
+        const std::string &programName() const;
         /*! \brief
          * Returns an invariant name of the binary.
          *
          * The returned value has OS-specific extensions (.exe on Windows)
          * removed, as well as any binary suffix that was configured.
+         *
+         * Does not throw.
          */
-        std::string invariantProgramName() const;
+        const std::string &invariantProgramName() const;
+        /*! \brief
+         * Returns the full command line used to invoke the binary.
+         *
+         * Does not throw.
+         */
+        const std::string &commandLine() const;
 
     private:
         class Impl;
