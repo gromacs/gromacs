@@ -37,29 +37,27 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <assert.h>
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
+
 #include "copyrite.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "pbc.h"
 #include "statutil.h"
-#include "names.h"
-#include "vec.h"
-#include "futil.h"
 #include "wman.h"
 #include "tpxio.h"
 #include "gmx_fatal.h"
 #include "network.h"
-#include "vec.h"
-#include "mtop_util.h"
 #include "gmxfio.h"
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
+
+#include "thread_mpi/threads.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -80,17 +78,6 @@
  *
  ******************************************************************/
 
-/* inherently globally shared names: */
-static const char *program_name=NULL;
-static char *cmd_line=NULL;
-
-#ifdef GMX_THREAD_MPI
-/* For now, some things here are simply not re-entrant, so
-   we have to actively lock them. */
-static tMPI_Thread_mutex_t init_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
-
-
 /****************************************************************
  *
  *            E X P O R T E D   F U N C T I O N S
@@ -102,92 +89,36 @@ static tMPI_Thread_mutex_t init_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 
 const char *ShortProgram(void)
 {
-    const char *pr,*ret;
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&init_mutex);
-#endif
-    pr=ret=program_name; 
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_unlock(&init_mutex);
-#endif
-    if (ret == NULL)
-        return "GROMACS";
-    if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
-        ret=pr+1;
-    return ret;
+    try
+    {
+        return gmx::ProgramInfo::getInstance().programName().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 const char *Program(void)
 {
-    const char *ret;
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&init_mutex);
-#endif
-    ret=program_name; 
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_unlock(&init_mutex);
-#endif
-    return ret;
+    try
+    {
+        return gmx::ProgramInfo::getInstance().programNameWithPath().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 const char *command_line(void)
 {
-    const char *ret;
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&init_mutex);
-#endif
-    ret=cmd_line; 
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_unlock(&init_mutex);
-#endif
-    return ret;
+    try
+    {
+        return gmx::ProgramInfo::getInstance().commandLine().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 void set_program_name(const char *argvzero)
 {
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&init_mutex);
-#endif
-    if (program_name == NULL)
-    {
-        program_name = strdup(argvzero);
-    }
-    if (program_name == NULL)
-        program_name="GROMACS";
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_unlock(&init_mutex);
-#endif
-}
-
-
-void set_command_line(int argc, char *argv[])
-{
-    int i;
-    size_t cmdlength;
-
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&init_mutex);
-#endif
-    if (cmd_line==NULL)
-    {
-        cmdlength = strlen(argv[0]);
-        for (i=1; i<argc; i++) 
-        {
-            cmdlength += strlen(argv[i]);
-        }
-        
-        /* Fill the cmdline string */
-        snew(cmd_line,cmdlength+argc+1);
-        for (i=0; i<argc; i++) 
-        {
-            strcat(cmd_line,argv[i]);
-            strcat(cmd_line," ");
-        }
-    }
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_unlock(&init_mutex);
-#endif
-
+    // The negative argc is a hack to make the ProgramInfo overridable in
+    // parse_common_args(), where the full command-line is known.
+    gmx::ProgramInfo::init(-1, &argvzero);
 }
 
 /* utility functions */
@@ -199,9 +130,9 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
     
     tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
     
-    iq = (a - b + tol*a)/c;
+    iq = static_cast<int>((a - b + tol*a)/c);
     
-    if (fabs(a - b - c*iq) <= tol*fabs(a))
+    if (std::fabs(a - b - c*iq) <= tol*std::fabs(a))
         return TRUE;
     else
         return FALSE;
@@ -210,17 +141,11 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 int check_times2(real t,real t0,real tp, real tpp, gmx_bool bDouble)
 {
     int  r;
-    real margin;
     
 #ifndef GMX_DOUBLE
     /* since t is float, we can not use double precision for bRmod */
     bDouble = FALSE;
 #endif
-    
-    if (t-tp>0 && tp-tpp>0)
-        margin = 0.1*min(t-tp,tp-tpp);
-    else
-        margin = 0;
     
     r=-1;
     if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN)))  &&
@@ -248,7 +173,7 @@ int check_times(real t)
 
 static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
 {
-    int i=0,j;
+    int i=0;
     const char *select;
 
     if (bCanTime)
@@ -280,8 +205,8 @@ static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
 
 static void set_default_xvg_format(const char *xvg_list[])
 {
-    int i,j;
-    const char *select,*tmp;
+    int i;
+    const char *select;
 
     select = getenv("GMX_VIEW_XVG");
     if (select == NULL)
@@ -331,46 +256,58 @@ t_topology *read_top(const char *fn,int *ePBC)
 
 static void usage(const char *type,const char *arg)
 {
-    assert(arg);
+    GMX_ASSERT(arg != NULL, "NULL command-line argument should not occur");
     gmx_fatal(FARGS,"Expected %s argument for option %s\n",type,arg);
 }
 
 int iscan(int argc,char *argv[],int *i)
 {
-    int var;
-    
-    if (argc > (*i)+1) {
-        if (!sscanf(argv[++(*i)],"%d",&var))
-            usage("an integer",argv[(*i)-1]);
-    } else
-        usage("an integer",argv[*i]);
-    
+    const char *const arg = argv[*i];
+    if (argc <= (*i)+1)
+    {
+        usage("an integer", arg);
+    }
+    const char *const value = argv[++(*i)];
+    char *endptr;
+    int var = std::strtol(value, &endptr, 10);
+    if (*value == '\0' || *endptr != '\0')
+    {
+        usage("an integer", arg);
+    }
     return var;
 }
 
 gmx_large_int_t istepscan(int argc,char *argv[],int *i)
 {
-    gmx_large_int_t var;
-    
-    if (argc > (*i)+1) {
-        if (!sscanf(argv[++(*i)],gmx_large_int_pfmt,&var))
-            usage("an integer",argv[(*i)-1]);
-    } else
-        usage("an integer",argv[*i]);
-    
+    const char *const arg = argv[*i];
+    if (argc <= (*i)+1)
+    {
+        usage("an integer", arg);
+    }
+    const char *const value = argv[++(*i)];
+    char *endptr;
+    gmx_large_int_t var = str_to_large_int_t(value, &endptr);
+    if (*value == '\0' || *endptr != '\0')
+    {
+        usage("an integer", arg);
+    }
     return var;
 }
 
 double dscan(int argc,char *argv[],int *i)
 {
-    double var;
-    
-    if (argc > (*i)+1) {
-        if (!sscanf(argv[++(*i)],"%lf",&var))
-            usage("a real",argv[(*i)-1]);
-    } else
-        usage("a real",argv[*i]);
-    
+    const char *const arg = argv[*i];
+    if (argc <= (*i)+1)
+    {
+        usage("a real", arg);
+    }
+    const char *const value = argv[++(*i)];
+    char *endptr;
+    double var = std::strtod(value, &endptr);
+    if (*value == '\0' || *endptr != '\0')
+    {
+        usage("a real", arg);
+    }
     return var;
 }
 
@@ -411,7 +348,7 @@ static void pdesc(char *desc)
     if ((int)strlen(ptr) < 70)
         fprintf(stderr,"\t%s\n",ptr);
     else {
-        for(nptr=ptr+70; (nptr != ptr) && (!isspace(*nptr)); nptr--)
+        for(nptr=ptr+70; (nptr != ptr) && (!std::isspace(*nptr)); nptr--)
             ;
         if (nptr == ptr)
             fprintf(stderr,"\t%s\n",ptr);
@@ -523,15 +460,18 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     /* This array should match the order of the enum in oenv.h */
     const char *time_units[] = { NULL, "fs", "ps", "ns", "us", "ms", "s", 
                                 NULL };
-    int  nicelevel=0,mantp=0,npri=0,debug_level=0,verbose_level=0;
+    int  nicelevel=0,debug_level=0,verbose_level=0;
     char *deffnm=NULL;
     real tbegin=0,tend=0,tdelta=0;
     gmx_bool bView=FALSE;
     
     t_pargs *all_pa=NULL;
     
+#ifdef __sgi
+    int npri=0;
     t_pargs npri_pa   = { "-npri", FALSE, etINT,   {&npri},
     "HIDDEN Set non blocking priority (try 128)" };
+#endif
     t_pargs nice_pa   = { "-nice", FALSE, etINT,   {&nicelevel}, 
     "Set the nicelevel" };
     t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR, {&deffnm}, 
@@ -570,18 +510,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #define NPCA_PA asize(pca_pa)
     FILE *fp;  
     gmx_bool bPrint,bExit,bXvgr;
-    int  i,j,k,npall,max_pa,cmdlength;
-    char *ptr,*newdesc;
-    const char *envstr;
+    int  i,j,k,npall,max_pa;
     
 #define FF(arg) ((Flags & arg)==arg)
 
-    cmdlength = strlen(argv[0]);
     /* Check for double arguments */
     for (i=1; (i<*argc); i++) 
     {
-        cmdlength += strlen(argv[i]);
-        if (argv[i] && (strlen(argv[i]) > 1) && (!isdigit(argv[i][1]))) 
+        if (argv[i] && (strlen(argv[i]) > 1) && (!std::isdigit(argv[i][1])))
         {
             for (j=i+1; (j<*argc); j++) 
             {
@@ -599,8 +535,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         }
     }
     debug_gmx();
-    set_program_name(argv[0]);
-    set_command_line(*argc, argv);
+    gmx::ProgramInfo::init(*argc, argv);
       
     /* Handle the flags argument, which is a bit field 
      * The FF macro returns whether or not the bit is set
@@ -611,11 +546,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     max_pa = NPCA_PA + EXTRA_PA + npargs+1;
     snew(all_pa,max_pa);
     
-    for(i=npall=0; (i<NPCA_PA); i++)
+    for(i=npall=0; (i<static_cast<int>(NPCA_PA)); i++)
         npall = add_parg(npall,all_pa,&(pca_pa[i]));
     
 #ifdef __sgi
-    envstr = getenv("GMXNPRIALL");
+    const char *envstr = getenv("GMXNPRIALL");
     if (envstr)
         npri=strtol(envstr,NULL,10);
     if (FF(PCA_BE_NICE)) {
@@ -732,18 +667,15 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
     if (nicelevel != 0 && !bExit)
     {
-#ifdef GMX_THREAD_MPI
         static gmx_bool nice_set=FALSE; /* only set it once */
+        static tMPI_Thread_mutex_t init_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
         tMPI_Thread_mutex_lock(&init_mutex);
         if (!nice_set)
         {
-#endif
             i=nice(nicelevel); /* assign ret value to avoid warnings */
-#ifdef GMX_THREAD_MPI
             nice_set=TRUE;
         }
         tMPI_Thread_mutex_unlock(&init_mutex);
-#endif
     }
 #endif
 #endif

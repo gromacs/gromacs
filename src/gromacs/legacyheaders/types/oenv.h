@@ -32,15 +32,18 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef GMX_TYPES_OENV_H
+#define GMX_TYPES_OENV_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* output options opaque type, for functions in statutil.c */
+/* output options opaque type, for functions in statutil.h and oenv.h */
 typedef struct output_env *output_env_t;
 
 #ifdef __cplusplus
 }
 #endif
 
+#endif

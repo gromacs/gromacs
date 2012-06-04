@@ -43,6 +43,8 @@
 #include <new>
 #include <vector>
 
+#include "gromacs/utility/programinfo.h"
+
 namespace gmx
 {
 namespace test
@@ -134,26 +136,7 @@ const char *CommandLine::arg(int i) const { return impl_->argv_[i]; }
 
 std::string CommandLine::toString() const
 {
-    std::string result;
-    for (size_t i = 0; i < impl_->args_.size(); ++i)
-    {
-        if (i > 0)
-        {
-            result.append(" ");
-        }
-        const char *arg = impl_->args_[i];
-        bool bSpaces = (std::strchr(arg, ' ') != NULL);
-        if (bSpaces)
-        {
-            result.append("'");
-        }
-        result.append(arg);
-        if (bSpaces)
-        {
-            result.append("'");
-        }
-    }
-    return result;
+    return ProgramInfo(argc(), argv()).commandLine();
 }
 
 } // namespace test

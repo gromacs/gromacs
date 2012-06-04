@@ -49,6 +49,7 @@
 #include "string2.h"
 #include "vec.h"
 #include "macros.h"
+#include "wman.h"
 
 /* The source code in this file should be thread-safe. 
       Please keep it that way. */
