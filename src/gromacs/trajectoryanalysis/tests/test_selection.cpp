@@ -33,19 +33,16 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <gromacs/options/basicoptions.h>
-#include <gromacs/options/options.h>
-#include <gromacs/selection/selection.h>
-#include <gromacs/selection/selectionoption.h>
-#include <gromacs/trajectoryanalysis/analysismodule.h>
-#include <gromacs/trajectoryanalysis/analysissettings.h>
-#include <gromacs/trajectoryanalysis/cmdlinerunner.h>
-#include <gromacs/utility/exceptions.h>
-#include <gromacs/utility/format.h>
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/format.h"
+#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
@@ -187,6 +184,7 @@ SelectionTester::writeOutput()
 int
 main(int argc, char *argv[])
 {
+    gmx::ProgramInfo::init(argc, argv);
     try
     {
         gmx::SelectionTester module;
@@ -196,7 +194,7 @@ main(int argc, char *argv[])
     }
     catch (const std::exception &ex)
     {
-        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        gmx::printFatalErrorMessage(stderr, ex);
         return 1;
     }
 }

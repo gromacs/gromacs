@@ -58,7 +58,7 @@ main(int argc, char *argv[])
     }
     catch (const std::exception &ex)
     {
-        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        gmx::printFatalErrorMessage(stderr, ex);
         return 1;
     }
 }

@@ -37,7 +37,7 @@
  */
 #include "gromacs/utility/errorformat.h"
 
-#include <string>
+#include <cstdio>
 
 #include "gromacs/legacyheaders/copyrite.h"
 
@@ -51,31 +51,38 @@ namespace gmx
 namespace internal
 {
 
-std::string formatFatalError(const char *title, const char *details,
-                             const char *func, const char *file, int line)
+void printFatalError(FILE *fp, const char *title, const char *details,
+                     const char *func, const char *file, int line)
 {
-    std::string result;
-    result.append("\n-------------------------------------------------------\n");
-    const char *programName = ProgramInfo::getInstance().programName().c_str();
-    result.append(formatString("Program %s, %s\n", programName, GromacsVersion()));
+    // In case ProgramInfo is not initialized and there is an issue with the
+    // initialization, fall back to "GROMACS".
+    const char *programName = "GROMACS";
+    try
+    {
+        programName = ProgramInfo::getInstance().programName().c_str();
+    }
+    catch (const std::exception &)
+    {
+    }
+
+    std::fprintf(fp, "\n-------------------------------------------------------\n");
+    std::fprintf(fp, "Program %s, %s\n", programName, GromacsVersion());
     if (func != NULL)
     {
-        result.append(formatString("In function %s\n", func));
+        std::fprintf(fp, "In function: %s\n", func);
     }
     // TODO: Strip away absolute paths from file names (CMake seems to generate those)
     if (file != NULL)
     {
-        result.append(formatString("Source file %s, line %d\n\n", file, line));
+        std::fprintf(fp, "Source file %s, line %d\n", file, line);
     }
-    else
-    {
-        result.append("\n");
-    }
-    result.append(formatString("%s:\n%s\n", title, details));
-    result.append("For more information and tips for troubleshooting, please check the GROMACS\n"
-                  "website at http://www.gromacs.org/Documentation/Errors");
-    result.append("\n-------------------------------------------------------\n");
-    return result;
+    std::fprintf(fp, "\n");
+    std::fprintf(fp, "%s:\n", title);
+    // TODO: Line wrapping
+    std::fprintf(fp, "%s\n", details);
+    std::fprintf(fp, "For more information and tips for troubleshooting, please check the GROMACS\n"
+                     "website at http://www.gromacs.org/Documentation/Errors");
+    std::fprintf(fp, "\n-------------------------------------------------------\n");
 }
 
 } // namespace internal
