@@ -144,6 +144,20 @@ class TestTemporaryFileManager
          */
         std::string getTemporaryFilePath(const char *suffix);
 
+        /*! \brief
+         * Creates a name for reference data or temporary file within a single unit test.
+         *
+         * \param[in] suffix  Suffix to add to the file name (should contain an
+         *      extension if one is desired).
+         * \returns   File name that includes the test name and
+         *      \p suffix.
+         *
+         * This method should only be called from within a Google Test test.
+         * Two calls with the same \p suffix return the same string within the
+         * same test.
+         */
+        static std::string getTestSpecificFileName(const char *suffix);
+
     private:
         class Impl;
 

@@ -246,4 +246,28 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
     }
 }
 
+TEST(ReferenceDataTest, HandlesIncorrectDataPaths)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+    int seq[5] = { -1, 3, 5, 2, 4 };
+
+    {
+        TestReferenceData data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequenceArray(5, seq, "seq");
+        checker.checkSequenceArray(5, seq, "seq2");
+    }
+    {
+        TestReferenceData data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        seq[0] = 2;
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq"), "seq/[0]");
+        seq[0] = -1;
+        seq[3] = 0;
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq"), "seq/[3]");
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq2"), "seq2/[3]");
+    }
+}
+
 } // namespace

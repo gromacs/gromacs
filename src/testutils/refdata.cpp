@@ -156,11 +156,8 @@ const char * const TestReferenceChecker::Impl::cSequenceLengthName =
 TestReferenceData::Impl::Impl(ReferenceDataMode mode)
     : _refDoc(NULL), _bWrite(false), _bInUse(false)
 {
-    const ::testing::TestInfo *test_info =
-        ::testing::UnitTest::GetInstance()->current_test_info();
     std::string dirname = getReferenceDataPath();
-    std::string filename = std::string(test_info->test_case_name())
-        + "_" + test_info->name() + ".xml";
+    std::string filename = TestTemporaryFileManager::getTestSpecificFileName(".xml");
     _fullFilename = Path::join(dirname, filename);
 
     _bWrite = true;
@@ -239,7 +236,7 @@ TestReferenceData::Impl::~Impl()
  */
 
 TestReferenceChecker::Impl::Impl(bool bWrite)
-    : _currNode(NULL), _nextSearchNode(NULL), _bWrite(bWrite)
+    : _currNode(NULL), _nextSearchNode(NULL), _bWrite(bWrite), _seqIndex(0)
 {
 }
 
@@ -248,7 +245,7 @@ TestReferenceChecker::Impl::Impl(const std::string &path, xmlNodePtr rootNode,
                                  bool bWrite)
     : _path(path + "/"), _currNode(rootNode),
       _nextSearchNode(rootNode->xmlChildrenNode),
-      _bWrite(bWrite)
+      _bWrite(bWrite), _seqIndex(0)
 {
 }
 
@@ -256,15 +253,14 @@ TestReferenceChecker::Impl::Impl(const std::string &path, xmlNodePtr rootNode,
 std::string
 TestReferenceChecker::Impl::traceString(const char *id) const
 {
-    const char *printId = (id != NULL ? id : "(unnamed)");
-    return "Checking '" + _path + printId + "'";
+    return "Checking '" + appendPath(id) + "'";
 }
 
 
 std::string
 TestReferenceChecker::Impl::appendPath(const char *id) const
 {
-    const char *printId = (id != NULL ? id : "(unnamed)");
+    std::string printId = (id != NULL) ? id : formatString("[%d]", _seqIndex);
     return _path + printId;
 }
 
@@ -344,12 +340,15 @@ TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id
         {
             _nextSearchNode = _currNode->xmlChildrenNode;
         }
+
     }
     if (node == NULL)
     {
         GMX_RELEASE_ASSERT(!_bWrite, "Node creation failed without exception");
         ADD_FAILURE() << "Reference data item not found";
     }
+    _seqIndex = (id == NULL) ? _seqIndex+1 : 0;
+
     return node;
 }
 
