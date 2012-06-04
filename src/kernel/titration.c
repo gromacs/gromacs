@@ -1587,6 +1587,23 @@ static int qhop_titrate(qhop_db *db, titration_t T,
     return i;
 }
 
+static void wipe_titrating_sites(titration_t T, t_qhop_residue *reactant, t_mdatoms *md)
+{
+    int i;
+    t_qhop_atom *qa;
+
+    qa = T->qhop_atoms;
+
+    /* Wipe donor/acceptor info of qhop_atoms for this residue. */
+    for (i=0; i<reactant->nr_titrating_sites; i++)
+    {
+        qa[i].state = eQNONE;
+        md->bqhopdonor[qa[i].atom_id]=FALSE;
+        md->bqhopacceptor[qa[i].atom_id]=FALSE;
+    }
+}
+
+
 /* Wrappers for qhop_titrate() */
 static void qhop_protonate(qhop_db *db, titration_t T,
                            const t_inputrec *ir,
@@ -1599,6 +1616,11 @@ static void qhop_protonate(qhop_db *db, titration_t T,
     int prod, i, nt, *t;
     gmx_bool isacc;
     t_qhop_atom *qa;
+
+    if (bRealHop)
+    {
+        wipe_titrating_sites(T, &(T->qhop_residues[qatom->qres_id]), md);
+    }
 
     prod = qhop_titrate(db, T, ir, cr, top, constr, qatom, md, bWater, bSwapBondeds, eQACC);
   
@@ -1645,6 +1667,11 @@ static void qhop_deprotonate(qhop_db *db, titration_t T,
     int prod, i, nt, *t;
     gmx_bool isdon;
     t_qhop_atom *qa;
+
+    if (bRealHop)
+    {
+        wipe_titrating_sites(T, &(T->qhop_residues[qatom->qres_id]), md);
+    }
 
     prod = qhop_titrate(db, T, ir, cr, top, constr, qatom, md, bWater, bSwapBondeds, eQDON);
 
@@ -3711,10 +3738,10 @@ int do_titration(FILE *fplog,
                         /* Zap all hops whose reactants were just consumed. */
                         for (j = i+1; j < T->nr_hop; j++)
                         {
-                            if (T->hop[j].donor_id    == T->hop[i].donor_id    ||
-                                T->hop[j].acceptor_id == T->hop[i].acceptor_id ||
-                                T->hop[j].donor_id    == T->hop[i].acceptor_id ||
-                                T->hop[j].acceptor_id == T->hop[i].donor_id)
+                            if (T->qhop_atoms[T->hop[j].donor_id].res_id    == T->qhop_atoms[T->hop[i].donor_id].res_id    ||
+                                T->qhop_atoms[T->hop[j].acceptor_id].res_id == T->qhop_atoms[T->hop[i].acceptor_id].res_id ||
+                                T->qhop_atoms[T->hop[j].donor_id].res_id    == T->qhop_atoms[T->hop[i].acceptor_id].res_id ||
+                                T->qhop_atoms[T->hop[j].acceptor_id].res_id == T->qhop_atoms[T->hop[i].donor_id].res_id)
                             {
                                 T->hop[j].regime = etQhopNONE;
                                 T->hop[j].bDonated = TRUE;
