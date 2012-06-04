@@ -922,4 +922,8 @@ gmx_fft_destroy(gmx_fft_t      fft)
         free(fft);
     }
 }
+
+void gmx_fft_cleanup()
+{
+}
 #endif /* GMX_FFT_FFTPACK */
