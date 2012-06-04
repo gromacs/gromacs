@@ -38,7 +38,7 @@
 #ifndef GMX_UTILITY_ERRORFORMAT_H
 #define GMX_UTILITY_ERRORFORMAT_H
 
-#include <string>
+#include <cstdio>
 
 namespace gmx
 {
@@ -50,10 +50,12 @@ namespace internal
 /*! \internal \brief
  * Formats common headers and footers for error messages.
  *
+ * Does not throw.
+ *
  * \ingroup module_utility
  */
-std::string formatFatalError(const char *title, const char *details,
-                             const char *func, const char *file, int line);
+void printFatalError(FILE *fp, const char *title, const char *details,
+                     const char *func, const char *file, int line);
 
 } // namespace internal
 //! \endcond

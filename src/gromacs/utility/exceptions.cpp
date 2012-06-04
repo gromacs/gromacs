@@ -105,7 +105,7 @@ int NotImplementedError::errorCode() const
  * Global functions
  */
 
-std::string formatErrorMessage(const std::exception &ex)
+void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {
     const char *title = "Unknown exception";
     const char *func = NULL;
@@ -120,8 +120,12 @@ std::string formatErrorMessage(const std::exception &ex)
         file = *boost::get_error_info<boost::throw_file>(*gmxEx);
         line = *boost::get_error_info<boost::throw_line>(*gmxEx);
     }
+    else if (dynamic_cast<const std::bad_alloc *>(&ex) != NULL)
+    {
+        title = "Memory allocation failed";
+    }
     // TODO: Treat errno information in boost exceptions
-    return internal::formatFatalError(title, ex.what(), func, file, line);
+    internal::printFatalError(fp, title, ex.what(), func, file, line);
 }
 
 } // namespace gmx

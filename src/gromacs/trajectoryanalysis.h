@@ -84,5 +84,6 @@
 #include "trajectoryanalysis/cmdlinerunner.h"
 #include "utility/exceptions.h"
 #include "utility/format.h"
+#include "utility/programinfo.h"
 
 #endif

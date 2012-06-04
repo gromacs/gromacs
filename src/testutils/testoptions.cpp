@@ -83,9 +83,9 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         }
         swap(commandLine, s_commandLine);
     }
-    catch (const std::bad_alloc &)
+    catch (const std::exception &ex)
     {
-        std::fprintf(stderr, "Out of memory\n");
+        printFatalErrorMessage(stderr, ex);
         std::exit(1);
     }
     ::gmx::setFatalErrorHandler(NULL);
