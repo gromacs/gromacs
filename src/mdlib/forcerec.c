@@ -655,13 +655,17 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                 bExclInter    = FALSE;
                 bHaveLJ       = FALSE;
                 bHaveQ        = FALSE;
-                for(ai=a0; ai<a1; ai++) {
-                    /* Here we only check for the A, not B topology */
-                    bHaveLJ = bHaveLJ || type_LJ[molt->atoms.atom[ai].type];
-                    bHaveQ  = bHaveQ  || (molt->atoms.atom[ai].q != 0);
+                for(ai=a0; ai<a1; ai++)
+                {
+                    /* Check LJ and electrostatic interactions */
+                    bHaveLJ = bHaveLJ || (type_LJ[molt->atoms.atom[ai].type] ||
+                                          type_LJ[molt->atoms.atom[ai].typeB]);
+                    bHaveQ  = bHaveQ  || (molt->atoms.atom[ai].q != 0 ||
+                                          molt->atoms.atom[ai].qB != 0);
 
                     /* Clear the exclusion list for atom ai */
-                    for(aj=a0; aj<a1; aj++) {
+                    for(aj=a0; aj<a1; aj++)
+                    {
                         bExcl[aj-a0] = FALSE;
                     }
                     /* Loop over all the exclusions of atom ai */
@@ -710,11 +714,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                 }
                 if (bHaveLJ)
                 {
-                    SET_CGINFO_HAS_LJ(cginfo[cgm+cg]);  
+                    SET_CGINFO_HAS_LJ(cginfo[cgm+cg]);
                 }
                 if (bHaveQ)
                 {
-                    SET_CGINFO_HAS_Q(cginfo[cgm+cg]);  
+                    SET_CGINFO_HAS_Q(cginfo[cgm+cg]);
                 }
                 /* Store the charge group size */
                 SET_CGINFO_NATOMS(cginfo[cgm+cg],a1-a0);

@@ -106,7 +106,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
-    
+
     real       Vvdw_ci,Vc_ci;
 #else
     int        egp_mask;
@@ -114,7 +114,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
     real       sh_invrc6;
 #endif
-    
+
 #ifdef CALC_COUL_RF
     real       k_rf2;
 #ifdef CALC_ENERGIES
@@ -188,9 +188,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         nbln = &nbl->ci[n];
 
         ish              = (nbln->shift & NBNXN_CI_SHIFT);
+        /* x, f and fshift are assumed to be stored with stride 3 */
         ish3             = ish*3;
-        cjind0           = nbln->cj_ind_start;      
-        cjind1           = nbln->cj_ind_end;    
+        cjind0           = nbln->cj_ind_start;
+        cjind1           = nbln->cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
@@ -289,7 +290,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         }
         ninner += cjind1 - cjind0;
 
-        /* Add i forces to mem force list */
+        /* Add accumulated i-forces to the force array */
         for(i=0; i<UNROLLI; i++)
         {
             for(d=0; d<DIM; d++)
@@ -326,5 +327,5 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 
 #undef CALC_SHIFTFORCES
 
-#undef UNROLLI   
-#undef UNROLLJ   
+#undef UNROLLI
+#undef UNROLLJ

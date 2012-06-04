@@ -59,11 +59,11 @@ typedef struct {
     /* PME/Ewald */
     real ewaldcoeff;
     real sh_ewald;   /* For shifting the Ewald potential */
-  
+
     /* Dielectric constant resp. multiplication factor for charges */
     real epsilon_r;
     real epsfac;
-  
+
     /* Constants for reaction-field or plain cut-off */
     real epsilon_rf;
     real k_rf;
@@ -77,7 +77,9 @@ typedef struct {
     real *tabq_coul_F;
     /* Coulomb energy table, size of array is tabsize (when used) */
     real *tabq_coul_V;
-    /* Coulomb force+energy table, size of array is tabsize*4 (when used) */
+    /* Coulomb force+energy table, size of array is tabsize*4,
+       entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
+       this is used with single precision SSE/AVX-128 for aligned loads */
     real *tabq_coul_FDV0;
 } interaction_const_t;
 

@@ -1,12 +1,12 @@
 /*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.03
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -50,6 +50,10 @@
 #include "coulomb.h"
 #include "calc_verletbuf.h"
 
+/* Struct for unique atom type for calculating the energy drift.
+ * The atom displacement depends on mass and constraints.
+ * The energy jump for given distance depend on LJ type and q.
+ */
 typedef struct
 {
     real     mass; /* mass */
@@ -57,12 +61,12 @@ typedef struct
     real     q;    /* charge */
     gmx_bool con;  /* constrained? if yes, use #DOF=2 iso 3 */
     int      n;    /* total #atoms of this type in the system */
-} att_t;
+} verletbuf_atomtype_t;
 
-static void add_at(att_t **att_p,int *natt_p,
+static void add_at(verletbuf_atomtype_t **att_p,int *natt_p,
                    real mass,int type,real q,gmx_bool con,int nmol)
 {
-    att_t *att;
+    verletbuf_atomtype_t *att;
     int natt,i;
 
     if (mass == 0)
@@ -101,10 +105,11 @@ static void add_at(att_t **att_p,int *natt_p,
 }
 
 static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
-                                        att_t **att_p,int *natt_p,
+                                        verletbuf_atomtype_t **att_p,
+                                        int *natt_p,
                                         int *n_nonlin_vsite)
 {
-    att_t *att;
+    verletbuf_atomtype_t *att;
     int natt;
     int mb,nmol,ft,i,j,a1,a2,a3,a;
     const t_atoms *atoms;
@@ -272,8 +277,7 @@ static void approx_2dof(real s2,real x,
     *scale = 0.5*M_PI*exp(ex*ex/(M_PI*er*er))*er;
 }
 
-
-static real ener_drift(const att_t *att,int natt,
+static real ener_drift(const verletbuf_atomtype_t *att,int natt,
                        const gmx_ffparams_t *ffp,
                        real kT_fac,real line_dens_nat,
                        real md_ljd,real md_ljr,real md_el,real dd_el,
@@ -388,7 +392,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
     real nb_cell_rel_pairs_not_in_list_at_cutoff;
 
-    att_t *att=NULL;
+    verletbuf_atomtype_t *att=NULL;
     int  natt=-1,i;
     double reppow;
     real md_ljd,md_ljr,md_el,dd_el;
@@ -574,7 +578,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         rb = ib*resolution;
         rl = max(ir->rvdw,ir->rcoulomb) + rb;
         line_dens_nat = 4*M_PI*rl*rl/boxvol;
-        
+
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
          */

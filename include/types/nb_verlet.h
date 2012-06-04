@@ -43,16 +43,17 @@
 extern "C" {
 #endif
 
-/* Atom locality indicator: local, non-local, all (used for f, x). */
+/* Atom locality indicator: local, non-local, all, used for calls to:
+   gridding, pair-search, force calculation, x/f buffer operations */
 enum { eatLocal = 0, eatNonlocal = 1, eatAll  };
 
 #define LOCAL_A(x)               ((x) == eatLocal)
 #define NONLOCAL_A(x)            ((x) == eatNonlocal)
 #define LOCAL_OR_NONLOCAL_A(x)   (LOCAL_A(x) || NONLOCAL_A(x))
 
-/* Interaction locality indicator (used in pair-list search/calculations): 
+/* Interaction locality indicator (used in pair-list search/calculations):
     - local interactions require local atom data and affect local output only;
-    - non-local interactions require both local and non-local atom data and 
+    - non-local interactions require both local and non-local atom data and
       affect both local- and non-local output. */
 enum { eintLocal = 0, eintNonlocal = 1 };
 

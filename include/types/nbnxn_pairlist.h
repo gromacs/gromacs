@@ -120,7 +120,7 @@ typedef struct {
 
 typedef struct {
     unsigned pair[32];     /* Exclusion bits for one warp,                *
-                            * each unsigned has bit for 4*8 i clusters    */ 
+                            * each unsigned has bit for 4*8 i clusters    */
 } nbnxn_excl_t;
 
 typedef struct {
@@ -160,37 +160,38 @@ typedef struct {
     gmx_cache_protect_t cp1;
 } nbnxn_pairlist_t;
 
-typedef struct {    
+typedef struct {
     int          nnbl;      /* number of lists */
     nbnxn_pairlist_t **nbl; /* lists */
     gmx_bool     combined;  /* TRUE if lists get combined into one (the 1st) */
-    gmx_bool     simple;    /* TRUE if the list of of type "simple" 
+    gmx_bool     simple;    /* TRUE if the list of of type "simple"
                                (na_sc=na_s, no super-clusters used) */
     int          natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
     int          natpair_lj;  /* Total number of atom pairs for LJ kernel   */
     int          natpair_q;   /* Total number of atom pairs for Q kernel    */
 } nbnxn_pairlist_set_t;
 
-    enum { nbatXYZ, nbatXYZQ, nbatX4, nbatX8 };
+enum { nbatXYZ, nbatXYZQ, nbatX4, nbatX8 };
 
 typedef struct {
-    real *f;      /* f, size natoms*xstride                             */
+    real *f;      /* f, size natoms*fstride                             */
     real *fshift; /* Shift force array, size SHIFTS*DIM                 */
     int  nV;      /* The size of *Vvdw and *Vc                          */
     real *Vvdw;   /* Temporary Van der Waals group energy storage       */
     real *Vc;     /* Temporary Coulomb group energy storage             */
     int  nVS;     /* The size of *VSvdw and *VSc                        */
-    real *VSvdw;  /* Temporary Van der Waals group energy storage       */
-    real *VSc;    /* Temporary Coulomb group energy storage             */
+    real *VSvdw;  /* Temporary SIMD Van der Waals group energy storage  */
+    real *VSc;    /* Temporary SIMD Coulomb group energy storage        */
 } nbnxn_atomdata_output_t;
 
-    enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
+/* LJ combination rules: geometric, Lorentz-Berthelot, none */
+enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
 
 typedef struct {
     gmx_nbat_alloc_t *alloc;
     gmx_nbat_free_t  *free;
     int  ntype;      /* The number of different atom types                 */
-    real *nbfp;      /* The Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
+    real *nbfp;      /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
     int  comb_rule;  /* Combination rule, see enum above                   */
     real *nbfp_comb; /* LJ parameter per atom type, size ntype*2           */
     real *nbfp_s4;   /* As nbfp, but with stride 4, size ntype^2*4         */
@@ -212,7 +213,7 @@ typedef struct {
     real *x;         /* x and possibly q, size natoms*xstride              */
     int  nout;       /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;  /* Output data structures               */
-    int  nalloc;     /* Allocation size of all arrays (time xstride for x) */
+    int  nalloc;     /* Allocation size of all arrays (for x/f *x/fstride) */
 } nbnxn_atomdata_t;
 
 #ifdef __cplusplus

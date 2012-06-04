@@ -111,12 +111,12 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * for the number of equally sized lists is below min_ci_balanced.
  */
 void nbnxn_make_pairlist(const nbnxn_search_t nbs,
-                         const nbnxn_atomdata_t *nbat,
-                         const t_blocka *excl,
-                         real rlist,
-                         int min_ci_balanced,
-                         nbnxn_pairlist_set_t *nbl_list,
-                         int iloc,
+			 const nbnxn_atomdata_t *nbat,
+			 const t_blocka *excl,
+			 real rlist,
+			 int min_ci_balanced,
+			 nbnxn_pairlist_set_t *nbl_list,
+			 int iloc,
 			 int nb_kernel_type,
 			 t_nrnb *nrnb);
 
@@ -136,7 +136,7 @@ void nbnxn_atomdata_init(FILE *fp,
 
 /* Copy the atom data to the non-bonded atom data structure */
 void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
-                         int aloc,
+                         int locality,
                          const nbnxn_search_t nbs,
                          const t_mdatoms *mdatoms,
                          const int *atinfo);
@@ -150,14 +150,14 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box,
  * FillLocal tells if the local filler particle coordinates should be zeroed.
  */
 void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
-                                      int aloc,
+                                      int locality,
                                       gmx_bool FillLocal,
                                       rvec *x,
                                       nbnxn_atomdata_t *nbat);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
-                                     int aloc,
+                                     int locality,
                                      const nbnxn_atomdata_t *nbat,
                                      rvec *f);
 
