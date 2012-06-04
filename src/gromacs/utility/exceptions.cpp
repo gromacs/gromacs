@@ -105,23 +105,37 @@ int NotImplementedError::errorCode() const
  * Global functions
  */
 
-std::string formatErrorMessage(const std::exception &ex)
+void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {
     const char *title = "Unknown exception";
-    const char *func = NULL;
-    const char *file = NULL;
-    int line = 0;
     const GromacsException *gmxEx = dynamic_cast<const GromacsException *>(&ex);
     // TODO: Also treat common standard exceptions
     if (gmxEx != NULL)
     {
         title = getErrorCodeString(gmxEx->errorCode());
-        func = *boost::get_error_info<boost::throw_function>(*gmxEx);
-        file = *boost::get_error_info<boost::throw_file>(*gmxEx);
-        line = *boost::get_error_info<boost::throw_line>(*gmxEx);
+    }
+    else if (dynamic_cast<const std::bad_alloc *>(&ex) != NULL)
+    {
+        title = "Memory allocation failed";
+    }
+    // We can't call get_error_info directly on ex since our internal boost
+    // needs to be compiled with BOOST_NO_RTTI. So we do the dynamic_cast
+    // here instead.
+    const char *const *funcPtr = NULL;
+    const char *const *filePtr = NULL;
+    const int         *linePtr = NULL;
+    const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
+    if (boostEx != NULL)
+    {
+        funcPtr = boost::get_error_info<boost::throw_function>(*boostEx);
+        filePtr = boost::get_error_info<boost::throw_file>(*boostEx);
+        linePtr = boost::get_error_info<boost::throw_line>(*boostEx);
     }
     // TODO: Treat errno information in boost exceptions
-    return internal::formatFatalError(title, ex.what(), func, file, line);
+    internal::printFatalError(fp, title, ex.what(),
+                              funcPtr != NULL ? *funcPtr : NULL,
+                              filePtr != NULL ? *filePtr : NULL,
+                              linePtr != NULL ? *linePtr : 0);
 }
 
 } // namespace gmx

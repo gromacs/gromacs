@@ -41,6 +41,7 @@
 
 #include <string>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_fatal.h"
@@ -489,11 +490,7 @@ static char *repall(const char *s,int nsr,const t_sandr_const sa[])
         }
         return gmx_strdup(result.c_str());
     }
-    catch (const std::bad_alloc &)
-    {
-        gmx_fatal(FARGS, "Out of memory");
-    }
-    return gmx_strdup(s);
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 static char *repallww(const char *s,int nsr,const t_sandr sa[])
@@ -507,11 +504,7 @@ static char *repallww(const char *s,int nsr,const t_sandr sa[])
         }
         return gmx_strdup(result.c_str());
     }
-    catch (const std::bad_alloc &)
-    {
-        gmx_fatal(FARGS, "Out of memory");
-    }
-    return gmx_strdup(s);
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 static char *html_xref(char *s,const char *program, t_linkdata *links,gmx_bool bWiki)
