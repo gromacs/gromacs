@@ -228,6 +228,12 @@ class TestReferenceChecker::Impl
          * (false).
          */
         bool                    _bWrite;
+        /*! \brief
+         * Current number of unnamed elements in a sequence.
+         *
+         * It is the index of the next added unnamed element.
+         */
+        int                     _seqIndex;
 };
 
 } // namespace test
