@@ -152,7 +152,7 @@ gmx_many_fft_destroy(gmx_fft_t    fft)
     }
 }
 
-#endif
+#endif //not GMX_FFT_FFTW3
 
 int gmx_fft_transpose_2d(t_complex *          in_data,
                          t_complex *          out_data,
