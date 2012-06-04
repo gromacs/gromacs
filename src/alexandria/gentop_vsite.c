@@ -42,6 +42,7 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
+#include "poldata.h"
 #include "toputil.h"
 #include "gentop_vsite.h"
 
@@ -100,6 +101,7 @@ void gentop_vsite_add_linear(gentop_vsite_t gvt,int ai,int aj,int ak)
     if (i == gvt->nlinear)
     {
         srenew(gvt->lin,++gvt->nlinear);
+        gvt->lin[i].nline = NOTSET;
         gvt->lin[i].a[0] = ai;
         gvt->lin[i].a[1] = aj;
         gvt->lin[i].a[2] = ak;
@@ -132,11 +134,12 @@ void gentop_vsite_add_planar(gentop_vsite_t gvt,int ai,int aj,int ak,int al,int 
 
 static void delete_params(t_params plist[],int etype,int alist[])
 {
-    int j,k,l;
+    int j,k,l,nra;
     
-    switch (etype)
+    nra = interaction_function[etype].nratoms;
+    switch (nra)
     {
-    case F_BONDS:
+    case 2:
         /* Remove bonds, if present */
         for(j=0; (j<plist[etype].nr); j++)
         {
@@ -163,8 +166,37 @@ static void delete_params(t_params plist[],int etype,int alist[])
             }
         }
         break;
-    case F_RBDIHS:
-    case F_PDIHS:
+    case 3:
+        /* Remove angle, if present */
+        for(j=0; (j<plist[etype].nr); j++)
+        {
+            if (plist[etype].param[j].a[1] == alist[1])
+            {
+                if (((plist[etype].param[j].a[0] == alist[0]) &&
+                     (plist[etype].param[j].a[2] == alist[2])) ||
+                    ((plist[etype].param[j].a[2] == alist[0]) &&
+                     (plist[etype].param[j].a[0] == alist[2])))
+                {
+                    if (NULL != debug)
+                        fprintf(debug,"Removing angle beteen atoms %d %d %d\n",
+                                alist[0],alist[1],alist[2]);
+                    for(k=j+1; (k<plist[etype].nr); k++)
+                    {
+                        for(l=0; (l<MAXATOMLIST); l++)
+                            plist[etype].param[k-1].a[l] = 
+                                plist[etype].param[k].a[l];
+                        for(l=0; (l<MAXFORCEPARAM); l++)
+                            plist[etype].param[k-1].c[l] = 
+                                plist[etype].param[k].c[l];
+                    }
+                    plist[etype].nr--;
+                    j--;
+                    break;
+                }
+            }
+        }
+        break;
+    case 4:
         /* Remove dihedral, if present. Allow wildcard in alist[3] (specified as -1) */
         for(j=0; (j<plist[etype].nr); j++)
         {
@@ -198,38 +230,9 @@ static void delete_params(t_params plist[],int etype,int alist[])
             }
         }
         break;
-    case F_ANGLES:
-        /* Remove angle, if present */
-        for(j=0; (j<plist[etype].nr); j++)
-        {
-            if (plist[etype].param[j].a[1] == alist[1])
-            {
-                if (((plist[etype].param[j].a[0] == alist[0]) &&
-                     (plist[etype].param[j].a[2] == alist[2])) ||
-                    ((plist[etype].param[j].a[2] == alist[0]) &&
-                     (plist[etype].param[j].a[0] == alist[2])))
-                {
-                    if (NULL != debug)
-                        fprintf(debug,"Removing angle beteen atoms %d %d %d\n",
-                                alist[0],alist[1],alist[2]);
-                    for(k=j+1; (k<plist[etype].nr); k++)
-                    {
-                        for(l=0; (l<MAXATOMLIST); l++)
-                            plist[etype].param[k-1].a[l] = 
-                                plist[etype].param[k].a[l];
-                        for(l=0; (l<MAXFORCEPARAM); l++)
-                            plist[etype].param[k-1].c[l] = 
-                                plist[etype].param[k].c[l];
-                    }
-                    plist[etype].nr--;
-                    j--;
-                    break;
-                }
-            }
-        }
-        break;
     default:
-        fprintf(stderr,"Don't know how to remove params from type %d\n",etype);
+        fprintf(stderr,"Don't know how to remove params from type %s\n",
+                interaction_function[etype].name);
     }
 }
 
@@ -342,13 +345,16 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
     }
 }
 
-void gentop_vsite_check(gentop_vsite_t gvt,int natom)
+void gentop_vsite_merge_linear(gentop_vsite_t gvt,int natom,gmx_bool bGenVsites)
 {
     int i,j,k,l,ai,aj,ndbl,found;
     
     for(i=0; (i<gvt->nlinear); i++)
         gvt->lin[i].nline = 3;
     
+    if (!bGenVsites)
+        return;
+        
     for(i=0; (i<gvt->nlinear); i++)
     {
         for(j=i+1; (j<gvt->nlinear); j++)
@@ -419,20 +425,30 @@ void gentop_vsite_check(gentop_vsite_t gvt,int natom)
 void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
                                    t_atoms *atoms,rvec **x,
                                    t_params plist[],t_symtab *symtab,
-                                   gpp_atomtype_t atype,t_excls **excls)
+                                   gpp_atomtype_t atype,t_excls **excls,
+                                   gmx_poldata_t pd)
 {
     int     i,j,k,l,natoms_old,nlin_at;
     int     a[MAXATOMLIST],aa[2];
     t_param pp;
+    int     ftb,fta,ftp,fti;
     
-    gentop_vsite_check(gvt,atoms->nr);
+    ftb = gmx_poldata_get_bond_ftype(pd);
+    fta = gmx_poldata_get_angle_ftype(pd);
+    ftp = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
+    fti = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
+    gentop_vsite_merge_linear(gvt,atoms->nr,bGenVsites);
     nlin_at = 0;
     for(i=0; (i<gvt->nlinear); i++) 
         nlin_at += gvt->lin[i].nline;
         
-    printf("Generating %d linear %s and %d impropers\n",
-           nlin_at,(bGenVsites ? "vsites" : "angles"),
-           gvt->nplanar);
+    printf("Generating %d linear ",nlin_at);
+    if (bGenVsites)
+        printf("vsites");
+    else
+        printf("angles");
+    printf(" and %d impropers\n",gvt->nplanar);
+    
     if ((gvt->egvt == egvtLINEAR) || (gvt->egvt == egvtALL))
     {
         /* If we use vsites (discouraged) each triplet of atoms in a linear arrangement 
@@ -449,9 +465,9 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
                 a[j] = gvt->lin[i].a[j];
             for( ; (j<MAXATOMLIST); j++)
                 a[j] = -1;
-            delete_params(plist,F_ANGLES,a);
-            delete_params(plist,F_RBDIHS,a);
-            delete_params(plist,F_PDIHS,a);
+            delete_params(plist,fta,a);
+            delete_params(plist,ftp,a);
+            delete_params(plist,fti,a);
             
             if (bGenVsites)
             {
@@ -460,7 +476,7 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
                 {
                     aa[0] = a[j+0];
                     aa[1] = a[j+1];
-                    delete_params(plist,F_BONDS,aa);
+                    delete_params(plist,ftb,aa);
                 }
                 
                 /* Compute details for the new masses and vsites, and update everything */
@@ -500,31 +516,31 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
                     {
                         a[0] = gvt->plan[i].a[1];
                         a[2] = gvt->plan[i].a[2]; 
-                        delete_params(plist,F_RBDIHS,a);
-                        delete_params(plist,F_PDIHS,a);
+                        delete_params(plist,ftp,a);
+                        delete_params(plist,fti,a);
                         a[2] = gvt->plan[i].a[3]; 
-                        delete_params(plist,F_RBDIHS,a);
-                        delete_params(plist,F_PDIHS,a);
+                        delete_params(plist,ftp,a);
+                        delete_params(plist,fti,a);
                     }
                     else if (j == 2)
                     {
                         a[0] = gvt->plan[i].a[2];
                         a[2] = gvt->plan[i].a[1]; 
-                        delete_params(plist,F_RBDIHS,a);
-                        delete_params(plist,F_PDIHS,a);
+                        delete_params(plist,ftp,a);
+                        delete_params(plist,fti,a);
                         a[2] = gvt->plan[i].a[3]; 
-                        delete_params(plist,F_RBDIHS,a);
-                        delete_params(plist,F_PDIHS,a);
+                        delete_params(plist,ftp,a);
+                        delete_params(plist,fti,a);
                     }
                     else if (j == 3)
                     {
                         a[0] = gvt->plan[i].a[3];
                         a[2] = gvt->plan[i].a[1]; 
-                        delete_params(plist,F_RBDIHS,a);
-                        delete_params(plist,F_PDIHS,a);
+                        delete_params(plist,ftp,a);
+                        delete_params(plist,fti,a);
                         a[2] = gvt->plan[i].a[2]; 
-                        delete_params(plist,F_RBDIHS,a);
-                        delete_params(plist,F_PDIHS,a);
+                        delete_params(plist,ftp,a);
+                        delete_params(plist,fti,a);
                     }
                 }
             }
@@ -534,7 +550,7 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
             {
                 pp.a[j] = gvt->plan[i].a[j];
             }
-            add_param_to_list(&(plist[F_IDIHS]),&pp);
+            add_param_to_list(&(plist[fti]),&pp);
         }
     }
 }

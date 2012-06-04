@@ -355,7 +355,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         snew(smnames,atoms->nr);
         snew(plist,F_NRE);
         mk_bonds(pd,atoms,x,NULL,plist,nbonds,TRUE,TRUE,TRUE,
-                 nexcl,&excls,FALSE,NULL,aps,btol);
+                 nexcl,&excls,FALSE,NULL,aps,btol,TRUE);
         ftb = gmx_poldata_get_bond_ftype(pd);
         /* Setting the atom types: this depends on the bonding */
         gvt = gentop_vsite_init(egvtLINEAR);

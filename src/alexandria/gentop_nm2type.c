@@ -177,14 +177,14 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
                 if ((nb == 2) && is_linear(x[i],x[bbb[0]],x[bbb[1]],pbc,th_toler)) 
                 {
                     geom = egmLinear;
-                    if (iter == 0)
+                    if ((iter == 0) && (NULL != gvt))
                         gentop_vsite_add_linear(gvt,bbb[0],i,bbb[1]);
                 }
                 else if ((nb == 3) && is_planar(x[i],x[bbb[0]],x[bbb[1]],x[bbb[2]],
                                                 pbc,phi_toler))
                 {
                     geom = egmPlanar;
-                    if (iter == 0)
+                    if ((iter == 0) && (NULL != gvt))
                         gentop_vsite_add_planar(gvt,i,bbb[0],bbb[1],bbb[2],nbonds);
                 }
                 if (debug)

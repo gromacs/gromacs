@@ -89,12 +89,14 @@ enum {
     exmlNEIGHBORS, 
     exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS,
     exmlFUNCTION,
-    exmlGT_BONDS, exmlLENGTH_UNIT, exmlGT_BOND, exmlPARAMS,
-    exmlATOM1, exmlATOM2, exmlLENGTH, exmlSIGMA, exmlBONDORDER,
-    exmlGT_ANGLES, exmlANGLE_UNIT, exmlGT_ANGLE,
-    exmlATOM3, exmlANGLE, 
+    exmlATOM1, exmlATOM2, exmlATOM3, exmlATOM4,
+    exmlSIGMA, exmlBONDORDER, exmlPARAMS,
+    exmlLENGTH, exmlLENGTH_UNIT, 
+    exmlANGLE, exmlANGLE_UNIT, 
+    exmlGT_BONDS, exmlGT_BOND, 
+    exmlGT_ANGLES, exmlGT_ANGLE,
     exmlGT_DIHEDRALS, exmlGT_DIHEDRAL,
-    exmlATOM4,   
+    exmlGT_IMPROPERS, exmlGT_IMPROPER,
     exmlBSATOMS, exmlBSATOM,
     exmlMILATOMS, exmlTAU_UNIT, exmlAHP_UNIT,
     exmlMILATOM, exmlMILNAME, exmlALEXANDRIA_EQUIV,
@@ -116,12 +118,14 @@ static const char *exml_names[exmlNR] = {
     "neighbors", 
     "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams",
     "function",
-    "gt_bonds", "length_unit", "gt_bond", "params",
-    "atom1", "atom2", "length", "sigma", "bondorder",
-    "gt_angles", "angle_unit", "gt_angle",
-    "atom3", "angle",
+    "atom1", "atom2", "atom3", "atom4", 
+    "sigma", "bondorder", "params",
+    "length", "length_unit",
+    "angle", "angle_unit", 
+    "gt_bonds", "gt_bond", 
+    "gt_angles", "gt_angle",
     "gt_dihedrals", "gt_dihedral",
-    "atom4", 
+    "gt_impropers", "gt_improper",
     "bsatoms", "bsatom",
     "milatoms", "tau_ahc_unit", "alpha_ahp_unit",
     "milatom", "milname", "alexandria_equiv",
@@ -205,7 +209,11 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         break;
     case exmlGT_DIHEDRALS:
         if (NN(xbuf[exmlFUNCTION]))
-            gmx_poldata_set_dihedral_function(pd,xbuf[exmlFUNCTION]);
+            gmx_poldata_set_dihedral_function(pd,egdPDIHS,xbuf[exmlFUNCTION]);
+        break;
+    case exmlGT_IMPROPERS:
+        if (NN(xbuf[exmlFUNCTION]))
+            gmx_poldata_set_dihedral_function(pd,egdIDIHS,xbuf[exmlFUNCTION]);
         break;
     case exmlGT_ANGLES:
         if (NN(xbuf[exmlANGLE_UNIT])) 
@@ -279,10 +287,22 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
             NN(xbuf[exmlATOM3]) && NN(xbuf[exmlATOM4]) && 
             NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
             NN(xbuf[exmlPARAMS]))
-            gmx_poldata_add_dihedral(pd,xbuf[exmlATOM1],xbuf[exmlATOM2],
-                                        xbuf[exmlATOM3],xbuf[exmlATOM4],
-                                        atof(xbuf[exmlANGLE]),atof(xbuf[exmlSIGMA]),
-                                        xbuf[exmlPARAMS]);
+            gmx_poldata_add_dihedral(pd,egdPDIHS,
+                                     xbuf[exmlATOM1],xbuf[exmlATOM2],
+                                     xbuf[exmlATOM3],xbuf[exmlATOM4],
+                                     atof(xbuf[exmlANGLE]),atof(xbuf[exmlSIGMA]),
+                                     xbuf[exmlPARAMS]);
+        break;
+    case exmlGT_IMPROPER:
+        if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) && 
+            NN(xbuf[exmlATOM3]) && NN(xbuf[exmlATOM4]) && 
+            NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
+            NN(xbuf[exmlPARAMS]))
+            gmx_poldata_add_dihedral(pd,egdIDIHS,
+                                     xbuf[exmlATOM1],xbuf[exmlATOM2],
+                                     xbuf[exmlATOM3],xbuf[exmlATOM4],
+                                     atof(xbuf[exmlANGLE]),atof(xbuf[exmlSIGMA]),
+                                     xbuf[exmlPARAMS]);
         break;
     case exmlSYM_CHARGE:
         if (NN(xbuf[exmlCENTRAL]) && NN(xbuf[exmlATTACHED]) && 
@@ -505,28 +525,32 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         sfree(params);
     }
   
-    child = add_xml_child(parent,exml_names[exmlGT_DIHEDRALS]);
-    if ((blu = gmx_poldata_get_angle_unit(pd)) != NULL)
-        add_xml_char(child,exml_names[exmlANGLE_UNIT],blu);
-    if ((func = gmx_poldata_get_dihedral_function(pd)) != NULL)
-        add_xml_char(child,exml_names[exmlFUNCTION],func);
-    while (gmx_poldata_get_dihedral(pd,&atom1,&atom2,&atom3,&atom4,
-                                       &angle,&sigma,&params) > 0) {
-        grandchild = add_xml_child(child,exml_names[exmlGT_DIHEDRAL]);
-        add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
-        add_xml_char(grandchild,exml_names[exmlATOM2],atom2);
-        add_xml_char(grandchild,exml_names[exmlATOM3],atom3);
-        add_xml_char(grandchild,exml_names[exmlATOM4],atom4);
-        add_xml_double(grandchild,exml_names[exmlANGLE],angle);
-        add_xml_double(grandchild,exml_names[exmlSIGMA],sigma);
-        add_xml_char(grandchild,exml_names[exmlPARAMS],params);    
-        sfree(atom1);
-        sfree(atom2);
-        sfree(atom3);
-        sfree(atom4);
-        sfree(params);
+    for(i=0; (i<egdNR); i++) {
+        int exs[egdNR] = { exmlGT_DIHEDRALS, exmlGT_IMPROPERS };
+        int ex[egdNR]  = { exmlGT_DIHEDRAL, exmlGT_IMPROPER };
+        
+        child = add_xml_child(parent,exml_names[exs[i]]);
+        if ((blu = gmx_poldata_get_angle_unit(pd)) != NULL)
+            add_xml_char(child,exml_names[exmlANGLE_UNIT],blu);
+        if ((func = gmx_poldata_get_dihedral_function(pd,i)) != NULL)
+            add_xml_char(child,exml_names[exmlFUNCTION],func);
+        while (gmx_poldata_get_dihedral(pd,i,&atom1,&atom2,&atom3,&atom4,
+                                        &angle,&sigma,&params) > 0) {
+            grandchild = add_xml_child(child,exml_names[ex[i]]);
+            add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
+            add_xml_char(grandchild,exml_names[exmlATOM2],atom2);
+            add_xml_char(grandchild,exml_names[exmlATOM3],atom3);
+            add_xml_char(grandchild,exml_names[exmlATOM4],atom4);
+            add_xml_double(grandchild,exml_names[exmlANGLE],angle);
+            add_xml_double(grandchild,exml_names[exmlSIGMA],sigma);
+            add_xml_char(grandchild,exml_names[exmlPARAMS],params);    
+            sfree(atom1);
+            sfree(atom2);
+            sfree(atom3);
+            sfree(atom4);
+            sfree(params);
+        }
     }
-  
     child = add_xml_child(parent,exml_names[exmlBSATOMS]);
     if ((tmp = gmx_poldata_get_bosque_unit(pd)) != NULL)
         add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);

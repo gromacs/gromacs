@@ -38,6 +38,7 @@
 #define _gentop_vsite_h
 
 #include "grompp.h"
+#include "poldata.h"
 
 enum { egvtNO, egvtLINEAR, egvtPLANAR, egvtALL, egvtNR };
 
@@ -55,6 +56,6 @@ extern void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites
                                           t_atoms *atoms,rvec **x,
                                           t_params plist[],
                                           t_symtab *symtab,gpp_atomtype_t atype,
-                                          t_excls **excls);
+                                          t_excls **excls,gmx_poldata_t pd);
 
 #endif

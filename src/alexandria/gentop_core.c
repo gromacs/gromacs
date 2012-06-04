@@ -85,11 +85,51 @@ static void mv_plist(t_params *dst,t_params *src)
     src->nr = 0;
 }
 
+void mv_plists(gmx_poldata_t pd,t_params plist[],gmx_bool bForward)
+{
+    int ft;
+    
+    /* Now move over to the appropriate function types */
+    if (NOTSET == (ft = gmx_poldata_get_bond_ftype(pd)))
+        gmx_fatal(FARGS,"Bond function type not set in force field file");
+    if (F_BONDS != ft) {
+        if (bForward)
+            mv_plist(&plist[ft],&plist[F_BONDS]);
+        else
+            mv_plist(&plist[F_BONDS],&plist[ft]);
+    }
+    if (NOTSET == (ft = gmx_poldata_get_angle_ftype(pd)))
+        gmx_fatal(FARGS,"Angle function type not set in force field file");
+    if (F_ANGLES != ft) {
+        if (bForward) 
+            mv_plist(&plist[ft],&plist[F_ANGLES]);
+        else
+            mv_plist(&plist[F_ANGLES],&plist[ft]);
+    }
+    if (NOTSET == (ft = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS)))
+        gmx_fatal(FARGS,"Dihedral function type not set in force field file");
+    if (F_PDIHS != ft) {
+        if (bForward)
+            mv_plist(&plist[ft],&plist[F_PDIHS]);
+        else
+            mv_plist(&plist[F_PDIHS],&plist[ft]);
+    }
+    if (NOTSET == (ft = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS)))
+        gmx_fatal(FARGS,"Improper function type not set in force field file");
+    if (F_IDIHS != ft) {
+        if (bForward) 
+            mv_plist(&plist[ft],&plist[F_IDIHS]);
+        else
+            mv_plist(&plist[F_IDIHS],&plist[ft]);
+    }
+}
+
 void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
               gmx_conect gc,t_params plist[],int nbond[],
               gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
               int nexcl,t_excls **excls,
-              gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol)
+              gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
+              gmx_bool bMovePlists)
 {
     t_param  b;
     int      i,j,ft;
@@ -169,21 +209,9 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     generate_excls(&nnb,nexcl,*excls);
     done_nnb(&nnb);
     
-    /* Now move over to the appropriate function types */
-    if (NOTSET == (ft = gmx_poldata_get_bond_ftype(pd)))
-        gmx_fatal(FARGS,"Bond function type not set in force field file");
-    if (F_BONDS != ft)
-        mv_plist(&plist[ft],&plist[F_BONDS]);
-    
-    if (NOTSET == (ft = gmx_poldata_get_angle_ftype(pd)))
-        gmx_fatal(FARGS,"Angle function type not set in force field file");
-    if (F_ANGLES != ft)
-        mv_plist(&plist[ft],&plist[F_ANGLES]);
-        
-    if (NOTSET == (ft = gmx_poldata_get_dihedral_ftype(pd)))
-        gmx_fatal(FARGS,"Dihedral function type not set in force field file");
-    if (F_PDIHS != ft)
-        mv_plist(&plist[ft],&plist[F_PDIHS]);
+    /* Move the plist to the correct function */
+    if (bMovePlists)
+        mv_plists(pd,plist,TRUE);
 }
 
 gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
@@ -216,66 +244,6 @@ gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
     }
     
     return atype;
-}
-
-static void lo_set_force_const(t_params *plist,real c[],int nrfp,gmx_bool bRound,
-                               gmx_bool bDih,gmx_bool bParam)
-{
-/* OBSOLETE ? */
-    int    i,j;
-    double cc;
-    char   buf[32];
-  
-    for(i=0; (i<plist->nr); i++) 
-    {
-        if (!bParam)
-            for(j=0; j<nrfp; j++)
-                c[j] = NOTSET;
-        else 
-        {
-            if (bRound) 
-            {
-                sprintf(buf,"%.2e",plist->param[i].c[0]);
-                sscanf(buf,"%lf",&cc);
-                c[0] = cc;
-            }
-            else 
-                c[0] = plist->param[i].c[0];
-            if (bDih) 
-            {
-                c[0] *= c[2];
-                c[0] = ((int)(c[0] + 3600)) % 360;
-                if (c[0] > 180)
-                    c[0] -= 360;
-                /* To put the minimum at the current angle rather than the maximum */
-                c[0] += 180; 
-            }
-        }
-        for(j=0; (j<nrfp); j++) 
-        {
-            plist->param[i].c[j]      = c[j];
-            plist->param[i].c[nrfp+j] = c[j];
-        }
-        set_p_string(&(plist->param[i]),"");
-    }
-}
-
-void set_force_const(t_params plist[],real kb,real kt,real kp,gmx_bool bRound,
-                     gmx_bool bParam)
-{
-/* OBSOLETE ? */
-    int i;
-    real c[MAXFORCEPARAM];
-  
-    c[0] = 0;
-    c[1] = kb;
-    lo_set_force_const(&plist[F_BONDS],c,2,bRound,FALSE,bParam);
-    c[1] = kt;
-    lo_set_force_const(&plist[F_ANGLES],c,2,bRound,FALSE,bParam);
-    c[1] = kp;
-    c[2] = 3;
-    lo_set_force_const(&plist[F_PDIHS],c,3,bRound,TRUE,bParam);
-    lo_set_force_const(&plist[F_IDIHS],c,2,bRound,TRUE,bParam);
 }
 
 void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
@@ -463,159 +431,6 @@ static void clean_thole(t_params *ps)
     }
     else
         fprintf(stderr,"No Tholes\n");
-}
-
-static void delete_shell_interactions(gmx_poldata_t pd,
-                                      t_params plist[F_NRE],t_atoms *atoms,
-                                      gpp_atomtype_t atype,t_nextnb *nnb,
-                                      t_excls excls[])
-{
-/* OBSOLETE */
-    int atp,jtp,jid,i,j,k,l,m,ftype,nb,nra,npol=0;
-    gmx_bool *bRemove,*bHaveShell,bShell;
-    int  *shell_index;
-    double pp,sp;
-    t_param *p;
-    int bt[] = { F_BONDS, F_ANGLES, F_PDIHS, F_IDIHS, F_LJ14 };
-  
-    pr_alloc(plist[F_BONDS].nr,&(plist[F_POLARIZATION]));
-    for(i=0; (i<asize(bt)); i++) 
-    {
-        ftype = bt[i];
-        p     = plist[ftype].param;
-        nra   = interaction_function[ftype].nratoms;
-        snew(bRemove,plist[ftype].nr);
-        for(j=0; (j<plist[ftype].nr); j++) 
-        {
-            for(k=0; (k<nra); k++) 
-            {
-                atp = atoms->atom[p[j].a[k]].type;
-                if (get_atomtype_ptype(atp,atype) == eptShell) 
-                {
-                    bRemove[j] = TRUE;
-                    if (ftype == F_BONDS) 
-                    {
-                        memcpy(&plist[F_POLARIZATION].param[npol],
-                               &plist[F_BONDS].param[j],
-                               sizeof(plist[F_BONDS].param[j]));
-                        gmx_poldata_type_polarizability(pd,get_atomtype_name(atp,atype),
-                                                          &pp,&sp); 
-                        plist[F_POLARIZATION].param[npol].C0 = pp;
-                        npol++;
-                        fprintf(stderr,"Adding polarization\n");
-                    }
-                }
-            }
-        }
-        for(j=k=0; (j<plist[ftype].nr); j++) 
-        {
-            if (!bRemove[j]) 
-                memcpy(&plist[ftype].param[k++],
-                       &plist[ftype].param[j],
-                       sizeof(plist[ftype].param[j]));
-        }
-        plist[ftype].nr = k;
-        sfree(bRemove);
-    }
-    plist[F_POLARIZATION].nr = npol;
-
-    /* now for all atoms */
-    for (i=0; (i < atoms->nr); i++) 
-    {
-        atp = atoms->atom[i].type;
-        if (get_atomtype_ptype(atp,atype) == eptShell) 
-        {
-            for(m=3; (m<=4); m++) 
-            {
-                /* for all fifth bonded atoms of atom i */
-                for (j=0; (j < nnb->nrexcl[i][m]); j++) 
-                {
-      
-                    /* store the 1st neighbour in nb */
-                    nb = nnb->a[i][m][j];
-                    jtp = atoms->atom[nb].type;
-                    if ((i != nb) && (strcasecmp(get_atomtype_name(jtp,atype),"SHELL") == 0)) 
-                    {
-                        srenew(excls[i].e,excls[i].nr+1);
-                        excls[i].e[excls[i].nr++] = nb;
-                        fprintf(stderr,"Excluding %d from %d\n",nb+1,i+1);
-                    }
-                }
-            }
-        }
-    }
-    my_clean_excls(atoms->nr,excls);
-    pr_alloc(atoms->nr,&(plist[F_THOLE_POL]));
-    npol = 0;
-    snew(bHaveShell,atoms->nr);
-    snew(shell_index,atoms->nr);
-    for (i=0; (i < atoms->nr); i++) 
-    {
-        /* for all first bonded atoms of atom i */
-        for (j=0; (j < nnb->nrexcl[i][1]); j++) 
-        {
-            jid = nnb->a[i][1][j];
-            atp = atoms->atom[jid].type;
-    
-            if (get_atomtype_ptype(atp,atype) == eptShell) 
-            {
-                bHaveShell[i] = TRUE;
-                shell_index[i] = jid;
-            }
-        }
-    }
-  
-    for (i=0; (i < atoms->nr); i++) 
-    {
-        if (bHaveShell[i]) 
-        {
-            /* for all first bonded atoms of atom i */
-            for (j=0; (j < nnb->nrexcl[i][1]); j++) 
-            {
-                jid = nnb->a[i][1][j];
-                if (bHaveShell[jid]) 
-                {
-                    plist[F_THOLE_POL].param[npol].AI = i;
-                    plist[F_THOLE_POL].param[npol].AJ = shell_index[i];
-                    plist[F_THOLE_POL].param[npol].AK = jid;
-                    plist[F_THOLE_POL].param[npol].AL = shell_index[jid];
-                    plist[F_THOLE_POL].param[npol].C0 = 2.6;
-                    plist[F_THOLE_POL].param[npol].C1 = atoms->atom[shell_index[i]].qB;
-                    plist[F_THOLE_POL].param[npol].C2 = atoms->atom[shell_index[jid]].qB;
-                    npol++;
-                }
-            }
-            /* for all second bonded atoms of atom i */
-            for (j=0; (j < nnb->nrexcl[i][2]); j++) 
-            {
-                jid = nnb->a[i][2][j];
-                if ((jid != i) && bHaveShell[jid]) 
-                {
-                    plist[F_THOLE_POL].param[npol].AI = i;
-                    plist[F_THOLE_POL].param[npol].AJ = shell_index[i];
-                    plist[F_THOLE_POL].param[npol].AK = jid;
-                    plist[F_THOLE_POL].param[npol].AL = shell_index[jid];
-                    plist[F_THOLE_POL].param[npol].C0 = 2.6;
-                    plist[F_THOLE_POL].param[npol].C1 = atoms->atom[shell_index[i]].qB;
-                    plist[F_THOLE_POL].param[npol].C2 = atoms->atom[shell_index[jid]].qB;
-                    npol++;
-                }
-            }
-        }
-    }
-    plist[F_THOLE_POL].nr = npol;
-    clean_thole(&plist[F_THOLE_POL]);
-    /* Add shell interactions to pairs */
-    for(j=0; (j<plist[F_LJ14].nr); j++) 
-    {
-        atom_id ai,aj;
-        ai = plist[F_LJ14].param[j].AI;
-        aj = plist[F_LJ14].param[j].AJ;
-        if ((bHaveShell[ai]) || (bHaveShell[aj])) 
-        {
-            /* Do something ??? */
-        }
-    }
 }
 
 real calc_dip(t_atoms *atoms,rvec x[])

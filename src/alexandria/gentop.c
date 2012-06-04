@@ -62,6 +62,7 @@
 #include "gmx_random.h"
 #include "pdb2top.h"
 #include "toputil.h"
+#include "topdirs.h"
 #include "slater_integrals.h"
 #include "gpp_atomtype.h"
 #include "gmx_resp.h"
@@ -255,57 +256,62 @@ void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
 
 static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms)
 {
-    int i,j,n,length;
+    int i,j,n,length,ft,k;
     double xx,sx,cc;
     char *params,**ptr;
     
     length = string2unit(gmx_poldata_get_length_unit(pd));
-    for(j=0; (j<plist[F_BONDS].nr); j++) {
+    ft = gmx_poldata_get_bond_ftype(pd);
+    for(j=0; (j<plist[ft].nr); j++) {
         if (1 == gmx_poldata_search_bond(pd,
-                                            *atoms->atomtype[plist[F_BONDS].param[j].a[0]],
-                                            *atoms->atomtype[plist[F_BONDS].param[j].a[1]],
+                                            *atoms->atomtype[plist[ft].param[j].a[0]],
+                                            *atoms->atomtype[plist[ft].param[j].a[1]],
                                             &xx,&sx,&params)) {
             ptr = split(' ',params);
             n = 0;
             while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
-                plist[F_BONDS].param[j].c[n] = atof(ptr[n]);
+                plist[ft].param[j].c[n] = atof(ptr[n]);
                 sfree(ptr[n]);
                 n++;
             }
             sfree(ptr);
         }
     }
-    for(j=0; (j<plist[F_ANGLES].nr); j++) {
+    ft = gmx_poldata_get_angle_ftype(pd);
+    for(j=0; (j<plist[ft].nr); j++) {
         if (1 == gmx_poldata_search_angle(pd,
-                                             *atoms->atomtype[plist[F_ANGLES].param[j].a[0]],
-                                             *atoms->atomtype[plist[F_ANGLES].param[j].a[1]],
-                                             *atoms->atomtype[plist[F_ANGLES].param[j].a[2]],
+                                             *atoms->atomtype[plist[ft].param[j].a[0]],
+                                             *atoms->atomtype[plist[ft].param[j].a[1]],
+                                             *atoms->atomtype[plist[ft].param[j].a[2]],
                                              &xx,&sx,&params)) {
             ptr = split(' ',params);
             n = 0;
             while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
-                plist[F_ANGLES].param[j].c[n] = atof(ptr[n]);
+                plist[ft].param[j].c[n] = atof(ptr[n]);
                 sfree(ptr[n]);
                 n++;
             }
             sfree(ptr);
         }
     }
-    for(j=0; (j<plist[F_PDIHS].nr); j++) {
-        if (1 == gmx_poldata_search_dihedral(pd,
-                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[0]],
-                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[1]],
-                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[2]],
-                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[3]],
-                                                &xx,&sx,&params)) {
-            ptr = split(' ',params);
-            n = 0;
-            while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
-                plist[F_PDIHS].param[j].c[n] = atof(ptr[n]);
-                sfree(ptr[n]);
-                n++;
+    for(k=0; (k<egdNR); k++) {
+        ft = gmx_poldata_get_dihedral_ftype(pd,k);
+        for(j=0; (j<plist[ft].nr); j++) {
+            if (1 == gmx_poldata_search_dihedral(pd,k,
+                                                 *atoms->atomtype[plist[ft].param[j].a[0]],
+                                                 *atoms->atomtype[plist[ft].param[j].a[1]],
+                                                 *atoms->atomtype[plist[ft].param[j].a[2]],
+                                                 *atoms->atomtype[plist[ft].param[j].a[3]],
+                                                 &xx,&sx,&params)) {
+                ptr = split(' ',params);
+                n = 0;
+                while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
+                    plist[ft].param[j].c[n] = atof(ptr[n]);
+                    sfree(ptr[n]);
+                    n++;
+                }
+                sfree(ptr);
             }
-            sfree(ptr);
         }
     }
 }
@@ -342,10 +348,9 @@ int main(int argc, char *argv[])
         "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
         "The corresponding data files can be found in the library directory",
         "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
-        "information about file formats. By default the forcefield selection",
-        "is interactive, but you can use the [TT]-ff[tt] option to specify",
-        "one of the short names above on the command line instead. In that",
-        "case gentop just looks for the corresponding file.[PAR]",
+        "information about file formats. The default forcefield is Alexandria",
+        "but selection can be made interactive, using the [TT]-ff select[tt] option.",
+        "one of the short names above on the command line instead.[PAR]" 
     };
     const char *bugs[] = {
         "No force constants for impropers are generated"
@@ -364,7 +369,7 @@ int main(int argc, char *argv[])
     int        *nbonds;
     char       **smnames;
     int        *cgnr;
-    int        bts[] = { 1,1,3,1 };
+    int        bts[ebtsNR],bts2[ebtsNR];
     int        nalloc,nelec,ePBC;
     matrix     box;          /* box length matrix */
     t_pbc      pbc;
@@ -431,7 +436,7 @@ int main(int argc, char *argv[])
     static const char *cgopt[] = { NULL, "Atom", "Group", "Neutral", NULL };
     static const char *lot = "B3LYP/aug-cc-pVTZ",*cat="Other";
     static const char *dzatoms = "";
-    static const char *ff = "select";
+    static const char *ff = "alexandria";
     t_pargs pa[] = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
@@ -589,10 +594,6 @@ int main(int argc, char *argv[])
     if ((iModel = name2eemtype(cqgen[0])) == -1)
         gmx_fatal(FARGS,"Invalid model %s. How could you!\n",cqgen[0]);
     
-    /* Set bts for topology output */
-    bts[2] = pdihtp;
-    bts[3] = idihtp;
-    
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
   
@@ -603,6 +604,12 @@ int main(int argc, char *argv[])
         printf("Reading force field information. There are %d atomtypes.\n",
                gmx_poldata_get_natypes(pd));
   
+    /* Set bts for topology output */
+    bts[ebtsBONDS]  = gmx_poldata_get_bond_ftype(pd);
+    bts[ebtsANGLES] = gmx_poldata_get_angle_ftype(pd);
+    bts[ebtsIDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
+    bts[ebtsPDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
+    
     /* Init parameter lists */
     snew(plist,F_NRE);
     init_plist(plist);
@@ -664,7 +671,7 @@ int main(int argc, char *argv[])
     {
         if ((NULL == molnm) || (strlen(molnm) == 0))
         {
-            mymol.name = strdup("BOE");
+            mymol.name = strdup("Koeiepoep.");
             molnm = strdup(mymol.name);
         }
         else
@@ -719,9 +726,6 @@ int main(int argc, char *argv[])
         clean_pdb_names(atoms,&symtab);
         if (bCONECT && (NULL != debug))
             gmx_conect_dump(debug,gc);
-        /*for(i=0; (i<atoms->nr); i++)
-          t_atoms_set_resinfo(atoms,i,&symtab,mymol.name,1,' ',' ');
-        */
     }
     set_pbc(&pbc,ePBC,box);
 
@@ -730,11 +734,11 @@ int main(int argc, char *argv[])
     snew(nbonds,atoms->nr);
     snew(smnames,atoms->nr);
     mk_bonds(pd,atoms,x,gc,plist,nbonds,bH14,(dih == edihAll),bRemoveDih,
-             nexcl,&excls,bPBC,box,aps,btol);
+             nexcl,&excls,bPBC,box,aps,btol,TRUE);
 
     /* Setting the atom types: this depends on the bonding */
     gvt = gentop_vsite_init(egvtALL);
-    if ((atype = set_atom_type(stderr,molnm,&symtab,atoms,&(plist[F_BONDS]),
+    if ((atype = set_atom_type(stderr,molnm,&symtab,atoms,&(plist[bts[ebtsBONDS]]),
                                nbonds,smnames,pd,aps,x,&pbc,th_toler,ph_toler,
                                gvt)) == NULL) 
         gmx_fatal(FARGS,"Can not find all atomtypes. Better luck next time!");
@@ -750,7 +754,7 @@ int main(int argc, char *argv[])
   
     /* Check which algorithm to use for charge generation */
     bQsym = bQsym || (opt2parg_bSet("-symm",asize(pa),pa));
-    symmetric_charges = symmetrize_charges(bQsym,atoms,&(plist[F_BONDS]),
+    symmetric_charges = symmetrize_charges(bQsym,atoms,&(plist[bts[ebtsBONDS]]),
                                            pd,aps,symm_string);
     
     if (NULL != gr)
@@ -867,9 +871,9 @@ int main(int argc, char *argv[])
     {
         int  anr;
         
-        anr = atoms->nr;    
+        anr = atoms->nr;
         gentop_vsite_generate_special(gvt,bGenVSites,atoms,&x,plist,
-                                      &symtab,atype,&excls);
+                                      &symtab,atype,&excls,pd);
         if (atoms->nr > anr) 
         {
             srenew(smnames,atoms->nr);
@@ -877,11 +881,10 @@ int main(int argc, char *argv[])
                 smnames[i] = strdup("ML");
             }
         }
-    
         if (!bPairs)
             plist[F_LJ14].nr = 0;
         if (dih == edihNo)
-            plist[F_PDIHS].nr = 0;
+            plist[bts[ebtsPDIHS]].nr = 0;
     
         if (bAddShells)
         {
@@ -894,7 +897,7 @@ int main(int argc, char *argv[])
         mu = calc_dip(atoms,x);
         
         if ((cgnr = generate_charge_groups(cgtp,atoms,
-                                           &plist[F_BONDS],&plist[F_POLARIZATION],
+                                           &plist[bts[ebtsBONDS]],&plist[F_POLARIZATION],
                                            bUsePDBcharge,
                                            &qtot,&mtot)) == NULL)
             gmx_fatal(FARGS,"Error generating charge groups");
@@ -908,9 +911,9 @@ int main(int argc, char *argv[])
                    "          %4d angles, %4d linear angles\n"
                    "          %4d pairs, %4d bonds, %4d atoms\n"
                    "          %4d polarizations\n",
-                   plist[F_PDIHS].nr,  plist[F_IDIHS].nr, 
-                   plist[F_ANGLES].nr, plist[F_LINEAR_ANGLES].nr,
-                   plist[F_LJ14].nr,   plist[F_BONDS].nr,atoms->nr,
+                   plist[bts[ebtsPDIHS]].nr,  plist[bts[ebtsIDIHS]].nr, 
+                   plist[bts[ebtsANGLES]].nr, plist[F_LINEAR_ANGLES].nr,
+                   plist[F_LJ14].nr,   plist[bts[ebtsBONDS]].nr,atoms->nr,
                    plist[F_POLARIZATION].nr);
         }
         printf("Total charge is %g, total mass is %g, dipole is %g D\n",
@@ -944,7 +947,30 @@ int main(int argc, char *argv[])
                 fprintf(fp,"; due to Paul J. van Maaren and David van der Spoel\n");
                 fprintf(fp,"; (in preparation)\n");
             }
-            write_top(fp,NULL,mymol.name,atoms,FALSE,bts,plist,excls,atype,cgnr,nexcl);
+            mv_plists(pd,plist,FALSE);
+            
+            /* Make pdb2gmx compatible bts array */
+            for(i=0; (i<ebtsNR); i++)
+                bts2[i] = NOTSET;
+            for(i=1; (i<20) && (bts2[ebtsBONDS] == NOTSET); i++)
+                if (ifunc_index(d_bonds,i) == bts[ebtsBONDS])
+                    bts2[ebtsBONDS] = i;
+            for(i=1; (i<20) && (bts2[ebtsANGLES] == NOTSET); i++)
+                if (ifunc_index(d_angles,i) == bts[ebtsANGLES])
+                    bts2[ebtsANGLES] = i;
+            for(i=1; (i<20) && (bts2[ebtsPDIHS] == NOTSET); i++)
+                if (ifunc_index(d_dihedrals,i) == bts[ebtsPDIHS])
+                    bts2[ebtsPDIHS] = i;
+            for(i=1; (i<20) && (bts2[ebtsIDIHS] == NOTSET); i++)
+                if (ifunc_index(d_dihedrals,i) == bts[ebtsIDIHS])
+                    bts2[ebtsIDIHS] = i;
+            bts2[ebtsEXCLS] = 0;
+            bts2[ebtsCMAP] = 0;
+            for(i=0; (i<ebtsNR); i++)
+                if (NOTSET == bts2[i])
+                    gmx_fatal(FARGS,"Could not find ftype for bts[%d]",i);
+            
+            write_top(fp,NULL,mymol.name,atoms,FALSE,bts2,plist,excls,atype,cgnr,nexcl);
             if (bAddShells)
             {
                 /* write_zeta_q(fp,qqgen,atoms,pd,iModel);*/

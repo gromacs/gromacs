@@ -439,12 +439,12 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         mk_bonds(pd,mymol->atoms,mymol->x,NULL,plist,nbonds,
                  bH14,bAllDihedrals,bRemoveDoubleDihedrals,
                  nexcl,&mymol->excls,
-                 TRUE,mymol->box,aps,btol);
+                 TRUE,mymol->box,aps,btol,TRUE);
         mk_ff_mtop(&mymol->mtop,pd);
         
         /* Setting the atom types: this depends on the bonding */
         set_pbc(&pbc,epbcNONE,mymol->box);
-        gvt = gentop_vsite_init(egvtLINEAR);
+        gvt = gentop_vsite_init(egvtALL);
         if ((mymol->atype = set_atom_type(NULL,mymol->molname,&(mymol->symtab),mymol->atoms,
                                           &(plist[ftb]),nbonds,mymol->smnames,pd,aps,
                                           mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
@@ -545,11 +545,12 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     {
         char *xyz_unit,*V_unit;
         double x,y,z,V;
-        int  cref,xu,vu,espnr;
+        int  cref,xu,vu,espnr,ftb;
         
+        ftb = gmx_poldata_get_bond_ftype(pd);
         snew(mymol->symmetric_charges,mymol->nalloc);
         mymol->symmetric_charges = symmetrize_charges(TRUE,mymol->atoms,
-                                                      &(plist[F_BONDS]),pd,aps,(char *)"");
+                                                      &(plist[ftb]),pd,aps,(char *)"");
         
         mymol->gr = gmx_resp_init(pd,iModel,FALSE,0,0,mymol->qtotal,
                                   0,0,-1,TRUE,watoms,rDecrZeta,FALSE,1,

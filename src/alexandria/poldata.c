@@ -122,9 +122,9 @@ typedef struct gmx_poldata {
     int ngt_angle,ngt_angle_c,gt_angle_ftype;
     char *gt_angle_unit;
     t_gt_angle *gt_angle;
-    char *gt_dihedral_function;
-    int ngt_dihedral,ngt_dihedral_c,gt_dihedral_ftype;
-    t_gt_dihedral *gt_dihedral;
+    char *gt_dihedral_function[egdNR];
+    int ngt_dihedral[egdNR],ngt_dihedral_c[egdNR],gt_dihedral_ftype[egdNR];
+    t_gt_dihedral *gt_dihedral[egdNR];
     int nmiller,nmiller_c;
     t_miller *miller;
     char *miller_tau_unit,*miller_ahp_unit;
@@ -145,7 +145,8 @@ typedef struct gmx_poldata {
 gmx_poldata_t gmx_poldata_init()
 {
     gmx_poldata_t pd;
-  
+    int i;
+      
     snew(pd,1);
     
     /* Initiate some crucial variables */
@@ -156,7 +157,8 @@ gmx_poldata_t gmx_poldata_init()
     pd->gt_vdw_ftype = NOTSET;
     pd->gt_bond_ftype = NOTSET;
     pd->gt_angle_ftype = NOTSET;
-    pd->gt_dihedral_ftype = NOTSET;
+    for(i=0; (i<egdNR); i++)
+        pd->gt_dihedral_ftype[i] = NOTSET;
     
     return pd;
 }
@@ -313,29 +315,32 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
     for(j=0; (j<pd->nalexandria); j++) 
         if (strcasecmp(pd->alexandria[j].type,gt_type) == 0)
             break;
-    if (j == pd->nalexandria) 
-        gmx_fatal(FARGS,"No such type %s in the force field when adding bonding_rule",
-                  gt_type);
-    for(i=0; (i<pd->nbrule); i++) 
-        if (strcasecmp(pd->brule[i].name,gt_name) == 0)
-            break;
-    if (i == pd->nbrule) {
-        pd->nbrule++;
-        srenew(pd->brule,pd->nbrule);
-  
-        sp = &(pd->brule[i]);
-        sp->elem           = strdup(pd->alexandria[j].elem);
-        sp->name           = strdup(gt_name);
-        sp->type           = strdup(gt_type);
-        sp->neighbors      = strdup(neighbors);
-        sp->nb             = split(' ',neighbors);
-        for(sp->numnb=0; (sp->nb[sp->numnb] != NULL); sp->numnb++)
-            ;
-        sp->geometry       = strdup(geometry);
-        sp->numbonds       = numbonds;
+    if (j < pd->nalexandria) {
+        for(i=0; (i<pd->nbrule); i++) 
+            if (strcasecmp(pd->brule[i].name,gt_name) == 0)
+                break;
+        if (i == pd->nbrule) {
+            pd->nbrule++;
+            srenew(pd->brule,pd->nbrule);
+            
+            sp = &(pd->brule[i]);
+            sp->elem           = strdup(pd->alexandria[j].elem);
+            sp->name           = strdup(gt_name);
+            sp->type           = strdup(gt_type);
+            sp->neighbors      = strdup(neighbors);
+            sp->nb             = split(' ',neighbors);
+            for(sp->numnb=0; (sp->nb[sp->numnb] != NULL); sp->numnb++)
+                ;
+            sp->geometry       = strdup(geometry);
+            sp->numbonds       = numbonds;
+        }
+        else 
+            fprintf(stderr,"Atom %s was already added to pdata record\n",gt_name);
     }
-    else 
-        fprintf(stderr,"Atom %s was already added to pdata record\n",gt_name);
+    else if (NULL != debug) {
+        fprintf(debug,"Ignoring bonding rule involving unknown atom type %s\n",
+                gt_type);
+    }
 }
 
 int gmx_poldata_get_bonding_rule(gmx_poldata_t pd,
@@ -372,9 +377,9 @@ int gmx_poldata_get_ngt_angle(gmx_poldata_t pd)
     return pd->ngt_angle;
 }
 
-int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd)
+int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd,int egd)
 {
-    return pd->ngt_dihedral;
+    return pd->ngt_dihedral[egd];
 }
 
 void gmx_poldata_set_bond_function(gmx_poldata_t pd,char *fn)
@@ -427,29 +432,29 @@ int gmx_poldata_get_angle_ftype(gmx_poldata_t pd)
     return pd->gt_angle_ftype;
 }
 
-int gmx_poldata_get_dihedral_ftype(gmx_poldata_t pd)
+int gmx_poldata_get_dihedral_ftype(gmx_poldata_t pd,int egd)
 {
-    return pd->gt_dihedral_ftype;
+    return pd->gt_dihedral_ftype[egd];
 }
 
-void gmx_poldata_set_dihedral_function(gmx_poldata_t pd,char *fn)
+void gmx_poldata_set_dihedral_function(gmx_poldata_t pd,int egd,char *func)
 {
     int i;
 
-    if (NULL != pd->gt_dihedral_function)
-        sfree(pd->gt_dihedral_function);
+    if (NULL != pd->gt_dihedral_function[egd])
+        sfree(pd->gt_dihedral_function[egd]);
     for(i=0; (i<F_NRE); i++)
-        if (strcasecmp(interaction_function[i].name,fn) == 0)
+        if (strcasecmp(interaction_function[i].name,func) == 0)
             break;
     if (i == F_NRE)
-        gmx_fatal(FARGS,"Dihedral function '%s' does not exist in gromacs",fn);
-    pd->gt_dihedral_ftype = i;
-    pd->gt_dihedral_function = strdup(fn);
+        gmx_fatal(FARGS,"Dihedral function '%s' does not exist in gromacs",func);
+    pd->gt_dihedral_ftype[egd] = i;
+    pd->gt_dihedral_function[egd] = strdup(func);
 }
 
-char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd)
+char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd,int egd)
 {
-    return pd->gt_dihedral_function;
+    return pd->gt_dihedral_function[egd];
 }
 
 void gmx_poldata_set_atype_polarizability(gmx_poldata_t pd,char *gt_type,
@@ -1126,35 +1131,37 @@ static int gtd_comp(const void *a,const void *b)
     return n;
 }   
 
-static t_gt_dihedral *search_dihedral(gmx_poldata_t pd,
+static t_gt_dihedral *search_dihedral(gmx_poldata_t pd,int egd,
                                       char *atom1,char *atom2,
                                       char *atom3,char *atom4)
 {
-    t_gt_dihedral gt_a,*gt_res;
- 
+    t_gt_dihedral gt_a,*gt_res,*gt_dptr;
+    int nd;
+    
+    gt_dptr = pd->gt_dihedral[egd];
+    nd = pd->ngt_dihedral[egd];
     gt_a.atom1 = atom1;
     gt_a.atom2 = atom2;
     gt_a.atom3 = atom3;
     gt_a.atom4 = atom4;
-    gt_res = bsearch(&gt_a,pd->gt_dihedral,pd->ngt_dihedral,
-                     sizeof(gt_a),&gtd_comp);
+    gt_res = bsearch(&gt_a,gt_dptr,nd,sizeof(gt_a),&gtd_comp);
     if (NULL == gt_res) {
         gt_a.atom1 = atom4;
         gt_a.atom2 = atom3;
         gt_a.atom3 = atom2;
         gt_a.atom4 = atom1;
-        gt_res = bsearch(&gt_a,pd->gt_dihedral,pd->ngt_dihedral,
-                         sizeof(gt_a),gtd_comp);
+        gt_res = bsearch(&gt_a,gt_dptr,nd,sizeof(gt_a),gtd_comp);
     }
     return gt_res;
 }
 
-int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
+int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,int egd,
+                                    char *atom1,char *atom2,
                                     char *atom3,char *atom4,char *params)
 {
     t_gt_dihedral *gt_res;
     
-    gt_res = search_dihedral(pd,atom1,atom2,atom3,atom4);
+    gt_res = search_dihedral(pd,egd,atom1,atom2,atom3,atom4);
     if (NULL != gt_res) {
         if (NULL != gt_res->params)
             sfree(gt_res->params);
@@ -1164,11 +1171,11 @@ int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
     return 0;
 }
 
-int gmx_poldata_add_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+int gmx_poldata_add_dihedral(gmx_poldata_t pd,int egd,
+                             char *atom1,char *atom2,
                              char *atom3,char *atom4,double dihedral,
                              double sigma,char *params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_dihedral *gt_b;
     int i;
 
@@ -1178,11 +1185,11 @@ int gmx_poldata_add_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
         (-1 == search_atomtype(pd,atom4)))
         return 0;
 
-    if (0 == gmx_poldata_set_dihedral_params(pd,atom1,atom2,
+    if (0 == gmx_poldata_set_dihedral_params(pd,egd,atom1,atom2,
                                              atom3,atom4,params)) {  
-        pold->ngt_dihedral++;
-        srenew(pold->gt_dihedral,pold->ngt_dihedral);
-        gt_b = &(pold->gt_dihedral[pold->ngt_dihedral-1]);
+        pd->ngt_dihedral[egd]++;
+        srenew(pd->gt_dihedral[egd],pd->ngt_dihedral[egd]);
+        gt_b = &(pd->gt_dihedral[egd][pd->ngt_dihedral[egd]-1]);
         gt_b->atom1   = strdup(atom1);
         gt_b->atom2   = strdup(atom2);
         gt_b->atom3   = strdup(atom3);
@@ -1190,22 +1197,22 @@ int gmx_poldata_add_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
         gt_b->dihedral   = dihedral;
         gt_b->sigma   = sigma;
         gt_b->params = strdup(params);
-        qsort(pold->gt_dihedral,pold->ngt_dihedral,sizeof(pold->gt_dihedral[0]),
+        qsort(pd->gt_dihedral[egd],pd->ngt_dihedral[egd],sizeof(pd->gt_dihedral[egd][0]),
               gtd_comp);
     }
     return 1;
 }
 
-int gmx_poldata_get_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
+int gmx_poldata_get_dihedral(gmx_poldata_t pd,int egd,
+                             char **atom1,char **atom2,
                              char **atom3,char **atom4,double *dihedral,
                              double *sigma,char **params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_dihedral *gt_b;
     int i;
   
-    if (pold->ngt_dihedral_c < pold->ngt_dihedral) {
-        gt_b = &(pold->gt_dihedral[pold->ngt_dihedral_c]);
+    if (pd->ngt_dihedral_c[egd] < pd->ngt_dihedral[egd]) {
+        gt_b = &(pd->gt_dihedral[egd][pd->ngt_dihedral_c[egd]]);
         assign_str(atom1,gt_b->atom1);
         assign_str(atom2,gt_b->atom2);
         assign_str(atom3,gt_b->atom3);
@@ -1213,28 +1220,29 @@ int gmx_poldata_get_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
         assign_scal(dihedral,gt_b->dihedral);
         assign_scal(sigma,gt_b->sigma);
         assign_str(params,gt_b->params);
-        pold->ngt_dihedral_c++;
+        pd->ngt_dihedral_c[egd]++;
     
-        return pold->ngt_dihedral_c;
+        return pd->ngt_dihedral_c[egd];
     }
-    pold->ngt_dihedral_c = 0;
+    pd->ngt_dihedral_c[egd] = 0;
   
     return 0;
 }
 
-int gmx_poldata_search_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+int gmx_poldata_search_dihedral(gmx_poldata_t pd,int egd,
+                                char *atom1,char *atom2,
                                 char *atom3,char *atom4,
                                 double *dihedral,double *sigma,char **params)
 {
     t_gt_dihedral *gt_res;
     
-    gt_res = search_dihedral(pd,atom1,atom2,atom3,atom4);
+    gt_res = search_dihedral(pd,egd,atom1,atom2,atom3,atom4);
     if (NULL != gt_res) {
         assign_scal(dihedral,gt_res->dihedral);
         assign_scal(sigma,gt_res->sigma);
         assign_str(params,gt_res->params);
         
-        return 1 + (int) (gt_res - pd->gt_dihedral);
+        return 1 + (int) (gt_res - pd->gt_dihedral[egd]);
     }
     return 0;
 }

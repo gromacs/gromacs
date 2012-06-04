@@ -46,6 +46,8 @@ enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
 extern "C" {
 #endif
 
+enum { egdPDIHS, egdIDIHS, egdNR };
+
 typedef struct gmx_poldata *gmx_poldata_t;
 
 extern gmx_poldata_t gmx_poldata_init();
@@ -55,7 +57,7 @@ extern void gmx_poldata_set_filename(gmx_poldata_t pd,char *fn2);
 extern int gmx_poldata_get_natypes(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_bond(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_angle(gmx_poldata_t pd);
-extern int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd);
+extern int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd,int egd);
 
 extern void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
                                          char *gt_name,char *gt_type,
@@ -222,31 +224,35 @@ extern void gmx_poldata_set_angle_unit(gmx_poldata_t pd,char *angle_unit);
 
 extern char *gmx_poldata_get_angle_unit(gmx_poldata_t pd);
 
-extern void gmx_poldata_set_dihedral_function(gmx_poldata_t pd,char *fn);
-extern char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd);
-extern int gmx_poldata_get_dihedral_ftype(gmx_poldata_t pd);
+extern void gmx_poldata_set_dihedral_function(gmx_poldata_t pd,int egd,char *fn);
+extern char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd,int egd);
+extern int gmx_poldata_get_dihedral_ftype(gmx_poldata_t pd,int egd);
     
 /* Return 1 on success or 0 otherwise */
-extern int gmx_poldata_add_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+extern int gmx_poldata_add_dihedral(gmx_poldata_t pd,int egd,char *atom1,char *atom2,
                                     char *atom3,char *atom4,
                                     double dihedral,double sigma,char *params);
 				   
-extern int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
+extern int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,int egd,
+                                           char *atom1,char *atom2,
                                            char *atom3,char *atom4,char *params);
 				   
-    /* Return dihedral-index 1-N or 0 if not found */
-extern int gmx_poldata_get_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
+/* Return dihedral-index 1-N or 0 if not found */
+extern int gmx_poldata_get_dihedral(gmx_poldata_t pd,int egd,
+                                    char **atom1,char **atom2,
                                     char **atom3,char **atom4,
                                     double *dihedral,double *sigma,char **params);
 
     /* Return dihedral-index 1-N or 0 if not found */
-extern int gmx_poldata_search_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+extern int gmx_poldata_search_dihedral(gmx_poldata_t pd,int egd,
+                                       char *atom1,char *atom2,
                                        char *atom3,char *atom4,
                                        double *dihedral,double *sigma,char **params);
 
-extern void gmx_poldata_set_dihedral_unit(gmx_poldata_t pd,char *dihedral_unit);
+extern void gmx_poldata_set_dihedral_unit(gmx_poldata_t pd,int egd,
+                                          char *dihedral_unit);
 
-extern char *gmx_poldata_get_dihedral_unit(gmx_poldata_t pd);
+extern char *gmx_poldata_get_dihedral_unit(gmx_poldata_t pd,int egd);
 
 extern void gmx_poldata_add_symcharges(gmx_poldata_t pd,char *central,
                                        char *attached,int numattach);

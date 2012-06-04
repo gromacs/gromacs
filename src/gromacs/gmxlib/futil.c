@@ -928,8 +928,8 @@ FILE *low_libopen(const char *file,gmx_bool bFatal)
         ff=NULL;
     } else {
       if (debug)
-	fprintf(debug,"Opening library file %s\n",fn);
-      ff=fopen(fn,"r");
+          fprintf(debug,"Opening library file %s\n",fn);
+      ff = ffopen(fn,"r");
     }
     sfree(fn);
 

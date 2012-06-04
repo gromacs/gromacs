@@ -334,8 +334,9 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_sigma(b->dih[i].lsq,&sig);
         gmx_stats_get_npoints(b->dih[i].lsq,&N);
         sprintf(pbuf,"%g",kp);
-        gmx_poldata_add_dihedral(pd,b->dih[i].a1,b->dih[i].a2,
-                                    b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
+        gmx_poldata_add_dihedral(pd,egdPDIHS,
+                                 b->dih[i].a1,b->dih[i].a2,
+                                 b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
         fprintf(fp,"dihedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4,av,sig);
     }
@@ -400,7 +401,7 @@ int main(int argc,char *argv[])
     rvec *x,dx,dx2,r_ij,r_kj,r_kl,mm,nn;
     t_pbc pbc;
     int t1,t2,t3;
-    int ftb,fta,ftd;
+    int ftb,fta,ftd,fti;
     matrix box;
     real sign;
     gmx_conect conect;
@@ -452,7 +453,8 @@ int main(int argc,char *argv[])
 #define ATP(ii) get_atomtype_name(md->mymol[i].atoms->atom[ii].type,md->mymol[i].atype)
     ftb = gmx_poldata_get_bond_ftype(md->pd);
     fta = gmx_poldata_get_angle_ftype(md->pd);
-    ftd = gmx_poldata_get_dihedral_ftype(md->pd);
+    ftd = gmx_poldata_get_dihedral_ftype(md->pd,egdPDIHS);
+    fti = gmx_poldata_get_dihedral_ftype(md->pd,egdIDIHS);
     snew(b,1);
     for(i=0; (i<md->nmol); i++) {
         molname = md->mymol[i].molname;

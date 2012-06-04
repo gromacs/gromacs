@@ -187,7 +187,7 @@ int get_file(const char *db,char ***strings)
   char buf[STRLEN];
   int  i,nstr,maxi;
 
-  in=libopen(db);
+  in=ffopen(db,"r");
   
   i=maxi=0;
   while (fgets2(buf,STRLEN-1,in)) {

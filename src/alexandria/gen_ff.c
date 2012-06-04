@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "typedefs.h"
+#include "pdb2top.h"
 #include "atomprop.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -12,7 +13,7 @@ int main(int argc,char *argv[])
   char *smname,*elem,*desc,*gt_type,*gt_old,*charge;
   char *neighbors,*vdwparams,*geometry;
   int numbonds,atomnumber;
-  int btp=1,atp=1,dtp=1;
+  int bts[ebtsNR];
   char *ai,*aj,*ak,*al,*params;
   double polarizability,sig_pol;
   real mass;
@@ -50,25 +51,37 @@ int main(int argc,char *argv[])
 	  gt_old = gt_type;
 	}
     }
+  bts[ebtsBONDS] = gmx_poldata_get_bond_ftype(pd);
+  bts[ebtsANGLES] = gmx_poldata_get_angle_ftype(pd);
+  bts[ebtsPDIHS] = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
+  bts[ebtsIDIHS] = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
+  
   /* Bondtypes */
   fprintf(fp,"\n[ bondtypes ]\n");
   fprintf(fp,"; ; i    j  func       parameters\n");
   while (1 == gmx_poldata_get_bond(pd,&ai,&aj,NULL,NULL,NULL,&params)) {
-    fprintf(fp,"%-5s  %-5s   %d  %s\n",ai,aj,btp,params);
+    fprintf(fp,"%-5s  %-5s   %d  %s\n",ai,aj,bts[ebtsBONDS],params);
   }
 
   /* Angletypes */
   fprintf(fp,"\n[ angletypes ]\n");
   fprintf(fp,"; ; i    j   k  func       parameters\n");
   while (1 == gmx_poldata_get_angle(pd,&ai,&aj,&ak,NULL,NULL,&params)) {
-    fprintf(fp,"%-5s  %-5s  %-5s  %d  %s\n",ai,aj,ak,atp,params);
+    fprintf(fp,"%-5s  %-5s  %-5s  %d  %s\n",ai,aj,ak,bts[ebtsANGLES],params);
   }
   
   /* Dihedraltypes */
   fprintf(fp,"\n[ dihedraltypes ]\n");
   fprintf(fp,"; ; i    j   k    l  func       parameters\n");
-  while (1 == gmx_poldata_get_dihedral(pd,&ai,&aj,&ak,&al,NULL,NULL,&params)) {
-    fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %s\n",ai,aj,ak,al,dtp,params);
+  while (1 == gmx_poldata_get_dihedral(pd,egdPDIHS,&ai,&aj,&ak,&al,NULL,NULL,&params)) {
+    fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %s\n",ai,aj,ak,al,bts[ebtsPDIHS],params);
+  }
+  
+  /* Impropertypes */
+  fprintf(fp,"\n[ dihedraltypes ]\n");
+  fprintf(fp,"; ; i    j   k    l  func       parameters\n");
+  while (1 == gmx_poldata_get_dihedral(pd,egdIDIHS,&ai,&aj,&ak,&al,NULL,NULL,&params)) {
+    fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %s\n",ai,aj,ak,al,bts[ebtsIDIHS],params);
   }
   
   fclose(fp);

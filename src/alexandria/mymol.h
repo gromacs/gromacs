@@ -22,6 +22,7 @@ enum
 enum { eSupportNo, eSupportLocal, eSupportRemote, eSupportNR };
 
 typedef struct {
+  /* Primary properties */
     char           *molname,*lot,*ref;
     int            eSupport;
     int            qtotal,mult,natom,nalloc,nshell;
