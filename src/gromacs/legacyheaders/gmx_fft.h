@@ -184,27 +184,6 @@ gmx_fft_init_many_1d_real        (gmx_fft_t *       fft,
                                   gmx_fft_flag      flags);
 
 
-
-/*! \brief Setup a 2-dimensional complex-to-complex transform 
- *
- *  \param fft    Pointer to opaque Gromacs FFT datatype
- *  \param nx     Length of transform in first dimension
- *  \param ny     Length of transform in second dimension
- *  \param flags  FFT options
- *
- *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
- *        i.e. you should create one copy per thread when executing in parallel.
- */
-int
-gmx_fft_init_2d        (gmx_fft_t *         fft,
-                        int                 nx, 
-                        int                 ny,
-                        gmx_fft_flag        flags);
-
-
 /*! \brief Setup a 2-dimensional real-to-complex transform 
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
@@ -226,54 +205,6 @@ gmx_fft_init_2d_real        (gmx_fft_t *         fft,
                              int                 nx, 
                              int                 ny,
                              gmx_fft_flag        flags);
-
-
-/*! \brief Setup a 3-dimensional complex-to-complex transform 
- *
- *  \param fft    Pointer to opaque Gromacs FFT datatype
- *  \param nx     Length of transform in first dimension
- *  \param ny     Length of transform in second dimension
- *  \param nz     Length of transform in third dimension
- *  \param flags  FFT options
- *
- *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
- *        i.e. you should create one copy per thread when executing in parallel.
- */
-int
-gmx_fft_init_3d        (gmx_fft_t *         fft,
-                        int                 nx, 
-                        int                 ny,
-                        int                 nz,
-                        gmx_fft_flag   flags);
-
-
-/*! \brief Setup a 3-dimensional real-to-complex transform 
- *
- *  \param fft    Pointer to opaque Gromacs FFT datatype
- *  \param nx     Length of transform in first dimension
- *  \param ny     Length of transform in second dimension
- *  \param nz     Length of transform in third dimension
- *  \param flags  FFT options
- *
- *  The normal space is assumed to be real, while the values in
- *  frequency space are complex.
- *
- *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
- *        i.e. you should create one copy per thread when executing in parallel.
- */
-int
-gmx_fft_init_3d_real   (gmx_fft_t *         fft,
-                        int                 nx, 
-                        int                 ny,
-                        int                 nz,
-                        gmx_fft_flag   flags);
-
 
 
 /*! \brief Perform a 1-dimensional complex-to-complex transform
@@ -382,32 +313,6 @@ gmx_fft_many_1d_real     (gmx_fft_t                  setup,
                           void *                     in_data,
                           void *                     out_data);
 
-
-/*! \brief Perform a 2-dimensional complex-to-complex transform
- *
- *  Performs an instance of a transform previously initiated.
- *
- *  \param setup     Setup returned from gmx_fft_init_1d()
- *  \param dir       Forward or Backward
- *  \param in_data   Input grid data. This should be allocated with gmx_new()
- *                   to make it 16-byte aligned for better performance.
- *  \param out_data  Output grid data. This should be allocated with gmx_new()
- *                   to make it 16-byte aligned for better performance.
- *                   You can provide the same pointer for in_data and out_data
- *                   to perform an in-place transform.
- *
- * \return 0 on success, or an error code.
- *
- * \note Data pointers are declared as void, to avoid casting pointers 
- *       depending on your grid type.
- */
-int 
-gmx_fft_2d               (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
-
-
 /*! \brief Perform a 2-dimensional real-to-complex transform
  *
  *  Performs an instance of a transform previously initiated.
@@ -442,68 +347,6 @@ gmx_fft_2d_real          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
                           void *                     out_data);
-
-
-/*! \brief Perform a 3-dimensional complex-to-complex transform
- *
- *  Performs an instance of a transform previously initiated.
- *
- *  \param setup     Setup returned from gmx_fft_init_1d()
- *  \param dir       Forward or Backward
- *  \param in_data   Input grid data. This should be allocated with gmx_new()
- *                   to make it 16-byte aligned for better performance.
- *  \param out_data  Output grid data. This should be allocated with gmx_new()
- *                   to make it 16-byte aligned for better performance.
- *                   You can provide the same pointer for in_data and out_data
- *                   to perform an in-place transform.
- *
- * \return 0 on success, or an error code.
- *
- * \note Data pointers are declared as void, to avoid casting pointers 
- *       depending on your grid type.
- */
-int 
-gmx_fft_3d               (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
-
-
-/*! \brief Perform a 3-dimensional real-to-complex transform
- *
- *  Performs an instance of a transform previously initiated.
- *
- *  \param setup     Setup returned from gmx_fft_init_1d_real()
- *  \param dir       Real-to-complex or complex-to-real
- *  \param in_data   Input grid data. This should be allocated with gmx_new()
- *                   to make it 16-byte aligned for better performance.
- *  \param out_data  Output grid data. This should be allocated with gmx_new()
- *                   to make it 16-byte aligned for better performance.
- *                   You can provide the same pointer for in_data and out_data
- *                   to perform an in-place transform.
- *
- * \return 0 on success, or an error code.
- *
- * \note If you are doing an in-place transform, the last dimension of the
- * array MUST be padded up to an even integer length so n/2 complex numbers can 
- * fit. Thus, if the real grid e.g. has dimension 7*5*3, you must allocate it as
- * a 7*5*4 array, where the last element in the second dimension is padding.
- * The complex data will be written to the same array, but since that dimension
- * is 7*5*2 it will now fill the entire array. Reverse complex-to-real in-place
- * transformation will produce the same sort of padded array.
- *
- * The padding does NOT apply to out-of-place transformation. In that case the
- * input will simply be 7*5*3 of real, while the output is 7*5*2 of complex.
- *
- * \note Data pointers are declared as void, to avoid casting pointers 
- *       depending on transform direction.
- */
-int 
-gmx_fft_3d_real          (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
-
 
 /*! \brief Release an FFT setup structure 
  *
@@ -548,42 +391,12 @@ gmx_fft_transpose_2d   (t_complex *       in_data,
                         int               nx,
                         int               ny);
 
-
-/*! \brief Transpose 2d multi-element matrix 
- * 
- * This routine is very similar to gmx_fft_transpose_2d(), but it 
- * supports matrices with more than one data value for each position.
- * It is extremely useful when transposing the x/y dimensions of a 3d
- * matrix - in that case you just set nelem to nz, and the routine will do
- * and x/y transpose where it moves entire columns of z data 
+/*! \brief Cleanup global data of FFT
  *
- * This routines works when the matrix is non-square, i.e. nx!=ny too, 
- * without allocating an entire matrix of work memory, which is important
- * for huge FFT grid.
- *
- * For performance reasons you need to provide a \a small workarray 
- * with length at least 2*nelem (note that the type is char, not t_complex).
- *
- * \param in_data    Input data, to be transposed 
- * \param out_data   Output, transposed data. If this is identical to 
- *                   in_data, an in-place transpose is performed.
- * \param nx         Number of rows before transpose
- * \param ny         Number of columns before transpose
- * \param nelem      Number of t_complex values in each position. If this
- *                   is 1 it is faster to use gmx_fft_transpose_2d() directly.
- * \param work       Work array of length 2*nelem, type t_complex.
- *
- * \return GMX_SUCCESS, or an error code from gmx_errno.h
- */
-int
-gmx_fft_transpose_2d_nelem(t_complex *        in_data,
-                           t_complex *        out_data,
-                           int                nx,
-                           int                ny,
-                           int                nelem,
-                           t_complex *        work);
-
-
+ *  Any plans are invalid after this function. Should be called
+ *  after all plans have been destroyed.s
+ * */
+void gmx_fft_cleanup();
 
 
 #ifdef __cplusplus

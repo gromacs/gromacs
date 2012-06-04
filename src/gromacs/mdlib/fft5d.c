@@ -1122,8 +1122,8 @@ void fft5d_destroy(fft5d_plan plan) {
         }
     }
 #ifdef GMX_FFT_FFTW3 
-    FFTW_LOCK;
 #ifdef FFT5D_MPI_TRANSPOS
+    FFTW_LOCK;
     for (s=0;s<2;s++)    
     {
         FFTW(destroy_plan)(plan->mpip[s]);
@@ -1132,6 +1132,7 @@ void fft5d_destroy(fft5d_plan plan) {
     {
         FFTW(destroy_plan)(plan->p3d);
     }
+    FFTW_UNLOCK;
 #endif /* FFT5D_MPI_TRANSPOS */
 #endif /* GMX_FFT_FFTW3 */
 

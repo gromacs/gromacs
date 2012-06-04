@@ -25,6 +25,10 @@
 #include "gmxcomplex.h"
 #include "gmx_fft.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct gmx_parallel_3dfft *
 gmx_parallel_3dfft_t;
 
@@ -41,14 +45,14 @@ gmx_parallel_3dfft_t;
  *
  *  \param pfft_setup     Pointer to parallel 3dfft setup structure, previously
  *                        allocated or with automatic storage.
- *  \param ngridx         Global number of grid cells in the x direction. Must be
- *                        divisible by the number of nodes.
- *  \param ngridy         Global number of grid cells in the y direction. Must be
- *                        divisible by the number of nodes.
- *  \param ngridz         Global number of grid cells in the z direction.
- *  \param node2slab      Node id to slab index array, can be NULL.
- *  \param slab2grid_x    Slab index to grid_x array (nnodes+1), can be NULL.
- *  \param comm           MPI communicator, must have been initialized. 
+ *  \param ndata          Number of grid cells in each direction
+ *  \param real_data      Real data. Input for forward and output for backward.
+ *  \param compex_data    Complex data.
+ *  \param comm           MPI communicator for both parallelization axis.
+ *                        Needs to be either initialized or MPI_NULL for
+ *                        no parallelization in that axis.
+ *  \param slab2index_major Not used
+ *  \param slab2index_minor Not used
  *  \param bReproducible  Try to avoid FFT timing optimizations and other stuff
  *                        that could make results differ for two runs with
  *                        identical input (reproducibility for debugging).
@@ -117,7 +121,9 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
 int
 gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _gmx_parallel_3dfft_h_ */
