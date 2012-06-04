@@ -83,9 +83,6 @@ fft5d_limits(fft5d_plan p,
              ivec                      local_offset,
              ivec                      local_size) 
 {
-    int N1,M0,K0,K1,*coor;
-    fft5d_local_size(p,&N1,&M0,&K0,&K1,&coor);  /* M0=MG/P[0], K1=KG/P[1], NG,MG,KG global sizes */
-    
     local_offset[2]=0;
     local_offset[1]=p->oM[0];  /*=p->coor[0]*p->MG/p->P[0]; */
     local_offset[0]=p->oK[0];  /*=p->coor[1]*p->KG/p->P[1]; */
@@ -95,6 +92,7 @@ fft5d_limits(fft5d_plan p,
     local_ndata[0]=p->pK[0]; 
     
     if ((!(p->flags&FFT5D_BACKWARD)) && (p->flags&FFT5D_REALCOMPLEX)) {
+        //C is length in multiples of complex local_size in multiples of real
         local_size[2]=p->C[0]*2;
     } else {
         local_size[2]=p->C[0];
@@ -167,9 +165,12 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
 
 int
 gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup) {
-    fft5d_destroy(pfft_setup->p2);
-    fft5d_destroy(pfft_setup->p1);
-    sfree(pfft_setup);
+    if (pfft_setup)
+    {
+        fft5d_destroy(pfft_setup->p2);
+        fft5d_destroy(pfft_setup->p1);
+        sfree(pfft_setup);
+    }
     return 0;
 }
 

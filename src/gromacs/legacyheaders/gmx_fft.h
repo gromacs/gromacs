@@ -584,6 +584,12 @@ gmx_fft_transpose_2d_nelem(t_complex *        in_data,
                            t_complex *        work);
 
 
+/*! \brief Cleanup global data of FFT
+ *
+ *  Any plans are invalid after this function. Should be called
+ *  after all plans have been destroyed.s
+ * */
+void gmx_fft_cleanup();
 
 
 #ifdef __cplusplus
