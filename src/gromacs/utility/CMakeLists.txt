@@ -15,6 +15,7 @@ set(UTILITY_PUBLIC_HEADERS
     flags.h
     gmx_header_config.h
     gmxassert.h
+    programinfo.h
     stringutil.h
     uniqueptr.h)
 install(FILES ${UTILITY_PUBLIC_HEADERS}

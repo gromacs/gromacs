@@ -33,45 +33,41 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
-#include <ctype.h>
-#include <assert.h>
-#include "sysstuff.h"
-#include "macros.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "pbc.h"
-#include "statutil.h"
-#include "names.h"
-#include "vec.h"
-#include "futil.h"
-#include "wman.h"
-#include "tpxio.h"
-#include "gmx_fatal.h"
-#include "network.h"
-#include "vec.h"
-#include "mtop_util.h"
-#include "gmxfio.h"
 #include "oenv.h"
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
+#include "smalloc.h"
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 
 struct output_env
 {
+    output_env()
+    {
+        setDefaults();
+    }
+    output_env(int argc, const char *const argv[])
+        : programInfo(argc, argv)
+    {
+        setDefaults();
+    }
+
+    void setDefaults()
+    {
+        time_unit   = time_ps;
+        view        = FALSE;
+        xvg_format  = exvgNONE;
+        verbosity   = 0;
+        debug_level = 0;
+    }
+
+    gmx::ProgramInfo programInfo;
+
     time_unit_t time_unit; /* the time unit, enum defined in oenv.h */
     gmx_bool view;  /* view of file requested */
     xvg_format_t xvg_format; /* xvg output format, enum defined in oenv.h */
     int  verbosity; /* The level of verbosity for this program */
     int debug_level; /* the debug level */
-
-    char *program_name; /* the program name */
-    char *cmd_line; /* the re-assembled command line */
 };
 
 /* The source code in this file should be thread-safe. 
@@ -93,76 +89,39 @@ static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",
                                         "ms", "s", NULL };
 
 
-
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
 void output_env_init(output_env_t *oenvp, int argc, char *argv[],
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level)
 {
-    int i;
-    int cmdlength=0;
-    char *argvzero=NULL;
-    output_env_t oenv;
-
-    snew(oenv, 1);
-    *oenvp = oenv;
-    oenv->time_unit  = tmu;
-    oenv->view=view;
-    oenv->xvg_format = xvg_format;
-    oenv->verbosity=verbosity;
-    oenv->debug_level=debug_level;
-    oenv->program_name=NULL;
-
-    if (argv)
+    try
     {
-        argvzero=argv[0];
-        assert(argvzero);
+        output_env_t oenv = new output_env(argc, argv);
+        *oenvp = oenv;
+        oenv->time_unit   = tmu;
+        oenv->view        = view;
+        oenv->xvg_format  = xvg_format;
+        oenv->verbosity   = verbosity;
+        oenv->debug_level = debug_level;
     }
-    /* set program name */
-    if (argvzero)
-    {
-        oenv->program_name=strdup(argvzero);
-    }
-    if (oenv->program_name == NULL)
-        oenv->program_name = strdup("GROMACS");
-   
-    /* copy command line */ 
-    if (argv) 
-    {
-        cmdlength = strlen(argvzero);
-        for (i=1; i<argc; i++) 
-        {
-            cmdlength += strlen(argv[i]);
-        }
-    }
-        
-    /* Fill the cmdline string */
-    snew(oenv->cmd_line,cmdlength+argc+1);
-    if (argv)
-    {
-        for (i=0; i<argc; i++)
-        {
-            strcat(oenv->cmd_line,argv[i]);
-            strcat(oenv->cmd_line," ");
-        }
-    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
-
 
 void output_env_init_default(output_env_t *oenvp)
 {
-    output_env_init(oenvp, 0, NULL, time_ps, FALSE, exvgNONE, 0, 0);
+    try
+    {
+        output_env_t oenv = new output_env();
+        *oenvp = oenv;
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
-
 
 void output_env_done(output_env_t oenv)
 {
-    sfree(oenv->program_name);
-    sfree(oenv->cmd_line);
-    sfree(oenv);
+    delete oenv;
 }
-
 
 
 int output_env_get_verbosity(const output_env_t oenv)
@@ -174,7 +133,6 @@ int output_env_get_debug_level(const output_env_t oenv)
 {
     return oenv->debug_level;
 }
-
 
 const char *output_env_get_time_unit(const output_env_t oenv)
 {
@@ -203,7 +161,6 @@ const char *output_env_get_xvgr_tlabel(const output_env_t oenv)
     return label;
 }
 
-
 real output_env_get_time_factor(const output_env_t oenv)
 {
     return timefactors[oenv->time_unit];
@@ -218,7 +175,6 @@ real output_env_conv_time(const output_env_t oenv, real time)
 {
     return time*timefactors[oenv->time_unit];
 }
-
 
 void output_env_conv_times(const output_env_t oenv, int n, real *time)
 {
@@ -242,23 +198,27 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
 
 const char *output_env_get_program_name(const output_env_t oenv)
 {
-    return oenv->program_name;
+    try
+    {
+        return oenv->programInfo.programNameWithPath().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 const char *output_env_get_short_program_name(const output_env_t oenv)
 {
-    const char *pr,*ret;
-    pr=ret=oenv->program_name; 
-    if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
-        ret=pr+1;
-    return ret;
+    try
+    {
+        return oenv->programInfo.programName().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
-
-
 
 const char *output_env_get_cmd_line(const output_env_t oenv)
 {
-    return oenv->cmd_line;
+    try
+    {
+        return oenv->programInfo.commandLine().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
-
-

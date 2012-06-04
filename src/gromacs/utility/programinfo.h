@@ -77,6 +77,7 @@ class ProgramInfo
          * \returns The same object as initialized with the last call to init().
          * \throws  std::bad_alloc if out of memory (only if this is the first
          *      call and init() has not been called either).
+         * \throws  tMPI::system_error on thread synchronization errors.
          */
         static const ProgramInfo &getInstance();
         /*! \brief
@@ -169,6 +170,10 @@ class ProgramInfo
          * removed, as well as any binary suffix that was configured.
          */
         std::string invariantProgramName() const;
+        /*! \brief
+         * Returns the full command line used to invoke the binary.
+         */
+        std::string commandLine() const;
 
     private:
         class Impl;
