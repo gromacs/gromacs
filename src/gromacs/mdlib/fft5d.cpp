@@ -86,12 +86,12 @@ FILE* debug=0;
 
 #ifdef GMX_FFT_FFTW3 
 #ifdef GMX_THREAD_MPI
+#include "thread_mpi/mutex.h"
 /* none of the fftw3 calls, except execute(), are thread-safe, so 
    we need to serialize them with this mutex. */
-static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-
-#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex)
-#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex)
+static tMPI::mutex big_fftw_mutex;
+#define FFTW_LOCK big_fftw_mutex.lock();
+#define FFTW_UNLOCK big_fftw_mutex.unlock();
 #else /* GMX_THREAD_MPI */
 #define FFTW_LOCK 
 #define FFTW_UNLOCK 
@@ -105,7 +105,7 @@ static double fft5d_fmax(double a, double b){
 /* largest factor smaller than sqrt */
 static int lfactor(int z) {  
 	int i;
-	for (i=sqrt(z);;i--)
+	for (i=static_cast<int>(sqrt(static_cast<double>(z)));;i--)
 		if (z%i==0) return i;
 	return 1;
 }
@@ -809,7 +809,7 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
 }
 
 static void print_localdata(const t_complex* lin, const char* txt, int s, fft5d_plan plan) {
-    int x,y,z,l,t;
+    int x,y,z,l;
     int *coor = plan->coor;
     int xs[3],xl[3],xc[3],NG[3];        
     int ll=(plan->flags&FFT5D_REALCOMPLEX)?1:2;
@@ -844,8 +844,9 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
 #ifdef GMX_MPI
     MPI_Comm *cart=plan->cart;
 #endif
-
+#ifdef NOGMX
     double time_fft=0,time_local=0,time_mpi[2]={0},time=0;    
+#endif
     int *N=plan->N,*M=plan->M,*K=plan->K,*pN=plan->pN,*pM=plan->pM,*pK=plan->pK,
         *C=plan->C,*P=plan->P,**iNin=plan->iNin,**oNin=plan->oNin,**iNout=plan->iNout,**oNout=plan->oNout;
     int s=0,tstart,tend,bParallelDim;
@@ -1128,11 +1129,12 @@ void fft5d_destroy(fft5d_plan plan) {
     {
         FFTW(destroy_plan)(plan->mpip[s]);
     }
+#endif /* FFT5D_MPI_TRANSPOS */
     if (plan->p3d)
     {
         FFTW(destroy_plan)(plan->p3d);
     }
-#endif /* FFT5D_MPI_TRANSPOS */
+    FFTW_UNLOCK;
 #endif /* GMX_FFT_FFTW3 */
 
     if (!(plan->flags&FFT5D_NOMALLOC))

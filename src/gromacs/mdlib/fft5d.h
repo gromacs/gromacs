@@ -39,6 +39,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef NOGMX
 /*#define GMX_MPI*/
 /*#define GMX_FFT_FFTW3*/
@@ -122,5 +126,9 @@ void fft5d_local_size(fft5d_plan plan,int* N1,int* M0,int* K0,int* K1,int** coor
 void fft5d_destroy(fft5d_plan plan);
 fft5d_plan fft5d_plan_3d_cart(int N, int M, int K, MPI_Comm comm, int P0, int flags, t_complex** lin, t_complex** lin2, t_complex** lout2, t_complex** lout3, int nthreads);
 void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan plan, int bothLocal, int normarlize);
+
+#ifdef __cplusplus
+}
+#endif
 #endif /*FFTLIB_H_*/
 
