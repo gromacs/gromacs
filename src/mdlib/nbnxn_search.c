@@ -527,7 +527,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        int nthread_max)
 {
     nbnxn_search_t nbs;
-    int d,np,g,t;
+    int d,g,t;
 
     snew(nbs,1);
     *nbs_ptr = nbs;
@@ -535,24 +535,20 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     nbs->DomDec = (n_dd_cells != NULL);
 
     clear_ivec(nbs->dd_dim);
-    if (!nbs->DomDec)
-    {
-        nbs->ngrid = 1;
-    }
-    else
+    nbs->ngrid = 1;
+    if (nbs->DomDec)
     {
         nbs->zones = zones;
 
-        np = 1;
         for(d=0; d<DIM; d++)
         {
             if ((*n_dd_cells)[d] > 1)
             {
                 nbs->dd_dim[d] = 1;
-                np *= 3;
+                /* Each grid matches a DD zone */
+                nbs->ngrid *= 2;
             }
         }
-        nbs->ngrid = (np + 1)/2;
     }
 
     if (!nbnxn_kernel_pairlist_simple(nb_kernel_type_loc))
