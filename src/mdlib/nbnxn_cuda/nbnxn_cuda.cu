@@ -516,9 +516,6 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     calc_ener = (calc_ener || always_ener) && !never_ener; 
 
-    /* turn off pruning (doesn't matter if this is pair-search step or not) */
-    plist->do_prune = FALSE;
-
     /* don't launch wait/update timers & counters if there was no work to do
 
        NOTE: if timing with multiple GPUs (streams) becomes possible, the
@@ -612,4 +609,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
             }
         }
     }
+
+    /* turn off pruning (doesn't matter if this is pair-search step or not) */
+    plist->do_prune = FALSE;
 }
