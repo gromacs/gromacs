@@ -594,8 +594,6 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
  */
 static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
-    int rc;
-    
     if(tMPI_Spinlock_trylock(x) != 0)
     {
         /* It was locked */
@@ -619,8 +617,6 @@ static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
  */
 static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
-    int rc;
-    
     tMPI_Spinlock_lock(x);
     /* Got the lock now, so the waiting is over */
     tMPI_Spinlock_unlock(x);
