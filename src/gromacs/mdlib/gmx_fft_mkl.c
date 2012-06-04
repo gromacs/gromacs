@@ -25,6 +25,7 @@
 #include <stdlib.h>
 
 #include <mkl_dfti.h>
+#include <mkl_service.h>
 
 
 #include "gmx_fft.h"
@@ -969,26 +970,8 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
     }
     else
     {
-        if(inplace)
-        {
-            /* complex-to-complex in X dimension, in-place */
-            status = DftiComputeBackward(fft->inplace[0],in_data);
-            
-            /* complex-to-real in Y dimension, in-place */
-            if ( status == 0 )
-                status = DftiComputeBackward(fft->inplace[1],in_data);
-                        
-        }
-        else
-        {
-            /* complex-to-complex in X dimension, from in_data to work */
-            status = DftiComputeBackward(fft->ooplace[0],in_data,fft->work);
-            
-            /* complex-to-real in Y dimension, from work to out_data */
-            if ( status == 0 )
-                status = DftiComputeBackward(fft->ooplace[1],fft->work,out_data);
-            
-        }
+        /* prior implementation was incorrect. See fft.cpp unit test */
+        gmx_incons("Complex -> Real is not supported by MKL.");
     }
     
     if( status != 0 )
@@ -1176,8 +1159,17 @@ gmx_fft_destroy(gmx_fft_t    fft)
         {
             DftiFreeDescriptor(&fft->ooplace[3]);
         }
+        if (fft->work != NULL)
+        {
+            free(fft->work);
+        }
         free(fft);
     }
+}
+
+void gmx_fft_cleanup()
+{
+    mkl_free_buffers();
 }
 
 #else
