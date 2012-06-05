@@ -126,3 +126,40 @@
    fun:malloc
    fun:__cilkrts_os_mutex_create
 }
+# Intel compiler with MKL
+{
+   dlerror
+   Memcheck:Leak
+   ...
+   fun:_dlerror_run
+}
+#Intel
+{
+   strlen
+   Memcheck:Addr8
+   fun:__intel_sse2_strlen
+}
+{
+   strlen2
+   Memcheck:Cond
+   fun:__intel_sse2_strlen
+}
+{
+   __kmpc_global_thread_num
+   Memcheck:Param
+   sched_setaffinity(mask)
+   ...
+   fun:__kmpc_global_thread_num
+}
+{
+   __kmpc_global_thread_num2
+   Memcheck:Cond
+   ...
+   fun:__kmpc_global_thread_num
+}
+{
+   __kmpc_global_thread_num3
+   Memcheck:Leak
+   ...
+   fun:__kmpc_global_thread_num
+}
