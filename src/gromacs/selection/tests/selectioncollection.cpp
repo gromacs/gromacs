@@ -127,7 +127,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
     matrix  box;
 
     snew(_top, 1);
-    read_tps_conf(gmx::test::getTestFilePath(filename).c_str(),
+    read_tps_conf(gmx::test::TestFileManager::getTestFilePath(filename).c_str(),
                   title, _top, &ePBC, &xtop, NULL, box, FALSE);
 
     snew(_frame, 1);
@@ -354,7 +354,7 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
-    ASSERT_NO_THROW(_sel = _sc.parseFromFile(gmx::test::getTestFilePath("selfile.dat")));
+    ASSERT_NO_THROW(_sel = _sc.parseFromFile(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, _sel.size());
     EXPECT_STREQ("resname RA RB", _sel[0].selectionText());
