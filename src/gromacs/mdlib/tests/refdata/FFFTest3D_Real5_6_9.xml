@@ -1,0 +1,677 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Vector Name="rsize">
+    <Int Name="X">5</Int>
+    <Int Name="Y">6</Int>
+    <Int Name="Z">10</Int>
+  </Vector>
+  <Vector Name="csize">
+    <Int Name="X">5</Int>
+    <Int Name="Y">6</Int>
+    <Int Name="Z">5</Int>
+  </Vector>
+  <Sequence Name="forward">
+    <Int Name="Length">300</Int>
+    <Real>136.099991</Real>
+    <Real>0.000000</Real>
+    <Real>6.104675</Real>
+    <Real>-9.692793</Real>
+    <Real>-156.904694</Real>
+    <Real>-44.500271</Real>
+    <Real>-156.904694</Real>
+    <Real>44.500271</Real>
+    <Real>6.104675</Real>
+    <Real>9.692793</Real>
+    <Real>109.330902</Real>
+    <Real>144.017410</Real>
+    <Real>110.989105</Real>
+    <Real>-75.428070</Real>
+    <Real>-28.957680</Real>
+    <Real>-35.773399</Real>
+    <Real>12.909733</Real>
+    <Real>-51.326603</Real>
+    <Real>-17.828440</Real>
+    <Real>-51.168423</Real>
+    <Real>80.282150</Real>
+    <Real>-30.151272</Real>
+    <Real>46.266457</Real>
+    <Real>-2.567846</Real>
+    <Real>-79.201797</Real>
+    <Real>-57.924297</Real>
+    <Real>82.000694</Real>
+    <Real>-94.147446</Real>
+    <Real>79.405762</Real>
+    <Real>-57.639099</Real>
+    <Real>174.500000</Real>
+    <Real>-82.099213</Real>
+    <Real>-1.021135</Real>
+    <Real>-80.952103</Real>
+    <Real>115.144890</Real>
+    <Real>-67.412949</Real>
+    <Real>65.004921</Real>
+    <Real>16.143179</Real>
+    <Real>-55.628662</Real>
+    <Real>-81.859581</Real>
+    <Real>-73.063065</Real>
+    <Real>-35.171608</Real>
+    <Real>22.705456</Real>
+    <Real>46.342239</Real>
+    <Real>-37.809608</Real>
+    <Real>-14.488886</Real>
+    <Real>-79.566299</Real>
+    <Real>40.132591</Real>
+    <Real>171.536591</Real>
+    <Real>-43.288338</Real>
+    <Real>-53.849998</Real>
+    <Real>8.746857</Real>
+    <Real>-37.527981</Real>
+    <Real>-76.662766</Real>
+    <Real>-46.050011</Real>
+    <Real>82.151398</Real>
+    <Real>93.260750</Real>
+    <Real>71.729401</Real>
+    <Real>82.167252</Real>
+    <Real>-68.644394</Real>
+    <Real>34.447922</Real>
+    <Real>-46.679695</Real>
+    <Real>47.084324</Real>
+    <Real>53.226364</Real>
+    <Real>-39.940063</Real>
+    <Real>-56.889717</Real>
+    <Real>-54.133568</Real>
+    <Real>162.862778</Real>
+    <Real>0.139784</Real>
+    <Real>-83.154434</Real>
+    <Real>77.450851</Real>
+    <Real>99.232132</Real>
+    <Real>25.603106</Real>
+    <Real>-41.980274</Real>
+    <Real>-63.660904</Real>
+    <Real>0.387545</Real>
+    <Real>-14.140629</Real>
+    <Real>-109.476654</Real>
+    <Real>-1.819370</Real>
+    <Real>-50.783764</Real>
+    <Real>-28.349995</Real>
+    <Real>66.250931</Real>
+    <Real>41.767319</Real>
+    <Real>141.317810</Real>
+    <Real>-98.532402</Real>
+    <Real>-56.132351</Real>
+    <Real>-26.039164</Real>
+    <Real>-32.616665</Real>
+    <Real>43.404266</Real>
+    <Real>74.736923</Real>
+    <Real>-75.394913</Real>
+    <Real>-63.045734</Real>
+    <Real>58.365730</Real>
+    <Real>39.770607</Real>
+    <Real>-89.180290</Real>
+    <Real>-54.385849</Real>
+    <Real>-23.894928</Real>
+    <Real>99.576477</Real>
+    <Real>1.824394</Real>
+    <Real>79.398521</Real>
+    <Real>-93.250000</Real>
+    <Real>-38.191719</Real>
+    <Real>71.020500</Real>
+    <Real>-1.741463</Real>
+    <Real>-45.144749</Real>
+    <Real>136.910095</Real>
+    <Real>76.807373</Real>
+    <Real>-61.008018</Real>
+    <Real>83.066872</Real>
+    <Real>-10.854141</Real>
+    <Real>11.146191</Real>
+    <Real>-39.325905</Real>
+    <Real>-44.096260</Real>
+    <Real>-54.376839</Real>
+    <Real>38.091496</Real>
+    <Real>-10.091565</Real>
+    <Real>28.417315</Real>
+    <Real>104.614540</Real>
+    <Real>-132.632584</Real>
+    <Real>13.423996</Real>
+    <Real>-89.798325</Real>
+    <Real>-124.425873</Real>
+    <Real>-177.699615</Real>
+    <Real>-86.970207</Real>
+    <Real>93.179634</Real>
+    <Real>-17.907501</Real>
+    <Real>21.200096</Real>
+    <Real>-170.350403</Real>
+    <Real>-56.001003</Real>
+    <Real>-18.570013</Real>
+    <Real>-41.499996</Real>
+    <Real>70.148056</Real>
+    <Real>92.677139</Real>
+    <Real>12.237492</Real>
+    <Real>63.749992</Real>
+    <Real>-69.490219</Real>
+    <Real>59.724304</Real>
+    <Real>16.675392</Real>
+    <Real>-41.651443</Real>
+    <Real>8.534382</Real>
+    <Real>13.130329</Real>
+    <Real>-22.927179</Real>
+    <Real>116.121109</Real>
+    <Real>-45.760754</Real>
+    <Real>-29.881199</Real>
+    <Real>24.907825</Real>
+    <Real>-39.485001</Real>
+    <Real>-8.265886</Real>
+    <Real>60.512638</Real>
+    <Real>100.439362</Real>
+    <Real>-12.300005</Real>
+    <Real>0.000000</Real>
+    <Real>-105.672363</Real>
+    <Real>-26.742607</Real>
+    <Real>23.572367</Real>
+    <Real>-22.442314</Real>
+    <Real>23.572367</Real>
+    <Real>22.442314</Real>
+    <Real>-105.672363</Real>
+    <Real>26.742607</Real>
+    <Real>42.035851</Real>
+    <Real>-41.135574</Real>
+    <Real>101.095390</Real>
+    <Real>13.414177</Real>
+    <Real>-72.121185</Real>
+    <Real>-60.285027</Real>
+    <Real>-4.238514</Real>
+    <Real>-12.733875</Real>
+    <Real>-2.203131</Real>
+    <Real>-5.904337</Real>
+    <Real>80.964844</Real>
+    <Real>-8.403931</Real>
+    <Real>-131.619049</Real>
+    <Real>-28.451719</Real>
+    <Real>-9.711679</Real>
+    <Real>-28.127993</Real>
+    <Real>-10.749870</Real>
+    <Real>-19.317490</Real>
+    <Real>20.460503</Real>
+    <Real>99.431366</Real>
+    <Real>-3.299992</Real>
+    <Real>-11.085125</Real>
+    <Real>-22.328377</Real>
+    <Real>9.187958</Real>
+    <Real>-85.659286</Real>
+    <Real>-7.129055</Real>
+    <Real>-68.632393</Real>
+    <Real>-26.374462</Real>
+    <Real>-61.079945</Real>
+    <Real>-80.646698</Real>
+    <Real>-53.250683</Real>
+    <Real>-70.411972</Real>
+    <Real>41.788376</Real>
+    <Real>32.640892</Real>
+    <Real>-34.654633</Real>
+    <Real>137.868515</Real>
+    <Real>22.242607</Real>
+    <Real>81.318375</Real>
+    <Real>-23.038826</Real>
+    <Real>-59.640949</Real>
+    <Real>-93.250000</Real>
+    <Real>38.191719</Real>
+    <Real>83.066872</Real>
+    <Real>10.854141</Real>
+    <Real>76.807373</Real>
+    <Real>61.008018</Real>
+    <Real>-45.144749</Real>
+    <Real>-136.910095</Real>
+    <Real>71.020500</Real>
+    <Real>1.741463</Real>
+    <Real>-29.122555</Real>
+    <Real>-55.548012</Real>
+    <Real>-91.848518</Real>
+    <Real>25.068550</Real>
+    <Real>7.366094</Real>
+    <Real>-19.841644</Real>
+    <Real>-54.161346</Real>
+    <Real>32.336601</Real>
+    <Real>48.259354</Real>
+    <Real>-110.070633</Real>
+    <Real>-25.626530</Real>
+    <Real>-34.453671</Real>
+    <Real>40.635841</Real>
+    <Real>152.679749</Real>
+    <Real>91.784843</Real>
+    <Real>79.680069</Real>
+    <Real>-91.796318</Real>
+    <Real>60.323021</Real>
+    <Real>-163.821884</Real>
+    <Real>25.244905</Real>
+    <Real>52.849995</Real>
+    <Real>-2.338261</Real>
+    <Real>-19.914078</Real>
+    <Real>-59.783733</Real>
+    <Real>32.573555</Real>
+    <Real>39.669312</Real>
+    <Real>31.658638</Real>
+    <Real>-44.218288</Real>
+    <Real>-33.918106</Real>
+    <Real>-63.665844</Real>
+    <Real>-106.979111</Real>
+    <Real>64.663254</Real>
+    <Real>45.356190</Real>
+    <Real>34.173038</Real>
+    <Real>-39.799603</Real>
+    <Real>-13.643003</Real>
+    <Real>44.499382</Real>
+    <Real>33.891609</Real>
+    <Real>-140.200684</Real>
+    <Real>-124.764404</Real>
+    <Real>-53.849998</Real>
+    <Real>-8.746857</Real>
+    <Real>82.167252</Real>
+    <Real>68.644394</Real>
+    <Real>93.260750</Real>
+    <Real>-71.729401</Real>
+    <Real>-46.050011</Real>
+    <Real>-82.151398</Real>
+    <Real>-37.527981</Real>
+    <Real>76.662766</Real>
+    <Real>-7.361046</Real>
+    <Real>-30.547447</Real>
+    <Real>-18.733921</Real>
+    <Real>-18.102921</Real>
+    <Real>-62.820633</Real>
+    <Real>30.062834</Real>
+    <Real>25.151785</Real>
+    <Real>-44.495804</Real>
+    <Real>-26.734823</Real>
+    <Real>62.413925</Real>
+    <Real>-48.153023</Real>
+    <Real>47.717987</Real>
+    <Real>-22.179010</Real>
+    <Real>5.617504</Real>
+    <Real>-9.662086</Real>
+    <Real>-2.834160</Real>
+    <Real>-79.862991</Real>
+    <Real>28.256496</Real>
+    <Real>53.788708</Real>
+    <Real>-29.917927</Real>
+    <Real>-3.299994</Real>
+    <Real>-72.572922</Real>
+    <Real>-11.154758</Real>
+    <Real>123.561584</Real>
+    <Real>4.391991</Real>
+    <Real>-61.963047</Real>
+    <Real>-18.307241</Real>
+    <Real>116.706436</Real>
+    <Real>0.370001</Real>
+    <Real>-218.315353</Real>
+    <Real>-38.139801</Real>
+    <Real>-30.521709</Real>
+    <Real>-107.609016</Real>
+    <Real>-90.941872</Real>
+    <Real>59.289177</Real>
+    <Real>-85.926285</Real>
+    <Real>-4.146584</Real>
+    <Real>162.120117</Real>
+    <Real>102.171837</Real>
+    <Real>60.231632</Real>
+  </Sequence>
+  <Sequence Name="backward 0">
+    <Int Name="Length">9</Int>
+    <Real>98.799988</Real>
+    <Real>-114.173569</Real>
+    <Real>53.384071</Real>
+    <Real>141.471985</Real>
+    <Real>199.509033</Real>
+    <Real>113.625153</Real>
+    <Real>-240.272003</Real>
+    <Real>7.033424</Real>
+    <Real>165.421875</Real>
+  </Sequence>
+  <Sequence Name="backward 1">
+    <Int Name="Length">9</Int>
+    <Real>-1.575298</Real>
+    <Real>-2.945534</Real>
+    <Real>49.955917</Real>
+    <Real>9.246468</Real>
+    <Real>-80.868546</Real>
+    <Real>142.019897</Real>
+    <Real>-145.112091</Real>
+    <Real>-67.696457</Real>
+    <Real>-220.994934</Real>
+  </Sequence>
+  <Sequence Name="backward 2">
+    <Int Name="Length">9</Int>
+    <Real>-138.077866</Real>
+    <Real>-95.826874</Real>
+    <Real>73.996407</Real>
+    <Real>107.429169</Real>
+    <Real>-172.523468</Real>
+    <Real>-184.753601</Real>
+    <Real>-99.268387</Real>
+    <Real>93.058205</Real>
+    <Real>94.748985</Real>
+  </Sequence>
+  <Sequence Name="backward 3">
+    <Int Name="Length">9</Int>
+    <Real>-235.800003</Real>
+    <Real>81.949379</Real>
+    <Real>10.473877</Real>
+    <Real>184.414093</Real>
+    <Real>-37.698116</Real>
+    <Real>8.471512</Real>
+    <Real>42.385918</Real>
+    <Real>0.269112</Real>
+    <Real>-81.465759</Real>
+  </Sequence>
+  <Sequence Name="backward 4">
+    <Int Name="Length">9</Int>
+    <Real>-78.322121</Real>
+    <Real>248.559799</Real>
+    <Real>-35.552376</Real>
+    <Real>-85.931610</Real>
+    <Real>-61.809845</Real>
+    <Real>-176.475525</Real>
+    <Real>96.170837</Real>
+    <Real>261.258270</Real>
+    <Real>-104.079994</Real>
+  </Sequence>
+  <Sequence Name="backward 5">
+    <Int Name="Length">9</Int>
+    <Real>155.175293</Real>
+    <Real>-98.054779</Real>
+    <Real>104.786880</Real>
+    <Real>38.312088</Real>
+    <Real>-323.533447</Real>
+    <Real>200.276062</Real>
+    <Real>44.753525</Real>
+    <Real>-91.192635</Real>
+    <Real>55.247559</Real>
+  </Sequence>
+  <Sequence Name="backward 6">
+    <Int Name="Length">9</Int>
+    <Real>15.303500</Real>
+    <Real>305.841766</Real>
+    <Real>149.636414</Real>
+    <Real>97.994270</Real>
+    <Real>-119.455658</Real>
+    <Real>-131.614471</Real>
+    <Real>-137.338257</Real>
+    <Real>-143.597076</Real>
+    <Real>-83.794022</Real>
+  </Sequence>
+  <Sequence Name="backward 7">
+    <Int Name="Length">9</Int>
+    <Real>142.921951</Real>
+    <Real>-106.948486</Real>
+    <Real>-177.869110</Real>
+    <Real>92.160866</Real>
+    <Real>147.520645</Real>
+    <Real>16.107725</Real>
+    <Real>99.443077</Real>
+    <Real>-117.643417</Real>
+    <Real>31.791712</Real>
+  </Sequence>
+  <Sequence Name="backward 8">
+    <Int Name="Length">9</Int>
+    <Real>70.535835</Real>
+    <Real>-12.913954</Real>
+    <Real>-71.002563</Real>
+    <Real>-25.461422</Real>
+    <Real>132.794754</Real>
+    <Real>49.911995</Real>
+    <Real>-18.915390</Real>
+    <Real>-99.215805</Real>
+    <Real>-93.416618</Real>
+  </Sequence>
+  <Sequence Name="backward 9">
+    <Int Name="Length">9</Int>
+    <Real>-137.812180</Real>
+    <Real>-270.526123</Real>
+    <Real>-4.917741</Real>
+    <Real>-109.398201</Real>
+    <Real>78.202507</Real>
+    <Real>-56.368717</Real>
+    <Real>41.836952</Real>
+    <Real>-61.765709</Real>
+    <Real>63.196239</Real>
+  </Sequence>
+  <Sequence Name="backward 10">
+    <Int Name="Length">9</Int>
+    <Real>95.718048</Real>
+    <Real>-146.683823</Real>
+    <Real>121.752052</Real>
+    <Real>-94.825714</Real>
+    <Real>46.993641</Real>
+    <Real>171.315262</Real>
+    <Real>-95.826294</Real>
+    <Real>-57.056820</Real>
+    <Real>-0.193985</Real>
+  </Sequence>
+  <Sequence Name="backward 11">
+    <Int Name="Length">9</Int>
+    <Real>-66.714127</Real>
+    <Real>-25.810600</Real>
+    <Real>29.393936</Real>
+    <Real>-151.375732</Real>
+    <Real>7.834263</Real>
+    <Real>-94.377373</Real>
+    <Real>-70.206131</Real>
+    <Real>93.005173</Real>
+    <Real>139.596436</Real>
+  </Sequence>
+  <Sequence Name="backward 12">
+    <Int Name="Length">9</Int>
+    <Real>115.719627</Real>
+    <Real>4.631203</Real>
+    <Real>114.154144</Real>
+    <Real>37.107712</Real>
+    <Real>50.143723</Real>
+    <Real>-78.143234</Real>
+    <Real>-203.631851</Real>
+    <Real>224.716385</Real>
+    <Real>156.081223</Real>
+  </Sequence>
+  <Sequence Name="backward 13">
+    <Int Name="Length">9</Int>
+    <Real>4.903898</Real>
+    <Real>-94.431732</Real>
+    <Real>-169.815826</Real>
+    <Real>224.333832</Real>
+    <Real>-107.830292</Real>
+    <Real>30.179779</Real>
+    <Real>-187.175079</Real>
+    <Real>-133.832184</Real>
+    <Real>-80.841988</Real>
+  </Sequence>
+  <Sequence Name="backward 14">
+    <Int Name="Length">9</Int>
+    <Real>24.096989</Real>
+    <Real>20.671638</Real>
+    <Real>190.058990</Real>
+    <Real>-44.652519</Real>
+    <Real>-190.773010</Real>
+    <Real>59.908936</Real>
+    <Real>11.267767</Real>
+    <Real>8.839233</Real>
+    <Real>-34.897720</Real>
+  </Sequence>
+  <Sequence Name="backward 15">
+    <Int Name="Length">9</Int>
+    <Real>158.846878</Real>
+    <Real>217.994934</Real>
+    <Real>-138.825958</Real>
+    <Real>-175.858566</Real>
+    <Real>76.223640</Real>
+    <Real>-42.485783</Real>
+    <Real>77.096649</Real>
+    <Real>153.119537</Real>
+    <Real>34.678310</Real>
+  </Sequence>
+  <Sequence Name="backward 16">
+    <Int Name="Length">9</Int>
+    <Real>371.395020</Real>
+    <Real>-111.492790</Real>
+    <Real>158.190826</Real>
+    <Real>-58.925667</Real>
+    <Real>-144.719879</Real>
+    <Real>-333.322144</Real>
+    <Real>99.971596</Real>
+    <Real>-46.656609</Real>
+    <Real>-26.605881</Real>
+  </Sequence>
+  <Sequence Name="backward 17">
+    <Int Name="Length">9</Int>
+    <Real>71.148178</Real>
+    <Real>-259.923920</Real>
+    <Real>247.147964</Real>
+    <Real>-74.934837</Real>
+    <Real>-143.744659</Real>
+    <Real>-90.704163</Real>
+    <Real>40.167183</Real>
+    <Real>-47.017914</Real>
+    <Real>-61.723965</Real>
+  </Sequence>
+  <Sequence Name="backward 18">
+    <Int Name="Length">9</Int>
+    <Real>311.415741</Real>
+    <Real>-101.387451</Real>
+    <Real>-65.574448</Real>
+    <Real>198.431671</Real>
+    <Real>-59.146561</Real>
+    <Real>-211.970352</Real>
+    <Real>65.043060</Real>
+    <Real>374.991150</Real>
+    <Real>77.087662</Real>
+  </Sequence>
+  <Sequence Name="backward 19">
+    <Int Name="Length">9</Int>
+    <Real>46.436607</Real>
+    <Real>-131.217865</Real>
+    <Real>-106.862938</Real>
+    <Real>-100.894928</Real>
+    <Real>91.341370</Real>
+    <Real>104.868263</Real>
+    <Real>108.135788</Real>
+    <Real>85.995560</Real>
+    <Real>138.099457</Real>
+  </Sequence>
+  <Sequence Name="backward 20">
+    <Int Name="Length">9</Int>
+    <Real>276.467651</Real>
+    <Real>102.775352</Real>
+    <Real>31.422379</Real>
+    <Real>24.277081</Real>
+    <Real>209.289078</Real>
+    <Real>-83.071228</Real>
+    <Real>-55.993786</Real>
+    <Real>6.634384</Real>
+    <Real>-98.950958</Real>
+  </Sequence>
+  <Sequence Name="backward 21">
+    <Int Name="Length">9</Int>
+    <Real>-144.987640</Real>
+    <Real>116.629684</Real>
+    <Real>100.528900</Real>
+    <Real>-126.684570</Real>
+    <Real>92.689560</Real>
+    <Real>-95.478477</Real>
+    <Real>112.271332</Real>
+    <Real>48.488789</Real>
+    <Real>-88.626488</Real>
+  </Sequence>
+  <Sequence Name="backward 22">
+    <Int Name="Length">9</Int>
+    <Real>115.846970</Real>
+    <Real>-233.430908</Real>
+    <Real>-201.873413</Real>
+    <Real>-170.125092</Real>
+    <Real>-157.867615</Real>
+    <Real>63.396282</Real>
+    <Real>125.960152</Real>
+    <Real>-31.443810</Real>
+    <Real>-120.665085</Real>
+  </Sequence>
+  <Sequence Name="backward 23">
+    <Int Name="Length">9</Int>
+    <Real>-38.792336</Real>
+    <Real>-97.641258</Real>
+    <Real>-298.203674</Real>
+    <Real>32.913078</Real>
+    <Real>234.089539</Real>
+    <Real>-94.883278</Real>
+    <Real>154.460388</Real>
+    <Real>-274.265320</Real>
+    <Real>138.110962</Real>
+  </Sequence>
+  <Sequence Name="backward 24">
+    <Int Name="Length">9</Int>
+    <Real>122.261093</Real>
+    <Real>-283.042755</Real>
+    <Real>180.152405</Real>
+    <Real>-9.914116</Real>
+    <Real>-68.225883</Real>
+    <Real>-123.085678</Real>
+    <Real>58.107559</Real>
+    <Real>-150.731934</Real>
+    <Real>97.533478</Real>
+  </Sequence>
+  <Sequence Name="backward 25">
+    <Int Name="Length">9</Int>
+    <Real>-29.801895</Real>
+    <Real>170.036240</Real>
+    <Real>-10.118553</Real>
+    <Real>-205.439148</Real>
+    <Real>-272.596405</Real>
+    <Real>8.733103</Real>
+    <Real>94.856377</Real>
+    <Real>37.072906</Real>
+    <Real>-43.885323</Real>
+  </Sequence>
+  <Sequence Name="backward 26">
+    <Int Name="Length">9</Int>
+    <Real>-122.646271</Real>
+    <Real>-218.252991</Real>
+    <Real>-66.248932</Real>
+    <Real>235.812164</Real>
+    <Real>77.755753</Real>
+    <Real>161.379578</Real>
+    <Real>-117.815208</Real>
+    <Real>24.181866</Real>
+    <Real>125.046944</Real>
+  </Sequence>
+  <Sequence Name="backward 27">
+    <Int Name="Length">9</Int>
+    <Real>30.252945</Real>
+    <Real>-222.873245</Real>
+    <Real>2.239723</Real>
+    <Real>-245.522018</Real>
+    <Real>193.957779</Real>
+    <Real>-126.312347</Real>
+    <Real>-249.541580</Real>
+    <Real>236.570755</Real>
+    <Real>125.660187</Real>
+  </Sequence>
+  <Sequence Name="backward 28">
+    <Int Name="Length">9</Int>
+    <Real>-8.014236</Real>
+    <Real>34.968662</Real>
+    <Real>-150.814621</Real>
+    <Real>61.533062</Real>
+    <Real>-96.969589</Real>
+    <Real>-39.410999</Real>
+    <Real>173.319183</Real>
+    <Real>-71.781250</Real>
+    <Real>4.845493</Real>
+  </Sequence>
+  <Sequence Name="backward 29">
+    <Int Name="Length">9</Int>
+    <Real>92.297699</Real>
+    <Real>240.886368</Real>
+    <Real>10.566074</Real>
+    <Real>-15.062660</Real>
+    <Real>54.062500</Real>
+    <Real>-59.442856</Real>
+    <Real>49.417946</Real>
+    <Real>-186.060486</Real>
+    <Real>-118.746475</Real>
+  </Sequence>
+</ReferenceData>
