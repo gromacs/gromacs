@@ -90,7 +90,7 @@ void setReferenceDataMode(ReferenceDataMode mode)
 
 std::string getReferenceDataPath()
 {
-    return getTestFilePath("refdata");
+    return TestFileManager::getTestFilePath("refdata");
 }
 
 void initReferenceData(int *argc, char **argv)
@@ -157,7 +157,7 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode)
     : _refDoc(NULL), _bWrite(false), _bInUse(false)
 {
     std::string dirname = getReferenceDataPath();
-    std::string filename = TestTemporaryFileManager::getTestSpecificFileName(".xml");
+    std::string filename = TestFileManager::getTestSpecificFileName(".xml");
     _fullFilename = Path::join(dirname, filename);
 
     _bWrite = true;

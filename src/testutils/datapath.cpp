@@ -55,24 +55,6 @@ namespace gmx
 namespace test
 {
 
-std::string getTestFilePath(const char *filename)
-{
-    return Path::join(getTestDataPath(), filename);
-}
-
-const char *getTestDataPath()
-{
-    GMX_RELEASE_ASSERT(g_testDataPath != NULL, "Test data path not set");
-    return g_testDataPath;
-}
-
-void setTestDataPath(const char *path)
-{
-    GMX_RELEASE_ASSERT(Directory::exists(path),
-                       "Test data directory does not exist");
-    g_testDataPath = path;
-}
-
 /********************************************************************
  * TestTemporaryFileManager::Impl
  */
@@ -82,7 +64,7 @@ void setTestDataPath(const char *path)
  *
  * \ingroup module_testutils
  */
-class TestTemporaryFileManager::Impl
+class TestFileManager::Impl
 {
     public:
         //! Container type for names of temporary files.
@@ -99,7 +81,7 @@ class TestTemporaryFileManager::Impl
         FileNameList            files_;
 };
 
-void TestTemporaryFileManager::Impl::removeFiles()
+void TestFileManager::Impl::removeFiles()
 {
     FileNameList::const_iterator i;
     for (i = files_.begin(); i != files_.end(); ++i)
@@ -113,17 +95,17 @@ void TestTemporaryFileManager::Impl::removeFiles()
  * TestTemporaryFileManager
  */
 
-TestTemporaryFileManager::TestTemporaryFileManager()
+TestFileManager::TestFileManager()
     : impl_(new Impl)
 {
 }
 
-TestTemporaryFileManager::~TestTemporaryFileManager()
+TestFileManager::~TestFileManager()
 {
     impl_->removeFiles();
 }
 
-std::string TestTemporaryFileManager::getTemporaryFilePath(const char *suffix)
+std::string TestFileManager::getTemporaryFilePath(const char *suffix)
 {
     // TODO: Add the path of the test binary
     std::string filename = getTestSpecificFileName(suffix);
@@ -131,7 +113,7 @@ std::string TestTemporaryFileManager::getTemporaryFilePath(const char *suffix)
     return filename;
 }
 
-std::string TestTemporaryFileManager::getTestSpecificFileName(const char *suffix)
+std::string TestFileManager::getTestSpecificFileName(const char *suffix)
 {
     const ::testing::TestInfo *test_info =
         ::testing::UnitTest::GetInstance()->current_test_info();
@@ -144,6 +126,24 @@ std::string TestTemporaryFileManager::getTestSpecificFileName(const char *suffix
     filename.append(suffix);
     std::replace(filename.begin(), filename.end(), '/', '_');
     return filename;
+}
+
+std::string TestFileManager::getTestFilePath(const char *filename)
+{
+    return Path::join(getTestDataPath(), filename);
+}
+
+const char *TestFileManager::getTestDataPath()
+{
+    GMX_RELEASE_ASSERT(g_testDataPath != NULL, "Test data path not set");
+    return g_testDataPath;
+}
+
+void TestFileManager::setTestDataPath(const char *path)
+{
+    GMX_RELEASE_ASSERT(Directory::exists(path),
+                       "Test data directory does not exist");
+    g_testDataPath = path;
 }
 
 } // namespace test

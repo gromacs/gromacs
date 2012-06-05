@@ -67,7 +67,7 @@ class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
     public:
         void checkHelp(gmx::CommandLineHelpWriter *writer);
 
-        gmx::test::TestTemporaryFileManager tempFiles_;
+        gmx::test::TestFileManager tempFiles_;
 };
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)

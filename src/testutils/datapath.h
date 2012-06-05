@@ -74,37 +74,6 @@ namespace test
 {
 
 /*! \libinternal \brief
- * Returns the path to a test input file.
- *
- * \param[in] filename  Relative path/filename to a test input file.
- * \returns Path to \p filename under the test input data directory.
- *
- * \inlibraryapi
- */
-std::string getTestFilePath(const char *filename);
-/*! \libinternal \brief
- * Returns the path to the test input directory.
- *
- * \returns Path to input data directory for the test executable.
- *
- * \inlibraryapi
- */
-const char *getTestDataPath();
-/*! \libinternal \brief
- * Sets the test input directory.
- *
- * \param[in] path  Path from which test input data is looked up from.
- *
- * \p path must name an existing directory.
- *
- * This function is automatically called by test_main_gtest.cpp and
- * test_main_gmock.cpp.
- *
- * \inlibraryapi
- */
-void setTestDataPath(const char *path);
-
-/*! \libinternal \brief
  * Helper for tests that need temporary output files.
  *
  * To be used as a member in a test fixture class, this class provides
@@ -118,17 +87,17 @@ void setTestDataPath(const char *path);
  * \inlibraryapi
  * \ingroup module_testutils
  */
-class TestTemporaryFileManager
+class TestFileManager
 {
     public:
-        TestTemporaryFileManager();
+        TestFileManager();
         /*! \brief
          * Frees internal storage and deletes any accessed file paths.
          *
          * Any errors (e.g., missing files) encountered while deleting the
          * files are ignored.
          */
-        ~TestTemporaryFileManager();
+        ~TestFileManager();
 
         /*! \brief
          * Creates a name for a temporary file within a single unit test.
@@ -157,6 +126,39 @@ class TestTemporaryFileManager
          * same test.
          */
         static std::string getTestSpecificFileName(const char *suffix);
+
+        /*! \libinternal \brief
+         * Returns the path to a test input file.
+         *
+         * \param[in] filename  Relative path/filename to a test input file.
+         * \returns Path to \p filename under the test input data directory.
+         *
+         * \inlibraryapi
+         */
+        static std::string getTestFilePath(const char *filename);
+
+        /*! \libinternal \brief
+         * Returns the path to the test input directory.
+         *
+         * \returns Path to input data directory for the test executable.
+         *
+         * \inlibraryapi
+         */
+        static const char *getTestDataPath();
+
+        /*! \libinternal \brief
+         * Sets the test input directory.
+         *
+         * \param[in] path  Path from which test input data is looked up from.
+         *
+         * \p path must name an existing directory.
+         *
+         * This function is automatically called by test_main_gtest.cpp and
+         * test_main_gmock.cpp.
+         *
+         * \inlibraryapi
+         */
+        static void setTestDataPath(const char *path);
 
     private:
         class Impl;

@@ -353,7 +353,7 @@ TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
     ASSERT_NO_THROW(assigner.startOption("sel"));
     EXPECT_NO_THROW(assigner.finishOption());
     ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(_options.finish());
@@ -378,7 +378,7 @@ TEST_F(SelectionFileOptionTest, HandlesTwoSeparateSelectionOptions)
     setManager();
 
     gmx::OptionsAssigner assigner(&_options);
-    std::string value(gmx::test::getTestFilePath("selfile.dat"));
+    std::string value(gmx::test::TestFileManager::getTestFilePath("selfile.dat"));
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("sel1"));
     EXPECT_NO_THROW(assigner.finishOption());
@@ -415,7 +415,7 @@ TEST_F(SelectionFileOptionTest, HandlesTwoSelectionOptionsFromSingleFile)
     setManager();
 
     gmx::OptionsAssigner assigner(&_options);
-    std::string value(gmx::test::getTestFilePath("selfile.dat"));
+    std::string value(gmx::test::TestFileManager::getTestFilePath("selfile.dat"));
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("sel1"));
     EXPECT_NO_THROW(assigner.finishOption());
@@ -451,7 +451,7 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFile)
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.startOption("optsel"));
     EXPECT_NO_THROW(assigner.finishOption());
@@ -488,7 +488,7 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFileWithOtherOptionSet)
     EXPECT_NO_THROW(assigner.appendValue("resname RC RD"));
     EXPECT_NO_THROW(assigner.finishOption());
     ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(_options.finish());
@@ -514,7 +514,7 @@ TEST_F(SelectionFileOptionTest, HandlesTwoRequiredOptionsFromSingleFile)
     setManager();
 
     gmx::OptionsAssigner assigner(&_options);
-    std::string value(gmx::test::getTestFilePath("selfile.dat"));
+    std::string value(gmx::test::TestFileManager::getTestFilePath("selfile.dat"));
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("sf"));
     EXPECT_NO_THROW(assigner.appendValue(value));
@@ -564,7 +564,7 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithNonExistentFile)
     ASSERT_NO_THROW(assigner.startOption("sf"));
     // TODO: Should this be changed to an InvalidInputError?
     EXPECT_THROW(assigner.appendValue("nonexistentfile"), gmx::FileIOError);
-    EXPECT_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")),
+    EXPECT_THROW(assigner.appendValue(gmx::test::TestFileManager::getTestFilePath("selfile.dat")),
                  gmx::InvalidInputError);
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
@@ -585,7 +585,7 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithMultipleFiles)
     ASSERT_NO_THROW(assigner.startOption("sel"));
     EXPECT_NO_THROW(assigner.finishOption());
     ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
     EXPECT_THROW(assigner.appendValue("nonexistentfile"), gmx::InvalidInputError);
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());

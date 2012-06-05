@@ -60,7 +60,7 @@ class HelpTestBase : public gmx::test::StringTestBase
     public:
         HelpTestBase();
 
-        gmx::test::TestTemporaryFileManager tempFiles_;
+        gmx::test::TestFileManager tempFiles_;
         MockHelpTopic           rootTopic_;
         gmx::HelpManager        manager_;
 };
