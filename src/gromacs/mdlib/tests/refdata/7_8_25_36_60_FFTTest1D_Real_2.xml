@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="forward">
+    <Int Name="Length">26</Int>
+    <Real>-14.899998</Real>
+    <Real>0.000000</Real>
+    <Real>4.681029</Real>
+    <Real>-3.886220</Real>
+    <Real>0.122538</Real>
+    <Real>-6.130621</Real>
+    <Real>-2.528990</Real>
+    <Real>-7.381798</Real>
+    <Real>-22.351772</Real>
+    <Real>-21.653393</Real>
+    <Real>38.317162</Real>
+    <Real>-14.388227</Real>
+    <Real>-42.038185</Real>
+    <Real>-12.708513</Real>
+    <Real>25.734924</Real>
+    <Real>12.099443</Real>
+    <Real>-5.587564</Real>
+    <Real>-1.429324</Real>
+    <Real>-20.619394</Real>
+    <Real>-17.997190</Real>
+    <Real>-18.367165</Real>
+    <Real>-21.378529</Real>
+    <Real>0.494249</Real>
+    <Real>3.557354</Real>
+    <Real>5.843164</Real>
+    <Real>10.211052</Real>
+  </Sequence>
+  <Sequence Name="backward">
+    <Int Name="Length">25</Int>
+    <Real>-10.899998</Real>
+    <Real>42.088486</Real>
+    <Real>-2.251348</Real>
+    <Real>20.774303</Real>
+    <Real>-8.037441</Real>
+    <Real>-6.344712</Real>
+    <Real>-15.688157</Real>
+    <Real>10.435755</Real>
+    <Real>-67.115044</Real>
+    <Real>15.042854</Real>
+    <Real>55.701084</Real>
+    <Real>-9.330409</Real>
+    <Real>-91.844208</Real>
+    <Real>-29.440853</Real>
+    <Real>47.926575</Real>
+    <Real>34.717335</Real>
+    <Real>-31.900063</Real>
+    <Real>44.418152</Real>
+    <Real>-23.200771</Real>
+    <Real>4.592251</Real>
+    <Real>-9.673705</Real>
+    <Real>-41.207043</Real>
+    <Real>3.189825</Real>
+    <Real>-15.374102</Real>
+    <Real>-4.078770</Real>
+  </Sequence>
+</ReferenceData>

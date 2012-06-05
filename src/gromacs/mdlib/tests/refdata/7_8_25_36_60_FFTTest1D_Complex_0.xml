@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="forward">
+    <Int Name="Length">14</Int>
+    <Real>-4.200000</Real>
+    <Real>-7.199999</Real>
+    <Real>-12.615427</Real>
+    <Real>-2.080840</Real>
+    <Real>1.683286</Real>
+    <Real>4.656070</Real>
+    <Real>18.848852</Real>
+    <Real>-10.344789</Real>
+    <Real>0.649853</Real>
+    <Real>32.731766</Real>
+    <Real>-20.751381</Real>
+    <Real>12.846081</Real>
+    <Real>-8.115183</Real>
+    <Real>13.491714</Real>
+  </Sequence>
+  <Sequence Name="backward">
+    <Int Name="Length">14</Int>
+    <Real>-4.200000</Real>
+    <Real>-7.199999</Real>
+    <Real>-8.115183</Real>
+    <Real>13.491714</Real>
+    <Real>-20.751381</Real>
+    <Real>12.846081</Real>
+    <Real>0.649853</Real>
+    <Real>32.731766</Real>
+    <Real>18.848852</Real>
+    <Real>-10.344789</Real>
+    <Real>1.683286</Real>
+    <Real>4.656070</Real>
+    <Real>-12.615427</Real>
+    <Real>-2.080840</Real>
+  </Sequence>
+</ReferenceData>
