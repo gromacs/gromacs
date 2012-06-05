@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="forward">
+    <Int Name="Length">10</Int>
+    <Real>3.600000</Real>
+    <Real>0.000000</Real>
+    <Real>2.329647</Real>
+    <Real>-5.440916</Real>
+    <Real>-9.400000</Real>
+    <Real>-2.200000</Real>
+    <Real>-11.529646</Real>
+    <Real>-14.640917</Real>
+    <Real>5.599999</Real>
+    <Real>0.000000</Real>
+  </Sequence>
+  <Sequence Name="backward">
+    <Int Name="Length">8</Int>
+    <Real>6.400000</Real>
+    <Real>9.957358</Real>
+    <Real>-16.400000</Real>
+    <Real>0.168125</Real>
+    <Real>-21.600000</Real>
+    <Real>18.442642</Real>
+    <Real>-7.600000</Real>
+    <Real>-17.368124</Real>
+  </Sequence>
+</ReferenceData>
