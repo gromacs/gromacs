@@ -45,6 +45,7 @@
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
 typedef void* MPI_Group;
+#define MPI_COMM_NULL NULL
 #endif
 #endif
 
