@@ -45,7 +45,7 @@
 #define EXCL_FORCES
 #endif
 
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && (defined GMX_SSE4_1 || defined GMX_MM256_HERE) && !defined COUNT_PAIRS
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && (defined GMX_SSE4_1 || defined GMX_AVX) && !defined COUNT_PAIRS
 /* Without exclusions and energies we only need to mask the cut-off,
  * this is faster with blendv (only available with SSE4.1).
  */
