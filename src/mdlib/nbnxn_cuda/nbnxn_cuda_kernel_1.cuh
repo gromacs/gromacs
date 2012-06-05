@@ -256,8 +256,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
                            check for small r2 to avoid invr6 overflow */
 #if defined EL_EWALD || defined EL_RF
                         if (r2 < rcoulomb_sq *
-                            (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi) *
-                            (r2 > 1.0e-12f))
+                            (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
 #else
                         if (r2 < rcoulomb_sq * int_bit)
 #endif
@@ -269,6 +268,9 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
                             /* LJ 6*C6 and 12*C12 */
                             c6      = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej));
                             c12     = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej) + 1);
+
+                            /* avoid NaN for excluded pairs at r=0 */
+                            r2 += (1 - int_bit) * NBNXN_AVOID_SING_R2_INC;
 
                             inv_r       = rsqrt(r2);
                             inv_r2      = inv_r * inv_r;

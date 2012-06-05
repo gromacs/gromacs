@@ -120,12 +120,13 @@
                         continue;
                     }
                     /* 9 flops for r^2 + cut-off check */
-#ifdef EXCL_FORCES
-                    /* Avoid overflow of rinvsix */
-                    if (rsq < 1e-12)
-                    {
-                        continue;
-                    }
+
+#ifdef CHECK_EXCLS
+                    /* Excluded atoms are allowed to be on top of each other.
+                     * To avoid overflow of rinv, rinvsq and rinvsix
+                     * we add a small number to rsq for excluded pairs only.
+                     */
+                    rsq += (1 - interact)*NBNXN_AVOID_SING_R2_INC;
 #endif
 
 #ifdef COUNT_PAIRS

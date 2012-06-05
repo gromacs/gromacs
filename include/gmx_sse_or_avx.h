@@ -52,6 +52,7 @@
 #undef gmx_cmplt_pr
 #undef gmx_and_pr
 #undef gmx_or_pr
+#undef gmx_andnot_pr
 
 #undef gmx_floor_pr
 #undef gmx_blendv_pr
@@ -111,6 +112,7 @@
 #define gmx_cmplt_pr      _mm_cmplt_ps
 #define gmx_and_pr        _mm_and_ps
 #define gmx_or_pr         _mm_or_ps
+#define gmx_andnot_pr     _mm_andnot_ps
 /* SSE 4.1 */
 #define gmx_floor_pr      _mm_floor_ps
 #define gmx_blendv_pr     _mm_blendv_ps
@@ -148,6 +150,7 @@
 #define gmx_cmplt_pr      _mm_cmplt_pd
 #define gmx_and_pr        _mm_and_pd
 #define gmx_or_pr         _mm_or_pd
+#define gmx_andnot_pr     _mm_andnot_pd
 /* SSE 4.1 */
 #define gmx_floor_pr      _mm_floor_pd
 #define gmx_blendv_pr     _mm_blendv_pd
@@ -196,6 +199,7 @@
 #define gmx_cmplt_pr(x,y) _mm256_cmp_ps(x,y,0x11)
 #define gmx_and_pr        _mm256_and_ps
 #define gmx_or_pr         _mm256_or_ps
+#define gmx_andnot_pr     _mm256_andnot_ps
 
 #define gmx_floor_pr      _mm256_floor_ps
 #define gmx_blendv_pr     _mm256_blendv_ps
@@ -235,6 +239,7 @@
 #define gmx_cmplt_pr(x,y) _mm256_cmp_pd(x,y,0x11)
 #define gmx_and_pr        _mm256_and_pd
 #define gmx_or_pr         _mm256_or_pd
+#define gmx_andnot_pr     _mm256_andnot_pd
 
 #define gmx_floor_pr      _mm256_floor_pd
 #define gmx_blendv_pr     _mm256_blendv_pd

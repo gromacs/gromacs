@@ -387,6 +387,14 @@
             }
 #endif
 
+#ifdef CHECK_EXCLS
+            /* For excluded pairs add a small number to avoid r^-6 = NaN */
+            rsq_SSE0      = gmx_add_pr(rsq_SSE0,gmx_andnot_pr(int_SSE0,avoid_sing_SSE));
+            rsq_SSE1      = gmx_add_pr(rsq_SSE1,gmx_andnot_pr(int_SSE1,avoid_sing_SSE));
+            rsq_SSE2      = gmx_add_pr(rsq_SSE2,gmx_andnot_pr(int_SSE2,avoid_sing_SSE));
+            rsq_SSE3      = gmx_add_pr(rsq_SSE3,gmx_andnot_pr(int_SSE3,avoid_sing_SSE));
+#endif
+
             /* Calculate 1/r */
 #ifndef GMX_DOUBLE
             rinv_SSE0     = gmx_invsqrt_pr(rsq_SSE0);

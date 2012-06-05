@@ -322,6 +322,7 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
     gmx_mm_pr  vctotSSE,VvdwtotSSE;
     gmx_mm_pr  sixthSSE,twelvethSSE;
 
+    gmx_mm_pr  avoid_sing_SSE;
     gmx_mm_pr  rc2_SSE;
 
 #ifdef CALC_ENERGIES
@@ -382,6 +383,8 @@ NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
     facel               = ic->epsfac;
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
+
+    avoid_sing_SSE = gmx_set1_pr(NBNXN_AVOID_SING_R2_INC);
 
     /* These kernels only support rvdw = rcoulomb */
     rc2_SSE   = gmx_set1_pr(ic->rvdw*ic->rvdw);

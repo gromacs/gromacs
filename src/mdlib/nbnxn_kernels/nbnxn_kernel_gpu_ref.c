@@ -244,7 +244,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 {
                                     within_rlist = TRUE;
                                 }
-                                if (rsq >= rcut2 || rsq < 1e-12)
+                                if (rsq >= rcut2)
                                 {
                                     continue;
                                 }
@@ -253,6 +253,10 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 {
                                     npair++;
                                 }
+
+                                /* avoid NaN for excluded pairs at r=0 */
+                                rsq             += (1.0 - int_bit)*NBNXN_AVOID_SING_R2_INC;
+
                                 rinv             = gmx_invsqrt(rsq);
                                 rinvsq           = rinv*rinv;  
                                 fscal            = 0;

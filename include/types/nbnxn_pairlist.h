@@ -48,6 +48,15 @@ extern "C" {
 /* With GPU kernels the cluster size is 8 atoms */
 #define NBNXN_GPU_CLUSTER_SIZE    8
 
+/* To avoid NaN when excluded atoms are at zero distance, we add a small
+ * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.
+ */
+#ifndef GMX_DOUBLE
+#define NBNXN_AVOID_SING_R2_INC  1.0e-12f
+#else
+#define NBNXN_AVOID_SING_R2_INC  1.0e-100
+#endif
+
 /* Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. nbnxn_rlist_inc gives the extra distance.
  */
