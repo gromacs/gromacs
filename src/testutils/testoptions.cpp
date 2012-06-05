@@ -72,7 +72,7 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         ::testing::InitGoogleMock(argc, argv);
         if (dataPath != NULL)
         {
-            setTestDataPath(dataPath);
+            TestFileManager::setTestDataPath(dataPath);
         }
         initReferenceData(argc, argv);
         boost::scoped_ptr<std::vector<std::string> > commandLine(
