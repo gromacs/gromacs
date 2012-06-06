@@ -86,9 +86,9 @@
 #include "gmx_wallcycle.h"
 #include "genborn.h"
 #include "nbnxn_search.h"
-#include "nbnxn_kernels/nbnxn_kernel_sse.h"
-#include "nbnxn_kernels/nbnxn_kernel_avx.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
+#include "nbnxn_kernels/nbnxn_kernel_x86_simd128.h"
+#include "nbnxn_kernels/nbnxn_kernel_x86_simd256.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
 #ifdef GMX_LIB_MPI
@@ -618,28 +618,28 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
         
         case nbk4xN_S128:
-            nbnxn_kernel_sse(&nbvg->nbl_lists,
-                             nbvg->nbat, ic,
-                             fr->shift_vec,
-                             flags,
-                             clearF,
-                             fr->fshift[0],
-                             enerd->grpp.ener[egCOULSR],
-                             fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
+            nbnxn_kernel_x86_simd128(&nbvg->nbl_lists,
+                                     nbvg->nbat, ic,
+                                     fr->shift_vec,
+                                     flags,
+                                     clearF,
+                                     fr->fshift[0],
+                                     enerd->grpp.ener[egCOULSR],
+                                     fr->bBHAM ?
+                                     enerd->grpp.ener[egBHAMSR] :
+                                     enerd->grpp.ener[egLJSR]);
             break;
         case nbk4xN_S256:
-            nbnxn_kernel_avx(&nbvg->nbl_lists,
-                             nbvg->nbat, ic,
-                             fr->shift_vec,
-                             flags,
-                             clearF,
-                             fr->fshift[0],
-                             enerd->grpp.ener[egCOULSR],
-                             fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
+            nbnxn_kernel_x86_simd256(&nbvg->nbl_lists,
+                                     nbvg->nbat, ic,
+                                     fr->shift_vec,
+                                     flags,
+                                     clearF,
+                                     fr->fshift[0],
+                                     enerd->grpp.ener[egCOULSR],
+                                     fr->bBHAM ?
+                                     enerd->grpp.ener[egBHAMSR] :
+                                     enerd->grpp.ener[egLJSR]);
             break;
 
         case nbk8x8x8_CUDA:

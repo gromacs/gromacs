@@ -46,7 +46,7 @@
 
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
 
-#include "nbnxn_kernel_sse.h"
+#include "nbnxn_kernel_x86_simd128.h"
 
 /* Include all flavors of the 128-bit SSE or AVX kernel loops */
 
@@ -58,35 +58,35 @@
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 
 #undef CALC_COUL_RF
 
@@ -97,35 +97,35 @@
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_outer.h"
+#include "nbnxn_kernel_x86_simd_outer.h"
 
 #undef CALC_COUL_PME
 
@@ -150,28 +150,28 @@ enum { coultRF, coultTAB, coultNR };
 
 
 static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_sse_rf_comb_geom_ener,
-    nbnxn_kernel_sse_rf_comb_lb_ener,
-    nbnxn_kernel_sse_rf_comb_none_ener },
-  { nbnxn_kernel_sse_tab_comb_geom_ener,
-    nbnxn_kernel_sse_tab_comb_lb_ener,
-    nbnxn_kernel_sse_tab_comb_none_ener } };
+{ { nbnxn_kernel_x86_simd128_rf_comb_geom_ener,
+    nbnxn_kernel_x86_simd128_rf_comb_lb_ener,
+    nbnxn_kernel_x86_simd128_rf_comb_none_ener },
+  { nbnxn_kernel_x86_simd128_tab_comb_geom_ener,
+    nbnxn_kernel_x86_simd128_tab_comb_lb_ener,
+    nbnxn_kernel_x86_simd128_tab_comb_none_ener } };
 
 static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
-{ { nbnxn_kernel_sse_rf_comb_geom_energrp,
-    nbnxn_kernel_sse_rf_comb_lb_energrp,
-    nbnxn_kernel_sse_rf_comb_none_energrp },
-  { nbnxn_kernel_sse_tab_comb_geom_energrp,
-    nbnxn_kernel_sse_tab_comb_lb_energrp,
-    nbnxn_kernel_sse_tab_comb_none_energrp } };
+{ { nbnxn_kernel_x86_simd128_rf_comb_geom_energrp,
+    nbnxn_kernel_x86_simd128_rf_comb_lb_energrp,
+    nbnxn_kernel_x86_simd128_rf_comb_none_energrp },
+  { nbnxn_kernel_x86_simd128_tab_comb_geom_energrp,
+    nbnxn_kernel_x86_simd128_tab_comb_lb_energrp,
+    nbnxn_kernel_x86_simd128_tab_comb_none_energrp } };
 
 static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_sse_rf_comb_geom_noener,
-    nbnxn_kernel_sse_rf_comb_lb_noener,
-    nbnxn_kernel_sse_rf_comb_none_noener },
-  { nbnxn_kernel_sse_tab_comb_geom_noener,
-    nbnxn_kernel_sse_tab_comb_lb_noener,
-    nbnxn_kernel_sse_tab_comb_none_noener } };
+{ { nbnxn_kernel_x86_simd128_rf_comb_geom_noener,
+    nbnxn_kernel_x86_simd128_rf_comb_lb_noener,
+    nbnxn_kernel_x86_simd128_rf_comb_none_noener },
+  { nbnxn_kernel_x86_simd128_tab_comb_geom_noener,
+    nbnxn_kernel_x86_simd128_tab_comb_lb_noener,
+    nbnxn_kernel_x86_simd128_tab_comb_none_noener } };
 
 #endif /* SSE */
 
@@ -243,15 +243,15 @@ static void reduce_group_energies(int ng,int ng_2log,
 }
 
 void
-nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
-                 const nbnxn_atomdata_t     *nbat,
-                 const interaction_const_t  *ic,
-                 rvec                       *shift_vec, 
-                 int                        force_flags,
-                 gmx_bool                   clearF,
-                 real                       *fshift,
-                 real                       *Vc,
-                 real                       *Vvdw)
+nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
+                         const nbnxn_atomdata_t     *nbat,
+                         const interaction_const_t  *ic,
+                         rvec                       *shift_vec, 
+                         int                        force_flags,
+                         gmx_bool                   clearF,
+                         real                       *fshift,
+                         real                       *Vc,
+                         real                       *Vvdw)
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
 {
     int              nnbl;
@@ -371,6 +371,6 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
 }
 #else
 {
-    gmx_incons("nbnxn_kernel_sse called while GROMACS was configured without SSE enabled");
+    gmx_incons("nbnxn_kernel_x86_simd128 called while GROMACS was configured without SSE enabled");
 }
 #endif

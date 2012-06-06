@@ -32,8 +32,8 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-#ifndef _nbnxn_kernel_avx_h
-#define _nbnxn_kernel_avx_h
+#ifndef _nbnxn_kernel_x86_simd128_h
+#define _nbnxn_kernel_x86_simd128_h
 
 #include "typedefs.h"
 
@@ -41,17 +41,17 @@
 extern "C" {
 #endif
 
-/* Wrapper call for the non-bonded cell vs cell kernels */
+/* Wrapper call for the non-bonded cluster vs cluster kernels */
 void
-nbnxn_kernel_avx(nbnxn_pairlist_set_t       *nbl_list,
-                 const nbnxn_atomdata_t     *nbat,
-                 const interaction_const_t  *ic,
-                 rvec                       *shift_vec,
-                 int                        force_flags,
-                 gmx_bool                   clearF,
-                 real                       *fshift,
-                 real                       *Vc,
-                 real                       *Vvdw);
+nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
+                         const nbnxn_atomdata_t     *nbat,
+                         const interaction_const_t  *ic,
+                         rvec                       *shift_vec,
+                         int                        force_flags,
+                         gmx_bool                   clearF,
+                         real                       *fshift,
+                         real                       *Vc,
+                         real                       *Vvdw);
 
 #ifdef __cplusplus
 }
