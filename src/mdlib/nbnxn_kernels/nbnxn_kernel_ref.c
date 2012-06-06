@@ -63,7 +63,8 @@
 #undef CALC_COUL_RF
 
 
-/* Tabulated Coulomb kernels */
+/* Tabulated exclusion interaction electrostatics kernels */
+#define CALC_COUL_PME
 
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
@@ -79,6 +80,8 @@
 
 /* Include the force only kernels */
 #include "nbnxn_kernel_ref_outer.h"
+
+#undef CALC_COUL_PME
 
 
 typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,

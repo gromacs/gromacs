@@ -52,7 +52,8 @@
 
 #ifdef CALC_COUL_RF
 #define NBK_FUNC_NAME(x,y) x##_rf_##y
-#else
+#endif
+#ifdef CALC_COUL_PME
 #define NBK_FUNC_NAME(x,y) x##_tab_##y
 #endif
 
@@ -120,7 +121,8 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #ifdef CALC_ENERGIES
     real       k_rf,c_rf;
 #endif
-#else
+#endif
+#ifdef CALC_COUL_PME
     real       tabscale;
 #ifdef CALC_ENERGIES
     real       halfsp;
@@ -149,7 +151,8 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     k_rf = ic->k_rf;
     c_rf = ic->c_rf;
 #endif
-#else
+#endif
+#ifdef CALC_COUL_PME
     tabscale = ic->tabq_scale;
 #ifdef CALC_ENERGIES
     halfsp = 0.5/ic->tabq_scale;
@@ -237,7 +240,8 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
 #ifdef CALC_COUL_RF
                         -= qi[i]*q[ci*UNROLLI+i]*0.5*c_rf;
-#else
+#endif
+#ifdef CALC_COUL_PME
                         -= qi[i]*q[ci*UNROLLI+i]*ic->ewaldcoeff*0.564189583548;
 #endif
                 }

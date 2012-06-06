@@ -71,7 +71,7 @@
 #ifdef CALC_COULOMB
                     real qq;
                     real fcoul;
-#ifndef CALC_COUL_RF
+#ifdef CALC_COUL_PME
                     real rs,frac;
                     int  ri;
                     real fexcl;
@@ -169,7 +169,9 @@
                     vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
                     /* 4 flops for RF energy */
 #endif
-#else
+#endif
+
+#ifdef CALC_COUL_PME
                     rs     = rsq*rinv*ic->tabq_scale;
                     ri     = (int)rs;
                     frac   = rs - ri;

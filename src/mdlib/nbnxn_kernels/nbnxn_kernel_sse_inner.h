@@ -102,7 +102,7 @@
             gmx_mm_pr  qq_SSE1;
             gmx_mm_pr  qq_SSE2;
             gmx_mm_pr  qq_SSE3;
-#ifndef CALC_COUL_RF
+#ifdef CALC_COUL_PME
             /* The force (PME mesh force) we need to subtract from 1/r^2 */
             gmx_mm_pr  fsub_SSE0;
             gmx_mm_pr  fsub_SSE1;
@@ -114,7 +114,7 @@
             gmx_mm_pr  frcoul_SSE1;
             gmx_mm_pr  frcoul_SSE2;
             gmx_mm_pr  frcoul_SSE3;
-#ifndef CALC_COUL_RF
+#ifdef CALC_COUL_PME
             /* For tables: r, rs=r/sp, rf=floor(rs), frac=rs-rf */
             gmx_mm_pr  r_SSE0,rs_SSE0,rf_SSE0,frac_SSE0;
             gmx_mm_pr  r_SSE1,rs_SSE1,rf_SSE1,frac_SSE1;
@@ -494,7 +494,7 @@
 #endif
 
 #ifdef CALC_COUL_RF
-            /* Coulomb interaction */
+            /* Electrostatic interactions */
             frcoul_SSE0   = gmx_mul_pr(qq_SSE0,gmx_add_pr(rinv_ex_SSE0,gmx_mul_pr(rsq_SSE0,mrc_3_SSE)));
             frcoul_SSE1   = gmx_mul_pr(qq_SSE1,gmx_add_pr(rinv_ex_SSE1,gmx_mul_pr(rsq_SSE1,mrc_3_SSE)));
             frcoul_SSE2   = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_mul_pr(rsq_SSE2,mrc_3_SSE)));
@@ -506,7 +506,10 @@
             vcoul_SSE2    = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_add_pr(gmx_mul_pr(rsq_SSE2,hrc_3_SSE),moh_rc_SSE)));
             vcoul_SSE3    = gmx_mul_pr(qq_SSE3,gmx_add_pr(rinv_ex_SSE3,gmx_add_pr(gmx_mul_pr(rsq_SSE3,hrc_3_SSE),moh_rc_SSE)));
 #endif
-#else
+#endif
+
+#ifdef CALC_COUL_PME
+            /* Electrostatic interactions */
             r_SSE0        = gmx_mul_pr(rsq_SSE0,rinv_SSE0);
             r_SSE1        = gmx_mul_pr(rsq_SSE1,rinv_SSE1);
             r_SSE2        = gmx_mul_pr(rsq_SSE2,rinv_SSE2);
