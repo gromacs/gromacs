@@ -1495,20 +1495,20 @@ static int qhop_titrate(qhop_db *db, titration_t T,
 
     /* Loop over acceptors or donors */
     for (reactant = 0;
-         (reactant < bDonor ? (db->rb.qrt[rt].subres[r].nd) : (db->rb.qrt[rt].subres[r].na))
+         (reactant < (bDonor ? (db->rb.qrt[rt].subres[r].nd) : (db->rb.qrt[rt].subres[r].na)))
              && prod_res==NULL;
          reactant++)
     {
         /* Loop over tautomers */
         for (t = 0;
-             t < bDonor ? (db->rb.qrt[rt].subres[r].don[reactant].nname) : (db->rb.qrt[rt].subres[r].acc[reactant].nname);
+             t < (bDonor ? (db->rb.qrt[rt].subres[r].don[reactant].nname) : (db->rb.qrt[rt].subres[r].acc[reactant].nname));
              t++)
         {
             /* Is this the reactant? */
             if (!strcasecmp(bDonor ?
                             db->rb.qrt[rt].subres[r].don[reactant].name[t] :
                             db->rb.qrt[rt].subres[r].acc[reactant].name[t],
-                            qatom->atomname));
+                            qatom->atomname))
             {
                 /* This is the reactant! */
                 prod_res = bDonor ?
