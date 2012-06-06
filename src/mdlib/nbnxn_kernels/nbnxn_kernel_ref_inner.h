@@ -106,9 +106,9 @@
 
                     aj = cj*UNROLLJ + j;
 
-                    dx  = xi[i*3+0] - x[aj*3+0];
-                    dy  = xi[i*3+1] - x[aj*3+1];
-                    dz  = xi[i*3+2] - x[aj*3+2];
+                    dx  = xi[i*XI_STRIDE+0] - x[aj*X_STRIDE+0];
+                    dy  = xi[i*XI_STRIDE+1] - x[aj*X_STRIDE+1];
+                    dz  = xi[i*XI_STRIDE+2] - x[aj*X_STRIDE+2];
 
                     rsq = dx*dx + dy*dy + dz*dz;
 
@@ -229,13 +229,13 @@
                     fz = fscal*dz;
 
                     /* Increment i-atom force */
-                    fi[i*3+0] += fx;
-                    fi[i*3+1] += fy;
-                    fi[i*3+2] += fz;
+                    fi[i*FI_STRIDE+0] += fx;
+                    fi[i*FI_STRIDE+1] += fy;
+                    fi[i*FI_STRIDE+2] += fz;
                     /* Decrement j-atom force */
-                    f[aj*3+0] -= fx;
-                    f[aj*3+1] -= fy;
-                    f[aj*3+2] -= fz;
+                    f[aj*F_STRIDE+0]  -= fx;
+                    f[aj*F_STRIDE+1]  -= fy;
+                    f[aj*F_STRIDE+2]  -= fz;
                     /* 9 flops for force addition */
                 }
             }

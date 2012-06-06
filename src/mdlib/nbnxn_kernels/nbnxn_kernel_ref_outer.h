@@ -41,6 +41,13 @@
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
 
+/* We could use nbat->xstride and nbat->fstride, but macros might be faster */
+#define X_STRIDE   3
+#define F_STRIDE   3
+/* Local i-atom buffer strides */
+#define XI_STRIDE  3
+#define FI_STRIDE  3
+
 
 /* All functionality defines are set here, except for:
  * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
@@ -101,8 +108,8 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     int        cjind0,cjind1,cjind;
     int        ip,jp;
 
-    real       xi[UNROLLI*DIM];
-    real       fi[UNROLLI*DIM];
+    real       xi[UNROLLI*XI_STRIDE];
+    real       fi[UNROLLI*FI_STRIDE];
     real       qi[UNROLLI];
 
 #ifdef CALC_ENERGIES
@@ -218,8 +225,8 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         {
             for(d=0; d<DIM; d++)
             {
-                xi[i*DIM+d] = x[(ci*UNROLLI+i)*DIM+d] + shiftvec[ish3+d];
-                fi[i*DIM+d] = 0;
+                xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ish3+d];
+                fi[i*FI_STRIDE+d] = 0;
             }
         }
 
@@ -309,7 +316,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         {
             for(d=0; d<DIM; d++)
             {
-                f[(ci*UNROLLI+i)*DIM+d] += fi[i*DIM+d];
+                f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
             }
         }
 #ifdef CALC_SHIFTFORCES
@@ -320,7 +327,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
             {
                 for(d=0; d<DIM; d++)
                 {
-                    fshift[ish3+d] += fi[i*DIM+d];
+                    fshift[ish3+d] += fi[i*FI_STRIDE+d];
                 }
             }
         }
@@ -340,6 +347,11 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 }
 
 #undef CALC_SHIFTFORCES
+
+#undef X_STRIDE
+#undef F_STRIDE
+#undef XI_STRIDE
+#undef FI_STRIDE
 
 #undef UNROLLI
 #undef UNROLLJ
