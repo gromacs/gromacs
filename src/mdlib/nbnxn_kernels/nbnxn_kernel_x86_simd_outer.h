@@ -63,12 +63,13 @@
 /* SSE single precision 4x4 kernel */
 #define SUM_SIMD(x) SUM_SIMD4(x)
 #define TAB_FDV0
-#endif
-#ifdef GMX_MM256_HERE
+#else
 /* SSE double precision 4x2 kernel */
 #define SUM_SIMD(x) (x[0]+x[1])
 #endif
-#else
+#endif
+
+#ifdef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
 /* AVX single precision 4x8 kernel */
 #define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
