@@ -505,10 +505,6 @@
             vcoul_SSE1    = gmx_mul_pr(qq_SSE1,gmx_add_pr(rinv_ex_SSE1,gmx_add_pr(gmx_mul_pr(rsq_SSE1,hrc_3_SSE),moh_rc_SSE)));
             vcoul_SSE2    = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_add_pr(gmx_mul_pr(rsq_SSE2,hrc_3_SSE),moh_rc_SSE)));
             vcoul_SSE3    = gmx_mul_pr(qq_SSE3,gmx_add_pr(rinv_ex_SSE3,gmx_add_pr(gmx_mul_pr(rsq_SSE3,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE0    = gmx_and_pr(vcoul_SSE0,wco_SSE0);
-            vcoul_SSE1    = gmx_and_pr(vcoul_SSE1,wco_SSE1);
-            vcoul_SSE2    = gmx_and_pr(vcoul_SSE2,wco_SSE2);
-            vcoul_SSE3    = gmx_and_pr(vcoul_SSE3,wco_SSE3);
 #endif
 #else
             r_SSE0        = gmx_mul_pr(rsq_SSE0,rinv_SSE0);
@@ -595,6 +591,15 @@
 
 #endif
 #endif
+
+#ifdef CALC_ENERGIES
+            /* Mask energy for cut-off and diagonal */
+            vcoul_SSE0    = gmx_and_pr(vcoul_SSE0,wco_SSE0);
+            vcoul_SSE1    = gmx_and_pr(vcoul_SSE1,wco_SSE1);
+            vcoul_SSE2    = gmx_and_pr(vcoul_SSE2,wco_SSE2);
+            vcoul_SSE3    = gmx_and_pr(vcoul_SSE3,wco_SSE3);
+#endif
+
 #endif /* CALC_COULOMB */
 
 #ifdef CALC_LJ

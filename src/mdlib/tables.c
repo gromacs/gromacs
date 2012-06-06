@@ -179,12 +179,11 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
     i_inrange = ntab;
     v_inrange = 0;
     dc = 0;
-    for(i=ntab-1; i>0; i--)
+    for(i=ntab-1; i>=0; i--)
     {
         x_r0 = i*dx;
 
         v_r0 = v_ewald_lr(beta,x_r0);
-        v_r1 = v_ewald_lr(beta,(i-1)*dx);
 
         if (!OutOfRange)
         {
@@ -214,6 +213,14 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
         default:
             gmx_incons("Unknown table format");
         }
+
+        if (i == 0)
+        {
+            continue;
+        }
+
+        /* Get the potential at table point i-1 */
+        v_r1 = v_ewald_lr(beta,(i-1)*dx);
 
         if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
         {
