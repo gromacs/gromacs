@@ -92,7 +92,7 @@
 
 
 /* Tabulated exclusion interaction electrostatics kernels */
-#define CALC_COUL_PME
+#define CALC_COUL_TAB
 
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
@@ -127,7 +127,7 @@
 #undef LJ_COMB_LB
 #include "nbnxn_kernel_x86_simd_outer.h"
 
-#undef CALC_COUL_PME
+#undef CALC_COUL_TAB
 
 
 typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,

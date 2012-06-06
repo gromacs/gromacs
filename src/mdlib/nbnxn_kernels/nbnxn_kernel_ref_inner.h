@@ -71,7 +71,7 @@
 #ifdef CALC_COULOMB
                     real qq;
                     real fcoul;
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
                     real rs,frac;
                     int  ri;
                     real fexcl;
@@ -171,7 +171,7 @@
 #endif
 #endif
 
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
                     rs     = rsq*rinv*ic->tabq_scale;
                     ri     = (int)rs;
                     frac   = rs - ri;

@@ -53,7 +53,7 @@
 #ifdef CALC_COUL_RF
 #define NBK_FUNC_NAME(x,y) x##_rf_##y
 #endif
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
 #define NBK_FUNC_NAME(x,y) x##_tab_##y
 #endif
 
@@ -122,7 +122,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     real       k_rf,c_rf;
 #endif
 #endif
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
     real       tabscale;
 #ifdef CALC_ENERGIES
     real       halfsp;
@@ -152,7 +152,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     c_rf = ic->c_rf;
 #endif
 #endif
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
     tabscale = ic->tabq_scale;
 #ifdef CALC_ENERGIES
     halfsp = 0.5/ic->tabq_scale;
@@ -226,6 +226,21 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         /* With half_LJ we currently always calculate Coulomb interactions */
         if (do_coul || half_LJ)
         {
+#ifdef CALC_ENERGIES
+            real Vc_sub_self;
+
+#ifdef CALC_COUL_RF
+            Vc_sub_self = 0.5*c_rf;
+#endif
+#ifdef CALC_COUL_TAB
+#ifdef GMX_DOUBLE
+            Vc_sub_self = 0.5*tab_coul_V[0];
+#else
+            Vc_sub_self = 0.5*tab_coul_FDV0[2];
+#endif
+#endif
+#endif
+
             for(i=0; i<UNROLLI; i++)
             {
                 qi[i] = facel*q[ci*UNROLLI+i];
@@ -238,12 +253,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #else
                     Vc[0]
 #endif
-#ifdef CALC_COUL_RF
-                        -= qi[i]*q[ci*UNROLLI+i]*0.5*c_rf;
-#endif
-#ifdef CALC_COUL_PME
-                        -= qi[i]*q[ci*UNROLLI+i]*ic->ewaldcoeff*0.564189583548;
-#endif
+                        -= qi[i]*q[ci*UNROLLI+i]*Vc_sub_self;
                 }
 #endif
             }

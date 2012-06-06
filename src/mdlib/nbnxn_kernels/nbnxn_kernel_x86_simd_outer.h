@@ -114,7 +114,7 @@
 #ifdef CALC_COUL_RF
 #define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,rf,e)
 #endif
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
 #define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab,e)
 #endif
 
@@ -278,7 +278,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #ifdef CALC_ENERGIES
     gmx_mm_pr  hrc_3_SSE,moh_rc_SSE;
 #endif
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
     /* Coulomb table variables */
     gmx_mm_pr  invtsp_SSE;
     const real *tab_coul_F;
@@ -360,7 +360,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #endif
 #endif
 
-#ifdef CALC_COUL_PME
+#ifdef CALC_COUL_TAB
 #ifdef GMX_MM256_HERE
     /* Generate aligned table pointers */
     ti0 = (int *)(((size_t)(ti0_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
@@ -512,7 +512,19 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
         if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh>>1))
 #endif
         {
-            int ia;
+            int  ia;
+            real Vc_sub_self;
+
+#ifdef CALC_COUL_RF
+            Vc_sub_self = 0.5*ic->c_rf;
+#endif
+#ifdef CALC_COUL_TAB
+#ifdef TAB_FDV0
+            Vc_sub_self = 0.5*tab_coul_F[2];
+#else
+            Vc_sub_self = 0.5*tab_coul_V[0];
+#endif
+#endif
 
             for(ia=0; ia<UNROLLI; ia++)
             {
@@ -524,12 +536,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #else
                 Vc[0]
 #endif
-#ifdef CALC_COUL_RF
-                    -= facel*qi*qi*0.5*ic->c_rf;
-#endif
-#ifdef CALC_COUL_PME
-                    -= facel*ic->ewaldcoeff*qi*qi*0.564189583548;
-#endif
+                    -= facel*qi*qi*Vc_sub_self;
             }
         }
 #endif
