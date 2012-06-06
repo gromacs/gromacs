@@ -140,7 +140,7 @@ typedef struct sample_range_t
     foreign lambda) */
 typedef struct sample_coll_t
 {
-    double native_lambda;  /* these should be the same for all samples in the */
+    double native_lambda;  /* these should be the same for all samples in the histogram?*/
     double foreign_lambda; /* collection */
     double temp; /* the temperature */
 
@@ -2667,14 +2667,13 @@ int gmx_bar(int argc,char *argv[])
         return 0;
     }
 
-#if 1
     if (sum_disc_err > prec)
     {
         prec=sum_disc_err;
         nd = ceil(-log10(prec));
         printf("WARNING: setting the precision to %g because that is the minimum\n         reasonable number, given the expected discretization error.\n", prec);
     }
-#endif
+
 
     sprintf(lamformat,"%%6.3f");
     sprintf( dgformat,"%%%d.%df",3+nd,nd);
@@ -2696,7 +2695,7 @@ int gmx_bar(int argc,char *argv[])
         fpb = xvgropen_type(opt2fn("-o",NFILE,fnm),"Free energy differences",
                             "\\lambda",buf,exvggtXYDY,oenv);
     }
-    
+
     fpi = NULL;
     if (opt2bSet("-oi",NFILE,fnm))
     {

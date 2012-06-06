@@ -278,32 +278,32 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    /* Start with GB */
    if(fr->bGB)
    {
-       icoul=4;
+       icoul=enbcoulGB;
    }
    else if (fr->bcoultab)
    {
-       icoul = 3;
+       icoul = enbcoulTAB;
    }
    else if (EEL_RF(fr->eeltype))
    {
-       icoul = 2;
+       icoul = enbcoulRF;
    }
    else 
    {
-       icoul = 1;
+       icoul = enbcoulOOR;
    }
    
    if (fr->bvdwtab)
    {
-       ivdw = 3;
+       ivdw = enbvdwTAB;
    }
    else if (fr->bBHAM)
    {
-       ivdw = 2;
+       ivdw = enbvdwBHAM;
    }
    else 
    {
-       ivdw = 1;
+       ivdw = enbvdwLJ;
    }
 
    fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
@@ -348,9 +348,9 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        
        if (fr->efep != efepNO) 
        {
-           if (fr->bEwald)
+           if ((fr->bEwald) && (fr->sc_alphacoul > 0)) /* need to handle long range differently if using softcore */
            {
-               icoulf = 5;
+               icoulf = enbcoulFEWALD;
            }
            else
            {
@@ -1790,7 +1790,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                          int jgid,int nlr,
                          atom_id lr[],t_excl bexcl[],int shift,
                          rvec x[],rvec box_size,t_nrnb *nrnb,
-                         real lambda,real *dvdlambda,
+                         real *lambda,real *dvdlambda,
                          gmx_grppairener_t *grppener,
                          gmx_bool bDoVdW,gmx_bool bDoCoul,
                          gmx_bool bEvaluateNow,put_in_list_t *put_in_list,
@@ -1918,7 +1918,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        t_grid *grid,rvec x[],
                        t_excl bexcl[],gmx_bool *bExcludeAlleg,
                        t_nrnb *nrnb,t_mdatoms *md,
-                       real lambda,real *dvdlambda,
+                       real *lambda,real *dvdlambda,
                        gmx_grppairener_t *grppener,
                        put_in_list_t *put_in_list,
                        gmx_bool bHaveVdW[],
@@ -2519,7 +2519,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb,t_mdatoms *md,
-                      real lambda,real *dvdlambda,
+                      real *lambda,real *dvdlambda,
                       gmx_grppairener_t *grppener,
                       gmx_bool bFillGrid,
                       gmx_bool bDoLongRange,
