@@ -32,10 +32,7 @@
 
 
 /* When calculating RF or Ewald interactions we calculate the electrostatic
- * forces on excluded atom pairs here in the non-bonded loops.
- * But when energies and/or virial is required we calculate them
- * separately to as then it is easier to separate the energy and virial
- * contributions.
+ * forces and energies on excluded atom pairs here in the non-bonded loops.
  */
 #if defined CHECK_EXCLS && defined CALC_COULOMB
 #define EXCL_FORCES
