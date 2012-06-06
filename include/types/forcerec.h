@@ -106,7 +106,12 @@ typedef struct {
 #define GMX_CUTOFF_INF 1E+18
 
 /*! Nonbonded kernel types: C, SSE/AVX, GPU CUDA, GPU emulation, etc */
-enum { nbkNotSet = 0, nbk4x4_PlainC, nbk4xN_S128, nbk4xN_S256, nbk8x8x8_CUDA, nbk8x8x8_PlainC };
+enum { nbkNotSet = 0, 
+       nbk4x4_PlainC, 
+       nbk4xN_X86_SIMD128,
+       nbk4xN_X86_SIMD256,
+       nbk8x8x8_CUDA,
+       nbk8x8x8_PlainC };
 
 /* Note that _mm_... intrinsics can be converted to either SSE or AVX
  * depending on compiler flags.

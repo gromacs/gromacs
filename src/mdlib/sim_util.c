@@ -617,7 +617,7 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egLJSR]);
             break;
         
-        case nbk4xN_S128:
+        case nbk4xN_X86_SIMD128:
             nbnxn_kernel_x86_simd128(&nbvg->nbl_lists,
                                      nbvg->nbat, ic,
                                      fr->shift_vec,
@@ -629,7 +629,7 @@ static void do_nb_verlet(t_forcerec *fr,
                                      enerd->grpp.ener[egBHAMSR] :
                                      enerd->grpp.ener[egLJSR]);
             break;
-        case nbk4xN_S256:
+        case nbk4xN_X86_SIMD256:
             nbnxn_kernel_x86_simd256(&nbvg->nbl_lists,
                                      nbvg->nbat, ic,
                                      fr->shift_vec,

@@ -1684,30 +1684,32 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
             (double_prec || !tabulated_force))
         {
 #ifdef GMX_AVX
-            *kernel_type = nbk4xN_S256;
+            *kernel_type = nbk4xN_X86_SIMD256;
 #else
             md_print_warning(cr,fp,"NOTE: Gromacs was compiled without AVX support,\n      can not use the faster AVX kernels\n");
-            *kernel_type = nbk4xN_S128;
+            *kernel_type = nbk4xN_X86_SIMD128;
 #endif
         }
         else
         {
-            *kernel_type = nbk4xN_S128;
+            *kernel_type = nbk4xN_X86_SIMD128;
         }
 
         if (getenv("GMX_NBNXN_AVX128") != NULL)
         {
-            *kernel_type = nbk4xN_S128;
+            *kernel_type = nbk4xN_X86_SIMD128;
         }
-#ifdef GMX_AVX
         if (getenv("GMX_NBNXN_AVX256") != NULL)
         {
-            *kernel_type = nbk4xN_S256;
-        }
+#ifdef GMX_AVX
+            *kernel_type = nbk4xN_X86_SIMD256;
+#else
+            gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but Gromacs was built without AVX support");
 #endif
+        }
 
 #ifndef GMX_SSE4_1
-        if (*kernel_type == nbk4xN_S128 && cpuinfo.sse4_1)
+        if (*kernel_type == nbk4xN_X86_SIMD128 && cpuinfo.sse4_1)
         {
             md_print_warning(cr,fp,"NOTE: Gromacs was compiled without SSE4.1 support,\n      can not use the faster SSE4.1 kernels\n");
         }

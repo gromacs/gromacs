@@ -39,10 +39,10 @@
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
 #ifdef GMX_MM128_HERE
-static void icell_set_x_simple_sse
+static void icell_set_x_x86_simd128
 #else
 #ifdef GMX_MM256_HERE
-static void icell_set_x_simple_avx
+static void icell_set_x_x86_simd256
 #else
 "error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
 #endif
@@ -55,17 +55,17 @@ static void icell_set_x_simple_avx
 {
     int  ia;
 #ifdef GMX_MM128_HERE
-    nbnxn_x_ci_sse_t *x_ci;
+    nbnxn_x_ci_x86_simd128_t *x_ci;
 
-    x_ci = work->x_ci_sse;
+    x_ci = work->x_ci_x86_simd128;
 
-    ia = X_IND_CI_SSE(ci);
+    ia = X_IND_CI_S128(ci);
 #else
-    nbnxn_x_ci_avx_t *x_ci;
+    nbnxn_x_ci_x86_simd256_t *x_ci;
 
-    x_ci = work->x_ci_avx;
+    x_ci = work->x_ci_x86_simd256;
 
-    ia = X_IND_CI_AVX(ci);
+    ia = X_IND_CI_S256(ci);
 #endif
 
     x_ci->ix_SSE0 = gmx_set1_pr(x[ia + 0*STRIDE_S    ] + shx);
@@ -88,26 +88,26 @@ static void icell_set_x_simple_avx
  * This is an accelerated version of make_cluster_list_simple.
  */
 #ifdef GMX_MM128_HERE
-static void make_cluster_list_simple_sse
+static void make_cluster_list_x86_simd128
 #else
 #ifdef GMX_MM256_HERE
-static void make_cluster_list_simple_avx
+static void make_cluster_list_x86_simd256
 #else
 "error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
 #endif
 #endif
-                                        (const nbnxn_grid_t *gridj,
-                                         nbnxn_pairlist_t *nbl,
-                                         int ci,int cjf,int cjl,
-                                         gmx_bool remove_sub_diag,
-                                         const real *x_j,
-                                         real rl2,float rbb2,
-                                         int *ndistc)
+                                         (const nbnxn_grid_t *gridj,
+                                          nbnxn_pairlist_t *nbl,
+                                          int ci,int cjf,int cjl,
+                                          gmx_bool remove_sub_diag,
+                                          const real *x_j,
+                                          real rl2,float rbb2,
+                                          int *ndistc)
 {
 #ifdef GMX_MM128_HERE
-    const nbnxn_x_ci_sse_t *work;
+    const nbnxn_x_ci_x86_simd128_t *work;
 #else
-    const nbnxn_x_ci_avx_t *work;
+    const nbnxn_x_ci_x86_simd256_t *work;
 #endif
 
     const float *bb_ci;
@@ -137,15 +137,15 @@ static void make_cluster_list_simple_avx
     int        xind_f,xind_l,cj;
 
 #ifdef GMX_MM128_HERE
-    cjf = CI_TO_CJ_SSE(cjf);
-    cjl = CI_TO_CJ_SSE(cjl+1) - 1;
+    cjf = CI_TO_CJ_S128(cjf);
+    cjl = CI_TO_CJ_S128(cjl+1) - 1;
 
-    work = nbl->work->x_ci_sse;
+    work = nbl->work->x_ci_x86_simd128;
 #else
-    cjf = CI_TO_CJ_AVX(cjf);
-    cjl = CI_TO_CJ_AVX(cjl+1) - 1;
+    cjf = CI_TO_CJ_S256(cjf);
+    cjl = CI_TO_CJ_S256(cjl+1) - 1;
 
-    work = nbl->work->x_ci_avx;
+    work = nbl->work->x_ci_x86_simd256;
 #endif
 
     bb_ci = nbl->work->bb_ci;
@@ -170,9 +170,9 @@ static void make_cluster_list_simple_avx
         else if (d2 < rl2)
         {
 #ifdef GMX_MM128_HERE
-            xind_f  = X_IND_CJ_SSE(CI_TO_CJ_SSE(gridj->cell0) + cjf);
+            xind_f  = X_IND_CJ_S128(CI_TO_CJ_S128(gridj->cell0) + cjf);
 #else
-            xind_f  = X_IND_CJ_AVX(CI_TO_CJ_AVX(gridj->cell0) + cjf);
+            xind_f  = X_IND_CJ_S256(CI_TO_CJ_S256(gridj->cell0) + cjf);
 #endif
             jx_SSE  = gmx_load_pr(x_j+xind_f+0*STRIDE_S);
             jy_SSE  = gmx_load_pr(x_j+xind_f+1*STRIDE_S);
@@ -240,9 +240,9 @@ static void make_cluster_list_simple_avx
         else if (d2 < rl2)
         {
 #ifdef GMX_MM128_HERE
-            xind_l  = X_IND_CJ_SSE(CI_TO_CJ_SSE(gridj->cell0) + cjl);
+            xind_l  = X_IND_CJ_S128(CI_TO_CJ_S128(gridj->cell0) + cjl);
 #else
-            xind_l  = X_IND_CJ_AVX(CI_TO_CJ_AVX(gridj->cell0) + cjl);
+            xind_l  = X_IND_CJ_S256(CI_TO_CJ_S256(gridj->cell0) + cjl);
 #endif
             jx_SSE  = gmx_load_pr(x_j+xind_l+0*STRIDE_S);
             jy_SSE  = gmx_load_pr(x_j+xind_l+1*STRIDE_S);
@@ -293,11 +293,11 @@ static void make_cluster_list_simple_avx
         {
             /* Store cj and the interaction mask */
 #ifdef GMX_MM128_HERE
-            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SSE(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_sse(remove_sub_diag,ci,cj);
+            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_S128(gridj->cell0) + cj;
+            nbl->cj[nbl->ncj].excl = get_imask_x86_simd128(remove_sub_diag,ci,cj);
 #else
-            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_AVX(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_avx(remove_sub_diag,ci,cj);
+            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_S256(gridj->cell0) + cj;
+            nbl->cj[nbl->ncj].excl = get_imask_x86_simd256(remove_sub_diag,ci,cj);
 #endif
             nbl->ncj++;
         }
