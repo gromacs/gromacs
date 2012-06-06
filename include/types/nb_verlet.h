@@ -36,8 +36,8 @@
 #ifndef NB_VERLET_H
 #define NB_VERLET_H
 
-#include "types/nbnxn_pairlist.h"
-#include "types/nbnxn_cuda_types_ext.h"
+#include "nbnxn_pairlist.h"
+#include "nbnxn_cuda_types_ext.h"
 
 #ifdef __cplusplus
 extern "C" {
