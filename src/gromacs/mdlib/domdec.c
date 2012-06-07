@@ -77,6 +77,7 @@
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/imd/imd.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
@@ -9767,6 +9768,9 @@ void dd_partition_system(FILE                *fplog,
         /* Update the local groups needed for ion swapping */
         dd_make_local_swap_groups(dd, ir->swap);
     }
+
+    /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
+    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd);
 
     add_dd_statistics(dd);
 
