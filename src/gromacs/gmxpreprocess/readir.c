@@ -77,7 +77,8 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
-  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
+  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],
+  imd_grp[STRLEN];
 static char fep_lambda[efptNR][STRLEN];
 static char lambda_weights[STRLEN];
 static char **pull_grp;
@@ -1607,6 +1608,20 @@ void get_ir(const char *mdparin,const char *mdparout,
     rot_grp = read_rotparams(&ninp,&inp,ir->rot,wi);
   }
 
+  /* Interactive MD */
+  CCTYPE("Group to display and/or manipulate in interactive MD simulations");
+  STYPE ("IMD-group", imd_grp, NULL);
+  fprintf(stderr, "IMD-group is '%s'\n", imd_grp);
+  if (imd_grp[0] == '\0')
+  {
+      ir->bIMD = FALSE;
+  }
+  else
+  {
+      snew(ir->imd,1);
+      ir->bIMD = TRUE;
+  }
+
   /* Refinement */
   CCTYPE("NMR refinement stuff");
   CTYPE ("Distance restraints type: No, Simple or Ensemble");
@@ -2364,6 +2379,26 @@ static gmx_bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   return bSet;
 }
 
+
+void make_IMD_group(t_IMD *IMDgroup,char *IMDgname,t_blocka *grps,char **gnames)
+{
+    int      ig=-1,i;
+
+
+    ig = search_string(IMDgname,grps->nr,gnames);
+    IMDgroup->nat = grps->index[ig+1] - grps->index[ig];
+
+    if (IMDgroup->nat > 0)
+    {
+        fprintf(stderr,"Group '%s' with %d atoms can be activated for interactive molecular dynamics (IMD).\n",
+                IMDgname,IMDgroup->nat);
+        snew(IMDgroup->ind,IMDgroup->nat);
+        for(i=0; i<IMDgroup->nat; i++)
+            IMDgroup->ind[i] = grps->a[grps->index[ig]+i];
+    }
+}
+
+
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
               gmx_bool bVerbose,
@@ -2627,6 +2662,10 @@ void do_index(const char* mdparin, const char *ndx,
   if (ir->bRot) {
     make_rotation_groups(ir->rot,rot_grp,grps,gnames);
   }
+
+  /* Make indices for IMD session */
+  if (ir->bIMD)
+      make_IMD_group(ir->imd,imd_grp,grps,gnames);
 
   nacc = str_nelem(acc,MAXPTR,ptr1);
   nacg = str_nelem(accgrps,MAXPTR,ptr2);

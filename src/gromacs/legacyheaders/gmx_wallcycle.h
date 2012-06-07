@@ -43,7 +43,8 @@
 extern "C" {
 #endif
 
-  enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcTEST, ewcNR };
+enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcTEST, ewcIMD, ewcNR };
+
 
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
