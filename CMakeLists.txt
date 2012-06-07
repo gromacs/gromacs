@@ -207,6 +207,8 @@ if(UNIX)
 endif()
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
+option(GMX_IMD "Enables interactive molecular dynamics." ON)
+
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
 mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
@@ -328,6 +330,28 @@ endif(GMX_DOUBLE)
 if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
 endif(GMX_SOFTWARE_INVSQRT)
+
+if(GMX_IMD)
+	if(WIN32 AND NOT CYGWIN)
+		set(GMX_WSOCKLIB_PATH CACHE PATH "Path to winsock (wsock32.lib) library.")
+		mark_as_advanced(GMX_WSOCKLIB_PATH)
+		message(STATUS "Locating winsock library.")
+		find_library(WSOCK32_LIBRARY NAMES wsock32 PATHS ${GMX_WSOCKLIB_PATH})
+		if(WSOCK32_LIBRARY)
+			list(APPEND GMX_EXTRA_LIBRARIES ${WSOCK32_LIBRARY})
+			message(STATUS "Using wsock32: ${WSOCK32_LIBRARY}")
+			message(STATUS "IMD using winsocks enabled.")
+			set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_IMD")
+		else()
+			message(STATUS "No winsock found. Disabling IMD.")
+		endif(WSOCK32_LIBRARY)
+	else()
+		message(STATUS "IMD enabled.")
+	    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_IMD")
+	endif(WIN32 AND NOT CYGWIN)
+else()
+	message(STATUS "IMD Disabled.")
+endif(GMX_IMD)
 
 
 

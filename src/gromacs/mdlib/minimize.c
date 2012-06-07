@@ -81,6 +81,10 @@
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 
+#ifdef GMX_IMD
+#include "imd.h"
+#endif
+
 typedef struct {
     t_state  s;
     rvec    *f;
@@ -313,7 +317,10 @@ void init_em(FILE *fplog, const char *title,
              t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int nfile, const t_filenm fnm[],
-             gmx_mdoutf_t **outf, t_mdebin **mdebin)
+             gmx_mdoutf_t **outf, t_mdebin **mdebin,
+             const output_env_t oenv,
+             int imdport, int imdfreq, 
+             unsigned long Flags)
 {
     int  start, homenr, i;
     real dvdl_constr;
@@ -329,6 +336,11 @@ void init_em(FILE *fplog, const char *title,
     initialize_lambdas(fplog, ir, &(state_global->fep_state), state_global->lambda, NULL);
 
     init_nrnb(nrnb);
+
+    /* Set up IMD */
+#ifdef GMX_IMD
+    init_imd(ir, cr, top_global, fplog, 1, state_global->natoms, state_global->x, mdatoms, nfile, fnm, oenv, imdport, imdfreq, Flags);
+#endif
 
     if (DOMAINDECOMP(cr))
     {
@@ -504,8 +516,17 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
                           t_state *state_global, rvec *f_global)
 {
     int mdof_flags;
+    gmx_bool bIMDout = FALSE;
 
-    if ((bX || bF || confout != NULL) && !DOMAINDECOMP(cr))
+#ifdef GMX_IMD
+    /* Shall we do IMD output? */
+    if (ir->bIMD)
+    {
+        bIMDout = do_per_step(step, imd_get_step(ir->imd->setup));
+    }
+#endif
+
+    if ((bX || bF || bIMDout || confout != NULL) && !DOMAINDECOMP(cr))
     {
         copy_em_coords(state, state_global);
         f_global = state->f;
@@ -520,6 +541,13 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
     {
         mdof_flags |= MDOF_F;
     }
+#ifdef GMX_IMD
+    /* If we want IMD output, set appropriate MDOF flag */
+    if (ir->bIMD)
+    {
+        mdof_flags |= MDOF_IMD;
+    }
+#endif
     write_traj(fplog, cr, outf, mdof_flags,
                top_global, step, (double)step,
                &state->s, state_global, state->f, f_global, NULL, NULL);
@@ -966,6 +994,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
+             int imdport, int imdfreq,
              unsigned long gmx_unused Flags,
              gmx_runtime_t *runtime)
 {
@@ -1005,7 +1034,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     init_em(fplog, CG, cr, inputrec,
             state_global, top_global, s_min, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin);
+            nfile, fnm, &outf, &mdebin, oenv, imdport, imdfreq, Flags);
 
     /* Print to log file */
     print_em_start(fplog, cr, runtime, wcycle, CG);
@@ -1472,6 +1501,15 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
+            
+#ifdef GMX_IMD
+            /* Prepare IMD energy record */
+            if (inputrec->bIMD)
+            {
+                do_imd_prepare_energies(inputrec->imd->setup,enerd,step,TRUE);
+            }
+#endif
+
             if (do_log)
             {
                 print_ebin_header(fplog, step, step, s_min->s.lambda[efptFEP]);
@@ -1481,12 +1519,25 @@ double do_cg(FILE *fplog, t_commrec *cr,
                        TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
+#ifdef GMX_IMD
+        /* Send energies and positions to the IMD client */
+        if (do_IMD(step,cr,TRUE,state_global->box,state_global->x,inputrec,0) && MASTER(cr))
+        {
+            do_imd_send_positions(inputrec->imd);
+        }
+#endif
+
         /* Stop when the maximum force lies below tolerance.
          * If we have reached machine precision, converged is already set to true.
          */
         converged = converged || (s_min->fmax < inputrec->em_tol);
 
     } /* End of the loop */
+
+#ifdef GMX_IMD
+    /* IMD cleanup */
+    imd_finalize(inputrec);
+#endif
 
     if (converged)
     {
@@ -1580,6 +1631,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char gmx_unused *deviceOptions,
+                int imdport, int imdfreq,
                 unsigned long gmx_unused Flags,
                 gmx_runtime_t *runtime)
 {
@@ -1655,7 +1707,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     {
         snew(dg[i], n);
     }
-
+ 
     step  = 0;
     neval = 0;
 
@@ -1663,7 +1715,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     init_em(fplog, LBFGS, cr, inputrec,
             state, top_global, &ems, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin);
+            nfile, fnm, &outf, &mdebin, oenv, imdport, imdfreq, Flags);
     /* Do_lbfgs is not completely updated like do_steep and do_cg,
      * so we free some memory again.
      */
@@ -1807,6 +1859,11 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         if (do_f)
         {
             mdof_flags |= MDOF_F;
+        }
+        
+        if (inputrec->bIMD)
+        {
+            mdof_flags |= MDOF_IMD;
         }
 
         write_traj(fplog, cr, outf, mdof_flags,
@@ -2269,6 +2326,18 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
                        TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
+        
+#ifdef GMX_IMD
+        /* Send x and E to IMD client */
+        if (do_IMD(step,cr,TRUE,state->box,state->x,inputrec,0))
+        {
+            if (MASTER(cr))
+            {
+                do_imd_send_positions(inputrec->imd);
+            }
+        }
+#endif
+
 
         /* Stop when the maximum force lies below tolerance.
          * If we have reached machine precision, converged is already set to true.
@@ -2277,6 +2346,11 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         converged = converged || (fmax < inputrec->em_tol);
 
     } /* End of the loop */
+
+#ifdef GMX_IMD
+    /* IMD cleanup */
+    imd_finalize(inputrec);
+#endif
 
     if (converged)
     {
@@ -2362,6 +2436,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char  gmx_unused *deviceOptions,
+                int imdport, int imdfreq,
                 unsigned long gmx_unused Flags,
                 gmx_runtime_t *runtime)
 {
@@ -2393,7 +2468,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     init_em(fplog, SD, cr, inputrec,
             state_global, top_global, s_try, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin);
+            nfile, fnm, &outf, &mdebin, oenv, imdport, imdfreq, Flags);
 
     /* Print to log file  */
     print_em_start(fplog, cr, runtime, wcycle, SD);
@@ -2470,6 +2545,14 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 upd_mdebin(mdebin, FALSE, FALSE, (double)count,
                            mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals, inputrec->expandedvals,
                            s_try->s.box, NULL, NULL, vir, pres, NULL, mu_tot, constr);
+#ifdef GMX_IMD
+               	/* Prepare IMD energy record */
+                if (inputrec->bIMD)
+                {
+                    do_imd_prepare_energies(inputrec->imd->setup, enerd, count, TRUE);
+                }
+#endif
+
                 print_ebin(outf->fp_ene, TRUE,
                            do_per_step(steps_accepted, inputrec->nstdisreout),
                            do_per_step(steps_accepted, inputrec->nstorireout),
@@ -2539,8 +2622,23 @@ double do_steep(FILE *fplog, t_commrec *cr,
             bAbort = TRUE;
         }
 
+#ifdef GMX_IMD
+        /* Send IMD energies and positions */
+        if (do_IMD(count, cr, TRUE, state_global->box, state_global->x, inputrec, 0))
+        {
+            if (MASTER(cr))
+            {
+                do_imd_send_positions(inputrec->imd);
+            }
+        }
+#endif
         count++;
     } /* End of the loop  */
+  
+#ifdef GMX_IMD
+  /* IMD cleanup */
+  imd_finalize(inputrec);
+#endif
 
     /* Print some shit...  */
     if (MASTER(cr))
@@ -2589,6 +2687,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
+             int imdport, int imdfreq,
              unsigned long gmx_unused Flags,
              gmx_runtime_t *runtime)
 {
@@ -2631,7 +2730,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             state_global, top_global, state_work, &top,
             &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, NULL);
+            nfile, fnm, &outf, NULL, oenv, imdport, imdfreq, Flags);
 
     natoms = top_global->natoms;
     snew(fneg, natoms);
