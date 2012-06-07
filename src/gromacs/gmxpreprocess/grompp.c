@@ -84,8 +84,9 @@
 #include "mtop_util.h"
 #include "genborn.h"
 #include "calc_verletbuf.h"
-
 #include "tomorse.h"
+#include "gromacs/imd/imd.h"
+
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
@@ -1486,6 +1487,7 @@ int gmx_grompp(int argc, char *argv[])
     warninp_t          wi;
     char               warn_buf[STRLEN];
     unsigned int       useed;
+    t_atoms            IMDatoms;   /* Atoms to be operated on interactively (IMD) */
 
     t_filenm           fnm[] = {
         { efMDP, NULL,  NULL,        ffREAD  },
@@ -1499,7 +1501,11 @@ int gmx_grompp(int argc, char *argv[])
         { efTPX, "-o",  NULL,        ffWRITE },
         { efTRN, "-t",  NULL,        ffOPTRD },
         { efEDR, "-e",  NULL,        ffOPTRD },
-        { efTRN, "-ref", "rotref",    ffOPTRW }
+#ifdef GMX_IMD
+        /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
+        { efGRO, "-imd", "imdgroup", ffOPTWR },
+#endif
+        { efTRN, "-ref", "rotref",   ffOPTRW }
     };
 #define NFILE asize(fnm)
 
@@ -2046,6 +2052,9 @@ int gmx_grompp(int argc, char *argv[])
 
     done_warning(wi, FARGS);
     write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
+
+    /* Output IMD group, if bIMD is TRUE */
+    write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);
 
     done_atomtype(atype);
     done_mtop(sys, TRUE);
