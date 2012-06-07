@@ -76,8 +76,10 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  *
  * version  feature added
  *    96    support for ion/water position swaps (computational electrophysiology)
+ *   ...
+ *   100    interactive molecular dynamics
  */
-static const int tpx_version = 96;
+static const int tpx_version = 100;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -377,6 +379,16 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
             gmx_fio_ndo_real(fio, simtemp->temperatures, n_lambda);
         }
     }
+}
+
+static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead)
+{
+    gmx_fio_do_int(fio, imd->nat);
+    if (bRead)
+    {
+        snew(imd->ind, imd->nat);
+    }
+    gmx_fio_ndo_int(fio, imd->ind, imd->nat);
 }
 
 static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int file_version)
@@ -1519,6 +1531,25 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bRot = FALSE;
+    }
+
+    /* Interactive molecular dynamics */
+    if (file_version >= 100)
+    {
+        gmx_fio_do_int(fio, ir->bIMD);
+        if (TRUE == ir->bIMD)
+        {
+            if (bRead)
+            {
+                snew(ir->imd, 1);
+            }
+            do_imd(fio, ir->imd, bRead);
+        }
+    }
+    else
+    {
+        /* We don't support IMD sessions for old .tpr files */
+        ir->bIMD = FALSE;
     }
 
     /* grpopts stuff */
