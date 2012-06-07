@@ -87,6 +87,10 @@
 
 #include "tomorse.h"
 
+#ifdef GMX_IMD
+#include "gromacs/imd/imd.h"
+#endif
+
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
     int  i, n;
@@ -1486,6 +1490,7 @@ int gmx_grompp(int argc, char *argv[])
     warninp_t          wi;
     char               warn_buf[STRLEN];
     unsigned int       useed;
+    t_atoms            IMDatoms;
 
     t_filenm           fnm[] = {
         { efMDP, NULL,  NULL,        ffREAD  },
@@ -1499,7 +1504,8 @@ int gmx_grompp(int argc, char *argv[])
         { efTPX, "-o",  NULL,        ffWRITE },
         { efTRN, "-t",  NULL,        ffOPTRD },
         { efEDR, "-e",  NULL,        ffOPTRD },
-        { efTRN, "-ref", "rotref",    ffOPTRW }
+        { efTRN, "-ref", "rotref",   ffOPTRW },
+        { efGRO, "-imd", "imdgroup", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -2046,6 +2052,11 @@ int gmx_grompp(int argc, char *argv[])
 
     done_warning(wi, FARGS);
     write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
+
+    if (ir->bIMD)
+    {
+        write_imdatoms(ir, &state, sys, opt2fn("-imd", NFILE, fnm));
+    }
 
     done_atomtype(atype);
     done_mtop(sys, TRUE);
