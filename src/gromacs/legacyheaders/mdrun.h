@@ -78,6 +78,9 @@ extern "C" {
 #define MD_READ_EKIN      (1<<17)
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
+#define MD_IMDWAIT        (1<<20)
+#define MD_IMDTERM        (1<<21)
+#define MD_IMDPULL        (1<<22)
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.
@@ -174,6 +177,7 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
                                 gmx_membed_t membed,
 				real cpt_period,real max_hours,
 				const char *deviceOptions,
+				int imdport,int imdfreq,
 				unsigned long Flags,
 				gmx_runtime_t *runtime);
 
@@ -288,6 +292,7 @@ void done_mdoutf(gmx_mdoutf_t *of);
 #define MDOF_F   (1<<2)
 #define MDOF_XTC (1<<3)
 #define MDOF_CPT (1<<4)
+#define MDOF_IMD (1<<5)
 
 void write_traj(FILE *fplog,t_commrec *cr,
 		       gmx_mdoutf_t *of,
@@ -433,7 +438,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
 	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-	     const char *deviceOptions, unsigned long Flags);
+	     const char *deviceOptions, int imdport, int imdfreq,
+	         unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);

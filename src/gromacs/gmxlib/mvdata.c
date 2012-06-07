@@ -474,6 +474,14 @@ static void bc_rot(const t_commrec *cr,t_rot *rot)
     bc_rotgrp(cr,&rot->grp[g]);
 }
 
+static void bc_imd(const t_commrec *cr,t_IMD *imd)
+{
+  int g;
+  block_bc(cr,*imd);
+  snew_bc(cr,imd->ind,imd->nat);
+  nblock_bc(cr,imd->nat,imd->ind);
+}
+
 static void bc_adress(const t_commrec *cr,t_adress *adress)
 {
   block_bc(cr,*adress);
@@ -606,6 +614,10 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   if (inputrec->bRot) {
     snew_bc(cr,inputrec->rot,1);
     bc_rot(cr,inputrec->rot);
+  }
+  if (inputrec->bIMD) {
+    snew_bc(cr,inputrec->imd,1);
+    bc_imd(cr,inputrec->imd);
   }
   for(i=0; (i<DIM); i++) {
     bc_cosines(cr,&(inputrec->ex[i]));

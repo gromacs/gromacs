@@ -73,7 +73,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 80;
+static const int tpx_version = 81;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -531,6 +531,13 @@ static void do_rot(t_fileio *fio, t_rot *rot,gmx_bool bRead, int file_version)
     do_rotgrp(fio, &rot->grp[g],bRead,file_version);
 }
 
+static void do_imd(t_fileio *fio, t_IMD *imd,gmx_bool bRead, int file_version)
+{
+  gmx_fio_do_int(fio,imd->nat);
+  if (bRead)
+      snew(imd->ind,imd->nat);
+  gmx_fio_ndo_int(fio,imd->ind,imd->nat);
+}
 
 static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead, 
                         int file_version, real *fudgeQQ)
@@ -1054,6 +1061,21 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
         ir->bRot = FALSE;
     }
     
+    /* Interactive molecular dynamics */
+    if (file_version >= 80) {
+        gmx_fio_do_int(fio,ir->bIMD);
+        if (ir->bIMD == TRUE) {
+            if (bRead)
+                snew(ir->imd,1);
+            do_imd(fio,ir->imd,bRead,file_version);
+        }
+    }else{
+        if (bRead){
+            ir->bIMD=TRUE;
+            snew(ir->imd,1);
+        }
+    }
+
     /* grpopts stuff */
     gmx_fio_do_int(fio,ir->opts.ngtc); 
     if (file_version >= 69) {
