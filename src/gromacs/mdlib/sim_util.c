@@ -85,7 +85,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
-
+#include "gromacs/imd/imd.h"
 #include "adress.h"
 #include "qmmm.h"
 
@@ -1402,6 +1402,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
+    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
+
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
@@ -1876,6 +1879,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
     }
+
+    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
