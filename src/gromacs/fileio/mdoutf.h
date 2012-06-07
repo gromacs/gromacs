@@ -92,5 +92,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 #define MDOF_F            (1<<2)
 #define MDOF_X_COMPRESSED (1<<3)
 #define MDOF_CPT          (1<<4)
+#define MDOF_IMD          (1<<5)
+
 
 #endif /* GMX_FILEIO_MDOUTF_H */

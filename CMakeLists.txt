@@ -326,6 +326,18 @@ if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
 endif()
 
+if(WIN32 AND NOT CYGWIN)
+    set(GMX_WSOCKLIB_PATH CACHE PATH "Path to winsock (wsock32.lib) library.")
+    mark_as_advanced(GMX_WSOCKLIB_PATH)
+    find_library(WSOCK32_LIBRARY NAMES wsock32 PATHS ${GMX_WSOCKLIB_PATH})
+    if(WSOCK32_LIBRARY)
+        list(APPEND GMX_EXTRA_LIBRARIES ${WSOCK32_LIBRARY})
+        add_definitions(-DGMX_HAVE_WINSOCK)
+    else()
+        message(STATUS "No winsock found. Cannot use interactive molecular dynamics (IMD).")
+    endif(WSOCK32_LIBRARY)
+endif()
+
 
 
 ########################################################################
