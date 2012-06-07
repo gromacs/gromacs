@@ -2064,6 +2064,54 @@ found. Note that these plug-ins are in a binary format, and that format
 must match the architecture of the machine attempting to use them.
 
 
+\section{Interactive Molecular Dynamics}
+{\gromacs} supports the Interactive molecular dynamics (IMD) protocol as implemented by VMD to
+control a running simulation in NAMD.  IMD allows monitoring of running simulation from a VMD client.
+In addition, the user can interact with the simulation by pulling on atoms, residues or fragments with a
+mouse or force-feedback devices.
+
+\subsection{Simulation input preparation}
+The {\gromacs} implementation allows transmission and interaction with a part of the running simulation
+only, e.g. in cases where no water molecules should be transmitted or pulled. The group is specified
+via the {\tt IMD-group} {\tt .mdp} option. When {\tt IMD-group} is empty, the IMD protocol
+is disabled and cannot be enabled via the switches in {\tt mdrun}. To interact with the entire
+system, {\tt IMD-group} has to be set to {\tt System}, which is also the default for {\tt .tpr}
+files created with an older version without IMD implementation. When using {\tt grompp}, a {\tt .gro} file
+to be used with VMD is written out ({\tt -imd} switch of {\tt grompp}).
+
+\subsection{Starting the simulation}
+Communication between VMD and {\gromacs} is achieved via tcp-sockets and thus enables controlling
+an {\tt mdrun} running locally or on a remote cluster. The port for the connection can be
+specified with the {\tt -imdport} switch of {\tt mdrun}, 8888 is the default.
+
+Every $N$ steps, the client receives the applied forces from the VMD client and sends the new coordinates to the client.
+The initial frequency for communication with the client is set to the global communication frequency but can
+be altered using the {\tt -imdfreq} switch. VMD also permits increasing or decreasing the communication
+frequency interactively.
+
+By default, the simulation starts and runs even if no IMD client is connected. This behavior is changed by the
+{\tt -imdwait} switch of {\tt mdrun}. After startup and whenever the client has disconnected, the integration
+stops until reconnection of the client.
+
+When the {\tt -imdterm} switch is used, the simulation can be terminated pressing the stop button in VMD. This is disabled by
+default.
+
+Finally, to turn on interaction with the simulation (i.e. pulling from VMD) the {\tt -imdpull} switch has to be used.
+
+Therefore, a simulation can only be monitored but not influenced from the VMD client when none of {\tt -imdwait},
+{\tt -imdterm} or {\tt -imdpull} are set. However, since the IMD protocol requires no authentication, it is not
+advisable to run simulations on a host directly reachable from an insecure environment. Secure shell forwarding of {\tt TCP}
+can be used to connect to running simulations not directly reachable from the interacting host.
+
+\subsection{Connecting from VMD}
+In VMD, first the structure corresponding to the IMD group has to be loaded (File $\rightarrow$ New Molecule\ldots). Then
+the IMD connection window has to be used (Extensions $\rightarrow$ Simulation $\rightarrow$ IMD Connect (NAMD)). In the IMD connection
+window, hostname and port have to be specified and followed by pressing Connect. Detach Sim allows disconnecting without
+terminating the simulation, while Stop Sim ends the simulation on the next neighbor searching step (if allowed by {\tt -imdterm}).
+
+The timestep transfer rate allows adjusting the communication frequency between simulation and IMD client. Setting the keep rate loads every $N^\mathrm{th}$ frame into VMD instead of discarding them when a new one is received. The displayed energies are in SI units in contrast to energies displayed from NAMD simulations.
+
+
 % LocalWords:  PMF pmf kJ mol Jarzynski BT bilayer rup mdp AFM fepmf fecalc rb
 % LocalWords:  posre grompp fs Verlet dihedrals hydrogens hydroxyl sulfhydryl
 % LocalWords:  vsitehydro planarity chirality pdb gmx virtualize virtualized xz
