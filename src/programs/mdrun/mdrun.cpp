@@ -382,6 +382,17 @@ int gmx_mdrun(int argc, char *argv[])
         "is sufficient, this signal should not be sent to mpirun or",
         "the [TT]mdrun[tt] process that is the parent of the others.",
         "[PAR]",
+#ifdef GMX_IMD
+        "Interactive molecular dynamics (IMD) can be activated by using at least one",
+        "of the IMD switches. The port [TT]mdrun[tt] listens to can be altered by",
+        "[TT]-imdport[tt]. The IMD update frequency is set by [TT]-imdfreq[tt] and can",
+        "be changed later from the IMD remote. The [TT]-imdterm[tt] switch allows the",
+        "simulation to be terminated from the IMD remote. With [TT]-imdwait[tt],",
+        "[TT]mdrun[tt] pauses whenever no IMD client is connected. Pulling from the",
+        "IMD remote can be turned on by [TT]-imdpull[tt]. The file pointed to by",
+        "[TT]-if[tt] contains atom indices and forces if IMD pulling is used."
+        "[PAR]",
+#endif
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
     t_commrec    *cr;
@@ -419,6 +430,9 @@ int gmx_mdrun(int argc, char *argv[])
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
         { efNDX, "-mn",     "membed",   ffOPTRD },
+#ifdef GMX_IMD
+        { efXVG, "-if",     "imdforces", ffOPTWR },
+#endif
         { efXVG, "-swap",   "swapions", ffOPTWR }
     };
 #define NFILE asize(fnm)
@@ -435,6 +449,9 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bRerunVSite   = FALSE;
     gmx_bool        bConfout      = TRUE;
     gmx_bool        bReproducible = FALSE;
+    gmx_bool        bIMDwait      = FALSE;
+    gmx_bool        bIMDterm      = FALSE;
+    gmx_bool        bIMDpull      = FALSE;
 
     int             npme          = -1;
     int             nstlist       = 0;
@@ -445,7 +462,9 @@ int gmx_mdrun(int argc, char *argv[])
     int             repl_ex_nex   = 0;
     int             nstepout      = 100;
     int             resetstep     = -1;
-    gmx_int64_t     nsteps        = -2; /* the value -2 means that the mdp option will be used */
+    gmx_int64_t     nsteps        = -2;   /* the value -2 means that the mdp option will be used */
+    int             imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
+    int             imdfreq       = -1;
 
     rvec            realddxyz          = {0, 0, 0};
     const char     *ddno_opt[ddnoNR+1] =
@@ -556,6 +575,18 @@ int gmx_mdrun(int argc, char *argv[])
           "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
         { "-reseed",  FALSE, etINT, {&repl_ex_seed},
           "Seed for replica exchange, -1 is generate a seed" },
+#ifdef GMX_IMD
+        { "-imdport",    FALSE, etINT, {&imdport},
+          "IMD listening port" },
+        { "-imdfreq",    FALSE, etINT, {&imdfreq},
+          "Initial IMD communication/update frequency (-1 is auto)" },
+        { "-imdwait",  FALSE, etBOOL, {&bIMDwait},
+          "Pause the simulation while no IMD client is connected" },
+        { "-imdterm",  FALSE, etBOOL, {&bIMDterm},
+          "Allow termination of the simulation from IMD client" },
+        { "-imdpull",  FALSE, etBOOL, {&bIMDpull},
+          "Allow pulling in the simulation from IMD client" },
+#endif
         { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
         { "-confout", FALSE, etBOOL, {&bConfout},
@@ -610,6 +641,18 @@ int gmx_mdrun(int argc, char *argv[])
     cr->npmenodes = npme;
 
     hw_opt.thread_affinity = nenum(thread_aff_opt);
+
+#ifdef GMX_IMD
+    /* We check the IMD integer options and set them to 0 if the switch is not set */
+    if (!opt2parg_bSet("-imdport", asize(pa), pa))
+    {
+        imdport = 0;
+    }
+    if (!opt2parg_bSet("-imdfreq", asize(pa), pa))
+    {
+        imdfreq = 0;
+    }
+#endif
 
     /* now check the -multi and -multidir option */
     if (opt2bSet("-multidir", NFILE, fnm))
@@ -723,7 +766,9 @@ int gmx_mdrun(int argc, char *argv[])
     Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
     Flags = Flags | (sim_part > 1    ? MD_STARTFROMCPT : 0);
     Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-
+    Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
+    Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
+    Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
 
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
@@ -756,7 +801,7 @@ int gmx_mdrun(int argc, char *argv[])
                   nbpu_opt[0], nstlist,
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                  pforce, cpt_period, max_hours, deviceOptions, Flags);
+                  pforce, cpt_period, max_hours, deviceOptions, imdport, imdfreq, Flags);
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
