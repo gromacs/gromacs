@@ -80,6 +80,7 @@
 #include "gpp_tomorse.h"
 #include "mtop_util.h"
 #include "genborn.h"
+#include "imd.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
@@ -1267,6 +1268,7 @@ int main (int argc, char *argv[])
   gmx_bool         bVerbose = FALSE;
   warninp_t    wi;
   char         warn_buf[STRLEN];
+  t_atoms      IMDatoms;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffREAD  },
@@ -1280,7 +1282,8 @@ int main (int argc, char *argv[])
     { efTPX, "-o",  NULL,        ffWRITE },
     { efTRN, "-t",  NULL,        ffOPTRD },
     { efEDR, "-e",  NULL,        ffOPTRD },
-    { efTRN, "-ref","rotref",    ffOPTRW }
+    { efTRN, "-ref","rotref",    ffOPTRW },
+    { efGRO, "-imd","imdgroup",  ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -1621,6 +1624,11 @@ int main (int argc, char *argv[])
   state.lambda = ir->init_lambda;
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),ir,&state,sys);
   
+#ifdef GMX_IMD
+  if (ir->bIMD)
+      write_imdatoms(ir, &state, sys, opt2fn("-imd",NFILE,fnm));
+#endif
+
   thanx(stderr);
   
   return 0;

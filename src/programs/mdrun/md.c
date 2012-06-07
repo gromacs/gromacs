@@ -82,6 +82,10 @@
 #include "string2.h"
 #include "membed.h"
 
+#ifdef GMX_IMD
+#include "imd.h"
+#endif
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -108,6 +112,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              int repl_ex_nst,int repl_ex_seed,gmx_membed_t membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
+             int imdport, int imdfreq,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
@@ -355,6 +360,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             dd_make_local_pull_groups(NULL,ir->pull,mdatoms);
         }
     }
+
+    /* Set up interactive MD (IMD) */
+#ifdef GMX_IMD
+    init_imd(ir,cr,top_global,fplog,ir->nstcalcenergy,top_global->natoms,state_global->x,mdatoms,nfile,fnm,oenv,imdport,imdfreq,Flags);
+#endif
 
     if (DOMAINDECOMP(cr))
     {
@@ -1218,6 +1228,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
         if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
+
+#ifdef GMX_IMD
+        /* Check if IMD step and do IMD communication */
+        wallcycle_start(wcycle,ewcIMD);
+        if ( TRUE == do_IMD(step,cr,bNS,state->box,state->x,ir,t) ) { mdof_flags |= MDOF_IMD; }
+        wallcycle_stop(wcycle,ewcIMD);
+#endif
+
         if (bCPT) { mdof_flags |= MDOF_CPT; };
 
 #if defined(GMX_FAHCORE) || defined(GMX_WRITELASTSTEP)
@@ -1816,6 +1834,21 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.set[eglsRESETCOUNTERS] = 0;
         }
 
+#ifdef GMX_IMD
+        wallcycle_start(wcycle,ewcIMD);
+        if ( (MASTER(cr)) && (mdof_flags & MDOF_IMD) )
+        {
+            /* Prepare IMD energy record */
+            do_imd_prepare_energies(ir->imd->setup,enerd,step,bNstEner);
+
+            /* Send positions (and energies if properly summed) to client via IMD */
+            //imd_send_x_E(top_global,state_global->x, state_global->box,ir);
+            do_imd_send_positions(ir->imd);
+
+        }
+        wallcycle_stop(wcycle,ewcIMD);
+#endif
+
     }
     /* End of main MD loop */
     debug_gmx();
@@ -1865,6 +1898,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         print_replica_exchange_statistics(fplog,repl_ex);
     }
+
+    /*IMD cleanup, e.g. force file closing...*/
+#ifdef GMX_IMD
+	imd_finalize(ir);
+#endif
+
     
     runtime->nsteps_done = step_rel;
     
