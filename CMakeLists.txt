@@ -144,12 +144,9 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 mark_as_advanced(GMX_X86_64_ASM)
-option(USE_VERSION_H "Generate development version string/information" ON)
 
-option(GMX_GPU  "Enable GPU acceleration. " ON)
-option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
-
-option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
+option(GMX_GPU  "Enable GPU acceleration" ON)
+option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -514,9 +511,9 @@ if(GMX_GPU)
     mdrun supports native GPU acceleration on NVIDIA hardware with compute
     capability >=2.0. This requires the NVIDIA CUDA library, which was not
     found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
-    
-    CPU or GPU acceleration can be selected and runtime, but if you are 
-    sure you can not make use of GPU acceleration, disable it by setting 
+
+    CPU or GPU acceleration can be selected at runtime, but if you are
+    sure you can not make use of GPU acceleration, disable it by setting
     the CMake variable GMX_GPU=OFF.")
     endif()
 
