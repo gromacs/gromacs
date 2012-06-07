@@ -14,7 +14,7 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.6-dev")
+set(PROJECT_VERSION "4.6-GPU-dev")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -107,6 +107,7 @@ IF( WIN32 AND NOT CYGWIN)
   ENDIF()
 ENDIF()
 
+
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -121,7 +122,7 @@ option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
+    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, SSE4.1, AVX, BlueGene, Power6, ia64, altivec, fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -143,6 +144,10 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 mark_as_advanced(GMX_X86_64_ASM)
+option(USE_VERSION_H "Generate development version string/information" ON)
+
+option(GMX_GPU  "Enable GPU acceleration. " Off)
+option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
 
 option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
 
@@ -156,6 +161,8 @@ if(UNIX AND NOT APPLE)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
+option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
+mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 ######################################################################
 # compiler tests
@@ -172,6 +179,9 @@ include(CheckCXXCompilerFlag)
 
 include(gmxCFlags)
 gmx_c_flags()
+
+include(gmxGetCompilerVersion)
+get_compiler_version()
 
 
 ########################################################################
@@ -273,7 +283,6 @@ else(GMX_OPENMM)
         GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
 endif(GMX_OPENMM)
 
-
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -296,13 +305,26 @@ check_include_files(sys/stat.h   HAVE_SYS_STAT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(rpc/rpc.h    HAVE_RPC_RPC_H)
 check_include_files("rpc/rpc.h;rpc/xdr.h"    HAVE_RPC_XDR_H)
-# SSE support
-check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
-check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
-check_include_files(pmmintrin.h  HAVE_PMMINTRIN_H)
-check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
 check_include_files(io.h  		 HAVE_IO_H)
 
+# SIMD instrinsics support
+#
+# x86intrin.h: x86 instructions
+# mmintrin.h: MMX (Pentium MMX!)
+# mm3dnow.h: 3dnow! (K6-2) (deprecated)
+# xmmintrin.h: SSE + MMX (Pentium 3, Athlon XP)
+# emmintrin.h: SSE2 + SSE + MMX (Pentiuem 4, Ahtlon 64)
+# pmmintrin.h: SSE3 + SSE2 + SSE + MMX (Pentium 4 Prescott, Ahtlon 64 San Diego)
+# tmmintrin.h: SSSE3 + SSE3 + SSE2 + SSE + MMX (Core 2, Bulldozer)
+# popcntintrin.h: POPCNT (Core i7, Phenom subset of SSE4.2 and SSE4A)
+# ammintrin.h: SSE4A + SSE3 + SSE2 + SSE + MMX (Phenom)
+# smmintrin.h: SSE4_1 + SSSE3 + SSE3 + SSE2 + SSE + MMX (Core i7, Bulldozer)
+# nmmintrin.h: SSE4_2 + SSE4_1 + SSSE3 + SSE3 + SSE2 + SSE + MMX (Core i7, Bulldozer)
+# wmmintrin.h: AES (Core i7 Westmere, Bulldozer)
+# immintrin.h: AVX, SSE4_2 + SSE4_1 + SSSE3 + SSE3 + SSE2 + SSE + MMX (Core i7 Sandy Bridge, Bulldozer)
+check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
+check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
+check_include_files(immintrin.h  HAVE_IMMINTRIN_H)
 
 include(CheckFunctionExists)
 check_function_exists(strcasecmp        HAVE_STRCASECMP)
@@ -321,6 +343,33 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
+
+if(GMX_GPU)
+    # we need some sort of sleep with CUDA:
+    # sleep() from unistd.h on POSIX or Sleep() from windows.h
+    if (WIN32 AND NOT CYGWIN)
+        set(CMAKE_REQUIRED_INCLUDES windows.h)
+        check_function_exists(Sleep     HAVE_WIN_SLEEP)
+        if(HAVE_WIN_SLEEP)
+            add_definitions(-DHAVE_WIN_SLEEP)
+        else()
+            message(WARNING "Sleep() from windows.h is needed when running on GPUs with ECC turned on, but it
+                could not be found. This could lead to GPU synchronization inefficiencies.")
+        endif()
+    else()
+        if (HAVE_UNISTD_H)
+            set(CMAKE_REQUIRED_INCLUDES unistd.h)
+            check_function_exists(sleep     HAVE_UNISTD_SLEEP)
+            if(HAVE_UNISTD_SLEEP)
+                add_definitions(-DHAVE_UNISTD_SLEEP)
+            endif()
+        endif (HAVE_UNISTD_H)
+        if (NOT HAVE_UNISTD_H OR NOT HAVE_UNISTD_SLEEP)
+            message(WARNING "sleep() from unistd.h is needed when running on GPUs with ECC turned on, but it
+                could not be found. This could lead to GPU synchronization inefficiencies.")
+        endif()
+    endif (WIN32 AND NOT CYGWIN)
+endif()
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -447,6 +496,49 @@ if(GMX_OPENMP)
     add_definitions(-DGMX_OPENMP)
 endif()
 
+if(GMX_GPU)
+    if(GMX_DOUBLE)
+        message(FATAL_ERROR "GPU acceleration is not available in double precision!")
+    endif()
+
+    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    # TODO: tested only with MSVC 2010, needs testing test with msvc+icc & cygwin
+    if(MSVC)
+        find_package(CUDA 4.1)
+    else()
+        find_package(CUDA 3.2)
+    endif()
+
+    if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
+        message(FATAL_ERROR "
+    mdrun supports native GPU acceleration on NVIDIA hardware with compute
+    capability >=2.0. This requires the NVIDIA CUDA library, which was not
+    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
+    
+    CPU or GPU acceleration can be selected and runtime, but if you are 
+    sure you can not make use of GPU acceleration, disable it by setting 
+    the CMake variable GMX_GPU=OFF.")
+    endif()
+
+    if(NOT GMX_OPENMP)
+        message(WARNING "
+    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreding.
+    Without OpenMP only a single CPU core per GPU can be used which is suboptimal.
+    Note that with MPI multiple processes can be forced to use a single GPU, but this
+    typically inefficient.")
+    endif()
+
+    add_definitions(-DGMX_GPU)
+    set(CUDA_BUILD_EMULATION OFF)
+    include(gmxManageNvccConfig)
+
+    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
+    # but it's too cumbersome to check the ld version and the flag should not hurt
+    if(CMAKE_COMPILER_IS_GNUCC)
+        set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
+    endif()
+endif()
+
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
    list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
@@ -458,6 +550,12 @@ endif(CYGWIN)
 
 if(WIN32 AND NOT CYGWIN)
     set(GMX_NATIVE_WINDOWS 1)
+endif()
+
+if(GMX_CYCLE_SUBCOUNTERS)
+    add_definitions(-DGMX_CYCLE_SUB)
+else()
+    remove_definitions(-DGMX_CYCLE_SUB)
 endif()
 
 # only bother with finding git and using version.h if the source is a git repo
@@ -538,11 +636,11 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)" OR CYGWIN)
 
-    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
+    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, SSE4.1, AVX, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
     # Determine the assembler/compiler to use
   else()
-    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
+    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, SSE4.1, AVX, BlueGene, Power6, ia64, altivec, fortran" FORCE)
   endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
@@ -557,7 +655,7 @@ endif(NOT GMX_SYSTEM_XDR)
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
-elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+elseif(${GMX_ACCELERATION} MATCHES "^(SSE|SSE4.1|AVX)$")
     
     if (GMX_64_BIT)
       set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
@@ -572,38 +670,70 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
     endif()
 	mark_as_advanced(GMX_ASM_USEASM_NASM)
 
-    if (NOT GMX_64_BIT)
-        # for 32-bit compiles, we might need to turn on sse 
-        CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
-        if (XFLAGS_SSE)
-            set(GROMACS_C_FLAGS "-msse2 ${GROMACS_C_FLAGS}")
-        endif (XFLAGS_SSE)
-        CHECK_CXX_COMPILER_FLAG("-msse2" XXFLAGS_SSE)
-        if (XXFLAGS_SSE)
-            set(GROMACS_CXX_FLAGS "-msse2 ${GROMACS_CXX_FLAGS}")
-        endif (XXFLAGS_SSE)
-    endif (NOT GMX_64_BIT)
+    if(HAVE_EMMINTRIN_H)
+        if(GMX_IA32_ASM)
+        if(GMX_DOUBLE)
+            set(GMX_IA32_SSE2 1)
+        else()
+            set(GMX_IA32_SSE 1)
+        endif()
+        elseif(GMX_X86_64_ASM)
+        if(GMX_DOUBLE)
+            set(GMX_X86_64_SSE2 1)
+        else()
+            set(GMX_X86_64_SSE 1)
+        endif()
+        endif()
+    endif(HAVE_EMMINTRIN_H)
 
-    if(GMX_IA32_ASM)
-      if(GMX_DOUBLE)
-        set(GMX_IA32_SSE2 1)
-      else()
-       set(GMX_IA32_SSE 1)
-      endif()
-    elseif(GMX_X86_64_ASM)
-      if(GMX_DOUBLE)
-       set(GMX_X86_64_SSE2 1)
-      else()
-        set(GMX_X86_64_SSE 1)
-      endif()
+    if (${GMX_ACCELERATION} STREQUAL "AVX" AND NOT GMX_ACCELERATION_CONFIGURED)
+        if (NOT HAVE_IMMINTRIN_H)
+            message(FATAL_ERROR "AVX acceleration selected, but the compiler doesn't seem to support it, try using SSE or SSE4.1 instead.")
+        endif()
+
+        # TODO this code needs to be more robust
+        if (NOT WIN32)
+            GMX_TEST_CFLAG(CFLAG_AVX "-mavx" _AVX_FLAG)
+        else()
+            GMX_TEST_CFLAG(CFLAG_AVX "/arch:AVX" _AVX_FLAG)
+        endif()
+
+        if (NOT CFLAG_AVX)
+            message(WARNING "AVX acceleration selected, but couldn't find the right compiler flag to enable it.
+                Will turn on AVX acceleration, but you'll have to make sure that you manually
+                add the appropriate flag!")
+        endif()
+
+        message(STATUS "Enabling SSE4.1 accelerated kernels and compiler optimizations")
+        add_definitions(-DGMX_AVX)
+        set(GROMACS_C_FLAGS "${GROMACS_C_FLAGS} ${_AVX_FLAG}")
     endif()
 
-#    if(HAVE_PMMINTRIN_H)
-#        set(GMX_SSE3 1)
-#    endif(HAVE_PMMINTRIN_H)
-#    if(HAVE_SMMINTRIN_H)
-#        set(GMX_SSE4_1 1)
-#    endif(HAVE_SMMINTRIN_H)
+    if (${GMX_ACCELERATION} STREQUAL "SSE4.1" AND NOT GMX_ACCELERATION_CONFIGURED)
+        if (NOT HAVE_IMMINTRIN_H)
+            message(FATAL_ERROR "SSE4.1 acceleration selected, but the compiler doesn't seem to support it; try using SSE instread.")
+        endif()
+
+        # TODO this code needs to be more robust
+        if (NOT WIN32)
+            GMX_TEST_CFLAG(CFLAG_SSE41 "-msse4.1" _SSE41_FLAG)
+        else()
+            GMX_TEST_CFLAG(CFLAG_SSE41 "/arch:SSE4.1" _SSE41_FLAG)
+        endif()
+
+        if (NOT CFLAG_SSE41)
+            message(WARNING "SSE4.1 acceleration selected, but couldn't find the right compiler flag to enable it.
+                Will turn on SSE4.1 acceleration, but you'll have to make sure that you manually
+                add the appropriate flag!")
+        endif()
+
+        message(STATUS "Enabling SSE4.1 accelerated kernels and compiler optimizations")
+        add_definitions(-DGMX_SSE4_1)
+        set(GROMACS_C_FLAGS "${GROMACS_C_FLAGS} ${_SSE41_FLAG}")
+    endif()
+
+    set(GMX_ACCELERATION_CONFIGURED ${GMX_ACCELERATION}
+        CACHE INTERNAL "The value GMX_ACCELERATION is configured to")
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
     set(GMX_FORTRAN 1)
@@ -735,6 +865,11 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+
+# enable threaded fftw3 if we've found it 
+if(FFTW3_THREADS OR FFTW3F_THREADS)
+    add_definitions(-DFFT5D_FFTW_THREADS)
+endif()
 
 # MKL has BLAS/LAPACK routines
 if(HAVE_MKL OR ACCELERATE_FRAMEWORK)

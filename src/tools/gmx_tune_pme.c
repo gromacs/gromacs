@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  *
@@ -819,7 +820,6 @@ static void make_grid_list(
     t_pmegrid *gridall;
     int gridalloc,excess;
 
-
     /* Determine length of triclinic box vectors */
     for(d=0; d<DIM; d++)
     {
@@ -841,32 +841,37 @@ static void make_grid_list(
     else
         eps = 1.0/max( (*griduse)[0].nkz, max( (*griduse)[0].nkx, (*griduse)[0].nky ) );
 
-    for (req_fac = fmin; act_fac < fmax; req_fac += eps)
+    /* if no scaling was requested, don't adjust the input's cut-ff based on the calculated spacing */
+    if (!(fmin == 1.0 && fmax == 1.0))
     {
-        nkx=0;
-        nky=0;
-        nkz=0;
-        calc_grid(NULL,box,fs*req_fac,&nkx,&nky,&nkz);
-        act_fs = max(box_size[XX]/nkx,max(box_size[YY]/nky,box_size[ZZ]/nkz));
-        act_fac = act_fs/fs;
-        if (    ! ( nkx==nkx_old           && nky==nky_old           && nkz==nkz_old           )    /* Exclude if grid is already in list */
-             && ! ( nkx==(*griduse)[0].nkx && nky==(*griduse)[0].nky && nkz==(*griduse)[0].nkz ) )  /* Exclude input file grid */
+        for (req_fac = fmin; act_fac < fmax; req_fac += eps)
         {
-            /* We found a new grid that will do */
-            nkx_old = nkx;
-            nky_old = nky;
-            nkz_old = nkz;
-            gridall[ngridall].nkx = nkx;
-            gridall[ngridall].nky = nky;
-            gridall[ngridall].nkz = nkz;
-            gridall[ngridall].fac = act_fac;
-            gridall[ngridall].fs  = act_fs;
-            fprintf(stdout, "%5d%5d%5d %12f %12f\n",nkx,nky,nkz,act_fs,act_fac);
-            ngridall++;
-            if (ngridall >= gridalloc)
+            nkx=0;
+            nky=0;
+            nkz=0;
+            calc_grid(NULL,box,fs*req_fac,&nkx,&nky,&nkz);
+            act_fs = max(box_size[XX]/nkx,max(box_size[YY]/nky,box_size[ZZ]/nkz));
+            act_fac = act_fs/fs;
+            if (    ! ( nkx==nkx_old           && nky==nky_old           && nkz==nkz_old           )    /* Exclude if grid is already in list */
+                    && ! ( nkx==(*griduse)[0].nkx && nky==(*griduse)[0].nky && nkz==(*griduse)[0].nkz 
+                        && (*griduse)[0].fs == fs) )  /* Exclude input file grid if the spacing of the input doesn't need adjustment */
             {
-                gridalloc += 25;
-                srenew(gridall, gridalloc);
+                /* We found a new grid that will do */
+                nkx_old = nkx;
+                nky_old = nky;
+                nkz_old = nkz;
+                gridall[ngridall].nkx = nkx;
+                gridall[ngridall].nky = nky;
+                gridall[ngridall].nkz = nkz;
+                gridall[ngridall].fac = act_fac;
+                gridall[ngridall].fs  = act_fs;
+                fprintf(stdout, "%5d%5d%5d %12f %12f\n",nkx,nky,nkz,act_fs,act_fac);
+                ngridall++;
+                if (ngridall >= gridalloc)
+                {
+                    gridalloc += 25;
+                    srenew(gridall, gridalloc);
+                }
             }
         }
     }
@@ -934,6 +939,7 @@ static void make_benchmark_tprs(
         gmx_large_int_t statesteps, /* Step counter in checkpoint file               */
         real upfac,                 /* Scale rcoulomb inbetween downfac and upfac    */
         real downfac,
+        gmx_bool ScaleRvdw,
         int *ntprs,                 /* No. of TPRs to write, each with a different
                                        rcoulomb and fourierspacing. If not enough
                                        grids are found, ntprs is reduced accordingly */
@@ -973,7 +979,8 @@ static void make_benchmark_tprs(
                 EELTYPE(eelPME));
     
     /* Check if rcoulomb == rlist, which is necessary for plain PME. */
-    if (  (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist) )
+    if (  (ir->cutoff_scheme != ecutsVERLET) && 
+          (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist))
     {
         gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to rlist (%f).",
                 EELTYPE(eelPME), ir->rcoulomb, ir->rlist);
@@ -983,6 +990,12 @@ static void make_benchmark_tprs(
     {
         gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to or smaller than rlist (%f)",
                 EELTYPE(ir->coulombtype), ir->rcoulomb, ir->rlist);
+    }
+
+    if (ScaleRvdw && ir->rvdw != ir->rcoulomb)
+    {
+        fprintf(stdout,"NOTE: input rvdw != rcoulomb, will not scale rvdw\n");
+        ScaleRvdw = FALSE;
     }
 
     /* Reduce the number of steps for the benchmarks */
@@ -1001,10 +1014,19 @@ static void make_benchmark_tprs(
         box_size[d] = sqrt(box_size[d]);
     }
 
-    /* Reconstruct fourierspacing per dimension from the number of grid points and box size */
-    info->fsx[0] = box_size[XX]/ir->nkx;
-    info->fsy[0] = box_size[YY]/ir->nky;
-    info->fsz[0] = box_size[ZZ]/ir->nkz;
+    if (ir->fourier_spacing > 0)
+    {
+        info->fsx[0] = ir->fourier_spacing;
+        info->fsy[0] = ir->fourier_spacing;
+        info->fsz[0] = ir->fourier_spacing;
+    }
+    else
+    {
+        /* Reconstruct fourierspacing per dimension from the number of grid points and box size */
+        info->fsx[0] = box_size[XX]/ir->nkx;
+        info->fsy[0] = box_size[YY]/ir->nky;
+        info->fsz[0] = box_size[ZZ]/ir->nkz;
+    }
 
     /* Put the input grid as first entry into the grid list */
     snew(pmegrid, *ntprs);
@@ -1016,6 +1038,16 @@ static void make_benchmark_tprs(
 
     /* If no value for the fourierspacing was provided on the command line, we
      * use the reconstruction from the tpr file */
+    if (ir->fourier_spacing > 0)
+    {
+        /* Use the spacing from the tpr */
+        fourierspacing = ir->fourier_spacing;
+    }
+    else
+    {
+        fourierspacing = pmegrid[0].fs;
+    }
+
     if (fourierspacing <= 0)
     {
         fourierspacing = pmegrid[0].fs;
@@ -1065,21 +1097,20 @@ static void make_benchmark_tprs(
             ir->rcoulomb = info->rcoulomb[0]*pmegrid[j].fac;
 
             /* Adjust other radii since various conditions neet to be fulfilled */
-            if (eelPME == ir->coulombtype)
-            {
-                /* plain PME, rcoulomb must be equal to rlist */
-                ir->rlist = ir->rcoulomb;
-            }
-            else
-            {
-                /* rlist must be >= rcoulomb, we keep the size of the buffer region */
-                ir->rlist = ir->rcoulomb + nlist_buffer;
-            }
+            /* rlist must be >= rcoulomb, we keep the size of the buffer region */
+            ir->rlist = ir->rcoulomb + nlist_buffer;
 
-            if (evdwCUT == ir->vdwtype)
+            if (ScaleRvdw)
             {
-                /* For vdw cutoff, rvdw >= rlist */
-                ir->rvdw = max(info->rvdw[0], ir->rlist);
+                ir->rvdw = info->rvdw[0]*pmegrid[j].fac;
+            }
+            else 
+            {
+                if (evdwCUT == ir->vdwtype)
+                {
+                    /* For vdw cutoff, rvdw >= rlist */    
+                    ir->rvdw = max(info->rvdw[0], ir->rlist);
+                }
             }
 
             ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
@@ -1698,7 +1729,8 @@ static gmx_bool is_main_switch(char *opt)
       || (0 == strcmp(opt,"-so"       ))
       || (0 == strcmp(opt,"-npstring" ))
       || (0 == strcmp(opt,"-npme"     ))
-      || (0 == strcmp(opt,"-passall"  )) )
+      || (0 == strcmp(opt,"-passall"  ))
+      || (0 == strcmp(opt,"-scalevdw" )) )
     return TRUE;
     
     return FALSE;
@@ -2078,6 +2110,7 @@ int gmx_tune_pme(int argc,char *argv[])
     int        npme_fixed=-2;             /* If >= -1, use only this number
                                            * of PME-only nodes                */
     real       downfac=1.0,upfac=1.2;
+    gmx_bool   ScaleRvdw=TRUE;
     int        ntprs=0;
     real       fs=0.0;                    /* 0 indicates: not set by the user */
     gmx_large_int_t bench_nsteps=BENCHSTEPS;
@@ -2234,6 +2267,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "Upper limit for rcoulomb scaling factor (Note that rcoulomb upscaling results in fourier grid downscaling)" },
       { "-downfac",  FALSE, etREAL, {&downfac},
         "Lower limit for rcoulomb scaling factor" },
+      { "-scalevdw",  FALSE, etBOOL, {&ScaleRvdw},
+        "Scale rvdw along with rcoulomb"},
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of [TT].tpr[tt] files to benchmark. Create this many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of [TT].tpr[tt] files to test" },
       { "-four",     FALSE, etREAL, {&fs},
@@ -2490,7 +2525,7 @@ int gmx_tune_pme(int argc,char *argv[])
     /* It can be that ntprs is reduced by make_benchmark_tprs if not enough
      * different grids could be found. */
     make_benchmark_tprs(opt2fn("-s",NFILE,fnm), tpr_names, bench_nsteps+presteps,
-            cpt_steps, upfac, downfac, &ntprs, fs, info, fp);
+            cpt_steps, upfac, downfac, ScaleRvdw, &ntprs, fs, info, fp);
 
 
     /********************************************************************************/
