@@ -263,6 +263,8 @@ int main(int argc,char *argv[])
     "The options [TT]-px[tt] and [TT]-pf[tt] are used for writing pull COM",
     "coordinates and forces when pulling is selected",
     "in the [TT].mdp[tt] file.[PAR]",
+    "The [TT]-if[tt] writes out atom indices and forces from interactive",
+    "molecular dynamics (IMD) when IMD pulling is allowed.",
     "With [TT]-multi[tt] or [TT]-multidir[tt], multiple systems can be ",
     "simulated in parallel.",
     "As many input files/directories are required as the number of systems. ",
@@ -351,7 +353,17 @@ int main(int argc,char *argv[])
     "is sufficient, this signal should not be sent to mpirun or",
     "the [TT]mdrun[tt] process that is the parent of the others.",
     "[PAR]",
-    "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
+    "When [TT]mdrun[tt] is started with MPI, it does not run niced by default.",
+    "[PAR]",
+#ifdef GMX_IMD
+    "Interactive molecular dynamics (IMD) is activated by using at least one ",
+    "of the IMD switches. The port [TT]mdrun[tt] listens on can be altered by",
+    "-imdport. The IMD update frequency is set by -imdfreq and can be changed ",
+    "later from IMD remote. -imdterm allows the simulation to be terminated from",
+    "the IMD remote. With -imdwait, [TT]mdrun[tt] pauses whenever no IMD client",
+    "is connected. Pulling from the IMD remote can be turned on by -imdpull."
+#endif
+
 #endif
   };
   t_commrec    *cr;
@@ -377,6 +389,7 @@ int main(int argc,char *argv[])
     { efEDO, "-eo",     "sam",      ffOPTWR },
     { efGCT, "-j",      "wham",     ffOPTRD },
     { efGCT, "-jo",     "bam",      ffOPTWR },
+    { efXVG, "-if",     "imdf",     ffOPTWR },
     { efXVG, "-ffout",  "gct",      ffOPTWR },
     { efXVG, "-devout", "deviatie", ffOPTWR },
     { efXVG, "-runav",  "runaver",  ffOPTWR },
@@ -408,6 +421,9 @@ int main(int argc,char *argv[])
   gmx_bool bIonize      = FALSE;
   gmx_bool bConfout     = TRUE;
   gmx_bool bReproducible = FALSE;
+  gmx_bool bIMDwait     = FALSE;
+  gmx_bool bIMDterm     = FALSE;
+  gmx_bool bIMDpull     = FALSE;
     
   int  npme=-1;
   int  nmultisim=0;
@@ -418,6 +434,8 @@ int main(int argc,char *argv[])
   int  nstepout=100;
   int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
+  int  imdport=8888;
+  int  imdfreq=-1;
   
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
@@ -497,6 +515,18 @@ int main(int argc,char *argv[])
       "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
+#ifdef GMX_IMD
+    { "-imdport",    FALSE, etINT, {&imdport},
+        "IMD listening port" },
+    { "-imdfreq",    FALSE, etINT, {&imdfreq},
+        "initial IMD communication/update frequency (-1 is auto)" },
+    { "-imdwait",  FALSE, etBOOL,{&bIMDwait},
+         "Pause the simulation while no IMD client is connected" },
+    { "-imdterm",  FALSE, etBOOL,{&bIMDterm},
+                "Allow termination of the simulation from IMD client" },
+    { "-imdpull",  FALSE, etBOOL,{&bIMDpull},
+                "Allow pulling in the simulation from IMD client" },
+#endif
     { "-confout", FALSE, etBOOL, {&bConfout},
       "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
     { "-stepout", FALSE, etINT, {&nstepout},
@@ -557,6 +587,16 @@ int main(int argc,char *argv[])
 
 #ifndef GMX_THREAD_MPI
   nthreads=1;
+#endif
+
+#ifdef GMX_IMD
+  /* we check the imd integer options and set them to 0 if the switch is not set */
+  if (!opt2parg_bSet("-imdport",asize(pa),pa)){
+      imdport=0;
+  }
+  if (!opt2parg_bSet("-imdfreq",asize(pa),pa)){
+      imdfreq=0;
+  }
 #endif
 
   /* now check the -multi and -multidir option */
@@ -655,7 +695,9 @@ int main(int argc,char *argv[])
   Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
   Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-
+  Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
+  Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
+  Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
 
   /* We postpone opening the log file if we are appending, so we can 
      first truncate the old log file and append to the correct position 
@@ -686,7 +728,7 @@ int main(int argc,char *argv[])
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
                 nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
-                pforce, cpt_period,max_hours,deviceOptions,Flags);
+                pforce, cpt_period,max_hours,deviceOptions,imdport,imdfreq,Flags);
 
   gmx_finalize_par();
 
