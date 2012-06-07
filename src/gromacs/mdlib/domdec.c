@@ -63,6 +63,7 @@
 #include "mtop_util.h"
 #include "gmx_ga2la.h"
 #include "macros.h"
+#include "imd.h"
 #include "nbnxn_search.h"
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
@@ -9821,11 +9822,19 @@ void dd_partition_system(FILE                *fplog,
         dd_make_local_rotation_groups(dd, ir->rot);
     }
 
+
     if (ir->eSwapCoords != eswapNO)
     {
         /* Update the local groups needed for ion swapping */
         dd_make_local_swap_groups(dd, ir->swap);
     }
+#ifdef GMX_IMD
+    if (ir->bIMD)
+    {
+        /* Update the local atoms to be communicated via the IMD protocol */
+        dd_make_local_IMD_atoms(dd,ir->imd);
+    }
+#endif
 
     add_dd_statistics(dd);
 

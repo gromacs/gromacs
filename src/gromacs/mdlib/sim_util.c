@@ -88,6 +88,10 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 
+#ifdef GMX_IMD
+#include "imd.h"
+#endif
+
 #include "adress.h"
 #include "qmmm.h"
 
@@ -1399,6 +1403,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
+#ifdef GMX_IMD
+    /* Add forces from interactive molecular dynamics (IMD) */
+    if (inputrec->bIMD)
+    {
+        imd_apply_forces(inputrec, cr, f);
+    }
+#endif    
+    
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
@@ -1908,6 +1920,14 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
     }
+
+#ifdef GMX_IMD
+    /* Add forces from interactive molecular dynamics (IMD) */
+    if (inputrec->bIMD)
+    {
+        imd_apply_forces(inputrec, cr, f);
+    }
+#endif
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
