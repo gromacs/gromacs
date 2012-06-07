@@ -75,6 +75,9 @@ extern "C" {
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 #define MD_TUNEPME        (1<<20)
 #define MD_TESTVERLET     (1<<22)
+#define MD_IMDWAIT        (1<<23)
+#define MD_IMDTERM        (1<<24)
+#define MD_IMDPULL        (1<<25)
 
 /* The options for the domain decomposition MPI task ordering */
 enum {
@@ -115,6 +118,7 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  gmx_membed_t membed,
                                  real cpt_period, real max_hours,
                                  const char *deviceOptions,
+                                 int imdport,
                                  unsigned long Flags,
                                  gmx_walltime_accounting_t walltime_accounting);
 
@@ -175,7 +179,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             const char *deviceOptions, unsigned long Flags);
+             const char *deviceOptions, int imdport, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 #ifdef __cplusplus
