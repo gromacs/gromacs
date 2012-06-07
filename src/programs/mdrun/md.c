@@ -94,6 +94,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
+#include "gromacs/imd/imd.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -146,6 +147,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
              real cpt_period, real max_hours,
              const char gmx_unused *deviceOptions,
+             int imdport, int imdfreq,
              unsigned long Flags,
              gmx_walltime_accounting_t walltime_accounting)
 {
@@ -220,6 +222,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
+
+    /* Interactive MD */
+    gmx_bool          bIMDstep = FALSE;
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -409,6 +414,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             dd_make_local_pull_groups(NULL, ir->pull, mdatoms);
         }
     }
+
+    /* Set up interactive MD (IMD) */
+    IMD_init(ir, cr, top_global, fplog, ir->nstcalcenergy, top_global->natoms, state_global->x, mdatoms, nfile, fnm, oenv, imdport, imdfreq, Flags);
 
     if (DOMAINDECOMP(cr))
     {
@@ -1326,6 +1334,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                  wcycle, mcrng, &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
+        /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
+        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV)
@@ -1945,6 +1955,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             gs.set[eglsRESETCOUNTERS] = 0;
         }
 
+
+        /* Send positions (and energies if properly summed) to client via IMD protocol */
+        if ((MASTER(cr)) && bIMDstep)
+        {
+            IMD_prep_energies_send_positions(ir->imd, enerd, step, bCalcEner, wcycle);
+        }
+
     }
     /* End of main MD loop */
     debug_gmx();
@@ -1999,6 +2016,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         print_replica_exchange_statistics(fplog, repl_ex);
     }
+
+    /* IMD cleanup, if bIMD is TRUE. */
+    IMD_finalize(ir->bIMD, ir->imd);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 
