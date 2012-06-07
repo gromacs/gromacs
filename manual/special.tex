@@ -2064,6 +2064,67 @@ found. Note that these plug-ins are in a binary format, and that format
 must match the architecture of the machine attempting to use them.
 
 
+\section{Interactive Molecular Dynamics}
+{\gromacs} supports the interactive molecular dynamics (IMD) protocol as implemented
+by \href{http://www.ks.uiuc.edu/Research/vmd}{VMD} to control a running simulation
+in NAMD. IMD allows to monitor a running {\gromacs} simulation from a VMD client.
+In addition, the user can interact with the simulation by pulling on atoms, residues
+or fragments with a mouse or a force-feedback device. Additional information about
+the {\gromacs} implementation can be found
+\href{http://www.mpibpc.mpg.de/grubmueller/interactivemd}{on this homepage}.
+
+\subsection{Simulation input preparation}
+The {\gromacs} implementation allows transmission and interaction with a part of the
+running simulation only, e.g.\ in cases where no water molecules should be transmitted
+or pulled. The group is specified via the {\tt .mdp} option {\tt IMD-group}. When
+{\tt IMD-group} is empty, the IMD protocol is disabled and cannot be enabled via the
+switches in {\tt mdrun}. To interact with the entire system, {\tt IMD-group} can
+be set to {\tt System}. When using {\tt grompp}, a {\tt .gro} file
+to be used as VMD input is written out ({\tt -imd} switch of {\tt grompp}).
+
+\subsection{Starting the simulation}
+Communication between VMD and {\gromacs} is achieved via TCP sockets and thus enables
+controlling an {\tt mdrun} running locally or on a remote cluster. The port for the
+connection can be specified with the {\tt -imdport} switch of {\tt mdrun}, 8888 is
+the default. If a port number of 0 or smaller is provided, {\gromacs} automatically
+assigns a free port to use with IMD.
+
+Every $N$ steps, the mdrun client receives the applied forces from VMD and sends the new
+positions to the client. VMD permits increasing or decreasing the communication frequency
+interactively.
+
+By default, the simulation starts and runs even if no IMD client is connected. This
+behavior is changed by the {\tt -imdwait} switch of {\tt mdrun}. After startup and
+whenever the client has disconnected, the integration stops until reconnection of
+the client.
+
+When the {\tt -imdterm} switch is used, the simulation can be terminated by pressing
+the stop button in VMD. This is disabled by default.
+
+Finally, to allow interacting with the simulation (i.e. pulling from VMD) the {\tt -imdpull}
+switch has to be used.
+
+Therefore, a simulation can only be monitored but not influenced from the VMD client
+when none of {\tt -imdwait}, {\tt -imdterm} or {\tt -imdpull} are set. However, since
+the IMD protocol requires no authentication, it is not advisable to run simulations on
+a host directly reachable from an insecure environment. Secure shell forwarding of TCP
+can be used to connect to running simulations not directly reachable from the interacting host.
+
+\subsection{Connecting from VMD}
+In VMD, first the structure corresponding to the IMD group has to be loaded ({\it File
+$\rightarrow$ New Molecule}). Then the IMD connection window has to be used
+({\it Extensions $\rightarrow$ Simulation $\rightarrow$ IMD Connect (NAMD)}). In the IMD
+connection window, hostname and port have to be specified and followed by pressing
+{\it Connect}. {\it Detach Sim} allows disconnecting without terminating the simulation, while
+{\it Stop Sim} ends the simulation on the next neighbor searching step (if allowed by
+{\tt -imdterm}).
+
+The timestep transfer rate allows adjusting the communication frequency between simulation
+and IMD client. Setting the keep rate loads every $N^\mathrm{th}$ frame into VMD instead
+of discarding them when a new one is received. The displayed energies are in SI units
+in contrast to energies displayed from NAMD simulations.
+
+
 % LocalWords:  PMF pmf kJ mol Jarzynski BT bilayer rup mdp AFM fepmf fecalc rb
 % LocalWords:  posre grompp fs Verlet dihedrals hydrogens hydroxyl sulfhydryl
 % LocalWords:  vsitehydro planarity chirality pdb gmx virtualize virtualized xz
