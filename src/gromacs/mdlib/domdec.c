@@ -51,6 +51,8 @@
 #include "gmx_ga2la.h"
 #include "gmx_sort.h"
 #include "macros.h"
+#include "imd.h"
+
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -8611,6 +8613,13 @@ void dd_partition_system(FILE            *fplog,
         dd_make_local_rotation_groups(dd,ir->rot);
     }
 
+#ifdef GMX_IMD
+    if (ir->bIMD)
+    {
+        /* Update the local atoms to be communicated via the IMD protocol */
+        dd_make_local_IMD_atoms(dd,ir->imd);
+    }
+#endif
 
     add_dd_statistics(dd);
     
