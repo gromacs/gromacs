@@ -899,12 +899,15 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
         wallcycle_stop(wcycle, ewcNS);
     }
-    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-    nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,FALSE,x,
-                                     nbv->grp[eintLocal].nbat);
-    wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+    else
+    {
+        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
+        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,FALSE,x,
+                                        nbv->grp[eintLocal].nbat);
+        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
+        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+    }
 
     if (bUseGPU)
     {
@@ -923,9 +926,14 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
         if (bDiffKernels)
         {
+            /* With GPU+CPU non-bonded calculations we need to copy
+             * the local coordinates to the non-local nbat struct
+             * (in CPU format) as the non-local kernel call also
+             * calculates the local - non-local interactions.
+             */
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatAll,TRUE,x,
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,TRUE,x,
                                              nbv->grp[eintNonlocal].nbat);
             wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
             wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
@@ -972,13 +980,14 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 gmx_sumd(2*DIM,mu,cr);
             }
             wallcycle_stop(wcycle,ewcMOVEX);
+
+            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,FALSE,x,
+                                            nbv->grp[eintNonlocal].nbat);
+            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
+            cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,FALSE,x,
-                                         nbv->grp[eintNonlocal].nbat);
-        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-        cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 
         if (bUseGPU && !bDiffKernels)
         { 
