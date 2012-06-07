@@ -158,6 +158,8 @@ struct mdrunner_arglist
     real cpt_period;
     real max_hours;
     const char *deviceOptions;
+    int imdport;
+    int imdfreq;
     unsigned long Flags;
     int ret; /* return value */
 };
@@ -194,7 +196,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.nbpu_opt,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
                       mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce, 
-                      mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
+                      mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.imdport, mc.imdfreq, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including 
@@ -1229,7 +1231,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int nsteps_cmdline, int nstepout,int resetstep,
              int nmultisim,int repl_ex_nst,int repl_ex_nex,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-             const char *deviceOptions, unsigned long Flags)
+             const char *deviceOptions, int imdport, int imdfreq, unsigned long Flags)
 {
     gmx_bool   bForceUseGPU,bTryUseGPU;
     double     nodetime=0,realtime;
@@ -1906,6 +1908,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       membed,
                                       cpt_period,max_hours,
                                       deviceOptions,
+                                      imdport,imdfreq,
                                       Flags,
                                       &runtime);
 

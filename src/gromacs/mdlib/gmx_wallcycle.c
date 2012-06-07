@@ -95,13 +95,14 @@ typedef struct gmx_wallcycle
 
 /* Each name should not exceed 19 characters */
 static const char *wcn[ewcNR] =
+
 { "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load",
   "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
   "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
   "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve",
   "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
   "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies",
-  "Enforced rotation", "Add rot. forces", "Test" };
+  "Enforced rotation", "Add rot. forces", "Test", "IMD" };
 
 static const char *wcsn[ewcsNR] =
 { "DD redist.", "DD NS grid + sort", "DD setup comm.",
@@ -110,6 +111,7 @@ static const char *wcsn[ewcsNR] =
   "Bonded F", "Nonbonded F", "Ewald F correction",
   "NB X buffer ops.", "NB F buffer ops."
 };
+
 
 gmx_bool wallcycle_have_counter(void)
 {

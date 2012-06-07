@@ -122,6 +122,7 @@ void done_mdoutf(gmx_mdoutf_t *of);
 #define MDOF_F   (1<<2)
 #define MDOF_XTC (1<<3)
 #define MDOF_CPT (1<<4)
+#define MDOF_IMD (1<<5)
 
 void write_traj(FILE *fplog,t_commrec *cr,
 		       gmx_mdoutf_t *of,
