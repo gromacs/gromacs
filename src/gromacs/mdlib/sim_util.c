@@ -93,6 +93,10 @@
 #include "nbnxn_kernels/nbnxn_kernel_x86_simd256.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
+#ifdef GMX_IMD
+#include "imd.h"
+#endif
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -1881,6 +1885,12 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr,step,t);
         wallcycle_stop(wcycle,ewcROTadd);
     }
+
+#ifdef GMX_IMD
+    /* Add forces from interactive molecular dynamics (IMD) */
+    if (inputrec->bIMD)
+        imd_apply_forces(inputrec,cr,f);
+#endif
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {

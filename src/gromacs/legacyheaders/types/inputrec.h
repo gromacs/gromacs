@@ -244,6 +244,19 @@ typedef struct {
 } t_rot;
 
 
+/* Abstract type for IMD only defined in IMD.c */
+typedef struct gmx_IMD *t_gmx_IMD;
+
+/* Abstract type for IMD setup only defined in imd.c */
+//typedef struct gmx_IMD_setup *gmx_IMD_setup_t;
+
+typedef struct {
+  int        nat;            /* Number of interactive atoms                   */
+  atom_id    *ind;           /* The global indices of the interactive atoms   */
+  t_gmx_IMD  setup;          /* Stores non-inputrec IMD data                  */
+} t_IMD;
+
+
 typedef struct {
   int  type;     /* type of AdResS simulation                    */
   gmx_bool bnew_wf;  /* enable new AdResS weighting function         */
@@ -405,6 +418,8 @@ typedef struct {
                         /* parameter needed for AdResS simulation       */
   gmx_bool bAdress;     /* Is AdResS enabled ? */
   t_adress *adress;     /* The data for adress simulations */
+  gmx_bool bIMD;        /* Can be used to disallow IMD sessions for this tpr  */
+  t_IMD *imd;           /* Interactive molecular dynamics                     */
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)
