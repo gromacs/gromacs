@@ -634,6 +634,12 @@ static void pr_rot(FILE *fp,int indent,t_rot *rot)
     pr_rotgrp(fp,indent,g,&rot->grp[g]);
 }
 
+static void pr_imd(FILE *fp,int indent,t_IMD *imd)
+{
+  PI("IMD_atoms",imd->nat);
+  pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
+}
+
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
                  gmx_bool bMDPformat)
 {
@@ -758,6 +764,10 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("rotation",EBOOL(ir->bRot));
     if (ir->bRot)
       pr_rot(fp,indent,ir->rot);
+
+    PS("interactiveMD",EBOOL(ir->bIMD));
+    if (ir->bIMD)
+      pr_imd(fp,indent,ir->imd);
 
     PS("disre",EDISRETYPE(ir->eDisre));
     PS("disre-weighting",EDISREWEIGHTING(ir->eDisreWeighting));

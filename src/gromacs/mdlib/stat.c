@@ -575,7 +575,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }
         else
         {
-            if (mdof_flags & (MDOF_X | MDOF_XTC))
+            if (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_IMD))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
                                state_global->x);
@@ -639,7 +639,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             else
             {
-                if (mdof_flags & (MDOF_X | MDOF_XTC)) MX(state_global->x);
+                if (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_IMD)) MX(state_global->x);
                 if (mdof_flags & MDOF_V)              MX(global_v);
             }
             if (mdof_flags & MDOF_F) MX(f_global);
