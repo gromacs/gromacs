@@ -253,6 +253,14 @@ typedef struct {
     gmx_enfrot_t enfrot;     /* Stores non-inputrec enforced rotation data    */
 } t_rot;
 
+/* Abstract type for IMD only defined in IMD.c */
+typedef struct gmx_IMD *t_gmx_IMD;
+
+typedef struct {
+  int        nat;            /* Number of interactive atoms                   */
+  atom_id    *ind;           /* The global indices of the interactive atoms   */
+  t_gmx_IMD  setup;          /* Stores non-inputrec IMD data                  */
+} t_IMD;
 
 typedef struct {
     int      type;           /* type of AdResS simulation                    */
@@ -395,6 +403,8 @@ typedef struct {
     t_pull         *pull;                 /* The data for center of mass pulling          */
     gmx_bool        bRot;                 /* Calculate enforced rotation potential(s)?    */
     t_rot          *rot;                  /* The data for enforced rotation potentials    */
+    gmx_bool        bIMD;                 /* Allow interactive MD sessions for this .tpr? */
+    t_IMD          *imd;                  /* Interactive molecular dynamics               */
     real            cos_accel;            /* Acceleration for viscosity calculation       */
     tensor          deform;               /* Triclinic deformation velocities (nm/ps)     */
     int             userint1;             /* User determined parameters                   */

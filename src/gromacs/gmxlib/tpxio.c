@@ -334,6 +334,16 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
     }
 }
 
+static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead, int file_version)
+{
+  gmx_fio_do_int(fio, imd->nat);
+  if (bRead)
+  {
+      snew(imd->ind, imd->nat);
+  }
+  gmx_fio_ndo_int(fio, imd->ind, imd->nat);
+}
+
 static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int file_version)
 {
     /* i is defined in the ndo_double macro; use g to iterate. */
@@ -1363,6 +1373,28 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bRot = FALSE;
+    }
+
+    /* Interactive molecular dynamics */
+    if (file_version >= 92)
+    {
+        gmx_fio_do_int(fio, ir->bIMD);
+        if (TRUE == ir->bIMD)
+        {
+            if (bRead)
+            {
+                snew(ir->imd, 1);
+            }
+            do_imd(fio, ir->imd, bRead, file_version);
+        }
+    }
+    else
+    {
+        if (bRead)
+        {
+            ir->bIMD = TRUE;
+            snew(ir->imd, 1);
+        }
     }
 
     /* grpopts stuff */
