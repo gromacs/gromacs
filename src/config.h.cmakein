@@ -146,6 +146,9 @@
 /* Compile with plugin support */
 #cmakedefine GMX_USE_PLUGINS
 
+/* Compile with IMD support */
+#cmakedefine GMX_IMD
+
 /* Fallback path for VMD plug-ins */
 #define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
 
