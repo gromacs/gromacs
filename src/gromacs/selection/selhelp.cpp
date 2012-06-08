@@ -63,15 +63,26 @@ const char CommonHelpText::name[] = "selections";
 const char CommonHelpText::title[] =
     "Selection syntax and usage";
 const char *const CommonHelpText::text[] = {
-    "This program supports selections in addition to traditional index files.",
-    "Please read the subtopic pages (available through \"help topic\") for",
-    "more information.",
-    "Explanation of command-line arguments for specifying selections can be",
-    "found under the \"cmdline\" subtopic, and general selection syntax is",
-    "described under \"syntax\". Available keywords can be found under",
-    "\"keywords\", and concrete examples under \"examples\".",
-    "Other subtopics give more details on certain aspects.",
-    "\"help all\" prints the help for all subtopics.",
+    "Selections are used to select atoms/molecules/residues for analysis.",
+    "In contrast to traditional index files, selections can be dynamic, i.e.,",
+    "select different atoms for different trajectory frames.[PAR]",
+
+    "Each analysis tool requires a different number of selections and the",
+    "selections are interpreted differently. The general idea is still the",
+    "same: each selection evaluates to a set of positions, where a position",
+    "can be an atom position or center-of-mass or center-of-geometry of",
+    "a set of atoms. The tool then uses these positions for its analysis to",
+    "allow very flexible processing. Some analysis tools may have limitations",
+    "on the types of selections allowed.[PAR]",
+
+    "To get started with selections, run, e.g., [TT][PROGRAM] select[tt]",
+    "without specifying selections on the command-line and use the interactive",
+    "prompt to try out different selections.",
+    "This tool provides output options that allow one to see what is actually",
+    "selected by the given selections, and the interactive prompt reports",
+    "syntax errors immediately, allowing one to try again.",
+    "The subtopics listed below give more details on different aspects of",
+    "selections.",
 };
 
 struct ArithmeticHelpText
@@ -102,22 +113,38 @@ const char CmdLineHelpText::name[] = "cmdline";
 const char CmdLineHelpText::title[] =
     "Specifying selections from command line";
 const char *const CmdLineHelpText::text[] = {
-    "There are two alternative command-line arguments for specifying",
-    "selections:[BR]",
-    "1. [TT]-select[tt] can be used to specify the complete selection as a",
-    "string on the command line.[BR]",
-    "2. [TT]-sf[tt] can be used to specify a file name from which the",
-    "selection is read.[BR]",
-    "If both options are specified, [TT]-select[tt] takes precedence.",
-    "If neither of the above is present, the user is prompted to type the",
-    "selection on the standard input (a pipe can also be used to provide",
-    "the selections in this case).",
-    "This is also done if an empty string is passed to [TT]-select[tt].[PAR]",
+    "If no selections are provided on the command line, you are prompted to",
+    "type the selections interactively (a pipe can also be used to provide",
+    "the selections in this case for most tools). While this works well for",
+    "testing, it is easier to provide the selections from the command line",
+    "if they are complex or for scripting.[PAR]",
 
-    "Option [TT]-n[tt] can be used to provide an index file.",
-    "If no index file is provided, default groups are generated.",
-    "In both cases, the user can also select an index group instead of",
-    "writing a full selection.",
+    "Each tool has different command-line arguments for specifying selections",
+    "(listed by [TT][PROGRAM] help <tool>[tt]).",
+    "You can either pass a single string containing all selections (separated",
+    "by semicolons), or multiple strings, each containing one selection.",
+    "Note that you need to quote the selections to protect them from the",
+    "shell.[PAR]",
+
+    "If you set a selection command-line argument, but do not provide any",
+    "selections, you are prompted to type the selections for that argument",
+    "interactively. This is useful if that selection argument is optional,",
+    "in which case it is not normally prompted for.[PAR]",
+
+    "To provide selections from a file, use [TT]-sf file.dat[tt] in the place",
+    "of the selection for a selection argument (e.g.,",
+    "[TT]-select -sf file.dat[tt]). In general, the [TT]-sf[tt] argument reads",
+    "selections from the provided file and assigns them to selection arguments",
+    "that have been specified up to that point, but for which no selections",
+    "have been provided.",
+    "As a special case, [TT]-sf[tt] provided on its own, without preceding",
+    "selection arguments, assigns the selections to all (yet unset) required",
+    "selections (i.e., those that would be promted interactively if no",
+    "selections are provided on the command line).[PAR]",
+
+    "To use groups from a traditional index file, use argument [TT]-n[tt]",
+    "to provide a file. See the \"syntax\" subtopic for how to use them.",
+    "If this option is not provided, default groups are generated.",
     "The default groups are generated by reading selections from a file",
     "[TT]defselection.dat[tt]. If such a file is found in the current",
     "directory, it is used instead of the one provided by default.[PAR]",
@@ -128,7 +155,7 @@ const char *const CmdLineHelpText::text[] = {
     "positions to calculate for each selection.[BR]",
     "2. [TT]-selrpos[tt] can be used to specify the default type of",
     "positions used in selecting atoms by coordinates.[BR]",
-    "See \"help positions\" for more information on these options.",
+    "See the \"positions\" subtopic for more information on these options.",
 };
 
 struct EvaluationHelpText
@@ -181,6 +208,8 @@ const char ExamplesHelpText::name[] = "examples";
 const char ExamplesHelpText::title[] =
     "Selection examples";
 const char *const ExamplesHelpText::text[] = {
+    // TODO: Once there are more tools available, use examples that invoke
+    // tools and explain what the selections do in those tools.
     "Below, examples of increasingly complex selections are given.[PAR]",
 
     "Selection of all water oxygens:[BR]",
@@ -225,7 +254,7 @@ const char KeywordsHelpText::title[] =
 const char *const KeywordsHelpText::text[] = {
     "The following selection keywords are currently available.",
     "For keywords marked with a star, additional help is available through",
-    "\"help KEYWORD\", where KEYWORD is the name of the keyword.",
+    "a subtopic KEYWORD, where KEYWORD is the name of the keyword.",
 };
 
 struct LimitationsHelpText
@@ -352,7 +381,8 @@ const char *const SyntaxHelpText::text[] = {
     "[TT]ATOM_EXPR or ATOM_EXPR[tt]. Parentheses can be used to alter the",
     "evaluation order.[BR]",
     "3. [TT]ATOM_EXPR[tt] expressions can be converted into [TT]POS_EXPR[tt]",
-    "expressions in various ways, see \"help positions\" for more details.[PAR]",
+    "expressions in various ways, see the \"positions\" subtopic for more",
+    "details.[PAR]",
 
     "Some keywords select atoms based on string values such as the atom name.",
     "For these keywords, it is possible to use wildcards ([TT]name \"C*\"[tt])",
@@ -508,7 +538,7 @@ void KeywordsHelpTopic::writeHelp(File *file) const
 
     file->writeLine();
     file->writeLine("Keywords that directly evaluate to positions:");
-    file->writeLine("(see also \"help positions\")");
+    file->writeLine("(see also \"positions\" subtopic)");
     printKeywordList(file, POS_VALUE, false);
 
     file->writeLine();

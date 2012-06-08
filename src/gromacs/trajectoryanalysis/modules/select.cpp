@@ -266,7 +266,8 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
         "analysis programs to calculate more complex things.",
         "Any combination of the output options is possible, but note",
         "that [TT]-om[tt] only operates on the first selection.",
-        "[TT]-os[tt] is the default output option if none is selected.[PAR]",
+        "Also note that if you provide no output options, no output is",
+        "produced.[PAR]",
         "With [TT]-os[tt], calculates the number of positions in each",
         "selection for each frame. With [TT]-norm[tt], the output is",
         "between 0 and 1 and describes the fraction from the maximum",
@@ -319,8 +320,9 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
     _options.addOption(FileNameOption("om").filetype(eftPlot).outputFile()
                            .store(&_fnMask).defaultValueIfSet("mask"));
 
-    _options.addOption(SelectionOption("select").required().multiValue()
-                           .storeVector(&_sel));
+    _options.addOption(SelectionOption("select").storeVector(&_sel)
+        .required().multiValue()
+        .description("Selections to analyze"));
 
     _options.addOption(BooleanOption("dump").store(&_bDump)
         .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));

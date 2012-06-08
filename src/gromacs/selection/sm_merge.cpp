@@ -116,7 +116,7 @@ static const char *help_merge[] = {
     "[TT]plus[tt] simply concatenates the positions after each other, and",
     "can work also with selections of different sizes.",
     "These keywords are valid only at the selection level, not in any",
-    "subexpressions.[PAR]",
+    "subexpressions.",
 };
 
 /** \internal Selection method data for the \p plus modifier. */
