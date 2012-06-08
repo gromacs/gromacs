@@ -85,7 +85,7 @@ enum {
     exmlFUDGEQQ, exmlFUDGELJ,
     exmlBONDING_RULES, exmlBONDING_RULE,
     exmlGT_ATOM, exmlELEM, exmlNAME, exmlDESC,
-    exmlGT_NAME, exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE,
+    exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE,
     exmlNEIGHBORS, 
     exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS,
     exmlFUNCTION,
@@ -114,7 +114,7 @@ static const char *exml_names[exmlNR] = {
     "fudgeQQ", "fudgeLJ",
     "bonding_rules", "bonding_rule",
     "atype", "elem", "name", "description",
-    "gt_name", "gt_type", "miller_equiv", "charge",
+    "gt_type", "miller_equiv", "charge",
     "neighbors", 
     "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams",
     "function",
@@ -248,8 +248,8 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         if (NN(xbuf[exmlGEOMETRY]) && 
             NN(xbuf[exmlNUMBONDS]) && NN(xbuf[exmlNEIGHBORS]) &&
             NN(xbuf[exmlGT_TYPE]) && 
-            NN(xbuf[exmlGT_NAME]))
-            gmx_poldata_add_bonding_rule(pd,xbuf[exmlGT_NAME],xbuf[exmlGT_TYPE],
+            NN(xbuf[exmlNAME]))
+            gmx_poldata_add_bonding_rule(pd,xbuf[exmlNAME],xbuf[exmlGT_TYPE],
                                          xbuf[exmlGEOMETRY],
                                          atoi(xbuf[exmlNUMBONDS]),
                                          xbuf[exmlNEIGHBORS]);

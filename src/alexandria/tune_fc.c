@@ -779,7 +779,8 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
                     sfree(params);
             }
             else {
-                gmx_fatal(FARGS,"There are no parameters for angle %s-%s-%s in the force field",aai,aaj,aak);
+                gmx_fatal(FARGS,"There are no parameters for improper %-%s-%s-%s in the force field for %s",
+                          aai,aaj,aak,aal,mymol->molname);
             }
         }
     }
@@ -801,6 +802,7 @@ static double calc_opt_deviation(opt_param_t *opt)
     gmx_mtop_atomloop_all_t aloop;
     t_atom *atom; 
     int    at_global,resnr;
+    FILE   *dbcopy;
     
     if (PAR(opt->md->cr)) 
     {
@@ -837,6 +839,8 @@ static double calc_opt_deviation(opt_param_t *opt)
                 clear_rvec(mymol->f[j]);
             
             /* Now optimize the shell positions */
+            dbcopy = debug;
+            debug = NULL;
             if (mymol->shell) { 
                 count = 
                     relax_shell_flexcon(debug,opt->md->cr,FALSE,0,
@@ -861,6 +865,7 @@ static double calc_opt_deviation(opt_param_t *opt)
                          NULL,mu_tot,t,NULL,NULL,FALSE,
                          flags);
             }
+            debug = dbcopy;
             if (0 && (i == 0)) {
                 for(j=0; (j<F_NRE); j++)
                     if ((mymol->enerd.term[j] != 0) || 
@@ -1361,7 +1366,6 @@ int main(int argc, char *argv[])
     }
     else
         fp = NULL;
-        
 
     if (MASTER(cr))
         gms = gmx_molselect_init(opt2fn_null("-sel",NFILE,fnm));

@@ -81,8 +81,8 @@ typedef struct {
     t_bond *bond;
     int nangle;
     t_angle *angle;
-    int ndih;
-    t_dih *dih;
+    int ndih,nimp;
+    t_dih *dih,*imp;
 } t_bonds;
 
 int bondcmp(const void *a,const void *b)
@@ -129,9 +129,10 @@ void sort_bonds(t_bonds *b)
     qsort(b->bond,b->nbond,sizeof(b->bond[0]),bondcmp);
     qsort(b->angle,b->nangle,sizeof(b->angle[0]),anglecmp);
     qsort(b->dih,b->ndih,sizeof(b->dih[0]),dihcmp);
+    qsort(b->imp,b->nimp,sizeof(b->imp[0]),dihcmp);
 }
 
-void add_bond(char *molname,t_bonds *b,char *a1,char *a2,double blen,double spacing)
+void add_bond(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,double blen,double spacing)
 {
     int i,j,index;
   
@@ -167,12 +168,12 @@ void add_bond(char *molname,t_bonds *b,char *a1,char *a2,double blen,double spac
     }
     gmx_stats_add_point(b->bond[i].lsq,0,blen,0,0);
     b->bond[i].histo[index]++;
-    if (NULL != debug) {
-        fprintf(debug,"%s bond %s-%s %g\n",molname,a1,a2,blen);
+    if (NULL != fplog) {
+        fprintf(fplog,"%s bond %s-%s %g\n",molname,a1,a2,blen);
     }
 }
 
-void add_angle(char *molname,t_bonds *b,char *a1,char *a2,char *a3,double angle,double spacing)
+void add_angle(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,char *a3,double angle,double spacing)
 {
     int i,j,index;
   
@@ -204,52 +205,66 @@ void add_angle(char *molname,t_bonds *b,char *a1,char *a2,char *a3,double angle,
     }
     gmx_stats_add_point(b->angle[i].lsq,0,angle,0,0);
     b->angle[i].histo[index]++;
-    if (NULL != debug) {
-        fprintf(debug,"%s angle %s-%s-%s %g\n",molname,a1,a2,a3,angle);
+    if (NULL != fplog) {
+        fprintf(fplog,"%s angle %s-%s-%s %g\n",molname,a1,a2,a3,angle);
     }
 }
 
-void add_dih(char *molname,t_bonds *b,char *a1,char *a2,char *a3,char *a4,
-             double angle,double spacing)
+void add_dih(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,char *a3,char *a4,
+             double angle,double spacing,int egd)
 {
-    int i,j,index;
+    int i,j,*nd,index;
+    t_dih **ddd;
     
     if (angle < 0)
         angle += 360;
+    if (egd == egdPDIHS) {
+        ddd = &b->dih;
+        nd = &b->ndih;
+    }
+    else {
+        ddd = &b->imp;
+        nd = &b->nimp;
+        while (angle > 176)
+            angle -= 180;
+    }
     index = gmx_nint(angle/spacing);
-    for(i=0; (i<b->ndih); i++) {
-        if (((strcmp(a1,b->dih[i].a1) == 0) && (strcmp(a2,b->dih[i].a2) == 0) && 
-             (strcmp(a3,b->dih[i].a3) == 0) && (strcmp(a4,b->dih[i].a4) == 0)) ||
-            ((strcmp(a1,b->dih[i].a4) == 0) && (strcmp(a2,b->dih[i].a3) == 0) && 
-             (strcmp(a3,b->dih[i].a2) == 0) && (strcmp(a4,b->dih[i].a1) == 0))) {
+    if (index < 0)
+        index = 0;
+    for(i=0; (i<(*nd)); i++) {
+        if (((strcmp(a1,(*ddd)[i].a1) == 0) && (strcmp(a2,(*ddd)[i].a2) == 0) && 
+             (strcmp(a3,(*ddd)[i].a3) == 0) && (strcmp(a4,(*ddd)[i].a4) == 0)) ||
+            ((strcmp(a1,(*ddd)[i].a4) == 0) && (strcmp(a2,(*ddd)[i].a3) == 0) && 
+             (strcmp(a3,(*ddd)[i].a2) == 0) && (strcmp(a4,(*ddd)[i].a1) == 0))) {
             break;
         }
     }
-    if (i == b->ndih) {
-        b->ndih++;
-        srenew(b->dih,b->ndih);
+    if (i == (*nd)) {
+        (*nd)++;
+        srenew((*ddd),(*nd));
         if (strcmp(a1,a4) < 0) 
         {
-            b->dih[i].a1     = strdup(a1);
-            b->dih[i].a2     = strdup(a2);
-            b->dih[i].a3     = strdup(a3);
-            b->dih[i].a4     = strdup(a4);
+            (*ddd)[i].a1     = strdup(a1);
+            (*ddd)[i].a2     = strdup(a2);
+            (*ddd)[i].a3     = strdup(a3);
+            (*ddd)[i].a4     = strdup(a4);
         }
         else 
         {
-            b->dih[i].a4     = strdup(a1);
-            b->dih[i].a3     = strdup(a2);
-            b->dih[i].a2     = strdup(a3);
-            b->dih[i].a1     = strdup(a4);
+            (*ddd)[i].a4     = strdup(a1);
+            (*ddd)[i].a3     = strdup(a2);
+            (*ddd)[i].a2     = strdup(a3);
+            (*ddd)[i].a1     = strdup(a4);
         }
-        b->dih[i].nhisto = (int) (360/spacing) + 1;
-        snew(b->dih[i].histo,b->dih[i].nhisto);
-        b->dih[i].lsq = gmx_stats_init();
+        (*ddd)[i].nhisto = (int) (360/spacing) + 1;
+        snew((*ddd)[i].histo,(*ddd)[i].nhisto);
+        (*ddd)[i].lsq = gmx_stats_init();
     }
-    gmx_stats_add_point(b->dih[i].lsq,0,angle,0,0);
-    b->dih[i].histo[index]++;
-    if (NULL != debug) {
-        fprintf(debug,"%s dihedrals %s-%s-%s-%s %g\n",molname,a1,a2,a3,a4,angle);
+    gmx_stats_add_point((*ddd)[i].lsq,0,angle,0,0);
+    (*ddd)[i].histo[index]++;
+    if (NULL != fplog) {
+        fprintf(fplog,"%s %s %s-%s-%s-%s %g\n",molname,(egd==egdPDIHS) ? "dihedrals" : "impropers",
+                a1,a2,a3,a4,angle);
     }
 }
 
@@ -300,6 +315,12 @@ void dump_histo(t_bonds *b,double bspacing,double aspacing,double dspacing,
         lo_dump_histo(buf,"Dihedral angle (deg.)",oenv,
                       b->dih[i].nhisto,b->dih[i].histo,aspacing);
     }
+    for(i=0; (i<b->nimp); i++) {
+        sprintf(buf,"imp-%s-%s-%s-%s.xvg",
+                b->imp[i].a1,b->imp[i].a2,b->imp[i].a3,b->imp[i].a4);
+        lo_dump_histo(buf,"Improper angle (deg.)",oenv,
+                      b->imp[i].nhisto,b->imp[i].histo,aspacing);
+    }
 }
 
 void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
@@ -339,6 +360,17 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
                                  b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
         fprintf(fp,"dihedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4,av,sig);
+    }
+    for(i=0; (i<b->nimp); i++) {
+        gmx_stats_get_average(b->imp[i].lsq,&av);
+        gmx_stats_get_sigma(b->imp[i].lsq,&sig);
+        gmx_stats_get_npoints(b->imp[i].lsq,&N);
+        sprintf(pbuf,"%g",kp);
+        gmx_poldata_add_dihedral(pd,egdIDIHS,
+                                 b->imp[i].a1,b->imp[i].a2,
+                                 b->imp[i].a3,b->imp[i].a4,av,sig,pbuf);
+        fprintf(fp,"impedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
+                b->imp[i].a1,b->imp[i].a2,b->imp[i].a3,b->imp[i].a4,av,sig);
     }
 }
 
@@ -464,7 +496,7 @@ int main(int argc,char *argv[])
             rvec_sub(md->mymol[i].x[ai],md->mymol[i].x[aj],dx);
             cai = ATP(ai);
             caj = ATP(aj);
-            add_bond(molname,b,cai,caj,1000*norm(dx),bspacing);
+            add_bond(fp,molname,b,cai,caj,1000*norm(dx),bspacing);
         }
         for(j=0; (j<md->mymol[i].ltop->idef.il[fta].nr); j+=interaction_function[fta].nratoms+1) {
             ai = md->mymol[i].ltop->idef.il[fta].iatoms[j+1];
@@ -476,7 +508,7 @@ int main(int argc,char *argv[])
             cai = ATP(ai);
             caj = ATP(aj);
             cak = ATP(ak);
-            add_angle(molname,b,cai,caj,cak,ang,aspacing);
+            add_angle(fp,molname,b,cai,caj,cak,ang,aspacing);
         }
         clear_mat(box);
         set_pbc(&pbc,epbcNONE,box);
@@ -494,7 +526,23 @@ int main(int argc,char *argv[])
             caj = ATP(aj);
             cak = ATP(ak);
             cal = ATP(al);
-            add_dih(molname,b,cai,caj,cak,cal,ang,dspacing);
+            add_dih(fp,molname,b,cai,caj,cak,cal,ang,dspacing,egdPDIHS);
+        }
+
+        for(j=0; (j<md->mymol[i].ltop->idef.il[fti].nr); j+=interaction_function[fti].nratoms+1) {
+            ai = md->mymol[i].ltop->idef.il[fti].iatoms[j+1];
+            aj = md->mymol[i].ltop->idef.il[fti].iatoms[j+2];
+            ak = md->mymol[i].ltop->idef.il[fti].iatoms[j+3];
+            al = md->mymol[i].ltop->idef.il[fti].iatoms[j+4];
+            ang = RAD2DEG*dih_angle(md->mymol[i].x[ai],md->mymol[i].x[aj],
+                                    md->mymol[i].x[ak],md->mymol[i].x[al],
+                                    &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
+                                    &sign,&t1,&t2,&t3);
+            cai = ATP(ai);
+            caj = ATP(aj);
+            cak = ATP(ak);
+            cal = ATP(al);
+            add_dih(fp,molname,b,cai,caj,cak,cal,ang,dspacing,egdIDIHS);
         }
     }
     sort_bonds(b);
@@ -504,8 +552,8 @@ int main(int argc,char *argv[])
     
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);    
     
-    printf("Extracted %d bondtypes, %d angletypes and %d dihedraltypes.\n",
-           b->nbond,b->nangle,b->ndih);
+    printf("Extracted %d bondtypes, %d angletypes, %d dihedraltypes and %d impropertypes.\n",
+           b->nbond,b->nangle,b->ndih,b->nimp);
     
     ffclose(fp);
     thanx(stdout);

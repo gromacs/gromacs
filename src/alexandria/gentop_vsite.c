@@ -441,14 +441,16 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
     nlin_at = 0;
     for(i=0; (i<gvt->nlinear); i++) 
         nlin_at += gvt->lin[i].nline;
-        
-    printf("Generating %d linear ",nlin_at);
-    if (bGenVsites)
-        printf("vsites");
-    else
-        printf("angles");
-    printf(" and %d impropers\n",gvt->nplanar);
     
+    if (NULL != debug) 
+    {    
+        fprintf(debug,"Generating %d linear ",nlin_at);
+        if (bGenVsites)
+            fprintf(debug,"vsites");
+        else
+            fprintf(debug,"angles");
+        fprintf(debug," and %d impropers\n",gvt->nplanar);
+    }
     if ((gvt->egvt == egvtLINEAR) || (gvt->egvt == egvtALL))
     {
         /* If we use vsites (discouraged) each triplet of atoms in a linear arrangement 

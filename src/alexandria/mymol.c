@@ -348,7 +348,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     t_pbc    pbc;
     t_excls  *newexcls=NULL;
     t_params plist[F_NRE];
-      
+    
     init_plist(plist);
     mymol->qtotal  = gmx_molprop_get_charge(mp);
     mymol->mult    = gmx_molprop_get_multiplicity(mp);
@@ -449,6 +449,9 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                                           &(plist[ftb]),nbonds,mymol->smnames,pd,aps,
                                           mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
             imm = immAtomTypes;
+        gentop_vsite_generate_special(gvt,FALSE,mymol->atoms,&mymol->x,plist,
+                                      &(mymol->symtab),mymol->atype,&mymol->excls,pd);
+
         gentop_vsite_done(&gvt);
         close_symtab(&(mymol->symtab));
     }
@@ -616,11 +619,11 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         plist_to_mtop(pd,plist,&mymol->mtop);
         snew(mymol->f,mymol->nalloc);
         mymol->fr = mk_forcerec();
-        init_forcerec(debug,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
+        init_forcerec(NULL,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
                       mymol->box,FALSE,NULL,NULL,NULL,NULL,NULL, TRUE,-1);
         init_state(&mymol->state,mymol->atoms->nr,1,1,1);
         mymol->ltop = gmx_mtop_generate_local_top(&(mymol->mtop),&(mymol->ir));
-        mymol->md = init_mdatoms(debug,&mymol->mtop,FALSE);
+        mymol->md = init_mdatoms(NULL,&mymol->mtop,FALSE);
     }
     if (immOK != imm) 
     {
