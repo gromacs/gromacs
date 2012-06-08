@@ -808,12 +808,15 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
                   grpa,hb->a.grp[ia],a+1);
 
     if (bMerge)
-        if ((daSwap = isInterchangable(hb, d, a, grpd, grpa) || bContact) && d>a)
+    {
+        
+        if (isInterchangable(hb, d, a, grpd, grpa) && d>a)
             /* Then swap identity so that the id of d is lower then that of a.
              *
              * This should really be redundant by now, as is_hbond() now ought to return
              * hbNo in the cases where this conditional is TRUE. */
         {
+            daSwap = TRUE;
             k = d;
             d = a;
             a = k;
@@ -830,6 +833,7 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
                 gmx_fatal(FARGS,"Inconsistent acceptor groups, %d iso %d, atom %d",
                           grpa,hb->a.grp[ia],a+1);
         }
+    }
 
     if (hb->hbmap) {
         /* Loop over hydrogens to find which hydrogen is in this particular HB */
@@ -1488,12 +1492,13 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
     rvec_sub(x[d],x[a],r_da);
     /* Insert projection code here */
 
-    /* if (d>a && ((isInterchangable(hb, d, a, grpd, grpa) && bMerge) || bContact)) */
-/*         /\* Then this hbond will be found again, or it has already been found. *\/ */
-/*         return hbNo; */
-
+    if (bMerge && d>a && isInterchangable(hb, d, a, grpd, grpa))
+    {
+        /* Then this hbond/contact will be found again, or it has already been found. */
+        /*return hbNo;*/
+    }
     if (bBox){
-        if (d>a && bMerge && (bContact || isInterchangable(hb, d, a, grpd, grpa))) { /* acceptor is also a donor and vice versa? */
+        if (d>a && bMerge && isInterchangable(hb, d, a, grpd, grpa)) { /* acceptor is also a donor and vice versa? */
             /* return hbNo; */
             daSwap = TRUE; /* If so, then their history should be filed with donor and acceptor swapped. */
         }
@@ -1507,7 +1512,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
     rda2 = iprod(r_da,r_da);
   
     if (bContact) {
-        if (daSwap)
+        if (daSwap && grpa == grpd)
             return hbNo;
         if (rda2 <= rc2){
             if (hb->bGem){
