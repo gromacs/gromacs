@@ -125,8 +125,6 @@ static const char *help_distance[] = {
     "For the first two keywords, it is possible to specify a cutoff to speed",
     "up the evaluation: all distances above the specified cutoff are",
     "returned as equal to the cutoff.",
-    "Currently, this does nothing, but in the future, it allows the use of",
-    "grid-based neighborhood search techniques.",
 };
 
 /** \internal Selection method data for the \p distance method. */
