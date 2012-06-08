@@ -808,7 +808,7 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
                   grpa,hb->a.grp[ia],a+1);
 
     if (bMerge)
-        if ((daSwap = isInterchangable(hb, d, a, grpd, grpa) || bContact) && d>a)
+        if ((d>a || bContact) && (daSwap = isInterchangable(hb, d, a, grpd, grpa)))
             /* Then swap identity so that the id of d is lower then that of a.
              *
              * This should really be redundant by now, as is_hbond() now ought to return
@@ -1507,7 +1507,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
     rda2 = iprod(r_da,r_da);
   
     if (bContact) {
-        if (daSwap)
+        if (daSwap && grpa == grpd)
             return hbNo;
         if (rda2 <= rc2){
             if (hb->bGem){
