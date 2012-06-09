@@ -114,7 +114,7 @@ class CommandLineParser
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

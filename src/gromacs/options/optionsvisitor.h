@@ -144,7 +144,7 @@ class OptionsIterator
         /*! \brief
          * Creates an object for visiting options in a Options object.
          */
-        OptionsIterator(const Options &options);
+        explicit OptionsIterator(const Options &options);
 
         /*! \brief
          * Visits each subsection in the wrapped Options object.
@@ -157,7 +157,7 @@ class OptionsIterator
 
     private:
         //! The wrapped Options object.
-        const Options          &_options;
+        const Options          &options_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsIterator);
 };
@@ -236,7 +236,7 @@ class OptionsModifyingIterator
         /*! \brief
          * Creates an object for visiting options in a Options object.
          */
-        OptionsModifyingIterator(Options *options);
+        explicit OptionsModifyingIterator(Options *options);
 
         /*! \brief
          * Visits each subsection in the wrapped Options object.
@@ -249,7 +249,7 @@ class OptionsModifyingIterator
 
     private:
         //! The wrapped Options object.
-        Options                &_options;
+        Options                &options_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsModifyingIterator);
 };

@@ -108,27 +108,28 @@ class AbstractPlotModule::Impl
 
         void closeFile();
 
-        AnalysisDataPlotSettings settings;
-        std::string             fnm;
-        FILE                   *fp;
+        AnalysisDataPlotSettings settings_;
+        std::string             filename_;
+        FILE                   *fp_;
 
-        bool                    bPlain;
-        bool                    bOmitX;
-        std::string             title;
-        std::string             subtitle;
-        std::string             xlabel;
-        std::string             ylabel;
-        std::vector<std::string>  leg;
-        char                    xfmt[15];
-        char                    yfmt[15];
-        real                    xscale;
+        bool                    bPlain_;
+        bool                    gOmitX_;
+        std::string             title_;
+        std::string             subtitle_;
+        std::string             xlabel_;
+        std::string             ylabel_;
+        std::vector<std::string>  legend_;
+        char                    xformat_[15];
+        char                    yformat_[15];
+        real                    xscale_;
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
-    : settings(settings), fp(NULL), bPlain(false), bOmitX(false), xscale(1.0)
+    : settings_(settings), fp_(NULL), bPlain_(false), gOmitX_(false),
+      xscale_(1.0)
 {
-    strcpy(xfmt, "%11.3f");
-    strcpy(yfmt, " %8.3f");
+    strcpy(xformat_, "%11.3f");
+    strcpy(yformat_, " %8.3f");
 }
 
 AbstractPlotModule::Impl::~Impl()
@@ -140,17 +141,17 @@ AbstractPlotModule::Impl::~Impl()
 void
 AbstractPlotModule::Impl::closeFile()
 {
-    if (fp != NULL)
+    if (fp_ != NULL)
     {
-        if (bPlain)
+        if (bPlain_)
         {
-            gmx_fio_fclose(fp);
+            gmx_fio_fclose(fp_);
         }
         else
         {
-            xvgrclose(fp);
+            xvgrclose(fp_);
         }
-        fp = NULL;
+        fp_ = NULL;
     }
 }
 
@@ -160,12 +161,12 @@ AbstractPlotModule::Impl::closeFile()
  */
 /*! \cond libapi */
 AbstractPlotModule::AbstractPlotModule()
-    : _impl(new Impl(AnalysisDataPlotSettings()))
+    : impl_(new Impl(AnalysisDataPlotSettings()))
 {
 }
 
 AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
-    : _impl(new Impl(settings))
+    : impl_(new Impl(settings))
 {
 }
 //! \endcond
@@ -178,72 +179,72 @@ AbstractPlotModule::~AbstractPlotModule()
 void
 AbstractPlotModule::setSettings(const AnalysisDataPlotSettings &settings)
 {
-    _impl->settings = settings;
+    impl_->settings_ = settings;
 }
 
 
 void
-AbstractPlotModule::setFileName(const std::string &fnm)
+AbstractPlotModule::setFileName(const std::string &filename)
 {
-    _impl->fnm = fnm;
+    impl_->filename_ = filename;
 }
 
 
 void
 AbstractPlotModule::setPlainOutput(bool bPlain)
 {
-    _impl->bPlain = bPlain;
+    impl_->bPlain_ = bPlain;
 }
 
 
 void
 AbstractPlotModule::setOmitX(bool bOmitX)
 {
-    _impl->bOmitX = bOmitX;
+    impl_->gOmitX_ = bOmitX;
 }
 
 
 void
 AbstractPlotModule::setTitle(const char *title)
 {
-    _impl->title = title;
+    impl_->title_ = title;
 }
 
 
 void
 AbstractPlotModule::setSubtitle(const char *subtitle)
 {
-    _impl->subtitle = subtitle;
+    impl_->subtitle_ = subtitle;
 }
 
 
 void
 AbstractPlotModule::setXLabel(const char *label)
 {
-    _impl->xlabel = label;
+    impl_->xlabel_ = label;
 }
 
 
 void
 AbstractPlotModule::setXAxisIsTime()
 {
-    TimeUnitManager manager(_impl->settings.timeUnit());
-    _impl->xlabel = formatString("Time (%s)", manager.timeUnitAsString());
-    _impl->xscale = manager.inverseTimeScaleFactor();
+    TimeUnitManager manager(impl_->settings_.timeUnit());
+    impl_->xlabel_ = formatString("Time (%s)", manager.timeUnitAsString());
+    impl_->xscale_ = manager.inverseTimeScaleFactor();
 }
 
 
 void
 AbstractPlotModule::setYLabel(const char *label)
 {
-    _impl->ylabel = label;
+    impl_->ylabel_ = label;
 }
 
 
 void
 AbstractPlotModule::setLegend(int nsets, const char * const *setname)
 {
-    _impl->leg.reserve(_impl->leg.size() + nsets);
+    impl_->legend_.reserve(impl_->legend_.size() + nsets);
     for (int i = 0; i < nsets; ++i)
     {
         appendLegend(setname[i]);
@@ -254,29 +255,31 @@ AbstractPlotModule::setLegend(int nsets, const char * const *setname)
 void
 AbstractPlotModule::appendLegend(const char *setname)
 {
-    _impl->leg.push_back(setname);
+    impl_->legend_.push_back(setname);
 }
 
 
 void
-AbstractPlotModule::setXFormat(int width, int prec, char fmt)
+AbstractPlotModule::setXFormat(int width, int precision, char format)
 {
-    GMX_RELEASE_ASSERT(width >= 0 && prec >= 0 && width <= 99 && prec <= 99,
+    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
+                       && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", fmt) != NULL,
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != NULL,
                        "Invalid format specifier");
-    sprintf(_impl->xfmt, "%%%d.%d%c", width, prec, fmt);
+    sprintf(impl_->xformat_, "%%%d.%d%c", width, precision, format);
 }
 
 
 void
-AbstractPlotModule::setYFormat(int width, int prec, char fmt)
+AbstractPlotModule::setYFormat(int width, int precision, char format)
 {
-    GMX_RELEASE_ASSERT(width >= 0 && prec >= 0 && width <= 99 && prec <= 99,
+    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
+                       && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", fmt) != NULL,
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != NULL,
                        "Invalid format specifier");
-    sprintf(_impl->yfmt, " %%%d.%d%c", width, prec, fmt);
+    sprintf(impl_->yformat_, " %%%d.%d%c", width, precision, format);
 }
 
 
@@ -290,46 +293,46 @@ AbstractPlotModule::flags() const
 void
 AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
 {
-    if (!_impl->fnm.empty())
+    if (!impl_->filename_.empty())
     {
-        if (_impl->bPlain)
+        if (impl_->bPlain_)
         {
-            _impl->fp = gmx_fio_fopen(_impl->fnm.c_str(), "w");
+            impl_->fp_ = gmx_fio_fopen(impl_->filename_.c_str(), "w");
         }
         else
         {
             time_unit_t time_unit
-                = static_cast<time_unit_t>(_impl->settings.timeUnit() + 1);
+                = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
             xvg_format_t xvg_format
-                = (_impl->settings.plotFormat() > 0
-                    ? static_cast<xvg_format_t>(_impl->settings.plotFormat())
+                = (impl_->settings_.plotFormat() > 0
+                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                     : exvgNONE);
             output_env_t oenv;
             output_env_init(&oenv, 0, NULL, time_unit, FALSE, xvg_format, 0, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
-            _impl->fp = xvgropen(_impl->fnm.c_str(), _impl->title.c_str(),
-                                 _impl->xlabel.c_str(), _impl->ylabel.c_str(),
-                                 oenv);
+            impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
+                                  impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),
+                                  oenv);
             const SelectionCollection *selections
-                = _impl->settings.selectionCollection();
+                = impl_->settings_.selectionCollection();
             if (selections != NULL)
             {
-                selections->printXvgrInfo(_impl->fp, oenv);
+                selections->printXvgrInfo(impl_->fp_, oenv);
             }
-            if (!_impl->subtitle.empty())
+            if (!impl_->subtitle_.empty())
             {
-                xvgr_subtitle(_impl->fp, _impl->subtitle.c_str(), oenv);
+                xvgr_subtitle(impl_->fp_, impl_->subtitle_.c_str(), oenv);
             }
             if (output_env_get_print_xvgr_codes(oenv)
-                && !_impl->leg.empty())
+                && !impl_->legend_.empty())
             {
-                std::vector<const char *> leg;
-                leg.reserve(_impl->leg.size());
-                for (size_t i = 0; i < _impl->leg.size(); ++i)
+                std::vector<const char *> legend;
+                legend.reserve(impl_->legend_.size());
+                for (size_t i = 0; i < impl_->legend_.size(); ++i)
                 {
-                    leg.push_back(_impl->leg[i].c_str());
+                    legend.push_back(impl_->legend_[i].c_str());
                 }
-                xvgr_legend(_impl->fp, leg.size(), &leg[0], oenv);
+                xvgr_legend(impl_->fp_, legend.size(), &legend[0], oenv);
             }
         }
     }
@@ -343,9 +346,9 @@ AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
     {
         return;
     }
-    if (!_impl->bOmitX)
+    if (!impl_->gOmitX_)
     {
-        std::fprintf(_impl->fp, _impl->xfmt, frame.x() * _impl->xscale);
+        std::fprintf(impl_->fp_, impl_->xformat_, frame.x() * impl_->xscale_);
     }
 }
 
@@ -357,21 +360,21 @@ AbstractPlotModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
     {
         return;
     }
-    std::fprintf(_impl->fp, "\n");
+    std::fprintf(impl_->fp_, "\n");
 }
 
 
 void
 AbstractPlotModule::dataFinished()
 {
-    _impl->closeFile();
+    impl_->closeFile();
 }
 
 /*! \cond libapi */
 bool
 AbstractPlotModule::isFileOpen() const
 {
-    return _impl->fp != NULL;
+    return impl_->fp_ != NULL;
 }
 
 
@@ -379,7 +382,7 @@ void
 AbstractPlotModule::writeValue(real value) const
 {
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
-    std::fprintf(_impl->fp, _impl->yfmt, value);
+    std::fprintf(impl_->fp_, impl_->yformat_, value);
 }
 //! \endcond
 
@@ -420,9 +423,9 @@ AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
 {
     for (int i = 0; i < DIM; ++i)
     {
-        _bWrite[i] = true;
+        bWrite_[i] = true;
     }
-    _bWrite[DIM] = false;
+    bWrite_[DIM] = false;
 }
 
 
@@ -432,37 +435,37 @@ AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
 {
     for (int i = 0; i < DIM; ++i)
     {
-        _bWrite[i] = true;
+        bWrite_[i] = true;
     }
-    _bWrite[DIM] = false;
+    bWrite_[DIM] = false;
 }
 
 
 void
 AnalysisDataVectorPlotModule::setWriteX(bool bWrite)
 {
-    _bWrite[XX] = bWrite;
+    bWrite_[XX] = bWrite;
 }
 
 
 void
 AnalysisDataVectorPlotModule::setWriteY(bool bWrite)
 {
-    _bWrite[YY] = bWrite;
+    bWrite_[YY] = bWrite;
 }
 
 
 void
 AnalysisDataVectorPlotModule::setWriteZ(bool bWrite)
 {
-    _bWrite[ZZ] = bWrite;
+    bWrite_[ZZ] = bWrite;
 }
 
 
 void
 AnalysisDataVectorPlotModule::setWriteNorm(bool bWrite)
 {
-    _bWrite[DIM] = bWrite;
+    bWrite_[DIM] = bWrite;
 }
 
 
@@ -471,7 +474,7 @@ AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[DIM + 1])
 {
     for (int i = 0; i < DIM + 1; ++i)
     {
-        _bWrite[i] = bWrite[i];
+        bWrite_[i] = bWrite[i];
     }
 }
 
@@ -491,12 +494,12 @@ AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
     {
         for (int d = 0; d < DIM; ++d)
         {
-            if (_bWrite[i])
+            if (bWrite_[i])
             {
                 writeValue(points.y(i + d));
             }
         }
-        if (_bWrite[DIM])
+        if (bWrite_[DIM])
         {
             rvec y = { points.y(i), points.y(i + 1), points.y(i + 2) };
             writeValue(norm(y));

@@ -144,9 +144,9 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
         /*! \brief
          * Set the output file name.
          *
-         * If no file name is set (or if \p fnm is NULL), no output occurs.
+         * If no file name is set (or if \p filename is empty), no output occurs.
          */
-        void setFileName(const std::string &fnm);
+        void setFileName(const std::string &filename);
         /*! \brief
          * Set plain output.
          *
@@ -201,11 +201,11 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
         /*! \brief
          * Set field width and precision for X value output.
          */
-        void setXFormat(int width, int prec, char fmt = 'f');
+        void setXFormat(int width, int precision, char format = 'f');
         /*! \brief
          * Set field width and precision for Y value output.
          */
-        void setYFormat(int width, int prec, char fmt = 'f');
+        void setYFormat(int width, int precision, char format = 'f');
 
         virtual int flags() const;
 
@@ -239,7 +239,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 
@@ -303,7 +303,7 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 
     private:
-        bool                    _bWrite[4];
+        bool                    bWrite_[4];
 
         // Copy and assign disallowed by base.
 };

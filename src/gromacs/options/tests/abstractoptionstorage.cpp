@@ -126,26 +126,26 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
     public:
         //! Initializes an option with the given name.
         explicit MockOption(const char *name)
-            : MyBase(name), _storagePtr(NULL)
+            : MyBase(name), storagePtr_(NULL)
         {
         }
 
         //! Sets an output pointer to give access to the created storage object.
         MyClass &storageObject(MockOptionStorage **storagePtr)
-        { _storagePtr = storagePtr; return me(); }
+        { storagePtr_ = storagePtr; return me(); }
 
     private:
         virtual gmx::AbstractOptionStoragePointer createStorage() const
         {
             MockOptionStorage *storage = new MockOptionStorage(*this);
-            if (_storagePtr != NULL)
+            if (storagePtr_ != NULL)
             {
-                *_storagePtr = storage;
+                *storagePtr_ = storage;
             }
             return gmx::AbstractOptionStoragePointer(storage);
         }
 
-        MockOptionStorage     **_storagePtr;
+        MockOptionStorage     **storagePtr_;
 };
 
 MockOptionStorage::MockOptionStorage(const MockOption &settings)

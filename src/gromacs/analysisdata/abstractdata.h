@@ -131,7 +131,7 @@ class AbstractAnalysisData
          *
          * Does not throw.
          */
-        bool isMultipoint() const { return _bMultiPoint; }
+        bool isMultipoint() const { return bMultiPoint_; }
         /*! \brief
          * Returns the number of columns in the data.
          *
@@ -148,7 +148,7 @@ class AbstractAnalysisData
          *
          * Does not throw.
          */
-        int columnCount() const { return _ncol; }
+        int columnCount() const { return columnCount_; }
         /*! \brief
          * Returns the total number of frames in the data.
          *
@@ -270,7 +270,7 @@ class AbstractAnalysisData
         /*! \brief
          * Sets the number of columns.
          *
-         * \param[in] ncol  Number of columns in the data (must be > 0).
+         * \param[in] columnCount  Number of columns in the data (must be > 0).
          *
          * Can be called only before notifyDataStart(), otherwise asserts.
          * Multiple calls are only allowed if all of them occur before
@@ -286,7 +286,7 @@ class AbstractAnalysisData
          *
          * \see columnCount()
          */
-        void setColumnCount(int ncol);
+        void setColumnCount(int columnCount);
         /*! \brief
          * Sets whether the data has multiple points per column in a frame.
          *
@@ -415,9 +415,9 @@ class AbstractAnalysisData
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
-        int                     _ncol;
-        bool                    _bMultiPoint;
+        PrivateImplPointer<Impl> impl_;
+        int                     columnCount_;
+        bool                    bMultiPoint_;
 
         /*! \brief
          * Needed to provide access to notification methods.

@@ -195,7 +195,7 @@ class TestReferenceData
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -476,7 +476,7 @@ if (checker.checkPresent(bHaveVelocities, "Velocities"))
          */
         explicit TestReferenceChecker(Impl *impl);
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 
         /*! \brief
          * Needed to expose the constructor only to TestReferenceData.

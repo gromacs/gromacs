@@ -140,7 +140,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 {
     public:
         //! Initializes an option with the given name.
-        explicit DoubleOption(const char *name) : MyBase(name), _bTime(false)
+        explicit DoubleOption(const char *name) : MyBase(name), bTime_(false)
         {
         }
 
@@ -158,13 +158,13 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
          * user-provided values are scaled according to the time unit set in
          * TimeUnitManager.
          */
-        MyClass &timeValue() { _bTime = true; return me(); }
+        MyClass &timeValue() { bTime_ = true; return me(); }
 
     private:
         //! Creates a DoubleOptionStorage object.
         virtual AbstractOptionStoragePointer createStorage() const;
 
-        bool _bTime;
+        bool bTime_;
 
         /*! \brief
          * Needed to initialize DoubleOptionStorage from this class without
@@ -199,8 +199,8 @@ class StringOption : public OptionTemplate<std::string, StringOption>
     public:
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
-            : MyBase(name), _enumValues(NULL), _defaultEnumIndex(-1),
-              _enumIndexStore(NULL)
+            : MyBase(name), enumValues_(NULL), defaultEnumIndex_(-1),
+              enumIndexStore_(NULL)
         {
         }
 
@@ -221,7 +221,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * The strings are copied once the option is created.
          */
         MyClass &enumValue(const char *const *values)
-        { _enumValues = values; return me(); }
+        { enumValues_ = values; return me(); }
         /*! \brief
          * Sets the default value using an index into the enumeration table.
          *
@@ -230,7 +230,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         MyClass &defaultEnumIndex(int index)
         {
             GMX_RELEASE_ASSERT(index >= 0, "Invalid enumeration index");
-            _defaultEnumIndex = index;
+            defaultEnumIndex_ = index;
             return me();
         }
         /*! \brief
@@ -245,16 +245,16 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * Cannot be specified without enumValue().
          */
         MyClass &storeEnumIndex(int *store)
-        { _enumIndexStore = store; return me(); }
+        { enumIndexStore_ = store; return me(); }
 
     private:
         //! Creates a StringOptionStorage object.
         virtual AbstractOptionStoragePointer createStorage() const;
         virtual std::string createDescription() const;
 
-        const char *const      *_enumValues;
-        int                     _defaultEnumIndex;
-        int                    *_enumIndexStore;
+        const char *const      *enumValues_;
+        int                     defaultEnumIndex_;
+        int                    *enumIndexStore_;
 
         /*! \brief
          * Needed to initialize StringOptionStorage from this class without

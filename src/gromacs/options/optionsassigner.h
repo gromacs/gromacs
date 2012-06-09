@@ -86,7 +86,7 @@ class OptionsAssigner
         /*! \brief
          * Creates an object that assigns to the given object.
          */
-        OptionsAssigner(Options *options);
+        explicit OptionsAssigner(Options *options);
         ~OptionsAssigner();
 
         /*! \brief
@@ -104,7 +104,7 @@ class OptionsAssigner
          *
          * Does not throw.
          */
-        void setAcceptBooleanNoPrefix(bool enabled);
+        void setAcceptBooleanNoPrefix(bool bEnabled);
         /*! \brief
          * Sets the assigner to find options in non-active sections.
          *
@@ -120,7 +120,7 @@ class OptionsAssigner
          *
          * Does not throw.
          */
-        void setNoStrictSectioning(bool enabled);
+        void setNoStrictSectioning(bool bEnabled);
 
         /*! \brief
          * Start assigning values.
@@ -202,7 +202,7 @@ class OptionsAssigner
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

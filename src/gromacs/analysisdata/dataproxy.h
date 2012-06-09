@@ -66,13 +66,14 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         /*! \brief
          * Creates a proxy object that only presents certain columns.
          *
-         * \param[in] col   First column to present.
-         * \param[in] span  Number of columns to present.
-         * \param[in] data  Data object that should be wrapped.
+         * \param[in] firstColumn  First column to present.
+         * \param[in] columnSpan   Number of columns to present.
+         * \param[in] data         Data object that should be wrapped.
          *
          * Does not throw.
          */
-        AnalysisDataProxy(int col, int span, AbstractAnalysisData *data);
+        AnalysisDataProxy(int firstColumn, int columnSpan,
+                          AbstractAnalysisData *data);
 
         virtual int flags() const;
 
@@ -86,9 +87,9 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        AbstractAnalysisData   &_source;
-        int                     _col;
-        int                     _span;
+        AbstractAnalysisData   &source_;
+        int                     firstColumn_;
+        int                     columnSpan_;
 
         // Copy and assign disallowed by base.
 };

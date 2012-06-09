@@ -171,7 +171,7 @@ class Options
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 
         //! Needed to be able to extend the interface of this object.
         friend class OptionsAssigner;
