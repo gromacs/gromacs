@@ -62,14 +62,14 @@ class CommandLineParser::Impl
         explicit Impl(Options *options);
 
         //! Helper object for assigning the options.
-        OptionsAssigner         _assigner;
+        OptionsAssigner         assigner_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
-    : _assigner(options)
+    : assigner_(options)
 {
-    _assigner.setAcceptBooleanNoPrefix(true);
-    _assigner.setNoStrictSectioning(true);
+    assigner_.setAcceptBooleanNoPrefix(true);
+    assigner_.setNoStrictSectioning(true);
 }
 
 /********************************************************************
@@ -77,7 +77,7 @@ CommandLineParser::Impl::Impl(Options *options)
  */
 
 CommandLineParser::CommandLineParser(Options *options)
-    : _impl(new Impl(options))
+    : impl_(new Impl(options))
 {
 }
 
@@ -101,7 +101,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
     // Start in the discard phase to skip options that can't be understood.
     bool bDiscard = true;
 
-    _impl->_assigner.start();
+    impl_->assigner_.start();
     std::vector<std::string>::const_iterator arg;
     for (arg = commandLine->begin() + 1; arg != commandLine->end(); ++arg)
     {
@@ -112,7 +112,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
             {
                 try
                 {
-                    _impl->_assigner.finishOption();
+                    impl_->assigner_.finishOption();
                 }
                 catch (const UserInputError &ex)
                 {
@@ -125,7 +125,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
             try
             {
                 const char *name = arg->c_str() + 1;
-                _impl->_assigner.startOption(name);
+                impl_->assigner_.startOption(name);
             }
             catch (const UserInputError &ex)
             {
@@ -138,7 +138,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
         {
             try
             {
-                _impl->_assigner.appendValue(*arg);
+                impl_->assigner_.appendValue(*arg);
             }
             catch (const UserInputError &ex)
             {
@@ -150,7 +150,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
     {
         try
         {
-            _impl->_assigner.finishOption();
+            impl_->assigner_.finishOption();
         }
         catch (const UserInputError &ex)
         {
@@ -158,7 +158,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
         }
         errors.finishContext();
     }
-    _impl->_assigner.finish();
+    impl_->assigner_.finish();
     if (!errors.isEmpty())
     {
         // TODO: This exception type may not always be appropriate.

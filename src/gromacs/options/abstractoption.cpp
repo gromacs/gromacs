@@ -54,28 +54,28 @@ namespace gmx
 
 AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
                                              OptionFlags staticFlags)
-    : _flags(settings._flags | staticFlags),
-      _minValueCount(settings._minValueCount),
-      _maxValueCount(settings._maxValueCount),
-      _inSet(false)
+    : flags_(settings.flags_ | staticFlags),
+      minValueCount_(settings.minValueCount_),
+      maxValueCount_(settings.maxValueCount_),
+      inSet_(false)
 {
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.
-    if ((_maxValueCount < 0 || hasFlag(efMulti)) && hasFlag(efExternalStore))
+    if ((maxValueCount_ < 0 || hasFlag(efMulti)) && hasFlag(efExternalStore))
     {
         GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
     }
     // Check that user has not provided incorrect values for vectors.
-    if (hasFlag(efVector) && (_minValueCount > 1 || _maxValueCount < 1))
+    if (hasFlag(efVector) && (minValueCount_ > 1 || maxValueCount_ < 1))
     {
         GMX_THROW(APIError("Inconsistent value counts for vector values"));
     }
 
-    if (settings._name != NULL)
+    if (settings.name_ != NULL)
     {
-        _name  = settings._name;
+        name_  = settings.name_;
     }
-    _descr = settings.createDescription();
+    descr_ = settings.createDescription();
 }
 
 AbstractOptionStorage::~AbstractOptionStorage()
@@ -94,7 +94,7 @@ void AbstractOptionStorage::startSource()
 
 void AbstractOptionStorage::startSet()
 {
-    GMX_RELEASE_ASSERT(!_inSet, "finishSet() not called");
+    GMX_RELEASE_ASSERT(!inSet_, "finishSet() not called");
     // The last condition takes care of the situation where multiple
     // sources are used, and a later source should be able to reassign
     // the value even though the option is already set.
@@ -103,19 +103,19 @@ void AbstractOptionStorage::startSet()
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
     clearSet();
-    _inSet = true;
+    inSet_ = true;
 }
 
 void AbstractOptionStorage::appendValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(_inSet, "startSet() not called");
+    GMX_RELEASE_ASSERT(inSet_, "startSet() not called");
     convertValue(value);
 }
 
 void AbstractOptionStorage::finishSet()
 {
-    GMX_RELEASE_ASSERT(_inSet, "startSet() not called");
-    _inSet = false;
+    GMX_RELEASE_ASSERT(inSet_, "startSet() not called");
+    inSet_ = false;
     // TODO: Should this be done only when processSet() does not throw?
     setFlag(efSet);
     processSet();
@@ -123,7 +123,7 @@ void AbstractOptionStorage::finishSet()
 
 void AbstractOptionStorage::finish()
 {
-    GMX_RELEASE_ASSERT(!_inSet, "finishSet() not called");
+    GMX_RELEASE_ASSERT(!inSet_, "finishSet() not called");
     processAll();
     if (hasFlag(efRequired) && !isSet())
     {
@@ -136,9 +136,9 @@ void AbstractOptionStorage::setMinValueCount(int count)
     GMX_RELEASE_ASSERT(!hasFlag(efMulti),
                        "setMinValueCount() not supported with efMulti");
     GMX_RELEASE_ASSERT(count >= 0, "Invalid value count");
-    _minValueCount = count;
+    minValueCount_ = count;
     if (isSet()
-        && !hasFlag(efDontCheckMinimumCount) && valueCount() < _minValueCount)
+        && !hasFlag(efDontCheckMinimumCount) && valueCount() < minValueCount_)
     {
         GMX_THROW(InvalidInputError("Too few values"));
     }
@@ -149,8 +149,8 @@ void AbstractOptionStorage::setMaxValueCount(int count)
     GMX_RELEASE_ASSERT(!hasFlag(efMulti),
                        "setMaxValueCount() not supported with efMulti");
     GMX_RELEASE_ASSERT(count >= -1, "Invalid value count");
-    _maxValueCount = count;
-    if (isSet() && _maxValueCount >= 0 && valueCount() > _maxValueCount)
+    maxValueCount_ = count;
+    if (isSet() && maxValueCount_ >= 0 && valueCount() > maxValueCount_)
     {
         GMX_THROW(InvalidInputError("Too many values"));
     }

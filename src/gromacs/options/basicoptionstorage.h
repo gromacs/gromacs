@@ -144,17 +144,17 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
         explicit StringOptionStorage(const StringOption &settings);
 
-        virtual OptionInfo &optionInfo() { return _info; }
-        virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual const char *typeString() const { return allowed_.empty() ? "string" : "enum"; }
         virtual std::string formatSingleValue(const std::string &value) const;
 
     private:
         virtual void convertValue(const std::string &value);
         virtual void refreshValues();
 
-        StringOptionInfo        _info;
-        ValueList               _allowed;
-        int                    *_enumIndexStore;
+        StringOptionInfo        info_;
+        ValueList               allowed_;
+        int                    *enumIndexStore_;
 };
 
 /*!\}*/

@@ -165,7 +165,7 @@ AbstractOptionStoragePointer IntegerOption::createStorage() const
  */
 
 DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
-    : MyBase(settings), info_(this), bTime_(settings._bTime), factor_(1.0)
+    : MyBase(settings), info_(this), bTime_(settings.bTime_), factor_(1.0)
 {
 }
 
@@ -263,32 +263,32 @@ AbstractOptionStoragePointer DoubleOption::createStorage() const
  */
 
 StringOptionStorage::StringOptionStorage(const StringOption &settings)
-    : MyBase(settings), _info(this), _enumIndexStore(NULL)
+    : MyBase(settings), info_(this), enumIndexStore_(NULL)
 {
-    if (settings._defaultEnumIndex >= 0 && settings._enumValues == NULL)
+    if (settings.defaultEnumIndex_ >= 0 && settings.enumValues_ == NULL)
     {
         GMX_THROW(APIError("Cannot set default enum index without enum values"));
     }
-    if (settings._enumIndexStore != NULL && settings._enumValues == NULL)
+    if (settings.enumIndexStore_ != NULL && settings.enumValues_ == NULL)
     {
         GMX_THROW(APIError("Cannot set enum index store without enum values"));
     }
-    if (settings._enumIndexStore != NULL && settings._maxValueCount < 0)
+    if (settings.enumIndexStore_ != NULL && settings.maxValueCount_ < 0)
     {
         GMX_THROW(APIError("Cannot set enum index store with arbitrary number of values"));
     }
-    if (settings._enumValues != NULL)
+    if (settings.enumValues_ != NULL)
     {
-        _enumIndexStore = settings._enumIndexStore;
+        enumIndexStore_ = settings.enumIndexStore_;
         const std::string *defaultValue = settings.defaultValue();
         int match = -1;
-        for (int i = 0; settings._enumValues[i] != NULL; ++i)
+        for (int i = 0; settings.enumValues_[i] != NULL; ++i)
         {
-            if (defaultValue != NULL && settings._enumValues[i] == *defaultValue)
+            if (defaultValue != NULL && settings.enumValues_[i] == *defaultValue)
             {
                 match = i;
             }
-            _allowed.push_back(settings._enumValues[i]);
+            allowed_.push_back(settings.enumValues_[i]);
         }
         if (defaultValue != NULL)
         {
@@ -297,27 +297,27 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
                 GMX_THROW(APIError("Default value is not one of allowed values"));
             }
         }
-        if (settings._defaultEnumIndex >= 0)
+        if (settings.defaultEnumIndex_ >= 0)
         {
-            if (settings._defaultEnumIndex >= static_cast<int>(_allowed.size()))
+            if (settings.defaultEnumIndex_ >= static_cast<int>(allowed_.size()))
             {
                 GMX_THROW(APIError("Default enumeration index is out of range"));
             }
-            if (defaultValue != NULL && *defaultValue != _allowed[settings._defaultEnumIndex])
+            if (defaultValue != NULL && *defaultValue != allowed_[settings.defaultEnumIndex_])
             {
                 GMX_THROW(APIError("Conflicting default values"));
             }
         }
         // If there is no default value, match is still -1.
-        if (_enumIndexStore != NULL)
+        if (enumIndexStore_ != NULL)
         {
-            *_enumIndexStore = match;
+            *enumIndexStore_ = match;
         }
     }
-    if (settings._defaultEnumIndex >= 0)
+    if (settings.defaultEnumIndex_ >= 0)
     {
         clear();
-        addValue(_allowed[settings._defaultEnumIndex]);
+        addValue(allowed_[settings.defaultEnumIndex_]);
         commitValues();
     }
 }
@@ -329,26 +329,26 @@ std::string StringOptionStorage::formatSingleValue(const std::string &value) con
 
 void StringOptionStorage::convertValue(const std::string &value)
 {
-    if (_allowed.size() == 0)
+    if (allowed_.size() == 0)
     {
         addValue(value);
     }
     else
     {
         ValueList::const_iterator  i;
-        ValueList::const_iterator  match = _allowed.end();
-        for (i = _allowed.begin(); i != _allowed.end(); ++i)
+        ValueList::const_iterator  match = allowed_.end();
+        for (i = allowed_.begin(); i != allowed_.end(); ++i)
         {
             // TODO: Case independence.
             if (i->find(value) == 0)
             {
-                if (match == _allowed.end() || i->size() < match->size())
+                if (match == allowed_.end() || i->size() < match->size())
                 {
                     match = i;
                 }
             }
         }
-        if (match == _allowed.end())
+        if (match == allowed_.end())
         {
             GMX_THROW(InvalidInputError("Invalid value: " + value));
         }
@@ -359,15 +359,15 @@ void StringOptionStorage::convertValue(const std::string &value)
 void StringOptionStorage::refreshValues()
 {
     MyBase::refreshValues();
-    if (_enumIndexStore != NULL)
+    if (enumIndexStore_ != NULL)
     {
         for (size_t i = 0; i < values().size(); ++i)
         {
             ValueList::const_iterator match =
-                std::find(_allowed.begin(), _allowed.end(), values()[i]);
-            GMX_ASSERT(match != _allowed.end(),
+                std::find(allowed_.begin(), allowed_.end(), values()[i]);
+            GMX_ASSERT(match != allowed_.end(),
                        "Enum value not found (internal error)");
-            _enumIndexStore[i] = static_cast<int>(match - _allowed.begin());
+            enumIndexStore_[i] = static_cast<int>(match - allowed_.begin());
         }
     }
 }
@@ -394,15 +394,15 @@ std::string StringOption::createDescription() const
 {
     std::string value(MyBase::createDescription());
 
-    if (_enumValues != NULL)
+    if (enumValues_ != NULL)
     {
         value.append(": ");
-        for (int i = 0; _enumValues[i] != NULL; ++i)
+        for (int i = 0; enumValues_[i] != NULL; ++i)
         {
-            value.append(_enumValues[i]);
-            if (_enumValues[i + 1] != NULL)
+            value.append(enumValues_[i]);
+            if (enumValues_[i + 1] != NULL)
             {
-                value.append(_enumValues[i + 2] != NULL ? ", " : ", or ");
+                value.append(enumValues_[i + 2] != NULL ? ", " : ", or ");
             }
         }
     }

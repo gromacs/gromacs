@@ -99,9 +99,9 @@ class AbstractOptionStorage
         //! Returns true if the option is required.
         bool isRequired() const { return hasFlag(efRequired); }
         //! Returns the name of the option.
-        const std::string &name() const { return _name; }
+        const std::string &name() const { return name_; }
         //! Returns the description of the option.
-        const std::string &description() const { return _descr; }
+        const std::string &description() const { return descr_; }
 
         /*! \brief
          * Returns an option info object corresponding to this option.
@@ -200,16 +200,16 @@ class AbstractOptionStorage
                               OptionFlags staticFlags);
 
         //! Returns true if the given flag is set.
-        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
+        bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
         //! Sets the given flag.
-        void setFlag(OptionFlag flag) { return _flags.set(flag); }
+        void setFlag(OptionFlag flag) { return flags_.set(flag); }
         //! Clears the given flag.
-        void clearFlag(OptionFlag flag) { return _flags.clear(flag); }
+        void clearFlag(OptionFlag flag) { return flags_.clear(flag); }
 
         //! Returns the minimum number of values required in one set.
-        int minValueCount() const { return _minValueCount; }
+        int minValueCount() const { return minValueCount_; }
         //! Returns the maximum allowed number of values in one set (-1 = no limit).
-        int maxValueCount() const { return _maxValueCount; }
+        int maxValueCount() const { return maxValueCount_; }
         /*! \brief
          * Sets a new minimum number of values required in one set.
          *
@@ -291,16 +291,16 @@ class AbstractOptionStorage
         virtual void processAll() = 0;
 
     private:
-        std::string             _name;
-        std::string             _descr;
+        std::string             name_;
+        std::string             descr_;
         //! Flags for the option.
-        OptionFlags             _flags;
+        OptionFlags             flags_;
         //! Minimum number of values required (in one set).
-        int                     _minValueCount;
+        int                     minValueCount_;
         //! Maximum allowed number of values (in one set), or -1 if no limit.
-        int                     _maxValueCount;
+        int                     maxValueCount_;
         //! Whether we are currently assigning values to a set.
-        bool                    _inSet;
+        bool                    inSet_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };

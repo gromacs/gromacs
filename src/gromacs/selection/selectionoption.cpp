@@ -61,13 +61,13 @@ namespace gmx
 
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
     : MyBase(settings, OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
-      info_(this), manager_(NULL), selectionFlags_(settings._selectionFlags)
+      info_(this), manager_(NULL), selectionFlags_(settings.selectionFlags_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efMulti),
                        "allowMultiple() is not supported for selection options");
-    if (settings._infoPtr != NULL)
+    if (settings.infoPtr_ != NULL)
     {
-        *settings._infoPtr = &info_;
+        *settings.infoPtr_ = &info_;
     }
 }
 

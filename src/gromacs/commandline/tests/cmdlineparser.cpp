@@ -58,23 +58,23 @@ class CommandLineParserTest : public ::testing::Test
     public:
         CommandLineParserTest();
 
-        gmx::Options            _options;
-        gmx::CommandLineParser  _parser;
-        bool                    _flag;
-        std::vector<int>        _ivalues;
-        std::vector<double>     _dvalues;
+        gmx::Options            options_;
+        gmx::CommandLineParser  parser_;
+        bool                    flag_;
+        std::vector<int>        ivalues_;
+        std::vector<double>     dvalues_;
 };
 
 CommandLineParserTest::CommandLineParserTest()
-    : _options(NULL, NULL), _parser(&_options),
-      _flag(false)
+    : options_(NULL, NULL), parser_(&options_),
+      flag_(false)
 {
     using gmx::BooleanOption;
     using gmx::IntegerOption;
     using gmx::DoubleOption;
-    _options.addOption(BooleanOption("flag").store(&_flag));
-    _options.addOption(IntegerOption("mvi").storeVector(&_ivalues).multiValue());
-    _options.addOption(DoubleOption("mvd").storeVector(&_dvalues).allowMultiple());
+    options_.addOption(BooleanOption("flag").store(&flag_));
+    options_.addOption(IntegerOption("mvi").storeVector(&ivalues_).multiValue());
+    options_.addOption(DoubleOption("mvd").storeVector(&dvalues_).allowMultiple());
 }
 
 TEST_F(CommandLineParserTest, HandlesSingleValues)
@@ -83,14 +83,14 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
         "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
     };
     CommandLine args(CommandLine::create(cmdline));
-    ASSERT_NO_THROW(_parser.parse(&args.argc(), args.argv()));
-    ASSERT_NO_THROW(_options.finish());
+    ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW(options_.finish());
 
-    EXPECT_TRUE(_flag);
-    ASSERT_EQ(1U, _ivalues.size());
-    EXPECT_EQ(2, _ivalues[0]);
-    ASSERT_EQ(1U, _dvalues.size());
-    EXPECT_DOUBLE_EQ(2.7, _dvalues[0]);
+    EXPECT_TRUE(flag_);
+    ASSERT_EQ(1U, ivalues_.size());
+    EXPECT_EQ(2, ivalues_[0]);
+    ASSERT_EQ(1U, dvalues_.size());
+    EXPECT_DOUBLE_EQ(2.7, dvalues_[0]);
 }
 
 TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
@@ -99,14 +99,14 @@ TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
         "test", "-mvi", "1", "-2", "-mvd", "-2.7"
     };
     CommandLine args(CommandLine::create(cmdline));
-    ASSERT_NO_THROW(_parser.parse(&args.argc(), args.argv()));
-    ASSERT_NO_THROW(_options.finish());
+    ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW(options_.finish());
 
-    ASSERT_EQ(2U, _ivalues.size());
-    EXPECT_EQ(1, _ivalues[0]);
-    EXPECT_EQ(-2, _ivalues[1]);
-    ASSERT_EQ(1U, _dvalues.size());
-    EXPECT_DOUBLE_EQ(-2.7, _dvalues[0]);
+    ASSERT_EQ(2U, ivalues_.size());
+    EXPECT_EQ(1, ivalues_[0]);
+    EXPECT_EQ(-2, ivalues_[1]);
+    ASSERT_EQ(1U, dvalues_.size());
+    EXPECT_DOUBLE_EQ(-2.7, dvalues_[0]);
 }
 
 } // namespace
