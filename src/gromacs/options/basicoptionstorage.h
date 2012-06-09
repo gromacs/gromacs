@@ -97,7 +97,7 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const
-        { return hasFlag(efVector) ? "vector" : "int"; }
+        { return isVector() ? "vector" : "int"; }
         virtual std::string formatSingleValue(const int &value) const;
 
     private:

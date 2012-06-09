@@ -57,34 +57,30 @@ namespace gmx
 enum OptionFlag
 {
     //! %Option has been set.
-    efSet                 = 1<<0,
+    efOption_Set                        = 1<<0,
     //! The current value of the option is a programmatic default value.
-    efHasDefaultValue     = 1<<1,
+    efOption_HasDefaultValue            = 1<<1,
     /*! \brief
      * Next assignment to the option clears old values.
      *
      * This flag is set when a new option source starts, such that values
      * from the new source will overwrite old ones.
      */
-    efClearOnNextSet      = 1<<5,
+    efOption_ClearOnNextSet             = 1<<2,
     //! %Option is required to be set.
-    efRequired            = 1<<2,
+    efOption_Required                   = 1<<4,
     //! %Option can be specified multiple times.
-    efMulti               = 1<<3,
+    efOption_MultipleTimes              = 1<<5,
     //! %Option is hidden from standard help.
-    efHidden              = 1<<4,
+    efOption_Hidden                     = 1<<6,
     /*! \brief
      * %Option value is a vector, but a single value is also accepted.
      *
-     * If only a single value is provided, the storage object should fill the
-     * whole vector with that value.  The length of the vector must be fixed.
-     * The default length is 3 elements.
+     * \see AbstractOption::setVector()
      */
-    efVector              = 1<<6,
-    efExternalStore       = 1<<8,
-    efExternalValueVector = 1<<10,
+    efOption_Vector                     = 1<<8,
     //! %Option does not support default values.
-    efNoDefaultValue      = 1<<7,
+    efOption_NoDefaultValue             = 1<<9,
     /*! \brief
      * Storage object does its custom checking for minimum value count.
      *
@@ -94,13 +90,7 @@ enum OptionFlag
      * This is useful to override the default check, which is done in
      * OptionStorageTemplate::processSet().
      */
-    efDontCheckMinimumCount     = 1<<16,
-    //efDynamic             = 1<<16,
-    //efRanges              = 1<<17,
-    //efEnum                = 1<<18,
-    //efStaticEnum          = 1<<19,
-    //efVarNum              = 1<<20,
-    //efAtomVal             = 1<<21,
+    efOption_DontCheckMinimumCount      = 1<<10
 };
 
 //! \libinternal Holds a combination of ::OptionFlag values.

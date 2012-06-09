@@ -72,7 +72,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          * in which case SelectionPosition::hasVelocity() returns false.
          */
         MyClass &evaluateVelocities()
-        { selectionFlags_.set(efEvaluateVelocities); return me(); }
+        { selectionFlags_.set(efSelection_EvaluateVelocities); return me(); }
         /*! \brief
          * Request force evaluation for output positions.
          *
@@ -80,19 +80,19 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          * in which case SelectionPosition::hasForce() returns false.
          */
         MyClass &evaluateForces()
-        { selectionFlags_.set(efEvaluateForces); return me(); }
+        { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
         /*! \brief
          * Only accept selections that evaluate to atom positions.
          *
          * TODO: This option is not yet implemented.
          */
         MyClass &onlyAtoms()
-        { selectionFlags_.set(efOnlyAtoms); return me(); }
+        { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
         /*! \brief
          * Only accept static selections for this option.
          */
         MyClass &onlyStatic()
-        { selectionFlags_.set(efOnlyStatic); return me(); }
+        { selectionFlags_.set(efSelection_OnlyStatic); return me(); }
         /*! \brief
          * Handle dynamic selections for this option with position masks.
          *
@@ -100,14 +100,14 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          * \see SelectionPosition::selected()
          */
         MyClass &dynamicMask()
-        { selectionFlags_.set(efDynamicMask); return me(); }
+        { selectionFlags_.set(efSelection_DynamicMask); return me(); }
         /*! \brief
          * Disallow using atom coordinates as the reference positions.
          *
          * TODO: This option is not yet implemented.
          */
         MyClass &dynamicOnlyWhole()
-        { selectionFlags_.set(efDynamicOnlyWhole); return me(); }
+        { selectionFlags_.set(efSelection_DynamicOnlyWhole); return me(); }
 
         /*! \brief
          * Get an info object that can be used to alter the option after

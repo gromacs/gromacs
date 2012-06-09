@@ -85,7 +85,7 @@ class AbstractOptionStorage
         virtual ~AbstractOptionStorage();
 
         //! Returns true if the option has been set.
-        bool isSet() const { return hasFlag(efSet); }
+        bool isSet() const { return hasFlag(efOption_Set); }
         /*! \brief
          * Returns true if the option is a boolean option.
          *
@@ -95,9 +95,11 @@ class AbstractOptionStorage
          */
         bool isBoolean() const;
         //! Returns true if the option is a hidden option.
-        bool isHidden() const { return hasFlag(efHidden); }
+        bool isHidden() const { return hasFlag(efOption_Hidden); }
         //! Returns true if the option is required.
-        bool isRequired() const { return hasFlag(efRequired); }
+        bool isRequired() const { return hasFlag(efOption_Required); }
+        //! Returns true if the option is vector-valued.
+        bool isVector() const { return hasFlag(efOption_Vector); }
         //! Returns the name of the option.
         const std::string &name() const { return name_; }
         //! Returns the description of the option.
@@ -199,6 +201,8 @@ class AbstractOptionStorage
         AbstractOptionStorage(const AbstractOption &settings,
                               OptionFlags staticFlags);
 
+        //! Marks the option as set.
+        void markAsSet() { flags_.set(efOption_Set); }
         //! Returns true if the given flag is set.
         bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
         //! Sets the given flag.
@@ -219,8 +223,9 @@ class AbstractOptionStorage
          * If values have already been provided, it is checked that there are
          * enough.
          *
-         * Cannot be called for options with ::efMulti set, because it is
-         * impossible to check the requirement after the values have been set.
+         * Cannot be called for options with ::efOption_MultipleTimes set,
+         * because it is impossible to check the requirement after the values
+         * have been set.
          * If attempted, will assert.
          */
         void setMinValueCount(int count);
@@ -234,8 +239,9 @@ class AbstractOptionStorage
          * If values have already been provided, it is checked that there are
          * not too many.
          *
-         * Cannot be called for options with ::efMulti set, because it is
-         * impossible to check the requirement after the values have been set.
+         * Cannot be called for options with ::efOption_MultipleTimes set,
+         * because it is impossible to check the requirement after the values
+         * have been set.
          * If attempted, will assert.
          */
         void setMaxValueCount(int count);

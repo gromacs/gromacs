@@ -113,8 +113,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * \throws  APIError if invalid settings have been provided.
          */
         template <class U>
-        OptionStorageTemplate(const OptionTemplate<T, U> &settings,
-                              OptionFlags staticFlags = OptionFlags());
+        explicit OptionStorageTemplate(const OptionTemplate<T, U> &settings,
+                                       OptionFlags staticFlags = OptionFlags());
 
 
         virtual void clearSet();
@@ -273,28 +273,31 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
       store_(settings.store_),
       countptr_(settings.countptr_)
 {
+    // If the maximum number of values is not known, storage to
+    // caller-allocated memory is unsafe.
+    if (store_ != NULL && (maxValueCount() < 0 || hasFlag(efOption_MultipleTimes)))
+    {
+        GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
+    }
     if (values_ == NULL)
     {
-        // The flag should be set for proper error checking.
-        GMX_RELEASE_ASSERT(!hasFlag(efExternalValueVector),
-                           "Internal inconsistency");
         ownedValues_.reset(new std::vector<T>);
         values_ = ownedValues_.get();
     }
-    if (hasFlag(efNoDefaultValue)
+    if (hasFlag(efOption_NoDefaultValue)
         && (settings.defaultValue_ != NULL
             || settings.defaultValueIfSet_ != NULL))
     {
         GMX_THROW(APIError("Option does not support default value, but one is set"));
     }
-    if (store_ != NULL && countptr_ == NULL && !hasFlag(efVector)
+    if (store_ != NULL && countptr_ == NULL && !isVector()
         && minValueCount() != maxValueCount())
     {
         GMX_THROW(APIError("Count storage is not set, although the number of produced values is not known"));
     }
-    if (!hasFlag(efNoDefaultValue))
+    if (!hasFlag(efOption_NoDefaultValue))
     {
-        setFlag(efHasDefaultValue);
+        setFlag(efOption_HasDefaultValue);
         if (settings.defaultValue_ != NULL)
         {
             values_->clear();
@@ -314,14 +317,13 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         }
         if (settings.defaultValueIfSet_ != NULL)
         {
-            if (hasFlag(efMulti))
+            if (hasFlag(efOption_MultipleTimes))
             {
                 GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
             }
             defaultValueIfSet_.reset(new T(*settings.defaultValueIfSet_));
         }
     }
-    setFlag(efClearOnNextSet);
 }
 
 
@@ -362,16 +364,15 @@ void OptionStorageTemplate<T>::processSet()
     if (setValues_.empty() && defaultValueIfSet_.get() != NULL)
     {
         addValue(*defaultValueIfSet_);
-        setFlag(efHasDefaultValue);
+        setFlag(efOption_HasDefaultValue);
     }
     else
     {
-        clearFlag(efHasDefaultValue);
+        clearFlag(efOption_HasDefaultValue);
     }
-    if (!hasFlag(efDontCheckMinimumCount)
+    if (!hasFlag(efOption_DontCheckMinimumCount)
         && setValues_.size() < static_cast<size_t>(minValueCount()))
     {
-        clearSet();
         GMX_THROW(InvalidInputError("Too few (valid) values"));
     }
     commitValues();
@@ -393,10 +394,9 @@ void OptionStorageTemplate<T>::addValue(const T &value)
 template <typename T>
 void OptionStorageTemplate<T>::commitValues()
 {
-    if (hasFlag(efClearOnNextSet))
+    if (hasFlag(efOption_ClearOnNextSet))
     {
         values_->swap(setValues_);
-        clearFlag(efClearOnNextSet);
     }
     else
     {

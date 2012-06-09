@@ -137,11 +137,24 @@ class AbstractOption
         //! Sets or clears a flag for the option.
         void setFlag(OptionFlag flag, bool bSet) { flags_.set(flag, bSet); }
         //! Returns true if the option is vector-valued.
-        bool isVector() const { return hasFlag(efVector); }
-        //! Sets the option to be vector-valued.
+        bool isVector() const { return hasFlag(efOption_Vector); }
+        /*! \brief
+         * Sets the option to be vector-valued.
+         *
+         * This method is provided for convenience to make management of value
+         * counts easier.  In order to implement a vector-valued option, the
+         * class derived from AbstractOption should expose a method that calls
+         * this method, and the storage object derived from
+         * AbstractOptionStorage should check isVector().
+         * If only a single value is provided, the storage object should fill
+         * the whole vector with that value.
+         *
+         * The length of the vector (the value of maxValueCount_) must be
+         * fixed.  The default length is 3 elements.
+         */
         void setVector()
         {
-            setFlag(efVector);
+            setFlag(efOption_Vector);
             minValueCount_ = 1;
             if (maxValueCount_ == 1)
             {
@@ -151,7 +164,7 @@ class AbstractOption
         //! Sets the required number of values for the option.
         void setValueCount(int count)
         {
-            if (!hasFlag(efVector))
+            if (!hasFlag(efOption_Vector))
             {
                 minValueCount_ = count;
             }
@@ -225,13 +238,13 @@ class OptionTemplate : public AbstractOption
         { setDescription(descr); return me(); }
         //! Hides the option from normal help output.
         MyClass &hidden(bool bHidden = true)
-        { setFlag(efHidden, bHidden); return me(); }
+        { setFlag(efOption_Hidden, bHidden); return me(); }
         //! Requires the option to be specified explicitly.
         MyClass &required(bool bRequired = true)
-        { setFlag(efRequired, bRequired); return me(); }
+        { setFlag(efOption_Required, bRequired); return me(); }
         //! Allows the option to be specified multiple times.
         MyClass &allowMultiple(bool bMulti = true)
-        { setFlag(efMulti, bMulti); return me(); }
+        { setFlag(efOption_MultipleTimes, bMulti); return me(); }
         //! Requires exactly \p count values for the option.
         MyClass &valueCount(int count) { setValueCount(count); return me(); }
         //! Allows any number of values for the option.
@@ -284,7 +297,7 @@ class OptionTemplate : public AbstractOption
          * Options object exists.
          */
         MyClass &store(T *store)
-        { setFlag(efExternalStore); store_ = store; return me(); }
+        { store_ = store; return me(); }
         /*! \brief
          * Stores number of values in the value pointed by \p countptr.
          *
@@ -312,7 +325,7 @@ class OptionTemplate : public AbstractOption
          * Options object exists.
          */
         MyClass &storeVector(std::vector<T> *store)
-        { setFlag(efExternalValueVector); storeVector_ = store; return me(); }
+        { storeVector_ = store; return me(); }
 
     protected:
         /*! \cond libapi */
