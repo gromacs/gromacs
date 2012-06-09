@@ -81,16 +81,14 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         {
             addValue("dummy");
         }
-        /*! \brief
-         * Calls setFlag(efSet).
-         */
-        void setOption()
-        {
-            setFlag(gmx::efSet);
-        }
+        // using MyBase::markAsSet;
         // using MyBase::addValue;
         // using MyBase::commitValues;
         // "using" is correct but MSVC gives error C2248. Workaround:
+        void markAsSet()
+        {
+            MyBase::markAsSet();
+        }
         void addValue(const std::string &value)
         {
             MyBase::addValue(value);
@@ -176,7 +174,7 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
         using ::testing::DoAll;
         using ::testing::InvokeWithoutArgs;
         EXPECT_CALL(*mock, processAll())
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::setOption),
+            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::markAsSet),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
     }

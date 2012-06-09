@@ -568,15 +568,15 @@ init_pos_keyword_defaults(t_selelem *root, const char *spost, const char *rpost,
         int flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
         if (bSelection)
         {
-            if (sel->hasFlag(gmx::efDynamicMask))
+            if (sel->hasFlag(gmx::efSelection_DynamicMask))
             {
                 flags |= POS_MASKONLY;
             }
-            if (sel->hasFlag(gmx::efEvaluateVelocities))
+            if (sel->hasFlag(gmx::efSelection_EvaluateVelocities))
             {
                 flags |= POS_VELOCITIES;
             }
-            if (sel->hasFlag(gmx::efEvaluateForces))
+            if (sel->hasFlag(gmx::efSelection_EvaluateForces))
             {
                 flags |= POS_FORCES;
             }

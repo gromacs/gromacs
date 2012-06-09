@@ -135,7 +135,7 @@ void IntegerOptionStorage::convertValue(const std::string &value)
 
 void IntegerOptionStorage::processSetValues(ValueList *values)
 {
-    if (hasFlag(efVector))
+    if (isVector())
     {
         expandVector(maxValueCount(), values);
     }
@@ -171,7 +171,7 @@ DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
 
 const char *DoubleOptionStorage::typeString() const
 {
-    return hasFlag(efVector) ? "vector" : (isTime() ? "time" : "double");
+    return isVector() ? "vector" : (isTime() ? "time" : "double");
 }
 
 std::string DoubleOptionStorage::formatSingleValue(const double &value) const
@@ -193,7 +193,7 @@ void DoubleOptionStorage::convertValue(const std::string &value)
 
 void DoubleOptionStorage::processSetValues(ValueList *values)
 {
-    if (hasFlag(efVector))
+    if (isVector())
     {
         expandVector(maxValueCount(), values);
     }
@@ -206,7 +206,7 @@ void DoubleOptionStorage::processAll()
 void DoubleOptionStorage::setScaleFactor(double factor)
 {
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
-    if (!hasFlag(efHasDefaultValue))
+    if (!hasFlag(efOption_HasDefaultValue))
     {
         double scale = factor / factor_;
         ValueList::iterator i;

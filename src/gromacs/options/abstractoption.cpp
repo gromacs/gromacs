@@ -59,14 +59,8 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
       maxValueCount_(settings.maxValueCount_),
       inSet_(false)
 {
-    // If the maximum number of values is not known, storage to
-    // caller-allocated memory is unsafe.
-    if ((maxValueCount_ < 0 || hasFlag(efMulti)) && hasFlag(efExternalStore))
-    {
-        GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
-    }
     // Check that user has not provided incorrect values for vectors.
-    if (hasFlag(efVector) && (minValueCount_ > 1 || maxValueCount_ < 1))
+    if (hasFlag(efOption_Vector) && (minValueCount_ > 1 || maxValueCount_ < 1))
     {
         GMX_THROW(APIError("Inconsistent value counts for vector values"));
     }
@@ -76,6 +70,7 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
         name_  = settings.name_;
     }
     descr_ = settings.createDescription();
+    setFlag(efOption_ClearOnNextSet);
 }
 
 AbstractOptionStorage::~AbstractOptionStorage()
@@ -89,7 +84,7 @@ bool AbstractOptionStorage::isBoolean() const
 
 void AbstractOptionStorage::startSource()
 {
-    setFlag(efClearOnNextSet);
+    setFlag(efOption_ClearOnNextSet);
 }
 
 void AbstractOptionStorage::startSet()
@@ -98,7 +93,8 @@ void AbstractOptionStorage::startSet()
     // The last condition takes care of the situation where multiple
     // sources are used, and a later source should be able to reassign
     // the value even though the option is already set.
-    if (isSet() && !hasFlag(efMulti) && !hasFlag(efClearOnNextSet))
+    if (isSet() && !hasFlag(efOption_MultipleTimes)
+        && !hasFlag(efOption_ClearOnNextSet))
     {
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
@@ -116,16 +112,21 @@ void AbstractOptionStorage::finishSet()
 {
     GMX_RELEASE_ASSERT(inSet_, "startSet() not called");
     inSet_ = false;
-    // TODO: Should this be done only when processSet() does not throw?
-    setFlag(efSet);
+    // TODO: Should this be set or not when processSet() throws?
+    setFlag(efOption_Set);
+    // TODO: Correct handling of the efOption_ClearOnNextSet requires
+    // processSet() and/or convertValue() to check it internally.
+    // OptionStorageTemplate takes care of it, but it's error-prone if
+    // a custom option is implemented that doesn't use it.
     processSet();
+    clearFlag(efOption_ClearOnNextSet);
 }
 
 void AbstractOptionStorage::finish()
 {
     GMX_RELEASE_ASSERT(!inSet_, "finishSet() not called");
     processAll();
-    if (hasFlag(efRequired) && !isSet())
+    if (isRequired() && !isSet())
     {
         GMX_THROW(InvalidInputError("Option is required, but not set"));
     }
@@ -133,12 +134,12 @@ void AbstractOptionStorage::finish()
 
 void AbstractOptionStorage::setMinValueCount(int count)
 {
-    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
-                       "setMinValueCount() not supported with efMulti");
+    GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
+                       "setMinValueCount() not supported with efOption_MultipleTimes");
     GMX_RELEASE_ASSERT(count >= 0, "Invalid value count");
     minValueCount_ = count;
-    if (isSet()
-        && !hasFlag(efDontCheckMinimumCount) && valueCount() < minValueCount_)
+    if (isSet() && !hasFlag(efOption_DontCheckMinimumCount)
+        && valueCount() < minValueCount_)
     {
         GMX_THROW(InvalidInputError("Too few values"));
     }
@@ -146,8 +147,8 @@ void AbstractOptionStorage::setMinValueCount(int count)
 
 void AbstractOptionStorage::setMaxValueCount(int count)
 {
-    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
-                       "setMaxValueCount() not supported with efMulti");
+    GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
+                       "setMaxValueCount() not supported with efOption_MultipleTimes");
     GMX_RELEASE_ASSERT(count >= -1, "Invalid value count");
     maxValueCount_ = count;
     if (isSet() && maxValueCount_ >= 0 && valueCount() > maxValueCount_)

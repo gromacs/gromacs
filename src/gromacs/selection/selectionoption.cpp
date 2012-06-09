@@ -60,10 +60,11 @@ namespace gmx
  */
 
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
-    : MyBase(settings, OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
+    : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
+                           | efOption_DontCheckMinimumCount),
       info_(this), manager_(NULL), selectionFlags_(settings.selectionFlags_)
 {
-    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
+    GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
     if (settings.infoPtr_ != NULL)
     {
@@ -107,7 +108,7 @@ void SelectionOptionStorage::addSelections(
     {
         // TODO: Having this check in the parser would make interactive input
         // behave better.
-        if (selectionFlags_.test(efOnlyStatic) && i->isDynamic())
+        if (selectionFlags_.test(efSelection_OnlyStatic) && i->isDynamic())
         {
             GMX_THROW(InvalidInputError("Dynamic selections not supported"));
         }
@@ -116,7 +117,7 @@ void SelectionOptionStorage::addSelections(
     if (bFullValue)
     {
         commitValues();
-        setFlag(efSet);
+        markAsSet();
     }
 }
 
@@ -154,7 +155,7 @@ void SelectionOptionStorage::processAll()
         GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
         manager_->requestOptionDelayedParsing(this);
-        setFlag(efSet);
+        markAsSet();
     }
 }
 
@@ -165,7 +166,7 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
     errors.startContext("In option '" + name() + "'");
     if (count >= 0)
     {
-        // Should not throw because efDontCheckMinimumCount is set
+        // Should not throw because efOption_DontCheckMinimumCount is set.
         setMinValueCount(count);
         if (valueCount() > 0 && valueCount() < count)
         {
@@ -192,7 +193,7 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
     ValueList::iterator i;
     for (i = values().begin(); i != values().end(); ++i)
     {
-        if (flag == efOnlyStatic && bSet && i->isDynamic())
+        if (flag == efSelection_OnlyStatic && bSet && i->isDynamic())
         {
             MessageStringCollector errors;
             errors.startContext("In option '" + name() + "'");
@@ -240,32 +241,32 @@ void SelectionOptionInfo::setValueCount(int count)
 
 void SelectionOptionInfo::setEvaluateVelocities(bool bEnabled)
 {
-    option().setSelectionFlag(efEvaluateVelocities, bEnabled);
+    option().setSelectionFlag(efSelection_EvaluateVelocities, bEnabled);
 }
 
 void SelectionOptionInfo::setEvaluateForces(bool bEnabled)
 {
-    option().setSelectionFlag(efEvaluateForces, bEnabled);
+    option().setSelectionFlag(efSelection_EvaluateForces, bEnabled);
 }
 
 void SelectionOptionInfo::setOnlyAtoms(bool bEnabled)
 {
-    option().setSelectionFlag(efOnlyAtoms, bEnabled);
+    option().setSelectionFlag(efSelection_OnlyAtoms, bEnabled);
 }
 
 void SelectionOptionInfo::setOnlyStatic(bool bEnabled)
 {
-    option().setSelectionFlag(efOnlyStatic, bEnabled);
+    option().setSelectionFlag(efSelection_OnlyStatic, bEnabled);
 }
 
 void SelectionOptionInfo::setDynamicMask(bool bEnabled)
 {
-    option().setSelectionFlag(efDynamicMask, bEnabled);
+    option().setSelectionFlag(efSelection_DynamicMask, bEnabled);
 }
 
 void SelectionOptionInfo::setDynamicOnlyWhole(bool bEnabled)
 {
-    option().setSelectionFlag(efDynamicOnlyWhole, bEnabled);
+    option().setSelectionFlag(efSelection_DynamicOnlyWhole, bEnabled);
 }
 
 
@@ -284,7 +285,8 @@ AbstractOptionStoragePointer SelectionOption::createStorage() const
  */
 
 SelectionFileOptionStorage::SelectionFileOptionStorage(const SelectionFileOption &settings)
-    : AbstractOptionStorage(settings, OptionFlags() | efMulti | efDontCheckMinimumCount),
+    : AbstractOptionStorage(settings, OptionFlags() | efOption_MultipleTimes
+                                          | efOption_DontCheckMinimumCount),
       info_(this), manager_(NULL), bValueParsed_(false)
 {
 }
