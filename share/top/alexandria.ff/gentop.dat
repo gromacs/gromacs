@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes polarizability_unit="A3" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="0.8333" fudgeLJ="0.5">
+  <atomtypes polarizability_unit="A3" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="0" fudgeLJ="0">
     <atype elem="Br" description="Bromine" gt_type="Br" miller_equiv="Br" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="C" description="Carbon with sp1" gt_type="CDI" miller_equiv="CDI" charge="0" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="C" description="Carbon with C=O" gt_type="CRP" miller_equiv="CTR" charge="0" polarizability="1.456" sigma_pol="0" vdwparams="1 1"/>
@@ -1395,7 +1395,84 @@
     <gt_dihedral atom1="OTR4" atom2="STE" atom3="NTR2" atom4="STE" angle="270.5" sigma="68.9229" params="270.5  5"/>
     <gt_dihedral atom1="STE" atom2="CTA" atom3="CTA" atom4="STE" angle="58.233" sigma="10.719" params="58.233  5"/>
   </gt_dihedrals>
-  <gt_impropers angle_unit="degree" function="idihs"/>  
+  <gt_impropers angle_unit="degree" function="idihs">
+    <gt_improper atom1="CDI" atom2="HA" atom3="CTR" atom4="CTR" angle="-0.0286384" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="Cl" atom3="OTR4" atom4="Cl" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="Cl" atom4="OTR4" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="CTA" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="CTA" atom4="OTR4" angle="0.0117661" sigma="0.0825582" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="NPI2" atom4="OTR4" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="OTE" atom4="OTR4" angle="0.250565" sigma="0.526102" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="OTH" atom4="OTR4" angle="-0.288146" sigma="0.372891" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="OTR4" atom4="CTA" angle="-0.175285" sigma="0.259133" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="OTR4" atom4="HA" angle="-0.172919" sigma="0.299504" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="OTR4" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="OTR4" atom4="OTE" angle="0.106727" sigma="0.246475" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTA" atom3="OTR4" atom4="OTH" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTR" atom3="CTA" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTR" atom3="CTA" atom4="OTR4" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTR" atom3="HA" atom4="OTR4" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTR" atom3="OTE" atom4="OTR4" angle="1.35198" sigma="0.0398508" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTR" atom3="OTR4" atom4="OTE" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="CTR" atom3="OTR4" atom4="OTH" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="F" atom3="OTR4" atom4="F" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="HA" atom3="CTR" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="HA" atom3="OTR4" atom4="OTE" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="HA" atom3="OTR4" atom4="OTH" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="HP" atom3="CTA" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="NPI2" atom3="HA" atom4="OTR4" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="NPI2" atom3="OTR4" atom4="HA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTE" atom3="CTA" atom4="OTR4" angle="0.0756104" sigma="0.0756104" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTE" atom3="CTP" atom4="OTR4" angle="1.40543" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTE" atom3="CTR" atom4="OTR4" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTE" atom3="HA" atom4="OTR4" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTE" atom3="OTR4" atom4="CTA" angle="0.0856945" sigma="0.590544" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTE" atom3="OTR4" atom4="HA" angle="-0.0357179" sigma="0.0590056" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTE" atom3="OTR4" atom4="OTE" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTH" atom3="OTR4" atom4="CTA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTR4" atom3="Cl" atom4="CTA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTR4" atom3="CTA" atom4="CTA" angle="-0.0385176" sigma="0.0823935" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTR4" atom3="HA" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CRP" atom2="OTR4" atom3="NPI2" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTA" atom2="CRP" atom3="CTA" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTA" atom2="CTA" atom3="CRP" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTA" atom2="CTR" atom3="CTR" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTA" atom2="HA" atom3="CTR" atom4="CTR" angle="-0.792228" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CDI" atom3="CTR" atom4="HA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CDI" atom3="HA" atom4="HA" angle="0.0126326" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="Cl" atom3="Cl" atom4="CTR" angle="-0.0196506" sigma="0.0201708" params="5"/>
+    <gt_improper atom1="CTR" atom2="Cl" atom3="CTR" atom4="HA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CRP" atom3="CTA" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CRP" atom3="CTR" atom4="HA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTA" atom3="CDI" atom4="HA" angle="0.0331252" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTA" atom3="CTA" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTA" atom3="CTR" atom4="HA" angle="0.18934" sigma="0.283642" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="Cl" atom4="Cl" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="Cl" atom4="CTR" angle="1.15725" sigma="0.00306173" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="CRP" atom4="HA" angle="-0.730521" sigma="0.730714" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="CTA" atom4="HA" angle="-0.102336" sigma="0.297712" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="CTP" atom4="HA" angle="-0.178549" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="CTR" atom4="HA" angle="-0.0323063" sigma="0.962976" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="F" atom4="F" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="F" atom4="HA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="HA" atom4="Cl" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="HA" atom4="HA" angle="-0.0422817" sigma="0.198662" params="5"/>
+    <gt_improper atom1="CTR" atom2="CTR" atom3="OTE" atom4="HA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="F" atom3="CTR" atom4="F" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="F" atom3="CTR" atom4="HA" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="HA" atom3="Cl" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="HA" atom3="CTA" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="HA" atom3="F" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="HA" atom3="HA" atom4="CTR" angle="-0.0399184" sigma="0.0693692" params="5"/>
+    <gt_improper atom1="CTR" atom2="HA" atom3="OTE" atom4="CTR" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="CTR" atom2="OTE" atom3="CTR" atom4="HA" angle="0.0199494" sigma="0.0282128" params="5"/>
+    <gt_improper atom1="F" atom2="OTR4" atom3="OTR4" atom4="NPI2" angle="0" sigma="0" params="5"/>
+    <gt_improper atom1="HP" atom2="CTA" atom3="CRP" atom4="NPI2" angle="-0.0342519" sigma="0" params="5"/>
+    <gt_improper atom1="HP" atom2="HP" atom3="CRP" atom4="NPI2" angle="0.000387041" sigma="0.000670375" params="5"/>
+    <gt_improper atom1="NPI2" atom2="CTA" atom3="OTR4" atom4="OTR4" angle="0.265492" sigma="0.473268" params="5"/>
+    <gt_improper atom1="NPI2" atom2="OTE" atom3="OTR4" atom4="OTR4" angle="-0.18095" sigma="0.18095" params="5"/>
+    <gt_improper atom1="NPI2" atom2="OTH" atom3="OTR4" atom4="OTR4" angle="0" sigma="0" params="5"/>
+  </gt_impropers>
   <bsatoms polarizability_unit="A3">
     <bsatom elem="H" polarizability="0.17"/>
     <bsatom elem="C" polarizability="1.51"/>
