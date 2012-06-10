@@ -56,6 +56,12 @@ typedef struct {
     int nb[4];
 } gv_planar;
 	
+typedef struct {
+    int natom;
+    int a[6];
+    int nb[6];
+} gv_ringplanar;
+	
 typedef struct gentop_vsite 
 {
     int egvt;
@@ -63,6 +69,8 @@ typedef struct gentop_vsite
     gv_linear *lin;
     int nplanar;
     gv_planar *plan;
+    int nringplanar;
+    gv_ringplanar *rplan;
 } gentop_vsite;
 
 gentop_vsite_t gentop_vsite_init(int egvt)
@@ -129,6 +137,30 @@ void gentop_vsite_add_planar(gentop_vsite_t gvt,int ai,int aj,int ak,int al,int 
         gvt->plan[i].a[3] = al;
         for(j=0; (j<4); j++)
             gvt->plan[i].nb[j] = nbonds[gvt->plan[i].a[j]];
+    }
+}
+
+void gentop_vsite_add_ring_planar(gentop_vsite_t gvt,
+                                  int natom,int aa[],int nbonds[])
+{
+    int i,j;
+    gmx_bool bSame;
+    
+    for(i=0; (i<gvt->nringplanar); i++)
+    {
+        bSame = TRUE;
+        for(j=0; (j<natom); j++)
+            bSame = bSame && (gvt->rplan[i].a[j] == aa[j]);
+        if (bSame)
+            break;
+    }
+    if (i == gvt->nringplanar)
+    {
+        srenew(gvt->rplan,++gvt->nringplanar);
+        for(j=0; (j<natom); j++) {
+            gvt->rplan[i].a[j] = aa[j];
+            gvt->rplan[i].nb[j] = nbonds[gvt->plan[i].a[j]];
+        }
     }
 }
 

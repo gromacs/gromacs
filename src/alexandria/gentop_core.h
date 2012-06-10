@@ -62,14 +62,16 @@ extern void mv_plists(gmx_poldata_t pd,t_params plist[],gmx_bool bForward);
 
 extern void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
                      gmx_conect gc,t_params plist[],int nbond[],
-                     gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+                     gmx_bool bRing[],
+                     gmx_bool bH14,gmx_bool bAllDihedrals,
+                     gmx_bool bRemoveDoubleDihedrals,
                      int nexcl,t_excls **excls,
                      gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
                      gmx_bool bMovePlists);
 		     
 extern gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
                                     t_symtab *tab,t_atoms *atoms,t_params *bonds,
-                                    int nbonds[],char **smnames,
+                                    int nbonds[],gmx_bool bRing[],char **smnames,
                                     gmx_poldata_t pd,gmx_atomprop_t aps,
                                     rvec x[],t_pbc *pbc,real th_toler,
                                     real ph_toler,gentop_vsite_t gvt);

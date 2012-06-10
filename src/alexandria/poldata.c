@@ -1370,6 +1370,9 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
         if (NULL != sr[n])
             fprintf(stderr,"Warning: more row values than q/zeta values for %s n = %d\n",name,n);
     }
+    sfree(sz);
+    sfree(sq);
+    sfree(sr);
     eep->nzeta = n;
     if (n >= MAXZETA)
     {

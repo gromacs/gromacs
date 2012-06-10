@@ -150,6 +150,7 @@ install(TARGETS
 	addquote
 	gen_ff
 	gen_table
+        g_merge_mp
         gauss2molprop
         COMPONENT runtime
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})

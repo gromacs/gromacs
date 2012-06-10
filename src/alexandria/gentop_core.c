@@ -124,9 +124,94 @@ void mv_plists(gmx_poldata_t pd,t_params plist[],gmx_bool bForward)
     }
 }
 
+static void detect_rings(t_params *bonds,int natom,gmx_bool bRing[])
+{
+    /* Check for 4,5,6 rings.
+     */
+    int j,k,l,m,n,o,a1,a2,a3,a4,a5,a6,a7;
+    
+    for(j=0; (j<natom); j++) 
+        bRing[j] = FALSE;
+        
+    for(a1=0; (a1<natom); a1++) {
+        for(j=0; (j<bonds->nr); j++) {
+            a2 = NOTSET;
+            if (bonds->param[j].a[0] == a1)
+                a2 = bonds->param[j].a[1];
+            else if (bonds->param[j].a[1] == a1)
+                a2 = bonds->param[j].a[0];
+            if (a2 != NOTSET) {
+                for(k=0; (k<bonds->nr); k++) {
+                    a3 = NOTSET;
+                    if (bonds->param[k].a[0] == a2)
+                        a3 = bonds->param[k].a[1];
+                    else if (bonds->param[k].a[1] == a2)
+                        a3 = bonds->param[k].a[0];
+                    if ((a3 != NOTSET) && (a3 != a1)) {
+                        for(l=0; (l<bonds->nr); l++) {
+                            a4 = NOTSET;
+                            if (bonds->param[l].a[0] == a3)
+                                a4 = bonds->param[l].a[1];
+                            else if (bonds->param[l].a[1] == a3)
+                                a4 = bonds->param[l].a[0];
+                            if ((a4 != NOTSET) && (a4 != a2)) {
+                                for(m=0; (m<bonds->nr); m++) {
+                                    a5 = NOTSET;
+                                    if (bonds->param[m].a[0] == a4)
+                                        a5 = bonds->param[m].a[1];
+                                    else if (bonds->param[m].a[1] == a4)
+                                        a5 = bonds->param[m].a[0];
+                                    if ((a5 != NOTSET) && (a5 != a3)) {
+                                        if (a5 == a1) {
+                                            /* 4-ring */
+                                            bRing[a1] = bRing[a2] = bRing[a3] = bRing[a4] = TRUE;
+                                        }
+                                        else if (a3 != a1) {
+                                            for(n=0; (n<bonds->nr); n++) {
+                                                a6 = NOTSET;
+                                                if (bonds->param[n].a[0] == a5)
+                                                    a6 = bonds->param[n].a[1];
+                                                else if (bonds->param[n].a[1] == a5)
+                                                    a6 = bonds->param[n].a[0];
+                                                if ((a6 != NOTSET) && (a6 != a4)) {
+                                                    if (a6 == a1) {
+                                                        /* 5-ring */
+                                                        bRing[a1] = bRing[a2] = bRing[a3] = bRing[a4] = bRing[a5] = TRUE;
+                                                    }
+                                                    else {
+                                                        for(o=0; (o<bonds->nr); o++) {
+                                                            a7 = NOTSET;
+                                                            if (bonds->param[o].a[0] == a6)
+                                                                a7 = bonds->param[o].a[1];
+                                                            else if (bonds->param[o].a[1] == a6)
+                                                                a7 = bonds->param[o].a[0];
+                                                            if (a7 == a1) {
+                                                                /* 6-ring */
+                                                                bRing[a1] = bRing[a2] = bRing[a3] = 
+                                                                    bRing[a4] = bRing[a5] = bRing[a6] = TRUE;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
               gmx_conect gc,t_params plist[],int nbond[],
-              gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+              gmx_bool bRing[],
+              gmx_bool bH14,
+              gmx_bool bAllDihedrals,
+              gmx_bool bRemoveDoubleDihedrals,
               int nexcl,t_excls **excls,
               gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
               gmx_bool bMovePlists)
@@ -135,7 +220,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     int      i,j,ft;
     t_pbc    pbc;
     rvec     dx;
-    real     dx1;
+    real     dx1,dx11;
     double   b_order;
     gmx_bool bBond;
     char     *elem_i,*elem_j;
@@ -163,7 +248,8 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
             else
                 rvec_sub(x[i],x[j],dx);
       
-            dx1 = gmx2convert(norm(dx),string2unit(length_unit));
+            dx11 = norm(dx);
+            dx1 = gmx2convert(dx11,string2unit(length_unit));
       
             if (gc) 
             {
@@ -183,7 +269,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
             {
                 b.AI = i;
                 b.AJ = j;
-                b.C0 = dx1;
+                b.C0 = dx11;
                 add_param_to_list (&(plist[F_BONDS]),&b);
                 nbond[i] += b_order;
                 nbond[j] += b_order;
@@ -203,6 +289,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     snew(*excls,atoms->nr);
     init_nnb(&nnb,atoms->nr,nexcl+2);
     gen_nnb(&nnb,plist);
+    detect_rings(&plist[F_BONDS],atoms->nr,bRing);
     print_nnb(&nnb,"NNB");
     gen_pad(&nnb,atoms,bH14,nexcl,plist,*excls,NULL,
             bAllDihedrals,bRemoveDoubleDihedrals,TRUE);
@@ -216,7 +303,8 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
 
 gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
                              t_symtab *tab,t_atoms *atoms,t_params *bonds,
-                             int nbonds[],char **smnames,gmx_poldata_t pd,
+                             int nbonds[],gmx_bool bRing[],
+                             char **smnames,gmx_poldata_t pd,
                              gmx_atomprop_t aps,rvec x[],t_pbc *pbc,real th_toler,
                              real ph_toler,gentop_vsite_t gvt)
 {
@@ -226,8 +314,8 @@ gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
     
     atype = init_atomtype();
     snew(atoms->atomtype,atoms->nr);
-    nresolved = nm2type(fp,molname,pd,aps,tab,atoms,atype,nbonds,bonds,smnames,
-                        x,pbc,th_toler,ph_toler,gvt);
+    nresolved = nm2type(fp,molname,pd,aps,tab,atoms,bRing,atype,nbonds,
+                        bonds,smnames,x,pbc,th_toler,ph_toler,gvt);
     if (nresolved != atoms->nr) 
         return NULL;
     else if (debug)

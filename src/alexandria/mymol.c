@@ -125,6 +125,7 @@ static void do_init_mtop(gmx_mtop_t *mtop,int nmoltype,char **molname,
     {
         gmx_incons("Number of moltypes less than 1 in do_init_mtop");
     } 
+    mtop->name = molname;
     mtop->nmoltype = nmoltype;
     snew(mtop->moltype,mtop->nmoltype);
     mtop->moltype[0].name = molname;
@@ -436,8 +437,9 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         
         snew(nbonds,mymol->nalloc);
         snew(mymol->smnames,mymol->nalloc);
+        snew(mymol->bRing,mymol->nalloc);
         mk_bonds(pd,mymol->atoms,mymol->x,NULL,plist,nbonds,
-                 bH14,bAllDihedrals,bRemoveDoubleDihedrals,
+                 mymol->bRing,bH14,bAllDihedrals,bRemoveDoubleDihedrals,
                  nexcl,&mymol->excls,
                  TRUE,mymol->box,aps,btol,TRUE);
         mk_ff_mtop(&mymol->mtop,pd);
@@ -446,7 +448,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         set_pbc(&pbc,epbcNONE,mymol->box);
         gvt = gentop_vsite_init(egvtALL);
         if ((mymol->atype = set_atom_type(NULL,mymol->molname,&(mymol->symtab),mymol->atoms,
-                                          &(plist[ftb]),nbonds,mymol->smnames,pd,aps,
+                                          &(plist[ftb]),nbonds,mymol->bRing,mymol->smnames,pd,aps,
                                           mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
             imm = immAtomTypes;
         gentop_vsite_generate_special(gvt,FALSE,mymol->atoms,&mymol->x,plist,

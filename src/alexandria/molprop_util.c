@@ -163,15 +163,11 @@ int mp_get_prop_ref(gmx_molprop_t mp,int emp,int iQM,char *lot,
         if (done != 0) {
             if (NULL != ref)
                 *ref   = strdup(reference);
-            else
-                sfree(reference);
             if (NULL != mylot)
                 *mylot = strdup("Experiment");
         }
-        else {
-            if (NULL != reference)
-                sfree(reference);
-        }
+        if (NULL != reference)
+            sfree(reference);
     }
     
     if ((done == 0) && ((iQM == iqmBoth) || (iQM == iqmQM)))
@@ -211,6 +207,7 @@ int mp_get_prop_ref(gmx_molprop_t mp,int emp,int iQM,char *lot,
                     sfree(ll[k]);
                     k++;
                 }
+                sfree(ll);
                 if (done != 0) 
                 {
                     if (NULL != mylot)
@@ -280,6 +277,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     int        nexcl=1;
     char       **anames=NULL,**smnames;
     int        *nbonds,bDone=0,calcref,atomref,atomid,ftb;
+    gmx_bool   *bRing;
     t_params   *plist=NULL;
     t_excls    *excls;
     double     btol=0.2;
@@ -354,13 +352,14 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         snew(nbonds,atoms->nr);
         snew(smnames,atoms->nr);
         snew(plist,F_NRE);
-        mk_bonds(pd,atoms,x,NULL,plist,nbonds,TRUE,TRUE,TRUE,
+        snew(bRing,atoms->nr);
+        mk_bonds(pd,atoms,x,NULL,plist,nbonds,bRing,TRUE,TRUE,TRUE,
                  nexcl,&excls,FALSE,NULL,aps,btol,TRUE);
         ftb = gmx_poldata_get_bond_ftype(pd);
         /* Setting the atom types: this depends on the bonding */
         gvt = gentop_vsite_init(egvtLINEAR);
-        if ((atype = set_atom_type(NULL,molname,&symtab,atoms,&(plist[ftb]),
-                                   nbonds,smnames,
+        if ((atype = set_atom_type(NULL,molname,&symtab,atoms,
+                                   &(plist[ftb]),nbonds,bRing,smnames,
                                    pd,aps,x,&pbc,th_toler,phi_toler,gvt)) != NULL) 
             bOK = TRUE;
         gentop_vsite_done(&gvt);

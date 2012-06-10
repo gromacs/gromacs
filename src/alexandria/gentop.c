@@ -392,7 +392,8 @@ int main(int argc, char *argv[])
     gentop_vsite_t gvt = NULL;
     gentop_qgen_t  qqgen = NULL;
     char qgen_msg[STRLEN];
-    
+    gmx_bool   *bRing;
+
     t_filenm fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
         { efTOP, "-o",    "out",  ffOPTWR },
@@ -733,13 +734,14 @@ int main(int argc, char *argv[])
         printf("Generating bonds from distances...\n");
     snew(nbonds,atoms->nr);
     snew(smnames,atoms->nr);
-    mk_bonds(pd,atoms,x,gc,plist,nbonds,bH14,(dih == edihAll),bRemoveDih,
+    snew(bRing,atoms->nr);
+    mk_bonds(pd,atoms,x,gc,plist,nbonds,bRing,bH14,(dih == edihAll),bRemoveDih,
              nexcl,&excls,bPBC,box,aps,btol,TRUE);
 
     /* Setting the atom types: this depends on the bonding */
     gvt = gentop_vsite_init(egvtALL);
     if ((atype = set_atom_type(stderr,molnm,&symtab,atoms,&(plist[bts[ebtsBONDS]]),
-                               nbonds,smnames,pd,aps,x,&pbc,th_toler,ph_toler,
+                               nbonds,bRing,smnames,pd,aps,x,&pbc,th_toler,ph_toler,
                                gvt)) == NULL) 
         gmx_fatal(FARGS,"Can not find all atomtypes. Better luck next time!");
     

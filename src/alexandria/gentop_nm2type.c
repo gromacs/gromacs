@@ -88,7 +88,7 @@ static gmx_bool is_linear(rvec xi,rvec xj,rvec xk,t_pbc *pbc,
 }
 
 int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
-            t_symtab *tab,t_atoms *atoms,
+            t_symtab *tab,t_atoms *atoms,gmx_bool bRing[],
             gpp_atomtype_t atype,int *nbonds,t_params *bonds,
             char **gt_atoms,rvec x[],t_pbc *pbc,real th_toler,real phi_toler,
             gentop_vsite_t gvt)
@@ -96,7 +96,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     int     cur = 0;
 #define   prev (1-cur)
     int     i,j,k,m,n,nresolved,nbh,maxbond,nb,nonebond;
-    int     ai,aj,iter=0,maxiter=10;
+    int     ai,aj,iter=0,maxiter=10,aa[6];
     int     *bbb,type,atomnr_i;
     char    *aname_i,*aname_m,*aname_n,*gt_atom,*gt_type,*elem_i;
     char    **nbhybrid;
@@ -106,8 +106,8 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     real    value;
     t_atom  *atom;
     t_param *param;
-    enum { egmLinear, egmPlanar, egmTetrahedral, egmNR };
-    const char *geoms[egmNR] = { "linear", "planar", "tetrahedral" };
+    enum { egmLinear, egmPlanar, egmRingPlanar, egmTetrahedral, egmNR };
+    const char *geoms[egmNR] = { "linear", "planar", "ring-planar", "tetrahedral" };
 
     snew(atom,1);
     snew(param,1);
@@ -183,7 +183,10 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
                 else if ((nb == 3) && is_planar(x[i],x[bbb[0]],x[bbb[1]],x[bbb[2]],
                                                 pbc,phi_toler))
                 {
-                    geom = egmPlanar;
+                    if (bRing[i]) 
+                        geom = egmRingPlanar;
+                    else
+                        geom = egmPlanar;
                     if ((iter == 0) && (NULL != gvt))
                         gentop_vsite_add_planar(gvt,i,bbb[0],bbb[1],bbb[2],nbonds);
                 }
@@ -191,7 +194,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
                     fprintf(debug,"Geometry = %s (atom %s with %d bonds)\n",
                             geoms[geom],aname_i,nb);
                 if ((gt_atom = gmx_poldata_get_atom(pd,elem_i,nb,nbhybrid,
-                                                       geoms[geom])) != NULL)
+                                                    geoms[geom])) != NULL)
                 {
                     if (debug)
                         fprintf(debug,"Selected %s\n",gt_atom);

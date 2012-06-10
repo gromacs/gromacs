@@ -29,60 +29,60 @@
     <atype elem="S" description="Sulphur" gt_type="SPI2" miller_equiv="SPI2" charge="0" polarizability="2.7958" sigma_pol="0" vdwparams="1 1"/>
   </atomtypes>
   <bonding_rules>
-    <bonding_rule gt_name="Bra" gt_type="Br" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="Brb" gt_type="Br" geometry="tetrahedral" numbonds="5" neighbors=""/>
-    <bonding_rule gt_name="C1c" gt_type="CDI" geometry="linear" numbonds="2" neighbors=""/>
-    <bonding_rule gt_name="C2o" gt_type="CRP" geometry="planar" numbonds="3" neighbors="O2"/>
-    <bonding_rule gt_name="C2c" gt_type="CTR" geometry="planar" numbonds="3" neighbors=""/>
-    <bonding_rule gt_name="C2s" gt_type="CTR" geometry="planar" numbonds="3" neighbors="S2"/>
-    <bonding_rule gt_name="C2d" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C Cl"/>
-    <bonding_rule gt_name="C2h" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C H"/>
-    <bonding_rule gt_name="C2i" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C F"/>
-    <bonding_rule gt_name="C2j" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C Br"/>
-    <bonding_rule gt_name="C2k" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C I"/>
-    <bonding_rule gt_name="C3a" gt_type="CTP" geometry="tetrahedral" numbonds="4" neighbors="O"/>
-    <bonding_rule gt_name="C3b" gt_type="CTA" geometry="tetrahedral" numbonds="4" neighbors=""/>
-    <bonding_rule gt_name="C2e" gt_type="CBR" geometry="planar" numbonds="3" neighbors="C2 C2 C2"/>
-    <bonding_rule gt_name="Cla" gt_type="Cl" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="Clb" gt_type="Cl" geometry="tetrahedral" numbonds="3" neighbors=""/>
-    <bonding_rule gt_name="Clc" gt_type="Cl" geometry="tetrahedral" numbonds="4" neighbors=""/>
-    <bonding_rule gt_name="F" gt_type="F" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="HA" gt_type="HA" geometry="tetrahedral" numbonds="1" neighbors="C"/>
-    <bonding_rule gt_name="HP" gt_type="HP" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="Ia" gt_type="I" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="Ib" gt_type="I" geometry="tetrahedral" numbonds="5" neighbors=""/>
-    <bonding_rule gt_name="N1a" gt_type="NDI" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="N1b" gt_type="NDI" geometry="linear" numbonds="2" neighbors=""/>
-    <bonding_rule gt_name="N2a" gt_type="NTR2" geometry="tetrahedral" numbonds="2" neighbors=""/>
-    <bonding_rule gt_name="N2h2" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="H H"/>
-    <bonding_rule gt_name="N2h" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="H"/>
-    <bonding_rule gt_name="N2b" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2o"/>
-    <bonding_rule gt_name="N2c2" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2 C2"/>
-    <bonding_rule gt_name="N2c23" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2 C3"/>
-    <bonding_rule gt_name="N2q" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2s"/>
-    <bonding_rule gt_name="N2d" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="O2 O2"/>
-    <bonding_rule gt_name="N2e" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="2 2"/>
-    <bonding_rule gt_name="N3a" gt_type="NTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
-    <bonding_rule gt_name="N3b" gt_type="NTE" geometry="tetrahedral" numbonds="4" neighbors=""/>
-    <bonding_rule gt_name="O2" gt_type="OTR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="OW" gt_type="OW" geometry="tetrahedral" numbonds="2" neighbors="H H"/>
-    <bonding_rule gt_name="OTH" gt_type="OTH" geometry="tetrahedral" numbonds="2" neighbors="H"/>
-    <bonding_rule gt_name="O3a" gt_type="OTE" geometry="tetrahedral" numbonds="2" neighbors=""/>
-    <bonding_rule gt_name="O3b" gt_type="OTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
-    <bonding_rule gt_name="OPI2" gt_type="OPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/>
-    <bonding_rule gt_name="P1" gt_type="PTE" geometry="linear" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="P2a" gt_type="PTE" geometry="planar" numbonds="2" neighbors=""/>
-    <bonding_rule gt_name="P3a" gt_type="PTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
-    <bonding_rule gt_name="P3b" gt_type="PTE" geometry="tetrahedral" numbonds="4" neighbors=""/>
-    <bonding_rule gt_name="P3c" gt_type="PTE" geometry="tetrahedral" numbonds="5" neighbors=""/>
-    <bonding_rule gt_name="P3d" gt_type="PTE" geometry="tetrahedral" numbonds="6" neighbors=""/>
-    <bonding_rule gt_name="S2a" gt_type="STR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule gt_name="S3a" gt_type="STE" geometry="tetrahedral" numbonds="2" neighbors=""/>
-    <bonding_rule gt_name="S3b" gt_type="STE" geometry="tetrahedral" numbonds="3" neighbors=""/>
-    <bonding_rule gt_name="S3q" gt_type="STE" geometry="tetrahedral" numbonds="4" neighbors=""/>
-    <bonding_rule gt_name="S3d" gt_type="STE" geometry="tetrahedral" numbonds="6" neighbors=""/>
-    <bonding_rule gt_name="SPI2a" gt_type="SPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/>
-    <bonding_rule gt_name="SPI2b" gt_type="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2"/>
+    <bonding_rule name="Bra" gt_type="Br" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Brb" gt_type="Br" geometry="tetrahedral" numbonds="5" neighbors=""/>
+    <bonding_rule name="C1c" gt_type="CDI" geometry="linear" numbonds="2" neighbors=""/>
+    <bonding_rule name="C2o" gt_type="CRP" geometry="planar" numbonds="3" neighbors="O2"/>
+    <bonding_rule name="C2c" gt_type="CTR" geometry="planar" numbonds="3" neighbors=""/>
+    <bonding_rule name="C2s" gt_type="CTR" geometry="planar" numbonds="3" neighbors="S2"/>
+    <bonding_rule name="C2d" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C Cl"/>
+    <bonding_rule name="C2h" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C H"/>
+    <bonding_rule name="C2i" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C F"/>
+    <bonding_rule name="C2j" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C Br"/>
+    <bonding_rule name="C2k" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C I"/>
+    <bonding_rule name="C3a" gt_type="CTP" geometry="tetrahedral" numbonds="4" neighbors="O"/>
+    <bonding_rule name="C3b" gt_type="CTA" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="C2e" gt_type="CBR" geometry="planar" numbonds="3" neighbors="C2 C2 C2"/>
+    <bonding_rule name="Cla" gt_type="Cl" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Clb" gt_type="Cl" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="Clc" gt_type="Cl" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="F" gt_type="F" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="HA" gt_type="HA" geometry="tetrahedral" numbonds="1" neighbors="C"/>
+    <bonding_rule name="HP" gt_type="HP" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Ia" gt_type="I" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="Ib" gt_type="I" geometry="tetrahedral" numbonds="5" neighbors=""/>
+    <bonding_rule name="N1a" gt_type="NDI" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="N1b" gt_type="NDI" geometry="linear" numbonds="2" neighbors=""/>
+    <bonding_rule name="N2a" gt_type="NTR2" geometry="tetrahedral" numbonds="2" neighbors=""/>
+    <bonding_rule name="N2h2" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="H H"/>
+    <bonding_rule name="N2h" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="H"/>
+    <bonding_rule name="N2b" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2o"/>
+    <bonding_rule name="N2c2" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2 C2"/>
+    <bonding_rule name="N2c23" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2 C3"/>
+    <bonding_rule name="N2q" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="C2s"/>
+    <bonding_rule name="N2d" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="O2 O2"/>
+    <bonding_rule name="N2e" gt_type="NPI2" geometry="planar" numbonds="3" neighbors="2 2"/>
+    <bonding_rule name="N3a" gt_type="NTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="N3b" gt_type="NTE" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="O2" gt_type="OTR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="OW" gt_type="OW" geometry="tetrahedral" numbonds="2" neighbors="H H"/>
+    <bonding_rule name="OTH" gt_type="OTH" geometry="tetrahedral" numbonds="2" neighbors="H"/>
+    <bonding_rule name="O3a" gt_type="OTE" geometry="tetrahedral" numbonds="2" neighbors=""/>
+    <bonding_rule name="O3b" gt_type="OTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="OPI2" gt_type="OPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/>
+    <bonding_rule name="P1" gt_type="PTE" geometry="linear" numbonds="1" neighbors=""/>
+    <bonding_rule name="P2a" gt_type="PTE" geometry="planar" numbonds="2" neighbors=""/>
+    <bonding_rule name="P3a" gt_type="PTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="P3b" gt_type="PTE" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="P3c" gt_type="PTE" geometry="tetrahedral" numbonds="5" neighbors=""/>
+    <bonding_rule name="P3d" gt_type="PTE" geometry="tetrahedral" numbonds="6" neighbors=""/>
+    <bonding_rule name="S2a" gt_type="STR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="S3a" gt_type="STE" geometry="tetrahedral" numbonds="2" neighbors=""/>
+    <bonding_rule name="S3b" gt_type="STE" geometry="tetrahedral" numbonds="3" neighbors=""/>
+    <bonding_rule name="S3q" gt_type="STE" geometry="tetrahedral" numbonds="4" neighbors=""/>
+    <bonding_rule name="S3d" gt_type="STE" geometry="tetrahedral" numbonds="6" neighbors=""/>
+    <bonding_rule name="SPI2a" gt_type="SPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/>
+    <bonding_rule name="SPI2b" gt_type="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2"/>
   </bonding_rules>
   <gt_bonds length_unit="pm" function="morse">
     <gt_bond atom1="F" atom2="F" length="139.8" sigma="0" bondorder="1" params="400  20"/>

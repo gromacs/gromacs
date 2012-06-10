@@ -735,7 +735,9 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
                 mymol->mtop.ffparams.iparams[tp].pdihs.phiA = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol->mtop.ffparams.iparams[tp].pdihs.cpA = atof(ptr[0]);
+                    mymol->mtop.ffparams.iparams[tp].pdihs.cpA = 
+                        mymol->mtop.ffparams.iparams[tp].pdihs.cpB = 
+                        atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
@@ -866,17 +868,10 @@ static double calc_opt_deviation(opt_param_t *opt)
                          flags);
             }
             debug = dbcopy;
-            if (0 && (i == 0)) {
-                for(j=0; (j<F_NRE); j++)
-                    if ((mymol->enerd.term[j] != 0) || 
-                        (mymol->mtop.moltype[0].ilist[j].nr > 0))
-                        printf("CHECK %s %d %g\n",interaction_function[j].name,
-                               mymol->mtop.moltype[0].ilist[j].nr,
-                               mymol->enerd.term[j]);
-            }
             mymol->Force2 = 0;
             for(j=0; (j<mymol->natom); j++)
                 mymol->Force2 += iprod(mymol->f[j],mymol->f[j]);
+            mymol->Force2 /= mymol->natom;
             opt->md->ener[ermsForce2] += opt->md->fc[ermsForce2]*mymol->Force2;
             mymol->Ecalc = mymol->enerd.term[F_EPOT];
             ener = sqr(mymol->Ecalc-mymol->Emol);
@@ -986,12 +981,12 @@ void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
            output_env_t oenv)
 {
     int iter,j,k,nsum,cur=0;
-    double ds,sorig,DE,E[2],beta;
+    double ds,sorig,DE,E[2] = {0,0},beta;
     double *ssum,*s2sum;
 #define prev (1-cur)
     gmx_rng_t rng;
     real r;
-    FILE *fpc,*fpe;
+    FILE *fpc=NULL,*fpe=NULL;
   
     beta = 1/(BOLTZ*temperature);
     if (NULL != xvgconv) {
@@ -1008,13 +1003,13 @@ void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
     snew(s2sum,n);
     nsum = 0;
     for(j=iter=0; (iter<maxiter); iter++) {
-        if ((NULL != xvgconv) && ((j % nprint) == 0)) {
+        if ((NULL != fpc) && ((j % nprint) == 0)) {
           fprintf(fpc,"%5d",iter);
           for(k=0; (k<n); k++) 
               fprintf(fpc,"  %10g",start[k]);
           fprintf(fpc,"\n");
         }
-        if ((NULL != xvgepot) && ((j % nprint) == 0)) {
+        if ((NULL != fpe) && ((j % nprint) == 0)) {
             fprintf(fpe,"%5d  %10g\n",iter,E[prev]);
         }
         ds = (2*gmx_rng_uniform_real(rng)-1)*step*fabs(start[j]);
@@ -1042,9 +1037,9 @@ void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
         j = (j+1) % n;
     }
     gmx_rng_destroy(rng);
-    if (NULL != xvgconv)
+    if (NULL != fpc)
         xvgrclose(fpc);
-    if (NULL != xvgepot)
+    if (NULL != fpe)
         xvgrclose(fpe);
     if (nsum > 0) {
         for(k=0; (k<n); k++) {
@@ -1112,9 +1107,9 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
                 chi2_min   = chi2;
             }
             
-            if (fp) 
+            if (NULL != fp) 
                 fprintf(fp,"%5d  %8.3f  %8.3f  %8.3f\n",n,chi2,md->ener[ermsTOT],md->ener[ermsBOUNDS]);
-            if (fplog) {
+            if (NULL != fplog) {
                 fprintf(fplog,"%5d  %8.3f  %8.3f  %8.3f\n",n,chi2,md->ener[ermsTOT],md->ener[ermsBOUNDS]);
                 fflush(fplog);
             }
@@ -1153,16 +1148,38 @@ static real quality_of_fit(real chi2,int N)
     return -1;
 }
 
-static void print_moldip_mols(FILE *fp,t_moldip *md)
+static void print_moldip_mols(FILE *fp,t_moldip *md,
+                              gmx_bool bForce,gmx_bool bMtop)
 {
-    int i,j;
+    int i,j,k;
     
     for(i=0; (i<md->nmol); i++) {
         fprintf(fp,"%-30s  %d\n",md->mymol[i].molname,md->mymol[i].natom);
         for(j=0; (j<md->mymol[i].natom); j++) {
-            fprintf(fp,"  %-5s  %-5s  q = %10g\n",*(md->mymol[i].atoms->atomname[j]),
+            fprintf(fp,"  %-5s  %-5s  q = %10g",*(md->mymol[i].atoms->atomname[j]),
                     md->mymol[i].smnames[j],md->mymol[i].atoms->atom[j].q);
+            if (bForce) 
+            {
+                fprintf(fp,"  %8.3f  %8.3f  %8.3f",
+                        md->mymol[i].f[j][XX],
+                        md->mymol[i].f[j][YY],
+                        md->mymol[i].f[j][ZZ]);
+            }
+            fprintf(fp,"\n");
         }
+        if (bForce) 
+        {
+            for(k=0; (k<F_NRE); k++)
+            {
+                if ((md->mymol[i].enerd.term[k] != 0) || 
+                    (md->mymol[i].mtop.moltype[0].ilist[k].nr > 0))
+                    fprintf(fp,"%s %d %g\n",interaction_function[k].name,
+                            md->mymol[i].mtop.moltype[0].ilist[k].nr,
+                            md->mymol[i].enerd.term[k]);
+            }
+        }
+        if (bMtop)
+            pr_mtop(fp,0,md->mymol[i].molname,&md->mymol[i].mtop,TRUE);
     }
 }
 
@@ -1384,7 +1401,7 @@ int main(int argc, char *argv[])
                 TRUE,TRUE,TRUE,watoms,FALSE);
     if (0 == md->nmol)
         gmx_fatal(FARGS,"No molecules!");
-    print_moldip_mols(fp,md);
+    print_moldip_mols(fp,md,FALSE,FALSE);
     print_moldip_specs(fp,md,"Before optimization",NULL,oenv);
     omt = analyze_idef(fp,md->nmol,md->mymol,md->pd,bOpt);
 
@@ -1396,6 +1413,7 @@ int main(int argc, char *argv[])
                     opt2fn("-epot",NFILE,fnm),
                     temperature);
     done_opt_mask(&omt);
+    print_moldip_mols(fp,md,TRUE,TRUE);
     print_moldip_specs(fp,md,"After optimization",opt2fn("-x",NFILE,fnm),oenv);
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);
     

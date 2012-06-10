@@ -1313,19 +1313,19 @@ static void pr_groups(FILE *fp,int indent,const char *title,
     fprintf(fp,"groups          ");
     for(g=0; g<egcNR; g++)
     {
-       printf(" %5.5s",gtypes[g]);
+        fprintf(fp," %5.5s",gtypes[g]);
     }
-    printf("\n");
+    fprintf(fp,"\n");
 
     (void) pr_indent(fp,indent);
     fprintf(fp,"allocated       ");
     nat_max = 0;
     for(g=0; g<egcNR; g++)
     {
-        printf(" %5d",groups->ngrpnr[g]);
+        fprintf(fp," %5d",groups->ngrpnr[g]);
         nat_max = max(nat_max,groups->ngrpnr[g]);
     }
-    printf("\n");
+    fprintf(fp,"\n");
 
     if (nat_max == 0)
     {
