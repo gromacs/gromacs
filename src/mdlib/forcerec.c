@@ -2029,7 +2029,8 @@ static void init_nb_verlet(FILE *fp,
             if (nbpu_opt != NULL && strcmp(nbpu_opt,"gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE, FALSE,
+                pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE,
+                                  EEL_FULL(ir->coulombtype),
                                   &nbv->grp[i].kernel_type);
             }
             else
