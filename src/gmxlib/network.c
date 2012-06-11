@@ -382,7 +382,7 @@ void gmx_init_intra_counters(t_commrec *cr)
     /* counters for PP+PME and PP-only processes on my node */
     int nnodes, nnodes_pp, id_mynode=-1, id_mynode_group=-1, nproc_mynode, nproc_mynode_pp;
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
-    int i, mynum, *num, *num_pp;
+    int i, mynum, *num, *num_s, *num_pp, *num_pp_s;
 #endif
 
     nnodes    = cr->nnodes;
@@ -392,17 +392,20 @@ void gmx_init_intra_counters(t_commrec *cr)
     /* We have MPI and can expect to have different compute nodes */
     mynum = gmx_hostname_num();
 
-    snew(num, nnodes);
-    snew(num_pp, nnodes_pp);
+    /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
+    snew(num,   nnodes);
+    snew(num_s, nnodes);
+    snew(num_pp,   nnodes_pp);
+    snew(num_pp_s, nnodes_pp);
 
-    num[cr->sim_nodeid] = mynum;
+    num_s[cr->sim_nodeid] = mynum;
     if (cr->duty & DUTY_PP)
     {
-        num_pp[cr->nodeid] = mynum;
+        num_pp_s[cr->nodeid] = mynum;
     }
 
-    MPI_Allreduce(MPI_IN_PLACE, num, nnodes, MPI_INT, MPI_SUM, cr->mpi_comm_mysim);
-    MPI_Allreduce(MPI_IN_PLACE, num_pp, nnodes_pp, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
+    MPI_Allreduce(num_s, num, nnodes, MPI_INT, MPI_SUM, cr->mpi_comm_mysim);
+    MPI_Allreduce(num_pp_s, num_pp, nnodes_pp, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
 
     id_mynode       = 0;
     id_mynode_group = 0;
@@ -431,7 +434,9 @@ void gmx_init_intra_counters(t_commrec *cr)
         }
     }
     sfree(num);
+    sfree(num_s);
     sfree(num_pp);
+    sfree(num_pp_s);
 #else
     /* Serial or thread-MPI code, we are running within a node */
     id_mynode       = cr->sim_nodeid;
