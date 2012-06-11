@@ -1,5 +1,6 @@
 PROJECT_NAME           = @CMAKE_PROJECT_NAME@
 PROJECT_NUMBER         = @PROJECT_VERSION@
+LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
 INPUT                  = @CMAKE_SOURCE_DIR@/src \
                          @CMAKE_SOURCE_DIR@/share/template
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
