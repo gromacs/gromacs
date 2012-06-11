@@ -86,47 +86,62 @@
 #define NNBSBB_D         2
 
 
-/* Strides for x/f with xyz and SSE/AVX xxxxyyyyzzzz coordinate order */
-#define STRIDE3  3
-#define STRIDE4  4
-#define STRIDE8  8
+/* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
+#define STRIDE_XYZ   3
+#define STRIDE_XYZQ  4
+/* Size of packs of x, y or z with SSE/AVX packed xxxxyyyyzzzz coords/forces */
+#define PACK_X4      4
+#define PACK_X8      8
+/* Strides for a pack of 4 and 8 coordinates */
+#define STRIDE_P4    (DIM*PACK_X4)
+#define STRIDE_P8    (DIM*PACK_X8)
 
 /* Index of atom a into the SSE/AVX coordinate array */
-#define X4_IND_A(a)  (DIM*STRIDE4*((a) >> 2) + ((a) & (STRIDE4 - 1)))
-#define X8_IND_A(a)  (DIM*STRIDE8*((a) >> 3) + ((a) & (STRIDE8 - 1)))
+#define X4_IND_A(a)  (STRIDE_P4*((a) >> 2) + ((a) & (PACK_X4 - 1)))
+#define X8_IND_A(a)  (STRIDE_P8*((a) >> 3) + ((a) & (PACK_X8 - 1)))
 
 
 #ifdef NBNXN_SEARCH_SSE
 
 /* The functions below are macros as they are performance sensitive */
 
-/* i-cluster index to j-cluster index conversion for 4x4, 4x2, 4x8 */
+/* 4x4 list, pack=4: no complex conversion required */
+/* i-cluster to j-cluster conversion */
 #define CI_TO_CJ_J4(ci)   (ci)
+/* cluster index to coordinate array index conversion */
+#define X_IND_CI_J4(ci)  ((ci)*STRIDE_P4)
+#define X_IND_CJ_J4(cj)  ((cj)*STRIDE_P4)
+
+/* 4x2 list, pack=4: j-cluster size is half the packing width */
+/* i-cluster to j-cluster conversion */
 #define CI_TO_CJ_J2(ci)  ((ci)<<1)
+/* cluster index to coordinate array index conversion */
+#define X_IND_CI_J2(ci)  ((ci)*STRIDE_P4)
+#define X_IND_CJ_J2(cj)  (((cj)>>1)*STRIDE_P4 + ((cj) & 1)*(PACK_X4>>1))
+
+/* 4x8 list, pack=8: i-cluster size is half the packing width */
+/* i-cluster to j-cluster conversion */
 #define CI_TO_CJ_J8(ci)  ((ci)>>1)
+/* cluster index to coordinate array index conversion */
+#define X_IND_CI_J8(ci)  (((ci)>>1)*STRIDE_P8 + ((ci) & 1)*(PACK_X8>>1))
+#define X_IND_CJ_J8(cj)  ((cj)*STRIDE_P8)
 
-#define X_IND_CI_J4(ci)  ((ci)*DIM*STRIDE4)
-#define X_IND_CJ_J4(cj)  ((cj)*DIM*STRIDE4)
-
-#define X_IND_CI_J2(ci)  ((ci)*DIM*STRIDE4)
-#define X_IND_CJ_J2(cj)  (((cj)>>1)*DIM*STRIDE4 + ((cj) & 1)*2)
-
-#define X_IND_CI_J8(ci)  (((ci)>>1)*DIM*STRIDE8 + ((ci) & 1)*(STRIDE8>>1))
-#define X_IND_CJ_J8(cj)  ((cj)*DIM*STRIDE8)
-
+/* The j-cluster size is matched to the SIMD width */
 #ifndef GMX_DOUBLE
+/* 128 bits can hold 4 floats */
 #define CI_TO_CJ_S128(ci)  CI_TO_CJ_J4(ci)
 #define X_IND_CI_S128(ci)  X_IND_CI_J4(ci)
 #define X_IND_CJ_S128(cj)  X_IND_CJ_J4(cj)
-
+/* 256 bits can hold 8 floats */
 #define CI_TO_CJ_S256(ci)  CI_TO_CJ_J8(ci)
 #define X_IND_CI_S256(ci)  X_IND_CI_J8(ci)
 #define X_IND_CJ_S256(cj)  X_IND_CJ_J8(cj)
 #else
+/* 128 bits can hold 2 doubles */
 #define CI_TO_CJ_S128(ci)  CI_TO_CJ_J2(ci)
 #define X_IND_CI_S128(ci)  X_IND_CI_J2(ci)
 #define X_IND_CJ_S128(cj)  X_IND_CJ_J2(cj)
-
+/* 256 bits can hold 4 doubles */
 #define CI_TO_CJ_S256(ci)  CI_TO_CJ_J4(ci)
 #define X_IND_CI_S256(ci)  X_IND_CI_J4(ci)
 #define X_IND_CJ_S256(cj)  X_IND_CJ_J4(cj)
@@ -875,20 +890,20 @@ static void calc_bounding_box_x_x4(int na,const real *x,float *bb)
     int  j;
     real xl,xh,yl,yh,zl,zh;
 
-    xl = x[0*STRIDE4];
-    xh = x[0*STRIDE4];
-    yl = x[1*STRIDE4];
-    yh = x[1*STRIDE4];
-    zl = x[2*STRIDE4];
-    zh = x[2*STRIDE4];
+    xl = x[0*PACK_X4];
+    xh = x[0*PACK_X4];
+    yl = x[1*PACK_X4];
+    yh = x[1*PACK_X4];
+    zl = x[2*PACK_X4];
+    zh = x[2*PACK_X4];
     for(j=1; j<na; j++)
     {
-        xl = min(xl,x[j+0*STRIDE4]);
-        xh = max(xh,x[j+0*STRIDE4]);
-        yl = min(yl,x[j+1*STRIDE4]);
-        yh = max(yh,x[j+1*STRIDE4]);
-        zl = min(zl,x[j+2*STRIDE4]);
-        zh = max(zh,x[j+2*STRIDE4]);
+        xl = min(xl,x[j+0*PACK_X4]);
+        xh = max(xh,x[j+0*PACK_X4]);
+        yl = min(yl,x[j+1*PACK_X4]);
+        yh = max(yh,x[j+1*PACK_X4]);
+        zl = min(zl,x[j+2*PACK_X4]);
+        zh = max(zh,x[j+2*PACK_X4]);
     }
     /* Note: possible double to float conversion here */
     bb[0] = R2F_D(xl);
@@ -905,20 +920,20 @@ static void calc_bounding_box_x_x8(int na,const real *x,float *bb)
     int  j;
     real xl,xh,yl,yh,zl,zh;
 
-    xl = x[0*STRIDE8];
-    xh = x[0*STRIDE8];
-    yl = x[1*STRIDE8];
-    yh = x[1*STRIDE8];
-    zl = x[2*STRIDE8];
-    zh = x[2*STRIDE8];
+    xl = x[0*PACK_X8];
+    xh = x[0*PACK_X8];
+    yl = x[1*PACK_X8];
+    yh = x[1*PACK_X8];
+    zl = x[2*PACK_X8];
+    zh = x[2*PACK_X8];
     for(j=1; j<na; j++)
     {
-        xl = min(xl,x[j+0*STRIDE8]);
-        xh = max(xh,x[j+0*STRIDE8]);
-        yl = min(yl,x[j+1*STRIDE8]);
-        yh = max(yh,x[j+1*STRIDE8]);
-        zl = min(zl,x[j+2*STRIDE8]);
-        zh = max(zh,x[j+2*STRIDE8]);
+        xl = min(xl,x[j+0*PACK_X8]);
+        xh = max(xh,x[j+0*PACK_X8]);
+        yl = min(yl,x[j+1*PACK_X8]);
+        yh = max(yh,x[j+1*PACK_X8]);
+        zl = min(zl,x[j+2*PACK_X8]);
+        zh = max(zh,x[j+2*PACK_X8]);
     }
     /* Note: possible double to float conversion here */
     bb[0] = R2F_D(xl);
@@ -939,7 +954,7 @@ static void calc_bounding_box_x_x4_halves(int na,const real *x,
 
     if (na > 2)
     {
-        calc_bounding_box_x_x4(min(na-2,2),x+(STRIDE4>>1),bbj+NNBSBB_B);
+        calc_bounding_box_x_x4(min(na-2,2),x+(PACK_X4>>1),bbj+NNBSBB_B);
     }
     else
     {
@@ -1182,7 +1197,7 @@ static void clear_nbat_real(int na,int nbatFormat,real *xnb,int a0)
         {
             for(d=0; d<DIM; d++)
             {
-                xnb[(a0+a)*STRIDE3+d] = 0;
+                xnb[(a0+a)*STRIDE_XYZ+d] = 0;
             }
         }
         break;
@@ -1191,40 +1206,40 @@ static void clear_nbat_real(int na,int nbatFormat,real *xnb,int a0)
         {
             for(d=0; d<DIM; d++)
             {
-                xnb[(a0+a)*STRIDE4+d] = 0;
+                xnb[(a0+a)*STRIDE_XYZQ+d] = 0;
             }
         }
         break;
     case nbatX4:
         j = X4_IND_A(a0);
-        c = a0 & (STRIDE4-1);
+        c = a0 & (PACK_X4-1);
         for(a=0; a<na; a++)
         {
-            xnb[j+0*STRIDE4] = 0;
-            xnb[j+1*STRIDE4] = 0;
-            xnb[j+2*STRIDE4] = 0;
+            xnb[j+0*PACK_X4] = 0;
+            xnb[j+1*PACK_X4] = 0;
+            xnb[j+2*PACK_X4] = 0;
             j++;
             c++;
-            if (c == STRIDE4)
+            if (c == PACK_X4)
             {
-                j += 2*STRIDE4;
+                j += 2*PACK_X4;
                 c  = 0;
             }
         }
         break;
     case nbatX8:
         j = X8_IND_A(a0);
-        c = a0 & (STRIDE8-1);
+        c = a0 & (PACK_X8-1);
         for(a=0; a<na; a++)
         {
-            xnb[j+0*STRIDE8] = 0;
-            xnb[j+1*STRIDE8] = 0;
-            xnb[j+2*STRIDE8] = 0;
+            xnb[j+0*PACK_X8] = 0;
+            xnb[j+1*PACK_X8] = 0;
+            xnb[j+2*PACK_X8] = 0;
             j++;
             c++;
-            if (c == STRIDE8)
+            if (c == PACK_X8)
             {
-                j += 2*STRIDE8;
+                j += 2*PACK_X8;
                 c  = 0;
             }
         }
@@ -1249,7 +1264,7 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
     switch (nbatFormat)
     {
     case nbatXYZ:
-        j = a0*STRIDE3;
+        j = a0*STRIDE_XYZ;
         for(i=0; i<na; i++)
         {
             xnb[j++] = x[a[i]][XX];
@@ -1268,7 +1283,7 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
         }
         break;
     case nbatXYZQ:
-        j = a0*STRIDE4;
+        j = a0*STRIDE_XYZQ;
         for(i=0; i<na; i++)
         {
             xnb[j++] = x[a[i]][XX];
@@ -1287,62 +1302,62 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
         break;
     case nbatX4:
         j = X4_IND_A(a0);
-        c = a0 & (STRIDE4-1);
+        c = a0 & (PACK_X4-1);
         for(i=0; i<na; i++)
         {
-            xnb[j+0*STRIDE4] = x[a[i]][XX];
-            xnb[j+1*STRIDE4] = x[a[i]][YY];
-            xnb[j+2*STRIDE4] = x[a[i]][ZZ];
+            xnb[j+0*PACK_X4] = x[a[i]][XX];
+            xnb[j+1*PACK_X4] = x[a[i]][YY];
+            xnb[j+2*PACK_X4] = x[a[i]][ZZ];
             j++;
             c++;
-            if (c == STRIDE4)
+            if (c == PACK_X4)
             {
-                j += 2*STRIDE4;
+                j += 2*PACK_X4;
                 c  = 0;
             }
         }
         /* Complete the partially filled last cell with particles far apart */
         for(; i<na_round; i++)
         {
-            xnb[j+0*STRIDE4] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j+1*STRIDE4] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j+2*STRIDE4] = -NBAT_FAR_AWAY*(1 + cz + i);
+            xnb[j+0*PACK_X4] = -NBAT_FAR_AWAY*(1 + cx);
+            xnb[j+1*PACK_X4] = -NBAT_FAR_AWAY*(1 + cy);
+            xnb[j+2*PACK_X4] = -NBAT_FAR_AWAY*(1 + cz + i);
             j++;
             c++;
-            if (c == STRIDE4)
+            if (c == PACK_X4)
             {
-                j += 2*STRIDE4;
+                j += 2*PACK_X4;
                 c  = 0;
             }
         }
         break;
     case nbatX8:
         j = X8_IND_A(a0);
-        c = a0 & (STRIDE8 - 1);
+        c = a0 & (PACK_X8 - 1);
         for(i=0; i<na; i++)
         {
-            xnb[j+0*STRIDE8] = x[a[i]][XX];
-            xnb[j+1*STRIDE8] = x[a[i]][YY];
-            xnb[j+2*STRIDE8] = x[a[i]][ZZ];
+            xnb[j+0*PACK_X8] = x[a[i]][XX];
+            xnb[j+1*PACK_X8] = x[a[i]][YY];
+            xnb[j+2*PACK_X8] = x[a[i]][ZZ];
             j++;
             c++;
-            if (c == STRIDE8)
+            if (c == PACK_X8)
             {
-                j += 2*STRIDE8;
+                j += 2*PACK_X8;
                 c  = 0;
             }
         }
         /* Complete the partially filled last cell with particles far apart */
         for(; i<na_round; i++)
         {
-            xnb[j+0*STRIDE8] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j+1*STRIDE8] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j+2*STRIDE8] = -NBAT_FAR_AWAY*(1 + cz + i);
+            xnb[j+0*PACK_X8] = -NBAT_FAR_AWAY*(1 + cx);
+            xnb[j+1*PACK_X8] = -NBAT_FAR_AWAY*(1 + cy);
+            xnb[j+2*PACK_X8] = -NBAT_FAR_AWAY*(1 + cz + i);
             j++;
             c++;
-            if (c == STRIDE8)
+            if (c == PACK_X8)
             {
-                j += 2*STRIDE8;
+                j += 2*PACK_X8;
                 c  = 0;
             }
         }
@@ -2237,7 +2252,8 @@ void nbnxn_grid_add_simple(nbnxn_search_t nbs,
             tx = sc*ncd + c;
 
             na = NBNXN_CPU_CLUSTER_I_SIZE;
-            while (na > 0 && nbat->type[tx*STRIDE4+na-1] == nbat->ntype-1)
+            while (na > 0 &&
+                   nbat->type[tx*NBNXN_CPU_CLUSTER_I_SIZE+na-1] == nbat->ntype-1)
             {
                 na--;
             }
@@ -2247,16 +2263,18 @@ void nbnxn_grid_add_simple(nbnxn_search_t nbs,
                 switch (nbat->XFormat)
                 {
                 case nbatX4:
-                    calc_bounding_box_x_x4(na,nbat->x+tx*DIM*STRIDE4,
+                    /* PACK_X4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
+                    calc_bounding_box_x_x4(na,nbat->x+tx*STRIDE_P4,
                                            bb+tx*NNBSBB_B);
                     break;
                 case nbatX8:
-                    calc_bounding_box_x_x8(na,nbat->x+X8_IND_A(tx*STRIDE4),
+                    /* PACK_X8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
+                    calc_bounding_box_x_x8(na,nbat->x+X8_IND_A(tx*NBNXN_CPU_CLUSTER_I_SIZE),
                                            bb+tx*NNBSBB_B);
                     break;
                 default:
                     calc_bounding_box(na,nbat->xstride,
-                                      nbat->x+tx*DIM*nbat->xstride,
+                                      nbat->x+tx*NBNXN_CPU_CLUSTER_I_SIZE*nbat->xstride,
                                       bb+tx*NNBSBB_B);
                     break;
                 }
@@ -3174,9 +3192,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE3+0] - x_j[(cjf_gl*4+j)*STRIDE3+0]) +
-                         sqr(x_ci[i*STRIDE3+1] - x_j[(cjf_gl*4+j)*STRIDE3+1]) +
-                         sqr(x_ci[i*STRIDE3+2] - x_j[(cjf_gl*4+j)*STRIDE3+2]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+0] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+0]) +
+                         sqr(x_ci[i*STRIDE_XYZ+1] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+1]) +
+                         sqr(x_ci[i*STRIDE_XYZ+2] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+2]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -3216,9 +3234,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE3+0] - x_j[(cjl_gl*4+j)*STRIDE3+0]) +
-                         sqr(x_ci[i*STRIDE3+1] - x_j[(cjl_gl*4+j)*STRIDE3+1]) +
-                         sqr(x_ci[i*STRIDE3+2] - x_j[(cjl_gl*4+j)*STRIDE3+2]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+0] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+0]) +
+                         sqr(x_ci[i*STRIDE_XYZ+1] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+1]) +
+                         sqr(x_ci[i*STRIDE_XYZ+2] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+2]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -3247,7 +3265,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 /* Include make_cluster_list_x86_simd128/256 */
 #define GMX_MM128_HERE
 #include "gmx_sse_or_avx.h"
-#define STRIDE_S  STRIDE4
+#define STRIDE_S  PACK_X4
 #include "nbnxn_search_x86_simd.h"
 #undef STRIDE_S
 #undef GMX_MM128_HERE
@@ -4017,9 +4035,9 @@ static void icell_set_x_simple(int ci,
 
     for(i=0; i<NBNXN_CPU_CLUSTER_I_SIZE; i++)
     {
-        work->x_ci[i*STRIDE3+0] = x[(ia+i)*stride+XX] + shx;
-        work->x_ci[i*STRIDE3+1] = x[(ia+i)*stride+YY] + shy;
-        work->x_ci[i*STRIDE3+2] = x[(ia+i)*stride+ZZ] + shz;
+        work->x_ci[i*STRIDE_XYZ+0] = x[(ia+i)*stride+XX] + shx;
+        work->x_ci[i*STRIDE_XYZ+1] = x[(ia+i)*stride+YY] + shy;
+        work->x_ci[i*STRIDE_XYZ+2] = x[(ia+i)*stride+ZZ] + shz;
     }
 }
 
@@ -4754,7 +4772,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
 
                     nbs->icell_set_x(cell0_i+ci,shx,shy,shz,
-                                     gridi->na_c,nbat->xstride,nbat->x,nbl->work);
+                                     gridi->na_c,nbat->xstride,nbat->x,
+                                     nbl->work);
 
                     for(cx=cxf; cx<=cxl; cx++)
                     {
@@ -5502,8 +5521,8 @@ void nbnxn_atomdata_init(FILE *fp,
     }
     nbat->energrp = NULL;
     nbat->alloc((void **)&nbat->shift_vec,SHIFTS*sizeof(*nbat->shift_vec));
-    nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE4 : STRIDE3);
-    nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE4 : STRIDE3);
+    nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
+    nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->x       = NULL;
     nbat->nout    = nout;
     snew(nbat->out,nbat->nout);
@@ -5526,13 +5545,13 @@ static void copy_lj_to_nbat_lj_comb_x4(const real *ljparam_type,
     /* The LJ params follow the combination rule:
      * copy the params for the type array to the atom array.
      */
-    for(is=0; is<na; is+=STRIDE4)
+    for(is=0; is<na; is+=PACK_X4)
     {
-        for(k=0; k<STRIDE4; k++)
+        for(k=0; k<PACK_X4; k++)
         {
             i = is + k;
             ljparam_at[is*2        +k] = ljparam_type[type[i]*2  ];
-            ljparam_at[is*2+STRIDE4+k] = ljparam_type[type[i]*2+1];
+            ljparam_at[is*2+PACK_X4+k] = ljparam_type[type[i]*2+1];
         }
     }
 }
@@ -5546,13 +5565,13 @@ static void copy_lj_to_nbat_lj_comb_x8(const real *ljparam_type,
     /* The LJ params follow the combination rule:
      * copy the params for the type array to the atom array.
      */
-    for(is=0; is<na; is+=STRIDE8)
+    for(is=0; is<na; is+=PACK_X8)
     {
-        for(k=0; k<STRIDE8; k++)
+        for(k=0; k<PACK_X8; k++)
         {
             i = is + k;
             ljparam_at[is*2        +k] = ljparam_type[type[i]*2  ];
-            ljparam_at[is*2+STRIDE8+k] = ljparam_type[type[i]*2+1];
+            ljparam_at[is*2+PACK_X8+k] = ljparam_type[type[i]*2+1];
         }
     }
 }
@@ -5621,7 +5640,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
 
             if (nbat->XFormat == nbatXYZQ)
             {
-                q = nbat->x + ash*nbat->xstride + 3;
+                q = nbat->x + ash*STRIDE_XYZQ + 3;
                 for(i=0; i<na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
@@ -5885,8 +5904,8 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 i = X4_IND_A(cell[a]);
 
                 f[a][XX] += fnb[i];
-                f[a][YY] += fnb[i+STRIDE4];
-                f[a][ZZ] += fnb[i+2*STRIDE4];
+                f[a][YY] += fnb[i+  PACK_X4];
+                f[a][ZZ] += fnb[i+2*PACK_X4];
             }
         }
         else
@@ -5898,8 +5917,8 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 for(fa=0; fa<nfa; fa++)
                 {
                     f[a][XX] += out[fa].f[i];
-                    f[a][YY] += out[fa].f[i+STRIDE4];
-                    f[a][ZZ] += out[fa].f[i+2*STRIDE4];
+                    f[a][YY] += out[fa].f[i+  PACK_X4];
+                    f[a][ZZ] += out[fa].f[i+2*PACK_X4];
                 }
             }
         }
@@ -5914,8 +5933,8 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 i = X8_IND_A(cell[a]);
 
                 f[a][XX] += fnb[i];
-                f[a][YY] += fnb[i+STRIDE8];
-                f[a][ZZ] += fnb[i+2*STRIDE8];
+                f[a][YY] += fnb[i+  PACK_X8];
+                f[a][ZZ] += fnb[i+2*PACK_X8];
             }
         }
         else
@@ -5927,8 +5946,8 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 for(fa=0; fa<nfa; fa++)
                 {
                     f[a][XX] += out[fa].f[i];
-                    f[a][YY] += out[fa].f[i+STRIDE8];
-                    f[a][ZZ] += out[fa].f[i+2*STRIDE8];
+                    f[a][YY] += out[fa].f[i+  PACK_X8];
+                    f[a][ZZ] += out[fa].f[i+2*PACK_X8];
                 }
             }
         }
