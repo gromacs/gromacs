@@ -212,7 +212,8 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
                                                                         \
     for(p=0; p<UNROLLJ; p++)                                            \
     {                                                                   \
-        clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*UNROLLJ);              \
+        /* Here we load "only" 4 floats, as we need just 2 */           \
+        clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*4);                    \
     }                                                                   \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0],clj_SSE[1],clj_SSE[2],clj_SSE[3],c6t_SSE[0],c12t_SSE[0]); \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[4],clj_SSE[5],clj_SSE[6],clj_SSE[7],c6t_SSE[1],c12t_SSE[1]); \
