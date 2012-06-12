@@ -59,9 +59,6 @@
 
 #ifdef GMX_OPENMP
 #define FFT5D_THREADS
-#endif
-#ifdef FFT5D_THREADS
-#include <omp.h>
 /* requires fftw compiled with openmp */
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
@@ -382,13 +379,31 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     if (!(flags&FFT5D_NOMALLOC)) { 
         snew_aligned(lin, lsize, 32);
         snew_aligned(lout, lsize, 32);
-        snew_aligned(lout2, lsize, 32);
-        snew_aligned(lout3, lsize, 32);
+        if (nthreads > 1)
+        {
+            /* We need extra transpose buffers to avoid OpenMP barriers */
+            snew_aligned(lout2, lsize, 32);
+            snew_aligned(lout3, lsize, 32);
+        }
+        else
+        {
+            /* We can reuse the buffers to avoid cache misses */
+            lout2 = lin;
+            lout3 = lout;
+        }
     } else {
         lin = *rlin;
         lout = *rlout;
-        lout2 = *rlout2;
-        lout3 = *rlout3;
+        if (nthreads > 1)
+        {
+            lout2 = *rlout2;
+            lout3 = *rlout3;
+        }
+        else
+        {
+            lout2 = lin;
+            lout3 = lout;
+        }
     }
 
     plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
@@ -508,6 +523,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
              */
 #pragma omp parallel for num_threads(nthreads) schedule(static) ordered
             for(t=0; t<nthreads; t++)
+#pragma omp ordered
             {
                 int tsize = ((t+1)*pM[s]*pK[s]/nthreads)-(t*pM[s]*pK[s]/nthreads);
 
@@ -903,7 +919,7 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
         }
 #endif
 
-        if (bParallelDim) {
+        if (bParallelDim || plan->nthreads == 1) {
             fftout = lout;
         }
         else
@@ -1090,6 +1106,14 @@ llToAll
 
 void fft5d_destroy(fft5d_plan plan) {
     int s,t;
+
+    /* Note that we expect plan->lin and plan->lout to be freed elsewhere */
+    if (plan->nthreads > 1)
+    {
+        free(plan->lout2);
+        free(plan->lout3);
+    }
+
     for (s=0;s<3;s++)
     {
         if (plan->p1d[s])
