@@ -1,0 +1,8 @@
+Verified+1: Jenkins Buildbot
+Code-Review+2: Gerrit Groenhof <g.groenhof@googlemail.com>
+Code-Review+1: Martin Hoefling <martin.hoefling@gmx.de>
+Submitted-by: Gerrit Groenhof <g.groenhof@googlemail.com>
+Submitted-at: Tue, 12 Jun 2012 18:07:30 +0200
+Reviewed-on: https://gerrit.gromacs.org/1050
+Project: gromacs
+Branch: refs/heads/release-4-5-patches
