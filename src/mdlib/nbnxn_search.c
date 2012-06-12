@@ -71,10 +71,11 @@
 #define NBNXN_8BB_SSE
 #endif
 
-#endif
+/* The width of SSE with single precision, used for bounding boxes */
+#define SSE_F_WIDTH        4
+#define SSE_F_WIDTH_2LOG   2
 
-#define SSE_WIDTH        4
-#define SSE_WIDTH_2LOG   2
+#endif /* NBNXN_SEARCH_SSE */
 
 /* Pair search box upper and lower corner in x,y,z.
  * Store this in 4 iso 3 reals, which is useful with SSE.
@@ -169,7 +170,7 @@
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #define NBNXN_BBXXXX
 /* Size of bounding box corners quadruplet */
-#define NNBSBB_XXXX      (NNBSBB_D*DIM*SSE_WIDTH)
+#define NNBSBB_XXXX      (NNBSBB_D*DIM*SSE_F_WIDTH)
 #endif
 
 /* We shift the i-particles backward for PBC.
@@ -251,7 +252,9 @@ static gmx_icell_set_x_t icell_set_x_simple_x86_simd256;
 #endif
 #endif
 static gmx_icell_set_x_t icell_set_x_supersub;
+#ifdef NBNXN_SEARCH_SSE
 static gmx_icell_set_x_t icell_set_x_supersub_sse8;
+#endif
 
 /* Function type for checking if sub-cells are within range */
 typedef gmx_bool
@@ -698,7 +701,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         srenew(grid->nsubc,grid->nc_nalloc);
         srenew(grid->bbcz,grid->nc_nalloc*NNBSBB_D);
 #ifdef NBNXN_8BB_SSE
-        bb_nalloc = grid->nc_nalloc*NSUBCELL/SSE_WIDTH*NNBSBB_XXXX;
+        bb_nalloc = grid->nc_nalloc*NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX;
 #else
         bb_nalloc = grid->nc_nalloc*NSUBCELL*NNBSBB_B;
 #endif
@@ -1021,7 +1024,7 @@ static void calc_bounding_box_sse(int na,const float *x,float *bb)
 
     for(i=1; i<na; i++)
     {
-        x_SSE    = _mm_load_ps(x+i*4);
+        x_SSE    = _mm_load_ps(x+i*NNBSBB_C);
         bb_0_SSE = _mm_min_ps(bb_0_SSE,x_SSE);
         bb_1_SSE = _mm_max_ps(bb_1_SSE,x_SSE);
     }
@@ -1063,20 +1066,20 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid,const float *bb)
         nc2 = (grid->cxy_na[i]+3)>>(2+1);
         for(c2=sc2; c2<sc2+nc2; c2++)
         {
-            min_SSE = _mm_min_ps(_mm_load_ps(bb+(c2*4+0)*4),
-                                 _mm_load_ps(bb+(c2*4+2)*4));
-            max_SSE = _mm_max_ps(_mm_load_ps(bb+(c2*4+1)*4),
-                                 _mm_load_ps(bb+(c2*4+3)*4));
-            _mm_store_ps(grid->bbj+(c2*2+0)*4,min_SSE);
-            _mm_store_ps(grid->bbj+(c2*2+1)*4,max_SSE);
+            min_SSE = _mm_min_ps(_mm_load_ps(bb+(c2*4+0)*NNBSBB_C),
+                                 _mm_load_ps(bb+(c2*4+2)*NNBSBB_C));
+            max_SSE = _mm_max_ps(_mm_load_ps(bb+(c2*4+1)*NNBSBB_C),
+                                 _mm_load_ps(bb+(c2*4+3)*NNBSBB_C));
+            _mm_store_ps(grid->bbj+(c2*2+0)*NNBSBB_C,min_SSE);
+            _mm_store_ps(grid->bbj+(c2*2+1)*NNBSBB_C,max_SSE);
         }
         if (((grid->cxy_na[i]+3)>>2) & 1)
         {
             /* Copy the last bb for odd bb count in this column */
-            for(j=0; j<4; j++)
+            for(j=0; j<NNBSBB_C; j++)
             {
-                grid->bbj[(c2*2+0)*4+j] = bb[(c2*4+0)*4+j];
-                grid->bbj[(c2*2+1)*4+j] = bb[(c2*4+1)*4+j];
+                grid->bbj[(c2*2+0)*NNBSBB_C+j] = bb[(c2*4+0)*NNBSBB_C+j];
+                grid->bbj[(c2*2+1)*NNBSBB_C+j] = bb[(c2*4+1)*NNBSBB_C+j];
             }
         }
     }
@@ -1126,18 +1129,18 @@ static void print_bbsizes_supersub(FILE *fp,
     for(c=0; c<grid->nc; c++)
     {
 #ifdef NBNXN_BBXXXX
-        for(s=0; s<grid->nsubc[c]; s+=SSE_WIDTH)
+        for(s=0; s<grid->nsubc[c]; s+=SSE_F_WIDTH)
         {
             int cs_w,i,d;
 
-            cs_w = (c*NSUBCELL + s)/SSE_WIDTH;
-            for(i=0; i<SSE_WIDTH; i++)
+            cs_w = (c*NSUBCELL + s)/SSE_F_WIDTH;
+            for(i=0; i<SSE_F_WIDTH; i++)
             {
                 for(d=0; d<DIM; d++)
                 {
                     ba[d] +=
-                        grid->bb[cs_w*NNBSBB_XXXX+(DIM+d)*SSE_WIDTH+i] -
-                        grid->bb[cs_w*NNBSBB_XXXX+     d *SSE_WIDTH+i];
+                        grid->bb[cs_w*NNBSBB_XXXX+(DIM+d)*SSE_F_WIDTH+i] -
+                        grid->bb[cs_w*NNBSBB_XXXX+     d *SSE_F_WIDTH+i];
                 }
             }
         }
@@ -1507,8 +1510,8 @@ void fill_cell(const nbnxn_search_t nbs,
                              */
         bb_ptr =
             grid->bb +
-            ((a0-grid->cell0*grid->na_sc)>>(grid->na_c_2log+SSE_WIDTH_2LOG))*NNBSBB_XXXX +
-            (((a0-grid->cell0*grid->na_sc)>>grid->na_c_2log) & (SSE_WIDTH-1));
+            ((a0-grid->cell0*grid->na_sc)>>(grid->na_c_2log+SSE_F_WIDTH_2LOG))*NNBSBB_XXXX +
+            (((a0-grid->cell0*grid->na_sc)>>grid->na_c_2log) & (SSE_F_WIDTH-1));
 
 #ifdef NBNXN_SEARCH_SSE_SINGLE
         if (nbat->XFormat == nbatXYZQ)
@@ -1650,7 +1653,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     int  subdiv_x,sub_x,na_x,ash_x;
 
     /* cppcheck-suppress unassignedVariable */
-    float bb_work_array[SSE_WIDTH*NNBSBB_D+3],*bb_work_align;
+    float bb_work_array[NNBSBB_B+3],*bb_work_align;
 
     bb_work_align = (float *)(((size_t)(bb_work_array+3)) & (~((size_t)15)));
 
@@ -2509,23 +2512,23 @@ static void subc_bb_dist2_sse_xxxx(const float *bb_j,
 
     zero = _mm_setzero_ps();
 
-    xj_l = _mm_load1_ps(bb_j+0*SSE_WIDTH);
-    yj_l = _mm_load1_ps(bb_j+1*SSE_WIDTH);
-    zj_l = _mm_load1_ps(bb_j+2*SSE_WIDTH);
-    xj_h = _mm_load1_ps(bb_j+3*SSE_WIDTH);
-    yj_h = _mm_load1_ps(bb_j+4*SSE_WIDTH);
-    zj_h = _mm_load1_ps(bb_j+5*SSE_WIDTH);
+    xj_l = _mm_load1_ps(bb_j+0*SSE_F_WIDTH);
+    yj_l = _mm_load1_ps(bb_j+1*SSE_F_WIDTH);
+    zj_l = _mm_load1_ps(bb_j+2*SSE_F_WIDTH);
+    xj_h = _mm_load1_ps(bb_j+3*SSE_F_WIDTH);
+    yj_h = _mm_load1_ps(bb_j+4*SSE_F_WIDTH);
+    zj_h = _mm_load1_ps(bb_j+5*SSE_F_WIDTH);
 
-    for(si=0; si<nsi; si+=SSE_WIDTH)
+    for(si=0; si<nsi; si+=SSE_F_WIDTH)
     {
         shi = si*NNBSBB_D*DIM;
 
-        xi_l = _mm_load_ps(bb_i+shi+0*SSE_WIDTH);
-        yi_l = _mm_load_ps(bb_i+shi+1*SSE_WIDTH);
-        zi_l = _mm_load_ps(bb_i+shi+2*SSE_WIDTH);
-        xi_h = _mm_load_ps(bb_i+shi+3*SSE_WIDTH);
-        yi_h = _mm_load_ps(bb_i+shi+4*SSE_WIDTH);
-        zi_h = _mm_load_ps(bb_i+shi+5*SSE_WIDTH);
+        xi_l = _mm_load_ps(bb_i+shi+0*SSE_F_WIDTH);
+        yi_l = _mm_load_ps(bb_i+shi+1*SSE_F_WIDTH);
+        zi_l = _mm_load_ps(bb_i+shi+2*SSE_F_WIDTH);
+        xi_h = _mm_load_ps(bb_i+shi+3*SSE_F_WIDTH);
+        yi_h = _mm_load_ps(bb_i+shi+4*SSE_F_WIDTH);
+        zi_h = _mm_load_ps(bb_i+shi+5*SSE_F_WIDTH);
 
         dx_0 = _mm_sub_ps(xi_l,xj_h);
         dy_0 = _mm_sub_ps(yi_l,yj_h);
@@ -2626,12 +2629,12 @@ static gmx_bool subc_in_range_sse8(int na_c,
     rc2_SSE   = _mm_set1_ps(rl2);
 
     na_c_sse = 8/4;
-    ix_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+0)*4);
-    iy_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+1)*4);
-    iz_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+2)*4);
-    ix_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+3)*4);
-    iy_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+4)*4);
-    iz_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+5)*4);
+    ix_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+0)*SSE_F_WIDTH);
+    iy_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+1)*SSE_F_WIDTH);
+    iz_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+2)*SSE_F_WIDTH);
+    ix_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+3)*SSE_F_WIDTH);
+    iy_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+4)*SSE_F_WIDTH);
+    iz_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+5)*SSE_F_WIDTH);
 
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
@@ -2855,7 +2858,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 
     snew(nbl->work,1);
 #ifdef NBNXN_BBXXXX
-    snew_aligned(nbl->work->bb_ci,NSUBCELL/SSE_WIDTH*NNBSBB_XXXX,16);
+    snew_aligned(nbl->work->bb_ci,NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX,16);
 #else
     snew_aligned(nbl->work->bb_ci,NSUBCELL*NNBSBB_B,16);
 #endif
@@ -3340,7 +3343,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
 
 #ifdef NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SSE */
-        subc_bb_dist2_sse_xxxx(gridj->bb+(cj>>SSE_WIDTH_2LOG)*NNBSBB_XXXX+(cj & (SSE_WIDTH-1)),
+        subc_bb_dist2_sse_xxxx(gridj->bb+(cj>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX+(cj & (SSE_F_WIDTH-1)),
                                ci1,bb_ci,d2l);
         *ndistc += na_c*2;
 #endif
@@ -3995,10 +3998,10 @@ static void set_icell_bb_supersub(const float *bb,int ci,
     int ia,m,i;
 
 #ifdef NBNXN_BBXXXX
-    ia = ci*(NSUBCELL>>SSE_WIDTH_2LOG)*NNBSBB_XXXX;
-    for(m=0; m<(NSUBCELL>>SSE_WIDTH_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
+    ia = ci*(NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX;
+    for(m=0; m<(NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
     {
-        for(i=0; i<SSE_WIDTH; i++)
+        for(i=0; i<SSE_F_WIDTH; i++)
         {
             bb_ci[m+ 0+i] = bb[ia+m+ 0+i] + shx;
             bb_ci[m+ 4+i] = bb[ia+m+ 4+i] + shy;
@@ -4062,6 +4065,7 @@ static void icell_set_x_supersub(int ci,
     }
 }
 
+#ifdef NBNXN_SEARCH_SSE
 /* Copies PBC shifted super-cell packed atom coordinates to working array */
 static void icell_set_x_supersub_sse8(int ci,
                                       real shx,real shy,real shz,
@@ -4076,19 +4080,20 @@ static void icell_set_x_supersub_sse8(int ci,
 
     for(si=0; si<NSUBCELL; si++)
     {
-        for(i=0; i<na_c; i+=SSE_WIDTH)
+        for(i=0; i<na_c; i+=SSE_F_WIDTH)
         {
             io = si*na_c + i;
             ia = ci*NSUBCELL*na_c + io;
-            for(j=0; j<4; j++)
+            for(j=0; j<SSE_F_WIDTH; j++)
             {
-                x_ci[io*DIM + j + 0] = x[(ia+j)*stride+0] + shx;
-                x_ci[io*DIM + j + 4] = x[(ia+j)*stride+1] + shy;
-                x_ci[io*DIM + j + 8] = x[(ia+j)*stride+2] + shz;
+                x_ci[io*DIM + j +             0] = x[(ia+j)*stride+0] + shx;
+                x_ci[io*DIM + j +   SSE_F_WIDTH] = x[(ia+j)*stride+1] + shy;
+                x_ci[io*DIM + j + 2*SSE_F_WIDTH] = x[(ia+j)*stride+2] + shz;
             }
         }
     }
 }
+#endif
 
 /* Estimates the interaction volume^2 for non-local interactions */
 static real nonlocal_vol2(const gmx_domdec_zones_t *zones,rvec ls,real r)
