@@ -169,9 +169,11 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
          * is around 0.4 (and 0.7*0.7=0.5).
          */
         /* We need to copy the temporary array, since only the elements
-         * for constraints involved in triangles are updated
-         * and then the pointers are swapped.
+         * for constraints involved in triangles are updated and then
+         * the pointers are swapped. This saving copying the whole arrary.
+         * We need barrier as other threads might still be reading from rhs2.
          */
+#pragma omp barrier
         for(b=b0; b<b1; b++)
         {
             rhs2[b] = rhs1[b];
@@ -194,7 +196,7 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
                         {
                             j = blbnb[n];
                             mvb = mvb + blcc[n]*rhs1[j];
-                    }
+                        }
                     }
                     rhs2[b] = mvb;
                     sol[b]  = sol[b] + mvb;
