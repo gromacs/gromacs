@@ -460,7 +460,7 @@ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
                 if (miller_equiv)
                     miller_equiv = NULL;
                 if (1 == gmx_poldata_search_atype(pd,catom,&elem,NULL,NULL,&miller_equiv,
-                                                  NULL,NULL,NULL,NULL)) 
+                                                  NULL,NULL,NULL,NULL,NULL)) 
                 {
                     (void) gmx_atomprop_query(ap,epropMass,"???",elem,&mm);
                     mass += mm*cnumber;
@@ -691,6 +691,7 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
                     t_atoms_set_resinfo(atoms,i,tab,molnm,1,' ',1,' ');
                     atoms->atomname[i] = put_symtab(tab,aa[i]);
                     atoms->atom[i].atomnumber = gmx_atomprop_atomnumber(ap,aa[i]);
+                    strcpy(atoms->atom[i].elem,gmx_atomprop_element(ap,atoms->atom[i].atomnumber));
                     atoms->atom[i].q = q[i]; 
                     atoms->atom[i].resind = 0;
                     sfree(aa[i]);

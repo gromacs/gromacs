@@ -104,6 +104,7 @@ typedef struct {
 typedef struct {
     int gt_index;
     int natom;
+    double bondorder;
     char **ai;
     int nparam;
     double *param;
@@ -120,7 +121,7 @@ typedef struct {
 } opt_param_t;
 
 static void add_obt(opt_bad_t *obt,int natom,char **ai,
-                    int nparam,double *param,int gt)
+                    int nparam,double *param,double bondorder,int gt)
 {
     int i;
     
@@ -133,15 +134,16 @@ static void add_obt(opt_bad_t *obt,int natom,char **ai,
     snew(obt->param,nparam);
     for(i=0; (i<nparam); i++)
         obt->param[i] = param[i];
+    obt->bondorder = bondorder;
 }
 
 static void add_opt(opt_param_t *opt,int otype,int natom,char **ai,
-                    int nparam,double *param,int gt)
+                    int nparam,double *param,double bondorder,int gt)
 {
     assert(otype < ebtsNR);
     assert(otype >= 0);
     srenew(opt->bad[otype],++opt->nbad[otype]);
-    add_obt(&opt->bad[otype][opt->nbad[otype]-1],natom,ai,nparam,param,gt);
+    add_obt(&opt->bad[otype][opt->nbad[otype]-1],natom,ai,nparam,param,bondorder,gt);
 }
 
 static void opt2list(opt_param_t *opt)
@@ -182,7 +184,7 @@ static void list2opt(opt_param_t *opt)
             case ebtsBONDS:
                 gmx_poldata_set_bond_params(pd,opt->bad[i][j].ai[0],
                                             opt->bad[i][j].ai[1],
-                                            buf);
+                                            opt->bad[i][j].bondorder,buf);
                 break;
             case ebtsANGLES:
                 gmx_poldata_set_angle_params(pd,opt->bad[i][j].ai[0],
@@ -369,6 +371,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
     char   *params,**ptr;
     int    gt,i,n,maxfc = 0;
     double *fc=NULL;
+    double bondorder;
     
     snew(opt,1);
     opt->md = md;
@@ -377,7 +380,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
     *nparam = 0;
     if (bOpt[ebtsBONDS]) {
         while((gt = gmx_poldata_get_bond(md->pd,&(ai[0]),&(ai[1]),
-                                         NULL,NULL,NULL,&params)) > 0) {
+                                         NULL,NULL,&bondorder,&params)) > 0) {
             if (omt->ngtb[ebtsBONDS][gt-1] > 0) {
                 ptr = split(' ',params);
                 for(n = 0; (NULL != ptr[n]); n++) {
@@ -391,7 +394,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                     fc[0] = D0;
                 if (beta0 > 0)
                     fc[1] = beta0;
-                add_opt(opt,ebtsBONDS,2,ai,n,fc,gt);
+                add_opt(opt,ebtsBONDS,2,ai,n,fc,bondorder,gt);
                 *nparam += n;
                 sfree(ptr);
             }
@@ -412,7 +415,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                     }
                     fc[n] = atof(ptr[n]);
                 }
-                add_opt(opt,ebtsANGLES,3,ai,n,fc,gt);
+                add_opt(opt,ebtsANGLES,3,ai,n,fc,0,gt);
                 *nparam += n;
             }
             if (NULL != params)
@@ -434,7 +437,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                     }
                     fc[n] = atof(ptr[n]);
                 }
-                add_opt(opt,ebtsPDIHS,4,ai,n,fc,gt);
+                add_opt(opt,ebtsPDIHS,4,ai,n,fc,0,gt);
                 *nparam += n;
             }
             if (NULL != params)
@@ -456,7 +459,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
                     }
                     fc[n] = atof(ptr[n]);
                 }
-                add_opt(opt,ebtsIDIHS,4,ai,n,fc,gt);
+                add_opt(opt,ebtsIDIHS,4,ai,n,fc,0,gt);
                 *nparam += n;
             }
             if (NULL != params)

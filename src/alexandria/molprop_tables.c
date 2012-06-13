@@ -457,7 +457,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     FILE   *xvg;
     int    i,j,pp,ntab,nfitexp,nfitqm,nh,ielem,imil,atomnumber;
     int    nfirst = 20,nsecond = 24;
-    int    numbonds;
+    int    numbonds,valence;
     double ahc,ahp,mil_pol,bos_pol,alexandria_pol,blength,sig_pol;
     double exp_val,qm_val;
     real   alexandria_aver,alexandria_sigma,nnn;
@@ -477,7 +477,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     {
         while(1 == gmx_poldata_get_atype(pd[pp],&elem,&desc,&(gt_type[cur]),
                                          &miller_equiv,&charge,
-                                         &alexandria_pol,&sig_pol,&spref))
+                                         &valence,&alexandria_pol,&sig_pol,&spref))
         {
             if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur],gt_type[prev]) != 0)) &&
                 (alexandria_pol > 0))
@@ -625,7 +625,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
 
 static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
 {
-    int    i,k,m,cur=0,numbonds;
+    int    i,k,m,cur=0,numbonds,valence;
     double alexandria_pol,sig_pol;
     char   *name,*elem,*gt_type[2] = { NULL, NULL };
     char   *charge,*miller_equiv,*spref,*geometry,*neighbors,*desc;
@@ -657,7 +657,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
     fprintf(fp,"\\\\\n\\hline\n");
     while(1 == gmx_poldata_get_atype(pd,&elem,&desc,&(gt_type[cur]),
                                      &miller_equiv,&charge,
-                                     &alexandria_pol,&sig_pol,&spref))
+                                     &valence,&alexandria_pol,&sig_pol,&spref))
     {
         if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur],gt_type[prev]) != 0)))
         {

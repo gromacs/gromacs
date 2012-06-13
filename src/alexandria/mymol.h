@@ -15,7 +15,7 @@
 enum 
 { 
     immOK, immZeroDip, immNoQuad, immCharged, immError, 
-    immAtomTypes, immAtomNumber, immMolpropConv,
+    immAtomTypes, immAtomNumber, immMolpropConv, immBondOrder,
     immQMInconsistency, immTest, immNoData, immNR 
 };
 
@@ -29,6 +29,8 @@ typedef struct {
     real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol,Ecalc,Force2;
     real           *qESP;
     gmx_bool       *bRing;
+    int            nbond;
+    double         *bondorder;
     gmx_mtop_t     mtop;
     gmx_localtop_t *ltop;
     gpp_atomtype_t atype;

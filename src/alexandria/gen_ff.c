@@ -12,7 +12,7 @@ int main(int argc,char *argv[])
   gmx_poldata_t pd;
   char *smname,*elem,*desc,*gt_type,*gt_old,*charge;
   char *neighbors,*vdwparams,*geometry;
-  int numbonds,atomnumber;
+  int numbonds,atomnumber,valence;
   int bts[ebtsNR];
   char *ai,*aj,*ak,*al,*params;
   double polarizability,sig_pol;
@@ -36,7 +36,7 @@ int main(int argc,char *argv[])
 
   gt_old = NULL;
   while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,
-                                    NULL,&charge,&polarizability,&sig_pol,
+                                    NULL,&charge,&valence,&polarizability,&sig_pol,
                                     &vdwparams))
     {
       if (gmx_atomprop_query(aps,epropMass,"",elem,&mass)) 

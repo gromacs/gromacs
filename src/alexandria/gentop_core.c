@@ -206,22 +206,21 @@ static void detect_rings(t_params *bonds,int natom,gmx_bool bRing[])
     }
 }
 
-void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
-              gmx_conect gc,t_params plist[],int nbond[],
-              gmx_bool bRing[],
-              gmx_bool bH14,
-              gmx_bool bAllDihedrals,
-              gmx_bool bRemoveDoubleDihedrals,
-              int nexcl,t_excls **excls,
-              gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
-              gmx_bool bMovePlists)
+int mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
+             gmx_conect gc,t_params plist[],int nbond[],
+             gmx_bool bRing[],
+             gmx_bool bH14,
+             gmx_bool bAllDihedrals,
+             gmx_bool bRemoveDoubleDihedrals,
+             int nexcl,t_excls **excls,
+             gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
+             gmx_bool bMovePlists)
 {
     t_param  b;
-    int      i,j,ft;
+    int      i,j,ft,nbonds;
     t_pbc    pbc;
     rvec     dx;
     real     dx1,dx11;
-    double   b_order;
     gmx_bool bBond;
     char     *elem_i,*elem_j;
     char     *length_unit;
@@ -254,16 +253,10 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
             if (gc) 
             {
                 bBond = gmx_conect_exist(gc,i,j);
-                if (bBond)
-                    b_order = 1;
-                else
-                    b_order = 0;
             }
             else 
             {
-                b_order =
-                    gmx_poldata_get_bondorder(pd,elem_i,elem_j,dx1,tol);
-                bBond = (b_order > 0);
+                bBond = gmx_poldata_elem_is_bond(pd,elem_i,elem_j,dx1,tol);
             }
             if (bBond) 
             {
@@ -271,8 +264,8 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
                 b.AJ = j;
                 b.C0 = dx11;
                 add_param_to_list (&(plist[F_BONDS]),&b);
-                nbond[i] += b_order;
-                nbond[j] += b_order;
+                nbond[i]++;
+                nbond[j]++;
             }
             if (debug) 
             {
@@ -290,6 +283,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     init_nnb(&nnb,atoms->nr,nexcl+2);
     gen_nnb(&nnb,plist);
     detect_rings(&plist[F_BONDS],atoms->nr,bRing);
+    nbonds = plist[F_BONDS].nr;
     print_nnb(&nnb,"NNB");
     gen_pad(&nnb,atoms,bH14,nexcl,plist,*excls,NULL,
             bAllDihedrals,bRemoveDoubleDihedrals,TRUE);
@@ -299,6 +293,8 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     /* Move the plist to the correct function */
     if (bMovePlists)
         mv_plists(pd,plist,TRUE);
+        
+    return nbonds;
 }
 
 gpp_atomtype_t set_atom_type(FILE *fp,char *molname,

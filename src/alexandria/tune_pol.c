@@ -71,7 +71,7 @@ static int decompose_frag(FILE *fp,int bTrain,
     double pol,poltot,a0,da0,ax,sig_pol,blength,pval,chi2;
     char   *elem,*miller_equiv,*name,*iupac,**atype=NULL,*spref,*gt_type,*atomname;
     char   *neighbors,*geometry,*desc,*charge;
-    int    i,j,niter=0,nusemol=0,nn,nnn,nexp,numbonds,ntp,natom,natom_tot,ca;
+    int    i,j,niter=0,nusemol=0,nn,nnn,nexp,numbonds,ntp,natom,natom_tot,ca,valence;
     int    *test=NULL,ntest=0,row,ims;
     gmx_bool   bPol,*bUseMol;
 
@@ -119,7 +119,7 @@ static int decompose_frag(FILE *fp,int bTrain,
         }
     }        
     while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
-                                      &charge,&pol,&sig_pol,&spref)) 
+                                      &charge,&valence,&pol,&sig_pol,&spref)) 
     {
         if ((pol == 0) || bForceFit) {
             ntp = 0;
@@ -236,7 +236,7 @@ static int decompose_frag(FILE *fp,int bTrain,
     }
     if (bZero)
         gmx_poldata_add_atype(pd,(char *)"0",(char *)"NUL",(char *)"NUL",(char *)"NUL",
-                              (char *)"",a0,0,(char *)"");
+                              (char *)"",0,a0,0,(char *)"");
 
     sfree(bUseMol);
     sfree(fpp);

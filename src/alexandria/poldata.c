@@ -47,7 +47,7 @@
 
 typedef struct {
     char   *desc,*type,*elem,*miller_equiv,*vdwparams,*charge;
-    double polarizability,sig_pol;
+    double valence,polarizability,sig_pol;
 } t_ffatype;
 
 typedef struct {
@@ -273,7 +273,7 @@ int gmx_poldata_get_comb_rule(gmx_poldata_t pd)
 
 void gmx_poldata_add_atype(gmx_poldata_t pd,char *elem,char *desc,
                            char *gt_type,
-                           char *miller_equiv,char *charge,
+                           char *miller_equiv,char *charge,double valence,
                            double polarizability,double sig_pol,
                            char *vdwparams)
 {
@@ -295,6 +295,7 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,char *elem,char *desc,
         sp->type           = strdup(gt_type);
         sp->miller_equiv   = strdup(miller_equiv);
         sp->charge         = strdup(charge);
+        sp->valence        = valence;
         sp->polarizability = polarizability;
         sp->sig_pol        = sig_pol;
         sp->vdwparams      = strdup(vdwparams);
@@ -637,6 +638,20 @@ char *gmx_poldata_get_atom(gmx_poldata_t pd,char *elem,
         return NULL;
 }
 
+int gmx_poldata_type_valence(gmx_poldata_t pd,char *gt_type,double *valence)
+{
+    gmx_poldata *pold = (gmx_poldata *) pd;
+    int i;
+
+    for(i=0; (i<pold->nalexandria); i++) 
+        if (strcasecmp(gt_type,pold->alexandria[i].type) == 0)
+        {
+            *valence = pold->alexandria[i].valence;
+            return 1;
+        }
+    return 0;
+}
+
 int gmx_poldata_type_polarizability(gmx_poldata_t pd,char *gt_type,double *polar,
                                     double *sig_pol)
 {
@@ -666,7 +681,8 @@ char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,char *gt_type)
 
 int gmx_poldata_get_atype(gmx_poldata_t pd,char **elem,char **desc,
                           char **gt_type,char **miller_equiv,
-                          char **charge,double *polarizability,double *sig_pol,
+                          char **charge,double *valence,
+                          double *polarizability,double *sig_pol,
                           char **vdwparams)
 {
     t_ffatype *sp;
@@ -675,6 +691,7 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,char **elem,char **desc,
     if (pd->nalexandria_c < pd->nalexandria) {
         sp = &(pd->alexandria[pd->nalexandria_c]);
         assign_str(charge,sp->charge);
+        assign_scal(valence,sp->valence);
         assign_scal(polarizability,sp->polarizability);
         assign_scal(sig_pol,sp->sig_pol);
         assign_str(elem,sp->elem);
@@ -694,7 +711,8 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,char **elem,char **desc,
 int gmx_poldata_search_atype(gmx_poldata_t pd,char *key,
                              char **elem,char **desc,
                              char **gt_type,char **miller_equiv,
-                             char **charge,double *polarizability,double *sig_pol,
+                             char **charge,double *valence,
+                             double *polarizability,double *sig_pol,
                              char **vdwparams)
 {
     t_ffatype *sp;
@@ -707,6 +725,7 @@ int gmx_poldata_search_atype(gmx_poldata_t pd,char *key,
     if (i<pd->nalexandria) {
         sp = &(pd->alexandria[i]);
         assign_str(charge,sp->charge);
+        assign_scal(valence,sp->valence);
         assign_scal(polarizability,sp->polarizability);
         assign_scal(sig_pol,sp->sig_pol);
         assign_str(elem,sp->elem);
@@ -721,8 +740,8 @@ int gmx_poldata_search_atype(gmx_poldata_t pd,char *key,
         return 0;
 }
 				  
-double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *elem1,char *elem2,
-                                 double distance,double toler)
+int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
+                             double distance,double toler)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     char *ba1,*ba2;
@@ -730,7 +749,7 @@ double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *elem1,char *elem2,
     int j,i,i_best=-1;
   
     if ((NULL == elem1) || (NULL == elem2))
-        return 0.0;
+        return 0;
     for(i=0; (i<pold->ngt_bond); i++) {
         if (0 == strlen(pold->gt_bond[i].elem1)) {
             for(j=0; (j<pold->nalexandria); j++) 
@@ -753,8 +772,32 @@ double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *elem1,char *elem2,
             }
         }
     }
+    return (dev_best < toler);
+}
+				  
+double gmx_poldata_atype_bondorder(gmx_poldata_t pd,char *atype1,char *atype2,
+                                   double distance,double toler)
+{
+    char *ba1,*ba2;
+    double dev,dev_best = 100000;
+    int j,i,i_best=-1;
+  
+    if ((NULL == atype1) || (NULL == atype2))
+        return 0.0;
+    for(i=0; (i<pd->ngt_bond); i++) {
+        ba1 = pd->gt_bond[i].atom1;
+        ba2 = pd->gt_bond[i].atom2;
+        if (((strcasecmp(ba1,atype1) == 0) && (strcasecmp(ba2,atype2) == 0)) ||
+            ((strcasecmp(ba1,atype2) == 0) && (strcasecmp(ba2,atype1) == 0))) {
+            dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
+            if (dev < dev_best) {
+                dev_best = dev;
+                i_best = i;
+            }
+        }
+    }
     if (dev_best < toler)
-        return pold->gt_bond[i_best].bondorder;
+        return pd->gt_bond[i_best].bondorder;
   
     return 0.0;
 }
@@ -901,7 +944,7 @@ static int search_atomtype(gmx_poldata_t pd,char *atom)
  * gt_bond stuff 
  */
 int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
-                                char *params)
+                                double bondorder,char *params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
@@ -909,10 +952,11 @@ int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
   
     for(i=0; (i<pold->ngt_bond); i++) {
         gt_b = &(pold->gt_bond[i]);
-        if ((((strcasecmp(gt_b->atom1,atom1) == 0) && 
-              (strcasecmp(gt_b->atom2,atom2) == 0)) ||
-             ((strcasecmp(gt_b->atom1,atom2) == 0) && 
-              (strcasecmp(gt_b->atom2,atom1) == 0))))
+        if (((((strcasecmp(gt_b->atom1,atom1) == 0) && 
+               (strcasecmp(gt_b->atom2,atom2) == 0)) ||
+              ((strcasecmp(gt_b->atom1,atom2) == 0) && 
+               (strcasecmp(gt_b->atom2,atom1) == 0)))) &&
+            (gt_b->bondorder == bondorder))
             break;
     }
     if (i < pold->ngt_bond) {
@@ -935,7 +979,7 @@ int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
         return 0;
     if (-1 == (a2 = search_atomtype(pd,atom2)))
         return 0;
-    if (gmx_poldata_set_bond_params(pd,atom1,atom2,params) == 0) {
+    if (gmx_poldata_set_bond_params(pd,atom1,atom2,bondorder,params) == 0) {
         pold->ngt_bond++;
         srenew(pold->gt_bond,pold->ngt_bond);
         gt_b = &(pold->gt_bond[pold->ngt_bond-1]);

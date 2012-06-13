@@ -71,7 +71,8 @@ extern int gmx_poldata_get_bonding_rule(gmx_poldata_t pd,
 
 extern void gmx_poldata_add_atype(gmx_poldata_t pd,char *elem,char *desc,
                                   char *gt_type,char *miller_equiv,
-                                  char *charge,double polarizability,double sig_pol,
+                                  char *charge,double valence,
+                                  double polarizability,double sig_pol,
                                   char *vdwparams);
     
 extern void gmx_poldata_set_atype_polarizability(gmx_poldata_t pd,char *gt_type,
@@ -130,19 +131,23 @@ extern char *gmx_poldata_get_charge(gmx_poldata_t pd,char *gt_type);
 extern int gmx_poldata_get_atype(gmx_poldata_t pd,
                                  char **elem,char **desc,
                                  char **gt_type,char **miller_equiv,
-                                 char **charge,double *polarizability,double *sig_pol,
+                                 char **charge,double *valence,
+                                 double *polarizability,double *sig_pol,
                                  char **vdwparams);
 
 /* Return 1 if OK, 0 if not found */				 
 extern int gmx_poldata_search_atype(gmx_poldata_t pd,char *key,
                                     char **elem,char **desc,
                                     char **gt_type,char **miller_equiv,
-                                    char **charge,double *polarizability,double *sig_pol,
+                                    char **charge,double *valence,
+                                    double *polarizability,double *sig_pol,
                                     char **vdwparams);
 
-/* Return 1 if OK, 0 if not found */				 
+/* Return 1 if OK, 0 if not found */
 extern int gmx_poldata_type_polarizability(gmx_poldata_t pd,char *gt_type,
                                            double *polarizability,double *sig_pol);
+/* Return 1 if OK, 0 if not found */
+extern int gmx_poldata_type_valence(gmx_poldata_t pd,char *gt_type,double *valence);
  
 extern void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
                                    int atomnumber,
@@ -180,7 +185,7 @@ extern int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
                                 char *params);
 				   
 extern int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
-                                       char *params);
+                                       double bondorder,char *params);
 				   
     /* Return bond-index 1-N or 0 if not found */
 extern int gmx_poldata_get_bond(gmx_poldata_t pd,char **atom1,char **atom2,
@@ -195,9 +200,12 @@ extern int gmx_poldata_get_bond_ftype(gmx_poldata_t pd);
 extern int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
                                    double *length,double *sigma,char **params);
 
+    /* Returns 1 if there is a bond, 0 if not */
+extern int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
+                                    double distance,double toler);
 /* Returns the bondorder */
-extern double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *atom1,char *atom2,
-                                        double distance,double toler);
+extern double gmx_poldata_atype_bondorder(gmx_poldata_t pd,char *atype1,char *atype2,
+                                          double distance,double toler);
 				     
 extern void gmx_poldata_set_angle_function(gmx_poldata_t pd,char *fn);
 extern char *gmx_poldata_get_angle_function(gmx_poldata_t pd);

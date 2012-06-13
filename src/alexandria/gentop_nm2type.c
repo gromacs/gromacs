@@ -102,7 +102,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     char    **nbhybrid;
     char    *empty_string = "";
     double  mm;
-    int     bLinear,bPlanar,geom;
+    int     bLinear,bPlanar,*geom;
     real    value;
     t_atom  *atom;
     t_param *param;
@@ -113,6 +113,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     snew(param,1);
     maxbond = 0;
     nonebond = 0;
+    snew(geom,atoms->nr);
     for(i=0; (i<atoms->nr); i++) {
         maxbond = max(maxbond,nbonds[i]);
         if (nbonds[i] == 1)
@@ -173,28 +174,41 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
                 if (debug)
                     fprintf(debug,"\n");
 	
-                geom = egmTetrahedral;
+                geom[i] = egmTetrahedral;
                 if ((nb == 2) && is_linear(x[i],x[bbb[0]],x[bbb[1]],pbc,th_toler)) 
                 {
-                    geom = egmLinear;
+                    geom[i] = egmLinear;
                     if ((iter == 0) && (NULL != gvt))
                         gentop_vsite_add_linear(gvt,bbb[0],i,bbb[1]);
                 }
                 else if ((nb == 3) && is_planar(x[i],x[bbb[0]],x[bbb[1]],x[bbb[2]],
                                                 pbc,phi_toler))
                 {
-                    if (bRing[i]) 
-                        geom = egmRingPlanar;
+                    if (bRing[i]) {
+                        if (iter == 0)
+                            geom[i] = egmRingPlanar;
+                        else {
+                            if (((geom[bbb[0]] == egmRingPlanar) && 
+                                 (geom[bbb[1]] == egmRingPlanar)) ||
+                                ((geom[bbb[0]] == egmRingPlanar) && 
+                                 (geom[bbb[2]] == egmRingPlanar)) ||
+                                ((geom[bbb[1]] == egmRingPlanar) && 
+                                 (geom[bbb[2]] == egmRingPlanar)))
+                                geom[i] = egmRingPlanar;
+                            else
+                                geom[i] = egmPlanar;
+                        }
+                    }
                     else
-                        geom = egmPlanar;
+                        geom[i] = egmPlanar;
                     if ((iter == 0) && (NULL != gvt))
                         gentop_vsite_add_planar(gvt,i,bbb[0],bbb[1],bbb[2],nbonds);
                 }
                 if (debug)
                     fprintf(debug,"Geometry = %s (atom %s with %d bonds)\n",
-                            geoms[geom],aname_i,nb);
+                            geoms[geom[i]],aname_i,nb);
                 if ((gt_atom = gmx_poldata_get_atom(pd,elem_i,nb,nbhybrid,
-                                                    geoms[geom])) != NULL)
+                                                    geoms[geom[i]])) != NULL)
                 {
                     if (debug)
                         fprintf(debug,"Selected %s\n",gt_atom);
@@ -254,6 +268,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     sfree(atom);
     sfree(param);
     sfree(nbhybrid);
-    
+    sfree(geom);
+        
     return nresolved;
 }

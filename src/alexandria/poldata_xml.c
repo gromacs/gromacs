@@ -85,7 +85,7 @@ enum {
     exmlFUDGEQQ, exmlFUDGELJ,
     exmlBONDING_RULES, exmlBONDING_RULE,
     exmlGT_ATOM, exmlELEM, exmlNAME, exmlDESC,
-    exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE,
+    exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE, exmlVALENCE,
     exmlNEIGHBORS, 
     exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS,
     exmlFUNCTION,
@@ -114,7 +114,7 @@ static const char *exml_names[exmlNR] = {
     "fudgeQQ", "fudgeLJ",
     "bonding_rules", "bonding_rule",
     "atype", "elem", "name", "description",
-    "gt_type", "miller_equiv", "charge",
+    "gt_type", "miller_equiv", "charge", "valence",
     "neighbors", 
     "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams",
     "function",
@@ -233,13 +233,14 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         break;
     case exmlGT_ATOM:
         if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlMILLER_EQUIV]) && 
-            NN(xbuf[exmlCHARGE]) && 
+            NN(xbuf[exmlCHARGE]) && NN(xbuf[exmlVALENCE]) &&
             NN(xbuf[exmlVDWPARAMS]) && NN(xbuf[exmlGT_TYPE]))
             gmx_poldata_add_atype(pd,xbuf[exmlELEM],
                                   xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
                                   xbuf[exmlGT_TYPE],
                                   xbuf[exmlMILLER_EQUIV],
                                   xbuf[exmlCHARGE],
+                                  atof(xbuf[exmlVALENCE]),
                                   NN(xbuf[exmlPOLARIZABILITY]) ? atof(xbuf[exmlPOLARIZABILITY]) : 0,
                                   NN(xbuf[exmlSIGPOL]) ? atof(xbuf[exmlSIGPOL]) : 0,
                                   xbuf[exmlVDWPARAMS]);
@@ -424,7 +425,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         *epref,*desc,*params,*func;
     char *neighbors,*zeta,*qstr,*rowstr;
     double polarizability,sig_pol,length,tau_ahc,alpha_ahp,angle,J0,chi0,
-        bondorder,sigma,fudgeQQ,fudgeLJ;
+        bondorder,sigma,fudgeQQ,fudgeLJ,valence;
   
     child = add_xml_child(parent,exml_names[exmlGT_ATOMS]);
     tmp = gmx_poldata_get_polar_unit(pd);
@@ -454,13 +455,14 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     fudgeLJ = gmx_poldata_get_fudgeLJ(pd);
     add_xml_double(child,exml_names[exmlFUDGELJ],fudgeLJ);
     while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
-                                      &charge,&polarizability,&sig_pol,&vdwparams)) {
+                                      &charge,&valence,&polarizability,&sig_pol,&vdwparams)) {
         grandchild = add_xml_child(child,exml_names[exmlGT_ATOM]);
         add_xml_char(grandchild,exml_names[exmlELEM],elem);
         add_xml_char(grandchild,exml_names[exmlDESC],desc);
         add_xml_char(grandchild,exml_names[exmlGT_TYPE],gt_type);
         add_xml_char(grandchild,exml_names[exmlMILLER_EQUIV],miller_equiv);
         add_xml_char(grandchild,exml_names[exmlCHARGE],charge);
+        add_xml_double(grandchild,exml_names[exmlVALENCE],valence);
         add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
         add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
         add_xml_char(grandchild,exml_names[exmlVDWPARAMS],vdwparams);

@@ -169,7 +169,7 @@ void add_bond(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,double blen
     gmx_stats_add_point(b->bond[i].lsq,0,blen,0,0);
     b->bond[i].histo[index]++;
     if (NULL != fplog) {
-        fprintf(fplog,"%s bond %s-%s %g\n",molname,a1,a2,blen);
+        fprintf(fplog,"%s bond-%s-%s %g\n",molname,a1,a2,blen);
     }
 }
 
@@ -206,7 +206,7 @@ void add_angle(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,char *a3,d
     gmx_stats_add_point(b->angle[i].lsq,0,angle,0,0);
     b->angle[i].histo[index]++;
     if (NULL != fplog) {
-        fprintf(fplog,"%s angle %s-%s-%s %g\n",molname,a1,a2,a3,angle);
+        fprintf(fplog,"%s angle-%s-%s-%s %g\n",molname,a1,a2,a3,angle);
     }
 }
 
@@ -263,7 +263,7 @@ void add_dih(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,char *a3,cha
     gmx_stats_add_point((*ddd)[i].lsq,0,angle,0,0);
     (*ddd)[i].histo[index]++;
     if (NULL != fplog) {
-        fprintf(fplog,"%s %s %s-%s-%s-%s %g\n",molname,(egd==egdPDIHS) ? "dihedrals" : "impropers",
+        fprintf(fplog,"%s %s-%s-%s-%s-%s %g\n",molname,(egd==egdPDIHS) ? "dih" : "imp",
                 a1,a2,a3,a4,angle);
     }
 }
@@ -337,8 +337,10 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_npoints(b->bond[i].lsq,&N);
         sprintf(pbuf,"%g  %g",Dm,beta);
         gmx_poldata_add_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,1.0,pbuf);
-        fprintf(fp,"bond %s-%s len %g sigma %g (pm)\n",
-                b->bond[i].a1,b->bond[i].a2,av,sig);
+        fprintf(fp,"bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
+                b->bond[i].a1,b->bond[i].a2,av,sig,N,
+                (sig > 1.5) ? " WARNING" : "");
+                
     }
     for(i=0; (i<b->nangle); i++) {
         gmx_stats_get_average(b->angle[i].lsq,&av);
@@ -347,8 +349,9 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         sprintf(pbuf,"%g",kt);
         gmx_poldata_add_angle(pd,b->angle[i].a1,b->angle[i].a2,
                                  b->angle[i].a3,av,sig,pbuf);
-        fprintf(fp,"angle %s-%s-%s angle %g sigma %g (deg)\n",
-                b->angle[i].a1,b->angle[i].a2,b->angle[i].a3,av,sig);
+        fprintf(fp,"angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
+                b->angle[i].a1,b->angle[i].a2,b->angle[i].a3,av,sig,N,
+                (sig > 3) ? " WARNING" : "");
     }
     for(i=0; (i<b->ndih); i++) {
         gmx_stats_get_average(b->dih[i].lsq,&av);
@@ -358,7 +361,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_poldata_add_dihedral(pd,egdPDIHS,
                                  b->dih[i].a1,b->dih[i].a2,
                                  b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
-        fprintf(fp,"dihedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
+        fprintf(fp,"dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4,av,sig);
     }
     for(i=0; (i<b->nimp); i++) {
@@ -369,7 +372,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_poldata_add_dihedral(pd,egdIDIHS,
                                  b->imp[i].a1,b->imp[i].a2,
                                  b->imp[i].a3,b->imp[i].a4,av,sig,pbuf);
-        fprintf(fp,"impedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
+        fprintf(fp,"improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->imp[i].a1,b->imp[i].a2,b->imp[i].a3,b->imp[i].a4,av,sig);
     }
 }

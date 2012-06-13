@@ -60,6 +60,7 @@
 #include "molprop_util.h"
 #include "gentop_core.h"
 #include "molprop_xml.h"
+#include "poldata.h"
 #include "poldata_xml.h"
 #include "gmx_simple_comm.h"
 
@@ -68,6 +69,7 @@ const char *immsg(int imm)
     static const char *msg[immNR] = {
         "OK", "Zero Dipole", "No Quadrupole", "Charged", "Error", 
         "Atom type problem", "Atom number problem", "Converting from molprop",
+        "Determining bond order",
         "QM Inconsistency (ESP dipole does not match Elec)", 
         "Not in training set", "No experimental data"
     };
@@ -170,7 +172,7 @@ static void mk_ff_mtop(gmx_mtop_t *mtop,gmx_poldata_t pd)
     /* Derive table of Van der Waals force field parameters */
     snew(c,ntype);
     i = 0;
-    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,NULL,NULL,&params)) {
+    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,&params)) {
         ptr = split(' ',params);
         snew(c[i],MAXFORCEPARAM);
         j=0;
@@ -327,6 +329,65 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
     return bSymmAll;
 }
 
+static int determine_bondorder(t_mymol *mymol,t_params plist[],gmx_poldata_t pd)
+{
+    int i,ai,aj,imm,ft,lu;
+    double *nbo,tol,toler,bo,dist,vtol,valence;
+    
+    imm = immOK;
+    
+    ft = gmx_poldata_get_bond_ftype(pd);
+    lu = string2unit(gmx_poldata_get_length_unit(pd));
+    /* Tolerance is 0.002 nm */
+    toler = gmx2convert(0.002,lu);
+    vtol = 1e-4;
+    snew(nbo,mymol->atoms->nr);
+    for(i=0; (immOK == imm) && (i<mymol->nbond); i++)
+    {
+        ai   = plist[ft].param[i].a[0];
+        aj   = plist[ft].param[i].a[1];
+        dist = gmx2convert(plist[ft].param[i].c[0],lu);
+        
+        tol = toler;
+        bo = 0;
+        while ((0 == bo) && (tol < 10*toler)) {
+            bo = gmx_poldata_atype_bondorder(pd,
+                                             *mymol->atoms->atomtype[ai],
+                                             *mymol->atoms->atomtype[aj],
+                                             dist,tol);
+            tol *= 2;
+        }
+        if (0 == bo) 
+        {
+            fprintf(stderr,"BO Could not determine bond order for %s%d-%s%d at %g pm in %s\n",
+                    *mymol->atoms->atomtype[ai],ai+1,
+                    *mymol->atoms->atomtype[aj],aj+1,
+                    dist,mymol->molname);
+            imm = immBondOrder;
+        }
+        else {
+            mymol->bondorder[i] = bo;
+            nbo[ai] += bo;
+            nbo[aj] += bo;
+        }
+    }
+    for(i=0; (immOK == imm) && (i<mymol->atoms->nr); i++) 
+    {
+        if (0 != gmx_poldata_type_valence(pd,*mymol->atoms->atomtype[i],&valence))
+        {
+            if (fabs(nbo[i]-valence) > vtol)
+            {
+                fprintf(stderr,"BO Determined valence for %s%d in %s to be %g, but it should be %g\n",
+                        *mymol->atoms->atomtype[i],i+1,mymol->molname,nbo[i],valence);
+                imm = immBondOrder;
+            }
+        }
+    }
+    sfree(nbo);
+    
+    return imm;
+}
+
 int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                gmx_bool bQM,char *lot,gmx_bool bZero,
                gmx_poldata_t pd,gmx_atomprop_t aps,
@@ -438,10 +499,11 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         snew(nbonds,mymol->nalloc);
         snew(mymol->smnames,mymol->nalloc);
         snew(mymol->bRing,mymol->nalloc);
-        mk_bonds(pd,mymol->atoms,mymol->x,NULL,plist,nbonds,
-                 mymol->bRing,bH14,bAllDihedrals,bRemoveDoubleDihedrals,
-                 nexcl,&mymol->excls,
-                 TRUE,mymol->box,aps,btol,TRUE);
+        mymol->nbond = mk_bonds(pd,mymol->atoms,mymol->x,NULL,plist,nbonds,
+                                mymol->bRing,bH14,bAllDihedrals,bRemoveDoubleDihedrals,
+                                nexcl,&mymol->excls,
+                                TRUE,mymol->box,aps,btol,TRUE);
+        snew(mymol->bondorder,mymol->nbond);
         mk_ff_mtop(&mymol->mtop,pd);
         
         /* Setting the atom types: this depends on the bonding */
@@ -451,15 +513,20 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                                           &(plist[ftb]),nbonds,mymol->bRing,mymol->smnames,pd,aps,
                                           mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
             imm = immAtomTypes;
+        sfree(nbonds);
+    }
+    if (immOK == imm) 
+    {
+        imm = determine_bondorder(mymol,plist,pd);
+    }
+    if (immOK == imm) 
+    {
         gentop_vsite_generate_special(gvt,FALSE,mymol->atoms,&mymol->x,plist,
                                       &(mymol->symtab),mymol->atype,&mymol->excls,pd);
 
         gentop_vsite_done(&gvt);
         close_symtab(&(mymol->symtab));
-    }
-    if (immOK == imm)
-    {
-        sfree(nbonds);
+
         mymol->eSupport = eSupportLocal;
         if (mp_get_prop_ref(mp,empDIPOLE,(bQM ? iqmQM : iqmBoth),
                             lot,NULL,(char *)"elec",
