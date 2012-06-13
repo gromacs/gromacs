@@ -112,7 +112,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     t_pbc *pbc=NULL;
     int i, bin;
     FILE *rkfp = NULL, *rhfp = NULL, *khfp = NULL,*datfp=NULL,*iefp=NULL;
-    gmx_bool bRKout, bRhistout, bKhistout,bDatout,bInstEffout;
+    gmx_bool bRKout, bRhistout, bKhistout,bDatout,bInstEffout,grident;
 
     const char *rkleg[2] = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
     const char *rhleg[1] = { "p(R)" };
@@ -162,6 +162,25 @@ int gmx_dyecoupl(int argc, char *argv[])
     printf("Select group with acceptor atom pairs defining the transition moment\n");
     get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex,&grpnm);
 
+    /*check if groups are identical*/
+    grident=TRUE;
+    if (ndon == nacc)
+    {
+        for (i=0;i<nacc;i++)
+        {
+            if(accindex[i] != donindex[i])
+            {
+                grident=FALSE;
+                break;
+            }
+        }
+    }
+
+    if (grident)
+    {
+        gmx_fatal(FARGS,"Donor and acceptor group are identical. This makes no sense.");
+    }
+    
     printf("Reading first frame\n");
     /* open trx file for reading */
     flags=0;
