@@ -455,7 +455,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     
     if (bEner || bPres || bConstrain) 
     {
-        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda,
+        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda[efptVDW],
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
     
@@ -463,10 +463,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     {
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
-        enerd->term[F_DVDL] += dvdlcorr;
-        if (fr->efep != efepNO) {
-            enerd->dvdl_lin += dvdlcorr;
-        }
+        enerd->term[F_DVDL_VDW] += dvdlcorr;
     }
     
     /* ########## Now pressure ############## */
@@ -493,7 +490,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         *pcurr = enerd->term[F_PRES];
         /* calculate temperature using virial */
         enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
-        
+
     }    
 }
 
@@ -509,6 +506,85 @@ void check_nst_param(FILE *fplog,t_commrec *cr,
         *p = ((*p)/nst + 1)*nst;
         sprintf(buf,"NOTE: %s changes %s to %d\n",desc_nst,desc_p,*p);
         md_print_warning(cr,fplog,buf);
+    }
+}
+
+void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bRerunMD,
+                         t_trxframe *rerun_fr,t_state *state_global, t_state *state, double lam0[])
+/* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
+   requiring different logic. */
+{
+    real frac;
+    int i,fep_state=0;
+    if (bRerunMD)
+    {
+        if (rerun_fr->bLambda)
+        {
+            if (fepvals->delta_lambda!=0)
+            {
+                state_global->lambda[efptFEP] = rerun_fr->lambda;
+                for (i=0;i<efptNR;i++)
+                {
+                    if (i!= efptFEP)
+                    {
+                        state->lambda[i] = state_global->lambda[i];
+                    }
+                }
+            }
+            else
+            {
+                /* find out between which two value of lambda we should be */
+                frac = (step*fepvals->delta_lambda);
+                fep_state = floor(frac*fepvals->n_lambda);
+                /* interpolate between this state and the next */
+                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+                frac = (frac*fepvals->n_lambda)-fep_state;
+                for (i=0;i<efptNR;i++)
+                {
+                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                }
+            }
+        }
+        else if (rerun_fr->bFepState)
+        {
+            state_global->fep_state = rerun_fr->fep_state;
+            for (i=0;i<efptNR;i++)
+            {
+                state_global->lambda[i] = fepvals->all_lambda[i][fep_state];
+            }
+        }
+    }
+    else
+    {
+        if (fepvals->delta_lambda!=0)
+        {
+            /* find out between which two value of lambda we should be */
+            frac = (step*fepvals->delta_lambda);
+            if (fepvals->n_lambda > 0)
+            {
+                fep_state = floor(frac*fepvals->n_lambda);
+                /* interpolate between this state and the next */
+                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+                frac = (frac*fepvals->n_lambda)-fep_state;
+                for (i=0;i<efptNR;i++)
+                {
+                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                }
+            }
+            else
+            {
+                for (i=0;i<efptNR;i++)
+                {
+                    state_global->lambda[i] = lam0[i] + frac;
+                }
+            }
+        }
+    }
+    for (i=0;i<efptNR;i++)
+    {
+        state->lambda[i] = state_global->lambda[i];
     }
 }
 
@@ -683,7 +759,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
         if (ir->efep != efepNO)
         {
             check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                            "nstdhdl",&ir->nstdhdl);
+                            "nstdhdl",&ir->fepvals->nstdhdl);
         }
     }
 }

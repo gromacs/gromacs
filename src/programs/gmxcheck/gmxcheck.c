@@ -215,7 +215,7 @@ static void chk_bonds(t_idef *idef,int ePBC,rvec *x,matrix box,real tol)
 	  b0 = idef->iparams[type].harmonic.rA;
 	  break;
 	case F_MORSE:
-	  b0 = idef->iparams[type].morse.b0;
+	  b0 = idef->iparams[type].morse.b0A;
 	  break;
 	case F_CUBICBONDS:
 	  b0 = idef->iparams[type].cubic.b0;

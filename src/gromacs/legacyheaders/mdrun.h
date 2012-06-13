@@ -134,6 +134,8 @@ typedef struct {
   const char *fn_cpt;
   gmx_bool bKeepAndNumCPT;
   int  eIntegrator;
+  gmx_bool  bExpanded;
+  int elamstats;
   int  simulation_part;
   FILE *fp_dhdl;
   FILE *fp_field;
@@ -168,7 +170,7 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 				gmx_edsam_t ed, 
 				t_forcerec *fr,
-				int repl_ex_nst,int repl_ex_seed,
+				int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                 gmx_membed_t membed,
 				real cpt_period,real max_hours,
 				const char *deviceOptions,
@@ -228,6 +230,10 @@ void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
 /* get the conserved energy associated with the ensemble type*/
 real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state,           
                                       t_extmass *MassQ);
+
+/* set the lambda values at each step of mdrun when they change */
+void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bRerunMD,
+                         t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[]);
 
 /* reset all cycle and time counters. */
 void reset_all_counters(FILE *fplog,t_commrec *cr,
@@ -332,9 +338,26 @@ void finish_run(FILE *log,t_commrec *cr,const char *confout,
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-			  gmx_large_int_t step, int natoms, 
-			  matrix box,real lambda,tensor pres,tensor virial,
-			  real *prescorr, real *enercorr, real *dvdlcorr);
+                   gmx_large_int_t step, int natoms,
+                   matrix box,real lambda,tensor pres,tensor virial,
+                   real *prescorr, real *enercorr, real *dvdlcorr);
+
+void initialize_lambdas(FILE *fplog,t_inputrec *ir,int *fep_state,real *lambda,double *lam0);
+
+void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
+
+int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd,
+                             t_state *state, t_extmass *MassQ, df_history_t *dfhist,
+                             gmx_large_int_t step, gmx_rng_t mcrng,
+                             rvec *v, t_mdatoms *mdatoms);
+
+void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
+                               int nlam, int frequency, gmx_large_int_t step);
+
+void get_mc_state(gmx_rng_t rng,t_state *state);
+
+void set_mc_state(gmx_rng_t rng,t_state *state);
+
 
 typedef enum
 {
@@ -408,7 +431,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              gmx_bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
+	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
 	     const char *deviceOptions, unsigned long Flags);
 /* Driver routine, that calls the different methods */
@@ -421,7 +444,7 @@ void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);
 void init_md(FILE *fplog,
 		    t_commrec *cr,t_inputrec *ir, const output_env_t oenv, 
 		    double *t,double *t0,
-		    real *lambda,double *lam0,
+		    real *lambda,int *fep_state, double *lam0,
 		    t_nrnb *nrnb,gmx_mtop_t *mtop,
 		    gmx_update_t *upd,
 		    int nfile,const t_filenm fnm[],
