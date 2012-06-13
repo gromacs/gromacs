@@ -41,6 +41,7 @@
 
 #include "memtestG80_core.h"
 
+#include "config.h"
 #include "gpu_utils.h"
 
 /*! \cond  TEST */

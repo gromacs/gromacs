@@ -346,10 +346,8 @@ if(GMX_GPU)
     # sleep() from unistd.h on POSIX or Sleep() from windows.h
     if (WIN32 AND NOT CYGWIN)
         set(CMAKE_REQUIRED_INCLUDES windows.h)
-        check_function_exists(Sleep     HAVE_WIN_SLEEP)
-        if(HAVE_WIN_SLEEP)
-            add_definitions(-DHAVE_WIN_SLEEP)
-        else()
+        check_function_exists(Sleep     HAVE_WINDOWS_SLEEP)
+        if(NOT HAVE_WIN_SLEEP)
             message(WARNING "Sleep() from windows.h is needed when running on GPUs with ECC turned on, but it
                 could not be found. This could lead to GPU synchronization inefficiencies.")
         endif()
@@ -357,9 +355,6 @@ if(GMX_GPU)
         if (HAVE_UNISTD_H)
             set(CMAKE_REQUIRED_INCLUDES unistd.h)
             check_function_exists(sleep     HAVE_UNISTD_SLEEP)
-            if(HAVE_UNISTD_SLEEP)
-                add_definitions(-DHAVE_UNISTD_SLEEP)
-            endif()
         endif (HAVE_UNISTD_H)
         if (NOT HAVE_UNISTD_H OR NOT HAVE_UNISTD_SLEEP)
             message(WARNING "sleep() from unistd.h is needed when running on GPUs with ECC turned on, but it
@@ -525,7 +520,6 @@ if(GMX_GPU)
     typically inefficient.")
     endif()
 
-    add_definitions(-DGMX_GPU)
     set(CUDA_BUILD_EMULATION OFF)
     include(gmxManageNvccConfig)
 
@@ -550,9 +544,9 @@ if(WIN32 AND NOT CYGWIN)
 endif()
 
 if(GMX_CYCLE_SUBCOUNTERS)
-    add_definitions(-DGMX_CYCLE_SUB)
+    set(GMX_CYCLE_SUB 1)
 else()
-    remove_definitions(-DGMX_CYCLE_SUB)
+    unset(GMX_CYCLE_SUB)
 endif()
 
 # only bother with finding git and using version.h if the source is a git repo

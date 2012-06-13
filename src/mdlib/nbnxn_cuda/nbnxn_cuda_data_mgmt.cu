@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "config.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "tables.h"
