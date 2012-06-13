@@ -45,14 +45,25 @@
 /*! Yield op for posix/win platforms. If sleep() from unistd.h / Sleep() from windows.h
     is not available we can't yield. */
 #if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__
+
 /* On Windows we assume that we always have windows.h */
+#ifdef HAVE_WINDOWS_SLEEP
 #include <windows.h>
 #define CUTHREAD_YIELD    Sleep(0)
-#else /* Posix case */
+#else
+#define CANT_CUTHREAD_YIELD
+#endif /* HAVE_WINDOWS_SLEEP */
+
+#else
+
+/* Posix case */
 #if defined(HAVE_UNISTD_H) && defined(HAVE_UNISTD_SLEEP)
 #include <unistd.h>
 #define CUTHREAD_YIELD    sleep(0)
-#endif
+#else
+#define CANT_CUTHREAD_YIELD
+#endif /* defined(HAVE_UNISTD_H) && defined(HAVE_UNISTD_SLEEP) */
+
 #endif
 
 /* CUDA library and hardware related defines */
