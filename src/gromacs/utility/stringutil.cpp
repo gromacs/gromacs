@@ -51,6 +51,30 @@
 namespace gmx
 {
 
+bool endsWith(const std::string &str, const char *suffix)
+{
+    if (suffix == NULL || suffix[0] == '\0')
+    {
+        return true;
+    }
+    size_t length = std::strlen(suffix);
+    return (str.length() >= length
+            && str.compare(str.length() - length, length, suffix) == 0);
+}
+
+std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
+{
+    if (suffix != NULL)
+    {
+        size_t suffixLength = std::strlen(suffix);
+        if (suffixLength > 0 && endsWith(str, suffix))
+        {
+            return str.substr(0, str.length() - suffixLength);
+        }
+    }
+    return str;
+}
+
 std::string formatString(const char *fmt, ...)
 {
     va_list ap;

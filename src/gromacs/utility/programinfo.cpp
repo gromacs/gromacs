@@ -53,6 +53,7 @@
 #include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -90,21 +91,10 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
       programName_(Path::splitToPathAndFilename(fullInvokedProgram_).second),
       invariantProgramName_(programName_)
 {
-    if (invariantProgramName_.length() >= 4
-        && invariantProgramName_.compare(invariantProgramName_.length() - 4, 4,
-                                         ".exe") == 0)
-    {
-        invariantProgramName_.erase(invariantProgramName_.length() - 4);
-    }
+    invariantProgramName_ = stripSuffixIfPresent(invariantProgramName_, ".exe");
 #ifdef GMX_BINARY_SUFFIX
-    size_t suffixLength = std::strlen(GMX_BINARY_SUFFIX);
-    if (suffixLength > 0 && invariantProgramName_.length() >= suffixLength
-        && invariantProgramName_.compare(
-                invariantProgramName_.length() - suffixLength, suffixLength,
-                GMX_BINARY_SUFFIX) == 0)
-    {
-        invariantProgramName_.erase(invariantProgramName_.length() - suffixLength);
-    }
+    invariantProgramName_ =
+        stripSuffixIfPresent(invariantProgramName_, GMX_BINARY_SUFFIX);
 #endif
     if (realBinaryName == NULL)
     {

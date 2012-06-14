@@ -53,6 +53,30 @@ namespace
 {
 
 /********************************************************************
+ * Tests for simple string utilities
+ */
+
+TEST(StringUtilityTest, EndsWithWorks)
+{
+    EXPECT_TRUE(gmx::endsWith("foobar", "bar"));
+    EXPECT_TRUE(gmx::endsWith("foobar", NULL));
+    EXPECT_TRUE(gmx::endsWith("foobar", ""));
+    EXPECT_FALSE(gmx::endsWith("foobar", "bbar"));
+    EXPECT_FALSE(gmx::endsWith("foobar", "barr"));
+    EXPECT_FALSE(gmx::endsWith("foobar", "foofoobar"));
+}
+
+TEST(StringUtilityTest, StripSuffixIfPresent)
+{
+    EXPECT_EQ("foo", gmx::stripSuffixIfPresent("foobar", "bar"));
+    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", NULL));
+    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", ""));
+    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "bbar"));
+    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "barr"));
+    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "foofoobar"));
+}
+
+/********************************************************************
  * Tests for formatString()
  */
 
