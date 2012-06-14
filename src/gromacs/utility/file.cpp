@@ -182,6 +182,32 @@ void File::readBytes(void *buffer, size_t bytes)
     }
 }
 
+bool File::readLine(std::string *line)
+{
+    line->clear();
+    const size_t bufsize = 256;
+    std::string result;
+    char buf[bufsize];
+    buf[0] = '\0';
+    FILE *fp = handle();
+    while (fgets(buf, bufsize, fp) != NULL)
+    {
+        size_t length = std::strlen(buf);
+        result.append(buf, length);
+        if (length < bufsize - 1 || buf[length - 1] == '\n')
+        {
+            break;
+        }
+    }
+    if (ferror(fp))
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Error while reading file"),
+                             "fgets", errno);
+    }
+    *line = result;
+    return !result.empty() || !feof(fp);
+}
+
 void File::writeString(const char *str)
 {
     if (fprintf(handle(), "%s", str) < 0)
@@ -205,6 +231,13 @@ void File::writeLine(const char *line)
 void File::writeLine()
 {
     writeString("\n");
+}
+
+// static
+File &File::standardInput()
+{
+    static File stdinObject(stdin, false);
+    return stdinObject;
 }
 
 // static

@@ -120,6 +120,27 @@ class File
          * The file must be open.
          */
         void readBytes(void *buffer, size_t bytes);
+        /*! \brief
+         * Reads a single line from the file.
+         *
+         * \param[out] line    String to receive the line.
+         * \returns    false if nothing was read because the file ended.
+         * \throws     std::bad_alloc if out of memory.
+         * \throws     FileIOError on any I/O error.
+         *
+         * On error or when false is returned, \p line will be empty.
+         * Terminating newline will be present in \p line if it was present in
+         * the file.
+         * To loop over all lines in the file, use:
+         * \code
+std::string line;
+while (file.readLine(&line))
+{
+    // ...
+}
+         * \endcode
+         */
+        bool readLine(std::string *line);
 
         /*! \brief
          * Writes a string to the file.
@@ -153,6 +174,12 @@ class File
          */
         void writeLine();
 
+        /*! \brief
+         * Returns a File object for accessing stdin.
+         *
+         * \throws    std::bad_alloc if out of memory (only on first call).
+         */
+        static File &standardInput();
         /*! \brief
          * Returns a File object for accessing stdout.
          *

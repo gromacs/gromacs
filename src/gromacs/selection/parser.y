@@ -80,11 +80,6 @@ yyerror(yyscan_t, char const *s);
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
 };
-/* NOTE: The Intel compiler seems to report warnings for the above line about
- * "definition at end of file not followed by a semicolon or a declarator".
- * This is due to the compiler misinterpreting #line directives in the
- * generated files parser.c/.h, and changing them would be more trouble than
- * it's worth. */
 
 /* Invalid token to report lexer errors */
 %token INVALID
@@ -182,16 +177,15 @@ yyerror(yyscan_t, char const *s);
 %expect 50
 %debug
 %pure-parser
+%define api.push-pull push
 
-/* If you change these, you also need to update the prototype in parsetree.c. */
-%name-prefix="_gmx_sel_yyb"
-%parse-param { yyscan_t                 scanner }
-%lex-param   { yyscan_t                 scanner }
+%name-prefix="_gmx_sel_yy"
+%parse-param { void *scanner }
 
 %%
 
 /* The start rule: allow one or more commands */
-commands:    /* empty */        { $$ = NULL }
+commands:    /* empty */        { $$ = NULL; }
            | commands command
              {
                  $$ = _gmx_sel_append_selection($2, $1, scanner);

@@ -126,21 +126,6 @@ class SelectionCollection::Impl
          */
         void clearSymbolTable();
         /*! \brief
-         * Helper function that runs the parser once the tokenizer has been
-         * initialized.
-         *
-         * \param[in,out] scanner Scanner data structure.
-         * \param[in]     maxnr   Maximum number of selections to parse
-         *      (if -1, parse as many as provided by the user).
-         * \returns       Vector of parsed selections.
-         * \throws        std::bad_alloc if out of memory.
-         * \throws        InvalidInputError if there is a parsing error.
-         *
-         * Used internally to implement parseFromStdin(), parseFromFile() and
-         * parseFromString().
-         */
-        SelectionList runParser(void *scanner, int maxnr);
-        /*! \brief
          * Replace group references by group contents.
          *
          * \param[in]    root    Root of selection tree to process.
