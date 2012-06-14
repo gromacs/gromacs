@@ -48,6 +48,35 @@ namespace gmx
 {
 
 /*! \brief
+ * Tests whether a string ends with another string.
+ *
+ * \param[in] str    String to process.
+ * \param[in] suffix Suffix to find.
+ * \returns   true if \p str ends with suffix.
+ *
+ * Returns true if \p suffix is NULL or empty.
+ * Does not throw.
+ *
+ * \inpublicapi
+ */
+bool endsWith(const std::string &str, const char *suffix);
+
+/*! \brief
+ * Removes a suffix from a string.
+ *
+ * \param[in] str    String to process.
+ * \param[in] suffix Suffix to remove.
+ * \returns   \p str with \p suffix removed, or \p str unmodified if it does
+ *      not end with \p suffix.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * Returns \p str if \p suffix is NULL or empty.
+ *
+ * \inpublicapi
+ */
+std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
+
+/*! \brief
  * Format a string (snprintf() wrapper).
  *
  * \throws  std::bad_alloc if out of memory.
