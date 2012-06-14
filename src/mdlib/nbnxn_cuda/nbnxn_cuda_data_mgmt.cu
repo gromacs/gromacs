@@ -320,6 +320,8 @@ void nbnxn_cuda_init(FILE *fplog,
 {
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
+    char sbuf[STRLEN];
+
 
     if (p_cu_nb == NULL) return;
 
@@ -374,22 +376,80 @@ void nbnxn_cuda_init(FILE *fplog,
     /* If ECC is enabled cudaStreamSynchronize introduces huge idling so we'll 
        switch to the (atmittedly fragile) memory polling waiting to preserve 
        performance. Event-timing also needs to be disabled. */
-    nb->use_stream_sync = TRUE;
-    if (nb->dev_info->dev_prop.ECCEnabled == 1 ||
-        (getenv("GMX_NO_CUDA_STREAMSYNC") != NULL))
+
+    gmx_bool bStreamSync    = getenv("GMX_CUDA_STREAMSYNC") != NULL;
+    gmx_bool bNoStreamSync  = getenv("GMX_NO_CUDA_STREAMSYNC") != NULL;
+    if (bStreamSync && bNoStreamSync)
     {
-        /* if we can't yield while poll-waiting, we need to use cudaStreamSynchronize */
-#ifdef CANT_CUTHREAD_YIELD
-        if (nb->dev_info->dev_prop.ECCEnabled == 1)
+        gmx_fatal(FARGS, "Conflicting environment variables: both GMX_CUDA_STREAMSYNC and GMX_NO_CUDA_STREAMSYNC defined");
+    }
+
+    /* if we can't yield while poll-waiting, we need to use cudaStreamSynchronize */
+    if (nb->dev_info->dev_prop.ECCEnabled == 1)
+    {
+        if (bStreamSync)
         {
-            gmx_warning("Can't yield as sleep(0)/Sleep(0) (posix/win) is not available.\n"
+            nb->use_stream_sync = TRUE;
+            nb->do_time         = TRUE;
+
+            sprintf(sbuf, "NOTE: cudaStreamSynchronize-based waiting forced by GMX_CUDA_STREAMSYNC, but ECC is turned\n"
+                    "      on which generally causes considerable performance loss");
+            fprintf(stderr, "\n%s\n", sbuf);
+            if (fplog)
+            {
+                fprintf(fplog, "\n%s\n", sbuf);
+            }
+        }
+        else
+        {
+#ifdef CANT_CUTHREAD_YIELD
+            nb->use_stream_sync = TRUE;
+            nb->do_time         = TRUE;
+
+            sprintf(sbuf, "Can't do thread yield as sleep(0)/Sleep(0) (posix/win) is not available.\n"
                         "         Will use the standard cudaStreamSynchronize-based waiting.\n"
                         "         Note that with ECC enabled this causes considerable performance loss.");
-        }
+            gmx_warning("%s\n", sbuf);
+            if (fplog)
+            {
+                fprintf(fplog, "\n%s\n", sbuf);
+            }
 #else
-        nb->use_stream_sync = FALSE;
-        nb->do_time         = FALSE;
+            nb->use_stream_sync = FALSE;
+            nb->do_time         = FALSE;
+
+            sprintf(sbuf, "NOTE: running on a GPU with ECC on; will not use cudaStreamSynchronize-based\n"
+                    "      waiting as it generally causes performance loss when used with ECC.");
+            fprintf(stderr, "\n%s\n", sbuf);
+            if (fplog)
+            {
+                fprintf(fplog, "\n%s\n", sbuf);
+            }
+
 #endif
+        }
+    }
+    else
+    {
+        if (bNoStreamSync)
+        {
+            nb->use_stream_sync = FALSE;
+            nb->do_time         = FALSE;
+
+            sprintf(sbuf, "NOTE: running on a GPU with no ECC, but cudaStreamSynchronize-based waiting\n"
+                    "forced off by GMX_NO_CUDA_STREAMSYNC");
+            fprintf(stderr, "\n%s\n", sbuf);
+            if (fplog)
+            {
+                fprintf(fplog, "\n%s\n", sbuf);
+            }
+        }
+        else
+        {
+            /* no/off ECC, cudaStreamSynchronize not turned off by env. var. */
+            nb->use_stream_sync = TRUE;
+            nb->do_time         = TRUE;
+        }
     }
 
     if (nb->do_time)
