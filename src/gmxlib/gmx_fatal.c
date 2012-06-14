@@ -215,7 +215,7 @@ static void quit_gmx(const char *msg)
         perror(msg);
     }
 
-#ifndef GMX_THREAD_MPI
+#ifdef GMX_LIB_MPI
     {
         int  nnodes;
         int  noderank;
@@ -276,7 +276,7 @@ static void quit_gmx_noquit(const char *msg)
         perror(msg);
     }
 
-#ifdef GMX_THREAD_MPI
+#ifndef GMX_LIB_MPI
     if (debug)
     {
         fflush(debug);
