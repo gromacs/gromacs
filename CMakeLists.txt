@@ -701,8 +701,9 @@ elseif(${GMX_ACCELERATION} MATCHES "^(SSE|SSE4.1|AVX)$")
                 add the appropriate flag!")
         endif()
 
-        message(STATUS "Enabling SSE4.1 accelerated kernels and compiler optimizations")
+        message(STATUS "Enabling AVX accelerated kernels and compiler optimizations")
         add_definitions(-DGMX_AVX)
+        add_definitions(-DGMX_SSE4_1)
         set(GROMACS_C_FLAGS "${GROMACS_C_FLAGS} ${_AVX_FLAG}")
     endif()
 
