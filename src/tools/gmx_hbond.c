@@ -2332,10 +2332,10 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 /* #if (_OPENMP >= 200805) /\* =====================\ *\/ */
 /*         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
 /* #else */
-        nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
+        nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, gmx_omp_get_num_procs());
 /* #endif /\* _OPENMP >= 200805 ====================/ *\/ */
 
-        omp_set_num_threads(nThreads);
+        gmx_omp_set_num_threads(nThreads);
         snew(dondata, nThreads);
         for (i=0; i<nThreads; i++)
             dondata[i] = -1;
@@ -2369,7 +2369,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     default(shared)
         {
 #pragma omp barrier
-            thisThread = omp_get_thread_num();
+            thisThread = gmx_omp_get_thread_num();
             rhbex = NULL;
 #endif /* ==============================================/ */
 
@@ -2491,7 +2491,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         { /* ##########  THE START OF THE ENORMOUS PARALLELIZED BLOCK!  ########## */
             h = NULL;
             g = NULL;
-            thisThread = omp_get_thread_num();
+            thisThread = gmx_omp_get_thread_num();
             snew(h,hb->maxhydro);
             snew(g,hb->maxhydro);
             mMax = INT_MIN;
@@ -3521,9 +3521,9 @@ int gmx_hbond(int argc,char *argv[])
 /* #if (_OPENMP > 200805) */
 /*         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
 /* #else */
-        actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
+        actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, gmx_omp_get_num_procs());
 /* #endif */
-        omp_set_num_threads(actual_nThreads);
+        gmx_omp_set_num_threads(actual_nThreads);
         printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
         fflush(stdout);
     }
@@ -3591,7 +3591,7 @@ int gmx_hbond(int argc,char *argv[])
            bGem, oenv, fnm, fpnhb, trrStatus, natoms,   \
            status, nabin, nrbin, adist, rdist, debug)
     {    /* Start of parallel region */
-        threadNr = omp_get_thread_num();
+        threadNr = gmx_omp_get_thread_num();
 #endif /* HAVE_OPENMP ================================================= */
         do
         {

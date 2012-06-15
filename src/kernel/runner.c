@@ -73,6 +73,8 @@
 #include "membed.h"
 #include "md_openmm.h"
 
+#include "gmx_omp.h"
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -86,10 +88,6 @@
 
 #ifdef GMX_OPENMM
 #include "md_openmm.h"
-#endif
-
-#ifdef GMX_OPENMP
-#include <omp.h>
 #endif
 
 
@@ -829,7 +827,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             {
                 cpu_set_t mask;
                 CPU_ZERO(&mask);
-                core+=omp_get_thread_num();
+                core+=gmx_omp_get_thread_num();
                 CPU_SET(core,&mask);
                 sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
             }
