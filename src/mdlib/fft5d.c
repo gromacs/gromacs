@@ -58,10 +58,11 @@
 #endif
 
 #ifdef GMX_OPENMP
+/* TODO: Do we still need this? Are we still planning ot use fftw + OpenMP? */
 #define FFT5D_THREADS
 #endif
 #ifdef FFT5D_THREADS
-#include <omp.h>
+#include "gmx_omp.h"
 /* requires fftw compiled with openmp */
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
