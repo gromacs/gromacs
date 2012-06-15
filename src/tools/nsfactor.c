@@ -45,10 +45,7 @@
 #include "strdb.h"
 #include "vec.h"
 #include "nsfactor.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
+#include "gmx_omp.h"
 
 void check_binwidth(real binwidth) {
     real smallest_bin=0.1;

@@ -67,9 +67,7 @@
 #include "tmpi.h"
 #endif
 
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
+#include "gmx_omp.h"
 
 #include <stdio.h>
 #include <string.h>
