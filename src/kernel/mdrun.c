@@ -289,7 +289,7 @@ int main(int argc,char *argv[])
     "appropriate options have been given. Currently under",
     "investigation are: polarizability and X-ray bombardments.",
     "[PAR]",
-    "The option [TT]-membed[dd] does what used to be g_membed, i.e. embed",
+    "The option [TT]-membed[tt] does what used to be g_membed, i.e. embed",
     "a protein into a membrane. The data file should contain the options",
     "that where passed to g_membed before. The [TT]-mn[tt] and [TT]-mp[tt]",
     "both apply to this as well.",
@@ -415,6 +415,7 @@ int main(int argc,char *argv[])
   int  nstglobalcomm=-1;
   int  repl_ex_nst=0;
   int  repl_ex_seed=-1;
+  int  repl_ex_nex=0;
   int  nstepout=100;
   int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
@@ -498,6 +499,8 @@ int main(int argc,char *argv[])
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
       "Attempt replica exchange periodically with this period (steps)" },
+    { "-nex",  FALSE, etINT, {&repl_ex_nex},
+      "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
     { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
@@ -580,6 +583,9 @@ int main(int argc,char *argv[])
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
+
+  if (repl_ex_nex < 0)
+      gmx_fatal(FARGS,"Replica exchange number of exchanges needs to be positive");
 
   if (nmultisim > 1) {
 #ifndef GMX_THREAD_MPI
@@ -691,7 +697,8 @@ int main(int argc,char *argv[])
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
                 nbpu_opt[0],
-                nsteps, nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                nsteps,nstepout,resetstep,
+                nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
                 pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   gmx_finalize_par();

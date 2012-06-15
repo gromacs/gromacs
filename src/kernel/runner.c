@@ -55,7 +55,6 @@
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
-#include "dihre.h"
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"
@@ -145,6 +144,7 @@ struct mdrunner_arglist
     int resetstep;
     int nmultisim;
     int repl_ex_nst;
+    int repl_ex_nex;
     int repl_ex_seed;
     real pforce;
     real cpt_period;
@@ -185,7 +185,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
                       mc.nbpu_opt,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
+                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce, 
                       mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
 }
 
@@ -201,8 +201,9 @@ static t_commrec *mdrunner_start_threads(int nthreads,
               const char *dddlb_opt,real dlb_scale,
               const char *ddcsx,const char *ddcsy,const char *ddcsz,
               const char *nbpu_opt,
-              int nsteps_cmdline, int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
-              int repl_ex_seed, real pforce,real cpt_period, real max_hours, 
+              int nsteps_cmdline, int nstepout,int resetstep,
+              int nmultisim,int repl_ex_nst,int repl_ex_nex, int repl_ex_seed,
+              real pforce,real cpt_period, real max_hours, 
               const char *deviceOptions, unsigned long Flags)
 {
     int ret;
@@ -244,6 +245,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     mda->resetstep=resetstep;
     mda->nmultisim=nmultisim;
     mda->repl_ex_nst=repl_ex_nst;
+    mda->repl_ex_nex=repl_ex_nex;
     mda->repl_ex_seed=repl_ex_seed;
     mda->pforce=pforce;
     mda->cpt_period=cpt_period;
@@ -694,7 +696,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
              const char *nbpu_opt,
-             int nsteps_cmdline, int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
+             int nsteps_cmdline, int nstepout,int resetstep,
+             int nmultisim,int repl_ex_nst,int repl_ex_nex,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
              const char *deviceOptions, unsigned long Flags)
 {
@@ -776,7 +779,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                       nbpu_opt,
                                       nsteps_cmdline, nstepout, resetstep, nmultisim, 
-                                      repl_ex_nst, repl_ex_seed, pforce, 
+                                      repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
                                       cpt_period, max_hours, deviceOptions, 
                                       Flags);
             /* the main thread continues here with a new cr. We don't deallocate
@@ -820,6 +823,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     /* now make sure the state is initialized and propagated */
     set_state_entries(state,inputrec,cr->nnodes);
+
+    /* remove when vv and rerun works correctly! */
+    if (PAR(cr) && EI_VV(inputrec->eI) && ((Flags & MD_RERUN) || (Flags & MD_RERUN_VSITE)))
+    {
+        gmx_fatal(FARGS,
+                  "Currently can't do velocity verlet with rerun in parallel.");
+    }
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
@@ -1122,12 +1132,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             }
         }
 
-        /* Dihedral Restraints */
-        if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0)
-        {
-            init_dihres(fplog,mtop,inputrec,fcd);
-        }
-
         /* Initiate forcerecord */
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
@@ -1253,7 +1257,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if (inputrec->ePull != epullNO)
         {
             /* Initialize pull code */
-            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
+            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv, inputrec->fepvals->init_lambda,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
         
@@ -1284,7 +1288,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       nstepout,inputrec,mtop,
                                       fcd,state,
                                       mdatoms,nrnb,wcycle,ed,fr,
-                                      repl_ex_nst,repl_ex_seed,
+                                      repl_ex_nst,repl_ex_nex,repl_ex_seed,
                                       membed,
                                       cpt_period,max_hours,
                                       deviceOptions,

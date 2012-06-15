@@ -40,6 +40,7 @@
 #include <string.h>
 #include "domdec.h"
 #include "gmx_wallcycle.h"
+#include "gmx_cyclecounter.h"
 #include "trnio.h"
 #include "smalloc.h"
 #include "network.h"
@@ -59,7 +60,6 @@
 #include "pull_rotation.h"
 #include "gmx_sort.h"
 #include "copyrite.h"
-#include "gmx_cyclecounter.h"
 
 
 static char *RotStr = {"Enforced rotation:"};

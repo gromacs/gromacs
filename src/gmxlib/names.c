@@ -100,7 +100,7 @@ const char *egrp_nm[egNR+1] = {
 };
 
 const char *etcoupl_names[etcNR+1] = {
-  "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-interval", "V-rescale", NULL
+  "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-massive", "V-rescale", NULL
 }; /* yes is alias for berendsen */
 
 const char *epcoupl_names[epcNR+1] = {
@@ -136,15 +136,35 @@ const char *gtypes[egcNR+1] = {
   "User1", "User2", "VCM", "XTC", "Or. Res. Fit", "QMMM", NULL
 };
 
-const char *efep_names[efepNR+1] = {
-  "no", "yes", NULL
+const char *esimtemp_names[esimtempNR+1] = {
+  "geometric", "exponential", "linear", NULL
 };
 
-const char *separate_dhdl_file_names[sepdhdlfileNR+1] = {
+const char *efep_names[efepNR+1] = {
+  "no", "yes", "static", "slow-growth", "expanded", NULL
+};
+
+const char *efpt_names[efptNR+1] = {
+  "fep-lambdas", "mass-lambdas", "coul-lambdas", "vdw-lambdas", "bonded-lambdas", "restraint-lambdas", "temperature-lambdas", NULL
+};
+
+const char *elamstats_names[elamstatsNR+1] = {
+  "no", "metropolis-transition", "barker-transition", "minvar", "wang-landau", "weighted-wang-landau", NULL
+};
+
+const char *elmcmove_names[elmcmoveNR+1] = {
+  "no", "metropolis", "barker", "gibbs", "metropolized-gibbs", NULL
+};
+
+const char *elmceq_names[elmceqNR+1] = {
+  "no", "yes", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", NULL
+};
+
+const char *separate_dhdl_file_names[esepdhdlfileNR+1] = {
   "yes", "no", NULL
 };
 
-const char *dhdl_derivatives_names[dhdlderivativesNR+1] = {
+const char *dhdl_derivatives_names[edhdlderivativesNR+1] = {
   "yes", "no", NULL
 };
 

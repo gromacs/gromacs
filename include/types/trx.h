@@ -38,13 +38,16 @@
  * not be allocated.
  */ 
 
+#ifndef _trx_h
+#define _trx_h
+
 #include "atoms.h"
-#include "../molfile_plugin.h"
-#include "../vmdio.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct gmxvmdplugin t_gmxvmdplugin;
 
 typedef struct trxframe
 {
@@ -66,7 +69,9 @@ typedef struct trxframe
   gmx_bool bTime;
   real time;      /* time of the frame                */
   gmx_bool bLambda;
+  gmx_bool bFepState; /* does it contain fep_state?       */
   real lambda;    /* free energy perturbation lambda  */
+  int  fep_state; /* which fep state are we in? */
   gmx_bool bAtoms;
   t_atoms *atoms; /* atoms struct (natoms)            */
   gmx_bool bPrec;
@@ -81,10 +86,11 @@ typedef struct trxframe
   matrix box;     /* the 3 box vectors                */
   gmx_bool bPBC;
   int  ePBC;      /* the type of pbc                  */
-  t_gmxvmdplugin vmdplugin;
+  t_gmxvmdplugin* vmdplugin;
 } t_trxframe;
 
 #ifdef __cplusplus
 }
 #endif
 
+#endif

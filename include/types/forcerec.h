@@ -148,6 +148,11 @@ static const char *nbk_name[] =
 #endif
     "CUDA 8x8x8", "plain C 8x8x8" };
 
+/* enums for the neighborlist type */
+enum { enbvdwNONE,enbvdwLJ,enbvdwBHAM,enbvdwTAB,enbvdwNR};
+/* OOR is "one over r" -- standard coul */
+enum { enbcoulNONE,enbcoulOOR,enbcoulRF,enbcoulTAB,enbcoulGB,enbcoulFEWALD,enbcoulNR};
+
 enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
        egCOUL14, egLJ14, egGB, egNR };
 
@@ -159,9 +164,10 @@ typedef struct {
 typedef struct {
   real term[F_NRE];    /* The energies for all different interaction types */
   gmx_grppairener_t grpp;
-  double dvdl_lin;     /* Contributions to dvdl with linear lam-dependence */
-  double dvdl_nonlin;  /* Idem, but non-linear dependence                  */
+  double dvdl_lin[efptNR];       /* Contributions to dvdl with linear lam-dependence */
+  double dvdl_nonlin[efptNR];    /* Idem, but non-linear dependence                  */
   int    n_lambda;
+  int    fep_state;              /*current fep state -- just for printing */
   double *enerpart_lambda; /* Partial energy for lambda and flambda[] */
 } gmx_enerdata_t;
 /* The idea is that dvdl terms with linear lambda dependence will be added
@@ -189,7 +195,7 @@ typedef struct {
     real ener[F_NRE];
     gmx_grppairener_t grpp;
     real Vcorr;
-    real dvdl;
+    real dvdl[efptNR];
     tensor vir;
 } f_thread_t;
 
@@ -267,10 +273,12 @@ typedef struct {
   real rvdw_switch,rvdw;
   real bham_b_max;
 
-  /* Free energy ? */
+  /* Free energy */
   int  efep;
-  real sc_alpha;
+  real sc_alphavdw;
+  real sc_alphacoul;
   int  sc_power;
+  real sc_r_power;
   real sc_sigma6_def;
   real sc_sigma6_min;
   gmx_bool bSepDVDL;

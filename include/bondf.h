@@ -59,11 +59,11 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 rvec x[],history_t *hist,
                 rvec f[],t_forcerec *fr,
                 const t_pbc *pbc,const t_graph *g,
-                gmx_enerdata_t *enerd,t_nrnb *nrnb,real lambda,
+                gmx_enerdata_t *enerd,t_nrnb *nrnb,real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd,int *ddgatindex,
                 t_atomtypes *atype, gmx_genborn_t *born,
-		gmx_bool bCalcEnerVir,
+		int force_flags,
                 gmx_bool bPrintSepPot,gmx_large_int_t step);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
@@ -97,7 +97,7 @@ void calc_bonds_lambda(FILE *fplog,
 			      t_forcerec *fr,
 			      const t_pbc *pbc,const t_graph *g,
 			      gmx_enerdata_t *enerd,t_nrnb *nrnb,
-			      real lambda,
+			      real *lambda,
 			      const t_mdatoms *md,
 			      t_fcdata *fcd,int *global_atom_index);
 /* As calc_bonds, but only determines the potential energy
@@ -133,6 +133,9 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       const rvec *x,int t1,int t2,int t3);
 /* Do an update of the forces for dihedral potentials */
 
+void make_dp_periodic(real *dp);
+/* make a dihedral fall in the range (-pi,pi) */
+
 /*************************************************************************
  *
  *  Bonded force functions
@@ -142,7 +145,8 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles,linear_angles;
   t_ifunc pdihs,idihs,rbdihs;
   t_ifunc tab_bonds,tab_angles,tab_dihs;
-  t_ifunc polarize,anharm_polarize,water_pol,thole_pol,angres,angresz,unimplemented;
+  t_ifunc polarize,anharm_polarize,water_pol,thole_pol,angres,angresz,dihres,unimplemented;
+
 
 /* Initialize the setup for the bonded force buffer reduction
  * over threads. This should be called each time the bonded setup

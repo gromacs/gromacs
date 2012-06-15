@@ -38,6 +38,8 @@
 
 #include <ctype.h>
 #include "sysstuff.h"
+#include "typedefs.h"
+#include "vmdio.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
@@ -53,7 +55,6 @@
 #include "confio.h"
 #include "checkpoint.h"
 #include "wgms.h"
-#include "vmdio.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -408,6 +409,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
     fr->bTime=TRUE;
     fr->time=sh.t;
     fr->bLambda = TRUE;
+    fr->bFepState = TRUE;
     fr->lambda = sh.lambda;
     fr->bBox = sh.box_size>0;
     if (fr->flags & (TRX_READ_X | TRX_NEED_X)) {

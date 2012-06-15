@@ -20,25 +20,22 @@
 #define VMDIO_H_
 
 #include "molfile_plugin.h"
-#include "types/simple.h"
+#include "types/trx.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct trxframe;
-
-typedef struct 
+struct gmxvmdplugin
 {
     molfile_plugin_t *api;
     const char* filetype;
     void* handle;
     gmx_bool bV;
-} t_gmxvmdplugin;
+};
     
 int read_first_vmd_frame(int  *status,const char *fn, struct trxframe *fr,int flags);
 gmx_bool read_next_vmd_frame(int status,struct trxframe *fr);
-int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin);
 
 #ifdef __cplusplus
 }

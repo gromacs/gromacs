@@ -68,10 +68,14 @@ extern const char *edisreweighting_names[edrwNR+1];
 extern const char *enbf_names[eNBF_NR+1];
 extern const char *ecomb_names[eCOMB_NR+1];
 extern const char *gtypes[egcNR+1];
+extern const char *esimtemp_names[esimtempNR+1];
 extern const char *efep_names[efepNR+1];
-extern const char *separate_dhdl_file_names[efepNR+1];
-extern const char *dhdl_derivatives_names[efepNR+1];
-extern const char *efep_names[efepNR+1];
+extern const char *efpt_names[efptNR+1];
+extern const char *elamstats_names[elamstatsNR+1];
+extern const char *elmcmove_names[elmcmoveNR+1];
+extern const char *elmceq_names[elmceqNR+1];
+extern const char *separate_dhdl_file_names[esepdhdlfileNR+1];
+extern const char *dhdl_derivatives_names[edhdlderivativesNR+1];
 extern const char *esol_names[esolNR+1];
 extern const char *enlist_names[enlistNR+1];
 extern const char *edispc_names[edispcNR+1];
@@ -115,9 +119,10 @@ extern const char *eAdressSITEtype_names[eAdressSITENR+1];
 #define EDISREWEIGHTING(e)  ENUM_NAME(e,edrwNR,edisreweighting_names)
 #define ENBFNAME(e)    ENUM_NAME(e,eNBF_NR,enbf_names)
 #define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
+#define ESIMTEMP(e)    ENUM_NAME(e,esimtempNR,esimtemp_names)
 #define EFEPTYPE(e)    ENUM_NAME(e,efepNR,efep_names)
-#define SEPDHDLFILETYPE(e) ENUM_NAME(e,sepdhdlfileNR,separate_dhdl_file_names)
-#define DHDLDERIVATIVESTYPE(e) ENUM_NAME(e,dhdlderivativesNR,dhdl_derivatives_names)
+#define SEPDHDLFILETYPE(e) ENUM_NAME(e,esepdhdlfileNR,separate_dhdl_file_names)
+#define DHDLDERIVATIVESTYPE(e) ENUM_NAME(e,edhdlderivativesNR,dhdl_derivatives_names)
 #define ESOLTYPE(e)    ENUM_NAME(e,esolNR,esol_names)
 #define ENLISTTYPE(e)  ENUM_NAME(e,enlistNR,enlist_names)
 #define EDISPCORR(e)   ENUM_NAME(e,edispcNR,edispc_names)

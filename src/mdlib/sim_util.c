@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -80,6 +80,7 @@
 #include "xtcio.h"
 #include "copyrite.h"
 #include "pull_rotation.h"
+#include "gmx_random.h"
 #include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
@@ -106,7 +107,7 @@
 
 #if 0
 typedef struct gmx_timeprint {
-    
+
 } t_gmx_timeprint;
 #endif
 
@@ -121,17 +122,17 @@ gmx_gettime()
 #ifdef HAVE_GETTIMEOFDAY
 	struct timeval t;
 	double seconds;
-	
+
 	gettimeofday(&t,NULL);
-	
+
 	seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
-	
+
 	return seconds;
 #else
 	double  seconds;
-	
+
 	seconds = time(NULL);
-	
+
 	return seconds;
 #endif
 }
@@ -139,14 +140,14 @@ gmx_gettime()
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
-void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,   
+void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
                 t_inputrec *ir, t_commrec *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
     double dt;
     char buf[48];
-    
+
 #ifndef GMX_THREAD_MPI
     if (!PAR(cr))
 #endif
@@ -164,11 +165,11 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
             runtime->time_per_step = dt/(step - ir->init_step + 1);
         }
         dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
-        
+
         if (ir->nsteps >= 0)
         {
             if (dt >= 300)
-            {    
+            {
                 finish = (time_t) (runtime->last + dt);
                 gmx_ctime_r(&finish,timebuf,STRLEN);
                 sprintf(buf,"%s",timebuf);
@@ -194,7 +195,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
     fflush(out);
 }
 
-#ifdef NO_CLOCK 
+#ifdef NO_CLOCK
 #define clock() -1
 #endif
 
@@ -206,7 +207,7 @@ static double set_proctime(gmx_runtime_t *runtime)
 
     prev = runtime->proc;
     runtime->proc = dclock();
-    
+
     diff = runtime->proc - prev;
 #else
     clock_t prev;
@@ -239,9 +240,9 @@ void runtime_start(gmx_runtime_t *runtime)
 void runtime_end(gmx_runtime_t *runtime)
 {
     double now;
-    
+
     now = gmx_gettime();
-    
+
     runtime->proctime += set_proctime(runtime);
     runtime->realtime  = now - runtime->real;
     runtime->real      = now;
@@ -285,7 +286,7 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
 static void sum_forces(int start,int end,rvec f[],rvec flr[])
 {
   int i;
-  
+
   if (gmx_debug_at) {
     pr_rvecs(debug,0,"fsr",f+start,end-start);
     pr_rvecs(debug,0,"flr",flr+start,end-start);
@@ -294,17 +295,17 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
     rvec_inc(f[i],flr[i]);
 }
 
-/* 
+/*
  * calc_f_el calculates forces due to an electric field.
  *
- * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e 
+ * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
  *
- * Et[] contains the parameters for the time dependent 
- * part of the field (not yet used). 
+ * Et[] contains the parameters for the time dependent
+ * part of the field (not yet used).
  * Ex[] contains the parameters for
  * the spatial dependent part of the field. You can have cool periodic
  * fields in principle, but only a constant field is supported
- * now. 
+ * now.
  * The function should return the energy due to the electric field
  * (if any) but for now returns 0.
  *
@@ -324,7 +325,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
     rvec Ext;
     real t0;
     int  i,m;
-    
+
     for(m=0; (m<DIM); m++)
     {
         if (Et[m].n > 0)
@@ -373,9 +374,9 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
   clear_mat(vir_part);
   calc_vir(fplog,SHIFTS,fr->shift_vec,fr->fshift,vir_part,ePBC==epbcSCREW,box);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
-  
-  /* Calculate partial virial, for local atoms only, based on short range. 
-   * Total virial is computed in global_stat, called from do_md 
+
+  /* Calculate partial virial, for local atoms only, based on short range.
+   * Total virial is computed in global_stat, called from do_md
    */
   f_calc_vir(fplog,start,start+homenr,x,f,vir_part,graph,box);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
@@ -395,6 +396,7 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
 }
 
 static void posres_wrapper(FILE *fplog,
+                           int flags,
                            gmx_bool bSepDVDL,
                            t_inputrec *ir,
                            t_nrnb *nrnb,
@@ -402,18 +404,21 @@ static void posres_wrapper(FILE *fplog,
                            matrix box,rvec x[],
                            rvec f[],
                            gmx_enerdata_t *enerd,
-                           real lambda,
+                           real *lambda,
                            t_forcerec *fr)
 {
     t_pbc pbc;
     real  v,dvdl;
+    int   i;
 
     /* Position restraints always require full pbc */
     set_pbc(&pbc,ir->ePBC,box);
+    dvdl = 0;
     v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                top->idef.iparams_posres,
                (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
-               ir->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
+               ir->ePBC==epbcNONE ? NULL : &pbc,
+               lambda[efptRESTRAINT],&dvdl,
                fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
     if (bSepDVDL)
     {
@@ -421,13 +426,27 @@ static void posres_wrapper(FILE *fplog,
                 interaction_function[F_POSRES].longname,v,dvdl);
     }
     enerd->term[F_POSRES] += v;
-    /* This linear lambda dependence assumption is only correct
-     * when only k depends on lambda,
-     * not when the reference position depends on lambda.
-     * grompp checks for this.
+    /* If just the force constant changes, the FEP term is linear,
+     * but if k changes, it is not.
      */
-    enerd->dvdl_lin += dvdl;
+    enerd->dvdl_nonlin[efptRESTRAINT] += dvdl;
     inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
+
+    if ((ir->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
+    {
+        for(i=0; i<enerd->n_lambda; i++)
+        {
+            real dvdl_dum,lambda_dum;
+
+            lambda_dum = (i==0 ? lambda[efptRESTRAINT] : ir->fepvals->all_lambda[efptRESTRAINT][i-1]);
+            v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
+                       top->idef.iparams_posres,
+                       (const rvec*)x,NULL,NULL,
+                       ir->ePBC==epbcNONE ? NULL : &pbc,lambda_dum,&dvdl,
+                       fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
+            enerd->enerpart_lambda[i] += v;
+        }
+    }
 }
 
 static void pull_potential_wrapper(FILE *fplog,
@@ -439,7 +458,7 @@ static void pull_potential_wrapper(FILE *fplog,
                                    tensor vir_force,
                                    t_mdatoms *mdatoms,
                                    gmx_enerdata_t *enerd,
-                                   real lambda,
+                                   real *lambda,
                                    double t)
 {
     t_pbc  pbc;
@@ -454,12 +473,12 @@ static void pull_potential_wrapper(FILE *fplog,
     dvdl = 0; 
     enerd->term[F_COM_PULL] +=
         pull_potential(ir->ePull,ir->pull,mdatoms,&pbc,
-                       cr,t,lambda,x,f,vir_force,&dvdl);
+                       cr,t,lambda[efptRESTRAINT],x,f,vir_force,&dvdl);
     if (bSepDVDL)
     {
         fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
     }
-    enerd->dvdl_lin += dvdl;
+    enerd->dvdl_lin[efptRESTRAINT] += dvdl;
 }
 
 static void pme_receive_force_ener(FILE *fplog,
@@ -487,7 +506,7 @@ static void pme_receive_force_ener(FILE *fplog,
         fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
     }
     enerd->term[F_COUL_RECIP] += e;
-    enerd->dvdl_lin += dvdl;
+    enerd->dvdl_lin[efptCOUL] += dvdl;
     if (wcycle)
     {
         dd_cycles_add(cr->dd,cycles_seppme,ddCyclPME);
@@ -693,7 +712,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real lambda,t_graph *graph,
+              real *lambda,t_graph *graph,
               t_forcerec *fr, interaction_const_t *ic,
               gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
@@ -800,7 +819,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
 
         gmx_pme_send_x(cr,bBS ? boxs : box,x,
-                       mdatoms->nChargePerturbed,lambda,
+                       mdatoms->nChargePerturbed,lambda[efptCOUL],
                        (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),step);
 
         GMX_MPE_LOG(ev_send_coordinates_finish);
@@ -1036,7 +1055,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         for(j=0; j<DIM; j++)
         {
             mu_tot[j] =
-                (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
+                (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] +
+                lambda[efptCOUL]*fr->mu_tot[1][j];
         }
     }
 
@@ -1120,7 +1140,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        posres_wrapper(fplog,bSepDVDL,inputrec,nrnb,top,box,x,
+        posres_wrapper(fplog,flags,bSepDVDL,inputrec,nrnb,top,box,x,
                        f,enerd,lambda,fr);
     }
 
@@ -1130,7 +1150,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
-                      lambda,graph,&(top->excls),fr->mu_tot,
+                      inputrec->fepvals,lambda,graph,&(top->excls),fr->mu_tot,
                       ((nb_kernel_type == nbk8x8x8_CUDA || nb_kernel_type == nbk8x8x8_PlainC) 
                         ? flags&~GMX_FORCE_NONBONDED : flags),
                       &cycles_pme);
@@ -1375,7 +1395,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real lambda,t_graph *graph,
+              real *lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
               gmx_bool bBornRadii,
@@ -1383,13 +1403,13 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
-    double mu[2*DIM]; 
+    double mu[2*DIM];
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     gmx_bool   bDoLongRange,bDoForces,bSepLRF;
     gmx_bool   bDoAdressWF;
     matrix boxs;
     rvec   vzero,box_diag;
-    real   e,v,dvdl;
+    real   e,v,dvdlambda[efptNR];
     t_pbc  pbc;
     float  cycles_pme,cycles_force;
 
@@ -1422,7 +1442,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     }
 
     bStateChanged = (flags & GMX_FORCE_STATECHANGED);
-    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll==FALSE); 
+    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll==FALSE);
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
@@ -1494,7 +1514,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         }
 
         gmx_pme_send_x(cr,bBS ? boxs : box,x,
-                       mdatoms->nChargePerturbed,lambda,
+                       mdatoms->nChargePerturbed,lambda[efptCOUL],
                        (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),step);
 
         GMX_MPE_LOG(ev_send_coordinates_finish);
@@ -1569,7 +1589,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
             for(j=0; j<DIM; j++)
             {
                 mu_tot[j] =
-                    (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
+                    (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
             }
         }
     }
@@ -1581,7 +1601,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     if (bNS)
     {
         wallcycle_start(wcycle,ewcNS);
-        
+
         if (graph && bStateChanged)
         {
             /* Calculate intramolecular shift vectors to make molecules whole */
@@ -1596,23 +1616,24 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         }
 
         /* Do the actual neighbour searching and if twin range electrostatics
-        * also do the calculation of long range forces and energies.
-        */
-        dvdl = 0; 
+         * also do the calculation of long range forces and energies.
+         */
+        for (i=0;i<efptNR;i++) {dvdlambda[i] = 0;}
         ns(fplog,fr,x,box,
            groups,&(inputrec->opts),top,mdatoms,
-           cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
+           cr,nrnb,lambda,dvdlambda,&enerd->grpp,bFillGrid,
            bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
+            fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdlambda);
         }
-        enerd->dvdl_lin += dvdl;
+        enerd->dvdl_lin[efptVDW] += dvdlambda[efptVDW];
+        enerd->dvdl_lin[efptCOUL] += dvdlambda[efptCOUL];
 
         wallcycle_stop(wcycle,ewcNS);
     }
-    
-    if (inputrec->implicit_solvent && bNS) 
+
+    if (inputrec->implicit_solvent && bNS)
     {
         make_gb_nblist(cr,inputrec->gb_algorithm,inputrec->rlist,
                        x,box,fr,&top->idef,graph,fr->born);
@@ -1626,7 +1647,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
             dd_force_flop_start(cr->dd,nrnb);
         }
     }
-    
+
     if (inputrec->bRot)
     {
         /* Enforced rotation has its own cycle counter that starts after the collective
@@ -1648,7 +1669,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     {
         /* Reset forces for which the virial is calculated separately:
          * PME/Ewald forces if necessary */
-        if (fr->bF_NoVirSum) 
+        if (fr->bF_NoVirSum)
         {
             if (flags & GMX_FORCE_VIRIAL)
             {
@@ -1705,7 +1726,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        posres_wrapper(fplog,bSepDVDL,inputrec,nrnb,top,box,x,
+        posres_wrapper(fplog,flags,bSepDVDL,inputrec,nrnb,top,box,x,
                        f,enerd,lambda,fr);
     }
 
@@ -1714,10 +1735,10 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
-                      lambda,graph,&(top->excls),fr->mu_tot,
+                      inputrec->fepvals,lambda,
+                      graph,&(top->excls),fr->mu_tot,
                       flags,
                       &cycles_pme);
-
 
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -1863,7 +1884,7 @@ void do_force(FILE *fplog,t_commrec *cr,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real lambda,t_graph *graph,
+              real *lambda,t_graph *graph,
               t_forcerec *fr,
               gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
@@ -1924,14 +1945,14 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     int    i,m,start,end;
     gmx_large_int_t step;
     real   dt=ir->delta_t;
-    real   dvdlambda;
+    real   dvdl_dum;
     rvec   *savex;
-    
+
     snew(savex,state->natoms);
 
     start = md->start;
     end   = md->homenr + start;
-    
+
     if (debug)
         fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
                 start,md->homenr,end);
@@ -1943,16 +1964,17 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
                 gmx_step_str(step,buf));
     }
-    dvdlambda = 0;
-    
+    dvdl_dum = 0;
+
     /* constrain the current position */
     constrain(NULL,TRUE,FALSE,constr,&(top->idef),
               ir,NULL,cr,step,0,md,
               state->x,state->x,NULL,
-              fr->bMolPBC,state->box,state->lambda,&dvdlambda,
+              fr->bMolPBC,state->box,
+              state->lambda[efptBONDED],&dvdl_dum,
               NULL,NULL,nrnb,econqCoord,
               ir->epc==epcMTTK,state->veta,state->veta);
-    if (EI_VV(ir->eI)) 
+    if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
@@ -1960,16 +1982,17 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
                   ir,NULL,cr,step,0,md,
                   state->x,state->v,state->v,
-                  fr->bMolPBC,state->box,state->lambda,&dvdlambda,
+                  fr->bMolPBC,state->box,
+                  state->lambda[efptBONDED],&dvdl_dum,
                   NULL,NULL,nrnb,econqVeloc,
                   ir->epc==epcMTTK,state->veta,state->veta);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI!=eiVV)
     {
-        for(i=start; (i<end); i++) 
+        for(i=start; (i<end); i++)
         {
-            for(m=0; (m<DIM); m++) 
+            for(m=0; (m<DIM); m++)
             {
                 /* Reverse the velocity */
                 state->v[i][m] = -state->v[i][m];
@@ -1977,8 +2000,8 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                 savex[i][m] = state->x[i][m] + dt*state->v[i][m];
             }
         }
-    /* Shake the positions at t=-dt with the positions at t=0                        
-     * as reference coordinates.                                                     
+    /* Shake the positions at t=-dt with the positions at t=0
+     * as reference coordinates.
          */
         if (fplog)
         {
@@ -1986,11 +2009,12 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
             fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
                     gmx_step_str(step,buf));
         }
-        dvdlambda = 0;
+        dvdl_dum = 0;
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
                   ir,NULL,cr,step,-1,md,
                   state->x,savex,NULL,
-                  fr->bMolPBC,state->box,state->lambda,&dvdlambda,
+                  fr->bMolPBC,state->box,
+                  state->lambda[efptBONDED],&dvdl_dum,
                   state->v,NULL,nrnb,econqCoord,
                   ir->epc==epcMTTK,state->veta,state->veta);
         
@@ -2001,7 +2025,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
             }
         }
     }
-    
     sfree(savex);
 }
 
@@ -2011,7 +2034,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
   double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
   double invscale,invscale2,invscale3;
   int    ri0,ri1,ri,i,offstart,offset;
-  real   scale,*vdwtab; 
+  real   scale,*vdwtab;
 
   fr->enershiftsix = 0;
   fr->enershifttwelve = 0;
@@ -2054,8 +2077,8 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
        */
       eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
       eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
-      
-      invscale = 1.0/(scale);  
+
+      invscale = 1.0/(scale);
       invscale2 = invscale*invscale;
       invscale3 = invscale*invscale2;
 
@@ -2068,7 +2091,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 	switched function.  We perform both the pressure and energy
 	loops at the same time for simplicity, as the computational
 	cost is low. */
-      
+
       for (i=0;i<2;i++) {
         enersum = 0.0; virsum = 0.0;
         if (i==0)
@@ -2080,12 +2103,12 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
           ea = invscale3;
           eb = 2.0*invscale2*r;
           ec = invscale*r*r;
-          
+
           pa = invscale3;
           pb = 3.0*invscale2*r;
           pc = 3.0*invscale*r*r;
           pd = r*r*r;
-          
+
           /* this "8" is from the packing in the vdwtab array - perhaps
 	    should be #define'ed? */
           offset = 8*ri + offstart;
@@ -2093,15 +2116,15 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
           f = vdwtab[offset+1];
           g = vdwtab[offset+2];
           h = vdwtab[offset+3];
-	  
+
           enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2)+
-            g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);  
-          virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) + 
+            g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
+          virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) +
             2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
-	  
+
         }
         enersum *= 4.0*M_PI;
-        virsum  *= 4.0*M_PI; 
+        virsum  *= 4.0*M_PI;
         eners[i] -= enersum;
         virs[i]  -= virsum;
       }
@@ -2111,7 +2134,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
       eners[1] +=  4.0*M_PI/(9.0*rc9);
       virs[0]  +=  8.0*M_PI/rc3;
       virs[1]  += -16.0*M_PI/(3.0*rc9);
-    } 
+    }
     else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER)) {
       if (fr->vdwtype == evdwUSER && fplog)
 	fprintf(fplog,
@@ -2150,62 +2173,62 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
     gmx_bool bCorrAll,bCorrPres;
     real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
-    
+
     *prescorr = 0;
     *enercorr = 0;
     *dvdlcorr = 0;
-    
+
     clear_mat(virial);
     clear_mat(pres);
-    
+
     if (ir->eDispCorr != edispcNO) {
         bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                      ir->eDispCorr == edispcAllEnerPres);
         bCorrPres = (ir->eDispCorr == edispcEnerPres ||
                      ir->eDispCorr == edispcAllEnerPres);
-        
+
         invvol = 1/det(box);
-        if (fr->n_tpi) 
+        if (fr->n_tpi)
         {
             /* Only correct for the interactions with the inserted molecule */
             dens = (natoms - fr->n_tpi)*invvol;
             ninter = fr->n_tpi;
-        } 
-        else 
+        }
+        else
         {
             dens = natoms*invvol;
             ninter = 0.5*natoms;
         }
-        
-        if (ir->efep == efepNO) 
+
+        if (ir->efep == efepNO)
         {
             avcsix    = fr->avcsix[0];
             avctwelve = fr->avctwelve[0];
-        } 
-        else 
+        }
+        else
         {
             avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
             avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
         }
-        
+
         enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
         *enercorr += avcsix*enerdiff;
         dvdlambda = 0.0;
-        if (ir->efep != efepNO) 
+        if (ir->efep != efepNO)
         {
             dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
         }
-        if (bCorrAll) 
+        if (bCorrAll)
         {
             enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
             *enercorr += avctwelve*enerdiff;
-            if (fr->efep != efepNO) 
+            if (fr->efep != efepNO)
             {
                 dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
         }
-        
-        if (bCorrPres) 
+
+        if (bCorrPres)
         {
             svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
             if (ir->eDispCorr == edispcAllEnerPres)
@@ -2214,14 +2237,14 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             }
             /* The factor 2 is because of the Gromacs virial definition */
             spres = -2.0*invvol*svir*PRESFAC;
-            
+
             for(m=0; m<DIM; m++) {
                 virial[m][m] += svir;
                 pres[m][m] += spres;
             }
             *prescorr += spres;
         }
-        
+
         /* Can't currently control when it prints, for now, just print when degugging */
         if (debug)
         {
@@ -2229,7 +2252,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                 fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
                         avcsix,avctwelve);
             }
-            if (bCorrPres) 
+            if (bCorrPres)
             {
                 fprintf(debug,
                         "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
@@ -2240,13 +2263,13 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                 fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
             }
         }
-        
+
         if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
         {
             fprintf(fplog,sepdvdlformat,"Dispersion correction",
                     *enercorr,dvdlambda);
         }
-        if (fr->efep != efepNO) 
+        if (fr->efep != efepNO)
         {
             *dvdlcorr += dvdlambda;
         }
@@ -2292,7 +2315,7 @@ static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
   as = 0;
   for(mb=0; mb<mtop->nmolblock; mb++) {
     molb = &mtop->molblock[mb];
-    if (molb->natoms_mol == 1 || 
+    if (molb->natoms_mol == 1 ||
 	(!bFirst && mtop->moltype[molb->type].cgs.nr == 1)) {
       /* Just one atom or charge group in the molecule, no PBC required */
       as += molb->nmol*molb->natoms_mol;
@@ -2300,16 +2323,16 @@ static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
       /* Pass NULL iso fplog to avoid graph prints for each molecule type */
       mk_graph_ilist(NULL,mtop->moltype[molb->type].ilist,
 		     0,molb->natoms_mol,FALSE,FALSE,graph);
-      
+
       for(mol=0; mol<molb->nmol; mol++) {
 	mk_mshift(fplog,graph,ePBC,box,x+as);
-	
+
 	shift_self(graph,box,x+as);
 	/* The molecule is whole now.
 	 * We don't need the second mk_mshift call as in do_pbc_first,
 	 * since we no longer need this graph.
 	 */
-	
+
 	as += molb->natoms_mol;
       }
       done_graph(graph);
@@ -2351,7 +2374,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 #ifdef GMX_MPI
         MPI_Allreduce(nrnb->n,nrnb_tot->n,eNRNB,MPI_DOUBLE,MPI_SUM,
                       cr->mpi_comm_mysim);
-#endif  
+#endif
     }
     else
     {
@@ -2408,7 +2431,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                      cr->mpi_comm_mysim);
         }
     }
-#endif  
+#endif
 
     if (SIMMASTER(cr))
     {
@@ -2441,10 +2464,73 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
     }
 }
 
+extern void initialize_lambdas(FILE *fplog,t_inputrec *ir,int *fep_state,real *lambda,double *lam0)
+{
+    /* this function works, but could probably use a logic rewrite to keep all the different
+       types of efep straight. */
+
+    int i;
+    t_lambda *fep = ir->fepvals;
+
+    if ((ir->efep==efepNO) && (ir->bSimTemp == FALSE)) {
+        for (i=0;i<efptNR;i++)  {
+            lambda[i] = 0.0;
+            if (lam0)
+            {
+                lam0[i] = 0.0;
+            }
+        }
+        return;
+    } else {
+        *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
+                                             if checkpoint is set -- a kludge is in for now
+                                             to prevent this.*/
+        for (i=0;i<efptNR;i++)
+        {
+            /* overwrite lambda state with init_lambda for now for backwards compatibility */
+            if (fep->init_lambda>=0) /* if it's -1, it was never initializd */
+            {
+                lambda[i] = fep->init_lambda;
+                if (lam0) {
+                    lam0[i] = lambda[i];
+                }
+            }
+            else
+            {
+                lambda[i] = fep->all_lambda[i][*fep_state];
+                if (lam0) {
+                    lam0[i] = lambda[i];
+                }
+            }
+        }
+        if (ir->bSimTemp) {
+            /* need to rescale control temperatures to match current state */
+            for (i=0;i<ir->opts.ngtc;i++) {
+                if (ir->opts.ref_t[i] > 0) {
+                    ir->opts.ref_t[i] = ir->simtempvals->temperatures[*fep_state];
+                }
+            }
+        }
+    }
+
+    /* Send to the log the information on the current lambdas */
+    if (fplog != NULL)
+    {
+        fprintf(fplog,"Initial vector of lambda components:[ ");
+        for (i=0;i<efptNR;i++)
+        {
+            fprintf(fplog,"%10.4f ",lambda[i]);
+        }
+        fprintf(fplog,"]\n");
+    }
+    return;
+}
+
+
 void init_md(FILE *fplog,
              t_commrec *cr,t_inputrec *ir,const output_env_t oenv,
              double *t,double *t0,
-             real *lambda,double *lam0,
+             real *lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile,const t_filenm fnm[],
@@ -2454,18 +2540,9 @@ void init_md(FILE *fplog,
 {
     int  i,j,n;
     real tmpt,mod;
-	
+
     /* Initial values */
     *t = *t0       = ir->init_t;
-    if (ir->efep != efepNO)
-    {
-        *lam0 = ir->init_lambda;
-        *lambda = *lam0 + ir->init_step*ir->delta_lambda;
-    }
-    else
-    {
-        *lambda = *lam0   = 0.0;
-    } 
 
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)
@@ -2480,17 +2557,21 @@ void init_md(FILE *fplog,
     {
         update_annealing_target_temp(&(ir->opts),ir->init_t);
     }
-    
+
+    /* Initialize lambda variables */
+    initialize_lambdas(fplog,ir,fep_state,lambda,lam0);
+
     if (upd)
     {
         *upd = init_update(fplog,ir);
     }
-    
+
+
     if (vcm != NULL)
     {
         *vcm = init_vcm(fplog,&mtop->groups,ir);
     }
-    
+
     if (EI_DYNAMICS(ir->eI) && !(Flags & MD_APPENDFILES))
     {
         if (ir->etc == etcBERENDSEN)
@@ -2502,9 +2583,9 @@ void init_md(FILE *fplog,
             please_cite(fplog,"Bussi2007a");
         }
     }
-    
+
     init_nrnb(nrnb);
-    
+
     if (nfile != -1)
     {
         *outf = init_mdoutf(nfile,fnm,Flags,cr,ir,oenv);
@@ -2512,17 +2593,17 @@ void init_md(FILE *fplog,
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
                               mtop,ir, (*outf)->fp_dhdl);
     }
-    
+
     if (ir->bAdress)
     {
       please_cite(fplog,"Fritsch12");
       please_cite(fplog,"Junghans10");
     }
-    /* Initiate variables */  
+    /* Initiate variables */
     clear_mat(force_vir);
     clear_mat(shake_vir);
     clear_rvec(mu_tot);
-    
+
     debug_gmx();
 }
 

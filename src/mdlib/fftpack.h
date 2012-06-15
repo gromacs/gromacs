@@ -1,17 +1,16 @@
 /*
- * 
+
  *                This source code is part of
  * 
  *                 G   R   O   M   A   C   S
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2012, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -30,27 +29,28 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
- */
+ * Groningen Machine for Chemical Simulation
 
-#ifndef _dihre_h
-#define _dihre_h
+ ************************************************************/
 
-#include "sysstuff.h"
-#include "typedefs.h"
+#include "types/simple.h"
+
+#ifndef _fftpack_h
+#define _fftpack_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  void init_dihres(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,t_fcdata *fcd);
+#define Treal real
 
-
-t_ifunc ta_dihres;
-/* Calculate the distance restraint forces, return the potential */
+    void fftpack_cffti1(int n, Treal wa[], int ifac[]);
+    void fftpack_cfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[], int isign);
+    void fftpack_rffti1(int n, Treal wa[], int ifac[]);
+    void fftpack_rfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
+    void fftpack_rfftb1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif	/* _disre_h */
+#endif

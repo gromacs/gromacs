@@ -30,6 +30,10 @@ endif()
 # Files	called xxx_test.c are test drivers with a main() function for 
 # module xxx.c, so they should not be included in the library
 
+if(NOT GMX_FFT_FFTPACK)
+list(REMOVE_ITEM MDLIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/fftpack.c)
+endif()
+
 add_library(md ${MDLIB_SOURCES})
 
 target_link_libraries(md ${GMX_GPU_LIBRARIES} gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
