@@ -70,6 +70,10 @@ const char *ptype_str[eptNR+1] = {
   "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
 };
 
+const char *ecutscheme_names[ecutsNR+1] = {
+  "Group", "Verlet", NULL
+};
+
 const char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
   "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User", 

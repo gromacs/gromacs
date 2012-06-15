@@ -137,6 +137,9 @@
 /* Use the PowerPC hardware 1/sqrt(x) */
 #cmakedefine GMX_POWERPC_INVSQRT
 
+/* Use sub-counters */
+#cmakedefine GMX_CYCLE_SUB
+
 /* Compile with plugin support */
 #cmakedefine GMX_USE_PLUGINS
 
@@ -193,6 +196,9 @@
 
 /* Support for SSE4.1 intrinsics */
 #cmakedefine GMX_SSE4_1
+
+/* Use GPU native acceleration */
+#cmakedefine GMX_GPU
 
 /* Define to 1 if you have the <altivec.h> header file. */
 #cmakedefine HAVE_ALTIVEC_H
@@ -367,6 +373,12 @@
 
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
+
+/* Define if sleep() in unistd.h is present. */
+#cmakedefine HAVE_UNISTD_SLEEP
+
+/* Define if Sleep() in windows.h is present. */
+#cmakedefine HAVE_WIN_SLEEP
 
 /* The size of int, as computed by sizeof. */
 #cmakedefine SIZEOF_INT @SIZEOF_INT@
