@@ -217,7 +217,7 @@ AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
     {
         _impl->_bAllowMissing = false;
     }
-    _impl->_modules.push_back(move(module));
+    _impl->_modules.push_back(module);
 }
 
 
