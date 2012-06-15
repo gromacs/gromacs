@@ -517,7 +517,12 @@ void please_cite(FILE *fp,const char *key)
       "H. Wang, F. Dommert, C.Holm",
       "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
       "J. Chem. Phys. B",
-      133, 2010, "034117"
+      133, 2010, "034117" },
+    { "Kutzner2011",
+      "C. Kutzner, J. Czub and H. Grubmueller",
+      "Keep it Flexible: Driving Macromolecular Rotary Motions in Atomistic Simulations with GROMACS",
+      "J. Chem. Theory Comput.",
+      7, 2011, "1381-1393"
     }
   };
 #define NSTR (int)asize(citedb)
