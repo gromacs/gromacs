@@ -355,6 +355,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                 }
             }
         }
+        else if (ir->nstenergy > 0 && ir->nstcalcenergy > ir->nstenergy)
+        {
+            /* If the user sets nstenergy small, we should respect that */
+            sprintf(warn_buf,"Setting nstcalcenergy (%d) equal to nstenergy (%d)",ir->nstcalcenergy,ir->nstenergy);
+            ir->nstcalcenergy = ir->nstenergy;
+        }
+
         if (ir->epc != epcNO)
         {
             if (ir->nstpcouple < 0)
