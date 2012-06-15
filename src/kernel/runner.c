@@ -73,6 +73,8 @@
 #include "membed.h"
 #include "md_openmm.h"
 
+#include "gmx_omp.h"
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -86,10 +88,6 @@
 
 #ifdef GMX_OPENMM
 #include "md_openmm.h"
-#endif
-
-#ifdef GMX_OPENMP
-#include <omp.h>
 #endif
 
 

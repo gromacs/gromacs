@@ -54,11 +54,7 @@
 #include "matio.h"
 #include "gmx_ana.h"
 #include "nsfactor.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
-
+#include "gmx_omp.h"
 
 int gmx_sans(int argc,char *argv[])
 {
@@ -153,9 +149,7 @@ int gmx_sans(int argc,char *argv[])
       { efXVG, "-pr",         "pr",   ffWRITE }
   };
 
-#ifdef GMX_OPENMP
-    nthreads = omp_get_max_threads();
-#endif
+  nthreads = omp_get_max_threads();
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,
@@ -166,9 +160,8 @@ int gmx_sans(int argc,char *argv[])
   check_mcover(mcover);
 
   /* setting number of omp threads globaly */
-#ifdef GMX_OPENMP
   omp_set_num_threads(nthreads);
-#endif
+
   /* Now try to parse opts for modes */
   switch(emethod[0][0]) {
   case 'd':
