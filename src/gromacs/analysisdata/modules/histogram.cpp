@@ -46,8 +46,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "histogram-impl.h"
-
 static const real UNDEFINED = std::numeric_limits<real>::max();
 static bool isDefined(real value)
 {
@@ -182,6 +180,46 @@ AnalysisHistogramSettings::findBin(real y) const
 
 
 /********************************************************************
+ * StaticAverageHistogram
+ */
+
+namespace
+{
+
+/*! \internal \brief
+ * Represents copies of average histograms.
+ *
+ * Methods in AbstractAverageHistogram that return new histogram instances
+ * return objects of this class.
+ * Initialization of values is handled in those methods.
+ *
+ * \ingroup module_analysisdata
+ */
+class StaticAverageHistogram : public AbstractAverageHistogram
+{
+    public:
+        StaticAverageHistogram();
+        //! Creates an average histogram module with defined bin parameters.
+        explicit StaticAverageHistogram(const AnalysisHistogramSettings &settings);
+
+        // Copy and assign disallowed by base.
+};
+
+StaticAverageHistogram::StaticAverageHistogram()
+{
+}
+
+
+StaticAverageHistogram::StaticAverageHistogram(
+        const AnalysisHistogramSettings &settings)
+    : AbstractAverageHistogram(settings)
+{
+}
+
+} // namespace
+
+
+/********************************************************************
  * AbstractAverageHistogram
  */
 
@@ -229,7 +267,7 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
     }
 
     AverageHistogramPointer dest(
-        new internal::StaticAverageHistogram(
+        new StaticAverageHistogram(
             histogramFromBins(xstart(), nbins, 2*xstep())
                 .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
@@ -277,7 +315,7 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
 AverageHistogramPointer
 AbstractAverageHistogram::clone() const
 {
-    AverageHistogramPointer dest(new internal::StaticAverageHistogram());
+    AverageHistogramPointer dest(new StaticAverageHistogram());
     copyContents(this, dest.get());
     return dest;
 }
@@ -318,27 +356,47 @@ AbstractAverageHistogram::scaleVector(real norm[])
 
 
 /********************************************************************
- * StaticAverageHistogram
+ * BasicAverageHistogramModule
  */
 
 namespace internal
 {
 
-StaticAverageHistogram::StaticAverageHistogram()
-{
-}
-
-
-StaticAverageHistogram::StaticAverageHistogram(
-        const AnalysisHistogramSettings &settings)
-    : AbstractAverageHistogram(settings)
-{
-}
-
-
-/********************************************************************
- * BasicAverageHistogramModule
+/*! \internal \brief
+ * Implements average histogram module that averages per-frame histograms.
+ *
+ * This class is used for accumulating average histograms in per-frame
+ * histogram modules (those that use BasicHistogramImpl as their implementation
+ * class).
+ * There are two columns, first for the average and second for standard
+ * deviation.
+ *
+ * \ingroup module_analysisdata
  */
+class BasicAverageHistogramModule : public AbstractAverageHistogram,
+                                    public AnalysisDataModuleInterface
+{
+    public:
+        BasicAverageHistogramModule();
+        //! Creates an average histogram module with defined bin parameters.
+        explicit BasicAverageHistogramModule(const AnalysisHistogramSettings &settings);
+
+        using AbstractAverageHistogram::init;
+
+        virtual int flags() const;
+
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
+        virtual void dataFinished();
+
+    private:
+        //! Number of frames accumulated so far.
+        int                     frameCount_;
+
+        // Copy and assign disallowed by base.
+};
 
 BasicAverageHistogramModule::BasicAverageHistogramModule()
     : frameCount_(0)
@@ -413,6 +471,41 @@ BasicAverageHistogramModule::dataFinished()
 /********************************************************************
  * BasicHistogramImpl
  */
+
+/*! \internal \brief
+ * Private implementation class for AnalysisDataSimpleHistogramModule and
+ * AnalysisDataWeightedHistogramModule.
+ *
+ * \ingroup module_analysisdata
+ */
+class BasicHistogramImpl
+{
+    public:
+        //! Smart pointer to manage an BasicAverageHistogramModule object.
+        typedef boost::shared_ptr<BasicAverageHistogramModule>
+                BasicAverageHistogramModulePointer;
+
+        BasicHistogramImpl();
+        //! Creates an histogram impl with defined bin parameters.
+        explicit BasicHistogramImpl(const AnalysisHistogramSettings &settings);
+        ~BasicHistogramImpl();
+
+        /*! \brief
+         * (Re)initializes the histogram from settings.
+         */
+        void init(const AnalysisHistogramSettings &settings);
+        /*! \brief
+         * Initializes data storage frame when a new frame starts.
+         */
+        void initFrame(AnalysisDataStorageFrame *frame);
+
+        //! Storage implementation object.
+        AnalysisDataStorage                  storage_;
+        //! Settings for the histogram object.
+        AnalysisHistogramSettings            settings_;
+        //! Averager module.
+        BasicAverageHistogramModulePointer   averager_;
+};
 
 BasicHistogramImpl::BasicHistogramImpl()
     : averager_(new BasicAverageHistogramModule())

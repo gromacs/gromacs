@@ -48,8 +48,6 @@
 #include "testutils/datatest.h"
 #include "testutils/refdata.h"
 
-#include "mock_datamodule-impl.h"
-
 namespace gmx
 {
 namespace test
@@ -58,6 +56,67 @@ namespace test
 /********************************************************************
  * MockAnalysisDataModule::Impl
  */
+
+/*! \internal \brief
+ * Private implementation class for gmx::test::MockAnalysisDataModule.
+ *
+ * \ingroup module_testutils
+ */
+class MockAnalysisDataModule::Impl
+{
+    public:
+        //! Initializes a mock object with the given flags.
+        explicit Impl(int flags);
+
+        /*! \brief
+         * Callback used to initialize reference data checks
+         *
+         * Called in response to dataStarted().
+         * Records information about the source data for later use.
+         */
+        void startReferenceData(AbstractAnalysisData *data);
+        /*! \brief
+         * Callback used to check frame start against reference data.
+         *
+         * Called to check parameters and order of calls to frameStarted().
+         * In addition to reference data checks, this method checks statically
+         * that the new frame matches \a frameIndex_.
+         */
+        void startReferenceFrame(const AnalysisDataFrameHeader &header);
+        /*! \brief
+         * Callback used to check frame points against reference data.
+         *
+         * Called to check parameters and order of calls to pointsAdded().
+         */
+        void checkReferencePoints(const AnalysisDataPointSetRef &points);
+        /*! \brief
+         * Callback used to check frame finish against reference data.
+         *
+         * Called to check parameters and order of calls to frameFinished().
+         * \a frameIndex_ is incremented here.
+         */
+        void finishReferenceFrame(const AnalysisDataFrameHeader &header);
+
+        /*! \brief
+         * Reference data checker to use for checking frames.
+         *
+         * Must be non-NULL if startReferenceFrame() is called.
+         */
+        boost::scoped_ptr<TestReferenceChecker>  rootChecker_;
+        /*! \brief
+         * Reference data checker to use to check the current frame.
+         *
+         * Non-NULL between startReferenceFrame() and finishReferenceFrame()
+         * calls.
+         */
+        boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
+        //! Flags that will be returned by the mock module.
+        int                     flags_;
+        //! Index of the current/next frame.
+        int                     frameIndex_;
+        //! Number of columns in the source data (for reference checking only).
+        int                     columnCount_;
+};
 
 namespace
 {

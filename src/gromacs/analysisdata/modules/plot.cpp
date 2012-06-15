@@ -63,8 +63,6 @@
 #include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "plot-impl.h"
-
 static const char *const g_plotFormats[] = {
     "none", "xmgrace", "xmgr", NULL
 };
@@ -101,6 +99,30 @@ AnalysisDataPlotSettings::addOptions(Options *options)
 /********************************************************************
  * AbstractPlotModule::Impl
  */
+
+class AbstractPlotModule::Impl
+{
+    public:
+        explicit Impl(const AnalysisDataPlotSettings &settings);
+        ~Impl();
+
+        void closeFile();
+
+        AnalysisDataPlotSettings settings;
+        std::string             fnm;
+        FILE                   *fp;
+
+        bool                    bPlain;
+        bool                    bOmitX;
+        std::string             title;
+        std::string             subtitle;
+        std::string             xlabel;
+        std::string             ylabel;
+        std::vector<std::string>  leg;
+        char                    xfmt[15];
+        char                    yfmt[15];
+        real                    xscale;
+};
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
     : settings(settings), fp(NULL), bPlain(false), bOmitX(false), xscale(1.0)
