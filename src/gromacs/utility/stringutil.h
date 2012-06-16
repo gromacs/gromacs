@@ -30,14 +30,14 @@
  */
 /*! \file
  * \brief
- * Declares common string formatting routines.
+ * Declares common string utility and formatting routines.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
  * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_FORMAT_H
-#define GMX_UTILITY_FORMAT_H
+#ifndef GMX_UTILITY_STRINGUTIL_H
+#define GMX_UTILITY_STRINGUTIL_H
 
 #include <string>
 #include <vector>

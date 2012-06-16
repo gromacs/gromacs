@@ -43,7 +43,7 @@
 
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "selhelp.h"
 #include "selmethod.h"

@@ -44,7 +44,7 @@
 
 #include "gromacs/onlinehelp/helptopicinterface.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

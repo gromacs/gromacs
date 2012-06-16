@@ -47,9 +47,9 @@
 #include "gromacs/legacyheaders/wman.h"
 
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

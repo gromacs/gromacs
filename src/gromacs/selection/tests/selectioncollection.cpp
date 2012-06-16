@@ -48,7 +48,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/datapath.h"
 #include "testutils/refdata.h"

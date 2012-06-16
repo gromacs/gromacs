@@ -57,8 +57,8 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "analysissettings-impl.h"
 

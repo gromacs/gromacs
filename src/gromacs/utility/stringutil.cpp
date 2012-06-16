@@ -30,12 +30,12 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in format.h.
+ * Implements functions and classes in stringutil.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_utility
  */
-#include "gromacs/utility/format.h"
+#include "stringutil.h"
 
 #include <cctype>
 #include <cstdio>

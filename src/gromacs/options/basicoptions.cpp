@@ -46,7 +46,7 @@
 
 #include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "basicoptionstorage.h"
 

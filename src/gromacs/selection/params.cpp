@@ -49,9 +49,9 @@
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/selection/selparam.h"
 #include "gromacs/utility/errorcodes.h"
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "parsetree.h"
 #include "position.h"

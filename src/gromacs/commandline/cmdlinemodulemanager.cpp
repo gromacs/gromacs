@@ -48,10 +48,10 @@
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

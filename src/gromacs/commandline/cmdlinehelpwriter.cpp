@@ -48,7 +48,7 @@
 #include "gromacs/selection/selectionfileoptioninfo.h"
 #include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

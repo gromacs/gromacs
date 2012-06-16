@@ -13,9 +13,9 @@ set(UTILITY_PUBLIC_HEADERS
     exceptions.h
     file.h
     flags.h
-    format.h
     gmx_header_config.h
     gmxassert.h
+    stringutil.h
     uniqueptr.h)
 install(FILES ${UTILITY_PUBLIC_HEADERS}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility

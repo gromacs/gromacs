@@ -41,7 +41,7 @@
 
 #include <string>
 
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "gmx_fatal.h"
 #include "string2.h"
