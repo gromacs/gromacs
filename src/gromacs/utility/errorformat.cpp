@@ -41,8 +41,8 @@
 
 #include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

@@ -51,7 +51,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 #include "testutils/datapath.h"
 #include "testutils/testexceptions.h"
 

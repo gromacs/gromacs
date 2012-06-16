@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests for string formatting functions and classes.
+ * Tests for string utility functions and classes.
  *
  * For development, the tests can be run with a '-stdout' command-line option
  * to print out the help to stdout instead of using the XML reference
@@ -44,7 +44,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/stringtest.h"

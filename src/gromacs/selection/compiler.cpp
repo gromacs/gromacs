@@ -282,7 +282,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "evaluate.h"
 #include "keywords.h"

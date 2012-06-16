@@ -40,7 +40,7 @@
 #ifndef GMX_ONLINEHELP_HELPTOPIC_H
 #define GMX_ONLINEHELP_HELPTOPIC_H
 
-#include "../utility/format.h"
+#include "../utility/stringutil.h"
 #include "../utility/uniqueptr.h"
 
 #include "helptopicinterface.h"

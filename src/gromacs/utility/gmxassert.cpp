@@ -42,7 +42,7 @@
 
 #include <string>
 
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "errorformat.h"
 

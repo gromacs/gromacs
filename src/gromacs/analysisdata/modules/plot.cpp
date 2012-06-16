@@ -60,8 +60,8 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 static const char *const g_plotFormats[] = {
     "none", "xmgrace", "xmgr", NULL

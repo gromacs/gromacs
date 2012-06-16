@@ -46,7 +46,7 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \internal \brief
  * Data structure for the \p permute selection modifier.
