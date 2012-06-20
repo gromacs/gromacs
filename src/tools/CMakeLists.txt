@@ -21,7 +21,7 @@ add_library(gmxana
             gmx_rmsdist.c   gmx_rotmat.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      
             gmx_traj.c      gmx_velacc.c    gmx_helixorient.c 
-            gmx_clustsize.c gmx_mdmat.c     gmx_wham.c      
+            gmx_clustsize.c gmx_mdmat.c     gmx_wham.cpp
             correl.c        gmx_sham.c      gmx_nmtraj.c    
             gmx_trjconv.c   gmx_trjcat.c    gmx_trjorder.c  gmx_xpm2ps.c    
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
