@@ -182,6 +182,7 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
         status = _gmx_sel_yypush_parse(parserState, token, &value, scanner);
     }
     while (status == YYPUSH_MORE);
+    _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
     return status;
 }
 
@@ -239,6 +240,7 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr)
             }
             status = _gmx_sel_yypush_parse(parserState.get(), 0, NULL,
                                            scanner);
+            _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
 early_termination:
             bOk = (status == 0);
         }

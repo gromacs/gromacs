@@ -49,7 +49,9 @@
 #include <config.h>
 #endif
 
-#include <string2.h>
+#include <exception>
+
+#include "gromacs/legacyheaders/string2.h"
 
 #include "parsetree.h"
 #include "selelem.h"
@@ -67,6 +69,27 @@ yyerror(yyscan_t, char const *s);
 #ifdef _MSC_VER
 #pragma warning(disable: 4065)
 #endif
+
+/* These macros should be used at the beginning and end of each semantic action
+ * that may throw an exception. For robustness, it's best to wrap all actions
+ * that call functions declared outside parser.y should be wrapped.
+ * These macros take care to catch any exceptions, store the exception (or
+ * handle it and allow the parser to continue), and terminate the parser
+ * cleanly if necessary.
+ * The code calling the parser should use
+ * _gmx_sel_lexer_rethrow_exception_if_occurred() to rethrow any exceptions.
+ */
+#define BEGIN_ACTION \
+    try {
+#define END_ACTION \
+    } \
+    catch(const std::exception &ex) \
+    { \
+        if (_gmx_selparser_handle_exception(scanner, ex)) \
+            YYERROR; \
+        else \
+            YYABORT; \
+    }
 %}
 
 %union{
@@ -188,9 +211,11 @@ yyerror(yyscan_t, char const *s);
 commands:    /* empty */        { $$ = NULL; }
            | commands command
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_append_selection($2, $1, scanner);
                  if (_gmx_sel_parser_should_finish(scanner))
                      YYACCEPT;
+                 END_ACTION;
              }
 ;
 
@@ -198,6 +223,7 @@ commands:    /* empty */        { $$ = NULL; }
 command:     cmd_plain CMD_SEP  { $$ = $1; }
            | error CMD_SEP
              {
+                 BEGIN_ACTION;
                  $$ = NULL;
                  _gmx_selparser_error(scanner, "invalid selection '%s'",
                                       _gmx_sel_lexer_pselstr(scanner));
@@ -211,27 +237,33 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
                  {
                      YYABORT;
                  }
+                 END_ACTION;
              }
 ;
 
 /* Commands can be selections or variable assignments */
 cmd_plain:   /* empty */
              {
+                 BEGIN_ACTION;
                  $$ = NULL;
                  _gmx_sel_handle_empty_cmd(scanner);
+                 END_ACTION;
              }
            | help_request       { $$ = NULL; }
            | TOK_INT
              {
+                 BEGIN_ACTION;
                  t_selelem *s, *p;
                  s = _gmx_sel_init_group_by_id($1, scanner);
                  if (s == NULL) YYERROR;
                  p = _gmx_sel_init_position(s, NULL, scanner);
                  if (p == NULL) YYERROR;
                  $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
+                 END_ACTION;
              }
            | string
              {
+                 BEGIN_ACTION;
                  t_selelem *s, *p;
                  s = _gmx_sel_init_group_by_name($1, scanner);
                  free($1);
@@ -239,30 +271,57 @@ cmd_plain:   /* empty */
                  p = _gmx_sel_init_position(s, NULL, scanner);
                  if (p == NULL) YYERROR;
                  $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
+                 END_ACTION;
              }
            | selection
-             { $$ = _gmx_sel_init_selection(NULL, $1, scanner); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_selection(NULL, $1, scanner);
+                 END_ACTION;
+             }
            | string selection
-             { $$ = _gmx_sel_init_selection($1, $2, scanner);   }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_selection($1, $2, scanner);
+                 END_ACTION;
+             }
            | IDENTIFIER '=' sel_expr
-             { $$ = _gmx_sel_assign_variable($1, $3, scanner);  }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_assign_variable($1, $3, scanner);
+                 END_ACTION;
+             }
            | IDENTIFIER '=' num_expr
-             { $$ = _gmx_sel_assign_variable($1, $3, scanner);  }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_assign_variable($1, $3, scanner);
+                 END_ACTION;
+             }
            | IDENTIFIER '=' pos_expr
-             { $$ = _gmx_sel_assign_variable($1, $3, scanner);  }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_assign_variable($1, $3, scanner);
+                 END_ACTION;
+             }
 ;
 
 /* Help requests */
 help_request:
              HELP help_topic
-             { _gmx_sel_handle_help_cmd(process_value_list($2, NULL), scanner); }
+             {
+                 BEGIN_ACTION;
+                 _gmx_sel_handle_help_cmd(process_value_list($2, NULL), scanner);
+                 END_ACTION;
+             }
 ;
 
 help_topic:  /* empty */            { $$ = NULL; }
            | help_topic HELP_TOPIC
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_value(STR_VALUE);
                  $$->u.s = $2; $$->next = $1;
+                 END_ACTION;
              }
 ;
 
@@ -270,14 +329,18 @@ help_topic:  /* empty */            { $$ = NULL; }
 selection:   pos_expr           { $$ = $1; }
            | sel_expr
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_position($1, NULL, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
            | '(' selection ')'  { $$ = $2; }
            | selection MODIFIER method_params
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_modifier($2, $3, $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
@@ -310,50 +373,56 @@ string:      STR                { $$ = $1; }
 /* Boolean expressions and grouping */
 sel_expr:    NOT sel_expr
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selelem_create(SEL_BOOLEAN);
                  $$->u.boolt = BOOL_NOT;
                  $$->child = $2;
+                 END_ACTION;
              }
            | sel_expr AND sel_expr
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selelem_create(SEL_BOOLEAN);
                  $$->u.boolt = BOOL_AND;
                  $$->child = $1; $$->child->next = $3;
+                 END_ACTION;
              }
            | sel_expr OR  sel_expr
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selelem_create(SEL_BOOLEAN);
                  $$->u.boolt = BOOL_OR;
                  $$->child = $1; $$->child->next = $3;
+                 END_ACTION;
              }
-/*           | sel_expr XOR sel_expr
-             {
-                 $$ = _gmx_selelem_create(SEL_BOOLEAN);
-                 $$->u.boolt = BOOL_XOR;
-                 $$->child = $1; $$->child->next = $3;
-             }*/
            | '(' sel_expr ')'   { $$ = $2; }
 ;
 
 /* Numeric comparisons */
 sel_expr:    num_expr CMP_OP num_expr
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_comparison($1, $3, $2, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
 /* External groups */
 sel_expr:    GROUP string
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_group_by_name($2, scanner);
                  free($2);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
            | GROUP TOK_INT
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_group_by_id($2, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
@@ -365,26 +434,34 @@ pos_mod:     EMPTY_POSMOD       { $$ = NULL; }
 /* Keyword selections */
 sel_expr:    pos_mod KEYWORD_GROUP
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
            | pos_mod KEYWORD_STR basic_value_list
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
            | pos_mod KEYWORD_NUMERIC basic_value_list
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
 /* Custom selection methods */
 sel_expr:    pos_mod METHOD_GROUP method_params
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_method($2, $3, $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
@@ -395,46 +472,78 @@ sel_expr:    pos_mod METHOD_GROUP method_params
 /* Basic numerical values */
 num_expr:    TOK_INT
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selelem_create(SEL_CONST);
                  _gmx_selelem_set_vtype($$, INT_VALUE);
                  _gmx_selvalue_reserve(&$$->v, 1);
                  $$->v.u.i[0] = $1;
+                 END_ACTION;
              }
            | TOK_REAL
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selelem_create(SEL_CONST);
                  _gmx_selelem_set_vtype($$, REAL_VALUE);
                  _gmx_selvalue_reserve(&$$->v, 1);
                  $$->v.u.r[0] = $1;
+                 END_ACTION;
              }
 ;
 
 /* Numeric selection methods */
 num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
            | pos_mod METHOD_NUMERIC method_params
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_method($2, $3, $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
 /* Arithmetic evaluation and grouping */
 num_expr:    num_expr '+' num_expr
-             { $$ = _gmx_sel_init_arithmetic($1, $3, '+', scanner); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_arithmetic($1, $3, '+', scanner);
+                 END_ACTION;
+             }
            | num_expr '-' num_expr
-             { $$ = _gmx_sel_init_arithmetic($1, $3, '-', scanner); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_arithmetic($1, $3, '-', scanner);
+                 END_ACTION;
+             }
            | num_expr '*' num_expr
-             { $$ = _gmx_sel_init_arithmetic($1, $3, '*', scanner); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_arithmetic($1, $3, '*', scanner);
+                 END_ACTION;
+             }
            | num_expr '/' num_expr
-             { $$ = _gmx_sel_init_arithmetic($1, $3, '/', scanner); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_arithmetic($1, $3, '/', scanner);
+                 END_ACTION;
+             }
            | '-' num_expr %prec UNARY_NEG
-             { $$ = _gmx_sel_init_arithmetic($2, NULL, '-', scanner); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_arithmetic($2, NULL, '-', scanner);
+                 END_ACTION;
+             }
            | num_expr '^' num_expr
-             { $$ = _gmx_sel_init_arithmetic($1, $3, '^', scanner); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_arithmetic($1, $3, '^', scanner);
+                 END_ACTION;
+             }
            | '(' num_expr ')'   { $$ = $2; }
 ;
 
@@ -444,15 +553,19 @@ num_expr:    num_expr '+' num_expr
 
 str_expr:    string
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selelem_create(SEL_CONST);
                  _gmx_selelem_set_vtype($$, STR_VALUE);
                  _gmx_selvalue_reserve(&$$->v, 1);
                  $$->v.u.s[0] = $1;
+                 END_ACTION;
              }
            | pos_mod KEYWORD_STR
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
@@ -462,7 +575,11 @@ str_expr:    string
 
 /* Constant position expressions */
 pos_expr:    '[' number ',' number ',' number ']'
-             { $$ = _gmx_sel_init_const_position($2, $4, $6); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_const_position($2, $4, $6);
+                 END_ACTION;
+             }
 ;
 
 /* Grouping of position expressions */
@@ -472,16 +589,20 @@ pos_expr:    '(' pos_expr ')'   { $$ = $2; }
 /* Expressions with a position value */
 pos_expr:    METHOD_POS method_params
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_method($1, $2, NULL, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
 /* Evaluation of positions using a keyword */
 pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_sel_init_position($3, $1, scanner);
                  if ($$ == NULL) YYERROR;
+                 END_ACTION;
              }
 ;
 
@@ -490,15 +611,27 @@ pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
  ********************************************************************/
 
 sel_expr:    VARIABLE_GROUP
-             { $$ = _gmx_sel_init_variable_ref($1); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_variable_ref($1);
+                 END_ACTION;
+             }
 ;
 
 num_expr:    VARIABLE_NUMERIC
-             { $$ = _gmx_sel_init_variable_ref($1); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_variable_ref($1);
+                 END_ACTION;
+             }
 ;
 
 pos_expr:    VARIABLE_POS
-             { $$ = _gmx_sel_init_variable_ref($1); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_sel_init_variable_ref($1);
+                 END_ACTION;
+             }
 ;
 
 /********************************************************************
@@ -521,8 +654,10 @@ method_param_list:
 method_param:
              PARAM value_list
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_param($1);
                  $$->value = process_value_list($2, &$$->nval);
+                 END_ACTION;
              }
 ;
 
@@ -553,31 +688,53 @@ basic_value_list_contents:
 ;
 
 value_item:  sel_expr            %prec PARAM_REDUCT
-             { $$ = _gmx_selexpr_create_value_expr($1); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_selexpr_create_value_expr($1);
+                 END_ACTION;
+             }
            | pos_expr            %prec PARAM_REDUCT
-             { $$ = _gmx_selexpr_create_value_expr($1); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_selexpr_create_value_expr($1);
+                 END_ACTION;
+             }
            | num_expr            %prec PARAM_REDUCT
-             { $$ = _gmx_selexpr_create_value_expr($1); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_selexpr_create_value_expr($1);
+                 END_ACTION;
+             }
            | str_expr            %prec PARAM_REDUCT
-             { $$ = _gmx_selexpr_create_value_expr($1); }
+             {
+                 BEGIN_ACTION;
+                 $$ = _gmx_selexpr_create_value_expr($1);
+                 END_ACTION;
+             }
            | value_item_range    { $$ = $1; }
 ;
 
 basic_value_item:
              integer_number      %prec PARAM_REDUCT
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $$->u.i.i2 = $1;
+                 END_ACTION;
              }
            | real_number         %prec PARAM_REDUCT
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $$->u.r.r2 = $1;
+                 END_ACTION;
              }
            | string              %prec PARAM_REDUCT
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_value(STR_VALUE);
                  $$->u.s = $1;
+                 END_ACTION;
              }
            | value_item_range    { $$ = $1; }
 ;
@@ -585,18 +742,24 @@ basic_value_item:
 value_item_range:
              integer_number TO integer_number
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $1; $$->u.i.i2 = $3;
+                 END_ACTION;
              }
            | integer_number TO real_number
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
+                 END_ACTION;
              }
            | real_number TO number
              {
+                 BEGIN_ACTION;
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
+                 END_ACTION;
              }
 ;
 

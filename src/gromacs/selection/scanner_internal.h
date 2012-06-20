@@ -37,12 +37,14 @@
 #ifndef SELECTION_SCANNER_INTERNAL_H
 #define SELECTION_SCANNER_INTERNAL_H
 
+#include <boost/exception_ptr.hpp>
+
+#include "parser.h"
+
 namespace gmx
 {
 class MessageStringCollector;
 }
-
-#include "parser.h"
 
 /* These need to be defined before including scanner_flex.h, because it
  * uses YY_EXTRA_TYPE. But we also need to include it before defining
@@ -68,6 +70,8 @@ typedef struct gmx_sel_lexer_t
     struct gmx_ana_selcollection_t  *sc;
     //! Error reporter object.
     gmx::MessageStringCollector     *errors;
+    //! Stores an exception that occurred during parsing.
+    boost::exception_ptr             exception;
     //! Whether external index groups have been set.
     bool                             bGroups;
     //! External index groups for resolving \c group keywords.

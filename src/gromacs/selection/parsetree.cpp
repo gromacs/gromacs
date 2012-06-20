@@ -216,6 +216,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <boost/exception_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "futil.h"
@@ -251,6 +252,13 @@ _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
     vsprintf(buf, fmt, ap);
     va_end(ap);
     errors->append(buf);
+}
+
+bool
+_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception &/*ex*/)
+{
+    _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+    return false;
 }
 
 /*!
@@ -577,39 +585,27 @@ _gmx_selelem_set_method(t_selelem *sel, gmx_ana_selmethod_t *method,
  * \param[in]     scanner Scanner data structure.
  * \returns       0 on success, a non-zero error code on error.
  */
-static int
+static void
 set_refpos_type(gmx::PositionCalculationCollection *pcc, t_selelem *sel,
                 const char *rpost, yyscan_t scanner)
 {
     if (!rpost)
     {
-        return 0;
+        return;
     }
 
     if (sel->u.expr.method->pupdate)
     {
-        /* Need to translate exceptions to error codes because the parser still
-         * uses return codes for error handling.
-         * Temporary solution for Redmine issue #880, exceptions should only
-         * occur here for internal errors... */
-        try
-        {
-            /* By default, use whole residues/molecules. */
-            sel->u.expr.pc
-                = pcc->createCalculationFromEnum(rpost, POS_COMPLWHOLE);
-        }
-        catch (const gmx::GromacsException &ex)
-        {
-            _gmx_selparser_error(scanner, ex.what());
-            return ex.errorCode();
-        }
+        /* By default, use whole residues/molecules. */
+        sel->u.expr.pc
+            = pcc->createCalculationFromEnum(rpost, POS_COMPLWHOLE);
     }
     else
     {
+        // TODO: Should this be treated as a real error?
         _gmx_selparser_error(scanner, "modifier '%s' is not applicable for '%s'",
                              rpost, sel->u.expr.method->name);
     }
-    return 0;
 }
 
 /*!
@@ -717,7 +713,6 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
     t_selexpr_param   *params, *param;
     t_selexpr_value   *arg;
     int                nargs;
-    int                rc;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
@@ -774,10 +769,14 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
             goto on_error;
         }
     }
-    rc = set_refpos_type(&sc->pcc, child, rpost, scanner);
-    if (rc != 0)
+    try
     {
-        goto on_error;
+        set_refpos_type(&sc->pcc, child, rpost, scanner);
+    }
+    catch (const std::exception &)
+    {
+        _gmx_selelem_free(root);
+        throw;
     }
 
     return root;
@@ -833,11 +832,14 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
         _gmx_selelem_free(root);
         return NULL;
     }
-    rc = set_refpos_type(&sc->pcc, root, rpost, scanner);
-    if (rc != 0)
+    try
+    {
+        set_refpos_type(&sc->pcc, root, rpost, scanner);
+    }
+    catch (const std::exception &)
     {
         _gmx_selelem_free(root);
-        return NULL;
+        throw;
     }
 
     return root;

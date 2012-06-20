@@ -374,8 +374,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
                     bool bInteractive, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps)
 {
-    gmx_sel_lexer_t *state;
-
     int rc = _gmx_sel_yylex_init(scannerp);
     if (rc != 0)
     {
@@ -383,7 +381,8 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
         GMX_THROW(gmx::InternalError("Lexer initialization failed"));
     }
 
-    snew(state, 1);
+    gmx_sel_lexer_t *state = new gmx_sel_lexer_t;
+
     state->sc        = sc;
     state->errors    = NULL;
     state->bGroups   = bGroups;
@@ -424,7 +423,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
     {
         _gmx_sel_yy_delete_buffer(state->buffer, scanner);
     }
-    sfree(state);
+    delete state;
     _gmx_sel_yylex_destroy(scanner);
 }
 
@@ -434,6 +433,26 @@ _gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->errors = errors;
+}
+
+void
+_gmx_sel_lexer_set_exception(yyscan_t scanner,
+                             const boost::exception_ptr &ex)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    state->exception = ex;
+}
+
+void
+_gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    if (state->exception)
+    {
+        boost::exception_ptr ex = state->exception;
+        state->exception = boost::exception_ptr();
+        rethrow_exception(ex);
+    }
 }
 
 bool
