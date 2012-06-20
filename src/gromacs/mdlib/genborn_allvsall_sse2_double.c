@@ -44,7 +44,7 @@
 #include "genborn_allvsall.h"
 
 
-#if ( (defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2)) && defined(GMX_DOUBLE) ) 
+#if 0 && defined (GMX_X86_SSE2)
 
 #include <gmx_sse2_double.h>
 

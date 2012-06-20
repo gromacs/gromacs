@@ -304,12 +304,18 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
             "Log file opened on %s"
             "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
             timebuf,host,pid,cr->nodeid,cr->nnodes);
-
-#if (defined BUILD_MACHINE && defined BUILD_TIME && defined BUILD_USER) 
     fprintf(fp,
-            "The Gromacs distribution was built %s by\n"
-            "%s (%s)\n\n\n",BUILD_TIME,BUILD_USER,BUILD_MACHINE);
-#endif
+            "Built %s by %s\n"
+            "Build os/architecture: %s\n"
+            "Build CPU Vendor: %s  Brand: %s\n"
+            "Build CPU Family: %d  Model: %d  Stepping: %d\n"
+            "Build CPU Features: %s\n"
+            "Compiler: %s\n"
+            "CFLAGS: %s\n\n",
+            BUILD_TIME,BUILD_USER,BUILD_HOST,
+            BUILD_CPU_VENDOR,BUILD_CPU_BRAND,
+            BUILD_CPU_FAMILY,BUILD_CPU_MODEL,BUILD_CPU_STEPPING,
+            BUILD_CPU_FEATURES,BUILD_COMPILER,BUILD_CFLAGS);
 
     fflush(fp);
     debug_gmx();
