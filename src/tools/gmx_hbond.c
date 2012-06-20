@@ -2241,7 +2241,7 @@ static void parallel_print(int *data, int nThreads)
         fprintf(stderr, "%-7i",data[i]);
 }
 
-static void normalizeACF(real *ct, real *gt, int len)
+static void normalizeACF(real *ct, real *gt, int nhb, int len)
 {
     real ct_fac, gt_fac;
     int i;
@@ -2249,7 +2249,8 @@ static void normalizeACF(real *ct, real *gt, int len)
     /* Xu and Berne use the same normalization constant */
 
     ct_fac = 1.0/ct[0];
-    gt_fac = (gt!=NULL && gt[0]!=0) ? 1.0/gt[0] : 0;
+    gt_fac = (nhb == 0) ? 0 : 1.0/(real)nhb;
+    
     printf("Normalization for c(t) = %g for gh(t) = %g\n",ct_fac,gt_fac);
     for (i=0; i<len; i++)
     {
@@ -2480,7 +2481,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         /* ##############################################################/ */
         sfree(dondata);
 #endif
-        normalizeACF(ct, NULL, nn);
+        normalizeACF(ct, NULL, 0, nn);
         snew(ctdouble, nn);
         snew(timedouble, nn);
         for (j=0; j<nn; j++)
@@ -2705,7 +2706,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         sfree(dondata);
 #endif /* HAVE_OPENMP =======================================/ */
 
-        normalizeACF(ct, NULL, nn);
+        normalizeACF(ct, NULL, 0, nn);
 
         fprintf(stderr, "\n\nACF successfully calculated.\n");
 
@@ -2851,7 +2852,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         fprintf(stderr,"\n");
         sfree(h);
         sfree(g);
-        normalizeACF(ct, gt, nn);
+        normalizeACF(ct, ght, nhb, nn);
 
         /* Determine tail value for statistics */
         tail  = 0;
