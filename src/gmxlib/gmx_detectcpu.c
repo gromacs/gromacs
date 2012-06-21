@@ -117,10 +117,11 @@ execute_cpuid_x86(unsigned int level,
                   unsigned int * edx)
 {
     unsigned int _eax,_ebx,_ecx,_edx;
-    int CPUInfo[4];
     int rc;
 
 #ifdef _MSC_VER
+    int CPUInfo[4];
+
     /* MSVC */
     __cpuid(CPUInfo,level);
 
@@ -136,8 +137,20 @@ execute_cpuid_x86(unsigned int level,
      * but there might be more options added in the future.
      */
     /* tested on 32 & 64 GCC, and Intel icc. */
-    __asm__("cpuid" : "=a"(_eax), "=b"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
-
+#if defined (__x86_64__) || defined (_M_X64)
+    __asm__("push  %%rbx      \n\t"
+            "cpuid            \n\t"
+            "movl %%ebx, %1   \n\t"
+            "pop  %%rbx       \n\t"
+            : "=a"(_eax), "=r"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
+#else
+    __asm__("push %%ebx       \n\t"
+            "cpuid            \n\t"
+            "movl %%ebx, %1   \n\t"
+            "pop %%ebx        \n\t"
+            : "=a"(_eax), "=r"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
+#endif
+    
     rc = 0;
 #endif
     /* If you end up having a compiler that really doesn't understand this and
@@ -251,8 +264,6 @@ detectcpu_amd(gmx_detectcpu_t *              data)
 {
     int                       max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
-    char                      str[GMX_DETECTCPU_STRLEN];
-    char *                    p;
 
     detectcpu_common_x86(data);
 
@@ -281,8 +292,6 @@ detectcpu_intel(gmx_detectcpu_t *              data)
 {
     int                       max_stdfn;
     unsigned int              eax,ebx,ecx,edx;
-    char                      str[GMX_DETECTCPU_STRLEN];
-    char *                    p;
 
     detectcpu_common_x86(data);
 
@@ -310,7 +319,6 @@ detectcpu_vendor(void)
     gmx_detectcpu_vendorid_t   i,vendor;
     /* Register data used on x86 */
     unsigned int               eax,ebx,ecx,edx;
-    unsigned int *             p;
     char                       vendorstring[13];
 
     /* Set default first */
@@ -539,7 +547,6 @@ main(int argc, char **argv)
 {
     gmx_detectcpu_t               data;
     gmx_detectcpu_acceleration_t  acc;
-    char                          str[1024];
     int                           i,cnt;
 
     if(argc<2)
