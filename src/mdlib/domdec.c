@@ -5210,31 +5210,25 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
 static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                                    int dim_ind,ivec loc)
 {
-    MPI_Group g_row = MPI_GROUP_EMPTY;
     MPI_Comm  c_row;
-    int  dim,i,*rank;
+    int  dim, i, rank;
     ivec loc_c;
     gmx_domdec_root_t *root;
     gmx_bool bPartOfGroup = FALSE;
     
     dim = dd->dim[dim_ind];
     copy_ivec(loc,loc_c);
-    snew(rank,dd->nc[dim]);
     for(i=0; i<dd->nc[dim]; i++)
     {
         loc_c[dim] = i;
-        rank[i] = dd_index(dd->nc,loc_c);
-        if (rank[i] == dd->rank)
+        rank = dd_index(dd->nc,loc_c);
+        if (rank == dd->rank)
         {
             /* This process is part of the group */
             bPartOfGroup = TRUE;
         }
     }
-    if (bPartOfGroup)
-    {
-        MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
-    }
-    MPI_Comm_create(dd->mpi_comm_all,g_row,&c_row);
+    MPI_Comm_split(dd->mpi_comm_all, bPartOfGroup?0:MPI_UNDEFINED, dd->rank, &c_row);
     if (bPartOfGroup)
     {
         dd->comm->mpi_comm_load[dim_ind] = c_row;
@@ -5268,7 +5262,6 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
             snew(dd->comm->load[dim_ind].load,dd->nc[dim]*DD_NLOAD_MAX);
         }
     }
-    sfree(rank);
 }
 #endif
 
