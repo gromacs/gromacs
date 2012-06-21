@@ -132,6 +132,9 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
       jx    = j3+XX;
       jy    = j3+YY;
       jz    = j3+ZZ;
+
+      if (invmass[i]==0 || invmass[j]==0)
+          continue;
       
       tx      = xp[ix]-xp[jx];
       ty      = xp[iy]-xp[jy];
