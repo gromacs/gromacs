@@ -1,9 +1,23 @@
 int
 main()
 {
-  float f;
-  int i; 
+  unsigned int _eax,_ebx,_ecx,_edx;
+  unsigned int level = 0;
+
   /* Test gcc inline asm for x86 */
-  asm("fld %1\nfistpl %0\n" : "=m" (*&i) : "f" (f));
+#if defined (__x86_64__) || defined (_M_X64)
+    __asm__("pushl %%rbx      \n\t"
+            "cpuid            \n\t"
+            "movl %%ebx, %1   \n\t"
+            "popl %%rbx       \n\t"
+            : "=a"(_eax), "=r"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
+#else
+    __asm__("pushl %%ebx      \n\t"
+            "cpuid            \n\t"
+            "movl %%ebx, %1   \n\t"
+            "popl %%ebx       \n\t"
+            : "=a"(_eax), "=r"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
+#endif
+
   return 0;
 }    
