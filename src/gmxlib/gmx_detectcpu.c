@@ -136,7 +136,11 @@ execute_cpuid_x86(unsigned int level,
      * but there might be more options added in the future.
      */
     /* tested on 32 & 64 GCC, and Intel icc. */
-    __asm__("cpuid" : "=a"(_eax), "=b"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
+    __asm__("pushl %%ebx      \n\t"
+            "cpuid            \n\t"
+            "movl %%ebx, %1   \n\t"
+            "popl %%ebx       \n\t"
+            : "=a"(_eax), "=r"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
 
     rc = 0;
 #endif
