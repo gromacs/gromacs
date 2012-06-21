@@ -117,10 +117,11 @@ execute_cpuid_x86(unsigned int level,
                   unsigned int * edx)
 {
     unsigned int _eax,_ebx,_ecx,_edx;
-    int CPUInfo[4];
     int rc;
 
 #ifdef _MSC_VER
+    int CPUInfo[4];
+
     /* MSVC */
     __cpuid(CPUInfo,level);
 
@@ -136,7 +137,11 @@ execute_cpuid_x86(unsigned int level,
      * but there might be more options added in the future.
      */
     /* tested on 32 & 64 GCC, and Intel icc. */
-    __asm__("cpuid" : "=a"(_eax), "=b"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
+    __asm__("pushl %%ebx      \n\t"
+            "cpuid            \n\t"
+            "movl %%ebx, %1   \n\t"
+            "popl %%ebx       \n\t"
+            : "=a"(_eax), "=r"(_ebx), "=c"(_ecx), "=d"(_edx) : "0"(level));
 
     rc = 0;
 #endif
@@ -251,8 +256,6 @@ detectcpu_amd(gmx_detectcpu_t *              data)
 {
     int                       max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
-    char                      str[GMX_DETECTCPU_STRLEN];
-    char *                    p;
 
     detectcpu_common_x86(data);
 
@@ -281,8 +284,6 @@ detectcpu_intel(gmx_detectcpu_t *              data)
 {
     int                       max_stdfn;
     unsigned int              eax,ebx,ecx,edx;
-    char                      str[GMX_DETECTCPU_STRLEN];
-    char *                    p;
 
     detectcpu_common_x86(data);
 
@@ -539,7 +540,6 @@ main(int argc, char **argv)
 {
     gmx_detectcpu_t               data;
     gmx_detectcpu_acceleration_t  acc;
-    char                          str[1024];
     int                           i,cnt;
 
     if(argc<2)
