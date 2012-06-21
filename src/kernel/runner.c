@@ -471,7 +471,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
                 /* Increase nstlist */
                 nstlist_prev = ir->nstlist;
                 rlist_prev   = rlist_new;
-                bCont = (rlist_new < rlist_ok);
+                bCont = (i+1 < NNSTL && rlist_new < rlist_ok);
             }
             else
             {
