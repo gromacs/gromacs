@@ -150,7 +150,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
           rrpr    = rijx*tx+rijy*ty+rijz*tz;
 	
           if (rrpr < toler*mytol) 
-              error=ll;
+              error=ll+1;
           else {
               acor      = omega*diff*m2[ll]/rrpr;
               lagr[ll] += acor;
