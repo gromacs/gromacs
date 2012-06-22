@@ -59,7 +59,8 @@ int n_bonded_dx(gmx_mtop_t *mtop,gmx_bool bExcl)
     for(ftype=0; ftype<F_NRE; ftype++) {
       if (interaction_function[ftype].flags & IF_BOND) {
 	switch (ftype) {
-		case F_POSRES:    ndxb = 1; break;
+		case F_POSRES:
+	        case F_FBPOSRES:  ndxb = 1; break;
 		case F_CONNBONDS: ndxb = 0; break;
 		default:     ndxb = NRAL(ftype) - 1; break;
 	}

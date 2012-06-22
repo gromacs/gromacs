@@ -1496,6 +1496,7 @@ void init_forcerec(FILE *fp,
     
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
                        gmx_mtop_ftype_count(mtop,F_POSRES) > 0 ||
+                       gmx_mtop_ftype_count(mtop,F_FBPOSRES) > 0 ||
                        IR_ELEC_FIELD(*ir) ||
                        (fr->adress_icor != eAdressICOff)
                       );

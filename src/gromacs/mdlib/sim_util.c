@@ -776,6 +776,22 @@ void do_force(FILE *fplog,t_commrec *cr,
         }
    }
 
+    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_FBPOSRES].nr > 0)
+    {
+        /* Flat-bottomed position restraints always require full pbc */
+        if(!(bStateChanged && bDoAdressWF))
+        {
+            set_pbc(&pbc,inputrec->ePBC,box);
+        }
+        v = fbposres(top->idef.il[F_FBPOSRES].nr,top->idef.il[F_FBPOSRES].iatoms,
+                     top->idef.iparams_fbposres,
+                     (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
+                     inputrec->ePBC==epbcNONE ? NULL : &pbc,
+                     fr->rc_scaling,fr->ePBC,fr->posres_com);
+        enerd->term[F_FBPOSRES] += v;
+        inc_nrnb(nrnb,eNR_FBPOSRES,top->idef.il[F_FBPOSRES].nr/2);
+    }
+
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),

@@ -701,7 +701,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
                         rvec com,
                         warninp_t wi)
 {
-  gmx_bool   bFirst = TRUE;
+  gmx_bool   bFirst = TRUE, *hadAtom;
   rvec   *x,*v,*xp;
   dvec   sum;
   double totmass;
@@ -711,7 +711,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
   char   warn_buf[STRLEN],title[STRLEN];
   int    a,i,ai,j,k,mb,nat_molb;
   gmx_molblock_t *molb;
-  t_params *pr;
+  t_params *pr,*prfb;
   t_atom *atom;
 
   get_stx_coordnum(fn,&natoms);
@@ -739,11 +739,13 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
   clear_dvec(sum);
   totmass = 0;
   a = 0;
+  snew(hadAtom,natoms);
   for(mb=0; mb<mtop->nmolblock; mb++) {
     molb = &mtop->molblock[mb];
     nat_molb = molb->nmol*mtop->moltype[molb->type].atoms.nr;
     pr = &(molinfo[molb->type].plist[F_POSRES]);
-    if (pr->nr > 0) {
+    prfb = &(molinfo[molb->type].plist[F_FBPOSRES]);
+    if (pr->nr > 0 || prfb->nr > 0) {
       atom = mtop->moltype[molb->type].atoms.atom;
       for(i=0; (i<pr->nr); i++) {
 	ai=pr->param[i].AI;
@@ -751,6 +753,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
 	  gmx_fatal(FARGS,"Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
 		    ai+1,*molinfo[molb->type].name,fn,natoms);
 	}
+    hadAtom[ai]=TRUE;
 	if (rc_scaling == erscCOM) {
 	  /* Determine the center of mass of the posres reference coordinates */
 	  for(j=0; j<npbcdim; j++) {
@@ -758,6 +761,21 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
 	  }
 	  totmass  += atom[ai].m;
 	}
+      }
+      /* Same for flat-bottomed posres, but do not count an atom twice for COM */
+      for(i=0; (i<prfb->nr); i++) {
+          ai=prfb->param[i].AI;
+          if (ai >= natoms) {
+              gmx_fatal(FARGS,"Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
+                        ai+1,*molinfo[molb->type].name,fn,natoms);
+          }
+          if (rc_scaling == erscCOM && hadAtom[ai] == FALSE) {
+              /* Determine the center of mass of the posres reference coordinates */
+              for(j=0; j<npbcdim; j++) {
+                  sum[j] += atom[ai].m*x[a+ai][j];
+              }
+              totmass  += atom[ai].m;
+          }
       }
       if (!bTopB) {
 	molb->nposres_xA = nat_molb;
@@ -820,6 +838,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
   free_t_atoms(&dumat,TRUE);
   sfree(x);
   sfree(v);
+  sfree(hadAtom);
 }
 
 static void gen_posres(gmx_mtop_t *mtop,t_molinfo *mi,
@@ -1412,7 +1431,7 @@ int main (int argc, char *argv[])
   else
     strcpy(fnB,fn);
 
-    if (nint_ftype(sys,mi,F_POSRES) > 0)
+    if (nint_ftype(sys,mi,F_POSRES) > 0 || nint_ftype(sys,mi,F_FBPOSRES) > 0)
     {
         if (bVerbose)
         {
