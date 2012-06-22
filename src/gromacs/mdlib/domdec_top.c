@@ -765,6 +765,42 @@ static void add_posres(int mol,int a_mol,gmx_molblock_t *molb,
     iatoms[0] = n;
 }
 
+static void add_fbposres(int mol,int a_mol,gmx_molblock_t *molb,
+                       t_iatom *iatoms,t_idef *idef)
+{
+    int n,a_molb;
+    t_iparams *ip;
+
+    /* This flat-bottom position restraint has not been added yet,
+     * so it's index is the current number of position restraints.
+     */
+    n = idef->il[F_FBPOSRES].nr/2;
+    if (n+1 > idef->iparams_fbposres_nalloc)
+    {
+        idef->iparams_fbposres_nalloc = over_alloc_dd(n+1);
+        srenew(idef->iparams_fbposres,idef->iparams_fbposres_nalloc);
+    }
+    ip = &idef->iparams_fbposres[n];
+    /* Copy the force constants */
+    *ip = idef->iparams[iatoms[0]];
+
+    /* Get the position restriant coordinats from the molblock */
+    a_molb = mol*molb->natoms_mol + a_mol;
+    if (a_molb >= molb->nposres_xA)
+    {
+        gmx_incons("Not enough position restraint coordinates");
+    }
+    /* Take reference positions from A position of normal posres */
+    ip->fbposres.pos0[XX] = molb->posres_xA[a_molb][XX];
+    ip->fbposres.pos0[YY] = molb->posres_xA[a_molb][YY];
+    ip->fbposres.pos0[ZZ] = molb->posres_xA[a_molb][ZZ];
+
+    /* Note: no B-type for flat-bottom posres */
+
+    /* Set the parameter index for idef->iparams_posre */
+    iatoms[0] = n;
+}
+
 static void add_vsite(gmx_ga2la_t ga2la,int *index,int *rtil,
                       int ftype,int nral,
                       gmx_bool bHomeA,int a,int a_gl,int a_mol,
@@ -1016,6 +1052,10 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                             {
                                 add_posres(mol,i_mol,&molb[mb],tiatoms,idef);
                             }
+                            else if (ftype == F_FBPOSRES)
+                            {
+                                add_fbposres(mol,i_mol,&molb[mb],tiatoms,idef);
+                            }
                         }
                         else
                         {
@@ -1210,6 +1250,10 @@ static int make_local_bondeds_intracg(gmx_domdec_t *dd,gmx_molblock_t *molb,
                 if (ftype == F_POSRES)
                 {
                     add_posres(mol,i_mol,&molb[mb],tiatoms,idef);
+                }
+                else if (ftype == F_FBPOSRES)
+                {
+                    add_fbposres(mol,i_mol,&molb[mb],tiatoms,idef);
                 }
                 /* Add this interaction to the local topology */
                 add_ifunc(nral,tiatoms,&idef->il[ftype]);
