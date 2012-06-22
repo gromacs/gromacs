@@ -1965,10 +1965,17 @@ evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
             {
                 gmx_ana_index_reserve(sel->child->v.u.g, gmin->isize);
                 gmx_ana_index_copy(sel->child->v.u.g, gmin, FALSE);
-                if (sel->child->u.cgrp.isize > 0)
+                if (sel->child->u.cgrp.nalloc_index > 0)
                 {
+                    /* Keep the name as in evaluate_boolean_static_part(). */
+                    char *name = sel->child->u.cgrp.name;
                     gmx_ana_index_reserve(&sel->child->u.cgrp, gmin->isize);
                     gmx_ana_index_copy(&sel->child->u.cgrp, gmin, FALSE);
+                    sel->child->u.cgrp.name = name;
+                }
+                else
+                {
+                    sel->child->u.cgrp.isize = sel->child->v.u.g->isize;
                 }
             }
             break;
