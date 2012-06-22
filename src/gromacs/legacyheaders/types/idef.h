@@ -104,6 +104,7 @@ enum {
   F_THOLE_POL,
   F_ANHARM_POL,
   F_POSRES,
+  F_FBPOSRES,
   F_DISRES,
   F_DISRESVIOL,
   F_ORIRES,
@@ -185,6 +186,7 @@ typedef union
   struct {real doh,dhh;                                   } settle;
   struct {real b0A,cbA,betaA,b0B,cbB,betaB;               } morse;
   struct {real pos0A[DIM],fcA[DIM],pos0B[DIM],fcB[DIM];   } posres;
+  struct {real pos0[DIM],r,k; int geom;                   } fbposres;
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
   struct {real a,b,c,d,e,f;                               } vsite;   
   struct {int  n; real a;                                 } vsiten;   
@@ -270,8 +272,8 @@ typedef struct
   t_iparams  *iparams;
   real fudgeQQ;
   gmx_cmap_t cmap_grid;
-  t_iparams  *iparams_posres;
-  int iparams_posres_nalloc;
+  t_iparams  *iparams_posres,*iparams_fbposres;
+  int iparams_posres_nalloc,iparams_fbposres_nalloc;
 
   t_ilist il[F_NRE];
   int ilsort;
@@ -299,7 +301,7 @@ typedef struct
  *      (ilist[ftype].iatoms[]) is an index in this array.
  *   gmx_cmap_t cmap_grid
  *      the grid for the dihedral pair correction maps.
- *   t_iparams *iparams_posres
+ *   t_iparams *iparams_posres, *iparams_fbposres
  *	defines the parameters for position restraints only.
  *      Position restraints are the only interactions that have different
  *      parameters (reference positions) for different molecules

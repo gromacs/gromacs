@@ -2899,6 +2899,33 @@ static gmx_bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,
                     }
                 }
             }
+            for(i=0; i<ilist[F_FBPOSRES].nr; i+=2)
+            {
+                /* Check for flat-bottom posres */
+                pr = &sys->ffparams.iparams[ilist[F_FBPOSRES].iatoms[i]];
+                if (pr->fbposres.k != 0)
+                {
+                    switch(pr->fbposres.geom)
+                    {
+                    case efbposresSPHERE:
+                        AbsRef[XX] = AbsRef[YY] = AbsRef[ZZ] = 1;
+                        break;
+                    case efbposresCYLINDER:
+                        AbsRef[XX] = AbsRef[YY] = 1;
+                        break;
+                    case efbposresX: /* d=XX */
+                    case efbposresY: /* d=YY */
+                    case efbposresZ: /* d=ZZ */
+                        d = pr->fbposres.geom - efbposresX;
+                        AbsRef[d] = 1;
+                        break;
+                    default:
+                        gmx_fatal(FARGS," Invalid geometry for flat-bottom position restraint.\n"
+                                  "Expected nr between 1 and %d. Found %d\n", efbposresNR-1,
+                                  pr->fbposres.geom);
+                    }
+                }
+            }
         }
     }
 
