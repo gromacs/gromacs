@@ -737,7 +737,8 @@ extract_item_subselections(t_selelem *sel, int *subexprn)
          * encountered.
          * TODO: There should be a more robust mechanism (probably a dedicated
          * flag) for detecting parser-generated subexpressions than relying on
-         * a NULL name field. */
+         * a NULL name field. Additional TODO: This mechanism doesn't seem to
+         * be currently used. */
         if (child->type == SEL_SUBEXPRREF && (child->child->type != SEL_SUBEXPR
                                               || child->child->name == NULL))
         {
@@ -1990,12 +1991,24 @@ evaluate_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
             if ((sel->child->cdata->flags & SEL_CDATA_STATIC)
                 && sel->child->v.u.g->isize < gmin->isize)
             {
+                GMX_RELEASE_ASSERT(sel->child->type == SEL_CONST,
+                        "The first child should have already been evaluated "
+                        "to a constant expression");
                 gmx_ana_index_reserve(sel->child->v.u.g, gmin->isize);
                 gmx_ana_index_copy(sel->child->v.u.g, gmin, false);
-                if (sel->child->u.cgrp.isize > 0)
+                if (sel->child->u.cgrp.nalloc_index > 0)
                 {
+                    /* Keep the name as in evaluate_boolean_static_part(). */
+                    char *name = sel->child->u.cgrp.name;
                     gmx_ana_index_reserve(&sel->child->u.cgrp, gmin->isize);
                     gmx_ana_index_copy(&sel->child->u.cgrp, gmin, false);
+                    sel->child->u.cgrp.name = name;
+                }
+                else
+                {
+                    GMX_RELEASE_ASSERT(sel->child->u.cgrp.index == sel->child->v.u.g->index,
+                            "If not allocated, the static group should equal the value");
+                    sel->child->u.cgrp.isize = sel->child->v.u.g->isize;
                 }
             }
             break;
@@ -2217,7 +2230,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             break;
 
-        case SEL_GROUPREF:
+        case SEL_GROUPREF: /* Should not be reached */
             GMX_THROW(gmx::APIError("Unresolved group reference in compilation"));
     }
 

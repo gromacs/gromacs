@@ -730,7 +730,9 @@ TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
     static const char * const selections[] = {
         "atomnr 1 to 5 and atomnr 2 to 7",
         "atomnr 1 to 5 or not atomnr 3 to 8",
-        "atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7",
+        "not not atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7",
+        "atomnr 1 to 5 and (atomnr 2 to 7 and atomnr 3 to 6)",
+        "x < 5 and atomnr 1 to 5 and y < 3 and atomnr 2 to 4",
         NULL
     };
     runTest(10, selections);
@@ -751,6 +753,20 @@ TEST_F(SelectionCollectionDataTest, HandlesArithmeticExpressions)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesNumericVariables)
+{
+    static const char * const selections[] = {
+        "value = x + y",
+        "value <= 4",
+        "index = resnr",
+        "index < 3",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
 /********************************************************************
  * Tests for complex boolean syntax
  */
@@ -762,6 +778,7 @@ TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysis)
         "atomnr 1 to 5 and (atomnr 4 to 7 or x < 2)",
         "atomnr 1 to 5 and y < 3 and (atomnr 4 to 7 or x < 2)",
         "atomnr 1 to 5 and not (atomnr 4 to 7 or x < 2)",
+        "atomnr 1 to 5 or (atomnr 4 to 6 and (atomnr 5 to 7 or x < 2))",
         NULL
     };
     runTest(10, selections);
@@ -794,5 +811,51 @@ TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysisWithMoreVariable
     };
     runTest(10, selections);
 }
+
+
+/********************************************************************
+ * Tests for complex subexpression cases
+ *
+ * These tests use some knowledge of the implementation to trigger different
+ * paths in the code.
+ */
+
+TEST_F(SelectionCollectionDataTest, HandlesUnusedVariables)
+{
+    static const char * const selections[] = {
+        "unused1 = atomnr 1 to 3",
+        "foo = atomnr 4 to 7",
+        "atomnr 1 to 6 and foo",
+        "unused2 = atomnr 3 to 5",
+        NULL
+    };
+    runTest(10, selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesVariablesWithStaticEvaluationGroups)
+{
+    static const char * const selections[] = {
+        "foo = atomnr 4 to 7 and x < 2",
+        "atomnr 1 to 5 and foo",
+        "atomnr 3 to 7 and foo",
+        NULL
+    };
+    runTest(10, selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups)
+{
+    static const char * const selections[] = {
+        "foo = atomnr 4 to 7 and x < 2",
+        "atomnr 1 to 6 and foo",
+        "within 1 of foo",
+        "foo",
+        NULL
+    };
+    runTest(10, selections);
+}
+
 
 } // namespace
