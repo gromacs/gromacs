@@ -613,8 +613,7 @@ void enforceEqualWeights(t_UmbrellaWindow * window,int nWindows)
     }
 }
 
-/*! \brief
- * Simple linear interpolation between two given tabulated points 
+/*! \brief Simple linear interpolation between two given tabulated points 
  */
 double tabulated_pot(double dist, t_UmbrellaOptions *opt)
 {
