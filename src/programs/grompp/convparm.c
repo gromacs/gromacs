@@ -284,6 +284,20 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->posres.pos0B[YY] = old[10];
     newparam->posres.pos0B[ZZ] = old[11];
     break;
+  case F_FBPOSRES:
+    newparam->fbposres.geom     = round_check(old[0],0,ftype,"geometry");
+    if ( ! (newparam->fbposres.geom > efbposresZERO && newparam->fbposres.geom < efbposresNR))
+    {
+      gmx_fatal(FARGS,"Invalid geometry for flat-bottomed position restraint.\n"
+		"Expected number between 1 and %d. Found %d\n", efbposresNR-1,
+		newparam->fbposres.geom);
+    }
+    newparam->fbposres.r        = old[1];
+    newparam->fbposres.k        = old[2];
+    newparam->fbposres.pos0[XX] = old[3];
+    newparam->fbposres.pos0[YY] = old[4];
+    newparam->fbposres.pos0[ZZ] = old[5];
+    break;
   case F_DISRES:
     newparam->disres.label = round_check(old[0],0,ftype,"label");
     newparam->disres.type  = round_check(old[1],1,ftype,"type'");
@@ -511,7 +525,7 @@ void convert_params(int atnr,t_params nbtypes[],
 					   (flags & IF_CONSTRAINT))) {
 	enter_function(&(plist[i]),(t_functype)i,comb,reppow,
 		       ffp,&molt->ilist[i],
-		       &maxtypes,FALSE,(i == F_POSRES));
+		       &maxtypes,FALSE,(i == F_POSRES  || i == F_FBPOSRES));
       }
     }
   }

@@ -1397,6 +1397,197 @@ real idihs(int nbonds,
 }
 
 
+/*! \brief returns dx, rdist, and dpdl for functions posres() and fbposres()        
+ */
+static void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
+                      const rvec comA_sc, const rvec comB_sc,
+                      real lambda,
+                      t_pbc *pbc, int refcoord_scaling,int npbcdim,
+                      rvec dx, rvec rdist, rvec dpdl)
+{
+    int m,d;
+    real posA, posB, L1, ref=0.;
+    rvec pos;
+
+    L1=1.0-lambda;
+
+    for(m=0; m<DIM; m++)
+    {
+        posA = pos0A[m];
+        posB = pos0B[m];
+        if (m < npbcdim)
+        {
+            switch (refcoord_scaling)
+            {
+            case erscNO:
+                ref      = 0;
+                rdist[m] = L1*posA + lambda*posB;
+                dpdl[m]  = posB - posA;
+                    break;
+            case erscALL:
+                /* Box relative coordinates are stored for dimensions with pbc */
+                posA *= pbc->box[m][m];
+                posB *= pbc->box[m][m];
+                for(d=m+1; d<npbcdim; d++)
+                {
+                    posA += pos0A[d]*pbc->box[d][m];
+                    posB += pos0B[d]*pbc->box[d][m];
+                }
+                ref      = L1*posA + lambda*posB;
+                rdist[m] = 0;
+                dpdl[m]  = posB - posA;
+                break;
+            case erscCOM:
+                ref      = L1*comA_sc[m] + lambda*comB_sc[m];
+                rdist[m] = L1*posA       + lambda*posB;
+                dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
+                break;
+            default:
+                gmx_fatal(FARGS, "No such scaling method implemented");
+            }
+        }
+        else
+        {
+            ref      = L1*posA + lambda*posB;
+            rdist[m] = 0;
+            dpdl[m]  = posB - posA;
+        }
+
+        /* We do pbc_dx with ref+rdist,
+         * since with only ref we can be up to half a box vector wrong.
+         */
+        pos[m] = ref + rdist[m];
+    }
+
+    if (pbc)
+    {
+        pbc_dx(pbc,x,pos,dx);
+    }
+    else
+    {
+        rvec_sub(x,pos,dx);
+    }
+}
+
+/*! \brief Adds forces of flat-bottomed positions restraints to f[]
+ *         and fixes vir_diag. Returns the flat-bottomed potential. */
+real fbposres(int nbonds,
+              const t_iatom forceatoms[],const t_iparams forceparams[],
+              const rvec x[],rvec f[],rvec vir_diag,
+              t_pbc *pbc,
+              int refcoord_scaling,int ePBC,rvec com)
+/* compute flat-bottomed positions restraints */
+{
+    int  i,ai,m,d,type,npbcdim=0,fbdim;
+    const t_iparams *pr;
+    real vtot,kk,v;
+    real ref=0,dr,dr2,rpot,rfb,rfb2,fact,invdr;
+    rvec com_sc,rdist,pos,dx,dpdl,fm;
+    gmx_bool bInvert;
+
+    npbcdim = ePBC2npbcdim(ePBC);
+
+    if (refcoord_scaling == erscCOM)
+    {
+        clear_rvec(com_sc);
+        for(m=0; m<npbcdim; m++)
+        {
+            for(d=m; d<npbcdim; d++)
+            {
+                com_sc[m] += com[d]*pbc->box[d][m];
+            }
+        }
+    }
+
+    vtot = 0.0;
+    for(i=0; (i<nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        pr   = &forceparams[type];
+
+        /* same calculation as for normal posres, but with identical A and B states, and lambda==0 */
+        posres_dx(x[ai],forceparams[type].fbposres.pos0, forceparams[type].fbposres.pos0,
+                  com_sc, com_sc, 0.0,
+                  pbc, refcoord_scaling, npbcdim,
+                  dx, rdist, dpdl);
+
+        clear_rvec(fm);
+        v=0.0;
+
+        kk=pr->fbposres.k;
+        rfb=pr->fbposres.r;
+        rfb2=sqr(rfb);
+
+        /* with rfb<0, push particle out of the sphere/cylinder/layer */
+        bInvert=FALSE;
+        if (rfb<0.){
+            bInvert=TRUE;
+            rfb=-rfb;
+        }
+
+        switch (pr->fbposres.geom)
+        {
+        case efbposresSPHERE:
+            /* spherical flat-bottom posres */
+            dr2=norm2(dx);
+            if ( dr2 > 0.0 &&
+                 ( (dr2 > rfb2 && bInvert==FALSE ) || (dr2 < rfb2 && bInvert==TRUE ) )
+                )
+            {
+                dr=sqrt(dr2);
+                v = 0.5*kk*sqr(dr - rfb);
+                fact = -kk*(dr-rfb)/dr;  /* Force pointing to the center pos0 */
+                svmul(fact,dx,fm);
+            }
+            break;
+        case efbposresCYLINDER:
+            /* cylidrical flat-bottom posres in x-y plane. fm[ZZ] = 0. */
+            dr2=sqr(dx[XX])+sqr(dx[YY]);
+            if  ( dr2 > 0.0 &&
+                  ( (dr2 > rfb2 && bInvert==FALSE ) || (dr2 < rfb2 && bInvert==TRUE ) )
+                )
+            {
+                dr=sqrt(dr2);
+                invdr=1./dr;
+                v = 0.5*kk*sqr(dr - rfb);
+                fm[XX] = -kk*(dr-rfb)*dx[XX]*invdr;  /* Force pointing to the center */
+                fm[YY] = -kk*(dr-rfb)*dx[YY]*invdr;
+            }
+            break;
+        case efbposresX: /* fbdim=XX */
+        case efbposresY: /* fbdim=YY */
+        case efbposresZ: /* fbdim=ZZ */
+            /* 1D flat-bottom potential */
+            fbdim = pr->fbposres.geom - efbposresX;
+            dr=dx[fbdim];
+            if ( ( dr>rfb && bInvert==FALSE ) || ( 0<dr && dr<rfb && bInvert==TRUE )  )
+            {
+                v = 0.5*kk*sqr(dr - rfb);
+                fm[fbdim] = -kk*(dr - rfb);
+            }
+            else if ( (dr < (-rfb) && bInvert==FALSE ) || ( (-rfb)<dr && dr<0 && bInvert==TRUE ))
+            {
+                v = 0.5*kk*sqr(dr + rfb);
+                fm[fbdim] = -kk*(dr + rfb);
+            }
+            break;
+        }
+
+        vtot += v;
+
+        for (m=0; (m<DIM); m++)
+        {
+            f[ai][m]   += fm[m];
+            /* Here we correct for the pbc_dx which included rdist */
+            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm[m];
+        }
+    }
+
+    return vtot;
+}
+
+
 real posres(int nbonds,
             const t_iatom forceatoms[],const t_iparams forceparams[],
             const rvec x[],rvec f[],rvec vir_diag,
@@ -1441,62 +1632,11 @@ real posres(int nbonds,
         ai   = forceatoms[i++];
         pr   = &forceparams[type];
         
-        for(m=0; m<DIM; m++)
-        {
-            posA = forceparams[type].posres.pos0A[m];
-            posB = forceparams[type].posres.pos0B[m];
-            if (m < npbcdim)
-            {
-                switch (refcoord_scaling)
-                {
-                case erscNO:
-                    ref      = 0;
-                    rdist[m] = L1*posA + lambda*posB;
-                    dpdl[m]  = posB - posA;
-                    break;
-                case erscALL:
-                    /* Box relative coordinates are stored for dimensions with pbc */
-                    posA *= pbc->box[m][m];
-                    posB *= pbc->box[m][m];
-                    for(d=m+1; d<npbcdim; d++)
-                    {
-                        posA += forceparams[type].posres.pos0A[d]*pbc->box[d][m];
-                        posB += forceparams[type].posres.pos0B[d]*pbc->box[d][m];
-                    }
-                    ref      = L1*posA + lambda*posB;
-                    rdist[m] = 0;
-                    dpdl[m]  = posB - posA;
-                    break;
-                case erscCOM:
-                    ref      = L1*comA_sc[m] + lambda*comB_sc[m];
-                    rdist[m] = L1*posA       + lambda*posB;
-                    dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
-                    break;
-                default:
-                    gmx_fatal(FARGS, "No such scaling method implemented");
-                }
-            }
-            else
-            {
-                ref      = L1*posA + lambda*posB;
-                rdist[m] = 0;
-                dpdl[m]  = posB - posA;
-            }
-
-            /* We do pbc_dx with ref+rdist,
-             * since with only ref we can be up to half a box vector wrong.
-             */
-            pos[m] = ref + rdist[m];
-        }
-
-        if (pbc)
-        {
-            pbc_dx(pbc,x[ai],pos,dx);
-        }
-        else
-        {
-            rvec_sub(x[ai],pos,dx);
-        }
+        /* return dx, rdist, and dpdl */
+        posres_dx(x[ai],forceparams[type].posres.pos0A, forceparams[type].posres.pos0B,
+                  comA_sc, comB_sc, lambda,
+                  pbc, refcoord_scaling, npbcdim,
+                  dx, rdist, dpdl);
 
         for (m=0; (m<DIM); m++)
         {
@@ -2841,7 +2981,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
     if (ftype<F_GB12 || ftype>F_GB14)
     {
         if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES))
+            !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES))
         {
             ind  = interaction_function[ftype].nrnb_ind;
             nat1 = interaction_function[ftype].nratoms+1;
@@ -2937,7 +3077,7 @@ real calc_one_bond_foreign(FILE *fplog,int ftype, const t_idef *idef,
     if (ftype<F_GB12 || ftype>F_GB14)
     {
         if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES))
+            !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES))
         {
             ind  = interaction_function[ftype].nrnb_ind;
             nat1 = interaction_function[ftype].nratoms+1;

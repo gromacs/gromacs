@@ -159,6 +159,7 @@ static const t_ftupd ftupd[] = {
   { 46, F_DPD               },
   { 30, F_POLARIZATION      },
   { 36, F_THOLE_POL         },
+  { 78, F_FBPOSRES          },
   { 22, F_DISRESVIOL        },
   { 22, F_ORIRES            },
   { 22, F_ORIRESDEV         },
@@ -1436,6 +1437,12 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
       gmx_fio_do_rvec(fio,iparams->posres.fcB);
     }
     break;
+  case F_FBPOSRES:
+      gmx_fio_do_int(fio,iparams->fbposres.geom);
+      gmx_fio_do_rvec(fio,iparams->fbposres.pos0);
+      gmx_fio_do_real(fio,iparams->fbposres.r);
+      gmx_fio_do_real(fio,iparams->fbposres.k);
+      break;
   case F_RBDIHS:
     bDum=gmx_fio_ndo_real(fio,iparams->rbdihs.rbcA,NR_RBDIHS);
     if(file_version>=25) 
@@ -2107,14 +2114,18 @@ static t_block mtop_mols(gmx_mtop_t *mtop)
 
 static void add_posres_molblock(gmx_mtop_t *mtop)
 {
-  t_ilist *il;
+    t_ilist *il,*ilfb;
   int am,i,mol,a;
   gmx_bool bFE;
   gmx_molblock_t *molb;
   t_iparams *ip;
 
+  /* posres reference positions are stored in ip->posres (if present) and
+     in ip->fbposres (if present). If normal and flat-bottomed posres are present,
+     posres.pos0A are identical to fbposres.pos0. */
   il = &mtop->moltype[0].ilist[F_POSRES];
-  if (il->nr == 0) {
+  ilfb = &mtop->moltype[0].ilist[F_FBPOSRES];
+  if (il->nr == 0 && ilfb->nr == 0) {
     return;
   }
   am = 0;
@@ -2127,6 +2138,16 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
 	ip->posres.pos0B[ZZ] != ip->posres.pos0A[ZZ]) {
       bFE = TRUE;
     }
+  }
+  /* This loop is required if we have only flat-bottomed posres:
+     - set am
+     - bFE == FALSE (no B-state for flat-bottomed posres) */
+  if (il->nr == 0)
+  {
+      for(i=0; i<ilfb->nr; i+=2) {
+          ip = &mtop->ffparams.iparams[ilfb->iatoms[i]];
+          am = max(am,ilfb->iatoms[i+1]);
+      }
   }
   /* Make the posres coordinate block end at a molecule end */
   mol = 0;
@@ -2153,6 +2174,19 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
       molb->posres_xB[a][YY] = ip->posres.pos0B[YY];
       molb->posres_xB[a][ZZ] = ip->posres.pos0B[ZZ];
     }
+  }
+  if (il->nr == 0)
+  {
+      /* If only flat-bottomed posres are present, take reference pos from them.
+         Here: bFE == FALSE      */
+      for(i=0; i<ilfb->nr; i+=2)
+      {
+          ip = &mtop->ffparams.iparams[ilfb->iatoms[i]];
+          a  = ilfb->iatoms[i+1];
+          molb->posres_xA[a][XX] = ip->fbposres.pos0[XX];
+          molb->posres_xA[a][YY] = ip->fbposres.pos0[YY];
+          molb->posres_xA[a][ZZ] = ip->fbposres.pos0[ZZ];
+      }
   }
 }
 

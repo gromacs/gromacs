@@ -975,6 +975,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->posres.pos0B[ZZ],iparams->posres.fcB[XX],
 	    iparams->posres.fcB[YY],iparams->posres.fcB[ZZ]);
     break;
+  case F_FBPOSRES:
+    fprintf(fp,"pos0=(%15.8e,%15.8e,%15.8e), geometry=%d, r=%15.8e, k=%15.8e\n",
+        iparams->fbposres.pos0[XX], iparams->fbposres.pos0[YY],
+        iparams->fbposres.pos0[ZZ], iparams->fbposres.geom,
+        iparams->fbposres.r,        iparams->fbposres.k);
+    break;
   case F_RBDIHS:
     for (i=0; i<NR_RBDIHS; i++) 
       fprintf(fp,"%srbcA[%d]=%15.8e",i==0?"":", ",i,iparams->rbdihs.rbcA[i]);

@@ -316,6 +316,12 @@ enum {
   eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
 };
 
+/* flat-bottom posres geometries */
+enum {
+  efbposresZERO, efbposresSPHERE, efbposresCYLINDER, efbposresX, efbposresY, efbposresZ,
+  efbposresNR
+};
+
 enum {
   eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
 };
