@@ -13,9 +13,6 @@ if(GMX_MPI)
     COMPILE_DEFINITIONS )
 
   if(MPI_FOUND)
-    if(GMX_FAHCORE)
-      add_definitions( -DMPI ) #for FAHCORE
-    endif()
     include(gmxTestMPI_IN_PLACE)
     if (GMX_MPI_IN_PLACE)
       gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
