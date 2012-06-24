@@ -52,7 +52,7 @@ wall-density, wall-ewald-zfac)
 <li><A HREF="#pull"><b>COM pulling</b></A> (pull, ...)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre-weighting, disre-mixed, disre-fc, disre-tau, nstdisreout, orire, orire-fc, orire-tau, orire-fitgrp, nstorireout)
 <li><A HREF="#free"><b>Free energy calculations</b></A> (free-energy, nstfep, nstdgdl, dhdl-print-energy, init-lambda, delta-lambda, fep-lambdas, coul-lambdas, vdw-lambdas, bonded-lambdas, restraint-lambdas, mass-lambdas, sc-alpha, sc-coul, sc-power, sc-r-power, sc-sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
-<li><A HREF="#free"><b>Expanded ensemble simulation</b></A> (lmc-stats, lmc-mc-move, lmc-seed, lmc-gibbsdelta, mc-temperature, nst-transition-matrix,init-lambda-weights,initial-wl-delta,wl-scale,wl-ratio,symmetrized-transition-matrix,lmc-forced-nstart,weight-c-range,mininum-var-min,lmc-weights-equil,weight-equil-wl-delta,weight-equil-number-all-lambda,weight-equil-number-steps,weight-equil-number-samples,weight-equil-count-ratio,simulated-tempering,simulated-tempering-scaling,sim-temp-low,sim-temp-high)
+<li><A HREF="#expanded"><b>Expanded ensemble simulation</b></A> (lmc-stats, lmc-mc-move, lmc-seed, lmc-gibbsdelta, mc-temperature, nst-transition-matrix,init-lambda-weights,initial-wl-delta,wl-scale,wl-ratio,symmetrized-transition-matrix,lmc-forced-nstart,weight-c-range,mininum-var-min,lmc-weights-equil,weight-equil-wl-delta,weight-equil-number-all-lambda,weight-equil-number-steps,weight-equil-number-samples,weight-equil-count-ratio,simulated-tempering,simulated-tempering-scaling,sim-temp-low,sim-temp-high)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc-grps, accelerate, freezegrps, freezedim, cos-acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E-x, E-xt, E-y, E-yt, E-z, E-zt )
 <li><A HREF="#qmmm"><b>Mixed quantum/classical dynamics</b></A> (QMMM, QMMM-grps, QMMMscheme, QMmethod, QMbasis, QMcharge, Qmmult, CASorbitals, CASelectrons, SH)
@@ -1486,8 +1486,8 @@ the molecule definition in the topology.</dd>
 <h3><!--Idx-->Expanded Ensemble calculations<!--EIdx--></h3>
 
 <dl>
-<dt><b>nstexpanded</b></dt> The frequency to peform expanded ensemble
-simulations.  Must be a multiple of <b>nstfep</b>.
+<dt><b>nstexpanded</b></dt> <dd>The frequency to peform expanded ensemble
+simulations.  Must be a multiple of <b>nstfep</b>.</dd>
 <dt><b>lmc-stats:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
@@ -1548,6 +1548,7 @@ simulation specified in the first group of <b>ref_t</b> is used.</dd>
 <dd>Low temperature for simulated tempering</dd>
 <dt><b>sim-temp-high: (300):</b></dt>
 <dd>High temperature for simulated tempering</dd>
+</dl>
 
 <A NAME="neq"><br>
 <hr>
