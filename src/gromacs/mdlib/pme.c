@@ -94,8 +94,11 @@
 #include "gmx_cyclecounter.h"
 #include "macros.h"
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
-#include "gmx_sse2_single.h"
+/* Single precision, with SSE2 or higher available */
+#if defined(GMX_X86_SSE2) && !defined(GMX_DOUBLE)
+
+#include "gmx_x86_sse2.h"
+#include "gmx_math_x86_sse2_single.h"
 
 #define PME_SSE
 /* Some old AMD processors could have problems with unaligned loads+stores */

@@ -188,6 +188,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t multisim_nsteps=-1; /* number of steps to do  before first multisim 
                                           simulation stops. If equal to zero, don't
                                           communicate any more between multisims.*/
+
+    if(MASTER(cr))
+    {
+        fprintf(stderr,
+                "\n* WARNING * WARNING * WARNING * WARNING * WARNING * WARNING *\n"
+                "We have just committed the new CPU detection code in this branch,\n"
+                "and will commit new SSE/AVX kernels in a few days. However, this\n"
+                "means that currently only the NxN kernels are accelerated!\n"
+                "In the mean time, you might want to avoid production runs in 4.6.\n\n");
+    }
+
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
