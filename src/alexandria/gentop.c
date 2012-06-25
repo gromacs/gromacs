@@ -257,16 +257,16 @@ void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
 static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms)
 {
     int i,j,n,length,ft,k;
-    double xx,sx,cc;
+    double xx,sx,cc,bo;
     char *params,**ptr;
     
     length = string2unit(gmx_poldata_get_length_unit(pd));
     ft = gmx_poldata_get_bond_ftype(pd);
     for(j=0; (j<plist[ft].nr); j++) {
         if (1 == gmx_poldata_search_bond(pd,
-                                            *atoms->atomtype[plist[ft].param[j].a[0]],
-                                            *atoms->atomtype[plist[ft].param[j].a[1]],
-                                            &xx,&sx,&params)) {
+                                         *atoms->atomtype[plist[ft].param[j].a[0]],
+                                         *atoms->atomtype[plist[ft].param[j].a[1]],
+                                         &xx,&sx,&bo,&params)) {
             ptr = split(' ',params);
             n = 0;
             while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
@@ -379,7 +379,8 @@ int main(int argc, char *argv[])
     real       mu;
     gmx_bool   bPDB,bRTP,bTOP;
     t_symtab   symtab;
-    int        nqa=0,iModel;
+    int        nqa=0,iModel,nbond;
+    double     *bondorder;
     real       cutoff,qtot,mtot;
     char       *gentop_version = (char *)"v0.99b";
     const char *fn,*xmlf;
@@ -735,16 +736,17 @@ int main(int argc, char *argv[])
     snew(nbonds,atoms->nr);
     snew(smnames,atoms->nr);
     snew(bRing,atoms->nr);
-    mk_bonds(pd,atoms,x,gc,plist,nbonds,bRing,bH14,(dih == edihAll),bRemoveDih,
-             nexcl,&excls,bPBC,box,aps,btol,TRUE);
+    nbond = mk_bonds(pd,atoms,x,gc,plist,nbonds,bRing,bH14,(dih == edihAll),bRemoveDih,
+                     nexcl,&excls,bPBC,box,aps,btol,TRUE);
+    snew(bondorder,nbond);
 
     /* Setting the atom types: this depends on the bonding */
     gvt = gentop_vsite_init(egvtALL);
     if ((atype = set_atom_type(stderr,molnm,&symtab,atoms,&(plist[bts[ebtsBONDS]]),
-                               nbonds,bRing,smnames,pd,aps,x,&pbc,th_toler,ph_toler,
+                               nbonds,bRing,bondorder,smnames,pd,aps,x,&pbc,th_toler,ph_toler,
                                gvt)) == NULL) 
         gmx_fatal(FARGS,"Can not find all atomtypes. Better luck next time!");
-    
+    sfree(bondorder);
     get_force_constants(pd,plist,atoms);
     
     if (NULL != gr)

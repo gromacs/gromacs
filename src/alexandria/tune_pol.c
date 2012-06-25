@@ -71,7 +71,8 @@ static int decompose_frag(FILE *fp,int bTrain,
     double pol,poltot,a0,da0,ax,sig_pol,blength,pval,chi2;
     char   *elem,*miller_equiv,*name,*iupac,**atype=NULL,*spref,*gt_type,*atomname;
     char   *neighbors,*geometry,*desc,*charge;
-    int    i,j,niter=0,nusemol=0,nn,nnn,nexp,numbonds,ntp,natom,natom_tot,ca,valence;
+    int    i,j,niter=0,nusemol=0,nn,nnn,nexp,numbonds,ntp,natom,natom_tot,ca;
+    double valence;
     int    *test=NULL,ntest=0,row,ims;
     gmx_bool   bPol,*bUseMol;
 

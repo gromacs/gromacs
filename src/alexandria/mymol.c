@@ -329,65 +329,6 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
     return bSymmAll;
 }
 
-static int determine_bondorder(t_mymol *mymol,t_params plist[],gmx_poldata_t pd)
-{
-    int i,ai,aj,imm,ft,lu;
-    double *nbo,tol,toler,bo,dist,vtol,valence;
-    
-    imm = immOK;
-    
-    ft = gmx_poldata_get_bond_ftype(pd);
-    lu = string2unit(gmx_poldata_get_length_unit(pd));
-    /* Tolerance is 0.002 nm */
-    toler = gmx2convert(0.002,lu);
-    vtol = 1e-4;
-    snew(nbo,mymol->atoms->nr);
-    for(i=0; (immOK == imm) && (i<mymol->nbond); i++)
-    {
-        ai   = plist[ft].param[i].a[0];
-        aj   = plist[ft].param[i].a[1];
-        dist = gmx2convert(plist[ft].param[i].c[0],lu);
-        
-        tol = toler;
-        bo = 0;
-        while ((0 == bo) && (tol < 10*toler)) {
-            bo = gmx_poldata_atype_bondorder(pd,
-                                             *mymol->atoms->atomtype[ai],
-                                             *mymol->atoms->atomtype[aj],
-                                             dist,tol);
-            tol *= 2;
-        }
-        if (0 == bo) 
-        {
-            fprintf(stderr,"BO Could not determine bond order for %s%d-%s%d at %g pm in %s\n",
-                    *mymol->atoms->atomtype[ai],ai+1,
-                    *mymol->atoms->atomtype[aj],aj+1,
-                    dist,mymol->molname);
-            imm = immBondOrder;
-        }
-        else {
-            mymol->bondorder[i] = bo;
-            nbo[ai] += bo;
-            nbo[aj] += bo;
-        }
-    }
-    for(i=0; (immOK == imm) && (i<mymol->atoms->nr); i++) 
-    {
-        if (0 != gmx_poldata_type_valence(pd,*mymol->atoms->atomtype[i],&valence))
-        {
-            if (fabs(nbo[i]-valence) > vtol)
-            {
-                fprintf(stderr,"BO Determined valence for %s%d in %s to be %g, but it should be %g\n",
-                        *mymol->atoms->atomtype[i],i+1,mymol->molname,nbo[i],valence);
-                imm = immBondOrder;
-            }
-        }
-    }
-    sfree(nbo);
-    
-    return imm;
-}
-
 int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                gmx_bool bQM,char *lot,gmx_bool bZero,
                gmx_poldata_t pd,gmx_atomprop_t aps,
@@ -510,14 +451,13 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
         set_pbc(&pbc,epbcNONE,mymol->box);
         gvt = gentop_vsite_init(egvtALL);
         if ((mymol->atype = set_atom_type(NULL,mymol->molname,&(mymol->symtab),mymol->atoms,
-                                          &(plist[ftb]),nbonds,mymol->bRing,mymol->smnames,pd,aps,
+                                          &(plist[ftb]),nbonds,mymol->bRing,mymol->bondorder,
+                                          mymol->smnames,pd,aps,
                                           mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
+        {
             imm = immAtomTypes;
+        }
         sfree(nbonds);
-    }
-    if (immOK == imm) 
-    {
-        imm = determine_bondorder(mymol,plist,pd);
     }
     if (immOK == imm) 
     {

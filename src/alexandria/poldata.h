@@ -114,9 +114,12 @@ extern char *gmx_poldata_get_force_field(gmx_poldata_t pd);
 
 extern char *gmx_poldata_get_length_unit(gmx_poldata_t pd);
 
-extern char *gmx_poldata_get_atom(gmx_poldata_t pd,char *elem,
-                                  int nbond,char *neighbors[],
-                                  const char *geometry);
+/* Return array of atomtypes compatible with the bonded neighbors.
+   The array should be freed, but not the contents of the elements.
+ */
+extern char **gmx_poldata_get_atoms(gmx_poldata_t pd,char *elem,
+                                    int nbond,char *neighbors[],
+                                    const char *geometry);
 				    
 extern char *gmx_poldata_get_geometry(gmx_poldata_t pd,char *gt_atom);
 
@@ -198,12 +201,13 @@ extern int gmx_poldata_get_bond_ftype(gmx_poldata_t pd);
     
     /* Return bond-index 1-N or 0 if not found */
 extern int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                                   double *length,double *sigma,char **params);
+                                   double *length,double *sigma,double *bondorder,
+                                   char **params);
 
-    /* Returns 1 if there is a bond, 0 if not */
+/* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
 extern int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
                                     double distance,double toler);
-/* Returns the bondorder */
+/* Returns the bondorder. Toler is absolute in length-units. */
 extern double gmx_poldata_atype_bondorder(gmx_poldata_t pd,char *atype1,char *atype2,
                                           double distance,double toler);
 				     

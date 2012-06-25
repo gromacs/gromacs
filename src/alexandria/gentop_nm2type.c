@@ -63,6 +63,9 @@
 #include "gentop_nm2type.h"
 #include "gentop_vsite.h"
 
+enum { egmLinear, egmPlanar, egmRingPlanar, egmTetrahedral, egmNR };
+static const char *geoms[egmNR] = { "linear", "planar", "ring-planar", "tetrahedral" };
+
 static gmx_bool is_planar(rvec xi,rvec xj,rvec xk,rvec xl,t_pbc *pbc,
                       real phi_toler)
 {
@@ -87,164 +90,356 @@ static gmx_bool is_linear(rvec xi,rvec xj,rvec xk,t_pbc *pbc,
     return (th > th_toler) || (th < 180-th_toler);
 }
 
+typedef struct {
+    int    nb,geom,atomnr,nat,myat,nn;
+    int    *bbb;
+    double nbo;
+    double *valence;
+    char   *elem,*aname;
+    char   **nb_hybrid,**at_ptr,**tp;
+} t_atsel;
+
+static void calc_bondorder(FILE *fp,
+                           gmx_poldata_t pd,int natoms,t_atsel ats[],t_params *bonds,
+                           double bondorder[])
+{
+    int    ai,aj,j,lu;
+    double toler,vtol,tol,dist,bo;
+    char   *unit;
+    
+    unit = gmx_poldata_get_length_unit(pd);
+    lu = string2unit(unit);
+    /* Tolerance is 0.002 nm */
+    toler = gmx2convert(0.002,lu);
+    vtol = 1e-4;
+
+    for(j=0; (j<bonds->nr); j++) 
+    {
+        ai = bonds->param[j].AI;
+        aj = bonds->param[j].AJ;
+
+        if ((NULL != ats[ai].tp[ats[ai].myat]) && (NULL != ats[aj].tp[ats[aj].myat]))
+        {
+            dist = gmx2convert(bonds->param[j].c[0],lu);
+            tol = toler;
+            bo = 0;
+            while ((0 == bo) && (tol < 10*toler)) 
+            {
+                bo = gmx_poldata_atype_bondorder(pd,
+                                                 ats[ai].tp[ats[ai].myat],
+                                                 ats[aj].tp[ats[aj].myat],dist,tol);
+                tol *= 2;
+            }
+            bondorder[j] = bo;
+        }
+        if (NULL != fp)
+        {
+            fprintf(fp,"Bond %s%d-%s%d order %g dist %g %s\n",
+                    ats[ai].tp[ats[ai].myat],ai+1,
+                    ats[aj].tp[ats[aj].myat],aj+1,
+                    bondorder[j],dist,unit);
+        }
+    }
+}
+
+static double minimize_valence(FILE *fp,
+                               int natoms,t_atsel ats[],const char *molname,
+                               t_params *bonds,gmx_poldata_t pd,
+                               double bondorder[])
+{
+    int    iter,iter2,maxiter=10;
+    int    i,j,ai,aj,ntot,j_best,jjj,nnull;
+    double valence,ddval,dval,dval_best;
+    char   buf[1024],b2[64];
+    
+    dval_best = natoms*4;
+    for(iter=0; (iter<maxiter) && (dval_best > 0); iter++) 
+    {
+        nnull = 1;
+        for(iter2=0; (iter2<maxiter) && (nnull > 0); iter2++)
+        {
+            nnull = 0;
+            for(i=0; (i<natoms); i++) 
+            {
+                for(j=0; (j<ats[i].nb); j++) 
+                {
+                    aj = ats[i].bbb[j];
+                    if (NULL != ats[aj].at_ptr)
+                        ats[i].nb_hybrid[j] = ats[aj].at_ptr[ats[aj].myat];
+                    else
+                        ats[i].nb_hybrid[j] = ats[aj].elem;
+                }
+                
+                ats[i].at_ptr = gmx_poldata_get_atoms(pd,ats[i].elem,ats[i].nb,
+                                                      ats[i].nb_hybrid,
+                                                      geoms[ats[i].geom]);
+                if ((NULL == ats[i].at_ptr) || (NULL == ats[i].at_ptr[0]))
+                    nnull++;
+            }
+        }
+        
+        if (0 < nnull)
+        {
+            fprintf(stderr,"Could not find bonding rules to describe all atoms in %s\n",
+                    molname);
+            return 1;
+        }
+        /* Select the first possible type */
+        ntot = 1;
+        for(i=0; (i<natoms); i++) 
+        {
+            ats[i].nat=0;
+            while (NULL != ats[i].at_ptr[ats[i].nat])
+            {
+                srenew(ats[i].tp,ats[i].nat+1);
+                ats[i].tp[ats[i].nat] = gmx_poldata_get_type(pd,ats[i].at_ptr[ats[i].nat]);
+                if (0 == gmx_poldata_type_valence(pd,ats[i].tp[ats[i].nat],&valence))
+                    gmx_fatal(FARGS,"Can not find valence for %s",
+                              ats[i].tp[ats[i].nat]);
+                srenew(ats[i].valence,ats[i].nat+1);
+                ats[i].valence[ats[i].nat] = valence;
+                ats[i].nat++;
+            }
+            if (0 == ats[i].nat)
+                return 1;
+            ats[i].myat = 0;
+            ntot *= ats[i].nat;
+            ats[i].nn = ntot;
+        }
+        if (NULL != fp)
+        {
+            fprintf(fp,"There are %d possible combinations of atomtypes in %s\n",
+                    ntot,molname);
+        }
+        if (ntot < 10000) 
+        {
+            /* Loop over all possibilities */
+            j_best = NOTSET;
+            for(j=0; (j<ntot) && (dval_best > 0); j++)
+            {
+                /* Set the atomtypes */
+                buf[0] = '\0';
+                for(i=0; (i<natoms); i++) 
+                {
+                    if (i > 0)
+                        jjj = (j/ats[i-1].nn);
+                    else
+                        jjj = j;
+                    ats[i].myat = jjj % ats[i].nat;
+                    sprintf(b2," %s",ats[i].at_ptr[ats[i].myat]);
+                    strcat(buf,b2);
+                    ats[i].nbo = 0;
+                }
+                /* Compute the bond orders */
+                calc_bondorder(fp,pd,natoms,ats,bonds,bondorder);
+                
+                /* Compute the valences based on bond order */
+                for(i=0; (i<bonds->nr); i++)
+                {
+                    ai   = bonds->param[i].a[0];
+                    aj   = bonds->param[i].a[1];
+                    ats[ai].nbo += bondorder[i];
+                    ats[aj].nbo += bondorder[i];
+                }
+                /* Now check the total deviation from valence */
+                dval = 0;
+                for(i=0; (i<natoms); i++) 
+                {
+                    ddval = fabs(ats[i].nbo-ats[i].valence[ats[i].myat]);
+                    dval += ddval;
+                    if ((ddval > 0) && (NULL != fp))
+                    {
+                        fprintf(fp,"val for %s%d is %g (should be %g)\n",
+                                ats[i].tp[ats[i].myat],i+1,ats[i].nbo,
+                                ats[i].valence[ats[i].myat]);
+                    }
+                }
+                if (NULL != fp)
+                {
+                    fprintf(fp,"j = %d myat = %s dval = %g\n",j,buf,dval);
+                }
+                if (dval < dval_best)
+                {
+                    dval_best = dval;
+                    j_best = j;
+                }
+            }
+        }
+    }
+    if (0 < dval_best)
+    {
+        fprintf(stderr,"Could not find suitable atomtypes for %s. Valence deviation is %g\n",
+                molname,dval_best);
+    }
+    return dval_best;
+}
+
 int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
-            t_symtab *tab,t_atoms *atoms,gmx_bool bRing[],
+            t_symtab *tab,t_atoms *atoms,gmx_bool bRing[],double bondorder[],
             gpp_atomtype_t atype,int *nbonds,t_params *bonds,
             char **gt_atoms,rvec x[],t_pbc *pbc,real th_toler,real phi_toler,
             gentop_vsite_t gvt)
 {
     int     cur = 0;
 #define   prev (1-cur)
-    int     i,j,k,m,n,nresolved,nbh,maxbond,nb,nonebond;
-    int     ai,aj,iter=0,maxiter=10,aa[6];
-    int     *bbb,type,atomnr_i;
-    char    *aname_i,*aname_m,*aname_n,*gt_atom,*gt_type,*elem_i;
-    char    **nbhybrid;
+    int     i,j,k,m,n,nonebond,nresolved;
+    int     ai,aj,nnull,nra,nrp,aa[6];
+    int     type;
+    char    *aname_m,*aname_n,*gt_type;
+    char    *envptr;
+    char    **ptr;
     char    *empty_string = "";
-    double  mm;
-    int     bLinear,bPlanar,*geom;
+    t_atsel *ats;
+    double  mm,dval;
+    int     bLinear,bPlanar,imm,iter;
     real    value;
     t_atom  *atom;
     t_param *param;
-    enum { egmLinear, egmPlanar, egmRingPlanar, egmTetrahedral, egmNR };
-    const char *geoms[egmNR] = { "linear", "planar", "ring-planar", "tetrahedral" };
 
+    envptr = getenv("MOLNAME");
+    if ((NULL != envptr) && (0 == strcasecmp(molname,envptr)))
+        printf("BOE! Molname = %s\n",molname);
+    
     snew(atom,1);
     snew(param,1);
-    maxbond = 0;
     nonebond = 0;
-    snew(geom,atoms->nr);
-    for(i=0; (i<atoms->nr); i++) {
-        maxbond = max(maxbond,nbonds[i]);
+    snew(ats,atoms->nr);
+    for(i=0; (i<atoms->nr); i++) 
+    {
+        /* Atom information */
+        atoms->atom[i].type = NOTSET;
+        ats[i].aname = *atoms->atomname[i];
+        if ((ats[i].elem = gmx_atomprop_element(aps,atoms->atom[i].atomnumber)) == NULL)
+            ats[i].elem = empty_string;
+        ats[i].atomnr = atoms->atom[i].atomnumber;
+        if ((ats[i].atomnr < 0) && (gmx_atomprop_query(aps,epropElement,"???",
+                                                       ats[i].aname,&value)))
+        {
+            ats[i].atomnr = gmx_nint(value);
+            atoms->atom[i].atomnumber = ats[i].atomnr;
+        }
+        /* Bond information */
         if (nbonds[i] == 1)
             nonebond++;
+        snew(ats[i].bbb,nbonds[i]);
+        snew(ats[i].nb_hybrid,nbonds[i]);
+        ats[i].nb  = 0;
     }
-    if (debug)
-        fprintf(debug,"Max number of bonds per atom in %s is %d.\nThere are %d atoms with one bond.\n",
-                molname,maxbond,nonebond);
-    snew(bbb,maxbond);
-    snew(nbhybrid,maxbond);
-    
-    /*if (strcasecmp(molname,"2-pentanol") == 0)
-      printf("BOE\n");*/
-    for(i=0; (i<atoms->nr); i++) {
-        atoms->atom[i].type = -NOTSET;
+    /* Fill local bonding arrays */
+    for(j=0; (j<bonds->nr); j++) {
+        ai = bonds->param[j].AI;
+        aj = bonds->param[j].AJ;
+        ats[ai].bbb[ats[ai].nb++] = aj;
+        ats[aj].bbb[ats[aj].nb++] = ai;
     }
-    do {
-        nresolved = 0;
-  
-        for(i=0; (i<atoms->nr); i++) {
-            /* In the first iteration do only the atoms with one bond, e.g.
-             * hydrogen, or halides, but also carbonyl oxygens or nitrile nitrogen.
-             */
-            if (1 /*(((iter == 0) && (nbonds[i] == 1)) || (iter > 0))*/ /*&&
-                                                                    (atoms->atom[i].type == -NOTSET)*/) {
-                aname_i = *atoms->atomname[i];
-                if ((elem_i = gmx_atomprop_element(aps,atoms->atom[i].atomnumber)) == NULL)
-                    elem_i = empty_string;
-                atomnr_i = atoms->atom[i].atomnumber;
-                if ((atomnr_i < 0) && (gmx_atomprop_query(aps,epropElement,"???",
-                                                          aname_i,&value)))
-                    atomnr_i = gmx_nint(value);
-	
-                if (debug) 
-                    fprintf(debug,"%s%d has bonds to: ",aname_i,i+1);
-                nb  = 0;
-                nbh = 0;
-                for(j=0; (j<bonds->nr); j++) {
-                    ai = bonds->param[j].AI;
-                    aj = bonds->param[j].AJ;
-                    if (ai == i) {
-                        bbb[nb++] = aj;
-                        if (atoms->atom[aj].atomnumber == 1)
-                            nbh++;
-                    }
-                    else if (aj == i) {
-                        bbb[nb++] = ai;
-                        if (atoms->atom[ai].atomnumber == 1)
-                            nbh++;
-                    }
-                }
-                for(j=0; (j<nb); j++) {
-                    nbhybrid[j] = gt_atoms[bbb[j]];
-                    if (debug)
-                        fprintf(debug," %s%d (%s)",*atoms->atomname[bbb[j]],
-                                bbb[j]+1,nbhybrid[j]);
-                }
-                if (debug)
-                    fprintf(debug,"\n");
-	
-                geom[i] = egmTetrahedral;
-                if ((nb == 2) && is_linear(x[i],x[bbb[0]],x[bbb[1]],pbc,th_toler)) 
-                {
-                    geom[i] = egmLinear;
-                    if ((iter == 0) && (NULL != gvt))
-                        gentop_vsite_add_linear(gvt,bbb[0],i,bbb[1]);
-                }
-                else if ((nb == 3) && is_planar(x[i],x[bbb[0]],x[bbb[1]],x[bbb[2]],
-                                                pbc,phi_toler))
-                {
-                    if (bRing[i]) {
-                        if (iter == 0)
-                            geom[i] = egmRingPlanar;
-                        else {
-                            if (((geom[bbb[0]] == egmRingPlanar) && 
-                                 (geom[bbb[1]] == egmRingPlanar)) ||
-                                ((geom[bbb[0]] == egmRingPlanar) && 
-                                 (geom[bbb[2]] == egmRingPlanar)) ||
-                                ((geom[bbb[1]] == egmRingPlanar) && 
-                                 (geom[bbb[2]] == egmRingPlanar)))
-                                geom[i] = egmRingPlanar;
-                            else
-                                geom[i] = egmPlanar;
-                        }
-                    }
-                    else
-                        geom[i] = egmPlanar;
-                    if ((iter == 0) && (NULL != gvt))
-                        gentop_vsite_add_planar(gvt,i,bbb[0],bbb[1],bbb[2],nbonds);
-                }
-                if (debug)
-                    fprintf(debug,"Geometry = %s (atom %s with %d bonds)\n",
-                            geoms[geom[i]],aname_i,nb);
-                if ((gt_atom = gmx_poldata_get_atom(pd,elem_i,nb,nbhybrid,
-                                                    geoms[geom[i]])) != NULL)
-                {
-                    if (debug)
-                        fprintf(debug,"Selected %s\n",gt_atom);
-                    gt_type = gmx_poldata_get_type(pd,gt_atom);
-                    gt_atoms[i] = strdup(gt_atom);
-                    mm = 0;
-                    if (gmx_atomprop_query(aps,epropMass,"???",elem_i,&value)) 
-                        mm = value;
-                    else 
-                        fprintf(stderr,"Can not find a mass for element %s",elem_i);
-                        
-                    type = get_atomtype_type(gt_type,atype);
-                    if (type == NOTSET)
-                    {
-                        /* Store mass and polarizability in atomtype as well */
-                        atom->qB = 0;
-                        atom->m  = mm;
-                        type    = add_atomtype(atype,tab,atom,gt_type,param,
-                                               atom->type,0,0,0,atomnr_i,0,0);
-                    }
-	  
-                    /* atoms->atom[i].q  = 0;*/
-                    atoms->atom[i].qB = 0;
-                    atoms->atom[i].m  = atoms->atom[i].mB = mm;
-                    atoms->atom[i].type  = type;
-                    atoms->atom[i].typeB = type;
-                    atoms->atomtype[i] = put_symtab(tab,gt_type);
-	  
-                    nresolved++;
-                }
-            }
+    /* Check for consistency in number of bonds */
+    for(i=0; (i<atoms->nr); i++) 
+    {
+        if (ats[i].nb != nbonds[i]) 
+        {
+            gmx_fatal(FARGS,"Inconsistency between number of nbonds[%d] = %d and bonds structure (%d)",i,nbonds[i],ats[i].nb); 
         }
-        if (debug)
-            fprintf(debug,"Iter %d nresolved %d/%d\n",iter,nresolved,atoms->nr);
-        iter++;
-    } while (iter < maxiter);
+    }
+    for(i=0; (i<atoms->nr); i++) 
+    {
+        /* Now test initial geometry */
+        ats[i].geom = egmTetrahedral;
+        if ((ats[i].nb == 2) && is_linear(x[i],x[ats[i].bbb[0]],x[ats[i].bbb[1]],pbc,th_toler)) 
+        {
+            ats[i].geom = egmLinear;
+            if (NULL != gvt)
+                gentop_vsite_add_linear(gvt,ats[i].bbb[0],i,ats[i].bbb[1]);
+        }
+        else if ((ats[i].nb == 3) && is_planar(x[i],x[ats[i].bbb[0]],x[ats[i].bbb[1]],x[ats[i].bbb[2]],
+                                               pbc,phi_toler))
+        {
+            if (bRing[i]) 
+                ats[i].geom = egmRingPlanar;
+            else
+                ats[i].geom = egmPlanar;
+            if (NULL != gvt)
+                gentop_vsite_add_planar(gvt,i,ats[i].bbb[0],ats[i].bbb[1],ats[i].bbb[2],
+                                        nbonds);
+        }
+    }
+    /* Iterate geometry test to look for rings. In a six-ring the information
+     * spreads in at most three steps around the ring, so four iterations is sufficient.
+     */
+    for(iter=0; (iter<4); iter++)
+    {
+        nra = 0;
+        for(i=0; (i<atoms->nr); i++) {
+            if ((ats[i].nb == 3) && (ats[i].geom == egmRingPlanar))
+            {
+                /* If two of three neighbors are in a ring, I am too */
+                nrp = 0;
+                for(k=0; (k<3); k++) 
+                {
+                    if ((ats[ats[i].bbb[k]].geom == egmRingPlanar) ||
+                        (1 &&
+                         (ats[ats[i].bbb[k]].geom == egmTetrahedral) &&
+                         (ats[ats[i].bbb[k]].nb == 2)))
+                        nrp++;
+                }
+                if (nrp < 2)
+                    ats[i].geom = egmPlanar;
+            }
+            if (ats[i].geom == egmRingPlanar)
+                nra++;
+        }
+    }
+    if (fp)
+    {
+        fprintf(fp,"There are %d atoms with one bond in %s.\n",
+                nonebond,molname);
+        fprintf(fp,"There are %d atoms in ring structures in %s.\n",
+                nra,molname);
+        for(i=0; (i<atoms->nr); i++)
+        {
+            fprintf(fp,"Geometry = %s (atom %s with %d bonds)\n",
+                    geoms[ats[i].geom],ats[i].aname,ats[i].nb);
+        }
+    }
+
+    /* Now we will determine for each atom the possible atom types in an iterative
+     * fashion until convergence (deviation from valence criteria dval == 0).
+     */
+    dval = minimize_valence(fp,atoms->nr,ats,molname,bonds,pd,bondorder);
+    
+    nresolved = 0;
+    if (0 == dval)
+    {
+        /* Now set the contents of the atoms structure */
+        for(i=0; (i<atoms->nr); i++) 
+        {
+            gt_atoms[i] = strdup(ats[i].at_ptr[ats[i].myat]);
+            gt_type = gmx_poldata_get_type(pd,gt_atoms[i]);
+            mm = 0;
+            if (gmx_atomprop_query(aps,epropMass,"???",ats[i].elem,&value)) 
+                mm = value;
+            else 
+                fprintf(stderr,"Can not find a mass for element %s",ats[i].elem);
+            
+            type = get_atomtype_type(gt_type,atype);
+            if (type == NOTSET)
+            {
+                /* Store mass and polarizability in atomtype as well */
+                atom->qB = 0;
+                atom->m  = mm;
+                type    = add_atomtype(atype,tab,atom,gt_type,param,
+                                       atom->type,0,0,0,ats[i].atomnr,0,0);
+            }
+            
+            /* atoms->atom[i].q  = 0;*/
+            atoms->atom[i].qB = 0;
+            atoms->atom[i].m  = atoms->atom[i].mB = mm;
+            atoms->atom[i].type  = type;
+            atoms->atom[i].typeB = type;
+            atoms->atomtype[i] = put_symtab(tab,gt_type);
+            
+            nresolved++;
+        }
+    }
     
     /* fprintf(stderr,"\n");*/
     if (nresolved < atoms->nr) {
@@ -256,19 +451,13 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
                 strcat(missing,atom);
             }
         }
-        if (debug)
-            fprintf(debug,"Could not resolve atomtypes %s for: %s.\n",
-                    missing,molname);
         if (fp)
             fprintf(fp,"Could not resolve atomtypes %s for: %s.\n",
                     missing,molname);
         sfree(missing);
     }
-    sfree(bbb);
     sfree(atom);
     sfree(param);
-    sfree(nbhybrid);
-    sfree(geom);
-        
+            
     return nresolved;
 }

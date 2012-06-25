@@ -71,7 +71,8 @@ extern int mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
 		     
 extern gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
                                     t_symtab *tab,t_atoms *atoms,t_params *bonds,
-                                    int nbonds[],gmx_bool bRing[],char **smnames,
+                                    int nbonds[],gmx_bool bRing[],double bondorder[],
+                                    char **smnames,
                                     gmx_poldata_t pd,gmx_atomprop_t aps,
                                     rvec x[],t_pbc *pbc,real th_toler,
                                     real ph_toler,gentop_vsite_t gvt);

@@ -276,7 +276,7 @@ static void get_dissociation_energy(FILE *fplog,opt_param_t *opt)
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             if ((gt = gmx_poldata_search_bond(opt->md->pd,aai,aaj,
-                                                 NULL,NULL,NULL)) != 0) {
+                                              NULL,NULL,NULL,NULL)) != 0) {
                 gti = opt->inv_gt[ebtsBONDS][gt-1];
                 at[gti][j]++;
                 a[j][gti]++; 
@@ -606,7 +606,7 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                     aaj = *mymol->atoms->atomtype[aj];
                     switch (bt) {
                     case ebtsBONDS:
-                        gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,NULL,&params);
+                        gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,NULL,NULL,&params);
                         break;
                     case ebtsANGLES:
                         ak = mymol->ltop->idef.il[ft].iatoms[i+3];
@@ -671,7 +671,7 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             /* Here unfortunately we need a case statement for the types */
-            if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,&params)) != 0) {
+            if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].morse.b0 = convert2gmx(value,lu);
                   
                 ptr = split(' ',params);

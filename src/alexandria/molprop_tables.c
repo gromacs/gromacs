@@ -457,8 +457,8 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     FILE   *xvg;
     int    i,j,pp,ntab,nfitexp,nfitqm,nh,ielem,imil,atomnumber;
     int    nfirst = 20,nsecond = 24;
-    int    numbonds,valence;
-    double ahc,ahp,mil_pol,bos_pol,alexandria_pol,blength,sig_pol;
+    int    numbonds;
+    double ahc,ahp,mil_pol,valence,bos_pol,alexandria_pol,blength,sig_pol;
     double exp_val,qm_val;
     real   alexandria_aver,alexandria_sigma,nnn;
     char   *gt_type[2] = { NULL, NULL };
@@ -625,8 +625,8 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
 
 static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
 {
-    int    i,k,m,cur=0,numbonds,valence;
-    double alexandria_pol,sig_pol;
+    int    i,k,m,cur=0,numbonds;
+    double alexandria_pol,sig_pol,valence;
     char   *name,*elem,*gt_type[2] = { NULL, NULL };
     char   *charge,*miller_equiv,*spref,*geometry,*neighbors,*desc;
 #define prev (1-cur)

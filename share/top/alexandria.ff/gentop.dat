@@ -2,50 +2,51 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <atomtypes polarizability_unit="A3" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="0" fudgeLJ="0">
-    <atype elem="Br" description="Bromine" gt_type="Br" miller_equiv="Br" charge="0" valence="1" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Br" description="Bromine" gt_type="Br5" miller_equiv="Br" charge="0" valence="5" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Nitrile Carbon" gt_type="CDN" miller_equiv="CDI" charge="0" valence="4" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Carbon with sp1" gt_type="CDI" miller_equiv="CDI" charge="0" valence="4" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Carbon with C=O" gt_type="C2O" miller_equiv="CTR" charge="0" valence="4" polarizability="1.456" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Carbon sp2" gt_type="CTR" miller_equiv="CTR" charge="0" valence="4" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Tetrahedral Carbon" gt_type="CTP" miller_equiv="CTE" charge="0" valence="4" polarizability="1.49715" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Tetrahedral Carbon" gt_type="CTA" miller_equiv="CTE" charge="0" valence="4" polarizability="1.26585" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Aromatic Carbon" gt_type="CRA" miller_equiv="CTR" charge="0" valence="4" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="Condensed Aromatic Carbon" gt_type="CRB" miller_equiv="CBR" charge="0" valence="4" polarizability="1.76736" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Cl" description="Chlorine" gt_type="Cl" miller_equiv="Cl" charge="0" valence="1" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="F" description="Fluorine" gt_type="F" miller_equiv="F" charge="0" valence="1" polarizability="0.348558" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="Hydrogen bound to Carbon" gt_type="HA" miller_equiv="H" charge="0" valence="1" polarizability="0.293428" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="Other Hydrogen" gt_type="HP" miller_equiv="H" charge="0" valence="1" polarizability="0.355658" sigma_pol="0" vdwparams="1e-5 1e-10"/>
-    <atype elem="I" description="Iodine" gt_type="I" miller_equiv="I" charge="0" valence="1" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Nitrogen in sp1" gt_type="NDI" miller_equiv="NDI" charge="0" valence="3" polarizability="0.90044" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Nitrogen in sp2" gt_type="NTR2" miller_equiv="NTR2" charge="0" valence="3" polarizability="0.761262" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Nitrogen in nitro" gt_type="NTN" miller_equiv="NTR2" charge="0" valence="5" polarizability="0.761262" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_type="NPI2" miller_equiv="NPI2" charge="0" valence="3" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Charged Aromatic Nitrogen" gt_type="NPQ" miller_equiv="NPI2" charge="0" valence="4" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Tetahedral Nitrogen" gt_type="NTE" miller_equiv="NTE" charge="0" valence="3" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="Tetahedral Nitrogen+" gt_type="NTP" miller_equiv="NTE" charge="0" valence="4" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen with double bond" gt_type="OTR4" miller_equiv="OTR4" charge="0" valence="2" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen minus" gt_type="OTM" miller_equiv="OTR4" charge="0" valence="1.5" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen in Hydroxide" gt_type="OH1" miller_equiv="OTE" charge="0" valence="1" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
-    <atype elem="O" description="Oxygen in Hydronium" gt_type="OH3" miller_equiv="OTE" charge="0" valence="3" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
-    <atype elem="O" description="Oxygen in Water" gt_type="OH2" miller_equiv="OTE" charge="0" valence="2" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
-    <atype elem="O" description="Oxygen with O-H" gt_type="OTH" miller_equiv="OTE" charge="0" valence="2" polarizability="0.419881" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Oxygen" gt_type="OTE" miller_equiv="OTE" charge="0" valence="2" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="Aromatic Oxygen" gt_type="OPI2" miller_equiv="OPI2" charge="0" valence="2" polarizability="0.505675" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_type="PTE" miller_equiv="PTE" charge="0" valence="3" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor" gt_type="P5" miller_equiv="PTE" charge="0" valence="5" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="Phosphor positive" gt_type="P4" miller_equiv="PTE" charge="0" valence="4" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur hexavalent" gt_type="STR6" miller_equiv="STR4" charge="0" valence="6" polarizability="3.43911" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur tetravalent" gt_type="STR4" miller_equiv="STR4" charge="0" valence="4" polarizability="3.43911" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur tetrahedral" gt_type="STE" miller_equiv="STE" charge="0" valence="2" polarizability="2.98596" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="Sulphur aromatic" gt_type="SPI2" miller_equiv="SPI2" charge="0" valence="2" polarizability="2.7958" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="Br" description="" gt_type="Br" miller_equiv="Br" charge="0" valence="1" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="Br" description="Penta compound" gt_type="Br5" miller_equiv="Br" charge="0" valence="5" polarizability="3.28999" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Keto" gt_type="C2O" miller_equiv="CTR" charge="0" valence="4" polarizability="1.456" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Nitrile" gt_type="CDN" miller_equiv="CDI" charge="0" valence="4" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Alkyne" gt_type="CDI" miller_equiv="CDI" charge="0" valence="4" polarizability="1.50062" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Aromatic" gt_type="CRA" miller_equiv="CTR" charge="0" valence="4" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Condensed Aromatic" gt_type="CRB" miller_equiv="CBR" charge="0" valence="4" polarizability="1.76736" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Alkane Aliphatic" gt_type="CTA" miller_equiv="CTE" charge="0" valence="4" polarizability="1.26585" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Alkane Polar" gt_type="CTP" miller_equiv="CTE" charge="0" valence="4" polarizability="1.49715" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Alkene" gt_type="CTR" miller_equiv="CTR" charge="0" valence="4" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="Cl" description="" gt_type="Cl" miller_equiv="Cl" charge="0" valence="1" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="F" description="" gt_type="F" miller_equiv="F" charge="0" valence="1" polarizability="0.348558" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="Aliphatic" gt_type="HA" miller_equiv="H" charge="0" valence="1" polarizability="0.293428" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="Polar" gt_type="HP" miller_equiv="H" charge="0" valence="1" polarizability="0.355658" sigma_pol="0" vdwparams="1e-5 1e-10"/>
+    <atype elem="I" description="" gt_type="I" miller_equiv="I" charge="0" valence="1" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Nitrile" gt_type="NDI" miller_equiv="NDI" charge="0" valence="3" polarizability="0.90044" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Aromatic" gt_type="NPI2" miller_equiv="NPI2" charge="0" valence="3" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Aromatic +" gt_type="NPQ" miller_equiv="NPI2" charge="0" valence="4" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Amine" gt_type="NTE" miller_equiv="NTE" charge="0" valence="3" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Amine +" gt_type="NTP" miller_equiv="NTE" charge="0" valence="4" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Nitro" gt_type="NTN" miller_equiv="NTR2" charge="0" valence="5" polarizability="0.761262" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Imine" gt_type="NTR2" miller_equiv="NTR2" charge="0" valence="3" polarizability="0.761262" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="Amide" gt_type="NTR3" miller_equiv="NTR2" charge="0" valence="3" polarizability="0.761262" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Doubly bonded" gt_type="OTR4" miller_equiv="OTR4" charge="0" valence="2" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Charged -" gt_type="OTM" miller_equiv="OTR4" charge="0" valence="1.5" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Hydroxide -" gt_type="OH1" miller_equiv="OTE" charge="0" valence="1" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
+    <atype elem="O" description="Water" gt_type="OH2" miller_equiv="OTE" charge="0" valence="2" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
+    <atype elem="O" description="Hydronium +" gt_type="OH3" miller_equiv="OTE" charge="0" valence="3" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
+    <atype elem="O" description="Alcohol" gt_type="OTH" miller_equiv="OTE" charge="0" valence="2" polarizability="0.419881" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Ester" gt_type="OTE" miller_equiv="OTE" charge="0" valence="2" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Aromatic" gt_type="OPI2" miller_equiv="OPI2" charge="0" valence="2" polarizability="0.505675" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="" gt_type="PTE" miller_equiv="PTE" charge="0" valence="3" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="" gt_type="P5" miller_equiv="PTE" charge="0" valence="5" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="Charged +" gt_type="P4" miller_equiv="PTE" charge="0" valence="5" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="Tetrahedral" gt_type="STE" miller_equiv="STE" charge="0" valence="2" polarizability="2.98596" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="Aromatic" gt_type="SPI2" miller_equiv="SPI2" charge="0" valence="2" polarizability="2.7958" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="Tetravalent" gt_type="STR4" miller_equiv="STR4" charge="0" valence="4" polarizability="3.43911" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="Hexavalent" gt_type="STR6" miller_equiv="STR4" charge="0" valence="6" polarizability="3.43911" sigma_pol="0" vdwparams="1 1"/>
   </atomtypes>
   <bonding_rules>
     <bonding_rule name="Bra" gt_type="Br" geometry="tetrahedral" numbonds="1" neighbors=""/>
     <bonding_rule name="Brb" gt_type="Br5" geometry="tetrahedral" numbonds="5" neighbors=""/>
     <bonding_rule name="CNa" gt_type="CDN" geometry="linear" numbonds="2" neighbors="N1"/>
     <bonding_rule name="C2w" gt_type="C2O" geometry="linear" numbonds="2" neighbors="O2 2"/>
-    <bonding_rule name="C2z" gt_type="CTR" geometry="linear" numbonds="2" neighbors="2 2"/>
+    <bonding_rule name="C2z" gt_type="CTR" geometry="linear" numbonds="2" neighbors=""/>
     <bonding_rule name="C1c" gt_type="CDI" geometry="linear" numbonds="2" neighbors=""/>
     <bonding_rule name="C2o" gt_type="C2O" geometry="planar" numbonds="3" neighbors="O2"/>
     <bonding_rule name="C2c" gt_type="CTR" geometry="planar" numbonds="3" neighbors=""/>
@@ -57,8 +58,8 @@
     <bonding_rule name="C2k" gt_type="CTR" geometry="planar" numbonds="3" neighbors="C C I"/>
     <bonding_rule name="C3a" gt_type="CTP" geometry="tetrahedral" numbonds="4" neighbors="O"/>
     <bonding_rule name="C3b" gt_type="CTA" geometry="tetrahedral" numbonds="4" neighbors=""/>
-    <bonding_rule name="C2e" gt_type="CRB" geometry="ring-planar" numbonds="3" neighbors="C2l C2l C2"/>
-    <bonding_rule name="C2l" gt_type="CRA" geometry="ring-planar" numbonds="3" neighbors=""/>
+    <bonding_rule name="C2e" gt_type="CRB" geometry="ring-planar" numbonds="3" neighbors="C2e C2e C2e"/>
+    <bonding_rule name="C2el" gt_type="CRA" geometry="ring-planar" numbonds="3" neighbors=""/>
     <bonding_rule name="Cla" gt_type="Cl" geometry="tetrahedral" numbonds="1" neighbors=""/>
     <bonding_rule name="Clb" gt_type="Cl" geometry="tetrahedral" numbonds="3" neighbors=""/>
     <bonding_rule name="Clc" gt_type="Cl" geometry="tetrahedral" numbonds="4" neighbors=""/>
@@ -76,18 +77,18 @@
     <bonding_rule name="N2Pe" gt_type="NPI2" geometry="ring-planar" numbonds="3" neighbors="C2 C3"/>
     <bonding_rule name="N2Pf" gt_type="NPI2" geometry="ring-planar" numbonds="3" neighbors="C2s"/>
     <bonding_rule name="N2a" gt_type="NTN" geometry="planar" numbonds="3" neighbors="O2 O2"/>
-    <bonding_rule name="N2b" gt_type="NTR2" geometry="planar" numbonds="3" neighbors="2 2"/>
-    <bonding_rule name="N2c" gt_type="NTR2" geometry="planar" numbonds="3" neighbors="2 2"/>
+    <bonding_rule name="N2b" gt_type="NTR3" geometry="planar" numbonds="3" neighbors="2 2"/>
+    <bonding_rule name="N2c" gt_type="NTR3" geometry="planar" numbonds="3" neighbors=""/>
+    <bonding_rule name="N2d" gt_type="NTR2" geometry="tetrahedral" numbonds="2" neighbors=""/>
     <bonding_rule name="N3a" gt_type="NTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
     <bonding_rule name="N3b" gt_type="NTP" geometry="tetrahedral" numbonds="4" neighbors=""/>
     <bonding_rule name="O2" gt_type="OTR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule name="OM" gt_type="OTM" geometry="tetrahedral" numbonds="1" neighbors=""/>
-    <bonding_rule name="OH3" gt_type="OH3" geometry="tetrahedral" numbonds="3" neighbors="H H"/>
-    <bonding_rule name="OH1" gt_type="OH1" geometry="tetrahedral" numbonds="1" neighbors="H H"/>
+    <bonding_rule name="O2M" gt_type="OTM" geometry="tetrahedral" numbonds="1" neighbors=""/>
+    <bonding_rule name="OH3" gt_type="OH3" geometry="tetrahedral" numbonds="3" neighbors="H H H"/>
     <bonding_rule name="OH2" gt_type="OH2" geometry="tetrahedral" numbonds="2" neighbors="H H"/>
+    <bonding_rule name="OH1" gt_type="OH1" geometry="tetrahedral" numbonds="1" neighbors="H"/>
     <bonding_rule name="OTH" gt_type="OTH" geometry="tetrahedral" numbonds="2" neighbors="H"/>
     <bonding_rule name="O3a" gt_type="OTE" geometry="tetrahedral" numbonds="2" neighbors=""/>
-    <bonding_rule name="O3b" gt_type="OTE" geometry="tetrahedral" numbonds="3" neighbors=""/>
     <!-- bonding_rule name="OPI2" gt_type="OPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/-->
     <bonding_rule name="P1" gt_type="PTE" geometry="linear" numbonds="1" neighbors=""/>
     <bonding_rule name="P2a" gt_type="PTE" geometry="planar" numbonds="2" neighbors=""/>
@@ -98,7 +99,6 @@
     <bonding_rule name="SPI2a" gt_type="SPI2" geometry="tetrahedral" numbonds="1" neighbors=""/>
     <bonding_rule name="SPI2b" gt_type="SPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2"/>
     <bonding_rule name="SPI2c" gt_type="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2"/>
-    <bonding_rule name="S2a" gt_type="STR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
     <bonding_rule name="S2a" gt_type="STR4" geometry="tetrahedral" numbonds="1" neighbors=""/>
     <bonding_rule name="S3a" gt_type="STE" geometry="tetrahedral" numbonds="2" neighbors=""/>
     <bonding_rule name="S3b" gt_type="STR4" geometry="tetrahedral" numbonds="3" neighbors=""/>
@@ -114,9 +114,10 @@
     <gt_bond atom1="Br" atom2="CTA" length="197.795" sigma="2.2691" bondorder="1" params="400  20"/>
     <gt_bond atom1="Br" atom2="CTR" length="191.044" sigma="1.06031" bondorder="1" params="400  20"/>
     <gt_bond atom1="Br" atom2="HP" length="142.5" sigma="0" bondorder="1" params="400  20"/>
-    <gt_bond atom1="Br" atom2="NTR2" length="215.695" sigma="0" bondorder="1" params="400  20"/>
+    <gt_bond atom1="Br" atom2="NTR3" length="215.695" sigma="0" bondorder="1" params="400  20"/>
     <gt_bond atom1="C2O" atom2="C2O" length="155.848" sigma="1.54579" bondorder="1" params="400  20"/>
     <gt_bond atom1="C2O" atom2="CDN" length="148.848" sigma="1.54579" bondorder="1" params="400  20"/>
+    <gt_bond atom1="C2O" atom2="CRA" length="147.535" sigma="1.6896" bondorder="1" params="400  20"/>
     <gt_bond atom1="C2O" atom2="CTA" length="152.124" sigma="1.70371" bondorder="1" params="400  20"/>
     <gt_bond atom1="C2O" atom2="CTP" length="152.519" sigma="0.702181" bondorder="1" params="400  20"/>
     <gt_bond atom1="C2O" atom2="CTR" length="147.535" sigma="1.6896" bondorder="1" params="400  20"/>
@@ -168,10 +169,11 @@
     <gt_bond atom1="CRA" atom2="Cl" length="178.721" sigma="2.98519" bondorder="1" params="400  20"/>
     <gt_bond atom1="CRA" atom2="F" length="133.704" sigma="1.8194" bondorder="1" params="400  20"/>
     <gt_bond atom1="CRA" atom2="HA" length="110.409" sigma="0.553201" bondorder="1" params="400  20"/>
-    <gt_bond atom1="CRA" atom2="NPI2" length="137.942" sigma="2.17664" bondorder="1.5" params="400  20"/>
+    <gt_bond atom1="CRA" atom2="NPI2" length="137.942" sigma="2.17664" bondorder="1" params="400  20"/>
     <gt_bond atom1="CRA" atom2="NPQ" length="137.942" sigma="2.17664" bondorder="1.5" params="400  20"/>
     <gt_bond atom1="CRA" atom2="NTE" length="137.533" sigma="0.941222" bondorder="1" params="400  20"/>
     <gt_bond atom1="CRA" atom2="NTN" length="148.942" sigma="2.17664" bondorder="1" params="400  20"/>
+    <gt_bond atom1="CRA" atom2="NTR2" length="135.542" sigma="2.17664" bondorder="1.5" params="400  20"/>
     <gt_bond atom1="CRA" atom2="OTE" length="134.928" sigma="1.83303" bondorder="1" params="400  20"/>
     <gt_bond atom1="CRA" atom2="OTH" length="134.928" sigma="1.83303" bondorder="1" params="400  20"/>
     <gt_bond atom1="CRA" atom2="OTR4" length="120.86" sigma="1.65783" bondorder="2" params="400  20"/>
@@ -191,7 +193,7 @@
     <gt_bond atom1="CTA" atom2="NTE" length="147.216" sigma="2.32636" bondorder="1" params="400  20"/>
     <gt_bond atom1="CTA" atom2="NTN" length="150.642" sigma="2.17664" bondorder="1" params="400  20"/>
     <gt_bond atom1="CTA" atom2="NTP" length="147.216" sigma="2.32636" bondorder="1" params="400  20"/>
-    <gt_bond atom1="CTA" atom2="NTR2" length="145.56" sigma="1.23535" bondorder="1" params="400  20"/>
+    <gt_bond atom1="CTA" atom2="NTR3" length="145.56" sigma="1.23535" bondorder="1" params="400  20"/>
     <gt_bond atom1="CTA" atom2="PTE" length="183.087" sigma="2.68146" bondorder="1" params="400 20"/>
     <gt_bond atom1="CTA" atom2="P4" length="180.087" sigma="2.68146" bondorder="1" params="400 20"/>
     <gt_bond atom1="CTA" atom2="P5" length="180.087" sigma="2.68146" bondorder="1" params="400 20"/>
@@ -211,7 +213,9 @@
     <gt_bond atom1="CTR" atom2="NPI2" length="137.664" sigma="3.99366" bondorder="1" params="400  20"/>
     <gt_bond atom1="CTR" atom2="NTE" length="139.4" sigma="0.902381" bondorder="1" params="400  20"/>
     <gt_bond atom1="CTR" atom2="NTN" length="146.942" sigma="2.17664" bondorder="1" params="400  20"/>
-    <gt_bond atom1="CTR" atom2="NTR2" length="132.633" sigma="2.83305" bondorder="1" params="400  20"/>
+    <gt_bond atom1="CTR" atom2="NTR3" length="135.433" sigma="2.83305" bondorder="1" params="400  20"/>
+    <gt_bond atom1="CTR" atom2="NTR2" length="137.033" sigma="2.83305" bondorder="1" params="400  20"/>
+    <gt_bond atom1="CTR" atom2="NTR2" length="131.033" sigma="2.83305" bondorder="2" params="400  20"/>
     <gt_bond atom1="CTR" atom2="OTE" length="136.838" sigma="1.38131" bondorder="1" params="400  20"/>
     <gt_bond atom1="CTR" atom2="OTH" length="136.656" sigma="0.83562" bondorder="1" params="400  20"/>
     <gt_bond atom1="CTR" atom2="PTE" length="183.352" sigma="0" bondorder="1" params="400 20"/>
@@ -223,7 +227,7 @@
     <gt_bond atom1="Cl" atom2="NPI2" length="189.9" sigma="0" bondorder="1" params="400 20"/>
     <gt_bond atom1="Cl" atom2="NTE" length="178.165" sigma="0.0709571" bondorder="1" params="400 20"/>
     <gt_bond atom1="Cl" atom2="NTN" length="189.806" sigma="7.89096" bondorder="1" params="400  20"/>
-    <gt_bond atom1="Cl" atom2="NTR2" length="191.806" sigma="7.89096" bondorder="1" params="400  20"/>
+    <gt_bond atom1="Cl" atom2="NTR3" length="191.806" sigma="7.89096" bondorder="1" params="400  20"/>
     <gt_bond atom1="Cl" atom2="OTH" length="169.815" sigma="1.08495" bondorder="1" params="400  20"/>
     <gt_bond atom1="Cl" atom2="OTR4" length="146.457" sigma="4.51647" bondorder="1" params="400  20"/>
     <gt_bond atom1="Cl" atom2="PTE" length="207.925" sigma="2.8309" bondorder="1" params="400 20"/>
@@ -237,7 +241,7 @@
     <gt_bond atom1="F" atom2="NPI2" length="148.4" sigma="0" bondorder="1" params="400  20"/>
     <gt_bond atom1="F" atom2="NTE" length="140.335" sigma="2.46596" bondorder="1" params="400  20"/>
     <gt_bond atom1="F" atom2="NTN" length="148.335" sigma="2.46596" bondorder="1" params="400  20"/>
-    <gt_bond atom1="F" atom2="NTR2" length="142.423" sigma="4.97129" bondorder="1" params="400  20"/>
+    <gt_bond atom1="F" atom2="NTR3" length="142.423" sigma="4.97129" bondorder="1" params="400  20"/>
     <gt_bond atom1="F" atom2="OTE" length="146.246" sigma="5.97734" bondorder="1" params="400  20"/>
     <gt_bond atom1="F" atom2="OTH" length="143" sigma="0" bondorder="1" params="400 20"/>
     <gt_bond atom1="F" atom2="OTR4" length="135.1" sigma="0" bondorder="1" params="400  20"/>
@@ -252,7 +256,7 @@
     <gt_bond atom1="HP" atom2="NPQ" length="104.527" sigma="0.588874" bondorder="1" params="400  20"/>
     <gt_bond atom1="HP" atom2="NTE" length="101.187" sigma="0.396107" bondorder="1" params="400  20"/>
     <gt_bond atom1="HP" atom2="NTP" length="101.187" sigma="0.396107" bondorder="1" params="400  20"/>
-    <gt_bond atom1="HP" atom2="NTR2" length="101.825" sigma="1.44043" bondorder="1" params="400  20"/>
+    <gt_bond atom1="HP" atom2="NTR3" length="101.825" sigma="1.44043" bondorder="1" params="400  20"/>
     <gt_bond atom1="HP" atom2="OTE" length="97.9907" sigma="0.0115452" bondorder="1" params="400 20"/>
     <gt_bond atom1="HP" atom2="OTH" length="96.5127" sigma="0.710561" bondorder="1" params="400  20"/>
     <gt_bond atom1="HP" atom2="OTR4" length="97" sigma="0.5" bondorder="1" params="400 20"/>
@@ -264,12 +268,13 @@
     <gt_bond atom1="HP" atom2="STE" length="134.5" sigma="0.0889201" bondorder="1" params="400  20"/>
     <gt_bond atom1="HP" atom2="STR4" length="134.9" sigma="0" bondorder="1" params="400 20"/>
     <gt_bond atom1="NDI" atom2="NDI" length="111.93" sigma="1.39932" bondorder="1" params="400  20"/>
-    <gt_bond atom1="NDI" atom2="NTR2" length="123.787" sigma="1.08745" bondorder="1" params="400  20"/>
+    <gt_bond atom1="NDI" atom2="NTR3" length="123.787" sigma="1.08745" bondorder="1" params="400  20"/>
     <gt_bond atom1="NDI" atom2="OTR4" length="115.36" sigma="2.23767" bondorder="1" params="400  20"/>
     <gt_bond atom1="NDI" atom2="STE" length="143.561" sigma="1.1608" bondorder="1" params="400 20"/>
     <gt_bond atom1="NDI" atom2="STR4" length="149.9" sigma="0" bondorder="1" params="400 20"/>
     <gt_bond atom1="NPI2" atom2="NPI2" length="135.6" sigma="0" bondorder="1" params="400 20"/>
     <gt_bond atom1="NPI2" atom2="NTR2" length="134.222" sigma="1.19532" bondorder="1" params="400 20"/>
+    <gt_bond atom1="NPI2" atom2="NTR3" length="134.222" sigma="1.19532" bondorder="1" params="400 20"/>
     <gt_bond atom1="NPI2" atom2="OTE" length="141.468" sigma="0.355152" bondorder="1" params="400  20"/>
     <gt_bond atom1="NPI2" atom2="OTH" length="141.504" sigma="0" bondorder="1" params="400  20"/>
     <gt_bond atom1="NPI2" atom2="OTR4" length="121.771" sigma="1.67148" bondorder="1" params="400  20"/>
@@ -281,15 +286,17 @@
     <gt_bond atom1="NTN" atom2="OTE" length="141.481" sigma="1.02424" bondorder="2" params="400  20"/>
     <gt_bond atom1="NTN" atom2="OTH" length="141.481" sigma="1.02424" bondorder="2" params="400  20"/>
     <gt_bond atom1="NTN" atom2="OTR4" length="122.481" sigma="1.02424" bondorder="2" params="400  20"/>
-    <gt_bond atom1="NTR2" atom2="NTR2" length="128.192" sigma="5.29881" bondorder="1" params="400  20"/>
-    <gt_bond atom1="NTR2" atom2="OTH" length="141.752" sigma="1.53903" bondorder="1" params="400  20"/>
-    <gt_bond atom1="NTR2" atom2="OTR4" length="116.923" sigma="2.83939" bondorder="1" params="400  20"/>
-    <gt_bond atom1="NTR2" atom2="STE" length="162.678" sigma="5.72701" bondorder="1" params="400 20"/>
-    <gt_bond atom1="NTR2" atom2="STR4" length="154.407" sigma="0.052637" bondorder="1" params="400 20"/>
+    <gt_bond atom1="NTR2" atom2="NTR3" length="128.192" sigma="5.29881" bondorder="1" params="400  20"/>
+    <gt_bond atom1="NTR3" atom2="NTR3" length="128.192" sigma="5.29881" bondorder="1" params="400  20"/>
+    <gt_bond atom1="NTR3" atom2="OTH" length="141.752" sigma="1.53903" bondorder="1" params="400  20"/>
+    <gt_bond atom1="NTR3" atom2="OTR4" length="116.923" sigma="2.83939" bondorder="1" params="400  20"/>
+    <gt_bond atom1="NTR3" atom2="STE" length="162.678" sigma="5.72701" bondorder="1" params="400 20"/>
+    <gt_bond atom1="NTR3" atom2="STR4" length="154.407" sigma="0.052637" bondorder="1" params="400 20"/>
     <gt_bond atom1="OTE" atom2="OTE" length="138.041" sigma="10.8368" bondorder="1" params="400  20"/>
     <gt_bond atom1="OTE" atom2="OTH" length="146.094" sigma="0.585754" bondorder="1" params="400 20"/>
     <gt_bond atom1="OTE" atom2="OTR4" length="125.486" sigma="0" bondorder="1" params="400  20"/>
     <gt_bond atom1="OTE" atom2="PTE" length="164.163" sigma="2.29378" bondorder="1" params="400  20"/>
+    <gt_bond atom1="OTE" atom2="P4" length="166.163" sigma="2.29378" bondorder="1" params="400  20"/>
     <gt_bond atom1="OTE" atom2="P5" length="166.163" sigma="2.29378" bondorder="1" params="400  20"/>
     <gt_bond atom1="OTE" atom2="STE" length="164.019" sigma="4.00053" bondorder="1" params="400  20"/>
     <gt_bond atom1="OTE" atom2="STR4" length="164.019" sigma="4.00053" bondorder="1" params="400  20"/>
@@ -302,6 +309,7 @@
     <gt_bond atom1="OTM" atom2="P5" length="148.068" sigma="1.27805" bondorder="1.5" params="400 20"/>
     <gt_bond atom1="OTM" atom2="STR6" length="143.068" sigma="1.27805" bondorder="1.5" params="400 20"/>
     <gt_bond atom1="OTR4" atom2="OTR4" length="120.6" sigma="0" bondorder="2" params="400  20"/>
+    <gt_bond atom1="OTR4" atom2="P4" length="149.991" sigma="4.71252" bondorder="2" params="400  20"/>
     <gt_bond atom1="OTR4" atom2="P5" length="149.991" sigma="4.71252" bondorder="2" params="400  20"/>
     <gt_bond atom1="OTR4" atom2="SPI2" length="150.226" sigma="2.37045" bondorder="2" params="400  20"/>
     <gt_bond atom1="OTR4" atom2="STE" length="145.226" sigma="2.37045" bondorder="2" params="400  20"/>
@@ -325,8 +333,8 @@
     <gt_angle atom1="Br" atom2="CTR" atom3="CTA" angle="113.762" sigma="0" params="113.762  400"/>
     <gt_angle atom1="Br" atom2="CTR" atom3="CTR" angle="119.971" sigma="1.96357" params="400"/>
     <gt_angle atom1="Br" atom2="CTR" atom3="HA" angle="113.249" sigma="0.83532" params="113.249  400"/>
-    <gt_angle atom1="Br" atom2="CTR" atom3="NTR2" angle="116.802" sigma="0" params="116.802  400"/>
-    <gt_angle atom1="Br" atom2="NTR2" atom3="OTR4" angle="115.153" sigma="0" params="400"/>
+    <gt_angle atom1="Br" atom2="CTR" atom3="NTR3" angle="116.802" sigma="0" params="116.802  400"/>
+    <gt_angle atom1="Br" atom2="NTR3" atom3="OTR4" angle="115.153" sigma="0" params="400"/>
     <gt_angle atom1="CRB" atom2="CRB" atom3="CRB" angle="118.135" sigma="0" params="118.135  400"/>
     <gt_angle atom1="CRB" atom2="CRB" atom3="C2O" angle="122.441" sigma="0" params="122.441  400"/>
     <gt_angle atom1="CRB" atom2="CRB" atom3="CTR" angle="118.815" sigma="3.14413" params="400"/>
@@ -342,7 +350,7 @@
     <gt_angle atom1="CRB" atom2="CTR" atom3="HA" angle="119.952" sigma="4.56098" params="400"/>
     <gt_angle atom1="CRB" atom2="CTR" atom3="NPI2" angle="107.156" sigma="0" params="400"/>
     <gt_angle atom1="CRB" atom2="CTR" atom3="NTE" angle="120.096" sigma="0" params="120.096  400"/>
-    <gt_angle atom1="CRB" atom2="CTR" atom3="NTR2" angle="122.983" sigma="0.892085" params="400"/>
+    <gt_angle atom1="CRB" atom2="CTR" atom3="NTR3" angle="122.983" sigma="0.892085" params="400"/>
     <gt_angle atom1="CRB" atom2="CTR" atom3="OTH" angle="121.936" sigma="1.73909" params="400"/>
     <gt_angle atom1="CDI" atom2="CDI" atom3="CDI" angle="179.901" sigma="0.0988594" params="400"/>
     <gt_angle atom1="CDI" atom2="CDI" atom3="C2O" angle="177.104" sigma="0.402314" params="177.104  400"/>
@@ -376,13 +384,13 @@
     <gt_angle atom1="CDI" atom2="CTR" atom3="CTA" angle="120.6" sigma="3.57407" params="400"/>
     <gt_angle atom1="CDI" atom2="CTR" atom3="CTR" angle="122.251" sigma="2.1693" params="400"/>
     <gt_angle atom1="CDI" atom2="CTR" atom3="HA" angle="117.644" sigma="2.30195" params="400"/>
-    <gt_angle atom1="CDI" atom2="CTR" atom3="NTR2" angle="116.807" sigma="0" params="116.807  400"/>
+    <gt_angle atom1="CDI" atom2="CTR" atom3="NTR3" angle="116.807" sigma="0" params="116.807  400"/>
     <gt_angle atom1="CDI" atom2="CTR" atom3="STE" angle="121.203" sigma="0" params="121.203  400"/>
     <gt_angle atom1="CDI" atom2="NDI" atom3="CTA" angle="179.251" sigma="0" params="179.251  400"/>
     <gt_angle atom1="CDI" atom2="NTE" atom3="CTA" angle="118.178" sigma="1.28991" params="118.178  400"/>
     <gt_angle atom1="CDI" atom2="NTE" atom3="HP" angle="115.218" sigma="0.368681" params="115.218  400"/>
-    <gt_angle atom1="CDI" atom2="NTR2" atom3="CTA" angle="140.446" sigma="0" params="400"/>
-    <gt_angle atom1="CDI" atom2="NTR2" atom3="HP" angle="128.859" sigma="3.47613" params="128.859  400"/>
+    <gt_angle atom1="CDI" atom2="NTR3" atom3="CTA" angle="140.446" sigma="0" params="400"/>
+    <gt_angle atom1="CDI" atom2="NTR3" atom3="HP" angle="128.859" sigma="3.47613" params="128.859  400"/>
     <gt_angle atom1="CDI" atom2="OTE" atom3="CTP" angle="115.562" sigma="0.121803" params="115.562  400"/>
     <gt_angle atom1="CDI" atom2="OTH" atom3="HP" angle="110.436" sigma="0" params="110.436  400"/>
     <gt_angle atom1="CDI" atom2="STE" atom3="CDI" angle="99.5628" sigma="0" params="99.5628  400"/>
@@ -410,7 +418,7 @@
     <gt_angle atom1="C2O" atom2="CTR" atom3="CTR" angle="119.498" sigma="7.1801" params="400"/>
     <gt_angle atom1="C2O" atom2="CTR" atom3="HA" angle="117.901" sigma="3.87673" params="400"/>
     <gt_angle atom1="C2O" atom2="CTR" atom3="NPI2" angle="131.781" sigma="0" params="131.781  400"/>
-    <gt_angle atom1="C2O" atom2="CTR" atom3="NTR2" angle="123.007" sigma="7.64545" params="123.007  400"/>
+    <gt_angle atom1="C2O" atom2="CTR" atom3="NTR3" angle="123.007" sigma="7.64545" params="123.007  400"/>
     <gt_angle atom1="C2O" atom2="CTR" atom3="OTE" angle="119.834" sigma="0" params="400"/>
     <gt_angle atom1="C2O" atom2="NPI2" atom3="C2O" angle="126.115" sigma="2.78755" params="126.115  400"/>
     <gt_angle atom1="C2O" atom2="NPI2" atom3="CTA" angle="121.829" sigma="4.81954" params="400"/>
@@ -418,7 +426,7 @@
     <gt_angle atom1="C2O" atom2="NPI2" atom3="HP" angle="117.912" sigma="3.32033" params="400"/>
     <gt_angle atom1="C2O" atom2="NTE" atom3="CTA" angle="117.737" sigma="4.77572" params="400"/>
     <gt_angle atom1="C2O" atom2="NTE" atom3="HP" angle="119.084" sigma="1.11603" params="400"/>
-    <gt_angle atom1="C2O" atom2="NTR2" atom3="CTR" angle="118.297" sigma="2.31314" params="118.297  400"/>
+    <gt_angle atom1="C2O" atom2="NTR3" atom3="CTR" angle="118.297" sigma="2.31314" params="118.297  400"/>
     <gt_angle atom1="C2O" atom2="OTE" atom3="C2O" angle="114.841" sigma="6.24159" params="400"/>
     <gt_angle atom1="C2O" atom2="OTE" atom3="CTP" angle="115.817" sigma="4.13563" params="400"/>
     <gt_angle atom1="C2O" atom2="OTE" atom3="CTR" angle="110.766" sigma="9.8818" params="400"/>
@@ -431,7 +439,7 @@
     <gt_angle atom1="CTA" atom2="C2O" atom3="HA" angle="114.76" sigma="0.838539" params="400"/>
     <gt_angle atom1="CTA" atom2="C2O" atom3="NPI2" angle="116.806" sigma="1.36672" params="400"/>
     <gt_angle atom1="CTA" atom2="C2O" atom3="NTE" angle="109.975" sigma="3.94475" params="400"/>
-    <gt_angle atom1="CTA" atom2="C2O" atom3="NTR2" angle="112.052" sigma="0" params="112.052  400"/>
+    <gt_angle atom1="CTA" atom2="C2O" atom3="NTR3" angle="112.052" sigma="0" params="112.052  400"/>
     <gt_angle atom1="CTA" atom2="C2O" atom3="OTE" angle="110.602" sigma="4.49339" params="400"/>
     <gt_angle atom1="CTA" atom2="C2O" atom3="OTH" angle="113.689" sigma="1.9027" params="400"/>
     <gt_angle atom1="CTA" atom2="C2O" atom3="OTR4" angle="123.94" sigma="4.64605" params="400"/>
@@ -456,14 +464,14 @@
     <gt_angle atom1="CTA" atom2="CTR" atom3="F" angle="113.065" sigma="1.08645" params="113.065  400"/>
     <gt_angle atom1="CTA" atom2="CTR" atom3="HA" angle="119.476" sigma="6.80413" params="400"/>
     <gt_angle atom1="CTA" atom2="CTR" atom3="NPI2" angle="125.873" sigma="2.35386" params="125.873  400"/>
-    <gt_angle atom1="CTA" atom2="CTR" atom3="NTR2" angle="119.376" sigma="3.74184" params="400"/>
+    <gt_angle atom1="CTA" atom2="CTR" atom3="NTR3" angle="119.376" sigma="3.74184" params="400"/>
     <gt_angle atom1="CTA" atom2="CTR" atom3="OTE" angle="112.766" sigma="8.96257" params="400"/>
     <gt_angle atom1="CTA" atom2="CTR" atom3="STE" angle="121.42" sigma="0" params="400"/>
     <gt_angle atom1="CTA" atom2="CTR" atom3="STR4" angle="126.496" sigma="0" params="126.496  400"/>
     <gt_angle atom1="CTA" atom2="NPI2" atom3="CTA" angle="117.984" sigma="1.85226" params="400"/>
     <gt_angle atom1="CTA" atom2="NPI2" atom3="CTR" angle="125.081" sigma="3.34068" params="125.081  400"/>
     <gt_angle atom1="CTA" atom2="NPI2" atom3="HP" angle="117.961" sigma="1.03629" params="400"/>
-    <gt_angle atom1="CTA" atom2="NPI2" atom3="NTR2" angle="117.646" sigma="1.75024" params="117.646  400"/>
+    <gt_angle atom1="CTA" atom2="NPI2" atom3="NTR3" angle="117.646" sigma="1.75024" params="117.646  400"/>
     <gt_angle atom1="CTA" atom2="NPI2" atom3="OTR4" angle="117.356" sigma="0.66713" params="400"/>
     <gt_angle atom1="CTA" atom2="NTE" atom3="CTA" angle="110.702" sigma="7.57732" params="400"/>
     <gt_angle atom1="CTA" atom2="NTE" atom3="CTR" angle="119.635" sigma="2.50179" params="400"/>
@@ -472,8 +480,8 @@
     <gt_angle atom1="CTA" atom2="NTE" atom3="NTE" angle="108.7" sigma="0.326551" params="108.7  400"/>
     <gt_angle atom1="CTA" atom2="NTE" atom3="OTH" angle="110.399" sigma="0" params="110.399  400"/>
     <gt_angle atom1="CTA" atom2="NTE" atom3="PTE" angle="120.085" sigma="2.29285" params="400"/>
-    <gt_angle atom1="CTA" atom2="NTR2" atom3="CTR" angle="118.298" sigma="0.29368" params="118.298  400"/>
-    <gt_angle atom1="CTA" atom2="NTR2" atom3="NDI" angle="116.093" sigma="0" params="116.093  400"/>
+    <gt_angle atom1="CTA" atom2="NTR3" atom3="CTR" angle="118.298" sigma="0.29368" params="118.298  400"/>
+    <gt_angle atom1="CTA" atom2="NTR3" atom3="NDI" angle="116.093" sigma="0" params="116.093  400"/>
     <gt_angle atom1="CTA" atom2="PTE" atom3="CTA" angle="105.598" sigma="4.75033" params="105.598  400"/>
     <gt_angle atom1="CTA" atom2="PTE" atom3="F" angle="100.975" sigma="2.74309" params="100.975  400"/>
     <gt_angle atom1="CTA" atom2="PTE" atom3="HP" angle="97.4684" sigma="0.353199" params="97.4684  400"/>
@@ -483,7 +491,7 @@
     <gt_angle atom1="CTA" atom2="STE" atom3="CTA" angle="94.6677" sigma="7.71115" params="400"/>
     <gt_angle atom1="CTA" atom2="STE" atom3="CTR" angle="97.6485" sigma="6.24531" params="97.6485  400"/>
     <gt_angle atom1="CTA" atom2="STE" atom3="HP" angle="97.0612" sigma="0.343317" params="400"/>
-    <gt_angle atom1="CTA" atom2="STE" atom3="NTR2" angle="102.776" sigma="0.0105022" params="102.776  400"/>
+    <gt_angle atom1="CTA" atom2="STE" atom3="NTR3" angle="102.776" sigma="0.0105022" params="102.776  400"/>
     <gt_angle atom1="CTA" atom2="STE" atom3="OTH" angle="100.638" sigma="0" params="400"/>
     <gt_angle atom1="CTA" atom2="STE" atom3="OTR4" angle="108.724" sigma="2.94674" params="400"/>
     <gt_angle atom1="CTA" atom2="STE" atom3="STE" angle="100.843" sigma="2.87617" params="400"/>
@@ -510,7 +518,7 @@
     <gt_angle atom1="CTP" atom2="OTE" atom3="CTP" angle="109.79" sigma="12.1231" params="400"/>
     <gt_angle atom1="CTP" atom2="OTE" atom3="CTR" angle="115.921" sigma="3.25393" params="400"/>
     <gt_angle atom1="CTP" atom2="OTE" atom3="NPI2" angle="114.802" sigma="1.14071" params="400"/>
-    <gt_angle atom1="CTP" atom2="OTE" atom3="NTR2" angle="109.908" sigma="0.615581" params="400"/>
+    <gt_angle atom1="CTP" atom2="OTE" atom3="NTR3" angle="109.908" sigma="0.615581" params="400"/>
     <gt_angle atom1="CTP" atom2="OTE" atom3="OTE" angle="106.03" sigma="0.807418" params="106.03  400"/>
     <gt_angle atom1="CTP" atom2="OTE" atom3="OTH" angle="107.276" sigma="0.714986" params="107.276  400"/>
     <gt_angle atom1="CTP" atom2="OTE" atom3="PTE" angle="119.788" sigma="2.76728" params="400"/>
@@ -541,7 +549,7 @@
     <gt_angle atom1="CTR" atom2="CTR" atom3="HA" angle="120.746" sigma="3.08155" params="400"/>
     <gt_angle atom1="CTR" atom2="CTR" atom3="NPI2" angle="114.267" sigma="7.02218" params="400"/>
     <gt_angle atom1="CTR" atom2="CTR" atom3="NTE" angle="120.686" sigma="0.978374" params="400"/>
-    <gt_angle atom1="CTR" atom2="CTR" atom3="NTR2" angle="120.611" sigma="5.32839" params="400"/>
+    <gt_angle atom1="CTR" atom2="CTR" atom3="NTR3" angle="120.611" sigma="5.32839" params="400"/>
     <gt_angle atom1="CTR" atom2="CTR" atom3="OTE" angle="118.106" sigma="6.1545" params="400"/>
     <gt_angle atom1="CTR" atom2="CTR" atom3="OTH" angle="119.611" sigma="2.36513" params="400"/>
     <gt_angle atom1="CTR" atom2="CTR" atom3="PTE" angle="120.12" sigma="4.94163" params="120.12  400"/>
@@ -549,25 +557,25 @@
     <gt_angle atom1="CTR" atom2="CTR" atom3="STR4" angle="122.274" sigma="1.08567" params="122.274  400"/>
     <gt_angle atom1="CTR" atom2="NPI2" atom3="CTR" angle="109.339" sigma="3.88841" params="400"/>
     <gt_angle atom1="CTR" atom2="NPI2" atom3="HP" angle="123.163" sigma="3.68738" params="400"/>
-    <gt_angle atom1="CTR" atom2="NPI2" atom3="NTR2" angle="111.426" sigma="1.57812" params="111.426  400"/>
+    <gt_angle atom1="CTR" atom2="NPI2" atom3="NTR3" angle="111.426" sigma="1.57812" params="111.426  400"/>
     <gt_angle atom1="CTR" atom2="NPI2" atom3="OTR4" angle="117.705" sigma="0.688089" params="400"/>
     <gt_angle atom1="CTR" atom2="NTE" atom3="HP" angle="115.598" sigma="1.21427" params="400"/>
     <gt_angle atom1="CTR" atom2="NTE" atom3="NTE" angle="114.382" sigma="2.37442" params="400"/>
-    <gt_angle atom1="CTR" atom2="NTR2" atom3="CTR" angle="114.346" sigma="5.48658" params="400"/>
-    <gt_angle atom1="CTR" atom2="NTR2" atom3="HP" angle="111.998" sigma="0.654024" params="111.998  400"/>
-    <gt_angle atom1="CTR" atom2="NTR2" atom3="NPI2" angle="103.765" sigma="1.67487" params="103.765  400"/>
-    <gt_angle atom1="CTR" atom2="NTR2" atom3="NTR2" angle="113.352" sigma="6.16167" params="113.352  400"/>
-    <gt_angle atom1="CTR" atom2="NTR2" atom3="OTE" angle="106.74" sigma="2.10838" params="106.74  400"/>
-    <gt_angle atom1="CTR" atom2="NTR2" atom3="OTH" angle="111.638" sigma="0" params="111.638  400"/>
-    <gt_angle atom1="CTR" atom2="NTR2" atom3="STE" angle="106.783" sigma="0" params="106.783  400"/>
+    <gt_angle atom1="CTR" atom2="NTR3" atom3="CTR" angle="114.346" sigma="5.48658" params="400"/>
+    <gt_angle atom1="CTR" atom2="NTR3" atom3="HP" angle="111.998" sigma="0.654024" params="111.998  400"/>
+    <gt_angle atom1="CTR" atom2="NTR3" atom3="NPI2" angle="103.765" sigma="1.67487" params="103.765  400"/>
+    <gt_angle atom1="CTR" atom2="NTR3" atom3="NTR3" angle="113.352" sigma="6.16167" params="113.352  400"/>
+    <gt_angle atom1="CTR" atom2="NTR3" atom3="OTE" angle="106.74" sigma="2.10838" params="106.74  400"/>
+    <gt_angle atom1="CTR" atom2="NTR3" atom3="OTH" angle="111.638" sigma="0" params="111.638  400"/>
+    <gt_angle atom1="CTR" atom2="NTR3" atom3="STE" angle="106.783" sigma="0" params="106.783  400"/>
     <gt_angle atom1="CTR" atom2="OTE" atom3="CTR" angle="110.304" sigma="5.46029" params="400"/>
-    <gt_angle atom1="CTR" atom2="OTE" atom3="NTR2" angle="108.709" sigma="0.00282258" params="108.709  400"/>
+    <gt_angle atom1="CTR" atom2="OTE" atom3="NTR3" angle="108.709" sigma="0.00282258" params="108.709  400"/>
     <gt_angle atom1="CTR" atom2="OTE" atom3="PTE" angle="110.264" sigma="0" params="110.264  400"/>
     <gt_angle atom1="CTR" atom2="OTH" atom3="HP" angle="109.627" sigma="0.637496" params="400"/>
     <gt_angle atom1="CTR" atom2="PTE" atom3="Cl" angle="100.448" sigma="0" params="100.448  400"/>
     <gt_angle atom1="CTR" atom2="STE" atom3="CTR" angle="94.9348" sigma="4.54872" params="400"/>
     <gt_angle atom1="CTR" atom2="STE" atom3="HP" angle="97.1275" sigma="0.0697709" params="400"/>
-    <gt_angle atom1="CTR" atom2="STE" atom3="NTR2" angle="91.696" sigma="0" params="91.696  400"/>
+    <gt_angle atom1="CTR" atom2="STE" atom3="NTR3" angle="91.696" sigma="0" params="91.696  400"/>
     <gt_angle atom1="Cl" atom2="CDI" atom3="NDI" angle="180" sigma="0" params="400"/>
     <gt_angle atom1="Cl" atom2="C2O" atom3="Cl" angle="111.861" sigma="0" params="400"/>
     <gt_angle atom1="Cl" atom2="C2O" atom3="OTH" angle="109.016" sigma="0" params="109.016  400"/>
@@ -577,12 +585,12 @@
     <gt_angle atom1="Cl" atom2="CTA" atom3="HA" angle="106.276" sigma="1.23507" params="400"/>
     <gt_angle atom1="Cl" atom2="CTR" atom3="Cl" angle="114.72" sigma="1.7736" params="400"/>
     <gt_angle atom1="Cl" atom2="CTR" atom3="HA" angle="113.527" sigma="0.901666" params="400"/>
-    <gt_angle atom1="Cl" atom2="CTR" atom3="NTR2" angle="116.819" sigma="0" params="116.819  400"/>
+    <gt_angle atom1="Cl" atom2="CTR" atom3="NTR3" angle="116.819" sigma="0" params="116.819  400"/>
     <gt_angle atom1="Cl" atom2="CTR" atom3="STR4" angle="124.588" sigma="0.0135303" params="124.588  400"/>
     <gt_angle atom1="Cl" atom2="NPI2" atom3="OTR4" angle="113.668" sigma="0" params="113.668  400"/>
     <gt_angle atom1="Cl" atom2="NTE" atom3="Cl" angle="107.796" sigma="0.0215944" params="107.796  400"/>
-    <gt_angle atom1="Cl" atom2="NTR2" atom3="OTR4" angle="114.14" sigma="0" params="400"/>
-    <gt_angle atom1="Cl" atom2="NTR2" atom3="STR4" angle="117.151" sigma="0" params="117.151  400"/>
+    <gt_angle atom1="Cl" atom2="NTR3" atom3="OTR4" angle="114.14" sigma="0" params="400"/>
+    <gt_angle atom1="Cl" atom2="NTR3" atom3="STR4" angle="117.151" sigma="0" params="117.151  400"/>
     <gt_angle atom1="Cl" atom2="OTH" atom3="HP" angle="104.115" sigma="0.840793" params="400"/>
     <gt_angle atom1="Cl" atom2="PTE" atom3="Cl" angle="102.005" sigma="1.48576" params="102.005  400"/>
     <gt_angle atom1="Cl" atom2="PTE" atom3="HP" angle="95.5787" sigma="1.01521" params="95.5787  400"/>
@@ -601,17 +609,17 @@
     <gt_angle atom1="F" atom2="CTA" atom3="STE" angle="110.871" sigma="1.03986" params="110.871  400"/>
     <gt_angle atom1="F" atom2="CTR" atom3="F" angle="110.107" sigma="1.34512" params="400"/>
     <gt_angle atom1="F" atom2="CTR" atom3="HA" angle="113.415" sigma="1.70936" params="400"/>
-    <gt_angle atom1="F" atom2="CTR" atom3="NTR2" angle="119.271" sigma="4.46638" params="119.271  400"/>
+    <gt_angle atom1="F" atom2="CTR" atom3="NTR3" angle="119.271" sigma="4.46638" params="119.271  400"/>
     <gt_angle atom1="F" atom2="Cl" atom3="OTR4" angle="102.071" sigma="0.00101442" params="400"/>
     <gt_angle atom1="F" atom2="NPI2" atom3="OTR4" angle="111.824" sigma="0.0226501" params="400"/>
     <gt_angle atom1="F" atom2="NTE" atom3="F" angle="101.874" sigma="1.08572" params="400"/>
     <gt_angle atom1="F" atom2="NTE" atom3="HP" angle="100.742" sigma="0.71126" params="100.742  400"/>
     <gt_angle atom1="F" atom2="NTE" atom3="NTE" angle="104.59" sigma="3.30098" params="400"/>
     <gt_angle atom1="F" atom2="NTE" atom3="OTR4" angle="117.44" sigma="0.0304039" params="117.44  400"/>
-    <gt_angle atom1="F" atom2="NTR2" atom3="NDI" angle="105.172" sigma="0" params="105.172  400"/>
-    <gt_angle atom1="F" atom2="NTR2" atom3="NTR2" angle="110.432" sigma="4.70229" params="400"/>
-    <gt_angle atom1="F" atom2="NTR2" atom3="OTR4" angle="110.451" sigma="0" params="400"/>
-    <gt_angle atom1="F" atom2="NTR2" atom3="STR4" angle="112.031" sigma="0" params="112.031  400"/>
+    <gt_angle atom1="F" atom2="NTR3" atom3="NDI" angle="105.172" sigma="0" params="105.172  400"/>
+    <gt_angle atom1="F" atom2="NTR3" atom3="NTR3" angle="110.432" sigma="4.70229" params="400"/>
+    <gt_angle atom1="F" atom2="NTR3" atom3="OTR4" angle="110.451" sigma="0" params="400"/>
+    <gt_angle atom1="F" atom2="NTR3" atom3="STR4" angle="112.031" sigma="0" params="112.031  400"/>
     <gt_angle atom1="F" atom2="OTE" atom3="F" angle="103.956" sigma="0" params="103.956  400"/>
     <gt_angle atom1="F" atom2="OTE" atom3="OTE" angle="109.309" sigma="0" params="400"/>
     <gt_angle atom1="F" atom2="OTH" atom3="HP" angle="98.7058" sigma="0" params="98.7058  400"/>
@@ -633,7 +641,7 @@
     <gt_angle atom1="HA" atom2="CTA" atom3="NDI" angle="110.233" sigma="0.0151599" params="110.233  400"/>
     <gt_angle atom1="HA" atom2="CTA" atom3="NPI2" angle="109.497" sigma="1.84265" params="400"/>
     <gt_angle atom1="HA" atom2="CTA" atom3="NTE" angle="109.729" sigma="2.29861" params="400"/>
-    <gt_angle atom1="HA" atom2="CTA" atom3="NTR2" angle="110.334" sigma="1.6887" params="400"/>
+    <gt_angle atom1="HA" atom2="CTA" atom3="NTR3" angle="110.334" sigma="1.6887" params="400"/>
     <gt_angle atom1="HA" atom2="CTA" atom3="PTE" angle="109.963" sigma="1.40725" params="109.963  400"/>
     <gt_angle atom1="HA" atom2="CTA" atom3="STE" angle="108.455" sigma="2.10251" params="400"/>
     <gt_angle atom1="HA" atom2="CTP" atom3="HA" angle="108.913" sigma="1.28365" params="400"/>
@@ -641,24 +649,24 @@
     <gt_angle atom1="HA" atom2="CTP" atom3="OTH" angle="109.771" sigma="2.00641" params="400"/>
     <gt_angle atom1="HA" atom2="CTR" atom3="HA" angle="117.427" sigma="0.954929" params="400"/>
     <gt_angle atom1="HA" atom2="CTR" atom3="NPI2" angle="121.693" sigma="3.37201" params="400"/>
-    <gt_angle atom1="HA" atom2="CTR" atom3="NTR2" angle="119.055" sigma="3.72372" params="400"/>
+    <gt_angle atom1="HA" atom2="CTR" atom3="NTR3" angle="119.055" sigma="3.72372" params="400"/>
     <gt_angle atom1="HA" atom2="CTR" atom3="OTE" angle="114.392" sigma="2.10209" params="400"/>
     <gt_angle atom1="HA" atom2="CTR" atom3="STE" angle="118.188" sigma="3.19065" params="400"/>
     <gt_angle atom1="HA" atom2="CTR" atom3="STR4" angle="120.761" sigma="1.42231" params="120.761  400"/>
     <gt_angle atom1="HP" atom2="NPI2" atom3="HP" angle="119.55" sigma="1.89434" params="400"/>
     <gt_angle atom1="HP" atom2="NPI2" atom3="NPI2" angle="116.705" sigma="0.0214001" params="116.705  400"/>
-    <gt_angle atom1="HP" atom2="NPI2" atom3="NTR2" angle="121.01" sigma="1.44833" params="121.01  400"/>
+    <gt_angle atom1="HP" atom2="NPI2" atom3="NTR3" angle="121.01" sigma="1.44833" params="121.01  400"/>
     <gt_angle atom1="HP" atom2="NTE" atom3="HP" angle="108.708" sigma="2.60288" params="400"/>
     <gt_angle atom1="HP" atom2="NTE" atom3="NTE" angle="108.887" sigma="3.44684" params="400"/>
     <gt_angle atom1="HP" atom2="NTE" atom3="OTH" angle="104.742" sigma="0.956022" params="104.742  400"/>
     <gt_angle atom1="HP" atom2="NTE" atom3="PTE" angle="114.759" sigma="2.188" params="114.759  400"/>
-    <gt_angle atom1="HP" atom2="NTR2" atom3="NDI" angle="110.534" sigma="0" params="400"/>
-    <gt_angle atom1="HP" atom2="NTR2" atom3="OTR4" angle="108.964" sigma="0" params="108.964  400"/>
-    <gt_angle atom1="HP" atom2="NTR2" atom3="STE" angle="107.685" sigma="0" params="107.685  400"/>
+    <gt_angle atom1="HP" atom2="NTR3" atom3="NDI" angle="110.534" sigma="0" params="400"/>
+    <gt_angle atom1="HP" atom2="NTR3" atom3="OTR4" angle="108.964" sigma="0" params="108.964  400"/>
+    <gt_angle atom1="HP" atom2="NTR3" atom3="STE" angle="107.685" sigma="0" params="107.685  400"/>
     <gt_angle atom1="HP" atom2="OTE" atom3="HP" angle="112.8" sigma="0.0177898" params="112.8  400"/>
     <gt_angle atom1="HP" atom2="OTH" atom3="NPI2" angle="103.055" sigma="0" params="400"/>
     <gt_angle atom1="HP" atom2="OTH" atom3="NTE" angle="105.207" sigma="2.41336" params="105.207  400"/>
-    <gt_angle atom1="HP" atom2="OTH" atom3="NTR2" angle="102.943" sigma="0.105733" params="400"/>
+    <gt_angle atom1="HP" atom2="OTH" atom3="NTR3" angle="102.943" sigma="0.105733" params="400"/>
     <gt_angle atom1="HP" atom2="OTH" atom3="OTE" angle="99.5231" sigma="1.08017" params="99.5231  400"/>
     <gt_angle atom1="HP" atom2="OTH" atom3="OTH" angle="100.736" sigma="0" params="400"/>
     <gt_angle atom1="HP" atom2="OTH" atom3="PTE" angle="112.448" sigma="4.36367" params="112.448  400"/>
@@ -671,39 +679,39 @@
     <gt_angle atom1="NDI" atom2="CDI" atom3="OTE" angle="178.081" sigma="0.0655999" params="178.081  400"/>
     <gt_angle atom1="NDI" atom2="CDI" atom3="STE" angle="175.885" sigma="1.54337" params="175.885  400"/>
     <gt_angle atom1="NDI" atom2="CDI" atom3="STR4" angle="179.897" sigma="0" params="179.897  400"/>
-    <gt_angle atom1="NDI" atom2="NDI" atom3="NTR2" angle="172.377" sigma="0.774584" params="400"/>
+    <gt_angle atom1="NDI" atom2="NDI" atom3="NTR3" angle="172.377" sigma="0.774584" params="400"/>
     <gt_angle atom1="NDI" atom2="NDI" atom3="OTR4" angle="180" sigma="0" params="400"/>
     <gt_angle atom1="NPI2" atom2="C2O" atom3="NPI2" angle="114.225" sigma="5.46516" params="400"/>
-    <gt_angle atom1="NPI2" atom2="C2O" atom3="NTR2" angle="116.151" sigma="0" params="116.151  400"/>
+    <gt_angle atom1="NPI2" atom2="C2O" atom3="NTR3" angle="116.151" sigma="0" params="116.151  400"/>
     <gt_angle atom1="NPI2" atom2="C2O" atom3="OTH" angle="110.715" sigma="0" params="110.715  400"/>
     <gt_angle atom1="NPI2" atom2="C2O" atom3="OTR4" angle="122.395" sigma="2.28323" params="400"/>
     <gt_angle atom1="NPI2" atom2="CTR" atom3="NPI2" angle="111.345" sigma="4.58443" params="111.345  400"/>
-    <gt_angle atom1="NPI2" atom2="CTR" atom3="NTR2" angle="117.723" sigma="6.16543" params="117.723  400"/>
+    <gt_angle atom1="NPI2" atom2="CTR" atom3="NTR3" angle="117.723" sigma="6.16543" params="117.723  400"/>
     <gt_angle atom1="NPI2" atom2="CTR" atom3="STR4" angle="127.339" sigma="0" params="127.339  400"/>
     <gt_angle atom1="NPI2" atom2="NPI2" atom3="OTR4" angle="116.523" sigma="0.0416424" params="116.523  400"/>
-    <gt_angle atom1="NPI2" atom2="NTR2" atom3="NTR2" angle="105.884" sigma="0.265469" params="105.884  400"/>
+    <gt_angle atom1="NPI2" atom2="NTR3" atom3="NTR3" angle="105.884" sigma="0.265469" params="105.884  400"/>
     <gt_angle atom1="NTE" atom2="C2O" atom3="NTE" angle="112.233" sigma="4.72646" params="112.233  400"/>
     <gt_angle atom1="NTE" atom2="C2O" atom3="OTE" angle="108.75" sigma="0" params="108.75  400"/>
     <gt_angle atom1="NTE" atom2="C2O" atom3="OTR4" angle="124.781" sigma="2.27093" params="400"/>
     <gt_angle atom1="NTE" atom2="CTR" atom3="NTE" angle="112.401" sigma="0" params="112.401  400"/>
-    <gt_angle atom1="NTE" atom2="CTR" atom3="NTR2" angle="123.799" sigma="4.05477" params="123.799  400"/>
+    <gt_angle atom1="NTE" atom2="CTR" atom3="NTR3" angle="123.799" sigma="4.05477" params="123.799  400"/>
     <gt_angle atom1="NTE" atom2="PTE" atom3="NTE" angle="104.149" sigma="4.52626" params="400"/>
     <gt_angle atom1="NTE" atom2="PTE" atom3="OTR4" angle="114.096" sigma="4.2099" params="400"/>
-    <gt_angle atom1="NTR2" atom2="CDI" atom3="OTR4" angle="173.244" sigma="0.495317" params="400"/>
-    <gt_angle atom1="NTR2" atom2="CDI" atom3="STR4" angle="174.177" sigma="0" params="174.177  400"/>
-    <gt_angle atom1="NTR2" atom2="C2O" atom3="OTR4" angle="124.93" sigma="0.630934" params="124.93  400"/>
-    <gt_angle atom1="NTR2" atom2="CTR" atom3="NTR2" angle="122.385" sigma="6.19261" params="122.385  400"/>
-    <gt_angle atom1="NTR2" atom2="CTR" atom3="OTE" angle="114.204" sigma="0.482919" params="400"/>
-    <gt_angle atom1="NTR2" atom2="NPI2" atom3="NTR2" angle="114.675" sigma="0" params="114.675  400"/>
-    <gt_angle atom1="NTR2" atom2="NTR2" atom3="NTR2" angle="111.195" sigma="0" params="111.195  400"/>
-    <gt_angle atom1="NTR2" atom2="NTR2" atom3="STE" angle="110.706" sigma="0" params="110.706  400"/>
-    <gt_angle atom1="NTR2" atom2="STE" atom3="NTR2" angle="98.3674" sigma="0" params="98.3674  400"/>
-    <gt_angle atom1="NTR2" atom2="STE" atom3="OTR4" angle="112.913" sigma="3.98367" params="112.913  400"/>
+    <gt_angle atom1="NTR3" atom2="CDI" atom3="OTR4" angle="173.244" sigma="0.495317" params="400"/>
+    <gt_angle atom1="NTR3" atom2="CDI" atom3="STR4" angle="174.177" sigma="0" params="174.177  400"/>
+    <gt_angle atom1="NTR3" atom2="C2O" atom3="OTR4" angle="124.93" sigma="0.630934" params="124.93  400"/>
+    <gt_angle atom1="NTR3" atom2="CTR" atom3="NTR3" angle="122.385" sigma="6.19261" params="122.385  400"/>
+    <gt_angle atom1="NTR3" atom2="CTR" atom3="OTE" angle="114.204" sigma="0.482919" params="400"/>
+    <gt_angle atom1="NTR3" atom2="NPI2" atom3="NTR3" angle="114.675" sigma="0" params="114.675  400"/>
+    <gt_angle atom1="NTR3" atom2="NTR3" atom3="NTR3" angle="111.195" sigma="0" params="111.195  400"/>
+    <gt_angle atom1="NTR3" atom2="NTR3" atom3="STE" angle="110.706" sigma="0" params="110.706  400"/>
+    <gt_angle atom1="NTR3" atom2="STE" atom3="NTR3" angle="98.3674" sigma="0" params="98.3674  400"/>
+    <gt_angle atom1="NTR3" atom2="STE" atom3="OTR4" angle="112.913" sigma="3.98367" params="112.913  400"/>
     <gt_angle atom1="OTE" atom2="C2O" atom3="OTE" angle="109.418" sigma="1.09567" params="400"/>
     <gt_angle atom1="OTE" atom2="C2O" atom3="OTR4" angle="123.712" sigma="2.49954" params="400"/>
     <gt_angle atom1="OTE" atom2="CTP" atom3="OTE" angle="110.912" sigma="2.21324" params="400"/>
     <gt_angle atom1="OTE" atom2="NPI2" atom3="OTR4" angle="115.219" sigma="2.49764" params="400"/>
-    <gt_angle atom1="OTE" atom2="NTR2" atom3="OTR4" angle="111.262" sigma="0.0127346" params="400"/>
+    <gt_angle atom1="OTE" atom2="NTR3" atom3="OTR4" angle="111.262" sigma="0.0127346" params="400"/>
     <gt_angle atom1="OTE" atom2="PTE" atom3="OTE" angle="101.321" sigma="2.56353" params="400"/>
     <gt_angle atom1="OTE" atom2="PTE" atom3="OTH" angle="103.866" sigma="3.33204" params="103.866  400"/>
     <gt_angle atom1="OTE" atom2="PTE" atom3="OTR4" angle="115.811" sigma="1.43655" params="400"/>
@@ -714,7 +722,7 @@
     <gt_angle atom1="OTH" atom2="C2O" atom3="OTR4" angle="122.037" sigma="2.40364" params="400"/>
     <gt_angle atom1="OTH" atom2="Cl" atom3="OTR4" angle="103.636" sigma="1.98325" params="103.636  400"/>
     <gt_angle atom1="OTH" atom2="NPI2" atom3="OTR4" angle="114.773" sigma="0.850818" params="400"/>
-    <gt_angle atom1="OTH" atom2="NTR2" atom3="OTR4" angle="111.099" sigma="0" params="400"/>
+    <gt_angle atom1="OTH" atom2="NTR3" atom3="OTR4" angle="111.099" sigma="0" params="400"/>
     <gt_angle atom1="OTH" atom2="PTE" atom3="OTH" angle="101.895" sigma="4.4123" params="101.895  400"/>
     <gt_angle atom1="OTH" atom2="PTE" atom3="OTR4" angle="108.553" sigma="3.84348" params="108.553  400"/>
     <gt_angle atom1="OTH" atom2="STE" atom3="OTH" angle="101.742" sigma="0" params="400"/>
@@ -724,13 +732,13 @@
     <gt_angle atom1="OTR4" atom2="C2O" atom3="OTR4" angle="127.79" sigma="5.68138" params="127.79  400"/>
     <gt_angle atom1="OTR4" atom2="Cl" atom3="OTR4" angle="112.329" sigma="2.90387" params="400"/>
     <gt_angle atom1="OTR4" atom2="NPI2" atom3="OTR4" angle="125.721" sigma="3.6301" params="400"/>
-    <gt_angle atom1="OTR4" atom2="NTR2" atom3="OTR4" angle="132.84" sigma="1.60927" params="400"/>
+    <gt_angle atom1="OTR4" atom2="NTR3" atom3="OTR4" angle="132.84" sigma="1.60927" params="400"/>
     <gt_angle atom1="OTR4" atom2="OTE" atom3="OTR4" angle="118.245" sigma="0" params="400"/>
     <gt_angle atom1="OTR4" atom2="PTE" atom3="OTR4" angle="112.828" sigma="4.99776" params="112.828  400"/>
     <gt_angle atom1="OTR4" atom2="STE" atom3="OTR4" angle="116.205" sigma="4.61563" params="400"/>
     <gt_angle atom1="OTR4" atom2="STE" atom3="STR4" angle="117.429" sigma="0" params="117.429  400"/>
     <gt_angle atom1="STE" atom2="CTA" atom3="STE" angle="112.144" sigma="2.25314" params="112.144  400"/>
-    <gt_angle atom1="STE" atom2="NTR2" atom3="STE" angle="125.898" sigma="0" params="125.898  400"/>
+    <gt_angle atom1="STE" atom2="NTR3" atom3="STE" angle="125.898" sigma="0" params="125.898  400"/>
     <gt_angle atom1="STR4" atom2="CDI" atom3="STR4" angle="180" sigma="0" params="400"/>
   </gt_angles>
   <gt_dihedrals angle_unit="degree" function="pdihs">
@@ -751,8 +759,8 @@
     <gt_dihedral atom1="Br" atom2="CTR" atom3="CTR" atom4="CTA" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="Br" atom2="CTR" atom3="CTR" atom4="CTR" angle="179.995" sigma="0.0289619" params="5"/>
     <gt_dihedral atom1="Br" atom2="CTR" atom3="CTR" atom4="HA" angle="23.483" sigma="60.6188" params="5"/>
-    <gt_dihedral atom1="Br" atom2="CTR" atom3="CTR" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="Br" atom2="CTR" atom3="NTR2" atom4="CTR" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="Br" atom2="CTR" atom3="CTR" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="Br" atom2="CTR" atom3="NTR3" atom4="CTR" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CRB" atom2="CRB" atom3="CRB" atom4="C2O" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CRB" atom2="CRB" atom3="CRB" atom4="CTR" angle="60" sigma="84.8528" params="60  5"/>
     <gt_dihedral atom1="CRB" atom2="CRB" atom3="C2O" atom4="HA" angle="0" sigma="0" params="0  5"/>
@@ -762,7 +770,7 @@
     <gt_dihedral atom1="CRB" atom2="CRB" atom3="CTR" atom4="CTR" angle="29.5172" sigma="95.5768" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CRB" atom3="CTR" atom4="HA" angle="176.388" sigma="25.4622" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CRB" atom3="CTR" atom4="NTE" angle="178.824" sigma="0" params="178.824  5"/>
-    <gt_dihedral atom1="CRB" atom2="CRB" atom3="CTR" atom4="NTR2" angle="0" sigma="0" params="5"/>
+    <gt_dihedral atom1="CRB" atom2="CRB" atom3="CTR" atom4="NTR3" angle="0" sigma="0" params="5"/>
     <gt_dihedral atom1="CRB" atom2="C2O" atom3="CTA" atom4="CTA" angle="84.2478" sigma="0" params="84.2478  5"/>
     <gt_dihedral atom1="CRB" atom2="C2O" atom3="CTA" atom4="HA" angle="178.63" sigma="103.336" params="5"/>
     <gt_dihedral atom1="CRB" atom2="C2O" atom3="NPI2" atom4="HP" angle="90" sigma="90" params="90  5"/>
@@ -776,11 +784,11 @@
     <gt_dihedral atom1="CRB" atom2="CTR" atom3="CTR" atom4="HA" angle="178.443" sigma="29.6921" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CTR" atom3="CTR" atom4="NPI2" angle="0" sigma="0" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CTR" atom3="CTR" atom4="NTE" angle="177.097" sigma="0" params="177.097  5"/>
-    <gt_dihedral atom1="CRB" atom2="CTR" atom3="CTR" atom4="NTR2" angle="0" sigma="0" params="5"/>
+    <gt_dihedral atom1="CRB" atom2="CTR" atom3="CTR" atom4="NTR3" angle="0" sigma="0" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CTR" atom3="NPI2" atom4="CTR" angle="0" sigma="0" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CTR" atom3="NPI2" atom4="HP" angle="180" sigma="0" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CTR" atom3="NTE" atom4="HP" angle="99.9818" sigma="66.3103" params="99.9818  5"/>
-    <gt_dihedral atom1="CRB" atom2="CTR" atom3="NTR2" atom4="CTR" angle="0.0200502" sigma="0.0401003" params="5"/>
+    <gt_dihedral atom1="CRB" atom2="CTR" atom3="NTR3" atom4="CTR" angle="0.0200502" sigma="0.0401003" params="5"/>
     <gt_dihedral atom1="CRB" atom2="CTR" atom3="OTH" atom4="HP" angle="179.984" sigma="146.95" params="5"/>
     <gt_dihedral atom1="CDI" atom2="CDI" atom3="CDI" atom4="CDI" angle="185.658" sigma="0" params="185.658  5"/>
     <gt_dihedral atom1="CDI" atom2="CDI" atom3="CDI" atom4="CTA" angle="196.662" sigma="0" params="196.662  5"/>
@@ -825,14 +833,14 @@
     <gt_dihedral atom1="CDI" atom2="CTR" atom3="CTR" atom4="CTA" angle="90" sigma="90" params="5"/>
     <gt_dihedral atom1="CDI" atom2="CTR" atom3="CTR" atom4="CTR" angle="180" sigma="0.027224" params="5"/>
     <gt_dihedral atom1="CDI" atom2="CTR" atom3="CTR" atom4="HA" angle="72.0022" sigma="109.97" params="5"/>
-    <gt_dihedral atom1="CDI" atom2="CTR" atom3="CTR" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CDI" atom2="CTR" atom3="CTR" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CDI" atom2="CTR" atom3="CTR" atom4="STE" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CDI" atom2="CTR" atom3="NTR2" atom4="CTR" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CDI" atom2="CTR" atom3="NTR3" atom4="CTR" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CDI" atom2="CTR" atom3="STE" atom4="CTR" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CDI" atom2="NDI" atom3="CTA" atom4="HA" angle="180" sigma="97.9415" params="180  5"/>
     <gt_dihedral atom1="CDI" atom2="NTE" atom3="CTA" atom4="CTA" angle="179.97" sigma="14.6109" params="179.97  5"/>
     <gt_dihedral atom1="CDI" atom2="NTE" atom3="CTA" atom4="HA" angle="179.987" sigma="112.929" params="179.987  5"/>
-    <gt_dihedral atom1="CDI" atom2="NTR2" atom3="CTA" atom4="HA" angle="180" sigma="97.4672" params="5"/>
+    <gt_dihedral atom1="CDI" atom2="NTR3" atom3="CTA" atom4="HA" angle="180" sigma="97.4672" params="5"/>
     <gt_dihedral atom1="CDI" atom2="OTE" atom3="CTP" atom4="CTA" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CDI" atom2="OTE" atom3="CTP" atom4="HA" angle="180" sigma="103.823" params="180  5"/>
     <gt_dihedral atom1="CDI" atom2="STE" atom3="CDI" atom4="NDI" angle="180" sigma="0" params="180  5"/>
@@ -859,11 +867,11 @@
     <gt_dihedral atom1="Cl" atom2="CTR" atom3="CTR" atom4="HA" angle="43.1786" sigma="96.6942" params="5"/>
     <gt_dihedral atom1="Cl" atom2="CTR" atom3="CTR" atom4="NPI2" angle="0" sigma="0" params="5"/>
     <gt_dihedral atom1="Cl" atom2="CTR" atom3="CTR" atom4="NTE" angle="3.1915" sigma="0" params="5"/>
-    <gt_dihedral atom1="Cl" atom2="CTR" atom3="CTR" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="Cl" atom2="CTR" atom3="CTR" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="C2O" atom2="CRB" atom3="CRB" atom4="CTR" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="C2O" atom2="CRB" atom3="CTR" atom4="CTR" angle="180.001" sigma="0.0165462" params="5"/>
     <gt_dihedral atom1="C2O" atom2="CRB" atom3="CTR" atom4="HA" angle="36.0045" sigma="107.979" params="5"/>
-    <gt_dihedral atom1="C2O" atom2="CRB" atom3="CTR" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="C2O" atom2="CRB" atom3="CTR" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="C2O" atom2="CRB" atom3="CTR" atom4="OTH" angle="119.993" sigma="169.695" params="5"/>
     <gt_dihedral atom1="C2O" atom2="CDI" atom3="CDI" atom4="HA" angle="90" sigma="90" params="90  5"/>
     <gt_dihedral atom1="C2O" atom2="C2O" atom3="CTA" atom4="CTA" angle="0" sigma="0" params="0  5"/>
@@ -903,11 +911,11 @@
     <gt_dihedral atom1="C2O" atom2="CTR" atom3="CTR" atom4="CTR" angle="90" sigma="127.235" params="5"/>
     <gt_dihedral atom1="C2O" atom2="CTR" atom3="CTR" atom4="HA" angle="128.044" sigma="81.7387" params="5"/>
     <gt_dihedral atom1="C2O" atom2="CTR" atom3="CTR" atom4="NPI2" angle="45" sigma="77.9423" params="45  5"/>
-    <gt_dihedral atom1="C2O" atom2="CTR" atom3="CTR" atom4="NTR2" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="C2O" atom2="CTR" atom3="CTR" atom4="NTR3" angle="90" sigma="90" params="90  5"/>
     <gt_dihedral atom1="C2O" atom2="CTR" atom3="CTR" atom4="OTE" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="C2O" atom2="CTR" atom3="NPI2" atom4="CTA" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="C2O" atom2="CTR" atom3="NPI2" atom4="CTR" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="C2O" atom2="CTR" atom3="NTR2" atom4="CTR" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="C2O" atom2="CTR" atom3="NTR3" atom4="CTR" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="C2O" atom2="CTR" atom3="OTE" atom4="CTR" angle="180" sigma="0" params="5"/>
     <gt_dihedral atom1="C2O" atom2="NPI2" atom3="C2O" atom4="CTA" angle="179.852" sigma="0.0198352" params="179.852  5"/>
     <gt_dihedral atom1="C2O" atom2="NPI2" atom3="C2O" atom4="CTR" angle="0" sigma="0" params="0  5"/>
@@ -918,14 +926,14 @@
     <gt_dihedral atom1="C2O" atom2="NPI2" atom3="CTR" atom4="CTR" angle="57.418" sigma="109.083" params="57.418  5"/>
     <gt_dihedral atom1="C2O" atom2="NPI2" atom3="CTR" atom4="HA" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="C2O" atom2="NPI2" atom3="CTR" atom4="NPI2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="C2O" atom2="NPI2" atom3="CTR" atom4="NTR2" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="C2O" atom2="NPI2" atom3="CTR" atom4="NTR3" angle="90" sigma="90" params="90  5"/>
     <gt_dihedral atom1="C2O" atom2="NTE" atom3="CTA" atom4="CTA" angle="128.034" sigma="145.968" params="5"/>
     <gt_dihedral atom1="C2O" atom2="NTE" atom3="CTA" atom4="CTP" angle="20.6521" sigma="0" params="20.6521  5"/>
     <gt_dihedral atom1="C2O" atom2="NTE" atom3="CTA" atom4="HA" angle="189.612" sigma="89.7744" params="5"/>
-    <gt_dihedral atom1="C2O" atom2="NTR2" atom3="CTR" atom4="CTA" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="C2O" atom2="NTR2" atom3="CTR" atom4="CTR" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="C2O" atom2="NTR2" atom3="CTR" atom4="HA" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="C2O" atom2="NTR2" atom3="CTR" atom4="NPI2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="C2O" atom2="NTR3" atom3="CTR" atom4="CTA" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="C2O" atom2="NTR3" atom3="CTR" atom4="CTR" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="C2O" atom2="NTR3" atom3="CTR" atom4="HA" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="C2O" atom2="NTR3" atom3="CTR" atom4="NPI2" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="C2O" atom2="OTE" atom3="C2O" atom4="CTA" angle="151.67" sigma="0" params="5"/>
     <gt_dihedral atom1="C2O" atom2="OTE" atom3="C2O" atom4="CTR" angle="0" sigma="0" params="5"/>
     <gt_dihedral atom1="C2O" atom2="OTE" atom3="C2O" atom4="OTR4" angle="254.525" sigma="74.5246" params="5"/>
@@ -953,7 +961,7 @@
     <gt_dihedral atom1="CTA" atom2="C2O" atom3="NPI2" atom4="HP" angle="179.477" sigma="112.943" params="5"/>
     <gt_dihedral atom1="CTA" atom2="C2O" atom3="NTE" atom4="CTA" angle="177.059" sigma="143.297" params="5"/>
     <gt_dihedral atom1="CTA" atom2="C2O" atom3="NTE" atom4="HP" angle="126.134" sigma="77.8122" params="5"/>
-    <gt_dihedral atom1="CTA" atom2="C2O" atom3="NTR2" atom4="CTR" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTA" atom2="C2O" atom3="NTR3" atom4="CTR" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CTA" atom2="C2O" atom3="OTE" atom4="CTP" angle="179.672" sigma="72.9437" params="5"/>
     <gt_dihedral atom1="CTA" atom2="C2O" atom3="OTE" atom4="CTR" angle="71.9921" sigma="87.9776" params="5"/>
     <gt_dihedral atom1="CTA" atom2="C2O" atom3="OTH" atom4="HP" angle="219.371" sigma="139.38" params="5"/>
@@ -1012,7 +1020,7 @@
     <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="CTP" angle="175.146" sigma="90.3501" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="CTR" angle="99.2024" sigma="69.6278" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="NPI2" angle="218.605" sigma="61.097" params="5"/>
-    <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="NTR2" angle="263.548" sigma="83.5484" params="263.548  5"/>
+    <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="NTR3" angle="263.548" sigma="83.5484" params="263.548  5"/>
     <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="OTH" angle="180" sigma="96.3302" params="180  5"/>
     <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="PTE" angle="157.736" sigma="112.614" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTP" atom3="OTE" atom4="STE" angle="180" sigma="0" params="5"/>
@@ -1036,19 +1044,19 @@
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="HA" angle="98.6312" sigma="126.918" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="NPI2" angle="119.161" sigma="84.2661" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="NTE" angle="268.816" sigma="153.92" params="5"/>
-    <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="NTR2" angle="179.817" sigma="0.447314" params="5"/>
+    <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="NTR3" angle="179.817" sigma="0.447314" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="OTE" angle="139.438" sigma="140.536" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="OTH" angle="0.120926" sigma="0.34203" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="CTR" atom4="STE" angle="120" sigma="84.8528" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="NPI2" atom4="CTA" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="NPI2" atom4="CTR" angle="180.768" sigma="0.85803" params="180.768  5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="NPI2" atom4="HP" angle="5.2579" sigma="0.107622" params="5.2579  5"/>
-    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NPI2" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR2" atom4="CTA" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR2" atom4="CTR" angle="179.991" sigma="0.0279392" params="5"/>
-    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR2" atom4="HP" angle="120" sigma="84.8528" params="120  5"/>
-    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR2" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR2" atom4="OTE" angle="0.975595" sigma="0" params="0.975595  5"/>
+    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NPI2" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR3" atom4="CTA" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR3" atom4="CTR" angle="179.991" sigma="0.0279392" params="5"/>
+    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR3" atom4="HP" angle="120" sigma="84.8528" params="120  5"/>
+    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR3" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTA" atom2="CTR" atom3="NTR3" atom4="OTE" angle="0.975595" sigma="0" params="0.975595  5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="OTE" atom4="CTR" angle="179.853" sigma="0.255221" params="5"/>
     <gt_dihedral atom1="CTA" atom2="CTR" atom3="STE" atom4="CTR" angle="180" sigma="0" params="5"/>
     <gt_dihedral atom1="CTA" atom2="NDI" atom3="CDI" atom4="STR4" angle="180" sigma="0" params="180  5"/>
@@ -1060,9 +1068,9 @@
     <gt_dihedral atom1="CTA" atom2="NPI2" atom3="CTR" atom4="CTR" angle="184.435" sigma="28.9286" params="184.435  5"/>
     <gt_dihedral atom1="CTA" atom2="NPI2" atom3="CTR" atom4="HA" angle="68.8214" sigma="137.637" params="68.8214  5"/>
     <gt_dihedral atom1="CTA" atom2="NPI2" atom3="CTR" atom4="NPI2" angle="157.075" sigma="59.3722" params="157.075  5"/>
-    <gt_dihedral atom1="CTA" atom2="NPI2" atom3="CTR" atom4="NTR2" angle="102.857" sigma="89.0769" params="102.857  5"/>
+    <gt_dihedral atom1="CTA" atom2="NPI2" atom3="CTR" atom4="NTR3" angle="102.857" sigma="89.0769" params="102.857  5"/>
     <gt_dihedral atom1="CTA" atom2="NPI2" atom3="CTR" atom4="STR4" angle="90" sigma="90" params="90  5"/>
-    <gt_dihedral atom1="CTA" atom2="NPI2" atom3="NTR2" atom4="CTR" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTA" atom2="NPI2" atom3="NTR3" atom4="CTR" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="CDI" atom4="NDI" angle="179.555" sigma="71.5811" params="179.555  5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="C2O" atom4="NTE" angle="227.656" sigma="110.657" params="227.656  5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="C2O" atom4="OTE" angle="270.713" sigma="78.1162" params="270.713  5"/>
@@ -1072,15 +1080,15 @@
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="CTA" atom4="HA" angle="181.488" sigma="100.228" params="5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="CTR" atom4="CTR" angle="205.862" sigma="107.826" params="5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="CTR" atom4="NTE" angle="186.633" sigma="0" params="186.633  5"/>
-    <gt_dihedral atom1="CTA" atom2="NTE" atom3="CTR" atom4="NTR2" angle="6.16977" sigma="0" params="6.16977  5"/>
+    <gt_dihedral atom1="CTA" atom2="NTE" atom3="CTR" atom4="NTR3" angle="6.16977" sigma="0" params="6.16977  5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="NTE" atom4="HP" angle="177.964" sigma="89.8353" params="177.964  5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="OTH" atom4="HP" angle="52.6973" sigma="0" params="52.6973  5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="PTE" atom4="CTA" angle="222.895" sigma="77.5404" params="222.895  5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="PTE" atom4="NTE" angle="174.342" sigma="92.0268" params="5"/>
     <gt_dihedral atom1="CTA" atom2="NTE" atom3="PTE" atom4="OTR4" angle="171.785" sigma="116.815" params="5"/>
-    <gt_dihedral atom1="CTA" atom2="NTR2" atom3="CDI" atom4="OTR4" angle="180" sigma="0" params="5"/>
-    <gt_dihedral atom1="CTA" atom2="NTR2" atom3="CTR" atom4="HA" angle="60" sigma="84.8528" params="60  5"/>
-    <gt_dihedral atom1="CTA" atom2="NTR2" atom3="NDI" atom4="NDI" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTA" atom2="NTR3" atom3="CDI" atom4="OTR4" angle="180" sigma="0" params="5"/>
+    <gt_dihedral atom1="CTA" atom2="NTR3" atom3="CTR" atom4="HA" angle="60" sigma="84.8528" params="60  5"/>
+    <gt_dihedral atom1="CTA" atom2="NTR3" atom3="NDI" atom4="NDI" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CTA" atom2="PTE" atom3="CTA" atom4="HA" angle="179.983" sigma="98.0148" params="179.983  5"/>
     <gt_dihedral atom1="CTA" atom2="PTE" atom3="NTE" atom4="HP" angle="49.7379" sigma="11.6372" params="49.7379  5"/>
     <gt_dihedral atom1="CTA" atom2="PTE" atom3="OTE" atom4="CTP" angle="180.624" sigma="56.2512" params="180.624  5"/>
@@ -1092,7 +1100,7 @@
     <gt_dihedral atom1="CTA" atom2="STE" atom3="CTA" atom4="STE" angle="178.136" sigma="147.465" params="178.136  5"/>
     <gt_dihedral atom1="CTA" atom2="STE" atom3="CTR" atom4="CTR" angle="60" sigma="84.8528" params="60  5"/>
     <gt_dihedral atom1="CTA" atom2="STE" atom3="CTR" atom4="HA" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTA" atom2="STE" atom3="NTR2" atom4="STE" angle="93.0434" sigma="0.0048803" params="93.0434  5"/>
+    <gt_dihedral atom1="CTA" atom2="STE" atom3="NTR3" atom4="STE" angle="93.0434" sigma="0.0048803" params="93.0434  5"/>
     <gt_dihedral atom1="CTA" atom2="STE" atom3="OTH" atom4="HP" angle="245.573" sigma="0" params="5"/>
     <gt_dihedral atom1="CTA" atom2="STE" atom3="STE" atom4="CTA" angle="226.328" sigma="46.3284" params="5"/>
     <gt_dihedral atom1="CTP" atom2="CDI" atom3="CDI" atom4="HA" angle="180" sigma="0" params="5"/>
@@ -1113,7 +1121,7 @@
     <gt_dihedral atom1="CTP" atom2="CTA" atom3="CTP" atom4="OTH" angle="206.04" sigma="76.8857" params="5"/>
     <gt_dihedral atom1="CTP" atom2="CTA" atom3="CTR" atom4="CTR" angle="176.396" sigma="168.329" params="176.396  5"/>
     <gt_dihedral atom1="CTP" atom2="CTA" atom3="CTR" atom4="HA" angle="174.375" sigma="8.6393" params="174.375  5"/>
-    <gt_dihedral atom1="CTP" atom2="CTA" atom3="CTR" atom4="NTR2" angle="351.405" sigma="0" params="351.405  5"/>
+    <gt_dihedral atom1="CTP" atom2="CTA" atom3="CTR" atom4="NTR3" angle="351.405" sigma="0" params="351.405  5"/>
     <gt_dihedral atom1="CTP" atom2="CTA" atom3="NPI2" atom4="CTR" angle="169.069" sigma="90.8588" params="169.069  5"/>
     <gt_dihedral atom1="CTP" atom2="CTA" atom3="NTE" atom4="HP" angle="193.689" sigma="99.1011" params="5"/>
     <gt_dihedral atom1="CTP" atom2="CTP" atom3="CTA" atom4="Cl" angle="246.052" sigma="94.8949" params="246.052  5"/>
@@ -1141,8 +1149,8 @@
     <gt_dihedral atom1="CTP" atom2="OTE" atom3="CTR" atom4="CTR" angle="164.126" sigma="123.374" params="5"/>
     <gt_dihedral atom1="CTP" atom2="OTE" atom3="CTR" atom4="HA" angle="124.186" sigma="74.2785" params="5"/>
     <gt_dihedral atom1="CTP" atom2="OTE" atom3="NPI2" atom4="OTR4" angle="178.24" sigma="125.924" params="5"/>
-    <gt_dihedral atom1="CTP" atom2="OTE" atom3="NTR2" atom4="CTR" angle="7.84782" sigma="0" params="7.84782  5"/>
-    <gt_dihedral atom1="CTP" atom2="OTE" atom3="NTR2" atom4="OTR4" angle="180" sigma="0" params="5"/>
+    <gt_dihedral atom1="CTP" atom2="OTE" atom3="NTR3" atom4="CTR" angle="7.84782" sigma="0" params="7.84782  5"/>
+    <gt_dihedral atom1="CTP" atom2="OTE" atom3="NTR3" atom4="OTR4" angle="180" sigma="0" params="5"/>
     <gt_dihedral atom1="CTP" atom2="OTE" atom3="OTE" atom4="CTP" angle="181.955" sigma="102.007" params="181.955  5"/>
     <gt_dihedral atom1="CTP" atom2="OTE" atom3="OTH" atom4="HP" angle="149.205" sigma="30.7946" params="149.205  5"/>
     <gt_dihedral atom1="CTP" atom2="OTE" atom3="PTE" atom4="Cl" angle="236.055" sigma="90.6834" params="236.055  5"/>
@@ -1162,7 +1170,7 @@
     <gt_dihedral atom1="CTR" atom2="CRB" atom3="CTR" atom4="HA" angle="95.6899" sigma="105.789" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CRB" atom3="CTR" atom4="NPI2" angle="90" sigma="90" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CRB" atom3="CTR" atom4="NTE" angle="359.106" sigma="0" params="359.106  5"/>
-    <gt_dihedral atom1="CTR" atom2="CRB" atom3="CTR" atom4="NTR2" angle="154.271" sigma="114.983" params="5"/>
+    <gt_dihedral atom1="CTR" atom2="CRB" atom3="CTR" atom4="NTR3" angle="154.271" sigma="114.983" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CRB" atom3="CTR" atom4="OTH" angle="180.018" sigma="0.0248482" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CDI" atom3="CDI" atom4="CTR" angle="188.763" sigma="0" params="188.763  5"/>
     <gt_dihedral atom1="CTR" atom2="CDI" atom3="CDI" atom4="HA" angle="108" sigma="88.1816" params="5"/>
@@ -1212,7 +1220,7 @@
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="HA" angle="178.392" sigma="17.5731" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="NPI2" angle="125.586" sigma="82.6721" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="NTE" angle="180.161" sigma="2.62753" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="NTR2" angle="16.3651" sigma="51.7484" params="5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="NTR3" angle="16.3651" sigma="51.7484" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="OTE" angle="117.159" sigma="94.141" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="OTH" angle="180.007" sigma="0.365832" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="PTE" angle="180" sigma="0" params="180  5"/>
@@ -1220,64 +1228,64 @@
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="CTR" atom4="STR4" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="NPI2" atom4="CTR" angle="101.971" sigma="158.794" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="NPI2" atom4="HP" angle="140.857" sigma="87.0565" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NPI2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NPI2" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="NPI2" atom4="OTR4" angle="114.35" sigma="106.367" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTE" atom4="HP" angle="176.328" sigma="112.022" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTE" atom4="NTE" angle="144.354" sigma="116.435" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR2" atom4="CTR" angle="16.8003" sigma="60.0419" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR2" atom4="NPI2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR2" atom4="OTE" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR2" atom4="STE" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR3" atom4="CTR" angle="16.8003" sigma="60.0419" params="5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR3" atom4="NPI2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR3" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR3" atom4="OTE" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="NTR3" atom4="STE" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="OTE" atom4="CTR" angle="76.3656" sigma="127.391" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="OTE" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="OTE" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="OTE" atom4="PTE" angle="180" sigma="120.528" params="180  5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="OTH" atom4="HP" angle="147.503" sigma="121.23" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="PTE" atom4="Cl" angle="180" sigma="97.9912" params="180  5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="STE" atom4="CTR" angle="30" sigma="67.082" params="5"/>
     <gt_dihedral atom1="CTR" atom2="CTR" atom3="STE" atom4="HP" angle="202.457" sigma="116.644" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="CTR" atom3="STE" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="CTR" atom3="STE" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="NPI2" atom3="C2O" atom4="CTR" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="NPI2" atom3="C2O" atom4="HA" angle="359.112" sigma="0" params="359.112  5"/>
     <gt_dihedral atom1="CTR" atom2="NPI2" atom3="C2O" atom4="NPI2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NPI2" atom3="C2O" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NPI2" atom3="C2O" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="NPI2" atom3="C2O" atom4="OTR4" angle="179.992" sigma="0.0220161" params="179.992  5"/>
     <gt_dihedral atom1="CTR" atom2="NPI2" atom3="CTA" atom4="HA" angle="159.48" sigma="103.267" params="159.48  5"/>
     <gt_dihedral atom1="CTR" atom2="NPI2" atom3="CTR" atom4="HA" angle="180.003" sigma="0.241933" params="5"/>
     <gt_dihedral atom1="CTR" atom2="NPI2" atom3="CTR" atom4="NPI2" angle="102.872" sigma="162.553" params="102.872  5"/>
-    <gt_dihedral atom1="CTR" atom2="NPI2" atom3="CTR" atom4="NTR2" angle="45.048" sigma="77.9147" params="45.048  5"/>
-    <gt_dihedral atom1="CTR" atom2="NPI2" atom3="NTR2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NPI2" atom3="CTR" atom4="NTR3" angle="45.048" sigma="77.9147" params="45.048  5"/>
+    <gt_dihedral atom1="CTR" atom2="NPI2" atom3="NTR3" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="NTE" atom3="CTA" atom4="HA" angle="181.874" sigma="106.483" params="5"/>
     <gt_dihedral atom1="CTR" atom2="NTE" atom3="NTE" atom4="HP" angle="187.213" sigma="75.8194" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="C2O" atom4="NPI2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="C2O" atom4="OTR4" angle="90" sigma="90" params="90  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="CTA" atom4="HA" angle="150" sigma="102.01" params="150  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="CTR" atom4="Cl" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="CTR" atom4="F" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="CTR" atom4="HA" angle="179.984" sigma="0.0930372" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="CTR" atom4="NPI2" angle="96.9015" sigma="114.129" params="96.9015  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="CTR" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="CTR" atom4="OTE" angle="0" sigma="0" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="NPI2" atom4="CTR" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="NPI2" atom4="HP" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="NPI2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="NTR2" atom4="CTR" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="NTR2" atom4="NPI2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="NTR2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="NTR2" atom4="STE" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="OTH" atom4="HP" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="CTR" atom2="NTR2" atom3="STE" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="C2O" atom4="NPI2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="C2O" atom4="OTR4" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="CTA" atom4="HA" angle="150" sigma="102.01" params="150  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="CTR" atom4="Cl" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="CTR" atom4="F" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="CTR" atom4="HA" angle="179.984" sigma="0.0930372" params="5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="CTR" atom4="NPI2" angle="96.9015" sigma="114.129" params="96.9015  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="CTR" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="CTR" atom4="OTE" angle="0" sigma="0" params="5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="NPI2" atom4="CTR" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="NPI2" atom4="HP" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="NPI2" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="NTR3" atom4="CTR" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="NTR3" atom4="NPI2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="NTR3" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="NTR3" atom4="STE" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="OTH" atom4="HP" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="CTR" atom2="NTR3" atom3="STE" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="OTE" atom3="C2O" atom4="HA" angle="180" sigma="0" params="5"/>
     <gt_dihedral atom1="CTR" atom2="OTE" atom3="C2O" atom4="OTR4" angle="149.998" sigma="123.494" params="5"/>
     <gt_dihedral atom1="CTR" atom2="OTE" atom3="CTP" atom4="HA" angle="191.226" sigma="94.3847" params="5"/>
     <gt_dihedral atom1="CTR" atom2="OTE" atom3="CTR" atom4="HA" angle="165.597" sigma="48.832" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="OTE" atom3="CTR" atom4="NTR2" angle="0" sigma="0" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="OTE" atom3="NTR2" atom4="CTR" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="OTE" atom3="CTR" atom4="NTR3" angle="0" sigma="0" params="5"/>
+    <gt_dihedral atom1="CTR" atom2="OTE" atom3="NTR3" atom4="CTR" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="CTR" atom2="OTE" atom3="PTE" atom4="Cl" angle="180" sigma="91.9324" params="180  5"/>
     <gt_dihedral atom1="CTR" atom2="OTE" atom3="PTE" atom4="OTE" angle="180" sigma="166.749" params="180  5"/>
     <gt_dihedral atom1="CTR" atom2="STE" atom3="CTA" atom4="HA" angle="179.998" sigma="83.3223" params="179.998  5"/>
     <gt_dihedral atom1="CTR" atom2="STE" atom3="CTR" atom4="HA" angle="144" sigma="72" params="5"/>
-    <gt_dihedral atom1="CTR" atom2="STE" atom3="NTR2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="CTR" atom2="STE" atom3="NTR3" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="F" atom2="C2O" atom3="CTA" atom4="HA" angle="120" sigma="97.272" params="120  5"/>
     <gt_dihedral atom1="F" atom2="C2O" atom3="OTH" atom4="HP" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="F" atom2="CTA" atom3="CDI" atom4="NDI" angle="181.21" sigma="97.9874" params="181.21  5"/>
@@ -1289,17 +1297,17 @@
     <gt_dihedral atom1="F" atom2="CTA" atom3="CTP" atom4="HA" angle="177.395" sigma="95.0554" params="177.395  5"/>
     <gt_dihedral atom1="F" atom2="CTA" atom3="CTP" atom4="OTH" angle="176.841" sigma="102.447" params="176.841  5"/>
     <gt_dihedral atom1="F" atom2="CTA" atom3="CTR" atom4="HA" angle="210.893" sigma="100.789" params="210.893  5"/>
-    <gt_dihedral atom1="F" atom2="CTA" atom3="STE" atom4="NTR2" angle="178.295" sigma="97.4906" params="178.295  5"/>
+    <gt_dihedral atom1="F" atom2="CTA" atom3="STE" atom4="NTR3" angle="178.295" sigma="97.4906" params="178.295  5"/>
     <gt_dihedral atom1="F" atom2="CTA" atom3="STE" atom4="OTR4" angle="183.418" sigma="98.2534" params="183.418  5"/>
     <gt_dihedral atom1="F" atom2="CTR" atom3="CTA" atom4="HA" angle="154.359" sigma="108.242" params="154.359  5"/>
     <gt_dihedral atom1="F" atom2="CTR" atom3="CTR" atom4="F" angle="6" sigma="32.311" params="5"/>
     <gt_dihedral atom1="F" atom2="CTR" atom3="CTR" atom4="HA" angle="37.1202" sigma="85.7194" params="5"/>
-    <gt_dihedral atom1="F" atom2="CTR" atom3="CTR" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="F" atom2="CTR" atom3="NTR2" atom4="HP" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="F" atom2="CTR" atom3="CTR" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="F" atom2="CTR" atom3="NTR3" atom4="HP" angle="90" sigma="90" params="90  5"/>
     <gt_dihedral atom1="F" atom2="NTE" atom3="CTA" atom4="HA" angle="179.986" sigma="97.6783" params="179.986  5"/>
     <gt_dihedral atom1="F" atom2="NTE" atom3="NTE" atom4="F" angle="158.234" sigma="103.449" params="5"/>
-    <gt_dihedral atom1="F" atom2="NTR2" atom3="NDI" atom4="NDI" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="F" atom2="NTR2" atom3="NTR2" atom4="F" angle="90" sigma="90" params="5"/>
+    <gt_dihedral atom1="F" atom2="NTR3" atom3="NDI" atom4="NDI" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="F" atom2="NTR3" atom3="NTR3" atom4="F" angle="90" sigma="90" params="5"/>
     <gt_dihedral atom1="F" atom2="OTE" atom3="OTE" atom4="F" angle="88.1612" sigma="0" params="5"/>
     <gt_dihedral atom1="F" atom2="PTE" atom3="CTA" atom4="HA" angle="180.003" sigma="104.01" params="180.003  5"/>
     <gt_dihedral atom1="F" atom2="PTE" atom3="OTH" atom4="HP" angle="180.078" sigma="82.8996" params="180.078  5"/>
@@ -1311,7 +1319,7 @@
     <gt_dihedral atom1="HA" atom2="C2O" atom3="CTP" atom4="HA" angle="180" sigma="58.2431" params="180  5"/>
     <gt_dihedral atom1="HA" atom2="C2O" atom3="CTP" atom4="OTH" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="HA" atom2="C2O" atom3="CTR" atom4="HA" angle="183.267" sigma="5.66035" params="5"/>
-    <gt_dihedral atom1="HA" atom2="C2O" atom3="CTR" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="HA" atom2="C2O" atom3="CTR" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="HA" atom2="C2O" atom3="CTR" atom4="OTE" angle="180" sigma="0" params="5"/>
     <gt_dihedral atom1="HA" atom2="C2O" atom3="NPI2" atom4="HP" angle="135" sigma="77.9423" params="5"/>
     <gt_dihedral atom1="HA" atom2="C2O" atom3="OTH" atom4="HP" angle="180" sigma="0" params="5"/>
@@ -1319,7 +1327,7 @@
     <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="HA" angle="158.952" sigma="110.493" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="NPI2" angle="170.37" sigma="104.573" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="NTE" angle="147.72" sigma="75.3701" params="5"/>
-    <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="NTR2" angle="180" sigma="99.6049" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="NTR3" angle="180" sigma="99.6049" params="180  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="OTE" angle="173.54" sigma="103.682" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="OTH" angle="205.358" sigma="99.5153" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="C2O" atom4="OTR4" angle="169.939" sigma="104.07" params="5"/>
@@ -1331,18 +1339,18 @@
     <gt_dihedral atom1="HA" atom2="CTA" atom3="CTP" atom4="OTH" angle="176.709" sigma="105.584" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="CTR" atom4="HA" angle="164.318" sigma="108.836" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="CTR" atom4="NPI2" angle="141.437" sigma="88.4191" params="141.437  5"/>
-    <gt_dihedral atom1="HA" atom2="CTA" atom3="CTR" atom4="NTR2" angle="150.781" sigma="101.386" params="5"/>
+    <gt_dihedral atom1="HA" atom2="CTA" atom3="CTR" atom4="NTR3" angle="150.781" sigma="101.386" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="CTR" atom4="OTE" angle="182.243" sigma="97.6524" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="CTR" atom4="STE" angle="180" sigma="97.6987" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="CTR" atom4="STR4" angle="120.05" sigma="97.1788" params="120.05  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="NPI2" atom4="HP" angle="136.39" sigma="97.9487" params="5"/>
-    <gt_dihedral atom1="HA" atom2="CTA" atom3="NPI2" atom4="NTR2" angle="180" sigma="98.2039" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTA" atom3="NPI2" atom4="NTR3" angle="180" sigma="98.2039" params="180  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="NPI2" atom4="OTR4" angle="167.215" sigma="106.68" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="NTE" atom4="HP" angle="186.712" sigma="101.729" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="NTE" atom4="NTE" angle="207.348" sigma="92.5375" params="207.348  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="NTE" atom4="OTH" angle="184.675" sigma="97.3684" params="184.675  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="NTE" atom4="PTE" angle="182.077" sigma="102.381" params="5"/>
-    <gt_dihedral atom1="HA" atom2="CTA" atom3="NTR2" atom4="NDI" angle="180" sigma="97.0124" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTA" atom3="NTR3" atom4="NDI" angle="180" sigma="97.0124" params="180  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="PTE" atom4="HP" angle="179.989" sigma="97.9981" params="179.989  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="PTE" atom4="NTE" angle="183.33" sigma="97.6737" params="183.33  5"/>
     <gt_dihedral atom1="HA" atom2="CTA" atom3="PTE" atom4="OTE" angle="179.983" sigma="97.9589" params="179.983  5"/>
@@ -1363,7 +1371,7 @@
     <gt_dihedral atom1="HA" atom2="CTP" atom3="CTP" atom4="OTH" angle="195.653" sigma="104.134" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTP" atom3="CTR" atom4="OTE" angle="180" sigma="58.4029" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTP" atom3="OTE" atom4="NPI2" angle="145.051" sigma="103.362" params="5"/>
-    <gt_dihedral atom1="HA" atom2="CTP" atom3="OTE" atom4="NTR2" angle="176.03" sigma="96.099" params="5"/>
+    <gt_dihedral atom1="HA" atom2="CTP" atom3="OTE" atom4="NTR3" angle="176.03" sigma="96.099" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTP" atom3="OTE" atom4="OTE" angle="184.465" sigma="75.3166" params="184.465  5"/>
     <gt_dihedral atom1="HA" atom2="CTP" atom3="OTE" atom4="OTH" angle="177.279" sigma="96.6618" params="177.279  5"/>
     <gt_dihedral atom1="HA" atom2="CTP" atom3="OTE" atom4="PTE" angle="178.794" sigma="100.039" params="5"/>
@@ -1382,51 +1390,51 @@
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="HA" angle="79.6463" sigma="139.797" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="NPI2" angle="136.556" sigma="107.169" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="NTE" angle="168.962" sigma="177.278" params="5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="NTR2" angle="168.925" sigma="43.2541" params="5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="NTR3" angle="168.925" sigma="43.2541" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="OTE" angle="137.716" sigma="106.74" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="OTH" angle="62.0416" sigma="135.902" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="PTE" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="STE" angle="101.742" sigma="103.546" params="5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="CTR" atom4="STR4" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="NPI2" atom4="HP" angle="75.3653" sigma="145.946" params="5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="NPI2" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="NPI2" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="HA" atom2="CTR" atom3="NPI2" atom4="OTR4" angle="90" sigma="90" params="90  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR2" atom4="HP" angle="60" sigma="84.8528" params="60  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR2" atom4="NPI2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR2" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR2" atom4="OTE" angle="179.656" sigma="0.486849" params="179.656  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR2" atom4="OTH" angle="90" sigma="90" params="90  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR2" atom4="STE" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="OTE" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="HA" atom2="CTR" atom3="STE" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR3" atom4="HP" angle="60" sigma="84.8528" params="60  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR3" atom4="NPI2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR3" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR3" atom4="OTE" angle="179.656" sigma="0.486849" params="179.656  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR3" atom4="OTH" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="NTR3" atom4="STE" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="OTE" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HA" atom2="CTR" atom3="STE" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="HP" atom2="NPI2" atom3="C2O" atom4="NPI2" angle="135" sigma="77.9423" params="5"/>
-    <gt_dihedral atom1="HP" atom2="NPI2" atom3="C2O" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HP" atom2="NPI2" atom3="C2O" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="HP" atom2="NPI2" atom3="C2O" atom4="OTH" angle="269.905" sigma="89.2341" params="269.905  5"/>
     <gt_dihedral atom1="HP" atom2="NPI2" atom3="C2O" atom4="OTR4" angle="89.8522" sigma="120.336" params="5"/>
     <gt_dihedral atom1="HP" atom2="NPI2" atom3="CTR" atom4="NPI2" angle="99.589" sigma="89.0811" params="99.589  5"/>
-    <gt_dihedral atom1="HP" atom2="NPI2" atom3="CTR" atom4="NTR2" angle="113.468" sigma="86.6675" params="113.468  5"/>
+    <gt_dihedral atom1="HP" atom2="NPI2" atom3="CTR" atom4="NTR3" angle="113.468" sigma="86.6675" params="113.468  5"/>
     <gt_dihedral atom1="HP" atom2="NPI2" atom3="NPI2" atom4="OTR4" angle="179.904" sigma="127.136" params="179.904  5"/>
-    <gt_dihedral atom1="HP" atom2="NPI2" atom3="NTR2" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HP" atom2="NPI2" atom3="NTR3" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="HP" atom2="NTE" atom3="CDI" atom4="NDI" angle="180" sigma="67.9809" params="180  5"/>
     <gt_dihedral atom1="HP" atom2="NTE" atom3="C2O" atom4="OTR4" angle="185.539" sigma="140.789" params="5"/>
     <gt_dihedral atom1="HP" atom2="NTE" atom3="CTR" atom4="NTE" angle="279.532" sigma="64.9611" params="279.532  5"/>
-    <gt_dihedral atom1="HP" atom2="NTE" atom3="CTR" atom4="NTR2" angle="99.6588" sigma="64.7209" params="99.6588  5"/>
+    <gt_dihedral atom1="HP" atom2="NTE" atom3="CTR" atom4="NTR3" angle="99.6588" sigma="64.7209" params="99.6588  5"/>
     <gt_dihedral atom1="HP" atom2="NTE" atom3="NTE" atom4="HP" angle="174.711" sigma="106.946" params="5"/>
     <gt_dihedral atom1="HP" atom2="NTE" atom3="OTH" atom4="HP" angle="217.713" sigma="69.9628" params="217.713  5"/>
     <gt_dihedral atom1="HP" atom2="NTE" atom3="PTE" atom4="NTE" angle="233.188" sigma="81.3062" params="233.188  5"/>
     <gt_dihedral atom1="HP" atom2="NTE" atom3="PTE" atom4="OTR4" angle="230.157" sigma="43.597" params="230.157  5"/>
-    <gt_dihedral atom1="HP" atom2="NTR2" atom3="CDI" atom4="OTR4" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="HP" atom2="NTR2" atom3="CDI" atom4="STR4" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="HP" atom2="NTR2" atom3="CTR" atom4="NPI2" angle="90" sigma="90" params="90  5"/>
-    <gt_dihedral atom1="HP" atom2="NTR2" atom3="CTR" atom4="NTE" angle="262.789" sigma="90.2467" params="262.789  5"/>
-    <gt_dihedral atom1="HP" atom2="NTR2" atom3="NDI" atom4="NDI" angle="180" sigma="0" params="5"/>
-    <gt_dihedral atom1="HP" atom2="NTR2" atom3="STE" atom4="OTR4" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HP" atom2="NTR3" atom3="CDI" atom4="OTR4" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HP" atom2="NTR3" atom3="CDI" atom4="STR4" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="HP" atom2="NTR3" atom3="CTR" atom4="NPI2" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="HP" atom2="NTR3" atom3="CTR" atom4="NTE" angle="262.789" sigma="90.2467" params="262.789  5"/>
+    <gt_dihedral atom1="HP" atom2="NTR3" atom3="NDI" atom4="NDI" angle="180" sigma="0" params="5"/>
+    <gt_dihedral atom1="HP" atom2="NTR3" atom3="STE" atom4="OTR4" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="Cl" atom4="OTR4" angle="180.331" sigma="97.896" params="180.331  5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="C2O" atom4="NPI2" angle="180.136" sigma="0" params="180.136  5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="C2O" atom4="OTH" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="C2O" atom4="OTR4" angle="130.187" sigma="100.911" params="5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="NPI2" atom4="OTR4" angle="90" sigma="90" params="5"/>
-    <gt_dihedral atom1="HP" atom2="OTH" atom3="NTR2" atom4="OTR4" angle="180" sigma="0" params="5"/>
+    <gt_dihedral atom1="HP" atom2="OTH" atom3="NTR3" atom4="OTR4" angle="180" sigma="0" params="5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="OTH" atom4="HP" angle="113.289" sigma="0" params="5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="PTE" atom4="HP" angle="180" sigma="21.9258" params="180  5"/>
     <gt_dihedral atom1="HP" atom2="OTH" atom3="PTE" atom4="OTE" angle="174.63" sigma="112.925" params="174.63  5"/>
@@ -1437,31 +1445,31 @@
     <gt_dihedral atom1="NDI" atom2="CDI" atom3="CDI" atom4="NDI" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="NDI" atom2="CDI" atom3="C2O" atom4="OTR4" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="NDI" atom2="CDI" atom3="CTP" atom4="OTE" angle="191.386" sigma="0" params="191.386  5"/>
-    <gt_dihedral atom1="NDI" atom2="CDI" atom3="CTR" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="NDI" atom2="CDI" atom3="CTR" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="NDI" atom2="CDI" atom3="CTR" atom4="STE" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="NPI2" atom2="C2O" atom3="CTR" atom4="NPI2" angle="180" sigma="0" params="180  5"/>
-    <gt_dihedral atom1="NPI2" atom2="C2O" atom3="CTR" atom4="NTR2" angle="180" sigma="0" params="180  5"/>
+    <gt_dihedral atom1="NPI2" atom2="C2O" atom3="CTR" atom4="NTR3" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="NPI2" atom2="CTA" atom3="CTP" atom4="OTE" angle="180.102" sigma="0" params="180.102  5"/>
     <gt_dihedral atom1="NPI2" atom2="CTR" atom3="C2O" atom4="OTR4" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="NPI2" atom2="CTR" atom3="CTR" atom4="NPI2" angle="60.0378" sigma="119.963" params="60.0378  5"/>
-    <gt_dihedral atom1="NPI2" atom2="CTR" atom3="CTR" atom4="NTR2" angle="0.0216113" sigma="0.0529367" params="0.0216113  5"/>
+    <gt_dihedral atom1="NPI2" atom2="CTR" atom3="CTR" atom4="NTR3" angle="0.0216113" sigma="0.0529367" params="0.0216113  5"/>
     <gt_dihedral atom1="NPI2" atom2="CTR" atom3="CTR" atom4="OTE" angle="352.54" sigma="0" params="352.54  5"/>
-    <gt_dihedral atom1="NPI2" atom2="CTR" atom3="NTR2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="NPI2" atom2="NTR2" atom3="CTR" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="NPI2" atom2="NTR2" atom3="NTR2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="NPI2" atom2="CTR" atom3="NTR3" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="NPI2" atom2="NTR3" atom3="CTR" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="NPI2" atom2="NTR3" atom3="NTR3" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="NTE" atom2="CTA" atom3="C2O" atom4="OTH" angle="70.958" sigma="119.759" params="5"/>
     <gt_dihedral atom1="NTE" atom2="CTA" atom3="C2O" atom4="OTR4" angle="189.378" sigma="53.8885" params="5"/>
     <gt_dihedral atom1="NTE" atom2="CTA" atom3="CTA" atom4="NTE" angle="218.156" sigma="66.4743" params="5"/>
     <gt_dihedral atom1="NTE" atom2="CTA" atom3="CTA" atom4="STE" angle="195.292" sigma="0" params="195.292  5"/>
     <gt_dihedral atom1="NTE" atom2="CTA" atom3="CTP" atom4="OTE" angle="206.101" sigma="116.333" params="5"/>
     <gt_dihedral atom1="NTE" atom2="CTA" atom3="CTP" atom4="OTH" angle="182.304" sigma="51.0708" params="5"/>
-    <gt_dihedral atom1="NTR2" atom2="CTR" atom3="C2O" atom4="OTR4" angle="90" sigma="90" params="90  5"/>
-    <gt_dihedral atom1="NTR2" atom2="CTR" atom3="CTR" atom4="NTR2" angle="90" sigma="90" params="90  5"/>
-    <gt_dihedral atom1="NTR2" atom2="CTR" atom3="CTR" atom4="OTE" angle="0" sigma="0" params="5"/>
-    <gt_dihedral atom1="NTR2" atom2="CTR" atom3="CTR" atom4="STE" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="NTR2" atom2="CTR" atom3="NPI2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="NTR2" atom2="NTR2" atom3="CTR" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
-    <gt_dihedral atom1="NTR2" atom2="NTR2" atom3="NPI2" atom4="NTR2" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="NTR3" atom2="CTR" atom3="C2O" atom4="OTR4" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="NTR3" atom2="CTR" atom3="CTR" atom4="NTR3" angle="90" sigma="90" params="90  5"/>
+    <gt_dihedral atom1="NTR3" atom2="CTR" atom3="CTR" atom4="OTE" angle="0" sigma="0" params="5"/>
+    <gt_dihedral atom1="NTR3" atom2="CTR" atom3="CTR" atom4="STE" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="NTR3" atom2="CTR" atom3="NPI2" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="NTR3" atom2="NTR3" atom3="CTR" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
+    <gt_dihedral atom1="NTR3" atom2="NTR3" atom3="NPI2" atom4="NTR3" angle="0" sigma="0" params="0  5"/>
     <gt_dihedral atom1="OTE" atom2="C2O" atom3="C2O" atom4="OTE" angle="177.523" sigma="0" params="5"/>
     <gt_dihedral atom1="OTE" atom2="C2O" atom3="C2O" atom4="OTR4" angle="357.381" sigma="0" params="5"/>
     <gt_dihedral atom1="OTE" atom2="C2O" atom3="CTP" atom4="OTH" angle="19.7757" sigma="0" params="5"/>
@@ -1479,7 +1487,7 @@
     <gt_dihedral atom1="OTH" atom2="CTP" atom3="CTA" atom4="STE" angle="180" sigma="0" params="180  5"/>
     <gt_dihedral atom1="OTH" atom2="CTP" atom3="CTP" atom4="OTH" angle="121.731" sigma="87.4781" params="5"/>
     <gt_dihedral atom1="OTR4" atom2="C2O" atom3="C2O" atom4="OTR4" angle="71.4476" sigma="87.5094" params="5"/>
-    <gt_dihedral atom1="OTR4" atom2="STE" atom3="NTR2" atom4="STE" angle="270.5" sigma="68.9229" params="270.5  5"/>
+    <gt_dihedral atom1="OTR4" atom2="STE" atom3="NTR3" atom4="STE" angle="270.5" sigma="68.9229" params="270.5  5"/>
     <gt_dihedral atom1="STE" atom2="CTA" atom3="CTA" atom4="STE" angle="58.233" sigma="10.719" params="58.233  5"/>
   </gt_dihedrals>
   <gt_impropers angle_unit="degree" function="idihs">
@@ -1584,7 +1592,7 @@
     <milatom milname="CRB" atomnumber="6" tau_ahc="1.707" alpha_ahp="1.896" alexandria_equiv="C2"/>
     <milatom milname="CDI" atomnumber="6" tau_ahc="1.393" alpha_ahp="1.283"/>
     <milatom milname="NTE" atomnumber="7" tau_ahc="1.373" alpha_ahp="0.964"/>
-    <milatom milname="NTR2" atomnumber="7" tau_ahc="1.262" alpha_ahp="1.03"/>
+    <milatom milname="NTR3" atomnumber="7" tau_ahc="1.262" alpha_ahp="1.03"/>
     <milatom milname="NPI2" atomnumber="7" tau_ahc="1.22" alpha_ahp="1.09" alexandria_equiv="N2"/>
     <milatom milname="NDI" atomnumber="7" tau_ahc="1.304" alpha_ahp="0.956"/>
     <milatom milname="OTE" atomnumber="8" tau_ahc="1.249" alpha_ahp="0.637"/>
@@ -1620,7 +1628,7 @@
     <eemprop model="AXp" name="CTP" jaa="25.8324" chi="10.0956" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="NDI" jaa="20.3808" chi="8.83108" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="NPI2" jaa="12.4496" chi="1.07492" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="NTR2" jaa="17.3623" chi="7.32133" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="NTR3" jaa="17.3623" chi="7.32133" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="NTE" jaa="29.2935" chi="8.20182" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="OPI2" jaa="18.5276" chi="4.25119" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="OTR4" jaa="23.4406" chi="9.26716" zeta="0" charge="0" row="1"/>
@@ -1647,7 +1655,7 @@
     <eemprop model="AXg" name="NDI" jaa="24.9083" chi="7.49112" zeta="0 40 10" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="NPI2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="NTE" jaa="24.9083" chi="7.49112" zeta="0 30.8 49.9" charge="7 -2 0" row="0 1 2"/>
-    <eemprop model="AXg" name="NTR2" jaa="24.9083" chi="7.49112" zeta="0 38.6 10.8" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="NTR3" jaa="24.9083" chi="7.49112" zeta="0 38.6 10.8" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="OPI2" jaa="28.4907" chi="11.3236" zeta="0 40.9 15.8" charge="8 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="OTE" jaa="28.4907" chi="11.3236" zeta="0 40.8 15.7" charge="8 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="OH2" jaa="28.4907" chi="11.3236" zeta="100 10" charge="6 0" row="0 1"/>
@@ -1671,7 +1679,7 @@
     <eemprop model="AXs" name="NDI" jaa="24.9083" chi="7.49112" zeta="0 60 38" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXs" name="NPI2" jaa="24.9083" chi="7.49112" zeta="0 61.6 38.2" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXs" name="NTE" jaa="24.9083" chi="7.49112" zeta="0 61.4 36.9" charge="7 -2 0" row="0 1 2"/>
-    <eemprop model="AXs" name="NTR2" jaa="24.9083" chi="7.49112" zeta="0 60.1 37.1" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="NTR3" jaa="24.9083" chi="7.49112" zeta="0 60.1 37.1" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXs" name="OPI2" jaa="28.4907" chi="11.3236" zeta="0 56.0 20.0" charge="8 -2 0" row="0 1 2"/>
     <eemprop model="AXs" name="OTE" jaa="28.4907" chi="11.3236" zeta="0 58.5 20.0" charge="8 -2 0" row="0 1 2"/>
     <eemprop model="AXs" name="OTH" jaa="28.4907" chi="11.3236" zeta="0 56.8 20.0" charge="8 -2 0" row="0 1 2"/>

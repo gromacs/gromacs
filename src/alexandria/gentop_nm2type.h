@@ -48,6 +48,7 @@
 extern int nm2type(FILE *fp,char *molname,
 		   gmx_poldata_t pd,gmx_atomprop_t aps,
 		   t_symtab *tab,t_atoms *atoms,gmx_bool bRing[],
+                   double bondorder[],
 		   gpp_atomtype_t atype,int *nbonds,t_params *bond,
 		   char **smname,
 		   rvec x[],t_pbc *pbc,real th_toler,real phi_toler,

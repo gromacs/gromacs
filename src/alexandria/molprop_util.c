@@ -276,7 +276,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     int        i,j,natom=-1,bOK=FALSE;
     int        nexcl=1;
     char       **anames=NULL,**smnames;
-    int        *nbonds,bDone=0,calcref,atomref,atomid,ftb;
+    int        *nbonds,nbond,bDone=0,calcref,atomref,atomid,ftb;
     gmx_bool   *bRing;
     t_params   *plist=NULL;
     t_excls    *excls;
@@ -288,6 +288,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     char       *program,*method,*basisset,*reference,*conformation,*miller,*elem;
     char       *atomname,*unit,*molname,*type;
     double     xx,yy,zz;
+    double     *bondorder;
     gentop_vsite_t gvt;
     
     clear_mat(box);
@@ -353,15 +354,17 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         snew(smnames,atoms->nr);
         snew(plist,F_NRE);
         snew(bRing,atoms->nr);
-        mk_bonds(pd,atoms,x,NULL,plist,nbonds,bRing,TRUE,TRUE,TRUE,
-                 nexcl,&excls,FALSE,NULL,aps,btol,TRUE);
+        nbond = mk_bonds(pd,atoms,x,NULL,plist,nbonds,bRing,TRUE,TRUE,TRUE,
+                         nexcl,&excls,FALSE,NULL,aps,btol,TRUE);
+        snew(bondorder,nbond);
         ftb = gmx_poldata_get_bond_ftype(pd);
         /* Setting the atom types: this depends on the bonding */
         gvt = gentop_vsite_init(egvtLINEAR);
         if ((atype = set_atom_type(NULL,molname,&symtab,atoms,
-                                   &(plist[ftb]),nbonds,bRing,smnames,
+                                   &(plist[ftb]),nbonds,bRing,bondorder,smnames,
                                    pd,aps,x,&pbc,th_toler,phi_toler,gvt)) != NULL) 
             bOK = TRUE;
+        sfree(bondorder);
         gentop_vsite_done(&gvt);
         if (bOK) 
         {

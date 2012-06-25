@@ -34,6 +34,7 @@
  * Groningen Machine for Chemical Simulation
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <string.h>
@@ -54,6 +55,7 @@ typedef struct {
     char   *elem,*name,*type,*neighbors,*geometry;
     char   **nb;
     int    numbonds,numnb;
+    double valence;
 } t_brule;
 
 typedef struct {
@@ -329,6 +331,7 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
             sp->name           = strdup(gt_name);
             sp->type           = strdup(gt_type);
             sp->neighbors      = strdup(neighbors);
+            sp->valence        = pd->alexandria[j].valence;
             sp->nb             = split(' ',neighbors);
             for(sp->numnb=0; (sp->nb[sp->numnb] != NULL); sp->numnb++)
                 ;
@@ -336,7 +339,7 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
             sp->numbonds       = numbonds;
         }
         else 
-            fprintf(stderr,"Atom %s was already added to pdata record\n",gt_name);
+            fprintf(stderr,"Bonding rule %s was already added to poldata record\n",gt_name);
     }
     else if (NULL != debug) {
         fprintf(debug,"Ignoring bonding rule involving unknown atom type %s\n",
@@ -563,10 +566,11 @@ static gmx_bool strcasestr_start(char *needle,char *haystack)
     return (ptr == haystack);
 }
 
-static int count_neighbors(t_brule *brule,int nbond,char *nbhybrid[])
+static int count_neighbors(t_brule *brule,int nbond,char *nbhybrid[],int *score)
 {
     int i,j,ni=0,*jj,i_found;
         
+    *score = 0;
     snew(jj,nbond+1);
     for(i=0; (i<brule->numnb); i++)
     {
@@ -583,6 +587,9 @@ static int count_neighbors(t_brule *brule,int nbond,char *nbhybrid[])
                 i_found = 1;
                 jj[j] = j+1;
                 ni++;
+                (*score) += 1;
+                if (strlen(nbhybrid[j]) > 0)
+                    (*score) += 1;
             }
         }
     }
@@ -604,38 +611,41 @@ char *gmx_poldata_get_charge(gmx_poldata_t pd,char *gt_type)
     return NULL;
 }
 
-char *gmx_poldata_get_atom(gmx_poldata_t pd,char *elem,
-                           int nbond,char *neighbors[],
-                           const char *geometry)
+char **gmx_poldata_get_atoms(gmx_poldata_t pd,char *elem,
+                             int nbond,char *neighbors[],
+                             const char *geometry)
 {
-    int i,nnb,pbest=-1,best=-1;
-  
+    int nnb,i,j,nptr=0,best=-1,score;
+    char **ptr = NULL;
+    
     for(i=0; (i<pd->nbrule); i++) 
     {
-        nnb = count_neighbors(&(pd->brule[i]),nbond,neighbors);
+        nnb = count_neighbors(&(pd->brule[i]),nbond,neighbors,&score);
         if ((strcasecmp(pd->brule[i].elem,elem) == 0) &&
             (strcasecmp(pd->brule[i].geometry,geometry) == 0) &&
             (nbond == pd->brule[i].numbonds) &&
             (nnb == pd->brule[i].numnb))
         {
-            if ((NULL != debug) && (best != -1) && (nnb == pbest))
-            {
-                fprintf(debug,"poldata clash: %s and %s are equally well suited, nnb = %d. Using %s.\n",
-                        pd->brule[best].name,pd->brule[i].name,nnb,
-                        pd->brule[best].name);
+            if (score > best) {
+                if (NULL != ptr)
+                {
+                    sfree(ptr);
+                    nptr=0;
+                    ptr=NULL;
+                }
             }
-            else if (nnb > pbest)
+            if (score >= best) 
             {
-                pbest = nnb;
-                best = i;
+                srenew(ptr,++nptr);
+                ptr[nptr-1] = pd->brule[i].name;
+                best = score;
             }
         }
     }
+    srenew(ptr,++nptr);
+    ptr[nptr-1] = NULL;
     
-    if (best != -1)
-        return pd->brule[best].name;
-    else
-        return NULL;
+    return ptr;
 }
 
 int gmx_poldata_type_valence(gmx_poldata_t pd,char *gt_type,double *valence)
@@ -774,27 +784,102 @@ int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
     }
     return (dev_best < toler);
 }
-				  
+
+static int lo_gtb_comp(t_gt_bond *ba,t_gt_bond *bb)
+{
+    char *a1,*a2,*b1,*b2;
+    int i;
+    
+    if (strcmp(ba->atom1,ba->atom2) <= 0)
+    {
+        a1 = ba->atom1;
+        a2 = ba->atom2;
+    }
+    else 
+    {
+        a2 = ba->atom1;
+        a1 = ba->atom2;
+    }
+    if (strcmp(bb->atom1,bb->atom2) <= 0)
+    {
+        b1 = bb->atom1;
+        b2 = bb->atom2;
+    }
+    else 
+    {
+        b2 = bb->atom1;
+        b1 = bb->atom2;
+    }
+    i = strcasecmp(a1,b1);
+    if (0 == i)
+        i = strcasecmp(a2,b2);
+        
+    return i;
+}
+
+static int gtb_comp(const void *a,const void *b)
+{
+    t_gt_bond *ba = (t_gt_bond *)a;
+    t_gt_bond *bb = (t_gt_bond *)b;
+    int i;
+
+    i = lo_gtb_comp(ba,bb);    
+    if ((0 == i) && ((0 != ba->bondorder) && (0 != bb->bondorder)))
+    {
+        if (ba->bondorder < bb->bondorder)
+            i = -1;
+        else if (ba->bondorder > bb->bondorder)
+            i = 1;
+    }
+    return i;
+}
+
+static t_gt_bond *search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
+                              double bondorder)
+{
+    t_gt_bond key,*gt_b;
+    int i;
+    
+    key.atom1 = atom1;
+    key.atom2 = atom2;
+    key.bondorder = bondorder;
+
+    gt_b = bsearch(&key,pd->gt_bond,pd->ngt_bond,sizeof(key),gtb_comp);
+    if (NULL != gt_b)
+    {
+        i = gt_b - pd->gt_bond;
+        while ((i > 0) && (lo_gtb_comp(&(pd->gt_bond[i-1]),&(pd->gt_bond[i])) == 0))
+        {
+            i--;
+        }
+        gt_b = &(pd->gt_bond[i]);
+    }
+    return gt_b;    
+}
+
 double gmx_poldata_atype_bondorder(gmx_poldata_t pd,char *atype1,char *atype2,
                                    double distance,double toler)
 {
     char *ba1,*ba2;
     double dev,dev_best = 100000;
     int j,i,i_best=-1;
-  
+    t_gt_bond *gt_b;
+    
     if ((NULL == atype1) || (NULL == atype2))
         return 0.0;
-    for(i=0; (i<pd->ngt_bond); i++) {
-        ba1 = pd->gt_bond[i].atom1;
-        ba2 = pd->gt_bond[i].atom2;
-        if (((strcasecmp(ba1,atype1) == 0) && (strcasecmp(ba2,atype2) == 0)) ||
-            ((strcasecmp(ba1,atype2) == 0) && (strcasecmp(ba2,atype1) == 0))) {
-            dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
+    gt_b = search_bond(pd,atype1,atype2,0);
+    if (NULL != gt_b)
+    {
+        i = gt_b - pd->gt_bond;
+        do {
+            dev = fabs(pd->gt_bond[i].length - distance);
             if (dev < dev_best) {
                 dev_best = dev;
                 i_best = i;
             }
-        }
+            i++;
+        } while ((i < pd->ngt_bond) && 
+                 (0 == lo_gtb_comp(&(pd->gt_bond[i]),&(pd->gt_bond[i-1]))));
     }
     if (dev_best < toler)
         return pd->gt_bond[i_best].bondorder;
@@ -946,12 +1031,11 @@ static int search_atomtype(gmx_poldata_t pd,char *atom)
 int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                 double bondorder,char *params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
     int i;
   
-    for(i=0; (i<pold->ngt_bond); i++) {
-        gt_b = &(pold->gt_bond[i]);
+    for(i=0; (i<pd->ngt_bond); i++) {
+        gt_b = &(pd->gt_bond[i]);
         if (((((strcasecmp(gt_b->atom1,atom1) == 0) && 
                (strcasecmp(gt_b->atom2,atom2) == 0)) ||
               ((strcasecmp(gt_b->atom1,atom2) == 0) && 
@@ -959,7 +1043,7 @@ int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
             (gt_b->bondorder == bondorder))
             break;
     }
-    if (i < pold->ngt_bond) {
+    if (i < pd->ngt_bond) {
         if (NULL != gt_b->params)
             sfree(gt_b->params);
         gt_b->params = strdup(params);
@@ -971,7 +1055,6 @@ int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
 int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
                          double length,double sigma,double bondorder,char *params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
     int j,a1,a2;
 
@@ -980,17 +1063,18 @@ int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
     if (-1 == (a2 = search_atomtype(pd,atom2)))
         return 0;
     if (gmx_poldata_set_bond_params(pd,atom1,atom2,bondorder,params) == 0) {
-        pold->ngt_bond++;
-        srenew(pold->gt_bond,pold->ngt_bond);
-        gt_b = &(pold->gt_bond[pold->ngt_bond-1]);
+        pd->ngt_bond++;
+        srenew(pd->gt_bond,pd->ngt_bond);
+        gt_b = &(pd->gt_bond[pd->ngt_bond-1]);
         gt_b->atom1     = strdup(atom1);
-        strncpy(gt_b->elem1,pold->alexandria[a1].elem,sizeof(gt_b->elem1)-1);
+        strncpy(gt_b->elem1,pd->alexandria[a1].elem,sizeof(gt_b->elem1)-1);
         gt_b->atom2     = strdup(atom2);
-        strncpy(gt_b->elem2,pold->alexandria[a2].elem,sizeof(gt_b->elem2)-1);
+        strncpy(gt_b->elem2,pd->alexandria[a2].elem,sizeof(gt_b->elem2)-1);
         gt_b->length    = length;
         gt_b->sigma     = sigma;
         gt_b->bondorder = bondorder;
         gt_b->params    = strdup(params);
+        qsort(pd->gt_bond,pd->ngt_bond,sizeof(pd->gt_bond[0]),gtb_comp);
     }
     return 1;
 }
@@ -998,42 +1082,44 @@ int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 int gmx_poldata_get_bond(gmx_poldata_t pd,char **atom1,char **atom2,
                          double *length,double *sigma,double *bondorder,char **params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
     int i;
   
-    if (pold->ngt_bond_c < pold->ngt_bond) {
-        gt_b = &(pold->gt_bond[pold->ngt_bond_c]);
+    if (pd->ngt_bond_c < pd->ngt_bond) {
+        gt_b = &(pd->gt_bond[pd->ngt_bond_c]);
         assign_str(atom1,gt_b->atom1);
         assign_str(atom2,gt_b->atom2);
         assign_scal(length,gt_b->length);
         assign_scal(sigma,gt_b->sigma);
         assign_scal(bondorder,gt_b->bondorder);
         assign_str(params,gt_b->params);
-        pold->ngt_bond_c++;
+        pd->ngt_bond_c++;
     
-        return pold->ngt_bond_c;
+        return pd->ngt_bond_c;
     }
-    pold->ngt_bond_c = 0;
+    pd->ngt_bond_c = 0;
   
     return 0;
 }
 
 int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                            double *length,double *sigma,char **params)
+                            double *length,double *sigma,double *bondorder,
+                            char **params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
     int i;
-  
-    for(i=0; (i<pold->ngt_bond); i++) {
-        gt_b = &(pold->gt_bond[i]);
+
+    gt_b = search_bond(pd,atom1,atom2,0);
+    if (NULL == gt_b) 
+    {
         if (((strcasecmp(gt_b->atom1,atom1) == 0) && 
              (strcasecmp(gt_b->atom2,atom2) == 0)) ||
             ((strcasecmp(gt_b->atom1,atom2) == 0) && 
              (strcasecmp(gt_b->atom2,atom1) == 0))) {
             assign_scal(length,gt_b->length);
             assign_scal(sigma,gt_b->sigma);
+            assign_scal(bondorder,gt_b->bondorder);
             assign_str(params,gt_b->params);
         
             return i+1;
