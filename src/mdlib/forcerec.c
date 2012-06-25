@@ -1388,9 +1388,12 @@ void init_forcerec(FILE *fp,
     if( (getenv("GMX_DISABLE_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
     {
         fr->use_acceleration = FALSE;
-        fprintf(fp,
-                "\nFound environment variable GMX_DISABLE_ACCELERATION.\n"
-                "Disabling all architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
+        if (fp != NULL)
+        {
+            fprintf(fp,
+                    "\nFound environment variable GMX_DISABLE_ACCELERATION.\n"
+                    "Disabling all architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
+        }
     }
 
     /* Check if we can/should do all-vs-all kernels */
