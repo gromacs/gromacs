@@ -446,7 +446,7 @@ else ( NOT GMX_INTERNAL_BOOST )
   set (Boost_FOUND FALSE)
 endif( NOT GMX_INTERNAL_BOOST )
 
-if(Boost_FOUND)
+if(Boost_FOUND AND NOT BOOST_VERSION VERSION_LESS "1.36" )
   include_directories(${Boost_INCLUDE_DIRS})
 else()
   message("Boost >= 1.36 not found. Using minimal internal version. Not recommended if GROMACS is used as library!")
