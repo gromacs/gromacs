@@ -672,10 +672,11 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
     endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
-
-#    Fortran is temporarily disabled while we push in nbNxN kernels.
-#    We need to fake it a bit here to avoid jenkins build errors!
-#    add_definitions(-DGMX_FORTRAN)
+    set(GMX_FORTRAN 1)
+    if(GMX_OPENMP AND OPENMP_FOUND AND BUILD_SHARED_LIBS)
+	set(CMAKE_SHARED_LINKER_FLAGS "${OpenMP_C_FLAGS}" CACHE STRING 
+        "Flags used by the linker during the creation of dll's" FORCE)
+    endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
