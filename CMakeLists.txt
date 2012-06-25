@@ -467,10 +467,12 @@ else ( NOT GMX_INTERNAL_BOOST )
   set (Boost_FOUND FALSE)
 endif( NOT GMX_INTERNAL_BOOST )
 
-if(Boost_FOUND)
+if(Boost_FOUND AND NOT BOOST_VERSION VERSION_LESS "1.36" )
   include_directories(${Boost_INCLUDE_DIRS})
 else()
-  message("Boost >= 1.36 not found. Using minimal internal version. Not recommended if GROMACS is used as library!")
+  if(NOT BOOST_QUIETLY)
+    message("Boost >= 1.36 not found. Using minimal internal version. Not recommended if GROMACS is used as library!")
+  endif()
   include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
   add_definitions( -DBOOST_NO_TYPEID )  #TYPEID not supported for minimal internal version (would add significant more code)
   # TODO: Propagate the above settings to the installed CMakeFiles.txt template
@@ -481,6 +483,7 @@ else()
           DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost
           COMPONENT development)
 endif()
+set(BOOST_QUIETLY TRUE CACHE INTERNAL "")
 
 if (LIBXML2_FOUND)
     option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ON)
