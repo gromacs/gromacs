@@ -70,17 +70,37 @@
 [ H3O ]
  [ atoms ]
     OW   OW_hydronium       -0.59     0
-    HW1  HW_hydronium        0.53     0
-    HW2  HW_hydronium        0.53     0
     HW3  HW_hydronium        0.53     0
+    HW4  HW_hydronium        0.53     0
+    HW5  HW_hydronium        0.53     0
 [ bonds ]
-    OW   HW1	0.102   502416.0 
-    OW   HW2	0.102   502416.0 
     OW   HW3	0.102   502416.0 
+    OW   HW4	0.102   502416.0 
+    OW   HW5	0.102   502416.0 
 [ angles ]
-    HW1  OW   HW2   112   628.02	 
-    HW1  OW   HW3   112   628.02	 
-    HW3  OW   HW2   112   628.02	 
+    HW3  OW   HW4   112   628.02	 
+    HW3  OW   HW5   112   628.02	 
+    HW5  OW   HW4   112   628.02	 
+
+[ HXX ]
+ [ atoms ]
+    OW   OW_hydronium       -0.59     0
+    HW1  HW        0.417     0
+    HW2  HW        0.417     0
+    HW3  HW_hydronium        0.53     0
+    HW4  HW_hydronium        0.53     0
+    HW5  HW_hydronium        0.53     0
+[ bonds ]
+    OW   HW1	0.09572   502416.0
+    OW   HW2	0.09572   502416.0
+    OW   HW3	0.102   502416.0 
+    OW   HW4	0.102   502416.0 
+    OW   HW5	0.102   502416.0 
+[ angles ]
+    HW1  OW   HW2   104.52    628.02
+    HW3  OW   HW4   112   628.02	 
+    HW3  OW   HW5   112   628.02	 
+    HW5  OW   HW4   112   628.02	 
 
 ; ------------------
 ; Titrable acetic acid. 

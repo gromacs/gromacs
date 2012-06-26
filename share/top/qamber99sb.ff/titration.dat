@@ -7,7 +7,7 @@
 -->
 <titrations>
   <resblocks>
-    <residue_type description="water" name="HOH" protonated="H3O" water="TRUE">
+    <residue_type description="water" name="HOH" protonated="HXX" water="TRUE">
       <res name="HOH">
 	<acceptor name="OW" product="H3O"/>
       </res>

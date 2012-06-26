@@ -14,6 +14,7 @@
   (HAIYANG)
   ** See which particles have interactions turned on
   (ERIK)
+  FIXED NOW!
 
 * Move do_titration to a point AFTER the calculation of full-step velocities.
   This could make energy conservaion easier. Test this when the rest works.
