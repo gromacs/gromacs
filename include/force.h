@@ -140,14 +140,12 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * tryGPU: should we try to use a GPU/emulation?
  * useGPU: return if a are using a real GPU
  * forceGPU: force the use of a GPU
- * tabulated_force: do we use tables for the force calculation
  * kernel_type: return the selected kernel type
  */
 void pick_nbnxn_kernel(FILE *fp,
                        const t_commrec *cr,
                        gmx_bool tryGPU, gmx_bool *useGPU,
                        gmx_bool forceGPU,
-		       gmx_bool tabulated_force,
                        int *kernel_type);
 
 void init_interaction_const_tables(FILE *fp, 

@@ -1556,7 +1556,6 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
                                   const gmx_detectcpu_t *cpu_info,
-                                  gmx_bool tabulated_force,
                                   int *kernel_type)
 {
 #ifdef GMX_X86_SSE2
@@ -1614,7 +1613,6 @@ void pick_nbnxn_kernel(FILE *fp,
                        const t_commrec *cr,
                        gmx_bool tryGPU, gmx_bool *useGPU,
                        gmx_bool forceGPU,
-                       gmx_bool tabulated_force,
                        int *kernel_type)
 {
     gmx_bool emulateGPU=FALSE;
@@ -1676,8 +1674,7 @@ void pick_nbnxn_kernel(FILE *fp,
 
     if (*kernel_type == nbkNotSet)
     {
-        pick_nbnxn_kernel_cpu(fp,cr,&cpu_information,tabulated_force,
-                              kernel_type);
+        pick_nbnxn_kernel_cpu(fp,cr,&cpu_information,kernel_type);
     }
 
     if (fp != NULL)
@@ -1908,7 +1905,6 @@ static void init_nb_verlet(FILE *fp,
                                   &nbv->useGPU,
                                   (nbpu_opt != NULL &&
                                    strncmp(nbpu_opt,"gpu",3) == 0),
-                                  EEL_FULL(ir->coulombtype),
                                   &nbv->grp[i].kernel_type);
             }
             else
@@ -1923,7 +1919,6 @@ static void init_nb_verlet(FILE *fp,
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE,
-                                  EEL_FULL(ir->coulombtype),
                                   &nbv->grp[i].kernel_type);
             }
             else
