@@ -657,7 +657,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 #endif /* HAVE_LIBGSL */
 
 #ifdef HAVE_LIBGSL
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPNEMP
   nThreads = gmx_omp_get_max_threads();
   gmx_omp_set_num_threads(nThreads);
   fprintf(stdout, "We will be using %i threads.\n", nThreads);
