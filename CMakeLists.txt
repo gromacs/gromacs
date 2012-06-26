@@ -586,8 +586,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
 
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
-
-    message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
 
@@ -623,8 +624,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
-
-    message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUAL "AVX_256")
 
@@ -663,11 +665,15 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
     # But just enable one of the choices internally...
     if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA")
         set(GMX_X86_AVX_128_FMA 1)
-        message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+	if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+	endif()
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_X86_AVX_256 1)
-        message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+	if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+	endif()
     endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
@@ -678,7 +684,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
 
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
-    message(STATUS "Configuring for BlueGene")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Configuring for BlueGene")
+    endif()
     set(GMX_BLUEGENE 1)
     if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
         set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
@@ -696,6 +704,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
 else(${GMX_ACCELERATION} STREQUAL "NONE")
     MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
+set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
 if(GMX_FORTRAN OR GMX_POWER6)
     if (GMX_THREAD_MPI)
