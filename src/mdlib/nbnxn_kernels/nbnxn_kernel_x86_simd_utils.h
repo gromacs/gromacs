@@ -253,8 +253,8 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     }                                                                   \
     GMX_MM_TRANSPOSE2_OP_PD(clj_SSE[0],clj_SSE[1],c6t_SSE[0],c12t_SSE[0]); \
     GMX_MM_TRANSPOSE2_OP_PD(clj_SSE[2],clj_SSE[3],c6t_SSE[1],c12t_SSE[1]); \
-    GMX_2_M128D_TO_M256D(c6t_SSE[0],c6t_SSE[2],c6_SSE);                 \
-    GMX_2_M128D_TO_M256D(c12t_SSE[1],c12t_SSE[3],c12_SSE);              \
+    GMX_2_M128D_TO_M256D(c6t_SSE[0],c6t_SSE[1],c6_SSE);                 \
+    GMX_2_M128D_TO_M256D(c12t_SSE[0],c12t_SSE[1],c12_SSE);              \
 }
 
 #endif
