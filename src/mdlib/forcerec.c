@@ -70,6 +70,7 @@
 #include "statutil.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gmx_detectcpu.h"
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
@@ -1333,112 +1334,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
 }
 
 
-/* Return TRUE if the CPU vendor is Intel, or possibly Intel and x86_64 */
-static gmx_bool 
-check_intel_x86_64()
-{
-    unsigned int level;
-    unsigned int _ebx,_ecx,_edx;
-    gmx_bool status;
-    int CPUInfo[4];
-
-    level = 0;
-#ifdef _MSC_VER
-    __cpuid(CPUInfo,0);
-	
-    _ebx=CPUInfo[1];
-    _ecx=CPUInfo[2];
-    _edx=CPUInfo[3];
-
-#elif defined(__x86_64__)
-    __asm__ ("push %%rbx\n\tcpuid\n\tmov %%rbx, %%rax\n\tpop %%rbx\n"   \
-             : "=a" (_ebx), "=c" (_ecx), "=d" (_edx)                    \
-             : "1" (level));
-#else
-    _ebx=_ecx=_edx=0;
-#endif
-
-    /* In sequence these ints as chars read "GenuineIntel" */
-    status = (_ebx == 0x756e6547 &&
-              _edx == 0x49656e69 &&
-              _ecx == 0x6c65746e);
-
-    return status;
-}
-
-typedef struct
-{
-    gmx_bool sse2;
-    gmx_bool sse4_1;
-    gmx_bool avx;
-    gmx_bool avx_intel;
-} cpuinfo_t;
-
-/* Return 1 if SSE2 support is present, otherwise 0. */
-static void 
-get_cpuinfo(cpuinfo_t *cpuinfo)
-{
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
-	unsigned int level;
-	unsigned int _eax,_ebx,_ecx,_edx;
-	int status;
-	int CPUInfo[4];
-    gmx_bool intel_x86_64;
-
-    /* This code is tricky.
-     * Moving this call further down changes the results of the assembly
-     * for getting the CPU vendor information.
-     */
-	intel_x86_64 = check_intel_x86_64();
-
-	level = 1;
-#ifdef _MSC_VER
-	__cpuid(CPUInfo,1);
-	
-	_eax=CPUInfo[0];
-	_ebx=CPUInfo[1];
-	_ecx=CPUInfo[2];
-	_edx=CPUInfo[3];
-	
-#elif defined(__x86_64__)
-	/* GCC 64-bit inline asm */
-	__asm__ ("push %%rbx\n\tcpuid\n\tpop %%rbx\n"                 \
-			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
-			 : "0" (level));
-#elif defined(__i386__)
-	__asm__ ("push %%ebx\n\tcpuid\n\tpop %%ebx\n"                 \
-			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
-			 : "0" (level));
-#else
-	_eax=_ebx=_ecx=_edx=0;
-#endif
-    
-    /* Features:
-     * SSE      Bit 25 of edx should be set
-     * SSE2     Bit 26 of edx should be set
-     * SSE3     Bit  0 of ecx should be set
-     * SSE4.1   Bit 19 of ecx should be set
-     * AVX      Bit 28 of ecx should be set
-     */
-    cpuinfo->sse2      = (_edx & (1 << 26)) != 0;
-    cpuinfo->sse4_1    = (_ecx & (1 << 19)) != 0;
-    cpuinfo->avx       = (_ecx & (1 << 28)) != 0;
-    cpuinfo->avx_intel = (cpuinfo->avx && intel_x86_64);
-
-    if (debug)
-    {
-        fprintf(debug,"cpuinfo: sse2 %d sse4_1 %d avx %d avx_intel %d\n",
-                cpuinfo->sse2,cpuinfo->sse4_1,cpuinfo->avx,cpuinfo->avx_intel);
-    }
-#else
-    cpuinfo->sse2      = FALSE;
-    cpuinfo->sse4_1    = FALSE;
-    cpuinfo->avx       = FALSE;
-    cpuinfo->avx_intel = FALSE;
-#endif
-}
-
-
 static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 {
     int t,i;
@@ -1660,30 +1555,30 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
 
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
+                                  const gmx_detectcpu_t *cpu_info,
                                   gmx_bool tabulated_force,
                                   int *kernel_type)
 {
-#if defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2)
+#ifdef GMX_X86_SSE2
     /* by default we'll use the 4xN SSE/AVX 128-bit kernels */
     if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
     {
-        cpuinfo_t cpuinfo;
+        gmx_detectcpu_t cpuinfo;
 #ifdef GMX_DOUBLE
         gmx_bool double_prec = TRUE;
 #else
         gmx_bool double_prec = FALSE;
 #endif
 
-        get_cpuinfo(&cpuinfo);
+        gmx_detectcpu(&cpuinfo);
 
-        /* On Intel Sandy-Bridge AVX kernels are always faster, except for
-         * tabulated forces in single precision, which are memory limited.
-         * On AMD Bulldozer AVX is much slower than SSE.
+        /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
+         * On AMD Bulldozer AVX0-256 is much slower than AVX-128.
          */
-        if (cpuinfo.avx_intel &&
-            (double_prec || !tabulated_force))
+        if (cpu_info->feature[GMX_DETECTCPU_FEATURE_X86_AVX] &&
+            cpu_info->vendorid != GMX_DETECTCPU_VENDOR_AMD)
         {
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
             *kernel_type = nbk4xN_X86_SIMD256;
 #else
             md_print_warning(cr,fp,"NOTE: Gromacs was compiled without AVX support,\n      can not use the faster AVX kernels\n");
@@ -1701,19 +1596,12 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
         }
         if (getenv("GMX_NBNXN_AVX256") != NULL)
         {
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
             *kernel_type = nbk4xN_X86_SIMD256;
 #else
             gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but Gromacs was built without AVX support");
 #endif
         }
-
-#ifndef GMX_SSE4_1
-        if (*kernel_type == nbk4xN_X86_SIMD128 && cpuinfo.sse4_1)
-        {
-            md_print_warning(cr,fp,"NOTE: Gromacs was compiled without SSE4.1 support,\n      can not use the faster SSE4.1 kernels\n");
-        }
-#endif
     }
     else
 #endif
@@ -1730,6 +1618,7 @@ void pick_nbnxn_kernel(FILE *fp,
                        int *kernel_type)
 {
     gmx_bool emulateGPU=FALSE;
+    gmx_detectcpu_t cpu_information;
 
     *kernel_type = nbkNotSet;
 
@@ -1782,9 +1671,13 @@ void pick_nbnxn_kernel(FILE *fp,
         }
     }
 
+    /* We store the CPU info in forcerec, but we might not have it here yet */
+    gmx_detectcpu(&cpu_information);
+
     if (*kernel_type == nbkNotSet)
     {
-        pick_nbnxn_kernel_cpu(fp,cr,tabulated_force,kernel_type);
+        pick_nbnxn_kernel_cpu(fp,cr,&cpu_information,tabulated_force,
+                              kernel_type);
     }
 
     if (fp != NULL)
@@ -2144,6 +2037,16 @@ void init_forcerec(FILE *fp,
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
     
+    gmx_detectcpu(&fr->cpu_information);
+    if(MASTER(cr))
+    {
+        /* Only print warnings from master */
+        gmx_detectcpu_check_acceleration(fr->cpu_information,fp);
+    }
+
+    /* By default we turn acceleration on, but it might be turned off further down... */
+    fr->use_acceleration = TRUE;
+
     fr->bDomDec = DOMAINDECOMP(cr);
 
     natoms = mtop->natoms;
@@ -2262,25 +2165,18 @@ void init_forcerec(FILE *fp,
         bGenericKernelOnly = TRUE;
         bNoSolvOpt         = TRUE;
     }
-
-    fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
-    if(fp && fr->UseOptimizedKernels==FALSE)
-    {
-        fprintf(fp,
-                "\nFound environment variable GMX_NOOPTIMIZEDKERNELS.\n"
-                "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
-    }    
-
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
-    {
-        cpuinfo_t cpuinfo;
-
-        get_cpuinfo(&cpuinfo);
-
-        fr->UseOptimizedKernels = cpuinfo.sse2;
-    }
-#endif
     
+    if( (getenv("GMX_DISABLE_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
+    {
+        fr->use_acceleration = FALSE;
+        if (fp != NULL)
+        {
+            fprintf(fp,
+                    "\nFound environment variable GMX_DISABLE_ACCELERATION.\n"
+                    "Disabling all architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
+        }
+    }
+
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir,mtop,FALSE,NULL,NULL);
     fr->AllvsAll_work   = NULL;
@@ -2725,8 +2621,7 @@ void init_forcerec(FILE *fp,
     
     if (cr->duty & DUTY_PP)
     {
-        gmx_setup_kernels(fp,bGenericKernelOnly);
-
+        gmx_setup_kernels(fp,fr,bGenericKernelOnly);
         if (ir->bAdress)
         {
             gmx_setup_adress_kernels(fp,bGenericKernelOnly);

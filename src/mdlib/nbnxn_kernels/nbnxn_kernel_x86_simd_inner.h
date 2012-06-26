@@ -45,9 +45,10 @@
 #define EXCL_FORCES
 #endif
 
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && (defined GMX_SSE4_1 || defined GMX_AVX) && !defined COUNT_PAIRS
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !defined __GNUC__
 /* Without exclusions and energies we only need to mask the cut-off,
- * this is faster with blendv (only available with SSE4.1).
+ * this is faster with blendv (only available with SSE4.1 and later).
+ * With gcc blendv is much slower; tested with gcc 4.6.2 and 4.6.3.
  */
 #define CUTOFF_BLENDV
 #endif
@@ -265,21 +266,33 @@
             }
 #else
             {
+#ifndef GMX_DOUBLE
                 /* Load integer interaction mask */
                 /* With AVX there are no integer operations, so cast to real */
                 gmx_mm_pr mask_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl));
-#ifndef GMX_DOUBLE
                 /* We can't compare all 4*8=32 float bits: shift the mask */
                 gmx_mm_pr masksh_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl>>(2*UNROLLJ)));
-#endif
-                int_SSE0  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask0),zero_SSE);
-                int_SSE1  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask1),zero_SSE);
-#ifndef GMX_DOUBLE
-                int_SSE2  = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask0),zero_SSE);
-                int_SSE3  = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask1),zero_SSE);
+                /* Intel Compiler version 12.1.3 20120130 is buggy: use cast.
+                 * With gcc we don't need the cast, but it's faster.
+                 */
+#define cast_cvt(x)  _mm256_cvtepi32_ps(_mm256_castps_si256(x))
+                int_SSE0  = gmx_cmpneq_pr(cast_cvt(gmx_and_pr(mask_pr,mask0)),zero_SSE);
+                int_SSE1  = gmx_cmpneq_pr(cast_cvt(gmx_and_pr(mask_pr,mask1)),zero_SSE);
+                int_SSE2  = gmx_cmpneq_pr(cast_cvt(gmx_and_pr(masksh_pr,mask0)),zero_SSE);
+                int_SSE3  = gmx_cmpneq_pr(cast_cvt(gmx_and_pr(masksh_pr,mask1)),zero_SSE);
+#undef cast_cvt
 #else
-                int_SSE2  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask2),zero_SSE);
-                int_SSE3  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask3),zero_SSE);
+                /* Load integer interaction mask */
+                /* With AVX there are no integer operations,
+                 * and there is no int to double conversion, so cast to float
+                 */
+                __m256 mask_ps = _mm256_castsi256_ps(_mm256_set1_epi32(l_cj[cjind].excl));
+#define cast_cvt(x)  _mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castps_si256(x)))
+                int_SSE0  = gmx_cmpneq_pr(cast_cvt(_mm256_and_ps(mask_ps,mask0)),zero_SSE);
+                int_SSE1  = gmx_cmpneq_pr(cast_cvt(_mm256_and_ps(mask_ps,mask1)),zero_SSE);
+                int_SSE2  = gmx_cmpneq_pr(cast_cvt(_mm256_and_ps(mask_ps,mask2)),zero_SSE);
+                int_SSE3  = gmx_cmpneq_pr(cast_cvt(_mm256_and_ps(mask_ps,mask3)),zero_SSE);
+#undef cast_cvt
 #endif
             }
 #endif
@@ -524,7 +537,7 @@
             ti_SSE1       = gmx_cvttpr_epi32(rs_SSE1);
             ti_SSE2       = gmx_cvttpr_epi32(rs_SSE2);
             ti_SSE3       = gmx_cvttpr_epi32(rs_SSE3);
-#if defined GMX_SSE4_1 || defined GMX_MM256_HERE
+#ifdef GMX_X86_SSE4_1
             /* SSE4.1 floor is faster than gmx_cvtepi32_ps int->float cast */
             rf_SSE0       = gmx_floor_pr(rs_SSE0);
             rf_SSE1       = gmx_floor_pr(rs_SSE1);

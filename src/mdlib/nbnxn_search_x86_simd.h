@@ -210,7 +210,7 @@ static void make_cluster_list_x86_simd256
             
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
-            *ndistc += 4*SSE_OR_AVX_WIDTH;
+            *ndistc += 4*GMX_X86_SIMD_WIDTH_HERE;
         }
         if (!InRange)
         {
@@ -279,7 +279,7 @@ static void make_cluster_list_x86_simd256
             
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
-            *ndistc += 4*SSE_OR_AVX_WIDTH;
+            *ndistc += 4*GMX_X86_SIMD_WIDTH_HERE;
         }
         if (!InRange)
         {

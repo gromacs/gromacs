@@ -57,8 +57,8 @@
 #include "nonbonded.h"
 #include "mdrun.h"
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
-#include "gmx_sse2_single.h"
+#if !defined(GMX_DOUBLE) && defined(GMX_X86_64_SSE2)
+#include "gmx_x86_simd_single.h"
 #define SSE_PROPER_DIHEDRALS
 #endif
 

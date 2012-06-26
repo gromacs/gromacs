@@ -39,6 +39,7 @@
 #include "idef.h"
 #include "nb_verlet.h"
 #include "interaction_const.h"
+#include "../gmx_detectcpu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -212,7 +213,8 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
-  gmx_bool  UseOptimizedKernels;
+  gmx_detectcpu_t cpu_information;
+  gmx_bool        use_acceleration;
 
   /* Use special N*N kernels? */
   gmx_bool bAllvsAll;

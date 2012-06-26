@@ -44,7 +44,7 @@
 #include "force.h"
 #include "gmx_omp_nthreads.h"
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#ifdef GMX_X86_SSE2
 
 #include "nbnxn_kernel_x86_simd128.h"
 
@@ -252,7 +252,7 @@ nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
                          real                       *fshift,
                          real                       *Vc,
                          real                       *Vvdw)
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#ifdef GMX_X86_SSE2
 {
     int              nnbl;
     nbnxn_pairlist_t **nbl;

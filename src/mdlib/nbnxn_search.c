@@ -48,23 +48,14 @@
 #include "gmx_omp_nthreads.h"
 #include "nrnb.h"
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#ifdef GMX_X86_SSE2
 #define NBNXN_SEARCH_SSE
 
 #ifndef GMX_DOUBLE
 #define NBNXN_SEARCH_SSE_SINGLE
-#include "gmx_sse2_single.h"
+#include "gmx_x86_simd_single.h"
 #else
-#include "gmx_sse2_double.h"
-#endif
-
-#include <xmmintrin.h>
-#include <emmintrin.h>
-#ifdef GMX_SSE4_1
-#include <smmintrin.h>
-#endif
-#ifdef GMX_AVX
-#include <immintrin.h>
+#include "gmx_x86_simd_double.h"
 #endif
 
 #if defined NBNXN_SEARCH_SSE_SINGLE && NSUBCELL == 8
@@ -187,7 +178,7 @@
 
 #ifdef NBNXN_SEARCH_SSE
 #define GMX_MM128_HERE
-#include "gmx_sse_or_avx.h"
+#include "gmx_x86_simd_macros.h"
 typedef struct nbnxn_x_ci_x86_simd128 {
     /* The i-cluster coordinates for simple search */
     gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
@@ -196,9 +187,9 @@ typedef struct nbnxn_x_ci_x86_simd128 {
     gmx_mm_pr ix_SSE3,iy_SSE3,iz_SSE3;
 } nbnxn_x_ci_x86_simd128_t;
 #undef GMX_MM128_HERE
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
 #define GMX_MM256_HERE
-#include "gmx_sse_or_avx.h"
+#include "gmx_x86_simd_macros.h"
 typedef struct nbnxn_x_ci_x86_simd256 {
     /* The i-cluster coordinates for simple search */
     gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
@@ -218,7 +209,7 @@ typedef struct nbnxn_list_work {
     real  *x_ci;       /* The coordinates, pbc shifted, for each atom       */
 #ifdef NBNXN_SEARCH_SSE
     nbnxn_x_ci_x86_simd128_t *x_ci_x86_simd128;
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
     nbnxn_x_ci_x86_simd256_t *x_ci_x86_simd256;
 #endif
 #endif
@@ -247,7 +238,7 @@ gmx_icell_set_x_t(int ci,
 static gmx_icell_set_x_t icell_set_x_simple;
 #ifdef NBNXN_SEARCH_SSE
 static gmx_icell_set_x_t icell_set_x_simple_x86_simd128;
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
 static gmx_icell_set_x_t icell_set_x_simple_x86_simd256;
 #endif
 #endif
@@ -2449,7 +2440,7 @@ static float subc_bb_dist2_sse(int na_c,
     __m128 dm_SSE;
     __m128 dm0_SSE;
     __m128 d2_SSE;
-#ifndef GMX_SSE4_1
+#ifndef GMX_X86_SSE4_1
     float d2_array[7],*d2_align;
 
     d2_align = (float *)(((size_t)(d2_array+3)) & (~((size_t)15)));
@@ -2470,7 +2461,7 @@ static float subc_bb_dist2_sse(int na_c,
 
     dm_SSE    = _mm_max_ps(dl_SSE,dh_SSE);
     dm0_SSE   = _mm_max_ps(dm_SSE,_mm_setzero_ps());
-#ifndef GMX_SSE4_1
+#ifndef GMX_X86_SSE4_1
     d2_SSE    = _mm_mul_ps(dm0_SSE,dm0_SSE);
 
     _mm_store_ps(d2_align,d2_SSE);
@@ -2865,7 +2856,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     snew_aligned(nbl->work->x_ci,NBNXN_NA_SC_MAX*DIM,16);
 #ifdef NBNXN_SEARCH_SSE
     snew_aligned(nbl->work->x_ci_x86_simd128,1,16);
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
     snew_aligned(nbl->work->x_ci_x86_simd256,1,32);
 #endif
 #endif
@@ -3130,7 +3121,7 @@ static unsigned int get_imask_x86_simd128(gmx_bool rdiag,int ci,int cj)
 #endif
 }
 
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
 /* Returns a diagonal or off-diagonal interaction mask for SIMD256 lists */
 static unsigned int get_imask_x86_simd256(gmx_bool rdiag,int ci,int cj)
 {
@@ -3267,16 +3258,16 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 #ifdef NBNXN_SEARCH_SSE
 /* Include make_cluster_list_x86_simd128/256 */
 #define GMX_MM128_HERE
-#include "gmx_sse_or_avx.h"
+#include "gmx_x86_simd_macros.h"
 #define STRIDE_S  PACK_X4
 #include "nbnxn_search_x86_simd.h"
 #undef STRIDE_S
 #undef GMX_MM128_HERE
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
 /* Include make_cluster_list_x86_simd128/256 */
 #define GMX_MM256_HERE
-#include "gmx_sse_or_avx.h"
-#define STRIDE_S  SSE_OR_AVX_WIDTH
+#include "gmx_x86_simd_macros.h"
+#define STRIDE_S  GMX_X86_SIMD_WIDTH_HERE
 #include "nbnxn_search_x86_simd.h"
 #undef STRIDE_S
 #undef GMX_MM256_HERE
@@ -4926,7 +4917,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                                       rl2,rbb2,
                                                                       &ndistc);
                                         break;
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
                                     case nbk4xN_X86_SIMD256:
                                         check_subcell_list_space_simple(nbl,ci_to_cj(na_cj_2log,cl-cf)+2);
                                         make_cluster_list_x86_simd256(gridj,
@@ -5055,7 +5046,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
         case nbk4xN_X86_SIMD128:
             nbs->icell_set_x = icell_set_x_x86_simd128;
             break;
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
         case nbk4xN_X86_SIMD256:
             nbs->icell_set_x = icell_set_x_x86_simd256;
             break;

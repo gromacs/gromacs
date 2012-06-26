@@ -44,7 +44,7 @@
 #include "force.h"
 #include "gmx_omp_nthreads.h"
 
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
 
 #include "nbnxn_kernel_x86_simd256.h"
 
@@ -252,7 +252,7 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
                          real                       *fshift,
                          real                       *Vc,
                          real                       *Vvdw)
-#ifdef GMX_AVX
+#ifdef GMX_X86_AVX_256
 {
     int              nnbl;
     nbnxn_pairlist_t **nbl;

@@ -35,21 +35,15 @@
 
 #include <math.h>
 
-#include <xmmintrin.h>
-#include <emmintrin.h>
-#ifdef GMX_SSE4_1
-#include <smmintrin.h>
-#endif
-
 #include "typedefs.h"
 
 /* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file */
-#include "gmx_sse_or_avx.h"
+#include "gmx_x86_simd_macros.h"
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    SSE_OR_AVX_WIDTH
+#define UNROLLJ    GMX_X86_SIMD_WIDTH_HERE
 
 #if defined GMX_MM128_HERE || defined GMX_DOUBLE
 #define STRIDE     4
@@ -221,10 +215,11 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     gmx_mm_pr  mask0 = _mm256_castsi256_ps(_mm256_set_epi32( 0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004, 0x0002, 0x0001 ));
     gmx_mm_pr  mask1 = _mm256_castsi256_ps(_mm256_set_epi32( 0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 ));
 #else
-    gmx_mm_pr  mask0 = _mm256_castsi256_pd(_mm256_set_epi32( 0x0008, 0x0008, 0x0004, 0x0004, 0x0002, 0x0002, 0x0001, 0x0001 ));
-    gmx_mm_pr  mask1 = _mm256_castsi256_pd(_mm256_set_epi32( 0x0080, 0x0080, 0x0040, 0x0040, 0x0020, 0x0020, 0x0010, 0x0010 ));
-    gmx_mm_pr  mask2 = _mm256_castsi256_pd(_mm256_set_epi32( 0x0800, 0x0800, 0x0400, 0x0400, 0x0200, 0x0200, 0x0100, 0x0100 ));
-    gmx_mm_pr  mask3 = _mm256_castsi256_pd(_mm256_set_epi32( 0x8000, 0x8000, 0x4000, 0x4000, 0x2000, 0x2000, 0x1000, 0x1000 ));
+    /* There is no 256-bit int to double conversion, so we use float here */
+    __m256     mask0 = _mm256_castsi256_ps(_mm256_set_epi32( 0x0008, 0x0008, 0x0004, 0x0004, 0x0002, 0x0002, 0x0001, 0x0001 ));
+    __m256     mask1 = _mm256_castsi256_ps(_mm256_set_epi32( 0x0080, 0x0080, 0x0040, 0x0040, 0x0020, 0x0020, 0x0010, 0x0010 ));
+    __m256     mask2 = _mm256_castsi256_ps(_mm256_set_epi32( 0x0800, 0x0800, 0x0400, 0x0400, 0x0200, 0x0200, 0x0100, 0x0100 ));
+    __m256     mask3 = _mm256_castsi256_ps(_mm256_set_epi32( 0x8000, 0x8000, 0x4000, 0x4000, 0x2000, 0x2000, 0x1000, 0x1000 ));
 #endif
 #endif
 
@@ -265,7 +260,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #ifndef GMX_MM256_HERE
     __m128i    zeroi_SSE = _mm_setzero_si128();
 #endif
-#if defined GMX_SSE4_1 || defined GMX_MM256_HERE
+#ifdef GMX_X86_SSE4_1
     gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
 #endif
 
