@@ -485,7 +485,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 {
     cudaError_t stat;
     int i, adat_end, iloc = -1;
-    unsigned int *signal_bytes;
+    volatile unsigned int *signal_bytes;
     unsigned int signal_pattern;
 
     /* determine interaction locality from atom locality */
