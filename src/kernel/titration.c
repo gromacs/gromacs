@@ -719,7 +719,7 @@ static int get_qhop_atoms(FILE *fplog,
                                 if (strcmp(qreac[AD][reac].name[a], atomname) == 0)
                                 {
                                     bMatch = TRUE;
-                                    q_atoms[q_atoms_nr].resname      = qdb->rb.qrt[rb].protonated;
+                                    q_atoms[q_atoms_nr].resname      = qdb->rb.qrt[rb].canonical;
                                     q_atoms[q_atoms_nr].atomname     = qreac[AD][reac].name[a];
                                     q_atoms[q_atoms_nr].res_id       = resnr-1;
                                     q_atoms[q_atoms_nr].atom_id      = i;
