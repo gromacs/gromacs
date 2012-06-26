@@ -402,7 +402,18 @@ void nbnxn_cuda_init(FILE *fplog,
         }
         else
         {
-#ifdef CANT_CUTHREAD_YIELD
+#ifdef CAN_CUTHREAD_YIELD
+            nb->use_stream_sync = FALSE;
+            nb->do_time         = FALSE;
+
+            sprintf(sbuf, "NOTE: running on a GPU with ECC on; will not use cudaStreamSynchronize-based\n"
+                    "      waiting as it generally causes performance loss when used with ECC.");
+            fprintf(stderr, "\n%s\n", sbuf);
+            if (fplog)
+            {
+                fprintf(fplog, "\n%s\n", sbuf);
+            }
+#else
             nb->use_stream_sync = TRUE;
             nb->do_time         = TRUE;
 
@@ -414,19 +425,7 @@ void nbnxn_cuda_init(FILE *fplog,
             {
                 fprintf(fplog, "\n%s\n", sbuf);
             }
-#else
-            nb->use_stream_sync = FALSE;
-            nb->do_time         = FALSE;
-
-            sprintf(sbuf, "NOTE: running on a GPU with ECC on; will not use cudaStreamSynchronize-based\n"
-                    "      waiting as it generally causes performance loss when used with ECC.");
-            fprintf(stderr, "\n%s\n", sbuf);
-            if (fplog)
-            {
-                fprintf(fplog, "\n%s\n", sbuf);
-            }
-
-#endif
+#endif /* CAN_CUTHREAD_YIELD */
         }
     }
     else

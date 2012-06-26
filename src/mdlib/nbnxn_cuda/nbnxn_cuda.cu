@@ -52,6 +52,23 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
 
+/* we can do yield which meaning that we have all the required posix/Win stuff */
+#ifdef CAN_CUTHREAD_YIELD
+#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__
+/* On Windows we assume that we always have windows.h */
+#include <windows.h>
+#else
+/* Posix -- if we got here it means that unistd.h is available, but we'll
+   check again to catch future stupid modifications. */
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#endif
+#endif /* CAN_CUTHREAD_YIELD */
+
+
+/***** The kernels come here *****/
+
 #define CLUSTER_SIZE            (NBNXN_GPU_CLUSTER_SIZE)
 
 #include "vectype_ops.cuh"
@@ -82,12 +99,23 @@ typedef void (*p_k_nbnxn)(const cu_atomdata_t,
                           const cu_plist_t,
                           gmx_bool);
 
+/*********************************/
+
 /* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
 static gmx_bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static gmx_bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 /* Will run kernel #2 if this env var is set. */
 static gmx_bool doKernel2    = (getenv("GMX_NB_K2") != NULL);
+
+
+/* Single byte of the bit-pattern used to fill the last element of the force
+   array when using polling-based waiting. */
+static unsigned char gpu_sync_signal_byte    = 0xAA;
+/* Bit-pattern used to fill the last element of the force with when using
+   polling-based waiting. */
+static unsigned int  gpu_sync_signal_pattern = 0xAAAAAAAA;
+
 
 /*! Returns the number of blocks to be used  for the nonbonded GPU kernel. */
 static inline int calc_nb_blocknr(int nwork_units)
@@ -402,7 +430,8 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
            (separately for l/nl parts) to a specific bit-pattern that we can check 
            for while waiting for the transfer to be done. */
         signal_field = adat->f + adat_end;
-        stat = cudaMemsetAsync(&signal_field->z, 0xAA, sizeof(signal_field->z), stream);
+        stat = cudaMemsetAsync(&signal_field->z, gpu_sync_signal_byte,
+                               sizeof(signal_field->z), stream);
         CU_RET_ERR(stat, "cudaMemsetAsync of the signal_field failed");
 
         /* For safety reasons set a few (5%) forces to NaN. This way even if the
@@ -478,6 +507,21 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
+static inline void cuthread_yield(void)
+{
+#ifndef CAN_CUTHREAD_YIELD
+    gmx_incons("cuthread_yield called, but win/posix sleep is not available!")
+#else
+#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__
+        /* Windows */
+        Sleep(0);
+#else
+        /* Posix */
+        sleep(0);
+#endif
+#endif /* CAN_CUTHREAD_YIELD */
+}
+
 void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                          const nbnxn_atomdata_t *nbatom,
                          int flags, int aloc,
@@ -486,7 +530,6 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     cudaError_t stat;
     int i, adat_end, iloc = -1;
     volatile unsigned int *signal_bytes;
-    unsigned int signal_pattern;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -546,11 +589,10 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         /* Busy-wait until we get the signalling pattern set in last 4-bytes 
            of the l/nl float vector. */
         signal_bytes    = (unsigned int*)&nbatom->out[0].f[adat_end*3 + 2];
-        signal_pattern  = 0xAAAAAAAA; /* FIXME move this to a module-global constant */
-        while (*signal_bytes != signal_pattern) 
+        while (*signal_bytes != gpu_sync_signal_pattern)
         {
             /* back off, otherwise we get stuck */
-            CUTHREAD_YIELD;
+            cuthread_yield();
         }
     }
 
