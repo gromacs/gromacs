@@ -28,13 +28,15 @@ int main(void) {
 
     if(isfinite_compile_ok)
         MESSAGE(STATUS "Checking for isfinite - yes")
-            set(${VARIABLE} ${isfinite_compile_ok}
-                "Result of test for isfinite")
     else(isfinite_compile_ok)
         MESSAGE(STATUS "Checking for isfinite - no")
     endif(isfinite_compile_ok)
     set(isfinite_compile_ok "${isfinite_compile_ok}" CACHE INTERNAL "Result of isfinite check")
   endif(NOT DEFINED isfinite_compile_ok)
+  if(isfinite_compile_ok)
+    set(${VARIABLE} ${isfinite_compile_ok}
+                "Result of test for isfinite")
+  endif()
 ENDMACRO(gmx_test_isfinite VARIABLE)
 
 MACRO(gmx_test__isfinite VARIABLE)
@@ -52,13 +54,15 @@ int main(void) {
 
     if(_isfinite_compile_ok)
         MESSAGE(STATUS "Checking for _isfinite - yes")
-            set(${VARIABLE} ${_isfinite_compile_ok}
-                "Result of test for _isfinite")
     else(_isfinite_compile_ok)
         MESSAGE(STATUS "Checking for _isfinite - no")
     endif(_isfinite_compile_ok)
     set(_isfinite_compile_ok "${_isfinite_compile_ok}" CACHE INTERNAL "Result of _isfinite check")
   endif(NOT DEFINED _isfinite_compile_ok)
+  if(_isfinite_compile_ok)
+    set(${VARIABLE} ${_isfinite_compile_ok}
+                "Result of test for _isfinite")
+  endif()
 ENDMACRO(gmx_test__isfinite VARIABLE)
 
 # Necessary for MSVC
@@ -76,11 +80,13 @@ int main(void) {
 
     if(_finite_compile_ok)
         MESSAGE(STATUS "Checking for _finite - yes")
-            set(${VARIABLE} ${_finite_compile_ok}
-                "Result of test for _finite")
     else(_finite_compile_ok)
         MESSAGE(STATUS "Checking for _finite - no")
     endif(_finite_compile_ok)
     set(_finite_compile_ok "${_finite_compile_ok}" CACHE INTERNAL "Result of _finite check")
   endif(NOT DEFINED _finite_compile_ok)
+  if(_finite_compile_ok)
+    set(${VARIABLE} ${_finite_compile_ok}
+                "Result of test for _finite")
+  endif()
 ENDMACRO(gmx_test__finite VARIABLE)
