@@ -6,14 +6,16 @@
 
 * constraints?
   ** Almost works with SHAKE.
-     HAVE IDEA, WILL FIX! (ERIK)
-  ** Dosen't work with LINCS. No clue why.
+  FIXED
+  ** Dosen't work with LINCS. Possibly because the bond history is part of the algorithm.
 
 * There are differences in Ecoul with ICE turned on/off.
   ** Test pure water
+  NO DIFFERENCE
   (HAIYANG)
   ** See which particles have interactions turned on
   (ERIK)
+  Wrong hydrogens are turned on/off
   FIXED NOW!
 
 * Move do_titration to a point AFTER the calculation of full-step velocities.
