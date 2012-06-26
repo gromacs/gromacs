@@ -1,0 +1,8 @@
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Code-Review+1: Teemu Murtola <teemu.murtola@gmail.com>
+Verified+1: Jenkins Buildbot
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Tue, 26 Jun 2012 03:32:58 +0200
+Reviewed-on: https://gerrit.gromacs.org/1091
+Project: gromacs
+Branch: refs/heads/release-4-6
