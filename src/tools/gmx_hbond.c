@@ -39,17 +39,8 @@
 #include <math.h>
 
 /*#define HAVE_NN_LOOPS*/
-/* Set environment variable CFLAGS = "-fopenmp" when running
- * configure and define DOUSEOPENMP to make use of parallelized
- * calculation of autocorrelation function.
- * It also adds a new option -nthreads which sets the number of threads.
- * */
-/*#define DOUSEOPENMP*/
 
-#ifdef DOUSEOPENMP
-#define HAVE_OPENMP
-#include "omp.h"
-#endif
+#include "gmx_omp.h"
 
 #include "statutil.h"
 #include "copyrite.h"
@@ -81,7 +72,7 @@ const char *hxtypenames[NRHXTYPES]=
 {"n-n","n-n+1","n-n+2","n-n+3","n-n+4","n-n+5","n-n>6"};
 #define MAXHH 4
 
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #define MASTER_THREAD_ONLY(threadNr) ((threadNr)==0)
 #else
 #define MASTER_THREAD_ONLY(threadNr) ((threadNr)==(threadNr))
@@ -292,7 +283,7 @@ static PSTYPE periodicIndex(ivec r, t_gemPeriod *per, gmx_bool daSwap) {
     /* printf("New shift found: %i,%i,%i\n",r[XX],r[YY],r[ZZ]); */
 
 /* Unfortunately this needs to be critical it seems. */
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #pragma omp critical
 #endif
     {
@@ -567,7 +558,7 @@ static void storeHbEnergy(t_hbdata *hb, int d, int a, int h, t_E E, int frame){
         E = 0;
 
     hb->hbE.E[d][a][h][frame] = E;
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #pragma omp critical
 #endif
     {
@@ -2253,7 +2244,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     enum {AC_NONE, AC_NN, AC_GEM, AC_LUZAR};
 
 
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
     int *dondata=NULL, thisThread;
 #endif
 
@@ -2298,7 +2289,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     nn = nframes/2;
   
     if (acType != AC_NN ||
-#ifndef HAVE_OPENMP
+#ifndef GMX_OPENMP
         TRUE
 #else
         FALSE
@@ -2323,7 +2314,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
      * configure and define DOUSEOPENMP to make use of it.
      */
 
-#ifdef HAVE_OPENMP  /* ================================================= \
+#ifdef GMX_OPENMP  /* ================================================= \
                      * Set up the OpenMP stuff,                           |
                      * like the number of threads and such                |
                      */
@@ -2332,7 +2323,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 /* #if (_OPENMP >= 200805) /\* =====================\ *\/ */
 /*         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
 /* #else */
-        nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, gmx_omp_get_num_procs());
+        nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, gmx_omp_get_max_threads());
 /* #endif /\* _OPENMP >= 200805 ====================/ *\/ */
 
         gmx_omp_set_num_threads(nThreads);
@@ -2352,7 +2343,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         }
         fprintf(stderr, "\n"); /*                                         | */
     }  /*                                                                 | */
-#endif /* HAVE_OPENMP ===================================================/  */
+#endif /* GMX_OPENMP ===================================================/  */
 
 
     /* Build the ACF according to acType */
@@ -2363,7 +2354,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 #ifdef HAVE_NN_LOOPS
         /* Here we're using the estimated energy for the hydrogen bonds. */
         snew(ct,nn);
-#ifdef HAVE_OPENMP /* ==================================\ */      
+#ifdef GMX_OPENMP /* ==================================\ */      
 #pragma omp parallel                            \
     private(i, j, k, nh, E, rhbex, thisThread),	\
     default(shared)
@@ -2376,7 +2367,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
             snew(rhbex, n2);
             memset(rhbex, 0, n2*sizeof(real)); /* Trust no-one, not even malloc()! */
 
-#ifdef HAVE_OPENMP /* ################################################## \
+#ifdef GMX_OPENMP /* ################################################## \
                     *                                                    #
                     *                                                    #
                     */
@@ -2385,7 +2376,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 #endif
             for (i=0; i<hb->d.nrd; i++) /* loop over donors */
             {
-#ifdef HAVE_OPENMP /* ====== Write some output ======\ */
+#ifdef GMX_OPENMP /* ====== Write some output ======\ */
 #pragma omp critical
                 {
                     dondata[thisThread] = i;
@@ -2410,7 +2401,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 		      
                             low_do_autocorr(NULL,oenv,NULL,nframes,1,-1,&(rhbex),hb->time[1]-hb->time[0],
                                             eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #pragma omp critical
 #endif
                             {
@@ -2423,7 +2414,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
             }           /* i loop */
             sfree(rhbex);
 #pragma omp barrier
-#ifdef HAVE_OPENMP 
+#ifdef GMX_OPENMP 
             /*                                                           # */
         } /* End of parallel block                                       # */
         /* ##############################################################/ */
@@ -2473,14 +2464,14 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     case AC_GEM:
         snew(ct,2*n2);
         memset(ct,0,2*n2*sizeof(real));
-#ifndef HAVE_OPENMP
+#ifndef GMX_OPENMP
         fprintf(stderr, "Donor:\n");
 #define __ACDATA ct
 #else
 #define __ACDATA p_ct
 #endif
 
-#ifdef HAVE_OPENMP /*  =========================================\
+#ifdef GMX_OPENMP /*  =========================================\
                     *                                          */
 #pragma omp parallel default(none)                              \
     private(i, k, nh, hbh, pHist, h, g, n0, nf, np, j, m,		\
@@ -2506,10 +2497,10 @@ static void do_hbac(const char *fn,t_hbdata *hb,
              * the overhead to be really small compared         \
              * to the actual calculations                       \ */
 #pragma omp for schedule(dynamic,1) nowait /*                   \ */
-#endif /* HAVE_OPENMP  =========================================/ */
+#endif /* GMX_OPENMP  =========================================/ */
       
             for (i=0; i<hb->d.nrd; i++) {
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #pragma omp critical
                 {
                     dondata[thisThread] = i;
@@ -2530,7 +2521,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                             if (ISHB(hbh->history[nh]) && pHist->len != 0) {
 
 /* No need for a critical section */
-/* #ifdef HAVE_OPENMP */
+/* #ifdef GMX_OPENMP */
 /* #pragma omp critical */
 /* #endif */
                                 {
@@ -2562,7 +2553,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                                             }
 
 /* This shouldn't have to be critical, right? */
-/* #ifdef HAVE_OPENMP */
+/* #ifdef GMX_OPENMP */
 /* #pragma omp critical */
 /* #endif */
                                             {
@@ -2642,7 +2633,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 
             sfree(h);
             sfree(g);
-#ifdef HAVE_OPENMP /* =======================================\ */
+#ifdef GMX_OPENMP /* =======================================\ */
 #pragma omp critical
             {
                 for (i=0; i<nn; i++)
@@ -2652,7 +2643,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 
         } /* ########## THE END OF THE ENORMOUS PARALLELIZED BLOCK ########## */
         sfree(dondata);
-#endif /* HAVE_OPENMP =======================================/ */
+#endif /* GMX_OPENMP =======================================/ */
 
         normalizeACF(ct, NULL, nn);
 
@@ -2997,7 +2988,7 @@ static void dump_hbmap(t_hbdata *hb,
         ffclose(fplog);
 }
 
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 /* sync_hbdata() updates the parallel t_hbdata p_hb using hb as template.
  * It mimics add_frames() and init_frame() to some extent. */
 static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
@@ -3151,7 +3142,7 @@ int gmx_hbond(int argc,char *argv[])
           "Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
         { "-diff", FALSE, etREAL, {&D},
           "Dffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd."},
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
@@ -3310,7 +3301,7 @@ int gmx_hbond(int argc,char *argv[])
               opt2bSet("-hbm",NFILE,fnm) ||
               bGem);
   
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
     /* Same thing here. There is no reason whatsoever to write the specific version of
      * OpenMP used for compilation to stdout for normal usage.
      *
@@ -3501,11 +3492,11 @@ int gmx_hbond(int argc,char *argv[])
 
     bParallel = FALSE;
 
-#ifndef HAVE_OPENMP
+#ifndef GMX_OPENMP
 #define __ADIST adist
 #define __RDIST rdist
 #define __HBDATA hb
-#else /* HAVE_OPENMP ==================================================	\
+#else /* GMX_OPENMP ==================================================	\
        * Set up the OpenMP stuff,                                       |
        * like the number of threads and such                            |
        * Also start the parallel loop.                                  |
@@ -3521,7 +3512,7 @@ int gmx_hbond(int argc,char *argv[])
 /* #if (_OPENMP > 200805) */
 /*         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
 /* #else */
-        actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, gmx_omp_get_num_procs());
+        actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, gmx_omp_get_max_threads());
 /* #endif */
         gmx_omp_set_num_threads(actual_nThreads);
         printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
@@ -3580,7 +3571,8 @@ int gmx_hbond(int argc,char *argv[])
             dist, ang, peri, icell, jcell,              \
             grp, ogrp, ai, aj, xjj, yjj, zjj,           \
             xk, yk, zk, ihb, id,  resdist,              \
-            xkk, ykk, zkk, kcell, ak, k, bTric)        \
+            xkk, ykk, zkk, kcell, ak, k, bTric,         \
+            bEdge_xjj, bEdge_yjj)                       \
     default(none)                                       \
     shared(hb, p_hb, p_adist, p_rdist, actual_nThreads, \
            x, bBox, box, hbox, rcut, r2cut, rshell,     \
@@ -3592,12 +3584,12 @@ int gmx_hbond(int argc,char *argv[])
            status, nabin, nrbin, adist, rdist, debug)
     {    /* Start of parallel region */
         threadNr = gmx_omp_get_thread_num();
-#endif /* HAVE_OPENMP ================================================= */
+#endif /* GMX_OPENMP ================================================= */
         do
         {
             bTric = bBox && TRICLINIC(box);
 
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
             sync_hbdata(hb, p_hb[threadNr], nframes, t);
 #pragma omp single
 #endif
@@ -3615,23 +3607,23 @@ int gmx_hbond(int argc,char *argv[])
                 if (hb->bDAnr)
                     count_da_grid(ngrid, grid, hb->danr[nframes]);
             } /* omp single */
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
             p_hb[threadNr]->time = hb->time; /* This pointer may have changed. */
 #endif
             if (bNN)
             {
 #ifdef HAVE_NN_LOOPS /* Unlock this feature when testing */
                 /* Loop over all atom pairs and estimate interaction energy */
-#ifdef HAVE_OPENMP /* ------- */
+#ifdef GMX_OPENMP /* ------- */
 #pragma omp single
-#endif /* HAVE_OPENMP ------- */
+#endif /* GMX_OPENMP ------- */
                 {
                     addFramesNN(hb, nframes);
                 }
-#ifdef HAVE_OPENMP /* ---------------- */
+#ifdef GMX_OPENMP /* ---------------- */
 #pragma omp barrier
 #pragma omp for schedule(dynamic)
-#endif /* HAVE_OPENMP ---------------- */
+#endif /* GMX_OPENMP ---------------- */
                 for (i=0; i<hb->d.nrd; i++)
                 {
                     for(j=0;j<hb->a.nra; j++)
@@ -3661,7 +3653,7 @@ int gmx_hbond(int argc,char *argv[])
             {
                 if (bSelected)
                 {
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #pragma omp single
 #endif
                     {
@@ -3684,7 +3676,7 @@ int gmx_hbond(int argc,char *argv[])
                 } /* if (bSelected) */
                 else
                 {
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #pragma omp single
                     {
 #endif
@@ -3693,7 +3685,7 @@ int gmx_hbond(int argc,char *argv[])
 
                     /* loop over all gridcells (xi,yi,zi)      */
                     /* Removed confusing macro, DvdS 27/12/98  */
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
                     }
                     /* The outer grid loop will have to do for now. */
 #pragma omp for schedule(dynamic)
@@ -3785,7 +3777,7 @@ int gmx_hbond(int argc,char *argv[])
                             } /* for xi,yi,zi */
                 } /* if (bSelected) {...} else */ 
 
-#ifdef HAVE_OPENMP /* ---------------------------- */
+#ifdef GMX_OPENMP /* ---------------------------- */
                 /* Better wait for all threads to finnish using x[] before updating it. */
                 k = nframes;            /*         */
 #pragma omp barrier                     /*         */
@@ -3806,14 +3798,14 @@ int gmx_hbond(int argc,char *argv[])
                  * where there's a potential bottleneck in form
                  * of slow I/O.                    */
 #pragma omp single /* ++++++++++++++++,            */
-#endif /* HAVE_OPENMP ----------------+------------*/
+#endif /* GMX_OPENMP ----------------+------------*/
                 { /*                  +   */
                     if (hb != NULL)  /*   */
                     { /*              +   */
                         analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,k,t,oenv);
                     } /*              +   */
                 } /*                  +   */
-#ifdef HAVE_OPENMP /*                 +   */
+#ifdef GMX_OPENMP /*                 +   */
 #pragma omp single /* +++           +++   */
 #endif       /*                       +   */
                 {  /*                 +   */
@@ -3821,19 +3813,19 @@ int gmx_hbond(int argc,char *argv[])
                         do_nhb_dist(fpnhb,hb,t);
                 }  /*                 +   */
             } /* if (bNN) {...} else  +   */
-#ifdef HAVE_OPENMP /*                 +   */
+#ifdef GMX_OPENMP /*                 +   */
 #pragma omp single /* +++           +++   */
 #endif       /*                       +   */
             {      /*                 +   */
                 trrStatus = (read_next_x(oenv,status,&t,natoms,x,box));
                 nframes++;      /*    +   */
             }      /*                 +   */
-#ifdef HAVE_OPENMP /* +++++++++++++++++   */
+#ifdef GMX_OPENMP /* +++++++++++++++++   */
 #pragma omp barrier
 #endif
         } while (trrStatus);
 
-#ifdef HAVE_OPENMP
+#ifdef GMX_OPENMP
 #pragma omp critical
         {
             hb->nrhb += p_hb[threadNr]->nrhb;
