@@ -68,4 +68,16 @@ gmx_mm256_calc_rsq_ps(__m256 dx, __m256 dy, __m256 dz)
 
 #endif
 
+#define GMX_MM_IPROD_PS(ax,ay,az,bx,by,bz)                 \
+    _mm_add_ps(_mm_add_ps(_mm_mul_ps(ax,bx),_mm_mul_ps(ay,by)),_mm_mul_ps(az,bz))
+
+#define GMX_MM_NORM2_PS(ax,ay,az) GMX_MM_IPROD_PS(ax,ay,az,ax,ay,az)
+
+#define GMX_MM_CPROD_PS(ax,ay,az,bx,by,bz,cx,cy,cz)        \
+    {                                                          \
+    cx = _mm_sub_ps(_mm_mul_ps(ay,bz),_mm_mul_ps(az,by));  \
+    cy = _mm_sub_ps(_mm_mul_ps(az,bx),_mm_mul_ps(ax,bz));  \
+    cz = _mm_sub_ps(_mm_mul_ps(ax,by),_mm_mul_ps(ay,bx));  \
+    }
+
 #endif /* _gmx_x86_simd256_single_h_ */
