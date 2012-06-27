@@ -401,6 +401,7 @@ int main(int argc,char *argv[])
   gmx_bool bPartDec     = FALSE;
   gmx_bool bDDBondCheck = TRUE;
   gmx_bool bDDBondComm  = TRUE;
+  gmx_bool bTunePME     = TRUE;
   gmx_bool bVerbose     = FALSE;
   gmx_bool bCompact     = TRUE;
   gmx_bool bSepPot      = FALSE;
@@ -418,12 +419,15 @@ int main(int argc,char *argv[])
   int  nstepout=100;
   int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
+  int  nsteps=-2; /* the value -2 means that the mdp option will be used */
   
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    const char *dddlb_opt[] =
+  const char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
+  const char *nbpu_opt[] =
+    { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
@@ -467,6 +471,10 @@ int main(int argc,char *argv[])
       "HIDDENThe DD cell sizes in z" },
     { "-gcom",    FALSE, etINT,{&nstglobalcomm},
       "Global communication frequency" },
+    { "-nb",      FALSE, etENUM, {&nbpu_opt},
+      "Calculate non-bonded interactions on" },
+    { "-tunepme", FALSE, etBOOL, {&bTunePME},  
+      "Optimize PME load between GPU and CPU" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -483,6 +491,8 @@ int main(int argc,char *argv[])
       "Keep and number checkpoint files" },
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
       "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
+    { "-nsteps",  FALSE, etINT, {&nsteps},
+      "Run this amount of steps (overrides mdp option)" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
@@ -647,6 +657,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
   Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
   Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
+  Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
@@ -685,7 +696,9 @@ int main(int argc,char *argv[])
   rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
+                nbpu_opt[0],
+                nsteps,nstepout,resetstep,
+                nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
                 pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   gmx_finalize_par();

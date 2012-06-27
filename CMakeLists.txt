@@ -112,6 +112,7 @@ IF( WIN32 AND NOT CYGWIN)
   ENDIF()
 ENDIF()
 
+
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -153,7 +154,8 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
 
-option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
+option(GMX_GPU  "Enable GPU acceleration" OFF)
+option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -165,6 +167,8 @@ if(UNIX AND NOT APPLE)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
+option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
+mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 ######################################################################
 # compiler tests
@@ -198,6 +202,10 @@ endif()
 
 include(gmxCFlags)
 gmx_c_flags()
+
+include(gmxGetCompilerVersion)
+get_compiler_version()
+
 
 ########################################################################
 # Set up binary and library suffixing 
@@ -299,8 +307,6 @@ else(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 
-
-
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -343,6 +349,28 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
+
+if(GMX_GPU)
+    # we need some sort of sleep with CUDA:
+    # sleep() from unistd.h on POSIX or Sleep() from windows.h
+    if (WIN32 AND NOT CYGWIN)
+        set(CMAKE_REQUIRED_INCLUDES windows.h)
+        check_function_exists(Sleep     HAVE_WINDOWS_SLEEP)
+        if(NOT HAVE_WIN_SLEEP)
+            message(WARNING "Sleep() from windows.h is needed when running on GPUs with ECC turned on, but it
+                could not be found. This could lead to GPU synchronization inefficiencies.")
+        endif()
+    else()
+        if (HAVE_UNISTD_H)
+            set(CMAKE_REQUIRED_INCLUDES unistd.h)
+            check_function_exists(sleep     HAVE_UNISTD_SLEEP)
+        endif (HAVE_UNISTD_H)
+        if (NOT HAVE_UNISTD_H OR NOT HAVE_UNISTD_SLEEP)
+            message(WARNING "sleep() from unistd.h is needed when running on GPUs with ECC turned on, but it
+                could not be found. This could lead to GPU synchronization inefficiencies.")
+        endif()
+    endif (WIN32 AND NOT CYGWIN)
+endif()
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -463,6 +491,48 @@ if(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 
+if(GMX_GPU)
+    if(GMX_DOUBLE)
+        message(FATAL_ERROR "GPU acceleration is not available in double precision!")
+    endif()
+
+    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    # TODO: tested only with MSVC 2010, needs testing test with msvc+icc & cygwin
+    if(MSVC)
+        find_package(CUDA 4.1)
+    else()
+        find_package(CUDA 3.2)
+    endif()
+
+    if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
+        message(FATAL_ERROR "
+    mdrun supports native GPU acceleration on NVIDIA hardware with compute
+    capability >=2.0. This requires the NVIDIA CUDA library, which was not
+    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
+
+    CPU or GPU acceleration can be selected at runtime, but if you are
+    sure you can not make use of GPU acceleration, disable it by setting
+    the CMake variable GMX_GPU=OFF.")
+    endif()
+
+    if(NOT GMX_OPENMP)
+        message(WARNING "
+    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreding.
+    Without OpenMP only a single CPU core per GPU can be used which is suboptimal.
+    Note that with MPI multiple processes can be forced to use a single GPU, but this
+    typically inefficient.")
+    endif()
+
+    set(CUDA_BUILD_EMULATION OFF)
+    include(gmxManageNvccConfig)
+
+    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
+    # but it's too cumbersome to check the ld version and the flag should not hurt
+    if(CMAKE_COMPILER_IS_GNUCC)
+        set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
+    endif()
+endif()
+
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
    list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
@@ -474,6 +544,12 @@ endif(CYGWIN)
 
 if(WIN32 AND NOT CYGWIN)
     set(GMX_NATIVE_WINDOWS 1)
+endif()
+
+if(GMX_CYCLE_SUBCOUNTERS)
+    set(GMX_CYCLE_SUB 1)
+else()
+    unset(GMX_CYCLE_SUB)
 endif()
 
 # only bother with finding git and using version.h if the source is a git repo
@@ -793,6 +869,11 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+
+# enable threaded fftw3 if we've found it 
+if(FFTW3_THREADS OR FFTW3F_THREADS)
+    add_definitions(-DFFT5D_FFTW_THREADS)
+endif()
 
 set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
 set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
