@@ -8,11 +8,25 @@ if(GMX_MPI)
   endif(GMX_THREAD_MPI)
 
   # Test the CMAKE_C_COMPILER for being an MPI (wrapper) compiler
-  TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
+  TRY_COMPILE(MPI_C_FOUND ${CMAKE_BINARY_DIR}
     "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
     COMPILE_DEFINITIONS )
 
-  if(MPI_FOUND)
+  # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
+  # MPI module from cmake >= 2.8.5 required for fall-back. Cmake <2.8.5 have to use mpi wrapper.
+  # Cmake <2.8.5 is not supported because of unreliability (redmine #851) and to be to
+  # use the new langauge feature (MPI_C_*).
+  if(NOT MPI_C_FOUND AND NOT CMAKE_VERSION VERSION_LESS "2.8.5")
+      find_package(MPI)
+      if(MPI_C_FOUND)
+        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_C_COMPILE_FLAGS})
+        set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_C_LINK_FLAGS})
+        include_directories(${MPI_C_INCLUDE_PATH})
+        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_C_LIBRARIES})
+      endif()
+  endif()
+
+  if(MPI_C_FOUND)
     include(gmxTestMPI_IN_PLACE)
     if (GMX_MPI_IN_PLACE)
       gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
@@ -26,11 +40,11 @@ if(GMX_MPI)
     if(OPENMPI_EXEC_RETURN EQUAL 0)
       string(REGEX REPLACE ".*Open MPI: \([0-9]+\\.[0-9]*\\.?[0-9]*\).*" "\\1" OPENMPI_VERSION ${OPENMPI_TYPE})
       if(OPENMPI_VERSION VERSION_LESS "1.4.1")
-        MESSAGE(WARNING "
-             CMake found OpenMPI version ${OPENMPI_VERSION} on your system.
-             There are known problems with GROMACS and OpenMPI version < 1.4.1.
-             Please consider updating your OpenMPI if your MPI wrapper compilers
-             are using the above OpenMPI version.")
+        MESSAGE(WARNING
+             "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
+             "There are known problems with GROMACS and OpenMPI version < 1.4.1. "
+             "Please consider updating your OpenMPI if your MPI wrapper compilers "
+             "are using the above OpenMPI version.")
       endif()
       unset(OPENMPI_VERSION)
       unset(OPENMPI_TYPE)
@@ -46,11 +60,11 @@ if(GMX_MPI)
       string(REGEX REPLACE "MVAPICH2 \([0-9]+\\.[0-9]*[a-z]?\\.?[0-9]*\)" "\\1" MVAPICH2_VERSION ${MVAPICH2_TYPE})
       if(${MVAPICH2_NAME} STREQUAL "MVAPICH2" AND MVAPICH2_VERSION VERSION_LESS "1.5")
         # This test works correctly even with 1.5a1
-        MESSAGE(WARNING "
-             CMake found MVAPICH2 version ${MVAPICH2_VERSION} on your system.
-             There are known problems with GROMACS and MVAPICH2 version < 1.5.
-             Please consider updating your MVAPICH2 if your MPI wrapper compilers
-             are using the above MVAPICH2 version.")
+        MESSAGE(WARNING
+             "CMake found MVAPICH2 version ${MVAPICH2_VERSION} on your system. "
+             "There are known problems with GROMACS and MVAPICH2 version < 1.5. "
+             "Please consider updating your MVAPICH2 if your MPI wrapper compilers "
+             "are using the above MVAPICH2 version.")
       endif()
       unset(MVAPICH2_VERSION)
       unset(MVAPICH2_NAME)
@@ -58,9 +72,20 @@ if(GMX_MPI)
       unset(MVAPICH2_EXEC_RETURN)
     endif()
 
-  else(MPI_FOUND)
-    message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
-  endif(MPI_FOUND)
+  else(MPI_C_FOUND)
+    if (CMAKE_VERSION VERSION_LESS "2.8.5")
+      message(FATAL_ERROR
+        "MPI support requested, but no MPI compiler found. Either set the "
+        "C-compiler (CMAKE_C_COMPILER) to the MPI compiler (often called mpicc), "
+        "or use a newer cmake version (>=2.8.5) for semi-automatic MPI detection.")
+    else()
+      message(FATAL_ERROR
+        "MPI support requested, but no MPI compiler found. Either set the "
+        "C-compiler (CMAKE_C_COMPILER) to the MPI compiler (often called mpicc), "
+        "or set the variables reported missing for MPI_C above.")
+    endif()
+
+  endif(MPI_C_FOUND)
 
   include(gmxTestCatamount)
   gmx_test_catamount(GMX_CRAY_XT3)
