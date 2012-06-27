@@ -121,8 +121,8 @@ enum { nbkNotSet = 0,
  */
 static const char *nbk_name[] =
   { "not set", "plain C 4x4",
-#if !(defined GMX_AVX || defined __AVX__)
-#ifndef GMX_SSE4_1
+#if !(defined GMX_X86_AVX_256 || defined GMX_X86_AVX128_FMA || defined __AVX__)
+#ifndef GMX_X86_SSE4_1
 #ifndef GMX_DOUBLE
     "SSE2 4x4",
 #else
