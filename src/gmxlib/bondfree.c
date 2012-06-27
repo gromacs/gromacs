@@ -3480,7 +3480,8 @@ static void reduce_thread_forces(int n,rvec *f,rvec *fshift,
 
 static real calc_one_bond(FILE *fplog,int thread,
                           int ftype,const t_idef *idef,
-                          rvec x[], rvec f[], t_forcerec *fr,
+                          rvec x[], rvec f[], rvec fshift[],
+                          t_forcerec *fr,
                           const t_pbc *pbc,const t_graph *g,
                           gmx_enerdata_t *enerd, gmx_grppairener_t *grpp,
                           t_nrnb *nrnb,
@@ -3520,7 +3521,7 @@ static real calc_one_bond(FILE *fplog,int thread,
             {
                 v = cmap_dihs(nbn,iatoms+nb0,
                               idef->iparams,&idef->cmap_grid,
-                              (const rvec*)x,f,fr->fshift,
+                              (const rvec*)x,f,fshift,
                               pbc,g,lambda[efptFTYPE],&(dvdl[efptFTYPE]),
                               md,fcd,global_atom_index);
             }
@@ -3545,7 +3546,7 @@ static real calc_one_bond(FILE *fplog,int thread,
             {
                 v = interaction_function[ftype].ifunc(nbn,iatoms+nb0,
                                                       idef->iparams,
-                                                      (const rvec*)x,f,fr->fshift,
+                                                      (const rvec*)x,f,fshift,
                                                       pbc,g,lambda[efptFTYPE],&(dvdl[efptFTYPE]),
                                                       md,fcd,global_atom_index);
             }
@@ -3561,7 +3562,7 @@ static real calc_one_bond(FILE *fplog,int thread,
         {
             v = do_listed_vdw_q(ftype,nbn,iatoms+nb0,
                                 idef->iparams,
-                                (const rvec*)x,f,fr->fshift,
+                                (const rvec*)x,f,fshift,
                                 pbc,g,lambda,dvdl,
                                 md,fr,grpp,global_atom_index);
             enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
@@ -3768,7 +3769,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 !(ftype == F_CONNBONDS || ftype == F_POSRES))
             {
                 v = calc_one_bond(fplog,thread,ftype,idef,x, 
-                                  f,fr,pbc_null,g,enerd,grpp,
+                                  ft,fshift,fr,pbc_null,g,enerd,grpp,
                                   nrnb,lambda,dvdlt,
                                   md,fcd,bCalcEnerVir,
                                   global_atom_index,bPrintSepPot);
