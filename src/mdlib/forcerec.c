@@ -1357,7 +1357,7 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 }
 
 /* Parse the GMX_GPU_ID string and return the GPU ID assigned to the current node.
- * The GMX_GPU_ID should connstain a sequence of digits which represent device IDs.
+ * The GMX_GPU_ID should contain a sequence of digits which represent device IDs.
  * The n-th digit in the sequence indicates the ID of the GPU assigned to the n-th
  * process/tMPI thread within a node.
  * */
@@ -1372,7 +1372,7 @@ static int parse_gmx_gpu_id(const t_commrec *cr)
     if ((env = getenv("GMX_GPU_ID")) != NULL)
     {
         /* GMX_GPU_ID too short */
-        if (strlen(env) < intra_id + 1)
+        if ((int)strlen(env) < intra_id + 1)
         {
             sprintf(sbuf, "GMX_GPU_ID too short, on node %d GPU ID #%d not specified.",
                     cr->nodeid, cr->nc.rank_intra);
