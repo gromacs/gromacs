@@ -12,6 +12,20 @@ if(GMX_MPI)
     "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
     COMPILE_DEFINITIONS )
 
+  # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
+  # MPI module from cmake >= 2.8.5 required for fall-back. Cmake <2.8.5 have to use mpi wrapper.
+  if(NOT MPI_FOUND AND NOT CMAKE_VERSION VERSION_LESS "2.8.5")
+      find_package(MPI)
+      if(MPI_C_FOUND) #false for cmake<2.8.5 because it does not have MPI_C_* variables
+	set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_C_COMPILE_FLAGS})
+	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_C_LINK_FLAGS})
+        
+	include_directories(${MPI_C_INCLUDE_PATH})
+	list(APPEND GMX_EXTRA_LIBRARIES ${MPI_C_LIBRARIES})
+      endif()
+      set(MPI_FOUND ${MPI_C_FOUND})
+  endif()
+
   if(MPI_FOUND)
     include(gmxTestMPI_IN_PLACE)
     if (GMX_MPI_IN_PLACE)
