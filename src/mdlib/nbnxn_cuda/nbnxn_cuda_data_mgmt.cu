@@ -48,7 +48,7 @@
 
 
 #include "nbnxn_cuda_types.h"
-#include "cudautils.cuh"
+#include "../../gmxlib/cuda_tools/cudautils.cuh"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
 

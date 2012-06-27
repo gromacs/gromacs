@@ -103,7 +103,7 @@
 #include "qmmm.h"
 
 #include "nbnxn_cuda_data_mgmt.h"
-#include "nbnxn_cuda.h"
+#include "nbnxn_cuda/nbnxn_cuda.h"
 
 #if 0
 typedef struct gmx_timeprint {

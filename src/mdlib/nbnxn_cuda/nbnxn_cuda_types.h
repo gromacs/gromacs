@@ -38,7 +38,7 @@
 
 #include "types/nbnxn_pairlist.h"
 #include "types/nbnxn_cuda_types_ext.h"
-#include "cudautils.cuh"
+#include "../../gmxlib/cuda_tools/cudautils.cuh"
 
 #ifdef __cplusplus
 extern "C" {

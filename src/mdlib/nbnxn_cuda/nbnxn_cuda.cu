@@ -47,7 +47,7 @@
 #include "types/force_flags.h"
 
 #include "nbnxn_cuda_types.h"
-#include "cudautils.cuh"
+#include "../../gmxlib/cuda_tools/cudautils.cuh"
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
@@ -71,7 +71,7 @@
 
 #define CLUSTER_SIZE            (NBNXN_GPU_CLUSTER_SIZE)
 
-#include "vectype_ops.cuh"
+#include "../../gmxlib/cuda_tools/vectype_ops.cuh"
 #include "nbnxn_cuda_kernel_utils.cuh"
 
 /* Generate all combinations of kernels through multiple inclusion:
