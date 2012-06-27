@@ -1529,6 +1529,7 @@ static void check_input(
 }
 
 
+      || (0 == strcmp(opt,"-err"      ))
 /* Returns TRUE when "opt" is needed at launch time */
 static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 {
