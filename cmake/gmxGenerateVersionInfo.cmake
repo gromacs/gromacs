@@ -47,9 +47,8 @@ endif()
 
 # if git executable exists and it's compatible version
 # build the development version string
-# this should at some point become VERSION_LESS
-if(EXISTS "${GIT_EXECUTABLE}" AND NOT GIT_VERSION STRLESS "1.5.3")
-    # refresh git index 
+if(EXISTS "${GIT_EXECUTABLE}" AND NOT GIT_VERSION VERSION_LESS "1.5.3")
+    # refresh git index
     execute_process(COMMAND ${GIT_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         TIMEOUT 5
