@@ -278,6 +278,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
+            /* cppcheck-suppress duplicateBranch */
             else if (do_coul)
             {
 #define CALC_COULOMB
@@ -302,6 +303,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
+            /* cppcheck-suppress duplicateBranch */
             else if (do_coul)
             {
 #define CALC_COULOMB
