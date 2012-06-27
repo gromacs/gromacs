@@ -689,6 +689,13 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
+# Access to /etc/passwd is not available on the back end of BlueGene,
+# despite being detected by CMake. This can cause linker warnings
+# about harmless things in src/gmxlib/string2.h.
+    set(HAVE_PWD_H OFF)
+# The automatic testing for endianness does not work for the BlueGene cross-compiler
+    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
+    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)

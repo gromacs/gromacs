@@ -1528,7 +1528,6 @@ static void check_input(
     }
 }
 
-
 /* Returns TRUE when "opt" is needed at launch time */
 static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 {

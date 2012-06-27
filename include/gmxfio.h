@@ -218,7 +218,7 @@ int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
 int xtc_seek_frame(t_fileio *fio, int frame, int natoms);
 
-int xtc_seek_time(t_fileio *fio, real time, int natoms);
+int xtc_seek_time(t_fileio *fio, real time, int natoms,gmx_bool bSeekForwardOnly);
 
 	
 /* Add this to the comment string for debugging */
