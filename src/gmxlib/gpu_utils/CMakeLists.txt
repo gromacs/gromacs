@@ -1,5 +1,3 @@
-remove_definitions("-DMPI")
-
 # (slightly sloppy) OS definitions required by memtestG80
 set(_os_def)
 if(UNIX)
