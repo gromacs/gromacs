@@ -73,7 +73,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 79;
+static const int tpx_version = 80;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -91,7 +91,8 @@ static const int tpx_generation = 24;
  */
 static const int tpx_incompatible_version = 9;
 
-
+/* TODO: remove this temporary version support */
+static gmx_bool nbnxn_pre = FALSE;
 
 /* Struct used to maintain tpx compatibility when function types are added */
 typedef struct {
@@ -605,6 +606,14 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
+    if (file_version >= 80 || nbnxn_pre)
+    {
+        gmx_fio_do_int(fio,ir->cutoff_scheme);
+    }
+    else
+    {
+        ir->cutoff_scheme = ecutsGROUP;
+    }
     gmx_fio_do_int(fio,ir->ns_type);
     gmx_fio_do_int(fio,ir->nstlist);
     gmx_fio_do_int(fio,ir->ndelta);
@@ -659,6 +668,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     if(file_version < 18)
       gmx_fio_do_int(fio,idum); 
+    if (file_version >= 80 || nbnxn_pre){
+      gmx_fio_do_real(fio,ir->verletbuf_drift);
+    } else {
+      ir->verletbuf_drift = 0;
+    }
     gmx_fio_do_real(fio,ir->rlist); 
     if (file_version >= 67) {
       gmx_fio_do_real(fio,ir->rlistlong);
@@ -746,7 +760,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 		ir->sa_surface_tension = 2.092;
 	}
 
-	  
+	 
+    if (file_version >= 80 || nbnxn_pre)
+    {
+        gmx_fio_do_real(fio,ir->fourier_spacing); 
+    }
+    else
+    {
+        ir->fourier_spacing = 0.0;
+    }
     gmx_fio_do_int(fio,ir->nkx); 
     gmx_fio_do_int(fio,ir->nky); 
     gmx_fio_do_int(fio,ir->nkz);
@@ -2368,7 +2390,14 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
             /* We only support reading tpx files with the same tag as the code
              * or tpx files with the release tag and with lower version number.
              */
-            if (!(strcmp(file_tag,TPX_TAG_RELEASE) == 0 && fver < tpx_version))
+            /* TODO: remove this temporary special version support */
+            if (strcmp(file_tag,"nbnxn-pre-release") == 0 && fver == 79)
+            {
+                nbnxn_pre = TRUE;
+                fver = 78;
+            }
+            else
+            if (!strcmp(file_tag,TPX_TAG_RELEASE) == 0 && fver <= 77) 
             {
                 gmx_fatal(FARGS,"tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' with program for tpx version %d, tag '%s'",
                           gmx_fio_getname(fio),fver,file_tag,
