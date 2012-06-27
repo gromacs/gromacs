@@ -1553,72 +1553,23 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     return (ngpu > 0);
 }
 
-static void pick_nbnxn_kernel_cpu(FILE *fp,
-                                  const t_commrec *cr,
-                                  const gmx_detectcpu_t *cpu_info,
-                                  int *kernel_type)
+static void nbnxn_detect_gpu(FILE *fp,
+                             const t_commrec *cr,
+                             const char *nbpu_opt,
+                             gmx_bool *useGPU,
+                             gmx_bool *emulateGPU)
 {
-#ifdef GMX_X86_SSE2
-    /* by default we'll use the 4xN SSE/AVX 128-bit kernels */
-    if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
-    {
-        gmx_detectcpu_t cpuinfo;
-#ifdef GMX_DOUBLE
-        gmx_bool double_prec = TRUE;
-#else
-        gmx_bool double_prec = FALSE;
-#endif
+    gmx_bool tryGPU,forceGPU;
 
-        gmx_detectcpu(&cpuinfo);
+    *useGPU     = FALSE;
+    *emulateGPU = FALSE;
 
-        /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
-         * On AMD Bulldozer AVX0-256 is much slower than AVX-128.
-         */
-        if (cpu_info->feature[GMX_DETECTCPU_FEATURE_X86_AVX] &&
-            cpu_info->vendorid != GMX_DETECTCPU_VENDOR_AMD)
-        {
-#ifdef GMX_X86_AVX_256
-            *kernel_type = nbk4xN_X86_SIMD256;
-#else
-            md_print_warning(cr,fp,"NOTE: Gromacs was compiled without AVX support,\n      can not use the faster AVX kernels\n");
-            *kernel_type = nbk4xN_X86_SIMD128;
-#endif
-        }
-        else
-        {
-            *kernel_type = nbk4xN_X86_SIMD128;
-        }
-
-        if (getenv("GMX_NBNXN_AVX128") != NULL)
-        {
-            *kernel_type = nbk4xN_X86_SIMD128;
-        }
-        if (getenv("GMX_NBNXN_AVX256") != NULL)
-        {
-#ifdef GMX_X86_AVX_256
-            *kernel_type = nbk4xN_X86_SIMD256;
-#else
-            gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but Gromacs was built without AVX support");
-#endif
-        }
-    }
-    else
-#endif
-    {
-        *kernel_type = nbk4x4_PlainC;
-    }
-}
-
-void pick_nbnxn_kernel(FILE *fp,
-                       const t_commrec *cr,
-                       gmx_bool tryGPU, gmx_bool *useGPU,
-                       gmx_bool forceGPU,
-                       int *kernel_type)
-{
-    gmx_bool emulateGPU=FALSE;
-    gmx_detectcpu_t cpu_information;
-
-    *kernel_type = nbkNotSet;
+    tryGPU   = (nbpu_opt != NULL &&
+                (strncmp(nbpu_opt,"gpu",3) == 0 ||
+                 strcmp(nbpu_opt,"auto") == 0));
+    
+    forceGPU = (nbpu_opt != NULL &&
+                strncmp(nbpu_opt,"gpu",3) == 0);
 
     if (tryGPU)
     {
@@ -1644,11 +1595,85 @@ void pick_nbnxn_kernel(FILE *fp,
         /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
            calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
        to also turn off GPU/CUDA initializations. */
-        emulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
-                      (getenv("GMX_NO_NONBONDED") != NULL));
+        *emulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
+                       (getenv("GMX_NO_NONBONDED") != NULL));
 
-       *useGPU = FALSE;
+        if (*emulateGPU == FALSE)
+        {
+            *useGPU = init_cu_nbv(fp,cr,forceGPU);
+        }
     }
+}
+
+static void pick_nbnxn_kernel_cpu(FILE *fp,
+                                  const t_commrec *cr,
+                                  const gmx_detectcpu_t *cpu_info,
+                                  int *kernel_type)
+{
+    *kernel_type = nbk4x4_PlainC;
+
+#ifdef GMX_X86_SSE2
+    {
+        gmx_detectcpu_t cpuinfo;
+#ifdef GMX_DOUBLE
+        gmx_bool double_prec = TRUE;
+#else
+        gmx_bool double_prec = FALSE;
+#endif
+
+        gmx_detectcpu(&cpuinfo);
+
+        /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
+         * On AMD Bulldozer AVX-256 is much slower than AVX-128.
+         */
+        if (cpu_info->feature[GMX_DETECTCPU_FEATURE_X86_AVX] &&
+            cpu_info->vendorid != GMX_DETECTCPU_VENDOR_AMD)
+        {
+#ifdef GMX_X86_AVX_256
+            *kernel_type = nbk4xN_X86_SIMD256;
+#else
+            *kernel_type = nbk4xN_X86_SIMD128;
+#endif
+        }
+        else
+        {
+            *kernel_type = nbk4xN_X86_SIMD128;
+        }
+
+        if (getenv("GMX_NBNXN_AVX128") != NULL)
+        {
+            *kernel_type = nbk4xN_X86_SIMD128;
+        }
+        if (getenv("GMX_NBNXN_AVX256") != NULL)
+        {
+#ifdef GMX_X86_AVX_256
+            *kernel_type = nbk4xN_X86_SIMD256;
+#else
+            gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but Gromacs was built without AVX support");
+#endif
+        }
+    }
+#endif /* GMX_X86_SSE2 */
+}
+
+static void pick_nbnxn_kernel(FILE *fp,
+                              const t_commrec *cr,
+                              gmx_bool use_acceleration,
+                              const char *nbpu_opt,
+                              gmx_bool *useGPU,
+                              int *kernel_type)
+{
+    gmx_bool emulateGPU=FALSE;
+    gmx_detectcpu_t cpu_information;
+
+    *kernel_type = nbkNotSet;
+
+    /* We detected before in check_nbnxn_gpu, but unfortunately with
+     * the current hardware detection and data structures we can't
+     * easily reuse the data, so we detect again here.
+     */
+    nbnxn_detect_gpu(fp,cr,nbpu_opt,useGPU,&emulateGPU);
+
     if (emulateGPU)
     {
         *kernel_type = nbk8x8x8_PlainC;
@@ -1658,15 +1683,9 @@ void pick_nbnxn_kernel(FILE *fp,
             fprintf(fp, "Emulating GPU\n");
         }
     }    
-    else if (tryGPU)
+    else if (*useGPU)
     {
-        /* Try to use a GPU */
-        *useGPU = init_cu_nbv(fp,cr,forceGPU);
-
-        if (*useGPU)
-        {
-            *kernel_type = nbk8x8x8_CUDA;
-        }
+        *kernel_type = nbk8x8x8_CUDA;
     }
 
     /* We store the CPU info in forcerec, but we might not have it here yet */
@@ -1674,7 +1693,14 @@ void pick_nbnxn_kernel(FILE *fp,
 
     if (*kernel_type == nbkNotSet)
     {
-        pick_nbnxn_kernel_cpu(fp,cr,&cpu_information,kernel_type);
+        if (use_acceleration)
+        {
+            pick_nbnxn_kernel_cpu(fp,cr,&cpu_information,kernel_type);
+        }
+        else
+        {
+            *kernel_type = nbk4x4_PlainC;
+        }
     }
 
     if (fp != NULL)
@@ -1687,6 +1713,32 @@ void pick_nbnxn_kernel(FILE *fp,
         fprintf(fp,"\nUsing %s non-bonded kernels\n\n",
                 nbk_name[*kernel_type]);
     }
+}
+
+gmx_bool check_nbnxn_gpu(FILE *fplog,t_commrec *cr,const char *nbpu_opt)
+{
+    gmx_bool useGPU,emulateGPU;
+    char     buf[STRLEN];
+
+    /* With GPU we should check nstlist for performance */
+    nbnxn_detect_gpu(NULL,cr,nbpu_opt,&useGPU,&emulateGPU);
+
+    if (useGPU || emulateGPU)
+    {
+        sprintf(buf,"%s %s",
+                useGPU ? "Using" : "Emulating",
+                PAR(cr) ? "GPUs" : "a GPU");
+        if (MASTER(cr))
+        {
+            fprintf(stderr,"%s\n",buf);
+        }
+        if (fplog != NULL)
+        {
+            fprintf(fplog,"\n%s\n",buf);
+        }
+    }
+
+    return (useGPU || emulateGPU);
 }
 
 static void init_ewald_f_table(interaction_const_t *ic,
@@ -1873,8 +1925,7 @@ static void init_nb_verlet(FILE *fp,
                            const t_inputrec *ir,
                            const t_forcerec *fr,
                            const t_commrec *cr,
-                           const char *nbpu_opt,
-                           int nbnxn_kernel_preset)
+                           const char *nbpu_opt)
 {
     nonbonded_verlet_t *nbv;
     int  i;
@@ -1896,29 +1947,17 @@ static void init_nb_verlet(FILE *fp,
 
         if (i == 0)
         {
-            if (nbnxn_kernel_preset < 0)
-            {
-                pick_nbnxn_kernel(fp, cr,
-                                  (nbpu_opt != NULL &&
-                                   (strncmp(nbpu_opt,"gpu",3) == 0 ||
-                                    strcmp(nbpu_opt,"auto") == 0)),
-                                  &nbv->useGPU,
-                                  (nbpu_opt != NULL &&
-                                   strncmp(nbpu_opt,"gpu",3) == 0),
-                                  &nbv->grp[i].kernel_type);
-            }
-            else
-            {
-                nbv->useGPU = (nbnxn_kernel_preset == nbk8x8x8_CUDA);
-                nbv->grp[i].kernel_type = nbnxn_kernel_preset;
-            }
+            pick_nbnxn_kernel(fp, cr, fr->use_acceleration, nbpu_opt,
+                              &nbv->useGPU,
+                              &nbv->grp[i].kernel_type);
         }
         else
         {
             if (nbpu_opt != NULL && strcmp(nbpu_opt,"gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE,
+                pick_nbnxn_kernel(fp, cr, fr->use_acceleration, NULL,
+                                  NULL,
                                   &nbv->grp[i].kernel_type);
             }
             else
@@ -2017,7 +2056,6 @@ void init_forcerec(FILE *fp,
                    const char *tabpfn,
                    const char *tabbfn,
                    const char *nbpu_opt,
-                   int        nbnxn_kernel_preset,
                    gmx_bool   bNoSolvOpt,
                    real       print_force)
 {
@@ -2638,7 +2676,7 @@ void init_forcerec(FILE *fp,
             gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, &fr->nbv, ir, fr, cr, nbpu_opt, nbnxn_kernel_preset);
+        init_nb_verlet(fp, &fr->nbv, ir, fr, cr, nbpu_opt);
 
         /* initilize interaction constants; 
            TODO should be moved out during modularizzation.

@@ -136,17 +136,10 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
-/* Selects the nbnxn (Verlet) kernel to be used.
- * tryGPU: should we try to use a GPU/emulation?
- * useGPU: return if a are using a real GPU
- * forceGPU: force the use of a GPU
- * kernel_type: return the selected kernel type
+gmx_bool check_nbnxn_gpu(FILE *fplog,t_commrec *cr,const char *nbpu_opt);
+/* Check if we will use a GPU or emulate a GPU.
+ * nbpu_opt is the mdrun command line option for the nbnxn non-bonded resource.
  */
-void pick_nbnxn_kernel(FILE *fp,
-                       const t_commrec *cr,
-                       gmx_bool tryGPU, gmx_bool *useGPU,
-                       gmx_bool forceGPU,
-                       int *kernel_type);
 
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
@@ -178,7 +171,6 @@ void init_forcerec(FILE       *fplog,
 			  const char *tabpfn,
 			  const char *tabbfn,
 		          const char *nbpu_opt,
-		   int nbnxn_kernel_preset,
 			  gmx_bool   bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 

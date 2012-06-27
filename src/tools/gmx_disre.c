@@ -712,7 +712,7 @@ int gmx_disre(int argc,char *argv[])
   fr      = mk_forcerec();
   fprintf(fplog,"Made forcerec\n");
   init_forcerec(fplog,oenv,fr,NULL,&ir,&mtop,cr,box,FALSE,
-                NULL,NULL,NULL,NULL,NULL,-1,FALSE,-1);
+                NULL,NULL,NULL,NULL,NULL,FALSE,-1);
   init_nrnb(&nrnb);
   if (ir.ePBC != epbcNONE)
     gpbc = gmx_rmpbc_init(&top->idef,ir.ePBC,natoms,box);

@@ -711,7 +711,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_nrnb     *nrnb;
     gmx_mtop_t *mtop=NULL;
     t_mdatoms  *mdatoms=NULL;
-    int        nbnxn_kernel=-1;
     t_forcerec *fr=NULL;
     t_fcdata   *fcd=NULL;
     real       ewaldcoeff=0;
@@ -1111,18 +1110,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            gmx_bool useGPU;
+            gmx_bool bGPU;
 
-            /* With GPU we should check nstlist for performance */
-            pick_nbnxn_kernel(fplog, cr,
-                              (strncmp(nbpu_opt,"gpu",3) == 0 ||
-                               strcmp(nbpu_opt,"auto") == 0),
-                              &useGPU,
-                              strncmp(nbpu_opt,"gpu",3) == 0,
-                              &nbnxn_kernel);
+            /* With GPU or emulation we should check nstlist for performance */
+            bGPU = check_nbnxn_gpu(fplog,cr,nbpu_opt);
+
             if ((EI_DYNAMICS(inputrec->eI) &&
-                 (nbnxn_kernel == nbk8x8x8_CUDA ||
-                  nbnxn_kernel == nbk8x8x8_PlainC) &&
+                 bGPU &&
                  inputrec->nstlist < NSTLIST_GPU_ENOUGH) ||
                 getenv(NSTLIST_ENVVAR) != NULL)
             {
@@ -1138,7 +1132,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                       opt2fn("-tabletf",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
-                      nbpu_opt,nbnxn_kernel,
+                      nbpu_opt,
                       FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
