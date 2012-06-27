@@ -117,7 +117,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0[efptNR];
-    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcVir,bCalcEner;
+    gmx_bool       bGStatEveryStep,bGStat,bCalcVir,bCalcEner;
     gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromCP,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
@@ -1026,14 +1026,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        if (EI_VV(ir->eI) && (!bInitStep)) {  /* for vv, the first half actually corresponds to the last step */
-            bNstEner = do_per_step(step-1,ir->nstcalcenergy);
-        } else {
-            bNstEner = do_per_step(step,ir->nstcalcenergy);
+        if (EI_VV(ir->eI) && (!bInitStep))
+        {
+            /* for vv, the first half actually corresponds to the last step */
+            bCalcEner = do_per_step(step-1,ir->nstcalcenergy);
         }
-        bNstEner  = do_per_step(step,ir->nstcalcenergy);
-        bCalcEner = bNstEner;
-        bCalcVir  = bCalcEner ||
+        else
+        {
+            bCalcEner = do_per_step(step,ir->nstcalcenergy);
+        }
+        bCalcVir = bCalcEner ||
             (ir->epc != epcNO && do_per_step(step,ir->nstpcouple));
 
         /* Do we need global communication ? */
@@ -1207,7 +1209,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
                 bPres = TRUE;
                 bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
-                if (bNstEner && ir->eI==eiVVAK)  /*MRS:  7/9/2010 -- this still doesn't fix it?*/
+                if (bCalcEner && ir->eI==eiVVAK)  /*MRS:  7/9/2010 -- this still doesn't fix it?*/
                 {
                     bSumEkinhOld = TRUE;
                 }
@@ -1845,7 +1847,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {
-                if (bNstEner)
+                if (bCalcEner)
                 {
                     upd_mdebin(mdebin,bDoDHDL, TRUE,
                                t,mdatoms->tmass,enerd,state,
