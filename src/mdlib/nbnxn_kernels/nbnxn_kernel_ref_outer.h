@@ -276,9 +276,11 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #define HALF_LJ
 #include "nbnxn_kernel_ref_inner.h"
 #undef HALF_LJ
+#undef CALC_COULOMB
             }
             else if (do_coul)
             {
+#define CALC_COULOMB
 #include "nbnxn_kernel_ref_inner.h"
 #undef CALC_COULOMB
             }
@@ -298,9 +300,11 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #define HALF_LJ
 #include "nbnxn_kernel_ref_inner.h"
 #undef HALF_LJ
+#undef CALC_COULOMB
             }
             else if (do_coul)
             {
+#define CALC_COULOMB
 #include "nbnxn_kernel_ref_inner.h"
 #undef CALC_COULOMB
             }
