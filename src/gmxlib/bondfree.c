@@ -57,6 +57,11 @@
 #include "nonbonded.h"
 #include "mdrun.h"
 
+#if !defined GMX_DOUBLE && defined GMX_X86_SSE2
+#include "gmx_x86_simd_single.h"
+#define SSE_PROPER_DIHEDRALS
+#endif
+
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
 1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4 ,
@@ -802,79 +807,88 @@ real bond_angle(const rvec xi,const rvec xj,const rvec xk,const t_pbc *pbc,
 }
 
 real angles(int nbonds,
-	    const t_iatom forceatoms[],const t_iparams forceparams[],
-	    const rvec x[],rvec f[],rvec fshift[],
-	    const t_pbc *pbc,const t_graph *g,
-	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,t_fcdata *fcd,
-	    int *global_atom_index)
+            const t_iatom forceatoms[],const t_iparams forceparams[],
+            const rvec x[],rvec f[],rvec fshift[],
+            const t_pbc *pbc,const t_graph *g,
+            real lambda,real *dvdlambda,
+            const t_mdatoms *md,t_fcdata *fcd,
+            int *global_atom_index)
 {
-  int  i,ai,aj,ak,t1,t2,type;
-  rvec r_ij,r_kj;
-  real cos_theta,cos_theta2,theta,dVdt,va,vtot;
-  ivec jt,dt_ij,dt_kj;
+    int  i,ai,aj,ak,t1,t2,type;
+    rvec r_ij,r_kj;
+    real cos_theta,cos_theta2,theta,dVdt,va,vtot;
+    ivec jt,dt_ij,dt_kj;
+
+    vtot = 0.0;
+    for(i=0; i<nbonds; )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+
+        theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
+                            r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
-  vtot = 0.0;
-  for(i=0; (i<nbonds); ) {
-    type = forceatoms[i++];
-    ai   = forceatoms[i++];
-    aj   = forceatoms[i++];
-    ak   = forceatoms[i++];
-    
-    theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
-			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
-  
-    *dvdlambda += harmonic(forceparams[type].harmonic.krA,
-			   forceparams[type].harmonic.krB,
-			   forceparams[type].harmonic.rA*DEG2RAD,
-			   forceparams[type].harmonic.rB*DEG2RAD,
-			   theta,lambda,&va,&dVdt);  /*  21  */
-    vtot += va;
-    
-    cos_theta2 = sqr(cos_theta);
-    if (cos_theta2 < 1) {
-      int  m;
-      real st,sth;
-      real cik,cii,ckk;
-      real nrkj2,nrij2;
-      rvec f_i,f_j,f_k;
-      
-      st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
-      sth = st*cos_theta;			/*   1		*/
+        *dvdlambda += harmonic(forceparams[type].harmonic.krA,
+                               forceparams[type].harmonic.krB,
+                               forceparams[type].harmonic.rA*DEG2RAD,
+                               forceparams[type].harmonic.rB*DEG2RAD,
+                               theta,lambda,&va,&dVdt);  /*  21  */
+        vtot += va;
+
+        cos_theta2 = sqr(cos_theta);
+        if (cos_theta2 < 1)
+        {
+            int  m;
+            real st,sth;
+            real cik,cii,ckk;
+            real nrkj2,nrij2;
+            real nrkj_1,nrij_1;
+            rvec f_i,f_j,f_k;
+
+            st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
+            sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
-      if (debug)
-	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-		theta*RAD2DEG,va,dVdt);
+            if (debug)
+                fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
+                        theta*RAD2DEG,va,dVdt);
 #endif
-      nrkj2=iprod(r_kj,r_kj);			/*   5		*/
-      nrij2=iprod(r_ij,r_ij);
+            nrij2 = iprod(r_ij,r_ij);			/*   5		*/
+            nrkj2 = iprod(r_kj,r_kj);			/*   5		*/
+
+            nrij_1 = gmx_invsqrt(nrij2);		/*  10		*/
+            nrkj_1 = gmx_invsqrt(nrkj2);		/*  10		*/
+
+            cik = st*nrij_1*nrkj_1;			/*   2		*/
+            cii = sth*nrij_1*nrij_1;			/*   2		*/
+            ckk = sth*nrkj_1*nrkj_1;			/*   2		*/
       
-      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
-      cii=sth/nrij2;				/*  10		*/
-      ckk=sth/nrkj2;				/*  10		*/
-      
-      for (m=0; (m<DIM); m++) {			/*  39		*/
-	f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
-	f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
-	f_j[m]=-f_i[m]-f_k[m];
-	f[ai][m]+=f_i[m];
-	f[aj][m]+=f_j[m];
-	f[ak][m]+=f_k[m];
-      }
-      if (g) {
-	copy_ivec(SHIFT_IVEC(g,aj),jt);
-      
-	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
-	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
-	t1=IVEC2IS(dt_ij);
-	t2=IVEC2IS(dt_kj);
-      }
-      rvec_inc(fshift[t1],f_i);
-      rvec_inc(fshift[CENTRAL],f_j);
-      rvec_inc(fshift[t2],f_k);
-    }                                           /* 161 TOTAL	*/
-  }
-  return vtot;
+            for (m=0; m<DIM; m++)
+            {			/*  39		*/
+                f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
+                f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
+                f_j[m]    = -f_i[m] - f_k[m];
+                f[ai][m] += f_i[m];
+                f[aj][m] += f_j[m];
+                f[ak][m] += f_k[m];
+            }
+            if (g != NULL)
+            {
+                copy_ivec(SHIFT_IVEC(g,aj),jt);
+
+                ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+                ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+                t1 = IVEC2IS(dt_ij);
+                t2 = IVEC2IS(dt_kj);
+            }
+            rvec_inc(fshift[t1],f_i);
+            rvec_inc(fshift[CENTRAL],f_j);
+            rvec_inc(fshift[t2],f_k);
+        }                                           /* 161 TOTAL	*/
+    }
+
+    return vtot;
 }
 
 real linear_angles(int nbonds,
@@ -1156,6 +1170,162 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 }
 
 
+#ifdef SSE_PROPER_DIHEDRALS
+
+/* x86 SIMD inner-product of 4 float vectors */
+#define GMX_MM_IPROD_PS(ax,ay,az,bx,by,bz)                 \
+    _mm_add_ps(_mm_add_ps(_mm_mul_ps(ax,bx),_mm_mul_ps(ay,by)),_mm_mul_ps(az,bz))
+
+/* x86 SIMD norm^2 of 4 float vectors */
+#define GMX_MM_NORM2_PS(ax,ay,az) GMX_MM_IPROD_PS(ax,ay,az,ax,ay,az)
+
+/* x86 SIMD cross-product of 4 float vectors */
+#define GMX_MM_CPROD_PS(ax,ay,az,bx,by,bz,cx,cy,cz)        \
+{                                                          \
+    cx = _mm_sub_ps(_mm_mul_ps(ay,bz),_mm_mul_ps(az,by));  \
+    cy = _mm_sub_ps(_mm_mul_ps(az,bx),_mm_mul_ps(ax,bz));  \
+    cz = _mm_sub_ps(_mm_mul_ps(ax,by),_mm_mul_ps(ay,bx));  \
+}
+
+/* load 4 rvec's into 3 x86 SIMD float registers */
+#define load_rvec4(r0,r1,r2,r3,rx_SSE,ry_SSE,rz_SSE)          \
+{                                                             \
+    __m128 tmp;                                               \
+    rx_SSE = _mm_load_ps(r0);                                 \
+    ry_SSE = _mm_load_ps(r1);                                 \
+    rz_SSE = _mm_load_ps(r2);                                 \
+    tmp    = _mm_load_ps(r3);                                 \
+    _MM_TRANSPOSE4_PS(rx_SSE,ry_SSE,rz_SSE,tmp);              \
+}
+
+#define store_rvec4(rx_SSE,ry_SSE,rz_SSE,r0,r1,r2,r3)         \
+{                                                             \
+    __m128 tmp=_mm_setzero_ps();                              \
+    _MM_TRANSPOSE4_PS(rx_SSE,ry_SSE,rz_SSE,tmp);              \
+    _mm_store_ps(r0,rx_SSE);                                  \
+    _mm_store_ps(r1,ry_SSE);                                  \
+    _mm_store_ps(r2,rz_SSE);                                  \
+    _mm_store_ps(r3,tmp   );                                  \
+}
+
+/* An rvec in a structure which can be allocated 16-byte aligned */
+typedef struct {
+    rvec  v;
+    float f;
+} rvec_sse_t;
+
+/* As dih_angle above, but calculates 4 dihedral angles at once using SSE,
+ * also calculates the pre-factor required for the dihedral force update.
+ * Note that bv and buf should be 16-byte aligned.
+ */
+static void
+dih_angle_sse(const rvec *x,
+              int ai[4],int aj[4],int ak[4],int al[4],
+              const t_pbc *pbc,
+              int t1[4],int t2[4],int t3[4],
+              rvec_sse_t *bv,
+              real *buf)
+{
+    int s;
+    __m128 rijx_SSE,rijy_SSE,rijz_SSE;
+    __m128 rkjx_SSE,rkjy_SSE,rkjz_SSE;
+    __m128 rklx_SSE,rkly_SSE,rklz_SSE;
+    __m128 mx_SSE,my_SSE,mz_SSE;
+    __m128 nx_SSE,ny_SSE,nz_SSE;
+    __m128 cx_SSE,cy_SSE,cz_SSE;
+    __m128 cn_SSE;
+    __m128 s_SSE;
+    __m128 phi_SSE;
+    __m128 ipr_SSE;
+    int signs;
+    __m128 iprm_SSE,iprn_SSE;
+    __m128 nrkj2_SSE,nrkj_1_SSE,nrkj_2_SSE,nrkj_SSE;
+    __m128 nrkj_m2_SSE,nrkj_n2_SSE;
+    __m128 p_SSE,q_SSE;
+    __m128 fmin_SSE=_mm_set1_ps(GMX_FLOAT_MIN);
+
+    for(s=0; s<4; s++)
+    {
+        t1[s] = pbc_rvec_sub(pbc,x[ai[s]],x[aj[s]],bv[0+s].v);
+        t2[s] = pbc_rvec_sub(pbc,x[ak[s]],x[aj[s]],bv[4+s].v);
+        t3[s] = pbc_rvec_sub(pbc,x[ak[s]],x[al[s]],bv[8+s].v);
+    }
+
+    load_rvec4(bv[0].v,bv[1].v,bv[2].v,bv[3].v,rijx_SSE,rijy_SSE,rijz_SSE);
+    load_rvec4(bv[4].v,bv[5].v,bv[6].v,bv[7].v,rkjx_SSE,rkjy_SSE,rkjz_SSE);
+    load_rvec4(bv[8].v,bv[9].v,bv[10].v,bv[11].v,rklx_SSE,rkly_SSE,rklz_SSE);
+
+    GMX_MM_CPROD_PS(rijx_SSE,rijy_SSE,rijz_SSE,
+                    rkjx_SSE,rkjy_SSE,rkjz_SSE,
+                    mx_SSE,my_SSE,mz_SSE);
+
+    GMX_MM_CPROD_PS(rkjx_SSE,rkjy_SSE,rkjz_SSE,
+                    rklx_SSE,rkly_SSE,rklz_SSE,
+                    nx_SSE,ny_SSE,nz_SSE);
+
+    GMX_MM_CPROD_PS(mx_SSE,my_SSE,mz_SSE,
+                    nx_SSE,ny_SSE,nz_SSE,
+                    cx_SSE,cy_SSE,cz_SSE);
+
+    cn_SSE = gmx_mm_sqrt_ps(GMX_MM_NORM2_PS(cx_SSE,cy_SSE,cz_SSE));
+    
+    s_SSE = GMX_MM_IPROD_PS(mx_SSE,my_SSE,mz_SSE,nx_SSE,ny_SSE,nz_SSE);
+
+    phi_SSE = gmx_mm_atan2_ps(cn_SSE,s_SSE);
+    _mm_store_ps(buf+16,phi_SSE);
+
+    ipr_SSE = GMX_MM_IPROD_PS(rijx_SSE,rijy_SSE,rijz_SSE,
+                              nx_SSE,ny_SSE,nz_SSE);
+
+    signs = _mm_movemask_ps(ipr_SSE);
+    
+    for(s=0; s<4; s++)
+    {
+        if (signs & (1<<s))
+        {
+            buf[16+s] = -buf[16+s];
+        }
+    }
+
+    iprm_SSE    = GMX_MM_NORM2_PS(mx_SSE,my_SSE,mz_SSE);
+    iprn_SSE    = GMX_MM_NORM2_PS(nx_SSE,ny_SSE,nz_SSE);
+
+    /* store_rvec4 messes with the input, don't use it after this! */
+    store_rvec4(mx_SSE,my_SSE,mz_SSE,bv[0].v,bv[1].v,bv[2].v,bv[3].v);
+    store_rvec4(nx_SSE,ny_SSE,nz_SSE,bv[4].v,bv[5].v,bv[6].v,bv[7].v);
+
+    nrkj2_SSE   = GMX_MM_NORM2_PS(rkjx_SSE,rkjy_SSE,rkjz_SSE);
+
+    /* Avoid division by zero. When zero, the result is multiplied by 0
+     * anyhow, so the 3 max below do not affect the final result.
+     */
+    nrkj2_SSE   = _mm_max_ps(nrkj2_SSE,fmin_SSE);
+    nrkj_1_SSE  = gmx_mm_invsqrt_ps(nrkj2_SSE);
+    nrkj_2_SSE  = _mm_mul_ps(nrkj_1_SSE,nrkj_1_SSE);
+    nrkj_SSE    = _mm_mul_ps(nrkj2_SSE,nrkj_1_SSE);
+
+    iprm_SSE    = _mm_max_ps(iprm_SSE,fmin_SSE);
+    iprn_SSE    = _mm_max_ps(iprn_SSE,fmin_SSE);
+    nrkj_m2_SSE = _mm_mul_ps(nrkj_SSE,gmx_mm_inv_ps(iprm_SSE));
+    nrkj_n2_SSE = _mm_mul_ps(nrkj_SSE,gmx_mm_inv_ps(iprn_SSE));
+
+    _mm_store_ps(buf+0,nrkj_m2_SSE);
+    _mm_store_ps(buf+4,nrkj_n2_SSE);
+
+    p_SSE       = GMX_MM_IPROD_PS(rijx_SSE,rijy_SSE,rijz_SSE,
+                                  rkjx_SSE,rkjy_SSE,rkjz_SSE);
+    p_SSE       = _mm_mul_ps(p_SSE,nrkj_2_SSE);
+
+    q_SSE       = GMX_MM_IPROD_PS(rklx_SSE,rkly_SSE,rklz_SSE,
+                                  rkjx_SSE,rkjy_SSE,rkjz_SSE);
+    q_SSE       = _mm_mul_ps(q_SSE,nrkj_2_SSE);
+
+    _mm_store_ps(buf+8 ,p_SSE);
+    _mm_store_ps(buf+12,q_SSE);
+}
+
+#endif /* SSE_PROPER_DIHEDRALS */
+
 
 void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		rvec r_ij,rvec r_kj,rvec r_kl,
@@ -1166,8 +1336,8 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   /* 143 FLOPS */
   rvec f_i,f_j,f_k,f_l;
   rvec uvec,vvec,svec,dx_jl;
-  real iprm,iprn,nrkj,nrkj2;
-  real a,p,q,toler;
+  real iprm,iprn,nrkj,nrkj2,nrkj_1,nrkj_2;
+  real a,b,p,q,toler;
   ivec jt,dt_ij,dt_kj,dt_lj;  
   
   iprm  = iprod(m,m);		/*  5 	*/
@@ -1175,15 +1345,17 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
   toler = nrkj2*GMX_REAL_EPS;
   if ((iprm > toler) && (iprn > toler)) {
-    nrkj  = nrkj2*gmx_invsqrt(nrkj2);	/* 10	*/
+    nrkj_1 = gmx_invsqrt(nrkj2);	/* 10	*/
+    nrkj_2 = nrkj_1*nrkj_1;	/*  1	*/
+    nrkj  = nrkj2*nrkj_1;	/*  1	*/
     a     = -ddphi*nrkj/iprm;	/* 11	*/
     svmul(a,m,f_i);		/*  3	*/
-    a     = ddphi*nrkj/iprn;	/* 11	*/
-    svmul(a,n,f_l);		/*  3 	*/
+    b     = ddphi*nrkj/iprn;	/* 11	*/
+    svmul(b,n,f_l);		/*  3 	*/
     p     = iprod(r_ij,r_kj);	/*  5	*/
-    p    /= nrkj2;		/* 10	*/
+    p    *= nrkj_2;		/*  1	*/
     q     = iprod(r_kl,r_kj);	/*  5	*/
-    q    /= nrkj2;		/* 10	*/
+    q    *= nrkj_2;		/*  1	*/
     svmul(p,f_i,uvec);		/*  3	*/
     svmul(q,f_l,vvec);		/*  3	*/
     rvec_sub(uvec,vvec,svec);	/*  3	*/
@@ -1216,6 +1388,73 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   /* 112 TOTAL 	*/
 }
 
+/* As do_dih_fup above, but without shift forces */
+static void
+do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
+                    rvec r_ij,rvec r_kj,rvec r_kl,
+                    rvec m,rvec n,rvec f[])
+{
+  rvec f_i,f_j,f_k,f_l;
+  rvec uvec,vvec,svec,dx_jl;
+  real iprm,iprn,nrkj,nrkj2,nrkj_1,nrkj_2;
+  real a,b,p,q,toler;
+  ivec jt,dt_ij,dt_kj,dt_lj;  
+  
+  iprm  = iprod(m,m);		/*  5 	*/
+  iprn  = iprod(n,n);		/*  5	*/
+  nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
+  toler = nrkj2*GMX_REAL_EPS;
+  if ((iprm > toler) && (iprn > toler)) {
+    nrkj_1 = gmx_invsqrt(nrkj2);	/* 10	*/
+    nrkj_2 = nrkj_1*nrkj_1;	/*  1	*/
+    nrkj  = nrkj2*nrkj_1;	/*  1	*/
+    a     = -ddphi*nrkj/iprm;	/* 11	*/
+    svmul(a,m,f_i);		/*  3	*/
+    b     = ddphi*nrkj/iprn;	/* 11	*/
+    svmul(b,n,f_l);		/*  3 	*/
+    p     = iprod(r_ij,r_kj);	/*  5	*/
+    p    *= nrkj_2;		/*  1	*/
+    q     = iprod(r_kl,r_kj);	/*  5	*/
+    q    *= nrkj_2;		/*  1	*/
+    svmul(p,f_i,uvec);		/*  3	*/
+    svmul(q,f_l,vvec);		/*  3	*/
+    rvec_sub(uvec,vvec,svec);	/*  3	*/
+    rvec_sub(f_i,svec,f_j);	/*  3	*/
+    rvec_add(f_l,svec,f_k);	/*  3	*/
+    rvec_inc(f[i],f_i);   	/*  3	*/
+    rvec_dec(f[j],f_j);   	/*  3	*/
+    rvec_dec(f[k],f_k);   	/*  3	*/
+    rvec_inc(f[l],f_l);   	/*  3	*/
+  }
+}
+
+/* As do_dih_fup_noshiftf above, but with pre-calculated pre-factors */
+static void
+do_dih_fup_noshiftf_prec(int i,int j,int k,int l,real ddphi,
+                         real nrkj_m2,real nrkj_n2,
+                         real p,real q,
+                         rvec m,rvec n,rvec f[])
+{
+    rvec f_i,f_j,f_k,f_l;
+    rvec uvec,vvec,svec,dx_jl;
+    real a,b,toler;
+    ivec jt,dt_ij,dt_kj,dt_lj;  
+  
+    a = -ddphi*nrkj_m2;
+    svmul(a,m,f_i);
+    b =  ddphi*nrkj_n2;
+    svmul(b,n,f_l);
+    svmul(p,f_i,uvec);
+    svmul(q,f_l,vvec);
+    rvec_sub(uvec,vvec,svec);
+    rvec_sub(f_i,svec,f_j);
+    rvec_add(f_l,svec,f_k);
+    rvec_inc(f[i],f_i);
+    rvec_dec(f[j],f_j);
+    rvec_dec(f[k],f_k);
+    rvec_inc(f[l],f_l);
+}
+
 
 real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
 	     real phi,real lambda,real *V,real *F)
@@ -1240,6 +1479,36 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
   return dvdlambda;
   
   /* That was 40 flops */
+}
+
+static void
+dopdihs_noener(real cpA,real cpB,real phiA,real phiB,int mult,
+               real phi,real lambda,real *F)
+{
+  real mdphi,sdphi,ddphi;
+  real L1   = 1.0 - lambda;
+  real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+  real cp   = L1*cpA + lambda*cpB;
+  
+  mdphi = mult*phi - ph0;
+  sdphi = sin(mdphi);
+  ddphi = -cp*mult*sdphi;
+  
+  *F = ddphi;
+  
+  /* That was 20 flops */
+}
+
+static void
+dopdihs_mdphi(real cpA,real cpB,real phiA,real phiB,int mult,
+              real phi,real lambda,real *cp,real *mdphi)
+{
+    real L1   = 1.0 - lambda;
+    real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+
+    *cp    = L1*cpA + lambda*cpB;
+
+    *mdphi = mult*phi - ph0;
 }
 
 static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
@@ -1326,6 +1595,153 @@ void make_dp_periodic(real *dp)  /* 1 flop? */
     }
     return;
 }
+
+/* As pdihs above, but without calculating energies and shift forces */
+static void
+pdihs_noener(int nbonds,
+             const t_iatom forceatoms[],const t_iparams forceparams[],
+             const rvec x[],rvec f[],
+             const t_pbc *pbc,const t_graph *g,
+             real lambda,
+             const t_mdatoms *md,t_fcdata *fcd,
+             int *global_atom_index)
+{
+    int  i,type,ai,aj,ak,al;
+    int  t1,t2,t3;
+    rvec r_ij,r_kj,r_kl,m,n;
+    real phi,sign,ddphi_tot,ddphi;
+
+    for(i=0; (i<nbonds); )
+    {
+        ai   = forceatoms[i+1];
+        aj   = forceatoms[i+2];
+        ak   = forceatoms[i+3];
+        al   = forceatoms[i+4];
+
+        phi = dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+                        &sign,&t1,&t2,&t3);
+
+        ddphi_tot = 0;
+
+        /* Loop over dihedrals working on the same atoms,
+         * so we avoid recalculating angles and force distributions.
+         */
+        do
+        {
+            type = forceatoms[i];
+            dopdihs_noener(forceparams[type].pdihs.cpA,
+                           forceparams[type].pdihs.cpB,
+                           forceparams[type].pdihs.phiA,
+                           forceparams[type].pdihs.phiB,
+                           forceparams[type].pdihs.mult,
+                           phi,lambda,&ddphi);
+            ddphi_tot += ddphi;
+
+            i += 5;
+        }
+        while(i < nbonds &&
+              forceatoms[i+1] == ai &&
+              forceatoms[i+2] == aj &&
+              forceatoms[i+3] == ak &&
+              forceatoms[i+4] == al);
+
+        do_dih_fup_noshiftf(ai,aj,ak,al,ddphi_tot,r_ij,r_kj,r_kl,m,n,f);
+    }
+}
+
+
+#ifdef SSE_PROPER_DIHEDRALS
+
+/* As pdihs_noner above, but using SSE to calculate 4 dihedrals at once */
+static void
+pdihs_noener_sse(int nbonds,
+                 const t_iatom forceatoms[],const t_iparams forceparams[],
+                 const rvec x[],rvec f[],
+                 const t_pbc *pbc,const t_graph *g,
+                 real lambda,
+                 const t_mdatoms *md,t_fcdata *fcd,
+                 int *global_atom_index)
+{
+    int  i,i4,s;
+    int  type,ai[4],aj[4],ak[4],al[4];
+    int  t1[4],t2[4],t3[4];
+    int  mult[4];
+    real cp[4],mdphi[4];
+    real ddphi;
+    rvec_sse_t rs_array[13],*rs;
+    real buf_array[24],*buf;
+    __m128 mdphi_SSE,sin_SSE,cos_SSE;
+
+    /* Ensure 16-byte alignment */
+    rs  = (rvec_sse_t *)(((size_t)(rs_array +1)) & (~((size_t)15)));
+    buf =      (float *)(((size_t)(buf_array+3)) & (~((size_t)15)));
+
+    for(i=0; (i<nbonds); i+=20)
+    {
+        /* Collect atoms quadruplets for 4 dihedrals */
+        i4 = i;
+        for(s=0; s<4; s++)
+        {
+            ai[s] = forceatoms[i4+1];
+            aj[s] = forceatoms[i4+2];
+            ak[s] = forceatoms[i4+3];
+            al[s] = forceatoms[i4+4];
+            /* At the end fill the arrays with identical entries */
+            if (i4 + 5 < nbonds)
+            {
+                i4 += 5;
+            }
+        }
+
+        /* Caclulate 4 dihedral angles at once */
+        dih_angle_sse(x,ai,aj,ak,al,pbc,t1,t2,t3,rs,buf);
+
+        i4 = i;
+        for(s=0; s<4; s++)
+        {
+            if (i4 < nbonds)
+            {
+                /* Calculate the coefficient and angle deviation */
+                type = forceatoms[i4];
+                dopdihs_mdphi(forceparams[type].pdihs.cpA,
+                              forceparams[type].pdihs.cpB,
+                              forceparams[type].pdihs.phiA,
+                              forceparams[type].pdihs.phiB,
+                              forceparams[type].pdihs.mult,
+                              buf[16+s],lambda,&cp[s],&buf[16+s]);
+                mult[s] = forceparams[type].pdihs.mult;
+            }
+            else
+            {
+                buf[16+s] = 0;
+            }
+            i4 += 5;
+        }
+
+        /* Calculate 4 sines at once */
+        mdphi_SSE = _mm_load_ps(buf+16);
+        gmx_mm_sincos_ps(mdphi_SSE,&sin_SSE,&cos_SSE);
+        _mm_store_ps(buf+16,sin_SSE);
+
+        i4 = i;
+        s = 0;
+        do
+        {
+            ddphi = -cp[s]*mult[s]*buf[16+s];
+
+            do_dih_fup_noshiftf_prec(ai[s],aj[s],ak[s],al[s],ddphi,
+                                     buf[ 0+s],buf[ 4+s],
+                                     buf[ 8+s],buf[12+s],
+                                     rs[0+s].v,rs[4+s].v,
+                                     f);
+            s++;
+            i4 += 5;
+        }
+        while (s < 4 && i4 < nbonds);
+    }
+}
+
+#endif /* SSE_PROPER_DIHEDRALS */
 
 
 real idihs(int nbonds,
@@ -2817,17 +3233,283 @@ real tab_dihs(int nbonds,
   return vtot;
 }
 
-real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
-                   rvec x[], rvec f[], t_forcerec *fr,
-                   const t_pbc *pbc,const t_graph *g,
-                   gmx_enerdata_t *enerd, t_nrnb *nrnb,
-                   real *lambda, real *dvdl,
-                   const t_mdatoms *md,t_fcdata *fcd,
-                   int *global_atom_index, gmx_bool bPrintSepPot)
+static unsigned
+calc_bonded_reduction_mask(const t_idef *idef,
+                           int shift,
+                           int t,int nt)
+{
+    unsigned mask;
+    int ftype,nb,nat1,nb0,nb1,i,a;
+
+    mask = 0;
+
+    for(ftype=0; ftype<F_NRE; ftype++)
+    {
+        if (interaction_function[ftype].flags & IF_BOND &&
+            !(ftype == F_CONNBONDS || ftype == F_POSRES) &&
+            (ftype<F_GB12 || ftype>F_GB14))
+        {
+            nb = idef->il[ftype].nr;
+            if (nb > 0)
+            {
+                nat1 = interaction_function[ftype].nratoms + 1;
+
+                /* Divide this interaction equally over the threads.
+                 * This is not stored: should match division in calc_bonds.
+                 */
+                nb0 = (((nb/nat1)* t   )/nt)*nat1;
+                nb1 = (((nb/nat1)*(t+1))/nt)*nat1;
+
+                for(i=nb0; i<nb1; i+=nat1)
+                {
+                    for(a=1; a<nat1; a++)
+                    {
+                        mask |= (1U << (idef->il[ftype].iatoms[i+a]>>shift));
+                    }
+                }
+            }
+        }
+    }
+
+    return mask;
+}
+
+void init_bonded_thread_force_reduction(t_forcerec *fr,
+                                        const t_idef *idef)
+{
+#define MAX_BLOCK_BITS 32
+    int t;
+    int ctot,c,b;
+
+    if (fr->nthreads <= 1)
+    {
+        fr->red_nblock = 0;
+
+        return;
+    }
+
+    /* We divide the force array in a maximum of 32 blocks.
+     * Minimum force block reduction size is 2^6=64.
+     */
+    fr->red_ashift = 6;
+    while (fr->natoms_force > (int)(MAX_BLOCK_BITS*(1U<<fr->red_ashift)))
+    {
+        fr->red_ashift++;
+    }
+    if (debug)
+    {
+        fprintf(debug,"bonded force buffer block atom shift %d bits\n",
+                fr->red_ashift);
+    }
+
+    /* Determine to which blocks each thread's bonded force calculation
+     * contributes. Store this is a mask for each thread.
+     */
+#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
+    for(t=1; t<fr->nthreads; t++)
+    {
+        fr->f_t[t].red_mask =
+            calc_bonded_reduction_mask(idef,fr->red_ashift,t,fr->nthreads);
+    }
+
+    /* Determine the maximum number of blocks we need to reduce over */
+    fr->red_nblock = 0;
+    ctot = 0;
+    for(t=0; t<fr->nthreads; t++)
+    {
+        c = 0;
+        for(b=0; b<MAX_BLOCK_BITS; b++)
+        {
+            if (fr->f_t[t].red_mask & (1U<<b))
+            {
+                fr->red_nblock = max(fr->red_nblock,b+1);
+                c++;
+            }
+        }
+        if (debug)
+        {
+            fprintf(debug,"thread %d flags %x count %d\n",
+                    t,fr->f_t[t].red_mask,c);
+        }
+        ctot += c;
+    }
+    if (debug)
+    {
+        fprintf(debug,"Number of blocks to reduce: %d of size %d\n",
+                fr->red_nblock,1<<fr->red_ashift);
+        fprintf(debug,"Reduction density %.2f density/#thread %.2f\n",
+                ctot*(1<<fr->red_ashift)/(double)fr->natoms_force,
+                ctot*(1<<fr->red_ashift)/(double)(fr->natoms_force*fr->nthreads));
+    }
+}
+
+static void zero_thread_forces(f_thread_t *f_t,int n,
+                               int nblock,int blocksize)
+{
+    int b,a0,a1,a,i,j;
+
+    if (n > f_t->f_nalloc)
+    {
+        f_t->f_nalloc = over_alloc_large(n);
+        srenew(f_t->f,f_t->f_nalloc);
+    }
+
+    if (f_t->red_mask != 0)
+    {
+        for(b=0; b<nblock; b++)
+        {
+            if (f_t->red_mask && (1U<<b))
+            {
+                a0 = b*blocksize;
+                a1 = min((b+1)*blocksize,n);
+                for(a=a0; a<a1; a++)
+                {
+                    clear_rvec(f_t->f[a]);
+                }
+            }
+        }
+    }
+    for(i=0; i<SHIFTS; i++)
+    {
+        clear_rvec(f_t->fshift[i]);
+    }
+    for(i=0; i<F_NRE; i++)
+    {
+        f_t->ener[i] = 0;
+    }
+    for(i=0; i<egNR; i++)
+    {
+        for(j=0; j<f_t->grpp.nener; j++)
+        {
+            f_t->grpp.ener[i][j] = 0;
+        }
+    }
+    for(i=0; i<efptNR; i++)
+    {
+        f_t->dvdl[i] = 0;
+    }
+}
+
+static void reduce_thread_force_buffer(int n,rvec *f,
+                                       int nthreads,f_thread_t *f_t,
+                                       int nblock,int block_size)
+{
+    int b;
+
+    if (nthreads > 256)
+    {
+        gmx_fatal(FARGS,"Can not reduce bonded forces on more than 256 threads");
+    }
+
+    /* This reduction can run on any number of threads,
+     * independently of nthreads.
+     */
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+    for(b=0; b<nblock; b++)
+    {
+        rvec *fp[256];
+        int nfb,ft,fb;
+        int a0,a1,a;
+
+        /* Determine which threads contribute to this block */
+        nfb = 0;
+        for(ft=1; ft<nthreads; ft++)
+        {
+            if (f_t[ft].red_mask & (1U<<b))
+            {
+                fp[nfb++] = f_t[ft].f;
+            }
+        }
+        if (nfb > 0)
+        {
+            /* Reduce force buffers for threads that contribute */
+            a0 =  b   *block_size;
+            a1 = (b+1)*block_size;
+            a1 = min(a1,n);
+            for(a=a0; a<a1; a++)
+            {
+                for(fb=0; fb<nfb; fb++)
+                {
+                    rvec_inc(f[a],fp[fb][a]);
+                }
+            }
+        }
+    }
+}
+
+static void reduce_thread_forces(int n,rvec *f,rvec *fshift,
+                                 real *ener,gmx_grppairener_t *grpp,real *dvdl,
+                                 int nthreads,f_thread_t *f_t,
+                                 int nblock,int block_size,
+                                 gmx_bool bCalcEnerVir,
+                                 gmx_bool bDHDL)
+{
+    if (nblock > 0)
+    {
+        /* Reduce the bonded force buffer */
+        reduce_thread_force_buffer(n,f,nthreads,f_t,nblock,block_size);
+    }
+
+    /* When necessary, reduce energy and virial using one thread only */
+    if (bCalcEnerVir)
+    {
+        int t,i,j;
+
+        for(i=0; i<SHIFTS; i++)
+        {
+            for(t=1; t<nthreads; t++)
+            {
+                rvec_inc(fshift[i],f_t[t].fshift[i]);
+            }
+        }
+        for(i=0; i<F_NRE; i++)
+        {
+            for(t=1; t<nthreads; t++)
+            {
+                ener[i] += f_t[t].ener[i];
+            }
+        }
+        for(i=0; i<egNR; i++)
+        {
+            for(j=0; j<f_t[1].grpp.nener; j++)
+            {
+                for(t=1; t<nthreads; t++)
+                {
+                    
+                    grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
+                }
+            }
+        }
+        if (bDHDL)
+        {
+            for(i=0; i<efptNR; i++)
+            {
+                
+                for(t=1; t<nthreads; t++)
+                {
+                    dvdl[i] += f_t[t].dvdl[i];
+                }
+            }
+        }
+    }
+}
+
+static real calc_one_bond(FILE *fplog,int thread,
+                          int ftype,const t_idef *idef,
+                          rvec x[], rvec f[], rvec fshift[],
+                          t_forcerec *fr,
+                          const t_pbc *pbc,const t_graph *g,
+                          gmx_enerdata_t *enerd, gmx_grppairener_t *grpp,
+                          t_nrnb *nrnb,
+                          real *lambda, real *dvdl,
+                          const t_mdatoms *md,t_fcdata *fcd,
+                          gmx_bool bCalcEnerVir,
+                          int *global_atom_index, gmx_bool bPrintSepPot)
 {
     int ind,nat1,nbonds,efptFTYPE;
     real v=0;
     t_iatom *iatoms;
+    int nb0,nbn;
 
     if (IS_RESTRAINT_TYPE(ftype))
     {
@@ -2838,74 +3520,90 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
         efptFTYPE = efptBONDED;
     }
 
-    if (ftype<F_GB12 || ftype>F_GB14)
+    if (interaction_function[ftype].flags & IF_BOND &&
+        !(ftype == F_CONNBONDS || ftype == F_POSRES))
     {
-        if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES))
-        {
-            ind  = interaction_function[ftype].nrnb_ind;
-            nat1 = interaction_function[ftype].nratoms+1;
-            nbonds    = idef->il[ftype].nr;
-            iatoms    = idef->il[ftype].iatoms;
-            if (nbonds > 0)
-            {
-                if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB)
-                {
-                    if(ftype==F_CMAP)
-                    {
-                        v = cmap_dihs(nbonds,iatoms,
-                                      idef->iparams,&idef->cmap_grid,
-                                      (const rvec*)x,f,fr->fshift,
-                                      pbc,g,lambda[efptFTYPE],&(dvdl[efptFTYPE]),
-                                      md,fcd,global_atom_index);
-                    }
-                    else
-                    {
-                        v =	    interaction_function[ftype].ifunc(nbonds,iatoms,
-                                                                  idef->iparams,
-                                                                  (const rvec*)x,f,fr->fshift,
-                                                                  pbc,g,lambda[efptFTYPE],&(dvdl[efptFTYPE]),
-                                                                  md,fcd,global_atom_index);
-                    }
-                    enerd->dvdl_nonlin[efptFTYPE] += dvdl[efptFTYPE];
-                    if (bPrintSepPot)
-                    {
-                        fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-                                interaction_function[ftype].longname,
-                                nbonds/nat1,v,lambda[efptFTYPE]);
-                    }
-                }
-                else
-                {
-                    v = do_listed_vdw_q(ftype,nbonds,iatoms,
-                                        idef->iparams,
-                                        (const rvec*)x,f,fr->fshift,
-                                        pbc,g,lambda,dvdl,
-                                        md,fr,&enerd->grpp,global_atom_index);
-                    enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
-                    enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
+        ind  = interaction_function[ftype].nrnb_ind;
+        nat1 = interaction_function[ftype].nratoms + 1;
+        nbonds    = idef->il[ftype].nr/nat1;
+        iatoms    = idef->il[ftype].iatoms;
 
-                    if (bPrintSepPot)
-                    {
-                        fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                                interaction_function[ftype].longname,
-                                interaction_function[F_LJ14].longname,nbonds/nat1,dvdl[efptVDW]);
-                        fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                                interaction_function[ftype].longname,
-                                interaction_function[F_COUL14].longname,nbonds/nat1,dvdl[efptCOUL]);
-                    }
-                }
-                if (ind != -1)
-                {
-                    inc_nrnb(nrnb,ind,nbonds/nat1);
-                }
+        nb0 = ((nbonds* thread   )/(fr->nthreads))*nat1;
+        nbn = ((nbonds*(thread+1))/(fr->nthreads))*nat1 - nb0;
+
+        if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB)
+        {
+            if(ftype==F_CMAP)
+            {
+                v = cmap_dihs(nbn,iatoms+nb0,
+                              idef->iparams,&idef->cmap_grid,
+                              (const rvec*)x,f,fshift,
+                              pbc,g,lambda[efptFTYPE],&(dvdl[efptFTYPE]),
+                              md,fcd,global_atom_index);
+            }
+            else if (ftype == F_PDIHS &&
+                     !bCalcEnerVir && fr->efep==efepNO)
+            {
+                /* No energies, shift forces, dvdl */
+#ifndef SSE_PROPER_DIHEDRALS
+                pdihs_noener
+#else
+                pdihs_noener_sse
+#endif
+                    (nbn,idef->il[ftype].iatoms+nb0,
+                     idef->iparams,
+                     (const rvec*)x,f,
+                     pbc,g,lambda[efptFTYPE],md,fcd,
+                     global_atom_index);
+                v = 0;
+                dvdl[efptFTYPE] = 0;
+            }
+            else
+            {
+                v = interaction_function[ftype].ifunc(nbn,iatoms+nb0,
+                                                      idef->iparams,
+                                                      (const rvec*)x,f,fshift,
+                                                      pbc,g,lambda[efptFTYPE],&(dvdl[efptFTYPE]),
+                                                      md,fcd,global_atom_index);
+            }
+            enerd->dvdl_nonlin[efptFTYPE] += dvdl[efptFTYPE];
+            if (bPrintSepPot)
+            {
+                fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+                        interaction_function[ftype].longname,
+                        nbonds/nat1,v,lambda[efptFTYPE]);
             }
         }
+        else
+        {
+            v = do_listed_vdw_q(ftype,nbn,iatoms+nb0,
+                                idef->iparams,
+                                (const rvec*)x,f,fshift,
+                                pbc,g,lambda,dvdl,
+                                md,fr,grpp,global_atom_index);
+            enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
+            enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
+            
+            if (bPrintSepPot)
+            {
+                fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                        interaction_function[ftype].longname,
+                        interaction_function[F_LJ14].longname,nbonds/nat1,dvdl[efptVDW]);
+                fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                        interaction_function[ftype].longname,
+                        interaction_function[F_COUL14].longname,nbonds/nat1,dvdl[efptCOUL]);
+            }
+        }
+        if (ind != -1 && thread == 0)
+        {
+            inc_nrnb(nrnb,ind,nbonds);
+        }
     }
+
     return v;
 }
 
-/* WARNING!  THIS FUNCTION MUST EXACTLY TRACK THE calc_one_bond
+/* WARNING!  THIS FUNCTION MUST EXACTLY TRACK THE calc
    function, or horrible things will happen when doing free energy
    calculations!  In a good coding world, this would not be a
    different function, but for speed reasons, it needs to be made a
@@ -2913,13 +3611,13 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
    to reduce duplication.
 */
 
-real calc_one_bond_foreign(FILE *fplog,int ftype, const t_idef *idef,
-                           rvec x[], rvec f[], t_forcerec *fr,
-                           const t_pbc *pbc,const t_graph *g,
-                           gmx_enerdata_t *enerd, t_nrnb *nrnb,
-                           real *lambda, real *dvdl,
-                           const t_mdatoms *md,t_fcdata *fcd,
-                           int *global_atom_index, gmx_bool bPrintSepPot)
+static real calc_one_bond_foreign(FILE *fplog,int ftype, const t_idef *idef,
+                                  rvec x[], rvec f[], t_forcerec *fr,
+                                  const t_pbc *pbc,const t_graph *g,
+                                  gmx_enerdata_t *enerd, t_nrnb *nrnb,
+                                  real *lambda, real *dvdl,
+                                  const t_mdatoms *md,t_fcdata *fcd,
+                                  int *global_atom_index, gmx_bool bPrintSepPot)
 {
     int ind,nat1,nbonds,efptFTYPE,nbonds_np;
     real v=0;
@@ -2993,14 +3691,18 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 const t_mdatoms *md,
                 t_fcdata *fcd,int *global_atom_index,
                 t_atomtypes *atype, gmx_genborn_t *born,
+                int force_flags,
                 gmx_bool bPrintSepPot,gmx_large_int_t step)
 {
-    int    i,ftype,nbonds,ind,nat;
+    gmx_bool bCalcEnerVir;
+    int    i;
     real   v,dvdl[efptNR],dvdl_dum[efptNR]; /* The dummy array is to have a place to store the dhdl at other values
                                                of lambda, which will be thrown away in the end*/
-    real   *epot;
     const  t_pbc *pbc_null;
     char   buf[22];
+    int    thread;
+
+    bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
 
     for (i=0;i<efptNR;i++)
     {
@@ -3027,34 +3729,85 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     }
 #endif
 
-    epot = enerd->term;
-
     /* Do pre force calculation stuff which might require communication */
-    if (idef->il[F_ORIRES].nr) {
-        epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
-                                            idef->il[F_ORIRES].iatoms,
-                                            idef->iparams,md,(const rvec*)x,
-                                            pbc_null,fcd,hist);
+    if (idef->il[F_ORIRES].nr)
+    {
+        enerd->term[F_ORIRESDEV] =
+            calc_orires_dev(ms,idef->il[F_ORIRES].nr,
+                            idef->il[F_ORIRES].iatoms,
+                            idef->iparams,md,(const rvec*)x,
+                            pbc_null,fcd,hist);
     }
-    if (idef->il[F_DISRES].nr) {
+    if (idef->il[F_DISRES].nr)
+    {
         calc_disres_R_6(ms,idef->il[F_DISRES].nr,
                         idef->il[F_DISRES].iatoms,
                         idef->iparams,(const rvec*)x,pbc_null,
                         fcd,hist);
     }
 
-    /* Loop over all bonded force types to calculate the bonded forces */
-    for(ftype=0; (ftype<F_NRE); ftype++) 
+#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
+    for(thread=0; thread<fr->nthreads; thread++)
     {
-        v = calc_one_bond(fplog,ftype,idef,x, 
-                          f,fr,pbc_null,g,enerd,nrnb,lambda,dvdl,
-                          md,fcd,global_atom_index,bPrintSepPot);
-        epot[ftype]        += v;
+        int    ftype,nbonds,ind,nat1;
+        real   *epot,v;
+        /* thread stuff */
+        rvec   *ft,*fshift;
+        real   *dvdlt;
+        gmx_grppairener_t *grpp;
+        int    nb0,nbn;
+
+        if (thread == 0)
+        {
+            ft     = f;
+            fshift = fr->fshift;
+            epot   = enerd->term;
+            grpp   = &enerd->grpp;
+            dvdlt  = dvdl;
+        }
+        else
+        {
+            zero_thread_forces(&fr->f_t[thread],fr->natoms_force,
+                               fr->red_nblock,1<<fr->red_ashift);
+
+            ft     = fr->f_t[thread].f;
+            fshift = fr->f_t[thread].fshift;
+            epot   = fr->f_t[thread].ener;
+            grpp   = &fr->f_t[thread].grpp;
+            dvdlt  = fr->f_t[thread].dvdl;
+        }
+        /* Loop over all bonded force types to calculate the bonded forces */
+        for(ftype=0; (ftype<F_NRE); ftype++)
+        {
+            if (idef->il[ftype].nr > 0 &&
+                (interaction_function[ftype].flags & IF_BOND) &&
+                (ftype < F_GB12 || ftype > F_GB14) &&
+                !(ftype == F_CONNBONDS || ftype == F_POSRES))
+            {
+                v = calc_one_bond(fplog,thread,ftype,idef,x, 
+                                  ft,fshift,fr,pbc_null,g,enerd,grpp,
+                                  nrnb,lambda,dvdlt,
+                                  md,fcd,bCalcEnerVir,
+                                  global_atom_index,bPrintSepPot);
+                epot[ftype]        += v;
+            }
+        }
     }
+    if (fr->nthreads > 1)
+    {
+        reduce_thread_forces(fr->natoms_force,f,fr->fshift,
+                             enerd->term,&enerd->grpp,dvdl,
+                             fr->nthreads,fr->f_t,
+                             fr->red_nblock,1<<fr->red_ashift,
+                             bCalcEnerVir,
+                             force_flags & GMX_FORCE_DHDL);
+    }
+
     /* Copy the sum of violations for the distance restraints from fcd */
     if (fcd)
     {
-        epot[F_DISRESVIOL] = fcd->disres.sumviol;
+        enerd->term[F_DISRESVIOL] = fcd->disres.sumviol;
+
     }
 }
 

@@ -52,6 +52,7 @@ extern const char *etcoupl_names[etcNR+1];
 extern const char *epcoupl_names[epcNR+1];
 extern const char *epcoupltype_names[epctNR+1];
 extern const char *erefscaling_names[erscNR+1];
+extern const char *ecutscheme_names[ecutsNR+1];
 extern const char *ens_names[ensNR+1];
 extern const char *ei_names[eiNR+1];
 extern const char *yesno_names[BOOL_NR+1];
@@ -101,6 +102,7 @@ extern const char *eAdressSITEtype_names[eAdressSITENR+1];
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
 
 #define EBOOL(e)       ENUM_NAME(e,BOOL_NR,bool_names)
+#define ECUTSCHEME(e)  ENUM_NAME(e,ecutsNR,ecutscheme_names)
 #define ENS(e)         ENUM_NAME(e,ensNR,ens_names)
 #define EI(e)          ENUM_NAME(e,eiNR,ei_names)
 #define EPBC(e)        ENUM_NAME(e,epbcNR,epbc_names)
