@@ -78,7 +78,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
                             (const nbnxn_pairlist_t     *nbl,
                              const nbnxn_atomdata_t     *nbat,
                              const interaction_const_t  *ic,
-                             rvec                       *shift_vec, 
+                             rvec                       *shift_vec,
                              real                       *f
 #ifdef CALC_SHIFTFORCES
                              ,
@@ -103,7 +103,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     real       facel;
     real       *nbfp_i;
     int        n,ci,ci_sh;
-    int        ish,ish3;
+    int        ish,ishf;
     gmx_bool   half_LJ,do_coul;
     int        cjind0,cjind1,cjind;
     int        ip,jp;
@@ -199,7 +199,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 
         ish              = (nbln->shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
-        ish3             = ish*3;
+        ishf             = ish*DIM;
         cjind0           = nbln->cj_ind_start;
         cjind1           = nbln->cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
@@ -225,7 +225,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         {
             for(d=0; d<DIM; d++)
             {
-                xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ish3+d];
+                xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
                 fi[i*FI_STRIDE+d] = 0;
             }
         }
@@ -327,7 +327,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
             {
                 for(d=0; d<DIM; d++)
                 {
-                    fshift[ish3+d] += fi[i*FI_STRIDE+d];
+                    fshift[ishf+d] += fi[i*FI_STRIDE+d];
                 }
             }
         }

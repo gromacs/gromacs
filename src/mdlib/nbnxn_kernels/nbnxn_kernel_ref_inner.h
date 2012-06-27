@@ -229,13 +229,13 @@
                     fz = fscal*dz;
 
                     /* Increment i-atom force */
-                    fi[i*FI_STRIDE+0] += fx;
-                    fi[i*FI_STRIDE+1] += fy;
-                    fi[i*FI_STRIDE+2] += fz;
+                    fi[i*FI_STRIDE+XX] += fx;
+                    fi[i*FI_STRIDE+YY] += fy;
+                    fi[i*FI_STRIDE+ZZ] += fz;
                     /* Decrement j-atom force */
-                    f[aj*F_STRIDE+0]  -= fx;
-                    f[aj*F_STRIDE+1]  -= fy;
-                    f[aj*F_STRIDE+2]  -= fz;
+                    f[aj*F_STRIDE+XX]  -= fx;
+                    f[aj*F_STRIDE+YY]  -= fy;
+                    f[aj*F_STRIDE+ZZ]  -= fz;
                     /* 9 flops for force addition */
                 }
             }

@@ -68,27 +68,33 @@
 
 #endif /* NBNXN_SEARCH_SSE */
 
-/* Pair search box upper and lower corner in x,y,z.
+/* Pair search box lower and upper corner in x,y,z.
  * Store this in 4 iso 3 reals, which is useful with SSE.
  * To avoid complicating the code we also use 4 without SSE.
  */
 #define NNBSBB_C         4
 #define NNBSBB_B         (2*NNBSBB_C)
-/* Pair search box upper and lower bound in z only. */
+/* Pair search box lower and upper bound in z only. */
 #define NNBSBB_D         2
-
+/* Pair search box lower and upper corner x,y,z indices */
+#define BBL_X  0
+#define BBL_Y  1
+#define BBL_Z  2
+#define BBU_X  4
+#define BBU_Y  5
+#define BBU_Z  6
 
 /* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
 #define STRIDE_XYZ   3
 #define STRIDE_XYZQ  4
-/* Size of packs of x, y or z with SSE/AVX packed xxxxyyyyzzzz coords/forces */
+/* Size of packs of x, y or z with SSE/AVX packed coords/forces */
 #define PACK_X4      4
 #define PACK_X8      8
-/* Strides for a pack of 4 and 8 coordinates */
+/* Strides for a pack of 4 and 8 coordinates/forces */
 #define STRIDE_P4    (DIM*PACK_X4)
 #define STRIDE_P8    (DIM*PACK_X8)
 
-/* Index of atom a into the SSE/AVX coordinate array */
+/* Index of atom a into the SSE/AVX coordinate/force array */
 #define X4_IND_A(a)  (STRIDE_P4*((a) >> 2) + ((a) & (PACK_X4 - 1)))
 #define X8_IND_A(a)  (STRIDE_P8*((a) >> 3) + ((a) & (PACK_X8 - 1)))
 
@@ -870,12 +876,12 @@ static void calc_bounding_box(int na,int stride,const real *x,float *bb)
         i += stride;
     }
     /* Note: possible double to float conversion here */
-    bb[0] = R2F_D(xl);
-    bb[1] = R2F_D(yl);
-    bb[2] = R2F_D(zl);
-    bb[4] = R2F_U(xh);
-    bb[5] = R2F_U(yh);
-    bb[6] = R2F_U(zh);
+    bb[BBL_X] = R2F_D(xl);
+    bb[BBL_Y] = R2F_D(yl);
+    bb[BBL_Z] = R2F_D(zl);
+    bb[BBU_X] = R2F_U(xh);
+    bb[BBU_Y] = R2F_U(yh);
+    bb[BBU_Z] = R2F_U(zh);
 }
 
 /* Packed coordinates, bb order xyz0 */
@@ -884,28 +890,28 @@ static void calc_bounding_box_x_x4(int na,const real *x,float *bb)
     int  j;
     real xl,xh,yl,yh,zl,zh;
 
-    xl = x[0*PACK_X4];
-    xh = x[0*PACK_X4];
-    yl = x[1*PACK_X4];
-    yh = x[1*PACK_X4];
-    zl = x[2*PACK_X4];
-    zh = x[2*PACK_X4];
+    xl = x[XX*PACK_X4];
+    xh = x[XX*PACK_X4];
+    yl = x[YY*PACK_X4];
+    yh = x[YY*PACK_X4];
+    zl = x[ZZ*PACK_X4];
+    zh = x[ZZ*PACK_X4];
     for(j=1; j<na; j++)
     {
-        xl = min(xl,x[j+0*PACK_X4]);
-        xh = max(xh,x[j+0*PACK_X4]);
-        yl = min(yl,x[j+1*PACK_X4]);
-        yh = max(yh,x[j+1*PACK_X4]);
-        zl = min(zl,x[j+2*PACK_X4]);
-        zh = max(zh,x[j+2*PACK_X4]);
+        xl = min(xl,x[j+XX*PACK_X4]);
+        xh = max(xh,x[j+XX*PACK_X4]);
+        yl = min(yl,x[j+YY*PACK_X4]);
+        yh = max(yh,x[j+YY*PACK_X4]);
+        zl = min(zl,x[j+ZZ*PACK_X4]);
+        zh = max(zh,x[j+ZZ*PACK_X4]);
     }
     /* Note: possible double to float conversion here */
-    bb[0] = R2F_D(xl);
-    bb[1] = R2F_D(yl);
-    bb[2] = R2F_D(zl);
-    bb[4] = R2F_U(xh);
-    bb[5] = R2F_U(yh);
-    bb[6] = R2F_U(zh);
+    bb[BBL_X] = R2F_D(xl);
+    bb[BBL_Y] = R2F_D(yl);
+    bb[BBL_Z] = R2F_D(zl);
+    bb[BBU_X] = R2F_U(xh);
+    bb[BBU_Y] = R2F_U(yh);
+    bb[BBU_Z] = R2F_U(zh);
 }
 
 /* Packed coordinates, bb order xyz0 */
@@ -914,28 +920,28 @@ static void calc_bounding_box_x_x8(int na,const real *x,float *bb)
     int  j;
     real xl,xh,yl,yh,zl,zh;
 
-    xl = x[0*PACK_X8];
-    xh = x[0*PACK_X8];
-    yl = x[1*PACK_X8];
-    yh = x[1*PACK_X8];
-    zl = x[2*PACK_X8];
-    zh = x[2*PACK_X8];
+    xl = x[XX*PACK_X8];
+    xh = x[XX*PACK_X8];
+    yl = x[YY*PACK_X8];
+    yh = x[YY*PACK_X8];
+    zl = x[ZZ*PACK_X8];
+    zh = x[ZZ*PACK_X8];
     for(j=1; j<na; j++)
     {
-        xl = min(xl,x[j+0*PACK_X8]);
-        xh = max(xh,x[j+0*PACK_X8]);
-        yl = min(yl,x[j+1*PACK_X8]);
-        yh = max(yh,x[j+1*PACK_X8]);
-        zl = min(zl,x[j+2*PACK_X8]);
-        zh = max(zh,x[j+2*PACK_X8]);
+        xl = min(xl,x[j+XX*PACK_X8]);
+        xh = max(xh,x[j+XX*PACK_X8]);
+        yl = min(yl,x[j+YY*PACK_X8]);
+        yh = max(yh,x[j+YY*PACK_X8]);
+        zl = min(zl,x[j+ZZ*PACK_X8]);
+        zh = max(zh,x[j+ZZ*PACK_X8]);
     }
     /* Note: possible double to float conversion here */
-    bb[0] = R2F_D(xl);
-    bb[1] = R2F_D(yl);
-    bb[2] = R2F_D(zl);
-    bb[4] = R2F_U(xh);
-    bb[5] = R2F_U(yh);
-    bb[6] = R2F_U(zh);
+    bb[BBL_X] = R2F_D(xl);
+    bb[BBL_Y] = R2F_D(yl);
+    bb[BBL_Z] = R2F_D(zl);
+    bb[BBU_X] = R2F_U(xh);
+    bb[BBU_Y] = R2F_U(yh);
+    bb[BBU_Z] = R2F_U(zh);
 }
 
 #ifdef NBNXN_SEARCH_SSE
@@ -1031,12 +1037,12 @@ static void calc_bounding_box_xxxx_sse(int na,const float *x,
 {
     calc_bounding_box_sse(na,x,bb_work);
 
-    bb[ 0] = bb_work[0];
-    bb[ 4] = bb_work[1];
-    bb[ 8] = bb_work[2];
-    bb[12] = bb_work[4];
-    bb[16] = bb_work[5];
-    bb[20] = bb_work[6];
+    bb[ 0] = bb_work[BBL_X];
+    bb[ 4] = bb_work[BBL_Y];
+    bb[ 8] = bb_work[BBL_Z];
+    bb[12] = bb_work[BBU_X];
+    bb[16] = bb_work[BBU_Y];
+    bb[20] = bb_work[BBU_Z];
 }
 
 #endif /* NBNXN_SEARCH_SSE_SINGLE */
@@ -1209,14 +1215,14 @@ static void clear_nbat_real(int na,int nbatFormat,real *xnb,int a0)
         c = a0 & (PACK_X4-1);
         for(a=0; a<na; a++)
         {
-            xnb[j+0*PACK_X4] = 0;
-            xnb[j+1*PACK_X4] = 0;
-            xnb[j+2*PACK_X4] = 0;
+            xnb[j+XX*PACK_X4] = 0;
+            xnb[j+YY*PACK_X4] = 0;
+            xnb[j+ZZ*PACK_X4] = 0;
             j++;
             c++;
             if (c == PACK_X4)
             {
-                j += 2*PACK_X4;
+                j += (DIM-1)*PACK_X4;
                 c  = 0;
             }
         }
@@ -1226,14 +1232,14 @@ static void clear_nbat_real(int na,int nbatFormat,real *xnb,int a0)
         c = a0 & (PACK_X8-1);
         for(a=0; a<na; a++)
         {
-            xnb[j+0*PACK_X8] = 0;
-            xnb[j+1*PACK_X8] = 0;
-            xnb[j+2*PACK_X8] = 0;
+            xnb[j+XX*PACK_X8] = 0;
+            xnb[j+YY*PACK_X8] = 0;
+            xnb[j+ZZ*PACK_X8] = 0;
             j++;
             c++;
             if (c == PACK_X8)
             {
-                j += 2*PACK_X8;
+                j += (DIM-1)*PACK_X8;
                 c  = 0;
             }
         }
@@ -1299,28 +1305,28 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
         c = a0 & (PACK_X4-1);
         for(i=0; i<na; i++)
         {
-            xnb[j+0*PACK_X4] = x[a[i]][XX];
-            xnb[j+1*PACK_X4] = x[a[i]][YY];
-            xnb[j+2*PACK_X4] = x[a[i]][ZZ];
+            xnb[j+XX*PACK_X4] = x[a[i]][XX];
+            xnb[j+YY*PACK_X4] = x[a[i]][YY];
+            xnb[j+ZZ*PACK_X4] = x[a[i]][ZZ];
             j++;
             c++;
             if (c == PACK_X4)
             {
-                j += 2*PACK_X4;
+                j += (DIM-1)*PACK_X4;
                 c  = 0;
             }
         }
         /* Complete the partially filled last cell with particles far apart */
         for(; i<na_round; i++)
         {
-            xnb[j+0*PACK_X4] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j+1*PACK_X4] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j+2*PACK_X4] = -NBAT_FAR_AWAY*(1 + cz + i);
+            xnb[j+XX*PACK_X4] = -NBAT_FAR_AWAY*(1 + cx);
+            xnb[j+YY*PACK_X4] = -NBAT_FAR_AWAY*(1 + cy);
+            xnb[j+ZZ*PACK_X4] = -NBAT_FAR_AWAY*(1 + cz + i);
             j++;
             c++;
             if (c == PACK_X4)
             {
-                j += 2*PACK_X4;
+                j += (DIM-1)*PACK_X4;
                 c  = 0;
             }
         }
@@ -1330,28 +1336,28 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
         c = a0 & (PACK_X8 - 1);
         for(i=0; i<na; i++)
         {
-            xnb[j+0*PACK_X8] = x[a[i]][XX];
-            xnb[j+1*PACK_X8] = x[a[i]][YY];
-            xnb[j+2*PACK_X8] = x[a[i]][ZZ];
+            xnb[j+XX*PACK_X8] = x[a[i]][XX];
+            xnb[j+YY*PACK_X8] = x[a[i]][YY];
+            xnb[j+ZZ*PACK_X8] = x[a[i]][ZZ];
             j++;
             c++;
             if (c == PACK_X8)
             {
-                j += 2*PACK_X8;
+                j += (DIM-1)*PACK_X8;
                 c  = 0;
             }
         }
         /* Complete the partially filled last cell with particles far apart */
         for(; i<na_round; i++)
         {
-            xnb[j+0*PACK_X8] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j+1*PACK_X8] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j+2*PACK_X8] = -NBAT_FAR_AWAY*(1 + cz + i);
+            xnb[j+XX*PACK_X8] = -NBAT_FAR_AWAY*(1 + cx);
+            xnb[j+YY*PACK_X8] = -NBAT_FAR_AWAY*(1 + cy);
+            xnb[j+ZZ*PACK_X8] = -NBAT_FAR_AWAY*(1 + cz + i);
             j++;
             c++;
             if (c == PACK_X8)
             {
-                j += 2*PACK_X8;
+                j += (DIM-1)*PACK_X8;
                 c  = 0;
             }
         }
@@ -1540,12 +1546,12 @@ void fill_cell(const nbnxn_search_t nbs,
             bbo = (a0 - grid->cell0*grid->na_sc)/grid->na_c;
             fprintf(debug,"%2d %2d %2d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
                     sx,sy,sz,
-                    (grid->bb+bbo*NNBSBB_B)[0],
-                    (grid->bb+bbo*NNBSBB_B)[4],
-                    (grid->bb+bbo*NNBSBB_B)[1],
-                    (grid->bb+bbo*NNBSBB_B)[5],
-                    (grid->bb+bbo*NNBSBB_B)[2],
-                    (grid->bb+bbo*NNBSBB_B)[6]);
+                    (grid->bb+bbo*NNBSBB_B)[BBL_X],
+                    (grid->bb+bbo*NNBSBB_B)[BBU_X],
+                    (grid->bb+bbo*NNBSBB_B)[BBL_Y],
+                    (grid->bb+bbo*NNBSBB_B)[BBU_Y],
+                    (grid->bb+bbo*NNBSBB_B)[BBL_Z],
+                    (grid->bb+bbo*NNBSBB_B)[BBU_Z]);
         }
     }
 }
@@ -2368,20 +2374,20 @@ static float box_dist2(float bx0,float bx1,float by0,
 
     d2 = 0;
 
-    dl  = bx0 - bb[4];
-    dh  = bb[0] - bx1;
+    dl  = bx0 - bb[BBU_X];
+    dh  = bb[BBL_X] - bx1;
     dm  = max(dl,dh);
     dm0 = max(dm,0);
     d2 += dm0*dm0;
 
-    dl  = by0 - bb[5];
-    dh  = bb[1] - by1;
+    dl  = by0 - bb[BBU_Y];
+    dh  = bb[BBL_Y] - by1;
     dm  = max(dl,dh);
     dm0 = max(dm,0);
     d2 += dm0*dm0;
 
-    dl  = bz0 - bb[6];
-    dh  = bb[2] - bz1;
+    dl  = bz0 - bb[BBU_Z];
+    dh  = bb[BBL_Z] - bz1;
     dm  = max(dl,dh);
     dm0 = max(dm,0);
     d2 += dm0*dm0;
@@ -2390,9 +2396,8 @@ static float box_dist2(float bx0,float bx1,float by0,
 }
 
 /* Plain C code calculating the distance^2 between two bounding boxes */
-static float subc_bb_dist2(int na_c,
-                          int si,const float *bb_i_ci,
-                          int csj,const float *bb_j_all)
+static float subc_bb_dist2(int si,const float *bb_i_ci,
+                           int csj,const float *bb_j_all)
 {
     const float *bb_i,*bb_j;
     float d2;
@@ -2403,20 +2408,20 @@ static float subc_bb_dist2(int na_c,
 
     d2 = 0;
 
-    dl  = bb_i[0] - bb_j[4];
-    dh  = bb_j[0] - bb_i[4];
+    dl  = bb_i[BBL_X] - bb_j[BBU_X];
+    dh  = bb_j[BBL_X] - bb_i[BBU_X];
     dm  = max(dl,dh);
     dm0 = max(dm,0);
     d2 += dm0*dm0;
 
-    dl  = bb_i[1] - bb_j[5];
-    dh  = bb_j[1] - bb_i[5];
+    dl  = bb_i[BBL_Y] - bb_j[BBU_Y];
+    dh  = bb_j[BBL_Y] - bb_i[BBU_Y];
     dm  = max(dl,dh);
     dm0 = max(dm,0);
     d2 += dm0*dm0;
 
-    dl  = bb_i[2] - bb_j[6];
-    dh  = bb_j[2] - bb_i[6];
+    dl  = bb_i[BBL_Z] - bb_j[BBU_Z];
+    dh  = bb_j[BBL_Z] - bb_i[BBU_Z];
     dm  = max(dl,dh);
     dm0 = max(dm,0);
     d2 += dm0*dm0;
@@ -3164,7 +3169,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-        d2 = subc_bb_dist2(4,0,bb_ci,cjf,gridj->bb);
+        d2 = subc_bb_dist2(0,bb_ci,cjf,gridj->bb);
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -3186,9 +3191,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+0] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+0]) +
-                         sqr(x_ci[i*STRIDE_XYZ+1] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+1]) +
-                         sqr(x_ci[i*STRIDE_XYZ+2] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+2]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -3206,7 +3211,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-        d2 = subc_bb_dist2(4,0,bb_ci,cjl,gridj->bb);
+        d2 = subc_bb_dist2(0,bb_ci,cjl,gridj->bb);
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -3228,9 +3233,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+0] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+0]) +
-                         sqr(x_ci[i*STRIDE_XYZ+1] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+1]) +
-                         sqr(x_ci[i*STRIDE_XYZ+2] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+2]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -3344,7 +3349,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
         {
 #ifndef NBNXN_BBXXXX
             /* Determine the bb distance between ci and cj */
-            d2l[ci] = subc_bb_dist2(na_c,ci,bb_ci,cj,gridj->bb);
+            d2l[ci] = subc_bb_dist2(ci,bb_ci,cj,gridj->bb);
             *ndistc += 2;
 #endif
             d2 = d2l[ci];
@@ -3973,12 +3978,12 @@ static void set_icell_bb_simple(const float *bb,int ci,
     int ia;
 
     ia = ci*NNBSBB_B;
-    bb_ci[0] = bb[ia+0] + shx;
-    bb_ci[1] = bb[ia+1] + shy;
-    bb_ci[2] = bb[ia+2] + shz;
-    bb_ci[4] = bb[ia+4] + shx;
-    bb_ci[5] = bb[ia+5] + shy;
-    bb_ci[6] = bb[ia+6] + shz;
+    bb_ci[BBL_X] = bb[ia+BBL_X] + shx;
+    bb_ci[BBL_Y] = bb[ia+BBL_Y] + shy;
+    bb_ci[BBL_Z] = bb[ia+BBL_Z] + shz;
+    bb_ci[BBU_X] = bb[ia+BBU_X] + shx;
+    bb_ci[BBU_Y] = bb[ia+BBU_Y] + shy;
+    bb_ci[BBU_Z] = bb[ia+BBU_Z] + shz;
 }
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
@@ -4006,12 +4011,12 @@ static void set_icell_bb_supersub(const float *bb,int ci,
     ia = ci*NSUBCELL*NNBSBB_B;
     for(i=0; i<NSUBCELL*NNBSBB_B; i+=NNBSBB_B)
     {
-        bb_ci[i+0] = bb[ia+i+0] + shx;
-        bb_ci[i+1] = bb[ia+i+1] + shy;
-        bb_ci[i+2] = bb[ia+i+2] + shz;
-        bb_ci[i+4] = bb[ia+i+4] + shx;
-        bb_ci[i+5] = bb[ia+i+5] + shy;
-        bb_ci[i+6] = bb[ia+i+6] + shz;
+        bb_ci[BBL_X] = bb[ia+BBL_X] + shx;
+        bb_ci[BBL_Y] = bb[ia+BBL_Y] + shy;
+        bb_ci[BBL_Z] = bb[ia+BBL_Z] + shz;
+        bb_ci[BBU_X] = bb[ia+BBU_X] + shx;
+        bb_ci[BBU_Y] = bb[ia+BBU_Y] + shy;
+        bb_ci[BBU_Z] = bb[ia+BBU_Z] + shz;
     }
 #endif
 }
@@ -4077,9 +4082,9 @@ static void icell_set_x_supersub_sse8(int ci,
             ia = ci*NSUBCELL*na_c + io;
             for(j=0; j<SSE_F_WIDTH; j++)
             {
-                x_ci[io*DIM + j +             0] = x[(ia+j)*stride+0] + shx;
-                x_ci[io*DIM + j +   SSE_F_WIDTH] = x[(ia+j)*stride+1] + shy;
-                x_ci[io*DIM + j + 2*SSE_F_WIDTH] = x[(ia+j)*stride+2] + shz;
+                x_ci[io*DIM + j + XX*SSE_F_WIDTH] = x[(ia+j)*stride+XX] + shx;
+                x_ci[io*DIM + j + YY*SSE_F_WIDTH] = x[(ia+j)*stride+YY] + shy;
+                x_ci[io*DIM + j + ZZ*SSE_F_WIDTH] = x[(ia+j)*stride+ZZ] + shz;
             }
         }
     }
@@ -5636,17 +5641,17 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
 
             if (nbat->XFormat == nbatXYZQ)
             {
-                q = nbat->x + ash*STRIDE_XYZQ + 3;
+                q = nbat->x + ash*STRIDE_XYZQ + ZZ + 1;
                 for(i=0; i<na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
-                    q += 4;
+                    q += STRIDE_XYZQ;
                 }
                 /* Complete the partially filled last cell with zeros */
                 for(; i<na_round; i++)
                 {
                     *q = 0;
-                    q += 4;
+                    q += STRIDE_XYZQ;
                 }
             }
             else
@@ -5869,7 +5874,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
             for(a=a0; a<a1; a++)
             {
                 i = cell[a]*nbat->fstride;
-                
+
                 f[a][XX] += fnb[i];
                 f[a][YY] += fnb[i+1];
                 f[a][ZZ] += fnb[i+2];
@@ -5880,13 +5885,13 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
             for(a=a0; a<a1; a++)
             {
                 i = cell[a]*nbat->fstride;
-                
+
                 for(fa=0; fa<nfa; fa++)
                 {
                     f[a][XX] += out[fa].f[i];
                     f[a][YY] += out[fa].f[i+1];
                     f[a][ZZ] += out[fa].f[i+2];
-                } 
+                }
             }
         }
         break;
@@ -5899,9 +5904,9 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
             {
                 i = X4_IND_A(cell[a]);
 
-                f[a][XX] += fnb[i];
-                f[a][YY] += fnb[i+  PACK_X4];
-                f[a][ZZ] += fnb[i+2*PACK_X4];
+                f[a][XX] += fnb[i+XX*PACK_X4];
+                f[a][YY] += fnb[i+YY*PACK_X4];
+                f[a][ZZ] += fnb[i+ZZ*PACK_X4];
             }
         }
         else
@@ -5912,9 +5917,9 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 
                 for(fa=0; fa<nfa; fa++)
                 {
-                    f[a][XX] += out[fa].f[i];
-                    f[a][YY] += out[fa].f[i+  PACK_X4];
-                    f[a][ZZ] += out[fa].f[i+2*PACK_X4];
+                    f[a][XX] += out[fa].f[i+XX*PACK_X4];
+                    f[a][YY] += out[fa].f[i+YY*PACK_X4];
+                    f[a][ZZ] += out[fa].f[i+ZZ*PACK_X4];
                 }
             }
         }
@@ -5928,9 +5933,9 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
             {
                 i = X8_IND_A(cell[a]);
 
-                f[a][XX] += fnb[i];
-                f[a][YY] += fnb[i+  PACK_X8];
-                f[a][ZZ] += fnb[i+2*PACK_X8];
+                f[a][XX] += fnb[i+XX*PACK_X8];
+                f[a][YY] += fnb[i+YY*PACK_X8];
+                f[a][ZZ] += fnb[i+ZZ*PACK_X8];
             }
         }
         else
@@ -5941,9 +5946,9 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 
                 for(fa=0; fa<nfa; fa++)
                 {
-                    f[a][XX] += out[fa].f[i];
-                    f[a][YY] += out[fa].f[i+  PACK_X8];
-                    f[a][ZZ] += out[fa].f[i+2*PACK_X8];
+                    f[a][XX] += out[fa].f[i+XX*PACK_X8];
+                    f[a][YY] += out[fa].f[i+YY*PACK_X8];
+                    f[a][ZZ] += out[fa].f[i+ZZ*PACK_X8];
                 }
             }
         }
