@@ -66,6 +66,7 @@
 #include "disre.h"
 #include "orires.h"
 #include "gmx_wallcycle.h"
+#include "gmx_omp_nthreads.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -121,8 +122,11 @@ typedef struct gmx_update
 
 
 static void do_update_md(int start,int nrend,double dt,
-                         t_grp_tcstat *tcstat,t_grp_acc *gstat,double nh_vxi[],
-                         rvec accel[],ivec nFreeze[],real invmass[],
+                         t_grp_tcstat *tcstat,
+                         double nh_vxi[],
+                         gmx_bool bNEMD,t_grp_acc *gstat,rvec accel[],
+                         ivec nFreeze[],
+                         real invmass[],
                          unsigned short ptype[],unsigned short cFREEZE[],
                          unsigned short cACC[],unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],
@@ -182,11 +186,13 @@ static void do_update_md(int start,int nrend,double dt,
               }
           }
       }
-  }
-  else
+  } 
+  else if (cFREEZE != NULL ||
+           nFreeze[0][XX] || nFreeze[0][YY] || nFreeze[0][ZZ] ||
+           bNEMD)
   {
-      /* Classic version of update, used with berendsen coupling */
-      for(n=start; n<nrend; n++)
+      /* Update with Berendsen/v-rescale coupling and freeze or NEMD */
+      for(n=start; n<nrend; n++) 
       {
           w_dt = invmass[n]*dt;
           if (cFREEZE)
@@ -225,6 +231,26 @@ static void do_update_md(int start,int nrend,double dt,
           }
       }
   }
+    else
+    {
+        /* Plain update with Berendsen/v-rescale coupling */
+        for(n=start; n<nrend; n++) 
+        {
+            w_dt = invmass[n]*dt;
+            if (cTC) 
+            {
+                gt = cTC[n];
+            }
+            lg = tcstat[gt].lambda;
+          
+            for(d=0; d<DIM; d++) 
+            {
+                vn           = lg*v[n][d] + f[n][d]*w_dt;
+                v[n][d]      = vn;
+                xprime[n][d] = x[n][d] + vn*dt;
+            } 
+        }  
+    }
 }
 
 static void do_update_vv_vel(int start,int nrend,double dt,
@@ -323,7 +349,9 @@ static void do_update_vv_pos(int start,int nrend,double dt,
 }/* do_update_vv_pos */
 
 static void do_update_visc(int start,int nrend,double dt,
-                           t_grp_tcstat *tcstat,real invmass[],double nh_vxi[],
+                           t_grp_tcstat *tcstat,
+                           double nh_vxi[],
+                           real invmass[],
                            unsigned short ptype[],unsigned short cTC[],
                            rvec x[],rvec xprime[],rvec v[],
                            rvec f[],matrix M,matrix box,real
@@ -822,13 +850,10 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
                                 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel,
                                 gmx_bool bSaveEkinOld)
 {
-  int          start=md->start,homenr=md->homenr;
-  int          g,d,n,m,ga=0,gt=0;
-  rvec         v_corrt;
-  real         hm;
+  int          g;
   t_grp_tcstat *tcstat=ekind->tcstat;
   t_grp_acc    *grpstat=ekind->grpstat;
-  real         dekindl;
+  int          nthread,thread;
 
   /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
      an option, but not supported now.  Additionally, if we are doing iterations.
@@ -857,46 +882,86 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
       }
   }
   ekind->dekindl_old = ekind->dekindl;
+  
+  nthread = gmx_omp_nthreads_get(emntUpdate);
 
-  dekindl = 0;
-  for(n=start; (n<start+homenr); n++)
-  {
-      if (md->cACC)
-      {
-          ga = md->cACC[n];
-      }
-      if (md->cTC)
-      {
-          gt = md->cTC[n];
-      }
-      hm   = 0.5*md->massT[n];
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
+    {
+        int  start_t,end_t,n;
+        int  ga,gt;
+        rvec v_corrt;
+        real hm;
+        int  d,m;
+        matrix *ekin_sum;
+        real   *dekindl_sum;
 
-      for(d=0; (d<DIM); d++)
-      {
-          v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
-      }
-      for(d=0; (d<DIM); d++)
-      {
-          for (m=0;(m<DIM); m++)
-          {
-              /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-              if (bEkinAveVel)
-              {
-                  tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
-              }
-              else
-              {
-                  tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d];
-              }
-          }
-      }
-      if (md->nMassPerturbed && md->bPerturbed[n])
-      {
-          dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
-      }
-  }
-  ekind->dekindl = dekindl;
-  inc_nrnb(nrnb,eNR_EKIN,homenr);
+        start_t = md->start + ((thread+0)*md->homenr)/nthread;
+        end_t   = md->start + ((thread+1)*md->homenr)/nthread;
+
+        ekin_sum    = ekind->ekin_work[thread];
+        dekindl_sum = &ekind->ekin_work[thread][opts->ngtc][0][0];
+
+        for(gt=0; gt<opts->ngtc; gt++)
+        {
+            clear_mat(ekin_sum[gt]);
+        }
+
+        ga = 0;
+        gt = 0;
+        for(n=start_t; n<end_t; n++) 
+        {
+            if (md->cACC)
+            {
+                ga = md->cACC[n];
+            }
+            if (md->cTC)
+            {
+                gt = md->cTC[n];
+            }
+            hm   = 0.5*md->massT[n];
+            
+            for(d=0; (d<DIM); d++) 
+            {
+                v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
+            }
+            for(d=0; (d<DIM); d++) 
+            {
+                for (m=0;(m<DIM); m++) 
+                {
+                    /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                    ekin_sum[gt][m][d] += hm*v_corrt[m]*v_corrt[d];
+                }
+            }
+            if (md->nMassPerturbed && md->bPerturbed[n]) 
+            {
+                *dekindl_sum -=
+                    0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
+            }
+        }
+    }
+
+    ekind->dekindl = 0;
+    for(thread=0; thread<nthread; thread++)
+    {
+        for(g=0; g<opts->ngtc; g++)
+        {
+            if (bEkinAveVel) 
+            {
+                m_add(tcstat[g].ekinf,ekind->ekin_work[thread][g],
+                      tcstat[g].ekinf);
+            }
+            else
+            {
+                m_add(tcstat[g].ekinh,ekind->ekin_work[thread][g],
+                      tcstat[g].ekinh);
+            }
+        }
+
+        ekind->dekindl += ekind->ekin_work[thread][opts->ngtc][0][0];
+    }
+
+    inc_nrnb(nrnb,eNR_EKIN,md->homenr);
 }
 
 static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
@@ -1131,7 +1196,9 @@ static void deform(gmx_update_t upd,
 static void combine_forces(int nstlist,
                            gmx_constr_t constr,
                            t_inputrec *ir,t_mdatoms *md,t_idef *idef,
-                           t_commrec *cr,gmx_large_int_t step,t_state *state,
+                           t_commrec *cr,
+                           gmx_large_int_t step,
+                           t_state *state,gmx_bool bMolPBC,
                            int start,int nrend,
                            rvec f[],rvec f_lr[],
                            t_nrnb *nrnb)
@@ -1152,7 +1219,7 @@ static void combine_forces(int nstlist,
          */
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
-                  state->x,f_lr,f_lr,state->box,state->lambda[efptBONDED],NULL,
+                  state->x,f_lr,f_lr,bMolPBC,state->box,state->lambda[efptBONDED],NULL,
                   NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
     }
 
@@ -1316,6 +1383,7 @@ void update_constraints(FILE         *fplog,
                         gmx_ekindata_t *ekind,
                         t_mdatoms    *md,
                         t_state      *state,
+                        gmx_bool     bMolPBC,
                         t_graph      *graph,
                         rvec         force[],        /* forces on home particles */
                         t_idef       *idef,
@@ -1379,7 +1447,8 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,state->v,state->v,
-                      state->box,state->lambda[efptBONDED],dvdlambda,
+                      bMolPBC,state->box,
+                      state->lambda[efptBONDED],dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
                       inputrec->epc==epcMTTK,state->veta,vetanew);
         }
@@ -1388,7 +1457,8 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda[efptBONDED],dvdlambda,
+                      bMolPBC,state->box,
+                      state->lambda[efptBONDED],dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
                       inputrec->epc==epcMTTK,state->veta,state->veta);
         }
@@ -1448,7 +1518,8 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,NULL,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda[efptBONDED],dvdlambda,
+                      bMolPBC,state->box,
+                      state->lambda[efptBONDED],dvdlambda,
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
@@ -1473,7 +1544,8 @@ void update_constraints(FILE         *fplog,
         }
         else
         {
-            copy_rvecn(upd->xp,state->x,start,nrend);
+            copy_rvecn_omp(upd->xp,state->x,start,nrend,
+                           gmx_omp_nthreads_get(emntUpdate));
         }
 
         dump_it_all(fplog,"After unshift",
@@ -1595,6 +1667,7 @@ void update_coords(FILE         *fplog,
                    t_inputrec   *inputrec,      /* input record and box stuff	*/
                    t_mdatoms    *md,
                    t_state      *state,
+                   gmx_bool     bMolPBC,
                    rvec         *f,        /* forces on home particles */
                    gmx_bool         bDoLR,
                    rvec         *f_lr,
@@ -1620,7 +1693,7 @@ void update_coords(FILE         *fplog,
     int              *icom = NULL;
     tensor           vir_con;
     rvec             *vcom,*xcom,*vall,*xall,*xin,*vin,*forcein,*fall,*xpall,*xprimein,*xprime;
-
+    int              nth,th;
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1659,7 +1732,8 @@ void update_coords(FILE         *fplog,
          * to produce twin time stepping.
          */
         /* is this correct in the new construction? MRS */
-        combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,step,state,
+        combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,
+                       step,state,bMolPBC,
                        start,nrend,f,f_lr,nrnb);
         force = f_lr;
     }
@@ -1673,79 +1747,108 @@ void update_coords(FILE         *fplog,
     dump_it_all(fplog,"Before update",
                 state->natoms,state->x,xprime,state->v,force);
 
-    switch (inputrec->eI) {
-    case (eiMD):
-        if (ekind->cosacc.cos_accel == 0) {
-            /* use normal version of update */
-            do_update_md(start,nrend,dt,
-                         ekind->tcstat,ekind->grpstat,state->nosehoover_vxi,
-                         inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
-                         md->cFREEZE,md->cACC,md->cTC,
-                         state->x,xprime,state->v,force,M,
-                         bNH,bPR);
-        }
-        else
-        {
-            do_update_visc(start,nrend,dt,
-                           ekind->tcstat,md->invmass,state->nosehoover_vxi,
-                           md->ptype,md->cTC,state->x,xprime,state->v,force,M,
-                           state->box,ekind->cosacc.cos_accel,ekind->cosacc.vcos,bNH,bPR);
-        }
-        break;
-    case (eiSD1):
-        do_update_sd1(upd->sd,start,homenr,dt,
-                      inputrec->opts.acc,inputrec->opts.nFreeze,
-                      md->invmass,md->ptype,
-                      md->cFREEZE,md->cACC,md->cTC,
-                      state->x,xprime,state->v,force,state->sd_X,
-                      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
-        break;
-    case (eiSD2):
-        /* The SD update is done in 2 parts, because an extra constraint step
-         * is needed
+    if (EI_RANDOM(inputrec->eI))
+    {
+        /* We still need to take care of generating random seeds properly
+         * when multi-threading.
          */
-        do_update_sd2(upd->sd,bInitStep,start,homenr,
-                      inputrec->opts.acc,inputrec->opts.nFreeze,
-                      md->invmass,md->ptype,
-                      md->cFREEZE,md->cACC,md->cTC,
-                      state->x,xprime,state->v,force,state->sd_X,
-                      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                      TRUE);
-        break;
-    case (eiBD):
-        do_update_bd(start,nrend,dt,
-                     inputrec->opts.nFreeze,md->invmass,md->ptype,
-                     md->cFREEZE,md->cTC,
-                     state->x,xprime,state->v,force,
-                     inputrec->bd_fric,
-                     inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                     upd->sd->bd_rf,upd->sd->gaussrand);
-        break;
-    case (eiVV):
-    case (eiVVAK):
-        alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
-        switch (UpdatePart) {
-        case etrtVELOCITY1:
-        case etrtVELOCITY2:
-            do_update_vv_vel(start,nrend,dt,
-                             ekind->tcstat,ekind->grpstat,
-                             inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,md->cFREEZE,md->cACC,
-                             state->v,force,(bNH || bPR),state->veta,alpha);
+        nth = 1;
+    }
+    else
+    {
+        nth = gmx_omp_nthreads_get(emntUpdate);
+    }
+
+# pragma omp parallel for num_threads(nth) schedule(static)
+    for(th=0; th<nth; th++)
+    {
+        int start_th,end_th;
+
+        start_th = start + ((nrend-start)* th   )/nth;
+        end_th   = start + ((nrend-start)*(th+1))/nth;
+
+        switch (inputrec->eI) {
+        case (eiMD):
+            if (ekind->cosacc.cos_accel == 0)
+            {
+                do_update_md(start_th,end_th,dt,
+                             ekind->tcstat,state->nosehoover_vxi,
+                             ekind->bNEMD,ekind->grpstat,inputrec->opts.acc,
+                             inputrec->opts.nFreeze,
+                             md->invmass,md->ptype,
+                             md->cFREEZE,md->cACC,md->cTC,
+                             state->x,xprime,state->v,force,M,
+                             bNH,bPR);
+            } 
+            else 
+            {
+                do_update_visc(start_th,end_th,dt,
+                               ekind->tcstat,state->nosehoover_vxi,
+                               md->invmass,md->ptype,
+                               md->cTC,state->x,xprime,state->v,force,M,
+                               state->box,
+                               ekind->cosacc.cos_accel,
+                               ekind->cosacc.vcos,
+                               bNH,bPR);
+            }
             break;
-        case etrtPOSITION:
-            do_update_vv_pos(start,nrend,dt,
-                             ekind->tcstat,ekind->grpstat,
-                             inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,md->cFREEZE,
-                             state->x,xprime,state->v,force,
-                             (bNH || bPR) ,state->veta,alpha);
+        case (eiSD1):
+            do_update_sd1(upd->sd,start,homenr,dt,
+                          inputrec->opts.acc,inputrec->opts.nFreeze,
+                          md->invmass,md->ptype,
+                          md->cFREEZE,md->cACC,md->cTC,
+                          state->x,xprime,state->v,force,state->sd_X,
+                          inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
+            break;
+        case (eiSD2):
+            /* The SD update is done in 2 parts, because an extra constraint step
+             * is needed 
+             */
+            do_update_sd2(upd->sd,bInitStep,start,homenr,
+                          inputrec->opts.acc,inputrec->opts.nFreeze,
+                          md->invmass,md->ptype,
+                          md->cFREEZE,md->cACC,md->cTC,
+                          state->x,xprime,state->v,force,state->sd_X,
+                          inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+                          TRUE);
+        break;
+        case (eiBD):
+            do_update_bd(start,nrend,dt,
+                         inputrec->opts.nFreeze,md->invmass,md->ptype,
+                         md->cFREEZE,md->cTC,
+                         state->x,xprime,state->v,force,
+                         inputrec->bd_fric,
+                         inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+                         upd->sd->bd_rf,upd->sd->gaussrand);
+            break;
+        case (eiVV):
+        case (eiVVAK):
+            alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
+            switch (UpdatePart) {
+            case etrtVELOCITY1:
+            case etrtVELOCITY2:
+                do_update_vv_vel(start_th,end_th,dt,
+                                 ekind->tcstat,ekind->grpstat,
+                                 inputrec->opts.acc,inputrec->opts.nFreeze,
+                                 md->invmass,md->ptype,
+                                 md->cFREEZE,md->cACC,
+                                 state->v,force,
+                                 (bNH || bPR),state->veta,alpha);  
+                break;
+            case etrtPOSITION:
+                do_update_vv_pos(start_th,end_th,dt,
+                                 ekind->tcstat,ekind->grpstat,
+                                 inputrec->opts.acc,inputrec->opts.nFreeze,
+                                 md->invmass,md->ptype,md->cFREEZE,
+                                 state->x,xprime,state->v,force,
+                                 (bNH || bPR),state->veta,alpha);
+                break;
+            }
+            break;
+        default:
+            gmx_fatal(FARGS,"Don't know how to update coordinates");
             break;
         }
-        break;
-    default:
-        gmx_fatal(FARGS,"Don't know how to update coordinates");
-        break;
     }
 
 }

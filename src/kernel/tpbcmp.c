@@ -587,6 +587,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->simulation_part",-1,ir1->simulation_part,ir2->simulation_part);
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
   cmp_int(fp,"inputrec->bPeriodicMols",-1,ir1->bPeriodicMols,ir2->bPeriodicMols);
+  cmp_int(fp,"inputrec->cutoff_scheme",-1,ir1->cutoff_scheme,ir2->cutoff_scheme);
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
   cmp_int(fp,"inputrec->nstlist",-1,ir1->nstlist,ir2->nstlist);
   cmp_int(fp,"inputrec->ndelta",-1,ir1->ndelta,ir2->ndelta);
@@ -603,6 +604,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_double(fp,"inputrec->init_t",-1,ir1->init_t,ir2->init_t,ftol,abstol);
   cmp_double(fp,"inputrec->delta_t",-1,ir1->delta_t,ir2->delta_t,ftol,abstol);
   cmp_real(fp,"inputrec->xtcprec",-1,ir1->xtcprec,ir2->xtcprec,ftol,abstol);
+  cmp_real(fp,"inputrec->fourierspacing",-1,ir1->fourier_spacing,ir2->fourier_spacing,ftol,abstol);
   cmp_int(fp,"inputrec->nkx",-1,ir1->nkx,ir2->nkx);
   cmp_int(fp,"inputrec->nky",-1,ir1->nky,ir2->nky);
   cmp_int(fp,"inputrec->nkz",-1,ir1->nkz,ir2->nkz);
@@ -627,6 +629,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"refcoord_scaling",-1,ir1->refcoord_scaling,ir2->refcoord_scaling);
   cmp_rvec(fp,"inputrec->posres_com",-1,ir1->posres_com,ir2->posres_com,ftol,abstol);
   cmp_rvec(fp,"inputrec->posres_comB",-1,ir1->posres_comB,ir2->posres_comB,ftol,abstol);
+  cmp_real(fp,"inputrec->verletbuf_drift",-1,ir1->verletbuf_drift,ir2->verletbuf_drift,ftol,abstol);
   cmp_real(fp,"inputrec->rlist",-1,ir1->rlist,ir2->rlist,ftol,abstol);
   cmp_real(fp,"inputrec->rlistlong",-1,ir1->rlistlong,ir2->rlistlong,ftol,abstol);
   cmp_real(fp,"inputrec->rtpi",-1,ir1->rtpi,ir2->rtpi,ftol,abstol);
