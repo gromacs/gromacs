@@ -1172,6 +1172,22 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 
 #ifdef SSE_PROPER_DIHEDRALS
 
+/* x86 SIMD inner-product of 4 float vectors */
+#define GMX_MM_IPROD_PS(ax,ay,az,bx,by,bz)                 \
+    _mm_add_ps(_mm_add_ps(_mm_mul_ps(ax,bx),_mm_mul_ps(ay,by)),_mm_mul_ps(az,bz))
+
+/* x86 SIMD norm^2 of 4 float vectors */
+#define GMX_MM_NORM2_PS(ax,ay,az) GMX_MM_IPROD_PS(ax,ay,az,ax,ay,az)
+
+/* x86 SIMD cross-product of 4 float vectors */
+#define GMX_MM_CPROD_PS(ax,ay,az,bx,by,bz,cx,cy,cz)        \
+{                                                          \
+    cx = _mm_sub_ps(_mm_mul_ps(ay,bz),_mm_mul_ps(az,by));  \
+    cy = _mm_sub_ps(_mm_mul_ps(az,bx),_mm_mul_ps(ax,bz));  \
+    cz = _mm_sub_ps(_mm_mul_ps(ax,by),_mm_mul_ps(ay,bx));  \
+}
+
+/* load 4 rvec's into 3 x86 SIMD float registers */
 #define load_rvec4(r0,r1,r2,r3,rx_SSE,ry_SSE,rz_SSE)          \
 {                                                             \
     __m128 tmp;                                               \
