@@ -24,6 +24,8 @@
 #define ALMOST_ONE 1-(1e-30)
 #include<math.h>
 
+#include "nb_kernel331_adress.h"
+
 
 
 /*
@@ -39,63 +41,63 @@ void nb_kernel331_adress_cg(
                     int *           jindex,
                     int *           jjnr,
                     int *           shift,
-                    float *         shiftvec,
-                    float *         fshift,
+                    real *         shiftvec,
+                    real *         fshift,
                     int *           gid,
-                    float *         pos,
-                    float *         faction,
-                    float *         charge,
-                    float *         p_facel,
-                    float *         p_krf,
-                    float *         p_crf,
-                    float *         Vc,
+                    real *         pos,
+                    real *         faction,
+                    real *         charge,
+                    real *         p_facel,
+                    real *         p_krf,
+                    real *         p_crf,
+                    real *         Vc,
                     int *           type,
                     int *           p_ntype,
-                    float *         vdwparam,
-                    float *         Vvdw,
-                    float *         p_tabscale,
-                    float *         VFtab,
-                    float *         invsqrta,
-                    float *         dvda,
-                    float *         p_gbtabscale,
-                    float *         GBtab,
+                    real *         vdwparam,
+                    real *         Vvdw,
+                    real *         p_tabscale,
+                    real *         VFtab,
+                    real *         invsqrta,
+                    real *         dvda,
+                    real *         p_gbtabscale,
+                    real *         GBtab,
                     int *           p_nthreads,
                     int *           count,
                     void *          mtx,
                     int *           outeriter,
                     int *           inneriter,
-                    float           force_cap,
-                    float *         wf)
+                    real           force_cap,
+                    real *         wf)
 {
     int           nri,ntype,nthreads;
-    float         facel,krf,crf,tabscale,gbtabscale;
+    real         facel,krf,crf,tabscale,gbtabscale;
     int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid;
     int           nn0,nn1,nouter,ninner;
-    float         shX,shY,shZ;
-    float         fscal,tx,ty,tz;
-    float         jq;
-    float         qq,vcoul,vctot;
+    real         shX,shY,shZ;
+    real         fscal,tx,ty,tz;
+    real         jq;
+    real         qq,vcoul,vctot;
     int           nti;
     int           tj;
-    float         Vvdw6,Vvdwtot;
-    float         Vvdw12;
-    float         r,rt,eps,eps2;
+    real         Vvdw6,Vvdwtot;
+    real         Vvdw12;
+    real         r,rt,eps,eps2;
     int           n0,nnn;
-    float         Y,F,Geps,Heps2,Fp,VV;
-    float         FF;
-    float         fijC;
-    float         fijD,fijR;
-    float         ix1,iy1,iz1,fix1,fiy1,fiz1;
-    float         ix2,iy2,iz2,fix2,fiy2,fiz2;
-    float         ix3,iy3,iz3,fix3,fiy3,fiz3;
-    float         jx1,jy1,jz1,fjx1,fjy1,fjz1;
-    float         dx11,dy11,dz11,rsq11,rinv11;
-    float         dx21,dy21,dz21,rsq21,rinv21;
-    float         dx31,dy31,dz31,rsq31,rinv31;
-    float         qO,qH;
-    float         c6,c12;
-    float         weight_cg1, weight_cg2, weight_product;
-    float         hybscal;
+    real         Y,F,Geps,Heps2,Fp,VV;
+    real         FF;
+    real         fijC;
+    real         fijD,fijR;
+    real         ix1,iy1,iz1,fix1,fiy1,fiz1;
+    real         ix2,iy2,iz2,fix2,fiy2,fiz2;
+    real         ix3,iy3,iz3,fix3,fiy3,fiz3;
+    real         jx1,jy1,jz1,fjx1,fjy1,fjz1;
+    real         dx11,dy11,dz11,rsq11,rinv11;
+    real         dx21,dy21,dz21,rsq21,rinv21;
+    real         dx31,dy31,dz31,rsq31,rinv31;
+    real         qO,qH;
+    real         c6,c12;
+    real         weight_cg1, weight_cg2, weight_product;
+    real         hybscal;
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
@@ -347,63 +349,63 @@ void nb_kernel331_adress_ex(
                     int *           jindex,
                     int *           jjnr,
                     int *           shift,
-                    float *         shiftvec,
-                    float *         fshift,
+                    real *         shiftvec,
+                    real *         fshift,
                     int *           gid,
-                    float *         pos,
-                    float *         faction,
-                    float *         charge,
-                    float *         p_facel,
-                    float *         p_krf,
-                    float *         p_crf,
-                    float *         Vc,
+                    real *         pos,
+                    real *         faction,
+                    real *         charge,
+                    real *         p_facel,
+                    real *         p_krf,
+                    real *         p_crf,
+                    real *         Vc,
                     int *           type,
                     int *           p_ntype,
-                    float *         vdwparam,
-                    float *         Vvdw,
-                    float *         p_tabscale,
-                    float *         VFtab,
-                    float *         invsqrta,
-                    float *         dvda,
-                    float *         p_gbtabscale,
-                    float *         GBtab,
+                    real *         vdwparam,
+                    real *         Vvdw,
+                    real *         p_tabscale,
+                    real *         VFtab,
+                    real *         invsqrta,
+                    real *         dvda,
+                    real *         p_gbtabscale,
+                    real *         GBtab,
                     int *           p_nthreads,
                     int *           count,
                     void *          mtx,
                     int *           outeriter,
                     int *           inneriter,
-                    float           force_cap,
-                    float *         wf)
+                    real           force_cap,
+                    real *         wf)
 {
     int           nri,ntype,nthreads;
-    float         facel,krf,crf,tabscale,gbtabscale;
+    real         facel,krf,crf,tabscale,gbtabscale;
     int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid;
     int           nn0,nn1,nouter,ninner;
-    float         shX,shY,shZ;
-    float         fscal,tx,ty,tz;
-    float         jq;
-    float         qq,vcoul,vctot;
+    real         shX,shY,shZ;
+    real         fscal,tx,ty,tz;
+    real         jq;
+    real         qq,vcoul,vctot;
     int           nti;
     int           tj;
-    float         Vvdw6,Vvdwtot;
-    float         Vvdw12;
-    float         r,rt,eps,eps2;
+    real         Vvdw6,Vvdwtot;
+    real         Vvdw12;
+    real         r,rt,eps,eps2;
     int           n0,nnn;
-    float         Y,F,Geps,Heps2,Fp,VV;
-    float         FF;
-    float         fijC;
-    float         fijD,fijR;
-    float         ix1,iy1,iz1,fix1,fiy1,fiz1;
-    float         ix2,iy2,iz2,fix2,fiy2,fiz2;
-    float         ix3,iy3,iz3,fix3,fiy3,fiz3;
-    float         jx1,jy1,jz1,fjx1,fjy1,fjz1;
-    float         dx11,dy11,dz11,rsq11,rinv11;
-    float         dx21,dy21,dz21,rsq21,rinv21;
-    float         dx31,dy31,dz31,rsq31,rinv31;
-    float         qO,qH;
-    float         c6,c12;
-    float         weight_cg1, weight_cg2, weight_product;
-    float         hybscal;
+    real         Y,F,Geps,Heps2,Fp,VV;
+    real         FF;
+    real         fijC;
+    real         fijD,fijR;
+    real         ix1,iy1,iz1,fix1,fiy1,fiz1;
+    real         ix2,iy2,iz2,fix2,fiy2,fiz2;
+    real         ix3,iy3,iz3,fix3,fiy3,fiz3;
+    real         jx1,jy1,jz1,fjx1,fjy1,fjz1;
+    real         dx11,dy11,dz11,rsq11,rinv11;
+    real         dx21,dy21,dz21,rsq21,rinv21;
+    real         dx31,dy31,dz31,rsq31,rinv31;
+    real         qO,qH;
+    real         c6,c12;
+    real         weight_cg1, weight_cg2, weight_product;
+    real         hybscal;
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
