@@ -294,7 +294,6 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
         EXPECT_CALL(*mock, convertValue("b"))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
-        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy"))));
         EXPECT_CALL(*mock, processAll());
     }
 
@@ -307,9 +306,7 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    ASSERT_EQ(2U, values.size());
-    EXPECT_EQ("a", values[0]);
-    EXPECT_EQ("dummy", values[1]);
+    ASSERT_TRUE(values.empty());
 }
 
 /*

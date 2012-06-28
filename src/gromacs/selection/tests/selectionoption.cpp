@@ -139,7 +139,6 @@ TEST_F(SelectionOptionTest, HandlesTooManySelections)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
-    ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
 
