@@ -306,7 +306,9 @@ class AbstractOptionStorage
         //! Maximum allowed number of values (in one set), or -1 if no limit.
         int                     maxValueCount_;
         //! Whether we are currently assigning values to a set.
-        bool                    inSet_;
+        bool                    bInSet_;
+        //! Whether there were errors in set values.
+        bool                    bSetValuesHadErrors_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };
