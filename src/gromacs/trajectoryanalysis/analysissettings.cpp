@@ -57,9 +57,9 @@ namespace gmx
  */
 
 TrajectoryAnalysisSettings::TrajectoryAnalysisSettings()
-    : _impl(new Impl)
+    : impl_(new Impl)
 {
-    _impl->frflags |= TRX_NEED_X;
+    impl_->frflags |= TRX_NEED_X;
 }
 
 
@@ -71,56 +71,56 @@ TrajectoryAnalysisSettings::~TrajectoryAnalysisSettings()
 const TimeUnitManager &
 TrajectoryAnalysisSettings::timeUnitManager() const
 {
-    return _impl->timeUnitManager;
+    return impl_->timeUnitManager;
 }
 
 
 const AnalysisDataPlotSettings &
 TrajectoryAnalysisSettings::plotSettings() const
 {
-    return _impl->plotSettings;
+    return impl_->plotSettings;
 }
 
 
 unsigned long
 TrajectoryAnalysisSettings::flags() const
 {
-    return _impl->flags;
+    return impl_->flags;
 }
 
 
 bool
 TrajectoryAnalysisSettings::hasFlag(unsigned long flag) const
 {
-    return _impl->flags & flag;
+    return impl_->flags & flag;
 }
 
 
 bool
 TrajectoryAnalysisSettings::hasPBC() const
 {
-    return _impl->bPBC;
+    return impl_->bPBC;
 }
 
 
 bool
 TrajectoryAnalysisSettings::hasRmPBC() const
 {
-    return _impl->bRmPBC;
+    return impl_->bRmPBC;
 }
 
 
 int
 TrajectoryAnalysisSettings::frflags() const
 {
-    return _impl->frflags;
+    return impl_->frflags;
 }
 
 
 void
 TrajectoryAnalysisSettings::setFlags(unsigned long flags)
 {
-    _impl->flags = flags;
+    impl_->flags = flags;
 }
 
 
@@ -129,11 +129,11 @@ TrajectoryAnalysisSettings::setFlag(unsigned long flag, bool bSet)
 {
     if (bSet)
     {
-        _impl->flags |= flag;
+        impl_->flags |= flag;
     }
     else
     {
-        _impl->flags &= ~flag;
+        impl_->flags &= ~flag;
     }
 }
 
@@ -141,21 +141,21 @@ TrajectoryAnalysisSettings::setFlag(unsigned long flag, bool bSet)
 void
 TrajectoryAnalysisSettings::setPBC(bool bPBC)
 {
-    _impl->bPBC = bPBC;
+    impl_->bPBC = bPBC;
 }
 
 
 void
 TrajectoryAnalysisSettings::setRmPBC(bool bRmPBC)
 {
-    _impl->bRmPBC = bRmPBC;
+    impl_->bRmPBC = bRmPBC;
 }
 
 
 void
 TrajectoryAnalysisSettings::setFrameFlags(int frflags)
 {
-    _impl->frflags = frflags;
+    impl_->frflags = frflags;
 }
 
 
@@ -164,20 +164,20 @@ TrajectoryAnalysisSettings::setFrameFlags(int frflags)
  */
 
 TopologyInformation::TopologyInformation()
-    : _top(NULL), _bTop(false), _xtop(NULL), _ePBC(-1)
+    : top_(NULL), bTop_(false), xtop_(NULL), ePBC_(-1)
 {
-    clear_mat(_boxtop);
+    clear_mat(boxtop_);
 }
 
 
 TopologyInformation::~TopologyInformation()
 {
-    if (_top)
+    if (top_)
     {
-        done_top(_top);
-        sfree(_top);
+        done_top(top_);
+        sfree(top_);
     }
-    sfree(_xtop);
+    sfree(xtop_);
 }
 
 
@@ -186,16 +186,16 @@ TopologyInformation::getTopologyConf(rvec **x, matrix box) const
 {
     if (box)
     {
-        copy_mat(const_cast<rvec *>(_boxtop), box);
+        copy_mat(const_cast<rvec *>(boxtop_), box);
     }
     if (x)
     {
-        if (!_xtop)
+        if (!xtop_)
         {
             *x = NULL;
             GMX_THROW(APIError("Topology coordinates requested without setting efUseTopX"));
         }
-        *x = _xtop;
+        *x = xtop_;
     }
 }
 

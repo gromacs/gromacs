@@ -166,7 +166,7 @@ class TrajectoryAnalysisModuleData
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
@@ -463,7 +463,7 @@ class TrajectoryAnalysisModule
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 
         /*! \brief
          * Needed to access the registered analysis data sets.

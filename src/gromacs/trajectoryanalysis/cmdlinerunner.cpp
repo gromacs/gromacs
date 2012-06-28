@@ -82,15 +82,15 @@ class TrajectoryAnalysisCommandLineRunner::Impl
                           Options *options,
                           int *argc, char *argv[]);
 
-        TrajectoryAnalysisModule *_module;
-        int                     _debugLevel;
-        bool                    _bPrintCopyright;
+        TrajectoryAnalysisModule *module_;
+        int                     debugLevel_;
+        bool                    bPrintCopyright_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
         TrajectoryAnalysisModule *module)
-    : _module(module), _debugLevel(0), _bPrintCopyright(true)
+    : module_(module), debugLevel_(0), bPrintCopyright_(true)
 {
 }
 
@@ -127,7 +127,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         Options *options,
         int *argc, char *argv[])
 {
-    Options &moduleOptions = _module->initOptions(settings);
+    Options &moduleOptions = module_->initOptions(settings);
     Options &commonOptions = common->initOptions();
     Options &selectionOptions = selections->initOptions();
 
@@ -157,7 +157,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     {
         return false;
     }
-    _module->initOptionsDone(settings);
+    module_->initOptionsDone(settings);
 
     common->initIndexGroups(selections);
 
@@ -176,7 +176,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
 TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
         TrajectoryAnalysisModule *module)
-    : _impl(new Impl(module))
+    : impl_(new Impl(module))
 {
 }
 
@@ -189,36 +189,36 @@ TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 void
 TrajectoryAnalysisCommandLineRunner::setPrintCopyright(bool bPrint)
 {
-    _impl->_bPrintCopyright = bPrint;
+    impl_->bPrintCopyright_ = bPrint;
 }
 
 
 void
 TrajectoryAnalysisCommandLineRunner::setSelectionDebugLevel(int debuglevel)
 {
-    _impl->_debugLevel = 1;
+    impl_->debugLevel_ = 1;
 }
 
 
 int
 TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
-    TrajectoryAnalysisModule *module = _impl->_module;
+    TrajectoryAnalysisModule *module = impl_->module_;
 
-    if (_impl->_bPrintCopyright)
+    if (impl_->bPrintCopyright_)
     {
         CopyRight(stderr, argv[0]);
     }
 
     SelectionCollection  selections;
-    selections.setDebugLevel(_impl->_debugLevel);
+    selections.setDebugLevel(impl_->debugLevel_);
     SelectionOptionManager seloptManager(&selections);
 
     TrajectoryAnalysisSettings  settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
     Options  options(NULL, NULL);
-    if (!_impl->parseOptions(&settings, &common, &selections, &seloptManager,
+    if (!impl_->parseOptions(&settings, &common, &selections, &seloptManager,
                              &options, &argc, argv))
     {
         return 0;
@@ -294,7 +294,7 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(File *file)
     TrajectoryAnalysisRunnerCommon  common(&settings);
     Options                         options(NULL, NULL);
 
-    Options &moduleOptions    = _impl->_module->initOptions(&settings);
+    Options &moduleOptions    = impl_->module_->initOptions(&settings);
     Options &commonOptions    = common.initOptions();
     Options &selectionOptions = selections.initOptions();
 

@@ -353,7 +353,7 @@ class SelectionCollection
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 
         /*! \brief
          * Needed for the compiler to freely modify the collection.

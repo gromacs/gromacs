@@ -362,7 +362,7 @@ void
 SelectionEvaluator::evaluate(SelectionCollection *coll,
                              t_trxframe *fr, t_pbc *pbc)
 {
-    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
+    gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
     gmx_sel_evaluate_t  data;
     t_selelem          *sel;
 
@@ -409,7 +409,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
 void
 SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
 {
-    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
+    gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
 
     SelectionDataList::const_iterator isel;
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)

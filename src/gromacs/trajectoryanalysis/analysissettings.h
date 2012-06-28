@@ -216,7 +216,7 @@ class TrajectoryAnalysisSettings
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 
         friend class TrajectoryAnalysisRunnerCommon;
 };
@@ -239,13 +239,13 @@ class TopologyInformation
 {
     public:
         //! Returns true if a topology file was loaded.
-        bool hasTopology() const { return _top != NULL; }
+        bool hasTopology() const { return top_ != NULL; }
         //! Returns true if a full topology file was loaded.
-        bool hasFullTopology() const { return _bTop; }
+        bool hasFullTopology() const { return bTop_; }
         //! Returns the loaded topology, or NULL if not loaded.
-        t_topology *topology() const { return _top; }
+        t_topology *topology() const { return top_; }
         //! Returns the ePBC field from the topology.
-        int ePBC() const { return _ePBC; }
+        int ePBC() const { return ePBC_; }
         /*! \brief
          * Gets the configuration from the topology.
          *
@@ -268,15 +268,15 @@ class TopologyInformation
         ~TopologyInformation();
 
         //! The topology structure, or NULL if no topology loaded.
-        t_topology          *_top;
+        t_topology          *top_;
         //! true if full tpx file was loaded, false otherwise.
-        bool                 _bTop;
+        bool                 bTop_;
         //! Coordinates from the topology (can be NULL).
-        rvec                *_xtop;
+        rvec                *xtop_;
         //! The box loaded from the topology file.
-        matrix               _boxtop;
+        matrix               boxtop_;
         //! The ePBC field loaded from the topology file.
-        int                  _ePBC;
+        int                  ePBC_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TopologyInformation);
 

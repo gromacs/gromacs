@@ -73,14 +73,14 @@ class SelectionCollectionTest : public ::testing::Test
 
         void setAtomCount(int natoms)
         {
-            ASSERT_NO_THROW(_sc.setTopology(NULL, natoms));
+            ASSERT_NO_THROW(sc_.setTopology(NULL, natoms));
         }
         void loadTopology(const char *filename);
 
-        gmx::SelectionCollection _sc;
-        gmx::SelectionList       _sel;
-        t_topology              *_top;
-        t_trxframe              *_frame;
+        gmx::SelectionCollection sc_;
+        gmx::SelectionList       sel_;
+        t_topology              *top_;
+        t_trxframe              *frame_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
@@ -94,26 +94,26 @@ void SelectionCollectionTest::SetUpTestCase()
 
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : _top(NULL), _frame(NULL)
+    : top_(NULL), frame_(NULL)
 {
-    _sc.setDebugLevel(s_debugLevel);
-    _sc.setReferencePosType("atom");
-    _sc.setOutputPosType("atom");
+    sc_.setDebugLevel(s_debugLevel);
+    sc_.setReferencePosType("atom");
+    sc_.setOutputPosType("atom");
 }
 
 
 SelectionCollectionTest::~SelectionCollectionTest()
 {
-    if (_top != NULL)
+    if (top_ != NULL)
     {
-        done_top(_top);
-        sfree(_top);
+        done_top(top_);
+        sfree(top_);
     }
 
-    if (_frame != NULL)
+    if (frame_ != NULL)
     {
-        sfree(_frame->x);
-        sfree(_frame);
+        sfree(frame_->x);
+        sfree(frame_);
     }
 }
 
@@ -126,20 +126,20 @@ SelectionCollectionTest::loadTopology(const char *filename)
     rvec   *xtop;
     matrix  box;
 
-    snew(_top, 1);
+    snew(top_, 1);
     read_tps_conf(gmx::test::TestFileManager::getTestFilePath(filename).c_str(),
-                  title, _top, &ePBC, &xtop, NULL, box, FALSE);
+                  title, top_, &ePBC, &xtop, NULL, box, FALSE);
 
-    snew(_frame, 1);
-    _frame->flags  = TRX_NEED_X;
-    _frame->natoms = _top->atoms.nr;
-    _frame->bX     = TRUE;
-    snew(_frame->x, _frame->natoms);
-    memcpy(_frame->x, xtop, sizeof(*_frame->x) * _frame->natoms);
-    _frame->bBox   = TRUE;
-    copy_mat(box, _frame->box);
+    snew(frame_, 1);
+    frame_->flags  = TRX_NEED_X;
+    frame_->natoms = top_->atoms.nr;
+    frame_->bX     = TRUE;
+    snew(frame_->x, frame_->natoms);
+    memcpy(frame_->x, xtop, sizeof(*frame_->x) * frame_->natoms);
+    frame_->bBox   = TRUE;
+    copy_mat(box, frame_->box);
 
-    ASSERT_NO_THROW(_sc.setTopology(_top, -1));
+    ASSERT_NO_THROW(sc_.setTopology(top_, -1));
 }
 
 
@@ -159,11 +159,11 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
         SelectionCollectionDataTest()
-            : _checker(_data.rootChecker()), _count(0), _framenr(0)
+            : checker_(data_.rootChecker()), count_(0), framenr_(0)
         {
         }
 
-        void setFlags(TestFlags flags) { _flags = flags; }
+        void setFlags(TestFlags flags) { flags_ = flags; }
 
         void runTest(int natoms, const char *const *selections);
         void runTest(const char *filename, const char *const *selections);
@@ -178,11 +178,11 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         void runEvaluate();
         void runEvaluateFinal();
 
-        gmx::test::TestReferenceData  _data;
-        gmx::test::TestReferenceChecker _checker;
-        size_t                        _count;
-        int                           _framenr;
-        TestFlags                     _flags;
+        gmx::test::TestReferenceData  data_;
+        gmx::test::TestReferenceChecker checker_;
+        size_t                        count_;
+        int                           framenr_;
+        TestFlags                     flags_;
 };
 
 
@@ -225,17 +225,17 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
 {
     using gmx::test::TestReferenceChecker;
 
-    TestReferenceChecker compound(_checker.checkCompound("ParsedSelections", "Parsed"));
+    TestReferenceChecker compound(checker_.checkCompound("ParsedSelections", "Parsed"));
     size_t varcount = 0;
-    _count = 0;
+    count_ = 0;
     for (size_t i = 0; selections[i] != NULL; ++i)
     {
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
         gmx::SelectionList result;
-        ASSERT_NO_THROW(result = _sc.parseFromString(selections[i]));
-        _sel.insert(_sel.end(), result.begin(), result.end());
-        if (_sel.size() == _count)
+        ASSERT_NO_THROW(result = sc_.parseFromString(selections[i]));
+        sel_.insert(sel_.end(), result.begin(), result.end());
+        if (sel_.size() == count_)
         {
             std::string id = gmx::formatString("Variable%d", static_cast<int>(varcount + 1));
             TestReferenceChecker varcompound(
@@ -245,14 +245,14 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
         }
         else
         {
-            std::string id = gmx::formatString("Selection%d", static_cast<int>(_count + 1));
+            std::string id = gmx::formatString("Selection%d", static_cast<int>(count_ + 1));
             TestReferenceChecker selcompound(
                     compound.checkCompound("ParsedSelection", id.c_str()));
             selcompound.checkString(selections[i], "Input");
-            selcompound.checkString(_sel[_count].name(), "Name");
-            selcompound.checkString(_sel[_count].selectionText(), "Text");
-            selcompound.checkBoolean(_sel[_count].isDynamic(), "Dynamic");
-            ++_count;
+            selcompound.checkString(sel_[count_].name(), "Name");
+            selcompound.checkString(sel_[count_].selectionText(), "Text");
+            selcompound.checkBoolean(sel_[count_].isDynamic(), "Dynamic");
+            ++count_;
         }
     }
 }
@@ -261,8 +261,8 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
 void
 SelectionCollectionDataTest::runCompiler()
 {
-    ASSERT_NO_THROW(_sc.compile());
-    ASSERT_EQ(_count, _sel.size());
+    ASSERT_NO_THROW(sc_.compile());
+    ASSERT_EQ(count_, sel_.size());
     checkCompiled();
 }
 
@@ -273,15 +273,15 @@ SelectionCollectionDataTest::checkCompiled()
     using gmx::test::TestReferenceChecker;
     const TestFlags mask = ~TestFlags(efTestPositionCoordinates);
 
-    TestReferenceChecker compound(_checker.checkCompound("CompiledSelections", "Compiled"));
-    for (size_t i = 0; i < _count; ++i)
+    TestReferenceChecker compound(checker_.checkCompound("CompiledSelections", "Compiled"));
+    for (size_t i = 0; i < count_; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
-                     _sel[i].selectionText() + "\"");
+                     sel_[i].selectionText() + "\"");
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
-        checkSelection(&selcompound, _sel[i], _flags & mask);
+        checkSelection(&selcompound, sel_[i], flags_ & mask);
     }
 }
 
@@ -291,19 +291,19 @@ SelectionCollectionDataTest::runEvaluate()
 {
     using gmx::test::TestReferenceChecker;
 
-    ++_framenr;
-    ASSERT_NO_THROW(_sc.evaluate(_frame, NULL));
-    std::string frame = gmx::formatString("Frame%d", _framenr);
+    ++framenr_;
+    ASSERT_NO_THROW(sc_.evaluate(frame_, NULL));
+    std::string frame = gmx::formatString("Frame%d", framenr_);
     TestReferenceChecker compound(
-            _checker.checkCompound("EvaluatedSelections", frame.c_str()));
-    for (size_t i = 0; i < _count; ++i)
+            checker_.checkCompound("EvaluatedSelections", frame.c_str()));
+    for (size_t i = 0; i < count_; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
-                     _sel[i].selectionText() + "\"");
+                     sel_[i].selectionText() + "\"");
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
-        checkSelection(&selcompound, _sel[i], _flags);
+        checkSelection(&selcompound, sel_[i], flags_);
     }
 }
 
@@ -311,8 +311,8 @@ SelectionCollectionDataTest::runEvaluate()
 void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
-    ASSERT_NO_THROW(_sc.evaluateFinal(_framenr));
-    if (!_checker.isWriteMode())
+    ASSERT_NO_THROW(sc_.evaluateFinal(framenr_));
+    if (!checker_.isWriteMode())
     {
         checkCompiled();
     }
@@ -334,7 +334,7 @@ SelectionCollectionDataTest::runTest(const char *filename, const char * const *s
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(loadTopology(filename));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
-    if (_flags.test(efTestEvaluation))
+    if (flags_.test(efTestEvaluation))
     {
         ASSERT_NO_FATAL_FAILURE(runEvaluate());
         ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
@@ -348,34 +348,34 @@ SelectionCollectionDataTest::runTest(const char *filename, const char * const *s
 
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
-    EXPECT_FALSE(_sc.requiresTopology());
-    EXPECT_NO_THROW(_sc.compile());
+    EXPECT_FALSE(sc_.requiresTopology());
+    EXPECT_NO_THROW(sc_.compile());
 }
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
-    ASSERT_NO_THROW(_sel = _sc.parseFromFile(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
+    ASSERT_NO_THROW(sel_ = sc_.parseFromFile(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
     // These should match the contents of selfile.dat
-    ASSERT_EQ(2U, _sel.size());
-    EXPECT_STREQ("resname RA RB", _sel[0].selectionText());
-    EXPECT_STREQ("resname RB RC", _sel[1].selectionText());
+    ASSERT_EQ(2U, sel_.size());
+    EXPECT_STREQ("resname RA RB", sel_[0].selectionText());
+    EXPECT_STREQ("resname RB RC", sel_[1].selectionText());
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
-    EXPECT_THROW(_sc.parseFromString("mindist from atomnr 1 cutoff"),
+    EXPECT_THROW(sc_.parseFromString("mindist from atomnr 1 cutoff"),
                  gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue2)
 {
-    EXPECT_THROW(_sc.parseFromString("within 1 of"),
+    EXPECT_THROW(sc_.parseFromString("within 1 of"),
                  gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
 {
-    EXPECT_THROW(_sc.parseFromString("within of atomnr 1"),
+    EXPECT_THROW(sc_.parseFromString("within of atomnr 1"),
                  gmx::InvalidInputError);
 }
 
@@ -383,53 +383,53 @@ TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
 
 TEST_F(SelectionCollectionTest, RecoversFromUnknownGroupReference)
 {
-    ASSERT_NO_THROW(_sc.parseFromString("group \"foo\""));
+    ASSERT_NO_THROW(sc_.parseFromString("group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW(_sc.setIndexGroups(NULL), gmx::InvalidInputError);
-    EXPECT_THROW(_sc.compile(), gmx::APIError);
+    EXPECT_THROW(sc_.setIndexGroups(NULL), gmx::InvalidInputError);
+    EXPECT_THROW(sc_.compile(), gmx::APIError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingMoleculeInfo)
 {
-    ASSERT_NO_THROW(_sc.parseFromString("molindex 1 to 5"));
+    ASSERT_NO_THROW(sc_.parseFromString("molindex 1 to 5"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingAtomTypes)
 {
-    ASSERT_NO_THROW(_sc.parseFromString("type CA"));
+    ASSERT_NO_THROW(sc_.parseFromString("type CA"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingPDBInfo)
 {
-    ASSERT_NO_THROW(_sc.parseFromString("altloc A"));
+    ASSERT_NO_THROW(sc_.parseFromString("altloc A"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation)
 {
-    ASSERT_NO_THROW(_sc.parseFromString("all permute 1 1"));
+    ASSERT_NO_THROW(sc_.parseFromString("all permute 1 1"));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW(_sc.compile(), gmx::InvalidInputError);
+    EXPECT_THROW(sc_.compile(), gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation2)
 {
-    ASSERT_NO_THROW(_sc.parseFromString("all permute 3 2 1"));
+    ASSERT_NO_THROW(sc_.parseFromString("all permute 3 2 1"));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation3)
 {
-    ASSERT_NO_THROW(_sc.parseFromString("x < 1.5 permute 3 2 1"));
+    ASSERT_NO_THROW(sc_.parseFromString("x < 1.5 permute 3 2 1"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW(_sc.compile());
-    EXPECT_THROW(_sc.evaluate(_frame, NULL), gmx::InconsistentInputError);
+    ASSERT_NO_THROW(sc_.compile());
+    EXPECT_THROW(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
 }
 
 // TODO: Tests for evaluation errors

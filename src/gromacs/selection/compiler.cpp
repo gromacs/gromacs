@@ -2570,14 +2570,14 @@ SelectionCompiler::SelectionCompiler()
 void
 SelectionCompiler::compile(SelectionCollection *coll)
 {
-    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
+    gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
     gmx_sel_evaluate_t  evaldata;
     t_selelem   *item;
     e_poscalc_t  post;
     size_t       i;
     int          flags;
-    bool         bDebug = (coll->_impl->_debugLevel >= 2
-                           && coll->_impl->_debugLevel != 3);
+    bool         bDebug = (coll->impl_->debugLevel_ >= 2
+                           && coll->impl_->debugLevel_ != 3);
 
     /* FIXME: Clean up the collection on exceptions */
 
@@ -2589,7 +2589,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
      * after compilation, and variable references in the symbol table can
      * also mess up the compilation and/or become invalid.
      */
-    coll->_impl->clearSymbolTable();
+    coll->impl_->clearSymbolTable();
 
     /* Loop through selections and initialize position keyword defaults if no
      * other value has been provided.
@@ -2598,8 +2598,8 @@ SelectionCompiler::compile(SelectionCollection *coll)
     {
         gmx::internal::SelectionData &sel = *sc->sel[i];
         init_pos_keyword_defaults(sel.rootElement(),
-                                  coll->_impl->_spost.c_str(),
-                                  coll->_impl->_rpost.c_str(),
+                                  coll->impl_->spost_.c_str(),
+                                  coll->impl_->rpost_.c_str(),
                                   &sel);
     }
 
@@ -2721,7 +2721,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    PositionCalculationCollection::typeFromEnum(coll->_impl->_rpost.c_str(),
+    PositionCalculationCollection::typeFromEnum(coll->impl_->rpost_.c_str(),
                                                 &post, &flags);
     item = sc->root;
     while (item)

@@ -69,14 +69,14 @@ class SelectionTester : public TrajectoryAnalysisModule
     private:
         void printSelections();
 
-        Options                  _options;
-        SelectionList            _selections;
-        int                      _nmaxind;
+        Options                  options_;
+        SelectionList            selections_;
+        int                      nmaxind_;
 };
 
 SelectionTester::SelectionTester()
-    : _options("testing", "Selection testing and debugging"),
-      _nmaxind(20)
+    : options_("testing", "Selection testing and debugging"),
+      nmaxind_(20)
 {
 }
 
@@ -88,9 +88,9 @@ void
 SelectionTester::printSelections()
 {
     fprintf(stderr, "\nSelections:\n");
-    for (size_t g = 0; g < _selections.size(); ++g)
+    for (size_t g = 0; g < selections_.size(); ++g)
     {
-        _selections[g].printDebugInfo(stderr, _nmaxind);
+        selections_[g].printDebugInfo(stderr, nmaxind_);
     }
     fprintf(stderr, "\n");
 }
@@ -102,15 +102,15 @@ SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
         "This is a test program for selections."
     };
 
-    _options.setDescription(concatenateStrings(desc));
+    options_.setDescription(concatenateStrings(desc));
 
-    _options.addOption(SelectionOption("select").storeVector(&_selections)
+    options_.addOption(SelectionOption("select").storeVector(&selections_)
                            .required().multiValue()
                            .description("Selections to test"));
-    _options.addOption(IntegerOption("pmax").store(&_nmaxind)
+    options_.addOption(IntegerOption("pmax").store(&nmaxind_)
                            .description("Maximum number of indices to print in lists (-1 = print all)"));
 
-    return _options;
+    return options_;
 }
 
 void
@@ -125,16 +125,16 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*
                               TrajectoryAnalysisModuleData * /*pdata*/)
 {
     fprintf(stderr, "\n");
-    for (size_t g = 0; g < _selections.size(); ++g)
+    for (size_t g = 0; g < selections_.size(); ++g)
     {
-        const Selection &sel = _selections[g];
+        const Selection &sel = selections_[g];
         int n;
 
         fprintf(stderr, "  Atoms (%d pcs):", sel.atomCount());
         n = sel.atomCount();
-        if (_nmaxind >= 0 && n > _nmaxind)
+        if (nmaxind_ >= 0 && n > nmaxind_)
         {
-            n = _nmaxind;
+            n = nmaxind_;
         }
         ConstArrayRef<int> atoms = sel.atomIndices();
         for (int i = 0; i < n; ++i)
@@ -149,9 +149,9 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*
 
         fprintf(stderr, "  Positions (%d pcs):\n", sel.posCount());
         n = sel.posCount();
-        if (_nmaxind >= 0 && n > _nmaxind)
+        if (nmaxind_ >= 0 && n > nmaxind_)
         {
-            n = _nmaxind;
+            n = nmaxind_;
         }
         for (int i = 0; i < n; ++i)
         {
