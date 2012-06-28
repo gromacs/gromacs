@@ -41,6 +41,7 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
+#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -49,9 +50,14 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace
 {
+
+/********************************************************************
+ * General assignment tests
+ */
 
 TEST(OptionsAssignerTest, HandlesMissingRequiredParameter)
 {
@@ -148,7 +154,7 @@ TEST(OptionsAssignerTest, HandlesExtraValue)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    EXPECT_EQ(2, value1);
+    EXPECT_EQ(0, value1);
 }
 
 TEST(OptionsAssignerTest, HandlesSubSections)
@@ -266,6 +272,10 @@ TEST(OptionsAssignerTest, HandlesMultipleSources)
 }
 
 
+/********************************************************************
+ * Tests for boolean assignment
+ */
+
 TEST(OptionsAssignerBooleanTest, StoresYesValue)
 {
     gmx::Options options(NULL, NULL);
@@ -344,6 +354,12 @@ TEST(OptionsAssignerBooleanTest, HandlesBooleanWithPrefixAndValue)
 }
 
 
+/********************************************************************
+ * Tests for integer assignment
+ *
+ * These tests also contain tests for general default value handling.
+ */
+
 TEST(OptionsAssignerIntegerTest, StoresSingleValue)
 {
     gmx::Options options(NULL, NULL);
@@ -360,6 +376,62 @@ TEST(OptionsAssignerIntegerTest, StoresSingleValue)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_EQ(3, value);
+}
+
+TEST(OptionsAssignerIntegerTest, HandlesEmptyValue)
+{
+    gmx::Options options(NULL, NULL);
+    int value = 1;
+    using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    EXPECT_THROW(assigner.appendValue(""), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(1, value);
+}
+
+TEST(OptionsAssignerIntegerTest, HandlesInvalidValue)
+{
+    gmx::Options options(NULL, NULL);
+    int value = 1;
+    using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    EXPECT_THROW(assigner.appendValue("2abc"), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(1, value);
+}
+
+TEST(OptionsAssignerIntegerTest, HandlesOverflow)
+{
+    gmx::Options options(NULL, NULL);
+    int value = 1;
+    using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    std::string overflowValue(
+            gmx::formatString("%d0000", std::numeric_limits<int>::max()));
+    EXPECT_THROW(assigner.appendValue(overflowValue), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(1, value);
 }
 
 TEST(OptionsAssignerIntegerTest, StoresDefaultValue)
@@ -542,6 +614,11 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssign
     EXPECT_EQ(1, vec2[2]);
 }
 
+
+/********************************************************************
+ * Tests for double assignment
+ */
+
 TEST(OptionsAssignerDoubleTest, StoresSingleValue)
 {
     gmx::Options options(NULL, NULL);
@@ -560,6 +637,28 @@ TEST(OptionsAssignerDoubleTest, StoresSingleValue)
     EXPECT_DOUBLE_EQ(2.7, value);
 }
 
+TEST(OptionsAssignerDoubleTest, HandlesEmptyValue)
+{
+    gmx::Options options(NULL, NULL);
+    double value = 1.0;
+    using gmx::DoubleOption;
+    ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    EXPECT_THROW(assigner.appendValue(""), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_DOUBLE_EQ(1.0, value);
+}
+
+
+/********************************************************************
+ * Tests for string assignment
+ */
 
 TEST(OptionsAssignerStringTest, StoresSingleValue)
 {

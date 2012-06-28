@@ -57,7 +57,7 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
     : flags_(settings.flags_ | staticFlags),
       minValueCount_(settings.minValueCount_),
       maxValueCount_(settings.maxValueCount_),
-      inSet_(false)
+      bInSet_(false), bSetValuesHadErrors_(false)
 {
     // Check that user has not provided incorrect values for vectors.
     if (hasFlag(efOption_Vector) && (minValueCount_ > 1 || maxValueCount_ < 1))
@@ -89,7 +89,7 @@ void AbstractOptionStorage::startSource()
 
 void AbstractOptionStorage::startSet()
 {
-    GMX_RELEASE_ASSERT(!inSet_, "finishSet() not called");
+    GMX_RELEASE_ASSERT(!bInSet_, "finishSet() not called");
     // The last condition takes care of the situation where multiple
     // sources are used, and a later source should be able to reassign
     // the value even though the option is already set.
@@ -99,32 +99,48 @@ void AbstractOptionStorage::startSet()
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
     clearSet();
-    inSet_ = true;
+    bInSet_ = true;
+    bSetValuesHadErrors_ = false;
 }
 
 void AbstractOptionStorage::appendValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(inSet_, "startSet() not called");
-    convertValue(value);
+    GMX_RELEASE_ASSERT(bInSet_, "startSet() not called");
+    try
+    {
+        convertValue(value);
+    }
+    catch (...)
+    {
+        bSetValuesHadErrors_ = true;
+        throw;
+    }
 }
 
 void AbstractOptionStorage::finishSet()
 {
-    GMX_RELEASE_ASSERT(inSet_, "startSet() not called");
-    inSet_ = false;
-    // TODO: Should this be set or not when processSet() throws?
+    GMX_RELEASE_ASSERT(bInSet_, "startSet() not called");
+    bInSet_ = false;
+    // We mark the option as set even when there are errors to avoid additional
+    // errors from required options not set.
+    // TODO: There could be a separate flag for this purpose.
     setFlag(efOption_Set);
-    // TODO: Correct handling of the efOption_ClearOnNextSet requires
-    // processSet() and/or convertValue() to check it internally.
-    // OptionStorageTemplate takes care of it, but it's error-prone if
-    // a custom option is implemented that doesn't use it.
-    processSet();
+    if (!bSetValuesHadErrors_)
+    {
+        // TODO: Correct handling of the efOption_ClearOnNextSet requires
+        // processSet() and/or convertValue() to check it internally.
+        // OptionStorageTemplate takes care of it, but it's error-prone if
+        // a custom option is implemented that doesn't use it.
+        processSet();
+    }
+    bSetValuesHadErrors_ = false;
     clearFlag(efOption_ClearOnNextSet);
+    clearSet();
 }
 
 void AbstractOptionStorage::finish()
 {
-    GMX_RELEASE_ASSERT(!inSet_, "finishSet() not called");
+    GMX_RELEASE_ASSERT(!bInSet_, "finishSet() not called");
     processAll();
     if (isRequired() && !isSet())
     {
