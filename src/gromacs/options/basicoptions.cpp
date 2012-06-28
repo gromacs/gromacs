@@ -38,6 +38,7 @@
  */
 #include "gromacs/options/basicoptions.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 
@@ -125,10 +126,19 @@ void IntegerOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
     char *endptr;
+    errno = 0;
     long int ival = std::strtol(ptr, &endptr, 10);
-    if (*endptr != '\0')
+    if (errno == ERANGE
+        || ival < std::numeric_limits<int>::min()
+        || ival > std::numeric_limits<int>::max())
     {
-        GMX_THROW(InvalidInputError("Invalid value: " + value));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; it causes an integer overflow"));
+    }
+    if (*ptr == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; expected an integer"));
     }
     addValue(ival);
 }
@@ -183,10 +193,17 @@ void DoubleOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
     char *endptr;
+    errno = 0;
     double dval = std::strtod(ptr, &endptr);
-    if (*endptr != '\0')
+    if (errno == ERANGE)
     {
-        GMX_THROW(InvalidInputError("Invalid value: " + value));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; it causes an overflow/underflow"));
+    }
+    if (*ptr == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; expected a number"));
     }
     addValue(dval * factor_);
 }
