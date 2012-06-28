@@ -8,25 +8,29 @@ if(GMX_MPI)
   endif(GMX_THREAD_MPI)
 
   # Test the CMAKE_C_COMPILER for being an MPI (wrapper) compiler
-  TRY_COMPILE(MPI_C_FOUND ${CMAKE_BINARY_DIR}
+  TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
     "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
     COMPILE_DEFINITIONS )
 
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
-  # MPI module from cmake >= 2.8.5 required for fall-back. Cmake <2.8.5 have to use mpi wrapper.
-  # Cmake <2.8.5 is not supported because of unreliability (redmine #851) and to be to
-  # use the new langauge feature (MPI_C_*).
-  if(NOT MPI_C_FOUND AND NOT CMAKE_VERSION VERSION_LESS "2.8.5")
-      find_package(MPI)
-      if(MPI_C_FOUND)
-        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_C_COMPILE_FLAGS})
-        set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_C_LINK_FLAGS})
-        include_directories(${MPI_C_INCLUDE_PATH})
-        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_C_LIBRARIES})
+  # cmake < 2.8.5 not recommended for fall-back because of unreliability (redmine #851)
+  if(NOT MPI_FOUND)
+      if(CMAKE_VERSION VERSION_LESS "2.8.5")
+          set(MPI_PREFIX MPI)
+      else()
+          set(MPI_PREFIX MPI_C)
       endif()
+      find_package(MPI)
+      if(${${MPI_PREFIX}_FOUND})
+        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${${MPI_PREFIX}_COMPILE_FLAGS})
+        set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${${MPI_PREFIX}_LINK_FLAGS})
+        include_directories(${${MPI_PREFIX}_INCLUDE_PATH})
+        list(APPEND GMX_EXTRA_LIBRARIES ${${MPI_PREFIX}_LIBRARIES})
+      endif()
+      set(MPI_FOUND ${${MPI_PREFIX}_FOUND})
   endif()
 
-  if(MPI_C_FOUND)
+  if(MPI_FOUND)
     include(gmxTestMPI_IN_PLACE)
     if (GMX_MPI_IN_PLACE)
       gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
@@ -72,12 +76,12 @@ if(GMX_MPI)
       unset(MVAPICH2_EXEC_RETURN)
     endif()
 
-  else(MPI_C_FOUND)
+  else(MPI_FOUND)
     if (CMAKE_VERSION VERSION_LESS "2.8.5")
       message(FATAL_ERROR
         "MPI support requested, but no MPI compiler found. Either set the "
         "C-compiler (CMAKE_C_COMPILER) to the MPI compiler (often called mpicc), "
-        "or use a newer cmake version (>=2.8.5) for semi-automatic MPI detection.")
+        "or use a newer cmake version (>=2.8.5) which has improved MPI detection.")
     else()
       message(FATAL_ERROR
         "MPI support requested, but no MPI compiler found. Either set the "
@@ -85,7 +89,7 @@ if(GMX_MPI)
         "or set the variables reported missing for MPI_C above.")
     endif()
 
-  endif(MPI_C_FOUND)
+  endif(MPI_FOUND)
 
   include(gmxTestCatamount)
   gmx_test_catamount(GMX_CRAY_XT3)
