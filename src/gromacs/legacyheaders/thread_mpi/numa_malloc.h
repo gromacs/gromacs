@@ -39,7 +39,7 @@ files.
 #ifndef TMPI_NUMA_MALLOC_H_
 #define TMPI_NUMA_MALLOC_H_
 
-/*! \file numa_alloc.h
+/*! \file
   
     \brief NUMA aware memory allocators.
   
