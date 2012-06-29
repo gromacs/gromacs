@@ -1,24 +1,19 @@
-Once installed, this directory contains a Makefile and 
-a small program that you could use as a template when 
-writing your own analysis software.
+Once installed, this directory contains CMakelist.txt,
+Makefile.pkg and a small program that you could use as
+a template when writing your own analysis software.
 
-A Makefile.arch is created for each architecture you install 
-with the correct paths and libraries. You will have to link
-(or copy) the correct makefile to "Makefile" or use the -f 
-option to gmake in order to select a makefile.
+The CMakelist.txt can be used together with cmake to
+build the template program:
+$ source /path/to/GMXRC
+$ cmake /path/to/template
+
+The Makefile.pkg can be used if cmake is unavailble. It
+makes use of pkg-config only to build the template program:
+$ source /path/to/GMXRC
+$ make -f Makefile.pkg
 
 ----------------------------------------------------------
 
-If you are reading this in the distribution directory, 
-there will be a Makefile.am which automake uses to 
-create a Makefile.in which in turn is converted to
-a Makefile by the configure script. Note that this is
-NOT the template makefile - it is called Template.mak,
-and used to create Makefile.arch at build time.
-
-You should NOT touch or copy Makefile.in unless you
-really know what you are doing - it is a template file
-used by the configure script to create the real Makefile.
-
-If you want to use automake and autoconf yourself, look
-in the contrib directory of the distribution.
+If you are reading this in the distribution directory,
+remember that CMakelist.txt.template will be renamed to
+CMakelist.txt during the installation.
