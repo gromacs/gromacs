@@ -70,7 +70,9 @@ yyerror(yyscan_t, char const *s);
 #pragma warning(disable: 4065)
 #endif
 
-/* These macros should be used at the beginning and end of each semantic action
+/*! \name Exception handling macros for actions
+ *
+ * These macros should be used at the beginning and end of each semantic action
  * that may throw an exception. For robustness, it's best to wrap all actions
  * that call functions declared outside parser.y should be wrapped.
  * These macros take care to catch any exceptions, store the exception (or
@@ -78,9 +80,12 @@ yyerror(yyscan_t, char const *s);
  * cleanly if necessary.
  * The code calling the parser should use
  * _gmx_sel_lexer_rethrow_exception_if_occurred() to rethrow any exceptions.
+ * \{
  */
+//! Starts an action that may throw exceptions.
 #define BEGIN_ACTION \
     try {
+//! Finishes an action that may throw exceptions.
 #define END_ACTION \
     } \
     catch(const std::exception &ex) \
@@ -90,6 +95,7 @@ yyerror(yyscan_t, char const *s);
         else \
             YYABORT; \
     }
+//!\}
 %}
 
 %union{

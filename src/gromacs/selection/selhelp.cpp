@@ -593,6 +593,6 @@ HelpTopicPointer createSelectionHelpTopic()
     root->registerSubTopic<SimpleHelpTopic<SyntaxHelpText> >();
     return move(root);
 }
-//! \cond
+//! \endcond
 
 } // namespace gmx

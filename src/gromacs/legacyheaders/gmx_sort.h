@@ -15,18 +15,21 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _GMX_SORT_H_
-#define _GMX_SORT_H_
-
-/** @file gmx_sort.h
+/*! \internal \file
+ * \brief
+ * Portable implementation of thread-safe sort routines.
  *
- *  @brief Portable implementation of thread-safe sort routines.
+ * This module provides a Gromacs version of the qsort() routine defined.
+ * It is not highly optimized, but it is thread safe, i.e. multiple threads
+ * can simultaneously call gmx_qsort() with different data.
  *
- *
- *  This module provides a Gromacs version of the qsort() routine defined.
- *  It is not highly optimized, but it is thread safe, i.e. multiple threads
- *  can simultaneously call gmx_qsort with different data.
+ * The rational is that some implementations of qsort() are not threadsafe.
+ * For instance qsort in glibc contains a bug which makes it non-threadsafe:
+ * http://sources.redhat.com/bugzilla/show_bug.cgi?id=11655
+ * On the other hand, system qsort might be faster than our own.
  */
+#ifndef GMX_SORT_H
+#define GMX_SORT_H
 
 #include <stdlib.h>
 
@@ -38,39 +41,40 @@ extern "C"
 } /* fixes auto-indentation problems */
 #endif
 
-
-/*
- *  @param base    Pointer to first element in list to sort
- *  @param nmemb   Number of elements in list
- *  @param size    Size in bytes of each element
- *  @param compar  Comparison function that takes two pointers to elements
- *                 being compared as arguments. The function should return an
- *                 integer less than, equal to, or greater than zero if the 
- *                 first argument is considered to be respectively less than,
- *                 equal to, or greater than the second.
+/*! \brief
+ * Portable thread-safe sort routine.
+ *
+ * \param base    Pointer to first element in list to sort
+ * \param nmemb   Number of elements in list
+ * \param size    Size in bytes of each element
+ * \param compar  Comparison function that takes two pointers to elements
+ *                being compared as arguments.  The function should return an
+ *                integer less than, equal to, or greater than zero if the
+ *                first argument is considered to be respectively less than,
+ *                equal to, or greater than the second.
  */
 void
-gmx_qsort(void *           base, 
-          size_t           nmemb, 
-          size_t           size, 
+gmx_qsort(void *           base,
+          size_t           nmemb,
+          size_t           size,
           int            (*compar)(const void *, const void *));
 
 
-#ifdef GMX_THREAD_MPI
-/* Some implementations of qsort are not threadsafe.
- * For instance qsort in glibc contains a bug which makes it non-threadsafe:
- * http://sources.redhat.com/bugzilla/show_bug.cgi?id=11655
+/*! \def qsort_threadsafe
+ * \brief
+ * Thread-safe qsort.
+ *
+ * Expands to gmx_qsort() if Gromacs is built with threading, or system qsort()
+ * otherwise.
  */
+#ifdef GMX_THREAD_MPI
 #define qsort_threadsafe gmx_qsort
 #else
-/* System qsort might be faster than our own */
 #define qsort_threadsafe qsort
 #endif
-
 
 #ifdef __cplusplus
 }
 #endif
 
-
-#endif /* _GMX_SORT_H_ */
+#endif /* GMX_SORT_H */

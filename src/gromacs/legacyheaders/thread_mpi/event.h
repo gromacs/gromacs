@@ -85,7 +85,7 @@ void tMPI_Event_destroy(tMPI_Event *ev);
 
    Sets the number of events that had occurred during the wait in N. 
    \param ev The event structure to wait on.
-   \ret      The number of events that have occurred at function 
+   \returns  The number of events that have occurred at function
              return time. */
 int tMPI_Event_wait(tMPI_Event *ev);
 
