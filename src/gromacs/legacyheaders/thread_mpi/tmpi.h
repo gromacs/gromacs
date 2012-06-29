@@ -936,7 +936,7 @@ int tMPI_Testany(int count, tMPI_Request *array_of_requests,
 /** Wait until some of several messages are transferred. Waits until at least
     one message is transferred.
    
-    \param[in]      count               The number of requests
+    \param[in]      incount             The number of requests
     \param[in,out]  array_of_requests   List of count requests obtained with
                                         tMPI_Isend()/tMPI_Irecv().
     \param[out]     outcount            Number of completed requests
@@ -952,7 +952,7 @@ int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
 
 /** Test whether some of several messages are transferred. 
 
-    \param[in]      count               The number of requests
+    \param[in]      incount             The number of requests
     \param[in,out]  array_of_requests   List of count requests obtained with
                                         tMPI_Isend()/tMPI_Irecv().
     \param[out]     outcount            Number of completed requests

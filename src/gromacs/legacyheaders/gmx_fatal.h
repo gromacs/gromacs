@@ -50,8 +50,10 @@ extern "C" {
 #define __has_feature(x) 0 // Compatibility with non-clang compilers.
 #endif
 
-/** \def GMX_ATTRIBUTE_NORETURN \brief Indicate that a function is not
- * expected to return.
+/*! \def GMX_ATTRIBUTE_NORETURN
+ * \brief
+ * Indicate that a function is not expected to return.
+ *
  * WARNING: In general this flag should not be used for compiler
  * optimizations, since set_gmx_error_handler can be set to a
  * handler which does not quit.

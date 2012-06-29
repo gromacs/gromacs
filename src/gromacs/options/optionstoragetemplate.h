@@ -94,7 +94,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // the declarations are still included for clarity.
         virtual const char *typeString() const = 0;
         virtual int valueCount() const { return static_cast<int>(values_->size()); }
-        /*! \copydoc AbstractOptionStorage::formatValue()
+        /*! \copydoc gmx::AbstractOptionStorage::formatValue()
          *
          * OptionStorageTemplate implements handling of DefaultValueIfSetIndex
          * in this method, as well as checking that \p i is a valid index.
