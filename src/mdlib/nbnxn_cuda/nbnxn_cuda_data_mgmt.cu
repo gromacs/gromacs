@@ -337,9 +337,6 @@ void nbnxn_cuda_init(FILE *fplog,
 
     nb->dd_run = bDomDec;
 
-    /* CUDA event timers don't work with multiple streams so 
-       we have to disable timing with DD */
-    nb->do_time = (!bDomDec && (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
     snew(nb->timers, 1);
     snew(nb->timings, 1);
 
@@ -390,7 +387,6 @@ void nbnxn_cuda_init(FILE *fplog,
         if (bStreamSync)
         {
             nb->use_stream_sync = TRUE;
-            nb->do_time         = TRUE;
 
             sprintf(sbuf, "NOTE: cudaStreamSynchronize-based waiting forced by GMX_CUDA_STREAMSYNC, but ECC is turned\n"
                     "      on which generally causes considerable performance loss");
@@ -404,7 +400,6 @@ void nbnxn_cuda_init(FILE *fplog,
         {
 #ifdef CAN_CUTHREAD_YIELD
             nb->use_stream_sync = FALSE;
-            nb->do_time         = FALSE;
 
             sprintf(sbuf, "NOTE: running on a GPU with ECC on; will not use cudaStreamSynchronize-based\n"
                     "      waiting as it generally causes performance loss when used with ECC.");
@@ -415,7 +410,6 @@ void nbnxn_cuda_init(FILE *fplog,
             }
 #else
             nb->use_stream_sync = TRUE;
-            nb->do_time         = TRUE;
 
             sprintf(sbuf, "Can't do thread yield as sleep(0)/Sleep(0) (posix/win) is not available.\n"
                         "         Will use the standard cudaStreamSynchronize-based waiting.\n"
@@ -433,7 +427,6 @@ void nbnxn_cuda_init(FILE *fplog,
         if (bNoStreamSync)
         {
             nb->use_stream_sync = FALSE;
-            nb->do_time         = FALSE;
 
             sprintf(sbuf, "NOTE: running on a GPU with no ECC, but cudaStreamSynchronize-based waiting\n"
                     "forced off by GMX_NO_CUDA_STREAMSYNC");
@@ -447,9 +440,15 @@ void nbnxn_cuda_init(FILE *fplog,
         {
             /* no/off ECC, cudaStreamSynchronize not turned off by env. var. */
             nb->use_stream_sync = TRUE;
-            nb->do_time         = TRUE;
         }
     }
+
+    /* CUDA timing disabled as event timers don't work:
+       - with multiple streams = domain-decomposition;
+       - with the waiting hack, without cudaStreamSynchronize;
+       - when turned off by GMX_DISABLE_CUDA_TIMING.
+     */
+    nb->do_time = (!bDomDec && nb->use_stream_sync && (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
 
     if (nb->do_time)
     {
