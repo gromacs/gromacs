@@ -100,6 +100,23 @@ static const char * const nb_k2_names[NUM_NB_KERNELS] =
     "_Z27k_nbnxn_cutoff_ener_prune_211cu_atomdata10cu_nbparam8cu_plisti"
 };
 
+/*! v2 nonbonded kernel names with names with mangling. */
+static const char * const nb_k3_names[NUM_NB_KERNELS] =
+{
+    "_Z12k_nbnxn_rf_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z15k_nbnxn_ewald_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z16k_nbnxn_cutoff_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z17k_nbnxn_rf_ener_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z18k_nbnxn_rf_prune_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z20k_nbnxn_ewald_ener_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_ewald_prune_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_cutoff_ener_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z22k_nbnxn_cutoff_prune_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z23k_nbnxn_rf_ener_prune_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z26k_nbnxn_ewald_ener_prune_311cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z27k_nbnxn_cutoff_ener_prune_311cu_atomdata10cu_nbparam8cu_plisti"
+};
+
 /*! Dummy kernel used for sanity check. */
 __device__ __global__ void k_empty_test(){}
 
@@ -470,10 +487,23 @@ void nbnxn_cuda_init(FILE *fplog,
         CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
     }
 
-    /* k_nbnxn_*_2 16/48 kB Shared/L1 */
     for (int i = 0; i < NUM_NB_KERNELS; i++)
     {
+        /* k_nbnxn_*_2 16/48 kB Shared/L1 */
         stat = cudaFuncSetCacheConfig(nb_k2_names[i], cudaFuncCachePreferL1);
+        CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+
+        if (nb->dev_info->dev_prop.major >= 3)
+        {
+            /* k_nbnxn_*_3 48/16 kB Shared/L1 */
+            stat = cudaFuncSetCacheConfig(nb_k3_names[i], cudaFuncCachePreferShared);
+        }
+        else
+        {
+            /* On Fermi prefer L1 gives 2% higher performance */
+            /* k_nbnxn_*_3 16/48 kB Shared/L1 */
+            stat = cudaFuncSetCacheConfig(nb_k3_names[i], cudaFuncCachePreferL1);
+        }
         CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
     }
 

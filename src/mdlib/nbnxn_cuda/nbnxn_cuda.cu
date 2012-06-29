@@ -105,8 +105,12 @@ typedef void (*p_k_nbnxn)(const cu_atomdata_t,
 static gmx_bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static gmx_bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
+/* Will run kernel #1 if this env var is set (default!). */
+static gmx_bool doKernel1    = (getenv("GMX_NB_K1") != NULL);
 /* Will run kernel #2 if this env var is set. */
 static gmx_bool doKernel2    = (getenv("GMX_NB_K2") != NULL);
+/* Will run kernel #3 if this env var is set. */
+static gmx_bool doKernel3    = (getenv("GMX_NB_K3") != NULL);
 
 
 /* Single byte of the bit-pattern used to fill the last element of the force
@@ -134,28 +138,21 @@ static inline int calc_nb_blocknr(int nwork_units)
  *  returns a function pointer to it. 
  */
 static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne, 
-                                            gmx_bool doPrune, gmx_bool doKernel2)
+                                            gmx_bool doPrune)
 {
     p_k_nbnxn k = NULL;
+
+    if (doKernel1 + doKernel2 + doKernel3 > 1)
+    {
+        gmx_fatal(FARGS, "Multiple GPU NB kernels requested at the same time; "
+                  "set only one of the GMX_NB_K[123] env vars!");
+    }
 
     /* select which kernel will be used */
     switch (eeltype)
     {
         case cu_eelCUT:
-            if (!doKernel2)
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_cutoff_1 :
-                                   k_nbnxn_cutoff_prune_1;
-                }
-                else 
-                {
-                    k = !doPrune ? k_nbnxn_cutoff_ener_1 :
-                                   k_nbnxn_cutoff_ener_prune_1;
-                }
-            }
-            else 
+            if (doKernel2)
             {
                 if (!doEne)
                 {
@@ -168,23 +165,36 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                                    k_nbnxn_cutoff_ener_prune_2;
                 }
             }
-            break;
-
-        case cu_eelRF:
-            if (!doKernel2)
+            else if (doKernel3)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_rf_1 :
-                                   k_nbnxn_rf_prune_1;
+                    k = !doPrune ? k_nbnxn_cutoff_3 :
+                                   k_nbnxn_cutoff_prune_3;
+                }
+                else 
+                {
+                    k = !doPrune ? k_nbnxn_cutoff_ener_3 :
+                                   k_nbnxn_cutoff_ener_prune_3;
+                }
+            }
+            else
+            {
+                if (!doEne)
+                {
+                    k = !doPrune ? k_nbnxn_cutoff_1 :
+                                   k_nbnxn_cutoff_prune_1;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_rf_ener_1 :
-                                   k_nbnxn_rf_ener_prune_1;
+                    k = !doPrune ? k_nbnxn_cutoff_ener_1 :
+                                   k_nbnxn_cutoff_ener_prune_1;
                 }
             }
-            else 
+            break;
+
+        case cu_eelRF:
+            if (doKernel2)
             {
                 if (!doEne)
                 {
@@ -197,23 +207,36 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                                    k_nbnxn_rf_ener_prune_2;
                 }
             }
-            break;
-
-        case cu_eelEWALD:
-            if (!doKernel2)
+            else if (doKernel3)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_ewald_1 :
-                                   k_nbnxn_ewald_prune_1;
+                    k = !doPrune ? k_nbnxn_rf_3 :
+                                   k_nbnxn_rf_prune_3;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_ewald_ener_1:
-                                   k_nbnxn_ewald_ener_prune_1;
+                    k = !doPrune ? k_nbnxn_rf_ener_3 :
+                                   k_nbnxn_rf_ener_prune_3;
                 }
             }
-            else 
+            else
+            {
+                if (!doEne)
+                {
+                    k = !doPrune ? k_nbnxn_rf_1 :
+                                   k_nbnxn_rf_prune_1;
+                }
+                else
+                {
+                    k = !doPrune ? k_nbnxn_rf_ener_1 :
+                                   k_nbnxn_rf_ener_prune_1;
+                }
+            }
+            break;
+
+        case cu_eelEWALD:
+            if (doKernel2)
             {
                 if (!doEne)
                 {
@@ -222,13 +245,39 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_ewald_ener_2 :
+                    k = !doPrune ? k_nbnxn_ewald_ener_2:
                                    k_nbnxn_ewald_ener_prune_2;
+                }
+            }
+            else if (doKernel3)
+            {
+                if (!doEne)
+                {
+                    k = !doPrune ? k_nbnxn_ewald_3 :
+                                   k_nbnxn_ewald_prune_3;
+                }
+                else
+                {
+                    k = !doPrune ? k_nbnxn_ewald_ener_3 :
+                                   k_nbnxn_ewald_ener_prune_3;
+                }
+            }
+            else
+            {
+                if (!doEne)
+                {
+                    k = !doPrune ? k_nbnxn_ewald_1 :
+                                   k_nbnxn_ewald_prune_1;
+                }
+                else
+                {
+                    k = !doPrune ? k_nbnxn_ewald_ener_1 :
+                                   k_nbnxn_ewald_ener_prune_1;
                 }
             }
             break;
 
-        default: 
+        default:
             gmx_incons("The provided electrostatics type does not exist in the "
                        "CUDA implementation!");
     }
@@ -343,14 +392,35 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* size of force buffers in shmem */
-    shmem = !doKernel2 ?
-        (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float) :
-        CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+    /* NOTE: with kernel3 and sm3.0 we don't need any shmem */
+    if (doKernel3)
+    {
+        /* i-atom x+q in shared memory */
+        shmem  = NSUBCELL * CLUSTER_SIZE * sizeof(float4);
+#ifdef IATYPE_SHMEM
+        /* i-atom types in shared memory */
+        shmem += NSUBCELL * CLUSTER_SIZE * sizeof(int);
+#endif
+#if __CUDA_ARCH__ < 300
+        /* force reduction buffers in shared memory */
+        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+#endif
+    }
+    else if (doKernel2)
+    {
+        /* i-atom x+q in shared memory */
+        shmem =  NSUBCELL * CLUSTER_SIZE * sizeof(float4);
+        /* force reduction buffers in shared memory */
+        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+    }
+    else
+    {
+        shmem = (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+    }
 
     /* get the pointer to the kernel we need & launch it */
     nb_kernel = select_nbnxn_kernel(nbp->eeltype, calc_ener,
-                                    plist->do_prune || always_prune,
-                                    doKernel2);
+                                    plist->do_prune || always_prune);
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist,
                                                       calc_fshift);
     CU_LAUNCH_ERR("k_calc_nb");

@@ -44,6 +44,7 @@
 #define FUNCTION_NAME(x, y) x##_cutoff_##y
 #include "nbnxn_cuda_kernel_1.cuh"
 #include "nbnxn_cuda_kernel_2.cuh"
+#include "nbnxn_cuda_kernel_3.cuh"
 #undef EL_CUTOFF
 #undef FUNCTION_NAME
 
@@ -52,6 +53,7 @@
 #define FUNCTION_NAME(x, y) x##_rf_##y
 #include "nbnxn_cuda_kernel_1.cuh"
 #include "nbnxn_cuda_kernel_2.cuh"
+#include "nbnxn_cuda_kernel_3.cuh"
 #undef EL_RF
 #undef FUNCTION_NAME
 
@@ -60,5 +62,6 @@
 #define FUNCTION_NAME(x, y) x##_ewald_##y
 #include "nbnxn_cuda_kernel_1.cuh"
 #include "nbnxn_cuda_kernel_2.cuh"
+#include "nbnxn_cuda_kernel_3.cuh"
 #undef EL_EWALD
 #undef FUNCTION_NAME
