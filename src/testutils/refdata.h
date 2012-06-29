@@ -398,10 +398,10 @@ if (checker.checkPresent(bHaveVelocities, "Velocities"))
          * \param[in] checkItem  Functor to check an individual item.
          *
          * This method creates a compound checker \c compound within which all
-         * values of the sequence are checked.  Calls checkItem(&compound, *i)
+         * values of the sequence are checked.  Calls \c checkItem(&compound, *i)
          * with that compound for each iterator \c i in the range [begin, end).
-         * \p checkItem should use check*() methods in the passed checker to
-         * check the each value.
+         * \p checkItem should use the various check methods in the passed
+         * checker to check each value.
          *
          * This method can be used to check a sequence made of compound types.
          * Typically \p checkItem will create a compound within the passed

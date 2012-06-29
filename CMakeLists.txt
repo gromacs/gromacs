@@ -997,6 +997,8 @@ if (DOXYGEN_FOUND)
         SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
             "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
     ENDFOREACH(NB_KERNEL_DIR)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-common.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile-common)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.cmakein
                    ${CMAKE_BINARY_DIR}/Doxyfile)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-lib.cmakein

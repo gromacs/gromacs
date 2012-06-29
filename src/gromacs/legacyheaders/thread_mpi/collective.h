@@ -113,9 +113,10 @@ typedef struct
     tMPI_Comm comm;
 } tMPI_Reduce_req;
 
+/** Allocate data structure for asynchronous reduce. */
 tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm);
 #if 0
-/** Execute fast a asynchronious reduce over comm. 
+/** Execute fast a asynchronous reduce over comm.
 
   Reduces array input with supplied funtion. This function may return before 
   the input array is ready to be written to again; to check for its completion,

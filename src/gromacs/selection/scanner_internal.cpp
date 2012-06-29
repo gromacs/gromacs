@@ -37,13 +37,15 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-/*! \internal \file scanner_flex.h
+/*! \cond
+ * \internal \file scanner_flex.h
  * \brief Generated (from scanner.l) header file by Flex.
  *
  * This file contains definitions of functions that are needed in
  * scanner_internal.cpp.
  *
  * \ingroup module_selection
+ * \endcond
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
