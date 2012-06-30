@@ -372,6 +372,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
+//! Helper method to process selections into an array of coordinates.
 static void
 copy_pos(const SelectionList &sel, bool bSplit, int natoms,
          int firstg, int first, rvec x[])
@@ -393,6 +394,7 @@ copy_pos(const SelectionList &sel, bool bSplit, int natoms,
 }
 
 
+//! Helper method to calculate a vector from two or three positions..
 static void
 calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 {

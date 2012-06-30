@@ -58,11 +58,14 @@
 
 #include "scanner.h"
 
+//! Helper method to reorder a list of parameter values and to count the values.
 static t_selexpr_value *
 process_value_list(t_selexpr_value *values, int *nr);
+//! Helper method to reorder a list of parameters.
 static t_selexpr_param *
 process_param_list(t_selexpr_param *params);
 
+//! Error handler needed by Bison.
 static void
 yyerror(yyscan_t, char const *s);
 
@@ -824,5 +827,3 @@ yyerror(yyscan_t scanner, char const *s)
 {
     _gmx_selparser_error(scanner, "%s", s);
 }
-
-

@@ -63,9 +63,15 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-static const char *const g_plotFormats[] = {
+namespace
+{
+
+//! Enum values for plot formats.
+const char *const g_plotFormats[] = {
     "none", "xmgrace", "xmgr", NULL
 };
+
+} // namespace
 
 namespace gmx
 {

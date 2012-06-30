@@ -105,7 +105,9 @@ typedef enum gmx_fft_direction
  */
 
 typedef int gmx_fft_flag;
+/** Macro to indicate no special flags for FFT routines. */
 static const int GMX_FFT_FLAG_NONE = 0;
+/** Flag to disable FFT optimizations based on timings, see ::gmx_fft_flag. */
 static const int GMX_FFT_FLAG_CONSERVATIVE = (1<<0);
 
 /*! \brief Setup a 1-dimensional complex-to-complex transform 

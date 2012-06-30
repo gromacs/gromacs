@@ -48,7 +48,13 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 
-static const char *g_testDataPath = NULL;
+namespace
+{
+
+//! Global test input data path set with gmx::test::TestFileManager::setTestDataPath().
+const char *g_testDataPath = NULL;
+
+} // namespace
 
 namespace gmx
 {

@@ -58,14 +58,21 @@
 namespace
 {
 
+/*! \internal \brief
+ * Global test environment for freeing up libxml2 internal buffers.
+ */
 class TestReferenceDataEnvironment : public ::testing::Environment
 {
     public:
+        //! Frees internal buffers allocated by libxml2.
         virtual void TearDown()
         {
             xmlCleanupParser();
         }
 };
+
+//! Global reference data mode set with gmx::test::setReferenceDataMode().
+gmx::test::ReferenceDataMode g_referenceDataMode = gmx::test::erefdataCompare;
 
 } // namespace
 
@@ -73,8 +80,6 @@ namespace gmx
 {
 namespace test
 {
-
-static ReferenceDataMode g_referenceDataMode = erefdataCompare;
 
 ReferenceDataMode getReferenceDataMode()
 {
