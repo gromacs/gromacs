@@ -43,8 +43,18 @@
 
 #include "errorformat.h"
 
-// This has to match the enum in errorcodes.h
-static const char *const error_names[] =
+namespace gmx
+{
+
+namespace
+{
+
+/*! \brief
+ * Strings corresponding to gmx::ErrorCode values.
+ *
+ * This has to match the enum in errorcodes.h!
+ */
+const char *const error_names[] =
 {
     "No error",
     "Out of memory",
@@ -65,8 +75,22 @@ static const char *const error_names[] =
     "Unknown error",
 };
 
-namespace gmx
+/*! \brief
+ * The default error handler if setFatalErrorHandler() is not called.
+ */
+void standardErrorHandler(int retcode, const char *msg,
+                          const char *file, int line)
 {
+    const char *title = getErrorCodeString(retcode);
+    fprintf(stderr, "%s",
+            internal::formatFatalError(title, msg, NULL, file, line).c_str());
+    std::exit(1);
+}
+
+//! Global error handler set with setFatalErrorHandler().
+ErrorHandlerFunc error_handler = standardErrorHandler;
+
+} // namespace
 
 const char *getErrorCodeString(int errorcode)
 {
@@ -76,17 +100,6 @@ const char *getErrorCodeString(int errorcode)
     }
     return error_names[errorcode];
 }
-
-static void standardErrorHandler(int retcode, const char *msg,
-                                 const char *file, int line)
-{
-    const char *title = getErrorCodeString(retcode);
-    fprintf(stderr, "%s",
-            internal::formatFatalError(title, msg, NULL, file, line).c_str());
-    std::exit(1);
-}
-
-static ErrorHandlerFunc error_handler = standardErrorHandler;
 
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
 {

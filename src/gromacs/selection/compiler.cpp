@@ -346,6 +346,9 @@ typedef struct t_compiler_data
  * COMPILER UTILITY FUNCTIONS
  ********************************************************************/
 
+/*! \brief
+ * Helper method for printing out debug information about a min/max group.
+ */
 static void
 print_group_info(FILE *fp, const char *name, t_selelem *sel, gmx_ana_index_t *g)
 {
