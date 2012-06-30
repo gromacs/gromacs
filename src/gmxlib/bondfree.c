@@ -159,7 +159,7 @@ real morse_bonds(int nbonds,
     if (temp == one)
     {
         /* bonds are constrainted. This may _not_ include bond constraints if they are lambda dependent */
-        *dvdlambda = cbB-cbA;
+        *dvdlambda += cbB-cbA;
         continue;
     }
 
