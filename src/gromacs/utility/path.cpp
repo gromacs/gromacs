@@ -46,8 +46,15 @@
 #include <direct.h>
 #endif
 
-static const char cDirSeparator = '/';
-static const char cDirSeparators[] = "/\\";
+namespace
+{
+
+//! Directory separator to use when joining paths.
+const char cDirSeparator = '/';
+//! Directory separators to use when parsing paths.
+const char cDirSeparators[] = "/\\";
+
+} // namespace
 
 namespace gmx
 {

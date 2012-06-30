@@ -43,8 +43,18 @@
 
 #include "errorformat.h"
 
-// This has to match the enum in errorcodes.h
-static const char *const error_names[] =
+namespace gmx
+{
+
+namespace
+{
+
+/*! \brief
+ * Strings corresponding to gmx::ErrorCode values.
+ *
+ * This has to match the enum in errorcodes.h!
+ */
+const char *const error_names[] =
 {
     "No error",
     "Out of memory",
@@ -65,8 +75,23 @@ static const char *const error_names[] =
     "Unknown error",
 };
 
-namespace gmx
+/*! \brief
+ * The default error handler if setFatalErrorHandler() is not called.
+ */
+void standardErrorHandler(int retcode, const char *msg,
+                          const char *file, int line)
 {
+    const char *title = getErrorCodeString(retcode);
+    internal::printFatalError(stderr, title, msg, NULL, file, line);
+    std::exit(1);
+}
+
+//! Global error handler set with setFatalErrorHandler().
+ErrorHandlerFunc g_errorHandler = standardErrorHandler;
+//! Mutex for protecting access to g_errorHandler.
+tMPI::mutex handler_mutex;
+
+} // namespace
 
 const char *getErrorCodeString(int errorcode)
 {
@@ -77,23 +102,12 @@ const char *getErrorCodeString(int errorcode)
     return error_names[errorcode];
 }
 
-static void standardErrorHandler(int retcode, const char *msg,
-                                 const char *file, int line)
-{
-    const char *title = getErrorCodeString(retcode);
-    internal::printFatalError(stderr, title, msg, NULL, file, line);
-    std::exit(1);
-}
-
-static ErrorHandlerFunc error_handler = standardErrorHandler;
-static tMPI::mutex handler_mutex;
-
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
 {
     tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
-    ErrorHandlerFunc old_handler = error_handler;
-    error_handler = handler;
-    return old_handler;
+    ErrorHandlerFunc oldHandler = g_errorHandler;
+    g_errorHandler = handler;
+    return oldHandler;
 }
 
 /*! \cond internal */
@@ -105,7 +119,7 @@ void fatalError(int retcode, const char *msg, const char *file, int line)
     ErrorHandlerFunc handler = NULL;
     {
         tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
-        handler = error_handler;
+        handler = g_errorHandler;
     }
     if (handler != NULL)
     {

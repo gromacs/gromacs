@@ -46,11 +46,18 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-static const real UNDEFINED = std::numeric_limits<real>::max();
-static bool isDefined(real value)
+namespace
+{
+
+//! Value used to signify that a real-valued histogram setting is not set.
+const real UNDEFINED = std::numeric_limits<real>::max();
+//! Checks whether \p value is defined.
+bool isDefined(real value)
 {
     return value != UNDEFINED;
 }
+
+} // namespace
 
 namespace gmx
 {

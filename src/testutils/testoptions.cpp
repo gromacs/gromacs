@@ -57,7 +57,13 @@
 #include "refdata.h"
 #include "testexceptions.h"
 
-static boost::scoped_ptr<std::vector<std::string> > s_commandLine;
+namespace
+{
+
+//! Stored command line for gmx::test::parseTestOptions().
+boost::scoped_ptr<std::vector<std::string> > s_commandLine;
+
+} // namespace
 
 namespace gmx
 {

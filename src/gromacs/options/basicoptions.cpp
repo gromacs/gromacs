@@ -50,8 +50,24 @@
 
 #include "basicoptionstorage.h"
 
-template <typename T> static
-void expandVector(size_t length, std::vector<T> *values)
+namespace
+{
+
+/*! \brief
+ * Expands a single value to a vector by copying the value.
+ *
+ * \tparam        ValueType  Type of values to process.
+ * \param[in]     length     Length of the resulting vector.
+ * \param[in,out] values     Values to process.
+ * \throws   std::bad_alloc    if out of memory.
+ * \throws   InvalidInputError if \p values has an invalid number of values.
+ *
+ * \p values should have 0, 1, or \p length values.
+ * If \p values has 1 value, it is expanded such that it has \p length
+ * identical values.  In other valid cases, nothing is done.
+ */
+template <typename ValueType>
+void expandVector(size_t length, std::vector<ValueType> *values)
 {
     if (length > 0 && values->size() > 0 && values->size() != length)
     {
@@ -60,10 +76,12 @@ void expandVector(size_t length, std::vector<T> *values)
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
                       "Expected 1 or %d values, got %d", length, values->size())));
         }
-        const T &value = (*values)[0];
+        const ValueType &value = (*values)[0];
         values->resize(length, value);
     }
 }
+
+} // namespace
 
 namespace gmx
 {

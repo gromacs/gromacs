@@ -197,7 +197,7 @@ extern "C"
 
 
 
-/* System mutex used for locking to guarantee atomicity */
+/** System mutex used for locking to guarantee atomicity */
 static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 /** Atomic operations datatype
