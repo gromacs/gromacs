@@ -207,6 +207,18 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   set_warning_line(wi,mdparin,-1);
 
   /* BASIC CUT-OFF STUFF */
+  if (ir->rcoulomb < 0)
+  {
+      warning_error(wi,"rcoulomb should be >= 0");
+  }
+  if (ir->rvdw < 0)
+  {
+      warning_error(wi,"rvdw should be >= 0");
+  }
+  if (ir->rlist < 0)
+  {
+      warning_error(wi,"rlist should be >= 0");
+  }
   if (ir->rlist == 0 ||
       !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
         (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist))) {
@@ -1407,7 +1419,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("pbc",         ir->ePBC,       epbc_names);
   EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
   CTYPE ("nblist cut-off");
-  RTYPE ("rlist",	ir->rlist,	1.0);
+  RTYPE ("rlist",	ir->rlist,	-1);
   CTYPE ("long-range cut-off for switched potentials");
   RTYPE ("rlistlong",	ir->rlistlong,	-1);
 
@@ -1417,7 +1429,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("coulombtype",	ir->coulombtype,    eel_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rcoulomb-switch",	ir->rcoulomb_switch,	0.0);
-  RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
+  RTYPE ("rcoulomb",	ir->rcoulomb,	-1);
   CTYPE ("Relative dielectric constant for the medium and the reaction field");
   RTYPE ("epsilon-r",   ir->epsilon_r,  1.0);
   RTYPE ("epsilon-rf",  ir->epsilon_rf, 0.0);
@@ -1425,7 +1437,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("vdw-type",	ir->vdwtype,    evdw_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rvdw-switch",	ir->rvdw_switch,	0.0);
-  RTYPE ("rvdw",	ir->rvdw,	1.0);
+  RTYPE ("rvdw",	ir->rvdw,	-1);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("DispCorr",    ir->eDispCorr,  edispc_names);
   CTYPE ("Extension of the potential lookup tables beyond the cut-off");
