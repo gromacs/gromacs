@@ -36,9 +36,6 @@
 #ifndef _fatal_collective_h
 #define _fatal_collective_h
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <errno.h>
 #include "types/simple.h"
 #include "types/commrec.h"
 
