@@ -24,7 +24,7 @@ add_library(gmxana
             gmx_clustsize.c gmx_mdmat.c     gmx_wham.cpp
             correl.c        gmx_sham.c      gmx_nmtraj.c    
             gmx_trjconv.c   gmx_trjcat.c    gmx_trjorder.c  gmx_xpm2ps.c    
-            gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
+            gmx_editconf.c  gmx_genbox.cpp    gmx_genion.c    gmx_genconf.c
             gmx_genpr.c     gmx_eneconv.c   gmx_vanhove.c   gmx_wheel.c     
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
             gmx_pme_error.c gmx_options.c   gmx_dos.c
