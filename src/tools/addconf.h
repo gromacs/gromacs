@@ -34,6 +34,10 @@
  */
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern 
 void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew, 
 	      int ePBC, matrix box, gmx_bool bInsert,
@@ -45,3 +49,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
  * that are within rshell distance.
  * If max_sol > 0, add max max_sol solvent molecules.
  */
+
+#ifdef __cplusplus
+}
+#endif
