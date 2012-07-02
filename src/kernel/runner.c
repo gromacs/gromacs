@@ -809,7 +809,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
         {
             gmx_fatal_collective(FARGS,cr,NULL,
-                                 "The Verlet cut-off scheme is not supported with domain decomposition");
+                                 "The Verlet cut-off scheme is not supported with particle decomposition");
         }
 
         /* now broadcast everything to the non-master nodes/threads: */
@@ -1333,7 +1333,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                nthreads_pp, 
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
-    if (cr->duty & DUTY_PP && fr->nbv != NULL && fr->nbv->useGPU)
+    if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->useGPU)
     {
         int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
 

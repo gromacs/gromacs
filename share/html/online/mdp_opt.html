@@ -500,12 +500,13 @@ Note that the generated buffer size takes into account that
 the GROMACS pair-list setup leads a reduction of the drift of
 a factor 10 compared to a simple particle-pair based list.
 Without dynamics (energy minimization etc.) the buffer is 5% of the cut-off.
-Use <b>verlet-buffer-drift</b>=-1 for dynamics without temperature coupling
-or to override  the buffer size.</dd>
+Dor dynamics without temperature coupling or to override the buffer size,
+use <b>verlet-buffer-drift</b>=-1 and set <b>rlist</b> manually.</dd>
 
 <dt><b>rlist: (1) [nm]</b></dt>
 <dd>Cut-off distance for the short-range neighbor list.
-With <b>cutoff-scheme</b>=<b>Verlet</b> this is by default set by the <b>verlet-buffer-drift</b> option.</dd>
+With <b>cutoff-scheme</b>=<b>Verlet</b> this is by default set by the
+<b>verlet-buffer-drift</b> option and the value of <b>rlist</b> is ignored.</dd>
 
 <dt><b>rlistlong: (-1) [nm]</b></dt>
 <dd>Cut-off distance for the long-range neighbor list.

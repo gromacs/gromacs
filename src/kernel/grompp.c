@@ -1576,7 +1576,7 @@ int main (int argc, char *argv[])
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0)
     {
         if (EI_DYNAMICS(ir->eI) &&
-            !(EI_MD(ir->eI==eiMD) && ir->etc!=etcNO) &&
+            !(EI_MD(ir->eI) && ir->etc==etcNO) &&
             inputrec2nboundeddim(ir) == 3)
         {
             set_verlet_buffer(sys,ir,state.box,ir->verletbuf_drift,wi);
