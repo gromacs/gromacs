@@ -118,6 +118,8 @@ static int get_mol_id(int at, gmx_mtop_t  *mtop, int *type, int *block)
     }
     *type = mtop->molblock[*block].type;
 
+    gmx_mtop_atomlookup_destroy(alook);
+
     return mol_id;
 }
 
