@@ -11,6 +11,10 @@ project(Gromacs)
 include(Dart)
 mark_as_advanced(DART_ROOT)
 
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # PROJECT_VERSION should have the following structure: 
 # VERSION-dev[-SUFFIX] where the VERSION should have the for: vMajor.vMinor.vPatch
 #
