@@ -236,20 +236,31 @@ static void do_update_md(int start,int nrend,double dt,
         /* Plain update with Berendsen/v-rescale coupling */
         for(n=start; n<nrend; n++) 
         {
-            w_dt = invmass[n]*dt;
-            if (cTC) 
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
             {
-                gt = cTC[n];
+                w_dt = invmass[n]*dt;
+                if (cTC)
+                {
+                    gt = cTC[n];
+                }
+                lg = tcstat[gt].lambda;
+
+                for(d=0; d<DIM; d++)
+                {
+                    vn           = lg*v[n][d] + f[n][d]*w_dt;
+                    v[n][d]      = vn;
+                    xprime[n][d] = x[n][d] + vn*dt;
+                }
             }
-            lg = tcstat[gt].lambda;
-          
-            for(d=0; d<DIM; d++) 
+            else
             {
-                vn           = lg*v[n][d] + f[n][d]*w_dt;
-                v[n][d]      = vn;
-                xprime[n][d] = x[n][d] + vn*dt;
-            } 
-        }  
+                for(d=0; d<DIM; d++)
+                {
+                    v[n][d]        = 0.0;
+                    xprime[n][d]   = x[n][d];
+                }
+            }
+        }
     }
 }
 
