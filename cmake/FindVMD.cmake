@@ -9,94 +9,62 @@
 #  To help us fund GROMACS development, we humbly ask that you cite
 #  the research papers on the package. Check out http://www.gromacs.org
 
-# ================================================================
-
-# This file is adapted from FindGit.cmake from CMake 2.8.5
-# That file is copyright and redistribution outside
-# CMake requires the following license statement.
-
-# ================================================================
-
-# CMake - Cross Platform Makefile Generator
-# Copyright 2000-2009 Kitware, Inc., Insight Software Consortium
-# All rights reserved.
-
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-
-# * Redistributions of source code must retain the above copyright
-#   notice, this list of conditions and the following disclaimer.
-
-# * Redistributions in binary form must reproduce the above copyright
-#   notice, this list of conditions and the following disclaimer in the
-#   documentation and/or other materials provided with the distribution.
-
-# * Neither the names of Kitware, Inc., the Insight Software Consortium,
-#   nor the names of their contributors may be used to endorse or promote
-#   products derived from this software without specific prior written
-#   permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-# ------------------------------------------------------------------------------
-
-# The above copyright and license notice applies to distributions of
-# CMake in source and binary form.  Some source files contain additional
-# notices of original copyright by their contributors; see each source
-# for details.  Third-party software packages supplied with CMake under
-# compatible licenses provide their own copyright notices documented in
-# corresponding subdirectories.
-
-# ------------------------------------------------------------------------------
-
-# CMake was initially developed by Kitware with the following sponsorship:
-
-#  * National Library of Medicine at the National Institutes of Health
-#    as part of the Insight Segmentation and Registration Toolkit (ITK).
-
-#  * US National Labs (Los Alamos, Livermore, Sandia) ASC Parallel
-#    Visualization Initiative.
-
-#  * National Alliance for Medical Image Computing (NAMIC) is funded by the
-#    National Institutes of Health through the NIH Roadmap for Medical Research,
-#    Grant U54 EB005149.
-
-#  * Kitware, Inc.
-
-# ================================================================
 
 # The module defines the following variables:
 #   VMD_EXECUTABLE - path to vmd command
-#   VMD_FOUND - true if the command was found
-# Example usage:
-#   find_package(VMD)
-#   if(VMD_FOUND)
-#     message("vmd found: ${VMD_EXECUTABLE}")
-#   endif()
+#   GMX_VMD_PLUGIN_PATH - path to vmd plugins
 
-set(vmd_names vmd)
+message(STATUS "Checking for suitable VMD version")
+find_program(VMD_EXECUTABLE NAMES vmd PATH_SUFFIXES bin 
+    DOC "VMD command")
 
-find_program(VMD_EXECUTABLE
-  NAMES ${vmd_names}
-  PATHS ENV VMDDIR
-  PATH_SUFFIXES bin # I guess this allows for OS-independence
-  DOC "VMD command"
-  )
-mark_as_advanced(VMD_EXECUTABLE)
+#set search path in increasing priority:
+# default path, vmd binary path, enviroment variable    
+set(VMD_PATHS "/usr/local/lib/vmd/plugins/*/molfile/")
+if(VMD_EXECUTABLE)
+    file(STRINGS "${VMD_EXECUTABLE}" VMDDIR REGEX "^defaultvmddir=.*$")
+    message(STATUS "${VMD_EXECTUABLE}")
+    string(REGEX REPLACE "(^.*=\"?|\"$)" "" VMDDIR "${VMDDIR}") 
+    list(INSERT VMD_PATHS 0 "${VMDDIR}/plugins/*/molfile/")
+endif()
+if(NOT "$ENV{VMDDIR}" STREQUAL "")
+    list(INSERT VMD_PATHS 0 "$ENV{VMDDIR}/plugins/*/molfile/")
+endif()
 
-# Handle the QUIETLY and REQUIRED arguments and set VMD_FOUND to TRUE if
-# all listed variables are TRUE
+#xyz is just an example. Any other molfile plugin could be used. 
+#But some require extra link flags.
+find_library(VMDXYZPLUGIN NAME "xyzplugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
+    PATHS ${VMD_PATHS})
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(VMD DEFAULT_MSG VMD_EXECUTABLE)
+if (VMDXYZPLUGIN)
+    try_run(TESTVMD TESTVMD_COMPILED ${CMAKE_BINARY_DIR} 
+        "${CMAKE_SOURCE_DIR}/cmake/TestVMD.c" 
+        CMAKE_FLAGS "-DLINK_LIBRARIES=${CMAKE_DL_LIBS}" 
+            "-DINCLUDE_DIRECTORIES=${CMAKE_SOURCE_DIR}/src/gmxlib"
+        COMPILE_DEFINITIONS "-DGMX_USE_PLUGINS"
+        RUN_OUTPUT_VARIABLE TESTVMD_OUTPUT ARGS ${VMDXYZPLUGIN})
+endif()
+
+if(NOT TESTVMD EQUAL 0)
+    if (NOT VMDXYZPLUGIN)
+        message(STATUS "VMD plugins not found")
+    elseif(NOT TESTVMD_COMPILED)
+        message(STATUS "Could not compile VMD version check")
+    elseif(TESTVMD EQUAL 1)
+        message(STATUS "Could not load VMD plugin {VMDXYZPLUGIN}: ${TESTVMD_OUTPUT}")
+    elseif(TESTVMD EQUAL 5)
+        message(STATUS "VMD plugin {VMDXYZPLUGIN} too old. VMD 1.8.6 required.")
+    else()
+        message(STATUS "Could not identify VMD version of {VMDXYZPLUGIN}. Error: ${TESTVMD}")
+    endif()
+    # This permits GROMACS to avoid hard-coding a fall-back path.
+    # Fall-back is useful in case VMD is installed later.
+    set(GMX_VMD_PLUGIN_PATH "/usr/local/lib/vmd/plugins/*/molfile" 
+        CACHE PATH "Path to VMD plugins for molfile I/O" FORCE)
+else()
+    get_filename_component(VMD_PLUGIN_PATH ${VMDXYZPLUGIN} PATH)
+    message(STATUS "VMD version of ${VMD_PLUGIN_PATH} is suitable")
+    set(GMX_VMD_PLUGIN_PATH ${VMD_PLUGIN_PATH}
+        CACHE PATH "Path to VMD plugins for molfile I/O" FORCE)
+endif()
+mark_as_advanced(GMX_VMD_PLUGIN_PATH)
