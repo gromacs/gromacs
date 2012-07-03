@@ -123,7 +123,7 @@ static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdpl
     }
 
     ifunc = vmddlsym(handle, "vmdplugin_init");
-    if (ifunc && ((initfunc)(ifunc))()) {
+    if (!ifunc || ((initfunc)(ifunc))()) {
         printf("\nvmdplugin_init() for %s returned an error; plugin(s) not loaded.\n", fullpath);
         vmddlclose(handle);
         return 0;
