@@ -37,7 +37,14 @@
 
 #include "gmx_fatal.h"
 #include "smalloc.h"
-
+/* FIXME get rid of this dirty hack which is here just to avoid pulling in mpi.h */
+#define _fcdata_h
+#define _iteratedconstraints_h
+#define _ifunc_h
+#include "typedefs.h"
+#undef  _fcdata_h
+#undef  _iteratedconstraints_h
+#undef  _ifunc_h
 #include "cuda.h"
 #include "cudautils.cuh"
 
@@ -290,7 +297,7 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
             cu_free_buffered(*d_dest, curr_size, curr_alloc_size);
         }
 
-        *curr_alloc_size = 1.2 * req_size + 100;
+        *curr_alloc_size = over_alloc_large(req_size);
 
         stat = cudaMalloc(d_dest, *curr_alloc_size * type_size);
         CU_RET_ERR(stat, "cudaMalloc failed in cu_free_buffered");

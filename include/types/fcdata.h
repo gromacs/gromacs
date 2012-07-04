@@ -32,6 +32,8 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _fcdata_h
+#define _fcdata_h
 
 #include "commrec.h"
 
@@ -117,3 +119,4 @@ typedef struct {
 }
 #endif
 
+#endif /* _fcdata_h */

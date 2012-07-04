@@ -40,12 +40,17 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "tables.h"
+/* FIXME get rid of this dirty hack which is here just to avoid pulling in mpi.h */
+#define _fcdata_h
+#define _iteratedconstraints_h
+#define _ifunc_h
+#include "typedefs.h"
+#undef  _fcdata_h
+#undef  _iteratedconstraints_h
+#undef  _ifunc_h
 #include "types/nb_verlet.h"
 #include "types/interaction_const.h"
-#include "types/ishift.h"
-#include "types/enums.h"
 #include "types/force_flags.h"
-
 
 #include "nbnxn_cuda_types.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
@@ -630,7 +635,6 @@ void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb, int flags)
     }
 }
 
-/* TODO: add gmx over_alloc call */
 void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
                               const nbnxn_atomdata_t *nbat)
 {
@@ -654,10 +658,9 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
 
     /* need to reallocate if we have to copy more atoms than the amount of space
        available and only allocate if we haven't initilzed yet, i.e d_atdat->natoms == -1 */
-    /* Add one element to f for possible signalling */
     if (natoms + 1 > d_atdat->nalloc)
     {
-        nalloc = (natoms + 1) * 1.2 + 100;
+        nalloc = over_alloc_small(natoms);
     
         /* free up first if the arrays have already been initialized */
         if (d_atdat->nalloc != -1)
@@ -667,8 +670,8 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
             cu_free_buffered(d_atdat->atom_types);
         }
         
-        /* Add one element for possible signalling */
-        stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
+        /* Add one element to f for polling-based wait */
+        stat = cudaMalloc((void **)&d_atdat->f, (nalloc + 1)*sizeof(*d_atdat->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
         stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->xq");
