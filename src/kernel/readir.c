@@ -978,23 +978,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning(wi,"Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
   }
 
-  /* ENERGY CONSERVATION */
-  if (ir_NVE(ir))
-  {
-      if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
-      {
-          sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-                  evdw_names[evdwSHIFT]);
-          warning_note(wi,warn_buf);
-      }
-      if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)
-      {
-          sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
-                  eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
-          warning_note(wi,warn_buf);
-      }
-  }
-
     /* ENERGY CONSERVATION */
     if (ir_NVE(ir) && ir->cutoff_scheme == ecutsGROUP)
     {
