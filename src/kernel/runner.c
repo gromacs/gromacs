@@ -802,7 +802,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             init_titration(fplog,forcefield,cr,mtop,inputrec,fr,state->box,mdatoms);
         }
     }
-
+    if (NULL != debug)
+        for(i=0; (i<6); i++)
+            fprintf(debug,"Atom %d q = %g\n",i,mdatoms->chargeA[i]);
+        
     if (cr->duty & DUTY_PP)
     {
         if (inputrec->ePull != epullNO)

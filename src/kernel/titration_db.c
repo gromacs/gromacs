@@ -40,6 +40,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "gmx_fatal.h"
+#include "fflibutil.h"
 #include "futil.h"
 #include "symtab.h"
 #include "hackblock.h"
@@ -579,7 +580,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
             '\0' : forcefield[i];
     }
   
-    sprintf(buf,"%s.ff/titration.dat",forcefield, buf2);
+    sprintf(buf,"%s.ff/titration.dat",forcefield);
     fn = (char *)gmxlibfn(buf);
     /* Read the xml data file */
     qdb = qhops_read(fn);
