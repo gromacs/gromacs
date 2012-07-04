@@ -424,7 +424,7 @@ int main(int argc,char *argv[])
     { "-sym",   FALSE, etBOOL, &bSym,     "HIDDENUse symmetry for the generation of ghat function (turn off for debugging only!)" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
   
   read_params(ftp2fn(efTPX,NFILE,fnm),&ir,box);
