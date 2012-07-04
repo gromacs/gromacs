@@ -55,9 +55,6 @@
 #include "physics.h"
 #include "gmx_ana.h"
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_multimin.h>
-
 enum { epAuf, epEuf, epAfu, epEfu, epNR };
 enum { eqAif, eqEif, eqAfi, eqEfi, eqAui, eqEui, eqAiu, eqEiu, eqNR };
 static char *eep[epNR] = { "Af", "Ef", "Au", "Eu" };
@@ -82,6 +79,9 @@ typedef struct {
   real *params;
   real *d2_replica;
 } t_remd_data;
+
+#ifdef HAVE_LIBGSL
+#include <gsl/gsl_multimin.h>
 
 static char *itoa(int i)
 {
@@ -664,6 +664,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
       fprintf(gp,"Chi2[%3d] = %8.2e\n",i,d->d2_replica[i]);
   }
 }
+#endif /*HAVE_LIBGSL*/
 
 int gmx_kinetics(int argc,char *argv[])
 {
@@ -779,6 +780,7 @@ int gmx_kinetics(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE | PCA_TIME_UNIT,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv); 
 
+#ifdef HAVE_LIBGSL
   please_cite(stdout,"Spoel2006d");
   if (cutoff < 0)
     gmx_fatal(FARGS,"cutoff should be >= 0 (rather than %f)",cutoff);
@@ -883,15 +885,9 @@ int gmx_kinetics(int argc,char *argv[])
   view_all(oenv, NFILE, fnm);
   
   thanx(stderr);
-  
-  return 0;
-}
-  
 #else
-int gmx_kinetics(int argc,char *argv[])
-{
   fprintf(stderr,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
+#endif /*HAVE_LIBGSL*/
   
   return 0;
 }
-#endif
