@@ -65,6 +65,7 @@ set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     add_executable(${TOOL} ${TOOL}.c)
+    gmx_add_man_page(${TOOL})
     target_link_libraries(${TOOL} gmxana)
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
