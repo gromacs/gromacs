@@ -893,6 +893,11 @@ if(GMX_LOAD_PLUGINS)
 endif(GMX_LOAD_PLUGINS)
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
+if(NOT CMAKE_CROSSCOMPILING)
+    option(GMX_BUILD_MANPAGES "Build man pages" ON)
+endif()
+mark_as_advanced(GMX_BUILD_MANPAGES)
+
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
     list(APPEND	GMX_EXTRA_LIBRARIES m)

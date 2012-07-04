@@ -1307,7 +1307,7 @@ int main (int argc, char *argv[])
       "Renumber atomtypes and minimize number of atomtypes" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   
   /* Initiate some variables */
   snew(ir,1);
