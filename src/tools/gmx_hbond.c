@@ -3221,7 +3221,7 @@ int gmx_hbond(int argc,char *argv[])
     t_gemParams *params=NULL;
     gmx_bool    bEdge_yjj, bEdge_xjj;
     
-    CopyRight(stdout,argv[0]);
+    CopyRight(stderr,argv[0]);
 
     npargs = asize(pa);  
     ppa    = add_acf_pargs(&npargs,pa);
