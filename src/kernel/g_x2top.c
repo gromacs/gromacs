@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
       "Dihedral angle force constant (kJ/mol/rad^2)" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs,&oenv);
