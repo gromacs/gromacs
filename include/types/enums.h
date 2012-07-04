@@ -33,6 +33,9 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
+#ifndef ENUMS_H_
+#define ENUMS_H_
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -337,3 +340,4 @@ enum {
 }
 #endif
 
+#endif /* ENUMS_H_ */
