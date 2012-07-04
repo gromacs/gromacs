@@ -64,39 +64,20 @@ else(GMX_FAHCORE)
 
 list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess md)
 
-add_executable(grompp grompp.c)
-target_link_libraries(grompp ${GMX_EXTRA_LIBRARIES})
-set_target_properties(grompp PROPERTIES OUTPUT_NAME "grompp${GMX_BINARY_SUFFIX}")
+set(GMX_KERNEL_PROGRAMS
+    grompp tpbconv pdb2gmx g_protonate g_luck gmxdump g_x2top gmxcheck)
 
-add_executable(tpbconv tpbconv.c)
-target_link_libraries(tpbconv ${GMX_EXTRA_LIBRARIES})
-set_target_properties(tpbconv PROPERTIES OUTPUT_NAME "tpbconv${GMX_BINARY_SUFFIX}")
-
-add_executable(pdb2gmx pdb2gmx.c)
-target_link_libraries(pdb2gmx ${GMX_EXTRA_LIBRARIES})
-set_target_properties(pdb2gmx PROPERTIES OUTPUT_NAME "pdb2gmx${GMX_BINARY_SUFFIX}")
-
-add_executable(g_protonate g_protonate.c)
-target_link_libraries(g_protonate ${GMX_EXTRA_LIBRARIES})
-set_target_properties(g_protonate PROPERTIES OUTPUT_NAME "g_protonate${GMX_BINARY_SUFFIX}")
-
-add_executable(g_luck g_luck.c)
-target_link_libraries(g_luck ${GMX_EXTRA_LIBRARIES})
-set_target_properties(g_luck PROPERTIES OUTPUT_NAME "g_luck${GMX_BINARY_SUFFIX}")
-
-add_executable(gmxdump gmxdump.c)
-target_link_libraries(gmxdump ${GMX_EXTRA_LIBRARIES})
-set_target_properties(gmxdump PROPERTIES OUTPUT_NAME "gmxdump${GMX_BINARY_SUFFIX}")
-
-add_executable(g_x2top g_x2top.c)
-target_link_libraries(g_x2top ${GMX_EXTRA_LIBRARIES})
-set_target_properties(g_x2top PROPERTIES OUTPUT_NAME "g_x2top${GMX_BINARY_SUFFIX}")
-
-add_executable(gmxcheck gmxcheck.c)
-target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
-set_target_properties(gmxcheck PROPERTIES OUTPUT_NAME "gmxcheck${GMX_BINARY_SUFFIX}")
+foreach(PROGRAM ${GMX_KERNEL_PROGRAMS})
+    add_executable(${PROGRAM} ${PROGRAM}.c)
+    if (NOT ${PROGRAM} STREQUAL "g_luck")
+        gmx_add_man_page(${PROGRAM})
+    endif()
+    target_link_libraries(${PROGRAM} ${GMX_EXTRA_LIBRARIES})
+    set_target_properties(${PROGRAM} PROPERTIES OUTPUT_NAME "${PROGRAM}${GMX_BINARY_SUFFIX}")
+endforeach()
 
 add_executable(mdrun ${MDRUN_SOURCES})
+gmx_add_man_page(mdrun)
 target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
 set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}")
 
@@ -110,16 +91,7 @@ endif()
 
 install(TARGETS gmxpreprocess DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
-install(TARGETS 
-        grompp
-        tpbconv
-        pdb2gmx
-        g_protonate
-        g_luck
-        gmxdump
-        g_x2top
-        gmxcheck
-        COMPONENT runtime
+install(TARGETS ${GMX_KERNEL_PROGRAMS} COMPONENT runtime
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 # Create the custom install-mdrun target
