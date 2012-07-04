@@ -92,7 +92,7 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
 {
     int i;
     int cmdlength=0;
-    char *argvzero=NULL;
+    char *argvzero=NULL, *extpos;
 
     oenv->time_unit  = tmu;
     oenv->view=view;
@@ -107,20 +107,24 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
         assert(argvzero);
     }
     /* set program name */
-    /* When you run a dynamically linked program before installing
-     * it, libtool uses wrapper scripts and prefixes the name with "lt-".
-     * Until libtool is fixed to set argv[0] right, rip away the prefix:
-     */
     if (argvzero)
     {
-        if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
-            oenv->program_name=strdup(argvzero+3);
+        /* if filename has file ending (e.g. .exe) then strip away */
+        extpos=strrchr(argvzero,'.');
+        if(extpos > strrchr(argvzero,DIR_SEPARATOR))
+        {
+            oenv->program_name=gmx_strndup(argvzero,extpos-argvzero);
+        }
         else
-            oenv->program_name=strdup(argvzero);
+        {
+            oenv->program_name=gmx_strdup(argvzero);
+        }
     }
     if (oenv->program_name == NULL)
-        oenv->program_name = strdup("GROMACS");
-   
+    {
+        oenv->program_name = gmx_strdup("GROMACS");
+    }
+
     /* copy command line */ 
     if (argv) 
     {
