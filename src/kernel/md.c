@@ -581,7 +581,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         fprintf(fplog,"\n");
     }
-    if (fr->bTitration)
+    if (1 || fr->bTitration)
     {
         /* Finalize titration and mdatoms, extend the topology */
         finalize_titration(fr->titration, top, mdatoms, cr);

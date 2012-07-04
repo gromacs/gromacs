@@ -168,15 +168,6 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     
     if (ir->bQMMM)
       srenew(md->bQM,md->nalloc);
-    if (ir->titration_alg != eTitrationAlgNone){
-      srenew(md->bqhopdonor,md->nalloc);
-      srenew(md->bqhopacceptor,md->nalloc);
-      for(k=md->nr; (k<md->nalloc); k++) {
-	md->bqhopdonor[k] = FALSE;
-	md->bqhopacceptor[k] = FALSE;
-      }
-    }
-    
   }
 
   for(i=0; (i<md->nr); i++) {
@@ -270,31 +261,10 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	md->bQM[i]      = FALSE;
       }
     }
-    if (ir->titration_alg != eTitrationAlgNone)
-      {
-	md->bqhopdonor[i]    = FALSE;
-	md->bqhopacceptor[i] = FALSE;
-      }
-
-/*     if (ir->bqhop){ */
-/*       gmx_fatal(FARGS, "Must fix this thing in atoms2md() where md->bqhopdonor[] and ->bqhopacceptors are set."); */
-/*       if (groups->grpnr[egcqhopdonors] == 0 ||  */
-/* 	  groups->grpnr[egcqhopdonors][ag] < groups->grps[egcqhopdonors].nr-1){ */
-/* 	fprintf(stderr,"qhop donor! (%d)\n",i); */
-/* 	md->bqhopdonor[i]      = TRUE; */
-/* 	md->bqhopacceptor[i]   = FALSE; /\* want dat kan natuurlijk niet *\/ */
-/*       }  */
-/*       else if (groups->grpnr[egcqhopacceptors] == 0 ||  */
-/* 	       groups->grpnr[egcqhopacceptors][ag]<groups->grps[egcqhopacceptors].nr-1){ */
-/* 	md->bqhopdonor[i]      = FALSE; */
-/* 	md->bqhopacceptor[i]   = TRUE; */
-/*       } */
-/*       else { */
-/* 	md->bqhopdonor[i]      = FALSE; */
-/* 	md->bqhopacceptor[i]   = FALSE; */
-/*       } */
-    /* } */
-    
+    if (NULL != md->bqhopdonor)
+      md->bqhopdonor[i]    = FALSE;
+    if (NULL != md->bqhopacceptor)
+      md->bqhopacceptor[i] = FALSE;
   }
 
   md->start  = start;

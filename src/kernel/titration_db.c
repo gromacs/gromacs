@@ -540,6 +540,9 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
     snew(stab,1);
     open_symtab(stab);
 
+    /* Note that if the default force field atomtypes do not match those in the
+     * tpr file, things may crash horribly!
+     */
     sprintf(ffdir,"%s.ff",forcefield);
     atype = read_atype(ffdir,stab);
     printf("Reading residue database... (%s)\n",forcefield);

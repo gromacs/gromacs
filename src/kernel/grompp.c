@@ -1268,7 +1268,7 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static gmx_bool bRenum=TRUE;
+  static gmx_bool bRenum=FALSE;
   static gmx_bool bRmVSBds=TRUE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
@@ -1283,8 +1283,8 @@ int main (int argc, char *argv[])
       "Number of allowed warnings during input processing. Not for normal use and may generate unstable systems" },
     { "-zero",    FALSE, etBOOL, {&bZero},
       "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
-    { "-renum",   FALSE, etBOOL, {&bRenum},
-      "Renumber atomtypes and minimize number of atomtypes" }
+    /*   { "-renum",   FALSE, etBOOL, {&bRenum},
+         "Renumber atomtypes and minimize number of atomtypes" }*/
   };
   
   CopyRight(stdout,argv[0]);

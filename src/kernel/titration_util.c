@@ -1107,13 +1107,20 @@ void set_interactions(titration_t T,
 /* Sets the bqhopdonor[] and bqhopacceptor[] arrays in a t_mdatoms. */
 static void qhop_atoms2md(t_mdatoms *md, const titration_t T)
 {
-    int i, j;
+    int i, j, k;
     t_qhop_atom *a;
     qhop_db *db;
 
     db = T->db;
 
     /* Should probably set the massT array too. */
+    srenew(md->bqhopdonor,md->nalloc);
+    srenew(md->bqhopacceptor,md->nalloc);
+    for(k=md->nr; (k<md->nalloc); k++) 
+    {
+        md->bqhopdonor[k] = FALSE;
+        md->bqhopacceptor[k] = FALSE;
+    }
 
     for (i=0; i < T->nr_qhop_atoms; i++)
     {

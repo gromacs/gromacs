@@ -3852,7 +3852,7 @@ int do_titration(FILE *fplog,
 
 /* paramStr is the string from the rtp file.
  * bts = ebtsBONDS, ..., ebtsCMAP
- * bt is the tyep found in t_rbonded.type
+ * bt is the type found in t_rbonded.type
  */
 
 static void str2bonded(const char *paramStr,
