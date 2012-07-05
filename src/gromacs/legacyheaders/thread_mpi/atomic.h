@@ -151,6 +151,7 @@ extern "C"
 #error No atomic operations implemented for this cpu/compiler combination. 
 #endif
 
+/** Indicates that no support for atomic operations is present. */
 #define TMPI_NO_ATOMICS
 
 
@@ -256,7 +257,7 @@ static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
  */
 typedef struct tMPI_Atomic
 {
-    int value;  
+    int value;  /**< The atomic value. */
 }
 tMPI_Atomic_t;
 
@@ -272,7 +273,7 @@ tMPI_Atomic_t;
 */
 typedef struct tMPI_Atomic_ptr
 {
-    void* value;  
+    void* value;  /**< The atomic pointer value. */
 }
 tMPI_Atomic_ptr_t;
 

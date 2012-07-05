@@ -71,9 +71,6 @@
 #include "futil.h"
 
 int continuing(char *s)
-/* strip trailing spaces and if s ends with a CONTINUE remove that too.
- * returns TRUE if s ends with a CONTINUE, FALSE otherwise.
- */
 {
   int sl;
   assert(s);
@@ -91,10 +88,6 @@ int continuing(char *s)
 
 
 char *fgets2(char *line, int n, FILE *stream)
-/* This routine reads a string from stream of max length n
- * and zero terminated, without newlines
- * line should be long enough (>= n)
- */
 {
   char *c;
   if (fgets(line,n,stream) == NULL) {
@@ -336,15 +329,6 @@ gmx_strndup(const char *src, int n)
     return dest;
 }
 
-/*!
- * \param[in] pattern  Pattern to match against.
- * \param[in] str      String to match.
- * \returns   0 on match, GMX_NO_WCMATCH if there is no match.
- *
- * Matches \p str against \p pattern, which may contain * and ? wildcards.
- * All other characters are matched literally.
- * Currently, it is not possible to match literal * or ?.
- */
 int
 gmx_wcmatch(const char *pattern, const char *str)
 {

@@ -54,7 +54,6 @@
 #include <errno.h>
 #include "../utility/gmx_header_config.h"
 
-/*#include "typedefs.h"*/
 #include "types/simple.h"
 
 /* Suppress Cygwin compiler warnings from using newlib version of
@@ -77,66 +76,106 @@
 extern "C" {
 #endif
 
+/** Continuation character. */
 #define CONTINUE    '\\'
+/** Comment sign to use. */
 #define COMMENTSIGN ';'
 
+/*! \brief
+ * Strip trailing spaces and if s ends with a ::CONTINUE remove that too.
+ *
+ * \returns TRUE if s ends with a CONTINUE, FALSE otherwise.
+ */
 int continuing(char *s);
 
+/*! \brief
+ * Reads a line from a stream.
+ *
+ * This routine reads a string from stream of max length n
+ * and zero terminated, without newlines.
+ * \p s should be long enough (>= \p n)
+ */
 char *fgets2(char *s, int n, FILE *stream);
 
-void strip_comment (char *line);
+/** Remove portion of a line after a ::COMMENTSIGN.  */
+void strip_comment(char *line);
 
-int break_line (char *line,
-		       char *variable,
-		       char *value);
+/** Make a string uppercase. */
+void upstring(char *str);
 
-void upstring (char *str);
+/** Remove leading whitespace from a string. */
+void ltrim(char *str);
 
-void ltrim (char *str);
+/** Remove trailing whitespace from a string. */
+void rtrim(char *str);
 
-void rtrim (char *str);
+/** Remove leading and trailing whitespace from a string. */
+void trim(char *str);
 
-void trim (char *str);
+/** Prints creation time stamp and user information into a file as comments. */
+void nice_header(FILE *out, const char *fn);
 
-void nice_header (FILE *out,const char *fn);
-
+/** Version of gmx_strcasecmp() that also ignores '-' and '_'. */
 int gmx_strcasecmp_min(const char *str1, const char *str2);
+/** Version of gmx_strncasecmp() that also ignores '-' and '_'. */
 int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
-/* This funny version of strcasecmp, is not only case-insensitive,
- * but also ignores '-' and '_'.
- */
 
+/** Case-insensitive strcmp(). */
 int gmx_strcasecmp(const char *str1, const char *str2);
+/** Case-insensitive strncmp(). */
 int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
+/** Creates a duplicate of \p src. */
 char *gmx_strdup(const char *src);
+/** Duplicates first \p n characters of \p src. */
 char *gmx_strndup(const char *src, int n);
-    
-/** Pattern matcing with wildcards. */
-int gmx_wcmatch(const char *pattern, const char *src);
+
+/*! \brief
+ * Pattern matcing with wildcards.
+ *
+ * \param[in] pattern  Pattern to match against.
+ * \param[in] str      String to match.
+ * \returns   0 on match, GMX_NO_WCMATCH if there is no match.
+ *
+ * Matches \p str against \p pattern, which may contain * and ? wildcards.
+ * All other characters are matched literally.
+ * Currently, it is not possible to match literal * or ?.
+ */
+int gmx_wcmatch(const char *pattern, const char *str);
 
 /** Return value for gmx_wcmatch() when there is no match. */
 #define GMX_NO_WCMATCH 1
 
-
-/* this is our implementation of strsep, the thread-safe replacement for
-   strtok */
+/** Our implementation of strsep, the thread-safe replacement for strtok. */
 char *gmx_strsep(char **stringp, const char *delim);
 
-
-char *wrap_lines(const char *buf,int line_width, int indent,
-			gmx_bool bIndentFirst);
-/* wraps lines at 'linewidth', indenting all following
- * lines by 'indent' spaces. A temp buffer is allocated and returned,
- * which can be disposed of if no longer needed.
- * If !bIndentFirst, then the first line will not be indented, only 
+/*! \brief
+ * Wraps lines, optionally indenting lines.
+ *
+ * Wraps lines at \p linewidth, indenting all following lines by \p indent
+ * spaces.  A temp buffer is allocated and returned, which can be disposed of
+ * if no longer needed.
+ * If \p bIndentFirst is FALSE, then the first line will not be indented, only
  * the lines that are created due to wapping.
  */
+char *wrap_lines(const char *buf,int line_width, int indent,
+                 gmx_bool bIndentFirst);
 
-
+/** Implementation of the well-known Perl function split. */
 char **split(char sep,const char *str);
-/* Implementation of the well-known Perl function split */
 
+/*! \brief
+ * Convert a string to gmx_large_int_t.
+ *
+ * This method works as the standard library function strtol(), except that it
+ * does not support different bases.
+ *
+ * \attention
+ * The following differences are present from the standard behavior:
+ *  - \p endptr cannot be NULL.
+ *  - If an overflow occurs, returns zero and \p *endptr will equal \p str.
+ *    errno is still set to ERANGE.
+ */
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 
 #ifdef GMX_NATIVE_WINDOWS
