@@ -36,15 +36,12 @@
 #ifndef _statutil_h
 #define _statutil_h
 
-#include <stdio.h>
 #include "typedefs.h"
 #include "filenm.h"
 #include "readinp.h"
-#include "wman.h"
 #include "pdbio.h"
 #include "oenv.h"
 #include "gmxfio.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,7 +87,6 @@ typedef gmx_bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
     
 /* Return the name of the program */
 const char *command_line(void);
-void set_command_line(int argc, char *argv[]);
 
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
