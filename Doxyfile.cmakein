@@ -6,6 +6,8 @@ PREDEFINED            += F77_FUNC(name,NAME)=name
 
 ENABLED_SECTIONS       = libapi internal
 INTERNAL_DOCS          = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
 HIDE_UNDOC_CLASSES     = YES
 WARN_LOGFILE           = doxygen-doc/doxygen.log
 

@@ -83,6 +83,9 @@
 #undef yytext
 #undef yyleng
 
+/*! \brief
+ * Handles initialization of method parameter token.
+ */
 static int
 init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
@@ -102,6 +105,9 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     return PARAM;
 }
 
+/*! \brief
+ * Processes a selection method token.
+ */
 static int
 init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
                   gmx_sel_lexer_t *state)
@@ -127,7 +133,9 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
                 GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported keyword type");
                 return INVALID;
         }
-    } else {
+    }
+    else
+    {
         /* Method with parameters or a modifier */
         if (method->flags & SMETH_MODIFIER)
         {

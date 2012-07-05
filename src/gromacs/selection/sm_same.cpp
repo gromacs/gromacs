@@ -179,8 +179,8 @@ static gmx_ana_selmethod_t sm_same_str = {
 
 /*!
  * \param[in]     npar  Not used (should be 2).
- * \param[in,out] param Method parameters (should point to 
- *   \ref smparams_same).
+ * \param[in,out] param Method parameters (should point to a copy of
+ *      ::smparams_same_int or ::smparams_same_str).
  * \returns Pointer to the allocated data (\ref t_methoddata_same).
  */
 static void *
@@ -260,7 +260,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
  * \param   top   Not used.
  * \param   npar  Not used (should be 2).
  * \param   param Initialized method parameters (should point to a copy of
- *      \ref smparams_same).
+ *      ::smparams_same_int or ::smparams_same_str).
  * \param   data  Pointer to \ref t_methoddata_same to initialize.
  * \returns 0 on success, -1 on failure.
  */

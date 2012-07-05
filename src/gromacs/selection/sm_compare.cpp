@@ -254,7 +254,7 @@ init_data_compare(int npar, gmx_ana_selparam_t *param)
     return data;
 }
 
-/* \brief
+/*! \brief
  * Reverses a comparison operator.
  *
  * \param[in] type  Comparison operator to reverse.
@@ -312,7 +312,7 @@ init_comparison_value(t_compare_value *val, gmx_ana_selparam_t param[2])
     return n;
 }
 
-/* \brief
+/*! \brief
  * Converts an integer value to floating point.
  *
  * \param[in]     n   Number of values in the \p val->u array.
@@ -335,7 +335,7 @@ convert_int_real(int n, t_compare_value *val)
     val->flags |= CMP_REALVAL | CMP_ALLOCREAL;
 }
 
-/* \brief
+/*! \brief
  * Converts a floating point value to integer.
  *
  * \param[in]     n      Number of values in the \p val->u array.

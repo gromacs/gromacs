@@ -43,16 +43,30 @@
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/utility/gmxassert.h"
 
-namespace gmx
+namespace
 {
 
-// These must correspond to the TimeUnit enum in the header!
-static const char *const g_timeUnits[] = {
+/*! \brief
+ * Enum values for a time unit.
+ *
+ * These must correspond to the TimeUnit enum in the header!
+ */
+const char *const g_timeUnits[] = {
     "fs", "ps", "ns", "us", "ms",  "s", NULL
 };
-static const double g_timeScaleFactors[] = {
+/*! \brief
+ * Scaling factors from each time unit to internal units (=picoseconds).
+ *
+ * These must correspond to the TimeUnit enum in the header!
+ */
+const double g_timeScaleFactors[] = {
     1e-3,    1,  1e3,  1e6,  1e9, 1e12
 };
+
+} // namespace
+
+namespace gmx
+{
 
 TimeUnitManager::TimeUnitManager()
     : timeUnit_(eTimeUnit_ps)
