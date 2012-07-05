@@ -212,10 +212,12 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
         if (imask)
 #endif
         {
-            /* Unrolling this loop with pruning leads to register spilling.
-               Unrolling this loop on Kepler is much slower.
-               Both tested with nvcc at least up to 5.0.7 */
-#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300
+            /* Unrolling this loop
+               - with pruning leads to register spilling;
+               - on Kepler is much slower;
+               - doesn't work on CUDA <v4.1
+               Tested with nvcc 3.2 - 5.0.7 */
+#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300 && CUDA_VERSION >= 4010
 #pragma unroll 4
 #endif
             for (jm = 0; jm < 4; jm++)
@@ -237,8 +239,11 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
 
                     fcj_buf = make_float3(0.0f);
 
+                    /* The PME and RF kernels don't unroll with CUDA <v4.1. */
+#if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && (defined EL_EWALD || defined EL_RF))
 #pragma unroll 8
-                    for(i=0; i<NSUBCELL; i++)
+#endif
+                    for(i = 0; i < NSUBCELL; i++)
                     {
                         if (imask & mask_ji)
                         {
