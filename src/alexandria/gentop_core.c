@@ -126,9 +126,9 @@ void mv_plists(gmx_poldata_t pd,t_params plist[],gmx_bool bForward)
 
 static void detect_rings(t_params *bonds,int natom,gmx_bool bRing[])
 {
-    /* Check for 4,5,6 rings.
+    /* Check for 4,5,6,7,8 rings.
      */
-    int j,k,l,m,n,o,a1,a2,a3,a4,a5,a6,a7;
+    int j,k,l,m,n,o,p,q,a1,a2,a3,a4,a5,a6,a7,a8,a9;
     
     for(j=0; (j<natom); j++) 
         bRing[j] = FALSE;
@@ -185,10 +185,42 @@ static void detect_rings(t_params *bonds,int natom,gmx_bool bRing[])
                                                                 a7 = bonds->param[o].a[1];
                                                             else if (bonds->param[o].a[1] == a6)
                                                                 a7 = bonds->param[o].a[0];
-                                                            if (a7 == a1) {
-                                                                /* 6-ring */
-                                                                bRing[a1] = bRing[a2] = bRing[a3] = 
-                                                                    bRing[a4] = bRing[a5] = bRing[a6] = TRUE;
+                                                            if ((a7 != NOTSET) && (a7 != a5)) {
+                                                                if (a7 == a1) {
+                                                                    /* 6-ring */
+                                                                    bRing[a1] = bRing[a2] = bRing[a3] = 
+                                                                        bRing[a4] = bRing[a5] = bRing[a6] = TRUE;
+                                                                }
+                                                                else  {
+                                                                    for(p=0; (p<bonds->nr); p++) {
+                                                                        a8 = NOTSET;
+                                                                        if (bonds->param[p].a[0] == a7)
+                                                                            a8 = bonds->param[p].a[1];
+                                                                        else if (bonds->param[p].a[1] == a7)
+                                                                            a8 = bonds->param[p].a[0];
+                                                                        if ((a8 != NOTSET) && (a8 != a6)) {
+                                                                            if (a8 == a1) {
+                                                                                /* 7-ring */
+                                                                                bRing[a1] = bRing[a2] = bRing[a3] = 
+                                                                                    bRing[a4] = bRing[a5] = bRing[a6] = bRing[a7] = TRUE;
+                                                                            }
+                                                                            else  {
+                                                                                for(q=0; (q<bonds->nr); q++) {
+                                                                                    a9 = NOTSET;
+                                                                                    if (bonds->param[q].a[0] == a8)
+                                                                                        a9 = bonds->param[q].a[1];
+                                                                                    else if (bonds->param[q].a[1] == a8)
+                                                                                        a9 = bonds->param[q].a[0];
+                                                                                    if (a9 == a1) {
+                                                                                        /* 8-ring */
+                                                                                        bRing[a1] = bRing[a2] = bRing[a3] = 
+                                                                                            bRing[a4] = bRing[a5] = bRing[a6] = bRing[a7] = bRing[a8] = TRUE;
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }

@@ -266,7 +266,7 @@ static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms
         if (1 == gmx_poldata_search_bond(pd,
                                          *atoms->atomtype[plist[ft].param[j].a[0]],
                                          *atoms->atomtype[plist[ft].param[j].a[1]],
-                                         &xx,&sx,&bo,&params)) {
+                                         &xx,&sx,NULL,&bo,&params)) {
             ptr = split(' ',params);
             n = 0;
             while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
@@ -280,10 +280,10 @@ static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms
     ft = gmx_poldata_get_angle_ftype(pd);
     for(j=0; (j<plist[ft].nr); j++) {
         if (1 == gmx_poldata_search_angle(pd,
-                                             *atoms->atomtype[plist[ft].param[j].a[0]],
-                                             *atoms->atomtype[plist[ft].param[j].a[1]],
-                                             *atoms->atomtype[plist[ft].param[j].a[2]],
-                                             &xx,&sx,&params)) {
+                                          *atoms->atomtype[plist[ft].param[j].a[0]],
+                                          *atoms->atomtype[plist[ft].param[j].a[1]],
+                                          *atoms->atomtype[plist[ft].param[j].a[2]],
+                                          &xx,&sx,NULL,&params)) {
             ptr = split(' ',params);
             n = 0;
             while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
@@ -302,7 +302,7 @@ static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms
                                                  *atoms->atomtype[plist[ft].param[j].a[1]],
                                                  *atoms->atomtype[plist[ft].param[j].a[2]],
                                                  *atoms->atomtype[plist[ft].param[j].a[3]],
-                                                 &xx,&sx,&params)) {
+                                                 &xx,&sx,NULL,&params)) {
                 ptr = split(' ',params);
                 n = 0;
                 while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
@@ -406,6 +406,7 @@ int main(int argc, char *argv[])
         { efDAT, "-q",    "qout", ffOPTWR },
         { efDAT, "-x",    "mol",  ffOPTWR },
         { efDAT, "-mpdb", "molprops", ffOPTRD },
+        { efDAT, "-d",    "gentop", ffOPTRD },
         { efCUB, "-pot",  "potential", ffOPTWR },
         { efCUB, "-ref",  "refpot", ffOPTRD },
         { efCUB, "-diff", "diffpot", ffOPTWR },
@@ -571,9 +572,12 @@ int main(int argc, char *argv[])
     {
         gmx_fatal(FARGS,"Empty forcefield string");
     }
-    sprintf(gentopdat,"%s/gentop.dat",ffdir);
-    printf("\nUsing the %s force field file %s\n\n",
-           ffname,gentopdat);
+    if ( 0 ) 
+    {
+        sprintf(gentopdat,"%s/gentop.dat",ffdir);
+        printf("\nUsing the %s force field file %s\n\n",
+               ffname,gentopdat);
+    }
     
     /* Check the options */
     bRTP = opt2bSet("-r",NFILE,fnm);
@@ -600,7 +604,7 @@ int main(int argc, char *argv[])
     aps = gmx_atomprop_init();
   
     /* Read polarization stuff */
-    if ((pd = gmx_poldata_read(gentopdat,aps)) == NULL)
+    if ((pd = gmx_poldata_read(opt2fn_null("-d",NFILE,fnm),aps)) == NULL)
         gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
     if (bVerbose)
         printf("Reading force field information. There are %d atomtypes.\n",

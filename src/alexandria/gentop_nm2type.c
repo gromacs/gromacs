@@ -50,6 +50,7 @@
 #include "confio.h"
 #include "symtab.h"
 #include "physics.h"
+#include "names.h"
 #include "statutil.h"
 #include "vec.h"
 #include "random.h"
@@ -63,8 +64,8 @@
 #include "gentop_nm2type.h"
 #include "gentop_vsite.h"
 
-enum { egmLinear, egmPlanar, egmRingPlanar, egmTetrahedral, egmNR };
-static const char *geoms[egmNR] = { "linear", "planar", "ring-planar", "tetrahedral" };
+enum { egmLinear, egmPlanar, egmTetrahedral, egmNR };
+static const char *geoms[egmNR] = { "linear", "planar", "tetrahedral" };
 
 static gmx_bool is_planar(rvec xi,rvec xj,rvec xk,rvec xl,t_pbc *pbc,
                       real phi_toler)
@@ -91,12 +92,13 @@ static gmx_bool is_linear(rvec xi,rvec xj,rvec xk,t_pbc *pbc,
 }
 
 typedef struct {
-    int    nb,geom,atomnr,nat,myat,nn;
-    int    *bbb;
-    double nbo;
-    double *valence;
-    char   *elem,*aname;
-    char   **nb_hybrid,**at_ptr,**tp;
+    int      nb,geom,conf,atomnr,nat,myat,nn;
+    int      *bbb;
+    int      iAromatic;
+    double   nbo;
+    double   *valence;
+    char     *elem,*aname;
+    char     **nb_hybrid,**at_ptr,**tp;
 } t_atsel;
 
 static void calc_bondorder(FILE *fp,
@@ -142,12 +144,59 @@ static void calc_bondorder(FILE *fp,
     }
 }
 
+static void check_rings(FILE *fp,const char *molname,int natoms,t_atsel ats[])
+{
+    int iter,nra,nrp,i,k,bbk;
+    
+    for(iter=0; (iter<4); iter++)
+    {
+        nra = 0;
+        for(i=0; (i<natoms); i++) {
+            if ((ats[i].nb == 2) && (ats[i].iAromatic > 0)) 
+            {
+                ats[i].iAromatic = ((0 < ats[ats[i].bbb[0]].iAromatic) && 
+                                    (0 < ats[ats[i].bbb[1]].iAromatic));
+            }
+            else if ((ats[i].nb == 3) && (ats[i].geom == egmPlanar))
+            {
+                /* If two of three neighbors are in an aromatic ring, I am too */
+                nrp = 0;
+                for(k=0; (k<3); k++) 
+                {
+                    bbk = ats[i].bbb[k];
+                    if ((ats[bbk].geom == egmPlanar) &&
+                        (0 < ats[bbk].iAromatic))
+                        nrp++;
+                }
+                if (nrp < 2) 
+                {
+                    ats[i].geom = egmPlanar;
+                    ats[i].iAromatic = 0;
+                }
+            }
+            if ((ats[i].geom == egmPlanar)  && (ats[i].iAromatic > 0))
+                nra++;
+        }
+    }
+    if (fp)
+    {
+        fprintf(fp,"There are %d atoms in ring structures in %s.\n",
+                nra,molname);
+        for(i=0; (i<natoms); i++)
+        {
+            fprintf(fp,"%d - geometry = %s (atom %s with %d bonds) iAromatic = %d\n",
+                    i+1,geoms[ats[i].geom],ats[i].aname,ats[i].nb,
+                    ats[i].iAromatic);
+        }
+    }
+}
+
 static double minimize_valence(FILE *fp,
                                int natoms,t_atsel ats[],const char *molname,
                                t_params *bonds,gmx_poldata_t pd,
                                double bondorder[])
 {
-    int    iter,iter2,maxiter=10;
+    int    iter,iter2,maxiter=10,iAroma;
     int    i,j,ai,aj,ntot,j_best,jjj,nnull;
     double valence,ddval,dval,dval_best;
     char   buf[1024],b2[64];
@@ -155,6 +204,7 @@ static double minimize_valence(FILE *fp,
     dval_best = natoms*4;
     for(iter=0; (iter<maxiter) && (dval_best > 0); iter++) 
     {
+        check_rings(fp,molname,natoms,ats);
         nnull = 1;
         for(iter2=0; (iter2<maxiter) && (nnull > 0); iter2++)
         {
@@ -169,10 +219,11 @@ static double minimize_valence(FILE *fp,
                     else
                         ats[i].nb_hybrid[j] = ats[aj].elem;
                 }
-                
-                ats[i].at_ptr = gmx_poldata_get_atoms(pd,ats[i].elem,ats[i].nb,
-                                                      ats[i].nb_hybrid,
-                                                      geoms[ats[i].geom]);
+                iAroma = (iter == 0) ? -1 : ats[i].iAromatic;
+                ats[i].at_ptr = gmx_poldata_get_bonding_rules(pd,ats[i].elem,ats[i].nb,
+                                                              ats[i].nb_hybrid,
+                                                              geoms[ats[i].geom],
+                                                              iAroma);
                 if ((NULL == ats[i].at_ptr) || (NULL == ats[i].at_ptr[0]))
                     nnull++;
             }
@@ -180,8 +231,9 @@ static double minimize_valence(FILE *fp,
         
         if (0 < nnull)
         {
-            fprintf(stderr,"Could not find bonding rules to describe all atoms in %s\n",
-                    molname);
+            if (NULL != fp)
+                fprintf(fp,"Could not find bonding rules to describe all atoms in %s\n",
+                        molname);
             return 1;
         }
         /* Select the first possible type */
@@ -193,7 +245,7 @@ static double minimize_valence(FILE *fp,
             {
                 srenew(ats[i].tp,ats[i].nat+1);
                 ats[i].tp[ats[i].nat] = gmx_poldata_get_type(pd,ats[i].at_ptr[ats[i].nat]);
-                if (0 == gmx_poldata_type_valence(pd,ats[i].tp[ats[i].nat],&valence))
+                if (0 == gmx_poldata_bonding_rule_valence(pd,ats[i].at_ptr[ats[i].nat],&valence))
                     gmx_fatal(FARGS,"Can not find valence for %s",
                               ats[i].tp[ats[i].nat]);
                 srenew(ats[i].valence,ats[i].nat+1);
@@ -268,8 +320,9 @@ static double minimize_valence(FILE *fp,
     }
     if (0 < dval_best)
     {
-        fprintf(stderr,"Could not find suitable atomtypes for %s. Valence deviation is %g\n",
-                molname,dval_best);
+        if (NULL != fp)
+            fprintf(fp,"Could not find suitable atomtypes for %s. Valence deviation is %g\n",
+                    molname,dval_best);
     }
     return dval_best;
 }
@@ -283,7 +336,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     int     cur = 0;
 #define   prev (1-cur)
     int     i,j,k,m,n,nonebond,nresolved;
-    int     ai,aj,nnull,nra,nrp,aa[6];
+    int     ai,aj;
     int     type;
     char    *aname_m,*aname_n,*gt_type;
     char    *envptr;
@@ -291,7 +344,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     char    *empty_string = "";
     t_atsel *ats;
     double  mm,dval;
-    int     bLinear,bPlanar,imm,iter;
+    int     bLinear,bPlanar,imm,iter,bbk;
     real    value;
     t_atom  *atom;
     t_param *param;
@@ -350,13 +403,14 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
             if (NULL != gvt)
                 gentop_vsite_add_linear(gvt,ats[i].bbb[0],i,ats[i].bbb[1]);
         }
-        else if ((ats[i].nb == 3) && is_planar(x[i],x[ats[i].bbb[0]],x[ats[i].bbb[1]],x[ats[i].bbb[2]],
+        else if ((ats[i].nb == 3) && is_planar(x[i],x[ats[i].bbb[0]],
+                                               x[ats[i].bbb[1]],x[ats[i].bbb[2]],
                                                pbc,phi_toler))
         {
             if (bRing[i]) 
-                ats[i].geom = egmRingPlanar;
-            else
-                ats[i].geom = egmPlanar;
+                ats[i].iAromatic = 1;
+            
+            ats[i].geom = egmPlanar;
             if (NULL != gvt)
                 gentop_vsite_add_planar(gvt,i,ats[i].bbb[0],ats[i].bbb[1],ats[i].bbb[2],
                                         nbonds);
@@ -365,40 +419,10 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     /* Iterate geometry test to look for rings. In a six-ring the information
      * spreads in at most three steps around the ring, so four iterations is sufficient.
      */
-    for(iter=0; (iter<4); iter++)
-    {
-        nra = 0;
-        for(i=0; (i<atoms->nr); i++) {
-            if ((ats[i].nb == 3) && (ats[i].geom == egmRingPlanar))
-            {
-                /* If two of three neighbors are in a ring, I am too */
-                nrp = 0;
-                for(k=0; (k<3); k++) 
-                {
-                    if ((ats[ats[i].bbb[k]].geom == egmRingPlanar) ||
-                        (1 &&
-                         (ats[ats[i].bbb[k]].geom == egmTetrahedral) &&
-                         (ats[ats[i].bbb[k]].nb == 2)))
-                        nrp++;
-                }
-                if (nrp < 2)
-                    ats[i].geom = egmPlanar;
-            }
-            if (ats[i].geom == egmRingPlanar)
-                nra++;
-        }
-    }
     if (fp)
     {
         fprintf(fp,"There are %d atoms with one bond in %s.\n",
                 nonebond,molname);
-        fprintf(fp,"There are %d atoms in ring structures in %s.\n",
-                nra,molname);
-        for(i=0; (i<atoms->nr); i++)
-        {
-            fprintf(fp,"Geometry = %s (atom %s with %d bonds)\n",
-                    geoms[ats[i].geom],ats[i].aname,ats[i].nb);
-        }
     }
 
     /* Now we will determine for each atom the possible atom types in an iterative

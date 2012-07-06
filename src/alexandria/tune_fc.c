@@ -184,13 +184,14 @@ static void list2opt(opt_param_t *opt)
             case ebtsBONDS:
                 gmx_poldata_set_bond_params(pd,opt->bad[i][j].ai[0],
                                             opt->bad[i][j].ai[1],
+                                            0,0,0,
                                             opt->bad[i][j].bondorder,buf);
                 break;
             case ebtsANGLES:
                 gmx_poldata_set_angle_params(pd,opt->bad[i][j].ai[0],
                                              opt->bad[i][j].ai[1],
                                              opt->bad[i][j].ai[2],
-                                             buf);
+                                             0,0,0,buf);
                 break;
             case ebtsPDIHS:
                 gmx_poldata_set_dihedral_params(pd,egdPDIHS,
@@ -198,7 +199,7 @@ static void list2opt(opt_param_t *opt)
                                                 opt->bad[i][j].ai[1],
                                                 opt->bad[i][j].ai[2],
                                                 opt->bad[i][j].ai[3],
-                                                buf);
+                                                0,0,0,buf);
                 break;
             case ebtsIDIHS:
                 gmx_poldata_set_dihedral_params(pd,egdIDIHS,
@@ -206,7 +207,7 @@ static void list2opt(opt_param_t *opt)
                                                 opt->bad[i][j].ai[1],
                                                 opt->bad[i][j].ai[2],
                                                 opt->bad[i][j].ai[3],
-                                                buf);
+                                                0,0,0,buf);
                 break;
             default:
                 gmx_fatal(FARGS,"Unsupported bts %d",i);
@@ -276,7 +277,7 @@ static void get_dissociation_energy(FILE *fplog,opt_param_t *opt)
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             if ((gt = gmx_poldata_search_bond(opt->md->pd,aai,aaj,
-                                              NULL,NULL,NULL,NULL)) != 0) {
+                                              NULL,NULL,NULL,NULL,NULL)) != 0) {
                 gti = opt->inv_gt[ebtsBONDS][gt-1];
                 at[gti][j]++;
                 a[j][gti]++; 
@@ -380,7 +381,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
     *nparam = 0;
     if (bOpt[ebtsBONDS]) {
         while((gt = gmx_poldata_get_bond(md->pd,&(ai[0]),&(ai[1]),
-                                         NULL,NULL,&bondorder,&params)) > 0) {
+                                         NULL,NULL,NULL,&bondorder,&params)) > 0) {
             if (omt->ngtb[ebtsBONDS][gt-1] > 0) {
                 ptr = split(' ',params);
                 for(n = 0; (NULL != ptr[n]); n++) {
@@ -406,7 +407,8 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
         }
     }
     if (bOpt[ebtsANGLES]) {
-        while((gt = gmx_poldata_get_angle(md->pd,&(ai[0]),&(ai[1]),&(ai[2]),NULL,NULL,&params)) > 0) {
+        while((gt = gmx_poldata_get_angle(md->pd,&(ai[0]),&(ai[1]),&(ai[2]),
+                                          NULL,NULL,NULL,&params)) > 0) {
             if (omt->ngtb[ebtsANGLES][gt-1] > 0) {
                 ptr = split(' ',params);
                 for(n = 0; (NULL != ptr[n]); n++) {
@@ -428,7 +430,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
     if (bOpt[ebtsPDIHS]) {
         while((gt = gmx_poldata_get_dihedral(md->pd,egdPDIHS,
                                              &(ai[0]),&(ai[1]),&(ai[2]),&(ai[3]),
-                                             NULL,NULL,&params)) > 0) {
+                                             NULL,NULL,NULL,&params)) > 0) {
             if (omt->ngtb[ebtsPDIHS][gt-1] > 0) {
                 ptr = split(' ',params);
                 for(n = 0; (NULL != ptr[n]); n++) {
@@ -450,7 +452,7 @@ static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
     if (bOpt[ebtsIDIHS]) {
         while((gt = gmx_poldata_get_dihedral(md->pd,egdIDIHS,
                                              &(ai[0]),&(ai[1]),&(ai[2]),&(ai[3]),
-                                             NULL,NULL,&params)) > 0) {
+                                             NULL,NULL,NULL,&params)) > 0) {
             if (omt->ngtb[ebtsIDIHS][gt-1] > 0) {
                 ptr = split(' ',params);
                 for(n = 0; (NULL != ptr[n]); n++) {
@@ -606,12 +608,14 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                     aaj = *mymol->atoms->atomtype[aj];
                     switch (bt) {
                     case ebtsBONDS:
-                        gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,NULL,NULL,&params);
+                        gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,
+                                                     NULL,NULL,NULL,&params);
                         break;
                     case ebtsANGLES:
                         ak = mymol->ltop->idef.il[ft].iatoms[i+3];
                         aak = *mymol->atoms->atomtype[ak];
-                        gt = gmx_poldata_search_angle(pd,aai,aaj,aak,NULL,NULL,&params);
+                        gt = gmx_poldata_search_angle(pd,aai,aaj,aak,NULL,
+                                                      NULL,NULL,&params);
                         break;
                     case ebtsPDIHS:
                     case ebtsIDIHS:
@@ -621,7 +625,7 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                         aal = *mymol->atoms->atomtype[al];
                         gt = gmx_poldata_search_dihedral(pd,(bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
                                                          aai,aaj,aak,aal,
-                                                         NULL,NULL,&params);
+                                                         NULL,NULL,NULL,&params);
                         break;                              
                     }
                     if (gt > 0) {
@@ -671,7 +675,7 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             /* Here unfortunately we need a case statement for the types */
-            if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,&params)) != 0) {
+            if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].morse.b0 = convert2gmx(value,lu);
                   
                 ptr = split(' ',params);
@@ -702,7 +706,7 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aai = *mymol->atoms->atomtype[ai];
             aaj = *mymol->atoms->atomtype[aj];
             aak = *mymol->atoms->atomtype[ak];
-            if ((gt = gmx_poldata_search_angle(pd,aai,aaj,aak,&value,NULL,&params)) != 0) {
+            if ((gt = gmx_poldata_search_angle(pd,aai,aaj,aak,&value,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].harmonic.rA = 
                     mymol->mtop.ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);
@@ -734,7 +738,7 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aak = *mymol->atoms->atomtype[ak];
             aal = *mymol->atoms->atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdPDIHS,aai,aaj,aak,aal,
-                                                  &value,NULL,&params)) != 0) {
+                                                  &value,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].pdihs.phiA = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
@@ -770,7 +774,7 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aak = *mymol->atoms->atomtype[ak];
             aal = *mymol->atoms->atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdIDIHS,aai,aaj,aak,aal,
-                                                  &value,NULL,&params)) != 0) {
+                                                  &value,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].harmonic.rA = 
                     mymol->mtop.ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);

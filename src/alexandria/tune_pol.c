@@ -120,7 +120,7 @@ static int decompose_frag(FILE *fp,int bTrain,
         }
     }        
     while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
-                                      &charge,&valence,&pol,&sig_pol,&spref)) 
+                                      &charge,&pol,&sig_pol,&spref)) 
     {
         if ((pol == 0) || bForceFit) {
             ntp = 0;
@@ -237,7 +237,7 @@ static int decompose_frag(FILE *fp,int bTrain,
     }
     if (bZero)
         gmx_poldata_add_atype(pd,(char *)"0",(char *)"NUL",(char *)"NUL",(char *)"NUL",
-                              (char *)"",0,a0,0,(char *)"");
+                              (char *)"",a0,0,(char *)"");
 
     sfree(bUseMol);
     sfree(fpp);

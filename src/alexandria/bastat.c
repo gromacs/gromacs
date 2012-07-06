@@ -132,7 +132,8 @@ void sort_bonds(t_bonds *b)
     qsort(b->imp,b->nimp,sizeof(b->imp[0]),dihcmp);
 }
 
-void add_bond(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,double blen,double spacing)
+void add_bond(FILE *fplog,char *molname,t_bonds *b,char *a1,char *a2,
+              double blen,double spacing)
 {
     int i,j,index;
   
@@ -329,14 +330,16 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
     int i,N;
     real av,sig;
     char pbuf[256];
-    
+    double bondorder;
+        
     gmx_poldata_set_length_unit(pd,"pm");
     for(i=0; (i<b->nbond); i++) {
         gmx_stats_get_average(b->bond[i].lsq,&av);
         gmx_stats_get_sigma(b->bond[i].lsq,&sig);
         gmx_stats_get_npoints(b->bond[i].lsq,&N);
         sprintf(pbuf,"%g  %g",Dm,beta);
-        gmx_poldata_add_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,1.0,pbuf);
+        bondorder = 1;
+        gmx_poldata_add_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,N,bondorder,pbuf);
         fprintf(fp,"bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 b->bond[i].a1,b->bond[i].a2,av,sig,N,
                 (sig > 1.5) ? " WARNING" : "");
@@ -348,7 +351,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         gmx_stats_get_npoints(b->angle[i].lsq,&N);
         sprintf(pbuf,"%g",kt);
         gmx_poldata_add_angle(pd,b->angle[i].a1,b->angle[i].a2,
-                                 b->angle[i].a3,av,sig,pbuf);
+                              b->angle[i].a3,av,sig,N,pbuf);
         fprintf(fp,"angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
                 b->angle[i].a1,b->angle[i].a2,b->angle[i].a3,av,sig,N,
                 (sig > 3) ? " WARNING" : "");
@@ -360,7 +363,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         sprintf(pbuf,"%g",kp);
         gmx_poldata_add_dihedral(pd,egdPDIHS,
                                  b->dih[i].a1,b->dih[i].a2,
-                                 b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
+                                 b->dih[i].a3,b->dih[i].a4,av,sig,N,pbuf);
         fprintf(fp,"dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4,av,sig);
     }
@@ -371,7 +374,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
         sprintf(pbuf,"%g",kp);
         gmx_poldata_add_dihedral(pd,egdIDIHS,
                                  b->imp[i].a1,b->imp[i].a2,
-                                 b->imp[i].a3,b->imp[i].a4,av,sig,pbuf);
+                                 b->imp[i].a3,b->imp[i].a4,av,sig,N,pbuf);
         fprintf(fp,"improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->imp[i].a1,b->imp[i].a2,b->imp[i].a3,b->imp[i].a4,av,sig);
     }
@@ -407,6 +410,8 @@ int main(int argc,char *argv[])
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     static int  nthreads=0; /* set to determine # of threads automatically */
     t_pargs pa[] = {
+        { "-lot",    FALSE, etSTR,  {&lot},
+          "Use this method and level of theory when selecting coordinates and charges" },
         { "-Dm",    FALSE, etREAL, {&Dm},
           "Dissociation energy (kJ/mol)" },
         { "-beta",    FALSE, etREAL, {&beta},
@@ -484,7 +489,7 @@ int main(int argc,char *argv[])
                 opt_elem,const_elem,
                 lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
                 TRUE,TRUE,TRUE,watoms,FALSE);
-                    
+                        
 #define ATP(ii) get_atomtype_name(md->mymol[i].atoms->atom[ii].type,md->mymol[i].atype)
     ftb = gmx_poldata_get_bond_ftype(md->pd);
     fta = gmx_poldata_get_angle_ftype(md->pd);

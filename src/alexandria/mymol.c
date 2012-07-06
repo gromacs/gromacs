@@ -172,7 +172,7 @@ static void mk_ff_mtop(gmx_mtop_t *mtop,gmx_poldata_t pd)
     /* Derive table of Van der Waals force field parameters */
     snew(c,ntype);
     i = 0;
-    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,&params)) {
+    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,NULL,NULL,&params)) {
         ptr = split(' ',params);
         snew(c[i],MAXFORCEPARAM);
         j=0;
@@ -329,16 +329,16 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
     return bSymmAll;
 }
 
-int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
-               gmx_bool bQM,char *lot,gmx_bool bZero,
-               gmx_poldata_t pd,gmx_atomprop_t aps,
-               int  iModel,t_commrec *cr,int *nwarn,
-               gmx_bool bCharged,const output_env_t oenv,
-               real th_toler,real ph_toler,
-               real dip_toler,real hfac,gmx_bool bH14,
-               gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
-               int nexcl,gmx_bool bESP,
-               real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta)
+static int init_mymol(FILE *fp,t_mymol *mymol,gmx_molprop_t mp,
+                      gmx_bool bQM,char *lot,gmx_bool bZero,
+                      gmx_poldata_t pd,gmx_atomprop_t aps,
+                      int  iModel,t_commrec *cr,int *nwarn,
+                      gmx_bool bCharged,const output_env_t oenv,
+                      real th_toler,real ph_toler,
+                      real dip_toler,real hfac,gmx_bool bH14,
+                      gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+                      int nexcl,gmx_bool bESP,
+                      real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta)
 {
     int      ftb,i,j,k,ia,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
     char     *mylot=NULL,*myref=NULL;
@@ -641,6 +641,9 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     if (immOK != imm) 
     {
         /* Remove temporary data */
+        if (NULL != fp)
+            fprintf(fp,"Could not add %s because of %s\n",mymol->molname,
+                    immsg(imm));
     }
     else if (NULL != debug)
     {
@@ -1064,7 +1067,7 @@ void read_moldip(t_moldip *md,
             {
                 int dest = (n % md->cr->nnodes);
                 
-                imm = init_mymol(&(md->mymol[n]),mp[i],md->bQM,lot,bZero,
+                imm = init_mymol(fp,&(md->mymol[n]),mp[i],md->bQM,lot,bZero,
                                  md->pd,md->atomprop,
                                  md->iModel,md->cr,&nwarn,bCharged,oenv,
                                  th_toler,ph_toler,dip_toler,md->hfac,bH14,
@@ -1114,7 +1117,7 @@ void read_moldip(t_moldip *md,
         {
             /* Receive another molecule */
             gmx_molprop_t mpnew = gmx_molprop_receive(md->cr,0);
-            imm = init_mymol(&(md->mymol[n]),mpnew,md->bQM,lot,bZero,
+            imm = init_mymol(fp,&(md->mymol[n]),mpnew,md->bQM,lot,bZero,
                              md->pd,md->atomprop,
                              md->iModel,md->cr,&nwarn,bCharged,oenv,
                              th_toler,ph_toler,dip_toler,md->hfac,

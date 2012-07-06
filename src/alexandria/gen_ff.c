@@ -27,14 +27,14 @@ static void end_table(FILE *tp)
 static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
 {
   char hbuf[1024],colinfo[1024];
-  double polarizability,sig_pol,valence;
+  double polarizability,sig_pol;
   char *smname,*elem,*desc,*gt_type,*gt_old,*charge;
   char *neighbors,*vdwparams,*geometry;
-  int  numbonds,atomnumber,nline,npage;
+  int  numbonds,atomnumber,nline,npage,nr;
   real mass;
   
-  strcpy(hbuf,"Type & Description & Elem & Val & $\\alpha$ & Van der Waals");
-  strcpy(colinfo,"clcccc");
+  strcpy(hbuf,"Nr. & Type & Description & Elem & $\\alpha$ & Van der Waals");
+  strcpy(colinfo,"cclccc");
   begin_table(tp,"Atom types defined by the Alexandria force field","atypes",
               colinfo,hbuf);
               
@@ -48,8 +48,9 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   gt_old = NULL;
   nline = 2;
   npage = 0;
+  nr = 1;
   while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,
-                                    NULL,&charge,&valence,&polarizability,&sig_pol,
+                                    NULL,&charge,&polarizability,&sig_pol,
                                     &vdwparams))
     {
       if (gmx_atomprop_query(aps,epropMass,"",elem,&mass)) 
@@ -67,8 +68,8 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
               nline = 1;
               begin_table(tp,"Atom types, continued",gmx_itoa(npage),colinfo,hbuf);
             }
-            fprintf(tp,"%s & %s & %s & %g & %.2f(%.2f) & %s\\\\\n",
-                    gt_type,desc,elem,valence,polarizability,sig_pol,vdwparams);
+            fprintf(tp,"%d & %s & %s & %s & %.2f(%.2f) & %s\\\\\n",
+                    nr++,gt_type,desc,elem,polarizability,sig_pol,vdwparams);
             nline++;
 	  }
 	  gt_old = gt_type;
@@ -79,21 +80,22 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
 
 static void do_brule(FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
 {
-  int nline,npage,numbonds;
+  int nline,npage,numbonds,nr,bAromatic;
   char hbuf[1024],colinfo[1024],pbuf[1024];
-  double length,sigma,bondorder;
-  char *gt_name,*gt_type,*geometry,*neighbors;
+  double length,sigma,bondorder,valence;
+  char *rule,*gt_type,*geometry,*neighbors;
   
   /* Bondtypes */
-  strcpy(colinfo,"ccccc");
-  strcpy(hbuf,"Rule & Type & Geometry & \\# Bonds & Neighbors");
+  strcpy(colinfo,"cccccccc");
+  strcpy(hbuf,"Nr. & Rule & Type & Geometry & Valence & Aromatic & \\# Bonds & Neighbors");
   begin_table(tp,"Bonding rules defined in the Alexandria force field to determine atom types.",
               "brules",colinfo,hbuf);
   
   nline = 2;
   npage = 0;
-  while (0 != gmx_poldata_get_bonding_rule(pd,&gt_name,&gt_type,&geometry,&numbonds,
-                                           &neighbors)) {
+  nr = 1;
+  while (0 != gmx_poldata_get_bonding_rule(pd,&rule,&gt_type,&geometry,&numbonds,
+                                           &valence,&bAromatic,&neighbors)) {
     if (0 == (nline % maxline)) {
       end_table(tp);
       sprintf(pbuf,"brule%d",++npage);
@@ -101,8 +103,9 @@ static void do_brule(FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
       begin_table(tp,"Bonding rules, continued",pbuf,colinfo,hbuf);
       nline = 1;
     }
-    fprintf(tp,"%s & %s & %s & %d & %s\\\\\n",gt_name,gt_type,geometry,numbonds,
-            neighbors);
+    fprintf(tp,"%d & %s & %s & %s & %g & %d & %d & %s\\\\\n",
+            nr++,rule,gt_type,geometry,
+            valence,bAromatic,numbonds,neighbors);
     nline++;
   }
   end_table(tp);
@@ -111,7 +114,7 @@ static void do_brule(FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
 static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
 {
   int bts[ebtsNR];
-  int nline,npage;
+  int nline,npage,nr,ntrain;
   char *ai,*aj,*ak,*al,*params,*lu;
   char hbuf[1024],colinfo[1024],pbuf[1024];
   double length,ang,sigma,bondorder;
@@ -123,8 +126,8 @@ static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   bts[ebtsIDIHS] = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
   
   /* Bondtypes */
-  strcpy(colinfo,"ccccl");
-  sprintf(hbuf,"i & j & Length (%s) & Bond order & Params",lu);
+  strcpy(colinfo,"ccccccl");
+  sprintf(hbuf,"Nr. & i & j & Length (%s) & Ntrain & Bond order & Params",lu);
   begin_table(tp,"Bonds defined in the Alexandria force field. Bond length (standard deviation in parentheses), bond order and Morse potential~\\protect\\cite{Morse29} parameters.",
               "btypes",colinfo,hbuf);
   
@@ -132,23 +135,28 @@ static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   fprintf(fp,"; ; i    j  func       parameters\n");
   nline = 2;
   npage = 0;
-  while (0 < gmx_poldata_get_bond(pd,&ai,&aj,&length,&sigma,&bondorder,&params)) {
-    fprintf(fp,"%-5s  %-5s   %d  %g  %s\n",ai,aj,bts[ebtsBONDS],length,params);
-    if (0 == (nline % maxline)) {
-      end_table(tp);
-      sprintf(pbuf,"btype%d",++npage);
-      fprintf(tp,"\\addtocounter{table}{-1}\n");
-      begin_table(tp,"Bonds, continued",pbuf,colinfo,hbuf);
-      nline = 1;
+  nr = 1;
+  while (0 < gmx_poldata_get_bond(pd,&ai,&aj,&length,&sigma,&ntrain,
+                                  &bondorder,&params)) {
+    if (ntrain > 0) {
+      fprintf(fp,"%-5s  %-5s   %d  %g  %s\n",ai,aj,bts[ebtsBONDS],length,params);
+      if (0 == (nline % maxline)) {
+        end_table(tp);
+        sprintf(pbuf,"btype%d",++npage);
+        fprintf(tp,"\\addtocounter{table}{-1}\n");
+        begin_table(tp,"Bonds, continued",pbuf,colinfo,hbuf);
+        nline = 1;
+      }
+      fprintf(tp,"%d & %s & %s & %.1f(%.1f) & %d & %g & %s\\\\\n",nr++,ai,aj,length,
+              sigma,ntrain,bondorder,params);
+      nline++;
     }
-    fprintf(tp,"%s & %s & %.1f(%.1f) & %g & %s\\\\\n",ai,aj,length,sigma,bondorder,params);
-    nline++;
   }
   end_table(tp);
   
   /* Angletypes */
-  strcpy(colinfo,"ccccl");
-  strcpy(hbuf,"i & j & k & Angle & Params");
+  strcpy(colinfo,"ccccccl");
+  strcpy(hbuf,"Nr. & i & j & k & Angle & Ntrain & Params");
   begin_table(tp,"Angles defined in the Alexandria force field.",
               "angtypes",colinfo,hbuf);
   
@@ -156,23 +164,27 @@ static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   fprintf(fp,"; ; i    j   k  func       parameters\n");
   nline = 2;
   npage = 0;
-  while (0 < gmx_poldata_get_angle(pd,&ai,&aj,&ak,&ang,&sigma,&params)) {
-    fprintf(fp,"%-5s  %-5s  %-5s  %d  %g  %s\n",ai,aj,ak,bts[ebtsANGLES],length,params);
-    if (0 == (nline % maxline)) {
-      end_table(tp);
-      sprintf(pbuf,"angtype%d",++npage);
-      fprintf(tp,"\\addtocounter{table}{-1}\n");
-      begin_table(tp,"Angles, continued",pbuf,colinfo,hbuf);
-      nline = 1;
+  nr = 1;
+  while (0 < gmx_poldata_get_angle(pd,&ai,&aj,&ak,&ang,&sigma,&ntrain,&params)) {
+    if (ntrain > 0) {
+      fprintf(fp,"%-5s  %-5s  %-5s  %d  %g  %s\n",ai,aj,ak,bts[ebtsANGLES],length,params);
+      if (0 == (nline % maxline)) {
+        end_table(tp);
+        sprintf(pbuf,"angtype%d",++npage);
+        fprintf(tp,"\\addtocounter{table}{-1}\n");
+        begin_table(tp,"Angles, continued",pbuf,colinfo,hbuf);
+        nline = 1;
+      }
+      fprintf(tp,"%d & %s & %s & %s & %.2f(%.2f) & %d & %s\\\\\n",
+              nr++,ai,aj,ak,ang,sigma,ntrain,params);
+      nline++;
     }
-    fprintf(tp,"%s & %s & %s & %.2f(%.2f) & %s\\\\\n",ai,aj,ak,ang,sigma,params);
-    nline++;
   }
   end_table(tp);
   
   /* Dihedraltypes */
-  strcpy(colinfo,"cccccl");
-  strcpy(hbuf,"i & j & k & l & Angle & Params");
+  strcpy(colinfo,"cccccccl");
+  strcpy(hbuf,"Nr. & i & j & k & l & Angle & Ntrain & Params");
   begin_table(tp,"Dihedrals defined in the Alexandria force field.",
               "dihtypes",colinfo,hbuf);
   
@@ -180,24 +192,28 @@ static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   fprintf(fp,"; ; i    j   k    l  func       parameters\n");
   nline = 2;
   npage = 0;
-  while (0 < gmx_poldata_get_dihedral(pd,egdPDIHS,&ai,&aj,&ak,&al,&ang,&sigma,&params)) {
-    fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %.1f  %s\n",
-            ai,aj,ak,al,bts[ebtsPDIHS],ang,params);
-    if (0 == (nline % maxline)) {
-      end_table(tp);
-      sprintf(pbuf,"dihtype%d",++npage);
-      fprintf(tp,"\\addtocounter{table}{-1}\n");
-      begin_table(tp,"Dihedrals, continued",pbuf,colinfo,hbuf);
-      nline = 1;
+  nr = 1;
+  while (0 < gmx_poldata_get_dihedral(pd,egdPDIHS,&ai,&aj,&ak,&al,&ang,&sigma,&ntrain,&params)) {
+    if (ntrain > 0) {
+      fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %.1f  %s\n",
+              ai,aj,ak,al,bts[ebtsPDIHS],ang,params);
+      if (0 == (nline % maxline)) {
+        end_table(tp);
+        sprintf(pbuf,"dihtype%d",++npage);
+        fprintf(tp,"\\addtocounter{table}{-1}\n");
+        begin_table(tp,"Dihedrals, continued",pbuf,colinfo,hbuf);
+        nline = 1;
+      }
+      fprintf(tp,"%d & %s & %s & %s & %s & %.1f(%.1f) & %d & %s\\\\\n",
+              nr++,ai,aj,ak,al,ang,sigma,ntrain,params);
+      nline++;
     }
-    fprintf(tp,"%s & %s & %s & %s & %.1f(%.1f) & %s\\\\\n",ai,aj,ak,al,ang,sigma,params);
-    nline++;
   }
   end_table(tp);
   
   /* Impropertypes */
-  strcpy(colinfo,"cccccl");
-  strcpy(hbuf,"i & j & k & l & Angle & Params");
+  strcpy(colinfo,"cccccccl");
+  strcpy(hbuf,"Nr. & i & j & k & l & Angle & N & Params");
   begin_table(tp,"Impropers defined in the Alexandria force field.",
               "idihtypes",colinfo,hbuf);
               
@@ -205,18 +221,22 @@ static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   fprintf(fp,"; ; i    j   k    l  func       parameters\n");
   nline = 2;
   npage = 0;
-  while (0 < gmx_poldata_get_dihedral(pd,egdIDIHS,&ai,&aj,&ak,&al,&ang,&sigma,&params)) {
-    fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %.1f  %s\n",
-            ai,aj,ak,al,bts[ebtsIDIHS],ang,params);
-    if (0 == (nline % maxline)) {
-      end_table(tp);
-      sprintf(pbuf,"idihtype%d",++npage);
-      fprintf(tp,"\\addtocounter{table}{-1}\n");
-      begin_table(tp,"Impropers, continued",pbuf,colinfo,hbuf);
-      nline = 1;
+  nr = 1;
+  while (0 < gmx_poldata_get_dihedral(pd,egdIDIHS,&ai,&aj,&ak,&al,&ang,&sigma,&ntrain,&params)) {
+    if (ntrain > 0) {
+      fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %.1f  %s\n",
+              ai,aj,ak,al,bts[ebtsIDIHS],ang,params);
+      if (0 == (nline % maxline)) {
+        end_table(tp);
+        sprintf(pbuf,"idihtype%d",++npage);
+        fprintf(tp,"\\addtocounter{table}{-1}\n");
+        begin_table(tp,"Impropers, continued",pbuf,colinfo,hbuf);
+        nline = 1;
+      }
+      fprintf(tp,"%d & %s & %s & %s & %s & %.1f(%.1f) & %d & %s\\\\\n",
+              nr++,ai,aj,ak,al,ang,sigma,ntrain,params);
+      nline++;
     }
-    fprintf(tp,"%s & %s & %s & %s & %.1f(%.1f) & %s\\\\\n",ai,aj,ak,al,ang,sigma,params);
-    nline++;
   }
   end_table(tp);
 }
@@ -229,7 +249,7 @@ int main(int argc,char *argv[])
   FILE *fp,*tp;
   
   aps = gmx_atomprop_init();
-  pd  = gmx_poldata_read("gentop.dat",aps);
+  pd  = gmx_poldata_read(NULL,aps);
   tp = fopen("forcefield.tex","w");
   fprintf(tp,"%% Generated by gen_ff\n");
   fprintf(tp,"%% Copyright 2012 David van der Spoel\n");
