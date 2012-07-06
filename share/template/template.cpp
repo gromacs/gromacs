@@ -108,6 +108,7 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 AnalysisTemplate::AnalysisTemplate()
     : options_("template", "Template options"), cutoff_(0.0)
 {
+    registerAnalysisDataset(&data_, "avedist");
 }
 
 
@@ -158,7 +159,6 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
                                const TopologyInformation & /*top*/)
 {
     data_.setColumnCount(sel_.size());
-    registerAnalysisDataset(&data_, "avedist");
 
     avem_.reset(new AnalysisDataAverageModule());
     data_.addModule(avem_);
