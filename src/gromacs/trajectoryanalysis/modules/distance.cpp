@@ -66,10 +66,10 @@ const char Distance::shortDescription[] =
     "Calculate distances";
 
 Distance::Distance()
-    : _options(name, shortDescription), _avem(new AnalysisDataAverageModule())
+    : options_(name, shortDescription), avem_(new AnalysisDataAverageModule())
 {
-    _data.setColumnCount(4);
-    registerAnalysisDataset(&_data, "distance");
+    data_.setColumnCount(4);
+    registerAnalysisDataset(&data_, "distance");
 }
 
 
@@ -87,13 +87,13 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
         "x, y and z components are plotted."
     };
 
-    _options.setDescription(concatenateStrings(desc));
+    options_.setDescription(concatenateStrings(desc));
 
-    _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&_fnDist).defaultValue("dist"));
-    _options.addOption(SelectionOption("select").required().valueCount(2)
-                           .store(_sel));
-    return _options;
+    options_.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
+                           .store(&fnDist_).defaultValue("dist"));
+    options_.addOption(SelectionOption("select").required().valueCount(2)
+                           .store(sel_));
+    return options_;
 }
 
 
@@ -101,23 +101,23 @@ void
 Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation & /*top*/)
 {
-    if (_sel[0].posCount() != 1)
+    if (sel_[0].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The first selection does not define a single position"));
     }
-    if (_sel[1].posCount() != 1)
+    if (sel_[1].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The second selection does not define a single position"));
     }
 
-    _data.addModule(_avem);
-    AnalysisDataPlotModulePointer _plotm(new AnalysisDataPlotModule());
-    _plotm->setSettings(settings.plotSettings());
-    _plotm->setFileName(_fnDist);
-    _plotm->setTitle("Distance");
-    _plotm->setXAxisIsTime();
-    _plotm->setYLabel("Distance (nm)");
-    _data.addModule(_plotm);
+    data_.addModule(avem_);
+    AnalysisDataPlotModulePointer plotm_(new AnalysisDataPlotModule());
+    plotm_->setSettings(settings.plotSettings());
+    plotm_->setFileName(fnDist_);
+    plotm_->setTitle("Distance");
+    plotm_->setXAxisIsTime();
+    plotm_->setYLabel("Distance (nm)");
+    data_.addModule(plotm_);
 }
 
 
@@ -125,9 +125,9 @@ void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle  dh = pdata->dataHandle(_data);
-    const Selection    &sel1 = pdata->parallelSelection(_sel[0]);
-    const Selection    &sel2 = pdata->parallelSelection(_sel[1]);
+    AnalysisDataHandle  dh = pdata->dataHandle(data_);
+    const Selection    &sel1 = pdata->parallelSelection(sel_[0]);
+    const Selection    &sel2 = pdata->parallelSelection(sel_[1]);
     rvec                dx;
     real                r;
     const SelectionPosition &p1 = sel1.position(0);
@@ -158,8 +158,8 @@ Distance::finishAnalysis(int /*nframes*/)
 void
 Distance::writeOutput()
 {
-    fprintf(stderr, "Average distance: %f\n", _avem->average(0));
-    fprintf(stderr, "Std. deviation:   %f\n", _avem->stddev(0));
+    fprintf(stderr, "Average distance: %f\n", avem_->average(0));
+    fprintf(stderr, "Std. deviation:   %f\n", avem_->stddev(0));
 }
 
 } // namespace analysismodules

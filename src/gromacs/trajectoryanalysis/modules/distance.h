@@ -72,11 +72,11 @@ class Distance : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        Options                          _options;
-        std::string                      _fnDist;
-        Selection                        _sel[2];
-        AnalysisData                     _data;
-        AnalysisDataAverageModulePointer _avem;
+        Options                          options_;
+        std::string                      fnDist_;
+        Selection                        sel_[2];
+        AnalysisData                     data_;
+        AnalysisDataAverageModulePointer avem_;
 
         // Copy and assign disallowed by base.
 };
