@@ -4034,7 +4034,7 @@ int gmx_hbond(int argc,char *argv[])
             int id,ia,hh,x,y;
       
             mat.nx=nframes;
-            mat.ny=(bContact ? hb->nrdist : hb->nrhb);
+            mat.ny=hb->nrhb;
 
             snew(mat.matrix,mat.nx);
             for(x=0; (x<mat.nx); x++) 
