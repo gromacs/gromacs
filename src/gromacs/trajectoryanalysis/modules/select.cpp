@@ -106,12 +106,12 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
             bool                bDynamic;
         };
 
-        std::string             _fnm;
-        std::vector<GroupInfo>  _groups;
-        FILE                   *_fp;
-        int                     _currentGroup;
-        int                     _currentSize;
-        bool                    _bAnyWritten;
+        std::string             fnm_;
+        std::vector<GroupInfo>  groups_;
+        FILE                   *fp_;
+        int                     currentGroup_;
+        int                     currentSize_;
+        bool                    bAnyWritten_;
 };
 
 /********************************************************************
@@ -119,7 +119,7 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
  */
 
 IndexFileWriterModule::IndexFileWriterModule()
-    : _fp(NULL), _currentGroup(-1), _currentSize(0), _bAnyWritten(false)
+    : fp_(NULL), currentGroup_(-1), currentSize_(0), bAnyWritten_(false)
 {
 }
 
@@ -132,17 +132,17 @@ IndexFileWriterModule::~IndexFileWriterModule()
 
 void IndexFileWriterModule::closeFile()
 {
-    if (_fp != NULL)
+    if (fp_ != NULL)
     {
-        gmx_fio_fclose(_fp);
-        _fp = NULL;
+        gmx_fio_fclose(fp_);
+        fp_ = NULL;
     }
 }
 
 
 void IndexFileWriterModule::setFileName(const std::string &fnm)
 {
-    _fnm = fnm;
+    fnm_ = fnm;
 }
 
 
@@ -150,7 +150,7 @@ void IndexFileWriterModule::addGroup(const std::string &name, bool bDynamic)
 {
     std::string newName(name);
     std::replace(newName.begin(), newName.end(), ' ', '_');
-    _groups.push_back(GroupInfo(newName, bDynamic));
+    groups_.push_back(GroupInfo(newName, bDynamic));
 }
 
 
@@ -162,57 +162,57 @@ int IndexFileWriterModule::flags() const
 
 void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
-    if (!_fnm.empty())
+    if (!fnm_.empty())
     {
-        _fp = gmx_fio_fopen(_fnm.c_str(), "w");
+        fp_ = gmx_fio_fopen(fnm_.c_str(), "w");
     }
 }
 
 
 void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
-    _bAnyWritten = false;
-    _currentGroup = -1;
+    bAnyWritten_ = false;
+    currentGroup_ = -1;
 }
 
 
 void
 IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (_fp == NULL)
+    if (fp_ == NULL)
     {
         return;
     }
     bool bFirstFrame = (points.frameIndex() == 0);
     if (points.firstColumn() == 0)
     {
-        ++_currentGroup;
-        if (bFirstFrame || _groups[_currentGroup].bDynamic)
+        ++currentGroup_;
+        if (bFirstFrame || groups_[currentGroup_].bDynamic)
         {
-            if (!bFirstFrame || _currentGroup > 0)
+            if (!bFirstFrame || currentGroup_ > 0)
             {
-                std::fprintf(_fp, "\n\n");
+                std::fprintf(fp_, "\n\n");
             }
-            std::string name = _groups[_currentGroup].name;
-            if (_groups[_currentGroup].bDynamic)
+            std::string name = groups_[currentGroup_].name;
+            if (groups_[currentGroup_].bDynamic)
             {
                 name += formatString("_f%d_t%.3f", points.frameIndex(), points.x());
             }
-            std::fprintf(_fp, "[ %s ]", name.c_str());
-            _bAnyWritten = true;
-            _currentSize = 0;
+            std::fprintf(fp_, "[ %s ]", name.c_str());
+            bAnyWritten_ = true;
+            currentSize_ = 0;
         }
     }
     else
     {
-        if (bFirstFrame || _groups[_currentGroup].bDynamic)
+        if (bFirstFrame || groups_[currentGroup_].bDynamic)
         {
-            if (_currentSize % 15 == 0)
+            if (currentSize_ % 15 == 0)
             {
-                std::fprintf(_fp, "\n");
+                std::fprintf(fp_, "\n");
             }
-            std::fprintf(_fp, "%4d ", static_cast<int>(points.y(0)));
-            ++_currentSize;
+            std::fprintf(fp_, "%4d ", static_cast<int>(points.y(0)));
+            ++currentSize_;
         }
     }
 }
@@ -225,9 +225,9 @@ void IndexFileWriterModule::frameFinished(const AnalysisDataFrameHeader & /*head
 
 void IndexFileWriterModule::dataFinished()
 {
-    if (_fp != NULL)
+    if (fp_ != NULL)
     {
-        std::fprintf(_fp, "\n");
+        std::fprintf(fp_, "\n");
     }
     closeFile();
 }
@@ -244,16 +244,16 @@ const char Select::shortDescription[] =
     "Print general information about selections";
 
 Select::Select()
-    : _options(name, shortDescription),
-      _bDump(false), _bTotNorm(false), _bFracNorm(false), _bResInd(false),
-      _top(NULL)
+    : options_(name, shortDescription),
+      bDump_(false), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
+      top_(NULL)
 {
-    registerAnalysisDataset(&_sdata, "size");
-    registerAnalysisDataset(&_cdata, "cfrac");
-    _idata.setColumnCount(2);
-    _idata.setMultipoint(true);
-    registerAnalysisDataset(&_idata, "index");
-    registerAnalysisDataset(&_mdata, "mask");
+    registerAnalysisDataset(&sdata_, "size");
+    registerAnalysisDataset(&cdata_, "cfrac");
+    idata_.setColumnCount(2);
+    idata_.setMultipoint(true);
+    registerAnalysisDataset(&idata_, "index");
+    registerAnalysisDataset(&mdata_, "mask");
 }
 
 
@@ -313,35 +313,35 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
         "With [TT]-dump[tt], the frame time is omitted from the output."
     };
 
-    _options.setDescription(concatenateStrings(desc));
+    options_.setDescription(concatenateStrings(desc));
 
-    _options.addOption(FileNameOption("os").filetype(eftPlot).outputFile()
-                           .store(&_fnSize).defaultValueIfSet("size"));
-    _options.addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
-                           .store(&_fnFrac).defaultValueIfSet("frac"));
-    _options.addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
-                           .store(&_fnIndex).defaultValueIfSet("index"));
-    _options.addOption(FileNameOption("on").filetype(eftIndex).outputFile()
-                           .store(&_fnNdx).defaultValueIfSet("index"));
-    _options.addOption(FileNameOption("om").filetype(eftPlot).outputFile()
-                           .store(&_fnMask).defaultValueIfSet("mask"));
+    options_.addOption(FileNameOption("os").filetype(eftPlot).outputFile()
+                           .store(&fnSize_).defaultValueIfSet("size"));
+    options_.addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
+                           .store(&fnFrac_).defaultValueIfSet("frac"));
+    options_.addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
+                           .store(&fnIndex_).defaultValueIfSet("index"));
+    options_.addOption(FileNameOption("on").filetype(eftIndex).outputFile()
+                           .store(&fnNdx_).defaultValueIfSet("index"));
+    options_.addOption(FileNameOption("om").filetype(eftPlot).outputFile()
+                           .store(&fnMask_).defaultValueIfSet("mask"));
 
-    _options.addOption(SelectionOption("select").storeVector(&_sel)
+    options_.addOption(SelectionOption("select").storeVector(&sel_)
         .required().multiValue()
         .description("Selections to analyze"));
 
-    _options.addOption(BooleanOption("dump").store(&_bDump)
+    options_.addOption(BooleanOption("dump").store(&bDump_)
         .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
-    _options.addOption(BooleanOption("norm").store(&_bTotNorm)
+    options_.addOption(BooleanOption("norm").store(&bTotNorm_)
         .description("Normalize by total number of positions with -os"));
-    _options.addOption(BooleanOption("cfnorm").store(&_bFracNorm)
+    options_.addOption(BooleanOption("cfnorm").store(&bFracNorm_)
         .description("Normalize by covered fraction with -os"));
     const char *const cResNumberEnum[] = { "number", "index", NULL };
-    _options.addOption(StringOption("resnr").store(&_resNumberType)
+    options_.addOption(StringOption("resnr").store(&resNumberType_)
         .enumValue(cResNumberEnum).defaultEnumIndex(0)
         .description("Residue number output type"));
 
-    return _options;
+    return options_;
 }
 
 
@@ -349,85 +349,85 @@ void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
                      const TopologyInformation &top)
 {
-    if (!_fnIndex.empty() && _bDump && _sel.size() > 1U)
+    if (!fnIndex_.empty() && bDump_ && sel_.size() > 1U)
     {
         GMX_THROW(InconsistentInputError("With -oi and -dump, there can be only one selection"));
     }
-    _bResInd = (_resNumberType == "index");
+    bResInd_ = (resNumberType_ == "index");
 
-    for (SelectionList::iterator i = _sel.begin(); i != _sel.end(); ++i)
+    for (SelectionList::iterator i = sel_.begin(); i != sel_.end(); ++i)
     {
         i->initCoveredFraction(CFRAC_SOLIDANGLE);
     }
 
     // TODO: For large systems, a float may not have enough precision
-    _sdata.setColumnCount(_sel.size());
-    _totsize.reserve(_sel.size());
-    for (size_t g = 0; g < _sel.size(); ++g)
+    sdata_.setColumnCount(sel_.size());
+    totsize_.reserve(sel_.size());
+    for (size_t g = 0; g < sel_.size(); ++g)
     {
-        _totsize.push_back(_sel[g].posCount());
+        totsize_.push_back(sel_[g].posCount());
     }
-    if (!_fnSize.empty())
+    if (!fnSize_.empty())
     {
         AnalysisDataPlotModulePointer plot(
             new AnalysisDataPlotModule(settings.plotSettings()));
-        plot->setFileName(_fnSize);
+        plot->setFileName(fnSize_);
         plot->setTitle("Selection size");
         plot->setXAxisIsTime();
         plot->setYLabel("Number");
-        _sdata.addModule(plot);
+        sdata_.addModule(plot);
     }
 
-    _cdata.setColumnCount(_sel.size());
-    if (!_fnFrac.empty())
+    cdata_.setColumnCount(sel_.size());
+    if (!fnFrac_.empty())
     {
         AnalysisDataPlotModulePointer plot(
             new AnalysisDataPlotModule(settings.plotSettings()));
-        plot->setFileName(_fnFrac);
+        plot->setFileName(fnFrac_);
         plot->setTitle("Covered fraction");
         plot->setXAxisIsTime();
         plot->setYLabel("Fraction");
         plot->setYFormat(6, 4);
-        _cdata.addModule(plot);
+        cdata_.addModule(plot);
     }
 
     // TODO: For large systems, a float may not have enough precision
-    if (!_fnIndex.empty())
+    if (!fnIndex_.empty())
     {
         AnalysisDataPlotModulePointer plot(
             new AnalysisDataPlotModule(settings.plotSettings()));
-        plot->setFileName(_fnIndex);
+        plot->setFileName(fnIndex_);
         plot->setPlainOutput(true);
         plot->setYFormat(4, 0);
-        if (_bDump)
+        if (bDump_)
         {
-            plot->setOmitX(_bDump);
-            _idata.addColumnModule(1, 1, plot);
+            plot->setOmitX(bDump_);
+            idata_.addColumnModule(1, 1, plot);
         }
         else
         {
-            _idata.addModule(plot);
+            idata_.addModule(plot);
         }
     }
-    if (!_fnNdx.empty())
+    if (!fnNdx_.empty())
     {
         boost::shared_ptr<IndexFileWriterModule> writer(new IndexFileWriterModule());
-        writer->setFileName(_fnNdx);
-        for (size_t g = 0; g < _sel.size(); ++g)
+        writer->setFileName(fnNdx_);
+        for (size_t g = 0; g < sel_.size(); ++g)
         {
-            writer->addGroup(_sel[g].name(), _sel[g].isDynamic());
+            writer->addGroup(sel_[g].name(), sel_[g].isDynamic());
         }
-        _idata.addModule(writer);
+        idata_.addModule(writer);
     }
 
-    _mdata.setColumnCount(_sel[0].posCount());
-    if (!_fnMask.empty())
+    mdata_.setColumnCount(sel_[0].posCount());
+    if (!fnMask_.empty())
     {
-        if (_sel.size() > 1U)
+        if (sel_.size() > 1U)
         {
             fprintf(stderr, "WARNING: the mask (-om) will only be written for the first group\n");
         }
-        if (!_sel[0].isDynamic())
+        if (!sel_[0].isDynamic())
         {
             fprintf(stderr, "WARNING: will not write the mask (-om) for a static selection\n");
         }
@@ -435,18 +435,18 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         {
             AnalysisDataPlotModulePointer plot(
                 new AnalysisDataPlotModule(settings.plotSettings()));
-            plot->setFileName(_fnMask);
-            plot->setPlainOutput(_bDump);
-            plot->setOmitX(_bDump);
+            plot->setFileName(fnMask_);
+            plot->setPlainOutput(bDump_);
+            plot->setOmitX(bDump_);
             plot->setTitle("Selection mask");
             plot->setXAxisIsTime();
             plot->setYLabel("Occupancy");
             plot->setYFormat(1, 0);
-            _mdata.addModule(plot);
+            mdata_.addModule(plot);
         }
     }
 
-    _top = top.topology();
+    top_ = top.topology();
 }
 
 
@@ -454,19 +454,19 @@ void
 Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle sdh = pdata->dataHandle(_sdata);
-    AnalysisDataHandle cdh = pdata->dataHandle(_cdata);
-    AnalysisDataHandle idh = pdata->dataHandle(_idata);
-    AnalysisDataHandle mdh = pdata->dataHandle(_mdata);
-    const SelectionList &sel = pdata->parallelSelections(_sel);
+    AnalysisDataHandle sdh = pdata->dataHandle(sdata_);
+    AnalysisDataHandle cdh = pdata->dataHandle(cdata_);
+    AnalysisDataHandle idh = pdata->dataHandle(idata_);
+    AnalysisDataHandle mdh = pdata->dataHandle(mdata_);
+    const SelectionList &sel = pdata->parallelSelections(sel_);
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        real normfac = _bFracNorm ? 1.0 / sel[g].coveredFraction() : 1.0;
-        if (_bTotNorm)
+        real normfac = bFracNorm_ ? 1.0 / sel[g].coveredFraction() : 1.0;
+        if (bTotNorm_)
         {
-            normfac /= _totsize[g];
+            normfac /= totsize_[g];
         }
         sdh.setPoint(g, sel[g].posCount() * normfac);
     }
@@ -487,9 +487,9 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
             const SelectionPosition &p = sel[g].position(i);
-            if (sel[g].type() == INDEX_RES && !_bResInd)
+            if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setPoint(1, _top->atoms.resinfo[p.mappedId()].nr);
+                idh.setPoint(1, top_->atoms.resinfo[p.mappedId()].nr);
             }
             else
             {
@@ -501,7 +501,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     idh.finishFrame();
 
     mdh.startFrame(frnr, fr.time);
-    for (int i = 0; i < _totsize[0]; ++i)
+    for (int i = 0; i < totsize_[0]; ++i)
     {
         mdh.setPoint(i, 0);
     }
