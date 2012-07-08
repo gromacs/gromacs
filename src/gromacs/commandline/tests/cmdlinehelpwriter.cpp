@@ -116,6 +116,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     options.addOption(StringOption("enum").description("Enum option")
                         .enumValue(enumValues).defaultEnumIndex(0));
 
+    std::string filename;
     options.addOption(FileNameOption("f")
                         .description("Input file description")
                         .filetype(eftTrajectory).inputFile().required()
@@ -125,8 +126,10 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
                         .filetype(eftGenericData).inputFile().libraryFile()
                         .defaultValueIfSet("libdata"));
     options.addOption(FileNameOption("io")
+                        .store(&filename)
                         .description("Input/Output file description")
-                        .filetype(eftGenericData).inputOutputFile());
+                        .filetype(eftGenericData).inputOutputFile()
+                        .defaultValueIfSet("inout"));
     options.addOption(FileNameOption("o")
                         .description("Output file description")
                         .filetype(eftPlot).outputFile());

@@ -316,15 +316,20 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
     options_.setDescription(concatenateStrings(desc));
 
     options_.addOption(FileNameOption("os").filetype(eftPlot).outputFile()
-                           .store(&fnSize_).defaultValueIfSet("size"));
+                           .store(&fnSize_).defaultValueIfSet("size")
+                           .description("Number of positions in each selection"));
     options_.addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
-                           .store(&fnFrac_).defaultValueIfSet("frac"));
+                           .store(&fnFrac_).defaultValueIfSet("frac")
+                           .description("Covered fraction for each selection"));
     options_.addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
-                           .store(&fnIndex_).defaultValueIfSet("index"));
+                           .store(&fnIndex_).defaultValueIfSet("index")
+                           .description("Indices selected by each selection"));
     options_.addOption(FileNameOption("on").filetype(eftIndex).outputFile()
-                           .store(&fnNdx_).defaultValueIfSet("index"));
+                           .store(&fnNdx_).defaultValueIfSet("index")
+                           .description("Index file from the selection"));
     options_.addOption(FileNameOption("om").filetype(eftPlot).outputFile()
-                           .store(&fnMask_).defaultValueIfSet("mask"));
+                           .store(&fnMask_).defaultValueIfSet("mask")
+                           .description("Mask for selected positions"));
 
     options_.addOption(SelectionOption("select").storeVector(&sel_)
         .required().multiValue()

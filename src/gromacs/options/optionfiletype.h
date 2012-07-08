@@ -50,11 +50,11 @@ namespace gmx
 enum OptionFileType {
     eftUnknown,
     eftTopology,
-    eftRunInput,
     eftTrajectory,
     eftIndex,
     eftPlot,
-    eftGenericData
+    eftGenericData,
+    eftOptionFileType_NR
 };
 
 } // namespace gmx

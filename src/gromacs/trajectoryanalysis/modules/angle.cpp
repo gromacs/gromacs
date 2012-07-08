@@ -132,9 +132,11 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
     options_.setDescription(concatenateStrings(desc));
 
     options_.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnAngle_).defaultValueIfSet("angle"));
+                           .store(&fnAngle_).defaultValueIfSet("angle")
+                           .description("Computed angles"));
     options_.addOption(FileNameOption("od").filetype(eftPlot).outputFile()
-                           .store(&fnDump_).defaultValueIfSet("angdump"));
+                           .store(&fnDump_).defaultValueIfSet("angdump")
+                           .description("Individual angles on separate lines"));
 
     options_.addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
         .defaultEnumIndex(0).store(&g1type_)

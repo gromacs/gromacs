@@ -150,7 +150,8 @@ void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
     for (int i = 0; i < option.valueCount() || i == 0; ++i)
     {
         std::string value;
-        if (option.valueCount() == 0)
+        if (option.valueCount() == 0
+            || (option.valueCount() == 1 && option.formatValue(0).empty()))
         {
             value = option.formatDefaultValueIfSet();
         }

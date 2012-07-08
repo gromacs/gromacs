@@ -228,6 +228,27 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual void refreshValues();
 
         /*! \brief
+         * Sets the default value for the option.
+         *
+         * \param[in] value  Default value to set.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This method can be used from the derived class constructor to
+         * programmatically set a default value.
+         */
+        void setDefaultValue(const T &value);
+        /*! \brief
+         * Sets the default value if set for the option.
+         *
+         * \param[in] value  Default value to set.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This method can be used from the derived class constructor to
+         * programmatically set a default value.
+         */
+        void setDefaultValueIfSet(const T &value);
+
+        /*! \brief
          * Provides derived classes access to the current list of values.
          *
          * The non-const variant should only be used from processAll() in
@@ -300,10 +321,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         setFlag(efOption_HasDefaultValue);
         if (settings.defaultValue_ != NULL)
         {
-            values_->clear();
-            addValue(*settings.defaultValue_);
-            // TODO: This is a bit hairy, as it indirectly calls a virtual function.
-            commitValues();
+            setDefaultValue(*settings.defaultValue_);
         }
         else if (ownedValues_.get() != NULL && store_ != NULL)
         {
@@ -317,11 +335,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         }
         if (settings.defaultValueIfSet_ != NULL)
         {
-            if (hasFlag(efOption_MultipleTimes))
-            {
-                GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
-            }
-            defaultValueIfSet_.reset(new T(*settings.defaultValueIfSet_));
+            setDefaultValueIfSet(*settings.defaultValueIfSet_);
         }
     }
 }
@@ -421,6 +435,40 @@ void OptionStorageTemplate<T>::refreshValues()
             store_[i] = (*values_)[i];
         }
     }
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::setDefaultValue(const T &value)
+{
+    if (hasFlag(efOption_NoDefaultValue))
+    {
+        GMX_THROW(APIError("Option does not support default value, but one is set"));
+    }
+    if (hasFlag(efOption_HasDefaultValue))
+    {
+        clear();
+        clearSet();
+        addValue(value);
+        // TODO: As this is called from the constructor, it should not call
+        // virtual functions.
+        commitValues();
+    }
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::setDefaultValueIfSet(const T &value)
+{
+    if (hasFlag(efOption_NoDefaultValue))
+    {
+        GMX_THROW(APIError("Option does not support default value, but one is set"));
+    }
+    if (hasFlag(efOption_MultipleTimes))
+    {
+        GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
+    }
+    defaultValueIfSet_.reset(new T(value));
 }
 
 } // namespace gmx

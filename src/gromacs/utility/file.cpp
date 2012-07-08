@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/legacyheaders/futil.h"
+
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -234,6 +236,18 @@ void File::writeLine()
 }
 
 // static
+bool File::exists(const char *filename)
+{
+    return gmx_fexist(filename);
+}
+
+// static
+bool File::exists(const std::string &filename)
+{
+    return exists(filename.c_str());
+}
+
+// static
 File &File::standardInput()
 {
     static File stdinObject(stdin, false);
@@ -295,6 +309,14 @@ std::string File::readToString(const char *filename)
 std::string File::readToString(const std::string &filename)
 {
     return readToString(filename.c_str());
+}
+
+// static
+void File::writeFileFromString(const std::string &filename,
+                               const std::string &text)
+{
+    File file(filename, "w");
+    file.writeString(text);
 }
 
 } // namespace gmx

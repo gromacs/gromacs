@@ -175,6 +175,18 @@ while (file.readLine(&line))
         void writeLine();
 
         /*! \brief
+         * Checks whether a file exists.
+         *
+         * \param[in] filename  Path to the file to check.
+         * \returns   true if \p filename exists and is accessible.
+         *
+         * Does not throw.
+         */
+        static bool exists(const char *filename);
+        //! \copydoc exists(const char *)
+        static bool exists(const std::string &filename);
+
+        /*! \brief
          * Returns a File object for accessing stdin.
          *
          * \throws    std::bad_alloc if out of memory (only on first call).
@@ -204,6 +216,17 @@ while (file.readLine(&line))
         static std::string readToString(const char *filename);
         //! \copydoc readToString(const char *)
         static std::string readToString(const std::string &filename);
+        /*! \brief
+         * Convenience method for writing a file from a string in a single call.
+         *
+         * \param[in] filename  File to read.
+         * \param[in] text      String to write to \p filename.
+         * \throws    FileIOError on any I/O error.
+         *
+         * If \p filename exists, it is overwritten.
+         */
+        static void writeFileFromString(const std::string &filename,
+                                        const std::string &text);
 
     private:
         /*! \brief
