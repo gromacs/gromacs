@@ -37,7 +37,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "6")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
+set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs/" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -978,15 +978,21 @@ endif()
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if ( DEFINED GMXLIB )
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${GMXLIB}")
+if (GMX_USE_RELATIVE_INSTALL_PATH)
+    set(GMX_INSTALL_PREFIX "")
 else()
-    set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+    set(GMX_INSTALL_PREFIX "/${CMAKE_INSTALL_PREFIX}")
 endif()
-set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
-set(DATA_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/gromacs)
-set(MAN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/share/man)
-set(INCL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+
+if ( DEFINED GMXLIB )
+    set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
+else()
+    set(LIB_INSTALL_DIR  ${GMX_INSTALL_PREFIX}lib)
+endif()
+set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
+set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/gromacs)
+set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
+set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
