@@ -43,15 +43,15 @@
  */
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
-__global__ void FUNCTION_NAME(k_nbnxn, ener_prune_1)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener_prune_old)
 #else
-__global__ void FUNCTION_NAME(k_nbnxn, prune_1)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _prune_old)
 #endif
 #else
 #ifdef CALC_ENERGIES
-__global__ void FUNCTION_NAME(k_nbnxn, ener_1)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener_old)
 #else
-__global__ void FUNCTION_NAME(k_nbnxn, 1)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _old)
 #endif
 #endif
             (const cu_atomdata_t atdat,

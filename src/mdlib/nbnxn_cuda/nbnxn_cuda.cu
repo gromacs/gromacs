@@ -105,12 +105,14 @@ typedef void (*p_k_nbnxn)(const cu_atomdata_t,
 static gmx_bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static gmx_bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
-/* Will run kernel #1 if this env var is set (default!). */
-static gmx_bool doKernel1    = (getenv("GMX_NB_K1") != NULL);
-/* Will run kernel #2 if this env var is set. */
-static gmx_bool doKernel2    = (getenv("GMX_NB_K2") != NULL);
-/* Will run kernel #3 if this env var is set. */
-static gmx_bool doKernel3    = (getenv("GMX_NB_K3") != NULL);
+
+/* Non-bonded kernel selector environment variables */
+/* old kernel (former k1) */
+static gmx_bool bRunOldKernel     = (getenv("GMX_NB_K1") != NULL) || (getenv("GMX_CU_NB_OLD") != NULL);
+/* legacy kernel (former #2) -- kept for now for backward compatiblity. */
+static gmx_bool bRunLegacyKernel  = (getenv("GMX_NB_K2") != NULL) || (getenv("GMX_CU_NB_LEGACY") != NULL);
+/* default kernel (former #3). */
+static gmx_bool bRunDefaultKernel = (getenv("GMX_NB_K3") != NULL) || (getenv("GMX_CU_NB_DEFAULT") != NULL);
 
 
 /* Single byte of the bit-pattern used to fill the last element of the force
@@ -142,8 +144,9 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
 {
     p_k_nbnxn k = NULL;
 
-    if (doKernel1 + doKernel2 + doKernel3 > 1)
+    if (bRunOldKernel + bRunLegacyKernel + bRunDefaultKernel > 1)
     {
+        /* TODO remove in release */
         gmx_fatal(FARGS, "Multiple GPU NB kernels requested at the same time; "
                   "set only one of the GMX_NB_K[123] env vars!");
     }
@@ -152,127 +155,128 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
     switch (eeltype)
     {
         case cu_eelCUT:
-            if (doKernel2)
+            if (bRunOldKernel)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_cutoff_2 :
-                                   k_nbnxn_cutoff_prune_2;
+                    k = !doPrune ? k_nbnxn_cutoff_old :
+                        k_nbnxn_cutoff_prune_old;
                 }
-                else 
+                else
                 {
-                    k = !doPrune ? k_nbnxn_cutoff_ener_2 :
-                                   k_nbnxn_cutoff_ener_prune_2;
+                    k = !doPrune ? k_nbnxn_cutoff_ener_old :
+                        k_nbnxn_cutoff_ener_prune_old;
                 }
             }
-            else if (doKernel3)
+            else if (bRunLegacyKernel)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_cutoff_3 :
-                                   k_nbnxn_cutoff_prune_3;
+                    k = !doPrune ? k_nbnxn_cutoff_legacy :
+                                   k_nbnxn_cutoff_prune_legacy;
                 }
-                else 
+                else
                 {
-                    k = !doPrune ? k_nbnxn_cutoff_ener_3 :
-                                   k_nbnxn_cutoff_ener_prune_3;
+                    k = !doPrune ? k_nbnxn_cutoff_ener_legacy :
+                                   k_nbnxn_cutoff_ener_prune_legacy;
                 }
             }
             else
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_cutoff_1 :
-                                   k_nbnxn_cutoff_prune_1;
+                    k = !doPrune ? k_nbnxn_cutoff :
+                                   k_nbnxn_cutoff_prune;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_cutoff_ener_1 :
-                                   k_nbnxn_cutoff_ener_prune_1;
+                    k = !doPrune ? k_nbnxn_cutoff_ener :
+                                   k_nbnxn_cutoff_ener_prune;
                 }
             }
             break;
 
         case cu_eelRF:
-            if (doKernel2)
+            if (bRunOldKernel)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_rf_2 :
-                                   k_nbnxn_rf_prune_2;
+                    k = !doPrune ? k_nbnxn_rf_old :
+                        k_nbnxn_rf_prune_old;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_rf_ener_2 :
-                                   k_nbnxn_rf_ener_prune_2;
+                    k = !doPrune ? k_nbnxn_rf_ener_old :
+                        k_nbnxn_rf_ener_prune_old;
                 }
             }
-            else if (doKernel3)
+
+            if (bRunLegacyKernel)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_rf_3 :
-                                   k_nbnxn_rf_prune_3;
+                    k = !doPrune ? k_nbnxn_rf_legacy :
+                                   k_nbnxn_rf_prune_legacy;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_rf_ener_3 :
-                                   k_nbnxn_rf_ener_prune_3;
+                    k = !doPrune ? k_nbnxn_rf_ener_legacy :
+                                   k_nbnxn_rf_ener_prune_legacy;
                 }
             }
-            else
+            else if (bRunDefaultKernel)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_rf_1 :
-                                   k_nbnxn_rf_prune_1;
+                    k = !doPrune ? k_nbnxn_rf :
+                                   k_nbnxn_rf_prune;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_rf_ener_1 :
-                                   k_nbnxn_rf_ener_prune_1;
+                    k = !doPrune ? k_nbnxn_rf_ener :
+                                   k_nbnxn_rf_ener_prune;
                 }
             }
             break;
 
         case cu_eelEWALD:
-            if (doKernel2)
+            if (bRunOldKernel)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_ewald_2 :
-                                   k_nbnxn_ewald_prune_2;
+                    k = !doPrune ? k_nbnxn_ewald_old :
+                        k_nbnxn_ewald_prune_old;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_ewald_ener_2:
-                                   k_nbnxn_ewald_ener_prune_2;
+                    k = !doPrune ? k_nbnxn_ewald_ener_old :
+                        k_nbnxn_ewald_ener_prune_old;
                 }
             }
-            else if (doKernel3)
+            else if (bRunLegacyKernel)
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_ewald_3 :
-                                   k_nbnxn_ewald_prune_3;
+                    k = !doPrune ? k_nbnxn_ewald_legacy :
+                                   k_nbnxn_ewald_prune_legacy;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_ewald_ener_3 :
-                                   k_nbnxn_ewald_ener_prune_3;
+                    k = !doPrune ? k_nbnxn_ewald_ener_legacy:
+                                   k_nbnxn_ewald_ener_prune_legacy;
                 }
             }
             else
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_nbnxn_ewald_1 :
-                                   k_nbnxn_ewald_prune_1;
+                    k = !doPrune ? k_nbnxn_ewald :
+                                   k_nbnxn_ewald_prune;
                 }
                 else
                 {
-                    k = !doPrune ? k_nbnxn_ewald_ener_1 :
-                                   k_nbnxn_ewald_ener_prune_1;
+                    k = !doPrune ? k_nbnxn_ewald_ener :
+                                   k_nbnxn_ewald_ener_prune;
                 }
             }
             break;
@@ -391,10 +395,21 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    /* size of force buffers in shmem */
-    /* NOTE: with kernel3 and sm3.0 we don't need any shmem */
-    if (doKernel3)
+    /* size of shmem (force-buffers/xq/atom type preloading) */
+    if (bRunOldKernel)
     {
+        shmem = (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+    }
+    else if (bRunLegacyKernel)
+    {
+        /* i-atom x+q in shared memory */
+        shmem =  NSUBCELL * CLUSTER_SIZE * sizeof(float4);
+        /* force reduction buffers in shared memory */
+        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+    }
+    else
+    {
+        /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
         /* i-atom x+q in shared memory */
         shmem  = NSUBCELL * CLUSTER_SIZE * sizeof(float4);
 #ifdef IATYPE_SHMEM
@@ -406,21 +421,11 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
         shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
 #endif
     }
-    else if (doKernel2)
-    {
-        /* i-atom x+q in shared memory */
-        shmem =  NSUBCELL * CLUSTER_SIZE * sizeof(float4);
-        /* force reduction buffers in shared memory */
-        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
-    }
-    else
-    {
-        shmem = (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
-    }
 
-    /* get the pointer to the kernel we need & launch it */
+    /* get the pointer to the kernel flavor we need to use */
     nb_kernel = select_nbnxn_kernel(nbp->eeltype, calc_ener,
                                     plist->do_prune || always_prune);
+
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist,
                                                       calc_fshift);
     CU_LAUNCH_ERR("k_calc_nb");

@@ -33,32 +33,25 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#if __CUDA_ARCH__ >= 300
-#define REDUCE_SHUFFLE
-/* On Kepler storing i-atom types in shmem gives a few %, on Fermi not */ 
-#define IATYPE_SHMEM
-#endif
-
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = neigbor_listId
     - #threads  = CLUSTER_SIZE^2
     - shmem     = CLUSTER_SIZE^2 * sizeof(float)
-    - local mem = 4 bytes !!! 
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
-__global__ void FUNCTION_NAME(k_nbnxn, ener_prune_3)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener_prune_legacy)
 #else
-__global__ void FUNCTION_NAME(k_nbnxn, prune_3)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _prune_legacy)
 #endif
 #else
 #ifdef CALC_ENERGIES
-__global__ void FUNCTION_NAME(k_nbnxn, ener_3)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener_legacy)
 #else
-__global__ void FUNCTION_NAME(k_nbnxn, 3)
+__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #endif
 #endif
             (const cu_atomdata_t atdat,
@@ -115,7 +108,8 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
         ai, aj,
         cij4_start, cij4_end,
         typei, typej,
-        i, jm, j4;
+        i, cii, jm, j4,
+        nsubi;
     float qi, qj_f,
           r2, inv_r, inv_r2, inv_r6,
           c6, c12,
@@ -125,25 +119,18 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
           F_invr; 
     float4  xqbuf;
     float3  xi, xj, rv;
+    float3  shift;
     extern __shared__  float4 xqib[];
-#ifdef IATYPE_SHMEM
-    int *atib = (int *)(xqib + NSUBCELL * CLUSTER_SIZE);
-#endif
     float3  f_ij, fcj_buf, fshift_buf;
     nbnxn_sci_t nb_sci;
-    unsigned int wexcl;
-    float int_bit;
+    unsigned int wexcl, int_bit;
     int wexcl_idx;
-    unsigned imask;
+    unsigned imask, imask_j;
+#ifdef PRUNE_NBL
+    unsigned imask_prune;
+#endif
 
-#ifndef REDUCE_SHUFFLE
-    /* j force reduction buffer */
-#ifdef IATYPE_SHMEM
-    float *f_buf = (float *)(atib + NSUBCELL * CLUSTER_SIZE);
-#else
-    float *f_buf = (float *)(xqib + NSUBCELL * CLUSTER_SIZE);
-#endif
-#endif
+    float *f_buf = (float *)(xqib + NSUBCELL * CLUSTER_SIZE); /* j force buffer */
     float3 fci_buf[NSUBCELL];           /* i force buffer */
 
     nb_sci      = pl_sci[bidx];         /* cluster index */
@@ -157,11 +144,6 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
     ci = sci * NSUBCELL + tidxi;
     ai = ci * CLUSTER_SIZE + tidxj;
     xqib[tidxi * CLUSTER_SIZE + tidxj] = xq[ai] + shift_vec[nb_sci.shift];
-#ifdef IATYPE_SHMEM
-    ci = sci * NSUBCELL + tidxj;
-    ai = ci * CLUSTER_SIZE + tidxi;
-    atib[tidxj * CLUSTER_SIZE + tidxi] = atom_types[ai];
-#endif
     __syncthreads();
 
     for(ci_offset = 0; ci_offset < NSUBCELL; ci_offset++)
@@ -212,21 +194,20 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
         if (imask)
 #endif
         {
-            /* Unrolling this loop
-               - with pruning leads to register spilling;
-               - on Kepler is much slower;
-               - doesn't work on CUDA <v4.1
-               Tested with nvcc 3.2 - 5.0.7 */
-#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300 && CUDA_VERSION >= 4010
-#pragma unroll 4
+#ifdef PRUNE_NBL
+            imask_prune = imask;
+#endif
+
+            /* nvcc >v4.1 doesn't like this loop, it refuses to unroll it */
+#if CUDA_VERSION >= 4010
+            #pragma unroll 4
 #endif
             for (jm = 0; jm < 4; jm++)
             {
-                if (imask & (255U << (jm * NSUBCELL)))
+                imask_j = (imask >> (jm * 8)) & 255U;
+                if (imask_j)
                 {
-                    uint mask_ji;
-
-                    mask_ji = (1U << (jm * NSUBCELL));
+                    nsubi = __popc(imask_j);
 
                     cj      = pl_cj4[j4].cj[jm];
                     aj      = cj * CLUSTER_SIZE + tidxj;
@@ -236,137 +217,128 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
                     qj_f    = nbparam.epsfac * xqbuf.w;
                     typej   = atom_types[aj];
+                    xj      -= shift;
 
                     fcj_buf = make_float3(0.0f);
 
-                    /* The PME and RF kernels don't unroll with CUDA <v4.1. */
-#if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && (defined EL_EWALD || defined EL_RF))
-#pragma unroll 8
-#endif
-                    for(i = 0; i < NSUBCELL; i++)
+                    /* loop over the i-clusters in sci */
+                    /* #pragma unroll 8 
+                       -- nvcc doesn't like my code, it refuses to unroll it
+                       which is a pity because here unrolling could help.  */
+                    for (cii = 0; cii < nsubi; cii++)
                     {
-                        if (imask & mask_ji)
-                        {
-                            ci      = sci * NSUBCELL + i;      /* i cluster index */
-                            ai      = ci * CLUSTER_SIZE + tidxi;  /* i atom index */
+                        i = __ffs(imask_j) - 1;
+                        imask_j &= ~(1U << i);
 
-                            /* all threads load an atom from i cluster ci into shmem! */
-                            xqbuf   = xqib[i * CLUSTER_SIZE + tidxi];
-                            xi      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
+                        ci_offset   = i;                       /* i force buffer offset */ 
+                        ci          = sci * NSUBCELL + i;      /* i cluster index */
+                        ai          = ci * CLUSTER_SIZE + tidxi;  /* i atom index */
 
-                            /* distance between i and j atoms */
-                            rv      = xi - xj;
-                            r2      = norm2(rv);
+                        /* all threads load an atom from i cluster ci into shmem! */
+                        xqbuf   = xqib[i * CLUSTER_SIZE + tidxi];
+                        xi      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
+
+                        /* distance between i and j atoms */
+                        rv      = xi - xj;
+                        r2      = norm2(rv);
 
 #ifdef PRUNE_NBL
-                            /* If _none_ of the atoms pairs are in cutoff range,
-                               the bit corresponding to the current
-                               cluster-pair in imask gets set to 0 */
-                            if (!__any(r2 < rlist_sq))
-                            {
-                                imask &= ~mask_ji;
-                            }
-#endif
-
-                            int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
-
-                            /* cutoff & exclusion check &
-                               check for small r2 to avoid invr6 overflow */
-#if defined EL_EWALD || defined EL_RF
-                            if (r2 < rcoulomb_sq *
-                                (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
-#else
-                            if (r2 < rcoulomb_sq * int_bit)
-#endif
-                            {
-                                /* load the rest of the i-atom parameters */
-                                qi      = xqbuf.w;
-#ifdef IATYPE_SHMEM
-                                typei   = atib[i * CLUSTER_SIZE + tidxi];
-#else
-                                typei   = atom_types[ai];
-#endif
-
-                                /* LJ 6*C6 and 12*C12 */
-                                c6      = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej));
-                                c12     = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej) + 1);
-
-                                /* avoid NaN for excluded pairs at r=0 */
-                                r2 += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
-
-                                inv_r       = rsqrt(r2);
-                                inv_r2      = inv_r * inv_r;
-                                inv_r6      = inv_r2 * inv_r2 * inv_r2;
-#if defined EL_EWALD || defined EL_RF
-                                /* We could mask inv_r2, but with Ewald
-                                 * masking both inv_r6 and F_invr is faster */
-                                inv_r6      *= int_bit;
-#endif
-#ifdef EL_EWALD
-                                /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
-                                inv_r6      *= r2 < rvdw_sq;
-#endif
-
-                                F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
-
-#ifdef CALC_ENERGIES
-                                E_lj        += c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f;
-#endif
-
-#ifdef EL_CUTOFF
-                                F_invr      += qi * qj_f * inv_r2 * inv_r;
-#endif
-#ifdef EL_RF
-                                F_invr      += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
-#endif
-#ifdef EL_EWALD
-                                F_invr      += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
-#endif
-
-#ifdef CALC_ENERGIES
-#ifdef EL_CUTOFF
-                                E_el        += qi * qj_f * (inv_r - c_rf);
-#endif
-#ifdef EL_RF
-                                E_el        += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
-#endif
-#ifdef EL_EWALD
-                                /* 1.0f - erff is faster than erfcf */
-                                E_el        += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
-#endif
-#endif
-                                f_ij    = rv * F_invr;
-
-                                /* accumulate j forces in registers */
-                                fcj_buf -= f_ij;
-
-                                /* accumulate i forces in registers */
-                                ci_offset = i;
-                                fci_buf[ci_offset] += f_ij;
-                            }
+                        /* If _none_ of the atoms pairs are in cutoff range,
+                           the bit corresponding to the current cluster-pair 
+                           in imask gets set to 0.
+                         */
+                        if (!__any(r2 < rlist_sq))
+                        {
+                            imask_prune &= ~(1U << (jm * NSUBCELL + i));
                         }
+#endif
 
-                        /* shift the mask bit by 1 */
-                        mask_ji += mask_ji;
+                        int_bit = ((wexcl >> (jm * NSUBCELL + i)) & 1);
+
+                        /* cutoff & exclusion check &
+                           check for small r2 to avoid invr6 overflow */
+#if defined EL_EWALD || defined EL_RF
+                        if (r2 < rcoulomb_sq *
+                            (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
+#else
+                        if (r2 < rcoulomb_sq * int_bit)
+#endif
+                        {
+                            /* load the rest of the i-atom parameters */
+                            qi      = xqbuf.w;
+                            typei   = atom_types[ai];
+
+                            /* LJ 6*C6 and 12*C12 */
+                            c6      = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej));
+                            c12     = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej) + 1);
+
+                            /* avoid NaN for excluded pairs at r=0 */
+                            r2 += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
+
+                            inv_r       = rsqrt(r2);
+                            inv_r2      = inv_r * inv_r;
+                            inv_r6      = inv_r2 * inv_r2 * inv_r2;
+#if defined EL_EWALD || defined EL_RF
+                            /* We could mask inv_r2, but with Ewald
+                             * masking both inv_r6 and F_invr is faster */
+                            inv_r6      *= int_bit;
+#endif
+#ifdef EL_EWALD
+                            /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
+                            inv_r6      *= r2 < rvdw_sq;
+#endif
+
+                            F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
+
+#ifdef CALC_ENERGIES
+                            E_lj        += c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f;
+#endif
+
+#ifdef EL_CUTOFF
+                            F_invr      += qi * qj_f * inv_r2 * inv_r;
+#endif
+#ifdef EL_RF
+                            F_invr      += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
+#endif
+#ifdef EL_EWALD
+                            F_invr      += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
+#endif
+
+#ifdef CALC_ENERGIES
+#ifdef EL_CUTOFF
+                            E_el        += qi * qj_f * (inv_r - c_rf);
+#endif
+#ifdef EL_RF
+                            E_el        += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
+#endif
+#ifdef EL_EWALD
+                            /* 1.0f - erff is faster than erfcf */
+                            E_el        += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
+#endif
+#endif
+                            f_ij    = rv * F_invr;
+
+                            /* accumulate j forces in registers */
+                            fcj_buf -= f_ij;
+
+                            /* accumulate i forces in registers */
+                            fci_buf[ci_offset] += f_ij;
+                        }
                     }
 
-                    /* reduce j forces */
-#ifdef REDUCE_SHUFFLE
-                    reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj);
-#else
                     /* store j forces in shmem */
                     f_buf[                 tidx] = fcj_buf.x;
                     f_buf[    STRIDE_DIM + tidx] = fcj_buf.y;
                     f_buf[2 * STRIDE_DIM + tidx] = fcj_buf.z;
 
+                    /* reduce j forces */
                     reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
-#endif
                 }
             }
 #ifdef PRUNE_NBL
             /* Update the imask with the new one which does not contain the 
                out of range clusters anymore. */
-            pl_cj4[j4].imei[widx].imask = imask;
+            pl_cj4[j4].imei[widx].imask = imask_prune;
 #endif
         }
     }
@@ -375,11 +347,6 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
     for(ci_offset = 0; ci_offset < NSUBCELL; ci_offset++)
     {
         ai  = (sci * NSUBCELL + ci_offset) * CLUSTER_SIZE + tidxi;
-#ifdef REDUCE_SHUFFLE
-        reduce_force_i_warp_shfl(fci_buf[ci_offset], f,
-                                 &fshift_buf, calc_fshift,
-                                 tidxj, ai);
-#else
         f_buf[                 tidx] = fci_buf[ci_offset].x;
         f_buf[    STRIDE_DIM + tidx] = fci_buf[ci_offset].y;
         f_buf[2 * STRIDE_DIM + tidx] = fci_buf[ci_offset].z;
@@ -388,15 +355,10 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
                        &fshift_buf, calc_fshift,
                        tidxi, tidxj, ai);
         __syncthreads();
-#endif
     }
 
     /* add up local shift forces */
-#ifdef REDUCE_SHUFFLE
-    if (calc_fshift && (tidxj == 0 || tidxj == 4))
-#else
     if (calc_fshift && tidxj == 0)
-#endif
     {
         atomicAdd(&atdat.fshift[nb_sci.shift].x, fshift_buf.x);
         atomicAdd(&atdat.fshift[nb_sci.shift].y, fshift_buf.y);
@@ -404,14 +366,9 @@ __global__ void FUNCTION_NAME(k_nbnxn, 3)
     }
 
 #ifdef CALC_ENERGIES
-#ifdef REDUCE_SHUFFLE
-    /* sum the energies over the warp and to global memory */
-    reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx);
-#else
     /* flush the partial energies to shmem and sum them up */
     f_buf[             tidx] = E_lj;
     f_buf[STRIDE_DIM + tidx] = E_el;
     reduce_energy_pow2(f_buf, e_lj, e_el, tidx);
-#endif
 #endif
 }
