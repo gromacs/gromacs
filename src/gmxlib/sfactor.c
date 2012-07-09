@@ -240,29 +240,27 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn) {
     char line[STRLEN];
     gmx_structurefactors *gsf;
     double a1,a2,a3,a4,b1,b2,b3,b4,c;
-    int n,p;
+    int p;
     int i;
     int nralloc=10;
     int line_no;
     char atomn[32];
     fp=libopen(datfn);
     line_no = 0;
-
     snew(gsf,1);
 
     snew(gsf->atomnm,nralloc);
     snew(gsf->a,nralloc);
     snew(gsf->b,nralloc);
     snew(gsf->c,nralloc);
-    snew(gsf->n,nralloc);
     snew(gsf->p,nralloc);
+    gsf->n=NULL;
     gsf->nratoms=line_no;
     while(get_a_line(fp,line,STRLEN)) {
         i=line_no;
-        if (sscanf(line,"%s %d %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                   atomn,&p,&n,&a1,&a2,&a3,&a4,&b1,&b2,&b3,&b4,&c) == 12) {
+        if (sscanf(line,"%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                   atomn,&p,&a1,&a2,&a3,&a4,&b1,&b2,&b3,&b4,&c) == 11) {
             gsf->atomnm[i]=strdup(atomn);
-            gsf->n[i]=n;
             gsf->p[i]=p;
             snew(gsf->a[i],4);
             snew(gsf->b[i],4);
@@ -283,7 +281,6 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn) {
                 srenew(gsf->a,nralloc);
                 srenew(gsf->b,nralloc);
                 srenew(gsf->c,nralloc);
-                srenew(gsf->n,nralloc);
                 srenew(gsf->p,nralloc);
             }
         }
@@ -296,7 +293,6 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn) {
     srenew(gsf->a,gsf->nratoms);
     srenew(gsf->b,gsf->nratoms);
     srenew(gsf->c,gsf->nratoms);
-    srenew(gsf->n,gsf->nratoms);
     srenew(gsf->p,gsf->nratoms);
 
     fclose(fp);
@@ -641,7 +637,6 @@ extern void gmx_structurefactors_done(gmx_structurefactors_t *gsf){
 	sfree(sf->b);
 	sfree(sf->atomnm);
 	sfree(sf->p);
-	sfree(sf->n);
 	sfree(sf->c);
 
 	sfree(sf);
