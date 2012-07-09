@@ -283,6 +283,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
     md->bNHC_trotter = IR_NVT_TROTTER(ir);
+    md->bPrintNHChains = ir-> bPrintNHChains;
     md->bMTTK = (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir));
     md->bMu = NEED_MUTOT(*ir);
 
