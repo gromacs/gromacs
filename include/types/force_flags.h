@@ -50,9 +50,9 @@ extern "C" {
 #define GMX_FORCE_DYNAMICBOX   (1<<1)
 /* Do neighbor searching */
 #define GMX_FORCE_NS           (1<<2)
-/* Calculate bonded energies/forces */
-#define GMX_FORCE_DOLR         (1<<3)
 /* Calculate long-range energies/forces */
+#define GMX_FORCE_DOLR         (1<<3)
+/* Calculate bonded energies/forces */
 #define GMX_FORCE_BONDED       (1<<4)
 /* Store long-range forces in a separate array */
 #define GMX_FORCE_SEPLRF       (1<<5)
