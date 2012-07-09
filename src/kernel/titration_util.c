@@ -1110,6 +1110,7 @@ static void qhop_atoms2md(t_mdatoms *md, const titration_t T)
     int i, j, k;
     t_qhop_atom *a;
     qhop_db *db;
+    gmx_bool bWater;
 
     db = T->db;
 
@@ -1129,7 +1130,9 @@ static void qhop_atoms2md(t_mdatoms *md, const titration_t T)
         md->bqhopacceptor[a->atom_id] = (a->state & eQACC) != 0;
         md->bqhopdonor[a->atom_id]    = (a->state & eQDON) != 0;
 
-        for (j=0; j < a->nr_protons; j++)
+        bWater = T->db->rb.qrt[T->qhop_residues[a->qres_id].rtype].bWater;
+
+        for (j=0; (!bWater && (j < a->nr_protons)); j++)
         {
             if (db->H_map.H[db->H_map.atomid2H[a->protons[j]]] == 0)
             {
