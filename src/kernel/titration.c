@@ -3503,9 +3503,12 @@ static void scramble_hops(titration_t T, int mode)      ///< etQhopMode????
         for (i=0; i<T->nr_hop-1; i++)
         {
             r = i+gmx_rng_uniform_uint32(T->rng) % (T->nr_hop - i);
-            tmp_hop = T->hop[i];
-            T->hop[i] = T->hop[r];
-            T->hop[r] = tmp_hop;
+            if (i != r) 
+            {
+                tmp_hop = T->hop[i];
+                T->hop[i] = T->hop[r];
+                T->hop[r] = tmp_hop;
+            }
         }
         break;
 

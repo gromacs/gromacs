@@ -1117,7 +1117,7 @@ static void qhop_atoms2md(t_mdatoms *md, const titration_t T)
     /* Should probably set the massT array too. */
     srenew(md->bqhopdonor,md->nalloc);
     srenew(md->bqhopacceptor,md->nalloc);
-    for(k=md->nr; (k<md->nalloc); k++) 
+    for(k=0; (k<md->nalloc); k++) 
     {
         md->bqhopdonor[k] = FALSE;
         md->bqhopacceptor[k] = FALSE;
