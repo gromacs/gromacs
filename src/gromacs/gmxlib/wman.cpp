@@ -675,7 +675,7 @@ static void write_nroffman(FILE *out,
   
   fprintf(out,".TH %s 1 \"%s\" \"\" \"GROMACS suite, %s\"\n",program,mydate(tmp,255,FALSE),GromacsVersion());
   fprintf(out,".SH NAME\n");
-  fprintf(out,"%s\n",program);
+  fprintf(out,"%s@DESC@\n\n",program);
   fprintf(out,".B %s\n",GromacsVersion());
   
   fprintf(out,".SH SYNOPSIS\n");

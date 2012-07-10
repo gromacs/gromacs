@@ -95,8 +95,7 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
                         int argc, const char *const argv[])
     : realBinaryName_(realBinaryName != NULL ? realBinaryName : ""),
       fullInvokedProgram_(argc != 0 ? argv[0] : ""),
-      programName_(Path::splitToPathAndFilename(fullInvokedProgram_).second),
-      invariantProgramName_(programName_)
+      programName_(Path::splitToPathAndFilename(fullInvokedProgram_).second)
 {
     // Temporary hack to make things work on Windows while waiting for #950.
     // Some places in the existing code expect to have DIR_SEPARATOR in all
@@ -108,7 +107,8 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
         std::replace(fullInvokedProgram_.begin(), fullInvokedProgram_.end(),
                      '/', '\\');
     }
-    invariantProgramName_ = stripSuffixIfPresent(invariantProgramName_, ".exe");
+    programName_ = stripSuffixIfPresent(programName_, ".exe");
+    invariantProgramName_ = programName_;
 #ifdef GMX_BINARY_SUFFIX
     invariantProgramName_ =
         stripSuffixIfPresent(invariantProgramName_, GMX_BINARY_SUFFIX);

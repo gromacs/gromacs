@@ -87,7 +87,7 @@ gmx_ctime_r(const time_t *clock,char *buf, int n);
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 13;
+static const int cpt_version = 14;
 
 
 const char *est_names[estNR]=
@@ -840,7 +840,7 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
     {
         *nnhpres = 0;
     }
-    if (*file_version >= 12)
+    if (*file_version >= 14)
     {
         do_cpt_int_err(xd,"# of total lambda states ",nlambda,list);
     }
@@ -887,7 +887,7 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
                                          (1<<(estORIRE_DTAV+2)) |
                                          (1<<(estORIRE_DTAV+3))));
     }
-	if (*file_version >= 12)
+	if (*file_version >= 14)
     {
         do_cpt_int_err(xd,"df history flags",flags_dfh,list);
     } else {

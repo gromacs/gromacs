@@ -458,8 +458,8 @@ the periodic boundary conditions, this requires a slower PBC algorithm
 and molecules are not made whole in the output</dd>
 </dl></dd>
 
-<dt><b>rlist: (1) [nm]</b></dt>
-<dd>cut-off distance for the short-range neighbor list</dd>
+<dt><b>rlist: (-1) [nm]</b></dt>
+<dd>cut-off distance for the short-range neighbor list, should be &ge; 0</dd>
 
 <dt><b>rlistlong: (-1) [nm]</b></dt>
 <dd>Cut-off distance for the long-range neighbor list.
@@ -617,8 +617,8 @@ i.e. both to the user supplied function and the PME Mesh correction part.</dd>
 <dt><b>rcoulomb-switch: (0) [nm]</b></dt>
 <dd>where to start switching the Coulomb potential</dd>
 
-<dt><b>rcoulomb: (1) [nm]</b></dt>
-<dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx--></dd>
+<dt><b>rcoulomb: (-1) [nm]</b></dt>
+<dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx-->, should be &ge; 0</dd>
 
 <dt><b>epsilon-r: (1)</b></dt>
 <dd>The relative <!--Idx-->dielectric constant<!--EIdx-->.
@@ -675,8 +675,8 @@ for <tt>f</tt> and <tt>-f'</tt> are ignored.</dd>
 <dt><b>rvdw-switch: (0) [nm]</b></dt>
 <dd>where to start switching the LJ potential</dd>
 
-<dt><b>rvdw: (1) [nm]</b></dt>
-<dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx--></dd>
+<dt><b>rvdw: (-1) [nm]</b></dt>
+<dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx-->, should be &ge; 0</dd>
 
 <dt><b>DispCorr:</b></dt>
 <dd><dl compact></dd>

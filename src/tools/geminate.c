@@ -52,13 +52,8 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "geminate.h"
+#include "gmx_omp.h"
 
-#ifdef DOUSEOPENMP
-#define HAVE_OPENMP
-#endif
-#ifdef HAVE_OPENMP
-#include <omp.h>
-#endif
 
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
@@ -473,13 +468,11 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
   part3 = gem_cxmul(gamma, gem_cxmul(gem_cxadd(alpha, beta) , gem_cxsub(alpha, beta)));  /* 3(1+2)(1-2) */
   part4 = gem_cxmul(gem_cxsub(gamma, alpha), gem_cxmul(gem_cxsub(alpha, beta), gem_cxsub(beta, gamma))); /* (3-1)(1-2)(2-3) */
 
-#ifdef HAVE_OPENMP
 #pragma omp parallel for				\
   private(i, tsqrt, oma, omb, omc, c1, c2, c3, c4),	\
   reduction(+:sumimaginary),				\
   default(shared),					\
   schedule(guided)
-#endif
   for (i=0; i<manytimes; i++){
     tsqrt = sqrt(time[i]);
     oma   = gem_comega(gem_cxrmul(alpha, tsqrt));
@@ -594,13 +587,11 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
   fixGemACF(GD->ctTheory, nFitPoints);
 
   /* Removing a bunch of points from the log-part. */
-#ifdef HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic)	\
   firstprivate(nData, ctTheory, y, nFitPoints)	\
   private (i, iLog, r)			\
   reduction(+:residual2)			\
   default(shared)
-#endif
   for(i=0; i<nFitPoints; i++)
     {
       iLog = GD->logtime[i];
@@ -666,9 +657,9 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 #endif /* HAVE_LIBGSL */
 
 #ifdef HAVE_LIBGSL
-#ifdef HAVE_OPENMP
-  nThreads = omp_get_num_procs();
-  omp_set_num_threads(nThreads);
+#ifdef GMX_OPENMP
+  nThreads = gmx_omp_get_max_threads();
+  gmx_omp_set_num_threads(nThreads);
   fprintf(stdout, "We will be using %i threads.\n", nThreads);
 #endif
 

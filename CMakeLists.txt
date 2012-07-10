@@ -60,6 +60,9 @@ set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
+set(CPACK_SOURCE_IGNORE_FILES ".isreposource;.git;.gitignore")
+set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
+SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/man;man")
 
 #must come after all cpack settings!
 include(CPack)
@@ -155,7 +158,6 @@ set(GMX_QMMM_PROGRAM "none"
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
@@ -193,7 +195,6 @@ if(GMX_OPENMP)
     if(OPENMP_FOUND)
         set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
         set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
-        add_definitions(-DGMX_OPENMP)
     else(OPENMP_FOUND)
         message(WARNING
                 "Compiler not supporting OpenMP. This might hurt your performance a lot, "
@@ -367,12 +368,17 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 if(UNIX AND NOT APPLE)
     if(GMX_PREFER_STATIC_LIBS)
         SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-        if(BUILD_SHARED_LIBS)
-            message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
-            set(BUILD_SHARED_LIBS OFF CACHE BOOL "Enable shared libraries (can be problematic with MPI, Windows)" FORCE)
+        if(SHARED_LIBS_DEFAULT)
+            if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
+                message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
+            elseif(NOT DEFINED BUILD_SHARED_LIBS) #Change default to OFF. Don't warn if it's already off.
+                message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
+                set(SHARED_LIBS_DEFAULT OFF)
+            endif()
         endif()
     endif()
 endif()
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 
 option(GMX_XML "Use libxml2 to parse xml files" ON)
 if (GMX_XML)
@@ -588,8 +594,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
 
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
-
-    message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
 
@@ -625,8 +632,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
-
-    message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUAL "AVX_256")
 
@@ -665,11 +673,15 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
     # But just enable one of the choices internally...
     if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA")
         set(GMX_X86_AVX_128_FMA 1)
-        message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+        if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+        endif()
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_X86_AVX_256 1)
-        message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+        if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+        endif()
     endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
@@ -680,7 +692,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
 
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
-    message(STATUS "Configuring for BlueGene")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Configuring for BlueGene")
+    endif()
     set(GMX_BLUEGENE 1)
     if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
         set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
@@ -698,6 +712,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
 else(${GMX_ACCELERATION} STREQUAL "NONE")
     MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
+set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
 if(GMX_FORTRAN OR GMX_POWER6)
     if (GMX_THREAD_MPI)
@@ -895,6 +910,21 @@ if(GMX_LOAD_PLUGINS)
   endif()
 endif(GMX_LOAD_PLUGINS)
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
+    if(NOT CMAKE_CROSSCOMPILING)
+        option(GMX_BUILD_MANPAGES "Build man pages" ON)
+    else()
+        message(STATUS "Building the man pages is not available when "
+            "cross-compiling the developer version from git")
+    endif()
+else()
+    #make sure source package contains all man pages
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/man/man1/ngmx.1")
+        message(FATAL_ERROR "Man pages are missing from source package.")
+    endif()
+endif()
+mark_as_advanced(GMX_BUILD_MANPAGES)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
