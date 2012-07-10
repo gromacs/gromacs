@@ -716,15 +716,26 @@ real dd_choose_grid(FILE *fplog,
                 if (cr->nnodes <= 18)
                 {
                     cr->npmenodes = 0;
+                    if (fplog)
+                    {
+                        fprintf(fplog,"Using %d separate PME nodes, as there are too few total\n nodes for efficient splitting\n",cr->npmenodes);
+                    }
                 }
                 else
                 {
                     cr->npmenodes = guess_npme(fplog,mtop,ir,box,cr->nnodes);
+                    if (fplog)
+                    {
+                        fprintf(fplog,"Using %d separate PME nodes, as guessed by mdrun\n",cr->npmenodes);
+                    }
                 }
             }
-            if (fplog)
+            else
             {
-                fprintf(fplog,"Using %d separate PME nodes\n",cr->npmenodes);
+                if (fplog)
+                {
+                    fprintf(fplog,"Using %d separate PME nodes, per user request\n",cr->npmenodes);
+                }
             }
         }
         

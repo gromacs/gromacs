@@ -109,6 +109,8 @@ END
 HEAD|Kinetic properties
 g_bar|calculates free energy difference estimates through Bennett's acceptance ratio
 g_current|calculate current autocorrelation function of system
+g_dos|analyses density of states and properties based on that
+g_kinetics|analysis kinetics constants from properties based on the Eyring model
 g_principal|calculate principal axes of inertion for a group of atoms
 g_tcaf|calculates viscosities of liquids
 g_traj|plots x, v, f, box, temperature and rotational energy
