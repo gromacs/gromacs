@@ -1589,7 +1589,7 @@ static int qhop_titrate(qhop_db *db, titration_t T,
 
 static void wipe_titrating_sites(titration_t T, t_qhop_residue *reactant, t_mdatoms *md)
 {
-    int i;
+    int i, j;
     t_qhop_atom *qa;
 
     qa = T->qhop_atoms;
@@ -1597,9 +1597,10 @@ static void wipe_titrating_sites(titration_t T, t_qhop_residue *reactant, t_mdat
     /* Wipe donor/acceptor info of qhop_atoms for this residue. */
     for (i=0; i<reactant->nr_titrating_sites; i++)
     {
-        qa[i].state = eQNONE;
-        md->bqhopdonor[qa[i].atom_id]=FALSE;
-        md->bqhopacceptor[qa[i].atom_id]=FALSE;
+        j = reactant->titrating_sites[i];
+        qa[j].state = eQNONE;
+        md->bqhopdonor[qa[j].atom_id]=FALSE;
+        md->bqhopacceptor[qa[j].atom_id]=FALSE;
     }
 }
 
