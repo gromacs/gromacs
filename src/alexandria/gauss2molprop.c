@@ -84,7 +84,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   gmx_bool bAtomicCenter;
   gmx_molprop_t mpt;
   real mm;
-  char *atomname,*ginc,*hfener,*mp2ener;
+  char *atomname,*ginc,*hfener,*mp2ener,*g3ener,*g4ener,*cbsener;
   char *conformation = "unknown";
   char *reference = "This Work";
   char *program=NULL,*method=NULL,*basis=NULL;
@@ -104,6 +104,9 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   charge  = NOTSET;
   hfener  = NULL;
   mp2ener = NULL;
+  g3ener  = NULL;
+  g4ener  = NULL;
+  cbsener = NULL;
   
   /* First loop over strings to deduct basic stuff */
   for(i=0; (i<nstrings); i++) 
@@ -142,6 +145,15 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
               if (NULL != strstr(ptr[j],"MP2=")) {
                   mp2ener = strdup(ptr[j]+4);
               }
+              if (NULL != strstr(ptr[j],"G3=")) {
+                  g3ener = strdup(ptr[j]+3);
+              }
+              if (NULL != strstr(ptr[j],"G4=")) {
+                  g4ener = strdup(ptr[j]+3);
+              }
+              if (NULL != strstr(ptr[j],"CBSQB3=")) {
+                  cbsener = strdup(ptr[j]+7);
+              }
           }
       }
       else if (NULL != strstr(strings[i],"#P")) {
@@ -167,6 +179,21 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       {
           ee = convert2gmx(atof(mp2ener),eg2cHartree);
           gmx_molprop_add_energy(mpt,calcref,"MP2","kJ/mol",ee,0);
+      }		
+      if (NULL != g3ener)
+      {
+          ee = convert2gmx(atof(g3ener),eg2cHartree);
+          gmx_molprop_add_energy(mpt,calcref,"G3","kJ/mol",ee,0);
+      }		
+      if (NULL != g4ener)
+      {
+          ee = convert2gmx(atof(g4ener),eg2cHartree);
+          gmx_molprop_add_energy(mpt,calcref,"G4","kJ/mol",ee,0);
+      }		
+      if (NULL != cbsener)
+      {
+          ee = convert2gmx(atof(cbsener),eg2cHartree);
+          gmx_molprop_add_energy(mpt,calcref,"CBS-BQ3","kJ/mol",ee,0);
       }		
     }
   if (calcref != NOTSET) 

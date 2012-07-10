@@ -756,33 +756,75 @@ int gmx_poldata_search_atype(gmx_poldata_t pd,char *key,
     else
         return 0;
 }
-				  
+
+double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2,
+                                        double distance,double toler)
+{
+    double dev,*bo=NULL;
+    char   *ba1,*ba2;
+    int    i,j,k,nbo;
+  
+    if ((NULL == elem1) || (NULL == elem2))
+        return 0;
+    for(i=0; (i<pd->ngt_bond); i++) {
+        if (0 == strlen(pd->gt_bond[i].elem1)) {
+            for(j=0; (j<pd->nalexandria); j++) 
+                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                    strcmp(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
+        }
+        if (0 == strlen(pd->gt_bond[i].elem2)) {
+            for(j=0; (j<pd->nalexandria); j++) 
+                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                    strcmp(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
+        }
+        ba1 = pd->gt_bond[i].elem1;
+        ba2 = pd->gt_bond[i].elem2;
+        if (((strcasecmp(ba1,elem1) == 0) && (strcasecmp(ba2,elem2) == 0)) ||
+            ((strcasecmp(ba1,elem2) == 0) && (strcasecmp(ba2,elem1) == 0))) {
+            dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
+            if (dev < toler) {
+                for(k=0; (k<nbo); k++) {
+                    if (pd->gt_bond[i].bondorder == bo[k])
+                        break;
+                }
+                if (k == nbo) 
+                {
+                    srenew(bo,nbo+2);
+                    bo[nbo] = pd->gt_bond[i].bondorder;
+                    bo[nbo+1] = 0;
+                    nbo++;
+                }
+            }
+        }
+    }
+    return bo;
+}
+
 int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
                              double distance,double toler)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     char *ba1,*ba2;
     double dev,dev_best = 100000;
     int j,i,i_best=-1;
   
     if ((NULL == elem1) || (NULL == elem2))
         return 0;
-    for(i=0; (i<pold->ngt_bond); i++) {
-        if (0 == strlen(pold->gt_bond[i].elem1)) {
-            for(j=0; (j<pold->nalexandria); j++) 
-                if (strcasecmp(pold->alexandria[j].type,pold->gt_bond[i].atom2) == 0)
-                    strcmp(pold->gt_bond[i].elem1,pold->alexandria[j].elem);
+    for(i=0; (i<pd->ngt_bond); i++) {
+        if (0 == strlen(pd->gt_bond[i].elem1)) {
+            for(j=0; (j<pd->nalexandria); j++) 
+                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                    strcmp(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
         }
-        if (0 == strlen(pold->gt_bond[i].elem2)) {
-            for(j=0; (j<pold->nalexandria); j++) 
-                if (strcasecmp(pold->alexandria[j].type,pold->gt_bond[i].atom2) == 0)
-                    strcmp(pold->gt_bond[i].elem2,pold->alexandria[j].elem);
+        if (0 == strlen(pd->gt_bond[i].elem2)) {
+            for(j=0; (j<pd->nalexandria); j++) 
+                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                    strcmp(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
         }
-        ba1 = pold->gt_bond[i].elem1;
-        ba2 = pold->gt_bond[i].elem2;
+        ba1 = pd->gt_bond[i].elem1;
+        ba2 = pd->gt_bond[i].elem2;
         if (((strcasecmp(ba1,elem1) == 0) && (strcasecmp(ba2,elem2) == 0)) ||
             ((strcasecmp(ba1,elem2) == 0) && (strcasecmp(ba2,elem1) == 0))) {
-            dev = fabs((pold->gt_bond[i].length - distance)/pold->gt_bond[i].length);
+            dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
             if (dev < dev_best) {
                 dev_best = dev;
                 i_best = i;

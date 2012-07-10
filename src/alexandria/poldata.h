@@ -211,6 +211,10 @@ extern int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 /* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
 extern int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
                                     double distance,double toler);
+
+/* Return NULL-terminated array of potential bondorders */
+extern double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2,
+                                               double distance,double toler);
 /* Returns the bondorder. Toler is absolute in length-units. */
 extern double gmx_poldata_atype_bondorder(gmx_poldata_t pd,char *atype1,char *atype2,
                                           double distance,double toler);

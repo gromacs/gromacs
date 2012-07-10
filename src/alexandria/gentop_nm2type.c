@@ -67,6 +67,24 @@
 enum { egmLinear, egmPlanar, egmTetrahedral, egmNR };
 static const char *geoms[egmNR] = { "linear", "planar", "tetrahedral" };
 
+enum { ecolWhite, ecolGrey, ecolBlack };
+
+typedef struct {
+    int      nb,geom,conf,atomnr,nat,myat,nn,ecol;
+    int      *bbb,*bondindex;
+    int      iAromatic;
+    double   nbo;
+    double   *valence;
+    char     *elem,*aname;
+    char     **nb_hybrid,**at_ptr,**tp;
+} t_atsel;
+
+typedef struct {
+    int      ai,aj,bcolor;
+    int      nbbo;
+    double   *bbo;
+} t_bondsel;
+
 static gmx_bool is_planar(rvec xi,rvec xj,rvec xk,rvec xl,t_pbc *pbc,
                       real phi_toler)
 {
@@ -90,16 +108,6 @@ static gmx_bool is_linear(rvec xi,rvec xj,rvec xk,t_pbc *pbc,
 		  
     return (th > th_toler) || (th < 180-th_toler);
 }
-
-typedef struct {
-    int      nb,geom,conf,atomnr,nat,myat,nn;
-    int      *bbb;
-    int      iAromatic;
-    double   nbo;
-    double   *valence;
-    char     *elem,*aname;
-    char     **nb_hybrid,**at_ptr,**tp;
-} t_atsel;
 
 static void calc_bondorder(FILE *fp,
                            gmx_poldata_t pd,int natoms,t_atsel ats[],t_params *bonds,
@@ -189,6 +197,182 @@ static void check_rings(FILE *fp,const char *molname,int natoms,t_atsel ats[])
                     ats[i].iAromatic);
         }
     }
+}
+
+static int first_atom_colour(int fC,int natom,int Col,t_atsel ats[])
+/* Return the first node with colour Col starting at fC.
+ * return -1 if none found.
+ */
+{
+  int i;
+  
+  for(i=fC; (i<natom); i++)
+  {
+      if ((ats[i].nb > 0) && (ats[i].ecol == Col))
+      {
+          return i;
+      }
+  }
+  
+  return -1;
+}
+
+static int colour_inner(int natoms,t_atsel ats[],int fW,int naG,
+                        int nbonds,t_bondsel bondsel[],
+                        double bondorder[])
+{
+    double *bo;
+    int bi,i,j,result;
+    int nbG,nbW,nbWi;
+    
+    snew(bo,nbonds);
+    for(i=0; (i<nbonds); i++)
+        bo[i] = bondorder[i];
+        
+    /* Now check all the possible bond orders for all the bonds outgoing from fW */
+    for(i=0; (i<ats[fW].nb); i++)
+    {
+        bi = ats[fW].bondindex[i];
+        switch (bondsel[bi].bcolor) 
+        {
+        case ecolWhite:
+            bondsel[bi].bcolor = ecolGrey;
+            result = 0;
+            for(j=0; (j<bondsel[bi].nbbo) && (0 == result); j++) 
+            {
+                bo[bi] = bondsel[bi].bbo[j];
+                result = colour_inner(natoms,ats,fW,naG,nbonds,bondsel,bo);
+            }
+            if (0 != result)
+            {
+                nbG++;
+                nbW--;
+                nbWi--;
+            }
+            else
+            {
+                bondsel[bi].bcolor = ecolWhite;
+            }
+            break;
+        case ecolGrey:
+            
+            break;
+        case ecolBlack:
+            if (ecolBlack == ats[bondsel[bi].ai].ecol)
+                gmx_fatal(FARGS,"Can not modify atom %d",bondsel[bi].ai);
+            ats[bondsel[bi].ai].nbo += bo[bi];
+            if (ecolBlack == ats[bondsel[bi].aj].ecol)
+                gmx_fatal(FARGS,"Can not modify atom %d",bondsel[bi].aj);
+            ats[bondsel[bi].aj].nbo += bo[bi];
+            nbWi--;
+            break;
+        }
+    } 
+    if (0 != result) 
+    {
+        for(i=0; (i<nbonds); i++)
+            bondorder[i] = bo[i];
+    }
+    sfree(bo);
+    
+    return result;
+}
+
+static void get_bondorders(FILE *fp,const char *molname,rvec x[],
+                           int natoms,t_atsel ats[],int nbonds,t_bondsel bts[],
+                           gmx_poldata_t pd,double bondorder[])
+{
+    int    lu;
+    int    i,j,ai,aj,bi,nbtot;
+    int    naW,naG,naB,nbW,nbG,nbB,nbWi;
+    int    fW,fG,*ibo_grey;
+    char   *elem_i,*elem_j,*unit;
+    rvec   dx;
+    double dx1,toler,*bo_grey;
+    
+    unit = gmx_poldata_get_length_unit(pd);
+    lu   = string2unit(unit);
+    snew(bo_grey,nbonds);
+    snew(ibo_grey,nbonds);
+    
+    naW = naG = naB = 0;
+    nbW = nbG = nbB = 0;
+    nbtot = 0;
+    for(i=0; (i<natoms); i++) 
+    {
+        ats[i].ecol = ecolWhite;
+        naW++;
+        nbtot += ats[i].nb;
+        snew(ats[i].bondindex,ats[i].nb);
+        ats[i].nb = 0;
+    }
+    /* Bonds are counted twice, so halve their number */
+    if (nbtot/2 != nbonds)
+    {
+        gmx_fatal(FARGS,"Inconsistency in number of bonds");
+    }
+    for(i=0; (i<nbonds); i++) 
+    {
+        ai = bts[i].ai;
+        aj = bts[i].aj;
+        elem_i = ats[ai].elem;
+        elem_j = ats[aj].elem;
+        /* Store the index of this bond in the atoms structure */
+        ats[ai].bondindex[ats[ai].nb++] = i;
+        ats[aj].bondindex[ats[aj].nb++] = i;
+        
+        bts[i].bcolor = ecolWhite;
+        rvec_sub(x[ai],x[aj],dx);
+        dx1 = gmx2convert(norm(dx),lu);
+        toler = 0.2*dx1;
+        if (NULL == (bts[i].bbo = gmx_poldata_elem_get_bondorders(pd,elem_i,elem_j,
+                                                                  dx1,toler)))
+        {
+            gmx_fatal(FARGS,"Can not find bond orders for %s - %s at distance %f",elem_i,elem_j,dx1);
+        }
+        bts[i].nbbo = 0;
+        while (0 != bts[i].bbo[bts[i].nbbo])
+        {
+            bts[i].nbbo++;
+        }
+        if (1 == bts[i].nbbo) 
+        {
+            bts[i].bcolor = ecolBlack;
+            bondorder[i] = bts[i].bbo[0];
+            /*ats[ai].nbo += bondorder[i];
+              ats[aj].nbo += bondorder[i];*/
+            nbW--;
+            nbB++;
+        }
+    }
+    if (NULL != fp)
+    {
+        fprintf(fp,"There are %d out of %d bonds for which the bondorder is known\n",nbB,nbtot);
+    }
+    /* Loop over white atoms and bonds */
+    fW = fG = 0;
+    while (naW > 0)
+    {
+        /* Make atoms grey */
+        if (-1 == (fW = first_atom_colour(fW,natoms,ecolWhite,ats)))
+        {
+            gmx_fatal(FARGS,"No WHITE atoms found while nW = %d\n",naW);
+        }
+        /* Make the first white atom grey */
+        ats[fW].ecol = ecolGrey;
+        naG++;
+        naW--;
+        
+        while (naG > 0) {
+            if ((0 < colour_inner(natoms,ats,fW,naG,nbonds,bts,bondorder)) &&
+                (ats[fW].nbo == ats[fW].valence[0]))
+            {
+                naG--;
+                naB++;
+                ats[fW].ecol = ecolBlack;
+            }
+        }
+    }            
 }
 
 static double minimize_valence(FILE *fp,
