@@ -57,8 +57,9 @@
 #endif
 
 /* CUDA library and hardware related defines */
-
-#define GRID_MAX_DIM        65535
+/* TODO list some constants instead that can be used for consistency checks to
+   detect future devices with features that make the currect code incompatible
+   with them (e.g. expected warp size = 32, check against the dev_info->props.warpsize). */
 #define WARP_SIZE           32
 
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed 

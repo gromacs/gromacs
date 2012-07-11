@@ -116,16 +116,23 @@ static unsigned int  gpu_sync_signal_pattern = 0xAAAAAAAA;
 
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
-static inline int calc_nb_blocknr(int nwork_units)
+static inline int calc_nb_kernel_nblock(int nwork_units, cu_dev_info_t *dinfo)
 {
-    int retval = (nwork_units <= GRID_MAX_DIM ? nwork_units : GRID_MAX_DIM);
-    if (retval != nwork_units)
+    int max_grid_x_size;
+
+    assert(dinfo);
+
+    max_grid_x_size = dinfo->dev_prop.maxGridSize[0];
+
+    /* do we exceed the grid x dimension limit? */
+    if (nwork_units > max_grid_x_size)
     {
-        gmx_fatal(FARGS, "Watch out, the number of nonbonded work units exceeds ",
-                  "the maximum grid size (%d > %d)!",
-                  nwork_units, GRID_MAX_DIM);
+        gmx_fatal(FARGS, "Watch out system too large to simulate!\n"
+                  "The number of nonbonded work units (=number of super-clusters) exceeds the"
+                  "maximum grid size in x dimension (%d > %d)!", nwork_units, max_grid_x_size);
     }
-    return retval;
+
+    return nwork_units;
 }
 
 
@@ -246,20 +253,16 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
 {
     cudaError_t stat;
     int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
+    /* CUDA kernel launch-related stuff */
+    int  shmem, nblock;
+    dim3 dim_block, dim_grid;
+    nbnxn_cu_k_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
     cu_atomdata_t   *adat   = cu_nb->atdat;
     cu_nbparam_t    *nbp    = cu_nb->nbparam;
     cu_plist_t      *plist  = cu_nb->plist[iloc];
     cu_timers_t     *t      = cu_nb->timers;
     cudaStream_t    stream  = cu_nb->stream[iloc];
-
-    /* kernel lunch-related stuff */
-    nbnxn_cu_k_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
-
-    int         shmem;
-    int         nb_blocks = calc_nb_blocknr(plist->nsci);
-    dim3        dim_block(CLUSTER_SIZE, CLUSTER_SIZE, 1);
-    dim3        dim_grid(nb_blocks, 1, 1);
 
     gmx_bool calc_ener   = flags & GMX_FORCE_VIRIAL;
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
@@ -284,15 +287,6 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
-    }
-
-    if (debug)
-    {
-        fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "Grid: %dx%d\n\t#Cells/Subcells: %d/%d (%d)\n",
-                dim_block.x, dim_block.y, dim_block.z,
-                dim_grid.x, dim_grid.y, plist->nsci*NSUBCELL,
-                NSUBCELL, plist->na_c);
     }
 
     /* When we get here all misc operations issues in the local stream are done,
@@ -339,10 +333,22 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     nb_kernel = select_nbnxn_kernel(cu_nb->kernel_ver, nbp->eeltype, calc_ener,
                                     plist->do_prune || always_prune);
 
+    /* kernel launch config */
+    nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
+    dim_block = dim3(CLUSTER_SIZE, CLUSTER_SIZE, 1);
+    dim_grid  = dim3(nblock, 1, 1);
     shmem     = calc_shmem_required(cu_nb->kernel_ver);
 
-    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist,
-                                                      calc_fshift);
+    if (debug)
+    {
+        fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
+                "Grid: %dx%d\n\t#Cells/Subcells: %d/%d (%d)\n",
+                dim_block.x, dim_block.y, dim_block.z,
+                dim_grid.x, dim_grid.y, plist->nsci*NSUBCELL,
+                NSUBCELL, plist->na_c);
+    }
+
+    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist, calc_fshift);
     CU_LAUNCH_ERR("k_calc_nb");
 
     if (do_time)
