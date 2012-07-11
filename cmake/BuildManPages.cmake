@@ -5,7 +5,7 @@ endif()
 function (gmx_add_man_page EXENAME)
     if(GMX_BUILD_MANPAGES)
         file(STRINGS ${CMAKE_SOURCE_DIR}/admin/programs.txt DESC 
-            REGEX "^${EXENAME}\\|")
+            REGEX "^${EXENAME}\\|" LIMIT_COUNT 1)
         #Regex breaks with a "|" in description. Cmake doesn't support 
         #non-greedy regex.
         string(REGEX REPLACE "^.*\\|" "" DESC "${DESC}")
