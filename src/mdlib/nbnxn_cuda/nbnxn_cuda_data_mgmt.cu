@@ -223,15 +223,15 @@ static void init_nbparam(cu_nbparam_t *nbp,
 
     if (ic->eeltype == eelCUT)
     {
-        nbp->eeltype = cu_eelCUT;
+        nbp->eeltype = eelCuCUT;
     }
     else if (EEL_RF(ic->eeltype))
     {                
-        nbp->eeltype = cu_eelRF;
+        nbp->eeltype = eelCuRF;
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype==eelEWALD))
     {
-        nbp->eeltype = cu_eelEWALD;
+        nbp->eeltype = eelCuEWALD;
     }
     else 
     {
@@ -239,7 +239,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
     }
 
     /* generate table for PME */
-    if (nbp->eeltype == cu_eelEWALD)
+    if (nbp->eeltype == eelCuEWALD)
     {
         nbp->coulomb_tab = NULL;
         init_ewald_coulomb_force_table(nbp);
@@ -799,7 +799,7 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb, gmx_bool bDomDec)
     plist_nl    = cu_nb->plist[eintNonlocal];
     timers      = cu_nb->timers;
 
-    if (nbparam->eeltype == cu_eelEWALD)
+    if (nbparam->eeltype == eelCuEWALD)
     {
         cu_unbind_texture("tex_coulomb_tab");
         cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);

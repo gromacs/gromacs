@@ -34,6 +34,7 @@
  */
 
 #include <stdlib.h>
+#include <assert.h>
 
 #if defined(_MSVC)
 #include <limits>
@@ -94,10 +95,10 @@
 #undef PRUNE_NBL
 
 /*! Nonbonded kernel function pointer type */
-typedef void (*p_k_nbnxn)(const cu_atomdata_t,
-                          const cu_nbparam_t,
-                          const cu_plist_t,
-                          gmx_bool);
+typedef void (*nbnxn_cu_k_ptr_t)(const cu_atomdata_t,
+                                 const cu_nbparam_t,
+                                 const cu_plist_t,
+                                 gmx_bool);
 
 /*********************************/
 
@@ -114,7 +115,7 @@ static unsigned char gpu_sync_signal_byte    = 0xAA;
 static unsigned int  gpu_sync_signal_pattern = 0xAAAAAAAA;
 
 
-/*! Returns the number of blocks to be used  for the nonbonded GPU kernel. */
+/*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
 static inline int calc_nb_blocknr(int nwork_units)
 {
     int retval = (nwork_units <= GRID_MAX_DIM ? nwork_units : GRID_MAX_DIM);
@@ -127,153 +128,72 @@ static inline int calc_nb_blocknr(int nwork_units)
     return retval;
 }
 
-/*! Selects the kernel version to execute at the current step and 
- *  returns a function pointer to it. 
- */
-static inline p_k_nbnxn select_nbnxn_kernel(int kver, int eeltype,
-                                            gmx_bool doEne, gmx_bool doPrune)
+
+/* Constant arrays listing all kernel function pointers and enabling selection
+   of a kernel in an elegant manner. */
+
+static const int nEnergyKernelTypes = 2; /* 0 - no nergy, 1 - energy */
+static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
+
+/* Default kernels */
+static const nbnxn_cu_k_ptr_t
+nb_cu_k_default[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
-    p_k_nbnxn k = NULL;
+    { { k_nbnxn_ewald,              k_nbnxn_ewald_prune },
+      { k_nbnxn_ewald_ener,         k_nbnxn_ewald_ener_prune } },
+    { { k_nbnxn_rf,                 k_nbnxn_rf_prune },
+      { k_nbnxn_rf_ener,            k_nbnxn_rf_ener_prune } },
+    { { k_nbnxn_ewald,              k_nbnxn_ewald_prune },
+      { k_nbnxn_cutoff_ener,        k_nbnxn_cutoff_ener_prune } },
+};
 
-    /* select which kernel will be used */
-    switch (eeltype)
+/* Legacy kernels */
+static const nbnxn_cu_k_ptr_t
+nb_cu_k_legacy[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
+{
+    { { k_nbnxn_ewald_legacy,       k_nbnxn_ewald_prune_legacy },
+      { k_nbnxn_ewald_ener_legacy,  k_nbnxn_ewald_ener_prune_legacy } },
+    { { k_nbnxn_rf_legacy,          k_nbnxn_rf_prune_legacy },
+      { k_nbnxn_rf_ener_legacy,     k_nbnxn_rf_ener_prune_legacy } },
+    { { k_nbnxn_ewald_legacy,       k_nbnxn_ewald_prune_legacy },
+      { k_nbnxn_cutoff_ener_legacy, k_nbnxn_cutoff_ener_prune_legacy } },
+};
+
+/* Old kernels */
+static const nbnxn_cu_k_ptr_t
+nb_cu_k_old[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
+{
+    { { k_nbnxn_ewald_old,          k_nbnxn_ewald_prune_old },
+      { k_nbnxn_ewald_ener_old,     k_nbnxn_ewald_ener_prune_old } },
+    { { k_nbnxn_rf_old,             k_nbnxn_rf_prune_old },
+      { k_nbnxn_rf_ener_old,        k_nbnxn_rf_ener_prune_old } },
+    { { k_nbnxn_ewald_old,          k_nbnxn_ewald_prune_old },
+      { k_nbnxn_cutoff_ener_old,    k_nbnxn_cutoff_ener_prune_old } },
+};
+
+/*! Return a pointer to the kernel version to be executed at the current step. */
+static inline nbnxn_cu_k_ptr_t select_nbnxn_kernel(int kver, int eeltype,
+                                                    gmx_bool doEne, gmx_bool doPrune)
+{
+    assert(kver < eNbnxnCuKNR);
+    assert(eeltype < eelCuNR);
+
+    if (NBNXN_KVER_OLD(kver))
     {
-        case cu_eelCUT:
-            if (NBNXN_KVER_OLD(kver))
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_cutoff_old :
-                        k_nbnxn_cutoff_prune_old;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_cutoff_ener_old :
-                        k_nbnxn_cutoff_ener_prune_old;
-                }
-            }
-            else if (NBNXN_KVER_LEGACY(kver))
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_cutoff_legacy :
-                                   k_nbnxn_cutoff_prune_legacy;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_cutoff_ener_legacy :
-                                   k_nbnxn_cutoff_ener_prune_legacy;
-                }
-            }
-            else
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_cutoff :
-                                   k_nbnxn_cutoff_prune;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_cutoff_ener :
-                                   k_nbnxn_cutoff_ener_prune;
-                }
-            }
-            break;
-
-        case cu_eelRF:
-            if (NBNXN_KVER_OLD(kver))
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_rf_old :
-                        k_nbnxn_rf_prune_old;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_rf_ener_old :
-                        k_nbnxn_rf_ener_prune_old;
-                }
-            }
-
-            if (NBNXN_KVER_LEGACY(kver))
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_rf_legacy :
-                                   k_nbnxn_rf_prune_legacy;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_rf_ener_legacy :
-                                   k_nbnxn_rf_ener_prune_legacy;
-                }
-            }
-            else
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_rf :
-                                   k_nbnxn_rf_prune;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_rf_ener :
-                                   k_nbnxn_rf_ener_prune;
-                }
-            }
-            break;
-
-        case cu_eelEWALD:
-            if (NBNXN_KVER_OLD(kver))
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_ewald_old :
-                        k_nbnxn_ewald_prune_old;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_ewald_ener_old :
-                        k_nbnxn_ewald_ener_prune_old;
-                }
-            }
-            else if (NBNXN_KVER_LEGACY(kver))
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_ewald_legacy :
-                                   k_nbnxn_ewald_prune_legacy;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_ewald_ener_legacy:
-                                   k_nbnxn_ewald_ener_prune_legacy;
-                }
-            }
-            else
-            {
-                if (!doEne)
-                {
-                    k = !doPrune ? k_nbnxn_ewald :
-                                   k_nbnxn_ewald_prune;
-                }
-                else
-                {
-                    k = !doPrune ? k_nbnxn_ewald_ener :
-                                   k_nbnxn_ewald_ener_prune;
-                }
-            }
-            break;
-
-        default:
-            gmx_incons("The provided electrostatics type does not exist in the "
-                       "CUDA implementation!");
+        return nb_cu_k_old[eeltype][doEne][doPrune];
     }
-    return k;
+    else if (NBNXN_KVER_LEGACY(kver))
+    {
+        return nb_cu_k_legacy[eeltype][doEne][doPrune];
+    }
+    else
+    {
+        return nb_cu_k_default[eeltype][doEne][doPrune];
+    }
 }
 
-/*! Calculates the amount of shared memory needed by the kernel type/arch in use. */
-static inline int calc_shmem(int kver)
+/*! Calculates the amount of shared memory required for kernel version in use. */
+static inline int calc_shmem_required(int kver)
 {
     int shmem;
 
@@ -334,7 +254,8 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     cudaStream_t    stream  = cu_nb->stream[iloc];
 
     /* kernel lunch-related stuff */
-    p_k_nbnxn   nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
+    nbnxn_cu_k_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
+
     int         shmem;
     int         nb_blocks = calc_nb_blocknr(plist->nsci);
     dim3        dim_block(CLUSTER_SIZE, CLUSTER_SIZE, 1);
@@ -418,7 +339,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     nb_kernel = select_nbnxn_kernel(cu_nb->kernel_ver, nbp->eeltype, calc_ener,
                                     plist->do_prune || always_prune);
 
-    shmem     = calc_shmem(cu_nb->kernel_ver);
+    shmem     = calc_shmem_required(cu_nb->kernel_ver);
 
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist,
                                                       calc_fshift);
