@@ -129,7 +129,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       }
       else if (NULL != strstr(strings[i],"GINC")) {
           j = 0;
-          while ((j<nstrings) && (strlen(strings[i+j]) > 0))
+          while ((i+j<nstrings) && (strlen(strings[i+j]) > 0))
               j++;
           snew(ginc,80*(j+1));
           for(k=i; (k<i+j); k++) {
