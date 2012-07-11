@@ -43,7 +43,6 @@
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -61,7 +60,8 @@ class Distance : public TrajectoryAnalysisModule
         Distance();
         virtual ~Distance();
 
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -72,7 +72,6 @@ class Distance : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        Options                          options_;
         std::string                      fnDist_;
         Selection                        sel_[2];
         AnalysisData                     data_;

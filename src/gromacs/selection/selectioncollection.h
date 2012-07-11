@@ -122,14 +122,14 @@ class SelectionCollection
         /*! \brief
          * Initializes options for setting global properties on the collection.
          *
-         * \returns Initialized options object.
-         * \throws  std::bad_alloc if out of memory.
+         * \param[in,out] options Options object to initialize.
+         * \throws        std::bad_alloc if out of memory.
          *
-         * The returned options can be used to set the default position types
-         * (see setReferencePosType() and setOutputPosType()) and debugging
-         * options.
+         * Adds options to \p options that can be used to set the default
+         * position types (see setReferencePosType() and setOutputPosType())
+         * and debugging flags.
          */
-        Options &initOptions();
+        void initOptions(Options *options);
 
         /*! \brief
          * Sets the default reference position handling for a selection

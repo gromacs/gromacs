@@ -117,8 +117,8 @@
  * to set up options understood by the module, as well as for setting up
  * different options through gmx::TrajectoryAnalysisSettings (see the
  * documentation of that class for more details):
- * \skip  Options &
- * \until return options_;
+ * \skip  void
+ * \until settings->
  * \until }
  * For the template, we first set a description text for the tool (used for
  * help text).  Then we declare an option to specify the output file name,
@@ -137,7 +137,7 @@
  *
  * To adjust settings or selection options (e.g., the number of accepted
  * selections) based on option values, you need to override
- * gmx::TrajectoryAnalysisModule::initOptionsDone().  For simplicity,
+ * gmx::TrajectoryAnalysisModule::optionsFinished().  For simplicity,
  * this is not done in the template.
  *
  *

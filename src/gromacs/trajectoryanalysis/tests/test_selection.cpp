@@ -53,7 +53,8 @@ class SelectionTester : public TrajectoryAnalysisModule
         SelectionTester();
         virtual ~SelectionTester();
 
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -66,13 +67,12 @@ class SelectionTester : public TrajectoryAnalysisModule
     private:
         void printSelections();
 
-        Options                  options_;
         SelectionList            selections_;
         int                      nmaxind_;
 };
 
 SelectionTester::SelectionTester()
-    : options_("testing", "Selection testing and debugging"),
+    : TrajectoryAnalysisModule("testing", "Selection testing and debugging"),
       nmaxind_(20)
 {
 }
@@ -92,22 +92,21 @@ SelectionTester::printSelections()
     fprintf(stderr, "\n");
 }
 
-Options &
-SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
+void
+SelectionTester::initOptions(Options *options,
+                             TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
         "This is a test program for selections."
     };
 
-    options_.setDescription(concatenateStrings(desc));
+    options->setDescription(concatenateStrings(desc));
 
-    options_.addOption(SelectionOption("select").storeVector(&selections_)
+    options->addOption(SelectionOption("select").storeVector(&selections_)
                            .required().multiValue()
                            .description("Selections to test"));
-    options_.addOption(IntegerOption("pmax").store(&nmaxind_)
+    options->addOption(IntegerOption("pmax").store(&nmaxind_)
                            .description("Maximum number of indices to print in lists (-1 = print all)"));
-
-    return options_;
 }
 
 void

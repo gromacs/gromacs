@@ -68,7 +68,7 @@ const char Angle::shortDescription[] =
     "Calculate angles";
 
 Angle::Angle()
-    : options_(name, shortDescription),
+    : TrajectoryAnalysisModule(name, shortDescription),
       sel1info_(NULL), sel2info_(NULL),
       bSplit1_(false), bSplit2_(false), bMulti_(false), bAll_(false),
       bDumpDist_(false), natoms1_(0), natoms2_(0), vt0_(NULL)
@@ -83,8 +83,8 @@ Angle::~Angle()
 }
 
 
-Options &
-Angle::initOptions(TrajectoryAnalysisSettings *settings)
+void
+Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
         "g_angle computes different types of angles between vectors.",
@@ -129,45 +129,43 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
     static const char *const cGroup2TypeEnum[] =
         { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
 
-    options_.setDescription(concatenateStrings(desc));
+    options->setDescription(concatenateStrings(desc));
 
-    options_.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&fnAngle_).defaultValueIfSet("angle")
                            .description("Computed angles"));
-    options_.addOption(FileNameOption("od").filetype(eftPlot).outputFile()
+    options->addOption(FileNameOption("od").filetype(eftPlot).outputFile()
                            .store(&fnDump_).defaultValueIfSet("angdump")
                            .description("Individual angles on separate lines"));
 
-    options_.addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
+    options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
         .defaultEnumIndex(0).store(&g1type_)
         .description("Type of analysis/first vector group"));
-    options_.addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
+    options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
         .defaultEnumIndex(0).store(&g2type_)
         .description("Type of second vector group"));
-    options_.addOption(BooleanOption("split1").store(&bSplit1_)
+    options->addOption(BooleanOption("split1").store(&bSplit1_)
         .description("Each position of first group in separate selection"));
-    options_.addOption(BooleanOption("split2").store(&bSplit2_)
+    options->addOption(BooleanOption("split2").store(&bSplit2_)
         .description("Each position of second group in separate selection"));
-    options_.addOption(BooleanOption("multi").store(&bMulti_)
+    options->addOption(BooleanOption("multi").store(&bMulti_)
         .description("Analyze multiple sets of angles/dihedrals"));
-    options_.addOption(BooleanOption("all").store(&bAll_)
+    options->addOption(BooleanOption("all").store(&bAll_)
         .description("Print individual angles together with the average"));
-    options_.addOption(BooleanOption("dumpd").store(&bDumpDist_)
+    options->addOption(BooleanOption("dumpd").store(&bDumpDist_)
         .description("Write also distances with -od"));
 
-    options_.addOption(SelectionOption("group1").multiValue().required()
+    options->addOption(SelectionOption("group1").multiValue().required()
         .dynamicOnlyWhole().storeVector(&sel1_).getAdjuster(&sel1info_)
         .description("First analysis/vector selection"));
-    options_.addOption(SelectionOption("group2").multiValue()
+    options->addOption(SelectionOption("group2").multiValue()
         .dynamicOnlyWhole().storeVector(&sel2_).getAdjuster(&sel2info_)
         .description("Second analysis/vector selection"));
-
-    return options_;
 }
 
 
 void
-Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
+Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
 {
     // Validity checks.
     bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
@@ -177,7 +175,7 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
         GMX_THROW(InconsistentInputError("Cannot use a second group (-g2) with "
                                          "-g1 angle or dihedral"));
     }
-    if (bSingle && options_.isSet("group2"))
+    if (bSingle && options->isSet("group2"))
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection "
                                          "(-group2) with -g1 angle or dihedral"));
@@ -231,7 +229,7 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
         default:
             GMX_THROW(InternalError("invalid -g2 value"));
     }
-    if (natoms2_ == 0 && options_.isSet("group2"))
+    if (natoms2_ == 0 && options->isSet("group2"))
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }

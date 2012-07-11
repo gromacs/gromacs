@@ -66,7 +66,8 @@ const char Distance::shortDescription[] =
     "Calculate distances";
 
 Distance::Distance()
-    : options_(name, shortDescription), avem_(new AnalysisDataAverageModule())
+    : TrajectoryAnalysisModule(name, shortDescription),
+      avem_(new AnalysisDataAverageModule())
 {
     data_.setColumnCount(4);
     registerAnalysisDataset(&data_, "distance");
@@ -78,8 +79,8 @@ Distance::~Distance()
 }
 
 
-Options &
-Distance::initOptions(TrajectoryAnalysisSettings *settings)
+void
+Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
         "g_dist can calculate the distance between two positions as",
@@ -87,14 +88,13 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
         "x, y and z components are plotted."
     };
 
-    options_.setDescription(concatenateStrings(desc));
+    options->setDescription(concatenateStrings(desc));
 
-    options_.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&fnDist_).defaultValueIfSet("dist")
                            .description("Computed distances"));
-    options_.addOption(SelectionOption("select").required().valueCount(2)
+    options->addOption(SelectionOption("select").required().valueCount(2)
                            .store(sel_));
-    return options_;
 }
 
 
