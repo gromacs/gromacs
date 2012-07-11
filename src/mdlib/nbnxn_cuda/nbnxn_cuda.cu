@@ -106,15 +106,6 @@ static gmx_bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static gmx_bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
-/* Non-bonded kernel selector environment variables */
-/* old kernel (former k1) */
-static gmx_bool bRunOldKernel     = (getenv("GMX_NB_K1") != NULL) || (getenv("GMX_CU_NB_OLD") != NULL);
-/* legacy kernel (former #2) -- kept for now for backward compatiblity. */
-static gmx_bool bRunLegacyKernel  = (getenv("GMX_NB_K2") != NULL) || (getenv("GMX_CU_NB_LEGACY") != NULL);
-/* default kernel (former #3). */
-static gmx_bool bRunDefaultKernel = (getenv("GMX_NB_K3") != NULL) || (getenv("GMX_CU_NB_DEFAULT") != NULL);
-
-
 /* Single byte of the bit-pattern used to fill the last element of the force
    array when using polling-based waiting. */
 static unsigned char gpu_sync_signal_byte    = 0xAA;
@@ -139,23 +130,16 @@ static inline int calc_nb_blocknr(int nwork_units)
 /*! Selects the kernel version to execute at the current step and 
  *  returns a function pointer to it. 
  */
-static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne, 
-                                            gmx_bool doPrune)
+static inline p_k_nbnxn select_nbnxn_kernel(int kver, int eeltype,
+                                            gmx_bool doEne, gmx_bool doPrune)
 {
     p_k_nbnxn k = NULL;
-
-    if (bRunOldKernel + bRunLegacyKernel + bRunDefaultKernel > 1)
-    {
-        /* TODO remove in release */
-        gmx_fatal(FARGS, "Multiple GPU NB kernels requested at the same time; "
-                  "set only one of the GMX_NB_K[123] env vars!");
-    }
 
     /* select which kernel will be used */
     switch (eeltype)
     {
         case cu_eelCUT:
-            if (bRunOldKernel)
+            if (NBNXN_KVER_OLD(kver))
             {
                 if (!doEne)
                 {
@@ -168,7 +152,7 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                         k_nbnxn_cutoff_ener_prune_old;
                 }
             }
-            else if (bRunLegacyKernel)
+            else if (NBNXN_KVER_LEGACY(kver))
             {
                 if (!doEne)
                 {
@@ -197,7 +181,7 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
             break;
 
         case cu_eelRF:
-            if (bRunOldKernel)
+            if (NBNXN_KVER_OLD(kver))
             {
                 if (!doEne)
                 {
@@ -211,7 +195,7 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                 }
             }
 
-            if (bRunLegacyKernel)
+            if (NBNXN_KVER_LEGACY(kver))
             {
                 if (!doEne)
                 {
@@ -224,7 +208,7 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                                    k_nbnxn_rf_ener_prune_legacy;
                 }
             }
-            else if (bRunDefaultKernel)
+            else
             {
                 if (!doEne)
                 {
@@ -240,7 +224,7 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
             break;
 
         case cu_eelEWALD:
-            if (bRunOldKernel)
+            if (NBNXN_KVER_OLD(kver))
             {
                 if (!doEne)
                 {
@@ -253,7 +237,7 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                         k_nbnxn_ewald_ener_prune_old;
                 }
             }
-            else if (bRunLegacyKernel)
+            else if (NBNXN_KVER_LEGACY(kver))
             {
                 if (!doEne)
                 {
@@ -286,6 +270,41 @@ static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne,
                        "CUDA implementation!");
     }
     return k;
+}
+
+/*! Calculates the amount of shared memory needed by the kernel type/arch in use. */
+static inline int calc_shmem(int kver)
+{
+    int shmem;
+
+    /* size of shmem (force-buffers/xq/atom type preloading) */
+    if (NBNXN_KVER_OLD(kver))
+    {
+        shmem = (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+    }
+    else if (NBNXN_KVER_LEGACY(kver))
+    {
+        /* i-atom x+q in shared memory */
+        shmem =  NSUBCELL * CLUSTER_SIZE * sizeof(float4);
+        /* force reduction buffers in shared memory */
+        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+    }
+    else
+    {
+        /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
+        /* i-atom x+q in shared memory */
+        shmem  = NSUBCELL * CLUSTER_SIZE * sizeof(float4);
+#ifdef IATYPE_SHMEM
+        /* i-atom types in shared memory */
+        shmem += NSUBCELL * CLUSTER_SIZE * sizeof(int);
+#endif
+#if __CUDA_ARCH__ < 300
+        /* force reduction buffers in shared memory */
+        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+#endif
+    }
+
+    return shmem;
 }
 
 /*! As we execute nonbonded workload in separate streams, before launching 
@@ -395,36 +414,11 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    /* size of shmem (force-buffers/xq/atom type preloading) */
-    if (bRunOldKernel)
-    {
-        shmem = (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
-    }
-    else if (bRunLegacyKernel)
-    {
-        /* i-atom x+q in shared memory */
-        shmem =  NSUBCELL * CLUSTER_SIZE * sizeof(float4);
-        /* force reduction buffers in shared memory */
-        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
-    }
-    else
-    {
-        /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
-        /* i-atom x+q in shared memory */
-        shmem  = NSUBCELL * CLUSTER_SIZE * sizeof(float4);
-#ifdef IATYPE_SHMEM
-        /* i-atom types in shared memory */
-        shmem += NSUBCELL * CLUSTER_SIZE * sizeof(int);
-#endif
-#if __CUDA_ARCH__ < 300
-        /* force reduction buffers in shared memory */
-        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
-#endif
-    }
-
     /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(nbp->eeltype, calc_ener,
+    nb_kernel = select_nbnxn_kernel(cu_nb->kernel_ver, nbp->eeltype, calc_ener,
                                     plist->do_prune || always_prune);
+
+    shmem     = calc_shmem(cu_nb->kernel_ver);
 
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist,
                                                       calc_fshift);

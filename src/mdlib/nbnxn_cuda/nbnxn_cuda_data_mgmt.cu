@@ -72,58 +72,58 @@
 
 static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
 
-/*! Names of old/unused nonbonded kernel fucntions with mangling (deprecated).
-    with CUDA 3.2/4.0 (used to be development k2). */
-static const char * const nb_k_old_names[NUM_NB_KERNELS] =
+/*! Names of default CUDA nonbonded kernel functions with mangling
+    (used to be development k3). */
+static const char * const nb_default_knames[NUM_NB_KERNELS] =
 {
-    "_Z12k_nbnxn_rf_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z15k_nbnxn_ewald_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z16k_nbnxn_cutoff_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z17k_nbnxn_rf_ener_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z18k_nbnxn_rf_prune_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z20k_nbnxn_ewald_ener_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_ewald_prune_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_cutoff_ener_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z22k_nbnxn_cutoff_prune_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z23k_nbnxn_rf_ener_prune_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z26k_nbnxn_ewald_ener_prune_11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z27k_nbnxn_cutoff_ener_prune_11cu_atomdata10cu_nbparam8cu_plisti"
+    "_Z10k_nbnxn_rf11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z13k_nbnxn_ewald11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z14k_nbnxn_cutoff11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z15k_nbnxn_rf_ener11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z16k_nbnxn_rf_prune11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z18k_nbnxn_ewald_ener11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z19k_nbnxn_ewald_prune11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z19k_nbnxn_cutoff_ener11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z20k_nbnxn_cutoff_prune11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_rf_ener_prune11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z24k_nbnxn_ewald_ener_prune11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z25k_nbnxn_cutoff_ener_prune11cu_atomdata10cu_nbparam8cu_plisti"
 };
 
 /*! Names of CUDA legacy nonbonded kernel functions with mangling (to be used
     with CUDA 3.2/4.0 (used to be development k2). */
-static const char * const nb_k_legacy_names[NUM_NB_KERNELS] =
+static const char * const nb_legacy_knames[NUM_NB_KERNELS] =
 {
-    "_Z12k_nbnxn_rf_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z15k_nbnxn_ewald_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z16k_nbnxn_cutoff_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z17k_nbnxn_rf_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z18k_nbnxn_rf_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z20k_nbnxn_ewald_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_ewald_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_cutoff_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z22k_nbnxn_cutoff_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z23k_nbnxn_rf_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z26k_nbnxn_ewald_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z27k_nbnxn_cutoff_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti"
+    "_Z17k_nbnxn_rf_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z20k_nbnxn_ewald_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_cutoff_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z22k_nbnxn_rf_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z23k_nbnxn_rf_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z25k_nbnxn_ewald_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z26k_nbnxn_ewald_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z26k_nbnxn_cutoff_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z27k_nbnxn_cutoff_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z28k_nbnxn_rf_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z31k_nbnxn_ewald_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z32k_nbnxn_cutoff_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti"
 };
 
-/*! Names of CUDA nonbonded kernel functions with mangling
-    (used to be development k3). */
-static const char * const nb_k_names[NUM_NB_KERNELS] =
+/*! Names of old/unused nonbonded kernel fucntions with mangling (deprecated,
+    used to be development k1). */
+static const char * const nb_old_knames[NUM_NB_KERNELS] =
 {
-    "_Z12k_nbnxn_rf_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z15k_nbnxn_ewald_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z16k_nbnxn_cutoff_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z17k_nbnxn_rf_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z18k_nbnxn_rf_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z20k_nbnxn_ewald_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_ewald_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_cutoff_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z22k_nbnxn_cutoff_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z23k_nbnxn_rf_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z26k_nbnxn_ewald_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z27k_nbnxn_cutoff_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti"
+    "_Z14k_nbnxn_rf_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z17k_nbnxn_ewald_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z18k_nbnxn_cutoff_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z19k_nbnxn_rf_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z20k_nbnxn_rf_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z22k_nbnxn_ewald_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z23k_nbnxn_ewald_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z23k_nbnxn_cutoff_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z24k_nbnxn_cutoff_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z25k_nbnxn_rf_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z28k_nbnxn_ewald_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z29k_nbnxn_cutoff_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti"
 };
 
 
@@ -348,7 +348,7 @@ void nbnxn_cuda_init(FILE *fplog,
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
     char sbuf[STRLEN];
-
+    bool bOldKernel, bLegacyKernel, bDefaultKernel, bCUDA40, bCUDA32;
 
     if (p_cu_nb == NULL) return;
 
@@ -483,38 +483,113 @@ void nbnxn_cuda_init(FILE *fplog,
         init_timings(nb->timings);
     }
 
-    *p_cu_nb = nb;
+    /* FIXME move this out in a function
+       Decide which kernel version to run based on:
+       - GPU SM version
+       - non-bonded kernel selector environment variables (both new and old form for backward-compatibility).
+    */
+    /* old kernel (former k1) */
+    bOldKernel     = (getenv("GMX_NB_K1") != NULL) || (getenv("GMX_CU_NB_OLD") != NULL);
+    /* legacy kernel (former k2), kept for now for backward compatiblity,
+       faster than the default with  CUDA 3.2/4.0 (TODO: on Kepler?). */
+    bLegacyKernel  = (getenv("GMX_NB_K2") != NULL) || (getenv("GMX_CU_NB_LEGACY") != NULL);
+    /* default kernel (former k3). */
+    bDefaultKernel = (getenv("GMX_NB_K3") != NULL) || (getenv("GMX_CU_NB_DEFAULT") != NULL);
 
-    if (debug)
+    if ((unsigned)(bOldKernel + bLegacyKernel + bDefaultKernel) > 1)
     {
-        fprintf(debug, "Initialized CUDA data structures.\n");
+        /* TODO remove in release? */
+        gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
+                  "of the following environment variables: \n"
+                  "GMX_CU_NB_DEFAULT, GMX_CU_NB_LEGACY [GMX_CU_NB_OLD deprecated!]");
     }
+
+    /* set the kernel type for the current GPU */
+    if (bOldKernel)
+    {
+        nb->kernel_ver = eNbnxnCuKOld;
+        /* TODO remove in release? */
+        gmx_warning("The old (and deprecated) CUDA non-bonded kernels (former k1) were selected.\n"
+                    "      This kernel is always slower than the default and legacy kernels.");
+    }
+    else
+    {
+        char sbuf[STRLEN];
+
+        bCUDA32 = bCUDA40 = false;
+#if CUDA_VERSION == 3200
+        bCUDA32 = true;
+        sprintf(sbuf, "3.2");
+#elif CUDA_VERSION == 4000
+        bCUDA40 = false;
+        sprintf(sbuf, "4.0");
+#endif
+
+        /* default is default ;) */
+        nb->kernel_ver = eNbnxnCuKDefault;
+
+        /* TODO: add warning to the sanity checks for the case when code compiled
+                 with old nvcc is used on Kepler. */
+        if (bCUDA32 || bCUDA40)
+        {
+            /* use legacy kernel unless something else is forced by an env. var */
+            if (bDefaultKernel)
+            {
+                fprintf(stderr,
+                        "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
+                        "      non-bonded kenels perform best. However, the default kernels were\n"
+                        "      selected by the GMX_CU_NB_DEFAULT environment variable."
+                        "      Consider using using the legacy kernels or upgrade your CUDA tookit.\n",
+                        sbuf);
+            }
+            else
+            {
+                nb->kernel_ver = eNbnxnCuKLegacy;
+            }
+        }
+        else
+        {
+            /* issue not if the non-default kernel is forced by an env. var */
+            if (bLegacyKernel)
+            {
+                fprintf(stderr, "\nNOTE: Non-default non-bonded CUDA kernels were selected by the GMX_CU_NB_LEGACY\n"
+                        "      env var. Consider using using the default kernels which should be faster!\n");
+
+                nb->kernel_ver = eNbnxnCuKLegacy;
+            }
+        }
+    }
+
 
     for (int i = 0; i < NUM_NB_KERNELS; i++)
     {
         /* Legacy kernel 16/48 kB Shared/L1 */
-        stat = cudaFuncSetCacheConfig(nb_k_legacy_names[i], cudaFuncCachePreferL1);
+        stat = cudaFuncSetCacheConfig(nb_legacy_knames[i], cudaFuncCachePreferL1);
         CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
 
         if (nb->dev_info->dev_prop.major >= 3)
         {
             /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
-            stat = cudaFuncSetCacheConfig(nb_k_names[i], cudaFuncCachePreferShared);
+            stat = cudaFuncSetCacheConfig(nb_default_knames[i], cudaFuncCachePreferShared);
         }
         else
         {
             /* On Fermi prefer L1 gives 2% higher performance */
             /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
-            stat = cudaFuncSetCacheConfig(nb_k_names[i], cudaFuncCachePreferL1);
+            stat = cudaFuncSetCacheConfig(nb_default_knames[i], cudaFuncCachePreferL1);
         }
+        CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+
+        /* Old kernel 48/16 kB Shared/L1 (TODO deprecated, remove) */
+        stat = cudaFuncSetCacheConfig(nb_old_knames[i],  cudaFuncCachePreferShared);
         CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
     }
 
-    /* Old kernel 48/16 kB Shared/L1 (TODO deprecated, remove) */
-    for (int i = 0; i < NUM_NB_KERNELS; i++)
+    *p_cu_nb = nb;
+
+    if (debug)
     {
-        stat = cudaFuncSetCacheConfig(nb_k_old_names[i],  cudaFuncCachePreferShared);
-        CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+        fprintf(debug, "Initialized CUDA data structures.\n");
     }
 
 

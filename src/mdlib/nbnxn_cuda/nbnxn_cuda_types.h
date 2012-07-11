@@ -47,6 +47,14 @@ extern "C" {
 /*! Types of electrostatics available in the CUDA nonbonded force kernels. */
 enum { cu_eelEWALD, cu_eelRF, cu_eelCUT };
 
+enum { eNbnxnCuKDefault, eNbnxnCuKLegacy, eNbnxnCuKOld };
+
+#define NBNXN_KVER_OLD(k)      (k == eNbnxnCuKOld)
+#define NBNXN_KVER_LEGACY(k)   (k == eNbnxnCuKLegacy)
+#define NBNXN_KVER_DEFAULT(k)  (k == eNbnxnCuKDefault)
+
+/*! Non-bonded kernel versions. */
+
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
  * are passed to the kernels, except cu_timers_t. */
 typedef struct cu_plist     cu_plist_t;
@@ -148,6 +156,8 @@ struct cu_timers
 struct nbnxn_cuda
 {
     cu_dev_info_t   *dev_info;      /* CUDA device information                              */
+    int             kernel_ver;     /* The version of the kernel to be executed on the device
+                                       in use, possible values: eNbnxnCuK* */
     gmx_bool        dd_run;         /* true if running with domain-decomposition            */
     gmx_bool        use_stream_sync; /* if true use memory polling-based waiting instead 
                                         of cudaStreamSynchronize                            */
