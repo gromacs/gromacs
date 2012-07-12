@@ -718,26 +718,32 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog, "\n Force evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
                 tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
                 gpu_cpu_ratio);
-        fprintf(fplog, " For optimal performance this ratio should be 1!\n");
-        /* print note if the imbalance is high with PME case in which
-         * CPU-GPU load balancing is possible */
-        if (gpu_cpu_ratio < 0.75 || gpu_cpu_ratio > 1.2)
+
+        /* only print notes related to CPU-GPU load balance with PME */
+        if (wc->wcc[ewcPMEMESH].n > 0)
         {
-            if (gpu_cpu_ratio < 0.75)
+            fprintf(fplog, "For optimal performance this ratio should be close to 1!\n");
+
+            /* print note if the imbalance is high with PME case in which
+             * CPU-GPU load balancing is possible */
+            if (gpu_cpu_ratio < 0.75 || gpu_cpu_ratio > 1.2)
             {
-                sprintf(buf, "NOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
-                             "      performance loss, consider turning on PME tuning (-tunepme).");
+                if (gpu_cpu_ratio < 0.75)
+                {
+                    sprintf(buf, "NOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
+                            "      performance loss, consider turning on PME tuning (-tunepme).");
+                }
+                if (gpu_cpu_ratio > 1.2)
+                {
+                    sprintf(buf, "NOTE: The GPU has >20%% more load than the CPU. This imbalance causes\n"
+                            "      performance loss, consider using a shorter cut-off.");
+                }
+                if (fplog)
+                {
+                    fprintf(fplog,"\n%s\n",buf);
+                }
+                fprintf(stderr,"\n\n%s\n",buf);
             }
-            if (gpu_cpu_ratio > 1.2)
-            {
-                sprintf(buf, "NOTE: The GPU has >20%% more load than the CPU. This imbalance causes\n"
-                             "      performance loss, consider using a shorter cut-off.");
-            }
-            if (fplog)
-            {
-                fprintf(fplog,"\n%s\n",buf);
-            }
-            fprintf(stderr,"\n\n%s\n",buf);
         }
     }
 
