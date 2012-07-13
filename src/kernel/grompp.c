@@ -1137,6 +1137,8 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 {
     real ref_T;
     int i;
+    verletbuf_list_setup_t ls;
+    real rlist_1x1;
     int n_nonlin_vsite;
     char warn_buf[STRLEN];
 
@@ -1165,9 +1167,16 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
         }
     }
 
-    /* Set the pair-list buffer size in ir */
+    /* Calculate the buffer size for simple atom vs atoms list */
+    ls.cluster_size_i = 1;
+    ls.cluster_size_j = 1;
     calc_verlet_buffer_size(mtop,det(box),ir,verletbuf_drift,
-                            &n_nonlin_vsite,&ir->rlist);
+                            &ls,&n_nonlin_vsite,&rlist_1x1);
+
+    /* Set the pair-list buffer size in ir */
+    verletbuf_get_list_setup(&ls);
+    calc_verlet_buffer_size(mtop,det(box),ir,verletbuf_drift,
+                            &ls,&n_nonlin_vsite,&ir->rlist);
 
     if (n_nonlin_vsite > 0)
     {
@@ -1175,8 +1184,12 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
         warning_note(wi,warn_buf);
     }
 
+    printf("Calculated rlist for %dx%d atom pair-list as %.3f nm, buffer size %.3f nm\n",
+           1,1,rlist_1x1,rlist_1x1-max(ir->rvdw,ir->rcoulomb));
+
     ir->rlistlong = ir->rlist;
-    printf("Set rlist to %g nm, buffer size %g nm\n",
+    printf("Set rlist, assuming %dx%d atom pair-list, to %.3f nm, buffer size %.3f nm\n",
+           ls.cluster_size_i,ls.cluster_size_j,
            ir->rlist,ir->rlist-max(ir->rvdw,ir->rcoulomb));
             
     if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC,box))

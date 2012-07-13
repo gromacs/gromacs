@@ -63,6 +63,21 @@ typedef struct
     int      n;    /* total #atoms of this type in the system */
 } verletbuf_atomtype_t;
 
+
+void verletbuf_get_list_setup(verletbuf_list_setup_t *list_setup)
+{
+    list_setup->cluster_size_i = NBNXN_CPU_CLUSTER_I_SIZE;
+#ifndef GMX_X86_SSE2
+    list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
+#else
+#ifndef GMX_DOUBLE
+    list_setup->cluster_size_j = 4;
+#else
+    list_setup->cluster_size_j = 2;
+#endif
+#endif
+}
+
 static void add_at(verletbuf_atomtype_t **att_p,int *natt_p,
                    real mass,int type,real q,gmx_bool con,int nmol)
 {
@@ -279,11 +294,12 @@ static void approx_2dof(real s2,real x,
 
 static real ener_drift(const verletbuf_atomtype_t *att,int natt,
                        const gmx_ffparams_t *ffp,
-                       real kT_fac,real line_dens_nat,
+                       real kT_fac,
                        real md_ljd,real md_ljr,real md_el,real dd_el,
-                       real r_buffer)
+                       real r_buffer,
+                       real rlist,real boxvol)
 {
-    double drift_tot,pot;
+    double drift_tot,pot1,pot2,pot;
     int    i,j;
     real   s2i,s2j,s2,s;
     int    ti,tj;
@@ -345,21 +361,24 @@ static real ener_drift(const verletbuf_atomtype_t *att,int natt,
              * Such potentials are extremely rare though.
              *
              * Note that pot has unit energy*length, as the linear
-             * atom density (line_dens_nat*natoms) still needs to be put in.
+             * atom density still needs to be put in.
              */
             c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
             c_erfc = 0.5*gmx_erfc(rsh/(sqrt(2*s2)));
             s      = sqrt(s2);
 
-            pot = sc_fac*
-                (md*((rsh*rsh + s2)*c_erfc - rsh*s*c_exp) +
-                 dd/6*(s*(rsh*rsh + 2*s2)*c_exp - rsh*(rsh*rsh + 3*s2)*c_erfc));
+            pot1 = sc_fac*
+                md/2*((rsh*rsh + s2)*c_erfc - rsh*s*c_exp);
+            pot2 = sc_fac*
+                dd/6*(s*(rsh*rsh + 2*s2)*c_exp - rsh*(rsh*rsh + 3*s2)*c_erfc);
+            pot = pot1 + pot2;
 
             if (gmx_debug_at)
             {
-                fprintf(debug,"n %d %d d s %.3f %.3f con %d md %8.1e dd %8.1e pot %8.1e\n",
-                        att[i].n,att[j].n,sqrt(s2i),sqrt(s2j),att[i].con,
-                        md,dd,pot);
+                fprintf(debug,"n %d %d d s %.3f %.3f con %d md %8.1e dd %8.1e pot1 %8.1e pot2 %8.1e pot %8.1e\n",
+                        att[i].n,att[j].n,sqrt(s2i),sqrt(s2j),
+                        att[i].con+att[j].con,
+                        md,dd,pot1,pot2,pot);
             }
 
             /* Multiply by the number of atom pairs */
@@ -371,33 +390,88 @@ static real ener_drift(const verletbuf_atomtype_t *att,int natt,
             {
                 pot *= (double)att[i].n*att[j].n;
             }
+            /* We need the line density to get the energy drift of the system.
+             * The effective average r^2 is close to (rlist+sigma)^2.
+             */
+            pot *= 4*M_PI*sqr(rlist + s)/boxvol;
 
+            /* Add the unsigned drift to avoid cancellation of errors */
             drift_tot += fabs(pot);
         }
     }
 
-    /* Multiply by the line atom density/natoms */
-    drift_tot *= line_dens_nat;
-
     return drift_tot;
+}
+
+static real surface_frac(int cluster_size,real particle_distance,real rlist)
+{
+    real d,area_rel;
+
+    if (rlist < 0.5*particle_distance)
+    {
+        /* We have non overlapping spheres */
+        return 1.0;
+    }
+
+    /* Half the inter-particle distance relative to rlist */
+    d = 0.5*particle_distance/rlist;
+
+    /* Determine the area of the surface at distance rlist to the closest
+     * particle, relative to surface of a sphere of radius rlist.
+     * The formulas below assume close to cubic cells for the pair search grid,
+     * which the pair search code tries to achieve.
+     * Note that in practice particle distances will not be delta distributed,
+     * but have some spread, often involving shorter distances,
+     * as e.g. O-H bonds in a water molecule. Thus the estimates below will
+     * usually be slightly too high and thus conservative.
+     */
+    switch (cluster_size)
+    {
+    case 1:
+        /* One particle: trivial */
+        area_rel = 1.0;
+        break;
+    case 2:
+        /* Two particles: two spheres at fractional distance 2*a */
+        area_rel = 1.0 + d;
+        break;
+    case 4:
+        /* We assume a perfect, symmetric tetrahedron geometry.
+         * The surface around a tetrahedron is too complex for a full
+         * analytical solution, so we use a Taylor expansion.
+         */
+        area_rel = (1.0 + 1/M_PI*(6*acos(1/sqrt(3))*d +
+                                  sqrt(3)*d*d*(1.0 +
+                                               5.0/18.0*d*d +
+                                               7.0/45.0*d*d*d*d +
+                                               83.0/756.0*d*d*d*d*d*d)));
+        break;
+    default:
+        gmx_incons("surface_frac called with unsupported cluster_size");
+        area_rel = 1.0;
+    }
+        
+    return area_rel/cluster_size;
 }
 
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
                              const t_inputrec *ir,real drift_target,
+                             const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist)
 {
     double resolution;
     char *env;
 
-    real nb_cell_rel_pairs_not_in_list_at_cutoff;
+    real particle_distance;
+    real nb_clust_frac_pairs_not_in_list_at_cutoff;
 
     verletbuf_atomtype_t *att=NULL;
     int  natt=-1,i;
     double reppow;
     real md_ljd,md_ljr,md_el,dd_el;
     real elfac;
-    real kT_fac,mass_min,line_dens_nat;
+    real kT_fac,mass_min;
     int  ib0,ib1,ib;
     real rb,rl;
     real drift;
@@ -434,13 +508,17 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
      * The results of this estimate have been checked againt simulations.
      * In most cases the real drift differs by less than a factor 2.
      */
-    nb_cell_rel_pairs_not_in_list_at_cutoff = 0.1;
+
+    /* Worst case assumption: HCP packing of particles gives largest distance */
+    particle_distance = pow(boxvol*sqrt(2)/mtop->natoms,1.0/3.0);
 
     get_verlet_buffer_atomtypes(mtop,&att,&natt,n_nonlin_vsite);
     assert(att != NULL && natt >= 0);
 
     if (debug)
     {
+        fprintf(debug,"particle distance assuming HCP packing: %f nm\n",
+                particle_distance);
         fprintf(debug,"energy drift atom types: %d\n",natt);
     }
 
@@ -577,24 +655,33 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         ib = (ib0 + ib1)/2;
         rb = ib*resolution;
         rl = max(ir->rvdw,ir->rcoulomb) + rb;
-        line_dens_nat = 4*M_PI*rl*rl/boxvol;
 
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
          */
         drift = ener_drift(att,natt,&mtop->ffparams,
                            kT_fac,
-                           line_dens_nat,
-                           md_ljd,md_ljr,md_el,dd_el,rb);
+                           md_ljd,md_ljr,md_el,dd_el,rb,
+                           rl,boxvol);
+
+        /* Correct for the fact that we are using a Ni x Nj particle pair list
+         * and not a 1 x 1 particle pair list. This reduces the drift.
+         */
+        nb_clust_frac_pairs_not_in_list_at_cutoff =
+            surface_frac(list_setup->cluster_size_i,particle_distance,rl)*
+            surface_frac(list_setup->cluster_size_j,particle_distance,rl);
+        drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */
         drift /= ir->nstlist*ir->delta_t*mtop->natoms;
 
-        drift *= nb_cell_rel_pairs_not_in_list_at_cutoff;
-
         if (debug)
         {
-            fprintf(debug,"ib %d %d %d rb %g drift %f\n",ib0,ib,ib1,rb,drift);
+            fprintf(debug,"ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %f\n",
+                    ib0,ib,ib1,rb,
+                    list_setup->cluster_size_i,list_setup->cluster_size_j,
+                    nb_clust_frac_pairs_not_in_list_at_cutoff,
+                    drift);
         }
 
         if (fabs(drift) > drift_target)

@@ -367,6 +367,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     int  nstl[NNSTL]={ 20, 25, 40, 50 };
     char *env;
     int  nstlist_orig,nstlist_prev;
+    verletbuf_list_setup_t ls;
     real rlist_inc,rlist_ok,rlist_max,rlist_new,rlist_prev;
     int  i;
     t_state state_tmp;
@@ -424,6 +425,8 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
         sscanf(env,"%d",&ir->nstlist);
     }
 
+    verletbuf_get_list_setup(&ls);
+
     /* Allow rlist to make the list double the size of the cut-off sphere */
     rlist_inc = nbnxn_rlist_inc(NBNXN_GPU_CLUSTER_SIZE,mtop->natoms/det(box));
     rlist_ok  = (max(ir->rvdw,ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC,1.0/3.0) - rlist_inc;
@@ -445,7 +448,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
         }
 
         /* Set the pair-list buffer size in ir */
-        calc_verlet_buffer_size(mtop,det(box),ir,ir->verletbuf_drift,
+        calc_verlet_buffer_size(mtop,det(box),ir,ir->verletbuf_drift,&ls,
                                 NULL,&rlist_new);
 
         /* Does rlist fit in the box? */
@@ -555,7 +558,10 @@ static void convert_to_verlet_scheme(FILE *fplog,
 
     if (EI_DYNAMICS(ir->eI))
     {
-        calc_verlet_buffer_size(mtop,box_vol,ir,ir->verletbuf_drift,
+        verletbuf_list_setup_t ls;
+
+        verletbuf_get_list_setup(&ls);
+        calc_verlet_buffer_size(mtop,box_vol,ir,ir->verletbuf_drift,&ls,
                                 NULL,&ir->rlist);
     }
     else

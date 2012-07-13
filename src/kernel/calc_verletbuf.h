@@ -38,6 +38,20 @@
 
 #include "typedefs.h"
 
+typedef struct
+{
+    int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
+    int  cluster_size_j;  /* Cluster pair-list j-cluster size atom count */
+} verletbuf_list_setup_t;
+
+
+/* Sets the pair-list setup assumed for the current Gromacs configuration.
+ * The setup with smallest cluster sizes is return, such that the Verlet
+ * buffer size estimated with this setup will be conservative.
+ */
+void verletbuf_get_list_setup(verletbuf_list_setup_t *list_setup);
+
+
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
  * based on the particle masses, temperature, LJ types, charges
  * and constraints as well as the non-bonded force behavior at the cut-off.
@@ -48,6 +62,7 @@
  */
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 			     const t_inputrec *ir,real drift_target,
+			     const verletbuf_list_setup_t *list_setup,
 			     int *n_nonlin_vsite,
 			     real *rlist);
 
