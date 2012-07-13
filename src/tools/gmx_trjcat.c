@@ -684,7 +684,7 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     searchtime = last_frame_time;
                 }
-                if (xtc_seek_time(stfio,searchtime,fr.natoms))
+                if (xtc_seek_time(stfio,searchtime,fr.natoms,TRUE))
                 {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }
