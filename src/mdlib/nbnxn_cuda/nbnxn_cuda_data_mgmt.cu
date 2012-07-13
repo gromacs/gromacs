@@ -341,7 +341,8 @@ void nbnxn_cuda_init(FILE *fplog,
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
     char sbuf[STRLEN];
-    bool bOldKernel, bLegacyKernel, bDefaultKernel, bCUDA40, bCUDA32;
+    bool bStreamSync, bNoStreamSync, bOldKernel, bLegacyKernel, bDefaultKernel,
+         bCUDA40, bCUDA32, bTMPIAtomics, bX86;
 
     if (p_cu_nb == NULL) return;
 
@@ -390,26 +391,44 @@ void nbnxn_cuda_init(FILE *fplog,
     stat = cudaGetDeviceProperties(&nb->dev_info->dev_prop, nb->dev_info->dev_id);
     CU_RET_ERR(stat, "cudaGetDeviceProperties failed");
 
-    /* If ECC is enabled cudaStreamSynchronize introduces huge idling so we'll 
-       switch to the (atmittedly fragile) memory polling waiting to preserve 
-       performance. Event-timing also needs to be disabled. */
+    /* On GPUs with ECC enabled, cudaStreamSynchronize shows a large overhead
+     * (which increases with shorter time/step) caused by a known CUDA driver bug.
+     * To work around the issue we'll use an (admittedly fragile) memory polling
+     * waiting to preserve performance. This requires support for atomic
+     * operations and only works on x86/x86_64.
+     * With polling wait event-timing also needs to be disabled.
+     */
 
-    gmx_bool bStreamSync    = getenv("GMX_CUDA_STREAMSYNC") != NULL;
-    gmx_bool bNoStreamSync  = getenv("GMX_NO_CUDA_STREAMSYNC") != NULL;
+    bStreamSync    = getenv("GMX_CUDA_STREAMSYNC") != NULL;
+    bNoStreamSync  = getenv("GMX_NO_CUDA_STREAMSYNC") != NULL;
+
+#ifdef TMPI_ATOMICS
+    bTMPIAtomics = TRUE;
+#else
+    bTMPIAtomics = FALSE;
+#endif
+
+#if defined(i386) || defined(__x86_64__)
+    bX86 = TRUE;
+#else
+    bX86 = FALSE;
+#endif
+
     if (bStreamSync && bNoStreamSync)
     {
         gmx_fatal(FARGS, "Conflicting environment variables: both GMX_CUDA_STREAMSYNC and GMX_NO_CUDA_STREAMSYNC defined");
     }
 
-    /* if we can't yield while poll-waiting, we need to use cudaStreamSynchronize */
     if (nb->dev_info->dev_prop.ECCEnabled == 1)
     {
         if (bStreamSync)
         {
             nb->use_stream_sync = TRUE;
 
-            sprintf(sbuf, "NOTE: cudaStreamSynchronize-based waiting forced by GMX_CUDA_STREAMSYNC, but ECC is turned\n"
-                    "      on which generally causes considerable performance loss");
+            sprintf(sbuf,
+                    "NOTE: Using a GPU with ECC enabled, but cudaStreamSynchronize-based waiting is\n"
+                    "      forced by the GMX_CUDA_STREAMSYNC env. var. Due to a CUDA bug, this \n"
+                    "      combination causes performance loss.");
             fprintf(stderr, "\n%s\n", sbuf);
             if (fplog)
             {
@@ -418,28 +437,50 @@ void nbnxn_cuda_init(FILE *fplog,
         }
         else
         {
-#ifdef CAN_CUTHREAD_YIELD
-            nb->use_stream_sync = FALSE;
+            /* can use polling wait only on x86/x86_64 *if* atomics are available */
+            nb->use_stream_sync = ((bX86 && bTMPIAtomics) == FALSE);
 
-            sprintf(sbuf, "NOTE: running on a GPU with ECC on; will not use cudaStreamSynchronize-based\n"
-                    "      waiting as it generally causes performance loss when used with ECC.");
-            fprintf(stderr, "\n%s\n", sbuf);
-            if (fplog)
+            if (!bX86)
             {
-                fprintf(fplog, "\n%s\n", sbuf);
-            }
-#else
-            nb->use_stream_sync = TRUE;
+                sprintf(sbuf,
+                        "Using a GPU with ECC on; the standard cudaStreamSynchronize waiting, due to a\n"
+                        "      CUDA bug, causes performance loss when used in combination with ECC.\n"
+                        "      However, the polling waiting workaround can not be used as it is only\n"
+                        "      supported on x86/x86_64, but not on the current architecture.");
+                gmx_warning("%s\n", sbuf);
+                if (fplog)
+                {
+                    fprintf(fplog, "\n%s\n", sbuf);
+                }
 
-            sprintf(sbuf, "Can't do thread yield as sleep(0)/Sleep(0) (posix/win) is not available.\n"
-                        "         Will use the standard cudaStreamSynchronize-based waiting.\n"
-                        "         Note that with ECC enabled this causes considerable performance loss.");
-            gmx_warning("%s\n", sbuf);
-            if (fplog)
-            {
-                fprintf(fplog, "\n%s\n", sbuf);
             }
-#endif /* CAN_CUTHREAD_YIELD */
+            else if (bTMPIAtomics)
+            {
+                sprintf(sbuf,
+                        "NOTE: Using a GPU with ECC enabled; will use polling waiting instead of the\n"
+                        "      standard cudaStreamSynchronize which, due to a CUDA bug, causes performance\n"
+                        "      loss when used in combination with ECC.\n"
+                        "      In case of lockups or crashes try switching back to the standard waiting\n"
+                        "      using the GMX_CUDA_STREAMSYNC env. var.");
+                fprintf(stderr, "\n%s\n", sbuf);
+                if (fplog)
+                {
+                    fprintf(fplog, "\n%s\n", sbuf);
+                }
+            }
+            else
+            {
+                sprintf(sbuf,
+                        "Using a GPU with ECC on; the standard cudaStreamSynchronize waiting, due to a\n"
+                        "      CUDA bug, causes performance loss when used in combination with ECC.\n"
+                        "      However, the polling waiting workaround can not be used as atomic\n"
+                        "      operations are not supported by the current CPU+compiler combination.");
+                gmx_warning("%s\n", sbuf);
+                if (fplog)
+                {
+                    fprintf(fplog, "\n%s\n", sbuf);
+                }
+            }
         }
     }
     else
@@ -448,8 +489,9 @@ void nbnxn_cuda_init(FILE *fplog,
         {
             nb->use_stream_sync = FALSE;
 
-            sprintf(sbuf, "NOTE: running on a GPU with no ECC, but cudaStreamSynchronize-based waiting\n"
-                    "forced off by GMX_NO_CUDA_STREAMSYNC");
+            sprintf(sbuf,
+                    "NOTE: Using a GPU with no/disabled ECC, but cudaStreamSynchronize-based waiting\n"
+                    "      is turned off and polling turned on by the GMX_NO_CUDA_STREAMSYNC env. var.");
             fprintf(stderr, "\n%s\n", sbuf);
             if (fplog)
             {
@@ -465,7 +507,7 @@ void nbnxn_cuda_init(FILE *fplog,
 
     /* CUDA timing disabled as event timers don't work:
        - with multiple streams = domain-decomposition;
-       - with the waiting hack, without cudaStreamSynchronize;
+       - with the polling waiting hack (without cudaStreamSynchronize);
        - when turned off by GMX_DISABLE_CUDA_TIMING.
      */
     nb->do_time = (!bDomDec && nb->use_stream_sync && (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
@@ -700,7 +742,7 @@ static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb)
 
 void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb, int flags)
 {
-    nbnxn_cuda_clear_f(cu_nb, cu_nb->atdat->natoms + 1);
+    nbnxn_cuda_clear_f(cu_nb, cu_nb->atdat->natoms);
     /* clear shift force array and energies if the outputs were 
        used in the current step */
     if (flags & GMX_FORCE_VIRIAL)
@@ -732,7 +774,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
 
     /* need to reallocate if we have to copy more atoms than the amount of space
        available and only allocate if we haven't initilzed yet, i.e d_atdat->natoms == -1 */
-    if (natoms + 1 > d_atdat->nalloc)
+    if (natoms > d_atdat->nalloc)
     {
         nalloc = over_alloc_small(natoms);
     
@@ -744,8 +786,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
             cu_free_buffered(d_atdat->atom_types);
         }
         
-        /* Add one element to f for polling-based wait */
-        stat = cudaMalloc((void **)&d_atdat->f, (nalloc + 1)*sizeof(*d_atdat->f));
+        stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
         stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->xq");

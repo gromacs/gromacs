@@ -2062,7 +2062,7 @@ static void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat,int n)
         /* Allocate one element extra for possible signaling with CUDA */
         nb_realloc_void((void **)&nbat->out[t].f,
                         nbat->natoms*nbat->fstride*sizeof(*nbat->out[t].f),
-                        (n+1)*nbat->fstride*sizeof(*nbat->out[t].f),
+                        n*nbat->fstride*sizeof(*nbat->out[t].f),
                         nbat->alloc,nbat->free);
     }
     nbat->nalloc = n;

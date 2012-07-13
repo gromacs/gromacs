@@ -350,27 +350,6 @@ check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 
-if(GMX_GPU)
-    # we need some sort of sleep with CUDA:
-    # sleep() from unistd.h on POSIX or Sleep() from windows.h
-    if (WIN32 AND NOT CYGWIN)
-        set(CMAKE_REQUIRED_INCLUDES windows.h)
-        check_function_exists(Sleep     HAVE_WINDOWS_SLEEP)
-        if(NOT HAVE_WIN_SLEEP)
-            message(WARNING "Sleep() from windows.h is needed when running on GPUs with ECC turned on, but it
-                could not be found. This could lead to GPU synchronization inefficiencies.")
-        endif()
-    else()
-        if (HAVE_UNISTD_H)
-            set(CMAKE_REQUIRED_INCLUDES unistd.h)
-            check_function_exists(sleep     HAVE_UNISTD_SLEEP)
-        endif (HAVE_UNISTD_H)
-        if (NOT HAVE_UNISTD_H OR NOT HAVE_UNISTD_SLEEP)
-            message(WARNING "sleep() from unistd.h is needed when running on GPUs with ECC turned on, but it
-                could not be found. This could lead to GPU synchronization inefficiencies.")
-        endif()
-    endif (WIN32 AND NOT CYGWIN)
-endif()
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -525,6 +504,16 @@ if(GMX_GPU)
 
     set(CUDA_BUILD_EMULATION OFF)
     include(gmxManageNvccConfig)
+
+    # Check whether we can use atomic operations needed for polling wait for GPU
+    # (to avoid the cudaStreamSynchronize + ECC bug).
+    # With thread-MPI testing atomics has already been carried out, but without
+    # thread-MPI we need to invoke the atomics test independently.
+    if (NOT GMX_THREAD_MPI)
+        set(TEST_TMPI_ATOMICS_ONLY ON CACHE INTERNAL
+            "Test only the atomic operations of thread-MPI.")
+        include(ThreadMPI)
+    endif()
 
     # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
     # but it's too cumbersome to check the ld version and the flag should not hurt

@@ -173,6 +173,9 @@
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
 
+/* Define when thread-MPI atomic operations are available */
+#cmakedefine TMPI_ATOMICS
+
 /* Define for busy wait option  */
 #cmakedefine TMPI_WAIT_FOR_NO_ONE
 

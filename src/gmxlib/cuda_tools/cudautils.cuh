@@ -42,19 +42,6 @@
 
 #include "cuda.h"
 
-/*! Check if sleep() from unistd.h / Sleep() from windows.h is available,
-  otherwise we can't yield. */
-#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__
-/* Windows case */
-#ifdef HAVE_WINDOWS_SLEEP
-#define CAN_CUTHREAD_YIELD
-#endif
-#else
-/* Posix case */
-#ifdef HAVE_UNISTD_SLEEP
-#define CAN_CUTHREAD_YIELD
-#endif
-#endif
 
 /* CUDA library and hardware related defines */
 /* TODO list some constants instead that can be used for consistency checks to

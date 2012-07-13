@@ -47,25 +47,15 @@
 #include "types/ishift.h"
 #include "types/force_flags.h"
 
+#ifdef TMPI_ATOMICS
+#include "thread_mpi/atomic.h"
+#endif
+
 #include "nbnxn_cuda_types.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
-
-/* we can do yield which meaning that we have all the required posix/Win stuff */
-#ifdef CAN_CUTHREAD_YIELD
-#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__
-/* On Windows we assume that we always have windows.h */
-#include <windows.h>
-#else
-/* Posix -- if we got here it means that unistd.h is available, but we'll
-   check again to catch future stupid modifications. */
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#endif
-#endif /* CAN_CUTHREAD_YIELD */
 
 
 /***** The kernels come here *****/
@@ -107,13 +97,12 @@ static gmx_bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static gmx_bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
-/* Single byte of the bit-pattern used to fill the last element of the force
-   array when using polling-based waiting. */
-static unsigned char gpu_sync_signal_byte    = 0xAA;
-/* Bit-pattern used to fill the last element of the force with when using
-   polling-based waiting. */
-static unsigned int  gpu_sync_signal_pattern = 0xAAAAAAAA;
 
+/* Bit-pattern used for polling-based GPU synchronization. It is used as a float
+ * and corresponds to having the exponent set to the maximum (127 -- single
+ * precision) and the matissa to 0.
+ */
+static unsigned int poll_wait_pattern = (0x7FU << 23);
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
 static inline int calc_nb_kernel_nblock(int nwork_units, cu_dev_info_t *dinfo)
@@ -366,7 +355,6 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     cudaError_t stat;
     int adat_begin, adat_len, adat_end;  /* local/nonlocal offset and length used for xq and f */
     int iloc = -1;
-    float3 *signal_field;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -422,14 +410,6 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 
     if (!cu_nb->use_stream_sync)
     {
-        /* Set the z component of the extra element in the GPU force array
-           (separately for l/nl parts) to a specific bit-pattern that we can check 
-           for while waiting for the transfer to be done. */
-        signal_field = adat->f + adat_end;
-        stat = cudaMemsetAsync(&signal_field->z, gpu_sync_signal_byte,
-                               sizeof(signal_field->z), stream);
-        CU_RET_ERR(stat, "cudaMemsetAsync of the signal_field failed");
-
         /* For safety reasons set a few (5%) forces to NaN. This way even if the
            polling "hack" fails with some future NVIDIA driver we'll get a crash. */
         for (int i = adat_begin; i < 3*adat_end + 2; i += adat_len/20)
@@ -450,8 +430,10 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 #endif
         }
 
-        /* Clear the bits in the force array (on the CPU) that we are going to poll. */
-        nbatom->out[0].f[adat_end*3 + 2] = 0;
+        /* Set the last four bytes of the force array to a bit pattern
+           which can't be the result of the force calculation:
+           max exponent (127) and zero mantissa. */
+        *(unsigned int*)&nbatom->out[0].f[adat_end*3 - 1] = poll_wait_pattern;
     }
 
     /* With DD the local D2H transfer can only start after the non-local 
@@ -464,7 +446,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 
     /* DtoH f */
     cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin, 
-                      (adat_len + 1) * sizeof(*adat->f), stream);
+                      (adat_len)*sizeof(*adat->f), stream);
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -503,19 +485,21 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-static inline void cuthread_yield(void)
+/* Atomic compare-exchange operation on unsigned values. It is used in
+ * polling wait for the GPU.
+ */
+static inline bool atomic_cas(volatile unsigned int *ptr,
+                              unsigned int oldval,
+                              unsigned int newval)
 {
-#ifndef CAN_CUTHREAD_YIELD
-    gmx_incons("cuthread_yield called, but win/posix sleep is not available!")
+    assert(ptr);
+
+#ifdef TMPI_ATOMICS
+    return tMPI_Atomic_cas((tMPI_Atomic_t *)ptr, oldval, newval);
 #else
-#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__
-        /* Windows */
-        Sleep(0);
-#else
-        /* Posix */
-        sleep(0);
+    gmx_incons("Atomic operations not available, atomic_cas() should not have been called!");
+    return TRUE;
 #endif
-#endif /* CAN_CUTHREAD_YIELD */
 }
 
 void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
@@ -525,7 +509,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 {
     cudaError_t stat;
     int i, adat_end, iloc = -1;
-    volatile unsigned int *signal_bytes;
+    volatile unsigned int *poll_word;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -582,14 +566,14 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     }
     else 
     {
-        /* Busy-wait until we get the signalling pattern set in last 4-bytes 
-           of the l/nl float vector. */
-        signal_bytes    = (unsigned int*)&nbatom->out[0].f[adat_end*3 + 2];
-        while (*signal_bytes != gpu_sync_signal_pattern)
-        {
-            /* back off, otherwise we get stuck */
-            cuthread_yield();
-        }
+        /* Busy-wait until we get the signalling pattern set in last byte
+         * of the l/nl float vector. This pattern corresponds to a floating
+         * point number which can't be the result of the force calculation
+         * (maximum, 127 exponent and 0 mantissa).
+         * The polling uses atomic compare-exchange.
+         */
+        poll_word = (volatile unsigned int*)&nbatom->out[0].f[adat_end*3 - 1];
+        while (atomic_cas(poll_word, poll_wait_pattern, poll_wait_pattern)) {}
     }
 
     /* timing data accumulation */
