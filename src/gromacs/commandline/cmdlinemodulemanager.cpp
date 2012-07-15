@@ -47,6 +47,7 @@
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -100,32 +101,47 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
         {
         }
 
-        virtual void writeHelp(File *file) const;
+        virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        void printModuleList(File *file) const;
+        void printModuleList(const HelpWriterContext &context) const;
 
         const CommandLineModuleMap &modules_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
 
-void RootHelpTopic::writeHelp(File *file) const
+void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(file, *this, helpText());
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                    "Root help is not implemented for this output format"));
+    }
+    writeBasicHelpTopic(context, *this, helpText());
     // TODO: If/when this list becomes long, it may be better to only print
     // "common" commands here, and have a separate topic (e.g.,
     // "help commands") that prints the full list.
-    printModuleList(file);
-    writeHelpTextForConsole(file,
+    printModuleList(context);
+    context.writeTextBlock(
             "For additional help on a command, use '[PROGRAM] help <command>'");
-    writeSubTopicList(file, "\nAdditional help is available on the following topics:");
-    writeHelpTextForConsole(file,
+    writeSubTopicList(context,
+            "\nAdditional help is available on the following topics:");
+    context.writeTextBlock(
             "To access the help, use '[PROGRAM] help <topic>'.");
 }
 
-void RootHelpTopic::printModuleList(File *file) const
+void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
 {
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                    "Module list is not implemented for this output format"));
+    }
     int maxNameLength = 0;
     CommandLineModuleMap::const_iterator module;
     for (module = modules_.begin(); module != modules_.end(); ++module)
@@ -136,12 +152,13 @@ void RootHelpTopic::printModuleList(File *file) const
             maxNameLength = nameLength;
         }
     }
+    File &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);
     formatter.setFirstColumnIndent(4);
-    file->writeLine();
-    file->writeLine("Available commands:");
+    file.writeLine();
+    file.writeLine("Available commands:");
     for (module = modules_.begin(); module != modules_.end(); ++module)
     {
         const char *name = module->first.c_str();
@@ -149,7 +166,7 @@ void RootHelpTopic::printModuleList(File *file) const
         formatter.clear();
         formatter.addColumnLine(0, name);
         formatter.addColumnLine(1, description);
-        file->writeString(formatter.formatRow());
+        file.writeString(formatter.formatRow());
     }
 }
 
@@ -182,7 +199,7 @@ class ModuleHelpTopic : public HelpTopicInterface
         {
             return NULL;
         }
-        virtual void writeHelp(File *file) const;
+        virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
         const CommandLineModuleInterface &module_;
@@ -190,9 +207,9 @@ class ModuleHelpTopic : public HelpTopicInterface
         GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
 };
 
-void ModuleHelpTopic::writeHelp(File *file) const
+void ModuleHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    module_.writeHelp(file);
+    module_.writeHelp(context);
 }
 
 } // namespace
@@ -235,7 +252,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         }
 
         virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(File *file) const;
+        virtual void writeHelp(const HelpWriterContext &context) const;
 
         //! Prints usage message to stderr.
         void printUsage() const;
@@ -258,7 +275,9 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
-    HelpManager helpManager(*rootTopic_);
+    HelpWriterContext context(&File::standardOutput(),
+                              eHelpOutputFormat_Console);
+    HelpManager helpManager(*rootTopic_, context);
     try
     {
         for (int i = 1; i < argc; ++i)
@@ -271,21 +290,23 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         fprintf(stderr, "%s\n", ex.what());
         return 2;
     }
-    helpManager.writeCurrentTopic(&File::standardOutput());
+    helpManager.writeCurrentTopic();
     fprintf(stderr, "\n");
     return 0;
 }
 
-void CommandLineHelpModule::writeHelp(File *file) const
+void CommandLineHelpModule::writeHelp(const HelpWriterContext &context) const
 {
-    writeHelpTextForConsole(file,
+    context.writeTextBlock(
             "Usage: [PROGRAM] help [<command>|<topic> [<subtopic> [...]]]");
     // TODO: More information.
 }
 
 void CommandLineHelpModule::printUsage() const
 {
-    rootTopic_->writeHelp(&File::standardError());
+    HelpWriterContext context(&File::standardError(),
+                              eHelpOutputFormat_Console);
+    rootTopic_->writeHelp(context);
 }
 
 /********************************************************************
@@ -337,11 +358,6 @@ class CommandLineModuleManager::Impl
          */
         CommandLineModuleMap::const_iterator
         findModuleFromBinaryName(const ProgramInfo &programInfo) const;
-
-        //! Prints usage message to stderr.
-        void printUsage(bool bModuleList) const;
-        //! Prints the list of modules to stderr.
-        void printModuleList() const;
 
         /*! \brief
          * Maps module names to module objects.

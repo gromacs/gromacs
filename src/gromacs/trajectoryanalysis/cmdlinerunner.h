@@ -44,7 +44,7 @@
 namespace gmx
 {
 
-class File;
+class HelpWriterContext;
 class TrajectoryAnalysisModule;
 
 /*! \brief
@@ -106,10 +106,11 @@ class TrajectoryAnalysisCommandLineRunner
         /*! \brief
          * Prints help for the module, including common options from the runner.
          *
-         * \param[in] file  File to write the help to.
+         * \param[in] context  Context object for writing the help.
          * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
          */
-        void writeHelp(File *file);
+        void writeHelp(const HelpWriterContext &context);
 
     private:
         class Impl;

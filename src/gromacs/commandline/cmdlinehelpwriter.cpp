@@ -40,6 +40,7 @@
 #include <string>
 
 #include "gromacs/onlinehelp/helpformat.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/options/options.h"
@@ -47,6 +48,7 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectionfileoptioninfo.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -69,27 +71,31 @@ class DescriptionWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing section descriptions.
-        explicit DescriptionWriter(File *file) : file_(*file) {}
+        explicit DescriptionWriter(const HelpWriterContext &context)
+            : context_(context)
+        {
+        }
 
         virtual void visitSubSection(const Options &section);
         virtual void visitOption(const OptionInfo & /*option*/) { }
 
     private:
-        File                   &file_;
+        const HelpWriterContext &context_;
 };
 
 void DescriptionWriter::visitSubSection(const Options &section)
 {
     if (!section.description().empty())
     {
+        File &file = context_.outputFile();
         const std::string &title = section.title();
         if (!title.empty())
         {
-            file_.writeLine(title);
-            file_.writeLine();
+            file.writeLine(title);
+            file.writeLine();
         }
-        writeHelpTextForConsole(&file_, section.description());
-        file_.writeLine();
+        context_.writeTextBlock(section.description());
+        file.writeLine();
     }
     OptionsIterator(section).acceptSubSections(this);
 }
@@ -108,7 +114,7 @@ class FileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
 {
     public:
         //! Creates a helper object for writing file parameters.
-        explicit FileParameterWriter(File *file);
+        explicit FileParameterWriter(const HelpWriterContext &context);
 
         //! Returns true if anything was written out.
         bool didOutput() const { return formatter_.didOutput(); }
@@ -117,12 +123,12 @@ class FileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
         virtual void visitOptionType(const FileNameOptionInfo &option);
 
     private:
-        File                   &file_;
-        TextTableFormatter      formatter_;
+        const HelpWriterContext &context_;
+        TextTableFormatter       formatter_;
 };
 
-FileParameterWriter::FileParameterWriter(File *file)
-    : file_(*file)
+FileParameterWriter::FileParameterWriter(const HelpWriterContext &context)
+    : context_(context)
 {
     formatter_.addColumn("Option",      6, false);
     formatter_.addColumn("Filename",    12, false);
@@ -196,7 +202,7 @@ void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
     }
     bool bLongType = (type.length() > 12U);
     formatter_.addColumnLine(2, type);
-    formatter_.addColumnLine(3, substituteMarkupForConsole(option.description()));
+    formatter_.addColumnLine(3, context_.substituteMarkup(option.description()));
 
     // Compute layout.
     if (name.length() > 6U || firstShortValue > 0)
@@ -222,7 +228,7 @@ void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
     }
 
     // Do the formatting.
-    file_.writeString(formatter_.formatRow());
+    context_.outputFile().writeString(formatter_.formatRow());
 }
 
 
@@ -239,7 +245,8 @@ class ParameterWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing non-file parameters.
-        ParameterWriter(File *file, const char *timeUnit);
+        ParameterWriter(const HelpWriterContext &context,
+                        const char *timeUnit);
 
         //! Sets the writer to show hidden options.
         void setShowHidden(bool bSet) { bShowHidden_ = bSet; }
@@ -250,14 +257,15 @@ class ParameterWriter : public OptionsVisitor
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        File                   &file_;
-        TextTableFormatter      formatter_;
-        const char             *timeUnit_;
-        bool                    bShowHidden_;
+        const HelpWriterContext &context_;
+        TextTableFormatter       formatter_;
+        const char              *timeUnit_;
+        bool                     bShowHidden_;
 };
 
-ParameterWriter::ParameterWriter(File *file, const char *timeUnit)
-    : file_(*file), timeUnit_(timeUnit), bShowHidden_(false)
+ParameterWriter::ParameterWriter(const HelpWriterContext &context,
+                                 const char *timeUnit)
+    : context_(context), timeUnit_(timeUnit), bShowHidden_(false)
 {
     formatter_.addColumn("Option",      12, false);
     formatter_.addColumn("Type",         6, false);
@@ -303,7 +311,7 @@ void ParameterWriter::visitOption(const OptionInfo &option)
         values.append(option.formatValue(i));
     }
     formatter_.addColumnLine(2, values);
-    std::string description(substituteMarkupForConsole(option.description()));
+    std::string description(context_.substituteMarkup(option.description()));
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
     if (doubleOption != NULL && doubleOption->isTime())
     {
@@ -315,7 +323,7 @@ void ParameterWriter::visitOption(const OptionInfo &option)
         formatter_.setColumnFirstLineOffset(3, 1);
     }
 
-    file_.writeString(formatter_.formatRow());
+    context_.outputFile().writeString(formatter_.formatRow());
 }
 
 
@@ -332,7 +340,7 @@ class SelectionParameterWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing selection parameters.
-        explicit SelectionParameterWriter(File *file);
+        explicit SelectionParameterWriter(const HelpWriterContext &context);
 
         //! Returns true if anything was written out.
         bool didOutput() const { return formatter_.didOutput(); }
@@ -341,12 +349,12 @@ class SelectionParameterWriter : public OptionsVisitor
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        File                   &file_;
-        TextTableFormatter      formatter_;
+        const HelpWriterContext &context_;
+        TextTableFormatter       formatter_;
 };
 
-SelectionParameterWriter::SelectionParameterWriter(File *file)
-    : file_(*file)
+SelectionParameterWriter::SelectionParameterWriter(const HelpWriterContext &context)
+    : context_(context)
 {
     formatter_.addColumn("Selection",   10, false);
     formatter_.addColumn("Description", 67, true);
@@ -367,11 +375,13 @@ void SelectionParameterWriter::visitOption(const OptionInfo &option)
         return;
     }
 
+    File &file = context_.outputFile();
+
     formatter_.clear();
     std::string name(formatString("-%s", option.name().c_str()));
     formatter_.addColumnLine(0, name);
-    formatter_.addColumnLine(1, substituteMarkupForConsole(option.description()));
-    file_.writeString(formatter_.formatRow());
+    formatter_.addColumnLine(1, context_.substituteMarkup(option.description()));
+    file.writeString(formatter_.formatRow());
 
     // TODO: What to do with selection variables?
     // They are not printed as values for any option.
@@ -379,7 +389,7 @@ void SelectionParameterWriter::visitOption(const OptionInfo &option)
     {
         std::string value(option.formatValue(i));
         // TODO: Wrapping
-        file_.writeLine(formatString("    %s", value.c_str()));
+        file.writeLine(formatString("    %s", value.c_str()));
     }
 }
 
@@ -447,38 +457,46 @@ CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *time
     return *this;
 }
 
-void CommandLineHelpWriter::writeHelp(File *file)
+void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
 {
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                    "Command-line help is not implemented for this output format"));
+    }
+    File &file = context.outputFile();
     if (impl_->bShowDescriptions_)
     {
-        file->writeLine("DESCRIPTION");
-        file->writeLine("-----------");
-        file->writeLine();
-        DescriptionWriter(file).visitSubSection(impl_->options_);
+        file.writeLine("DESCRIPTION");
+        file.writeLine("-----------");
+        file.writeLine();
+        DescriptionWriter(context).visitSubSection(impl_->options_);
     }
     {
-        FileParameterWriter writer(file);
+        FileParameterWriter writer(context);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
-            file->writeLine();
+            file.writeLine();
         }
     }
     {
-        ParameterWriter writer(file, impl_->timeUnit_.c_str());
+        ParameterWriter writer(context, impl_->timeUnit_.c_str());
         writer.setShowHidden(impl_->bShowHidden_);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
-            file->writeLine();
+            file.writeLine();
         }
     }
     {
-        SelectionParameterWriter writer(file);
+        SelectionParameterWriter writer(context);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
-            file->writeLine();
+            file.writeLine();
         }
     }
 }

@@ -47,6 +47,7 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
@@ -107,11 +108,13 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
     {
+        HelpWriterContext context(&File::standardError(),
+                                  eHelpOutputFormat_Console);
         CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
             .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-            .writeHelp(&File::standardError());
+            .writeHelp(context);
     }
 }
 
@@ -282,7 +285,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
 
 void
-TrajectoryAnalysisCommandLineRunner::writeHelp(File *file)
+TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
 {
     // TODO: This method duplicates some code from run() and Impl::printHelp().
     // See how to best refactor it to share the common code.
@@ -309,7 +312,7 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(File *file)
     CommandLineHelpWriter(options)
         .setShowDescriptions(true)
         .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-        .writeHelp(file);
+        .writeHelp(context);
 }
 
 } // namespace gmx

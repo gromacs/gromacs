@@ -43,6 +43,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/onlinehelp/helptopic.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 
@@ -62,12 +63,18 @@ class HelpTestBase : public gmx::test::StringTestBase
 
         gmx::test::TestFileManager tempFiles_;
         MockHelpTopic           rootTopic_;
+        std::string             filename_;
+        gmx::File               helpFile_;
+        gmx::HelpWriterContext  context_;
         gmx::HelpManager        manager_;
 };
 
 HelpTestBase::HelpTestBase()
     : rootTopic_("", NULL, "Root topic text"),
-      manager_(rootTopic_)
+      filename_(tempFiles_.getTemporaryFilePath("helptext.txt")),
+      helpFile_(filename_, "w"),
+      context_(&helpFile_, gmx::eHelpOutputFormat_Console),
+      manager_(rootTopic_, context_)
 {
 }
 
@@ -75,23 +82,13 @@ HelpTestBase::HelpTestBase()
  * Tests for HelpManager
  */
 
-class HelpManagerTest : public HelpTestBase
-{
-    public:
-        HelpManagerTest();
-
-        gmx::File               helpFile_;
-};
-
-HelpManagerTest::HelpManagerTest()
-    : helpFile_(tempFiles_.getTemporaryFilePath("helptext.txt"), "w")
-{
-}
+typedef HelpTestBase HelpManagerTest;
 
 TEST_F(HelpManagerTest, HandlesRootTopic)
 {
-    EXPECT_CALL(rootTopic_, writeHelp(&helpFile_));
-    manager_.writeCurrentTopic(&helpFile_);
+    using ::testing::_;
+    EXPECT_CALL(rootTopic_, writeHelp(_));
+    manager_.writeCurrentTopic();
 }
 
 TEST_F(HelpManagerTest, HandlesSubTopics)
@@ -102,10 +99,11 @@ TEST_F(HelpManagerTest, HandlesSubTopics)
         first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
     rootTopic_.addSubTopic("second", "Second topic", "Second topic text");
 
-    EXPECT_CALL(firstSub, writeHelp(&helpFile_));
+    using ::testing::_;
+    EXPECT_CALL(firstSub, writeHelp(_));
     ASSERT_NO_THROW(manager_.enterTopic("first"));
     ASSERT_NO_THROW(manager_.enterTopic("firstsub"));
-    manager_.writeCurrentTopic(&helpFile_);
+    manager_.writeCurrentTopic();
 }
 
 TEST_F(HelpManagerTest, HandlesInvalidTopics)
@@ -148,13 +146,11 @@ class HelpTopicFormattingTest : public HelpTestBase
 
 void HelpTopicFormattingTest::checkHelpFormatting()
 {
-    std::string filename = tempFiles_.getTemporaryFilePath("helptext.txt");
     ASSERT_NO_THROW(manager_.enterTopic("testtopic"));
-    gmx::File file(filename, "w");
-    ASSERT_NO_THROW(manager_.writeCurrentTopic(&file));
-    file.close();
+    ASSERT_NO_THROW(manager_.writeCurrentTopic());
+    helpFile_.close();
 
-    checkFileContents(filename, "HelpText");
+    checkFileContents(filename_, "HelpText");
 }
 
 TEST_F(HelpTopicFormattingTest, FormatsSimpleTopic)

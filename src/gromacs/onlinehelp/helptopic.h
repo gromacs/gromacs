@@ -52,16 +52,19 @@ namespace gmx
 /*! \libinternal \brief
  * Helper for writing simple help text.
  *
- * \param     file   File to write the help to.
- * \param[in] topic  Topic to write the help for (used for title).
- * \param[in] text   Text to write for the topic.
+ * \param[in] context Context for writing the help.
+ * \param[in] topic   Topic to write the help for (used for title).
+ * \param[in] text    Text to write for the topic.
+ * \throws    std::bad_alloc if out of memory.
+ * \throws    FileIOError on any I/O error.
  *
  * Formats basic help by writing a title (obtained from \p topic), followed by
  * \p text with markup substituted and lines properly wrapped.
  *
  * \inlibraryapi
  */
-void writeBasicHelpTopic(File *file, const HelpTopicInterface &topic,
+void writeBasicHelpTopic(const HelpWriterContext &context,
+                         const HelpTopicInterface &topic,
                          const std::string &text);
 //! \endcond
 
@@ -87,7 +90,7 @@ class AbstractSimpleHelpTopic : public HelpTopicInterface
         virtual bool hasSubTopics() const;
         virtual const HelpTopicInterface *findSubTopic(const char *name) const;
 
-        virtual void writeHelp(File *file) const;
+        virtual void writeHelp(const HelpWriterContext &context) const;
 
     protected:
         /*! \brief
@@ -127,7 +130,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
         virtual bool hasSubTopics() const;
         virtual const HelpTopicInterface *findSubTopic(const char *name) const;
 
-        virtual void writeHelp(File *file) const;
+        virtual void writeHelp(const HelpWriterContext &context) const;
 
         /*! \brief
          * Adds a given topic as a subtopic of this topic.
@@ -166,9 +169,11 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
         /*! \brief
          * Writes the list of subtopics.
          *
-         * \param     file   File to write the list to.
+         * \param[in] context Context for writing the help.
          * \param[in] title  Title for the written list.
          * \returns   true if anything was printed.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
          *
          * Subtopics with empty titles are skipped from the list.
          * If there would be no subtopics in the list, \p title is not printed
@@ -180,7 +185,8 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
          * subtopic list that is printed by the default writeHelp()
          * implementation.
          */
-        bool writeSubTopicList(File *file, const std::string &title) const;
+        bool writeSubTopicList(const HelpWriterContext &context,
+                               const std::string &title) const;
 
     private:
         class Impl;

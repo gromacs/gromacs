@@ -44,7 +44,7 @@
 namespace gmx
 {
 
-class File;
+class HelpWriterContext;
 class Options;
 
 /*! \brief
@@ -87,9 +87,11 @@ class CommandLineHelpWriter
         /*! \brief
          * Writes the help.
          *
-         * \param[in] file  File to write the help to.
+         * \param[in] context  Context object for writing the help.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
          */
-        void writeHelp(File *file);
+        void writeHelp(const HelpWriterContext &context);
 
     private:
         class Impl;

@@ -76,7 +76,7 @@ class MockModule : public gmx::CommandLineModuleInterface
         virtual const char *shortDescription() const { return descr_; }
 
         MOCK_METHOD2(run, int(int argc, char *argv[]));
-        MOCK_CONST_METHOD1(writeHelp, void(gmx::File *));
+        MOCK_CONST_METHOD1(writeHelp, void(const gmx::HelpWriterContext &context));
 
     private:
         const char             *name_;

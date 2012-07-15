@@ -42,6 +42,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/onlinehelp/helptopic.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -459,7 +461,7 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
     public:
         KeywordsHelpTopic();
 
-        virtual void writeHelp(File *file) const;
+        virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
         /*! \brief
@@ -478,12 +480,13 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
         /*! \brief
          * Prints a brief list of keywords (selection methods) available.
          *
-         * \param[in] file  Where to write the list.
-         * \param[in] type  Only methods that return this type are printed.
+         * \param[in] context  Context for printing the help.
+         * \param[in] type     Only methods that return this type are printed.
          * \param[in] bModifiers  If false, \ref SMETH_MODIFIER methods are
          *      excluded, otherwise only them are printed.
          */
-        void printKeywordList(File *file, e_selvalue_t type, bool bModifiers) const;
+        void printKeywordList(const HelpWriterContext &context,
+                              e_selvalue_t type, bool bModifiers) const;
 
         MethodList              methods_;
 };
@@ -512,44 +515,59 @@ KeywordsHelpTopic::KeywordsHelpTopic()
     }
 }
 
-void KeywordsHelpTopic::writeHelp(File *file) const
+void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(file, *this, helpText());
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        GMX_THROW(NotImplementedError(
+                    "Selection help is not implemented for this output format"));
+    }
+    // TODO: The markup here is not really appropriate, and printKeywordList()
+    // still prints raw text, but these are waiting for discussion of the
+    // markup format in #969.
+    writeBasicHelpTopic(context, *this, helpText());
+    context.writeTextBlock("[BR]");
 
-    /* Print the list of keywords */
-    file->writeLine();
-    file->writeLine("Keywords that select atoms by an integer property:");
-    file->writeLine("(use in expressions or like \"atomnr 1 to 5 7 9\")");
-    printKeywordList(file, INT_VALUE, false);
+    // Print the list of keywords
+    context.writeTextBlock(
+            "Keywords that select atoms by an integer property:[BR]"
+            "(use in expressions or like \"atomnr 1 to 5 7 9\")[BR]");
+    printKeywordList(context, INT_VALUE, false);
+    context.writeTextBlock("[BR]");
 
-    file->writeLine();
-    file->writeLine("Keywords that select atoms by a numeric property:");
-    file->writeLine("(use in expressions or like \"occupancy 0.5 to 1\")");
-    printKeywordList(file, REAL_VALUE, false);
+    context.writeTextBlock(
+            "Keywords that select atoms by a numeric property:[BR]"
+            "(use in expressions or like \"occupancy 0.5 to 1\")[BR]");
+    printKeywordList(context, REAL_VALUE, false);
+    context.writeTextBlock("[BR]");
 
-    file->writeLine();
-    file->writeLine("Keywords that select atoms by a string property:");
-    file->writeLine("(use like \"name PATTERN [PATTERN] ...\")");
-    printKeywordList(file, STR_VALUE, false);
+    context.writeTextBlock(
+            "Keywords that select atoms by a string property:[BR]"
+            "(use like \"name PATTERN [PATTERN] ...\")[BR]");
+    printKeywordList(context, STR_VALUE, false);
+    context.writeTextBlock("[BR]");
 
-    file->writeLine();
-    file->writeLine("Additional keywords that directly select atoms:");
-    printKeywordList(file, GROUP_VALUE, false);
+    context.writeTextBlock(
+            "Additional keywords that directly select atoms:[BR]");
+    printKeywordList(context, GROUP_VALUE, false);
+    context.writeTextBlock("[BR]");
 
-    file->writeLine();
-    file->writeLine("Keywords that directly evaluate to positions:");
-    file->writeLine("(see also \"positions\" subtopic)");
-    printKeywordList(file, POS_VALUE, false);
+    context.writeTextBlock(
+            "Keywords that directly evaluate to positions:[BR]"
+            "(see also \"positions\" subtopic)[BR]");
+    printKeywordList(context, POS_VALUE, false);
+    context.writeTextBlock("[BR]");
 
-    file->writeLine();
-    file->writeLine("Additional keywords:");
-    printKeywordList(file, POS_VALUE, true);
-    printKeywordList(file, NO_VALUE, true);
+    context.writeTextBlock("Additional keywords:[BR]");
+    printKeywordList(context, POS_VALUE, true);
+    printKeywordList(context, NO_VALUE, true);
 }
 
-void KeywordsHelpTopic::printKeywordList(File *file, e_selvalue_t type,
+void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
+                                         e_selvalue_t type,
                                          bool bModifiers) const
 {
+    File &file = context.outputFile();
     MethodList::const_iterator iter;
     for (iter = methods_.begin(); iter != methods_.end(); ++iter)
     {
@@ -558,20 +576,19 @@ void KeywordsHelpTopic::printKeywordList(File *file, e_selvalue_t type,
         if (method.type == type && bModifiers == bIsModifier)
         {
             bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);
-            file->writeString(formatString(" %c ", bHasHelp ? '*' : ' '));
+            file.writeString(formatString(" %c ", bHasHelp ? '*' : ' '));
             if (method.help.syntax != NULL)
             {
-                file->writeLine(method.help.syntax);
+                file.writeLine(method.help.syntax);
             }
             else
             {
-                const std::string &symname = iter->first;
-                file->writeString(symname);
+                std::string symname = iter->first;
                 if (symname != method.name)
                 {
-                    file->writeString(formatString(" (synonym for %s)", method.name));
+                    symname.append(formatString(" (synonym for %s)", method.name));
                 }
-                file->writeLine();
+                file.writeLine(symname);
             }
         }
     }
