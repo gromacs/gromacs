@@ -2344,7 +2344,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         snew(ct,nn);
 
 #pragma omp parallel                            \
-    private(i, j, k, nh, E, rhbex, thisThread),	\
+    private(i, j, k, nh, E, rhbex, thisThread)  \
     default(shared)
         {
 #pragma omp barrier

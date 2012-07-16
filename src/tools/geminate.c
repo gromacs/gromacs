@@ -469,9 +469,9 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
   part4 = gem_cxmul(gem_cxsub(gamma, alpha), gem_cxmul(gem_cxsub(alpha, beta), gem_cxsub(beta, gamma))); /* (3-1)(1-2)(2-3) */
 
 #pragma omp parallel for				\
-  private(i, tsqrt, oma, omb, omc, c1, c2, c3, c4),	\
-  reduction(+:sumimaginary),				\
-  default(shared),					\
+  private(i, tsqrt, oma, omb, omc, c1, c2, c3, c4)	\
+  reduction(+:sumimaginary)				\
+  default(shared)					\
   schedule(guided)
   for (i=0; i<manytimes; i++){
     tsqrt = sqrt(time[i]);
