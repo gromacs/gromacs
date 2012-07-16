@@ -3211,9 +3211,51 @@ static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex
 }
 
 
+/* Special version of copy_rvec:
+ * During the copy procedure of xcurr to b, the correct PBC image is chosen
+ * such that the copied vector ends up near its reference position xref */
+static inline void copy_correct_pbc_image(
+        const rvec  xcurr,            /* copy vector xcurr ...                */
+        rvec        b,                /* ... to b ...                         */
+        const rvec  xref,   /* choosing the PBC image such that b ends up near xref */
+        matrix      box,
+        int         npbcdim)
+{
+    rvec  dx;
+    int   d,m;
+    ivec  shift;
+
+
+    /* Shortest PBC distance between the atom and its reference */
+    rvec_sub(xcurr, xref, dx);
+
+    /* Determine the shift for this atom */
+    clear_ivec(shift);
+    for(m=npbcdim-1; m>=0; m--)
+    {
+        while (dx[m] < -0.5*box[m][m])
+        {
+            for(d=0; d<DIM; d++)
+                dx[d] += box[m][d];
+            shift[m]++;
+        }
+        while (dx[m] >= 0.5*box[m][m])
+        {
+            for(d=0; d<DIM; d++)
+                dx[d] -= box[m][d];
+            shift[m]--;
+        }
+    }
+
+    /* Apply the shift to the position */
+    copy_rvec(xcurr, b);
+    shift_single_coord(box, b, shift);
+}
+
 
 static void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
-        rvec *x,gmx_mtop_t *mtop,gmx_bool bVerbose,FILE *out_slabs, gmx_bool bOutputCenters)
+        rvec *x,gmx_mtop_t *mtop,gmx_bool bVerbose,FILE *out_slabs, matrix box,
+        gmx_bool bOutputCenters)
 {
     int i,ii;
     rvec        coord,*xdum;
@@ -3247,7 +3289,7 @@ static void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
             for (i=0; i<rotg->nat; i++)
             {
                 ii = rotg->ind[i];
-                copy_rvec(x[ii], erg->xc_old[i]);
+                copy_correct_pbc_image(x[ii], erg->xc_old[i],rotg->x_ref[i],box,3);
             }
         }
 #ifdef GMX_MPI
@@ -3498,6 +3540,10 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         snew(x_pbc,mtop->natoms);
         m_rveccopy(mtop->natoms,x,x_pbc);
         do_pbc_first_mtop(NULL,ir->ePBC,box,mtop,x_pbc);
+        /* All molecules will be whole now, but not necessarily in the home box.
+         * Additionally, if a rotation group consists of more than one molecule
+         * (e.g. two strands of DNA), each one of them can end up in a different
+         * periodic box. This is taken care of in init_rot_group.  */
     }
 
     for (g=0; g<rot->ngrp; g++)
@@ -3526,7 +3572,7 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog,cr,g,rotg,x_pbc,mtop,bVerbose,er->out_slabs,
+            init_rot_group(fplog,cr,g,rotg,x_pbc,mtop,bVerbose,er->out_slabs,box,
                            !(er->Flags & MD_APPENDFILES) ); /* Do not output the reference centers
                                                              * again if we are appending */
         }
@@ -3619,18 +3665,15 @@ static void rotate_local_reference(t_rotgrp *rotg)
  * its rotated reference */
 static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
 {
-    int d,i,ii,m;
+    int i,ii;
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
-    rvec xref,xcurr,dx;
-    ivec shift;
+    rvec xref;
 
 
     erg=rotg->enfrotgrp;
-    
+
     for (i=0; i<erg->nat_loc; i++)
     {
-        clear_ivec(shift);
-        
         /* Index of a rotation group atom  */
         ii = erg->ind_loc[i];
 
@@ -3639,34 +3682,8 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
          * the reference positions have already been rotated in
          * rotate_local_reference() */
         copy_rvec(erg->xr_loc[i], xref);
-        
-        /* Subtract the (old) center from the current positions
-         * (just to determine the shifts!) */
-        rvec_sub(x[ii], erg->xc_center, xcurr);
-        
-        /* Shortest PBC distance between the atom and its reference */
-        rvec_sub(xcurr, xref, dx);
-        
-        /* Determine the shift for this atom */
-        for(m=npbcdim-1; m>=0; m--)
-        {
-            while (dx[m] < -0.5*box[m][m])
-            {
-                for(d=0; d<DIM; d++)
-                    dx[d] += box[m][d];
-                shift[m]++;
-            }
-            while (dx[m] >= 0.5*box[m][m])
-            {
-                for(d=0; d<DIM; d++)
-                    dx[d] -= box[m][d];
-                shift[m]--;
-            }
-        }
-        
-        /* Apply the shift to the current atom */
-        copy_rvec(x[ii], erg->x_loc_pbc[i]);
-        shift_single_coord(box, erg->x_loc_pbc[i], shift); 
+
+        copy_correct_pbc_image(x[ii],erg->x_loc_pbc[i], xref, box, npbcdim);
     }
 }
 
