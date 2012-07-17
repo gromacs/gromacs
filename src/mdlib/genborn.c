@@ -1147,17 +1147,18 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             gmx_fatal(FARGS,"Bad gb algorithm for all-vs-all interactions");
         }
         inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,md->homenr);
-
-        return 0;
     }
-    
-    /* Switch for determining which algorithm to use for Born radii calculation */
+    else
+    {
+        /* FALSE == fr->bAllvsAll */
+
+        /* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
     
-#if 0 && defined (GMX_X86_SSE2)
-    /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
-    switch(ir->gb_algorithm)
-    {
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
+        /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
+        switch(ir->gb_algorithm)
+        {
         case egbSTILL:
             if(fr->use_acceleration)
             {            
@@ -1191,10 +1192,10 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             
         default:
             gmx_fatal(FARGS, "Unknown double precision sse-enabled algorithm for Born radii calculation: %d",ir->gb_algorithm);
-    }
+        }
 #else
-    switch(ir->gb_algorithm)
-    {
+        switch(ir->gb_algorithm)
+        {
         case egbSTILL:
             calc_gb_rad_still(cr,fr,born->nr,top,atype,x,nl,born,md); 
             break;
@@ -1207,20 +1208,20 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             
         default:
             gmx_fatal(FARGS, "Unknown double precision algorithm for Born radii calculation: %d",ir->gb_algorithm);
-    }
+        }
             
 #endif
                         
 #else                
             
-#if 0 && defined (GMX_X86_SSE2)
-    /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
-    switch(ir->gb_algorithm)
-    {
+#if (!defined DISABLE_SSE && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) ) )
+        /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
+        switch(ir->gb_algorithm)
+        {
         case egbSTILL:
             if(fr->use_acceleration)
             {
-            calc_gb_rad_still_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born);
+                calc_gb_rad_still_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born);
             }
             else
             {
@@ -1228,14 +1229,14 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             }
             break;
         case egbHCT:
-                if(fr->use_acceleration)
-                {
-                    calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
-                }
-                else
-                {
-                    calc_gb_rad_hct(cr,fr,born->nr,top,atype,x,nl,born,md); 
-                }
+            if(fr->use_acceleration)
+            {
+                calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+            }
+            else
+            {
+                calc_gb_rad_hct(cr,fr,born->nr,top,atype,x,nl,born,md);
+            }
             break;
             
         case egbOBC:
@@ -1251,11 +1252,11 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             
         default:
             gmx_fatal(FARGS, "Unknown sse-enabled algorithm for Born radii calculation: %d",ir->gb_algorithm);
-    }
+        }
     
 #else
-    switch(ir->gb_algorithm)
-    {
+        switch(ir->gb_algorithm)
+        {
         case egbSTILL:
             calc_gb_rad_still(cr,fr,born->nr,top,atype,x,nl,born,md); 
             break;
@@ -1268,30 +1269,27 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             
         default:
             gmx_fatal(FARGS, "Unknown algorithm for Born radii calculation: %d",ir->gb_algorithm);
-    }
+        }
     
 #endif /* Single precision sse */
             
 #endif /* Double or single precision */
-    
-    if(fr->bAllvsAll==FALSE)
-    {
+
         switch(ir->gb_algorithm)
         {
-            case egbSTILL:
-                inc_nrnb(nrnb,eNR_BORN_RADII_STILL,nl->nrj);
-                break;
-            case egbHCT:
-            case egbOBC:
-                inc_nrnb(nrnb,eNR_BORN_RADII_HCT_OBC,nl->nrj);
-                break;
-                
-            default:
-                break;
+        case egbSTILL:
+            inc_nrnb(nrnb,eNR_BORN_RADII_STILL,nl->nrj);
+            break;
+        case egbHCT:
+        case egbOBC:
+            inc_nrnb(nrnb,eNR_BORN_RADII_HCT_OBC,nl->nrj);
+            break;
+
+        default:
+            break;
         }
         inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,nl->nri);
     }
-    
     return 0;        
 }
 
