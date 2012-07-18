@@ -150,7 +150,7 @@ gau_atomprop_t read_gauss_data(const char *fn)
     return gaps;
 }
 
-double gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,double temp)
+double gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,char *desc,double temp)
 {
     int i;
     double v = 0;
@@ -160,6 +160,7 @@ double gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,dou
     {
         if ((0 == strcasecmp(gaps->gap[i].element,element)) &&
             (0 == strcasecmp(gaps->gap[i].method,method)) &&
+            (0 == strcasecmp(gaps->gap[i].desc,desc)) &&
             (fabs(temp - gaps->gap[i].temp) < ttol)) 
         {
             v = gaps->gap[i].value;
@@ -169,23 +170,27 @@ double gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,dou
     return v;
 }
 
-double gmx_molprop_get_atomic_energy(gmx_molprop_t mpt,gau_atomprop_t gaps,
-                                     char *method,double temp)
+void gmx_molprop_get_atomic_energy(gmx_molprop_t mpt,gau_atomprop_t gaps,
+                                   char *method,double temp,real *atom_ener,real *temp_corr)
 {
-    char *atomname;
-    int  natom;
-    double vtot,v;
+    char   *atomname;
+    char   desc[128];
+    int    natom;
+    double vm,ve,vdh;
     
-    vtot = 0;
+    vm = ve = vdh = 0;
+    sprintf(desc,"%s(0K)",method);
     while (0  < gmx_molprop_get_composition_atom(mpt,"bosque",
                                                  &atomname,&natom))
     {
         /* There are natom atoms with name atomname */
-        v = gau_atomprop_get_value(gaps,atomname,method,temp);
-        vtot += v*natom;
+        vm  += natom*gau_atomprop_get_value(gaps,atomname,method,desc,0);
+        ve  += natom*gau_atomprop_get_value(gaps,atomname,"exp","DHf(0K)",0);
+        vdh += natom*gau_atomprop_get_value(gaps,atomname,"exp","H(0K)-H(298.15K)",298.15);
     }
     /* Make sure units match! */
-    return convert2gmx(vtot,eg2cHartree);
+    *atom_ener = convert2gmx(ve-vm,eg2cHartree);
+    *temp_corr = convert2gmx(vdh,eg2cHartree);
 }
 
 /* Read a line from a G03/G09 composite method (G3, G4, etc) record */
@@ -233,7 +238,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   real *pot=NULL;
   char **ptr2;
   gmx_bool bThermResults=FALSE;
-  real temp,pres,ezpe,etherm,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener;
+  real temp,pres,ezpe,etherm,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener,temp_corr;
   int status;
 
   nstrings = get_file(fn,&strings);
@@ -511,9 +516,11 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       }		
       else if (NULL != g3ener)
       {
-          atom_ener = gmx_molprop_get_atomic_energy(mpt,gaps,"G3",temp);
-          ee = convert2gmx(atof(g3ener),eg2cHartree) - atom_ener;
-          gmx_molprop_add_energy(mpt,calcref,"G3","kJ/mol",ee,0);
+          gmx_molprop_get_atomic_energy(mpt,gaps,"G3",temp,&atom_ener,&temp_corr);
+          ee = convert2gmx(atof(g3ener),eg2cHartree) + atom_ener;
+          gmx_molprop_add_energy(mpt,calcref,"G3 DHf(0K)","kJ/mol",ee,0);
+          ee = convert2gmx(atof(g3ener)-ezpe+etherm,eg2cHartree) + atom_ener - temp_corr;
+          gmx_molprop_add_energy(mpt,calcref,"G3 DHf(298.15K)","kJ/mol",ee,0);
       }		
       else if (NULL != cbsener)
       {
