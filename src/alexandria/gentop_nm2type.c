@@ -633,8 +633,8 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     /* Now we will determine for each atom the possible atom types in an iterative
      * fashion until convergence (deviation from valence criteria dval == 0).
      */
-    /* dval = minimize_valence(fp,atoms->nr,ats,molname,bonds,pd,bondorder);*/
-    get_bondorders(fp,molname,x,atoms->nr,ats,bonds,pd,bondorder);
+    dval = minimize_valence(fp,atoms->nr,ats,molname,bonds,pd,bondorder);
+    /*get_bondorders(fp,molname,x,atoms->nr,ats,bonds,pd,bondorder);*/
     
     nresolved = 0;
     if (0 == dval)
