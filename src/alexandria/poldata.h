@@ -212,6 +212,9 @@ extern int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 extern int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
                                     double distance,double toler);
 
+/* Return maximal valence for a give element */
+double gmx_poldata_elem_get_max_valence(gmx_poldata_t pd,char *elem);
+
 /* Return NULL-terminated array of potential bondorders */
 extern double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2,
                                                double distance,double toler);

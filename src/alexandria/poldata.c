@@ -757,6 +757,20 @@ int gmx_poldata_search_atype(gmx_poldata_t pd,char *key,
         return 0;
 }
 
+double gmx_poldata_elem_get_max_valence(gmx_poldata_t pd,char *elem)
+{
+    double mv = 0;
+    int i;
+    
+    for(i=0; (i<pd->nbrule); i++)
+    {
+        if ((0 == gmx_strcasecmp(pd->brule[i].elem,elem)) &&
+            (mv < pd->brule[i].valence))
+            mv = pd->brule[i].valence;
+    }
+    return mv;
+}
+
 double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2,
                                         double distance,double toler)
 {
@@ -766,6 +780,7 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2
   
     if ((NULL == elem1) || (NULL == elem2))
         return 0;
+    nbo = 0;
     for(i=0; (i<pd->ngt_bond); i++) {
         if (0 == strlen(pd->gt_bond[i].elem1)) {
             for(j=0; (j<pd->nalexandria); j++) 
