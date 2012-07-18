@@ -4083,7 +4083,7 @@ static void print_cg_move(FILE *fplog,
     fprintf(fplog,"\nStep %s:\n",gmx_step_str(step,buf));
     if (bHaveLimitdAndCMOld)
     {
-        fprintf(fplog,"The charge group starting at atom %d moved than the distance allowed by the domain decomposition (%f) in direction %c\n",
+        fprintf(fplog,"The charge group starting at atom %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
                 ddglatnr(dd,dd->cgindex[cg]),limitd,dim2char(dim));
     }
     else
@@ -4569,19 +4569,19 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
             if (dim >= npbcdim && dd->nc[dim] > 2)
             {
                 /* No pbc in this dim and more than one domain boundary.
-                 * We to a separate check if a charge did not move too far.
+                 * We do a separate check if a charge group didn't move too far.
                  */
                 if (((flag & DD_FLAG_FW(d)) &&
-                     comm->vbuf.v[buf_pos][d] > cell_x1[dim]) ||
+                     comm->vbuf.v[buf_pos][dim] > cell_x1[dim]) ||
                     ((flag & DD_FLAG_BW(d)) &&
-                     comm->vbuf.v[buf_pos][d] < cell_x0[dim]))
+                     comm->vbuf.v[buf_pos][dim] < cell_x0[dim]))
                 {
-                    cg_move_error(fplog,dd,step,cg,d,
+                    cg_move_error(fplog,dd,step,cg,dim,
                                   (flag & DD_FLAG_FW(d)) ? 1 : 0,
                                    FALSE,0,
                                    comm->vbuf.v[buf_pos],
                                    comm->vbuf.v[buf_pos],
-                                   comm->vbuf.v[buf_pos][d]);
+                                   comm->vbuf.v[buf_pos][dim]);
                 }
             }
 
