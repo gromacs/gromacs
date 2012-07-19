@@ -1,0 +1,9 @@
+Code-Review+2: Christoph Junghans <junghans@votca.org>
+Code-Review+1: Michael Shirts <michael.shirts@virginia.edu>
+Code-Review+1: Szilárd Páll <pszilard@kth.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Christoph Junghans <junghans@votca.org>
+Submitted-at: Thu, 19 Jul 2012 18:33:53 +0200
+Reviewed-on: https://gerrit.gromacs.org/1211
+Project: gromacs
+Branch: refs/heads/release-4-5-patches
