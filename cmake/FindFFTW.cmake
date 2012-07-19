@@ -44,10 +44,14 @@ endif(NOT __pkg_config_checked_PC_FFTW_${FFTW_PKG})
 
 if(FFTW_LIBRARY)
   set(FFTW_LIBRARY_${FFTW_PKG} "${FFTW_LIBRARY}" CACHE INTERNAL "Path to ${FFTW_PKG} library" FORCE)
+else(FFTW_LIBRARY)
+  set(FFTW_LIBRARY "" CACHE FILEPATH "Path to ${FFTW_PKG} library")
 endif(FFTW_LIBRARY)
 
 if(FFTW_INCLUDE_DIR)
   set(FFTW_INCLUDE_DIR_${FFTW_PKG} "${FFTW_INCLUDE_DIR}" CACHE INTERNAL "Path to ${FFTW_HEADER}" FORCE)
+else(FFTW_INCLUDE_DIR)
+  set(FFTW_INCLUDE_DIR "" CACHE DIRECTORY "Path to ${FFTW_HEADER}")
 endif(FFTW_INCLUDE_DIR)
 
 #we use _${FFTW_PKG} variables to have different cache entries for fftw3 and ffw3f
@@ -57,9 +61,6 @@ find_library(FFTW_LIBRARY_${FFTW_PKG} NAMES "${FFTW_PKG}" HINTS ${PC_FFTW_${FFTW
 #make _${FFTW_PKG} variables INTERNAL to avoid confusion in cmake-gui
 set(FFTW_LIBRARY_${FFTW_PKG} ${FFTW_LIBRARY_${FFTW_PKG}} CACHE INTERNAL "Path to ${FFTW_PKG} library" FORCE)
 set(FFTW_INCLUDE_DIR_${FFTW_PKG} ${FFTW_INCLUDE_DIR_${FFTW_PKG}} CACHE INTERNAL "Path to ${FFTW_HEADER}" FORCE)
-
-set(FFTW_LIBRARY "${FFTW_LIBRARY_${FFTW_PKG}}" CACHE FILEPATH "Path to ${FFTW_PKG} library" FORCE)
-set(FFTW_INCLUDE_DIR "${FFTW_INCLUDE_DIR_${FFTW_PKG}}" CACHE DIRECTORY "Path to ${FFTW_HEADER}" FORCE)
 
 # set default find_package outcome variables
 set(FFTW_LIBRARIES "${FFTW_LIBRARY_${FFTW_PKG}}")
