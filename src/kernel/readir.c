@@ -287,7 +287,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             
             if (ir->rlist == rc_max)
             {
-                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no Verlet buffer");
+                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no explicit Verlet buffer, only the effective buffer of the 4x4 atom cluster pair-list");
             }
         }
         else
