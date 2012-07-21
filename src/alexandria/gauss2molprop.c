@@ -626,7 +626,7 @@ int main(int argc, char *argv[])
     
   t_filenm fnm[] = {
     { efLOG, "-g03",  "gauss",  ffRDMULT },
-    { efDAT, "-f",    "gaussian.dat",  ffREAD },
+    { efDAT, "-f",    "atomization_energies.dat",  ffREAD },
     { efDAT, "-o",    "molprop", ffWRITE }
   };
 #define NFILE asize(fnm)
