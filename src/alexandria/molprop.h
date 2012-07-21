@@ -41,7 +41,8 @@ typedef struct gmx_molprop *gmx_molprop_t;
 
 enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
 
-enum { empPOTENTIAL, empDIPOLE, empQUADRUPOLE, empPOLARIZABILITY, empENERGY, empNR };
+enum { empPOTENTIAL, empDIPOLE, empQUADRUPOLE, empPOLARIZABILITY, 
+       empENERGY, empNR };
 
 #ifdef __cplusplus
 extern "C" {

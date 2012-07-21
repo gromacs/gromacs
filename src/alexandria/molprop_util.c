@@ -1049,12 +1049,10 @@ t_qmcount *find_calculations(int np,gmx_molprop_t mp[],int emp,char *fc_str)
     double value,error,vec[3];
     tensor quadrupole;
     t_qmcount *qmc;
-    char *types[] = { (char *)"elec", (char *)"ESP", (char *)"RESP", 
-                      (char *)"empirical", (char *)"refractive index", 
-                      (char *)"HF", (char *)"MP2", (char *)"Molecular Beam" };
+    char **types=NULL;
     int ntypes;
     
-    ntypes = (sizeof(types)/sizeof(types[0]));
+    ntypes = 0;
     snew(qmc,1);
     for(i=0; (i<np); i++) 
     {
@@ -1078,6 +1076,17 @@ t_qmcount *find_calculations(int np,gmx_molprop_t mp[],int emp,char *fc_str)
             if ((NULL != ll[0]) && (NULL != ll[1]) && (NULL != ll[2])) 
             {
                 add_qmc_calc(qmc,ll[0],ll[1],ll[2]);
+                for(i=0; (i<ntypes); i++)
+                {
+                    if (0 == strcasecmp(types[i],ll[2]))
+                        break;
+                }
+                if (i == ntypes) 
+                {
+                    srenew(types,ntypes+1);
+                    types[ntypes] = strdup(ll[2]);
+                    ntypes++;
+                }
             }
             n++;
         }
@@ -1114,6 +1123,10 @@ t_qmcount *find_calculations(int np,gmx_molprop_t mp[],int emp,char *fc_str)
         }
         
     }
+    for(k=0; (k<ntypes); k++) 
+        sfree(types[k]);
+    if (NULL != types)
+        sfree(types);
         
     return qmc;
 }

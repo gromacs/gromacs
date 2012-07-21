@@ -106,8 +106,6 @@ static void add_properties(const char *fn,int nmp,gmx_molprop_t mp[])
         for(i=0; (i<nmp); i++) {
             key.iupac = gmx_molprop_get_iupac(mp[i]);
             if (NULL != key.iupac) {
-                if (strcmp(key.iupac,"1-bromobutane") == 0)
-                    printf("Gotcha!\n");
                 tpp = bsearch(&key,tp,nprop,sizeof(tp[0]),tp_comp);
                 if (NULL != tpp) {
                     gmx_molprop_add_experiment(mp[i],tpp->ref,"minimum",&expref);
@@ -171,7 +169,7 @@ int main(int argc,char *argv[])
     if ((pd = gmx_poldata_read(opt2fn_null("-di",NFILE,fnm),ap)) == NULL)
       gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
     nfiles = opt2fns(&fns,"-f",NFILE,fnm);
-    mp = merge_xml(nfiles,fns,NULL,NULL,"double_dip.dat",&np,ap,pd,TRUE,TRUE,th_toler,ph_toler);
+    mp = merge_xml(nfiles,fns,NULL,NULL,NULL,&np,ap,pd,TRUE,TRUE,th_toler,ph_toler);
     
     add_properties(opt2fn_null("-x",NFILE,fnm),np,mp);
     

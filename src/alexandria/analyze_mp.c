@@ -398,7 +398,7 @@ int main(int argc,char *argv[])
         { efDAT, "-p",    "poldata",   ffRDMULT },
         { efDAT, "-pref", "gentop",    ffOPTRD  },
         { efDAT, "-pout", "gentop",    ffOPTWR  },
-        { efDAT, "-m",    "allmols",   ffREAD   },
+        { efDAT, "-m",    "allmols",   ffRDMULT },
         { efTEX, "-t",    "table",     ffWRITE  },
         { efTEX, "-atype","atomtypes", ffOPTWR  },
         { efDAT, "-sel",  "molselect", ffREAD   },
@@ -408,7 +408,7 @@ int main(int argc,char *argv[])
     };
 #define NFILE (sizeof(fnm)/sizeof(fnm[0]))
     static char *sort[] = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", NULL };
-    static char *prop[] = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", NULL };
+    static char *prop[] = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"DHf(298.15K)", NULL };
     static char *fc_str = (char *)"";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static real toler = 0.15,outlier=0;

@@ -192,8 +192,8 @@ static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
             (1 == gau_atomprop_get_value(gaps,atomname,"exp","DHf(0K)",0,&vve)) &&
             (1 == gau_atomprop_get_value(gaps,atomname,"exp","H(0K)-H(298.15K)",298.15,&vvdh)))
         {
-            vm += natom*vvm;
-            ve += natom*vve;
+            vm  += natom*vvm;
+            ve  += natom*vve;
             vdh += natom*vvdh;
         }
         else
@@ -203,12 +203,10 @@ static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
     }
     /* Make sure units match! */
     ee = convert2gmx(eg34+ve-vm,eg2cHartree);
-    sprintf(desc,"%s DHf(0K)",method);
-    gmx_molprop_add_energy(mpt,calcref,desc,"kJ/mol",ee,0);
+    gmx_molprop_add_energy(mpt,calcref,"DHf(0K)","kJ/mol",ee,0);
     
     ee = convert2gmx(eg34-ezpe+etherm+ve-vm-vdh,eg2cHartree);
-    sprintf(desc,"%s DHf(298.15K)",method);
-    gmx_molprop_add_energy(mpt,calcref,desc,"kJ/mol",ee,0);
+    gmx_molprop_add_energy(mpt,calcref,"DHf(298.15K)","kJ/mol",ee,0);
     
     return 1;
 }
@@ -248,7 +246,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   gmx_bool bAtomicCenter;
   gmx_molprop_t mpt;
   real mm;
-  char *atomname,*ginc,*hfener,*mp2ener,*g3ener,*g4ener,*cbsener;
+  char *atomname,*ginc,*hfener,*mp2ener,*g2ener,*g3ener,*g4ener,*cbsener;
   char *conformation = "unknown";
   char *reference = "This Work";
   char *program=NULL,*method=NULL,*basis=NULL;
@@ -258,7 +256,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   real *pot=NULL;
   char **ptr2;
   gmx_bool bThermResults=FALSE;
-  real temp,pres,ezpe,etherm,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener,temp_corr;
+  real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener,temp_corr;
   int status;
 
   nstrings = get_file(fn,&strings);
@@ -272,6 +270,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   charge  = NOTSET;
   hfener  = NULL;
   mp2ener = NULL;
+  g2ener  = NULL;
   g3ener  = NULL;
   g4ener  = NULL;
   cbsener = NULL;
@@ -305,10 +304,35 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
 
           bThermResults = TRUE;
       }
-      else if (NULL != strstr(strings[i],"E(ZPE)=")) 
+      else if (NULL != strstr(strings[i],"E(ZPE)="))
       {
-          status = gau_comp_meth_read_line(strings[i],&ezpe,&etherm);
-          /* fprintf(stdout, "na gau_(): %f %f\n", ezpe, etherm);*/
+          status = gau_comp_meth_read_line(strings[i],&ezpe2,&etherm2);
+      }
+      else if (NULL != strstr(strings[i],"Zero-point correction=")) 
+      {
+          
+          ptr = split(' ',strings[i]);
+          if (NULL != ptr[2]) 
+          {
+              ezpe = atof(strdup(ptr[2]));
+          }
+
+         
+          fprintf(stdout, "na gau_(): %f \n", ezpe);
+
+          bThermResults = TRUE;
+      }
+      else if (NULL != strstr(strings[i],"Thermal correction to Enthalpy=")) 
+      {
+          
+          ptr = split(' ',strings[i]);
+          if (NULL != ptr[4]) 
+          {
+              etherm = atof(strdup(ptr[4]));
+          }
+
+         
+          fprintf(stdout, "na gau_(): %f \n", etherm);
 
           bThermResults = TRUE;
       }
@@ -344,6 +368,10 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
               if (NULL != strstr(ptr[j],"MP2=")) 
               {
                   mp2ener = strdup(ptr[j]+4);
+              }
+              if (NULL != strstr(ptr[j],"G2=")) 
+              {
+                  g2ener = strdup(ptr[j]+3);
               }
               if (NULL != strstr(ptr[j],"G3=")) 
               {
@@ -533,7 +561,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       generate_composition(1,&mpt,pd,aps,TRUE,th_toler,ph_toler);
 
       /* Add energies */
-      if ((NULL != g4ener) || (NULL != g3ener) || (NULL != cbsener))
+      if ((NULL != g4ener) || (NULL != g2ener) || (NULL != g3ener) || (NULL != cbsener))
       {
           if (NULL != g4ener) 
           {
@@ -544,6 +572,11 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
           {
               mymeth = "G3";
               myener = atof(g3ener);
+          }
+          else if (NULL != g2ener)
+          {
+              mymeth = "G2";
+              myener = atof(g2ener);
           }
           else
           {
