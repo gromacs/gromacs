@@ -616,7 +616,6 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
 
 }
 
-
 int main(int argc, char *argv[])
 {
   static const char *desc[] = {

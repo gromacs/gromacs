@@ -702,11 +702,13 @@ void gmx_molprops_write(const char *fn,int nmolprop,gmx_molprop_t mpt[],
     
     /* Add molecule definitions */
     for(i=0; (i<nmolprop); i++)
+    {
+        printf("Adding %d/%d %s\n",i+1,nmolprop,gmx_molprop_get_molname(mpt[i]));
         add_xml_molprop(myroot,mpt[i]);
-
+    }
     xmlSetDocCompressMode(doc,(int)bCompress);
     xmlIndentTreeOutput = 1;
-    if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
+    if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",0) == 0)
         gmx_fatal(FARGS,"Saving file",fn);
     xmlFreeDoc(doc);
 }
