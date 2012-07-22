@@ -81,7 +81,7 @@ static void add_properties(const char *fn,int nmp,gmx_molprop_t mp[])
     int    i,expref,nadd=0;
     
     if (NULL != fn) {
-        fp = ffopen(fn,"r"); 
+        fp = ffopen(fn,"r");
         while (!feof(fp)) {
             fgets2(buf,STRLEN-1,fp);
             ptr = split('|',buf);

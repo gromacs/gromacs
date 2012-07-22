@@ -842,6 +842,8 @@ gmx_molprop_t *merge_xml(int nfile,char **filens,char *outf,
   
     for(i=0; (i<nfile); i++) 
     {
+        if (!gmx_fexist(filens[i])) 
+            continue;
         mp = gmx_molprops_read(filens[i],&np);
         generate_composition(np,mp,pd,ap,bForceGenComp,th_toler,ph_toler);
         generate_formula(np,mp,ap);

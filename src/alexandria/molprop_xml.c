@@ -710,6 +710,3 @@ void gmx_molprops_write(const char *fn,int nmolprop,gmx_molprop_t mpt[],
         gmx_fatal(FARGS,"Saving file",fn);
     xmlFreeDoc(doc);
 }
-
-
-
