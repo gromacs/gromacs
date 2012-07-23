@@ -4,7 +4,7 @@ ENABLED_SECTIONS       =
 INTERNAL_DOCS          = NO
 HIDE_UNDOC_CLASSES     = YES
 HIDE_FRIEND_COMPOUNDS  = YES
-WARN_LOGFILE           = doxygen-doc/doxygen-user.log
+WARN_LOGFILE           = doxygen-user.log
 HTML_OUTPUT            = html-user
 
 ALIASES               += inpublicapi="\ingroup group_publicapi"
