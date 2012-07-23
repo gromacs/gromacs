@@ -509,8 +509,6 @@ endif (LIBXML2_FOUND)
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 set(MEMORYCHECK_SUPPRESSIONS_FILE ${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp)
 
-find_package(Doxygen)
-
 ########################################################################
 # Generate development version info for cache
 ########################################################################
@@ -1020,6 +1018,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
+add_subdirectory(doxygen)
 add_subdirectory(share)
 add_subdirectory(man)
 add_subdirectory(src)
@@ -1037,39 +1036,6 @@ ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_COMMAND}" -P 
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
-
-########################################################################
-# Doxygen configuration
-########################################################################
-if (DOXYGEN_FOUND)
-    FILE(GLOB NB_KERNEL_DIRS src/gromacs/gmxlib/nonbonded/nb_kernel_*/)
-    LIST(REMOVE_ITEM NB_KERNEL_DIRS
-         ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_c)
-    FOREACH(NB_KERNEL_DIR ${NB_KERNEL_DIRS})
-        SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
-            "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
-    ENDFOREACH(NB_KERNEL_DIR)
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-common.cmakein
-                   ${CMAKE_BINARY_DIR}/Doxyfile-common)
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.cmakein
-                   ${CMAKE_BINARY_DIR}/Doxyfile)
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-lib.cmakein
-                   ${CMAKE_BINARY_DIR}/Doxyfile-lib)
-    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-user.cmakein
-                   ${CMAKE_BINARY_DIR}/Doxyfile-user)
-    add_custom_target(doc
-      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      COMMENT "Generating full documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-user
-      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-user
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      COMMENT "Generating user documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-lib
-      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-lib
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      COMMENT "Generating libary documentation with Doxygen" VERBATIM)
-endif (DOXYGEN_FOUND)
 
 
 ########################################################################

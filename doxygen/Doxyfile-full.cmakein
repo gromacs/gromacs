@@ -9,7 +9,8 @@ INTERNAL_DOCS          = YES
 EXTRACT_STATIC         = YES
 EXTRACT_LOCAL_CLASSES  = YES
 HIDE_UNDOC_CLASSES     = YES
-WARN_LOGFILE           = doxygen-doc/doxygen.log
+WARN_LOGFILE           = doxygen-full.log
+HTML_OUTPUT            = html-full
 
 INLINE_INHERITED_MEMB  = NO  # Makes it easier to go through all documentation
 
