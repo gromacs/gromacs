@@ -1016,11 +1016,11 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
     if (bRM && ((tern >= 0 && ntdb[tern] == NULL) ||
                 (terc >= 0 && ctdb[terc] == NULL))) {
-        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Edit a .n.tdb and/or .c.tdb file.");
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Fix your terminal residues so that they match the residue database (.rtp) entries, or provide terminal database entries (.tdb).");
     }
     if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
                 (terc >= 0 && ctdb[terc]->nhack == 0))) {
-        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends. Select a proper terminal entry.");
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends. Fix your coordinate file, add a new terminal database entry (.tdb), or select the proper existing terminal entry.");
     }
   }
   

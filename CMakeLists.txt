@@ -40,7 +40,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "0")
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
 set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
@@ -51,10 +51,15 @@ endif(NOT CMAKE_BUILD_TYPE)
 enable_language(C)
 enable_language(CXX)
 
+set(GMX_USE_RELATIVE_INSTALL_PATH OFF CACHE STRING "Use relative paths not absolute paths for cmake install. Has only an effect on cpack.")
+mark_as_advanced(GMX_USE_RELATIVE_INSTALL_PATH)
+
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance molecular simulation")
-set(CPACK_SET_DESTDIR "ON")
+if (NOT GMX_USE_RELATIVE_INSTALL_PATH)
+    set(CPACK_SET_DESTDIR "ON")
+endif()
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
@@ -705,6 +710,13 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
+# Access to /etc/passwd is not available on the back end of BlueGene,
+# despite being detected by CMake. This can cause linker warnings
+# about harmless things in src/gmxlib/string2.h.
+    set(HAVE_PWD_H OFF)
+# The automatic testing for endianness does not work for the BlueGene cross-compiler
+    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
+    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
@@ -980,15 +992,21 @@ endif()
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if ( DEFINED GMXLIB )
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${GMXLIB}")
+if (GMX_USE_RELATIVE_INSTALL_PATH)
+    set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
+    mark_as_advanced(GMX_INSTALL_PREFIX)
 else()
-    set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+    set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
 endif()
-set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
-set(DATA_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/gromacs)
-set(MAN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/share/man)
-set(INCL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+
+if ( NOT DEFINED GMXLIB )
+    set(GMXLIB lib)
+endif()
+set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
+set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
+set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/gromacs)
+set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
+set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
@@ -998,7 +1016,7 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "${LIB_INSTALL_DIR}")
+    set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
