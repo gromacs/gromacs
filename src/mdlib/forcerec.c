@@ -1385,7 +1385,7 @@ void init_forcerec(FILE *fp,
         bNoSolvOpt         = TRUE;
     }
     
-    if( (getenv("GMX_DISABLE_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
+    if (getenv("GMX_DISABLE_ACCELERATION") != NULL)
     {
         fr->use_acceleration = FALSE;
         if (fp != NULL)
@@ -1424,7 +1424,7 @@ void init_forcerec(FILE *fp,
     fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
                       fr->eeltype == eelRF_ZERO);
     
-    if (getenv("GMX_FORCE_TABLES"))
+    if (getenv("GMX_REQUIRE_TABLES"))
     {
         fr->bvdwtab  = TRUE;
         fr->bcoultab = TRUE;
