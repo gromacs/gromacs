@@ -55,7 +55,6 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance 
 if (NOT GMX_USE_RELATIVE_INSTALL_PATH)
     set(CPACK_SET_DESTDIR "ON")
 endif()
-set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
