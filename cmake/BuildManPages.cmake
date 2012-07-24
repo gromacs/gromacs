@@ -33,6 +33,9 @@ if(GMX_BUILD_MANPAGES)
     endforeach()
     TODAY(TODAYS_DATE)
     configure_file(${CMAKE_SOURCE_DIR}/man/man7/gromacs.7.cmakein ${CMAKE_BINARY_DIR}/man/man7/gromacs.7)
+endif()
+#man-pages are only avalaible if they are either build or this is a source archive
+if(GMX_BUILD_MANPAGES OR NOT EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
     install(FILES ${CMAKE_BINARY_DIR}/man/man7/gromacs.7 DESTINATION
         ${MAN_INSTALL_DIR}/man7)
 endif()
@@ -54,6 +57,8 @@ function (gmx_add_man_page EXENAME)
             COMMAND ${CMAKE_COMMAND} -DINFILE=${EXENAME}${GMX_BINARY_SUFFIX}.nroff 
                 -DOUTFILE=${MAN1_PATH}/${EXENAME}.1 -DDESC=" - ${DESC}"
                 -P ${CMAKE_SOURCE_DIR}/cmake/Filter.cmake)
+    endif()
+    if(GMX_BUILD_MANPAGES OR NOT EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
         install(FILES ${MAN1_PATH}/${EXENAME}.1 DESTINATION 
             ${MAN_INSTALL_DIR}/man1)
     endif()
