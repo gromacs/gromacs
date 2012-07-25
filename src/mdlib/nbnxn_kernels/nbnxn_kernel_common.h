@@ -31,27 +31,27 @@
  * For more info, check our website at http://www.gromacs.org
  */
 
-#ifndef _nbnxn_kernel_ref_h
-#define _nbnxn_kernel_ref_h
+#ifndef _nbnxn_kernel_common_h
+#define _nbnxn_kernel_common_h
 
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+}
+#endif
 
-/* Wrapper call for the non-bonded n vs n reference kernels */
 void
-nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
-                 const nbnxn_atomdata_t     *nbat,
-                 const interaction_const_t  *ic,
-                 rvec                       *shift_vec,
-                 int                        force_flags,
-                 int                        clearF,
-                 real                       *fshift,
-                 real                       *Vc,
-                 real                       *Vvdw);
+clear_f(const nbnxn_atomdata_t *nbat,real *f);
 
+void
+clear_fshift(real *fshift);
+
+#if 0
+{
+#endif
 #ifdef __cplusplus
 }
 #endif

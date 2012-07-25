@@ -45,6 +45,7 @@
 #include "typedefs.h"
 #include "force.h"
 #include "nbnxn_kernel_gpu_ref.h"
+#include "nbnxn_kernel_common.h"
 
 #define NA_C  NBNXN_GPU_CLUSTER_SIZE
 
@@ -109,11 +110,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
     if (clearF == enbvClearFYes)
     {
-        /* Zero the output force array */
-        for(n=0; n<nbat->natoms*nbat->fstride; n++)
-        {
-            f[n] = 0;
-        }
+        clear_f(nbat, f);
     }
 
     bEner = (force_flags & GMX_FORCE_ENERGY);

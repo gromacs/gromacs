@@ -43,6 +43,7 @@
 #include "smalloc.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
+#include "nbnxn_kernel_common.h"
 
 #ifdef GMX_X86_SSE2
 
@@ -175,27 +176,6 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
 
 #endif /* SSE */
 
-
-static void clear_f(const nbnxn_atomdata_t *nbat,
-                    real *f)
-{
-    int i;
-
-    for(i=0; i<nbat->natoms*nbat->xstride; i++)
-    {
-        f[i] = 0;
-    }
-}
-
-static void clear_fshift(real *fshift)
-{
-    int i;
-
-    for(i=0; i<SHIFTS*DIM; i++)
-    {
-        fshift[i] = 0;
-    }
-}
 
 static void reduce_group_energies(int ng,int ng_2log,
                                   const real *VSvdw,const real *VSc,

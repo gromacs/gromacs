@@ -30,13 +30,15 @@
  * the papers people have written on it - you can find them on the website!
  */
 
-
 /* When calculating RF or Ewald interactions we calculate the electrostatic
  * forces and energies on excluded atom pairs here in the non-bonded loops.
  */
 #if defined CHECK_EXCLS && defined CALC_COULOMB
 #define EXCL_FORCES
 #endif
+
+/* TODO: fix flop counts for new use of skipmask and interact (and the
+ * flop count for the latter depends on EXCL_FORCES, too) */
 
         {
             int cj;
@@ -83,39 +85,38 @@
                     real fscal;
                     real fx,fy,fz;
 
+                    /* A multiply mask used to zero an interaction
+                     * when either the distance cutoff is exceeded, or
+                     * (if appropriate) the i and j indices are
+                     * unsuitable for this kind of inner loop. */
+                    real skipmask;
 #ifdef CHECK_EXCLS
+                    /* A multiply mask used to zero an interaction
+                     * when that interaction should be excluded
+                     * (e.g. because of bonding). */
                     int interact;
 
                     interact = ((l_cj[cjind].excl>>(i*UNROLLI + j)) & 1);
 #ifndef EXCL_FORCES
-                    /* Remove all exclused atom pairs from the list */
-                    if (interact == 0)
-                    {
-                        continue;
-                    }
+                    skipmask = interact;
 #else
-                    /* Remove the (sub-)diagonal to avoid double counting */
-                    if (cj == ci_sh && j <= i)
-                    {
-                        continue;
-                    }
+                    skipmask = !(cj == ci_sh && j <= i);
 #endif
 #else
-#define interact 1
+#define interact 1.0
+                    skipmask = 1.0;
 #endif
 
                     aj = cj*UNROLLJ + j;
 
-                    dx  = xi[i*XI_STRIDE+0] - x[aj*X_STRIDE+0];
-                    dy  = xi[i*XI_STRIDE+1] - x[aj*X_STRIDE+1];
-                    dz  = xi[i*XI_STRIDE+2] - x[aj*X_STRIDE+2];
+                    dx  = xi[i*XI_STRIDE+XX] - x[aj*X_STRIDE+XX];
+                    dy  = xi[i*XI_STRIDE+YY] - x[aj*X_STRIDE+YY];
+                    dz  = xi[i*XI_STRIDE+ZZ] - x[aj*X_STRIDE+ZZ];
 
                     rsq = dx*dx + dy*dy + dz*dz;
 
-                    if (rsq >= rcut2)
-                    {
-                        continue;
-                    }
+                    /* Prepare to enforce the cut-off. */
+                    skipmask = (rsq >= rcut2) ? 0 : skipmask;
                     /* 9 flops for r^2 + cut-off check */
 
 #ifdef CHECK_EXCLS
@@ -133,6 +134,12 @@
                     rinv = gmx_invsqrt(rsq);
                     /* 5 flops for invsqrt */
 
+                    /* Partially enforce the cut-off (and perhaps
+                     * exclusions) to avoid possible overflow of
+                     * rinvsix when computing LJ, and/or overflowing
+                     * the Coulomb table during lookup. */
+                    rinv = rinv * skipmask;
+
                     rinvsq  = rinv*rinv;
 
 #ifdef HALF_LJ
@@ -149,6 +156,9 @@
 #ifdef CALC_ENERGIES
                         VLJ     = (FrLJ12 - c12*sh_invrc6*sh_invrc6)/12 -
                                   (FrLJ6 - c6*sh_invrc6)/6;
+                        /* Need to zero the interaction if r >= rcut
+                         * or there should be exclusion. */
+                        VLJ     = VLJ * skipmask;
                         /* 7 flops for LJ energy */
 #ifdef ENERGY_GROUPS
                         Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += VLJ;
@@ -160,9 +170,18 @@
                     }
 
 #ifdef CALC_COULOMB
-                    qq = qi[i]*q[aj];
+                    /* Enforce the cut-off and perhaps exclusions. In
+                     * those cases, rinv is zero because of skipmask,
+                     * but fcoul and vcoul will later be non-zero (in
+                     * both RF and table cases) because of the
+                     * contributions that do not depend on rinv. These
+                     * contributions cannot be allowed to accumulate
+                     * to the force and potential, and the easiest way
+                     * to do this is to zero the charges in
+                     * advance. */
+                    qq = skipmask * qi[i] * q[aj];
 
-#ifdef  CALC_COUL_RF
+#ifdef CALC_COUL_RF
                     fcoul  = qq*(interact*rinv*rinvsq - k_rf2);
                     /* 4 flops for RF force */
 #ifdef CALC_ENERGIES
@@ -176,8 +195,10 @@
                     ri     = (int)rs;
                     frac   = rs - ri;
 #ifndef GMX_DOUBLE
+                    /* fexcl = F_i + frac * (F_(i+1)-F_i) */
                     fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
 #else
+                    /* fexcl = (1-frac) * F_i + frac * F_(i+1) */
                     fexcl  = (1 - frac)*tab_coul_F[ri] + frac*tab_coul_F[ri+1];
 #endif
                     fcoul  = interact*rinvsq - fexcl;

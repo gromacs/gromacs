@@ -41,6 +41,7 @@
 #include "force.h"
 #include "gmx_omp_nthreads.h"
 #include "nbnxn_kernel_ref.h"
+#include "nbnxn_kernel_common.h"
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -110,27 +111,6 @@ p_nbk_func_ener p_nbk_c_energrp[coultNR] =
 
 p_nbk_func_noener p_nbk_c_noener[coultNR] =
 { nbnxn_kernel_ref_rf_noener, nbnxn_kernel_ref_tab_noener };
-
-static void clear_f(const nbnxn_atomdata_t *nbat,
-                    real *f)
-{
-    int i;
-
-    for(i=0; i<nbat->natoms*nbat->xstride; i++)
-    {
-        f[i] = 0;
-    }
-}
-
-static void clear_fshift(real *fshift)
-{
-    int i;
-
-    for(i=0; i<SHIFTS*DIM; i++)
-    {
-        fshift[i] = 0;
-    }
-}
 
 void
 nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
