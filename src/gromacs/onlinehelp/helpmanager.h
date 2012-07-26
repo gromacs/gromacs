@@ -44,8 +44,8 @@
 namespace gmx
 {
 
-class File;
 class HelpTopicInterface;
+class HelpWriterContext;
 
 /*! \libinternal \brief
  * Helper for providing interactive online help.
@@ -61,12 +61,14 @@ class HelpManager
          *
          * \param[in] rootTopic  Help topic that can be accessed through this
          *      manager.
+         * \param[in] context    Context object for writing the help.
          * \throws    std::bad_alloc if out of memory.
          *
-         * The provided topic must remain valid for the lifetime of this
-         * manager object.
+         * The provided topic and context objects must remain valid for the
+         * lifetime of this manager object.
          */
-        explicit HelpManager(const HelpTopicInterface &rootTopic);
+        HelpManager(const HelpTopicInterface &rootTopic,
+                    const HelpWriterContext &context);
         ~HelpManager();
 
         /*! \brief
@@ -81,11 +83,10 @@ class HelpManager
         /*! \brief
          * Writes out the help for the currently active topic.
          *
-         * \param   file  File to write the help text to.
          * \throws  std::bad_alloc if out of memory.
          * \throws  FileIOError on any I/O error.
          */
-        void writeCurrentTopic(File *file) const;
+        void writeCurrentTopic() const;
 
     private:
         class Impl;

@@ -42,6 +42,7 @@
 #include <gmock/gmock.h>
 
 #include "gromacs/onlinehelp/helptopic.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 
 namespace gmx
 {
@@ -61,7 +62,7 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
         virtual const char *name() const;
         virtual const char *title() const;
 
-        MOCK_CONST_METHOD1(writeHelp, void(File *));
+        MOCK_CONST_METHOD1(writeHelp, void(const HelpWriterContext &context));
 
         MockHelpTopic &addSubTopic(const char *name, const char *title,
                                    const char *text);

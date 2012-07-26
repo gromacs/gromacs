@@ -79,16 +79,21 @@ class TrajectoryAnalysisRunnerCommon
         explicit TrajectoryAnalysisRunnerCommon(TrajectoryAnalysisSettings *settings);
         ~TrajectoryAnalysisRunnerCommon();
 
-        //! Initializes common options for trajectory analysis.
-        Options &initOptions();
+        /*! \brief
+         * Initializes common options for trajectory analysis.
+         *
+         * \param[in,out] options  Options object to add the options to.
+         */
+        void initOptions(Options *options);
         //! Scales time option values according to the time unit set.
         void scaleTimeOptions(Options *options);
         /*! \brief
          * Processes common option values after they have been parsed.
          *
-         * \returns false if the tool should exit after printing help.
+         * \param[in,out] options Options object in which options are stored.
+         * \returns       false if the tool should exit after printing help.
          */
-        bool initOptionsDone();
+        bool optionsFinished(Options *options);
         //! Initialize index groups for selections.
         void initIndexGroups(SelectionCollection *selections);
         //! Free memory allocated for index groups.

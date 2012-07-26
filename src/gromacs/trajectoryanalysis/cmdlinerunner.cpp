@@ -47,6 +47,7 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
@@ -78,8 +79,6 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
-                          SelectionOptionManager *seloptManager,
-                          Options *options,
                           int *argc, char *argv[]);
 
         TrajectoryAnalysisModule *module_;
@@ -109,11 +108,13 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
     {
+        HelpWriterContext context(&File::standardError(),
+                                  eHelpOutputFormat_Console);
         CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
             .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-            .writeHelp(&File::standardError());
+            .writeHelp(context);
     }
 }
 
@@ -123,47 +124,50 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         TrajectoryAnalysisSettings *settings,
         TrajectoryAnalysisRunnerCommon *common,
         SelectionCollection *selections,
-        SelectionOptionManager *seloptManager,
-        Options *options,
         int *argc, char *argv[])
 {
-    Options &moduleOptions = module_->initOptions(settings);
-    Options &commonOptions = common->initOptions();
-    Options &selectionOptions = selections->initOptions();
+    Options options(NULL, NULL);
+    Options moduleOptions(module_->name(), module_->description());
+    Options commonOptions("common", "Common analysis control");
+    Options selectionOptions("selection", "Common selection control");
+    module_->initOptions(&moduleOptions, settings);
+    common->initOptions(&commonOptions);
+    selections->initOptions(&selectionOptions);
 
-    options->addSubSection(&commonOptions);
-    options->addSubSection(&selectionOptions);
-    options->addSubSection(&moduleOptions);
+    options.addSubSection(&commonOptions);
+    options.addSubSection(&selectionOptions);
+    options.addSubSection(&moduleOptions);
 
-    setManagerForSelectionOptions(options, seloptManager);
+    SelectionOptionManager seloptManager(selections);
+    setManagerForSelectionOptions(&options, &seloptManager);
 
     {
-        CommandLineParser  parser(options);
+        CommandLineParser  parser(&options);
         try
         {
             parser.parse(argc, argv);
         }
         catch (const UserInputError &ex)
         {
-            printHelp(*options, *settings, *common);
+            printHelp(options, *settings, *common);
             throw;
         }
-        printHelp(*options, *settings, *common);
-        common->scaleTimeOptions(options);
-        options->finish();
+        printHelp(options, *settings, *common);
+        common->scaleTimeOptions(&options);
+        options.finish();
     }
 
-    if (!common->initOptionsDone())
+    if (!common->optionsFinished(&commonOptions))
     {
         return false;
     }
-    module_->initOptionsDone(settings);
+    module_->optionsFinished(&moduleOptions, settings);
 
     common->initIndexGroups(selections);
 
     // TODO: Check whether the input is a pipe.
     bool bInteractive = true;
-    seloptManager->parseRequestedFromStdin(bInteractive);
+    seloptManager.parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
 
     return true;
@@ -212,14 +216,11 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     SelectionCollection  selections;
     selections.setDebugLevel(impl_->debugLevel_);
-    SelectionOptionManager seloptManager(&selections);
 
     TrajectoryAnalysisSettings  settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
-    Options  options(NULL, NULL);
-    if (!impl_->parseOptions(&settings, &common, &selections, &seloptManager,
-                             &options, &argc, argv))
+    if (!impl_->parseOptions(&settings, &common, &selections, &argc, argv))
     {
         return 0;
     }
@@ -284,30 +285,34 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
 
 void
-TrajectoryAnalysisCommandLineRunner::writeHelp(File *file)
+TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
 {
     // TODO: This method duplicates some code from run() and Impl::printHelp().
     // See how to best refactor it to share the common code.
     SelectionCollection             selections;
-    SelectionOptionManager          seloptManager(&selections);
     TrajectoryAnalysisSettings      settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
-    Options                         options(NULL, NULL);
 
-    Options &moduleOptions    = impl_->module_->initOptions(&settings);
-    Options &commonOptions    = common.initOptions();
-    Options &selectionOptions = selections.initOptions();
+    Options options(NULL, NULL);
+    Options moduleOptions(impl_->module_->name(), impl_->module_->description());
+    Options commonOptions("common", "Common analysis control");
+    Options selectionOptions("selection", "Common selection control");
+
+    impl_->module_->initOptions(&moduleOptions, &settings);
+    common.initOptions(&commonOptions);
+    selections.initOptions(&selectionOptions);
 
     options.addSubSection(&commonOptions);
     options.addSubSection(&selectionOptions);
     options.addSubSection(&moduleOptions);
 
+    SelectionOptionManager seloptManager(&selections);
     setManagerForSelectionOptions(&options, &seloptManager);
 
     CommandLineHelpWriter(options)
         .setShowDescriptions(true)
         .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-        .writeHelp(file);
+        .writeHelp(context);
 }
 
 } // namespace gmx

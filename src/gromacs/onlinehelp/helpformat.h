@@ -48,44 +48,6 @@ namespace gmx
 
 class File;
 
-/*! \cond libapi */
-/*! \libinternal \brief
- * Make the string uppercase.
- *
- * \param[in] text  Input text.
- * \returns   \p text with all characters transformed to uppercase.
- * \throws    std::bad_alloc if out of memory.
- *
- * \inlibraryapi
- */
-std::string toUpperCase(const std::string &text);
-
-/*! \libinternal \brief
- * Substitute markup used in help text for console output.
- *
- * \param[in] text  Text to substitute.
- * \returns   \p text with markup substituted.
- * \throws    std::bad_alloc if out of memory.
- *
- * \inlibraryapi
- */
-std::string substituteMarkupForConsole(const std::string &text);
-/*! \libinternal \brief
- * Format a help text block for console output.
- *
- * \param     file  File to write the formatted text to.
- * \param[in] text  Text to format.
- * \throws    std::bad_alloc if out of memory.
- * \throws    FileIOError on any I/O error.
- *
- * Calls substituteMarkupForConsole(), and also wraps the lines to 78
- * characters.
- *
- * \inlibraryapi
- */
-void writeHelpTextForConsole(File *file, const std::string &text);
-//! \endcond
-
 /*! \libinternal \brief
  * Formats rows of a table for text output.
  *

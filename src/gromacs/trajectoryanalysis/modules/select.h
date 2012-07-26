@@ -43,7 +43,6 @@
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -61,7 +60,8 @@ class Select : public TrajectoryAnalysisModule
         Select();
         virtual ~Select();
 
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -72,7 +72,6 @@ class Select : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        Options                  options_;
         SelectionList            sel_;
 
         std::string              fnSize_;

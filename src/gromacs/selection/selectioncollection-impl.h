@@ -47,7 +47,6 @@
 #include "../legacyheaders/typedefs.h"
 
 #include "../onlinehelp/helptopicinterface.h"
-#include "../options/options.h"
 #include "../utility/uniqueptr.h"
 #include "indexutil.h"
 #include "poscalc.h"
@@ -145,8 +144,6 @@ class SelectionCollection::Impl
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t sc_;
-        //! Options object for setting global properties on the collection.
-        Options                 options_;
         //! Default reference position type for selections.
         std::string             rpost_;
         //! Default output position type for selections.

@@ -76,8 +76,7 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl()
-    : options_("selection", "Common selection control"),
-      debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
+    : debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
 {
     sc_.root      = NULL;
     sc_.nvars     = 0;
@@ -346,8 +345,8 @@ SelectionCollection::~SelectionCollection()
 }
 
 
-Options &
-SelectionCollection::initOptions()
+void
+SelectionCollection::initOptions(Options *options)
 {
     static const char * const debug_levels[]
         = {"no", "basic", "compile", "eval", "full", NULL};
@@ -361,23 +360,20 @@ SelectionCollection::initOptions()
     options.setDescription(desc);
     */
 
-    Options &options = impl_->options_;
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
-    options.addOption(StringOption("selrpos").enumValue(postypes)
-                          .store(&impl_->rpost_).defaultValue(postypes[0])
-                          .description("Selection reference positions"));
-    options.addOption(StringOption("seltype").enumValue(postypes)
-                          .store(&impl_->spost_).defaultValue(postypes[0])
-                          .description("Default selection output positions"));
+    options->addOption(StringOption("selrpos").enumValue(postypes)
+                           .store(&impl_->rpost_).defaultValue(postypes[0])
+                           .description("Selection reference positions"));
+    options->addOption(StringOption("seltype").enumValue(postypes)
+                           .store(&impl_->spost_).defaultValue(postypes[0])
+                           .description("Default selection output positions"));
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
                        "Debug level out of range");
-    options.addOption(StringOption("seldebug").hidden(impl_->debugLevel_ == 0)
-                          .enumValue(debug_levels)
-                          .defaultValue(debug_levels[impl_->debugLevel_])
-                          .storeEnumIndex(&impl_->debugLevel_)
-                          .description("Print out selection trees for debugging"));
-
-    return impl_->options_;
+    options->addOption(StringOption("seldebug").hidden(impl_->debugLevel_ == 0)
+                           .enumValue(debug_levels)
+                           .defaultValue(debug_levels[impl_->debugLevel_])
+                           .storeEnumIndex(&impl_->debugLevel_)
+                           .description("Print out selection trees for debugging"));
 }
 
 

@@ -132,7 +132,7 @@ class TrajectoryAnalysisSettings
          *
          * Returns the value set with setPBC() and/or overridden by the user.
          * The user-provided value can be accessed in
-         * TrajectoryAnalysisModule::initOptionsDone(), and can be overridden
+         * TrajectoryAnalysisModule::optionsFinished(), and can be overridden
          * with a call to setPBC().
          */
         bool hasPBC() const;

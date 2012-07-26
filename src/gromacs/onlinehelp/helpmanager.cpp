@@ -37,8 +37,6 @@
  */
 #include "helpmanager.h"
 
-#include <cstdio>
-
 #include <string>
 #include <vector>
 
@@ -64,6 +62,12 @@ class HelpManager::Impl
         //! Container type for keeping the stack of active topics.
         typedef std::vector<const HelpTopicInterface *> TopicStack;
 
+        //! Initializes a new manager with the given context.
+        explicit Impl(const HelpWriterContext &context)
+            : rootContext_(context)
+        {
+        }
+
         //! Whether the active topic is the root topic.
         bool isAtRootTopic() const { return topicStack_.size() == 1; }
         //! Returns the active topic.
@@ -74,13 +78,15 @@ class HelpManager::Impl
         //! Formats the active topic as a string, including its parent topics.
         std::string currentTopicAsString() const;
 
+        //! Context with which the manager was initialized.
+        const HelpWriterContext &rootContext_;
         /*! \brief
          * Stack of active topics.
          *
          * The first item is always the root topic, and each item is a subtopic
          * of the preceding item.  The last item is the currently active topic.
          */
-        TopicStack              topicStack_;
+        TopicStack               topicStack_;
 };
 
 std::string HelpManager::Impl::currentTopicAsString() const
@@ -102,8 +108,9 @@ std::string HelpManager::Impl::currentTopicAsString() const
  * HelpManager
  */
 
-HelpManager::HelpManager(const HelpTopicInterface &rootTopic)
-    : impl_(new Impl)
+HelpManager::HelpManager(const HelpTopicInterface &rootTopic,
+                         const HelpWriterContext &context)
+    : impl_(new Impl(context))
 {
     impl_->topicStack_.push_back(&rootTopic);
 }
@@ -139,10 +146,10 @@ void HelpManager::enterTopic(const char *name)
     impl_->topicStack_.push_back(newTopic);
 }
 
-void HelpManager::writeCurrentTopic(File *file) const
+void HelpManager::writeCurrentTopic() const
 {
     const HelpTopicInterface &topic = impl_->currentTopic();
-    topic.writeHelp(file);
+    topic.writeHelp(impl_->rootContext_);
 }
 
 } // namespace gmx

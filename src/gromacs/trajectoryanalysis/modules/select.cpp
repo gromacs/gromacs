@@ -244,7 +244,7 @@ const char Select::shortDescription[] =
     "Print general information about selections";
 
 Select::Select()
-    : options_(name, shortDescription),
+    : TrajectoryAnalysisModule(name, shortDescription),
       bDump_(false), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       top_(NULL)
 {
@@ -262,8 +262,8 @@ Select::~Select()
 }
 
 
-Options &
-Select::initOptions(TrajectoryAnalysisSettings *settings)
+void
+Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
         "[TT]g_select[tt] writes out basic data about dynamic selections.",
@@ -313,40 +313,38 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
         "With [TT]-dump[tt], the frame time is omitted from the output."
     };
 
-    options_.setDescription(concatenateStrings(desc));
+    options->setDescription(concatenateStrings(desc));
 
-    options_.addOption(FileNameOption("os").filetype(eftPlot).outputFile()
+    options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
                            .store(&fnSize_).defaultValueIfSet("size")
                            .description("Number of positions in each selection"));
-    options_.addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
+    options->addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
                            .store(&fnFrac_).defaultValueIfSet("frac")
                            .description("Covered fraction for each selection"));
-    options_.addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
+    options->addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
                            .store(&fnIndex_).defaultValueIfSet("index")
                            .description("Indices selected by each selection"));
-    options_.addOption(FileNameOption("on").filetype(eftIndex).outputFile()
+    options->addOption(FileNameOption("on").filetype(eftIndex).outputFile()
                            .store(&fnNdx_).defaultValueIfSet("index")
                            .description("Index file from the selection"));
-    options_.addOption(FileNameOption("om").filetype(eftPlot).outputFile()
+    options->addOption(FileNameOption("om").filetype(eftPlot).outputFile()
                            .store(&fnMask_).defaultValueIfSet("mask")
                            .description("Mask for selected positions"));
 
-    options_.addOption(SelectionOption("select").storeVector(&sel_)
+    options->addOption(SelectionOption("select").storeVector(&sel_)
         .required().multiValue()
         .description("Selections to analyze"));
 
-    options_.addOption(BooleanOption("dump").store(&bDump_)
+    options->addOption(BooleanOption("dump").store(&bDump_)
         .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
-    options_.addOption(BooleanOption("norm").store(&bTotNorm_)
+    options->addOption(BooleanOption("norm").store(&bTotNorm_)
         .description("Normalize by total number of positions with -os"));
-    options_.addOption(BooleanOption("cfnorm").store(&bFracNorm_)
+    options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
         .description("Normalize by covered fraction with -os"));
     const char *const cResNumberEnum[] = { "number", "index", NULL };
-    options_.addOption(StringOption("resnr").store(&resNumberType_)
+    options->addOption(StringOption("resnr").store(&resNumberType_)
         .enumValue(cResNumberEnum).defaultEnumIndex(0)
         .description("Residue number output type"));
-
-    return options_;
 }
 
 

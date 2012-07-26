@@ -224,6 +224,7 @@
 #include "string2.h"
 
 #include "gromacs/onlinehelp/helpmanager.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
@@ -1369,7 +1370,9 @@ _gmx_sel_handle_help_cmd(t_selexpr_value *topic, yyscan_t scanner)
     {
         sc->rootHelp = gmx::createSelectionHelpTopic();
     }
-    gmx::HelpManager manager(*sc->rootHelp);
+    gmx::HelpWriterContext context(&gmx::File::standardError(),
+                                   gmx::eHelpOutputFormat_Console);
+    gmx::HelpManager manager(*sc->rootHelp, context);
     try
     {
         t_selexpr_value *value = topic;
@@ -1384,5 +1387,5 @@ _gmx_sel_handle_help_cmd(t_selexpr_value *topic, yyscan_t scanner)
         fprintf(stderr, "%s\n", ex.what());
         return;
     }
-    manager.writeCurrentTopic(&gmx::File::standardError());
+    manager.writeCurrentTopic();
 }

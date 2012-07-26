@@ -74,7 +74,6 @@ class TrajectoryAnalysisRunnerCommon::Impl
         void finishTrajectory();
 
         TrajectoryAnalysisSettings &settings_;
-        Options                 options_;
         TopologyInformation     topInfo_;
 
         bool                    bHelp_;
@@ -102,7 +101,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
 
 
 TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
-    : settings_(*settings), options_("common", "Common analysis control"),
+    : settings_(*settings),
       bHelp_(false), bShowHidden_(false), bQuiet_(false),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
       grps_(NULL),
@@ -164,67 +163,64 @@ TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 }
 
 
-Options &
-TrajectoryAnalysisRunnerCommon::initOptions()
+void
+TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
 {
     TrajectoryAnalysisSettings &settings = impl_->settings_;
-    Options &options = impl_->options_;
 
     // Add options for help.
-    options.addOption(BooleanOption("h").store(&impl_->bHelp_)
-                          .description("Print help and quit"));
-    options.addOption(BooleanOption("hidden").store(&impl_->bShowHidden_)
-                          .hidden()
-                          .description("Show hidden options"));
-    options.addOption(BooleanOption("quiet").store(&impl_->bQuiet_)
-                          .hidden()
-                          .description("Hide options in normal run"));
+    options->addOption(BooleanOption("h").store(&impl_->bHelp_)
+                           .description("Print help and quit"));
+    options->addOption(BooleanOption("hidden").store(&impl_->bShowHidden_)
+                           .hidden()
+                           .description("Show hidden options"));
+    options->addOption(BooleanOption("quiet").store(&impl_->bQuiet_)
+                           .hidden()
+                           .description("Hide options in normal run"));
 
     // Add common file name arguments.
-    options.addOption(FileNameOption("f")
-                          .filetype(eftTrajectory).inputFile()
-                          .store(&impl_->trjfile_)
-                          .defaultValueIfSet("traj")
-                          .description("Input trajectory or single configuration"));
-    options.addOption(FileNameOption("s")
-                          .filetype(eftTopology).inputFile()
-                          .store(&impl_->topfile_)
-                          .defaultValueIfSet("topol")
-                          .description("Input structure"));
-    options.addOption(FileNameOption("n")
-                          .filetype(eftIndex).inputFile()
-                          .store(&impl_->ndxfile_)
-                          .defaultValueIfSet("index")
-                          .description("Extra index groups"));
-    options.addOption(SelectionFileOption("sf"));
+    options->addOption(FileNameOption("f")
+                           .filetype(eftTrajectory).inputFile()
+                           .store(&impl_->trjfile_)
+                           .defaultValueIfSet("traj")
+                           .description("Input trajectory or single configuration"));
+    options->addOption(FileNameOption("s")
+                           .filetype(eftTopology).inputFile()
+                           .store(&impl_->topfile_)
+                           .defaultValueIfSet("topol")
+                           .description("Input structure"));
+    options->addOption(FileNameOption("n")
+                           .filetype(eftIndex).inputFile()
+                           .store(&impl_->ndxfile_)
+                           .defaultValueIfSet("index")
+                           .description("Extra index groups"));
+    options->addOption(SelectionFileOption("sf"));
 
     // Add options for trajectory time control.
-    options.addOption(DoubleOption("b").store(&impl_->startTime_).timeValue()
-                          .description("First frame (%t) to read from trajectory"));
-    options.addOption(DoubleOption("e").store(&impl_->endTime_).timeValue()
-                          .description("Last frame (%t) to read from trajectory"));
-    options.addOption(DoubleOption("dt").store(&impl_->deltaTime_).timeValue()
-                          .description("Only use frame if t MOD dt == first time (%t)"));
+    options->addOption(DoubleOption("b").store(&impl_->startTime_).timeValue()
+                           .description("First frame (%t) to read from trajectory"));
+    options->addOption(DoubleOption("e").store(&impl_->endTime_).timeValue()
+                           .description("Last frame (%t) to read from trajectory"));
+    options->addOption(DoubleOption("dt").store(&impl_->deltaTime_).timeValue()
+                           .description("Only use frame if t MOD dt == first time (%t)"));
 
     // Add time unit option.
-    settings.impl_->timeUnitManager.addTimeUnitOption(&options, "tu");
+    settings.impl_->timeUnitManager.addTimeUnitOption(options, "tu");
 
     // Add plot options.
-    settings.impl_->plotSettings.addOptions(&options);
+    settings.impl_->plotSettings.addOptions(options);
 
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))
     {
-        options.addOption(BooleanOption("rmpbc").store(&settings.impl_->bRmPBC)
-                              .description("Make molecules whole for each frame"));
+        options->addOption(BooleanOption("rmpbc").store(&settings.impl_->bRmPBC)
+                               .description("Make molecules whole for each frame"));
     }
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserPBC))
     {
-        options.addOption(BooleanOption("pbc").store(&settings.impl_->bPBC)
-                              .description("Use periodic boundary conditions for distance calculation"));
+        options->addOption(BooleanOption("pbc").store(&settings.impl_->bPBC)
+                               .description("Use periodic boundary conditions for distance calculation"));
     }
-
-    return impl_->options_;
 }
 
 
@@ -236,7 +232,7 @@ TrajectoryAnalysisRunnerCommon::scaleTimeOptions(Options *options)
 
 
 bool
-TrajectoryAnalysisRunnerCommon::initOptionsDone()
+TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
 {
     if (impl_->bHelp_)
     {
@@ -251,11 +247,11 @@ TrajectoryAnalysisRunnerCommon::initOptionsDone()
         GMX_THROW(InconsistentInputError("No trajectory or topology provided, nothing to do!"));
     }
 
-    if (impl_->options_.isSet("b"))
+    if (options->isSet("b"))
         setTimeValue(TBEGIN, impl_->startTime_);
-    if (impl_->options_.isSet("e"))
+    if (options->isSet("e"))
         setTimeValue(TEND, impl_->endTime_);
-    if (impl_->options_.isSet("dt"))
+    if (options->isSet("dt"))
         setTimeValue(TDELTA, impl_->deltaTime_);
 
     return true;

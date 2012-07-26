@@ -64,6 +64,16 @@ class TrajectoryAnalysisModule::Impl
         //! Container that associates a AnalysisData object with its name.
         typedef std::map<std::string, AnalysisData *> AnalysisDatasetContainer;
 
+        //! Initializes analysis module data with given name and description.
+        Impl(const char *name, const char *description)
+            : name_(name), description_(description)
+        {
+        }
+
+        //! Name of the module.
+        std::string                     name_;
+        //! Description of the module.
+        std::string                     description_;
         //! List of registered data set names.
         std::vector<std::string>        datasetNames_;
         /*! \brief
@@ -234,8 +244,9 @@ TrajectoryAnalysisModuleDataBasic::finish()
  * TrajectoryAnalysisModule
  */
 
-TrajectoryAnalysisModule::TrajectoryAnalysisModule()
-    : impl_(new Impl)
+TrajectoryAnalysisModule::TrajectoryAnalysisModule(const char *name,
+                                                   const char *description)
+    : impl_(new Impl(name, description))
 {
 }
 
@@ -245,7 +256,9 @@ TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 }
 
 
-void TrajectoryAnalysisModule::initOptionsDone(TrajectoryAnalysisSettings * /*settings*/)
+void TrajectoryAnalysisModule::optionsFinished(
+        Options * /*options*/,
+        TrajectoryAnalysisSettings * /*settings*/)
 {
 }
 
@@ -266,6 +279,18 @@ TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
 
 void TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
 {
+}
+
+
+const char *TrajectoryAnalysisModule::name() const
+{
+    return impl_->name_.c_str();
+}
+
+
+const char *TrajectoryAnalysisModule::description() const
+{
+    return impl_->description_.c_str();
 }
 
 

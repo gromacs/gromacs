@@ -44,7 +44,7 @@
 namespace gmx
 {
 
-class File;
+class HelpWriterContext;
 
 /*! \brief
  * Provides a single online help topic.
@@ -100,11 +100,11 @@ class HelpTopicInterface
         /*! \brief
          * Prints the help text for this topic.
          *
-         * \param   file  File to write the help text to.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  FileIOError on any I/O error.
+         * \param[in] context  Context object for writing the help.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
          */
-        virtual void writeHelp(File *file) const = 0;
+        virtual void writeHelp(const HelpWriterContext &context) const = 0;
 };
 
 //! Smart pointer type to manage a HelpTopicInterface object.

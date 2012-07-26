@@ -42,7 +42,6 @@
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -62,8 +61,10 @@ class Angle : public TrajectoryAnalysisModule
         Angle();
         virtual ~Angle();
 
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
-        virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options *options,
+                                     TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -76,8 +77,6 @@ class Angle : public TrajectoryAnalysisModule
     private:
         void checkSelections(const SelectionList &sel1,
                              const SelectionList &sel2) const;
-
-        Options                 options_;
 
         SelectionList           sel1_;
         SelectionList           sel2_;

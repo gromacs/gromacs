@@ -42,7 +42,7 @@
 namespace gmx
 {
 
-class File;
+class HelpWriterContext;
 
 /*! \brief
  * Module that can be run from command line using CommandLineModuleManager.
@@ -78,10 +78,11 @@ class CommandLineModuleInterface
         /*! \brief
          * Prints help for the module.
          *
-         * \param[in] file  File to write the help to.
+         * \param[in] context  Context object for writing the help.
          * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
          */
-        virtual void writeHelp(File *file) const = 0;
+        virtual void writeHelp(const HelpWriterContext &context) const = 0;
 };
 
 } // namespace gmx

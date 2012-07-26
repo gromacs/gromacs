@@ -41,6 +41,7 @@
 #include <utility>
 
 #include "gromacs/onlinehelp/helpformat.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
@@ -50,16 +51,16 @@ namespace gmx
 {
 
 /*! \cond libapi */
-void writeBasicHelpTopic(File *file, const HelpTopicInterface &topic,
+void writeBasicHelpTopic(const HelpWriterContext &context,
+                         const HelpTopicInterface &topic,
                          const std::string &text)
 {
     const char *title = topic.title();
     if (title != NULL && title[0] != '\0')
     {
-        file->writeLine(toUpperCase(title));
-        file->writeLine();
+        context.writeTitle(title);
     }
-    writeHelpTextForConsole(file, text);
+    context.writeTextBlock(text);
 }
 //! \endcond
 
@@ -78,9 +79,9 @@ AbstractSimpleHelpTopic::findSubTopic(const char *name) const
     return NULL;
 }
 
-void AbstractSimpleHelpTopic::writeHelp(File *file) const
+void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(file, *this, helpText());
+    writeBasicHelpTopic(context, *this, helpText());
 }
 
 /********************************************************************
@@ -135,16 +136,23 @@ AbstractCompositeHelpTopic::findSubTopic(const char *name) const
     return topic->second.get();
 }
 
-void AbstractCompositeHelpTopic::writeHelp(File *file) const
+void AbstractCompositeHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(file, *this, helpText());
-    writeSubTopicList(file, "\nAvailable subtopics:");
+    writeBasicHelpTopic(context, *this, helpText());
+    writeSubTopicList(context, "\nAvailable subtopics:");
 }
 
 bool
-AbstractCompositeHelpTopic::writeSubTopicList(File *file,
+AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
                                               const std::string &title) const
 {
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                    "Subtopic listing is not implemented for this output format"));
+    }
     int maxNameLength = 0;
     Impl::SubTopicMap::const_iterator topic;
     for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
@@ -164,11 +172,12 @@ AbstractCompositeHelpTopic::writeSubTopicList(File *file,
     {
         return false;
     }
+    File &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);
     formatter.setFirstColumnIndent(4);
-    file->writeLine(title);
+    file.writeLine(title);
     for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
     {
         const char *name = topic->first.c_str();
@@ -178,7 +187,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(File *file,
             formatter.clear();
             formatter.addColumnLine(0, name);
             formatter.addColumnLine(1, title);
-            file->writeString(formatter.formatRow());
+            file.writeString(formatter.formatRow());
         }
     }
     return true;

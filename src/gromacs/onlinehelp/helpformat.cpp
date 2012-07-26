@@ -37,56 +37,15 @@
  */
 #include "helpformat.h"
 
-#include <cctype>
-
 #include <algorithm>
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/wman.h"
-
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
-
-/*! \cond libapi */
-std::string toUpperCase(const std::string &text)
-{
-    std::string result(text);
-    transform(result.begin(), result.end(), result.begin(), toupper);
-    return result;
-}
-
-std::string substituteMarkupForConsole(const std::string &text)
-{
-    char *resultStr = check_tty(text.c_str());
-    try
-    {
-        std::string result(resultStr);
-        sfree(resultStr);
-        return result;
-    }
-    catch (...)
-    {
-        sfree(resultStr);
-        throw;
-    }
-}
-
-void writeHelpTextForConsole(File *file, const std::string &text)
-{
-    TextLineWrapper wrapper;
-    wrapper.setLineLength(78);
-    const char *program = ProgramInfo::getInstance().programName().c_str();
-    std::string newText = replaceAll(text, "[PROGRAM]", program);
-    file->writeLine(wrapper.wrapToString(substituteMarkupForConsole(newText)));
-}
-//! \endcond
 
 /********************************************************************
  * TextTableFormatter::Impl
