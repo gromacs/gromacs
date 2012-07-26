@@ -4,5 +4,5 @@ if(CPACK_SOURCE_PACKAGE_FILE_NAME AND NOT EXISTS "${CMAKE_BINARY_DIR}/man/man1/n
     message(FATAL_ERROR 
         "To generate correct source package all man pages need to be generated. "
         "The man pages are automatically build together with the binaries. "
-        "Make sure to build all binaries (e.g. GMX_X11=on). ${CMAKE_SOURCE_DIR}/man/man1/ngmx.1")
+        "Make sure to build all binaries (e.g. GMX_X11=on).")
 endif()

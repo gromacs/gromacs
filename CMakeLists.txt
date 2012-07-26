@@ -60,7 +60,6 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance 
 if (NOT GMX_USE_RELATIVE_INSTALL_PATH)
     set(CPACK_SET_DESTDIR "ON")
 endif()
-set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
@@ -860,8 +859,6 @@ mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
 
 set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
-set(GMX_VMD_PLUGIN_PATH)
-mark_as_advanced(GMX_VMD_PLUGIN_PATH)
 
 if(GMX_LOAD_PLUGINS)
   if(CYGWIN OR NOT WIN32)
@@ -871,49 +868,17 @@ if(GMX_LOAD_PLUGINS)
     gmx_test_dlopen(HAVE_DLOPEN)
   endif()
 
-  find_package(VMD)
-
-  # Test for unsuitable versions of VMD
-
-  if(VMD_FOUND AND NOT GMX_VMD_PLUGIN_PATH)
-    message(STATUS "Checking for suitable VMD version")
-    exec_program(${VMD_EXECUTABLE}
-      ARGS --help
-      OUTPUT_VARIABLE VMD_HELP
-      RETURN_VALUE VMD_EXEC_RETURN)
-
-    if(VMD_EXEC_RETURN EQUAL 0)
-      # This is the accepted idiom for subexpression matching, unfortunately
-      string(REGEX REPLACE ".*VMD for .*, version ([0-9]+\\.[0-9]*\\.?[0-9]*).*" "\\1" VMD_VERSION ${VMD_HELP})
-      string(REGEX REPLACE ".*VMD for (.*), version .*" "\\1" VMD_ARCH ${VMD_HELP})
-
-      if(VMD_VERSION VERSION_LESS "1.8")
-        MESSAGE(WARNING "Found VMD version ${VMD_VERSION}, but GROMACS needs at least 1.8")
-        unset(VMD_EXECUTABLE)
-        set(VMD_FOUND FALSE)
-      else()
-        message(STATUS "VMD version ${VMD_VERSION} is suitable")
-        if(DEFINED ENV{VMDDIR})
-          # This permits GROMACS to avoid hard-coding a fall-back
-          # path that it can tell right now would be useless.
-          set(GMX_VMD_PLUGIN_PATH "$ENV{VMDDIR}/plugins/${VMD_ARCH}/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
-        else()
-          set(GMX_VMD_PLUGIN_PATH "/usr/local/lib/vmd/plugins/*/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
-        endif()
-      endif()
-
-      # clean up
-      unset(VMD_HELP)
-      unset(VMD_VERSION)
-      unset(VMD_ARCH)
-    endif()
-  endif()
-
   # so, should we use plug-ins?
   if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
-    if (NOT VMD_QUIETLY)
-      MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
-    endif(NOT VMD_QUIETLY)
+    if(NOT VMD_QUIETLY)
+      MESSAGE(STATUS
+          "Found the ability to use plug-ins when building shared libaries, "
+          "so will compile to use plug-ins (e.g. to read VMD-supported file "
+          "formats).")
+    endif()
+    if(NOT GMX_VMD_PLUGIN_PATH)
+      find_package(VMD)
+    endif()
     set(GMX_USE_PLUGINS ON)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
     set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
@@ -1021,7 +986,6 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 add_subdirectory(share)
-add_subdirectory(man)
 add_subdirectory(src)
 add_subdirectory(scripts)
 
