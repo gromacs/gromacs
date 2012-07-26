@@ -134,9 +134,13 @@ static void warn_step(FILE *fp,real ftol,gmx_bool bLastStep,gmx_bool bConstrain)
     }
     else
     {
-        fprintf(fp,"\nStepsize too small, or no change in energy.\n"
-                "Converged to machine precision,\n"
-                "but not to the requested precision Fmax < %g\n",
+        fprintf(fp,
+                "\nEither the energy minimization algorithm tried to make a new\n"
+                "step whose size was too small, or there was no change in\n"
+                "the energy since last step, so we regard the minimization\n"
+                "as converged within the available machine precision.\n"
+                "It was not converged to the requested precision\n"
+                "Fmax < %g (but this may not be possible for your system).\n",
                 ftol);
         if (sizeof(real)<sizeof(double))
         {
