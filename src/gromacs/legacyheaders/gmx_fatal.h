@@ -50,7 +50,10 @@ extern "C" {
 #define __has_feature(x) 0 // Compatibility with non-clang compilers.
 #endif
 
-/*! \def GMX_ATTRIBUTE_NORETURN
+/* This documentation block seems to produce warnings with some Doxygen
+ * versions, so it's disabled for now.  Maybe because the file itself
+ * is not documented. */
+/* \def GMX_ATTRIBUTE_NORETURN
  * \brief
  * Indicate that a function is not expected to return.
  *
