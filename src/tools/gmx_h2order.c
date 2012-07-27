@@ -279,11 +279,11 @@ int gmx_h2order(int argc,char *argv[])
   char      *grpname,            	    /* groupnames                 */
             *micname;
   int       ngx,                            /* nr. of atomsin sol group   */
-            nmic;                           /* nr. of atoms in micelle    */
+            nmic = 0;                       /* nr. of atoms in micelle    */
   t_topology *top;                	    /* topology 		  */ 
   int       ePBC;
   atom_id    *index,             	    /* indices for solvent group  */
-             *micelle;
+             *micelle = NULL;
   gmx_bool       bMicel =  FALSE;               /* think we're a micel        */
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
