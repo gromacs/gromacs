@@ -42,7 +42,8 @@ set(MDRUN_SOURCES
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
-set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
+set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+    COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 
 if(GMX_OPENMM) 
@@ -62,7 +63,7 @@ if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
 else(GMX_FAHCORE)
 
-list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess md)
+list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess md ${OpenMP_LINKER_FLAGS})
 
 set(GMX_KERNEL_PROGRAMS
     grompp tpbconv pdb2gmx g_protonate g_luck gmxdump g_x2top gmxcheck)
@@ -79,7 +80,7 @@ endforeach()
 add_executable(mdrun ${MDRUN_SOURCES})
 gmx_add_man_page(mdrun)
 target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
-set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}")
+set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}" COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 # this is to circumvent the following MSVC error: 
 # warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
