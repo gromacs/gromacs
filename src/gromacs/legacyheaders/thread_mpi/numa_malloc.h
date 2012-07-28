@@ -51,9 +51,11 @@ files.
    
     Currently this is only implemented on Windows. Check for the presence
     of these functions with
+    \code
     #ifdef TMPI_NUMA_MALLOC
     ....
     #endif
+    \endcode
  */
 
 
