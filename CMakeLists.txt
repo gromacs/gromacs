@@ -169,6 +169,9 @@ option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_
 if(UNIX AND NOT APPLE)
     option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+    if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_LIBS)
+        set(GROMACS_LINKER_FLAGS "-static-libgcc")
+    endif()
 endif()
 
 
@@ -189,8 +192,21 @@ include(CheckCXXCompilerFlag)
 if(GMX_OPENMP)
     find_package(OpenMP)
     if(OPENMP_FOUND)
-        set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
-        set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
+        #only set linker flag, if user didn't set them manual
+        if(NOT DEFINED OpenMP_LINKER_FLAGS) 
+            if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_LIBS)
+                set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
+            else()
+                set(OpenMP_LINKER_FLAGS "${OpenMP_C_FLAGS}")
+            endif()
+        endif()
+        if(NOT DEFINED OpenMP_SHARED_LINKER_FLAGS) 
+            if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_LIBS)
+                set(OpenMP_SHARED_LINKER_FLAGS "")
+            else()
+                set(OpenMP_SHARED_LINKER_FLAGS "${OpenMP_C_FLAGS}")
+            endif()
+        endif()
     else(OPENMP_FOUND)
         message(WARNING
                 "Compiler not supporting OpenMP. This might hurt your performance a lot, "
@@ -923,7 +939,10 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         "Flags used by the compiler during all build types" FORCE)
     set(CMAKE_EXE_LINKER_FLAGS 
         "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
-        CACHE STRING "Linker flags" FORCE) 
+        CACHE STRING "Linker flags for creating executables" FORCE) 
+    set(CMAKE_SHARED_LINKER_FLAGS 
+        "${GROMACS_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}" 
+        CACHE STRING "Linker flags for creating shared libraries" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 
 ######################################
