@@ -79,19 +79,20 @@
  *     Currently, only variables and expressions used to evaluate parameter
  *     values are extracted, but common subexpression could also be detected
  *     here.
- *  -# A second pass with simple reordering and initialization is done:
+ *  -# A second pass (in fact, multiple passes because of interdependencies)
+ *     with simple reordering and initialization is done:
  *    -# Boolean expressions are combined such that one element can evaluate,
  *       e.g., "A and B and C". The subexpressions in boolean expression are
  *       reordered such that static expressions come first without otherwise
  *       altering the relative order of the expressions.
- *    -# The \c t_selelem::evaluate field is set to the correct evaluation
- *       function from evaluate.h.
  *    -# The compiler data structure is allocated for each element, and
  *       the fields are initialized, with the exception of the contents of
- *       \c gmax and \c gmin fields.  In reality, several passes are made
- *       to completely initialize the structure, because some flags are set
- *       recursively based on which elements refer to an element, and these
- *       flags need to be set to initialize other fields.
+ *       \c gmax and \c gmin fields.  This is the part that needs multiple
+ *       passes, because some flags are set recursively based on which elements
+ *       refer to an element, and these flags need to be set to initialize
+ *       other fields.
+ *    -# The \c t_selelem::evaluate field is set to the correct evaluation
+ *       function from evaluate.h.
  *    .
  *  -# The evaluation function of all elements is replaced with the
  *     analyze_static() function to be able to initialize the element before
@@ -320,10 +321,10 @@ enum
     SEL_CDATA_MINMAXALLOC = 16,
     /** Whether to update \p gmin and \p gmax in static analysis. */
     SEL_CDATA_DOMINMAX      = 128,
-    /** Whether subexpressions use simple pass evaluation functions. */
+    /** Whether the subexpression uses simple pass evaluation functions. */
     SEL_CDATA_SIMPLESUBEXPR = 32,
-    /** Whether this expressions is a part of a common subexpression. */
-    SEL_CDATA_COMMONSUBEXPR = 64 
+    /** Whether this expression is a part of a common subexpression. */
+    SEL_CDATA_COMMONSUBEXPR = 64
 };
 
 /*! \internal \brief
@@ -333,6 +334,8 @@ typedef struct t_compiler_data
 {
     /** The real evaluation method. */
     sel_evalfunc     evaluate;
+    /** Number of references to a \ref SEL_SUBEXPR element. */
+    int              refcount;
     /** Flags for specifying how to treat this element during compilation. */
     int              flags;
     /** Smallest selection that can be selected by the subexpression. */
@@ -415,6 +418,10 @@ _gmx_selelem_print_compiler_info(FILE *fp, t_selelem *sel, int level)
     if (!sel->cdata->flags)
     {
         fprintf(fp, "0");
+    }
+    if (sel->cdata->refcount > 0)
+    {
+        fprintf(fp, " refc=%d", sel->cdata->refcount);
     }
     fprintf(fp, " eval=");
     _gmx_sel_print_evalfunc_name(fp, sel->cdata->evaluate);
@@ -1122,14 +1129,14 @@ init_item_evalfunc(t_selelem *sel)
             break;
 
         case SEL_SUBEXPR:
-            sel->evaluate = (sel->refcount == 2
+            sel->evaluate = ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                              ? &_gmx_sel_evaluate_subexpr_simple
                              : &_gmx_sel_evaluate_subexpr);
             break;
 
         case SEL_SUBEXPRREF:
             sel->name     = sel->child->name;
-            sel->evaluate = (sel->child->refcount == 2
+            sel->evaluate = ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                              ? &_gmx_sel_evaluate_subexprref_simple
                              : &_gmx_sel_evaluate_subexprref);
             break;
@@ -1137,6 +1144,7 @@ init_item_evalfunc(t_selelem *sel)
         case SEL_GROUPREF:
             GMX_THROW(gmx::APIError("Unresolved group reference in compilation"));
     }
+    sel->cdata->evaluate = sel->evaluate;
 }
 
 /*! \brief
@@ -1158,11 +1166,12 @@ setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
             if ((sel->type == SEL_BOOLEAN && (child->flags & SEL_DYNAMIC))
                 || (sel->type == SEL_ARITHMETIC && child->type != SEL_CONST
                     && !(child->flags & SEL_SINGLEVAL))
-                || (sel->type == SEL_SUBEXPR && sel->refcount > 2))
+                || (sel->type == SEL_SUBEXPR
+                    && !(sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)))
             {
                 child->mempool = mempool;
                 if (child->type == SEL_SUBEXPRREF
-                    && child->child->refcount == 2)
+                    && (child->child->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
                 {
                     child->child->child->mempool = mempool;
                 }
@@ -1201,7 +1210,8 @@ init_item_evaloutput(t_selelem *sel)
         }
     }
 
-    if (sel->type == SEL_SUBEXPR && sel->refcount == 2)
+    if (sel->type == SEL_SUBEXPR
+        && (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
     {
         sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         if (sel->v.type == GROUP_VALUE || sel->v.type == POS_VALUE)
@@ -1221,7 +1231,8 @@ init_item_evaloutput(t_selelem *sel)
             _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
         }
     }
-    else if (sel->type == SEL_SUBEXPRREF && sel->child->refcount == 2)
+    else if (sel->type == SEL_SUBEXPRREF
+             && (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
     {
         if (sel->v.u.ptr)
         {
@@ -1269,6 +1280,9 @@ init_item_compilerdata(t_selelem *sel)
 
     /* Store the real evaluation method because the compiler will replace it */
     sel->cdata->evaluate = sel->evaluate;
+
+    /* This will be computed separately. */
+    sel->cdata->refcount = 0;
 
     /* Initialize the flags */
     sel->cdata->flags = SEL_CDATA_STATICEVAL;
@@ -1419,6 +1433,36 @@ init_item_staticeval(t_selelem *sel)
 }
 
 /*! \brief
+ * Compute reference counts for subexpressions.
+ *
+ * \param sel Root of the selection subtree to process.
+ */
+static void
+init_item_subexpr_refcount(t_selelem *sel)
+{
+    // Reset the counter when the subexpression is first encountered.
+    if (sel->type == SEL_ROOT && sel->child->type == SEL_SUBEXPR
+        && sel->child->cdata)
+    {
+        sel->child->cdata->refcount = 0;
+    }
+
+    if (sel->type == SEL_SUBEXPRREF)
+    {
+        ++sel->child->cdata->refcount;
+    }
+    else
+    {
+        t_selelem *child = sel->child;
+        while (child)
+        {
+            init_item_subexpr_refcount(child);
+            child = child->next;
+        }
+    }
+}
+
+/*! \brief
  * Initializes compiler flags for subexpressions.
  *
  * \param sel Root of the selection subtree to process.
@@ -1428,7 +1472,7 @@ init_item_subexpr_flags(t_selelem *sel)
 {
     if (sel->type == SEL_SUBEXPR)
     {
-        if (sel->refcount == 2)
+        if (sel->cdata->refcount == 1)
         {
             sel->cdata->flags |= SEL_CDATA_SIMPLESUBEXPR;
         }
@@ -1437,7 +1481,8 @@ init_item_subexpr_flags(t_selelem *sel)
             sel->cdata->flags |= SEL_CDATA_COMMONSUBEXPR;
         }
     }
-    else if (sel->type == SEL_SUBEXPRREF && sel->child->refcount == 2)
+    else if (sel->type == SEL_SUBEXPRREF
+             && (sel->child->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
     {
         sel->cdata->flags |= SEL_CDATA_SIMPLESUBEXPR;
     }
@@ -1446,7 +1491,7 @@ init_item_subexpr_flags(t_selelem *sel)
      * common subexpression flag needs to be propagated. */
     if (sel->type != SEL_SUBEXPRREF
         || ((sel->cdata->flags & SEL_CDATA_COMMONSUBEXPR)
-            && sel->child->refcount > 2))
+            && !(sel->child->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)))
     {
         t_selelem *child = sel->child;
 
@@ -2395,7 +2440,7 @@ postprocess_item_subexpressions(t_selelem *sel)
 
     /* Replace the evaluation function of statically evaluated subexpressions
      * for which the static group was not known in advance. */
-    if (sel->type == SEL_SUBEXPR && sel->refcount > 2
+    if (sel->type == SEL_SUBEXPR && sel->cdata->refcount > 1
         && (sel->cdata->flags & SEL_CDATA_STATICEVAL)
         && !(sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
@@ -2621,20 +2666,27 @@ SelectionCompiler::compile(SelectionCollection *coll)
         optimize_boolean_expressions(item);
         reorder_boolean_static_children(item);
         optimize_arithmetic_expressions(item);
-        /* Initialize evaluation */
-        init_item_evalfunc(item);
-        setup_memory_pooling(item, sc->mempool);
         /* Initialize the compiler data */
         init_item_compilerdata(item);
         init_item_staticeval(item);
+        init_item_subexpr_refcount(item);
         item = item->next;
     }
-    /* Initialize subexpression flags and evaluation output.
+    /* Initialize subexpression flags.
      * Requires compiler flags for the full tree. */
     item = sc->root;
     while (item)
     {
         init_item_subexpr_flags(item);
+        item = item->next;
+    }
+    /* Initialize evaluation.
+     * Requires subexpression flags. */
+    item = sc->root;
+    while (item)
+    {
+        init_item_evalfunc(item);
+        setup_memory_pooling(item, sc->mempool);
         init_item_evaloutput(item);
         item = item->next;
     }
@@ -2672,6 +2724,14 @@ SelectionCompiler::compile(SelectionCollection *coll)
     /* At this point, static subexpressions no longer have references to them,
      * so they can be removed. */
     sc->root = remove_unused_subexpressions(sc->root);
+    // Update the reference counts for consistency (only used for the
+    // debugging output below).
+    item = sc->root;
+    while (item)
+    {
+        init_item_subexpr_refcount(item);
+        item = item->next;
+    }
 
     if (bDebug)
     {
@@ -2712,6 +2772,13 @@ SelectionCompiler::compile(SelectionCollection *coll)
     /* We need a yet another pass of subexpression removal to remove static
      * subexpressions referred to by common dynamic subexpressions. */
     sc->root = remove_unused_subexpressions(sc->root);
+    // Update the reference counts, used by postprocess_item_subexpressions().
+    item = sc->root;
+    while (item)
+    {
+        init_item_subexpr_refcount(item);
+        item = item->next;
+    }
 
     if (bDebug)
     {
