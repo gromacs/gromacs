@@ -487,7 +487,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 
     snew(cr,1);
 
-    argv = *argv_ptr;
+    argv = argv_ptr ? *argv_ptr : NULL;
 
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
