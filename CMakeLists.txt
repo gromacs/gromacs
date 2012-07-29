@@ -44,6 +44,13 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
 set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
+if (GMX_USE_RELATIVE_INSTALL_PATH)
+    set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
+    mark_as_advanced(GMX_INSTALL_PREFIX)
+else()
+    set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
+endif()
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
@@ -493,9 +500,9 @@ else()
   # TODO: Propagate the above settings to the installed CMakeFiles.txt template
   # (from share/template/)
   # TODO: Reorder stuff such that INCL_INSTALL_DIR could be used here
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost")
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${GMX_INSTALL_PREFIX}include/gromacs/external/boost")
   install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
-          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost
+          DESTINATION ${GMX_INSTALL_PREFIX}include/gromacs/external/boost
           COMPONENT development)
 endif()
 set(BOOST_QUIETLY TRUE CACHE INTERNAL "")
@@ -955,13 +962,6 @@ endif()
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if (GMX_USE_RELATIVE_INSTALL_PATH)
-    set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
-    mark_as_advanced(GMX_INSTALL_PREFIX)
-else()
-    set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
-endif()
-
 if ( NOT DEFINED GMXLIB )
     set(GMXLIB lib)
 endif()
