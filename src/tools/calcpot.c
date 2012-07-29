@@ -215,8 +215,8 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 		   matrix box,rvec **x, const output_env_t oenv)
 {
   gmx_localtop_t *ltop;
-  double   t,t0,lam0;
-  real     lam;
+  double   t,t0;
+  real     lam[efptNR];
   int      fep_state;
   gmx_bool     bNEMD,bSA;
   int      traj=0,xtc_traj=0;
@@ -247,7 +247,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   }
 
   clear_rvec(mutot);
-  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&fep_state,&lam0,
+  init_md(fplog,*cr,inputrec,oenv,&t,&t0,lam,&fep_state,NULL,
 	  &nrnb,mtop,NULL,-1,NULL,NULL,NULL,
 	  force_vir,shake_vir,mutot,&bSA,NULL,NULL,0);
 
