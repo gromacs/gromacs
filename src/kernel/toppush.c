@@ -54,6 +54,7 @@
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
+#include "maths.h"
 
 void generate_nbparams(int comb,int ftype,t_params *plist,gpp_atomtype_t atype,
 		       warninp_t wi)
@@ -1487,15 +1488,16 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s%*s%*s"
   };
   const char *ccformat="%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-  int      nr,i,j,nral,nral_fmt,nread,ftype;
+  int      i,j,nral,nral_fmt,nread,ftype;
   char     format[STRLEN];
   /* One force parameter more, so we can check if we read too many */
   double   cc[MAXFORCEPARAM+1];
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB,*param_defA,*param_defB;
-  gmx_bool     bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE;
+  gmx_bool bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE, bHasParameters = FALSE;
   int      nparam_defA,nparam_defB;
-  char  errbuf[256];
+#define STRLENGTH 256
+  char  errbuf[STRLENGTH];
 
   nparam_defA=nparam_defB=0;
 	
@@ -1773,17 +1775,43 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 				  interaction_function[ftype].longname,
 				  (int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
 	
-	/* Dont add R-B dihedrals where all parameters are zero (no interaction) */
-	if (ftype==F_RBDIHS) {
-		nr=0;
-		for(i=0;i<NRFP(ftype);i++) {
-			if(param.c[i]!=0)
-				nr++;
-		}
-		if(nr==0)
-			return;
-	}
-	
+	/* Dont add interactions where all parameters are zero (no interaction) */
+    for (i = 0; i < NRFP(ftype) && !bHasParameters; i++)
+    {
+        if (!gmx_numzero(param.c[i]))
+        {
+            bHasParameters = TRUE;
+        }
+    }
+    if (!bHasParameters)
+    {
+        char *ptr = errbuf;
+        ptr += snprintf(errbuf, STRLENGTH,
+                        "Interaction %s (with parameter values of zero) is being removed\n from atom number%s ",
+                        interaction_function[ftype].longname,
+                        nral > 1 ? "s" : "");
+        i = 0;
+        if (i < MAXATOMLIST)
+        {
+            ptr += snprintf(ptr, STRLENGTH-(ptr-errbuf),
+                            "%d", param.a[i]+1);
+        }
+        for (i++; i < nral-1 && i < MAXATOMLIST; i++)
+        {
+            ptr += snprintf(ptr, STRLENGTH-(ptr-errbuf),
+                            ", %d", param.a[i]+1);
+        }
+        if (i < nral && i < MAXATOMLIST)
+        {
+            ptr += snprintf(ptr, STRLENGTH-(ptr-errbuf),
+                            " and %d", param.a[i]+1);
+        }
+        ptr += snprintf(ptr, STRLENGTH-(ptr-errbuf),
+                        "\n");
+        warning_note(wi, errbuf);
+        return;
+    }
+
 	/* Put the values in the appropriate arrays */
 	add_param_to_list (&bond[ftype],&param);
 
@@ -1804,6 +1832,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 			add_param_to_list (&bond[ftype],&param);		
 		}
 	}
+#undef STRLENGTH
 }
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
