@@ -56,6 +56,7 @@
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
+#include "maths.h"
 
 void generate_nbparams(int comb,int ftype,t_params *plist,gpp_atomtype_t atype,
 		       warninp_t wi)
@@ -1489,15 +1490,15 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s%*s%*s"
   };
   const char *ccformat="%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-  int      nr,i,j,nral,nral_fmt,nread,ftype;
+  int      i,j,nral,nral_fmt,nread,ftype;
   char     format[STRLEN];
   /* One force parameter more, so we can check if we read too many */
   double   cc[MAXFORCEPARAM+1];
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB,*param_defA,*param_defB;
-  gmx_bool     bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE;
+  gmx_bool bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE, bHasParameters = FALSE;
   int      nparam_defA,nparam_defB;
-  char  errbuf[256];
+  char  errbuf[STRLEN];
 
   nparam_defA=nparam_defB=0;
 	
@@ -1775,37 +1776,108 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 				  interaction_function[ftype].longname,
 				  (int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
 	
-	/* Dont add R-B dihedrals where all parameters are zero (no interaction) */
-	if (ftype==F_RBDIHS) {
-		nr=0;
-		for(i=0;i<NRFP(ftype);i++) {
-			if(param.c[i]!=0)
-				nr++;
-		}
-		if(nr==0)
-			return;
-	}
-	
-	/* Put the values in the appropriate arrays */
-	add_param_to_list (&bond[ftype],&param);
+	/* Don't add interactions where all parameters are zero (no
+     * interaction). */
+    for (i = 0; i < NRFP(ftype) && !bHasParameters; i++)
+    {
+        if (0.0 != param.c[i])
+        {
+            /* Testing for inequality to zero is OK. param.c[i] has
+             * just been read from an input file, rather than being
+             * the result of a numerical algorithm, so it will be
+             * equal to zero only when it should be. This also permits
+             * the user to set parameters to tiny debugging values and
+             * have the interaction get computed. */
+            bHasParameters = TRUE;
+        }
+    }
+    if (F_LJ14 == ftype && !bHasParameters)
+    {
+        /* [ pairs ] with zero LJ parameters still need to generate a
+         * 1-4 Coulomb interaction. There is no mechanism to compute a
+         * Coulomb-only 1-4 interaction - kernel 330 is always used. A
+         * proper implementation would create F_COUL14 interactions
+         * here and use kernel 300 later, but the infrastructure to
+         * support this is not currently available. Only if a
+         * forcefield (& simulation) used lots of zero LJ14 parameters
+         * on charged atoms would this be worth fixing. Scenarios that
+         * might fit would include lipids or polymers with charge and
+         * not LJ on hydrogen atoms. */
+        bHasParameters = TRUE;
+    }
+    if (bHasParameters)
+    {
+        /* Put the values in the appropriate arrays */
+        add_param_to_list (&bond[ftype],&param);
 
-	/* Push additional torsions from FF for ftype==9 if we have them.
-	 * We have already checked that the A/B states do not differ in this case,
-	 * so we do not have to double-check that again, or the vsite stuff.
-	 * In addition, those torsions cannot be automatically perturbed.
-	 */
-	if(bDef && ftype==F_PDIHS)
-	{
-		for(i=1;i<nparam_defA;i++)
-		{
-			/* Advance pointer! */
-			param_defA+=2; 
-			for(j=0; (j<NRFPA(ftype)+NRFPB(ftype)); j++)
-				param.c[j] = param_defA->c[j];
-			/* And push the next term for this torsion */
-			add_param_to_list (&bond[ftype],&param);		
-		}
-	}
+        /* Push additional torsions from FF for ftype==9 if we have them.
+         * We have already checked that the A/B states do not differ in this case,
+         * so we do not have to double-check that again, or the vsite stuff.
+         * In addition, those torsions cannot be automatically perturbed.
+         */
+        if(bDef && ftype == F_PDIHS)
+        {
+            for(i = 1; i < nparam_defA; i++)
+            {
+                /* Advance pointer! */
+                param_defA += 2;
+                for(j = 0; (j < NRFPA(ftype) + NRFPB(ftype)); j++)
+                {
+                    param.c[j] = param_defA->c[j];
+                }
+                /* And push the next term for this torsion */
+                add_param_to_list (&bond[ftype],&param);
+            }
+        }
+    }
+    else
+    {
+        /* Remove this interaction, by not adding it to the
+         * arrays. Note this to the user. */
+        char *ptr = errbuf;
+        int just_written, space_remaining = STRLEN;
+        just_written = snprintf(errbuf, space_remaining,
+                                "An interaction of type %s (with parameter values "
+                                "of zero) is being removed from atom number%s ",
+                                interaction_function[ftype].longname,
+                                nral > 1 ? "s" : "");
+        just_written = min(just_written, space_remaining);
+        space_remaining -= just_written;
+        ptr += just_written;
+
+        i = 0;
+        if (i < MAXATOMLIST)
+        {
+            just_written = snprintf(ptr, space_remaining,
+                                    "%d", param.a[i]+1);
+            just_written = min(just_written, space_remaining);
+            space_remaining -= just_written;
+            ptr += just_written;
+        }
+        for (i++; i < nral-1 && i < MAXATOMLIST; i++)
+        {
+            just_written = snprintf(ptr, space_remaining,
+                                    ", %d", param.a[i]+1);
+            just_written = min(just_written, space_remaining);
+            space_remaining -= just_written;
+            ptr += just_written;
+        }
+        if (i < nral && i < MAXATOMLIST)
+        {
+            just_written = snprintf(ptr, space_remaining,
+                                    " and %d", param.a[i]+1);
+            just_written = min(just_written, space_remaining);
+            space_remaining -= just_written;
+            ptr += just_written;
+        }
+        just_written = snprintf(ptr, space_remaining, "\n");
+        just_written = min(just_written, space_remaining);
+        space_remaining -= just_written;
+        ptr += just_written;
+
+        warning_note(wi, errbuf);
+    }
+    return;
 }
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
