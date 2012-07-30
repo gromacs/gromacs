@@ -254,11 +254,15 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
      *
      * Second, if the force constant is zero in both A and B states, we set the phase
      * and multiplicity to zero too so the interaction gets removed during clean-up.
+     * In particular, some CHARMM dihedrals do this.
      */	
     newparam->pdihs.phiB = old[3];
     newparam->pdihs.cpB  = old[4];
           
-    if( fabs(newparam->pdihs.cpA) < GMX_REAL_MIN && fabs(newparam->pdihs.cpB) < GMX_REAL_MIN )
+    /* Explicit floating-point comparison with zero is OK, because
+     * these variables will have been read from a text input file as
+     * zero when they should have zero value. */
+    if( 0.0 == newparam->pdihs.cpA && 0.0 == newparam->pdihs.cpB )
     {
         newparam->pdihs.phiA = 0.0; 
         newparam->pdihs.phiB = 0.0; 
