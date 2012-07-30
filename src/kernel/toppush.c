@@ -54,6 +54,7 @@
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
+#include "maths.h"
 
 void generate_nbparams(int comb,int ftype,t_params *plist,gpp_atomtype_t atype,
 		       warninp_t wi)
@@ -1773,17 +1774,16 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 				  interaction_function[ftype].longname,
 				  (int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
 	
-	/* Dont add R-B dihedrals where all parameters are zero (no interaction) */
-	if (ftype==F_RBDIHS) {
-		nr=0;
-		for(i=0;i<NRFP(ftype);i++) {
-			if(param.c[i]!=0)
-				nr++;
+	/* Dont add interactions where all parameters are zero (no interaction) */
+    nr=0;
+    for (i = 0; i < NRFP(ftype) && 0 == nr; i++)
+    {
+        if (!gmx_numzero(param.c[i]))
+        {
+            nr++;
 		}
-		if(nr==0)
-			return;
-	}
-	
+    }
+
 	/* Put the values in the appropriate arrays */
 	add_param_to_list (&bond[ftype],&param);
 
