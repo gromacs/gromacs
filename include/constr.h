@@ -37,6 +37,7 @@
 #ifndef _constr_h
 #define _constr_h
 #include "typedefs.h"
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {

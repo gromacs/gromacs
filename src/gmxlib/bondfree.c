@@ -55,7 +55,6 @@
 #include "orires.h"
 #include "force.h"
 #include "nonbonded.h"
-#include "mdrun.h"
 
 #if !defined GMX_DOUBLE && defined GMX_X86_SSE2
 #include "gmx_x86_simd_single.h"

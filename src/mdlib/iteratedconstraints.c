@@ -37,9 +37,11 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include "typedefs.h"
 #include "gmx_fatal.h"
 #include "mdrun.h"
+#include "types/iteratedconstraints.h"
 
 #ifdef GMX_DOUBLE
 #define CONVERGEITER  0.000000001

@@ -50,6 +50,8 @@
 #include "vsite.h"
 #include "pull.h"
 #include "update.h"
+#include "types/globsig.h"
+#include "types/membedt.h"
 
 
 #ifdef GMX_THREAD_MPI

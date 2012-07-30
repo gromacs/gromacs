@@ -36,6 +36,9 @@
 #include <config.h>
 #endif
 
+#include <stddef.h>
+
+#include "types/commrec.h"
 #include "vec.h"
 #include "calcpot.h"
 #include "nrnb.h"

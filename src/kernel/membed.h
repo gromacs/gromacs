@@ -36,6 +36,7 @@
 #define _gmx_membed_h
 
 #include "typedefs.h"
+#include "types/membedt.h"
 
 #ifdef __cplusplus
 extern "C" {

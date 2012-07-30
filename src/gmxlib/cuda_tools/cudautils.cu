@@ -37,14 +37,7 @@
 
 #include "gmx_fatal.h"
 #include "smalloc.h"
-/* FIXME get rid of this dirty hack which is here just to avoid pulling in mpi.h */
-#define _fcdata_h
-#define _iteratedconstraints_h
-#define _ifunc_h
 #include "typedefs.h"
-#undef  _fcdata_h
-#undef  _iteratedconstraints_h
-#undef  _ifunc_h
 #include "cuda.h"
 #include "cudautils.cuh"
 

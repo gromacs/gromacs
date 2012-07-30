@@ -20,6 +20,7 @@
 #define _domdec_h
 
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vsite.h"
 #include "genborn.h"
 

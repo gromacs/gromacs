@@ -84,6 +84,8 @@
 #include "pme_switch.h"
 #include "bondf.h"
 #include "membed.h"
+#include "types/nlistheuristics.h"
+#include "types/iteratedconstraints.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

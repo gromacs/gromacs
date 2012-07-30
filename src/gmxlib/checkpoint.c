@@ -49,7 +49,6 @@
 #include "statutil.h"
 #include "txtdump.h"
 #include "vec.h"
-#include "mdrun.h"
 #include "network.h"
 #include "gmx_random.h"
 #include "checkpoint.h"

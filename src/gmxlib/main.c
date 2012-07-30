@@ -61,7 +61,6 @@
 #include "macros.h"
 #include "futil.h"
 #include "filenm.h"
-#include "mdrun.h"
 #include "gmxfio.h"
 #include "string2.h"
 
@@ -211,7 +210,7 @@ void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
 
 
 void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly, 
-                   unsigned long Flags, FILE** fplog)
+                  gmx_bool bAppendFiles, FILE** fplog)
 {
     int  len,testlen,pid;
     char buf[256],host[256];
@@ -219,8 +218,6 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
     char timebuf[STRLEN];
     FILE *fp=*fplog;
     char *tmpnm;
-
-    gmx_bool bAppend = Flags & MD_APPENDFILES;	
   
     debug_gmx();
   
@@ -260,11 +257,11 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
     {
         /* Since log always ends with '.log' let's use this info */
         par_fn(tmpnm,efLOG,cr,FALSE,!bMasterOnly,buf,255);
-        fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
+        fp = gmx_fio_fopen(buf, bAppendFiles ? "a+" : "w+" );
     }
-    else if (!bAppend)
+    else if (!bAppendFiles)
     {
-        fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
+        fp = gmx_fio_fopen(tmpnm, bAppendFiles ? "a+" : "w+" );
     }
 
     sfree(tmpnm);
@@ -293,7 +290,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
 	pid = 0;
 #endif
 
-    if (bAppend)
+    if (bAppendFiles)
     {
         fprintf(fp,
                 "\n"

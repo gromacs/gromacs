@@ -673,7 +673,8 @@ int main(int argc,char *argv[])
      there instead.  */
   if ((MASTER(cr) || bSepPot) && !bAppendFiles) 
   {
-      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
+      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,
+                   !bSepPot,Flags & MD_APPENDFILES,&fplog);
       CopyRight(fplog,argv[0]);
       please_cite(fplog,"Hess2008b");
       please_cite(fplog,"Spoel2005a");

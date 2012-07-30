@@ -40,14 +40,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "tables.h"
-/* FIXME get rid of this dirty hack which is here just to avoid pulling in mpi.h */
-#define _fcdata_h
-#define _iteratedconstraints_h
-#define _ifunc_h
 #include "typedefs.h"
-#undef  _fcdata_h
-#undef  _iteratedconstraints_h
-#undef  _ifunc_h
 #include "types/nb_verlet.h"
 #include "types/interaction_const.h"
 #include "types/force_flags.h"
