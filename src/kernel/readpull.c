@@ -294,7 +294,10 @@ void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
   dvec      dr,dev;
 
   /* need to pass in the correct masses if free energy is on*/
-  lambda = ir->fepvals->all_lambda[efptMASS][ir->fepvals->init_fep_state];
+  if (ir->efep)
+  {
+      lambda = ir->fepvals->all_lambda[efptMASS][ir->fepvals->init_fep_state];
+  }
   init_pull(NULL,ir,0,NULL,mtop,NULL,oenv,lambda,FALSE,0); 
   md = init_mdatoms(NULL,mtop,ir->efep);
   atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
