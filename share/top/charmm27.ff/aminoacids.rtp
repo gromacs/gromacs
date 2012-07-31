@@ -1645,6 +1645,17 @@
 	OH2	H1
 	OH2	H2
 
+[ HO4 ]
+; TIP4P
+ [ atoms ]
+       OW      OWT4    0.00    0
+       HW1     HWT4    0.52    0
+       HW2     HWT4    0.52    0
+       MW      MWT4    -1.04   0
+ [ bonds ]
+       OW      HW1
+       OW      HW2
+
 [ SOD ]
  [ atoms ]
 	SOD	SOD	1.00	0
