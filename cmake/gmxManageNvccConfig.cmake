@@ -68,8 +68,16 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         endif()
     endif()
 
+    # set the CUDA architectures to compile for
+    # with CUDA >v4.2 compute capability 3.0 is not supported
+    if(CUDA_VERSION VERSION_LESS "4.2.0")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_20,code=compute_20")
+    else()
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
+    endif()
+
     # finally set the damn flags
     set(CUDA_NVCC_FLAGS
-        "${_FPIC_NVCC_FLAG}-arch=sm_20;-use_fast_math;${CUDA_NVCC_HOST_COMPILER_OPTIONS}"
+        "${_FPIC_NVCC_FLAG}${_CUDA_ARCH_STR};-use_fast_math;${CUDA_NVCC_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Compiler flags for nvcc." FORCE)
 endif()
