@@ -1374,6 +1374,10 @@ int main (int argc, char *argv[])
     }
   }
 
+  if ( ( ir->eI == eiSD1 || ir->eI == eiSD2 ) && ( ir->etc != etcNO ) ) {
+      warning_note(wi,"Temperature coupling is ignored with SD integrators.");
+  }
+
   /* If we are doing QM/MM, check that we got the atom numbers */
   have_atomnumber = TRUE;
   for (i=0; i<get_atomtype_ntypes(atype); i++) {
