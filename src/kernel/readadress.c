@@ -73,6 +73,9 @@ void read_adressparams(int *ninp_p,t_inpfile **inp_p,t_adress *adress, warninp_t
     adress->refs[i]=strtod(ptr1[i],NULL);
   for( ;(i<DIM); i++) /*remaining undefined components of the vector set to zero*/
     adress->refs[i]=0;
+
+  *ninp_p   = ninp;
+  *inp_p    = inp;
 }
 
 void do_adress_index(t_adress *adress, gmx_groups_t *groups,char **gnames,t_grpopts *opts,warninp_t wi){
