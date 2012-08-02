@@ -49,7 +49,7 @@ namespace internal
 
 SelectionData::SelectionData(SelectionTreeElement *elem,
                              const char *selstr)
-    : name_(elem->name), selectionText_(selstr),
+    : name_(elem->name()), selectionText_(selstr),
       rootElement_(*elem), coveredFractionType_(CFRAC_NONE),
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
       bDynamic_(false), bDynamicCoveredFraction_(false)
