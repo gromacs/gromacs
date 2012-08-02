@@ -52,12 +52,11 @@
 #include "indexutil.h"
 #include "selectionenums.h"
 
-struct t_selelem;
-
 namespace gmx
 {
 
 class SelectionOptionStorage;
+class SelectionTreeElement;
 
 class Selection;
 class SelectionPosition;
@@ -89,7 +88,7 @@ class SelectionData
          * \param[in] selstr String that was parsed to produce this selection.
          * \throws    std::bad_alloc if out of memory.
          */
-        SelectionData(t_selelem *elem, const char *selstr);
+        SelectionData(SelectionTreeElement *elem, const char *selstr);
         ~SelectionData();
 
         //! Returns the string that was parsed to produce this selection.
@@ -99,7 +98,7 @@ class SelectionData
         //! Number of positions in the selection.
         int posCount() const { return rawPositions_.nr; }
         //! Returns the root of the evaluation tree for this selection.
-        t_selelem *rootElement() { return rootElement_; }
+        SelectionTreeElement &rootElement() { return rootElement_; }
 
         //! Returns whether the covered fraction can change between frames.
         bool isCoveredFractionDynamic() const { return bDynamicCoveredFraction_; }
@@ -192,8 +191,8 @@ class SelectionData
         //! Information for all possible positions.
         std::vector<PositionInfo> originalPosInfo_;
         SelectionFlags          flags_;
-        //! Pointer to the root of the selection evaluation tree.
-        t_selelem              *rootElement_;
+        //! Root of the selection evaluation tree.
+        SelectionTreeElement   &rootElement_;
         //! Type of the covered fraction.
         e_coverfrac_t           coveredFractionType_;
         //! Covered fraction of the selection for the current frame.

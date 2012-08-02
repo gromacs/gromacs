@@ -30,6 +30,17 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+/* "%code requires" blocks.  */
+
+/* Line 2068 of yacc.c  */
+#line 166 "parser.y"
+
+#include "selelem.h"
+
+
+
+/* Line 2068 of yacc.c  */
+#line 44 "parser.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -80,14 +91,14 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 104 "parser.y"
+#line 170 "parser.y"
 
     int                         i;
     real                        r;
     char                       *str;
     struct gmx_ana_selmethod_t *meth;
 
-    struct t_selelem           *sel;
+    gmx::SelectionTreeElementPointer *sel;
 
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
@@ -95,7 +106,7 @@ typedef union YYSTYPE
 
 
 /* Line 2068 of yacc.c  */
-#line 99 "parser.h"
+#line 110 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

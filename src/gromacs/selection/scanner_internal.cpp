@@ -294,9 +294,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     /* For variable symbols, return the type of the variable value */
     if (symtype == SYMBOL_VARIABLE)
     {
-        t_selelem *var;
-
-        var = _gmx_sel_sym_value_var(symbol);
+        gmx::SelectionTreeElementPointer var = _gmx_sel_sym_value_var(symbol);
         /* Return simple tokens for constant variables */
         if (var->type == SEL_CONST)
         {
@@ -316,7 +314,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                     return INVALID;
             }
         }
-        yylval->sel = var;
+        yylval->sel = new gmx::SelectionTreeElementPointer(var);
         switch (var->v.type)
         {
             case INT_VALUE:   return VARIABLE_NUMERIC;
@@ -324,10 +322,12 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
             case POS_VALUE:   return VARIABLE_POS;
             case GROUP_VALUE: return VARIABLE_GROUP;
             default:
+                delete yylval->sel;
                 GMX_ERROR_NORET(gmx::eeInternalError,
                                 "Unsupported variable type");
                 return INVALID;
         }
+        delete yylval->sel;
         return INVALID; /* Should not be reached. */
     }
     /* For method symbols, return the correct type */

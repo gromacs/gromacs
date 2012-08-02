@@ -201,7 +201,7 @@ set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
  * are neglected.
  */
 void
-_gmx_selelem_set_kwpos_type(t_selelem *sel, const char *type)
+_gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 
@@ -231,7 +231,7 @@ _gmx_selelem_set_kwpos_type(t_selelem *sel, const char *type)
  * are neglected.
  */
 void
-_gmx_selelem_set_kwpos_flags(t_selelem *sel, int flags)
+_gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 

@@ -39,13 +39,12 @@
 #include <config.h>
 #endif
 
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
-#include <typedefs.h>
-#include <gmx_fatal.h>
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/poscalc.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "selelem.h"
 #include "symrec.h"
@@ -61,6 +60,9 @@ struct gmx_sel_symtab_t
 
 /*! \internal \brief
  * Single symbol for the selection parser.
+ *
+ * \todo
+ * Make this a proper class.
  */
 struct gmx_sel_symrec_t
 {
@@ -68,13 +70,10 @@ struct gmx_sel_symrec_t
     char                           *name;
     /** Type of the symbol. */
     e_symbol_t                      type;
-    /** Value of the symbol. */
-    union {
-        /** Pointer to the method structure (\ref SYMBOL_METHOD). */
-        struct gmx_ana_selmethod_t *meth;
-        /** Pointer to the variable value (\ref SYMBOL_VARIABLE). */
-        struct t_selelem           *var;
-    }                               u;
+    /** Pointer to the method structure (\ref SYMBOL_METHOD). */
+    struct gmx_ana_selmethod_t         *meth;
+    /** Pointer to the variable value (\ref SYMBOL_VARIABLE). */
+    gmx::SelectionTreeElementPointer    var;
     /** Pointer to the next symbol. */
     struct gmx_sel_symrec_t        *next;
 };
@@ -124,12 +123,9 @@ _gmx_sel_sym_type(gmx_sel_symrec_t *sym)
 struct gmx_ana_selmethod_t *
 _gmx_sel_sym_value_method(gmx_sel_symrec_t *sym)
 {
-    if (sym->type != SYMBOL_METHOD)
-    {
-        gmx_call("symbol is not a method symbol");
-        return NULL;
-    }
-    return sym->u.meth;
+    GMX_RELEASE_ASSERT(sym->type == SYMBOL_METHOD,
+            "Attempting to get method handle for a non-method symbol");
+    return sym->meth;
 }
 
 /*!
@@ -137,15 +133,12 @@ _gmx_sel_sym_value_method(gmx_sel_symrec_t *sym)
  * \returns   The variable expression associated with \p sym, or NULL if
  *   \p sym is not a \ref SYMBOL_VARIABLE symbol.
  */
-struct t_selelem *
+const gmx::SelectionTreeElementPointer &
 _gmx_sel_sym_value_var(gmx_sel_symrec_t *sym)
 {
-    if (sym->type != SYMBOL_VARIABLE)
-    {
-        gmx_call("symbol is not a variable symbol");
-        return NULL;
-    }
-    return sym->u.var;
+    GMX_RELEASE_ASSERT(sym->type == SYMBOL_VARIABLE,
+            "Attempting to get variable value for a non-variable symbol");
+    return sym->var;
 }
 
 /*! \brief
@@ -158,16 +151,16 @@ _gmx_sel_sym_value_var(gmx_sel_symrec_t *sym)
 static void
 add_reserved_symbols(gmx_sel_symtab_t *tab)
 {
-    gmx_sel_symrec_t *sym;
     gmx_sel_symrec_t *last;
     size_t            i;
 
     last = NULL;
     for (i = 0; i < asize(sym_reserved); ++i)
     {
-        snew(sym, 1);
+        gmx_sel_symrec_t *sym = new gmx_sel_symrec_t();
         sym->name = strdup(sym_reserved[i]);
         sym->type = SYMBOL_RESERVED;
+        sym->meth = NULL;
         sym->next = NULL;
         if (last)
         {
@@ -189,7 +182,6 @@ add_reserved_symbols(gmx_sel_symtab_t *tab)
 static void
 add_position_symbols(gmx_sel_symtab_t *tab)
 {
-    gmx_sel_symrec_t  *sym;
     gmx_sel_symrec_t  *last;
     int                i;
 
@@ -202,9 +194,10 @@ add_position_symbols(gmx_sel_symtab_t *tab)
     }
     for (i = 0; postypes[i] != NULL; ++i)
     {
-        snew(sym, 1);
+        gmx_sel_symrec_t  *sym = new gmx_sel_symrec_t();
         sym->name = strdup(postypes[i]);
         sym->type = SYMBOL_POS;
+        sym->meth = NULL;
         sym->next = NULL;
         if (last)
         {
@@ -249,12 +242,8 @@ _gmx_sel_symtab_free(gmx_sel_symtab_t *tab)
     {
         sym = tab->first;
         tab->first = sym->next;
-        if (sym->type == SYMBOL_VARIABLE)
-        {
-            _gmx_selelem_free(sym->u.var);
-        }
         sfree(sym->name);
-        sfree(sym);
+        delete sym;
     }
     sfree(tab);
 }
@@ -434,7 +423,7 @@ add_symbol(gmx_sel_symtab_t *tab, const char *name, e_symbol_t *ctype)
  */
 gmx_sel_symrec_t *
 _gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, const char *name,
-                        struct t_selelem *sel)
+                        const gmx::SelectionTreeElementPointer &sel)
 {
     gmx_sel_symrec_t *sym;
     e_symbol_t        ctype;
@@ -462,8 +451,7 @@ _gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, const char *name,
     }
 
     sym->type  = SYMBOL_VARIABLE;
-    sym->u.var = sel;
-    sel->refcount++;
+    sym->var = sel;
     return sym;
 }
 
@@ -504,6 +492,6 @@ _gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, const char *name,
     }
 
     sym->type   = SYMBOL_METHOD;
-    sym->u.meth = method;
+    sym->meth = method;
     return sym;
 }

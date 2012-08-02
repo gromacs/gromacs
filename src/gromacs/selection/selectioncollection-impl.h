@@ -52,6 +52,7 @@
 #include "poscalc.h"
 #include "selection.h" // For gmx::SelectionList
 #include "selectioncollection.h"
+#include "selelem.h"
 
 namespace gmx
 {
@@ -68,8 +69,10 @@ typedef std::vector<SelectionDataPointer> SelectionDataList;
  */
 struct gmx_ana_selcollection_t
 {
-    /** Root of the selection element tree. */
-    struct t_selelem           *root;
+    //! Position calculation collection used for selection position evaluation.
+    gmx::PositionCalculationCollection  pcc;
+    //! Root of the selection element tree.
+    gmx::SelectionTreeElementPointer    root;
     /*! \brief
      * Array of compiled selections.
      *
@@ -87,8 +90,6 @@ struct gmx_ana_selcollection_t
     t_topology                    *top;
     /** Index group that contains all the atoms. */
     struct gmx_ana_index_t         gall;
-    /** Position calculation collection used for selection position evaluation. */
-    gmx::PositionCalculationCollection  pcc;
     /** Memory pool used for selection evaluation. */
     struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
@@ -139,7 +140,7 @@ class SelectionCollection::Impl
          * Does not throw currently, but this is subject to change when more
          * underlying code is converted to C++.
          */
-        void resolveExternalGroups(struct t_selelem *root,
+        void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
                                    MessageStringCollector *errors);
 
         //! Internal data, used for interfacing with old C code.
