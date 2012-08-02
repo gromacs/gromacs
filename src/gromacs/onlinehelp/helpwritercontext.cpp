@@ -130,17 +130,8 @@ File &HelpWriterContext::outputFile() const
 std::string HelpWriterContext::substituteMarkup(const std::string &text) const
 {
     char *resultStr = check_tty(text.c_str());
-    try
-    {
-        std::string result(resultStr);
-        sfree(resultStr);
-        return result;
-    }
-    catch (...)
-    {
-        sfree(resultStr);
-        throw;
-    }
+    sfree_guard resultGuard(resultStr);
+    return std::string(resultStr);
 }
 
 void HelpWriterContext::writeTitle(const std::string &title) const
