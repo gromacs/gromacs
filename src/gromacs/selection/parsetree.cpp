@@ -566,7 +566,7 @@ _gmx_selelem_set_method(const SelectionTreeElementPointer &sel,
                         yyscan_t scanner)
 {
     _gmx_selelem_set_vtype(sel, method->type);
-    sel->name   = method->name;
+    sel->setName(method->name);
     snew(sel->u.expr.method, 1);
     memcpy(sel->u.expr.method, method, sizeof(gmx_ana_selmethod_t));
     _gmx_selelem_init_method_params(sel, scanner);
@@ -634,8 +634,8 @@ _gmx_sel_init_arithmetic(const SelectionTreeElementPointer &left,
     char               buf[2];
     buf[0] = op;
     buf[1] = 0;
+    sel->setName(buf);
     sel->u.arith.opstr = strdup(buf);
-    sel->name          = sel->u.arith.opstr;
     sel->child         = left;
     sel->child->next   = right;
     return sel;
@@ -944,9 +944,9 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
     {
         SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_GROUPREF));
         _gmx_selelem_set_vtype(sel, GROUP_VALUE);
+        sel->setName(name);
         sel->u.gref.name = strdup(name);
         sel->u.gref.id = -1;
-        sel->name = sel->u.gref.name;
         return sel;
     }
     if (!grps)
@@ -962,7 +962,7 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
         _gmx_selparser_error(scanner, "Cannot match 'group %s'", name);
         return SelectionTreeElementPointer();
     }
-    sel->name = sel->u.cgrp.name;
+    sel->setName(sel->u.cgrp.name);
     return sel;
 }
 
@@ -997,7 +997,7 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
         _gmx_selparser_error(scanner, "Cannot match 'group %d'", id);
         return SelectionTreeElementPointer();
     }
-    sel->name = sel->u.cgrp.name;
+    sel->setName(sel->u.cgrp.name);
     return sel;
 }
 
@@ -1021,7 +1021,7 @@ _gmx_sel_init_variable_ref(const SelectionTreeElementPointer &sel)
     {
         ref.reset(new SelectionTreeElement(SEL_SUBEXPRREF));
         _gmx_selelem_set_vtype(ref, sel->v.type);
-        ref->name  = sel->name;
+        ref->setName(sel->name());
         ref->child = sel;
     }
     return ref;
@@ -1058,7 +1058,8 @@ _gmx_sel_init_selection(const char *name,
     root->child = sel;
     if (name)
     {
-        root->name = root->u.cgrp.name = strdup(name);
+        root->setName(name);
+        root->u.cgrp.name = strdup(name);
     }
     /* Update the flags */
     _gmx_selelem_update_flags(root, scanner);
@@ -1066,7 +1067,7 @@ _gmx_sel_init_selection(const char *name,
     /* If there is no name provided by the user, check whether the actual
      * selection given was from an external group, and if so, use the name
      * of the external group. */
-    if (!root->name)
+    if (root->name().empty())
     {
         SelectionTreeElementPointer child = root->child;
         while (child->type == SEL_MODIFIER)
@@ -1084,15 +1085,17 @@ _gmx_sel_init_selection(const char *name,
             && child->child->child->type == SEL_CONST
             && child->child->child->v.type == GROUP_VALUE)
         {
-            root->name = root->u.cgrp.name =
-                strdup(child->child->child->u.cgrp.name);
+            const char *grpName = child->child->child->u.cgrp.name;
+            root->setName(grpName);
+            root->u.cgrp.name = strdup(grpName);
         }
     }
     /* If there still is no name, use the selection string */
-    if (!root->name)
+    if (root->name().empty())
     {
-        root->name = root->u.cgrp.name
-            = strdup(_gmx_sel_lexer_pselstr(scanner));
+        const char *selStr = _gmx_sel_lexer_pselstr(scanner);
+        root->setName(selStr);
+        root->u.cgrp.name = strdup(selStr);
     }
 
     /* Print out some information if the parser is interactive */
@@ -1153,15 +1156,12 @@ _gmx_sel_assign_variable(const char *name,
     }
     /* Create the root element */
     root.reset(new SelectionTreeElement(SEL_ROOT));
+    root->setName(name);
+    root->u.cgrp.name = strdup(name);
     /* Create the subexpression element */
     root->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
+    root->child->setName(name);
     _gmx_selelem_set_vtype(root->child, expr->v.type);
-    {
-        char *newName = strdup(name);
-        root->name          = newName;
-        root->u.cgrp.name   = newName;
-        root->child->name   = newName;
-    }
     root->child->child  = expr;
     /* Update flags */
     _gmx_selelem_update_flags(root, scanner);
