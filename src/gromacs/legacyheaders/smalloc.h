@@ -197,7 +197,7 @@ void _snew_aligned(const char *name, const char *file, int line,
 #define srealloc(ptr, size) _srealloc(#ptr,__FILE__,__LINE__,(ptr),(size))
 #define snew_aligned(ptr,nelem,alignment) _snew_aligned(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)),alignment)
 
-#else
+#else /* __cplusplus */
 
 /* These macros work in C, not in C++ */
 #define snew(ptr,nelem) (ptr)=save_calloc(#ptr,__FILE__,__LINE__,\
@@ -210,12 +210,47 @@ void _snew_aligned(const char *name, const char *file, int line,
 #define srealloc(ptr,size) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
 			(ptr),size,1)
 #define snew_aligned(ptr,nelem,alignment) (ptr)=save_calloc_aligned(#ptr,__FILE__,__LINE__,(nelem),sizeof(*(ptr)),alignment)
-#endif
+#endif /* __cplusplus */
 
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
 
 /* call this ONLY with a pointer obtained through snew_aligned or 
    smalloc_aligned: */
 #define sfree_aligned(ptr) save_free_aligned(#ptr,__FILE__,__LINE__,(ptr))
+
+#ifdef __cplusplus
+
+#include "../utility/common.h"
+
+namespace gmx
+{
+
+/*! \brief
+ * Guard that calls sfree() on a pointer on scope exit.
+ *
+ * Methods in this class do not throw.
+ */
+class sfree_guard
+{
+    public:
+        /*! \brief
+         * Initializes a guard that frees \p ptr on scope exit.
+         *
+         * \param[in] ptr  Pointer to free.
+         *
+         * \p ptr can be null, in which case the guard does nothing.
+         */
+        explicit sfree_guard(void *ptr) : ptr_(ptr) {}
+        //! Frees the pointer passed to the constructor.
+        ~sfree_guard() { sfree(ptr_); }
+
+    private:
+        void                   *ptr_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(sfree_guard);
+};
+
+} // namespace gmx
+#endif /* __cplusplus */
 
 #endif	/* _smalloc_h */
