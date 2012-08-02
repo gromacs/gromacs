@@ -51,6 +51,7 @@
 
 #include <exception>
 
+#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 
 #include "parsetree.h"
@@ -58,12 +59,73 @@
 
 #include "scanner.h"
 
+using gmx::sfree_guard;
+using gmx::SelectionTreeElement;
+using gmx::SelectionTreeElementPointer;
+
 //! Helper method to reorder a list of parameter values and to count the values.
 static t_selexpr_value *
 process_value_list(t_selexpr_value *values, int *nr);
 //! Helper method to reorder a list of parameters.
 static t_selexpr_param *
 process_param_list(t_selexpr_param *params);
+
+/*! \brief
+ * Retrieves a selection tree pointer from a semantic value.
+ *
+ * \param[in] src  Semantic value to get the tree from.
+ * \returns   Pointer to the selection tree.
+ *
+ * There should be no statements that may throw exceptions in actions before
+ * this function has been called for all semantic values that have a tree
+ * argument.  Together with set(), this function abstracts away exception
+ * safety issues that arise from the use of a plain pointer for storing the
+ * selection tree semantic values.
+ *
+ * Does not throw.
+ */
+static SelectionTreeElementPointer
+get(SelectionTreeElementPointer *src)
+{
+    SelectionTreeElementPointer result;
+    if (src != NULL)
+    {
+        result.swap(*src);
+        delete src;
+    }
+    return result;
+}
+/*! \brief
+ * Sets a selection tree pointer to a semantic value.
+ *
+ * \param[out] dest  Semantic value to set the tree to.
+ * \param[in]  value Pointer to the selection tree to set.
+ * \throws     std::bad_alloc if out of memory.
+ *
+ * This should be the last statement before ::END_ACTION, except for a
+ * possible ::CHECK_SEL.
+ */
+static void
+set(SelectionTreeElementPointer *&dest,
+        const SelectionTreeElementPointer &value)
+{
+    dest = new SelectionTreeElementPointer(value);
+}
+/*! \brief
+ * Checks that a valid tree was set.
+ *
+ * Should be called after set() if it was used to set a value where NULL
+ * pointer indicates an error.
+ *
+ * \todo
+ * Get rid of this macro.  It should now be possible to handle all errors using
+ * exceptions.
+ */
+#define CHECK_SEL(sel) \
+    if (!*(sel)) { \
+        delete sel; \
+        YYERROR; \
+    }
 
 //! Error handler needed by Bison.
 static void
@@ -101,13 +163,17 @@ yyerror(yyscan_t, char const *s);
 //!\}
 %}
 
+%code requires{
+#include "selelem.h"
+}
+
 %union{
     int                         i;
     real                        r;
     char                       *str;
     struct gmx_ana_selmethod_t *meth;
 
-    struct t_selelem           *sel;
+    gmx::SelectionTreeElementPointer *sel;
 
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
@@ -198,9 +264,8 @@ yyerror(yyscan_t, char const *s);
 
 %destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER CMP_OP string
 %destructor { if($$) free($$);              } PARAM
-%destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
-%destructor { _gmx_selelem_free_chain($$);  } selection
-%destructor { _gmx_selelem_free($$);        } sel_expr num_expr str_expr pos_expr
+%destructor { delete $$;                    } commands command cmd_plain selection
+%destructor { delete $$;                    } sel_expr num_expr str_expr pos_expr
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
 %destructor { _gmx_selexpr_free_values($$); } value_list value_list_contents value_item value_item_range
 %destructor { _gmx_selexpr_free_values($$); } basic_value_list basic_value_list_contents basic_value_item
@@ -221,7 +286,7 @@ commands:    /* empty */        { $$ = NULL; }
            | commands command
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_append_selection($2, $1, scanner);
+                 set($$, _gmx_sel_append_selection(get($2), get($1), scanner));
                  if (_gmx_sel_parser_should_finish(scanner))
                      YYACCEPT;
                  END_ACTION;
@@ -262,54 +327,60 @@ cmd_plain:   /* empty */
            | TOK_INT
              {
                  BEGIN_ACTION;
-                 t_selelem *s, *p;
-                 s = _gmx_sel_init_group_by_id($1, scanner);
-                 if (s == NULL) YYERROR;
-                 p = _gmx_sel_init_position(s, NULL, scanner);
-                 if (p == NULL) YYERROR;
-                 $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
+                 SelectionTreeElementPointer s
+                        = _gmx_sel_init_group_by_id($1, scanner);
+                 if (!s) YYERROR;
+                 SelectionTreeElementPointer p
+                        = _gmx_sel_init_position(s, NULL, scanner);
+                 if (!p) YYERROR;
+                 set($$, _gmx_sel_init_selection(s->name, p, scanner));
                  END_ACTION;
              }
            | string
              {
                  BEGIN_ACTION;
-                 t_selelem *s, *p;
-                 s = _gmx_sel_init_group_by_name($1, scanner);
-                 free($1);
-                 if (s == NULL) YYERROR;
-                 p = _gmx_sel_init_position(s, NULL, scanner);
-                 if (p == NULL) YYERROR;
-                 $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
+                 sfree_guard nameGuard($1);
+                 SelectionTreeElementPointer s
+                        = _gmx_sel_init_group_by_name($1, scanner);
+                 if (!s) YYERROR;
+                 SelectionTreeElementPointer p
+                        = _gmx_sel_init_position(s, NULL, scanner);
+                 if (!p) YYERROR;
+                 set($$, _gmx_sel_init_selection(s->name, p, scanner));
                  END_ACTION;
              }
            | selection
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_selection(NULL, $1, scanner);
+                 set($$, _gmx_sel_init_selection(NULL, get($1), scanner));
                  END_ACTION;
              }
            | string selection
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_selection($1, $2, scanner);
+                 sfree_guard nameGuard($1);
+                 set($$, _gmx_sel_init_selection($1, get($2), scanner));
                  END_ACTION;
              }
            | IDENTIFIER '=' sel_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_assign_variable($1, $3, scanner);
+                 sfree_guard nameGuard($1);
+                 set($$, _gmx_sel_assign_variable($1, get($3), scanner));
                  END_ACTION;
              }
            | IDENTIFIER '=' num_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_assign_variable($1, $3, scanner);
+                 sfree_guard nameGuard($1);
+                 set($$, _gmx_sel_assign_variable($1, get($3), scanner));
                  END_ACTION;
              }
            | IDENTIFIER '=' pos_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_assign_variable($1, $3, scanner);
+                 sfree_guard nameGuard($1);
+                 set($$, _gmx_sel_assign_variable($1, get($3), scanner));
                  END_ACTION;
              }
 ;
@@ -339,16 +410,16 @@ selection:   pos_expr           { $$ = $1; }
            | sel_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_position($1, NULL, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_position(get($1), NULL, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
            | '(' selection ')'  { $$ = $2; }
            | selection MODIFIER method_params
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_modifier($2, $3, $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_modifier($2, $3, get($1), scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -383,25 +454,34 @@ string:      STR                { $$ = $1; }
 sel_expr:    NOT sel_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selelem_create(SEL_BOOLEAN);
-                 $$->u.boolt = BOOL_NOT;
-                 $$->child = $2;
+                 SelectionTreeElementPointer arg(get($2));
+                 SelectionTreeElementPointer sel(
+                        new SelectionTreeElement(SEL_BOOLEAN));
+                 sel->u.boolt = BOOL_NOT;
+                 sel->child = arg;
+                 set($$, sel);
                  END_ACTION;
              }
            | sel_expr AND sel_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selelem_create(SEL_BOOLEAN);
-                 $$->u.boolt = BOOL_AND;
-                 $$->child = $1; $$->child->next = $3;
+                 SelectionTreeElementPointer arg1(get($1)), arg2(get($3));
+                 SelectionTreeElementPointer sel(
+                        new SelectionTreeElement(SEL_BOOLEAN));
+                 sel->u.boolt = BOOL_AND;
+                 sel->child = arg1; sel->child->next = arg2;
+                 set($$, sel);
                  END_ACTION;
              }
            | sel_expr OR  sel_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selelem_create(SEL_BOOLEAN);
-                 $$->u.boolt = BOOL_OR;
-                 $$->child = $1; $$->child->next = $3;
+                 SelectionTreeElementPointer arg1(get($1)), arg2(get($3));
+                 SelectionTreeElementPointer sel(
+                        new SelectionTreeElement(SEL_BOOLEAN));
+                 sel->u.boolt = BOOL_OR;
+                 sel->child = arg1; sel->child->next = arg2;
+                 set($$, sel);
                  END_ACTION;
              }
            | '(' sel_expr ')'   { $$ = $2; }
@@ -411,8 +491,8 @@ sel_expr:    NOT sel_expr
 sel_expr:    num_expr CMP_OP num_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_comparison($1, $3, $2, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_comparison(get($1), get($3), $2, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -421,16 +501,16 @@ sel_expr:    num_expr CMP_OP num_expr
 sel_expr:    GROUP string
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_group_by_name($2, scanner);
-                 free($2);
-                 if ($$ == NULL) YYERROR;
+                 sfree_guard nameGuard($2);
+                 set($$, _gmx_sel_init_group_by_name($2, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
            | GROUP TOK_INT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_group_by_id($2, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_group_by_id($2, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -444,22 +524,22 @@ pos_mod:     EMPTY_POSMOD       { $$ = NULL; }
 sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
            | pos_mod KEYWORD_STR basic_value_list
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
            | pos_mod KEYWORD_NUMERIC basic_value_list
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -468,8 +548,8 @@ sel_expr:    pos_mod KEYWORD_GROUP
 sel_expr:    pos_mod METHOD_GROUP method_params
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_method($2, $3, $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_method($2, $3, $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -482,19 +562,23 @@ sel_expr:    pos_mod METHOD_GROUP method_params
 num_expr:    TOK_INT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selelem_create(SEL_CONST);
-                 _gmx_selelem_set_vtype($$, INT_VALUE);
-                 _gmx_selvalue_reserve(&$$->v, 1);
-                 $$->v.u.i[0] = $1;
+                 SelectionTreeElementPointer sel(
+                        new SelectionTreeElement(SEL_CONST));
+                 _gmx_selelem_set_vtype(sel, INT_VALUE);
+                 _gmx_selvalue_reserve(&sel->v, 1);
+                 sel->v.u.i[0] = $1;
+                 set($$, sel);
                  END_ACTION;
              }
            | TOK_REAL
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selelem_create(SEL_CONST);
-                 _gmx_selelem_set_vtype($$, REAL_VALUE);
-                 _gmx_selvalue_reserve(&$$->v, 1);
-                 $$->v.u.r[0] = $1;
+                 SelectionTreeElementPointer sel(
+                        new SelectionTreeElement(SEL_CONST));
+                 _gmx_selelem_set_vtype(sel, REAL_VALUE);
+                 _gmx_selvalue_reserve(&sel->v, 1);
+                 sel->v.u.r[0] = $1;
+                 set($$, sel);
                  END_ACTION;
              }
 ;
@@ -503,15 +587,15 @@ num_expr:    TOK_INT
 num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
            | pos_mod METHOD_NUMERIC method_params
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_method($2, $3, $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_method($2, $3, $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -520,37 +604,37 @@ num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
 num_expr:    num_expr '+' num_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_arithmetic($1, $3, '+', scanner);
+                 set($$, _gmx_sel_init_arithmetic(get($1), get($3), '+', scanner));
                  END_ACTION;
              }
            | num_expr '-' num_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_arithmetic($1, $3, '-', scanner);
+                 set($$, _gmx_sel_init_arithmetic(get($1), get($3), '-', scanner));
                  END_ACTION;
              }
            | num_expr '*' num_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_arithmetic($1, $3, '*', scanner);
+                 set($$, _gmx_sel_init_arithmetic(get($1), get($3), '*', scanner));
                  END_ACTION;
              }
            | num_expr '/' num_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_arithmetic($1, $3, '/', scanner);
+                 set($$, _gmx_sel_init_arithmetic(get($1), get($3), '/', scanner));
                  END_ACTION;
              }
            | '-' num_expr %prec UNARY_NEG
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_arithmetic($2, NULL, '-', scanner);
+                 set($$, _gmx_sel_init_arithmetic(get($2), SelectionTreeElementPointer(), '-', scanner));
                  END_ACTION;
              }
            | num_expr '^' num_expr
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_arithmetic($1, $3, '^', scanner);
+                 set($$, _gmx_sel_init_arithmetic(get($1), get($3), '^', scanner));
                  END_ACTION;
              }
            | '(' num_expr ')'   { $$ = $2; }
@@ -563,17 +647,19 @@ num_expr:    num_expr '+' num_expr
 str_expr:    string
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selelem_create(SEL_CONST);
-                 _gmx_selelem_set_vtype($$, STR_VALUE);
-                 _gmx_selvalue_reserve(&$$->v, 1);
-                 $$->v.u.s[0] = $1;
+                 SelectionTreeElementPointer sel(
+                        new SelectionTreeElement(SEL_CONST));
+                 _gmx_selelem_set_vtype(sel, STR_VALUE);
+                 _gmx_selvalue_reserve(&sel->v, 1);
+                 sel->v.u.s[0] = $1;
+                 set($$, sel);
                  END_ACTION;
              }
            | pos_mod KEYWORD_STR
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -586,7 +672,7 @@ str_expr:    string
 pos_expr:    '[' number ',' number ',' number ']'
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_const_position($2, $4, $6);
+                 set($$, _gmx_sel_init_const_position($2, $4, $6));
                  END_ACTION;
              }
 ;
@@ -599,8 +685,8 @@ pos_expr:    '(' pos_expr ')'   { $$ = $2; }
 pos_expr:    METHOD_POS method_params
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_method($1, $2, NULL, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_method($1, $2, NULL, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -609,8 +695,8 @@ pos_expr:    METHOD_POS method_params
 pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_position($3, $1, scanner);
-                 if ($$ == NULL) YYERROR;
+                 set($$, _gmx_sel_init_position(get($3), $1, scanner));
+                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;
@@ -622,7 +708,7 @@ pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
 sel_expr:    VARIABLE_GROUP
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_variable_ref($1);
+                 set($$, _gmx_sel_init_variable_ref(get($1)));
                  END_ACTION;
              }
 ;
@@ -630,7 +716,7 @@ sel_expr:    VARIABLE_GROUP
 num_expr:    VARIABLE_NUMERIC
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_variable_ref($1);
+                 set($$, _gmx_sel_init_variable_ref(get($1)));
                  END_ACTION;
              }
 ;
@@ -638,7 +724,7 @@ num_expr:    VARIABLE_NUMERIC
 pos_expr:    VARIABLE_POS
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_sel_init_variable_ref($1);
+                 set($$, _gmx_sel_init_variable_ref(get($1)));
                  END_ACTION;
              }
 ;
@@ -699,25 +785,25 @@ basic_value_list_contents:
 value_item:  sel_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr($1);
+                 $$ = _gmx_selexpr_create_value_expr(get($1));
                  END_ACTION;
              }
            | pos_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr($1);
+                 $$ = _gmx_selexpr_create_value_expr(get($1));
                  END_ACTION;
              }
            | num_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr($1);
+                 $$ = _gmx_selexpr_create_value_expr(get($1));
                  END_ACTION;
              }
            | str_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr($1);
+                 $$ = _gmx_selexpr_create_value_expr(get($1));
                  END_ACTION;
              }
            | value_item_range    { $$ = $1; }

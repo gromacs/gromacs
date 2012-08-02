@@ -49,12 +49,12 @@
 #define USE_REGEX
 #endif
 
-#include "macros.h"
-#include "smalloc.h"
-#include "string2.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
-#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/messagestringcollector.h"
 
 #include "keywords.h"
@@ -680,24 +680,18 @@ evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 }
 
 /*!
- * \param[out]  selp    Pointer to receive a pointer to the created selection
- *      element (set to NULL on error).
  * \param[in]   method  Keyword selection method to evaluate.
  * \param[in]   param   Parameter that gives the group to evaluate \p method in.
  * \param[in]   scanner Scanner data structure.
- * \returns     0 on success, non-zero error code on error.
+ * \returns     Pointer to the created selection element (NULL on error).
  *
- * Creates a \ref SEL_EXPRESSION selection element (pointer put in \c *selp)
- * that evaluates the keyword method given by \p method in the group given by
- * \p param.
+ * Creates a \ref SEL_EXPRESSION selection element that evaluates the keyword
+ * method given by \p method in the group given by \p param.
  */
-int
-_gmx_sel_init_keyword_evaluator(t_selelem **selp, gmx_ana_selmethod_t *method,
+gmx::SelectionTreeElementPointer
+_gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t *method,
                                 t_selexpr_param *param, void *scanner)
 {
-    t_selelem            *sel;
-    t_methoddata_kweval  *data;
-
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[1024];
     sprintf(buf, "In evaluation of '%s'", method->name);
@@ -707,14 +701,15 @@ _gmx_sel_init_keyword_evaluator(t_selelem **selp, gmx_ana_selmethod_t *method,
         || method->outinit || method->pupdate)
     {
         _gmx_selexpr_free_params(param);
-        GMX_ERROR(gmx::eeInternalError,
-                  "Unsupported keyword method for arbitrary group evaluation");
+        GMX_THROW(gmx::InternalError(
+                "Unsupported keyword method for arbitrary group evaluation"));
     }
 
-    *selp = NULL;
-    sel = _gmx_selelem_create(SEL_EXPRESSION);
+    gmx::SelectionTreeElementPointer sel(
+            new gmx::SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(sel, method, scanner);
 
+    t_methoddata_kweval  *data;
     snew(data, 1);
     data->kwmethod = sel->u.expr.method;
     data->kwmdata  = sel->u.expr.mdata;
@@ -743,9 +738,7 @@ _gmx_sel_init_keyword_evaluator(t_selelem **selp, gmx_ana_selmethod_t *method,
     if (!_gmx_sel_parse_params(param, sel->u.expr.method->nparams,
                                sel->u.expr.method->param, sel, scanner))
     {
-        _gmx_selelem_free(sel);
-        return -1;
+        return gmx::SelectionTreeElementPointer();
     }
-    *selp = sel;
-    return 0;
+    return sel;
 }
