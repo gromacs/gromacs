@@ -2123,6 +2123,9 @@ static void copyEvecReference(t_eigvec* floodvecs)
 	int i;
 
 
+	if (NULL==floodvecs->refproj0)
+	    snew(floodvecs->refproj0, floodvecs->neig);
+
 	for (i=0; i<floodvecs->neig; i++)
 	{
 		floodvecs->refproj0[i] = floodvecs->refproj[i];
