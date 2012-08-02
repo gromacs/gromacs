@@ -764,16 +764,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
 #if defined GMX_THREAD_MPI
         /* NOW the threads will be started: */
-        if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
-        {
-            /* With OpenMP we effectively have particle decomposition */
-            Flags &= ~MD_PARTDEC;
-            nthreads_mpi = 1;
-        }
-        else
-        {
-            nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
-        }
+        nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
 
         if (nthreads_mpi > 1)
         {
@@ -815,7 +806,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
         {
             gmx_fatal_collective(FARGS,cr,NULL,
-                                 "The Verlet cut-off scheme is not supported with particle decomposition");
+                                 "The Verlet cut-off scheme is not supported with particle decomposition.\n"
+                                 "You can achieve the same effect as particle decomposition by running in parallel using only OpenMP threads.");
         }
 
         /* now broadcast everything to the non-master nodes/threads: */
