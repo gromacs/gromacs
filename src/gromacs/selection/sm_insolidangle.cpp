@@ -495,19 +495,15 @@ evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  *   _gmx_selelem_estimate_coverfrac(), false otherwise.
  */
 bool
-_gmx_selelem_can_estimate_cover(t_selelem *sel)
+_gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel)
 {
-    t_selelem   *child;
-    bool         bFound;
-    bool         bDynFound;
-
-    if (sel->type == SEL_BOOLEAN && sel->u.boolt == BOOL_OR)
+    if (sel.type == SEL_BOOLEAN && sel.u.boolt == BOOL_OR)
     {
         return false;
     }
-    bFound    = false;
-    bDynFound = false;
-    child     = sel->child;
+    bool bFound    = false;
+    bool bDynFound = false;
+    gmx::SelectionTreeElementPointer child = sel.child;
     while (child)
     {
         if (child->type == SEL_EXPRESSION)
@@ -530,7 +526,7 @@ _gmx_selelem_can_estimate_cover(t_selelem *sel)
                 bDynFound = true;
             }
         }
-        else if (!_gmx_selelem_can_estimate_cover(child))
+        else if (!_gmx_selelem_can_estimate_cover(*child))
         {
             return false;
         }
@@ -549,23 +545,22 @@ _gmx_selelem_can_estimate_cover(t_selelem *sel)
  * frame.
  */
 real
-_gmx_selelem_estimate_coverfrac(t_selelem *sel)
+_gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel)
 {
-    t_selelem   *child;
     real         cfrac;
 
-    if (sel->type == SEL_EXPRESSION && sel->u.expr.method->name == sm_insolidangle.name)
+    if (sel.type == SEL_EXPRESSION && sel.u.expr.method->name == sm_insolidangle.name)
     {
-        t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)sel->u.expr.mdata;
+        t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)sel.u.expr.mdata;
         if (d->cfrac < 0)
         {
-            d->cfrac = estimate_covered_fraction(d);        
+            d->cfrac = estimate_covered_fraction(d);
         }
         return d->cfrac;
     }
-    if (sel->type == SEL_BOOLEAN && sel->u.boolt == BOOL_NOT)
+    if (sel.type == SEL_BOOLEAN && sel.u.boolt == BOOL_NOT)
     {
-        cfrac = _gmx_selelem_estimate_coverfrac(sel->child);
+        cfrac = _gmx_selelem_estimate_coverfrac(*sel.child);
         if (cfrac < 1.0)
         {
             return 1 - cfrac;
@@ -574,10 +569,10 @@ _gmx_selelem_estimate_coverfrac(t_selelem *sel)
     }
 
     /* Here, we assume that the selection is simple enough */
-    child = sel->child;
+    gmx::SelectionTreeElementPointer child = sel.child;
     while (child)
     {
-        cfrac = _gmx_selelem_estimate_coverfrac(child); 
+        cfrac = _gmx_selelem_estimate_coverfrac(*child);
         if (cfrac < 1.0)
         {
             return cfrac;

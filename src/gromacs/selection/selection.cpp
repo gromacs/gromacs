@@ -47,9 +47,10 @@ namespace gmx
 namespace internal
 {
 
-SelectionData::SelectionData(t_selelem *elem, const char *selstr)
+SelectionData::SelectionData(SelectionTreeElement *elem,
+                             const char *selstr)
     : name_(elem->name), selectionText_(selstr),
-      rootElement_(elem), coveredFractionType_(CFRAC_NONE),
+      rootElement_(*elem), coveredFractionType_(CFRAC_NONE),
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
       bDynamic_(false), bDynamicCoveredFraction_(false)
 {
@@ -62,9 +63,7 @@ SelectionData::SelectionData(t_selelem *elem, const char *selstr)
     }
     else
     {
-        t_selelem *child;
-
-        child = elem->child;
+        SelectionTreeElementPointer child = elem->child;
         child->flags     &= ~SEL_ALLOCVAL;
         _gmx_selvalue_setstore(&child->v, &rawPositions_);
         /* We should also skip any modifiers to determine the dynamic
@@ -107,11 +106,11 @@ bool
 SelectionData::initCoveredFraction(e_coverfrac_t type)
 {
     coveredFractionType_ = type;
-    if (type == CFRAC_NONE || rootElement_ == NULL)
+    if (type == CFRAC_NONE)
     {
         bDynamicCoveredFraction_ = false;
     }
-    else if (!_gmx_selelem_can_estimate_cover(rootElement_))
+    else if (!_gmx_selelem_can_estimate_cover(rootElement()))
     {
         coveredFractionType_ = CFRAC_NONE;
         bDynamicCoveredFraction_ = false;
@@ -198,7 +197,7 @@ SelectionData::restoreOriginalPositions()
     if (isDynamic())
     {
         gmx_ana_pos_t &p = rawPositions_;
-        gmx_ana_index_copy(p.g, rootElement_->v.u.g, false);
+        gmx_ana_index_copy(p.g, rootElement().v.u.g, false);
         p.g->name = NULL;
         gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efSelection_DynamicMask));
         p.nr = p.m.nr;

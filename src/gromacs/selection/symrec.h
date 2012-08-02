@@ -37,10 +37,11 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifndef SELECTION_SYMREC_H
-#define SELECTION_SYMREC_H
+#ifndef GMX_SELECTION_SYMREC_H
+#define GMX_SELECTION_SYMREC_H
 
-struct t_selelem;
+#include "selelem.h"
+
 struct gmx_ana_selmethod_t;
 
 /** Defines the type of the symbol. */
@@ -66,8 +67,8 @@ _gmx_sel_sym_type(gmx_sel_symrec_t *sym);
 /** Returns the method associated with a \ref SYMBOL_METHOD symbol. */
 struct gmx_ana_selmethod_t *
 _gmx_sel_sym_value_method(gmx_sel_symrec_t *sym);
-/** Returns the method associated with a \ref SYMBOL_VARIABLE symbol. */
-struct t_selelem *
+/** Returns the selection tree associated with a \ref SYMBOL_VARIABLE symbol. */
+const gmx::SelectionTreeElementPointer &
 _gmx_sel_sym_value_var(gmx_sel_symrec_t *sym);
 
 /** Creates a new symbol table. */
@@ -92,7 +93,7 @@ _gmx_sel_next_symbol(gmx_sel_symrec_t *after, e_symbol_t type);
 /** Adds a new variable symbol. */
 gmx_sel_symrec_t *
 _gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, const char *name,
-                        struct t_selelem *sel);
+                        const gmx::SelectionTreeElementPointer &sel);
 /** Adds a new method symbol. */
 gmx_sel_symrec_t *
 _gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, const char *name,
