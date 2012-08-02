@@ -209,10 +209,8 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
                               void *scanner)
 {
     gmx_ana_selmethod_t *kwmethod;
-    t_selelem           *kwelem;
     t_selexpr_param     *param;
     char                *pname;
-    int                  rc;
 
     /* Do nothing if this is not a same method. */
     if (!*method || (*method)->name != sm_same.name)
@@ -220,13 +218,13 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
         return 0;
     }
 
-    if (params->nval != 1 || !params->value->bExpr
-        || params->value->u.expr->type != SEL_EXPRESSION)
+    if (params->nval != 1 || !params->value->hasExpressionValue()
+        || params->value->expr->type != SEL_EXPRESSION)
     {
         _gmx_selparser_error(scanner, "'same' should be followed by a single keyword");
         return -1;
     }
-    kwmethod = params->value->u.expr->u.expr.method;
+    kwmethod = params->value->expr->u.expr.method;
 
     if (kwmethod->type == STR_VALUE)
     {
@@ -239,17 +237,19 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
     params->next = NULL;
     pname        = param->name;
     param->name  = NULL;
+    gmx::scoped_ptr_sfree pnameGuard(pname);
     /* Create a second keyword evaluation element for the keyword given as
      * the first parameter, evaluating the keyword in the group given by the
      * second parameter. */
-    rc = _gmx_sel_init_keyword_evaluator(&kwelem, kwmethod, param, scanner);
-    if (rc != 0)
+    gmx::SelectionTreeElementPointer kwelem
+        = _gmx_sel_init_keyword_evaluator(kwmethod, param, scanner);
+    // FIXME: Use exceptions.
+    if (!kwelem)
     {
-        sfree(pname);
-        return rc;
+        return -1;
     }
     /* Replace the second parameter with one with a value from \p kwelem. */
-    param        = _gmx_selexpr_create_param(pname);
+    param        = _gmx_selexpr_create_param(strdup(pname));
     param->nval  = 1;
     param->value = _gmx_selexpr_create_value_expr(kwelem);
     params->next = param;
