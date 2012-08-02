@@ -45,6 +45,8 @@
 #ifndef GMX_SELECTION_SELELEM_H
 #define GMX_SELECTION_SELELEM_H
 
+#include <string>
+
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/types/simple.h"
@@ -289,13 +291,18 @@ class SelectionTreeElement
          */
         void mempoolRelease();
 
-        /*! \brief Name of the element.
+        //! Returns the name of the element.
+        const std::string &name() const { return name_; }
+        /*! \brief
+         * Sets the name of the element.
          *
-         * This field is only used for informative purposes.
-         * It is always either NULL or a pointer to a string.
-         * Memory is never allocated for it directly.
+         * \param[in] name  Name to set (can be NULL).
+         * \throws    std::bad_alloc if out of memory.
          */
-        const char                         *name;
+        void setName(const char *name) { name_ = (name != NULL ? name : ""); }
+        //! \copydoc setName(const char *)
+        void setName(const std::string &name) { name_ = name; }
+
         //! Type of the element.
         e_selelem_t                         type;
         /*! \brief
@@ -376,6 +383,13 @@ class SelectionTreeElement
         SelectionTreeElementPointer         next;
 
     private:
+        /*! \brief
+         * Name of the element.
+         *
+         * This field is only used for informative purposes.
+         */
+        std::string                         name_;
+
         GMX_DISALLOW_COPY_AND_ASSIGN(SelectionTreeElement);
 };
 

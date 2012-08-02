@@ -593,7 +593,7 @@ parse_values_varnum(int nval, t_selexpr_value *values,
     {
         SelectionTreeElementPointer child(new SelectionTreeElement(SEL_CONST));
         _gmx_selelem_set_vtype(child, STR_VALUE);
-        child->name = param->name;
+        child->setName(param->name);
         child->flags &= ~SEL_ALLOCVAL;
         child->flags |= SEL_FLAGSSET | SEL_VARNUMVAL | SEL_ALLOCDATA;
         child->v.nr = param->val.nr;

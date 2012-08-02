@@ -317,7 +317,7 @@ void SelectionCollection::Impl::resolveExternalGroups(
         if (bOk)
         {
             root->type = SEL_CONST;
-            root->name = root->u.cgrp.name;
+            root->setName(root->u.cgrp.name);
         }
     }
 

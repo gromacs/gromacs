@@ -118,7 +118,6 @@ namespace gmx
 
 SelectionTreeElement::SelectionTreeElement(e_selelem_t type)
 {
-    this->name       = NULL;
     this->type       = type;
     this->flags      = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
     if (type == SEL_BOOLEAN)
@@ -395,9 +394,9 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
 
     fprintf(fp, "%*c %s %s", level*2+1, '*',
             _gmx_selelem_type_str(sel), _gmx_sel_value_type_str(&sel.v));
-    if (sel.name)
+    if (!sel.name().empty())
     {
-        fprintf(fp, " \"%s\"", sel.name);
+        fprintf(fp, " \"%s\"", sel.name().c_str());
     }
     fprintf(fp, " flg=");
     if (sel.flags & SEL_FLAGSSET)

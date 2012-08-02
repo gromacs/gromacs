@@ -688,17 +688,17 @@ remove_unused_subexpressions(SelectionTreeElementPointer root)
  * \param[in]     i   Running number for the subexpression.
  *
  * The name of the selection becomes "SubExpr N", where N is \p i;
- * Memory is allocated for the name and the name is stored both in
- * gmx::SelectionTreeElement::name and gmx::SelectionTreeElement::u::cgrp::name; the latter
- * is freed by _gmx_selelem_free().
+ * Memory is allocated for the name and the name is stored both as the
+ * name of the subexpression element and as
+ * gmx::SelectionTreeElement::u::cgrp::name; the latter is freed by
+ * _gmx_selelem_free().
  */
 static void
 create_subexpression_name(const SelectionTreeElementPointer &sel, int i)
 {
-    char *name = strdup(gmx::formatString("SubExpr %d", i).c_str());
-
-    sel->name        = name;
-    sel->u.cgrp.name = name;
+    std::string name(gmx::formatString("SubExpr %d", i));
+    sel->setName(name);
+    sel->u.cgrp.name = strdup(name.c_str());
 }
 
 /*! \brief
@@ -736,16 +736,8 @@ extract_item_subselections(const SelectionTreeElementPointer &sel,
         {
             subexpr = subexpr->next;
         }
-        /* The latter check excludes variable references.
-         * It also excludes subexpression elements that have already been
-         * processed, because they are given a name when they are first
-         * encountered.
-         * TODO: There should be a more robust mechanism (probably a dedicated
-         * flag) for detecting parser-generated subexpressions than relying on
-         * a NULL name field. Additional TODO: This mechanism doesn't seem to
-         * be currently used. */
-        if (child->type == SEL_SUBEXPRREF && (child->child->type != SEL_SUBEXPR
-                                              || child->child->name == NULL))
+        /* The latter check excludes variable references. */
+        if (child->type == SEL_SUBEXPRREF && child->child->type != SEL_SUBEXPR)
         {
             /* Create the root element for the subexpression */
             if (!root)
@@ -758,23 +750,20 @@ extract_item_subselections(const SelectionTreeElementPointer &sel,
                 subexpr->next.reset(new SelectionTreeElement(SEL_ROOT));
                 subexpr = subexpr->next;
             }
-            /* Create the subexpression element and/or
+            /* Create the subexpression element and
              * move the actual subexpression under the created element. */
-            if (child->child->type != SEL_SUBEXPR)
-            {
-                subexpr->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
-                _gmx_selelem_set_vtype(subexpr->child, child->v.type);
-                subexpr->child->child = child->child;
-                child->child          = subexpr->child;
-            }
-            else
-            {
-                subexpr->child = child->child;
-            }
+            subexpr->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
+            _gmx_selelem_set_vtype(subexpr->child, child->v.type);
+            subexpr->child->child = child->child;
+            child->child          = subexpr->child;
             create_subexpression_name(subexpr->child, ++*subexprn);
             /* Set the flags for the created elements */
             subexpr->flags          |= (child->flags & SEL_VALFLAGMASK);
             subexpr->child->flags   |= (child->flags & SEL_VALFLAGMASK);
+        }
+        if (child->type == SEL_SUBEXPRREF)
+        {
+            child->setName(child->child->name());
         }
         child = child->next;
     }
@@ -1117,7 +1106,6 @@ init_item_evalfunc(const SelectionTreeElementPointer &sel)
             break;
 
         case SEL_SUBEXPRREF:
-            sel->name     = sel->child->name;
             sel->evaluate = ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                              ? &_gmx_sel_evaluate_subexprref_simple
                              : &_gmx_sel_evaluate_subexprref);
@@ -1624,7 +1612,6 @@ release_subexpr_memory(const SelectionTreeElementPointer &sel)
         if (subexpr.use_count() == 2)
         {
             release_subexpr_memory(subexpr);
-            subexpr->name = NULL;
             // Free children.
             subexpr->child.reset();
             subexpr->freeValues();
@@ -1679,7 +1666,6 @@ make_static(const SelectionTreeElementPointer &sel)
     /* Free the expression data as it is no longer needed */
     sel->freeExpressionData();
     /* Make the item static */
-    sel->name            = NULL;
     sel->type            = SEL_CONST;
     sel->evaluate        = NULL;
     sel->cdata->evaluate = NULL;
