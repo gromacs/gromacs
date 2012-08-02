@@ -280,7 +280,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
 
     /* When we get here all misc operations issues in the local stream are done,
        so we record that in the local stream and wait for it in the nonlocal one. */
-    if (cu_nb->dd_run)
+    if (cu_nb->bUseTwoStreams)
     {
         if (iloc == eintLocal)
         {
@@ -438,7 +438,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 
     /* With DD the local D2H transfer can only start after the non-local 
        has been launched. */
-    if (iloc == eintLocal && cu_nb->dd_run)
+    if (iloc == eintLocal && cu_nb->bUseTwoStreams)
     {
         stat = cudaStreamWaitEvent(stream, cu_nb->nonlocal_done, 0);
         CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");

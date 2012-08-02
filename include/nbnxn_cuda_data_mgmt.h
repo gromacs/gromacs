@@ -56,7 +56,8 @@ extern "C" {
 FUNC_QUALIFIER
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
-                     gmx_bool bDomDec) FUNC_TERM
+                     /* true of both local and non-local are don on GPU */
+                     gmx_bool bLocalAndNonlocal) FUNC_TERM
 
 /*! Initilizes simulation constant data. */
 FUNC_QUALIFIER
@@ -93,8 +94,7 @@ void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb,
 /*! Frees all GPU resources used for the nonbonded calculations. */
 FUNC_QUALIFIER
 void nbnxn_cuda_free(FILE *fplog,
-                     nbnxn_cuda_ptr_t cu_nb,
-                     gmx_bool bDomDec) FUNC_TERM
+                     nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
 
 /*! Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 FUNC_QUALIFIER

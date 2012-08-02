@@ -158,7 +158,7 @@ struct nbnxn_cuda
     cu_dev_info_t   *dev_info;      /* CUDA device information                              */
     int             kernel_ver;     /* The version of the kernel to be executed on the device
                                        in use, possible values: eNbnxnCuK* */
-    gmx_bool        dd_run;         /* true if running with domain-decomposition            */
+    gmx_bool        bUseTwoStreams; /* true if doing both local/non-local NB work on GPU */
     gmx_bool        use_stream_sync; /* if true use memory polling-based waiting instead 
                                         of cudaStreamSynchronize                            */
     cu_atomdata_t   *atdat;         /* atom data */
@@ -171,7 +171,11 @@ struct nbnxn_cuda
     /* events used for synchronization */
     cudaEvent_t    nonlocal_done, misc_ops_done;
 
-    gmx_bool        do_time;        /* true if CUDA event-based timing is enabled, off with DD */
+    /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
+     * concurrrent streams, so we won't time if both l/nl work is done on GPUs.
+     * Timer init/uninit is still done even with timing off so only the condition
+     * setting do_time needs to be change if this CUDA "feature" gets fixed. */
+    gmx_bool        do_time;        /* True if event-based timing is enabled.               */
     cu_timers_t     *timers;        /* CUDA event-based timers.                             */
     wallclock_gpu_t *timings;       /* Timing data.                                         */
 };

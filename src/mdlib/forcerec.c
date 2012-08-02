@@ -1930,6 +1930,7 @@ static void init_nb_verlet(FILE *fp,
     nonbonded_verlet_t *nbv;
     int  i;
     char *env;
+    gmx_bool bHybridGPURun = FALSE;
 
     gmx_nbat_alloc_t *nb_alloc;
     gmx_nbat_free_t  *nb_free;
@@ -1959,6 +1960,8 @@ static void init_nb_verlet(FILE *fp,
                 pick_nbnxn_kernel(fp, cr, fr->use_acceleration, NULL,
                                   NULL,
                                   &nbv->grp[i].kernel_type);
+
+                bHybridGPURun = TRUE;
             }
             else
             {
@@ -1970,8 +1973,9 @@ static void init_nb_verlet(FILE *fp,
 
     if (nbv->useGPU)
     {
-        /* need to move this  */
-        nbnxn_cuda_init(fp, &(nbv->cu_nbv), DOMAINDECOMP(cr));
+        /* init the NxN GPU data; the last argument tells whether we'll have
+         * both local and non-local NB calculation on GPU */
+        nbnxn_cuda_init(fp, &(nbv->cu_nbv), (nbv->nloc > 1) && !bHybridGPURun);
         env = getenv("GMX_NB_MIN_CI");
         if (env)
         {

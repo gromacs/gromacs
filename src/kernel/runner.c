@@ -1344,7 +1344,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
 
         /* free GPU memory and uninitialize GPU */
-        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv, DOMAINDECOMP(cr));
+        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {

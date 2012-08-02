@@ -278,7 +278,7 @@ static void init_plist(cu_plist_t *pl)
 }
 
 /*! Initilizes the timer data structure. */
-static void init_timers(cu_timers_t *t, gmx_bool bDomDec)
+static void init_timers(cu_timers_t *t, gmx_bool bUseTwoStreams)
 {
     cudaError_t stat;
     int eventflags = ( USE_CUDA_EVENT_BLOCKING_SYNC ? cudaEventBlockingSync: cudaEventDefault );
@@ -289,7 +289,7 @@ static void init_timers(cu_timers_t *t, gmx_bool bDomDec)
     CU_RET_ERR(stat, "cudaEventCreate on stop_atdat failed");
 
     /* The non-local counters/stream (second in the array) are needed only with DD. */
-    for (int i = 0; i <= bDomDec ? 1 : 0; i++)
+    for (int i = 0; i <= bUseTwoStreams ? 1 : 0; i++)
     {
         stat = cudaEventCreateWithFlags(&(t->start_nb_k[i]), eventflags);
         CU_RET_ERR(stat, "cudaEventCreate on start_nb_k failed");
@@ -336,7 +336,7 @@ static void init_timings(wallclock_gpu_t *t)
 
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
-                     gmx_bool bDomDec)
+                     gmx_bool bLocalAndNonlocal)
 {
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
@@ -351,12 +351,12 @@ void nbnxn_cuda_init(FILE *fplog,
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
     snew(nb->plist[eintLocal], 1);
-    if (bDomDec)
+    if (bLocalAndNonlocal)
     {
         snew(nb->plist[eintNonlocal], 1);
     }
 
-    nb->dd_run = bDomDec;
+    nb->bUseTwoStreams = bLocalAndNonlocal;
 
     snew(nb->timers, 1);
     snew(nb->timings, 1);
@@ -371,7 +371,7 @@ void nbnxn_cuda_init(FILE *fplog,
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
     CU_RET_ERR(stat, "cudaStreamCreate on stream[eintLocal] failed");
-    if (bDomDec)
+    if (nb->bUseTwoStreams)
     {
         init_plist(nb->plist[eintNonlocal]);
         stat = cudaStreamCreate(&nb->stream[eintNonlocal]);
@@ -510,11 +510,12 @@ void nbnxn_cuda_init(FILE *fplog,
        - with the polling waiting hack (without cudaStreamSynchronize);
        - when turned off by GMX_DISABLE_CUDA_TIMING.
      */
-    nb->do_time = (!bDomDec && nb->use_stream_sync && (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
+    nb->do_time = (!nb->bUseTwoStreams && nb->use_stream_sync &&
+                   (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
 
     if (nb->do_time)
     {
-        init_timers(nb->timers, bDomDec);
+        init_timers(nb->timers, nb->bUseTwoStreams);
         init_timings(nb->timings);
     }
 
@@ -817,7 +818,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb, gmx_bool bDomDec)
+void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
 {
     cudaError_t     stat;
     cu_atomdata_t   *atdat;
@@ -852,7 +853,7 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb, gmx_bool bDomDec)
         CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_atdat");
 
         /* The non-local counters/stream (second in the array) are needed only with DD. */
-        for (int i = 0; i <= bDomDec ? 1 : 0; i++)
+        for (int i = 0; i <= (cu_nb->bUseTwoStreams ? 1 : 0); i++)
         {
             stat = cudaEventDestroy(timers->start_nb_k[i]);
             CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_k");
@@ -899,7 +900,7 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb, gmx_bool bDomDec)
     cu_free_buffered(plist->sci, &plist->nsci, &plist->sci_nalloc);
     cu_free_buffered(plist->cj4, &plist->ncj4, &plist->cj4_nalloc);
     cu_free_buffered(plist->excl, &plist->nexcl, &plist->excl_nalloc);
-    if (bDomDec)
+    if (cu_nb->bUseTwoStreams)
     {
         cu_free_buffered(plist_nl->sci, &plist_nl->nsci, &plist_nl->sci_nalloc);
         cu_free_buffered(plist_nl->cj4, &plist_nl->ncj4, &plist_nl->cj4_nalloc);
