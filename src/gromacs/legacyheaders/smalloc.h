@@ -197,7 +197,7 @@ void _snew_aligned(const char *name, const char *file, int line,
 #define srealloc(ptr, size) _srealloc(#ptr,__FILE__,__LINE__,(ptr),(size))
 #define snew_aligned(ptr,nelem,alignment) _snew_aligned(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)),alignment)
 
-#else
+#else /* __cplusplus */
 
 /* These macros work in C, not in C++ */
 #define snew(ptr,nelem) (ptr)=save_calloc(#ptr,__FILE__,__LINE__,\
@@ -210,12 +210,57 @@ void _snew_aligned(const char *name, const char *file, int line,
 #define srealloc(ptr,size) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
 			(ptr),size,1)
 #define snew_aligned(ptr,nelem,alignment) (ptr)=save_calloc_aligned(#ptr,__FILE__,__LINE__,(nelem),sizeof(*(ptr)),alignment)
-#endif
+#endif /* __cplusplus */
 
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
 
 /* call this ONLY with a pointer obtained through snew_aligned or 
    smalloc_aligned: */
 #define sfree_aligned(ptr) save_free_aligned(#ptr,__FILE__,__LINE__,(ptr))
+
+#ifdef __cplusplus
+
+#include "../utility/common.h"
+
+namespace gmx
+{
+
+/*! \brief
+ * Stripped-down version of scoped_ptr that uses sfree().
+ *
+ * Currently only implements constructor from a pointer value and destructor;
+ * other operations can be added if they become necessary.
+ *
+ * This is currently in smalloc.h, as this header also declares sfree().
+ * If more flexible guards/smart pointers are needed for C pointers, this class
+ * should be moved to a separate header under src/gromacs/utility/ together
+ * with that more flexible implementation.
+ * Currently, boost::shared_ptr is used in a few locations, but is not suitable
+ * for all cases.  A scoped_ptr with deleter support would be a general enough
+ * implementation for all uses.  C++11 unique_ptr has this, but for non-C++11
+ * suppoer we need something else.
+ *
+ * Methods in this class do not throw.
+ */
+class scoped_ptr_sfree
+{
+    public:
+        /*! \brief
+         * Initializes a scoped_ptr that frees \p ptr on scope exit.
+         *
+         * \param[in] ptr  Pointer to use for initialization.
+         */
+        explicit scoped_ptr_sfree(void *ptr) : ptr_(ptr) {}
+        //! Frees the pointer passed to the constructor.
+        ~scoped_ptr_sfree() { sfree(ptr_); }
+
+    private:
+        void                   *ptr_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(scoped_ptr_sfree);
+};
+
+} // namespace gmx
+#endif /* __cplusplus */
 
 #endif	/* _smalloc_h */
