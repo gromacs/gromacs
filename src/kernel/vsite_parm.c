@@ -1020,8 +1020,11 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     if ( bKeep ) {
       if(debug)fprintf(debug," keeping");
       /* now copy the bond to the new array */
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      if (kept_i!=i)
+      {
+          memcpy(&(ps->param[kept_i]),
+             &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      }
       kept_i++;
     } else if (IS_CHEMBOND(cftype)) {
       srenew(plist[F_CONNBONDS].param,plist[F_CONNBONDS].nr+1);
