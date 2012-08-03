@@ -1020,13 +1020,11 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     if ( bKeep ) {
       if(debug)fprintf(debug," keeping");
       /* now copy the bond to the new array */
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      ps->param[kept_i] = ps->param[i];
       kept_i++;
     } else if (IS_CHEMBOND(cftype)) {
       srenew(plist[F_CONNBONDS].param,plist[F_CONNBONDS].nr+1);
-      memcpy(&(plist[F_CONNBONDS].param[plist[F_CONNBONDS].nr]),
-	     &(ps->param[i]),(size_t)sizeof(plist[F_CONNBONDS].param[0]));
+      plist[F_CONNBONDS].param[plist[F_CONNBONDS].nr] = ps->param[i];
       plist[F_CONNBONDS].nr++;
       nconverted++;
     } else
@@ -1134,10 +1132,9 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
       }
     
     if ( bKeep ) {
-      /* now copy the angle to the new array */
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
-      kept_i++;
+        /* now copy the angle to the new array */
+        ps->param[kept_i] = ps->param[i];
+        kept_i++;
     }
   }
   
@@ -1218,9 +1215,8 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     }
       
     if ( bKeep ) {
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
-      kept_i++;
+        ps->param[kept_i] = ps->param[i];
+        kept_i++;
     }
   }
 
