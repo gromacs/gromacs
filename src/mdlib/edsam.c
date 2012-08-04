@@ -2120,13 +2120,16 @@ static int ed_constraints(gmx_bool edtype, t_edpar *edi)
  * umbrella sampling simulations. */
 static void copyEvecReference(t_eigvec* floodvecs)
 {
-	int i;
+    int i;
 
 
-	for (i=0; i<floodvecs->neig; i++)
-	{
-		floodvecs->refproj0[i] = floodvecs->refproj[i];
-	}
+    if (NULL==floodvecs->refproj0)
+        snew(floodvecs->refproj0, floodvecs->neig);
+
+    for (i=0; i<floodvecs->neig; i++)
+    {
+        floodvecs->refproj0[i] = floodvecs->refproj[i];
+    }
 }
 
 
