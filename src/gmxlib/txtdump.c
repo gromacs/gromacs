@@ -1540,30 +1540,37 @@ void pr_top(FILE *fp,int indent,const char *title,t_topology *top, gmx_bool bSho
   }
 }
 
-void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
+void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *tpxheader)
 {
   char buf[22];
     
-  if (available(fp,sh,indent,title))
+  if (available(fp,tpxheader,indent,title))
     {
       indent=pr_title(fp,indent,title);
       pr_indent(fp,indent);
-      fprintf(fp,"bIr    = %spresent\n",sh->bIr?"":"not ");
+      fprintf(fp,"bIr    = %spresent\n",tpxheader->bIr?"":"not ");
       pr_indent(fp,indent);
-      fprintf(fp,"bBox   = %spresent\n",sh->bBox?"":"not ");
+      fprintf(fp,"bBox   = %spresent\n",tpxheader->bBox?"":"not ");
       pr_indent(fp,indent);
-      fprintf(fp,"bTop   = %spresent\n",sh->bTop?"":"not ");
+      fprintf(fp,"bTop   = %spresent\n",tpxheader->bTop?"":"not ");
       pr_indent(fp,indent);
-      fprintf(fp,"bX     = %spresent\n",sh->bX?"":"not ");
+      fprintf(fp,"bX     = %spresent\n",tpxheader->bX?"":"not ");
       pr_indent(fp,indent);
-      fprintf(fp,"bV     = %spresent\n",sh->bV?"":"not ");
+      fprintf(fp,"bV     = %spresent\n",tpxheader->bV?"":"not ");
       pr_indent(fp,indent);
-      fprintf(fp,"bF     = %spresent\n",sh->bF?"":"not ");
+      fprintf(fp,"bF     = %spresent\n",tpxheader->bF?"":"not ");
       
       pr_indent(fp,indent);
-      fprintf(fp,"natoms = %d\n",sh->natoms);
+      fprintf(fp,"natoms = %d\n",tpxheader->natoms);
       pr_indent(fp,indent);
-      fprintf(fp,"lambda = %e\n",sh->lambda);
+      fprintf(fp,"lambda = %e\n",tpxheader->lambda);
+
+      pr_indent(fp,indent);
+      fprintf(fp,"tpx file version = %d\n",tpxheader->file_version);
+      pr_indent(fp,indent);
+      fprintf(fp,"tpx topology version = %d\n",tpxheader->file_generation);
+      pr_indent(fp,indent);
+      fprintf(fp,"tpx file version tag = %s\n",tpxheader->file_tag);
     }
 }
 

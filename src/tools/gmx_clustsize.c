@@ -84,12 +84,12 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   gmx_bool    bSame,bTPRwarn=TRUE;
   /* Topology stuff */
   t_trxframe  fr;
-  t_tpxheader tpxh;
+  t_tpxheader tpxheader;
   gmx_mtop_t *mtop=NULL;
   int     ePBC=-1;
   t_block *mols=NULL;
   t_atom  *atom;
-  int     version,generation,ii,jj,nsame;
+  int     ii,jj,nsame;
   real    temp,tfac;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
@@ -115,10 +115,10 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 
   if (tpr) {  
     snew(mtop,1);
-    read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
-    if (tpxh.natoms != natoms) 
+    read_tpxheader(tpr,&tpxheader,TRUE);
+    if (tpxheader.natoms != natoms)
       gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
-		tpxh.natoms,natoms);
+		tpxheader.natoms,natoms);
     ePBC = read_tpx(tpr,NULL,NULL,&natoms,NULL,NULL,NULL,mtop);
   }
   if (ndf <= -1)

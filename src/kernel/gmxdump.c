@@ -71,19 +71,19 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
   t_state     state;
   rvec        *f=NULL;
   t_inputrec  ir;
-  t_tpxheader tpx;
+  t_tpxheader tpxheader;
   gmx_mtop_t  mtop;
   gmx_groups_t *groups;
   t_topology  top;
 
-  read_tpxheader(fn,&tpx,TRUE,NULL,NULL);
+  read_tpxheader(fn,&tpxheader,TRUE);
 
   read_tpx_state(fn,
-		 tpx.bIr  ? &ir : NULL,
-		 &state,tpx.bF ? f : NULL,
-		 tpx.bTop ? &mtop: NULL);
+		 tpxheader.bIr  ? &ir : NULL,
+		 &state,tpxheader.bF ? f : NULL,
+		 tpxheader.bTop ? &mtop: NULL);
   
-  if (mdpfn && tpx.bIr) {
+  if (mdpfn && tpxheader.bIr) {
     gp = gmx_fio_fopen(mdpfn,"w");
     pr_inputrec(gp,0,NULL,&(ir),TRUE);
     gmx_fio_fclose(gp);
@@ -93,32 +93,32 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
     if (bSysTop)
       top = gmx_mtop_t_to_t_topology(&mtop);
 
-    if (available(stdout,&tpx,0,fn)) {
+    if (available(stdout,&tpxheader,0,fn)) {
       indent=0;
       indent=pr_title(stdout,indent,fn);
-      pr_inputrec(stdout,0,"inputrec",tpx.bIr ? &(ir) : NULL,FALSE);
+      pr_inputrec(stdout,0,"inputrec",tpxheader.bIr ? &(ir) : NULL,FALSE);
       
       indent = 0;
-      pr_header(stdout,indent,"header",&(tpx));
+      pr_header(stdout,indent,"header",&(tpxheader));
       
       if (!bSysTop)
 	pr_mtop(stdout,indent,"topology",&(mtop),bShowNumbers);
       else
 	pr_top(stdout,indent,"topology",&(top),bShowNumbers);
 
-      pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
-      pr_rvecs(stdout,indent,"box_rel",tpx.bBox ? state.box_rel : NULL,DIM);
-      pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
-      pr_rvecs(stdout,indent,"pres_prev",tpx.bBox ? state.pres_prev : NULL,DIM);
-      pr_rvecs(stdout,indent,"svir_prev",tpx.bBox ? state.svir_prev : NULL,DIM);
-      pr_rvecs(stdout,indent,"fvir_prev",tpx.bBox ? state.fvir_prev : NULL,DIM);
+      pr_rvecs(stdout,indent,"box",tpxheader.bBox ? state.box : NULL,DIM);
+      pr_rvecs(stdout,indent,"box_rel",tpxheader.bBox ? state.box_rel : NULL,DIM);
+      pr_rvecs(stdout,indent,"boxv",tpxheader.bBox ? state.boxv : NULL,DIM);
+      pr_rvecs(stdout,indent,"pres_prev",tpxheader.bBox ? state.pres_prev : NULL,DIM);
+      pr_rvecs(stdout,indent,"svir_prev",tpxheader.bBox ? state.svir_prev : NULL,DIM);
+      pr_rvecs(stdout,indent,"fvir_prev",tpxheader.bBox ? state.fvir_prev : NULL,DIM);
       /* leave nosehoover_xi in for now to match the tpr version */
       pr_doubles(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
       /*pr_doubles(stdout,indent,"nosehoover_vxi",state.nosehoover_vxi,state.ngtc);*/
       /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
-      pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
-      pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
-      if (tpx.bF) {
+      pr_rvecs(stdout,indent,"x",tpxheader.bX ? state.x : NULL,state.natoms);
+      pr_rvecs(stdout,indent,"v",tpxheader.bV ? state.v : NULL,state.natoms);
+      if (tpxheader.bF) {
 	pr_rvecs(stdout,indent,"f",f,state.natoms);
       }
     }

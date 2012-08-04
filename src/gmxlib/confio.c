@@ -1354,10 +1354,10 @@ void get_stx_coordnum(const char *infile,int *natoms)
   case efTPA:
   case efTPB:
   case efTPR: {
-    t_tpxheader tpx;
+    t_tpxheader tpxheader;
     
-    read_tpxheader(infile,&tpx,TRUE,&tpxver,&tpxgen);
-    *natoms = tpx.natoms;
+    read_tpxheader(infile,&tpxheader,TRUE);
+    *natoms = tpxheader.natoms;
     break;
   }
   default:
