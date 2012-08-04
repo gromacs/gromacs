@@ -254,7 +254,7 @@ int main(int argc,char *argv[])
   FILE        *fp;
   t_inputrec  *ir;
   t_topology  top;
-  t_tpxheader tpx;
+  t_tpxheader tpxheader;
   t_nrnb      nrnb;
   t_nsborder  *nsb;
   t_forcerec  *fr;
@@ -298,8 +298,8 @@ int main(int argc,char *argv[])
   
   if (MASTER(cr)) {
     /* Read tpr file etc. */
-    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,FALSE,NULL,NULL);
-    snew(x,tpx.natoms);
+    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpxheader,FALSE);
+    snew(x,tpxheader.natoms);
     read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,ir,
 	     box,&natoms,x,NULL,NULL,&top);
     /* Charges */

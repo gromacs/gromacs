@@ -176,27 +176,27 @@ void set_file(t_x11 *x11,t_manager *man,const char *trajectory,
 {
   gmx_atomprop_t aps;
   char         buf[256],quote[256];
-  t_tpxheader  sh;
+  t_tpxheader  tpxheader;
   t_atoms      *at;
   gmx_bool         *bB;
   int          i,idum;
 
-  read_tpxheader(status,&sh,TRUE,NULL,NULL);
-  snew(man->ix,sh.natoms);
-  snew(man->zz,sh.natoms);
-  snew(man->col,sh.natoms);
-  snew(man->size,sh.natoms);
-  snew(man->vdw,sh.natoms);
-  snew(man->bLabel,sh.natoms);
-  snew(man->bVis,sh.natoms);
-  for(i=0; (i<sh.natoms); i++)
+  read_tpxheader(status,&tpxheader,TRUE);
+  snew(man->ix,tpxheader.natoms);
+  snew(man->zz,tpxheader.natoms);
+  snew(man->col,tpxheader.natoms);
+  snew(man->size,tpxheader.natoms);
+  snew(man->vdw,tpxheader.natoms);
+  snew(man->bLabel,tpxheader.natoms);
+  snew(man->bVis,tpxheader.natoms);
+  for(i=0; (i<tpxheader.natoms); i++)
     man->bVis[i]=FALSE;
 
   man->bPbc=FALSE;
 
-  snew(man->szLab,sh.natoms);
-  snew(man->bHydro,sh.natoms);
-  snew(bB,sh.natoms);
+  snew(man->szLab,tpxheader.natoms);
+  snew(man->bHydro,tpxheader.natoms);
+  snew(bB,tpxheader.natoms);
   read_tpx_top(status,NULL,man->box,&man->natom,NULL,NULL,NULL,&man->top);
   man->gpbc = gmx_rmpbc_init(&man->top.idef,-1,man->natom,man->box);
   

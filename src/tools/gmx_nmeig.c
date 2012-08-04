@@ -320,8 +320,7 @@ int gmx_nmeig(int argc,char *argv[])
   int        i,j,k,l,d,gnx;
   gmx_bool   bSuck;
   atom_id    *index;
-  t_tpxheader tpx;
-  int        version,generation;
+  t_tpxheader tpxheader;
   real       value,omega,nu;
   real       factor_gmx_to_omega2;
   real       factor_omega_to_wavenumber;
@@ -354,8 +353,8 @@ int gmx_nmeig(int argc,char *argv[])
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   /* Read tpr file for volume and number of harmonic terms */
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,TRUE,&version,&generation);
-  snew(top_x,tpx.natoms);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpxheader,TRUE);
+  snew(top_x,tpxheader.natoms);
   
   read_tpx(ftp2fn(efTPX,NFILE,fnm),NULL,box,&natoms,
            top_x,NULL,NULL,&mtop);
