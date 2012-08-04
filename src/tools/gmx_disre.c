@@ -577,7 +577,7 @@ int gmx_disre(int argc,char *argv[])
   };
   
   FILE        *out=NULL,*aver=NULL,*numv=NULL,*maxxv=NULL,*xvg=NULL;
-  t_tpxheader header;
+  t_tpxheader tpxheader;
   t_inputrec  ir;
   gmx_mtop_t  mtop;
   rvec        *xtop;
@@ -634,8 +634,8 @@ int gmx_disre(int argc,char *argv[])
   if (ntop)
     init5(ntop);
   
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header,FALSE,NULL,NULL);
-  snew(xtop,header.natoms);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpxheader,FALSE);
+  snew(xtop,tpxheader.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&ir,box,&ntopatoms,xtop,NULL,NULL,&mtop);
   bPDB = opt2bSet("-q",NFILE,fnm);
   if (bPDB) {

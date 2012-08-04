@@ -203,7 +203,6 @@ int gmx_rmsf(int argc,char *argv[])
   int          step,nre,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms;
   
-  t_tpxheader  header;
   t_inputrec   ir;
   t_topology   top;
   int          ePBC;

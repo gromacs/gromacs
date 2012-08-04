@@ -132,7 +132,6 @@ static void tpx2params(FILE *fp,t_inputrec *ir)
 static void tpx2methods(const char *tpx,const char *tex)
 {
   FILE         *fp;
-  t_tpxheader sh;
   t_inputrec  ir;
   t_state     state;
   gmx_mtop_t  mtop;

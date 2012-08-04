@@ -53,6 +53,7 @@
 #include "enxio.h"
 #include "mtop_util.h"
 #include "string2.h"
+#include "maths.h"
 
 static void cmp_int(FILE *fp,const char *s,int index,int i1,int i2)
 {
@@ -129,30 +130,97 @@ static void cmp_str(FILE *fp, const char *s, int index,
   }
 }
 
+/* Use to compare reals that were introducted at some point. */
+static void cmp_str_new(FILE *fp, const char *s, int index,
+                        const char *s1, const char *s2,
+                        gmx_bool bNew1, gmx_bool bNew2)
+{
+    if (!(bNew1 || bNew2))
+    {
+        /* Parameter was new in neither version. */
+        cmp_str(fp, s, index, s1, s2);
+    }
+    else if (bNew1 || bNew2)
+    {
+        /* Parameter was new in exactly one version. */
+        const char *newstr = "<new feature>";
+        const char *one = bNew1 ? newstr : s1;
+        const char *two = bNew1 ? s2 : newstr;
+        if (index != -1)
+        {
+            fprintf(fp,"%s[%d] (%s - %s)\n",s,index,one,two);
+        }
+        else
+        {
+            fprintf(fp,"%s (%s - %s)\n",s,one,two);
+        }
+    }
+}
+
 static gmx_bool equal_real(real i1,real i2,real ftol,real abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
+    return ( gmx_within_tol(i1, i2, ftol) || fabs(i1-i2)<=abstol );
 }
 
 static gmx_bool equal_float(float i1,float i2,float ftol,float abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
+    return ( gmx_within_tol(i1, i2, ftol) || fabsf(i1-i2)<=abstol );
 }
 
 static gmx_bool equal_double(double i1,double i2,real ftol,real abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
+    return ( gmx_within_tol(i1, i2, ftol) || fabs(i1-i2)<=abstol );
 }
 
 static void 
 cmp_real(FILE *fp,const char *s,int index,real i1,real i2,real ftol,real abstol)
 {
-  if (!equal_real(i1,i2,ftol,abstol)) {
-    if (index != -1)
-      fprintf(fp,"%s[%2d] (%e - %e)\n",s,index,i1,i2);
+    if(!equal_real(i1,i2,ftol,abstol))
+    {
+        if (index != -1)
+        {
+            fprintf(fp,"%s[%2d] (%e - %e)\n",s,index,i1,i2);
+        }
+        else
+        {
+            fprintf(fp,"%s (%e - %e)\n",s,i1,i2);
+        }
+    }
+}
+
+/* Use to compare reals that have been made obsolete at some point,
+ * but are still in the data structures for backwards
+ * compatibility. */
+static void
+cmp_real_obsolete(FILE *fp,const char *s,int index,
+                  real i1,real i2,real ftol,real abstol,
+                  gmx_bool bObsolete1, gmx_bool bObsolete2)
+{
+    if (!(bObsolete1 || bObsolete2))
+    {
+        /* Parameter was obsolete in neither version. */
+        cmp_real(fp, s, index, i1, i2, ftol, abstol);
+    }
+    else if(bObsolete1 || bObsolete2)
+    {
+        /* Parameter was obsolete in exactly one version. */
+        char valbuf[256], *obsoletestr = "<obsolete feature>";
+        char *one = bObsolete1 ? obsoletestr : valbuf;
+        char *two = bObsolete1 ? valbuf : obsoletestr;
+        snprintf(valbuf, 256, "%e", bObsolete1 ? i2 : i1);
+        if (index != -1)
+        {
+            fprintf(fp,"%s[%2d] (%s - %s)\n",s,index,one,two);
+        }
+        else
+        {
+            fprintf(fp,"%s (%s - %s)\n",s,one,two);
+        }
+    }
     else
-      fprintf(fp,"%s (%e - %e)\n",s,i1,i2);
-  }
+    {
+        /* Parameter was obsolete in both versions. */
+    }
 }
 
 static void 
@@ -570,7 +638,36 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_double(fp,"inputrec->dh_hist_spacing",-1,fep1->dh_hist_spacing,fep2->dh_hist_spacing,ftol,abstol);
 }
 
-static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, real abstol)
+static void
+cmp_tpxheader(FILE *fp,
+              t_tpxheader *tpxheader1,
+              t_tpxheader *tpxheader2)
+{
+    fprintf(fp,"Comparing tpx file header\n");
+    cmp_bool(fp,"tpxheader->bIr",            -1,tpxheader1->bIr,            tpxheader2->bIr);
+    cmp_bool(fp,"tpxheader->bBox",           -1,tpxheader1->bBox,           tpxheader2->bBox);
+    cmp_bool(fp,"tpxheader->bTop",           -1,tpxheader1->bTop,           tpxheader2->bTop);
+    cmp_bool(fp,"tpxheader->bX",             -1,tpxheader1->bX,             tpxheader2->bX);
+    cmp_bool(fp,"tpxheader->bV",             -1,tpxheader1->bV,             tpxheader2->bV);
+    cmp_bool(fp,"tpxheader->bF",             -1,tpxheader1->bF,             tpxheader2->bF);
+    cmp_int(fp, "tpxheader->natoms",         -1,tpxheader1->natoms,         tpxheader2->natoms);
+    cmp_int(fp, "tpxheader->ngtc",           -1,tpxheader1->ngtc,           tpxheader2->ngtc);
+    cmp_int(fp, "tpxheader->lambda",         -1,tpxheader1->lambda,         tpxheader2->lambda);
+    cmp_int(fp, "tpxheader->fep_state",      -1,tpxheader1->fep_state,      tpxheader2->fep_state);
+    cmp_int(fp, "tpxheader->file_version",   -1,tpxheader1->file_version,   tpxheader2->file_version);
+    cmp_int(fp, "tpxheader->file_generation",-1,tpxheader1->file_generation,tpxheader2->file_generation);
+    cmp_str_new(fp, "tpxheader->file_tag",   -1,tpxheader1->file_tag,       tpxheader2->file_tag,
+                tpxheader1->file_version >= 77, tpxheader2->file_version >= 77);
+}
+
+static void
+cmp_inputrec(FILE *fp,
+             t_inputrec *ir1,
+             t_inputrec *ir2,
+             t_tpxheader *tpxheader1,
+             t_tpxheader *tpxheader2,
+             real ftol,
+             real abstol)
 {
   fprintf(fp,"comparing inputrec\n");
 
@@ -687,7 +784,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_real(fp,"inputrec->orires_fc",-1,ir1->orires_fc,ir2->orires_fc,ftol,abstol);
   cmp_real(fp,"inputrec->orires_tau",-1,ir1->orires_tau,ir2->orires_tau,ftol,abstol);
   cmp_int(fp,"inputrec->nstorireout",-1,ir1->nstorireout,ir2->nstorireout);
-  cmp_real(fp,"inputrec->dihre_fc",-1,ir1->dihre_fc,ir2->dihre_fc,ftol,abstol);
+  cmp_real_obsolete(fp,"inputrec->dihre_fc",-1,ir1->dihre_fc,ir2->dihre_fc,ftol,abstol,
+                    tpxheader1->file_version < 79,tpxheader2->file_version < 79);
   cmp_real(fp,"inputrec->em_stepsize",-1,ir1->em_stepsize,ir2->em_stepsize,ftol,abstol);
   cmp_real(fp,"inputrec->em_tol",-1,ir1->em_tol,ir2->em_tol,ftol,abstol);
   cmp_int(fp,"inputrec->niter",-1,ir1->niter,ir2->niter);
@@ -798,7 +896,7 @@ void comp_tpx(const char *fn1,const char *fn2,
 	      gmx_bool bRMSD,real ftol,real abstol)
 {
   const char  *ff[2];
-  t_tpxheader sh[2];
+  t_tpxheader tpxheader[2];
   t_inputrec  ir[2];
   t_state     state[2];
   gmx_mtop_t  mtop[2];
@@ -807,11 +905,14 @@ void comp_tpx(const char *fn1,const char *fn2,
 
   ff[0]=fn1;
   ff[1]=fn2;
-  for(i=0; i<(fn2 ? 2 : 1); i++) {
-    read_tpx_state(ff[i],&(ir[i]),&state[i],NULL,&(mtop[i]));
+  for(i=0; i<(fn2 ? 2 : 1); i++)
+  {
+      read_tpxheader(ff[i], &tpxheader[i], FALSE);
+      read_tpx_state(ff[i],&(ir[i]),&state[i],NULL,&(mtop[i]));
   }
   if (fn2) {
-    cmp_inputrec(stdout,&ir[0],&ir[1],ftol,abstol);
+      cmp_tpxheader(stdout, &tpxheader[0], &tpxheader[1]);
+      cmp_inputrec(stdout,&ir[0],&ir[1], &tpxheader[0], &tpxheader[1], ftol,abstol);
     /* Convert gmx_mtop_t to t_topology.
      * We should implement direct mtop comparison,
      * but it might be useful to keep t_topology comparison as an option.

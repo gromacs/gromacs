@@ -182,7 +182,7 @@ int main(int argc,char *argv[])
 
   FILE        *fp;  
   t_topology  top;
-  t_tpxheader sh;
+  t_tpxheader tpxheader;
   t_inputrec  ir;
   t_iparams   *ip[2];
   int         cur=0;
@@ -199,10 +199,10 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-  /* Read initial topology and coordaintes etc. */
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&sh,TRUE,NULL,NULL);
-  snew(xx,sh.natoms);
-  snew(vv,sh.natoms);
+  /* Read initial topology and coordinates etc. */
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpxheader,TRUE);
+  snew(xx,tpxheader.natoms);
+  snew(vv,tpxheader.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,&natoms,
 	   xx,vv,NULL,&top);
 

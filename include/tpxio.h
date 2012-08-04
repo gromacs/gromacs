@@ -66,6 +66,10 @@ typedef struct
   real	lambda;		/* Current value of lambda			*/
   int   fep_state;      /* Current value of the alchemical state --
                          * not yet printed out.  */
+    int file_version;    /* tpx file format version */
+    int file_generation; /* tpx file topology format version */
+    char *file_tag;      /* tpx file format version tag string
+                          * (memory owned by itself) */
   /*a better decision will eventually (5.0 or later) need to be made
     on how to treat the alchemical state of the system, which can now
     vary through a simulation, and cannot be completely described
@@ -92,8 +96,7 @@ t_fileio *open_tpx(const char *fn, const char *mode);
 void close_tpx(t_fileio *fio);
 /*  Close the file corresponding to fio */
   
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
-                           int *version, int *generation);
+void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
 /* Read the header from a tpx file and then close it again.
  * By setting TopOnlyOK to true, it is possible to read future
  * versions too (we skip the changed inputrec), provided we havent

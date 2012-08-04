@@ -61,11 +61,11 @@ int main(int argc,char *argv[])
     read_xml(opt2fn("-r",NFILE,fnm),&step,&t,&lambda,&ir,
 	     box,&natoms,&x,&v,&f,&top);
   else {
-    t_tpxheader tpx;
+    t_tpxheader tpxheader;
     
-    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,FALSE);
-    snew(x,tpx.natoms);
-    snew(v,tpx.natoms);
+    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpxheader,FALSE);
+    snew(x,tpxheader.natoms);
+    snew(v,tpxheader.natoms);
     f = NULL;
     read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	     box,&natoms,x,v,f,&top);

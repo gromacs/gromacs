@@ -446,7 +446,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   FILE         *log;
   t_topology   top;
-  t_tpxheader  stath;
+  t_tpxheader  tpxheader;
   t_inputrec   ir;
   t_block      *excl;
   t_forcerec   *fr;
@@ -489,25 +489,25 @@ int main(int argc,char *argv[])
   
 
   /* Read topology and coordinates */
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&stath,FALSE);
-  snew(x,stath.natoms);
-  snew(f_sr,stath.natoms);
-  snew(f_excl,stath.natoms);
-  snew(f_four,stath.natoms);
-  snew(f_pppm,stath.natoms);
-  snew(f_pois,stath.natoms);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpxheader,FALSE);
+  snew(x,tpxheader.natoms);
+  snew(f_sr,tpxheader.natoms);
+  snew(f_excl,tpxheader.natoms);
+  snew(f_four,tpxheader.natoms);
+  snew(f_pppm,tpxheader.natoms);
+  snew(f_pois,tpxheader.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&natoms,x,NULL,NULL,&top);
   excl=&(top.atoms.excl);
   nmol=top.blocks[ebMOLS].nr;
 
   /* Allocate space for potential, charges and rho (charge density) */
-  snew(charge,stath.natoms);
-  snew(phi_f,stath.natoms);
-  snew(phi_p3m,stath.natoms);
-  snew(phi_pois,stath.natoms);
-  snew(phi_s,stath.natoms);
-  snew(rho,stath.natoms);
+  snew(charge,tpxheader.natoms);
+  snew(phi_f,tpxheader.natoms);
+  snew(phi_p3m,tpxheader.natoms);
+  snew(phi_pois,tpxheader.natoms);
+  snew(phi_s,tpxheader.natoms);
+  snew(rho,tpxheader.natoms);
   
   /* Set the charges */
   for(i=0; (i<natoms); i++)
