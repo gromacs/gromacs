@@ -52,8 +52,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
-#include "testutils/datapath.h"
 #include "testutils/testexceptions.h"
+#include "testutils/testfilemanager.h"
 
 namespace
 {
@@ -93,7 +93,7 @@ void setReferenceDataMode(ReferenceDataMode mode)
 
 std::string getReferenceDataPath()
 {
-    return TestFileManager::getTestFilePath("refdata");
+    return TestFileManager::getInputFilePath("refdata");
 }
 
 void initReferenceData(int *argc, char **argv)

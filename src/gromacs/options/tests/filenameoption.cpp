@@ -45,7 +45,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 
-#include "testutils/datapath.h"
+#include "testutils/testfilemanager.h"
 
 namespace
 {

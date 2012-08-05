@@ -50,8 +50,8 @@
 #include "gromacs/utility/flags.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "testutils/datapath.h"
 #include "testutils/refdata.h"
+#include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
 namespace
@@ -127,7 +127,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
     matrix  box;
 
     snew(top_, 1);
-    read_tps_conf(gmx::test::TestFileManager::getTestFilePath(filename).c_str(),
+    read_tps_conf(gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
                   title, top_, &ePBC, &xtop, NULL, box, FALSE);
 
     snew(frame_, 1);
@@ -354,7 +354,8 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
-    ASSERT_NO_THROW(sel_ = sc_.parseFromFile(gmx::test::TestFileManager::getTestFilePath("selfile.dat")));
+    ASSERT_NO_THROW(sel_ = sc_.parseFromFile(
+                gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel_.size());
     EXPECT_STREQ("resname RA RB", sel_[0].selectionText());

@@ -46,9 +46,9 @@
 #include "gromacs/utility/file.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/datapath.h"
 #include "testutils/datatest.h"
 #include "testutils/refdata.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -137,14 +137,14 @@ void
 AbstractTrajectoryAnalysisModuleTestFixture::setTopology(const char *filename)
 {
     impl_->cmdline_.append("-s");
-    impl_->cmdline_.append(TestFileManager::getTestFilePath(filename));
+    impl_->cmdline_.append(TestFileManager::getInputFilePath(filename));
 }
 
 void
 AbstractTrajectoryAnalysisModuleTestFixture::setTrajectory(const char *filename)
 {
     impl_->cmdline_.append("-f");
-    impl_->cmdline_.append(TestFileManager::getTestFilePath(filename));
+    impl_->cmdline_.append(TestFileManager::getInputFilePath(filename));
 }
 
 void
