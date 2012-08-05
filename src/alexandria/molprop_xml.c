@@ -708,7 +708,7 @@ void gmx_molprops_write(const char *fn,int nmolprop,gmx_molprop_t mpt[],
     }
     xmlSetDocCompressMode(doc,(int)bCompress);
     xmlIndentTreeOutput = 1;
-    if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",0) == 0)
+    if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",1) == 0)
         gmx_fatal(FARGS,"Saving file",fn);
     xmlFreeDoc(doc);
 }
