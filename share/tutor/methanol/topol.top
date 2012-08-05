@@ -1,9 +1,0 @@
-#include "gromos43a1.ff/forcefield.itp"
-#include "methanol.itp"
-
-[ system ]
-Pure Methanol - Yummie!
-
-[ molecules ]
-Methanol	216
-
