@@ -382,8 +382,16 @@ int gmx_nmeig(int argc,char *argv[])
     
   /* Memory for eigenvalues and eigenvectors (begin..end) */
   snew(eigenvalues,nrow);
+  if (NULL == eigenvalues)
+  {
+      gmx_fatal(FARGS, "Could not allocate memory for eigenvalues\n");
+  }
   snew(eigenvectors,nrow*(end-begin+1));
-       
+  if (NULL == eigenvectors)
+  {
+      gmx_fatal(FARGS, "Could not allocate memory for eigenvectors\n");
+  }
+
   /* If the Hessian is in sparse format we can calculate max (ndim-1) eigenvectors,
    * and they must start at the first one. If this is not valid we convert to full matrix
    * storage, but warn the user that we might run out of memory...

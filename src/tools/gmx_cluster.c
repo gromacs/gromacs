@@ -1021,12 +1021,12 @@ int gmx_cluster(int argc,char *argv[])
   const char   *fn,*trx_out_fn;
   t_clusters   clust;
   t_mat        *rms;
-  real         *eigval;
+  real         *eigenvalues;
   t_topology   top;
   int          ePBC;
   t_atoms      useatoms;
   t_matrix     *readmat=NULL;
-  real         *tmp;
+  real         *eigenvectors;
   
   int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
@@ -1353,16 +1353,24 @@ int gmx_cluster(int argc,char *argv[])
     break;
   case m_diagonalize:
     /* Do a diagonalization */
-      snew(eigval,nf);
-      snew(tmp,nf*nf);
-      memcpy(tmp,rms->mat[0],nf*nf*sizeof(real));
-      eigensolver(tmp,nf,0,nf,eigval,rms->mat[0]);
-      sfree(tmp);
+      snew(eigenvalues,nf);
+      if (NULL == eigenvalues)
+      {
+          gmx_fatal(FARGS, "Could not allocate memory for eigenvalues\n");
+      }
+      snew(eigenvectors,nf*nf);
+      if (NULL == eigenvectors)
+      {
+          gmx_fatal(FARGS, "Could not allocate memory for eigenvectors\n");
+      }
+      memcpy(eigenvectors,rms->mat[0],nf*nf*sizeof(real));
+      eigensolver(eigenvectors,nf,0,nf,eigenvalues,rms->mat[0]);
+      sfree(eigenvectors);
       
       fp = xvgropen(opt2fn("-ev",NFILE,fnm),"RMSD matrix Eigenvalues",
                     "Eigenvector index","Eigenvalues (nm\\S2\\N)",oenv);
       for(i=0; (i<nf); i++)
-          fprintf(fp,"%10d  %10g\n",i,eigval[i]);
+          fprintf(fp,"%10d  %10g\n",i,eigenvalues[i]);
           ffclose(fp);
       break;
   case m_monte_carlo:
