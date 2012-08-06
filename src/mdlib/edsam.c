@@ -2142,7 +2142,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
 {
     t_edpar *edi = NULL;    /* points to a single edi data set */
     int     numedis=0;      /* keep track of the number of ED data sets in edi file */
-    int     i,nr_edi;
+    int     i,nr_edi,avindex;
     rvec    *x_pbc  = NULL; /* positions of the whole MD system with pbc removed  */
     rvec    *xfit   = NULL; /* the positions which will be fitted to the reference structure  */
     rvec    *xstart = NULL; /* the positions which are subject to ED sampling */
@@ -2249,31 +2249,54 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             if (edi->star.nr > 0)
             {
                 fprintf(stderr, "ED: Fitting target structure to reference structure\n");
+
                 /* get translation & rotation for fit of target structure to reference structure */
                 fit_to_reference(edi->star.x, fit_transvec, fit_rotmat, edi);
                 /* do the fit */
-                translate_and_rotate(edi->star.x, edi->sav.nr, fit_transvec, fit_rotmat);
-                rad_project(edi, edi->star.x, &edi->vecs.radcon, cr);
+                translate_and_rotate(edi->star.x, edi->star.nr, fit_transvec, fit_rotmat);
+                if (edi->star.nr == edi->sav.nr)
+                {
+                    avindex = 0;
+                }
+                else /* edi->star.nr = edi->sref.nr + edi->sav.nr */
+                {
+                    /* The last sav.nr indices of the target structure correspond to
+                     * the average structure, which must be projected */
+                    avindex = edi->star.nr - edi->sav.nr;
+                }
+                rad_project(edi, &edi->star.x[avindex], &edi->vecs.radcon, cr);
             } else
                 rad_project(edi, xstart, &edi->vecs.radcon, cr);
 
             /* process structure that will serve as origin of expansion circle */
             if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 fprintf(stderr, "ED: Setting center of flooding potential (0 = average structure)\n");
+
             if (edi->sori.nr > 0)
             {
                 fprintf(stderr, "ED: Fitting origin structure to reference structure\n");
+
                 /* fit this structure to reference structure */
                 fit_to_reference(edi->sori.x, fit_transvec, fit_rotmat, edi);
                 /* do the fit */
-                translate_and_rotate(edi->sori.x, edi->sav.nr, fit_transvec, fit_rotmat);
-                rad_project(edi, edi->sori.x, &edi->vecs.radacc, cr);
-                rad_project(edi, edi->sori.x, &edi->vecs.radfix, cr);
+                translate_and_rotate(edi->sori.x, edi->sori.nr, fit_transvec, fit_rotmat);
+                if (edi->sori.nr == edi->sav.nr)
+                {
+                    avindex = 0;
+                }
+                else /* edi->sori.nr = edi->sref.nr + edi->sav.nr */
+                {
+                    /* For the projection, we need the last sav.nr indices of sori */
+                    avindex = edi->sori.nr - edi->sav.nr;
+                }
+
+                rad_project(edi, &edi->sori.x[avindex], &edi->vecs.radacc, cr);
+                rad_project(edi, &edi->sori.x[avindex], &edi->vecs.radfix, cr);
                 if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 {
                     fprintf(stderr, "ED: The ORIGIN structure will define the flooding potential center.\n");
                     /* Set center of flooding potential to the ORIGIN structure */
-                    rad_project(edi, edi->sori.x, &edi->flood.vecs, cr);
+                    rad_project(edi, &edi->sori.x[avindex], &edi->flood.vecs, cr);
                     /* We already know that no (moving) reference position was provided,
                      * therefore we can overwrite refproj[0]*/
                     copyEvecReference(&edi->flood.vecs);
