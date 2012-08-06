@@ -464,7 +464,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
         sscanf(env,"%d",&ir->nstlist);
     }
 
-    verletbuf_get_list_setup(&ls);
+    verletbuf_get_list_setup(TRUE,&ls);
 
     /* Allow rlist to make the list double the size of the cut-off sphere */
     rlist_inc = nbnxn_rlist_inc(NBNXN_GPU_CLUSTER_SIZE,mtop->natoms/det(box));
@@ -599,7 +599,7 @@ static void convert_to_verlet_scheme(FILE *fplog,
     {
         verletbuf_list_setup_t ls;
 
-        verletbuf_get_list_setup(&ls);
+        verletbuf_get_list_setup(FALSE,&ls);
         calc_verlet_buffer_size(mtop,box_vol,ir,ir->verletbuf_drift,&ls,
                                 NULL,&ir->rlist);
     }
@@ -1106,9 +1106,37 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
          * -- uncool, but there's no elegant workaround */
         gmx_bool bGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
 
+        /* Check if we need to update rlist for the current run setup */
+        if (inputrec->verletbuf_drift > 0)
+        {
+            verletbuf_list_setup_t ls;
+            real rlist_new;
+
+            /* Here we assume CPU acceleration is on. But as currently
+             * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
+             * and 4x2 gives a large buffer than 4x4, this is ok.
+             */
+            verletbuf_get_list_setup(bGPU,&ls);
+            
+            calc_verlet_buffer_size(mtop,det(box),inputrec,
+                                    inputrec->verletbuf_drift,&ls,
+                                    NULL,&rlist_new);
+            if (rlist_new != inputrec->rlist)
+            {
+                if (fplog != NULL)
+                {
+                    fprintf(fplog,"\nChanging rlist from %g to %g for non-bonded %dx%d atom kernels\n\n",
+                            inputrec->rlist,rlist_new,
+                            ls.cluster_size_i,ls.cluster_size_j);
+                }
+                inputrec->rlist     = rlist_new;
+                inputrec->rlistlong = rlist_new;
+            }
+        }
+
         if (bGPU)
         {
-            /* With GPUs disable PME nodes when the user request any */
+            /* With GPUs disable PME nodes when set to auto */
             if (cr->npmenodes < 0)
             {
                 cr->npmenodes = 0;

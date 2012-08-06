@@ -1174,7 +1174,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
                             &ls,&n_nonlin_vsite,&rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
-    verletbuf_get_list_setup(&ls);
+    verletbuf_get_list_setup(FALSE,&ls);
     calc_verlet_buffer_size(mtop,det(box),ir,verletbuf_drift,
                             &ls,&n_nonlin_vsite,&ir->rlist);
 

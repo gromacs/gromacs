@@ -64,18 +64,30 @@ typedef struct
 } verletbuf_atomtype_t;
 
 
-void verletbuf_get_list_setup(verletbuf_list_setup_t *list_setup)
+void verletbuf_get_list_setup(gmx_bool bGPU,
+                              verletbuf_list_setup_t *list_setup)
 {
-    list_setup->cluster_size_i = NBNXN_CPU_CLUSTER_I_SIZE;
+    list_setup->cluster_size_i     = NBNXN_CPU_CLUSTER_I_SIZE;
+
+    if (bGPU)
+    {
+        list_setup->cluster_size_j = NBNXN_GPU_CLUSTER_SIZE;
+    }
+    else
+    {
 #ifndef GMX_X86_SSE2
-    list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
+        list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
 #else
-#ifndef GMX_DOUBLE
-    list_setup->cluster_size_j = 4;
+        int simd_width;
+
+#ifdef GMX_X86_AVX_256
+        simd_width = 256;
 #else
-    list_setup->cluster_size_j = 2;
+        simd_width = 128;
 #endif
+        list_setup->cluster_size_j = simd_width/(sizeof(real)*8);
 #endif
+    }
 }
 
 static void add_at(verletbuf_atomtype_t **att_p,int *natt_p,
@@ -436,6 +448,8 @@ static real surface_frac(int cluster_size,real particle_distance,real rlist)
         area_rel = 1.0 + d;
         break;
     case 4:
+    case 8:
+        /* We don't have a formula for 8 (yet), use 4 which is conservative */
         /* We assume a perfect, symmetric tetrahedron geometry.
          * The surface around a tetrahedron is too complex for a full
          * analytical solution, so we use a Taylor expansion.

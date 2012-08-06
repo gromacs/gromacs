@@ -49,7 +49,8 @@ typedef struct
  * The setup with smallest cluster sizes is return, such that the Verlet
  * buffer size estimated with this setup will be conservative.
  */
-void verletbuf_get_list_setup(verletbuf_list_setup_t *list_setup);
+void verletbuf_get_list_setup(gmx_bool bGPU,
+			      verletbuf_list_setup_t *list_setup);
 
 
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
