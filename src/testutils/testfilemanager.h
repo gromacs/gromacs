@@ -30,7 +30,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::test::TestFileManager
+ * Declares gmx::test::TestFileManager.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
@@ -44,8 +44,8 @@
  *
  * \ingroup group_utilitymodules
  */
-#ifndef GMX_TESTUTILS_DATAPATH_H
-#define GMX_TESTUTILS_DATAPATH_H
+#ifndef GMX_TESTUTILS_TESTFILEMANAGER_H
+#define GMX_TESTUTILS_TESTFILEMANAGER_H
 
 #include <string>
 
@@ -53,6 +53,12 @@
 
 namespace gmx
 {
+/*! \libinternal \brief
+ * Testing utilities namespace.
+ *
+ * This namespace contains utilities for writing unit tests, mostly from the
+ * \ref module_testutils module.
+ */
 namespace test
 {
 
@@ -67,9 +73,10 @@ namespace test
  * getTemporaryFilePath()) at test teardown (i.e., when the
  * TestFileManager is destructed).
  *
- * Functions getTestFilePath() and getTestDataPath() provide means to access
- * data files that are located in the test source directory.  This is typically
- * used to provide input files for the tests.
+ * Functions getInputFilePath() and getInputDataDirectory() provide means to
+ * access data files that are located in the test source directory.
+ * This is used to provide input files for the tests, and also to store test
+ * reference data persistently (see TestReferenceData).
  *
  * \inlibraryapi
  * \ingroup module_testutils
@@ -101,7 +108,7 @@ class TestFileManager
         std::string getTemporaryFilePath(const char *suffix);
 
         /*! \brief
-         * Creates a name for reference data or temporary file within a single unit test.
+         * Creates a file name for use within a single unit test.
          *
          * \param[in] suffix  Suffix to add to the file name (should contain an
          *      extension if one is desired).
@@ -111,6 +118,8 @@ class TestFileManager
          * This method should only be called from within a Google Test test.
          * Two calls with the same \p suffix return the same string within the
          * same test.
+         * Intended to produce distinct names for files that may be stored in
+         * the same directory for multiple tests.
          */
         static std::string getTestSpecificFileName(const char *suffix);
 
@@ -120,14 +129,14 @@ class TestFileManager
          * \param[in] filename  Relative path/filename to a test input file.
          * \returns Path to \p filename under the test input data directory.
          */
-        static std::string getTestFilePath(const char *filename);
+        static std::string getInputFilePath(const char *filename);
 
         /*! \brief
          * Returns the path to the test input directory.
          *
          * \returns Path to input data directory for the test executable.
          */
-        static const char *getTestDataPath();
+        static const char *getInputDataDirectory();
 
         /*! \brief
          * Sets the test input directory.
@@ -136,10 +145,10 @@ class TestFileManager
          *
          * \p path must name an existing directory.
          *
-         * This function is automatically called by test_main_gtest.cpp and
-         * test_main_gmock.cpp.
+         * This function is automatically called by unittest_main.cpp through
+         * initTestUtils().
          */
-        static void setTestDataPath(const char *path);
+        static void setInputDataDirectory(const char *path);
 
     private:
         class Impl;

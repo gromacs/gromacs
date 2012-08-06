@@ -57,8 +57,8 @@
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/file.h"
 
-#include "testutils/datapath.h"
 #include "testutils/stringtest.h"
+#include "testutils/testfilemanager.h"
 
 namespace
 {

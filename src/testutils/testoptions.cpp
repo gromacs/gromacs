@@ -53,9 +53,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
-#include "datapath.h"
 #include "refdata.h"
 #include "testexceptions.h"
+#include "testfilemanager.h"
 
 namespace
 {
@@ -78,7 +78,7 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         ::testing::InitGoogleMock(argc, argv);
         if (dataPath != NULL)
         {
-            TestFileManager::setTestDataPath(dataPath);
+            TestFileManager::setInputDataDirectory(dataPath);
         }
         initReferenceData(argc, argv);
         boost::scoped_ptr<std::vector<std::string> > commandLine(

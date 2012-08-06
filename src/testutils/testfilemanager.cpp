@@ -30,12 +30,12 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions and classes in datapath.h.
+ * Implements gmx::test::TestFileManager.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_testutils
  */
-#include "datapath.h"
+#include "testfilemanager.h"
 
 #include <cstdio>
 
@@ -47,14 +47,6 @@
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
-
-namespace
-{
-
-//! Global test input data path set with gmx::test::TestFileManager::setTestDataPath().
-const char *g_testDataPath = NULL;
-
-} // namespace
 
 namespace gmx
 {
@@ -73,6 +65,9 @@ namespace test
 class TestFileManager::Impl
 {
     public:
+        //! Global test input data path set with setDataInputDirectory().
+        static const char *s_inputDirectory;
+
         //! Container type for names of temporary files.
         typedef std::set<std::string> FileNameList;
 
@@ -86,6 +81,8 @@ class TestFileManager::Impl
         //! List of unique paths returned by getTemporaryFilePath().
         FileNameList            files_;
 };
+
+const char *TestFileManager::Impl::s_inputDirectory = NULL;
 
 void TestFileManager::Impl::removeFiles()
 {
@@ -134,22 +131,24 @@ std::string TestFileManager::getTestSpecificFileName(const char *suffix)
     return filename;
 }
 
-std::string TestFileManager::getTestFilePath(const char *filename)
+std::string TestFileManager::getInputFilePath(const char *filename)
 {
-    return Path::join(getTestDataPath(), filename);
+    return Path::join(getInputDataDirectory(), filename);
 }
 
-const char *TestFileManager::getTestDataPath()
+const char *TestFileManager::getInputDataDirectory()
 {
-    GMX_RELEASE_ASSERT(g_testDataPath != NULL, "Test data path not set");
-    return g_testDataPath;
+    GMX_RELEASE_ASSERT(Impl::s_inputDirectory != NULL, "Test data path not set");
+    return Impl::s_inputDirectory;
 }
 
-void TestFileManager::setTestDataPath(const char *path)
+void TestFileManager::setInputDataDirectory(const char *path)
 {
+    // There is no need to protect this by a mutex, as this is called in early
+    // initialization of the tests.
     GMX_RELEASE_ASSERT(Directory::exists(path),
                        "Test data directory does not exist");
-    g_testDataPath = path;
+    Impl::s_inputDirectory = path;
 }
 
 } // namespace test
