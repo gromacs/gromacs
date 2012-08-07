@@ -260,6 +260,13 @@ int gmx_hostname_num()
 #ifndef GMX_MPI
   return 0;
 #else
+#ifdef GMX_THREAD_MPI
+  /* thread-MPI currently puts the thread number in the process name,
+   * we might want to change this, as this is inconsistent with what
+   * most MPI implementations would do when running on a single node.
+   */
+  return 0;
+#else
   int  resultlen,hostnum,i,j;
   char mpi_hostname[MPI_MAX_PROCESSOR_NAME],hostnum_str[MPI_MAX_PROCESSOR_NAME];
 
@@ -289,6 +296,7 @@ int gmx_hostname_num()
         mpi_hostname,hostnum);
   }
   return hostnum;
+#endif
 #endif
 }
 

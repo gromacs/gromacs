@@ -116,6 +116,17 @@ enum {
 };
 
 typedef struct {
+    int      nthreads_tot;        /* Total number of threads requested (TMPI) */
+    int      nthreads_tmpi;       /* Number of TMPI threads requested         */
+    int      nthreads_omp;        /* Number of OpenMP threads requested       */
+    int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
+    gmx_bool thread_pinning;      /* Pin OpenMP threads to cores?             */
+    gmx_bool pin_hyperthreading;  /* Pin pairs of threads to physical cores   */
+    int      core_pinning_offset; /* Physical core pinning offset             */
+    char    *gpu_id;              /* GPU id's to use, each specified as chars */
+} gmx_hw_opt_t;
+
+typedef struct {
   double real;
 #ifdef GMX_CRAY_XT3
   double proc;
@@ -432,7 +443,8 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 		     int natoms, gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 
-int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
+int mdrunner(gmx_hw_opt_t *hw_opt,
+	     FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt,real dlb_scale,

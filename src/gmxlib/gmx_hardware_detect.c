@@ -359,10 +359,10 @@ static const int MAX_GPU_IDS = 10;
 
 void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
                    const t_commrec *cr,
-                   int cutoff_scheme, const char *nbpu_opt)
+                   int cutoff_scheme, const char *nbpu_opt, const char *gpu_id)
 {
     int             i;
-    char            *env;
+    const char      *env;
     char            sbuf[STRLEN], stmp[STRLEN];
     gmx_hwinfo_t    *hw;
     gmx_gpu_info_t  gpuinfo_auto, gpuinfo_user;
@@ -428,8 +428,18 @@ void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
 
     if (bTryUseGPU)
     {
+        env = getenv("GMX_GPU_ID");
+        if (env != NULL && gpu_id != NULL)
+        {
+            gmx_fatal(FARGS,"GMX_GPU_ID and -gpu_id can not be used at the same time");
+        }
+        if (env == NULL)
+        {
+            env = gpu_id;
+        }
+
         /* parse GPU IDs if the user passed any */
-        if ((env = getenv("GMX_GPU_ID")) != NULL)
+        if (env != NULL)
         {
             int gpuid[MAX_GPU_IDS];
             int nid, res;

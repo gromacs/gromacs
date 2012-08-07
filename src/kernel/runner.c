@@ -123,6 +123,7 @@ tMPI_Thread_mutex_t deform_init_box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #ifdef GMX_THREAD_MPI
 struct mdrunner_arglist
 {
+    gmx_hw_opt_t *hw_opt;
     FILE *fplog;
     t_commrec *cr;
     int nfile;
@@ -180,7 +181,7 @@ static void mdrunner_start_fn(void *arg)
         fplog=mc.fplog;
     }
 
-    mda->ret=mdrunner(cr->nnodes, fplog, cr, mc.nfile, fnm, mc.oenv, 
+    mda->ret=mdrunner(mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv, 
                       mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
@@ -195,7 +196,7 @@ static void mdrunner_start_fn(void *arg)
    the main thread) for thread-parallel runs. This in turn calls mdrunner()
    for each thread. 
    All options besides nthreads are the same as for mdrunner(). */
-static t_commrec *mdrunner_start_threads(int nthreads, 
+static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt, 
               FILE *fplog,t_commrec *cr,int nfile, 
               const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
               gmx_bool bCompact, int nstglobalcomm,
@@ -214,14 +215,17 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     t_filenm *fnmn;
 
     /* first check whether we even need to start tMPI */
-    if (nthreads<2)
+    if (hw_opt->nthreads_tmpi < 2)
+    {
         return cr;
+    }
 
     /* a few small, one-time, almost unavoidable memory leaks: */
     snew(mda,1);
     fnmn=dup_tfn(nfile, fnm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
+    mda->hw_opt=hw_opt;
     mda->fplog=fplog;
     mda->cr=cr;
     mda->nfile=nfile;
@@ -255,11 +259,12 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     mda->deviceOptions=deviceOptions;
     mda->Flags=Flags;
 
-    fprintf(stderr, "Starting %d tMPI threads\n",nthreads);
+    fprintf(stderr, "Starting %d tMPI threads\n",hw_opt->nthreads_tmpi);
     fflush(stderr);
     /* now spawn new threads that start mdrunner_start_fn(), while 
        the main thread returns */
-    ret=tMPI_Init_fn(TRUE, nthreads, mdrunner_start_fn, (void*)(mda) );
+    ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi,
+                     mdrunner_start_fn, (void*)(mda) );
     if (ret!=TMPI_SUCCESS)
         return NULL;
 
@@ -278,12 +283,12 @@ static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
                             const t_commrec *cr)
 {
     int nthreads,nthreads_new,ngpu;
-    int min_atoms_per_thread;
+    int min_atoms_per_mpi_thread;
     char *env;
     char sbuf[STRLEN];
     gmx_bool bCanUseGPU,bNthreadsAuto,bMaxMpiThreadsSet = FALSE;
 
-    bCanUseGPU  = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
+    bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
     
     /* auto-determine the number of tMPI threads? */
     bNthreadsAuto = (nthreads_requested < 1);
@@ -313,11 +318,11 @@ static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
         /* Steps are divided over the nodes iso splitting the atoms */
-        min_atoms_per_thread = 0;
+        min_atoms_per_mpi_thread = 0;
     }
     else
     {
-        min_atoms_per_thread = MIN_ATOMS_PER_THREAD;
+        min_atoms_per_mpi_thread = MIN_ATOMS_PER_THREAD;
     }
 
     /* Check if an algorithm does not support parallel simulation.  */
@@ -329,11 +334,11 @@ static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
         nthreads = 1;
     }
     else if (bNthreadsAuto &&
-             mtop->natoms/nthreads < min_atoms_per_thread)
+             mtop->natoms/nthreads < min_atoms_per_mpi_thread)
     {
         /* the thread number was chosen automatically, but there are too many
            threads (too few atoms per thread) */
-        nthreads_new = max(1,mtop->natoms/min_atoms_per_thread);
+        nthreads_new = max(1,mtop->natoms/min_atoms_per_mpi_thread);
 
         if (nthreads_new > 8 || (nthreads == 8 && nthreads_new > 4))
         {
@@ -364,22 +369,13 @@ static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
      * thread/device. Consistency checks will be done later. */
     if (bNthreadsAuto && bCanUseGPU)
     {
-        /* We should take into account the number of PME nodes, but this is
-         * set at this point only if -npme is passed on the command line.
-         * However, auto-switching to npme > 0 only happens from nnodes >= 18
-         * so we can adjust nthreads safely when nthreads < 18 (or -npme has
-         * been set). */
-
-        int ntmpi_pme;
-        ntmpi_pme = (cr->npmenodes != -1) ? cr->npmenodes : 0;
-
-        /* Reduce the # of threads to the # of GPUs */
-        /* FIXME: this check is not very elegant, perhaps not even necessary anymore 
-         * as we set npme to 0 when not set with GPUs */
-        if ((nthreads - ntmpi_pme > ngpu) && (nthreads < 18 || cr->npmenodes != -1))
+        /* cr->npmenodes=-1 should be changed before calling this function */
+        if (cr->npmenodes < 0)
         {
-            nthreads = ngpu + ntmpi_pme;
+            gmx_incons("cr->npmenodes < 0");
         }
+
+        nthreads = ngpu + cr->npmenodes;
     }
 
     return nthreads;
@@ -398,7 +394,7 @@ static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.40;
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp,t_commrec *cr,
-                             t_inputrec *ir,gmx_mtop_t *mtop,matrix box)
+                             t_inputrec *ir,const gmx_mtop_t *mtop,matrix box)
 {
     char *env;
     int  nstlist_orig,nstlist_prev;
@@ -556,6 +552,61 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     }
 }
 
+static void prepare_verlet_scheme(FILE *fplog,
+                                  gmx_hwinfo_t *hwinfo,
+                                  t_commrec *cr,
+                                  gmx_hw_opt_t *hw_opt,
+                                  const char *nbpu_opt,
+                                  t_inputrec *ir,
+                                  const gmx_mtop_t *mtop,
+                                  matrix box,
+                                  gmx_bool *bGPU)
+{
+    /* Here we only check for GPU usage on the MPI master process,
+     * as here we don't know how many GPUs we will use yet.
+     * We check for a GPU on all processes later.
+     */
+    *bGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
+
+    if (ir->verletbuf_drift > 0)
+    {
+        /* Update the Verlet buffer size for the current run setup */
+        verletbuf_list_setup_t ls;
+        real rlist_new;
+
+        /* Here we assume CPU acceleration is on. But as currently
+         * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
+         * and 4x2 gives a large buffer than 4x4, this is ok.
+         */
+        verletbuf_get_list_setup(*bGPU,&ls);
+
+        calc_verlet_buffer_size(mtop,det(box),ir,
+                                ir->verletbuf_drift,&ls,
+                                NULL,&rlist_new);
+        if (rlist_new != ir->rlist)
+        {
+            if (fplog != NULL)
+            {
+                fprintf(fplog,"\nChanging rlist from %g to %g for non-bonded %dx%d atom kernels\n\n",
+                        ir->rlist,rlist_new,
+                        ls.cluster_size_i,ls.cluster_size_j);
+            }
+            ir->rlist     = rlist_new;
+            ir->rlistlong = rlist_new;
+        }
+    }
+
+    /* With GPU or emulation we should check nstlist for performance */
+    if ((EI_DYNAMICS(ir->eI) &&
+         *bGPU &&
+         ir->nstlist < NSTLIST_GPU_ENOUGH) ||
+        getenv(NSTLIST_ENVVAR) != NULL)
+    {
+        /* Choose a better nstlist */
+        increase_nstlist(fplog,cr,ir,mtop,box);
+    }
+}
+
 static void convert_to_verlet_scheme(FILE *fplog,
                                      t_inputrec *ir,
                                      gmx_mtop_t *mtop,real box_vol)
@@ -611,6 +662,35 @@ static void convert_to_verlet_scheme(FILE *fplog,
     gmx_mtop_remove_chargegroups(mtop);
 }
 
+#ifdef GMX_THREAD_MPI
+/* thread-MPI currently lacks MPI_Scan, so here's a partial implementation */
+static
+int MPI_Scan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
+             MPI_Op op, MPI_Comm comm)
+{
+    int rank,size,i;
+    int *buf;
+    int ret;
+
+    if (!(count == 1 && datatype == MPI_INT && op == MPI_SUM))
+    {
+        gmx_incons("Invalid use of temporary TMPI MPI_Scan function");
+    }
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+    snew(buf, size);
+    for(i=0; i<size; i++)
+    {
+        buf[i] = (i <= rank) ? 0 : ((int *)sendbuf)[0];
+    }
+    ret = MPI_Allreduce(MPI_IN_PLACE, buf, size, datatype, op, comm);
+    ((int *)recvbuf)[0] = buf[rank];
+    sfree(buf);
+
+    return ret;
+}
+#endif
+
 /* Set CPU affinity. Can be important for performance.
    On some systems (e.g. Cray) CPU Affinity is set by default.
    But default assigning doesn't work (well) with only some ranks
@@ -622,73 +702,73 @@ static void convert_to_verlet_scheme(FILE *fplog,
 */
 static void set_cpu_affinity(FILE *fplog,
                              const t_commrec *cr,
+                             const gmx_hw_opt_t *hw_opt,
                              int nthreads_pme,
                              const t_inputrec *inputrec)
 {
 #ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP?! */
-#ifdef __linux /* TODO: only linux? why not  everywhere if sched_setaffinity is available */
-    if (getenv("GMX_NO_THREAD_PINNING") == NULL)
+#ifdef __linux /* TODO: only linux? why not everywhere if sched_setaffinity is available */
+    if (hw_opt->thread_pinning)
     {
-        int thread, local_nthreads, offset, n_ht_pc;
+        int thread, local_nthreads, offset, n_ht_physcore;
         char *env;
 
-        if (inputrec->cutoff_scheme == ecutsVERLET)
+        /* threads on this MPI process or TMPI thread */
+        if (cr->duty & DUTY_PP)
         {
             local_nthreads = gmx_omp_nthreads_get(emntNonbonded);
         }
         else
         {
-            /* threads on this node */
-            local_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1;
+            local_nthreads = gmx_omp_nthreads_get(emntPME);
         }
 
         /* map the current process to cores */
+        thread = 0;
+#ifdef GMX_MPI
         if (PAR(cr) || MULTISIM(cr))
         {
-            thread = cr->nodeid_intra*local_nthreads;
+            /* We need to determine a scan of the thread counts in this
+             * compute node.
+             */
+            MPI_Comm comm_intra;
+
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->nodeid_intra,
+                           &comm_intra);
+            MPI_Scan(&local_nthreads,&thread,1,MPI_INT,MPI_SUM,comm_intra);
+            MPI_Comm_free(&comm_intra);
         }
-        else
-        {
-            thread = 0;
-        }
+#endif
 
         offset = 0;
-        if ((env = getenv("GMX_CORE_PINNING_OFFSET")) != NULL)
+        if (hw_opt->core_pinning_offset > 0)
         {
-            char *end;
-            offset = strtol(env, &end, 10);
-            if (!end || (*end != 0))
+            offset = hw_opt->core_pinning_offset;
+            if (SIMMASTER(cr))
             {
-                gmx_fatal(FARGS, "Invalid core pinning offset: %s", env);
+                fprintf(stderr, "Applying core pinning offset %d\n", offset);
             }
-
-            fprintf(stderr, "Applying core pinning offset %d\n", offset);
             if (fplog)
             {
                 fprintf(fplog, "Applying core pinning offset %d\n", offset);
             }
         }
 
-        n_ht_pc = -1;
-        if ((env = getenv("GMX_HT_PINNING")) != NULL)
+        n_ht_physcore = -1;
+        if (hw_opt->pin_hyperthreading)
         {
-            char *end;
-
             /* This should ONLY be used with hyperthreading turned on */
-            n_ht_pc = strtol(env, &end, 10);
-            if (!end || (*end != 0))
-            {
-                gmx_fatal(FARGS, "Invalid core pinning offset: %s", env);
-            }
+            n_ht_physcore = omp_get_num_procs()/2;
 
-            fprintf(stderr, "Assuming HT with %d physical cores\n", n_ht_pc);
+            if (SIMMASTER(cr))
+            {
+                fprintf(stderr, "Assuming Hyper-Threading with %d physical cores in a compute node\n",
+                        n_ht_physcore);
+            }
             if (fplog)
             {
-                fprintf(fplog, "Assuming HT with %d physical cores\n", n_ht_pc);
-            }
-            if (offset % 1 == 1)
-            {
-                gmx_fatal(FARGS,"Can not have an odd pinning offset with HT");
+                fprintf(fplog, "Assuming Hyper-Threading with %d physical cores in a compute node\n",
+                        n_ht_physcore);
             }
         }
 
@@ -700,35 +780,135 @@ static void set_cpu_affinity(FILE *fplog,
 
             CPU_ZERO(&mask);
             thread += omp_get_thread_num();
-            if (n_ht_pc <= 0)
+            if (n_ht_physcore <= 0)
             {
                 core = offset + thread;
             }
             else
             {
                 /* Lock pairs of threads to the same hyperthreaded core */
-                core = offset + thread/2 + (thread % 2)*n_ht_pc;
+                core = offset + thread/2 + (thread % 2)*n_ht_physcore;
             }
             CPU_SET(core, &mask);
             sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
         }
     }
-    else
-    {
-        char sbuf[STRLEN];
-        sprintf(sbuf, "NOTE: Thread pinning turned off by the "
-                "GMX_NO_THREAD_PINNING environment variable");
-        if (SIMMASTER(cr))
-        {
-            fprintf(stderr, "%s\n\n", sbuf);
-        }
-        if (fplog)
-        {
-            fprintf(fplog, "\n%s\n", sbuf);
-        }
-    }
 #endif /* __linux    */
 #endif /* GMX_OPENMP */
+}
+
+
+static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
+                                    int cutoff_scheme)
+{
+    char *env;
+
+    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
+    {
+        int nt_omp;
+
+        sscanf(env,"%d",&nt_omp);
+        if (nt_omp <= 0)
+        {
+            gmx_fatal(FARGS,"OMP_NUM_THREADS is invalid: '%s'",env);
+        }
+
+        if (hw_opt->nthreads_omp > 0 && nt_omp != hw_opt->nthreads_omp)
+        {
+            gmx_fatal(FARGS,"OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values",nt_omp,hw_opt->nthreads_omp);
+        }
+
+        /* Setting the number of OpenMP threads.
+         * NOTE: this function is only called on the master node.
+         */
+        fprintf(stderr,"Getting the number of OpenMP threads from OMP_NUM_THREADS: %d\n",nt_omp);
+        hw_opt->nthreads_omp = nt_omp;
+    }
+
+#ifndef GMX_THREAD_MPI
+    if (hw_opt->nthreads_tot > 0)
+    {
+        gmx_fatal(FARGS,"Setting the total number of threads is only supported with thread-MPI and Gromacs was compiled without thread-MPI");
+    }
+    if (hw_opt->nthreads_tmpi > 0)
+    {
+        gmx_fatal(FARGS,"Setting the number of thread-MPI threads is only supported with thread-MPI and Gromacs was compiled without thread-MPI");
+    }
+#endif
+
+    if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp_pme <= 0)
+    {
+        /* We have the same number of OpenMP threads for PP and PME processes,
+         * thus we can perform several consistency checks.
+         */
+        if (hw_opt->nthreads_tmpi > 0 &&
+            hw_opt->nthreads_omp > 0 &&
+            hw_opt->nthreads_tot != hw_opt->nthreads_tmpi*hw_opt->nthreads_omp)
+        {
+            gmx_fatal(FARGS,"The total number of threads requested (%d) does not match the thread-MPI threads (%d) times the OpenMP threads (%d) requested",
+                      hw_opt->nthreads_tot,hw_opt->nthreads_tmpi,hw_opt->nthreads_omp);
+        }
+
+        if (hw_opt->nthreads_tmpi > 0 &&
+            hw_opt->nthreads_tot % hw_opt->nthreads_tmpi != 0)
+        {
+            gmx_fatal(FARGS,"The total number of threads requested (%d) is not divisible by the number of thread-MPI threads requested (%d)",
+                      hw_opt->nthreads_tot,hw_opt->nthreads_tmpi);
+        }
+
+        if (hw_opt->nthreads_omp > 0 &&
+            hw_opt->nthreads_tot % hw_opt->nthreads_omp != 0)
+        {
+            gmx_fatal(FARGS,"The total number of threads requested (%d) is not divisible by the number of OpenMP threads requested (%d)",
+                      hw_opt->nthreads_tot,hw_opt->nthreads_omp);
+        }
+
+        if (hw_opt->nthreads_tmpi > 0 &&
+            hw_opt->nthreads_omp <= 0)
+        {
+            hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
+        }
+    }
+
+#ifndef GMX_OPENMP
+    if (hw_opt->nthreads_omp > 1)
+    {
+        gmx_fatal(FARGS,"OpenMP threads are requested, but Gromacs was compiled without OpenMP support");
+    }
+#endif
+
+    if (cutoff_scheme != ecutsVERLET)
+    {
+        /* We only have OpenMP support for PME only nodes */
+        if (hw_opt->nthreads_omp > 1)
+        {
+            gmx_fatal(FARGS,"OpenMP threads have been requested with cut-off scheme %s, but these are only supported with cut-off scheme %s",
+                      ecutscheme_names[cutoff_scheme],
+                      ecutscheme_names[ecutsVERLET]);
+        }
+        hw_opt->nthreads_omp = 1;
+    }
+
+    if (hw_opt->nthreads_omp_pme > 0 && hw_opt->nthreads_omp <= 0)
+    {
+        gmx_fatal(FARGS,"You need to specify -ntomp in addition to -ntomp_pme");
+    }
+
+    if (hw_opt->nthreads_omp_pme <= 0 && hw_opt->nthreads_omp > 0)
+    {
+        hw_opt->nthreads_omp_pme = hw_opt->nthreads_omp;
+    }
+
+    if (debug)
+    {
+        fprintf(debug,"hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s'\n",
+                hw_opt->nthreads_tot,
+                hw_opt->nthreads_tmpi,
+                hw_opt->nthreads_omp,
+                hw_opt->nthreads_omp_pme,
+                hw_opt->gpu_id!=NULL ? hw_opt->gpu_id : "");
+                
+    }
 }
 
 
@@ -769,7 +949,13 @@ static void override_nsteps_cmdline(FILE *fplog,
     }
 }
 
-int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
+typedef struct {
+    int      cutoff_scheme;
+    gmx_bool bGPU;
+} master_inf_t;
+
+int mdrunner(gmx_hw_opt_t *hw_opt,
+             FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
@@ -807,11 +993,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
-    int         nthreads_mpi=1;
     int         nthreads_pme=1;
     int         nthreads_pp=1;
     gmx_membed_t membed=NULL;
     gmx_hwinfo_t *hwinfo=NULL;
+    master_inf_t minf={-1,FALSE};
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -824,7 +1010,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     }
 
     snew(state,1);
-    if (MASTER(cr)) 
+    if (SIMMASTER(cr)) 
     {
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
@@ -834,31 +1020,72 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             convert_to_verlet_scheme(fplog,inputrec,mtop,det(state->box));
         }
-    }
 
-    /* override nsteps with value from cmdline */
-    override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
+        /* override nsteps with value from cmdline */
+        override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
 
-    /* TODO passing around nbpu_opt is a dirty hack; we should have an enum for this */
-    snew(hwinfo, 1);
-    if (SIMMASTER(cr))
-    {
+        /* TODO passing around nbpu_opt is a dirty hack; we should have an enum for this */
         /* Detect hardware, gather information. With tMPI only thread 0 does it
          * and after threads are started broadcasts hwinfo around. */
-        gmx_hw_detect(fplog, hwinfo, cr, inputrec->cutoff_scheme, nbpu_opt);
+        snew(hwinfo, 1);
+        gmx_hw_detect(fplog, hwinfo, cr,
+                      inputrec->cutoff_scheme, nbpu_opt, hw_opt->gpu_id);
+
+        minf.cutoff_scheme = inputrec->cutoff_scheme;
+        minf.bGPU          = FALSE;
+
+        if (inputrec->cutoff_scheme == ecutsVERLET)
+        {
+            prepare_verlet_scheme(fplog,hwinfo,cr,hw_opt,nbpu_opt,
+                                  inputrec,mtop,state->box,
+                                  &minf.bGPU);
+        }
+    }
+#ifndef GMX_THREAD_MPI
+    if (PAR(cr))
+    {
+        gmx_bcast_sim(sizeof(minf),&minf,cr);
+    }
+#endif
+    if (minf.bGPU && cr->npmenodes == -1)
+    {
+        /* Don't automatically use PME-only nodes with GPUs */
+        cr->npmenodes = 0;
     }
 
-    if (MASTER(cr))
+#ifdef GMX_THREAD_MPI
+    /* With thread-MPI inputrec is only set here on the master thread */
+    if (SIMMASTER(cr))
+#endif
     {
-#if defined GMX_THREAD_MPI
-        /* NOW the threads will be started: */
-        nthreads_mpi = get_nthreads_mpi(nthreads_requested, hwinfo,
-                                        inputrec, mtop, cr);
+        check_and_update_hw_opt(hw_opt,minf.cutoff_scheme);
 
-        if (nthreads_mpi > 1)
+        if (hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
+            cr->npmenodes <= 0)
+        {
+            gmx_fatal(FARGS,"You need to explicitly specify the number of PME nodes (-npme) when using different number of OpenMP threads for PP and PME nodes");
+        }
+    }
+
+#ifdef GMX_THREAD_MPI
+    if (SIMMASTER(cr))
+    {
+        /* NOW the threads will be started: */
+        hw_opt->nthreads_tmpi = get_nthreads_mpi(hw_opt->nthreads_tmpi > 0 ?
+                                                 hw_opt->nthreads_tmpi :
+                                                 hw_opt->nthreads_tot,
+                                                 hwinfo,
+                                                 inputrec, mtop,
+                                                 cr);
+        if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp <= 0)
+        {
+            hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
+        }
+
+        if (hw_opt->nthreads_tmpi > 1)
         {
             /* now start the threads. */
-            cr=mdrunner_start_threads(nthreads_mpi, fplog, cr_old, nfile, fnm, 
+            cr=mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm, 
                                       oenv, bVerbose, bCompact, nstglobalcomm, 
                                       ddxyz, dd_node_order, rdd, rconstr, 
                                       dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
@@ -874,8 +1101,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                 gmx_comm("Failed to spawn threads");
             }
         }
-#endif
     }
+#endif
     /* END OF CAUTION: cr is now reliable */
 
     /* g_membed initialisation *
@@ -892,15 +1119,15 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     if (PAR(cr))
     {
+        /* now broadcast everything to the non-master nodes/threads: */
+        init_parallel(fplog, cr, inputrec, mtop);
+
         if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
         {
             gmx_fatal_collective(FARGS,cr,NULL,
                                  "The Verlet cut-off scheme is not supported with particle decomposition.\n"
                                  "You can achieve the same effect as particle decomposition by running in parallel using only OpenMP threads.");
         }
-
-        /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop);
     }
     if (fplog != NULL)
     {
@@ -913,6 +1140,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      * make sure that the data doesn't get freed twice. */
     if (cr->nnodes > 1)
     {
+        if (!SIMMASTER(cr))
+        {
+            snew(hwinfo, 1);
+        }
         gmx_bcast(sizeof(&hwinfo), &hwinfo, cr);
     }
 #else
@@ -920,7 +1151,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         /* now we have inputrec on all nodes, can run the detection */
         /* TODO: perhaps it's better to propagate within a node instead? */
-        gmx_hw_detect(fplog, hwinfo, cr, inputrec->cutoff_scheme, nbpu_opt);
+        snew(hwinfo, 1);
+        gmx_hw_detect(fplog, hwinfo, cr,
+                      inputrec->cutoff_scheme, nbpu_opt, hw_opt->gpu_id);
     }
 #endif
 
@@ -1100,60 +1333,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         ed = ed_open(nfile,fnm,Flags,cr);
     }
 
-    if (inputrec->cutoff_scheme == ecutsVERLET)
-    {
-        /* GPU emulation detection is done later, but we need here as well
-         * -- uncool, but there's no elegant workaround */
-        gmx_bool bGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
-
-        /* Check if we need to update rlist for the current run setup */
-        if (inputrec->verletbuf_drift > 0)
-        {
-            verletbuf_list_setup_t ls;
-            real rlist_new;
-
-            /* Here we assume CPU acceleration is on. But as currently
-             * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
-             * and 4x2 gives a large buffer than 4x4, this is ok.
-             */
-            verletbuf_get_list_setup(bGPU,&ls);
-            
-            calc_verlet_buffer_size(mtop,det(box),inputrec,
-                                    inputrec->verletbuf_drift,&ls,
-                                    NULL,&rlist_new);
-            if (rlist_new != inputrec->rlist)
-            {
-                if (fplog != NULL)
-                {
-                    fprintf(fplog,"\nChanging rlist from %g to %g for non-bonded %dx%d atom kernels\n\n",
-                            inputrec->rlist,rlist_new,
-                            ls.cluster_size_i,ls.cluster_size_j);
-                }
-                inputrec->rlist     = rlist_new;
-                inputrec->rlistlong = rlist_new;
-            }
-        }
-
-        if (bGPU)
-        {
-            /* With GPUs disable PME nodes when set to auto */
-            if (cr->npmenodes < 0)
-            {
-                cr->npmenodes = 0;
-            }
-
-            /* With GPU or emulation we should check nstlist for performance */
-            if ((cr->duty & DUTY_PP) &&
-                (((EI_DYNAMICS(inputrec->eI) && bGPU &&
-                   inputrec->nstlist < NSTLIST_GPU_ENOUGH) ||
-                  getenv(NSTLIST_ENVVAR) != NULL)))
-            {
-                /* Choose a better nstlist */
-                increase_nstlist(fplog,cr,inputrec,mtop,box);
-            }
-        }
-    }
-
     if (PAR(cr) && !((Flags & MD_PARTDEC) ||
                      EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
@@ -1201,11 +1380,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* Initialize per-node process ID and counters. */
     gmx_init_intra_counters(cr);
 
-    /* decide on the number of OpenMP threads */
-    gmx_omp_nthreads_init(fplog, cr, (cr->duty & DUTY_PP) == 0,
+    gmx_omp_nthreads_init(fplog, cr,
+                          hw_opt->nthreads_omp,
+                          hw_opt->nthreads_omp_pme,
+                          (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, nthreads_requested, nbpu_opt);
+    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi, nbpu_opt);
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is 
@@ -1322,8 +1503,16 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         snew(pmedata,1);
     }
 
-    /* Set the CPU affinity */
-    set_cpu_affinity(fplog,cr,nthreads_pme,inputrec);
+#if defined GMX_THREAD_MPI && defined TMPI_THREAD_AFFINITY
+    /* With the number of TMPI threads equal to the number of cores
+     * we already pinned in thread-MPI, so don't pin again here.
+     */
+    if (hw_opt->nthreads_tmpi != tMPI_Thread_get_hw_number())
+#endif
+    {
+        /* Set the CPU affinity */
+        set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,inputrec);
+    }
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */

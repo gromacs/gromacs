@@ -182,6 +182,8 @@ static int pick_module_nthreads(FILE *fplog, int m,
 }
 
 void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
+                           int omp_nthreads_req,
+                           int omp_nthreads_pme_req,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
@@ -252,6 +254,10 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             {
                 nth = modth.max_cores;
             }
+        }
+        else if (omp_nthreads_req > 0)
+        {
+            nth = omp_nthreads_req;
         }
         else if (bFullOmpSupport && bOMP)
         {
@@ -349,7 +355,22 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         {
             modth.gnth = 1;
         }
-        modth.gnth_pme = bSepPME ? nth : 0;
+
+        if (bSepPME)
+        {
+            if (omp_nthreads_pme_req > 0)
+            {
+                modth.gnth_pme = omp_nthreads_pme_req;
+            }
+            else
+            {
+                modth.gnth_pme = nth;
+            }
+        }
+        else
+        {
+            modth.gnth_pme = 0;
+        }
 
         /* now set the per-module values */
         modth.nth[emntDefault] = modth.gnth;
@@ -394,6 +415,12 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     /* inform the user about the settings */
     if (SIMMASTER(cr))
     {
+#ifdef GMX_THREAD_MPI
+        const char *mpi_str="tMPI thread";
+#else
+        const char *mpi_str="MPI process";
+#endif
+
         if (!bOMP && bFullOmpSupport)
         {
             fprintf(stderr, "Not compiled with OpenMP multithreading\n");
@@ -401,27 +428,16 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         }
 
         /* for group scheme we print PME threads info only */
-        nth = bFullOmpSupport ? modth.gnth : modth.gnth_pme;
-        sprintf(sbuf, "Using %d OpenMP thread", nth);
-        if (nth > 1) /* plural */
-        {
-            strcat(sbuf, "s");
-        }
-        if (PAR(cr)) /* tMPI or MPI*/
-        {
-#ifdef GMX_THREAD_MPI
-            strcat(sbuf, " per tMPI thread");
-#else
-            strcat(sbuf, " per MPI process");
-#endif
-        }
         if (bFullOmpSupport)
         {
-            fprintf(stderr, "%s\n", sbuf);
+            fprintf(stderr, "Using %d OpenMP thread%s per %s\n",
+                    modth.gnth,modth.gnth > 1 ? "s" : "",mpi_str);
         }
-        else if (nth > 1) /* don't print the nt=1 for group */
+        if (bSepPME && modth.gnth_pme != modth.gnth)
         {
-            fprintf(stderr, "%s for PME\n", sbuf);
+            fprintf(stderr, "Using %d OpenMP thread%s per %s for PME\n",
+                    modth.gnth_pme,modth.gnth_pme > 1 ? "s" : "",mpi_str);
+            
         }
     }
 }

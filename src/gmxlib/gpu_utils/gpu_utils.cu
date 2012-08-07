@@ -918,7 +918,7 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int ind
     }
     else
     {
-        sprintf(s, "#%d: NVIDIA %s, compute capability: %d.%d, ECC: %3s, stat: %s",
+        sprintf(s, "#%d: NVIDIA %s, compute cap.: %d.%d, ECC: %3s, stat: %s",
                 dinfo->id, dinfo->prop.name,
                 dinfo->prop.major, dinfo->prop.minor,
                 dinfo->prop.ECCEnabled ? "yes" : " no",

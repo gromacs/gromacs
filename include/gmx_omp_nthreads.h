@@ -50,6 +50,8 @@ typedef enum module_nth
  *  thread-safety is ensured (for the features available with tMPI). 
  *  This function should caled only once during the initialization of mdrun. */
 void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
+                           int omp_nthreads_req,
+                           int omp_nthreads_pme_req,
                            gmx_bool bCurrNodePMEOnly,
                            gmx_bool bFullOmpSupport);
 

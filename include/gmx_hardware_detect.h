@@ -33,7 +33,7 @@ extern "C" {
 
 void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
                    const t_commrec *cr,
-                   int cutoff_scheme, const char *nbpu_opt);
+                   int cutoff_scheme, const char *nbpu_opt, const char *gpu_id);
 
 void gmx_hw_info_free(gmx_hwinfo_t *hwinfo);
 
