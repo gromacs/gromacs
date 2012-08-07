@@ -479,7 +479,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
 
     reset_gpu_rlist_ewaldtab(nbv->cu_nbv,ic);
 
-    if (nbv->nloc > 1)
+    if (nbv->ngrp > 1)
     {
         init_interaction_const_tables(NULL,ic,nbv->grp[1].kernel_type);
     }

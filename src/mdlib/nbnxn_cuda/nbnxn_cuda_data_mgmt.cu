@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "config.h"
 #include "gmx_fatal.h"
@@ -49,6 +50,7 @@
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
+#include "gpu_utils.h"
 
 #define USE_CUDA_EVENT_BLOCKING_SYNC FALSE  /* makes the CPU thread block */
 
@@ -119,9 +121,6 @@ static const char * const nb_old_knames[NUM_NB_KERNELS] =
     "_Z29k_nbnxn_cutoff_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti"
 };
 
-
-/*! Dummy kernel used for sanity check. */
-__device__ __global__ void k_empty_test(){}
 
 /*! Tabulates the Ewald Coulomb force and initializes the size/scale 
     and the table GPU array. If called with an already allocated table,
@@ -336,6 +335,7 @@ static void init_timings(wallclock_gpu_t *t)
 
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
+                     gmx_gpu_info_t *gpu_info, int my_gpu_index,
                      gmx_bool bLocalAndNonlocal)
 {
     cudaError_t stat;
@@ -344,10 +344,11 @@ void nbnxn_cuda_init(FILE *fplog,
     bool bStreamSync, bNoStreamSync, bOldKernel, bLegacyKernel, bDefaultKernel,
          bCUDA40, bCUDA32, bTMPIAtomics, bX86;
 
+    assert(gpu_info);
+
     if (p_cu_nb == NULL) return;
 
     snew(nb, 1);
-    snew(nb->dev_info, 1);
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
     snew(nb->plist[eintLocal], 1);
@@ -384,12 +385,8 @@ void nbnxn_cuda_init(FILE *fplog,
     stat = cudaEventCreateWithFlags(&nb->misc_ops_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_one failed");
 
-    /* init device info */
-    /* FIXME this should not be done here! */
-    stat = cudaGetDevice(&nb->dev_info->dev_id);
-    CU_RET_ERR(stat, "cudaGetDevice failed");
-    stat = cudaGetDeviceProperties(&nb->dev_info->dev_prop, nb->dev_info->dev_id);
-    CU_RET_ERR(stat, "cudaGetDeviceProperties failed");
+    /* set device info, just point it to the right GPU among the detected ones */
+    nb->dev_info = &gpu_info->cuda_dev[get_gpu_device_id(gpu_info, my_gpu_index)];
 
     /* On GPUs with ECC enabled, cudaStreamSynchronize shows a large overhead
      * (which increases with shorter time/step) caused by a known CUDA driver bug.
@@ -419,7 +416,7 @@ void nbnxn_cuda_init(FILE *fplog,
         gmx_fatal(FARGS, "Conflicting environment variables: both GMX_CUDA_STREAMSYNC and GMX_NO_CUDA_STREAMSYNC defined");
     }
 
-    if (nb->dev_info->dev_prop.ECCEnabled == 1)
+    if (nb->dev_info->prop.ECCEnabled == 1)
     {
         if (bStreamSync)
         {
@@ -603,7 +600,7 @@ void nbnxn_cuda_init(FILE *fplog,
         stat = cudaFuncSetCacheConfig(nb_legacy_knames[i], cudaFuncCachePreferL1);
         CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
 
-        if (nb->dev_info->dev_prop.major >= 3)
+        if (nb->dev_info->prop.major >= 3)
         {
             /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
             stat = cudaFuncSetCacheConfig(nb_default_knames[i], cudaFuncCachePreferShared);
@@ -627,11 +624,6 @@ void nbnxn_cuda_init(FILE *fplog,
     {
         fprintf(debug, "Initialized CUDA data structures.\n");
     }
-
-
-    /* TODO: move this to gpu_utils module */
-    k_empty_test<<<1, 512>>>();
-    CU_LAUNCH_ERR_SYNC("dummy test kernel");
 }
 
 void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t cu_nb,
@@ -884,14 +876,14 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
     cu_free_buffered(nbparam->nbfp);
 
     stat = cudaFree(atdat->shift_vec);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->shift_vec");
+    CU_RET_ERR(stat, "cudaFree failed on atdat->shift_vec");
     stat = cudaFree(atdat->fshift);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->fshift");
+    CU_RET_ERR(stat, "cudaFree failed on atdat->fshift");
 
     stat = cudaFree(atdat->e_lj);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->e_lj");
+    CU_RET_ERR(stat, "cudaFree failed on atdat->e_lj");
     stat = cudaFree(atdat->e_el);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->e_el");
+    CU_RET_ERR(stat, "cudaFree failed on atdat->e_el");
 
     cu_free_buffered(atdat->f, &atdat->natoms, &atdat->nalloc);
     cu_free_buffered(atdat->xq);
@@ -906,9 +898,6 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
         cu_free_buffered(plist_nl->cj4, &plist_nl->ncj4, &plist_nl->cj4_nalloc);
         cu_free_buffered(plist_nl->excl, &plist_nl->nexcl, &plist->excl_nalloc);
     }
-
-    stat = cudaThreadExit();
-    CU_RET_ERR(stat, "cudaThreadExit failed");
 
     if (debug)
     {
@@ -941,7 +930,7 @@ void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
 int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
 {
     return cu_nb != NULL ? 
-        GPU_MIN_CI_BALANCED_FACTOR*cu_nb->dev_info->dev_prop.multiProcessorCount : 0;
+        GPU_MIN_CI_BALANCED_FACTOR*cu_nb->dev_info->prop.multiProcessorCount : 0;
 }
 
 

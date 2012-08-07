@@ -36,6 +36,8 @@
 #ifndef NBNXN_CUDA_TYPES_EXT_H
 #define NBNXN_CUDA_TYPES_EXT_H
 
+/* FIXME we should probably remove the nbnxn prefix of the file! */
+
 /* This is a heuristically determined parameter for the Fermi architecture for 
  * the minimum size of ci lists by multiplying this constant with the # of 
  * multiprocessors on the current device. 
@@ -45,8 +47,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* Abstract for CUDA nonbonded structure */
-typedef struct nbnxn_cuda * nbnxn_cuda_ptr_t;
+
+/* Abstract types */
+/* CUDA nonbonded structure */
+typedef struct nbnxn_cuda *nbnxn_cuda_ptr_t;
+/* CUDA GPU device info */
+typedef struct cuda_dev_info *cuda_dev_info_ptr_t;
 
 typedef struct wallclock_gpu wallclock_gpu_t;
 typedef struct nbnxn_cuda_ktime nbnxn_cuda_ktime_t;

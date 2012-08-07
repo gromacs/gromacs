@@ -155,7 +155,7 @@ struct cu_timers
 /* Main data structure for CUDA nonbonded force calculations. */
 struct nbnxn_cuda
 {
-    cu_dev_info_t   *dev_info;      /* CUDA device information                              */
+    cuda_dev_info_t *dev_info;      /* CUDA device information                              */
     int             kernel_ver;     /* The version of the kernel to be executed on the device
                                        in use, possible values: eNbnxnCuK* */
     gmx_bool        bUseTwoStreams; /* true if doing both local/non-local NB work on GPU */

@@ -115,12 +115,15 @@
 extern "C" {
 #endif
 
-/*! Device information: ID and properties of CUDA GPU use in the current process. */
-typedef struct cu_dev_info
+/*! CUDA device information. */
+typedef struct cuda_dev_info cuda_dev_info_t;
+struct cuda_dev_info
 {
-    int dev_id;                 /* id of the CUDA device in use */
-    cudaDeviceProp dev_prop;    /* CUDA device properties */
-} cu_dev_info_t;
+    int             id;      /* id of the CUDA device */
+    cudaDeviceProp  prop;    /* CUDA device properties */
+    int             stat;    /* result of the device check */
+};
+
 
 /*! Launches asynchronous host to device memory copy in tstream 0. */
 int cu_copy_D2H(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);

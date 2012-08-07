@@ -136,11 +136,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
-gmx_bool check_nbnxn_gpu(FILE *fplog,t_commrec *cr,const char *nbpu_opt);
-/* Check if we will use a GPU or emulate a GPU.
- * nbpu_opt is the mdrun command line option for the nbnxn non-bonded resource.
- */
-
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
                                    int verlet_kernel_type);

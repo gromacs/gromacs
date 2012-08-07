@@ -502,7 +502,6 @@ if(GMX_GPU)
     typically inefficient.")
     endif()
 
-    set(CUDA_BUILD_EMULATION OFF)
     include(gmxManageNvccConfig)
 
     # Check whether we can use atomic operations needed for polling wait for GPU

@@ -1395,216 +1395,6 @@ static int parse_gmx_gpu_id(const t_commrec *cr)
 }
 
 
-/* Check the consistency of the GMX_GPU_ID string.
-
-   Make sure that with thread-MPI each thread uses a different, otherwise
-   threads mess up each others GPU context. */
-static void check_gmx_gpu_id_consistency(const char *gpu_id_str,
-                                         const t_commrec *cr)
-{
-    gmx_bool bAllSame = TRUE, bAllDifferent = TRUE, bSomeSame = FALSE;
-    int len, i, j, npppn;
-    char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
-
-    len = strlen(gpu_id_str);
-    if (len == 0)
-    {
-        gmx_fatal(FARGS, "GMX_GPU_ID environment variable set but empty.");
-    }
-
-    /* number of PP processes on my node */
-    npppn = cr->nnodes_pp_intra;
-    sbuf2[0] = '\0';
-#ifdef GMX_THREAD_MPI
-    sprintf(sbuf1, "thread-MPI thread");
-    if (npppn > 1)
-    {
-        strcat(sbuf1, "s");
-    }
-#else
-#ifdef GMX_MPI
-    sprintf(sbuf1, "MPI process");
-    if (npppn > 1)
-    {
-        strcat(sbuf1, "es");
-    }
-    sprintf(sbuf2, " per node");
-#else
-    /* neither MPI nor tMPI */
-    sprintf(sbuf1, "process");
-#endif
-#endif
-
-    if (len != npppn)
-    {
-        gmx_fatal(FARGS, "On node %d incorrect GMX_GPU_ID: %d device IDs passed, but %s is\n"
-                  "using %d PP %s%s requiring one GPU for each.",
-                  cr->nodeid, len, ShortProgram(), npppn, sbuf1, sbuf2);
-    }
-
-    if (len < 2)
-    {
-        return;
-    }
-
-    for (i = 0; i < len - 1; i++)
-    {
-        for (j = i + 1; j < len; j++)
-        {
-            bAllSame        &= gpu_id_str[i] == gpu_id_str[j];
-            bSomeSame       |= gpu_id_str[i] == gpu_id_str[j];
-            bAllDifferent   &= gpu_id_str[i] != gpu_id_str[j];
-        }
-    }
-
-#ifdef GMX_THREAD_MPI
-    if (!bAllDifferent)
-    {
-        gmx_fatal(FARGS,
-                  "Invalid GPU assignment: multiple tMPI threads per GPU (GMX_GPU_ID=%s).\n"
-                  "Use MPI if you are sure that you want multiple processes to use the same GPU.",
-                  gpu_id_str);
-    }
-#endif
-
-    if (bSomeSame)
-    {
-        gmx_warning("GMX_GPU_ID=%s assigns a/some GPU(s) to multiple %s;\n"
-                    "         this should be avoided as it generally causes performance loss.",
-                    gpu_id_str, sbuf1);
-    }
-}
-
-/* TODO print some stats to the log! */
-static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
-{
-    int gpu_device_id;
-    char *env;
-    gmx_bool GPU_OK;
-    int nnodes;
-    int *gpus,ngpu,i;
-
-#ifndef GMX_GPU
-    if (forceGPU)
-    {
-        gmx_fatal(FARGS,"GPU requested for non-bonded interactions, "
-                  "but %s was compiled without GPU support",ShortProgram());
-    }
-
-    return FALSE;
-#endif
-
-    /* cppcheck-suppress unreachableCode */
-    /* unless GMX_GPU_ID is set, each process will use the GPU with id = intra-node id */
-    gpu_device_id = cr->nodeid_group_intra;
-    if ((env = getenv("GMX_GPU_ID")) != NULL)
-    {
-        gpu_device_id = parse_gmx_gpu_id(cr);
-
-        check_gmx_gpu_id_consistency(env, cr);
-
-        /* If you set this env.var, you want to use a GPU */
-        forceGPU = TRUE;
-    }
-
-    GPU_OK = (init_gpu(fp, gpu_device_id) == 0);
-
-    if (PAR(cr))
-    {
-        nnodes = cr->dd->nnodes;
-    }
-    else
-    {
-        nnodes = 1;
-    }
-    snew(gpus,cr->nnodes);
-    gpus[cr->nodeid] = (GPU_OK ? -1 : 1+gpu_device_id);
-    /* In parallel we need to check if every node has a GPU */
-    if (PAR(cr))
-    {
-        gmx_sumi(cr->nnodes,gpus,cr);
-    }
-    ngpu = 0;
-    for(i=0; i<cr->nnodes; i++)
-    {
-        if (gpus[i] == -1)
-        {
-            ngpu++;
-        }
-    }
-    if (ngpu < nnodes && (ngpu > 0 || (ngpu == 0 && forceGPU)))
-    {
-        char *buf,buf2[40];
-        
-        snew(buf,40+40*cr->nnodes);
-        sprintf(buf,"Could not initialize");
-        for(i=0; i<cr->nnodes; i++)
-        {
-            if (gpus[i] > 0)
-            {
-                sprintf(buf2," on node %d: GPU #%d",gpus[i]-1,i);
-                strcat(buf,buf2);
-            }
-        }
-        gmx_fatal_collective(FARGS,cr,NULL,buf);
-    }
-    sfree(gpus);
-
-    return (ngpu > 0);
-}
-
-static void nbnxn_detect_gpu(FILE *fp,
-                             const t_commrec *cr,
-                             const char *nbpu_opt,
-                             gmx_bool *useGPU,
-                             gmx_bool *emulateGPU)
-{
-    gmx_bool tryGPU,forceGPU;
-
-    *useGPU     = FALSE;
-    *emulateGPU = FALSE;
-
-    tryGPU   = (nbpu_opt != NULL &&
-                (strncmp(nbpu_opt,"gpu",3) == 0 ||
-                 strcmp(nbpu_opt,"auto") == 0));
-    
-    forceGPU = (nbpu_opt != NULL &&
-                strncmp(nbpu_opt,"gpu",3) == 0);
-
-    if (tryGPU)
-    {
-        /* Try to use a GPU if GMX_GPU is not defined */
-        if (getenv("GMX_NO_GPU") != NULL)
-        {
-            if (forceGPU)
-            {
-                gmx_fatal(FARGS,"Conflicting command line argument and env.var. for GPU use for non-bonded interactions");
-            }
-
-            tryGPU = FALSE;
-
-            if (MASTER(cr))
-            {
-                gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
-            }
-        }
-    }
-
-    if (tryGPU)
-    {
-        /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
-           calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
-       to also turn off GPU/CUDA initializations. */
-        *emulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
-                       (getenv("GMX_NO_NONBONDED") != NULL));
-
-        if (*emulateGPU == FALSE)
-        {
-            *useGPU = init_cu_nbv(fp,cr,forceGPU);
-        }
-    }
-}
-
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
                                   const gmx_detectcpu_t *cpu_info,
@@ -1614,14 +1404,11 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 
 #ifdef GMX_X86_SSE2
     {
-        gmx_detectcpu_t cpuinfo;
 #ifdef GMX_DOUBLE
         gmx_bool double_prec = TRUE;
 #else
         gmx_bool double_prec = FALSE;
 #endif
-
-        gmx_detectcpu(&cpuinfo);
 
         /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
          * On AMD Bulldozer AVX-256 is much slower than AVX-128.
@@ -1649,7 +1436,7 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 #ifdef GMX_X86_AVX_256
             *kernel_type = nbk4xN_X86_SIMD256;
 #else
-            gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but Gromacs was built without AVX support");
+            gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but GROMACS was built without AVX support");
 #endif
         }
     }
@@ -1658,44 +1445,69 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 
 static void pick_nbnxn_kernel(FILE *fp,
                               const t_commrec *cr,
-                              gmx_bool use_acceleration,
-                              const char *nbpu_opt,
+                              const gmx_hwinfo_t *hwinfo,
+                              gmx_bool use_cpu_acceleration,
                               gmx_bool *useGPU,
                               int *kernel_type)
 {
-    gmx_bool emulateGPU=FALSE;
+    gmx_bool bEmulateGPU, bGPU;
     gmx_detectcpu_t cpu_information;
+    char gpu_err_str[STRLEN], sbuf[STRLEN];
+
+    assert(kernel_type);
 
     *kernel_type = nbkNotSet;
+    /* if useGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
+    bGPU = (useGPU != NULL) && hwinfo->bCanUseGPU;
+    bEmulateGPU  = FALSE;
 
-    /* We detected before in check_nbnxn_gpu, but unfortunately with
-     * the current hardware detection and data structures we can't
-     * easily reuse the data, so we detect again here.
-     */
-    nbnxn_detect_gpu(fp,cr,nbpu_opt,useGPU,&emulateGPU);
+    if (bGPU)
+    {
+        /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
+           calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
+           to also turn off GPU/CUDA initializations. */
+        bEmulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
+                      (getenv("GMX_NO_NONBONDED") != NULL));
 
-    if (emulateGPU)
+        if (bEmulateGPU)
+        {
+            bGPU = FALSE;
+        }
+        else
+        {
+            /* Each PP node will use the intra-node id-th device from the
+             * list of detected/selected GPUs. */ 
+            if (!init_gpu(cr->nodeid_group_intra, gpu_err_str, &hwinfo->gpu_info))
+            {
+                /* At this point the init should never fail as we made sure that 
+                 * we have all the GPUs we need. If it still does, we'll bail. */
+                /* TODO collect messages from other nodes? */
+                sprintf(sbuf, "On node %d failed to initialize GPU #%d: %s",
+                        cr->nodeid,
+                        get_gpu_device_id(&hwinfo->gpu_info, cr->nodeid_group_intra),
+                        gpu_err_str);
+                gmx_fatal_collective(FARGS,cr,NULL,sbuf);
+            }
+        }
+        *useGPU = bGPU;
+    }
+
+    if (bEmulateGPU)
     {
         *kernel_type = nbk8x8x8_PlainC;
 
-        if (fp != NULL)
-        {
-            fprintf(fp, "Emulating GPU\n");
-        }
-    }    
-    else if (*useGPU)
+        md_print_warning(cr, fp, "Emulating a GPU run on the CPU (slow)");
+    }
+    else if (bGPU)
     {
         *kernel_type = nbk8x8x8_CUDA;
     }
 
-    /* We store the CPU info in forcerec, but we might not have it here yet */
-    gmx_detectcpu(&cpu_information);
-
     if (*kernel_type == nbkNotSet)
     {
-        if (use_acceleration)
+        if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp,cr,&cpu_information,kernel_type);
+            pick_nbnxn_kernel_cpu(fp,cr,&hwinfo->cpu_info,kernel_type);
         }
         else
         {
@@ -1715,31 +1527,6 @@ static void pick_nbnxn_kernel(FILE *fp,
     }
 }
 
-gmx_bool check_nbnxn_gpu(FILE *fplog,t_commrec *cr,const char *nbpu_opt)
-{
-    gmx_bool useGPU,emulateGPU;
-    char     buf[STRLEN];
-
-    /* With GPU we should check nstlist for performance */
-    nbnxn_detect_gpu(NULL,cr,nbpu_opt,&useGPU,&emulateGPU);
-
-    if (useGPU || emulateGPU)
-    {
-        sprintf(buf,"%s %s",
-                useGPU ? "Using" : "Emulating",
-                PAR(cr) ? "GPUs" : "a GPU");
-        if (MASTER(cr))
-        {
-            fprintf(stderr,"%s\n",buf);
-        }
-        if (fplog != NULL)
-        {
-            fprintf(fplog,"\n%s\n",buf);
-        }
-    }
-
-    return (useGPU || emulateGPU);
-}
 
 static void init_ewald_f_table(interaction_const_t *ic,
                                int verlet_kernel_type)
@@ -1909,7 +1696,7 @@ void init_interaction_const(FILE *fp,
     if (fr->cutoff_scheme == ecutsVERLET)
     {
         assert(fr->nbv != NULL && fr->nbv->grp != NULL);
-        init_interaction_const_tables(fp,ic,fr->nbv->grp[fr->nbv->nloc-1].kernel_type);
+        init_interaction_const_tables(fp,ic,fr->nbv->grp[fr->nbv->ngrp-1].kernel_type);
     }
 }
 
@@ -1917,10 +1704,10 @@ gmx_bool nb_kernel_pmetune_support(const nonbonded_verlet_t *nbv)
 {
     /* PME tuning is currently only supported with only CUDA kernels */
     return (nbv->useGPU &&
-            !(nbv->nloc == 2 && nbnxn_kernel_pairlist_simple(nbv->grp[1].kernel_type)));
+            !(nbv->ngrp == 2 && nbnxn_kernel_pairlist_simple(nbv->grp[1].kernel_type)));
 }
 
-static void init_nb_verlet(FILE *fp, 
+static void init_nb_verlet(FILE *fp,
                            nonbonded_verlet_t **nb_verlet,
                            const t_inputrec *ir,
                            const t_forcerec *fr,
@@ -1937,27 +1724,27 @@ static void init_nb_verlet(FILE *fp,
 
     snew(nbv, 1);
 
-    nbv->nbs                     = NULL;
+    nbv->nbs = NULL;
 
-    nbv->nloc = (DOMAINDECOMP(cr) ? 2 : 1);
-    for(i=0; i<nbv->nloc; i++)
+    nbv->ngrp = (DOMAINDECOMP(cr) ? 2 : 1);
+    for(i=0; i<nbv->ngrp; i++)
     {
         nbv->grp[i].nbl_lists.nnbl = 0;
         nbv->grp[i].nbat           = NULL;
         nbv->grp[i].kernel_type    = nbkNotSet;
 
-        if (i == 0)
+        if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(fp, cr, fr->use_acceleration, nbpu_opt,
+            pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                               &nbv->useGPU,
                               &nbv->grp[i].kernel_type);
         }
-        else
+        else /* non-local */
         {
             if (nbpu_opt != NULL && strcmp(nbpu_opt,"gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, fr->use_acceleration, NULL,
+                pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                                   NULL,
                                   &nbv->grp[i].kernel_type);
 
@@ -1975,11 +1762,20 @@ static void init_nb_verlet(FILE *fp,
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        nbnxn_cuda_init(fp, &(nbv->cu_nbv), (nbv->nloc > 1) && !bHybridGPURun);
-        env = getenv("GMX_NB_MIN_CI");
-        if (env)
+        nbnxn_cuda_init(fp, &nbv->cu_nbv,
+                        &fr->hwinfo->gpu_info, cr->nodeid_group_intra,
+                        (nbv->ngrp > 1) && !bHybridGPURun);
+
+        if ((env = getenv("GMX_NB_MIN_CI")) != NULL)
         {
-            sscanf(env, "%d", &nbv->min_ci_balanced);
+            char *end;
+
+            nbv->min_ci_balanced = strtol(env, &end, 10);
+            if (!end || (*end != 0) || nbv->min_ci_balanced <= 0)
+            {
+                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, positive integer required", env);
+            }
+
             if (debug)
             {
                 fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n", 
@@ -2008,7 +1804,7 @@ static void init_nb_verlet(FILE *fp,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
                       gmx_omp_nthreads_get(emntNonbonded));
 
-    for(i=0; i<nbv->nloc; i++)
+    for(i=0; i<nbv->ngrp; i++)
     {
         if (nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
         {
@@ -2074,15 +1870,8 @@ void init_forcerec(FILE *fp,
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
     
-    gmx_detectcpu(&fr->cpu_information);
-    if(MASTER(cr))
-    {
-        /* Only print warnings from master */
-        gmx_detectcpu_check_acceleration(fr->cpu_information,fp);
-    }
-
     /* By default we turn acceleration on, but it might be turned off further down... */
-    fr->use_acceleration = TRUE;
+    fr->use_cpu_acceleration = TRUE;
 
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -2202,15 +1991,15 @@ void init_forcerec(FILE *fp,
         bGenericKernelOnly = TRUE;
         bNoSolvOpt         = TRUE;
     }
-    
-    if( (getenv("GMX_DISABLE_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
+
+    if( (getenv("GMX_DISABLE_CPU_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
     {
-        fr->use_acceleration = FALSE;
+        fr->use_cpu_acceleration = FALSE;
         if (fp != NULL)
         {
             fprintf(fp,
-                    "\nFound environment variable GMX_DISABLE_ACCELERATION.\n"
-                    "Disabling all architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
+                    "\nFound environment variable GMX_DISABLE_CPU_ACCELERATION.\n"
+                    "Disabling all CPU architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
         }
     }
 
@@ -2362,7 +2151,8 @@ void init_forcerec(FILE *fp,
                        IR_ELEC_FIELD(*ir) ||
                        (fr->adress_icor != eAdressICOff)
                       );
-    
+
+    /* FIXME dead code */
     /* Mask that says whether or not this NBF list should be computed */
     /*  if (fr->bMask == NULL) {
         ngrp = ir->opts.ngener*ir->opts.ngener;
@@ -2665,6 +2455,7 @@ void init_forcerec(FILE *fp,
         }
     }
 
+    /* FIXME better remove this #ifdef-ing */
 #ifndef GMX_OPENMP
     fr->nthreads = 1;
 #else
@@ -2682,9 +2473,10 @@ void init_forcerec(FILE *fp,
 
         init_nb_verlet(fp, &fr->nbv, ir, fr, cr, nbpu_opt);
 
-        /* initilize interaction constants; 
-           TODO should be moved out during modularizzation.
+        /* initialize interaction constants
+         * TODO should be moved out during modularization.
          */
+
         init_interaction_const(fp, &fr->ic, fr);
     }
 

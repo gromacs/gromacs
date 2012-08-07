@@ -863,7 +863,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_NONLOCAL);
         }
 
-        if (nbv->nloc == 1 ||
+        if (nbv->ngrp == 1 ||
             nbv->grp[eintNonlocal].nbat == nbv->grp[eintLocal].nbat)
         {
             nbnxn_atomdata_set(nbv->grp[eintLocal].nbat,eatAll,

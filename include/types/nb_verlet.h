@@ -43,6 +43,49 @@
 extern "C" {
 #endif
 
+/*! Nonbonded NxN kernel types: plain C, SSE/AVX, GPU CUDA, GPU emulation, etc */
+enum { nbkNotSet = 0, 
+       nbk4x4_PlainC, 
+       nbk4xN_X86_SIMD128,
+       nbk4xN_X86_SIMD256,
+       nbk8x8x8_CUDA,
+       nbk8x8x8_PlainC };
+
+/* Note that _mm_... intrinsics can be converted to either SSE or AVX
+ * depending on compiler flags.
+ * For gcc we check for __AVX__
+ * At least a check for icc should be added (if there is a macro)
+ */
+static const char *nbk_name[] =
+  { "not set", "plain C 4x4",
+#if !(defined GMX_X86_AVX_256 || defined GMX_X86_AVX128_FMA || defined __AVX__)
+#ifndef GMX_X86_SSE4_1
+#ifndef GMX_DOUBLE
+    "SSE2 4x4",
+#else
+    "SSE2 4x2",
+#endif
+#else
+#ifndef GMX_DOUBLE
+    "SSE4.1 4x4",
+#else
+    "SSE4.1 4x2",
+#endif
+#endif
+#else
+#ifndef GMX_DOUBLE
+    "AVX-128 4x4",
+#else
+    "AVX-128 4x2",
+#endif
+#endif
+#ifndef GMX_DOUBLE
+    "AVX-256 4x8",
+#else
+    "AVX-256 4x4",
+#endif
+    "CUDA 8x8x8", "plain C 8x8x8" };
+
 /* Atom locality indicator: local, non-local, all, used for calls to:
    gridding, pair-search, force calculation, x/f buffer operations */
 enum { eatLocal = 0, eatNonlocal = 1, eatAll  };
@@ -69,7 +112,7 @@ typedef struct {
 /* non-bonded data structure with Verlet-type cut-off */
 typedef struct {
     nbnxn_search_t           nbs;   /* n vs n atom pair searching data          */
-    int                      nloc;  /* number of interaction groups             */
+    int                      ngrp;  /* number of interaction groups             */
     nonbonded_verlet_group_t grp[2];/* local and non-local interaction group    */
 
     gmx_bool            useGPU;           /* TRUE when GPU acceleration is used */

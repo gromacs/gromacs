@@ -44,6 +44,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "typedefs.h"
 #include "smalloc.h"
@@ -70,6 +71,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
+#include "gmx_hardware_detect.h"
 #include "gmx_omp_nthreads.h"
 #include "pull_rotation.h"
 #include "calc_verletbuf.h"
@@ -271,20 +273,29 @@ static t_commrec *mdrunner_start_threads(int nthreads,
  * were requested, which algorithms we're using,
  * and how many particles there are.
  */
-static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
-                            gmx_mtop_t *mtop)
+static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
+                            t_inputrec *inputrec, gmx_mtop_t *mtop,
+                            const t_commrec *cr)
 {
-    int nthreads,nthreads_new;
+    int nthreads,nthreads_new,ngpu;
     int min_atoms_per_thread;
     char *env;
+    char sbuf[STRLEN];
+    gmx_bool bCanUseGPU,bNthreadsAuto,bMaxMpiThreadsSet = FALSE;
+
+    bCanUseGPU  = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
+    
+    /* auto-determine the number of tMPI threads? */
+    bNthreadsAuto = (nthreads_requested < 1);
 
     nthreads = nthreads_requested;
 
     /* determine # of hardware threads. */
-    if (nthreads_requested < 1)
+    if (bNthreadsAuto)
     {
         if ((env = getenv("GMX_MAX_MPI_THREADS")) != NULL)
         {
+            bMaxMpiThreadsSet = TRUE;
             nthreads = 0;
             sscanf(env,"%d",&nthreads);
             if (nthreads < 1)
@@ -298,7 +309,7 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
             nthreads = tMPI_Thread_get_hw_number();
         }
     }
-
+    
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
         /* Steps are divided over the nodes iso splitting the atoms */
@@ -314,10 +325,10 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
         ( inputrec->eI == eiLBFGS ||
           inputrec->coulombtype == eelEWALD ) )
     {
-        fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Not starting any threads.\n");
+        fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI thread.\n");
         nthreads = 1;
     }
-    else if (nthreads_requested < 1 &&
+    else if (bNthreadsAuto &&
              mtop->natoms/nthreads < min_atoms_per_thread)
     {
         /* the thread number was chosen automatically, but there are too many
@@ -326,7 +337,8 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
 
         if (nthreads_new > 8 || (nthreads == 8 && nthreads_new > 4))
         {
-            /* Use only multiples of 4 above 8 threads
+            /* TODO better get rid of this ?
+             * Use only multiples of 4 above 8 threads
              * or with an 8-core processor
              * (to avoid 6 threads on 8 core processors with 4 real cores).
              */
@@ -342,29 +354,52 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
 
         fprintf(stderr,"\n");
         fprintf(stderr,"NOTE: Parallelization is limited by the small number of atoms,\n");
-        fprintf(stderr,"      only starting %d threads.\n",nthreads);
+        fprintf(stderr,"      only starting %d thread-MPI threads.\n",nthreads);
         fprintf(stderr,"      You can use the -nt option to optimize the number of threads.\n\n");
     }
+
+    ngpu = hwinfo->gpu_info.ncuda_dev_use;
+
+    /* If nthreads is auto-set and we're using GPUs we need to ensure one
+     * thread/device. Consistency checks will be done later. */
+    if (bNthreadsAuto && bCanUseGPU)
+    {
+        /* We should take into account the number of PME nodes, but this is
+         * set at this point only if -npme is passed on the command line.
+         * However, auto-switching to npme > 0 only happens from nnodes >= 18
+         * so we can adjust nthreads safely when nthreads < 18 (or -npme has
+         * been set). */
+
+        int ntmpi_pme;
+        ntmpi_pme = (cr->npmenodes != -1) ? cr->npmenodes : 0;
+
+        /* Reduce the # of threads to the # of GPUs */
+        /* FIXME: this check is not very elegant, perhaps not even necessary anymore 
+         * as we set npme to 0 when not set with GPUs */
+        if ((nthreads - ntmpi_pme > ngpu) && (nthreads < 18 || cr->npmenodes != -1))
+        {
+            nthreads = ngpu + ntmpi_pme;
+        }
+    }
+
     return nthreads;
 }
 #endif /* GMX_THREAD_MPI */
 
 
 /* Environment variable for setting nstlist */
-#define NSTLIST_ENVVAR      "GMX_NSTLIST"
+static const char*  NSTLIST_ENVVAR          =  "GMX_NSTLIST";
 /* Try to increase nstlist when using a GPU with nstlist less than this */
-#define NSTLIST_GPU_ENOUGH  20
+static const int    NSTLIST_GPU_ENOUGH      = 20;
 /* Increase nstlist until the non-bonded cost increases more than this factor */
-#define NBNXN_GPU_LIST_OK_FAC   1.25
+static const float  NBNXN_GPU_LIST_OK_FAC   = 1.25;
 /* Don't increase nstlist beyond a non-bonded cost increases of this factor */
-#define NBNXN_GPU_LIST_MAX_FAC  1.40
+static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.40;
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp,t_commrec *cr,
                              t_inputrec *ir,gmx_mtop_t *mtop,matrix box)
 {
-#define NNSTL 4
-    int  nstl[NNSTL]={ 20, 25, 40, 50 };
     char *env;
     int  nstlist_orig,nstlist_prev;
     verletbuf_list_setup_t ls;
@@ -377,6 +412,10 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     const char *box_err="Can not increase nstlist for GPU run because the box is too small";
     const char *dd_err ="Can not increase nstlist for GPU run because of domain decomposition limitations";
     char buf[STRLEN];
+
+    /* Number of + nstlist alternative values to try when switching  */
+    const int nstl[]={ 20, 25, 40, 50 };
+#define NNSTL  sizeof(nstl)/sizeof(nstl[0])
 
     env = getenv(NSTLIST_ENVVAR);
     if (env == NULL)
@@ -572,24 +611,22 @@ static void convert_to_verlet_scheme(FILE *fplog,
     gmx_mtop_remove_chargegroups(mtop);
 }
 
-
+/* Set CPU affinity. Can be important for performance.
+   On some systems (e.g. Cray) CPU Affinity is set by default.
+   But default assigning doesn't work (well) with only some ranks
+   having threads. This causes very low performance.
+   External tools have cumbersome syntax for setting affinity
+   in the case that only some ranks have threads.
+   Thus it is important that GROMACS sets the affinity internally at
+   if only PME is using threads.
+*/
 static void set_cpu_affinity(FILE *fplog,
                              const t_commrec *cr,
                              int nthreads_pme,
                              const t_inputrec *inputrec)
 {
-        /* Set CPU affinity. Can be important for performance.
-           On some systems (e.g. Cray) CPU Affinity is set by default.
-           But default assigning doesn't work (well) with only some ranks
-           having threads. This causes very low performance.
-           External tools have cumbersome syntax for setting affinity
-           in the case that only some ranks have threads.
-           Thus it is important that GROMACS sets the affinity internally at
-           if only PME is using threads.
-        */
-
-#ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP! */
-#ifdef __linux
+#ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP?! */
+#ifdef __linux /* TODO: only linux? why not  everywhere if sched_setaffinity is available */
     if (getenv("GMX_NO_THREAD_PINNING") == NULL)
     {
         int thread, local_nthreads, offset, n_ht_pc;
@@ -695,6 +732,43 @@ static void set_cpu_affinity(FILE *fplog,
 }
 
 
+/* Override the value in inputrec with value passed on the commnad line (if any) */
+static void override_nsteps_cmdline(FILE *fplog,
+                                    int nsteps_cmdline,
+                                    t_inputrec *ir,
+                                    const t_commrec *cr)
+{
+    assert(ir);
+    assert(cr);
+
+    /* override with anything else than the default -2 */
+    if (nsteps_cmdline > -2)
+    {
+        char stmp[STRLEN];
+
+        ir->nsteps = nsteps_cmdline;
+        if (EI_DYNAMICS(ir->eI))
+        {
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps, %.3f ps",
+                    nsteps_cmdline, nsteps_cmdline*ir->delta_t);
+        }
+        else
+        {
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps",
+                    nsteps_cmdline);
+        }
+
+        if (SIMMASTER(cr))
+        {
+            fprintf(stderr, "\n%s\n\n", stmp);
+        }
+        if (fplog)
+        {
+            fprintf(fplog, "%s\n\n", stmp);
+        }
+    }
+}
+
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm,
@@ -737,6 +811,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     int         nthreads_pme=1;
     int         nthreads_pp=1;
     gmx_membed_t membed=NULL;
+    gmx_hwinfo_t *hwinfo=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -747,8 +822,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         fplog = NULL;
     }
-
-    gmx_omp_nthreads_detecthw();
 
     snew(state,1);
     if (MASTER(cr)) 
@@ -761,10 +834,26 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             convert_to_verlet_scheme(fplog,inputrec,mtop,det(state->box));
         }
+    }
 
+    /* override nsteps with value from cmdline */
+    override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
+
+    /* TODO passing around nbpu_opt is a dirty hack; we should have an enum for this */
+    snew(hwinfo, 1);
+    if (SIMMASTER(cr))
+    {
+        /* Detect hardware, gather information. With tMPI only thread 0 does it
+         * and after threads are started broadcasts hwinfo around. */
+        gmx_hw_detect(fplog, hwinfo, cr, inputrec->cutoff_scheme, nbpu_opt);
+    }
+
+    if (MASTER(cr))
+    {
 #if defined GMX_THREAD_MPI
         /* NOW the threads will be started: */
-        nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
+        nthreads_mpi = get_nthreads_mpi(nthreads_requested, hwinfo,
+                                        inputrec, mtop, cr);
 
         if (nthreads_mpi > 1)
         {
@@ -818,6 +907,27 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
     }
 
+#if defined GMX_THREAD_MPI
+    /* With tMPI we detected on thread 0 and we'll just pass the hwinfo pointer
+     * to the other threads  -- slightly uncool, but works fine, just need to
+     * make sure that the data doesn't get freed twice. */
+    if (cr->nnodes > 1)
+    {
+        gmx_bcast(sizeof(&hwinfo), &hwinfo, cr);
+    }
+#else
+    if (PAR(cr) && !SIMMASTER(cr))
+    {
+        /* now we have inputrec on all nodes, can run the detection */
+        /* TODO: perhaps it's better to propagate within a node instead? */
+        gmx_hw_detect(fplog, hwinfo, cr, inputrec->cutoff_scheme, nbpu_opt);
+    }
+#endif
+
+    /* TODO this should use the hwinfo->cpu_info as soon as this will include
+     * information on the number of cores and threads/package */
+    gmx_omp_nthreads_detecthw();
+
     /* now make sure the state is initialized and propagated */
     set_state_entries(state,inputrec,cr->nnodes);
 
@@ -836,14 +946,15 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
 #ifndef GMX_MPI
-                  "but mdrun was compiled without threads or MPI enabled"
+                  "but %s was compiled without threads or MPI enabled"
 #else
 #ifdef GMX_THREAD_MPI
                   "but the number of threads (option -nt) is 1"
 #else
-                  "but mdrun was not started through mpirun/mpiexec or only one process was requested through mpirun/mpiexec" 
+                  "but %s was not started through mpirun/mpiexec or only one process was requested through mpirun/mpiexec"
 #endif
 #endif
+                  , ShortProgram()
             );
     }
 
@@ -989,6 +1100,32 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         ed = ed_open(nfile,fnm,Flags,cr);
     }
 
+    if (inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        /* GPU emulation detection is done later, but we need here as well
+         * -- uncool, but there's no elegant workaround */
+        gmx_bool bGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
+
+        if (bGPU)
+        {
+            /* With GPUs disable PME nodes when the user request any */
+            if (cr->npmenodes < 0)
+            {
+                cr->npmenodes = 0;
+            }
+
+            /* With GPU or emulation we should check nstlist for performance */
+            if ((cr->duty & DUTY_PP) &&
+                (((EI_DYNAMICS(inputrec->eI) && bGPU &&
+                   inputrec->nstlist < NSTLIST_GPU_ENOUGH) ||
+                  getenv(NSTLIST_ENVVAR) != NULL)))
+            {
+                /* Choose a better nstlist */
+                increase_nstlist(fplog,cr,inputrec,mtop,box);
+            }
+        }
+    }
+
     if (PAR(cr) && !((Flags & MD_PARTDEC) ||
                      EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
@@ -1036,8 +1173,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* Initialize per-node process ID and counters. */
     gmx_init_intra_counters(cr);
 
+    /* decide on the number of OpenMP threads */
     gmx_omp_nthreads_init(fplog, cr, (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
+
+    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, nthreads_requested, nbpu_opt);
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is 
@@ -1060,34 +1200,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         wcycle_set_reset_counters(wcycle, reset_counters);
     }
 
-    /* override nsteps if defined on the command line */
-    if (nsteps_cmdline >= -1)
-    {
-        char stmp[STRLEN];
-
-        inputrec->nsteps = nsteps_cmdline;
-        if (EI_DYNAMICS(inputrec->eI))
-        {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps, %.3f ps",
-                    nsteps_cmdline, nsteps_cmdline*inputrec->delta_t);
-        }
-        else
-        {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps",
-                    nsteps_cmdline);
-        }
-
-        if (SIMMASTER(cr))
-        {
-            fprintf(stderr, "\n%s\n\n", stmp);
-        }
-        if (fplog)
-        {
-            fprintf(fplog, "%s\n\n", stmp);
-        }
-    }
-
-
     snew(nrnb,1);
     if (cr->duty & DUTY_PP)
     {
@@ -1106,25 +1218,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             }
         }
 
-        if (inputrec->cutoff_scheme == ecutsVERLET)
-        {
-            gmx_bool bGPU;
-
-            /* With GPU or emulation we should check nstlist for performance */
-            bGPU = check_nbnxn_gpu(fplog,cr,nbpu_opt);
-
-            if ((EI_DYNAMICS(inputrec->eI) &&
-                 bGPU &&
-                 inputrec->nstlist < NSTLIST_GPU_ENOUGH) ||
-                getenv(NSTLIST_ENVVAR) != NULL)
-            {
-                /* Choose a better nstlist */
-                increase_nstlist(fplog,cr,inputrec,mtop,box);
-            }
-        }
-
         /* Initiate forcerecord */
         fr = mk_forcerec();
+        fr->hwinfo = hwinfo;
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tabletf",nfile,fnm),
@@ -1333,20 +1429,27 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->useGPU)
     {
-        int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
-
         /* free GPU memory and uninitialize GPU */
         nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
 
-        if (uninit_gpu(fplog, gpu_device_id) != 0)
+        char gpu_err_str[STRLEN];
+        if (!free_gpu(gpu_err_str))
         {
-            gmx_warning("Failed to uninitialize GPU.");
+            gmx_warning("On node %d failed to free GPU #%d: %s",
+                        cr->nodeid, get_current_gpu_device_id(), gpu_err_str);
         }
     }
 
     if (opt2bSet("-membed",nfile,fnm))
     {
         sfree(membed);
+    }
+
+#ifdef GMX_THREAD_MPI
+    if (PAR(cr) && SIMMASTER(cr))
+#endif
+    {
+        gmx_hw_info_free(hwinfo);
     }
 
     /* Does what it says */  

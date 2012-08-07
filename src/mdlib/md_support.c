@@ -816,7 +816,7 @@ void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
 
 void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
 {
-    if (MASTER(cr))
+    if (SIMMASTER(cr))
     {
         fprintf(stderr,"\n%s\n",buf);
     }

@@ -39,6 +39,7 @@
 #include "types/simple.h"
 #include "types/interaction_const.h"
 #include "types/nbnxn_cuda_types_ext.h"
+#include "types/hwinfo.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;
@@ -56,6 +57,7 @@ extern "C" {
 FUNC_QUALIFIER
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
+                     gmx_gpu_info_t *gpu_info, int my_gpu_index,
                      /* true of both local and non-local are don on GPU */
                      gmx_bool bLocalAndNonlocal) FUNC_TERM
 

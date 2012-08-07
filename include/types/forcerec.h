@@ -40,6 +40,7 @@
 #include "nb_verlet.h"
 #include "interaction_const.h"
 #include "../gmx_detectcpu.h"
+#include "hwinfo.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,49 +107,6 @@ typedef struct {
  */
 #define GMX_CUTOFF_INF 1E+18
 
-/*! Nonbonded kernel types: C, SSE/AVX, GPU CUDA, GPU emulation, etc */
-enum { nbkNotSet = 0, 
-       nbk4x4_PlainC, 
-       nbk4xN_X86_SIMD128,
-       nbk4xN_X86_SIMD256,
-       nbk8x8x8_CUDA,
-       nbk8x8x8_PlainC };
-
-/* Note that _mm_... intrinsics can be converted to either SSE or AVX
- * depending on compiler flags.
- * For gcc we check for __AVX__
- * At least a check for icc should be added (if there is a macro)
- */
-static const char *nbk_name[] =
-  { "not set", "plain C 4x4",
-#if !(defined GMX_X86_AVX_256 || defined GMX_X86_AVX128_FMA || defined __AVX__)
-#ifndef GMX_X86_SSE4_1
-#ifndef GMX_DOUBLE
-    "SSE2 4x4",
-#else
-    "SSE2 4x2",
-#endif
-#else
-#ifndef GMX_DOUBLE
-    "SSE4.1 4x4",
-#else
-    "SSE4.1 4x2",
-#endif
-#endif
-#else
-#ifndef GMX_DOUBLE
-    "AVX-128 4x4",
-#else
-    "AVX-128 4x2",
-#endif
-#endif
-#ifndef GMX_DOUBLE
-    "AVX-256 4x8",
-#else
-    "AVX-256 4x4",
-#endif
-    "CUDA 8x8x8", "plain C 8x8x8" };
-
 /* enums for the neighborlist type */
 enum { enbvdwNONE,enbvdwLJ,enbvdwBHAM,enbvdwTAB,enbvdwNR};
 /* OOR is "one over r" -- standard coul */
@@ -213,8 +171,8 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
-  gmx_detectcpu_t cpu_information;
-  gmx_bool        use_acceleration;
+  gmx_hwinfo_t    *hwinfo;
+  gmx_bool        use_cpu_acceleration;
 
   /* Use special N*N kernels? */
   gmx_bool bAllvsAll;
@@ -308,7 +266,7 @@ typedef struct {
   t_nblists *nblists;
 
   gmx_bool cutoff_scheme; /* old- or Verlet-style cutoff */
-  gmx_bool bNonbonded;    /* true if nonbonded calculations are turned off */
+  gmx_bool bNonbonded;    /* true if nonbonded calculations are *not* turned off */
   nonbonded_verlet_t *nbv;
 
   /* The wall tables (if used) */
@@ -466,6 +424,7 @@ typedef struct {
   real userreal4;
 
   /* Thread local force and energy data */ 
+  /* FIXME move to bonded_thread_data_t */
   int  nthreads;
   int  red_ashift;
   int  red_nblock;

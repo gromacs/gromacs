@@ -105,13 +105,13 @@ static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 static unsigned int poll_wait_pattern = (0x7FU << 23);
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
-static inline int calc_nb_kernel_nblock(int nwork_units, cu_dev_info_t *dinfo)
+static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
 {
     int max_grid_x_size;
 
     assert(dinfo);
 
-    max_grid_x_size = dinfo->dev_prop.maxGridSize[0];
+    max_grid_x_size = dinfo->prop.maxGridSize[0];
 
     /* do we exceed the grid x dimension limit? */
     if (nwork_units > max_grid_x_size)
