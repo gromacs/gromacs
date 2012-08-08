@@ -54,8 +54,9 @@ namespace internal
  *
  * \ingroup module_utility
  */
-void printFatalError(FILE *fp, const char *title, const char *details,
-                     const char *func, const char *file, int line);
+void printFatalErrorHeader(FILE *fp, const char *title,
+                           const char *func, const char *file, int line);
+void printFatalErrorFooter(FILE *fp);
 
 } // namespace internal
 //! \endcond

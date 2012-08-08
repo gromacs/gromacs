@@ -35,30 +35,128 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_utility
  */
-#include "gromacs/utility/exceptions.h"
+#include "exceptions.h"
 
 #include <boost/exception/get_error_info.hpp>
 
 #include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "errorformat.h"
 
 namespace gmx
 {
 
+namespace
+{
+
+/*! \internal \brief
+ * Stores a user-friendly explanation for the reason of an exception.
+ *
+ * Typically, should not be used directly, but through the GromacsException
+ * class: it is initialized by the constructor, and can be accessed with
+ * GromacsException::what().
+ *
+ * \ingroup module_utility
+ */
+typedef boost::error_info<struct errinfo_message_, ErrorMessage>
+        errinfo_message;
+
+} // namespace
+
+/********************************************************************
+ * ErrorMessage
+ */
+
+struct ErrorMessage::Impl
+{
+    std::string         reason_;
+    ErrorMessage        child_;
+};
+
+ErrorMessage::ErrorMessage()
+{
+}
+
+ErrorMessage::ErrorMessage(const char *reason)
+    : impl_(new Impl)
+{
+    impl_->reason_ = reason;
+}
+
+ErrorMessage::ErrorMessage(const std::string &reason)
+    : impl_(new Impl)
+{
+    impl_->reason_ = reason;
+}
+
+ErrorMessage::~ErrorMessage()
+{
+}
+
+const std::string &ErrorMessage::reason() const
+{
+    return impl_->reason_;
+}
+
+const ErrorMessage &ErrorMessage::child() const
+{
+    return impl_->child_;
+}
+
+ErrorMessage
+ErrorMessage::prependContext(const std::string &context) const
+{
+    ErrorMessage newMessage(context);
+    newMessage.impl_->child_ = *this;
+    return newMessage;
+}
+
+/********************************************************************
+ * NestedExceptions
+ */
+
+NestedExceptions::NestedExceptions()
+    : impl_(new Impl)
+{
+}
+
+NestedExceptions::~NestedExceptions()
+{
+}
+
 /********************************************************************
  * GromacsException
  */
 
-GromacsException::GromacsException(const std::string &reason)
+GromacsException::GromacsException(const ErrorMessage &reason)
 {
     *this << errinfo_message(reason);
 }
 
 const char *GromacsException::what() const throw()
 {
-    const std::string *msg = boost::get_error_info<errinfo_message>(*this);
-    return msg != NULL ? msg->c_str() : "No reason provided";
+    const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
+    while (msg != NULL && msg->hasChild())
+    {
+        msg = &msg->child();
+    }
+    return msg != NULL ? msg->reason().c_str() : "No reason provided";
+}
+
+const ErrorMessage &GromacsException::message() const
+{
+    const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
+    GMX_RELEASE_ASSERT(msg != NULL, "Message should always be set");
+    return *msg;
+}
+
+void GromacsException::prependContext(const std::string &context)
+{
+    const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
+    GMX_RELEASE_ASSERT(msg != NULL, "Message should always be set");
+    *this << errinfo_message(msg->prependContext(context));
 }
 
 /********************************************************************
@@ -105,6 +203,52 @@ int NotImplementedError::errorCode() const
  * Global functions
  */
 
+namespace
+{
+
+void printGromacsExceptionMessage(FILE *fp, const GromacsException &ex,
+                                  int indent)
+{
+    // TODO: Line wrapping in the whole function.
+    // TODO: Remove duplicate context if present in multiple nested exceptions.
+    const ErrorMessage *msg = boost::get_error_info<errinfo_message>(ex);
+    while (msg != NULL && msg->hasChild())
+    {
+        std::fprintf(fp, "%*s%s\n", indent*2, "", msg->reason().c_str());
+        ++indent;
+        msg = &msg->child();
+    }
+    if (msg != NULL && !msg->reason().empty())
+    {
+        std::fprintf(fp, "%*s%s\n", indent*2, "", msg->reason().c_str());
+    }
+
+    const NestedExceptions *nested
+        = boost::get_error_info<errinfo_nested_exceptions>(ex);
+    if (nested != NULL)
+    {
+        const std::vector<boost::exception_ptr> &exceptions = nested->exceptions();
+        std::vector<boost::exception_ptr>::const_iterator ni;
+        for (ni = exceptions.begin(); ni != exceptions.end(); ++ni)
+        {
+            try
+            {
+                rethrow_exception(*ni);
+            }
+            catch (const GromacsException &nestedEx)
+            {
+                printGromacsExceptionMessage(fp, nestedEx, indent);
+            }
+            catch (...)
+            {
+                // TODO: Print something sensible here.
+            }
+        }
+    }
+}
+
+} // namespace
+
 void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {
     const char *title = "Unknown exception";
@@ -131,11 +275,21 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
         filePtr = boost::get_error_info<boost::throw_file>(*boostEx);
         linePtr = boost::get_error_info<boost::throw_line>(*boostEx);
     }
+    internal::printFatalErrorHeader(fp, title,
+                                    funcPtr != NULL ? *funcPtr : NULL,
+                                    filePtr != NULL ? *filePtr : NULL,
+                                    linePtr != NULL ? *linePtr : 0);
+    if (gmxEx != NULL)
+    {
+        printGromacsExceptionMessage(fp, *gmxEx, 0);
+    }
+    else
+    {
+        // TODO: Line wrapping
+        std::fprintf(fp, "%s\n", ex.what());
+    }
     // TODO: Treat errno information in boost exceptions
-    internal::printFatalError(fp, title, ex.what(),
-                              funcPtr != NULL ? *funcPtr : NULL,
-                              filePtr != NULL ? *filePtr : NULL,
-                              linePtr != NULL ? *linePtr : 0);
+    internal::printFatalErrorFooter(fp);
 }
 
 } // namespace gmx

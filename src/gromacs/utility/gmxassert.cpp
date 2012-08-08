@@ -35,14 +35,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_utility
  */
-#include "gromacs/utility/gmxassert.h"
+#include "gmxassert.h"
 
 #include <cstdio>
 #include <cstdlib>
-
-#include <string>
-
-#include "gromacs/utility/stringutil.h"
 
 #include "errorformat.h"
 
@@ -56,18 +52,10 @@ namespace internal
 void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line)
 {
-    try
-    {
-        std::string title = formatString("Condition: %s\n%s", condition, msg);
-        printFatalError(stderr, "Assertion failed", title.c_str(),
-                        func, file, line);
-    }
-    catch (const std::bad_alloc &)
-    {
-        printFatalError(stderr, "Assertion failed",
-                "(memory allocation failed while formatting the error message)",
-                func, file, line);
-    }
+    printFatalErrorHeader(stderr, "Assertion failed", func, file, line);
+    // TODO: Line wrapping
+    std::fprintf(stderr, "Condition: %s\n%s\n", condition, msg);
+    printFatalErrorFooter(stderr);
     std::abort();
 }
 
