@@ -44,26 +44,61 @@
 
 #include <exception>
 #include <string>
+#include <vector>
 
 #include <boost/exception/errinfo_api_function.hpp>
 #include <boost/exception/errinfo_errno.hpp>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/info.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/throw_exception.hpp>
 
 namespace gmx
 {
 
-/*! \brief
- * Stores a user-friendly explanation for the reason of an exception.
- *
- * Typically, should not be used directly, but through the GromacsException
- * class: it is initialized by the constructor, and can be accessed with
- * GromacsException::what().
- *
- * \inlibraryapi
- */
-typedef boost::error_info<struct errinfo_message_, std::string> errinfo_message;
+class GromacsException;
+
+class ErrorMessage
+{
+    public:
+        ErrorMessage(const char *reason);
+        ErrorMessage(const std::string &reason);
+        ErrorMessage(const std::string &context, const std::string &reason);
+        ~ErrorMessage();
+
+        const std::string &context() const
+        {
+            return impl_->context_;
+        }
+        const std::string &reason() const
+        {
+            return impl_->reason_;
+        }
+        bool hasDetails() const { return !details().empty(); }
+        const std::vector<ErrorMessage> &details() const
+        {
+            return impl_->details_;
+        }
+
+        void addDetails(const ErrorMessage &message)
+        {
+            impl_->details_.push_back(message);
+        }
+
+        ErrorMessage prependContext(const std::string &context) const;
+        ErrorMessage prependContext(const std::string &context,
+                                    const std::string &reason) const;
+
+    private:
+        struct Impl
+        {
+            std::string                 context_;
+            std::string                 reason_;
+            std::vector<ErrorMessage>   details_;
+        };
+
+        boost::shared_ptr<Impl> impl_;
+};
 
 /*! \addtopublicapi
  * \{
@@ -98,13 +133,18 @@ class GromacsException : public std::exception, public boost::exception
          */
         virtual int errorCode() const = 0;
 
+        const ErrorMessage &message() const;
+        void prependContext(const std::string &context);
+        void prependContext(const std::string &context,
+                            const std::string &reason);
+
     protected:
         /*! \brief
          * Creates an exception object with the provided detailed reason.
          *
          * \param[in] reason Detailed reason for the exception.
          */
-        explicit GromacsException(const std::string &reason);
+        explicit GromacsException(const ErrorMessage &reason);
 };
 
 /*! \brief
@@ -120,7 +160,7 @@ class FileIOError : public GromacsException
          *
          * \param[in] reason Detailed reason for the exception.
          */
-        explicit FileIOError(const std::string &reason)
+        explicit FileIOError(const ErrorMessage &reason)
             : GromacsException(reason) {}
 
         virtual int errorCode() const;
@@ -138,7 +178,7 @@ class UserInputError : public GromacsException
 {
     protected:
         //! \copydoc FileIOError::FileIOError()
-        explicit UserInputError(const std::string &reason)
+        explicit UserInputError(const ErrorMessage &reason)
             : GromacsException(reason) {}
 };
 
@@ -151,7 +191,7 @@ class InvalidInputError : public UserInputError
 {
     public:
         //! \copydoc FileIOError::FileIOError()
-        explicit InvalidInputError(const std::string &reason)
+        explicit InvalidInputError(const ErrorMessage &reason)
             : UserInputError(reason) {}
 
         virtual int errorCode() const;
@@ -166,7 +206,7 @@ class InconsistentInputError : public UserInputError
 {
     public:
         //! \copydoc FileIOError::FileIOError()
-        explicit InconsistentInputError(const std::string &reason)
+        explicit InconsistentInputError(const ErrorMessage &reason)
             : UserInputError(reason) {}
 
         virtual int errorCode() const;
@@ -181,7 +221,7 @@ class SimulationInstabilityError : public GromacsException
 {
     public:
         //! \copydoc FileIOError::FileIOError()
-        explicit SimulationInstabilityError(const std::string &reason)
+        explicit SimulationInstabilityError(const ErrorMessage &reason)
             : GromacsException(reason) {}
 
         virtual int errorCode() const;
@@ -196,7 +236,7 @@ class InternalError : public GromacsException
 {
     public:
         //! \copydoc FileIOError::FileIOError()
-        explicit InternalError(const std::string &reason)
+        explicit InternalError(const ErrorMessage &reason)
             : GromacsException(reason) {}
 
         virtual int errorCode() const;
@@ -211,7 +251,7 @@ class APIError : public GromacsException
 {
     public:
         //! \copydoc FileIOError::FileIOError()
-        explicit APIError(const std::string &reason)
+        explicit APIError(const ErrorMessage &reason)
             : GromacsException(reason) {}
 
         virtual int errorCode() const;
@@ -226,7 +266,7 @@ class NotImplementedError : public APIError
 {
     public:
         //! \copydoc FileIOError::FileIOError()
-        explicit NotImplementedError(const std::string &reason)
+        explicit NotImplementedError(const ErrorMessage &reason)
             : APIError(reason) {}
 
         virtual int errorCode() const;

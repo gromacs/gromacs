@@ -39,9 +39,11 @@
 
 #include <cctype>
 
+#include <string>
+#include <vector>
+
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/messagestringcollector.h"
 
 namespace gmx
 {
@@ -97,7 +99,8 @@ void CommandLineParser::parse(int *argc, char *argv[])
 
 void CommandLineParser::parse(std::vector<std::string> *commandLine)
 {
-    MessageStringCollector errors;
+    ErrorMessage errors("Invalid command-line options");
+    std::string currentContext;
     // Start in the discard phase to skip options that can't be understood.
     bool bDiscard = true;
 
@@ -116,11 +119,11 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
                 }
                 catch (const UserInputError &ex)
                 {
-                    errors.append(ex.what());
+                    errors.addDetails(ex.message().prependContext(currentContext));
                 }
-                errors.finishContext();
+                currentContext.clear();
             }
-            errors.startContext("In command-line option " + *arg);
+            currentContext = "In command-line option " + *arg;
             bDiscard = false;
             try
             {
@@ -130,8 +133,8 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
             catch (const UserInputError &ex)
             {
                 bDiscard = true;
-                errors.append(ex.what());
-                errors.finishContext();
+                errors.addDetails(ex.message().prependContext(currentContext));
+                currentContext.clear();
             }
         }
         else if (!bDiscard)
@@ -142,7 +145,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
             }
             catch (const UserInputError &ex)
             {
-                errors.append(ex.what());
+                errors.addDetails(ex.message().prependContext(currentContext));
             }
         }
     }
@@ -154,15 +157,14 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
         }
         catch (const UserInputError &ex)
         {
-            errors.append(ex.what());
+            errors.addDetails(ex.message().prependContext(currentContext));
         }
-        errors.finishContext();
     }
     impl_->assigner_.finish();
-    if (!errors.isEmpty())
+    if (errors.hasDetails())
     {
         // TODO: This exception type may not always be appropriate.
-        GMX_THROW(InvalidInputError(errors.toString()));
+        GMX_THROW(InvalidInputError(errors));
     }
 }
 
