@@ -1,10 +1,9 @@
 file(GLOB UTILITY_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
-# Needs to be created in the source tree to allow relative paths in headers to
-# be resolved correctly before installation
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gmx_header_config.h.cmakein
-               ${CMAKE_CURRENT_SOURCE_DIR}/gmx_header_config.h)
+set(GENERATED_HEADER_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/gmx_header_config_gen.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gmx_header_config_gen.h.cmakein
+               ${GENERATED_HEADER_CONFIG})
 
 set(UTILITY_PUBLIC_HEADERS
     arrayref.h
@@ -19,6 +18,9 @@ set(UTILITY_PUBLIC_HEADERS
     stringutil.h
     uniqueptr.h)
 install(FILES ${UTILITY_PUBLIC_HEADERS}
+        DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility
+        COMPONENT development)
+install(FILES ${GENERATED_HEADER_CONFIG}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility
         COMPONENT development)
 

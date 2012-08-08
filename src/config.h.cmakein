@@ -1,4 +1,4 @@
-/* Manually created from config.h.in to work with cmake */
+#include "gromacs/utility/gmx_header_config.h"
 
 /* Disable warnings about double-to-float conversion accuracy loss on MSVC */
 #ifdef _MSC_VER

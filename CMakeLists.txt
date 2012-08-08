@@ -529,6 +529,8 @@ add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_SOURCE_DIR}/src)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(${CMAKE_BINARY_DIR}/src)
+# Required for gmx_header_config_gen.h to be found before installation
+include_directories(${CMAKE_BINARY_DIR}/src/gromacs/utility)
 # Required for now to make old code compile
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
