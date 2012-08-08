@@ -35,30 +35,74 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_utility
  */
-#include "gromacs/utility/exceptions.h"
+#include "exceptions.h"
 
 #include <boost/exception/get_error_info.hpp>
 
 #include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "errorformat.h"
 
 namespace gmx
 {
 
+namespace
+{
+
+/*! \internal \brief
+ * Stores a user-friendly explanation for the reason of an exception.
+ *
+ * Typically, should not be used directly, but through the GromacsException
+ * class: it is initialized by the constructor, and can be accessed with
+ * GromacsException::what().
+ *
+ * \ingroup module_utility
+ */
+typedef boost::error_info<struct errinfo_message_, ErrorMessagePointer>
+        errinfo_message;
+
+} // namespace
+
+/********************************************************************
+ * ErrorMessage
+ */
+
+void ErrorMessage::addExceptionAsDetails(const GromacsException &ex)
+{
+    const ErrorMessagePointer *msg = boost::get_error_info<errinfo_message>(ex);
+    GMX_RELEASE_ASSERT(msg != NULL, "Message should always be set");
+    details_.push_back(*msg);
+}
+
 /********************************************************************
  * GromacsException
  */
 
-GromacsException::GromacsException(const std::string &reason)
+GromacsException::GromacsException(const ErrorMessage &reason)
 {
-    *this << errinfo_message(reason);
+    *this << errinfo_message(ErrorMessagePointer(new ErrorMessage(reason)));
 }
 
 const char *GromacsException::what() const throw()
 {
-    const std::string *msg = boost::get_error_info<errinfo_message>(*this);
-    return msg != NULL ? msg->c_str() : "No reason provided";
+    const ErrorMessagePointer *msg = boost::get_error_info<errinfo_message>(*this);
+    return msg != NULL ? (*msg)->reason().c_str() : "No reason provided";
+}
+
+const ErrorMessage &GromacsException::message() const
+{
+    const ErrorMessagePointer *msg = boost::get_error_info<errinfo_message>(*this);
+    GMX_RELEASE_ASSERT(msg != NULL, "Message should always be set");
+    return **msg;
+}
+
+void GromacsException::prependContext(const std::string &context)
+{
+    const ErrorMessagePointer *msg = boost::get_error_info<errinfo_message>(*this);
+    GMX_RELEASE_ASSERT(msg != NULL, "Message should always be set");
+    (*msg)->prependContext(context);
 }
 
 /********************************************************************
@@ -105,6 +149,32 @@ int NotImplementedError::errorCode() const
  * Global functions
  */
 
+namespace
+{
+
+void printGromacsExceptionMessage(FILE *fp, const ErrorMessage &msg, int indent)
+{
+    // TODO: Line wrapping in the whole function.
+    // TODO: Remove duplicate context if present in multiple details objects.
+    const std::vector<std::string> &contextStack = msg.contextStack();
+    std::vector<std::string>::const_reverse_iterator ci;
+    for (ci = contextStack.rbegin(); ci != contextStack.rend(); ++ci)
+    {
+        std::fprintf(fp, "%*s%s\n", indent*2, "", ci->c_str());
+        ++indent;
+    }
+    std::fprintf(fp, "%*s%s\n", indent*2, "", msg.reason().c_str());
+
+    const std::vector<ErrorMessagePointer> &details = msg.details();
+    std::vector<ErrorMessagePointer>::const_iterator di;
+    for (di = details.begin(); di != details.end(); ++di)
+    {
+        printGromacsExceptionMessage(fp, **di, indent);
+    }
+}
+
+} // namespace
+
 void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {
     const char *title = "Unknown exception";
@@ -131,11 +201,21 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
         filePtr = boost::get_error_info<boost::throw_file>(*boostEx);
         linePtr = boost::get_error_info<boost::throw_line>(*boostEx);
     }
+    internal::printFatalErrorHeader(fp, title,
+                                    funcPtr != NULL ? *funcPtr : NULL,
+                                    filePtr != NULL ? *filePtr : NULL,
+                                    linePtr != NULL ? *linePtr : 0);
+    if (gmxEx != NULL)
+    {
+        printGromacsExceptionMessage(fp, gmxEx->message(), 0);
+    }
+    else
+    {
+        // TODO: Line wrapping
+        std::fprintf(fp, "%s\n", ex.what());
+    }
     // TODO: Treat errno information in boost exceptions
-    internal::printFatalError(fp, title, ex.what(),
-                              funcPtr != NULL ? *funcPtr : NULL,
-                              filePtr != NULL ? *filePtr : NULL,
-                              linePtr != NULL ? *linePtr : 0);
+    internal::printFatalErrorFooter(fp);
 }
 
 } // namespace gmx
