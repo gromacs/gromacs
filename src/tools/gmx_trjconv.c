@@ -1388,8 +1388,8 @@ int gmx_trjconv(int argc,char *argv[])
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout = fr;
-			frout.bV    &= bVels;
-			frout.bF    &= bForce;
+			frout.bV = (frout.bV && bVels);
+			frout.bF = (frout.bF && bForce);
                         frout.natoms = nout;
                         if (bNeedPrec && (bSetPrec || !fr.bPrec)) {
                             frout.bPrec = TRUE;
