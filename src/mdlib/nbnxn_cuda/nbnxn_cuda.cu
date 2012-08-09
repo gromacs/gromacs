@@ -155,18 +155,6 @@ nb_cu_k_legacy[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
       { k_nbnxn_cutoff_ener_legacy, k_nbnxn_cutoff_ener_prune_legacy } },
 };
 
-/* Old kernels */
-static const nbnxn_cu_k_ptr_t
-nb_cu_k_old[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
-{
-    { { k_nbnxn_ewald_old,          k_nbnxn_ewald_prune_old },
-      { k_nbnxn_ewald_ener_old,     k_nbnxn_ewald_ener_prune_old } },
-    { { k_nbnxn_rf_old,             k_nbnxn_rf_prune_old },
-      { k_nbnxn_rf_ener_old,        k_nbnxn_rf_ener_prune_old } },
-    { { k_nbnxn_ewald_old,          k_nbnxn_ewald_prune_old },
-      { k_nbnxn_cutoff_ener_old,    k_nbnxn_cutoff_ener_prune_old } },
-};
-
 /*! Return a pointer to the kernel version to be executed at the current step. */
 static inline nbnxn_cu_k_ptr_t select_nbnxn_kernel(int kver, int eeltype,
                                                     gmx_bool doEne, gmx_bool doPrune)
@@ -174,11 +162,7 @@ static inline nbnxn_cu_k_ptr_t select_nbnxn_kernel(int kver, int eeltype,
     assert(kver < eNbnxnCuKNR);
     assert(eeltype < eelCuNR);
 
-    if (NBNXN_KVER_OLD(kver))
-    {
-        return nb_cu_k_old[eeltype][doEne][doPrune];
-    }
-    else if (NBNXN_KVER_LEGACY(kver))
+    if (NBNXN_KVER_LEGACY(kver))
     {
         return nb_cu_k_legacy[eeltype][doEne][doPrune];
     }
@@ -194,11 +178,7 @@ static inline int calc_shmem_required(int kver)
     int shmem;
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
-    if (NBNXN_KVER_OLD(kver))
-    {
-        shmem = (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
-    }
-    else if (NBNXN_KVER_LEGACY(kver))
+    if (NBNXN_KVER_LEGACY(kver))
     {
         /* i-atom x+q in shared memory */
         shmem =  NSUBCELL * CLUSTER_SIZE * sizeof(float4);

@@ -103,24 +103,6 @@ static const char * const nb_legacy_knames[NUM_NB_KERNELS] =
     "_Z32k_nbnxn_cutoff_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti"
 };
 
-/*! Names of old/unused nonbonded kernel fucntions with mangling (deprecated,
-    used to be development k1). */
-static const char * const nb_old_knames[NUM_NB_KERNELS] =
-{
-    "_Z14k_nbnxn_rf_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z17k_nbnxn_ewald_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z18k_nbnxn_cutoff_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z19k_nbnxn_rf_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z20k_nbnxn_rf_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z22k_nbnxn_ewald_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z23k_nbnxn_ewald_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z23k_nbnxn_cutoff_ener_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z24k_nbnxn_cutoff_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z25k_nbnxn_rf_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z28k_nbnxn_ewald_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z29k_nbnxn_cutoff_ener_prune_old11cu_atomdata10cu_nbparam8cu_plisti"
-};
-
 
 /*! Tabulates the Ewald Coulomb force and initializes the size/scale 
     and the table GPU array. If called with an already allocated table,
@@ -341,7 +323,7 @@ void nbnxn_cuda_init(FILE *fplog,
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
     char sbuf[STRLEN];
-    bool bStreamSync, bNoStreamSync, bOldKernel, bLegacyKernel, bDefaultKernel,
+    bool bStreamSync, bNoStreamSync, bLegacyKernel, bDefaultKernel,
          bCUDA40, bCUDA32, bTMPIAtomics, bX86;
 
     assert(gpu_info);
@@ -519,77 +501,63 @@ void nbnxn_cuda_init(FILE *fplog,
     /* FIXME move this out in a function
        Decide which kernel version to run based on:
        - GPU SM version
-       - non-bonded kernel selector environment variables (both new and old form for backward-compatibility).
+       - non-bonded kernel selector environment variables
     */
-    /* old kernel (former k1) */
-    bOldKernel     = (getenv("GMX_NB_K1") != NULL) || (getenv("GMX_CU_NB_OLD") != NULL);
     /* legacy kernel (former k2), kept for now for backward compatiblity,
        faster than the default with  CUDA 3.2/4.0 (TODO: on Kepler?). */
-    bLegacyKernel  = (getenv("GMX_NB_K2") != NULL) || (getenv("GMX_CU_NB_LEGACY") != NULL);
+    bLegacyKernel  = (getenv("GMX_CU_NB_LEGACY") != NULL);
     /* default kernel (former k3). */
-    bDefaultKernel = (getenv("GMX_NB_K3") != NULL) || (getenv("GMX_CU_NB_DEFAULT") != NULL);
+    bDefaultKernel = (getenv("GMX_CU_NB_DEFAULT") != NULL);
 
-    if ((unsigned)(bOldKernel + bLegacyKernel + bDefaultKernel) > 1)
+    if ((unsigned)(bLegacyKernel + bDefaultKernel) > 1)
     {
         /* TODO remove in release? */
         gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
                   "of the following environment variables: \n"
-                  "GMX_CU_NB_DEFAULT, GMX_CU_NB_LEGACY [GMX_CU_NB_OLD deprecated!]");
+                  "GMX_CU_NB_DEFAULT, GMX_CU_NB_LEGACY");
     }
 
     /* set the kernel type for the current GPU */
-    if (bOldKernel)
-    {
-        nb->kernel_ver = eNbnxnCuKOld;
-        /* TODO remove in release? */
-        gmx_warning("The old (and deprecated) CUDA non-bonded kernels (former k1) were selected.\n"
-                    "      This kernel is always slower than the default and legacy kernels.");
-    }
-    else
-    {
-        char sbuf[STRLEN];
-
-        bCUDA32 = bCUDA40 = false;
+    bCUDA32 = bCUDA40 = false;
 #if CUDA_VERSION == 3200
-        bCUDA32 = true;
-        sprintf(sbuf, "3.2");
+    bCUDA32 = true;
+    sprintf(sbuf, "3.2");
 #elif CUDA_VERSION == 4000
-        bCUDA40 = false;
-        sprintf(sbuf, "4.0");
+    bCUDA40 = false;
+    sprintf(sbuf, "4.0");
 #endif
 
-        /* default is default ;) */
-        nb->kernel_ver = eNbnxnCuKDefault;
+    /* default is default ;) */
+    nb->kernel_ver = eNbnxnCuKDefault;
 
-        /* TODO: add warning to the sanity checks for the case when code compiled
-                 with old nvcc is used on Kepler. */
-        if (bCUDA32 || bCUDA40)
+    /* TODO: add warning to the sanity checks for the case when code compiled
+       with old nvcc is used on Kepler. */
+    if (bCUDA32 || bCUDA40)
+    {
+        /* use legacy kernel unless something else is forced by an env. var */
+        if (bDefaultKernel)
         {
-            /* use legacy kernel unless something else is forced by an env. var */
-            if (bDefaultKernel)
-            {
-                fprintf(stderr,
-                        "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
-                        "      non-bonded kenels perform best. However, the default kernels were\n"
-                        "      selected by the GMX_CU_NB_DEFAULT environment variable."
-                        "      Consider using using the legacy kernels or upgrade your CUDA tookit.\n",
-                        sbuf);
-            }
-            else
-            {
-                nb->kernel_ver = eNbnxnCuKLegacy;
-            }
+            fprintf(stderr,
+                    "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
+                    "      non-bonded kenels perform best. However, the default kernels were\n"
+                    "      selected by the GMX_CU_NB_DEFAULT environment variable."
+                    "      Consider using using the legacy kernels or upgrade your CUDA tookit.\n",
+                    sbuf);
         }
         else
         {
-            /* issue not if the non-default kernel is forced by an env. var */
-            if (bLegacyKernel)
-            {
-                fprintf(stderr, "\nNOTE: Non-default non-bonded CUDA kernels were selected by the GMX_CU_NB_LEGACY\n"
-                        "      env var. Consider using using the default kernels which should be faster!\n");
-
-                nb->kernel_ver = eNbnxnCuKLegacy;
-            }
+            nb->kernel_ver = eNbnxnCuKLegacy;
+        }
+    }
+    else
+    {
+        /* issue not if the non-default kernel is forced by an env. var */
+        if (bLegacyKernel)
+        {
+            fprintf(stderr, "\nNOTE: Non-default non-bonded CUDA kernels were selected by the GMX_CU_NB_LEGACY\n"
+                    "      env var. Consider using using the default kernels which should be faster!\n");
+            
+            nb->kernel_ver = eNbnxnCuKLegacy;
         }
     }
 
@@ -611,10 +579,6 @@ void nbnxn_cuda_init(FILE *fplog,
             /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
             stat = cudaFuncSetCacheConfig(nb_default_knames[i], cudaFuncCachePreferL1);
         }
-        CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
-
-        /* Old kernel 48/16 kB Shared/L1 (TODO deprecated, remove) */
-        stat = cudaFuncSetCacheConfig(nb_old_knames[i],  cudaFuncCachePreferShared);
         CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
     }
 

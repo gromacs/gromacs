@@ -42,7 +42,6 @@
 /* Cut-Off */
 #define EL_CUTOFF
 #define NB_KERNEL_FUNC_NAME(x,...) x##_cutoff##__VA_ARGS__
-#include "nbnxn_cuda_kernel_old.cuh"
 #include "nbnxn_cuda_kernel_legacy.cuh"
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_CUTOFF
@@ -51,7 +50,6 @@
 /* Reaction-Field */
 #define EL_RF
 #define NB_KERNEL_FUNC_NAME(x,...) x##_rf##__VA_ARGS__
-#include "nbnxn_cuda_kernel_old.cuh"
 #include "nbnxn_cuda_kernel_legacy.cuh"
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_RF
@@ -60,7 +58,6 @@
 /* Ewald */
 #define EL_EWALD
 #define NB_KERNEL_FUNC_NAME(x,...) x##_ewald##__VA_ARGS__
-#include "nbnxn_cuda_kernel_old.cuh"
 #include "nbnxn_cuda_kernel_legacy.cuh"
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_EWALD
