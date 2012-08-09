@@ -41,6 +41,7 @@
 #include "typedefs.h"
 #include "gmx_fatal.h"
 #include "mdrun.h"
+#include "md_support.h"
 #include "types/iteratedconstraints.h"
 
 #ifdef GMX_DOUBLE

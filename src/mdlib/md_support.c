@@ -46,8 +46,7 @@
 #include "gmx_wallcycle.h"
 #include "vcm.h"
 #include "nrnb.h"
-
-#include "nbnxn_cuda_data_mgmt.h"
+#include "md_support.h"
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
@@ -589,40 +588,6 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
     {
         state->lambda[i] = state_global->lambda[i];
     }
-}
-
-void reset_all_counters(FILE *fplog,t_commrec *cr,
-                        gmx_large_int_t step,
-                        gmx_large_int_t *step_rel,t_inputrec *ir,
-                        gmx_wallcycle_t wcycle,t_nrnb *nrnb,
-                        gmx_runtime_t *runtime,
-                        nbnxn_cuda_ptr_t cu_nbv)
-{
-    char buf[STRLEN],sbuf[STEPSTRSIZE];
-
-    /* Reset all the counters related to performance over the run */
-    sprintf(buf,"step %s: resetting all time and cycle counters\n",
-            gmx_step_str(step,sbuf));
-    md_print_warning(cr,fplog,buf);
-
-    if (cu_nbv)
-    {
-        nbnxn_cuda_reset_timings(cu_nbv);
-    }
-
-    wallcycle_stop(wcycle,ewcRUN);
-    wallcycle_reset_all(wcycle);
-    if (DOMAINDECOMP(cr))
-    {
-        reset_dd_statistics_counters(cr->dd);
-    }
-    init_nrnb(nrnb);
-    ir->init_step += *step_rel;
-    ir->nsteps    -= *step_rel;
-    *step_rel = 0;
-    wallcycle_start(wcycle,ewcRUN);
-    runtime_start(runtime);
-    print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
 }
 
 static void min_zero(int *n,int i)

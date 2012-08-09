@@ -31,8 +31,7 @@
 #include "gpu_utils.h"
 #include "statutil.h"
 #include "gmx_hardware_detect.h"
-#include "mdrun.h" /* FIXME  it's stupid to include this in, but need to re-implement
-                      md_print_warning anyway */
+#include "md_support.h"
 
 
 /* TODO:

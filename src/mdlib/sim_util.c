@@ -63,6 +63,7 @@
 #include "nrnb.h"
 #include "mshift.h"
 #include "mdrun.h"
+#include "sim_util.h"
 #include "update.h"
 #include "physics.h"
 #include "main.h"

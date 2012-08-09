@@ -64,6 +64,7 @@
 #include "vsite.h"
 #include "force.h"
 #include "mdrun.h"
+#include "md_support.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "trnio.h"
