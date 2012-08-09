@@ -560,13 +560,13 @@ static void prepare_verlet_scheme(FILE *fplog,
                                   t_inputrec *ir,
                                   const gmx_mtop_t *mtop,
                                   matrix box,
-                                  gmx_bool *bGPU)
+                                  gmx_bool *bUseGPU)
 {
     /* Here we only check for GPU usage on the MPI master process,
      * as here we don't know how many GPUs we will use yet.
      * We check for a GPU on all processes later.
      */
-    *bGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
+    *bUseGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
 
     if (ir->verletbuf_drift > 0)
     {
@@ -578,7 +578,7 @@ static void prepare_verlet_scheme(FILE *fplog,
          * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
          * and 4x2 gives a large buffer than 4x4, this is ok.
          */
-        verletbuf_get_list_setup(*bGPU,&ls);
+        verletbuf_get_list_setup(*bUseGPU,&ls);
 
         calc_verlet_buffer_size(mtop,det(box),ir,
                                 ir->verletbuf_drift,&ls,
@@ -598,7 +598,7 @@ static void prepare_verlet_scheme(FILE *fplog,
 
     /* With GPU or emulation we should check nstlist for performance */
     if ((EI_DYNAMICS(ir->eI) &&
-         *bGPU &&
+         *bUseGPU &&
          ir->nstlist < NSTLIST_GPU_ENOUGH) ||
         getenv(NSTLIST_ENVVAR) != NULL)
     {
@@ -949,9 +949,12 @@ static void override_nsteps_cmdline(FILE *fplog,
     }
 }
 
+/* Data structure set by SIMMASTER which needs to be passed to all nodes
+ * before the other nodes have read the tpx file and called gmx_hw_detect.
+ */
 typedef struct {
-    int      cutoff_scheme;
-    gmx_bool bGPU;
+    int      cutoff_scheme; /* The cutoff-scheme from inputrec_t */
+    gmx_bool bUseGPU;       /* Use GPU or GPU emulation          */
 } master_inf_t;
 
 int mdrunner(gmx_hw_opt_t *hw_opt,
@@ -967,6 +970,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
              const char *deviceOptions, unsigned long Flags)
 {
+    gmx_bool   bForceUseGPU,bTryUseGPU;
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
     t_state    *state=NULL;
@@ -1009,6 +1013,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fplog = NULL;
     }
 
+    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
+    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+
     snew(state,1);
     if (SIMMASTER(cr)) 
     {
@@ -1024,21 +1031,31 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* override nsteps with value from cmdline */
         override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
 
-        /* TODO passing around nbpu_opt is a dirty hack; we should have an enum for this */
         /* Detect hardware, gather information. With tMPI only thread 0 does it
          * and after threads are started broadcasts hwinfo around. */
         snew(hwinfo, 1);
         gmx_hw_detect(fplog, hwinfo, cr,
-                      inputrec->cutoff_scheme, nbpu_opt, hw_opt->gpu_id);
+                      bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
 
         minf.cutoff_scheme = inputrec->cutoff_scheme;
-        minf.bGPU          = FALSE;
+        minf.bUseGPU       = FALSE;
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             prepare_verlet_scheme(fplog,hwinfo,cr,hw_opt,nbpu_opt,
                                   inputrec,mtop,state->box,
-                                  &minf.bGPU);
+                                  &minf.bUseGPU);
+        }
+        else if (hwinfo->bCanUseGPU)
+        {
+            md_print_warning(cr,fplog,
+                             "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
+                             "      To use a GPU, set the mdp option cutoff-scheme = Verlet\n");
+
+            if (bForceUseGPU)
+            {
+                gmx_fatal(FARGS,"GPU requested, but can't be used without cutoff-scheme=Verlet");
+            }
         }
     }
 #ifndef GMX_THREAD_MPI
@@ -1047,7 +1064,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bcast_sim(sizeof(minf),&minf,cr);
     }
 #endif
-    if (minf.bGPU && cr->npmenodes == -1)
+    if (minf.bUseGPU && cr->npmenodes == -1)
     {
         /* Don't automatically use PME-only nodes with GPUs */
         cr->npmenodes = 0;
@@ -1153,7 +1170,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* TODO: perhaps it's better to propagate within a node instead? */
         snew(hwinfo, 1);
         gmx_hw_detect(fplog, hwinfo, cr,
-                      inputrec->cutoff_scheme, nbpu_opt, hw_opt->gpu_id);
+                      bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
     }
 #endif
 
@@ -1386,7 +1403,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi, nbpu_opt);
+    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi, minf.bUseGPU);
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is 

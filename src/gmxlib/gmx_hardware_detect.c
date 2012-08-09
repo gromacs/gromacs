@@ -149,7 +149,7 @@ static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
 
 void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
                                       const t_commrec *cr, int ntmpi_requested,
-                                      const char *nbpu_opt)
+                                      gmx_bool bUseGPU)
 {
     int      npppn, ntmpi_pp, ngpu;
     char     sbuf[STRLEN], th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
@@ -227,7 +227,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
         print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);
     }
 
-    if (hwinfo->bCanUseGPU && !bEmulateGPU)
+    if (bUseGPU && hwinfo->bCanUseGPU && !bEmulateGPU)
     {
         ngpu = hwinfo->gpu_info.ncuda_dev_use;
         sprintf(gpu_plural, "%s", (ngpu > 1) ? "s" : "");
@@ -302,11 +302,26 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
                 }
                 else
                 {
-                    gmx_fatal(FARGS,
-                              "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
-                              "%s was started with %d PP %s%s%s, but only %d GPU%s were detected.",
-                              th_or_proc, btMPI ? "s" : "es" , pernode,
-                              ShortProgram(), npppn, th_or_proc, th_or_proc_plural, pernode, ngpu, gpu_plural);
+                    /* Avoid duplicate error messages.
+                     * Unfortunately we can only do this at the physical node
+                     * level, since the hardware setup and MPI process count
+                     * might be differ over physical nodes.
+                     */
+                    if (cr->nodeid_intra == 0)
+                    {
+                        gmx_fatal(FARGS,
+                                  "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
+                                  "%s was started with %d PP %s%s%s, but only %d GPU%s were detected.",
+                                  th_or_proc, btMPI ? "s" : "es" , pernode,
+                                  ShortProgram(), npppn, th_or_proc, th_or_proc_plural, pernode, ngpu, gpu_plural);
+                    }
+#ifdef GMX_MPI
+                    else
+                    {
+                        /* Avoid other ranks to continue after inconsistency */
+                        MPI_Barrier(MPI_COMM_WORLD);
+                    }
+#endif
                 }
             }
         }
@@ -359,17 +374,17 @@ static const int MAX_GPU_IDS = 10;
 
 void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
                    const t_commrec *cr,
-                   int cutoff_scheme, const char *nbpu_opt, const char *gpu_id)
+                   gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
+                   const char *gpu_id)
 {
     int             i;
     const char      *env;
     char            sbuf[STRLEN], stmp[STRLEN];
     gmx_hwinfo_t    *hw;
     gmx_gpu_info_t  gpuinfo_auto, gpuinfo_user;
-    gmx_bool        bTryUseGPU, bForceUseGPU, bGPUBin;
+    gmx_bool        bGPUBin;
 
     assert(hwinfo);
-    assert(cutoff_scheme < ecutsNR);
 
     /* detect CPU; no fuss, we don't detect system-wide -- sloppy, but that's it for now */
     gmx_detectcpu(&hwinfo->cpu_info);
@@ -385,26 +400,6 @@ void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
 #else
     bGPUBin      = FALSE;
 #endif
-    bForceUseGPU = (nbpu_opt && strncmp(nbpu_opt, "gpu", 3) == 0);
-    bTryUseGPU   = (bGPUBin && cutoff_scheme == ecutsVERLET && nbpu_opt &&
-                    (strncmp(nbpu_opt, "gpu", 3) == 0 ||
-                     strncmp(nbpu_opt, "auto", 4) == 0));
-
-    /* TODO: should all these checks be moved to the runconf check?! */
-    if (getenv("GMX_NO_GPU") != NULL)
-    {
-        if (bForceUseGPU)
-        {
-            gmx_fatal(FARGS,"Conflicting use of command line argument \'-nb %s\' and env.var. GMX_NO_GPU!",
-                      nbpu_opt);
-        }
-
-        /* TODO this used to be a warning -- should it be? */
-        sprintf(sbuf, "NOTE: GPU acceleration turned off by the GMX_NO_GPU env. var.");
-        md_print_warning(cr, fplog, sbuf);
-
-        bTryUseGPU = bForceUseGPU = FALSE;
-    }
 
     /* Bail if binary is not compiled with GPU on */
     if (bForceUseGPU && !bGPUBin)
@@ -413,20 +408,13 @@ void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
                   "without GPU suupport!", ShortProgram());
     }
 
-    /* Bail if GPU is chosen with Group scheme */
-    if (bForceUseGPU && cutoff_scheme != ecutsVERLET)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but this is only supported "
-                  "with the Verlet scheme!");
-    }
-
     /* run the detection if the binary was compiled with GPU support */
     if (bGPUBin)
     {
         detect_cuda_gpus(&hwinfo->gpu_info);
     }
 
-    if (bTryUseGPU)
+    if (bForceUseGPU || bTryUseGPU)
     {
         env = getenv("GMX_GPU_ID");
         if (env != NULL && gpu_id != NULL)

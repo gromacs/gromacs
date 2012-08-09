@@ -33,13 +33,14 @@ extern "C" {
 
 void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
                    const t_commrec *cr,
-                   int cutoff_scheme, const char *nbpu_opt, const char *gpu_id);
+                   gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
+                   const char *gpu_id);
 
 void gmx_hw_info_free(gmx_hwinfo_t *hwinfo);
 
 void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
                                       const t_commrec *cr, int ntmpi_requsted,
-                                      const char *nbpu_opt);
+                                      gmx_bool bUseGPU);
 
 #ifdef __cplusplus
 }
