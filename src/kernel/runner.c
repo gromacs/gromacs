@@ -1049,9 +1049,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
         else if (hwinfo->bCanUseGPU)
         {
-            md_print_warning(cr,fplog,
-                             "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                             "      To use a GPU, set the mdp option cutoff-scheme = Verlet\n");
+            md_print_warn(cr,fplog,
+                          "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
+                          "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n");
 
             if (bForceUseGPU)
             {

@@ -127,9 +127,19 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 		     int natoms, gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 
-void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);
-/* Print a warning message to stderr on the master node
+void md_print_info(const t_commrec *cr, FILE *fplog,
+                   const char *fmt, ...);
+/* Print an general information message to stderr on the master node
  * and to fplog if fplog!=NULL.
+ * fmt is a standard printf formatting string which should end in \n,
+ * the arguments after that contain the values to be printed, as in printf.
+ */
+
+void md_print_warn(const t_commrec *cr, FILE *fplog,
+                   const char *fmt, ...);
+/* As md_print_info above, but for important notices or warnings.
+ * The only difference with md_print_info is that a newline is printed
+ * before and after the message such that it stands out.
  */
 
 #ifdef __cplusplus

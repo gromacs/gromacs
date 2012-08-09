@@ -107,12 +107,11 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
                                gmx_runtime_t *runtime,
                                nbnxn_cuda_ptr_t cu_nbv)
 {
-    char buf[STRLEN],sbuf[STEPSTRSIZE];
+    char sbuf[STEPSTRSIZE];
 
     /* Reset all the counters related to performance over the run */
-    sprintf(buf,"step %s: resetting all time and cycle counters\n",
-            gmx_step_str(step,sbuf));
-    md_print_warning(cr,fplog,buf);
+    md_print_warn(cr,fplog,"step %s: resetting all time and cycle counters\n",
+                  gmx_step_str(step,sbuf));
 
     if (cu_nbv)
     {

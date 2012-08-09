@@ -67,7 +67,7 @@ static void print_gpu_detection_stats(FILE *fplog,
                                       const gmx_gpu_info_t *gpu_info,
                                       const t_commrec *cr)
 {
-    char sbuf[STRLEN], stmp[STRLEN];
+    char stmp[STRLEN];
     int  ngpu;
 
     ngpu = gpu_info->ncuda_dev;
@@ -75,14 +75,13 @@ static void print_gpu_detection_stats(FILE *fplog,
     if (ngpu > 0)
     {
         sprint_gpus(stmp, gpu_info, TRUE);
-        sprintf(sbuf, "%d GPU%s detected in the system:\n%s",
-                ngpu, (ngpu > 1) ? "s" : "", stmp);
+        md_print_warn(cr, fplog, "%d GPU%s detected in the system:\n%s\n",
+                      ngpu, (ngpu > 1) ? "s" : "", stmp);
     }
     else
     {
-        sprintf(sbuf, "No GPUs detected in the system.");
+        md_print_warn(cr, fplog, "No GPUs detected in the system.\n");
     }
-    md_print_warning(cr, fplog, sbuf);
 }
 
 static void print_gpu_use_stats(FILE *fplog,
@@ -117,9 +116,8 @@ static void print_gpu_use_stats(FILE *fplog,
             }
             strcat(sbuf, stmp);
         }
-        strcat(sbuf, "\n");
     }
-    md_print_warning(cr, fplog, sbuf);
+    md_print_info(cr, fplog, "%s\n\n", sbuf);
 }
 
 /* Parse a "plain" GPU ID string which contains a sequence of digits corresponding
@@ -249,13 +247,12 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
                 else
                 {
                     /* There are more GPUs than tMPI threads; we have to limit the number GPUs used. */
-                    sprintf(sbuf,
-                            "NOTE: %d GPU%s were detected, but only %d PP thread-MPI thread%s can be started.\n"
-                            "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.%s",
-                            ngpu, gpu_plural, npppn, th_or_proc_plural,
-                            ShortProgram(), npppn, npppn > 1 ? "s" : "",
-                            bMaxMpiThreadsSet ? "\n      Also, you can allow more threads to be used by increasing GMX_MAX_MPI_THREADS" : "");
-                    md_print_warning(cr, fplog, sbuf);
+                    md_print_warn(cr,fplog,
+                                  "NOTE: %d GPU%s were detected, but only %d PP thread-MPI thread%s can be started.\n"
+                                  "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.%s\n",
+                                  ngpu, gpu_plural, npppn, th_or_proc_plural,
+                                  ShortProgram(), npppn, npppn > 1 ? "s" : "",
+                                  bMaxMpiThreadsSet ? "\n      Also, you can allow more threads to be used by increasing GMX_MAX_MPI_THREADS" : "");
 
                     if (cr->nodeid_intra == 0)
                     {
@@ -283,14 +280,13 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
             {
                 if (ngpu > npppn)
                 {
-                    sprintf(sbuf,
-                            "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
-                            "      PP %s%s%s than GPU%s available.\n"
-                            "      Each PP %s can only use one GPU, so only %d GPU%s%s will be used.",
-                            ShortProgram(),
-                            th_or_proc, th_or_proc_plural, pernode, gpu_plural,
-                            th_or_proc, npppn, gpu_plural, pernode);
-                    md_print_warning(cr, fplog, sbuf);
+                    md_print_warn(cr,fplog,
+                                  "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
+                                  "      PP %s%s%s than GPU%s available.\n"
+                                  "      Each PP %s can only use one GPU, so only %d GPU%s%s will be used.",
+                                  ShortProgram(),
+                                  th_or_proc, th_or_proc_plural, pernode, gpu_plural,
+                                  th_or_proc, npppn, gpu_plural, pernode);
 
                     if (bMPI || (btMPI && cr->nodeid_intra == 0))
                     {
@@ -353,12 +349,11 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
 
             if (bSomeSame)
             {
-                sprintf(sbuf,
-                        "NOTE: Potentially sub-optimal launch configuration: you assigned %s to\n"
-                        "      multiple %s%s; this should be avoided as it generally\n"
-                        "      causes performance loss.",
-                        same_count > 1 ? "GPUs" : "a GPU", th_or_proc, btMPI ? "s" : "es");
-                md_print_warning(cr, fplog, sbuf);
+                md_print_warn(cr,fplog,
+                              "NOTE: Potentially sub-optimal launch configuration: you assigned %s to\n"
+                              "      multiple %s%s; this should be avoided as it generally\n"
+                              "      causes performance loss.",
+                              same_count > 1 ? "GPUs" : "a GPU", th_or_proc, btMPI ? "s" : "es");
             }
         }
         print_gpu_use_stats(fplog, &hwinfo->gpu_info, cr);

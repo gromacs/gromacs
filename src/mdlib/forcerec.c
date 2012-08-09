@@ -1459,7 +1459,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         *kernel_type = nbk8x8x8_PlainC;
 
-        md_print_warning(cr, fp, "Emulating a GPU run on the CPU (slow)");
+        md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)\n");
     }
     else if (bGPU)
     {

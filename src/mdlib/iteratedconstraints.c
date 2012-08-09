@@ -99,7 +99,6 @@ gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate
        practice. Generally, 3-5 iterations will be sufficient */
 
     real relerr,err,xmin;
-    char buf[256];
     int i;
     gmx_bool incycle;
     
@@ -203,8 +202,7 @@ gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate
                     /* how many close calls have we had?  If less than a few, we're OK */
                     if (iterate->num_close < MAX_NUMBER_CLOSE) 
                     {
-                        sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
-                        md_print_warning(cr,fplog,buf);
+                        md_print_warn(cr,fplog,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
                         iterate->num_close++;
                         return TRUE;
                         /* if more than a few, check the total fraction.  If too high, die. */

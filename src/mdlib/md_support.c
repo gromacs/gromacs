@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <stdarg.h>
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -500,14 +501,12 @@ void check_nst_param(FILE *fplog,t_commrec *cr,
                      const char *desc_nst,int nst,
                      const char *desc_p,int *p)
 {
-    char buf[STRLEN];
-
     if (*p > 0 && *p % nst != 0)
     {
         /* Round up to the next multiple of nst */
         *p = ((*p)/nst + 1)*nst;
-        sprintf(buf,"NOTE: %s changes %s to %d\n",desc_nst,desc_p,*p);
-        md_print_warning(cr,fplog,buf);
+        md_print_warn(cr,fplog,
+                      "NOTE: %s changes %s to %d\n",desc_nst,desc_p,*p);
     }
 }
 
@@ -626,8 +625,6 @@ static int lcd4(int i1,int i2,int i3,int i4)
 int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
                         int nstglobalcomm,t_inputrec *ir)
 {
-    char buf[STRLEN];
-
     if (!EI_DYNAMICS(ir->eI))
     {
         nstglobalcomm = 1;
@@ -663,8 +660,7 @@ int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
             nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
         {
             nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
-            sprintf(buf,"WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n",nstglobalcomm);
-            md_print_warning(cr,fplog,buf);
+            md_print_warn(cr,fplog,"WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n",nstglobalcomm);
         }
         if (ir->nstcalcenergy > 0)
         {
@@ -691,9 +687,8 @@ int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
 
     if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
     {
-        sprintf(buf,"WARNING: Changing nstcomm from %d to %d\n",
-                ir->nstcomm,nstglobalcomm);
-        md_print_warning(cr,fplog,buf);
+        md_print_warn(cr,fplog,"WARNING: Changing nstcomm from %d to %d\n",
+                      ir->nstcomm,nstglobalcomm);
         ir->nstcomm = nstglobalcomm;
     }
 
@@ -707,13 +702,13 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
     if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
         ir->nstcalcenergy % ir->nstlist != 0)
     {
-        md_print_warning(cr,fplog,"Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies");
+        md_print_warn(cr,fplog,"Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies\n");
 
         if (gmx_mtop_ftype_count(mtop,F_CONSTR) +
             gmx_mtop_ftype_count(mtop,F_CONSTRNC) > 0 &&
             ir->eConstrAlg == econtSHAKE)
         {
-            md_print_warning(cr,fplog,"With twin-range cut-off's and SHAKE the virial and pressure are incorrect");
+            md_print_warn(cr,fplog,"With twin-range cut-off's and SHAKE the virial and pressure are incorrect\n");
             if (ir->epc != epcNO)
             {
                 gmx_fatal(FARGS,"Can not do pressure coupling with twin-range cut-off's and SHAKE");
@@ -779,14 +774,52 @@ void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
     }
 }
 
-void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
+void md_print_info(const t_commrec *cr, FILE *fplog,
+                   const char *fmt, ...)
 {
+    va_list ap;
+
     if (SIMMASTER(cr))
     {
-        fprintf(stderr,"\n%s\n",buf);
+        va_start(ap,fmt);
+
+        vfprintf(stderr,fmt,ap);
+        
+        va_end(ap);
     }
-    if (fplog)
+    if (fplog != NULL)
     {
-        fprintf(fplog,"\n%s\n",buf);
+        va_start(ap,fmt);
+
+        vfprintf(fplog,fmt,ap);
+
+        va_end(ap);
+    }
+}
+
+void md_print_warn(const t_commrec *cr, FILE *fplog,
+                   const char *fmt, ...)
+{
+    va_list ap;
+
+    if (SIMMASTER(cr))
+    {
+        va_start(ap,fmt);
+
+        fprintf(stderr,"\n");
+        vfprintf(stderr,fmt,ap);
+        fprintf(stderr,"\n");
+
+        va_end(ap);
+    }
+    if (fplog != NULL)
+    {
+        va_start(ap,fmt);
+
+        fprintf(fplog,"\n");
+        vfprintf(fplog,fmt,ap);
+        fprintf(fplog,"\n");
+
+        va_end(ap);
     }
 }
