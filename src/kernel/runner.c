@@ -279,7 +279,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
  * were requested, which algorithms we're using,
  * and how many particles there are.
  */
-static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
+static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
+                            gmx_hw_opt_t *hw_opt,
                             t_inputrec *inputrec, gmx_mtop_t *mtop,
                             const t_commrec *cr)
 {
@@ -290,11 +291,32 @@ static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
     gmx_bool bCanUseGPU,bNthreadsAuto,bMaxMpiThreadsSet = FALSE;
 
     bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
+
+    nthreads = 0;
+    if (hw_opt->nthreads_tmpi > 0)
+    {
+        nthreads = hw_opt->nthreads_tmpi;
+    }
+    else if (hw_opt->nthreads_tot > 0)
+    {
+        /* There are no separate PME nodes here, as we checked in
+         * that check_and_update_hw_opt -nt_tmpi is set in that case.
+         * Note that separate PME nodes might be switched on later.
+         */
+        if (hw_opt->nthreads_omp > 0)
+        {
+            nthreads = hw_opt->nthreads_tot/hw_opt->nthreads_omp;
+        }
+        else if (!bCanUseGPU)
+        {
+            /* TODO choose nthreads_omp based on hardware topology */
+            /* Don't use OpenMP parallelization */
+            nthreads = hw_opt->nthreads_tot;
+        }
+    }
     
     /* auto-determine the number of tMPI threads? */
-    bNthreadsAuto = (nthreads_requested < 1);
-
-    nthreads = nthreads_requested;
+    bNthreadsAuto = (nthreads < 1);
 
     /* determine # of hardware threads. */
     if (bNthreadsAuto)
@@ -1078,6 +1100,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         check_and_update_hw_opt(hw_opt,minf.cutoff_scheme);
 
+#ifdef GMX_THREAD_MPI
+        if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)
+        {
+            gmx_fatal(FARGS,"You need to explicitly specify the number of MPI threads (-nt_mpi) when using separate PME nodes");
+        }
+#endif
+
         if (hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
             cr->npmenodes <= 0)
         {
@@ -1089,10 +1118,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (SIMMASTER(cr))
     {
         /* NOW the threads will be started: */
-        hw_opt->nthreads_tmpi = get_nthreads_mpi(hw_opt->nthreads_tmpi > 0 ?
-                                                 hw_opt->nthreads_tmpi :
-                                                 hw_opt->nthreads_tot,
-                                                 hwinfo,
+        hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
+                                                 hw_opt,
                                                  inputrec, mtop,
                                                  cr);
         if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp <= 0)
