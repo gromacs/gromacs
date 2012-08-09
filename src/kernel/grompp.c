@@ -1361,7 +1361,7 @@ int main (int argc, char *argv[])
       "Renumber atomtypes and minimize number of atomtypes" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   
   /* Initiate some variables */
   snew(ir,1);
@@ -1435,6 +1435,10 @@ int main (int argc, char *argv[])
                 econstr_names[econtSHAKE],econstr_names[econtLINCS]);
         warning_error(wi,warn_buf);
     }
+  }
+
+  if ( EI_SD (ir->eI) &&  ir->etc != etcNO ) {
+      warning_note(wi,"Temperature coupling is ignored with SD integrators.");
   }
 
   /* If we are doing QM/MM, check that we got the atom numbers */

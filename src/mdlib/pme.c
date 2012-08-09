@@ -284,7 +284,7 @@ typedef struct gmx_pme {
     int     pmegrid_start_ix,pmegrid_start_iy,pmegrid_start_iz;
 
     /* Work data for spreading and gathering */
-    pme_spline_work_t spline_work;
+    pme_spline_work_t *spline_work;
 
     real *fftgridA;             /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
     real *fftgridB;             /* inside the interpolation grid, but separate for 2D PME decomp. */
@@ -2166,7 +2166,7 @@ static void gather_f_bsplines(gmx_pme_t pme,real *grid,
 
     pme_spline_work_t *work;
 
-    work = &pme->spline_work;
+    work = pme->spline_work;
 
     order = pme->pme_order;
     thx   = spline->theta[XX];
@@ -2865,15 +2865,23 @@ make_gridindex5_to_localindex(int n,int local_start,int local_range,
     *fraction_shift  = fsh;
 }
 
-static void sse_mask_init(pme_spline_work_t *work,int order)
+static pme_spline_work_t *make_pme_spline_work(int order)
 {
+    pme_spline_work_t *work;
+
 #ifdef PME_SSE
     float  tmp[8];
     __m128 zero_SSE;
     int    of,i;
 
+    snew_aligned(work,1,16);
+
     zero_SSE = _mm_setzero_ps();
 
+    /* Generate bit masks to mask out the unused grid entries,
+     * as we only operate on order of the 8 grid entries that are
+     * load into 2 SSE float registers.
+     */
     for(of=0; of<8-(order-1); of++)
     {
         for(i=0; i<8; i++)
@@ -2885,7 +2893,11 @@ static void sse_mask_init(pme_spline_work_t *work,int order)
         work->mask_SSE0[of] = _mm_cmpgt_ps(work->mask_SSE0[of],zero_SSE);
         work->mask_SSE1[of] = _mm_cmpgt_ps(work->mask_SSE1[of],zero_SSE);
     }
+#else
+    work = NULL;
 #endif
+
+    return work;
 }
 
 static void
@@ -3163,7 +3175,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                   pme->overlap[0].s2g1[pme->nodeid_major]-pme->overlap[0].s2g0[pme->nodeid_major+1],
                   pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
 
-    sse_mask_init(&pme->spline_work,pme->pme_order);
+    pme->spline_work = make_pme_spline_work(pme->pme_order);
 
     ndata[0] = pme->nkx;
     ndata[1] = pme->nky;
@@ -3849,7 +3861,7 @@ static void spread_on_grid(gmx_pme_t pme,
 #ifdef PME_TIME_SPREAD
             ct1a = omp_cyc_start();
 #endif
-            spread_q_bsplines_thread(grid,atc,spline,&pme->spline_work);
+            spread_q_bsplines_thread(grid,atc,spline,pme->spline_work);
 
             if (grids->nthread > 1)
             {

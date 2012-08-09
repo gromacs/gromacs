@@ -504,7 +504,7 @@ Dor dynamics without temperature coupling or to override the buffer size,
 use <b>verlet-buffer-drift</b>=-1 and set <b>rlist</b> manually.</dd>
 
 <dt><b>rlist: (1) [nm]</b></dt>
-<dd>Cut-off distance for the short-range neighbor list.
+<dd>Cut-off distance for the short-range neighbor list, should be &ge; 0.
 With <b>cutoff-scheme</b>=<b>Verlet</b> this is by default set by the
 <b>verlet-buffer-drift</b> option and the value of <b>rlist</b> is ignored.</dd>
 
@@ -664,8 +664,8 @@ i.e. both to the user supplied function and the PME Mesh correction part.</dd>
 <dt><b>rcoulomb-switch: (0) [nm]</b></dt>
 <dd>where to start switching the Coulomb potential</dd>
 
-<dt><b>rcoulomb: (1) [nm]</b></dt>
-<dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx--></dd>
+<dt><b>rcoulomb: (-1) [nm]</b></dt>
+<dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx-->, should be &ge; 0</dd>
 
 <dt><b>epsilon-r: (1)</b></dt>
 <dd>The relative <!--Idx-->dielectric constant<!--EIdx-->.
@@ -722,8 +722,8 @@ for <tt>f</tt> and <tt>-f'</tt> are ignored.</dd>
 <dt><b>rvdw-switch: (0) [nm]</b></dt>
 <dd>where to start switching the LJ potential</dd>
 
-<dt><b>rvdw: (1) [nm]</b></dt>
-<dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx--></dd>
+<dt><b>rvdw: (-1) [nm]</b></dt>
+<dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx-->, should be &ge; 0</dd>
 
 <dt><b>DispCorr:</b></dt>
 <dd><dl compact></dd>

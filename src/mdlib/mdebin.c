@@ -578,9 +578,13 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->dhc=NULL;
     if (ir->fepvals->separate_dhdl_file == esepdhdlfileNO )
     {
-        snew(md->dhc, 1);
+        /* Currently dh histograms are only written with dynamics */
+        if (EI_DYNAMICS(ir->eI))
+        {
+            snew(md->dhc, 1);
 
-        mde_delta_h_coll_init(md->dhc, ir);
+            mde_delta_h_coll_init(md->dhc, ir);
+        }
         md->fp_dhdl = NULL;
     }
     else
@@ -1292,12 +1296,18 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
                 pr_ebin(log,md->ebin,md->ifvir,9,3,mode,FALSE);
                 fprintf(log,"\n");
             }
-            fprintf(log,"   Total Virial (%s)\n",unit_energy);
-            pr_ebin(log,md->ebin,md->ivir,9,3,mode,FALSE);
-            fprintf(log,"\n");
-            fprintf(log,"   Pressure (%s)\n",unit_pres_bar);
-            pr_ebin(log,md->ebin,md->ipres,9,3,mode,FALSE);
-            fprintf(log,"\n");
+            if (md->bVir)
+            {
+                fprintf(log,"   Total Virial (%s)\n",unit_energy);
+                pr_ebin(log,md->ebin,md->ivir,9,3,mode,FALSE);
+                fprintf(log,"\n");
+            }
+            if (md->bPress)
+            {
+                fprintf(log,"   Pressure (%s)\n",unit_pres_bar);
+                pr_ebin(log,md->ebin,md->ipres,9,3,mode,FALSE);
+                fprintf(log,"\n");
+            }
             if (md->bMu)
             {
                 fprintf(log,"   Total Dipole (%s)\n",unit_dipole_D);

@@ -376,7 +376,7 @@ int main (int argc, char *argv[])
   };
   int nerror = 0;
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,

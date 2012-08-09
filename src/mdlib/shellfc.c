@@ -77,8 +77,8 @@ typedef struct gmx_shellfc {
   int     nshell;          /* The number of local shells               */
   t_shell *shell;          /* The local shells                         */
   int     shell_nalloc;    /* The allocation size of shell             */
-  gmx_bool    bPredict;        /* Predict shell positions                  */
-  gmx_bool    bForceInit;      /* Force initialization of shell positions  */
+  gmx_bool bPredict;       /* Predict shell positions                  */
+  gmx_bool bRequireInit;   /* Require initialization of shell positions  */
   int     nflexcon;        /* The number of flexible constraints       */
   rvec    *x[2];           /* Array for iterative minimization         */
   rvec    *f[2];           /* Array for iterative minimization         */
@@ -416,13 +416,13 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   shfc->shell_index_gl = shell_index;
 
   shfc->bPredict   = (getenv("GMX_NOPREDICT") == NULL);
-  shfc->bForceInit = FALSE;
+  shfc->bRequireInit = FALSE;
   if (!shfc->bPredict) {
     if (fplog)
       fprintf(fplog,"\nWill never predict shell positions\n");
   } else {
-    shfc->bForceInit = (getenv("GMX_FORCEINIT") != NULL);
-    if (shfc->bForceInit && fplog)
+    shfc->bRequireInit = (getenv("GMX_REQUIRE_SHELL_INIT") != NULL);
+    if (shfc->bRequireInit && fplog)
       fprintf(fplog,"\nWill always initiate shell positions\n");
   }
 
@@ -811,7 +811,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
 #define  Try (1-Min)             /* At start Try = 1 */
 
   bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
-  bInit        = (mdstep == inputrec->init_step) || shfc->bForceInit;
+  bInit        = (mdstep == inputrec->init_step) || shfc->bRequireInit;
   ftol         = inputrec->em_tol;
   number_steps = inputrec->niter;
   nshell       = shfc->nshell;

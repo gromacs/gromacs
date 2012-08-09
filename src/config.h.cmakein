@@ -131,8 +131,11 @@
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
 
-/* Use threads for parallelization */
+/* Use threads_mpi for parallelization */
 #cmakedefine GMX_THREAD_MPI
+
+/* Use OpenMP multithreading */
+#cmakedefine GMX_OPENMP
 
 /* Use old threading (domain decomp force calc) code */
 #cmakedefine GMX_THREAD_SHM_FDECOMP 

@@ -551,7 +551,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
     int i,j;
 
     PI("nstdhdl",fep->nstdhdl);
-    PI("init-fep_state",fep->init_fep_state);
+    PI("init-lambda-state",fep->init_fep_state);
     PR("init-lambda",fep->init_lambda);
     PR("delta-lambda",fep->delta_lambda);
     if (!bMDPformat)
@@ -578,7 +578,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
     PI("sc-power",fep->sc_power);
     PR("sc-r-power",fep->sc_r_power);
     PR("sc-sigma",fep->sc_sigma);
-    PR("sc-sigma_min",fep->sc_sigma_min);
+    PR("sc-sigma-min",fep->sc_sigma_min);
     PS("separate-dhdl-file", SEPDHDLFILETYPE(fep->separate_dhdl_file));
     PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
     PI("dh-hist-size", fep->dh_hist_size);

@@ -36,7 +36,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "6")
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
 set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
@@ -46,15 +46,22 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
 
+set(GMX_USE_RELATIVE_INSTALL_PATH OFF CACHE STRING "Use relative paths not absolute paths for cmake install. Has only an effect on cpack.")
+mark_as_advanced(GMX_USE_RELATIVE_INSTALL_PATH)
+
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance molecular simulation")
-set(CPACK_SET_DESTDIR "ON")
-set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
+if (NOT GMX_USE_RELATIVE_INSTALL_PATH)
+    set(CPACK_SET_DESTDIR "ON")
+endif()
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
+set(CPACK_SOURCE_IGNORE_FILES ".isreposource;.git;.gitignore")
+set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
+SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/man;man")
 
 #must come after all cpack settings!
 include(CPack)
@@ -148,7 +155,6 @@ set(GMX_QMMM_PROGRAM "none"
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
@@ -189,7 +195,6 @@ if(GMX_OPENMP)
     if(OPENMP_FOUND)
         set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
         set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
-        add_definitions(-DGMX_OPENMP)
     else(OPENMP_FOUND)
         message(WARNING
                 "Compiler not supporting OpenMP. This might hurt your performance a lot, "
@@ -412,12 +417,17 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 if(UNIX AND NOT APPLE)
     if(GMX_PREFER_STATIC_LIBS)
         SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-        if(BUILD_SHARED_LIBS)
-            message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
-            set(BUILD_SHARED_LIBS OFF CACHE BOOL "Enable shared libraries (can be problematic with MPI, Windows)" FORCE)
+        if(SHARED_LIBS_DEFAULT)
+            if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
+                message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
+            elseif(NOT DEFINED BUILD_SHARED_LIBS) #Change default to OFF. Don't warn if it's already off.
+                message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
+                set(SHARED_LIBS_DEFAULT OFF)
+            endif()
         endif()
     endif()
 endif()
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 
 option(GMX_XML "Use libxml2 to parse xml files" ON)
 if (GMX_XML)
@@ -651,8 +661,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
 
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
-
-    message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
 
@@ -688,8 +699,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
-
-    message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUAL "AVX_256")
 
@@ -728,11 +740,15 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
     # But just enable one of the choices internally...
     if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA")
         set(GMX_X86_AVX_128_FMA 1)
-        message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+        if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+        endif()
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_X86_AVX_256 1)
-        message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+        if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+        endif()
     endif()
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
@@ -743,7 +759,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
 
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
-    message(STATUS "Configuring for BlueGene")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Configuring for BlueGene")
+    endif()
     set(GMX_BLUEGENE 1)
     if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
         set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
@@ -754,6 +772,13 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
+# Access to /etc/passwd is not available on the back end of BlueGene,
+# despite being detected by CMake. This can cause linker warnings
+# about harmless things in src/gmxlib/string2.h.
+    set(HAVE_PWD_H OFF)
+# The automatic testing for endianness does not work for the BlueGene cross-compiler
+    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
+    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
@@ -761,6 +786,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
 else(${GMX_ACCELERATION} STREQUAL "NONE")
     MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
+set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
 if(GMX_FORTRAN OR GMX_POWER6)
     if (GMX_THREAD_MPI)
@@ -900,8 +926,6 @@ mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
 
 set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
-set(GMX_VMD_PLUGIN_PATH)
-mark_as_advanced(GMX_VMD_PLUGIN_PATH)
 
 if(GMX_LOAD_PLUGINS)
   if(CYGWIN OR NOT WIN32)
@@ -911,49 +935,17 @@ if(GMX_LOAD_PLUGINS)
     gmx_test_dlopen(HAVE_DLOPEN)
   endif()
 
-  find_package(VMD)
-
-  # Test for unsuitable versions of VMD
-
-  if(VMD_FOUND AND NOT GMX_VMD_PLUGIN_PATH)
-    message(STATUS "Checking for suitable VMD version")
-    exec_program(${VMD_EXECUTABLE}
-      ARGS --help
-      OUTPUT_VARIABLE VMD_HELP
-      RETURN_VALUE VMD_EXEC_RETURN)
-
-    if(VMD_EXEC_RETURN EQUAL 0)
-      # This is the accepted idiom for subexpression matching, unfortunately
-      string(REGEX REPLACE ".*VMD for .*, version ([0-9]+\\.[0-9]*\\.?[0-9]*).*" "\\1" VMD_VERSION ${VMD_HELP})
-      string(REGEX REPLACE ".*VMD for (.*), version .*" "\\1" VMD_ARCH ${VMD_HELP})
-
-      if(VMD_VERSION VERSION_LESS "1.8")
-        MESSAGE(WARNING "Found VMD version ${VMD_VERSION}, but GROMACS needs at least 1.8")
-        unset(VMD_EXECUTABLE)
-        set(VMD_FOUND FALSE)
-      else()
-        message(STATUS "VMD version ${VMD_VERSION} is suitable")
-        if(DEFINED ENV{VMDDIR})
-          # This permits GROMACS to avoid hard-coding a fall-back
-          # path that it can tell right now would be useless.
-          set(GMX_VMD_PLUGIN_PATH "$ENV{VMDDIR}/plugins/${VMD_ARCH}/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
-        else()
-          set(GMX_VMD_PLUGIN_PATH "/usr/local/lib/vmd/plugins/*/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
-        endif()
-      endif()
-
-      # clean up
-      unset(VMD_HELP)
-      unset(VMD_VERSION)
-      unset(VMD_ARCH)
-    endif()
-  endif()
-
   # so, should we use plug-ins?
   if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
-    if (NOT VMD_QUIETLY)
-      MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
-    endif(NOT VMD_QUIETLY)
+    if(NOT VMD_QUIETLY)
+      MESSAGE(STATUS
+          "Found the ability to use plug-ins when building shared libaries, "
+          "so will compile to use plug-ins (e.g. to read VMD-supported file "
+          "formats).")
+    endif()
+    if(NOT GMX_VMD_PLUGIN_PATH)
+      find_package(VMD)
+    endif()
     set(GMX_USE_PLUGINS ON)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
     set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
@@ -962,6 +954,21 @@ if(GMX_LOAD_PLUGINS)
   endif()
 endif(GMX_LOAD_PLUGINS)
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
+    if(NOT CMAKE_CROSSCOMPILING)
+        option(GMX_BUILD_MANPAGES "Build man pages" ON)
+    else()
+        message(STATUS "Building the man pages is not available when "
+            "cross-compiling the developer version from git")
+    endif()
+else()
+    #make sure source package contains all man pages
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/man/man1/ngmx.1")
+        message(FATAL_ERROR "Man pages are missing from source package.")
+    endif()
+endif()
+mark_as_advanced(GMX_BUILD_MANPAGES)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
@@ -1017,15 +1024,21 @@ endif()
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if ( DEFINED GMXLIB )
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${GMXLIB}")
+if (GMX_USE_RELATIVE_INSTALL_PATH)
+    set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
+    mark_as_advanced(GMX_INSTALL_PREFIX)
 else()
-    set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+    set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
 endif()
-set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
-set(DATA_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/gromacs)
-set(MAN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/share/man)
-set(INCL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+
+if ( NOT DEFINED GMXLIB )
+    set(GMXLIB lib)
+endif()
+set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
+set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
+set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/gromacs)
+set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
+set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
@@ -1035,13 +1048,12 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "${LIB_INSTALL_DIR}")
+    set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
 add_subdirectory(share)
 add_subdirectory(include)
-add_subdirectory(man)
 add_subdirectory(src)
 add_subdirectory(scripts)
 

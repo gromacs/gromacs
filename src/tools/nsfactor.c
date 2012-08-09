@@ -45,10 +45,7 @@
 #include "strdb.h"
 #include "vec.h"
 #include "nsfactor.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
+#include "gmx_omp.h"
 
 void check_binwidth(real binwidth) {
     real smallest_bin=0.1;
@@ -202,7 +199,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         }
         rng=gmx_rng_init(seed);
 #ifdef GMX_OPENMP
-        nthreads = omp_get_max_threads();
+        nthreads = gmx_omp_get_max_threads();
         snew(tgr,nthreads);
         snew(trng,nthreads);
         for(i=0;i<nthreads;i++){
@@ -211,7 +208,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         }
         #pragma omp parallel shared(tgr,trng,mc) private(tid,i,j)
         {
-            tid = omp_get_thread_num();
+            tid = gmx_omp_get_thread_num();
             /* now starting parallel threads */
             #pragma omp for
             for(mc=0;mc<max;mc++) {
@@ -246,7 +243,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         gmx_rng_destroy(rng);
     } else {
 #ifdef GMX_OPENMP
-        nthreads = omp_get_max_threads();
+        nthreads = gmx_omp_get_max_threads();
         /* Allocating memory for tgr arrays */
         snew(tgr,nthreads);
         for(i=0;i<nthreads;i++) {
@@ -254,7 +251,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         }
         #pragma omp parallel shared(tgr) private(tid,i,j)
         {
-            tid = omp_get_thread_num();
+            tid = gmx_omp_get_thread_num();
             /* starting parallel threads */
             #pragma omp for
             for(i=0;i<isize;i++) {
