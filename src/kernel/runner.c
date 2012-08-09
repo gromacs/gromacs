@@ -343,7 +343,7 @@ static int get_nthreads_mpi(int nthreads_requested, gmx_hwinfo_t *hwinfo,
 
         if (nthreads_new > 8 || (nthreads == 8 && nthreads_new > 4))
         {
-            /* TODO better get rid of this ?
+            /* TODO replace this once we have proper HT detection
              * Use only multiples of 4 above 8 threads
              * or with an 8-core processor
              * (to avoid 6 threads on 8 core processors with 4 real cores).

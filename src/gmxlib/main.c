@@ -209,6 +209,25 @@ void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
 }
 
 
+char *gmx_gethostname(char *name, size_t len)
+{
+    if (len < 8)
+    {
+        gmx_incons("gmx_gethostname called with len<8");
+    }
+#ifdef HAVE_UNISTD_H
+    if (gethostname(name, len-1) != 0)
+    {
+        strncpy(name, "unknown",8);
+    }
+#else
+    strncpy(name, "unknown",8);
+#endif
+
+    return name;
+}
+
+
 void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly, 
                   gmx_bool bAppendFiles, FILE** fplog)
 {
@@ -269,14 +288,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
     gmx_fatal_set_log_file(fp);
   
     /* Get some machine parameters */
-#ifdef HAVE_UNISTD_H
-    if (gethostname(host,255) != 0)
-    {
-        sprintf(host,"unknown");
-    }
-#else
-    sprintf(host,"unknown");
-#endif  
+    gmx_gethostname(host,256);
 
     time(&t);
 

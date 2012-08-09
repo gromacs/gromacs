@@ -259,7 +259,7 @@ static gmx_bool is_gmx_openmm_supported_gpu_name(char *gpuName)
 
 /*! \brief Checks whether the GPU with the given device id is supported in Gromacs-OpenMM.
  *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has laredy been selected
+ * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
  * \param[out] gpu_name Set to contain the name of the CUDA device, if NULL passed, no device name is set. 
  * \returns             TRUE if the device is supported, otherwise FALSE
  * 
@@ -574,32 +574,6 @@ int do_timed_memtest(int dev_id, int time_constr)
     return res;
 }
 
-// FIXME remove
-int init_gpu_old(FILE *fplog, int dev_id)
-{
-    cudaDeviceProp  dev_prop;
-
-    if (do_sanity_checks(dev_id, &dev_prop) != 0)
-    {
-        if (fplog)
-        {
-            fprintf(fplog, "Failed to initilize CUDA device #%d.\n", dev_id);
-        }
-
-        return -1;
-    }
-    else 
-    {
-        if (fplog)
-        {
-            /* TODO: this print is only relevant in the single-node case... */
-            fprintf(fplog, "Using CUDA device #%d, %s.\n", dev_id, dev_prop.name);
-        }
-
-        return 0;
-    }
-}
-
 /* TODO docs */
 gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info)
 {
@@ -654,28 +628,6 @@ gmx_bool free_gpu(char *result_str)
     strncpy(result_str, cudaGetErrorString(stat), STRLEN);
 
     return (stat == cudaSuccess);
-}
-
-/* FIXME  remove */
-int uninit_gpu_old(FILE *fplog, int dev_id)
-{
-    cudaError_t err;
-
-    err = cudaThreadExit();
-    if (err != cudaSuccess)
-    {
-        if (fplog)
-        {
-            fprintf(fplog, "Error %d while cleaning up CUDA runtime: %s.\n", err,
-                    cudaGetErrorString(err));
-        }
-        return -1;
-    }
-    if (debug)
-    {
-        fprintf(debug, "Succesfully cleaned up CUDA runtime.\n");
-    }
-    return 0;
 }
 
 static gmx_bool is_gmx_supported_gpu(const cudaDeviceProp *dev_prop)

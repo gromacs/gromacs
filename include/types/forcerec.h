@@ -273,14 +273,6 @@ typedef struct {
   int  nwall;
   t_forcetable **wall_tab;
 
-  /* This mask array of length nn determines whether or not this bit of the
-   * neighbourlists should be computed. Usually all these are true of course,
-   * but not when shells are used. During minimisation all the forces that 
-   * include shells are done, then after minimsation is converged the remaining
-   * forces are computed.
-   */
-  /* gmx_bool *bMask; */
-
   /* The number of charge groups participating in do_force_lowlevel */
   int ncg_force;
   /* The number of atoms participating in do_force_lowlevel */

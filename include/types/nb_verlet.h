@@ -103,10 +103,12 @@ enum { eintLocal = 0, eintNonlocal = 1 };
 #define LOCAL_I(x)               ((x) == eintLocal)
 #define NONLOCAL_I(x)            ((x) == eintNonlocal)
 
+enum { enbvClearFNo, enbvClearFYes };
+
 typedef struct {
-    nbnxn_pairlist_set_t nbl_lists; /* pair list(s)                         */
-    nbnxn_atomdata_t     *nbat;     /* atom data                            */
-    int                  kernel_type;/* non-bonded kernel - see enum above  */
+    nbnxn_pairlist_set_t nbl_lists;   /* pair list(s)                       */
+    nbnxn_atomdata_t     *nbat;       /* atom data                          */
+    int                  kernel_type; /* non-bonded kernel - see enum above */
 } nonbonded_verlet_group_t;
 
 /* non-bonded data structure with Verlet-type cut-off */

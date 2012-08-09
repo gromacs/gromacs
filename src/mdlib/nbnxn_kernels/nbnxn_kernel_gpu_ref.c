@@ -54,7 +54,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                      const interaction_const_t  *iconst,
                      rvec                       *shift_vec,
                      int                        force_flags,
-                     gmx_bool                   clearF,
+                     int                        clearF,
                      real *                     f,
                      real *                     fshift,
                      real *                     Vc,
@@ -107,7 +107,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         gmx_fatal(FARGS,"The neighborlist cluster size in the GPU reference kernel is %d, expected it to be %d",nbl->na_ci,NA_C);
     }
 
-    if (clearF)
+    if (clearF == enbvClearFYes)
     {
         /* Zero the output force array */
         for(n=0; n<nbat->natoms*nbat->fstride; n++)

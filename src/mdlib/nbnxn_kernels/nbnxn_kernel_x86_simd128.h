@@ -48,7 +48,7 @@ nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
                          const interaction_const_t  *ic,
                          rvec                       *shift_vec,
                          int                        force_flags,
-                         gmx_bool                   clearF,
+                         int                        clearF,
                          real                       *fshift,
                          real                       *Vc,
                          real                       *Vvdw);

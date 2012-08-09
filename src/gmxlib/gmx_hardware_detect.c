@@ -32,13 +32,8 @@
 #include "statutil.h"
 #include "gmx_hardware_detect.h"
 #include "md_support.h"
+#include "main.h"
 
-
-/* TODO:
- *   x- handle the force GPU case
- *   - warn about GPU presence when CPU use is forced
- *   - err when GPU is forced with group scheme (if it's possible?)
- */
 
 /* FW decl. */
 void limit_num_gpus_used(gmx_hwinfo_t *hwinfo, int count);
@@ -67,20 +62,29 @@ static void print_gpu_detection_stats(FILE *fplog,
                                       const gmx_gpu_info_t *gpu_info,
                                       const t_commrec *cr)
 {
-    char stmp[STRLEN];
+    char onhost[266],stmp[STRLEN];
     int  ngpu;
 
     ngpu = gpu_info->ncuda_dev;
 
+#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    /* We only print the detection on one, of possibly multiple, nodes */
+    strncpy(onhost," on host ",10);
+    gmx_gethostname(onhost+9,256);
+#else
+    /* We detect all relevant GPUs */
+    strncpy(onhost,"",1);
+#endif
+
     if (ngpu > 0)
     {
         sprint_gpus(stmp, gpu_info, TRUE);
-        md_print_warn(cr, fplog, "%d GPU%s detected in the system:\n%s\n",
-                      ngpu, (ngpu > 1) ? "s" : "", stmp);
+        md_print_warn(cr, fplog, "%d GPU%s detected%s:\n%s\n",
+                      ngpu, (ngpu > 1) ? "s" : "", onhost, stmp);
     }
     else
     {
-        md_print_warn(cr, fplog, "No GPUs detected in the system.\n");
+        md_print_warn(cr, fplog, "No GPUs detected%s\n", onhost);
     }
 }
 
@@ -120,6 +124,9 @@ static void print_gpu_use_stats(FILE *fplog,
     md_print_info(cr, fplog, "%s\n\n", sbuf);
 }
 
+/* We can't have more than 10 GPU id's as we use single char numbers */
+static const int MAX_GPU_IDS = 10;
+
 /* Parse a "plain" GPU ID string which contains a sequence of digits corresponding
  * to GPU IDs; the order will indicate the process/tMPI thread - GPU assignment. */
 static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
@@ -127,6 +134,11 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
     int  i;
 
     *nid = strlen(idstr);
+
+    if (*nid > MAX_GPU_IDS)
+    {
+        gmx_fatal(FARGS,"%d GPU id's passed in a string, but not more than %d are supported",*nid,MAX_GPU_IDS);
+    }
 
     for (i = 0; i < *nid; i++)
     {
@@ -219,8 +231,6 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
 
     if (bGPUBin)
     {
-        /* TODO might need an accompanying message here for the case when we're
-         * using the group scheme or of the user explicitly turned off GPU use. */
         print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);
     }
 
@@ -264,8 +274,6 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
             }
         }
 
-        /* TODO: in case of MPI add node name/id info and communicate over nodes
-         * (to be able to issue notes from other nodes)! */
         if (ngpu != npppn)
         {
             if (hwinfo->gpu_info.bUserSet)
@@ -358,13 +366,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
         }
         print_gpu_use_stats(fplog, &hwinfo->gpu_info, cr);
     }
-
-    /* TODO: print GPU stats to the log */
-    /* TODO consistency check so that we're running with GPUs on all nodes */
 }
-
-/* TODO move this to the right place! */
-static const int MAX_GPU_IDS = 10;
 
 void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
                    const t_commrec *cr,
@@ -438,10 +440,9 @@ void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
 
             if (!res)
             {
-                /* TODO improve this msg */
                 print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);
 
-                sprintf(sbuf, "Some of the requested GPUs do not exists, behave strangely, or are not compatible:\n");
+                sprintf(sbuf, "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n");
                 for (i = 0; i < nid; i++)
                 {
                     if (checkres[i] != egpuCompatible)

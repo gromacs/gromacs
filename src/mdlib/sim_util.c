@@ -596,7 +596,7 @@ static void do_nb_verlet(t_forcerec *fr,
                          interaction_const_t *ic,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
-                         gmx_bool clearF, /* FIXME this argument is very uncool */
+                         int clearF,
                          t_nrnb *nrnb,
                          gmx_wallcycle_t wcycle)
 {
@@ -933,7 +933,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     {
         wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, FALSE, nrnb, wcycle);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
+                     nrnb, wcycle);
         wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 
@@ -1013,7 +1014,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         { 
             wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE, nrnb, wcycle);
+            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
+                         nrnb, wcycle);
             cycles_force += wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
     }
@@ -1159,7 +1161,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     if (!bUseOrEmulGPU)
     {
         /* Maybe we should move this into do_force_lowlevel */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, TRUE, nrnb, wcycle);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
+                     nrnb, wcycle);
     }
         
 
@@ -1169,7 +1172,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
         if (DOMAINDECOMP(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, bDiffKernels,
+            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
+                         bDiffKernels ? enbvClearFYes : enbvClearFNo,
                          nrnb, wcycle);
         }
 
@@ -1229,7 +1233,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             else
             {
                 wallcycle_start_nocount(wcycle,ewcFORCE);
-                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE, nrnb, wcycle);
+                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
+                             nrnb, wcycle);
                 cycles_force += wallcycle_stop(wcycle,ewcFORCE);
             }            
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1297,7 +1302,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         else
         {            
             wallcycle_start_nocount(wcycle,ewcFORCE);
-            do_nb_verlet(fr, ic, enerd, flags, eintLocal, !DOMAINDECOMP(cr),
+            do_nb_verlet(fr, ic, enerd, flags, eintLocal,
+                         DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
                          nrnb, wcycle);
             wallcycle_stop(wcycle,ewcFORCE);
         }

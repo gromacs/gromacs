@@ -47,7 +47,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
                  const interaction_const_t  *ic,
                  rvec                       *shift_vec,
                  int                        force_flags,
-                 gmx_bool                   clearF,
+                 int                        clearF,
                  real                       *fshift,
                  real                       *Vc,
                  real                       *Vvdw);

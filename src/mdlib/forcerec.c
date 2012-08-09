@@ -1341,18 +1341,21 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 
     fr->nthreads = gmx_omp_nthreads_get(emntBonded);
 
-    snew(fr->f_t,fr->nthreads);
-    /* Thread 0 uses the global force and energy arrays */
-    for(t=1; t<fr->nthreads; t++)
+    if (fr->nthreads > 1)
     {
-        fr->f_t[t].f = NULL;
-        fr->f_t[t].f_nalloc = 0;
-        snew(fr->f_t[t].fshift,SHIFTS);
-        /* snew(fr->f_t[t].ener,F_NRE); */
-        fr->f_t[t].grpp.nener = grpp_nener;
-        for(i=0; i<egNR; i++)
+        snew(fr->f_t,fr->nthreads);
+        /* Thread 0 uses the global force and energy arrays */
+        for(t=1; t<fr->nthreads; t++)
         {
-            snew(fr->f_t[t].grpp.ener[i],grpp_nener);
+            fr->f_t[t].f = NULL;
+            fr->f_t[t].f_nalloc = 0;
+            snew(fr->f_t[t].fshift,SHIFTS);
+            /* snew(fr->f_t[t].ener,F_NRE); */
+            fr->f_t[t].grpp.nener = grpp_nener;
+            for(i=0; i<egNR; i++)
+            {
+                snew(fr->f_t[t].grpp.ener[i],grpp_nener);
+            }
         }
     }
 }
@@ -1415,7 +1418,7 @@ static void pick_nbnxn_kernel(FILE *fp,
 {
     gmx_bool bEmulateGPU, bGPU;
     gmx_detectcpu_t cpu_information;
-    char gpu_err_str[STRLEN], sbuf[STRLEN];
+    char gpu_err_str[STRLEN];
 
     assert(kernel_type);
 
@@ -1444,12 +1447,10 @@ static void pick_nbnxn_kernel(FILE *fp,
             {
                 /* At this point the init should never fail as we made sure that 
                  * we have all the GPUs we need. If it still does, we'll bail. */
-                /* TODO collect messages from other nodes? */
-                sprintf(sbuf, "On node %d failed to initialize GPU #%d: %s",
-                        cr->nodeid,
-                        get_gpu_device_id(&hwinfo->gpu_info, cr->nodeid_group_intra),
-                        gpu_err_str);
-                gmx_fatal_collective(FARGS,cr,NULL,sbuf);
+                gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
+                          cr->nodeid,
+                          get_gpu_device_id(&hwinfo->gpu_info, cr->nodeid_group_intra),
+                          gpu_err_str);
             }
         }
         *useGPU = bGPU;
@@ -2114,16 +2115,6 @@ void init_forcerec(FILE *fp,
                        IR_ELEC_FIELD(*ir) ||
                        (fr->adress_icor != eAdressICOff)
                       );
-
-    /* FIXME dead code */
-    /* Mask that says whether or not this NBF list should be computed */
-    /*  if (fr->bMask == NULL) {
-        ngrp = ir->opts.ngener*ir->opts.ngener;
-        snew(fr->bMask,ngrp);*/
-    /* Defaults to always */
-    /*    for(i=0; (i<ngrp); i++)
-          fr->bMask[i] = TRUE;
-          }*/
     
     if (fr->cutoff_scheme == ecutsGROUP &&
         ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr)) {
@@ -2418,12 +2409,8 @@ void init_forcerec(FILE *fp,
         }
     }
 
-    /* FIXME better remove this #ifdef-ing */
-#ifndef GMX_OPENMP
-    fr->nthreads = 1;
-#else
+    /* Initialize the thread working data for bonded interactions */
     init_forcerec_f_threads(fr,mtop->groups.grps[egcENER].nr);
-#endif
     
     snew(fr->excl_load,fr->nthreads+1);
 
@@ -2439,7 +2426,6 @@ void init_forcerec(FILE *fp,
         /* initialize interaction constants
          * TODO should be moved out during modularization.
          */
-
         init_interaction_const(fp, &fr->ic, fr);
     }
 

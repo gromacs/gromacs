@@ -248,7 +248,7 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
                          const interaction_const_t  *ic,
                          rvec                       *shift_vec, 
                          int                        force_flags,
-                         gmx_bool                   clearF,
+                         int                        clearF,
                          real                       *fshift,
                          real                       *Vc,
                          real                       *Vvdw)
@@ -279,7 +279,7 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
 
         out = &nbat->out[nb];
 
-        if (clearF)
+        if (clearF == enbvClearFYes)
         {
             clear_f(nbat,out->f);
         }
@@ -292,7 +292,7 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
         {
             fshift_p = out->fshift;
 
-            if (clearF)
+            if (clearF == enbvClearFYes)
             {
                 clear_fshift(fshift_p);
             }

@@ -269,8 +269,6 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     {
         if (md->bEner[i])
         {
-            /* FIXME: The constness should not be cast away */
-            /*ener_nm[f_nre]=(char *)interaction_function[i].longname;*/
             ener_nm[md->f_nre]=interaction_function[i].longname;
             md->f_nre++;
         }
