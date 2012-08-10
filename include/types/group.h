@@ -71,6 +71,8 @@ typedef struct {
   gmx_bool         bNEMD;
   int          ngtc;            /* The number of T-coupling groups      */
   t_grp_tcstat *tcstat;         /* T-coupling data 			*/
+  tensor       **ekin_work_alloc; /* Allocated locations of ekin_work   */
+  tensor       **ekin_work;     /* Work arrays for tcstat per thread    */
   int          ngacc;           /* The number of acceleration groups    */
   t_grp_acc    *grpstat;	/* Acceleration data			*/
   tensor       ekin;            /* overall kinetic energy               */
