@@ -312,6 +312,7 @@ static void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray,
   /* fills the t_QMrec struct of QM group grpnr 
    */
   int i;
+  gmx_mtop_atomlookup_t alook;
   t_atom *atom;
 
 
@@ -323,12 +324,17 @@ static void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray,
     qm->indexQM[i]=atomarray[i];
   }
 
+  alook = gmx_mtop_atomlookup_init(mtop);
+
   snew(qm->atomicnumberQM,nr);
   for (i=0;i<qm->nrQMatoms;i++){
-    gmx_mtop_atomnr_to_atom(mtop,qm->indexQM[i],&atom);
+    gmx_mtop_atomnr_to_atom(alook,qm->indexQM[i],&atom);
     qm->nelectrons       += mtop->atomtypes.atomnumber[atom->type];
     qm->atomicnumberQM[i] = mtop->atomtypes.atomnumber[atom->type];
   }
+
+  gmx_mtop_atomlookup_destroy(alook);
+
   qm->QMcharge       = ir->opts.QMcharge[grpnr];
   qm->multiplicity   = ir->opts.QMmult[grpnr];
   qm->nelectrons    -= ir->opts.QMcharge[grpnr];
@@ -456,6 +462,7 @@ void init_QMMMrec(t_commrec *cr,
   gmx_mtop_ilistloop_all_t iloop;
   int       a_offset;
   t_ilist   *ilist_mol;
+  gmx_mtop_atomlookup_t alook;
 
   c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,6)); 
   c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,12)); 
@@ -610,8 +617,11 @@ void init_QMMMrec(t_commrec *cr,
      * Also we set the charges to zero in the md->charge arrays to prevent 
      * the innerloops from doubly counting the electostatic QM MM interaction
      */
+
+    alook = gmx_mtop_atomlookup_init(mtop);
+
     for (k=0;k<qm_nr;k++){
-      gmx_mtop_atomnr_to_atom(mtop,qm_arr[k],&atom);
+      gmx_mtop_atomnr_to_atom(alook,qm_arr[k],&atom);
       atom->q  = 0.0;
       atom->qB = 0.0;
     } 
@@ -621,7 +631,7 @@ void init_QMMMrec(t_commrec *cr,
     init_QMrec(0,qr->qm[0],qm_nr,qm_arr,mtop,ir);
     if(qr->qm[0]->bOPT || qr->qm[0]->bTS){
       for(i=0;i<qm_nr;i++){
-	gmx_mtop_atomnr_to_atom(mtop,qm_arr[i],&atom);
+	gmx_mtop_atomnr_to_atom(alook,qm_arr[i],&atom);
 	qr->qm[0]->c6[i]  =  C6(fr->nbfp,mtop->ffparams.atnr,
 				atom->type,atom->type)/c6au;
 	qr->qm[0]->c12[i] = C12(fr->nbfp,mtop->ffparams.atnr,
@@ -635,7 +645,7 @@ void init_QMMMrec(t_commrec *cr,
     /* find frontier atoms and mark them true in the frontieratoms array.
      */
     for(i=0;i<qm_nr;i++) {
-      gmx_mtop_atomnr_to_ilist(mtop,qm_arr[i],&ilist_mol,&a_offset);
+      gmx_mtop_atomnr_to_ilist(alook,qm_arr[i],&ilist_mol,&a_offset);
       nrvsite2 = ilist_mol[F_VSITE2].nr;
       iatoms   = ilist_mol[F_VSITE2].iatoms;
       
@@ -659,7 +669,9 @@ void init_QMMMrec(t_commrec *cr,
 	}
       }
     }
-      
+
+    gmx_mtop_atomlookup_destroy(alook);
+
     /* MM rec creation */
     mm               = mk_MMrec(); 
     mm->scalefactor  = ir->scalefactor;
