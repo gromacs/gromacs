@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {

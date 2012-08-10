@@ -67,18 +67,18 @@ typedef struct {
   int    mde_n,mdeb_n;
   real   *tmp_r;
   rvec   *tmp_v;
-  gmx_bool	 bConstr;
+  gmx_bool   bConstr;
   gmx_bool   bConstrVir;
   gmx_bool   bTricl;
   gmx_bool   bDynBox;
   gmx_bool   bNHC_trotter;
   gmx_bool   bPrintNHChains;
   gmx_bool   bMTTK;
+  gmx_bool   bMu; /* true if dipole is calculated */
   gmx_bool   bDiagPres;
   gmx_bool   bVir;
   gmx_bool   bPress;
   gmx_bool   bSurft;
-  gmx_bool   bMu;
   int    f_nre;
   int    epc;
   real   ref_p;

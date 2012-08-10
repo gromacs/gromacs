@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,16 +70,25 @@ do_ewald(FILE *log,       gmx_bool bVerbose,
  
 real
 ewald_LRcorrection(FILE *fp,
-			       int start,int end,
-			       t_commrec *cr,t_forcerec *fr,
-			       real *chargeA,real *chargeB,
-			       t_blocka *excl,rvec x[],
-			       matrix box,rvec mu_tot[],
-			       int ewald_geometry,real epsilon_surface,
-			       real lambda,real *dvdlambda,
-			       real *vdip,real *vcharge);
-/* Calculate the Long range correction to ewald, due to 
- * 1-4 interactions, surface dipole term and charge terms
+		   int start,int end,
+		   t_commrec *cr,int thread,t_forcerec *fr,
+		   real *chargeA,real *chargeB,
+		   gmx_bool calc_excl_corr,
+		   t_blocka *excl,rvec x[],
+		   matrix box,rvec mu_tot[],
+		   int ewald_geometry,real epsilon_surface,
+		   rvec *f,tensor vir,
+		   real lambda,real *dvdlambda);
+/* Calculate the Long range correction to the Ewald sum,
+ * due to excluded pairs and/or surface dipole terms.
+ */
+
+real
+ewald_charge_correction(t_commrec *cr,t_forcerec *fr,real lambda,matrix box,
+			real *dvdlambda,tensor vir);
+/* Calculate the Long range correction to the Ewald sum,
+ * due to a net system charge.
+ * Should only be called on one thread.
  */
 
 /* Routines to set global constants for speeding up the calculation
