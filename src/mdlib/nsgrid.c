@@ -42,6 +42,7 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "nsgrid.h"
@@ -126,9 +127,9 @@ static void dd_box_bounds_to_ns_bounds(real box0,real box_size,
     *gr1 = av + NSGRID_STDDEV_FAC*stddev;
 }
 
-void get_nsgrid_boundaries(t_grid *grid,
+void get_nsgrid_boundaries(int nboundeddim,matrix box,
                            gmx_domdec_t *dd,
-                           matrix box,gmx_ddbox_t *ddbox,rvec *gr0,rvec *gr1,
+                           gmx_ddbox_t *ddbox,rvec *gr0,rvec *gr1,
                            int ncg,rvec *cgcm,
                            rvec grid_x0,rvec grid_x1,
                            real *grid_density)
@@ -137,7 +138,7 @@ void get_nsgrid_boundaries(t_grid *grid,
     real vol,bdens0,bdens1;
     int d;
 
-    if (grid->nboundeddim < DIM)
+    if (nboundeddim < DIM)
     {
         calc_x_av_stddev(ncg,cgcm,av,stddev);
     }
@@ -145,7 +146,7 @@ void get_nsgrid_boundaries(t_grid *grid,
     vol = 1;
     for(d=0; d<DIM; d++)
     {
-        if (d < grid->nboundeddim)
+        if (d < nboundeddim)
         {
             grid_x0[d] = (gr0 != NULL ? (*gr0)[d] : 0);
             grid_x1[d] = (gr1 != NULL ? (*gr1)[d] : box[d][d]);
