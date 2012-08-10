@@ -37,7 +37,11 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
-#include "../typedefs.h"
+#include "types/idef.h"
+#include "types/mdatom.h"
+#include "types/fcdata.h"
+#include "types/graph.h"
+#include "types/pbc.h"
 
 #ifdef __cplusplus
 extern "C" {

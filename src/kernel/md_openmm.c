@@ -56,6 +56,7 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "mdrun.h"
+#include "md_support.h"
 #include "confio.h"
 #include "network.h"
 #include "pull.h"

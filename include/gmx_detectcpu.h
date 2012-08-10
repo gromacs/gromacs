@@ -104,6 +104,7 @@ gmx_detectcpu_acceleration_string[GMX_DETECTCPU_NACCELERATIONS];
 
 #define GMX_DETECTCPU_STRLEN  64
 
+/* FIXME the externally used types should perhaps be in a separate header */
 /* Data structure with CPU detection information. Set by gmxDetectCpu().
  * This is listed in the header for now, since we might want to access it in
  * performance-sensitive part of the code where we don't want function calls.
