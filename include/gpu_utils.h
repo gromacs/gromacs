@@ -90,7 +90,8 @@ int get_current_gpu_device_id(void) FUNC_TERM_INT
 /* FIXME temporary stuff */
 FUNC_QUALIFIER
 int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_INT
-void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index);
+FUNC_QUALIFIER
+void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_VOID
 
 #ifdef __cplusplus
 }

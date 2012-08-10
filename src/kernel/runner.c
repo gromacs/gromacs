@@ -1691,10 +1691,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->useGPU)
     {
+        char gpu_err_str[STRLEN];
+
         /* free GPU memory and uninitialize GPU */
         nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
 
-        char gpu_err_str[STRLEN];
         if (!free_gpu(gpu_err_str))
         {
             gmx_warning("On node %d failed to free GPU #%d: %s",

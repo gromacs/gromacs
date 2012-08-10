@@ -31,8 +31,62 @@
 #include "gpu_utils.h"
 #include "statutil.h"
 #include "gmx_hardware_detect.h"
-#include "md_support.h"
 #include "main.h"
+
+#include <stdarg.h>
+
+/* TODO these md_print functions are duplicated of those in md_support.c,
+ * but these can't be used because the are in mdlib, we should resolve this.
+ */
+static void md_print_info(const t_commrec *cr, FILE *fplog,
+                          const char *fmt, ...)
+{
+    va_list ap;
+
+    if (SIMMASTER(cr))
+    {
+        va_start(ap,fmt);
+
+        vfprintf(stderr,fmt,ap);
+        
+        va_end(ap);
+    }
+    if (fplog != NULL)
+    {
+        va_start(ap,fmt);
+
+        vfprintf(fplog,fmt,ap);
+
+        va_end(ap);
+    }
+}
+
+static void md_print_warn(const t_commrec *cr, FILE *fplog,
+                          const char *fmt, ...)
+{
+    va_list ap;
+
+    if (SIMMASTER(cr))
+    {
+        va_start(ap,fmt);
+
+        fprintf(stderr,"\n");
+        vfprintf(stderr,fmt,ap);
+        fprintf(stderr,"\n");
+
+        va_end(ap);
+    }
+    if (fplog != NULL)
+    {
+        va_start(ap,fmt);
+
+        fprintf(fplog,"\n");
+        vfprintf(fplog,fmt,ap);
+        fprintf(fplog,"\n");
+
+        va_end(ap);
+    }
+}
 
 
 /* FW decl. */
@@ -125,7 +179,7 @@ static void print_gpu_use_stats(FILE *fplog,
 }
 
 /* We can't have more than 10 GPU id's as we use single char numbers */
-static const int MAX_GPU_IDS = 10;
+#define MAX_GPU_IDS  10
 
 /* Parse a "plain" GPU ID string which contains a sequence of digits corresponding
  * to GPU IDs; the order will indicate the process/tMPI thread - GPU assignment. */
@@ -226,7 +280,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
     else
     {
         /* neither MPI nor tMPI */
-        sprintf(th_or_proc, th_or_proc, "process");
+        sprintf(th_or_proc, "process");
     }
 
     if (bGPUBin)
