@@ -206,41 +206,136 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   set_warning_line(wi,mdparin,-1);
 
-  /* BASIC CUT-OFF STUFF */
-  if (ir->rcoulomb < 0)
-  {
-      warning_error(wi,"rcoulomb should be >= 0");
-  }
-  if (ir->rvdw < 0)
-  {
-      warning_error(wi,"rvdw should be >= 0");
-  }
-  if (ir->rlist < 0)
-  {
-      warning_error(wi,"rlist should be >= 0");
-  }
-  if (ir->rlist == 0 ||
-      !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
-        (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist))) {
-    /* No switched potential and/or no twin-range:
-     * we can set the long-range cut-off to the maximum of the other cut-offs.
-     */
-    ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
-  } else if (ir->rlistlong < 0) {
-    ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
-    sprintf(warn_buf,"rlistlong was not set, setting it to %g (no buffer)",
-	    ir->rlistlong);
-    warning(wi,warn_buf);
-  }
-  if (ir->rlistlong == 0 && ir->ePBC != epbcNONE) {
-      warning_error(wi,"Can not have an infinite cut-off with PBC");
-  }
-  if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist)) {
-      warning_error(wi,"rlistlong can not be shorter than rlist");
-  }
-  if (IR_TWINRANGE(*ir) && ir->nstlist <= 0) {
-      warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
-  }
+    /* BASIC CUT-OFF STUFF */
+    if (ir->rcoulomb < 0)
+    {
+        warning_error(wi,"rcoulomb should be >= 0");
+    }
+    if (ir->rvdw < 0)
+    {
+        warning_error(wi,"rvdw should be >= 0");
+    }
+    if (ir->rlist < 0 &&
+        !(ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0))
+    {
+        warning_error(wi,"rlist should be >= 0");
+    }
+
+    if (ir->cutoff_scheme == ecutsGROUP)
+    {
+        /* BASIC CUT-OFF STUFF */
+        if (ir->rlist == 0 ||
+            !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
+              (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist))) {
+            /* No switched potential and/or no twin-range:
+             * we can set the long-range cut-off to the maximum of the other cut-offs.
+             */
+            ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+        }
+        else if (ir->rlistlong < 0)
+        {
+            ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+            sprintf(warn_buf,"rlistlong was not set, setting it to %g (no buffer)",
+                    ir->rlistlong);
+            warning(wi,warn_buf);
+        }
+        if (ir->rlistlong == 0 && ir->ePBC != epbcNONE)
+        {
+            warning_error(wi,"Can not have an infinite cut-off with PBC");
+        }
+        if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist))
+        {
+            warning_error(wi,"rlistlong can not be shorter than rlist");
+        }
+        if (IR_TWINRANGE(*ir) && ir->nstlist <= 0)
+        {
+            warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
+        }
+    }
+    else
+    {
+        real rc_max;
+
+        /* Normal Verlet type neighbor-list, currently only limited feature support */
+        if (inputrec2nboundeddim(ir) < 3)
+        {
+            warning_error(wi,"With Verlet lists only full pbc or pbc=xy with walls is supported");
+        }
+        if (ir->rcoulomb != ir->rvdw)
+        {
+            warning_error(wi,"With Verlet lists rcoulomb!=rvdw is not supported");
+        }
+        if (ir->vdwtype != evdwCUT)
+        {
+            warning_error(wi,"With Verlet lists only cut-off LJ interactions are supported");
+        }
+        if (!(ir->coulombtype == eelCUT ||
+              (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
+              EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
+        {
+            warning_error(wi,"With Verlet lists only cut-off, reaction-field, PME and EWALD electrostatics are supported");
+        }
+
+        if (ir->nstlist <= 0)
+        {
+             warning_error(wi,"With Verlet lists nstlist should be larger than 0");
+        }
+
+        if (ir->nstlist < 10)
+        {
+            warning_note(wi,"With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note that with the Verlet scheme nstlist has no effect on the accuracy of your simulation.");
+        }
+
+        rc_max = max(ir->rvdw,ir->rcoulomb);
+
+        if (ir->verletbuf_drift <= 0)
+        {
+            if (ir->verletbuf_drift == 0)
+            {
+                warning_error(wi,"Can not have an energy drift of exactly 0");
+            }
+
+            if (ir->rlist < rc_max)
+            {
+                warning_error(wi,"With verlet lists rlist can not be smaller than rvdw or rcoulomb");
+            }
+            
+            if (ir->rlist == rc_max)
+            {
+                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no explicit Verlet buffer, only the effective buffer of the 4x4 atom cluster pair-list");
+            }
+        }
+        else
+        {
+            if (ir->rlist > rc_max)
+            {
+                warning_note(wi,"You have set rlist larger than the interaction cut-off, but you also have verlet-buffer-drift > 0. Will set rlist using verlet-buffer-drift.");
+            }
+
+            if (EI_DYNAMICS(ir->eI))
+            {
+                if (EI_MD(ir->eI) && ir->etc == etcNO)
+                {
+                   warning_error(wi,"Temperature coupling is required for calculating rlist using the energy drift. Set rlist and use verlet-buffer-drift=-1."); 
+                }
+
+                if (inputrec2nboundeddim(ir) < 3)
+                {
+                    warning_error(wi,"The box volume is required for calculating rlist from the energy drift and there are unbounded dimensions. Set rlist and use verlet-buffer-drift=-1.");
+                }
+                /* Set rlist temporarily so we can continue processing */
+                ir->rlist = rc_max;
+            }
+            else
+            {
+                /* Set the buffer to 5% of the cut-off */
+                ir->rlist = 1.05*rc_max;
+            }
+        }
+
+        /* No twin-range calculations with Verlet lists */
+        ir->rlistlong = ir->rlist;
+    }
 
     /* GENERAL INTEGRATOR STUFF */
     if (!(ir->eI == eiMD || EI_VV(ir->eI)))
@@ -275,6 +370,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                 }
             }
         }
+        else if (ir->nstenergy > 0 && ir->nstcalcenergy > ir->nstenergy)
+        {
+            /* If the user sets nstenergy small, we should respect that */
+            sprintf(warn_buf,"Setting nstcalcenergy (%d) equal to nstenergy (%d)",ir->nstcalcenergy,ir->nstenergy);
+            ir->nstcalcenergy = ir->nstenergy;
+        }
+
         if (ir->epc != epcNO)
         {
             if (ir->nstpcouple < 0)
@@ -792,9 +894,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     }
   } else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype)) {
-    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
-	    eel_names[ir->coulombtype]);
-    CHECK(ir->rlist > ir->rcoulomb);
+      if (ir->cutoff_scheme == ecutsGROUP) {
+          sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
+                  eel_names[ir->coulombtype]);
+          CHECK(ir->rlist > ir->rcoulomb);
+      }
   }
 
   if (EEL_FULL(ir->coulombtype)) {
@@ -803,7 +907,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
-    } else {
+    } else if (ir->cutoff_scheme == ecutsGROUP) {
       if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD) {
 	sprintf(err_buf,
 		"With coulombtype = %s, rcoulomb must be equal to rlist\n"
@@ -840,20 +944,27 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
   } else if (ir->vdwtype == evdwCUT) {
-    sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
-    CHECK(ir->rlist > ir->rvdw);
+      if (ir->cutoff_scheme == ecutsGROUP) {
+          sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
+          CHECK(ir->rlist > ir->rvdw);
+      }
   }
-  if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
-      && (ir->rlistlong <= ir->rcoulomb)) {
-    sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
-	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
-    warning_note(wi,warn_buf);
-  }
-  if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlistlong <= ir->rvdw)) {
-    sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
-	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
-    warning_note(wi,warn_buf);
-  }
+    if (ir->cutoff_scheme == ecutsGROUP)
+    {
+        if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
+            && (ir->rlistlong <= ir->rcoulomb))
+        {
+            sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
+                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+            warning_note(wi,warn_buf);
+        }
+        if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlistlong <= ir->rvdw))
+        {
+            sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
+                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+            warning_note(wi,warn_buf);
+        }
+    }
 
   if (ir->vdwtype == evdwUSER && ir->eDispCorr != edispcNO) {
       warning_note(wi,"You have selected user tables with dispersion correction, the dispersion will be corrected to -C6/r^6 beyond rvdw_switch (the tabulated interaction between rvdw_switch and rvdw will not be double counted). Make sure that you really want dispersion correction to -C6/r^6.");
@@ -882,22 +993,22 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning(wi,"Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
   }
 
-  /* ENERGY CONSERVATION */
-  if (ir_NVE(ir))
-  {
-      if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
-      {
-          sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-                  evdw_names[evdwSHIFT]);
-          warning_note(wi,warn_buf);
-      }
-      if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)
-      {
-          sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
-                  eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
-          warning_note(wi,warn_buf);
-      }
-  }
+    /* ENERGY CONSERVATION */
+    if (ir_NVE(ir) && ir->cutoff_scheme == ecutsGROUP)
+    {
+        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
+        {
+            sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
+                    evdw_names[evdwSHIFT]);
+            warning_note(wi,warn_buf);
+        }
+        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)
+        {
+            sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
+                    eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
+            warning_note(wi,warn_buf);
+        }
+    }
 
   /* IMPLICIT SOLVENT */
   if(ir->coulombtype==eelGB_NOTUSED)
@@ -963,16 +1074,25 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     
   }
 
-  if (ir->bAdress && !EI_SD(ir->eI)){
-       warning_error(wi,"AdresS simulation supports only stochastic dynamics");
-  }
-  if (ir->bAdress && ir->epc != epcNO){
-       warning_error(wi,"AdresS simulation does not support pressure coupling");
-  }
-   if (ir->bAdress && (EEL_PME(ir->coulombtype))){
-       warning_error(wi,"AdresS simulation does not support long-range electrostatics");
-   }
-
+    if (ir->bAdress)
+    {
+        if (ir->cutoff_scheme != ecutsGROUP)
+        {
+            warning_error(wi,"AdresS simulation supports only cutoff-scheme=group");
+        }
+        if (!EI_SD(ir->eI))
+        {
+            warning_error(wi,"AdresS simulation supports only stochastic dynamics");
+        }
+        if (ir->epc != epcNO)
+        {
+            warning_error(wi,"AdresS simulation does not support pressure coupling");
+        }
+        if (EEL_PME(ir->coulombtype))
+        {
+            warning_error(wi,"AdresS simulation does not support long-range electrostatics");
+        }
+    }
 }
 
 /* count the number of text elemets separated by whitespace in a string.
@@ -1362,7 +1482,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("mode for center of mass motion removal");
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
   CTYPE ("number of steps for center of mass motion removal");
-  ITYPE ("nstcomm",	ir->nstcomm,	10);
+  ITYPE ("nstcomm",	ir->nstcomm,	100);
   CTYPE ("group(s) for center of mass motion removal");
   STYPE ("comm-grps",   vcm,            NULL);
   
@@ -1396,8 +1516,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	1000);
-  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
-  ITYPE ("nstenergy",   ir->nstenergy,  100);
+  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	100);
+  ITYPE ("nstenergy",   ir->nstenergy,  1000);
   CTYPE ("Output frequency and precision for .xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc-precision",ir->xtcprec,   1000.0);
@@ -1409,6 +1529,8 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   /* Neighbor searching */  
   CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
+  CTYPE ("cut-off scheme (group: using charge groups, Verlet: particle based cut-off's)");
+  EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
   CTYPE ("nblist update frequency");
   ITYPE ("nstlist",	ir->nstlist,	10);
   CTYPE ("ns algorithm (simple or grid)");
@@ -1418,6 +1540,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Periodic boundary conditions: xyz, no, xy");
   EETYPE("pbc",         ir->ePBC,       epbc_names);
   EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
+  CTYPE ("Allowed energy drift due to the verlet buffer in kJ/mol/ps per atom,");
+  CTYPE ("a value of -1 means: use rlist");
+  RTYPE("verlet-buffer-drift", ir->verletbuf_drift,    0.005);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	-1);
   CTYPE ("long-range cut-off for switched potentials");
@@ -1445,7 +1570,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Seperate tables between energy group pairs");
   STYPE ("energygrp-table", egptable,   NULL);
   CTYPE ("Spacing for the PME/PPPM FFT grid");
-  RTYPE ("fourierspacing", opts->fourierspacing,0.12);
+  RTYPE ("fourierspacing", ir->fourier_spacing,0.12);
   CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
   ITYPE ("fourier-nx",  ir->nkx,         0);
   ITYPE ("fourier-ny",  ir->nky,         0);
@@ -2455,8 +2580,14 @@ void do_index(const char* mdparin, const char *ndx,
               sprintf(warn_buf,"With integrator %s tau-t should be larger than 0",ei_names[ir->eI]);
               warning_error(wi,warn_buf);
           }
-          if ((ir->etc == etcVRESCALE && ir->opts.tau_t[i] >= 0) || 
-              (ir->etc != etcVRESCALE && ir->opts.tau_t[i] >  0))
+
+          if (ir->etc != etcVRESCALE && ir->opts.tau_t[i] == 0)
+          {
+              warning_note(wi,"Changing old tau_t=0 value for not temperature coupling groups to -1");
+              ir->opts.tau_t[i] = -1;
+          }
+
+          if (ir->opts.tau_t[i] >= 0)
           {
               tau_min = min(tau_min,ir->opts.tau_t[i]);
           }
@@ -2800,6 +2931,10 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.egp_flags,nr*nr);
 
   bExcl = do_egp_flag(ir,groups,"energygrp-excl",egpexcl,EGP_EXCL);
+    if (bExcl && ir->cutoff_scheme == ecutsVERLET) 
+    {
+        warning_error(wi,"Energy groups exclusions are not (yet) implemented for the Verlet scheme");
+    } 
   if (bExcl && EEL_FULL(ir->coulombtype))
     warning(wi,"Can not exclude the lattice Coulomb energy between energy groups");
 
