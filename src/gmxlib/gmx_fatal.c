@@ -449,7 +449,7 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 }
 
 void gmx_fatal_collective(int f_errno,const char *file,int line,
-                          t_commrec *cr,gmx_domdec_t *dd,
+                          const t_commrec *cr,gmx_domdec_t *dd,
                           const char *fmt,...)
 {
     gmx_bool    bFinalize;
