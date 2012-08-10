@@ -104,7 +104,7 @@
 #include "qmmm.h"
 
 #include "nbnxn_cuda_data_mgmt.h"
-/* #include "nbnxn_cuda/nbnxn_cuda.h" */
+#include "nbnxn_cuda/nbnxn_cuda.h"
 
 #if 0
 typedef struct gmx_timeprint {
@@ -663,7 +663,7 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
 
         case nbk8x8x8_CUDA:
-            /* nbnxn_cuda_launch_kernel(fr->nbv->cu_nbv, nbvg->nbat, flags, ilocality); */
+            nbnxn_cuda_launch_kernel(fr->nbv->cu_nbv, nbvg->nbat, flags, ilocality);
             break;
 
         case nbk8x8x8_PlainC:
@@ -1024,7 +1024,6 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     {
         /* launch D2H copy-back F */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-        /*
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
             nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintNonlocal].nbat,
@@ -1032,7 +1031,6 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
         nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintLocal].nbat,
                                   flags, eatLocal);
-        */
         cycles_force += wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 
@@ -1225,13 +1223,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             if (bUseGPU)
             {
                 wallcycle_start(wcycle,ewcWAIT_GPU_NB_NL);
-                /*
                 nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                     nbv->grp[eintNonlocal].nbat,
                                     flags, eatNonlocal,
                                     enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                     fr->fshift);
-                */
                 cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_NL);
             }
             else
@@ -1293,13 +1289,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (bUseGPU)
         {
             wallcycle_start(wcycle,ewcWAIT_GPU_NB_L);
-            /*
             nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                 nbv->grp[eintLocal].nbat,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                 fr->fshift);
-            */
             wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
