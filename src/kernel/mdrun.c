@@ -156,9 +156,61 @@ int main(int argc,char *argv[])
     "([TT]-x[tt]).[PAR]",
     "The option [TT]-dhdl[tt] is only used when free energy calculation is",
     "turned on.[PAR]",
-    "When [TT]mdrun[tt] is started using MPI with more than 1 node, parallelization",
-    "is used. By default domain decomposition is used, unless the [TT]-pd[tt]",
-    "option is set, which selects particle decomposition.[PAR]",
+    "A simulation can be run in parallel using two different parallelization",
+    "schemes: MPI parallelization and/or OpenMP thread parallelization.",
+    "The MPI parallelization uses multiple processes when [TT]mdrun[tt] is",
+    "compiled with a normal MPI library or threads when [TT]mdrun[tt] is",
+    "compiled with the GROMACS built-in thread-MPI library. OpenMP threads",
+    "are supported when mdrun is compiled with OpenMP. Full OpenMP support",
+    "is only available with the Verlet cut-off scheme, with the (older)",
+    "group scheme only PME-only processes can use OpenMP parallelization.",
+    "In all cases [TT]mdrun[tt] will by default try to use all the available",
+    "hardware resources. With a normal MPI library only the options",
+    "[TT]-ntomp[tt] (with the Verlet cut-off scheme) and [TT]-ntomp_pme[tt],",
+    "for PME-only processes, can be used to control the number of threads.",
+    "With thread-MPI there are additional options [TT]-nt[tt], which sets",
+    "the total number of threads, and [TT]-ntmpi[tt], which sets the number",
+    "of thread-MPI threads.",
+    "Note that using combined MPI+OpenMP parallelization is almost always",
+    "slower than single parallelization, except at the scaling limit, where",
+    "especially OpenMP parallelization of PME reduces the communication cost.",
+    "[PAR]",
+    "With GPUs (only supported with the Verlet cut-off scheme), the number",
+    "of GPUs should match the number of MPI processes or MPI threads,",
+    "excluding PME-only processes/threads. With thread-MPI the number",
+    "of MPI threads will automatically be set to the number of GPUs detected.",
+    "When you want to use a subset of the available GPUs, you can use",
+    "the [TT]-gpu_id[tt] option, where GPU id's are passed as a string,",
+    "e.g. 02 for using GPUs 0 and 2. When you want different GPU id's",
+    "on different nodes of a compute cluster, use the GMX_GPU_ID environment",
+    "variable instead. The format for GMX_GPU_ID is identical to ",
+    "[TT]-gpu_id[tt], but an environment variable can have different values",
+    "on different nodes of a cluster.",
+    "When using PME, the load between the GPU, which calculates",
+    "non-bonded interations, and the GPU, which calculates bonded and PME",
+    "interactions, is automatically balanced. This is done by scaling",
+    "the Coulomb cut-off and PME grid spacing by the same amount. In the first",
+    "few hundred steps different settings are tried and the fastest is chosen",
+    "for the rest of the simulation. This does not affect the accuracy of",
+    "the results, but it does affect the decomposition of the Coulomb energy",
+    "into particle and mesh contributions. The auto-tuning can be turned off",
+    "with the option [TT]-notunepme[tt].",
+    "[PAR]",
+    "By default [TT]mdrun[tt] pins threads to cores, as this often results",
+    "in significantly better performance. If you don't want this, use",
+    "[TT]-nopin[tt]. With Intel CPUs with hyper-threading, you should",
+    "pin consecutive threads to the same physical core with [TT]-pinht[tt]",
+    "for better performance when using more than half of the virtual cores.",
+    "When running multiple mdrun (or other) simulations on the same physical",
+    "node, some simulations need to start pinning from a non-zero core",
+    "to avoid overloading cores; with [TT]-pinoffset[tt] you can specify",
+    "the offset in physical cores for pinning.",
+    "[PAR]",
+    "When [TT]mdrun[tt] is started using MPI with more than 1 process",
+    "or with thread-MPI with more than 1 thread, MPI parallelization is used.",
+    "By default domain decomposition is used, unless the [TT]-pd[tt]",
+    "option is set, which selects particle decomposition.",
+    "[PAR]",
     "With domain decomposition, the spatial decomposition can be set",
     "with option [TT]-dd[tt]. By default [TT]mdrun[tt] selects a good decomposition.",
     "The user only needs to change this when the system is very inhomogeneous.",
@@ -401,6 +453,7 @@ int main(int argc,char *argv[])
   gmx_bool bPartDec     = FALSE;
   gmx_bool bDDBondCheck = TRUE;
   gmx_bool bDDBondComm  = TRUE;
+  gmx_bool bTunePME     = TRUE;
   gmx_bool bVerbose     = FALSE;
   gmx_bool bCompact     = TRUE;
   gmx_bool bSepPot      = FALSE;
@@ -416,14 +469,16 @@ int main(int argc,char *argv[])
   int  repl_ex_seed=-1;
   int  repl_ex_nex=0;
   int  nstepout=100;
-  int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
+  int  nsteps=-2; /* the value -2 means that the mdp option will be used */
   
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    const char *dddlb_opt[] =
+  const char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
+  const char *nbpu_opt[] =
+    { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
@@ -433,20 +488,34 @@ int main(int argc,char *argv[])
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
 
+  gmx_hw_opt_t hw_opt={0,0,0,0,TRUE,FALSE,0,NULL};
+
   t_pargs pa[] = {
 
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
-#ifdef GMX_THREAD_MPI
-    { "-nt",      FALSE, etINT, {&nthreads},
-      "Number of threads to start (0 is guess)" },
-#endif
-    { "-npme",    FALSE, etINT, {&npme},
-      "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
       "DD node order" },
+    { "-npme",    FALSE, etINT, {&npme},
+      "Number of separate nodes to be used for PME, -1 is guess" },
+    { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
+      "Total number of threads to start (0 is guess)" },
+    { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
+      "Number of thread-MPI threads to start (0 is guess)" },
+    { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
+      "Number of OpenMP threads to start (0 is guess)" },
+    { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
+      "Number of OpenMP threads to start (0 is -ntomp)" },
+    { "-pin",     FALSE, etBOOL, {&hw_opt.bThreadPinning},
+      "Pin OpenMP threads to cores" },
+    { "-pinht",   FALSE, etBOOL, {&hw_opt.bPinHyperthreading},
+      "For Intel CPUs with Hyper-Threading: pin 2 threads to each physical core" },
+    { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
+      "Core offset for pinning (for running multiple mdrun processes on a single physical node)" },
+    { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_id},
+      "List of GPU id's to use" },
     { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
       "Check for all bonded interactions with DD" },
     { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
@@ -467,6 +536,10 @@ int main(int argc,char *argv[])
       "HIDDENThe DD cell sizes in z" },
     { "-gcom",    FALSE, etINT,{&nstglobalcomm},
       "Global communication frequency" },
+    { "-nb",      FALSE, etENUM, {&nbpu_opt},
+      "Calculate non-bonded interactions on" },
+    { "-tunepme", FALSE, etBOOL, {&bTunePME},  
+      "Optimize PME load between GPU and CPU" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -483,6 +556,8 @@ int main(int argc,char *argv[])
       "Keep and number checkpoint files" },
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
       "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
+    { "-nsteps",  FALSE, etINT, {&nsteps},
+      "Run this number of steps, overrides .mdp file option" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
@@ -554,10 +629,6 @@ int main(int argc,char *argv[])
      lead to problems. */ 
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
-
-#ifndef GMX_THREAD_MPI
-  nthreads=1;
-#endif
 
   /* now check the -multi and -multidir option */
   if (opt2bSet("-multidir", NFILE, fnm))
@@ -647,6 +718,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
   Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
   Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
+  Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
@@ -662,7 +734,8 @@ int main(int argc,char *argv[])
      there instead.  */
   if ((MASTER(cr) || bSepPot) && !bAppendFiles) 
   {
-      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
+      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,
+                   !bSepPot,Flags & MD_APPENDFILES,&fplog);
       CopyRight(fplog,argv[0]);
       please_cite(fplog,"Hess2008b");
       please_cite(fplog,"Spoel2005a");
@@ -682,10 +755,12 @@ int main(int argc,char *argv[])
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-  rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
+  rc = mdrunner(&hw_opt, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
+                nbpu_opt[0],
+                nsteps,nstepout,resetstep,
+                nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
                 pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   gmx_finalize_par();

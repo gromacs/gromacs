@@ -161,6 +161,9 @@
 /* Use the PowerPC hardware 1/sqrt(x) */
 #cmakedefine GMX_POWERPC_INVSQRT
 
+/* Use sub-counters */
+#cmakedefine GMX_CYCLE_SUBCOUNTERS
+
 /* Compile with plugin support */
 #cmakedefine GMX_USE_PLUGINS
 
@@ -172,6 +175,9 @@
 
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
+
+/* Define when thread-MPI atomic operations are available */
+#cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
 #cmakedefine TMPI_WAIT_FOR_NO_ONE
@@ -196,6 +202,9 @@
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
+
+/* Use GPU native acceleration */
+#cmakedefine GMX_GPU
 
 /* Define to 1 if the system has the type gmx_bool. */
 #cmakedefine HAVE_BOOL
@@ -358,6 +367,12 @@
 
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
+
+/* Define if sleep() in unistd.h is present. */
+#cmakedefine HAVE_UNISTD_SLEEP
+
+/* Define if Sleep() in windows.h is present. */
+#cmakedefine HAVE_WIN_SLEEP
 
 /* The size of int, as computed by sizeof. */
 #cmakedefine SIZEOF_INT @SIZEOF_INT@
