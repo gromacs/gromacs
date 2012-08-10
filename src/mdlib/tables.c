@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -50,6 +51,7 @@
 #include "physics.h"
 #include "force.h"
 #include "gmxfio.h"
+#include "tables.h"
 
 /* All the possible (implemented) table functions */
 enum { 
@@ -123,6 +125,192 @@ typedef struct {
 #define pow3(x) ((x)*(x)*(x))
 #define pow4(x) ((x)*(x)*(x)*(x))
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
+
+
+static double v_ewald_lr(double beta,double r)
+{
+    if (r == 0)
+    {
+        return beta*2/sqrt(M_PI);
+    }
+    else
+    {
+        return gmx_erfd(beta*r)/r;
+    }
+}
+
+void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
+                                 int ntab,int tableformat,
+                                 real dx,real beta)
+{
+    real tab_max;
+    int stride=0;
+    int i,i_inrange;
+    double dc,dc_new;
+    gmx_bool OutOfRange;
+    double v_r0,v_r1,v_inrange,vi,a0,a1,a2dx;
+    double x_r0;
+
+    if (ntab < 2)
+    {
+        gmx_fatal(FARGS,"Can not make a spline table with less than 2 points");
+    }
+
+    /* We need some margin to be able to divide table values by r
+     * in the kernel and also to do the integration arithmetics
+     * without going out of range. Furthemore, we divide by dx below.
+     */
+    tab_max = GMX_REAL_MAX*0.0001;
+
+    /* This function produces a table with:
+     * maximum energy error: V'''/(6*12*sqrt(3))*dx^3
+     * maximum force error:  V'''/(6*4)*dx^2
+     * The rms force error is the max error times 1/sqrt(5)=0.45.
+     */
+
+    switch (tableformat)
+    {
+    case tableformatF:    stride = 1; break;
+    case tableformatFDV0: stride = 4; break;
+    default: gmx_incons("Unknown table format");
+    }
+
+    OutOfRange = FALSE;
+    i_inrange = ntab;
+    v_inrange = 0;
+    dc = 0;
+    for(i=ntab-1; i>=0; i--)
+    {
+        x_r0 = i*dx;
+
+        v_r0 = v_ewald_lr(beta,x_r0);
+
+        if (!OutOfRange)
+        {
+            i_inrange = i;
+            v_inrange = v_r0;
+    
+            vi = v_r0;
+        }
+        else
+        {
+            /* Linear continuation for the last point in range */
+            vi = v_inrange - dc*(i - i_inrange)*dx;
+        }
+
+        switch (tableformat)
+        {
+        case tableformatF:
+            if (tabv != NULL)
+            {
+                tabv[i] = vi;
+            }
+            break;
+        case tableformatFDV0:
+            tabf[i*stride+2] = vi;
+            tabf[i*stride+3] = 0;
+            break;
+        default:
+            gmx_incons("Unknown table format");
+        }
+
+        if (i == 0)
+        {
+            continue;
+        }
+
+        /* Get the potential at table point i-1 */
+        v_r1 = v_ewald_lr(beta,(i-1)*dx);
+
+        if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
+        {
+            OutOfRange = TRUE;
+        }
+
+        if (!OutOfRange)
+        {
+            /* Calculate the average second derivative times dx over interval i-1 to i.
+             * Using the function values at the end points and in the middle.
+             */
+            a2dx = (v_r0 + v_r1 - 2*v_ewald_lr(beta,x_r0-0.5*dx))/(0.25*dx);
+            /* Set the derivative of the spline to match the difference in potential
+             * over the interval plus the average effect of the quadratic term.
+             * This is the essential step for minimizing the error in the force.
+             */
+            dc = (v_r0 - v_r1)/dx + 0.5*a2dx;
+        }
+
+        if (i == ntab - 1)
+        {
+            /* Fill the table with the force, minus the derivative of the spline */
+            tabf[i*stride] = -dc;
+        }
+        else
+        {
+            /* tab[i] will contain the average of the splines over the two intervals */
+            tabf[i*stride] += -0.5*dc;
+        }
+
+        if (!OutOfRange)
+        {
+            /* Make spline s(x) = a0 + a1*(x - xr) + 0.5*a2*(x - xr)^2
+             * matching the potential at the two end points
+             * and the derivative dc at the end point xr.
+             */
+            a0   = v_r0;
+            a1   = dc;
+            a2dx = (a1*dx + v_r1 - a0)*2/dx;
+
+            /* Set dc to the derivative at the next point */
+            dc_new = a1 - a2dx;
+                
+            if (dc_new != dc_new || dc_new < -tab_max || dc_new > tab_max)
+            {
+                OutOfRange = TRUE;
+            }
+            else
+            {
+                dc = dc_new;
+            }
+        }
+
+        tabf[(i-1)*stride] = -0.5*dc;
+    }
+    /* Currently the last value only contains half the force: double it */
+    tabf[0] *= 2;
+
+    if (tableformat == tableformatFDV0)
+    {
+        /* Store the force difference in the second entry */
+        for(i=0; i<ntab-1; i++)
+        {
+            tabf[i*stride+1] = tabf[(i+1)*stride] - tabf[i*stride];
+        }
+        tabf[(ntab-1)*stride+1] = -tabf[i*stride];
+    }
+}
+
+/* The scale (1/spacing) for third order spline interpolation
+ * of the Ewald mesh contribution which needs to be subtracted
+ * from the non-bonded interactions.
+ */
+real ewald_spline3_table_scale(real ewaldcoeff,real rc)
+{
+    double erf_x_d3=1.0522; /* max of (erf(x)/x)''' */
+    double ftol,etol;
+    double sc_f,sc_e;
+
+    /* Force tolerance: single precision accuracy */
+    ftol = GMX_FLOAT_EPS;
+    sc_f = sqrt(erf_x_d3/(6*4*ftol*ewaldcoeff))*ewaldcoeff;
+
+    /* Energy tolerance: 10x more accurate than the cut-off jump */
+    etol = 0.1*gmx_erfc(ewaldcoeff*rc);
+    etol = max(etol,GMX_REAL_EPS);
+    sc_e = pow(erf_x_d3/(6*12*sqrt(3)*etol),1.0/3.0)*ewaldcoeff;
+
+    return max(sc_f,sc_e);
+}
 
 /* Calculate the potential and force for an r value
  * in exactly the same way it is done in the inner loop.

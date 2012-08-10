@@ -65,8 +65,10 @@
 #include "partdec.h"
 #include "constr.h"
 #include "checkpoint.h"
-#include "mdrun.h"
 #include "xvgr.h"
+#include "md_support.h"
+#include "mdrun.h"
+#include "sim_util.h"
 
 typedef struct gmx_global_stat
 {
