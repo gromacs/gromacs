@@ -76,9 +76,10 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
 static const int tpx_version = 80;
 
 /* This number should only be increased when you edit the TOPOLOGY section
- * of the tpx format. This way we can maintain forward compatibility too
- * for all analysis tools and/or external programs that only need to
- * know the atom/residue names, charges, and bond connectivity.
+ * or the HEADER of the tpx format.
+ * This way we can maintain forward compatibility too for all analysis tools
+ * and/or external programs that only need to know the atom/residue names,
+ * charges, and bond connectivity.
  *  
  * It first appeared in tpx version 26, when I also moved the inputrecord
  * to the end of the tpx file, so we can just skip it if we only
@@ -91,8 +92,7 @@ static const int tpx_generation = 24;
  */
 static const int tpx_incompatible_version = 9;
 
-/* TODO: remove this temporary version support */
-static gmx_bool nbnxn_pre = FALSE;
+
 
 /* Struct used to maintain tpx compatibility when function types are added */
 typedef struct {
@@ -606,7 +606,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
-    if (file_version >= 80 || nbnxn_pre)
+    if (file_version >= 80)
     {
         gmx_fio_do_int(fio,ir->cutoff_scheme);
     }
@@ -668,7 +668,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     if(file_version < 18)
       gmx_fio_do_int(fio,idum); 
-    if (file_version >= 80 || nbnxn_pre){
+    if (file_version >= 80) {
       gmx_fio_do_real(fio,ir->verletbuf_drift);
     } else {
       ir->verletbuf_drift = 0;
@@ -761,7 +761,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
 
 	 
-    if (file_version >= 80 || nbnxn_pre)
+    if (file_version >= 80)
     {
         gmx_fio_do_real(fio,ir->fourier_spacing); 
     }
@@ -2369,8 +2369,27 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
   
     /* Check versions! */
     gmx_fio_do_int(fio,fver);
+
+    /* This is for backward compatibility with development versions 77-79
+     * where the tag was, mistakenly, placed before the generation,
+     * which would cause a segv instead of a proper error message
+     * when reading the topology only from tpx with <77 code.
+     */
+    if (fver >= 77 && fver <= 79)
+    {
+        gmx_fio_do_string(fio,file_tag);
+    }
   
-    if (fver >= 77)
+    if (fver >= 26)
+    {
+        gmx_fio_do_int(fio,fgen);
+    }
+    else
+    {
+        fgen = 0;
+    }
+ 
+    if (fver >= 80)
     {
         gmx_fio_do_string(fio,file_tag);
     }
@@ -2390,14 +2409,7 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
             /* We only support reading tpx files with the same tag as the code
              * or tpx files with the release tag and with lower version number.
              */
-            /* TODO: remove this temporary special version support */
-            if (strcmp(file_tag,"nbnxn-pre-release") == 0 && fver == 79)
-            {
-                nbnxn_pre = TRUE;
-                fver = 78;
-            }
-            else
-            if (!strcmp(file_tag,TPX_TAG_RELEASE) == 0 && fver <= 77) 
+            if (!strcmp(file_tag,TPX_TAG_RELEASE) == 0 && fver < tpx_version) 
             {
                 gmx_fatal(FARGS,"tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' with program for tpx version %d, tag '%s'",
                           gmx_fio_getname(fio),fver,file_tag,
@@ -2406,15 +2418,6 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
         }
     }
 
-    if (fver >= 26)
-    {
-        gmx_fio_do_int(fio,fgen);
-    }
-    else
-    {
-        fgen=0;
-    }
- 
     if (file_version != NULL)
     {
         *file_version = fver;
