@@ -3001,7 +3001,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
     for(b=0; b<=NSUBCELL; b++)
     {
         fprintf(fp,"nbl j-list #i-subcell %d %7d %4.1f\n",
-                b,c[b],100.0*c[b]/(double)(nbl->ncj4*4));
+                b,c[b],100.0*c[b]/(double)(nbl->ncj4*NBNXN_GPU_JGROUP_SIZE));
     }
 }
 
@@ -3022,7 +3022,7 @@ static void print_supersub_nsp(const char *fn,
         nsp = 0;
         for(j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
         {
-            for(p=0; p<4*NSUBCELL; p++)
+            for(p=0; p<NBNXN_GPU_JGROUP_SIZE*NSUBCELL; p++)
             {
                 nsp += (nbl->cj4[j4].imei[0].imask >> p) & 1;
             }
@@ -3191,9 +3191,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*4+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -3233,9 +3233,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*4+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -3317,7 +3317,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
     for(cjo=0; cjo<gridj->nsubc[scj]; cjo++)
     {
         cj4_ind   = (nbl->work->cj_ind >> 2);
-        cj_offset = nbl->work->cj_ind - cj4_ind*4;
+        cj_offset = nbl->work->cj_ind - cj4_ind*NBNXN_GPU_JGROUP_SIZE;
         cj4       = &nbl->cj4[cj4_ind];
 
         cj = scj*NSUBCELL + cjo;
@@ -3425,14 +3425,16 @@ static void make_cluster_list(const nbnxn_search_t nbs,
     }
 }
 
-/* Set the exclusion masks for simple list i-entry nbl_ci */
-static void set_ci_excls(const nbnxn_search_t nbs,
-                         nbnxn_pairlist_t *nbl,
-                         gmx_bool diagRemoved,
-                         int na_ci_2log,
-                         int na_cj_2log,
-                         const nbnxn_ci_t *nbl_ci,
-                         const t_blocka *excl)
+/* Set all atom-pair exclusions from the topology stored in excl
+ * as masks in the pair-list for simple list i-entry nbl_ci
+ */
+static void set_ci_top_excls(const nbnxn_search_t nbs,
+                             nbnxn_pairlist_t *nbl,
+                             gmx_bool diagRemoved,
+                             int na_ci_2log,
+                             int na_cj_2log,
+                             const nbnxn_ci_t *nbl_ci,
+                             const t_blocka *excl)
 {
     const int *cell;
     int ci;
@@ -3495,7 +3497,7 @@ static void set_ci_excls(const nbnxn_search_t nbs,
         {
             si  = (i>>na_ci_2log);
 
-            /* Loop over the exclusions for this i-atom */
+            /* Loop over the topology-based exclusions for this i-atom */
             for(eind=excl->index[ai]; eind<excl->index[ai+1]; eind++)
             {
                 aj = excl->a[eind];
@@ -3566,13 +3568,15 @@ static void set_ci_excls(const nbnxn_search_t nbs,
     }
 }
 
-/* Set the exclusion masks for i-super-cell nbl_sci */
-static void set_sci_excls(const nbnxn_search_t nbs,
-                          nbnxn_pairlist_t *nbl,
-                          gmx_bool diagRemoved,
-                          int na_c_2log,
-                          const nbnxn_sci_t *nbl_sci,
-                          const t_blocka *excl)
+/* Set all atom-pair exclusions from the topology stored in excl
+ * as masks in the pair-list for i-super-cell entry nbl_sci
+ */
+static void set_sci_top_excls(const nbnxn_search_t nbs,
+                              nbnxn_pairlist_t *nbl,
+                              gmx_bool diagRemoved,
+                              int na_c_2log,
+                              const nbnxn_sci_t *nbl_sci,
+                              const t_blocka *excl)
 {
     const int *cell;
     int na_c;
@@ -3600,7 +3604,7 @@ static void set_sci_excls(const nbnxn_search_t nbs,
 
     sci = nbl_sci->sci;
 
-    cj_ind_first = nbl_sci->cj4_ind_start*4;
+    cj_ind_first = nbl_sci->cj4_ind_start*NBNXN_GPU_JGROUP_SIZE;
     cj_ind_last  = nbl->work->cj_ind - 1;
 
     cj_first = nbl->cj4[nbl_sci->cj4_ind_start].cj[0];
@@ -3625,7 +3629,7 @@ static void set_sci_excls(const nbnxn_search_t nbs,
         {
             si  = (i>>na_c_2log);
 
-            /* Loop over the exclusions for this i-atom */
+            /* Loop over the topology-based exclusions for this i-atom */
             for(eind=excl->index[ai]; eind<excl->index[ai+1]; eind++)
             {
                 aj = excl->a[eind];
@@ -3687,15 +3691,23 @@ static void set_sci_excls(const nbnxn_search_t nbs,
                         inner_i = i  - si*na_c;
                         inner_e = ge - se*na_c;
 
-                        if (nbl_imask0(nbl,found) & (1U << ((found & 3)*NSUBCELL + si)))
+/* Macro for getting the index of atom a within a cluster */
+#define AMODI(a)  ((a) & (NBNXN_CPU_CLUSTER_I_SIZE - 1))
+/* Macro for converting an atom number to a cluster number */
+#define A2CI(a)   ((a) >> NBNXN_CPU_CLUSTER_I_SIZE_2LOG)
+
+                        if (nbl_imask0(nbl,found) & (1U << (AMODI(found)*NSUBCELL + si)))
                         {
                             w       = (inner_e >> 2);
 
-                            get_nbl_exclusions_1(nbl,found>>2,w,&nbl_excl);
+                            get_nbl_exclusions_1(nbl,A2CI(found),w,&nbl_excl);
 
-                            nbl_excl->pair[(inner_e & 3)*nbl->na_ci+inner_i] &=
-                                ~(1U << ((found & 3)*NSUBCELL + si));
+                            nbl_excl->pair[AMODI(inner_e)*nbl->na_ci+inner_i] &=
+                                ~(1U << (AMODI(found)*NSUBCELL + si));
                         }
+
+#undef AMODI
+#undef A2CI
                     }
                 }
             }
@@ -3858,7 +3870,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
     cj4_end   = nbl->sci[nbl->nsci-1].cj4_ind_end;
     j4len = cj4_end - cj4_start;
 
-    if (j4len > 1 && j4len*NSUBCELL*4 > nsp_max)
+    if (j4len > 1 && j4len*NSUBCELL*NBNXN_GPU_JGROUP_SIZE > nsp_max)
     {
         /* Remove the last ci entry and process the cj4's again */
         nbl->nsci -= 1;
@@ -3873,7 +3885,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
         {
             nsp_cj4_p = nsp_cj4;
             nsp_cj4   = 0;
-            for(p=0; p<NSUBCELL*4; p++)
+            for(p=0; p<NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
             {
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
@@ -3935,7 +3947,7 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
          * so round the count up before closing.
          */
         nbl->ncj4         = ((nbl->work->cj_ind + 4-1) >> 2);
-        nbl->work->cj_ind = nbl->ncj4*4;
+        nbl->work->cj_ind = nbl->ncj4*NBNXN_GPU_JGROUP_SIZE;
 
         nbl->nsci++;
 
@@ -3951,7 +3963,7 @@ static void sync_work(nbnxn_pairlist_t *nbl)
 {
     if (!nbl->simple)
     {
-        nbl->work->cj_ind   = nbl->ncj4*4;
+        nbl->work->cj_ind   = nbl->ncj4*NBNXN_GPU_JGROUP_SIZE;
         nbl->work->cj4_init = nbl->ncj4;
     }
 }
@@ -4030,13 +4042,13 @@ static void icell_set_x_simple(int ci,
 {
     int  ia,i;
 
-    ia = ci*4;
+    ia = ci*NBNXN_CPU_CLUSTER_I_SIZE;
 
     for(i=0; i<NBNXN_CPU_CLUSTER_I_SIZE; i++)
     {
-        work->x_ci[i*STRIDE_XYZ+0] = x[(ia+i)*stride+XX] + shx;
-        work->x_ci[i*STRIDE_XYZ+1] = x[(ia+i)*stride+YY] + shy;
-        work->x_ci[i*STRIDE_XYZ+2] = x[(ia+i)*stride+ZZ] + shz;
+        work->x_ci[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
+        work->x_ci[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
+        work->x_ci[i*STRIDE_XYZ+ZZ] = x[(ia+i)*stride+ZZ] + shz;
     }
 }
 
@@ -4055,9 +4067,9 @@ static void icell_set_x_supersub(int ci,
     ia = ci*NSUBCELL*na_c;
     for(i=0; i<NSUBCELL*na_c; i++)
     {
-        x_ci[i*DIM + 0] = x[(ia+i)*stride + 0] + shx;
-        x_ci[i*DIM + 1] = x[(ia+i)*stride + 1] + shy;
-        x_ci[i*DIM + 2] = x[(ia+i)*stride + 2] + shz;
+        x_ci[i*DIM + XX] = x[(ia+i)*stride + XX] + shx;
+        x_ci[i*DIM + YY] = x[(ia+i)*stride + YY] + shy;
+        x_ci[i*DIM + ZZ] = x[(ia+i)*stride + ZZ] + shz;
     }
 }
 
@@ -4210,14 +4222,14 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
         /* Thus the (average) maximum j-list size should be as follows */
         nsubpair_max = max(1,(int)(nsp_est/min_ci_balanced+0.5));
 
-        /* Since the target value is a maximum (this avoid high outlyers,
+        /* Since the target value is a maximum (this avoid high outliers,
          * which lead to load imbalance), not average, we get more lists
          * than we ask for (to compensate we need to add NSUBCELL*4/4).
          * But more importantly, the optimal GPU performance moves
          * to lower number of block for very small blocks.
          * To compensate we add the maximum pair count per cj4.
          */
-        nsubpair_max += NSUBCELL*4;
+        nsubpair_max += NSUBCELL*NBNXN_CPU_CLUSTER_I_SIZE;
     }
 
     if (debug)
@@ -4558,13 +4570,20 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     if (conv_i == 1)
     {
-        /* Set the block size as 5/11/ntask times the average number of cells
+#define CI_BLOCK_ENUM    5
+#define CI_BLOCK_DENOM  11
+        /* Here we decide how to distribute the blocks over the threads.
+         * We use prime numbers to try to avoid that the grid size becomes
+         * a multiple of the number of threads, which would lead to some
+         * threads getting "inner" pairs and others getting boundary pairs,
+         * which in turns will lead to load imbalance between threads.
+         * Set the block size as 5/11/ntask times the average number of cells
          * in a y,z slab. This should ensure a quite uniform distribution
          * of the grid parts of the different thread along all three grid
          * zone boundaries with 3D domain decomposition. At the same time
          * the blocks will not become too small.
          */
-        ci_block = (gridi->nc*5)/(11*gridi->ncx*nth);
+        ci_block = (gridi->nc*CI_BLOCK_ENUM)/(CI_BLOCK_DENOM*gridi->ncx*nth);
 
         /* Ensure the blocks are not too small: avoids cache invalidation */
         if (ci_block*gridi->na_sc < 16)
@@ -4957,22 +4976,22 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     /* Set the exclusions for this ci list */
                     if (nbl->simple)
                     {
-                        set_ci_excls(nbs,
-                                     nbl,
-                                     shift == CENTRAL && gridi == gridj,
-                                     gridj->na_c_2log,
-                                     na_cj_2log,
-                                     &(nbl->ci[nbl->nci]),
-                                     excl);
+                        set_ci_top_excls(nbs,
+                                         nbl,
+                                         shift == CENTRAL && gridi == gridj,
+                                         gridj->na_c_2log,
+                                         na_cj_2log,
+                                         &(nbl->ci[nbl->nci]),
+                                         excl);
                     }
                     else
                     {
-                        set_sci_excls(nbs,
-                                     nbl,
-                                     shift == CENTRAL && gridi == gridj,
-                                     gridj->na_c_2log,
-                                     &(nbl->sci[nbl->nsci]),
-                                     excl);
+                        set_sci_top_excls(nbs,
+                                          nbl,
+                                          shift == CENTRAL && gridi == gridj,
+                                          gridj->na_c_2log,
+                                          &(nbl->sci[nbl->nsci]),
+                                          excl);
                     }
 
                     /* Close this ci list */

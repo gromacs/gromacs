@@ -43,10 +43,15 @@ extern "C" {
 /* With CPU kernels the i-cluster size is always 4 atoms.
  * Without SSE the j-cluster size is also 4.
  */
-#define NBNXN_CPU_CLUSTER_I_SIZE  4
+#define NBNXN_CPU_CLUSTER_I_SIZE       4
+
+#define NBNXN_CPU_CLUSTER_I_SIZE_2LOG  2
 
 /* With GPU kernels the cluster size is 8 atoms */
-#define NBNXN_GPU_CLUSTER_SIZE    8
+#define NBNXN_GPU_CLUSTER_SIZE         8
+
+/* With GPU kernels we group cell pairs in 4 to optimize memory usage */
+#define NBNXN_GPU_JGROUP_SIZE  4
 
 /* To avoid NaN when excluded atoms are at zero distance, we add a small
  * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.
