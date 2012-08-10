@@ -1,6 +1,11 @@
 
 file(GLOB MDLIB_SOURCES *.c nbnxn_kernels/*.c)
 
+if(GMX_GPU)
+    add_subdirectory(nbnxn_cuda)
+    set(GMX_GPU_LIBRARIES nbnxn_cuda)
+endif()
+
 # due to a compiler bug gcc 4.4.x crashes on force.c and constr.c with -O3,
 # but strangely not with -O2 + all extra -O3 flags
 if(GMX_OPENMP AND CMAKE_COMPILER_IS_GNUCC AND
