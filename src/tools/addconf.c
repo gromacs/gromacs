@@ -267,8 +267,8 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   /* create free energy data to avoid NULLs */
   snew(ir->fepvals,1);
   printf("Neighborsearching with a cut-off of %g\n",rlong);
-  init_forcerec(stdout,oenv,fr,NULL,ir,mtop,cr,box,FALSE,NULL,NULL,NULL,NULL,
-                TRUE,-1);
+  init_forcerec(stdout,oenv,fr,NULL,ir,mtop,cr,box,FALSE,
+                NULL,NULL,NULL,NULL,NULL,TRUE,-1);
   if (debug)
     pr_forcerec(debug,fr,cr);
 
@@ -528,7 +528,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
 	atoms->resinfo[atoms->nres-1].nr = resnr;
 	/* calculate shift of the solvent molecule using the first atom */
 	copy_rvec(x_solvt[i],dx);
-	put_atoms_in_box(box,1,&dx);
+	put_atoms_in_box(ePBC,box,1,&dx);
 	rvec_dec(dx,x_solvt[i]);
       }
       atoms->atom[atoms->nr] = atoms_solvt->atom[i];

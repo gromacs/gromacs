@@ -37,6 +37,7 @@
 #define _repl_ex_h
 
 #include "typedefs.h"
+#include "types/commrec.h"
 
 /* Abstract type for replica exchange */
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
