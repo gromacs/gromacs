@@ -216,7 +216,7 @@ gmx_setup_kernels(FILE *fplog,t_forcerec *fr,gmx_bool bGenericKernelOnly)
 	
     nb_kernel_setup(fplog,nb_kernel_list);
     
-    if(fr->use_acceleration==FALSE)
+    if(fr->use_cpu_acceleration==FALSE)
     {
         return;
     }
@@ -312,7 +312,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         {
 #if 0 && defined (GMX_X86_SSE2)
 # ifdef GMX_DOUBLE
-            if(fr->use_acceleration)
+            if(fr->use_cpu_acceleration)
             {
                 nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                                  &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -323,7 +323,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                      &outeriter,&inneriter,&fr->AllvsAll_work);        
             }
 #  else /* not double */
-            if(fr->use_acceleration)
+            if(fr->use_cpu_acceleration)
             {
                 nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                                  &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -344,7 +344,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         { 
 #if 0 && defined (GMX_X86_SSE2)
 # ifdef GMX_DOUBLE
-            if(fr->use_acceleration)
+            if(fr->use_cpu_acceleration)
             {
                 nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                                &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -356,7 +356,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
             }
             
 #  else /* not double */
-            if(fr->use_acceleration)
+            if(fr->use_cpu_acceleration)
             {
                 nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                                &outeriter,&inneriter,&fr->AllvsAll_work);

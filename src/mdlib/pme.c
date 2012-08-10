@@ -92,8 +92,7 @@
 /* Single precision, with SSE2 or higher available */
 #if defined(GMX_X86_SSE2) && !defined(GMX_DOUBLE)
 
-#include "gmx_x86_sse2.h"
-#include "gmx_math_x86_sse2_single.h"
+#include "gmx_x86_simd_single.h"
 
 #define PME_SSE
 /* Some old AMD processors could have problems with unaligned loads+stores */
@@ -156,6 +155,7 @@ typedef struct {
 } thread_plist_t;
 
 typedef struct {
+    int  *thread_one;
     int  n;
     int  *ind;
     splinevec theta;
@@ -216,6 +216,7 @@ typedef struct {
     int  nthread;       /* The number of threads operating on this grid     */
     ivec nc;            /* The local spatial decomposition over the threads */
     pmegrid_t *grid_th; /* Array of grids for each thread                   */
+    real *grid_all;     /* Allocated array for the grids in *grid_th        */
     int  **g2t;         /* The grid to thread index                         */
     ivec nthread_comm;  /* The number of threads to communicate with        */
 } pmegrids_t;
@@ -1439,7 +1440,7 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
     {
         grid[i] = 0;
     }
-
+    
     order = pmegrid->order;
 
     for(nn=0; nn<spline->n; nn++)
@@ -1635,7 +1636,7 @@ static void pmegrids_init(pmegrids_t *grids,
 {
     ivec n,n_base,g0,g1;
     int t,x,y,z,d,i,tfac;
-    int max_comm_lines;
+    int max_comm_lines=-1;
 
     n[XX] = nx - (pme_order - 1);
     n[YY] = ny - (pme_order - 1);
@@ -1655,7 +1656,6 @@ static void pmegrids_init(pmegrids_t *grids,
     {
         ivec nst;
         int gridsize;
-        real *grid_all;
 
         for(d=0; d<DIM; d++)
         {
@@ -1676,7 +1676,7 @@ static void pmegrids_init(pmegrids_t *grids,
         t = 0;
         gridsize = nst[XX]*nst[YY]*nst[ZZ];
         set_gridsize_alignment(&gridsize,pme_order);
-        snew_aligned(grid_all,
+        snew_aligned(grids->grid_all,
                      grids->nthread*gridsize+(grids->nthread+1)*GMX_CACHE_SEP,
                      16);
 
@@ -1696,7 +1696,7 @@ static void pmegrids_init(pmegrids_t *grids,
                                  (n[ZZ]*(z+1))/grids->nc[ZZ],
                                  TRUE,
                                  pme_order,
-                                 grid_all+GMX_CACHE_SEP+t*(gridsize+GMX_CACHE_SEP));
+                                 grids->grid_all+GMX_CACHE_SEP+t*(gridsize+GMX_CACHE_SEP));
                     t++;
                 }
             }
@@ -2694,6 +2694,8 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
             snew(atc->thread_plist[thread].n,atc->nthread+2*GMX_CACHE_SEP);
             atc->thread_plist[thread].n += GMX_CACHE_SEP;
         }
+        snew(atc->spline[thread].thread_one,pme->nthread);
+        atc->spline[thread].thread_one[thread] = 1;
     }
 }
 
@@ -3245,8 +3247,70 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
 
     *pmedata = pme;
-
+    
     return 0;
+}
+
+static void reuse_pmegrids(const pmegrids_t *old,pmegrids_t *new)
+{
+    int d,t;
+
+    for(d=0; d<DIM; d++)
+    {
+        if (new->grid.n[d] > old->grid.n[d])
+        {
+            return;
+        }
+    }
+
+    sfree_aligned(new->grid.grid);
+    new->grid.grid = old->grid.grid;
+
+    if (new->nthread > 1 && new->nthread == old->nthread)
+    {
+        sfree_aligned(new->grid_all);
+        for(t=0; t<new->nthread; t++)
+        {
+            new->grid_th[t].grid = old->grid_th[t].grid;
+        }
+    }
+}
+
+int gmx_pme_reinit(gmx_pme_t *         pmedata,
+                   t_commrec *         cr,
+                   gmx_pme_t           pme_src,
+                   const t_inputrec *  ir,
+                   ivec                grid_size)
+{
+    t_inputrec irc;
+    int homenr;
+    int ret;
+
+    irc = *ir;
+    irc.nkx = grid_size[XX];
+    irc.nky = grid_size[YY];
+    irc.nkz = grid_size[ZZ];
+
+    if (pme_src->nnodes == 1)
+    {
+        homenr = pme_src->atc[0].n;
+    }
+    else
+    {
+        homenr = -1;
+    }
+
+    ret = gmx_pme_init(pmedata,cr,pme_src->nnodes_major,pme_src->nnodes_minor,
+                       &irc,homenr,pme_src->bFEP,FALSE,pme_src->nthread);
+
+    if (ret == 0)
+    {
+        /* We can easily reuse the allocated pme grids in pme_src */
+        reuse_pmegrids(&pme_src->pmegridA,&(*pmedata)->pmegridA);
+        /* We would like to reuse the fft grids, but that's harder */
+    }
+
+    return ret;
 }
 
 
@@ -4255,7 +4319,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle,ewcPME_FFT);
-
+                    
                     where();
                     GMX_MPE_LOG(ev_gmxfft3d_finish);
 

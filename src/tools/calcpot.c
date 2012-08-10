@@ -36,6 +36,9 @@
 #include <config.h>
 #endif
 
+#include <stddef.h>
+
+#include "types/commrec.h"
 #include "vec.h"
 #include "calcpot.h"
 #include "nrnb.h"
@@ -284,7 +287,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(fplog,oenv,*fr,NULL,inputrec,mtop,*cr,
-		state->box,FALSE,table,NULL,table,NULL,TRUE,-1);
+		state->box,FALSE,table,NULL,table,NULL,NULL,TRUE,-1);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
