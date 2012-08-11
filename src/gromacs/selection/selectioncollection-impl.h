@@ -44,6 +44,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/scoped_ptr.hpp>
+
 #include "../legacyheaders/typedefs.h"
 
 #include "../onlinehelp/helptopicinterface.h"
@@ -56,11 +58,15 @@
 
 namespace gmx
 {
+
 //! Smart pointer for managing an internal selection data object.
 typedef gmx_unique_ptr<internal::SelectionData>::type SelectionDataPointer;
 //! Container for storing a list of selections internally.
 typedef std::vector<SelectionDataPointer> SelectionDataList;
-}
+
+class SelectionParserSymbolTable;
+
+} // namespace gmx
 
 /*! \internal \brief
  * Information for a collection of selections.
@@ -92,8 +98,8 @@ struct gmx_ana_selcollection_t
     struct gmx_ana_index_t         gall;
     /** Memory pool used for selection evaluation. */
     struct gmx_sel_mempool_t      *mempool;
-    /** Parser symbol table. */
-    struct gmx_sel_symtab_t     *symtab;
+    //! Parser symbol table.
+    boost::scoped_ptr<gmx::SelectionParserSymbolTable> symtab;
     //! Root of help topic tree (NULL is no help yet requested).
     gmx::HelpTopicPointer          rootHelp;
 };

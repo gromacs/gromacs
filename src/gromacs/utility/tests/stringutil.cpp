@@ -56,11 +56,23 @@ namespace
  * Tests for simple string utilities
  */
 
+TEST(StringUtilityTest, StartsWithWorks)
+{
+    EXPECT_TRUE(gmx::startsWith("foobar", "foo"));
+    EXPECT_TRUE(gmx::startsWith("foobar", ""));
+    EXPECT_TRUE(gmx::startsWith("", ""));
+    EXPECT_FALSE(gmx::startsWith("", "foobar"));
+    EXPECT_FALSE(gmx::startsWith("foo", "foobar"));
+    EXPECT_FALSE(gmx::startsWith("foobar", "oob"));
+}
+
 TEST(StringUtilityTest, EndsWithWorks)
 {
     EXPECT_TRUE(gmx::endsWith("foobar", "bar"));
     EXPECT_TRUE(gmx::endsWith("foobar", NULL));
     EXPECT_TRUE(gmx::endsWith("foobar", ""));
+    EXPECT_TRUE(gmx::endsWith("", ""));
+    EXPECT_FALSE(gmx::endsWith("", "foobar"));
     EXPECT_FALSE(gmx::endsWith("foobar", "bbar"));
     EXPECT_FALSE(gmx::endsWith("foobar", "barr"));
     EXPECT_FALSE(gmx::endsWith("foobar", "foofoobar"));

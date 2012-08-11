@@ -296,6 +296,7 @@
 namespace gmx
 {
 class PositionCalculationCollection;
+class SelectionParserSymbolTable;
 } // namespace gmx
 
 struct gmx_ana_pos_t;
@@ -650,11 +651,11 @@ typedef struct gmx_ana_selmethod_t
 
 /** Registers a selection method. */
 int
-gmx_ana_selmethod_register(struct gmx_sel_symtab_t *symtab,
+gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
                            const char *name, gmx_ana_selmethod_t *method);
 /** Registers all selection methods in the library. */
 int
-gmx_ana_selmethod_register_defaults(struct gmx_sel_symtab_t *symtab);
+gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab);
 
 /** Finds a parameter from a selection method by name. */
 gmx_ana_selparam_t *

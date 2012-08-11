@@ -1138,20 +1138,14 @@ _gmx_sel_assign_variable(const char *name,
     if (expr->type == SEL_CONST && expr->v.type != GROUP_VALUE)
     {
         /* If so, just assign the constant value to the variable */
-        if (!_gmx_sel_add_var_symbol(sc->symtab, name, expr))
-        {
-            return SelectionTreeElementPointer();
-        }
+        sc->symtab->addVariable(name, expr);
         goto finish;
     }
     /* Check if we are assigning a variable to another variable */
     if (expr->type == SEL_SUBEXPRREF)
     {
         /* If so, make a simple alias */
-        if (!_gmx_sel_add_var_symbol(sc->symtab, name, expr->child))
-        {
-            return SelectionTreeElementPointer();
-        }
+        sc->symtab->addVariable(name, expr->child);
         goto finish;
     }
     /* Create the root element */
@@ -1166,10 +1160,7 @@ _gmx_sel_assign_variable(const char *name,
     /* Update flags */
     _gmx_selelem_update_flags(root, scanner);
     /* Add the variable to the symbol table */
-    if (!_gmx_sel_add_var_symbol(sc->symtab, name, root->child))
-    {
-        return SelectionTreeElementPointer();
-    }
+    sc->symtab->addVariable(name, root->child);
 finish:
     srenew(sc->varstrs, sc->nvars + 1);
     sc->varstrs[sc->nvars] = strdup(pselstr);

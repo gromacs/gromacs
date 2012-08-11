@@ -54,9 +54,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "smalloc.h"
-#include "string2.h"
+#include <string>
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
@@ -215,9 +217,6 @@ int
 _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                                   gmx_sel_lexer_t *state)
 {
-    gmx_sel_symrec_t *symbol;
-    e_symbol_t        symtype;
-
     /* Check if the identifier matches with a parameter name */
     if (state->msp >= 0)
     {
@@ -274,7 +273,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     }
 
     /* Check if the identifier matches with a symbol */
-    symbol = _gmx_sel_find_symbol_len(state->sc->symtab, yytext, yyleng, false);
+    const gmx::SelectionParserSymbol *symbol
+        = state->sc->symtab->findSymbol(std::string(yytext, yyleng), false);
     /* If there is no match, return the token as a string */
     if (!symbol)
     {
@@ -282,19 +282,19 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
         _gmx_sel_lexer_add_token(yytext, yyleng, state);
         return IDENTIFIER;
     }
-    _gmx_sel_lexer_add_token(_gmx_sel_sym_name(symbol), -1, state);
-    symtype = _gmx_sel_sym_type(symbol);
+    _gmx_sel_lexer_add_token(symbol->name().c_str(), -1, state);
+    gmx::SelectionParserSymbol::SymbolType symtype = symbol->type();
     /* Reserved symbols should have been caught earlier */
-    if (symtype == SYMBOL_RESERVED)
+    if (symtype == gmx::SelectionParserSymbol::ReservedSymbol)
     {
         GMX_ERROR_NORET(gmx::eeInternalError,
                         "Mismatch between tokenizer and reserved symbol table");
         return INVALID;
     }
     /* For variable symbols, return the type of the variable value */
-    if (symtype == SYMBOL_VARIABLE)
+    if (symtype == gmx::SelectionParserSymbol::VariableSymbol)
     {
-        gmx::SelectionTreeElementPointer var = _gmx_sel_sym_value_var(symbol);
+        gmx::SelectionTreeElementPointer var = symbol->variableValue();
         /* Return simple tokens for constant variables */
         if (var->type == SEL_CONST)
         {
@@ -331,19 +331,17 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
         return INVALID; /* Should not be reached. */
     }
     /* For method symbols, return the correct type */
-    if (symtype == SYMBOL_METHOD)
+    if (symtype == gmx::SelectionParserSymbol::MethodSymbol)
     {
-        gmx_ana_selmethod_t *method;
-
-        method = _gmx_sel_sym_value_method(symbol);
+        gmx_ana_selmethod_t *method = symbol->methodValue();
         return init_method_token(yylval, method, state->prev_pos_kw > 0, state);
     }
     /* For position symbols, we need to return KEYWORD_POS, but we also need
      * some additional handling. */
-    if (symtype == SYMBOL_POS)
+    if (symtype == gmx::SelectionParserSymbol::PositionSymbol)
     {
         state->bMatchOf = true;
-        yylval->str = _gmx_sel_sym_name(symbol);
+        yylval->str = strdup(symbol->name().c_str());
         state->prev_pos_kw = 2;
         return KEYWORD_POS;
     }
