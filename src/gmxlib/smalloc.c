@@ -284,9 +284,8 @@ size_t memavail(void)
  * on systems that lack posix_memalign() and memalign() when 
  * freeing memory that needed to be adjusted to achieve
  * the necessary alignment. */
-void *save_calloc_aligned(const char *name,const char *file,int line,
-                          unsigned nelem,size_t elsize,size_t alignment,
-			  int set_to_zero)
+void *save_malloc_aligned(const char *name,const char *file,int line,
+                          unsigned nelem,size_t elsize,size_t alignment)
 {
     void **aligned=NULL;
     void *malloced=NULL;
@@ -346,12 +345,16 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
            pointer we're going to return */
         aligned[-1] = malloced;
 #endif
-	if (set_to_zero)
-        {
-            memset(aligned, 0,(size_t) (nelem * elsize));
-        }
     }
     return (void*)aligned;
+}
+
+void *save_calloc_aligned(const char *name,const char *file,int line,
+                          unsigned nelem,size_t elsize,size_t alignment)
+{
+    void *aligned = save_malloc_aligned(name, file, line, nelem, elsize, alignment);
+    memset(aligned, 0, (size_t)(nelem * elsize));
+    return aligned;
 }
 
 /* This routine can NOT be called with any pointer */
