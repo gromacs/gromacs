@@ -160,8 +160,8 @@ using gmx::SelectionTreeElementPointer;
 %type <val>   basic_value_list basic_value_list_contents basic_value_item
 %type <val>   help_topic
 
-%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER CMP_OP string
-%destructor { if($$) free($$);              } PARAM
+%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER KEYWORD_POS CMP_OP string
+%destructor { if($$) free($$);              } PARAM pos_mod
 %destructor { delete $$;                    } commands command cmd_plain selection
 %destructor { delete $$;                    } sel_expr num_expr str_expr pos_expr
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
@@ -422,6 +422,7 @@ pos_mod:     EMPTY_POSMOD       { $$ = NULL; }
 sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
+                 sfree_guard posmodGuard($1);
                  set_sel($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -429,6 +430,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
            | pos_mod KEYWORD_STR basic_value_list
              {
                  BEGIN_ACTION;
+                 sfree_guard posmodGuard($1);
                  set_sel($$, _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -436,6 +438,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
            | pos_mod KEYWORD_NUMERIC basic_value_list
              {
                  BEGIN_ACTION;
+                 sfree_guard posmodGuard($1);
                  set_sel($$, _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -446,6 +449,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
 sel_expr:    pos_mod METHOD_GROUP method_params
              {
                  BEGIN_ACTION;
+                 sfree_guard posmodGuard($1);
                  set_sel($$, _gmx_sel_init_method($2, $3, $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -485,6 +489,7 @@ num_expr:    TOK_INT
 num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
              {
                  BEGIN_ACTION;
+                 sfree_guard posmodGuard($1);
                  set_sel($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -492,6 +497,7 @@ num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
            | pos_mod METHOD_NUMERIC method_params
              {
                  BEGIN_ACTION;
+                 sfree_guard posmodGuard($1);
                  set_sel($$, _gmx_sel_init_method($2, $3, $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -556,6 +562,7 @@ str_expr:    string
            | pos_mod KEYWORD_STR
              {
                  BEGIN_ACTION;
+                 sfree_guard posmodGuard($1);
                  set_sel($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -593,6 +600,7 @@ pos_expr:    METHOD_POS method_params
 pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
+                 sfree_guard keywordGuard($1);
                  set_sel($$, _gmx_sel_init_position(get_sel($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;

@@ -48,11 +48,28 @@ namespace gmx
 {
 
 /*! \brief
+ * Tests whether a string starts with another string.
+ *
+ * \param[in] str    String to process.
+ * \param[in] prefix Prefix to find.
+ * \returns   true if \p str starts with \p prefix.
+ *
+ * Returns true if \p prefix is empty.
+ * Does not throw.
+ *
+ * \inpublicapi
+ */
+bool inline startsWith(const std::string &str, const std::string &prefix)
+{
+    return str.compare(0, prefix.length(), prefix) == 0;
+}
+
+/*! \brief
  * Tests whether a string ends with another string.
  *
  * \param[in] str    String to process.
  * \param[in] suffix Suffix to find.
- * \returns   true if \p str ends with suffix.
+ * \returns   true if \p str ends with \p suffix.
  *
  * Returns true if \p suffix is NULL or empty.
  * Does not throw.
