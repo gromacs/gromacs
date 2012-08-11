@@ -2782,7 +2782,7 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
  */
 static void nbnxn_alloc_aligned(void **ptr,size_t nbytes)
 {
-    *ptr = save_calloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,32,0);
+    *ptr = save_malloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,32);
 }
 
 /* Free function for memory allocated with nbnxn_alloc_aligned */

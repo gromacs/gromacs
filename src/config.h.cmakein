@@ -162,7 +162,7 @@
 #cmakedefine GMX_POWERPC_INVSQRT
 
 /* Use sub-counters */
-#cmakedefine GMX_CYCLE_SUB
+#cmakedefine GMX_CYCLE_SUBCOUNTERS
 
 /* Compile with plugin support */
 #cmakedefine GMX_USE_PLUGINS
