@@ -42,10 +42,11 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-#include <macros.h>
-#include <string2.h>
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "symrec.h"
 
@@ -219,10 +220,9 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  */
 static bool
 check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
-             gmx_sel_symtab_t *symtab)
+             const gmx::SelectionParserSymbolTable &symtab)
 {
     bool              bOk = true;
-    gmx_sel_symrec_t *sym;
     int               i, j;
 
     if (nparams > 0 && !param)
@@ -379,17 +379,18 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             continue;
         }
         /* Check that the name does not conflict with a method */
-        if (_gmx_sel_find_symbol(symtab, param[i].name, true))
+        if (symtab.findSymbol(param[i].name, true))
         {
             report_param_error(fp, name, param[i].name, "error: name conflicts with another method or a keyword");
             bOk = false;
         }
     } /* End of parameter loop */
     /* Check parameters of existing methods */
-    sym = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
-    while (sym)
+    gmx::SelectionParserSymbolIterator symbol
+        = symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
+    while (symbol != symtab.endIterator())
     {
-        gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(sym);
+        gmx_ana_selmethod_t *method = symbol->methodValue();
         gmx_ana_selparam_t  *param =
             gmx_ana_selmethod_find_param(name, method);
         if (param)
@@ -397,7 +398,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             report_param_error(fp, method->name, param->name, "error: name conflicts with another method or a keyword");
             bOk = false;
         }
-        sym = _gmx_sel_next_symbol(sym, SYMBOL_METHOD);
+        ++symbol;
     }
     return bOk;
 }
@@ -487,7 +488,8 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
  * compiler, and evaluation functions can deal with the method.
  */
 static bool
-check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
+check_method(FILE *fp, gmx_ana_selmethod_t *method,
+             const gmx::SelectionParserSymbolTable &symtab)
 {
     bool         bOk = true;
 
@@ -557,7 +559,8 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
  * compiler, and evaluation functions can deal with the method.
  */
 static bool
-check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
+check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
+               const gmx::SelectionParserSymbolTable &symtab)
 {
     bool         bOk = true;
 
@@ -616,7 +619,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
  * All problems are described to \p stderr.
  */
 int
-gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
+gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
                            const char *name, gmx_ana_selmethod_t *method)
 {
     bool bOk;
@@ -624,17 +627,22 @@ gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
     /* Check the method */
     if (method->flags & SMETH_MODIFIER)
     {
-        bOk = check_modifier(stderr, method, symtab);
+        bOk = check_modifier(stderr, method, *symtab);
     }
     else
     {
-        bOk = check_method(stderr, method, symtab);
+        bOk = check_method(stderr, method, *symtab);
     }
     /* Try to register the method if everything is ok */
-    if (bOk) 
+    if (bOk)
     {
-        if (!_gmx_sel_add_method_symbol(symtab, name, method))
+        try
         {
+            symtab->addMethod(name, method);
+        }
+        catch (const gmx::APIError &ex)
+        {
+            report_error(stderr, name, ex.what());
             bOk = false;
         }
     }
@@ -652,7 +660,7 @@ gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
  *   registered.
  */
 int
-gmx_ana_selmethod_register_defaults(gmx_sel_symtab_t *symtab)
+gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
 {
     size_t i;
     int  rc;

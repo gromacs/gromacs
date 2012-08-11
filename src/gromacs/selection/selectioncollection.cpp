@@ -83,15 +83,14 @@ SelectionCollection::Impl::Impl()
     sc_.top       = NULL;
     gmx_ana_index_clear(&sc_.gall);
     sc_.mempool   = NULL;
-    sc_.symtab    = NULL;
-
-    _gmx_sel_symtab_create(&sc_.symtab);
-    gmx_ana_selmethod_register_defaults(sc_.symtab);
+    sc_.symtab.reset(new SelectionParserSymbolTable);
+    gmx_ana_selmethod_register_defaults(sc_.symtab.get());
 }
 
 
 SelectionCollection::Impl::~Impl()
 {
+    clearSymbolTable();
     sc_.sel.clear();
     sc_.root.reset();
     for (int i = 0; i < sc_.nvars; ++i)
@@ -104,18 +103,13 @@ SelectionCollection::Impl::~Impl()
     {
         _gmx_sel_mempool_destroy(sc_.mempool);
     }
-    clearSymbolTable();
 }
 
 
 void
 SelectionCollection::Impl::clearSymbolTable()
 {
-    if (sc_.symtab)
-    {
-        _gmx_sel_symtab_free(sc_.symtab);
-        sc_.symtab = NULL;
-    }
+    sc_.symtab.reset();
 }
 
 
