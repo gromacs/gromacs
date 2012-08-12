@@ -33,7 +33,7 @@
 /* "%code requires" blocks.  */
 
 /* Line 2068 of yacc.c  */
-#line 166 "parser.y"
+#line 64 "parser.y"
 
 #include "selelem.h"
 
@@ -91,7 +91,7 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 170 "parser.y"
+#line 68 "parser.y"
 
     int                         i;
     real                        r;

@@ -89,126 +89,24 @@
  *
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <exception>
-
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "parsetree.h"
 #include "selelem.h"
 
-#include "scanner.h"
+#include "parser_internal.h"
 
 using gmx::sfree_guard;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
-//! Helper method to reorder a list of parameter values and to count the values.
-static t_selexpr_value *
-process_value_list(t_selexpr_value *values, int *nr);
-//! Helper method to reorder a list of parameters.
-static t_selexpr_param *
-process_param_list(t_selexpr_param *params);
-
-/*! \brief
- * Retrieves a selection tree pointer from a semantic value.
- *
- * \param[in] src  Semantic value to get the tree from.
- * \returns   Pointer to the selection tree.
- *
- * There should be no statements that may throw exceptions in actions before
- * this function has been called for all semantic values that have a tree
- * argument.  Together with set(), this function abstracts away exception
- * safety issues that arise from the use of a plain pointer for storing the
- * selection tree semantic values.
- *
- * Does not throw.
- */
-static SelectionTreeElementPointer
-get(SelectionTreeElementPointer *src)
-{
-    SelectionTreeElementPointer result;
-    if (src != NULL)
-    {
-        result.swap(*src);
-        delete src;
-    }
-    return result;
-}
-/*! \brief
- * Sets a selection tree pointer to a semantic value.
- *
- * \param[out] dest  Semantic value to set the tree to.
- * \param[in]  value Pointer to the selection tree to set.
- * \throws     std::bad_alloc if out of memory.
- *
- * This should be the last statement before ::END_ACTION, except for a
- * possible ::CHECK_SEL.
- */
-static void
-set(SelectionTreeElementPointer *&dest,
-        const SelectionTreeElementPointer &value)
-{
-    dest = new SelectionTreeElementPointer(value);
-}
-/*! \brief
- * Checks that a valid tree was set.
- *
- * Should be called after set() if it was used to set a value where NULL
- * pointer indicates an error.
- *
- * \todo
- * Get rid of this macro.  It should now be possible to handle all errors using
- * exceptions.
- */
-#define CHECK_SEL(sel) \
-    if (!*(sel)) { \
-        delete sel; \
-        YYERROR; \
-    }
-
-//! Error handler needed by Bison.
-static void
-yyerror(yyscan_t, char const *s);
-
 #ifdef _MSC_VER
 #pragma warning(disable: 4065)
 #endif
 
-/*! \name Exception handling macros for actions
- *
- * These macros should be used at the beginning and end of each semantic action
- * that may throw an exception. For robustness, it's best to wrap all actions
- * that call functions declared outside parser.y should be wrapped.
- * These macros take care to catch any exceptions, store the exception (or
- * handle it and allow the parser to continue), and terminate the parser
- * cleanly if necessary.
- * The code calling the parser should use
- * _gmx_sel_lexer_rethrow_exception_if_occurred() to rethrow any exceptions.
- * \{
- */
-//! Starts an action that may throw exceptions.
-#define BEGIN_ACTION \
-    try {
-//! Finishes an action that may throw exceptions.
-#define END_ACTION \
-    } \
-    catch(const std::exception &ex) \
-    { \
-        if (_gmx_selparser_handle_exception(scanner, ex)) \
-            YYERROR; \
-        else \
-            YYABORT; \
-    }
-//!\}
-
 
 /* Line 268 of yacc.c  */
-#line 212 "parser.cpp"
+#line 110 "parser.cpp"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -231,14 +129,14 @@ yyerror(yyscan_t, char const *s);
 /* "%code requires" blocks.  */
 
 /* Line 288 of yacc.c  */
-#line 166 "parser.y"
+#line 64 "parser.y"
 
 #include "selelem.h"
 
 
 
 /* Line 288 of yacc.c  */
-#line 242 "parser.cpp"
+#line 140 "parser.cpp"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -289,7 +187,7 @@ typedef union YYSTYPE
 {
 
 /* Line 293 of yacc.c  */
-#line 170 "parser.y"
+#line 68 "parser.y"
 
     int                         i;
     real                        r;
@@ -304,7 +202,7 @@ typedef union YYSTYPE
 
 
 /* Line 293 of yacc.c  */
-#line 308 "parser.cpp"
+#line 206 "parser.cpp"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -340,7 +238,7 @@ void yypstate_delete ();
 
 
 /* Line 343 of yacc.c  */
-#line 344 "parser.cpp"
+#line 242 "parser.cpp"
 
 #ifdef short
 # undef short
@@ -639,16 +537,16 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   285,   285,   286,   297,   298,   320,   326,   327,   339,
-     352,   358,   365,   372,   379,   390,   398,   399,   409,   410,
-     417,   418,   432,   433,   437,   438,   441,   442,   445,   446,
-     454,   465,   476,   487,   491,   501,   509,   519,   520,   524,
-     531,   538,   548,   562,   573,   587,   594,   604,   610,   616,
-     622,   628,   634,   640,   647,   658,   672,   681,   685,   695,
-     708,   716,   724,   737,   739,   744,   745,   750,   759,   760,
-     761,   765,   766,   768,   773,   774,   778,   779,   781,   785,
-     791,   797,   803,   809,   813,   820,   827,   834,   838,   845,
-     852
+       0,   183,   183,   184,   195,   196,   218,   224,   225,   237,
+     250,   256,   263,   270,   277,   288,   296,   297,   307,   308,
+     315,   316,   330,   331,   335,   336,   339,   340,   343,   344,
+     352,   363,   374,   385,   389,   399,   407,   417,   418,   422,
+     429,   436,   446,   460,   471,   485,   492,   502,   508,   514,
+     520,   526,   532,   538,   545,   556,   570,   579,   583,   593,
+     606,   614,   622,   635,   637,   642,   643,   648,   657,   658,
+     659,   663,   664,   666,   671,   672,   676,   677,   679,   683,
+     689,   695,   701,   707,   711,   718,   725,   732,   736,   743,
+     750
 };
 #endif
 
@@ -1442,227 +1340,227 @@ yydestruct (yymsg, yytype, yyvaluep, scanner)
       case 5: /* "HELP_TOPIC" */
 
 /* Line 1391 of yacc.c  */
-#line 265 "parser.y"
+#line 163 "parser.y"
 	{ free((yyvaluep->str));                     };
 
 /* Line 1391 of yacc.c  */
-#line 1450 "parser.cpp"
+#line 1348 "parser.cpp"
 	break;
       case 8: /* "STR" */
 
 /* Line 1391 of yacc.c  */
-#line 265 "parser.y"
+#line 163 "parser.y"
 	{ free((yyvaluep->str));                     };
 
 /* Line 1391 of yacc.c  */
-#line 1459 "parser.cpp"
+#line 1357 "parser.cpp"
 	break;
       case 9: /* "IDENTIFIER" */
 
 /* Line 1391 of yacc.c  */
-#line 265 "parser.y"
+#line 163 "parser.y"
 	{ free((yyvaluep->str));                     };
 
 /* Line 1391 of yacc.c  */
-#line 1468 "parser.cpp"
+#line 1366 "parser.cpp"
 	break;
       case 25: /* "PARAM" */
 
 /* Line 1391 of yacc.c  */
-#line 266 "parser.y"
+#line 164 "parser.y"
 	{ if((yyvaluep->str)) free((yyvaluep->str));              };
 
 /* Line 1391 of yacc.c  */
-#line 1477 "parser.cpp"
+#line 1375 "parser.cpp"
 	break;
       case 28: /* "CMP_OP" */
 
 /* Line 1391 of yacc.c  */
-#line 265 "parser.y"
+#line 163 "parser.y"
 	{ free((yyvaluep->str));                     };
 
 /* Line 1391 of yacc.c  */
-#line 1486 "parser.cpp"
+#line 1384 "parser.cpp"
 	break;
       case 50: /* "commands" */
 
 /* Line 1391 of yacc.c  */
-#line 267 "parser.y"
+#line 165 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1495 "parser.cpp"
+#line 1393 "parser.cpp"
 	break;
       case 51: /* "command" */
 
 /* Line 1391 of yacc.c  */
-#line 267 "parser.y"
+#line 165 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1504 "parser.cpp"
+#line 1402 "parser.cpp"
 	break;
       case 52: /* "cmd_plain" */
 
 /* Line 1391 of yacc.c  */
-#line 267 "parser.y"
+#line 165 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1513 "parser.cpp"
+#line 1411 "parser.cpp"
 	break;
       case 54: /* "help_topic" */
 
 /* Line 1391 of yacc.c  */
-#line 272 "parser.y"
+#line 170 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1522 "parser.cpp"
+#line 1420 "parser.cpp"
 	break;
       case 55: /* "selection" */
 
 /* Line 1391 of yacc.c  */
-#line 267 "parser.y"
+#line 165 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1531 "parser.cpp"
+#line 1429 "parser.cpp"
 	break;
       case 59: /* "string" */
 
 /* Line 1391 of yacc.c  */
-#line 265 "parser.y"
+#line 163 "parser.y"
 	{ free((yyvaluep->str));                     };
 
 /* Line 1391 of yacc.c  */
-#line 1540 "parser.cpp"
+#line 1438 "parser.cpp"
 	break;
       case 60: /* "sel_expr" */
 
 /* Line 1391 of yacc.c  */
-#line 268 "parser.y"
+#line 166 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1549 "parser.cpp"
+#line 1447 "parser.cpp"
 	break;
       case 62: /* "num_expr" */
 
 /* Line 1391 of yacc.c  */
-#line 268 "parser.y"
+#line 166 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1558 "parser.cpp"
+#line 1456 "parser.cpp"
 	break;
       case 63: /* "str_expr" */
 
 /* Line 1391 of yacc.c  */
-#line 268 "parser.y"
+#line 166 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1567 "parser.cpp"
+#line 1465 "parser.cpp"
 	break;
       case 64: /* "pos_expr" */
 
 /* Line 1391 of yacc.c  */
-#line 268 "parser.y"
+#line 166 "parser.y"
 	{ delete (yyvaluep->sel);                    };
 
 /* Line 1391 of yacc.c  */
-#line 1576 "parser.cpp"
+#line 1474 "parser.cpp"
 	break;
       case 65: /* "method_params" */
 
 /* Line 1391 of yacc.c  */
-#line 269 "parser.y"
+#line 167 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
 
 /* Line 1391 of yacc.c  */
-#line 1585 "parser.cpp"
+#line 1483 "parser.cpp"
 	break;
       case 66: /* "method_param_list" */
 
 /* Line 1391 of yacc.c  */
-#line 269 "parser.y"
+#line 167 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
 
 /* Line 1391 of yacc.c  */
-#line 1594 "parser.cpp"
+#line 1492 "parser.cpp"
 	break;
       case 67: /* "method_param" */
 
 /* Line 1391 of yacc.c  */
-#line 269 "parser.y"
+#line 167 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
 
 /* Line 1391 of yacc.c  */
-#line 1603 "parser.cpp"
+#line 1501 "parser.cpp"
 	break;
       case 68: /* "value_list" */
 
 /* Line 1391 of yacc.c  */
-#line 270 "parser.y"
+#line 168 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1612 "parser.cpp"
+#line 1510 "parser.cpp"
 	break;
       case 69: /* "value_list_contents" */
 
 /* Line 1391 of yacc.c  */
-#line 270 "parser.y"
+#line 168 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1621 "parser.cpp"
+#line 1519 "parser.cpp"
 	break;
       case 70: /* "basic_value_list" */
 
 /* Line 1391 of yacc.c  */
-#line 271 "parser.y"
+#line 169 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1630 "parser.cpp"
+#line 1528 "parser.cpp"
 	break;
       case 71: /* "basic_value_list_contents" */
 
 /* Line 1391 of yacc.c  */
-#line 271 "parser.y"
+#line 169 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1639 "parser.cpp"
+#line 1537 "parser.cpp"
 	break;
       case 72: /* "value_item" */
 
 /* Line 1391 of yacc.c  */
-#line 270 "parser.y"
+#line 168 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1648 "parser.cpp"
+#line 1546 "parser.cpp"
 	break;
       case 73: /* "basic_value_item" */
 
 /* Line 1391 of yacc.c  */
-#line 271 "parser.y"
+#line 169 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1657 "parser.cpp"
+#line 1555 "parser.cpp"
 	break;
       case 74: /* "value_item_range" */
 
 /* Line 1391 of yacc.c  */
-#line 270 "parser.y"
+#line 168 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
 
 /* Line 1391 of yacc.c  */
-#line 1666 "parser.cpp"
+#line 1564 "parser.cpp"
 	break;
 
       default:
@@ -2011,14 +1909,14 @@ yyreduce:
         case 2:
 
 /* Line 1806 of yacc.c  */
-#line 285 "parser.y"
+#line 183 "parser.y"
     { (yyval.sel) = NULL; }
     break;
 
   case 3:
 
 /* Line 1806 of yacc.c  */
-#line 287 "parser.y"
+#line 185 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_append_selection(get((yyvsp[(2) - (2)].sel)), get((yyvsp[(1) - (2)].sel)), scanner));
@@ -2031,14 +1929,14 @@ yyreduce:
   case 4:
 
 /* Line 1806 of yacc.c  */
-#line 297 "parser.y"
+#line 195 "parser.y"
     { (yyval.sel) = (yyvsp[(1) - (2)].sel); }
     break;
 
   case 5:
 
 /* Line 1806 of yacc.c  */
-#line 299 "parser.y"
+#line 197 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.sel) = NULL;
@@ -2061,7 +1959,7 @@ yyreduce:
   case 6:
 
 /* Line 1806 of yacc.c  */
-#line 320 "parser.y"
+#line 218 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.sel) = NULL;
@@ -2073,14 +1971,14 @@ yyreduce:
   case 7:
 
 /* Line 1806 of yacc.c  */
-#line 326 "parser.y"
+#line 224 "parser.y"
     { (yyval.sel) = NULL; }
     break;
 
   case 8:
 
 /* Line 1806 of yacc.c  */
-#line 328 "parser.y"
+#line 226 "parser.y"
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer s
@@ -2097,7 +1995,7 @@ yyreduce:
   case 9:
 
 /* Line 1806 of yacc.c  */
-#line 340 "parser.y"
+#line 238 "parser.y"
     {
                  BEGIN_ACTION;
                  sfree_guard nameGuard((yyvsp[(1) - (1)].str));
@@ -2115,7 +2013,7 @@ yyreduce:
   case 10:
 
 /* Line 1806 of yacc.c  */
-#line 353 "parser.y"
+#line 251 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_selection(NULL, get((yyvsp[(1) - (1)].sel)), scanner));
@@ -2126,7 +2024,7 @@ yyreduce:
   case 11:
 
 /* Line 1806 of yacc.c  */
-#line 359 "parser.y"
+#line 257 "parser.y"
     {
                  BEGIN_ACTION;
                  sfree_guard nameGuard((yyvsp[(1) - (2)].str));
@@ -2138,7 +2036,7 @@ yyreduce:
   case 12:
 
 /* Line 1806 of yacc.c  */
-#line 366 "parser.y"
+#line 264 "parser.y"
     {
                  BEGIN_ACTION;
                  sfree_guard nameGuard((yyvsp[(1) - (3)].str));
@@ -2150,7 +2048,7 @@ yyreduce:
   case 13:
 
 /* Line 1806 of yacc.c  */
-#line 373 "parser.y"
+#line 271 "parser.y"
     {
                  BEGIN_ACTION;
                  sfree_guard nameGuard((yyvsp[(1) - (3)].str));
@@ -2162,7 +2060,7 @@ yyreduce:
   case 14:
 
 /* Line 1806 of yacc.c  */
-#line 380 "parser.y"
+#line 278 "parser.y"
     {
                  BEGIN_ACTION;
                  sfree_guard nameGuard((yyvsp[(1) - (3)].str));
@@ -2174,7 +2072,7 @@ yyreduce:
   case 15:
 
 /* Line 1806 of yacc.c  */
-#line 391 "parser.y"
+#line 289 "parser.y"
     {
                  BEGIN_ACTION;
                  _gmx_sel_handle_help_cmd(process_value_list((yyvsp[(2) - (2)].val), NULL), scanner);
@@ -2185,14 +2083,14 @@ yyreduce:
   case 16:
 
 /* Line 1806 of yacc.c  */
-#line 398 "parser.y"
+#line 296 "parser.y"
     { (yyval.val) = NULL; }
     break;
 
   case 17:
 
 /* Line 1806 of yacc.c  */
-#line 400 "parser.y"
+#line 298 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value(STR_VALUE);
@@ -2204,14 +2102,14 @@ yyreduce:
   case 18:
 
 /* Line 1806 of yacc.c  */
-#line 409 "parser.y"
+#line 307 "parser.y"
     { (yyval.sel) = (yyvsp[(1) - (1)].sel); }
     break;
 
   case 19:
 
 /* Line 1806 of yacc.c  */
-#line 411 "parser.y"
+#line 309 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_position(get((yyvsp[(1) - (1)].sel)), NULL, scanner));
@@ -2223,14 +2121,14 @@ yyreduce:
   case 20:
 
 /* Line 1806 of yacc.c  */
-#line 417 "parser.y"
+#line 315 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel); }
     break;
 
   case 21:
 
 /* Line 1806 of yacc.c  */
-#line 419 "parser.y"
+#line 317 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_modifier((yyvsp[(2) - (3)].meth), (yyvsp[(3) - (3)].param), get((yyvsp[(1) - (3)].sel)), scanner));
@@ -2242,63 +2140,63 @@ yyreduce:
   case 22:
 
 /* Line 1806 of yacc.c  */
-#line 432 "parser.y"
+#line 330 "parser.y"
     { (yyval.i) = (yyvsp[(1) - (1)].i); }
     break;
 
   case 23:
 
 /* Line 1806 of yacc.c  */
-#line 433 "parser.y"
+#line 331 "parser.y"
     { (yyval.i) = -(yyvsp[(2) - (2)].i); }
     break;
 
   case 24:
 
 /* Line 1806 of yacc.c  */
-#line 437 "parser.y"
+#line 335 "parser.y"
     { (yyval.r) = (yyvsp[(1) - (1)].r); }
     break;
 
   case 25:
 
 /* Line 1806 of yacc.c  */
-#line 438 "parser.y"
+#line 336 "parser.y"
     { (yyval.r) = -(yyvsp[(2) - (2)].r); }
     break;
 
   case 26:
 
 /* Line 1806 of yacc.c  */
-#line 441 "parser.y"
+#line 339 "parser.y"
     { (yyval.r) = (yyvsp[(1) - (1)].i); }
     break;
 
   case 27:
 
 /* Line 1806 of yacc.c  */
-#line 442 "parser.y"
+#line 340 "parser.y"
     { (yyval.r) = (yyvsp[(1) - (1)].r); }
     break;
 
   case 28:
 
 /* Line 1806 of yacc.c  */
-#line 445 "parser.y"
+#line 343 "parser.y"
     { (yyval.str) = (yyvsp[(1) - (1)].str); }
     break;
 
   case 29:
 
 /* Line 1806 of yacc.c  */
-#line 446 "parser.y"
+#line 344 "parser.y"
     { (yyval.str) = (yyvsp[(1) - (1)].str); }
     break;
 
   case 30:
 
 /* Line 1806 of yacc.c  */
-#line 455 "parser.y"
+#line 353 "parser.y"
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg(get((yyvsp[(2) - (2)].sel)));
@@ -2314,7 +2212,7 @@ yyreduce:
   case 31:
 
 /* Line 1806 of yacc.c  */
-#line 466 "parser.y"
+#line 364 "parser.y"
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg1(get((yyvsp[(1) - (3)].sel))), arg2(get((yyvsp[(3) - (3)].sel)));
@@ -2330,7 +2228,7 @@ yyreduce:
   case 32:
 
 /* Line 1806 of yacc.c  */
-#line 477 "parser.y"
+#line 375 "parser.y"
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg1(get((yyvsp[(1) - (3)].sel))), arg2(get((yyvsp[(3) - (3)].sel)));
@@ -2346,14 +2244,14 @@ yyreduce:
   case 33:
 
 /* Line 1806 of yacc.c  */
-#line 487 "parser.y"
+#line 385 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel); }
     break;
 
   case 34:
 
 /* Line 1806 of yacc.c  */
-#line 492 "parser.y"
+#line 390 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_comparison(get((yyvsp[(1) - (3)].sel)), get((yyvsp[(3) - (3)].sel)), (yyvsp[(2) - (3)].str), scanner));
@@ -2365,7 +2263,7 @@ yyreduce:
   case 35:
 
 /* Line 1806 of yacc.c  */
-#line 502 "parser.y"
+#line 400 "parser.y"
     {
                  BEGIN_ACTION;
                  sfree_guard nameGuard((yyvsp[(2) - (2)].str));
@@ -2378,7 +2276,7 @@ yyreduce:
   case 36:
 
 /* Line 1806 of yacc.c  */
-#line 510 "parser.y"
+#line 408 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_group_by_id((yyvsp[(2) - (2)].i), scanner));
@@ -2390,21 +2288,21 @@ yyreduce:
   case 37:
 
 /* Line 1806 of yacc.c  */
-#line 519 "parser.y"
+#line 417 "parser.y"
     { (yyval.str) = NULL; }
     break;
 
   case 38:
 
 /* Line 1806 of yacc.c  */
-#line 520 "parser.y"
+#line 418 "parser.y"
     { (yyval.str) = (yyvsp[(1) - (1)].str);   }
     break;
 
   case 39:
 
 /* Line 1806 of yacc.c  */
-#line 525 "parser.y"
+#line 423 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (2)].meth), NULL, (yyvsp[(1) - (2)].str), scanner));
@@ -2416,7 +2314,7 @@ yyreduce:
   case 40:
 
 /* Line 1806 of yacc.c  */
-#line 532 "parser.y"
+#line 430 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (3)].meth), process_value_list((yyvsp[(3) - (3)].val), NULL), (yyvsp[(1) - (3)].str), scanner));
@@ -2428,7 +2326,7 @@ yyreduce:
   case 41:
 
 /* Line 1806 of yacc.c  */
-#line 539 "parser.y"
+#line 437 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (3)].meth), process_value_list((yyvsp[(3) - (3)].val), NULL), (yyvsp[(1) - (3)].str), scanner));
@@ -2440,7 +2338,7 @@ yyreduce:
   case 42:
 
 /* Line 1806 of yacc.c  */
-#line 549 "parser.y"
+#line 447 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_method((yyvsp[(2) - (3)].meth), (yyvsp[(3) - (3)].param), (yyvsp[(1) - (3)].str), scanner));
@@ -2452,7 +2350,7 @@ yyreduce:
   case 43:
 
 /* Line 1806 of yacc.c  */
-#line 563 "parser.y"
+#line 461 "parser.y"
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
@@ -2468,7 +2366,7 @@ yyreduce:
   case 44:
 
 /* Line 1806 of yacc.c  */
-#line 574 "parser.y"
+#line 472 "parser.y"
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
@@ -2484,7 +2382,7 @@ yyreduce:
   case 45:
 
 /* Line 1806 of yacc.c  */
-#line 588 "parser.y"
+#line 486 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (2)].meth), NULL, (yyvsp[(1) - (2)].str), scanner));
@@ -2496,7 +2394,7 @@ yyreduce:
   case 46:
 
 /* Line 1806 of yacc.c  */
-#line 595 "parser.y"
+#line 493 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_method((yyvsp[(2) - (3)].meth), (yyvsp[(3) - (3)].param), (yyvsp[(1) - (3)].str), scanner));
@@ -2508,7 +2406,7 @@ yyreduce:
   case 47:
 
 /* Line 1806 of yacc.c  */
-#line 605 "parser.y"
+#line 503 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_arithmetic(get((yyvsp[(1) - (3)].sel)), get((yyvsp[(3) - (3)].sel)), '+', scanner));
@@ -2519,7 +2417,7 @@ yyreduce:
   case 48:
 
 /* Line 1806 of yacc.c  */
-#line 611 "parser.y"
+#line 509 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_arithmetic(get((yyvsp[(1) - (3)].sel)), get((yyvsp[(3) - (3)].sel)), '-', scanner));
@@ -2530,7 +2428,7 @@ yyreduce:
   case 49:
 
 /* Line 1806 of yacc.c  */
-#line 617 "parser.y"
+#line 515 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_arithmetic(get((yyvsp[(1) - (3)].sel)), get((yyvsp[(3) - (3)].sel)), '*', scanner));
@@ -2541,7 +2439,7 @@ yyreduce:
   case 50:
 
 /* Line 1806 of yacc.c  */
-#line 623 "parser.y"
+#line 521 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_arithmetic(get((yyvsp[(1) - (3)].sel)), get((yyvsp[(3) - (3)].sel)), '/', scanner));
@@ -2552,7 +2450,7 @@ yyreduce:
   case 51:
 
 /* Line 1806 of yacc.c  */
-#line 629 "parser.y"
+#line 527 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_arithmetic(get((yyvsp[(2) - (2)].sel)), SelectionTreeElementPointer(), '-', scanner));
@@ -2563,7 +2461,7 @@ yyreduce:
   case 52:
 
 /* Line 1806 of yacc.c  */
-#line 635 "parser.y"
+#line 533 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_arithmetic(get((yyvsp[(1) - (3)].sel)), get((yyvsp[(3) - (3)].sel)), '^', scanner));
@@ -2574,14 +2472,14 @@ yyreduce:
   case 53:
 
 /* Line 1806 of yacc.c  */
-#line 640 "parser.y"
+#line 538 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel); }
     break;
 
   case 54:
 
 /* Line 1806 of yacc.c  */
-#line 648 "parser.y"
+#line 546 "parser.y"
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
@@ -2597,7 +2495,7 @@ yyreduce:
   case 55:
 
 /* Line 1806 of yacc.c  */
-#line 659 "parser.y"
+#line 557 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (2)].meth), NULL, (yyvsp[(1) - (2)].str), scanner));
@@ -2609,7 +2507,7 @@ yyreduce:
   case 56:
 
 /* Line 1806 of yacc.c  */
-#line 673 "parser.y"
+#line 571 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_const_position((yyvsp[(2) - (7)].r), (yyvsp[(4) - (7)].r), (yyvsp[(6) - (7)].r)));
@@ -2620,14 +2518,14 @@ yyreduce:
   case 57:
 
 /* Line 1806 of yacc.c  */
-#line 681 "parser.y"
+#line 579 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel); }
     break;
 
   case 58:
 
 /* Line 1806 of yacc.c  */
-#line 686 "parser.y"
+#line 584 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_method((yyvsp[(1) - (2)].meth), (yyvsp[(2) - (2)].param), NULL, scanner));
@@ -2639,7 +2537,7 @@ yyreduce:
   case 59:
 
 /* Line 1806 of yacc.c  */
-#line 696 "parser.y"
+#line 594 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_position(get((yyvsp[(3) - (3)].sel)), (yyvsp[(1) - (3)].str), scanner));
@@ -2651,7 +2549,7 @@ yyreduce:
   case 60:
 
 /* Line 1806 of yacc.c  */
-#line 709 "parser.y"
+#line 607 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel))));
@@ -2662,7 +2560,7 @@ yyreduce:
   case 61:
 
 /* Line 1806 of yacc.c  */
-#line 717 "parser.y"
+#line 615 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel))));
@@ -2673,7 +2571,7 @@ yyreduce:
   case 62:
 
 /* Line 1806 of yacc.c  */
-#line 725 "parser.y"
+#line 623 "parser.y"
     {
                  BEGIN_ACTION;
                  set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel))));
@@ -2684,35 +2582,35 @@ yyreduce:
   case 63:
 
 /* Line 1806 of yacc.c  */
-#line 738 "parser.y"
+#line 636 "parser.y"
     { (yyval.param) = process_param_list((yyvsp[(1) - (1)].param)); }
     break;
 
   case 64:
 
 /* Line 1806 of yacc.c  */
-#line 740 "parser.y"
+#line 638 "parser.y"
     { (yyval.param) = process_param_list((yyvsp[(1) - (2)].param)); }
     break;
 
   case 65:
 
 /* Line 1806 of yacc.c  */
-#line 744 "parser.y"
+#line 642 "parser.y"
     { (yyval.param) = NULL;              }
     break;
 
   case 66:
 
 /* Line 1806 of yacc.c  */
-#line 746 "parser.y"
+#line 644 "parser.y"
     { (yyvsp[(2) - (2)].param)->next = (yyvsp[(1) - (2)].param); (yyval.param) = (yyvsp[(2) - (2)].param); }
     break;
 
   case 67:
 
 /* Line 1806 of yacc.c  */
-#line 751 "parser.y"
+#line 649 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.param) = _gmx_selexpr_create_param((yyvsp[(1) - (2)].str));
@@ -2724,84 +2622,84 @@ yyreduce:
   case 68:
 
 /* Line 1806 of yacc.c  */
-#line 759 "parser.y"
+#line 657 "parser.y"
     { (yyval.val) = NULL; }
     break;
 
   case 69:
 
 /* Line 1806 of yacc.c  */
-#line 760 "parser.y"
+#line 658 "parser.y"
     { (yyval.val) = (yyvsp[(1) - (1)].val);   }
     break;
 
   case 70:
 
 /* Line 1806 of yacc.c  */
-#line 761 "parser.y"
+#line 659 "parser.y"
     { (yyval.val) = (yyvsp[(2) - (3)].val);   }
     break;
 
   case 71:
 
 /* Line 1806 of yacc.c  */
-#line 765 "parser.y"
+#line 663 "parser.y"
     { (yyval.val) = (yyvsp[(1) - (1)].val); }
     break;
 
   case 72:
 
 /* Line 1806 of yacc.c  */
-#line 767 "parser.y"
+#line 665 "parser.y"
     { (yyvsp[(2) - (2)].val)->next = (yyvsp[(1) - (2)].val); (yyval.val) = (yyvsp[(2) - (2)].val); }
     break;
 
   case 73:
 
 /* Line 1806 of yacc.c  */
-#line 769 "parser.y"
+#line 667 "parser.y"
     { (yyvsp[(3) - (3)].val)->next = (yyvsp[(1) - (3)].val); (yyval.val) = (yyvsp[(3) - (3)].val); }
     break;
 
   case 74:
 
 /* Line 1806 of yacc.c  */
-#line 773 "parser.y"
+#line 671 "parser.y"
     { (yyval.val) = (yyvsp[(1) - (1)].val); }
     break;
 
   case 75:
 
 /* Line 1806 of yacc.c  */
-#line 774 "parser.y"
+#line 672 "parser.y"
     { (yyval.val) = (yyvsp[(2) - (3)].val); }
     break;
 
   case 76:
 
 /* Line 1806 of yacc.c  */
-#line 778 "parser.y"
+#line 676 "parser.y"
     { (yyval.val) = (yyvsp[(1) - (1)].val); }
     break;
 
   case 77:
 
 /* Line 1806 of yacc.c  */
-#line 780 "parser.y"
+#line 678 "parser.y"
     { (yyvsp[(2) - (2)].val)->next = (yyvsp[(1) - (2)].val); (yyval.val) = (yyvsp[(2) - (2)].val); }
     break;
 
   case 78:
 
 /* Line 1806 of yacc.c  */
-#line 782 "parser.y"
+#line 680 "parser.y"
     { (yyvsp[(3) - (3)].val)->next = (yyvsp[(1) - (3)].val); (yyval.val) = (yyvsp[(3) - (3)].val); }
     break;
 
   case 79:
 
 /* Line 1806 of yacc.c  */
-#line 786 "parser.y"
+#line 684 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value_expr(get((yyvsp[(1) - (1)].sel)));
@@ -2812,7 +2710,7 @@ yyreduce:
   case 80:
 
 /* Line 1806 of yacc.c  */
-#line 792 "parser.y"
+#line 690 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value_expr(get((yyvsp[(1) - (1)].sel)));
@@ -2823,7 +2721,7 @@ yyreduce:
   case 81:
 
 /* Line 1806 of yacc.c  */
-#line 798 "parser.y"
+#line 696 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value_expr(get((yyvsp[(1) - (1)].sel)));
@@ -2834,7 +2732,7 @@ yyreduce:
   case 82:
 
 /* Line 1806 of yacc.c  */
-#line 804 "parser.y"
+#line 702 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value_expr(get((yyvsp[(1) - (1)].sel)));
@@ -2845,14 +2743,14 @@ yyreduce:
   case 83:
 
 /* Line 1806 of yacc.c  */
-#line 809 "parser.y"
+#line 707 "parser.y"
     { (yyval.val) = (yyvsp[(1) - (1)].val); }
     break;
 
   case 84:
 
 /* Line 1806 of yacc.c  */
-#line 814 "parser.y"
+#line 712 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value(INT_VALUE);
@@ -2864,7 +2762,7 @@ yyreduce:
   case 85:
 
 /* Line 1806 of yacc.c  */
-#line 821 "parser.y"
+#line 719 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value(REAL_VALUE);
@@ -2876,7 +2774,7 @@ yyreduce:
   case 86:
 
 /* Line 1806 of yacc.c  */
-#line 828 "parser.y"
+#line 726 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value(STR_VALUE);
@@ -2888,14 +2786,14 @@ yyreduce:
   case 87:
 
 /* Line 1806 of yacc.c  */
-#line 834 "parser.y"
+#line 732 "parser.y"
     { (yyval.val) = (yyvsp[(1) - (1)].val); }
     break;
 
   case 88:
 
 /* Line 1806 of yacc.c  */
-#line 839 "parser.y"
+#line 737 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value(INT_VALUE);
@@ -2907,7 +2805,7 @@ yyreduce:
   case 89:
 
 /* Line 1806 of yacc.c  */
-#line 846 "parser.y"
+#line 744 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value(REAL_VALUE);
@@ -2919,7 +2817,7 @@ yyreduce:
   case 90:
 
 /* Line 1806 of yacc.c  */
-#line 853 "parser.y"
+#line 751 "parser.y"
     {
                  BEGIN_ACTION;
                  (yyval.val) = _gmx_selexpr_create_value(REAL_VALUE);
@@ -2931,7 +2829,7 @@ yyreduce:
 
 
 /* Line 1806 of yacc.c  */
-#line 2935 "parser.cpp"
+#line 2833 "parser.cpp"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -3163,62 +3061,4 @@ yypushreturn:
 }
 
 
-
-/* Line 2067 of yacc.c  */
-#line 861 "parser.y"
-
-
-static t_selexpr_value *
-process_value_list(t_selexpr_value *values, int *nr)
-{
-    t_selexpr_value *val, *pval, *nval;
-
-    /* Count values (if needed) and reverse list */
-    if (nr)
-    {
-        *nr  = 0;
-    }
-    pval = NULL;
-    val  = values;
-    while (val)
-    {
-        if (nr)
-        {
-            ++*nr;
-        }
-        nval = val->next;
-        val->next = pval;
-        pval = val;
-        val = nval;
-    }
-    values = pval;
-
-    return values;
-}
-
-static t_selexpr_param *
-process_param_list(t_selexpr_param *params)
-{
-    t_selexpr_param *par, *ppar, *npar;
-
-    /* Reverse list */
-    ppar = NULL;
-    par  = params;
-    while (par)
-    {
-        npar = par->next;
-        par->next = ppar;
-        ppar = par;
-        par = npar;
-    }
-    params = ppar;
-
-    return params;
-}
-
-static void
-yyerror(yyscan_t scanner, char const *s)
-{
-    _gmx_selparser_error(scanner, "%s", s);
-}
 
