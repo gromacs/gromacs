@@ -95,9 +95,9 @@ void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counter
 /* Set reset_counters */
 
 /* Uncomment the next line to get extra cycle counters of sub parts */
-/* #define GMX_CYCLE_SUB */
+/* #define GMX_CYCLE_SUBCOUNTERS */
 
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
 /* Set the start sub cycle count for ewcs */

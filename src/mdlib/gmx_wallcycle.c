@@ -85,7 +85,7 @@ typedef struct gmx_wallcycle
 #endif
     int          nthreads_pp;
     int          nthreads_pme;
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
     wallcc_t     *wcsc;
 #endif
     double       *cycles_sum;
@@ -158,7 +158,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr,
         snew(wc->wcc_all,ewcNR*ewcNR);
     }
 
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
     snew(wc->wcsc,ewcsNR);
 #endif
 
@@ -184,7 +184,7 @@ void wallcycle_destroy(gmx_wallcycle_t wc)
     {
         sfree(wc->wcc_all);
     }
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
     if (wc->wcsc != NULL)
     {
         sfree(wc->wcsc);
@@ -347,7 +347,7 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
             wc->wcc_all[i].c = 0;
         }
     }
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
     for (i=0; i<ewcsNR; i++)
     {
         wc->wcsc[i].n = 0;
@@ -450,7 +450,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         cycles[i]   = (double)wcc[i].c;
     }
     nsum = ewcNR;
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
     for(i=0; i<ewcsNR; i++)
     {
         wc->wcsc[i].c *= wc->nthreads_pp;
@@ -469,7 +469,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         {
             wcc[i].n = (int)(buf[i] + 0.5);
         }
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
         for(i=0; i<ewcsNR; i++)
         {
             wc->wcsc[i].n = (int)(buf[ewcNR+i] + 0.5);
@@ -657,7 +657,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog,"%s\n",hline);
     }
 
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
     fprintf(fplog,"%s\n",hline);
     for(i=0; i<ewcsNR; i++)
     {
@@ -813,7 +813,7 @@ extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_
     wc->reset_counters = reset_counters;
 }
 
-#ifdef GMX_CYCLE_SUB
+#ifdef GMX_CYCLE_SUBCOUNTERS
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
 {
@@ -832,4 +832,4 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
     }
 }
 
-#endif /* GMX_CYCLE_SUB */
+#endif /* GMX_CYCLE_SUBCOUNTERS */

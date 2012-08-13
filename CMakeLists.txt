@@ -544,12 +544,6 @@ if(WIN32 AND NOT CYGWIN)
     set(GMX_NATIVE_WINDOWS 1)
 endif()
 
-if(GMX_CYCLE_SUBCOUNTERS)
-    set(GMX_CYCLE_SUB 1)
-else()
-    unset(GMX_CYCLE_SUB)
-endif()
-
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
