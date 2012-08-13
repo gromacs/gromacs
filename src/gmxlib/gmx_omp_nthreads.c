@@ -50,8 +50,6 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
-#else
-#include "no_omp.h"
 #endif
 
 /*! Structure with the number of threads for each OpenMP multi-threaded
@@ -383,6 +381,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
 
+#ifdef GMX_OPENMP
         /* set the number of threads globally */
 #ifndef GMX_THREAD_MPI
         if (bThisNodePMEOnly)
@@ -401,6 +400,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                 omp_set_num_threads(1);
             }
         }
+#endif /* GMX_OPENMP */
 
         modth.initialized = TRUE;
     }
@@ -444,7 +444,11 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
 void gmx_omp_nthreads_detecthw()
 {
+#ifdef GMX_OPENMP
     modth.max_cores = omp_get_max_threads();
+#else
+    modth.max_cores = 1;
+#endif
 }
 
 int gmx_omp_nthreads_get(int mod)
