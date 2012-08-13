@@ -1147,7 +1147,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     {
         if (ir->opts.ref_t[i] < 0)
         {
-            warning(wi,"There are groups which are not temperature coupled, can not take those into account in the energy drift calculation for the Verlet buffer size");
+            warning(wi,"Some atom groups do not use temperature coupling. This cannot be accounted for in the energy drift estimation for the Verlet buffer size. The energy drift and the Verlet buffer might be underestimated.");
         }
         else
         {
@@ -1161,7 +1161,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     {
         if (ir->opts.ref_t[i] >= 0 && ir->opts.ref_t[i] != ref_T)
         {
-            sprintf(warn_buf,"ref_T for group of %.1f DOFs is %g K , which is smaller than the maximum of %g K used for the buffer size calculation. The buffer size might be on the conservative (large) side.",
+            sprintf(warn_buf,"ref_T for group of %.1f DOFs is %g K, which is smaller than the maximum of %g K used for the buffer size calculation. The buffer size might be on the conservative (large) side.",
                     ir->opts.nrdf[i],ir->opts.ref_t[i],ref_T);
             warning_note(wi,warn_buf);
         }
@@ -1590,7 +1590,8 @@ int main (int argc, char *argv[])
            bGenVel ? state.v : NULL,
            wi);
   
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0)
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0 &&
+        ir->nstlist > 1)
     {
         if (EI_DYNAMICS(ir->eI) &&
             !(EI_MD(ir->eI) && ir->etc==etcNO) &&
@@ -1655,7 +1656,7 @@ int main (int argc, char *argv[])
     else if (ir->nkx != 0 && ir->nky != 0 && ir->nkz != 0)
     {
         set_warning_line(wi,mdparin,-1);
-        warning_error(wi,"Some but not old fourier grid sizes have been set.");
+        warning_error(wi,"Some of the Fourier grid sizes are set, but all of them need to be set.");
     }
     max_spacing = calc_grid(stdout,box,ir->fourier_spacing,
                             &(ir->nkx),&(ir->nky),&(ir->nkz));

@@ -59,7 +59,7 @@ typedef struct
     real     mass; /* mass */
     int      type; /* type (used for LJ parameters) */
     real     q;    /* charge */
-    gmx_bool con;  /* constrained? if yes, use #DOF=2 iso 3 */
+    int      con;  /* constrained: 0, else 1, if 1, use #DOF=2 iso 3 */
     int      n;    /* total #atoms of this type in the system */
 } verletbuf_atomtype_t;
 
@@ -91,7 +91,7 @@ void verletbuf_get_list_setup(gmx_bool bGPU,
 }
 
 static void add_at(verletbuf_atomtype_t **att_p,int *natt_p,
-                   real mass,int type,real q,gmx_bool con,int nmol)
+                   real mass,int type,real q,int con,int nmol)
 {
     verletbuf_atomtype_t *att;
     int natt,i;
@@ -167,7 +167,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
         {
             il = &mtop->moltype[mtop->molblock[mb].type].ilist[ft];
 
-            for(i=0; i<il->nr; i+=3)
+            for(i=0; i<il->nr; i+=1+NRAL(ft))
             {
                 a1 = il->iatoms[i+1];
                 a2 = il->iatoms[i+2];
@@ -178,7 +178,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
 
         il = &mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE];
 
-        for(i=0; i<il->nr; i+=4)
+        for(i=0; i<il->nr; i+=1+NRAL(F_SETTLE))
         {
             a1 = il->iatoms[i+1];
             a2 = il->iatoms[i+2];

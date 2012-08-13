@@ -45,9 +45,8 @@ extern "C" {
 void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
                                  int ntab,int tableformat,
                                  real dr,real beta);
-/* Fill table tab of size ntab with spacing dr with the ewald long-range
- * (mesh) force and optionally energy.
- * With tableformatF tabv can be NULL.
+/* Fill table tabf of size ntab with spacing dr with the ewald long-range
+ * (mesh) force and with tableformatF and tabv!=NULL, fill tabv energy.
  * With tableformatFDV0 the size of the tabf array should be ntab*4, tabv=NULL.
  * This function interpolates the Ewald mesh potential contribution
  * with coefficient beta using a quadratic spline.

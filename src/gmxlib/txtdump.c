@@ -644,7 +644,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
       indent=pr_title(fp,indent,title);
     PS("integrator",EI(ir->eI));
     PSTEP("nsteps",ir->nsteps);
-    PSTEP("init_step",ir->init_step);
+    PSTEP("init-step",ir->init_step);
     PS("cutoff-scheme",ECUTSCHEME(ir->cutoff_scheme));
     PS("ns_type",ENS(ir->ns_type));
     PI("nstlist",ir->nstlist);

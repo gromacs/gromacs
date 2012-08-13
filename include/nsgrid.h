@@ -50,6 +50,11 @@ extern "C" {
  * to account for less dense regions at the edges of the system.
  */
 
+#define NSGRID_SIGNAL_MOVED_FAC  4
+/* A cell index of NSGRID_SIGNAL_MOVED_FAC*ncells signals
+ * that a charge group moved to another DD domain.
+ */
+
 t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
 void done_grid(t_grid *grid);

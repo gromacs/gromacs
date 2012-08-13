@@ -231,7 +231,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* PME load balancing data for GPU kernels */
     pme_switch_t    pme_switch=NULL;
     double          cycles_pmes;
-    gmx_bool        pmetune_done=TRUE;
+    gmx_bool        bDonePMETune=TRUE;
 
     if(MASTER(cr))
     {
@@ -528,7 +528,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
         cycles_pmes = 0;
-        pmetune_done = FALSE;
+        bDonePMETune = FALSE;
     }
 
     if (!ir->bContinuation && !bRerunMD)
@@ -995,7 +995,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,
-                                    do_verbose && pmetune_done);
+                                    do_verbose && bDonePMETune);
                 wallcycle_stop(wcycle,ewcDOMDEC);
                 /* If using an iterative integrator, reallocate space to match the decomposition */
             }
@@ -1927,7 +1927,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && pmetune_done)
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && bDonePMETune)
         {
             if (shellfc) 
             {
@@ -2007,7 +2007,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             dd_cycles_add(cr->dd,cycles,ddCyclStep);
         }
 
-        if (pme_switch != NULL && !pmetune_done)
+        if (pme_switch != NULL && !bDonePMETune)
         {
             /* PME grid + cut-off optimization with GPUs */
 
@@ -2020,7 +2020,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* init_step might not be a multiple of nstlist,
                  * but the first cycle is always skipped anyhow.
                  */
-                pmetune_done =
+                bDonePMETune =
                     switch_pme(pme_switch,cr,
                                (bVerbose && MASTER(cr)) ? stderr : NULL,
                                fplog,
@@ -2039,7 +2039,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,
-                               fr->nbv != NULL && fr->nbv->useGPU ? fr->nbv->cu_nbv : NULL);
+                               fr->nbv != NULL && fr->nbv->bUseGPU ? fr->nbv->cu_nbv : NULL);
             wcycle_set_reset_counters(wcycle,-1);
             /* Correct max_hours for the elapsed time */
             max_hours -= run_time/(60.0*60.0);

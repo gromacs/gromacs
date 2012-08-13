@@ -35,7 +35,7 @@ extern "C" {
 
 typedef enum
 {
-    egpuCompatible = 0,  egpuInexistent,  egpuIncompatible, egpuInsane
+    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane
 } e_gpu_detect_res_t;
 
 

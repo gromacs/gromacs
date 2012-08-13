@@ -530,6 +530,8 @@ check_solvent(FILE *                fp,
     fr->solvent_opt = bestsol;
 }
 
+enum { acNONE=0, acCONSTRAINT, acSETTLE };
+
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                                    t_forcerec *fr,gmx_bool bNoSolvOpt,
                                    gmx_bool *bExcl_IntraCGAll_InterCGNone)
@@ -539,24 +541,25 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
     const gmx_moltype_t *molt;
     const gmx_molblock_t *molb;
     cginfo_mb_t *cginfo_mb;
-    gmx_bool *type_LJ;
+    gmx_bool *type_VDW;
     int  *cginfo;
     int  cg_offset,a_offset,cgm,am;
     int  mb,m,ncg_tot,cg,a0,a1,gid,ai,j,aj,excl_nalloc;
     int  *a_con;
+    int  ftype;
     int  ia;
-    gmx_bool bId,*bExcl,bExclIntraAll,bExclInter,bHaveLJ,bHaveQ;
+    gmx_bool bId,*bExcl,bExclIntraAll,bExclInter,bHaveVDW,bHaveQ;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb,mtop->nmolblock);
 
-    snew(type_LJ,fr->ntype);
+    snew(type_VDW,fr->ntype);
     for(ai=0; ai<fr->ntype; ai++)
     {
-        type_LJ[ai] = FALSE;
+        type_VDW[ai] = FALSE;
         for(j=0; j<fr->ntype; j++)
         {
-            type_LJ[ai] = type_LJ[ai] ||
+            type_VDW[ai] = type_VDW[ai] ||
                 fr->bBHAM ||
                 C6(fr->nbfp,fr->ntype,ai,j) != 0 ||
                 C12(fr->nbfp,fr->ntype,ai,j) != 0;
@@ -614,22 +617,26 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
         snew(cginfo_mb[mb].cginfo,cginfo_mb[mb].cg_mod);
         cginfo = cginfo_mb[mb].cginfo;
 
+        /* Set constraints flags for constrained atoms */
         snew(a_con,molt->atoms.nr);
-        for(ia=0; ia<molt->ilist[F_CONSTR].nr; ia+=3)
+        for(ftype=0; ftype<F_NRE; ftype++)
         {
-            a_con[molt->ilist[F_CONSTR].iatoms[ia+1]] = 1;
-            a_con[molt->ilist[F_CONSTR].iatoms[ia+2]] = 1;
-        }
-        for(ia=0; ia<molt->ilist[F_CONSTRNC].nr; ia+=3)
-        {
-            a_con[molt->ilist[F_CONSTRNC].iatoms[ia+1]] = 1;
-            a_con[molt->ilist[F_CONSTRNC].iatoms[ia+2]] = 1;
-        }
-        for(ia=0; ia<molt->ilist[F_SETTLE].nr; ia+=4)
-        {
-            a_con[molt->ilist[F_SETTLE].iatoms[ia+1]] = 2;
-            a_con[molt->ilist[F_SETTLE].iatoms[ia+2]] = 2;
-            a_con[molt->ilist[F_SETTLE].iatoms[ia+3]] = 2;
+            if (interaction_function[ftype].flags & IF_CONSTRAINT)
+            {
+                int nral;
+
+                nral = NRAL(ftype);
+                for(ia=0; ia<molt->ilist[ftype].nr; ia+=1+nral)
+                {
+                    int a;
+
+                    for(a=0; a<nral; a++)
+                    {
+                        a_con[molt->ilist[ftype].iatoms[ia+1+a]] =
+                            (ftype == F_SETTLE ? acSETTLE : acCONSTRAINT);
+                    }
+                }
+            }
         }
 
         for(m=0; m<(bId ? 1 : molb->nmol); m++)
@@ -655,15 +662,15 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                  */
                 bExclIntraAll = TRUE;
                 bExclInter    = FALSE;
-                bHaveLJ       = FALSE;
+                bHaveVDW      = FALSE;
                 bHaveQ        = FALSE;
                 for(ai=a0; ai<a1; ai++)
                 {
-                    /* Check LJ and electrostatic interactions */
-                    bHaveLJ = bHaveLJ || (type_LJ[molt->atoms.atom[ai].type] ||
-                                          type_LJ[molt->atoms.atom[ai].typeB]);
-                    bHaveQ  = bHaveQ  || (molt->atoms.atom[ai].q != 0 ||
-                                          molt->atoms.atom[ai].qB != 0);
+                    /* Check VDW and electrostatic interactions */
+                    bHaveVDW = bHaveVDW || (type_VDW[molt->atoms.atom[ai].type] ||
+                                            type_VDW[molt->atoms.atom[ai].typeB]);
+                    bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
+                                            molt->atoms.atom[ai].qB != 0);
 
                     /* Clear the exclusion list for atom ai */
                     for(aj=a0; aj<a1; aj++)
@@ -692,13 +699,16 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                         }
                     }
 
-                    if (a_con[ai] == 1)
+                    switch (a_con[ai])
                     {
+                    case acCONSTRAINT:
                         SET_CGINFO_CONSTR(cginfo[cgm+cg]);
-                    }
-                    else if (a_con[ai] == 2)
-                    {
+                        break;
+                    case acSETTLE:
                         SET_CGINFO_SETTLE(cginfo[cgm+cg]);
+                        break;
+                    default:
+                        break;
                     }
                 }
                 if (bExclIntraAll)
@@ -714,9 +724,9 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                     /* The size in cginfo is currently only read with DD */
                     gmx_fatal(FARGS,"A charge group has size %d which is larger than the limit of %d atoms",a1-a0,MAX_CHARGEGROUP_SIZE);
                 }
-                if (bHaveLJ)
+                if (bHaveVDW)
                 {
-                    SET_CGINFO_HAS_LJ(cginfo[cgm+cg]);
+                    SET_CGINFO_HAS_VDW(cginfo[cgm+cg]);
                 }
                 if (bHaveQ)
                 {
@@ -1370,12 +1380,6 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 
 #ifdef GMX_X86_SSE2
     {
-#ifdef GMX_DOUBLE
-        gmx_bool double_prec = TRUE;
-#else
-        gmx_bool double_prec = FALSE;
-#endif
-
         /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
          * On AMD Bulldozer AVX-256 is much slower than AVX-128.
          */
@@ -1413,7 +1417,7 @@ static void pick_nbnxn_kernel(FILE *fp,
                               const t_commrec *cr,
                               const gmx_hwinfo_t *hwinfo,
                               gmx_bool use_cpu_acceleration,
-                              gmx_bool *useGPU,
+                              gmx_bool *bUseGPU,
                               int *kernel_type)
 {
     gmx_bool bEmulateGPU, bGPU;
@@ -1423,8 +1427,8 @@ static void pick_nbnxn_kernel(FILE *fp,
     assert(kernel_type);
 
     *kernel_type = nbkNotSet;
-    /* if useGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
-    bGPU = (useGPU != NULL) && hwinfo->bCanUseGPU;
+    /* if bUseGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
+    bGPU = (bUseGPU != NULL) && hwinfo->bCanUseGPU;
     bEmulateGPU  = FALSE;
 
     if (bGPU)
@@ -1453,7 +1457,7 @@ static void pick_nbnxn_kernel(FILE *fp,
                           gpu_err_str);
             }
         }
-        *useGPU = bGPU;
+        *bUseGPU = bGPU;
     }
 
     if (bEmulateGPU)
@@ -1492,9 +1496,13 @@ static void pick_nbnxn_kernel(FILE *fp,
 }
 
 
-static void init_ewald_f_table(interaction_const_t *ic,
-                               int verlet_kernel_type)
+static void init_verlet_ewald_f_table(interaction_const_t *ic,
+                                      int verlet_kernel_type)
 {
+        /* Table size identical to the CUDA implementation in:
+         * bnxn_cuda/nbnxn_cuda_data_mgmt.cu, but we can't include
+         * that file here. TODO fix this during modularization
+         */
 #define GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE 1536
 
     if (nbnxn_kernel_pairlist_simple(verlet_kernel_type))
@@ -1513,7 +1521,6 @@ static void init_ewald_f_table(interaction_const_t *ic,
     }
     else
     {
-        /* Table size identical to the CUDA implementation */
         ic->tabq_size = GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE;
         /* Subtract 2 iso 1 to avoid access out of range due to rounding */
         ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
@@ -1561,7 +1568,7 @@ void init_interaction_const_tables(FILE *fp,
 
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
-        init_ewald_f_table(ic,verlet_kernel_type);
+        init_verlet_ewald_f_table(ic,verlet_kernel_type);
 
         if (fp != NULL)
         {
@@ -1652,7 +1659,7 @@ void init_interaction_const(FILE *fp,
 
     *interaction_const = ic;
 
-    if (fr->nbv != NULL && fr->nbv->useGPU)
+    if (fr->nbv != NULL && fr->nbv->bUseGPU)
     {
         nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
     }
@@ -1667,7 +1674,7 @@ void init_interaction_const(FILE *fp,
 gmx_bool nb_kernel_pmetune_support(const nonbonded_verlet_t *nbv)
 {
     /* PME tuning is currently only supported with only CUDA kernels */
-    return (nbv->useGPU &&
+    return (nbv->bUseGPU &&
             !(nbv->ngrp == 2 && nbnxn_kernel_pairlist_simple(nbv->grp[1].kernel_type)));
 }
 
@@ -1700,7 +1707,7 @@ static void init_nb_verlet(FILE *fp,
         if (i == 0) /* local */
         {
             pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
-                              &nbv->useGPU,
+                              &nbv->bUseGPU,
                               &nbv->grp[i].kernel_type);
         }
         else /* non-local */
@@ -1722,7 +1729,7 @@ static void init_nb_verlet(FILE *fp,
         }
     }
 
-    if (nbv->useGPU)
+    if (nbv->bUseGPU)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
@@ -1936,11 +1943,9 @@ void init_forcerec(FILE *fp,
     {
         /* turn off non-bonded calculations */
         fr->bNonbonded = FALSE;
-        if (fp)
-        {
-            fprintf(fp, "Found environment varialbe GMX_NO_NONBONDED.\n"
-                        "Disabling nonbonded calculations.\n\n");
-        }
+        md_print_warn(cr,fp,
+                      "Found environment variable GMX_NO_NONBONDED.\n"
+                      "Disabling nonbonded calculations.\n");
     }
 
     bGenericKernelOnly = FALSE;
@@ -2041,7 +2046,8 @@ void init_forcerec(FILE *fp,
             fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
         }
     }
-    else
+
+    if (ir->cutoff_scheme == ecutsVERLET)
     {
         if (!gmx_within_tol(fr->reppow,12.0,10*GMX_DOUBLE_EPS))
         {

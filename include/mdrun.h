@@ -92,8 +92,8 @@ typedef struct {
     int      nthreads_tmpi;       /* Number of TMPI threads requested         */
     int      nthreads_omp;        /* Number of OpenMP threads requested       */
     int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
-    gmx_bool thread_pinning;      /* Pin OpenMP threads to cores?             */
-    gmx_bool pin_hyperthreading;  /* Pin pairs of threads to physical cores   */
+    gmx_bool bThreadPinning;      /* Pin OpenMP threads to cores?             */
+    gmx_bool bPinHyperthreading;  /* Pin pairs of threads to physical cores   */
     int      core_pinning_offset; /* Physical core pinning offset             */
     char    *gpu_id;              /* GPU id's to use, each specified as chars */
 } gmx_hw_opt_t;

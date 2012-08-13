@@ -93,8 +93,8 @@ typedef struct {
 /* This bit is only used with bBondComm in the domain decomposition */
 #define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<22))
 #define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1<<22))
-#define SET_CGINFO_HAS_LJ(cgi)       (cgi) =  ((cgi)  |  (1<<23))
-#define GET_CGINFO_HAS_LJ(cgi)     ( (cgi)            &  (1<<23))
+#define SET_CGINFO_HAS_VDW(cgi)      (cgi) =  ((cgi)  |  (1<<23))
+#define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1<<23))
 #define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
 #define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
 #define SET_CGINFO_NATOMS(cgi,opt)   (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
@@ -265,7 +265,7 @@ typedef struct {
   int  *gid2nblists;
   t_nblists *nblists;
 
-  gmx_bool cutoff_scheme; /* old- or Verlet-style cutoff */
+  int      cutoff_scheme; /* old- or Verlet-style cutoff */
   gmx_bool bNonbonded;    /* true if nonbonded calculations are *not* turned off */
   nonbonded_verlet_t *nbv;
 

@@ -827,7 +827,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
     gmx_ga2la_t ga2la;
     gmx_mtop_atomlookup_t alook;
     int settle;
-    int sa;
+    int nral,sa;
     int cg,a,a_gl,a_glsa,a_gls[3],a_locs[3];
     int mb,molnr,a_mol,offset;
     const gmx_molblock_t *molb;
@@ -839,6 +839,8 @@ static void atoms_to_settles(gmx_domdec_t *dd,
     ga2la  = dd->ga2la;
 
     alook = gmx_mtop_atomlookup_settle_init(mtop);
+
+    nral = NRAL(F_SETTLE);
 
     for(cg=cg_start; cg<cg_end; cg++)
     {
@@ -861,9 +863,9 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                     bAssign = FALSE;
                     nlocal = 0;
-                    for(sa=0; sa<3; sa++)
+                    for(sa=0; sa<nral; sa++)
                     {
-                        a_glsa = offset + ia1[settle*4+1+sa];
+                        a_glsa = offset + ia1[settle*(1+nral)+1+sa];
                         a_gls[sa] = a_glsa;
                         a_home[sa] = ga2la_get_home(ga2la,a_glsa,&a_locs[sa]);
                         if (a_home[sa])
@@ -878,15 +880,15 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                     if (bAssign)
                     {
-                        if (ils_local->nr + 4 > ils_local->nalloc)
+                        if (ils_local->nr+1+nral > ils_local->nalloc)
                         {
-                            ils_local->nalloc = over_alloc_dd(ils_local->nr+4);
+                            ils_local->nalloc = over_alloc_dd(ils_local->nr+1+nral);
                             srenew(ils_local->iatoms,ils_local->nalloc);
                         }
 
                         ils_local->iatoms[ils_local->nr++] = ia1[settle*4];
 
-                        for(sa=0; sa<3; sa++)
+                        for(sa=0; sa<nral; sa++)
                         {
                             if (ga2la_get_home(ga2la,a_gls[sa],&a_locs[sa]))
                             {
@@ -952,7 +954,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                 gmx_mtop_atomnr_to_molblock_ind(alook,a_gl,&mb,&molnr,&a_mol);
                 molb = &mtop->molblock[mb];
         
-                ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/3;
+                ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/NRAL(F_SETTLE);
 
                 ia1 = mtop->moltype[molb->type].ilist[F_CONSTR].iatoms;
                 ia2 = mtop->moltype[molb->type].ilist[F_CONSTRNC].iatoms;
@@ -1178,6 +1180,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
     }
 
     if (dd->constraint_comm) {
+        int nral1;
+
         at_end =
             setup_specat_communication(dd,ireq,dd->constraint_comm,
                                        dd->constraints->ga2la,
@@ -1186,10 +1190,12 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
         
         /* Fill in the missing indices */
         ga2la_specat = dd->constraints->ga2la;
-        for(i=0; i<ilc_local->nr; i+=3)
+
+        nral1 = 1 + NRAL(F_CONSTR);
+        for(i=0; i<ilc_local->nr; i+=nral1)
         {
             iap = ilc_local->iatoms + i;
-            for(j=1; j<3; j++)
+            for(j=1; j<nral1; j++)
             {
                 if (iap[j] < 0)
                 {
@@ -1198,10 +1204,11 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
             }
         }
 
-        for(i=0; i<ils_local->nr; i+=4)
+        nral1 = 1 + NRAL(F_SETTLE);
+        for(i=0; i<ils_local->nr; i+=nral1)
         {
             iap = ils_local->iatoms + i;
-            for(j=1; j<4; j++)
+            for(j=1; j<nral1; j++)
             {
                 if (iap[j] < 0)
                 {

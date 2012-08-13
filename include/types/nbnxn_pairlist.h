@@ -143,7 +143,7 @@ typedef struct {
     gmx_nbat_alloc_t *alloc;
     gmx_nbat_free_t  *free;
 
-    gmx_bool simple;       /* Simple list has na_sc=na_s and uses cj   *
+    gmx_bool bSimple;      /* Simple list has na_sc=na_s and uses cj   *
                             * Complex list uses cj4                    */
 
     int      na_ci;        /* The number of atoms per i-cluster        */
@@ -177,8 +177,8 @@ typedef struct {
 typedef struct {
     int          nnbl;      /* number of lists */
     nbnxn_pairlist_t **nbl; /* lists */
-    gmx_bool     combined;  /* TRUE if lists get combined into one (the 1st) */
-    gmx_bool     simple;    /* TRUE if the list of of type "simple"
+    gmx_bool     bCombined; /* TRUE if lists get combined into one (the 1st) */
+    gmx_bool     bSimple;   /* TRUE if the list of of type "simple"
                                (na_sc=na_s, no super-clusters used) */
     int          natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
     int          natpair_lj;  /* Total number of atom pairs for LJ kernel   */
@@ -220,7 +220,7 @@ typedef struct {
     int  nenergrp;   /* The number of energy groups                        */
     int  neg_2log;   /* Log2 of nenergrp                                   */
     int  *energrp;   /* The energy groups per cluster, can be NULL         */
-    gmx_bool dynamic_box; /* Do we need to update shift_vec every step?    */
+    gmx_bool bDynamicBox; /* Do we need to update shift_vec every step?    */
     rvec *shift_vec; /* Shift vectors, copied from t_forcerec              */
     int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */
     int  fstride;    /* stride for a coordinate in f (usually 3 or 4)      */

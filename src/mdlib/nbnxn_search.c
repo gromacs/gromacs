@@ -279,7 +279,7 @@ typedef struct {
     rvec c1;             /* The upper corner of the (local) grid        */
     real atom_density;   /* The atom number density for the local grid  */
 
-    gmx_bool simple;     /* Is this grid simple or super/sub            */
+    gmx_bool bSimple;    /* Is this grid simple or super/sub            */
     int  na_c;           /* Number of atoms per cluster                 */
     int  na_cj;          /* Number of atoms for list j-clusters         */
     int  na_sc;          /* Number of atoms per super-cluster           */
@@ -632,7 +632,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
     if (n > grid->na_sc)
     {
         /* target cell length */
-        if (grid->simple)
+        if (grid->bSimple)
         {
             /* To minimize the zero interactions, we should make
              * the largest of the i/j cell cubic.
@@ -708,7 +708,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
          */
         snew_aligned(grid->bb,bb_nalloc,16);
 
-        if (grid->simple)
+        if (grid->bSimple)
         {
             if (grid->na_cj == grid->na_c)
             {
@@ -1394,7 +1394,7 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
         {
             haveQ = haveQ || GET_CGINFO_HAS_Q(atinfo[order[a]]);
 
-            if (GET_CGINFO_HAS_LJ(atinfo[order[a]]))
+            if (GET_CGINFO_HAS_VDW(atinfo[order[a]]))
             {
                 sort1[n1++] = order[a];
                 a_lj_max = a;
@@ -1457,7 +1457,7 @@ void fill_cell(const nbnxn_search_t nbs,
 
     na = a1 - a0;
 
-    if (grid->simple)
+    if (grid->bSimple)
     {
         sort_on_lj(nbat,grid->na_c,a0,a1,atinfo,nbs->a,
                    grid->flags+(a0>>grid->na_c_2log)-grid->cell0);
@@ -1500,7 +1500,7 @@ void fill_cell(const nbnxn_search_t nbs,
         calc_bounding_box_x_x8(na,nbat->x+X8_IND_A(a0),bb_ptr);
     }
 #ifdef NBNXN_BBXXXX
-    else if (!grid->simple)
+    else if (!grid->bSimple)
     {
         /* Store the bounding boxes in a format convenient
          * for SSE calculations: xxxxyyyyzzzz...
@@ -1924,7 +1924,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 #pragma omp parallel for num_threads(nbs->nthread_max) schedule(static)
     for(thread=0; thread<nbs->nthread_max; thread++)
     {
-        if (grid->simple)
+        if (grid->bSimple)
         {
             sort_columns_simple(nbs,dd_zone,grid,a0,a1,atinfo,x,nbat,
                                 ((thread+0)*grid->ncx*grid->ncy)/nthread,
@@ -1941,13 +1941,13 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     }
 
 #ifdef NBNXN_SEARCH_SSE
-    if (grid->simple && nbat->XFormat == nbatX8)
+    if (grid->bSimple && nbat->XFormat == nbatX8)
     {
         combine_bounding_box_pairs(grid,grid->bb);
     }
 #endif
 
-    if (!grid->simple)
+    if (!grid->bSimple)
     {
         grid->nsubc_tot = 0;
         for(i=0; i<grid->nc; i++)
@@ -1958,7 +1958,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 
     if (debug)
     {
-        if (grid->simple)
+        if (grid->bSimple)
         {
             print_bbsizes_simple(debug,nbs,grid);
         }
@@ -2092,11 +2092,11 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     nbs_cycle_start(&nbs->cc[enbsCCgrid]);
 
-    grid->simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
+    grid->bSimple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
     grid->na_c      = kernel_to_ci_size(nb_kernel_type);
     grid->na_cj     = kernel_to_cj_size(nb_kernel_type);
-    grid->na_sc     = (grid->simple ? 1 : NSUBCELL)*grid->na_c;
+    grid->na_sc     = (grid->bSimple ? 1 : NSUBCELL)*grid->na_c;
     grid->na_c_2log = get_2log(grid->na_c);
 
     nbat->na_c = grid->na_c;
@@ -2219,7 +2219,7 @@ void nbnxn_grid_add_simple(nbnxn_search_t nbs,
 
     grid = &nbs->grid[0];
 
-    if (grid->simple)
+    if (grid->bSimple)
     {
         gmx_incons("nbnxn_grid_simple called with a simple grid");
     }
@@ -2292,7 +2292,7 @@ void nbnxn_grid_add_simple(nbnxn_search_t nbs,
     }
 
 #ifdef NBNXN_SEARCH_SSE
-    if (grid->simple && nbat->XFormat == nbatX8)
+    if (grid->bSimple && nbat->XFormat == nbatX8)
     {
         combine_bounding_box_pairs(grid,grid->bb_simple);
     }
@@ -2805,7 +2805,7 @@ static void set_no_excls(nbnxn_excl_t *excl)
 
 /* Initializes a single nbnxn_pairlist_t data structure */
 static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
-                                gmx_bool simple,
+                                gmx_bool bSimple,
                                 gmx_nbat_alloc_t *alloc,
                                 gmx_nbat_free_t  *free)
 {
@@ -2826,7 +2826,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
         nbl->free = free;
     }
 
-    nbl->simple      = simple;
+    nbl->bSimple     = bSimple;
     nbl->na_sc       = 0;
     nbl->na_ci       = 0;
     nbl->na_cj       = 0;
@@ -2842,7 +2842,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     nbl->cj4         = NULL;
     nbl->nci_tot     = 0;
 
-    if (!nbl->simple)
+    if (!nbl->bSimple)
     {
         nbl->excl        = NULL;
         nbl->excl_nalloc = 0;
@@ -2869,14 +2869,14 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 }
 
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
-                             gmx_bool simple, gmx_bool combined,
+                             gmx_bool bSimple, gmx_bool bCombined,
                              gmx_nbat_alloc_t *alloc,
                              gmx_nbat_free_t  *free)
 {
     int i;
 
-    nbl_list->simple    = simple;
-    nbl_list->combined  = combined;
+    nbl_list->bSimple   = bSimple;
+    nbl_list->bCombined = bCombined;
 
     nbl_list->nnbl = gmx_omp_nthreads_get(emntNonbonded);
 
@@ -2893,11 +2893,11 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
         /* Only list 0 is used on the GPU, use normal allocation for i>0 */
         if (i == 0)
         {
-            nbnxn_init_pairlist(nbl_list->nbl[i],nbl_list->simple,alloc,free);
+            nbnxn_init_pairlist(nbl_list->nbl[i],nbl_list->bSimple,alloc,free);
         }
         else
         {
-            nbnxn_init_pairlist(nbl_list->nbl[i],nbl_list->simple,NULL,NULL);
+            nbnxn_init_pairlist(nbl_list->nbl[i],nbl_list->bSimple,NULL,NULL);
         }
     }
 }
@@ -3961,7 +3961,7 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
 /* Syncs the working array before adding another grid pair to the list */
 static void sync_work(nbnxn_pairlist_t *nbl)
 {
-    if (!nbl->simple)
+    if (!nbl->bSimple)
     {
         nbl->work->cj_ind   = nbl->ncj4*NBNXN_GPU_JGROUP_SIZE;
         nbl->work->cj4_init = nbl->ncj4;
@@ -4291,7 +4291,7 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
     int nsci,ncj4,nexcl;
     int n,i;
 
-    if (nblc->simple)
+    if (nblc->bSimple)
     {
         gmx_incons("combine_nblists does not support simple lists");
     }
@@ -4501,7 +4501,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
 
-    if (gridj->simple != nbl->simple)
+    if (gridj->bSimple != nbl->bSimple)
     {
         gmx_incons("Grid incompatible with pair-list");
     }
@@ -4519,7 +4519,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     rl2 = nbl->rlist*nbl->rlist;
 
-    rbb2 = boundingbox_only_distance2(gridi,gridj,nbl->rlist,nbl->simple);
+    rbb2 = boundingbox_only_distance2(gridi,gridj,nbl->rlist,nbl->bSimple);
 
     if (debug)
     {
@@ -4550,7 +4550,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         }
     }
 
-    if (nbl->simple && !gridi->simple)
+    if (nbl->bSimple && !gridi->bSimple)
     {
         conv_i  = gridi->na_sc/gridj->na_sc;
         bb_i    = gridi->bb_simple;
@@ -4622,7 +4622,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     ci_y = 0;
     while (next_ci(gridi,conv_i,nth,ci_block,&ci_x,&ci_y,&ci_b,&ci))
     {
-        if (nbl->simple && flags_i[ci] == 0)
+        if (nbl->bSimple && flags_i[ci] == 0)
         {
             continue;
         }
@@ -4630,7 +4630,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         d2cx = 0;
         if (gridj != gridi && shp[XX] == 0)
         {
-            if (nbl->simple)
+            if (nbl->bSimple)
             {
                 bx1 = bb_i[ci*NNBSBB_B+NNBSBB_C+XX];
             }
@@ -4691,7 +4691,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             {
                 shy = ty*box[YY][YY] + tz*box[ZZ][YY];
 
-                if (nbl->simple)
+                if (nbl->bSimple)
                 {
                     by0 = bb_i[ci*NNBSBB_B         +YY] + shy;
                     by1 = bb_i[ci*NNBSBB_B+NNBSBB_C+YY] + shy;
@@ -4735,7 +4735,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
                     shx = tx*box[XX][XX] + ty*box[YY][XX] + tz*box[ZZ][XX];
 
-                    if (nbl->simple)
+                    if (nbl->bSimple)
                     {
                         bx0 = bb_i[ci*NNBSBB_B         +XX] + shx;
                         bx1 = bb_i[ci*NNBSBB_B+NNBSBB_C+XX] + shx;
@@ -4756,7 +4756,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         continue;
                     }
 
-                    if (nbl->simple)
+                    if (nbl->bSimple)
                     {
                         new_ci_entry(nbl,cell0_i+ci,shift,flags_i[ci],
                                      nbl->work);
@@ -4780,7 +4780,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         cxf = ci_x;
                     }
 
-                    if (nbl->simple)
+                    if (nbl->bSimple)
                     {
                         set_icell_bb_simple(bb_i,ci,shx,shy,shz,
                                             nbl->work->bb_ci);
@@ -4974,7 +4974,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
 
                     /* Set the exclusions for this ci list */
-                    if (nbl->simple)
+                    if (nbl->bSimple)
                     {
                         set_ci_top_excls(nbs,
                                          nbl,
@@ -4995,7 +4995,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
 
                     /* Close this ci list */
-                    if (nbl->simple)
+                    if (nbl->bSimple)
                     {
                         close_ci_entry_simple(nbl);
                     }
@@ -5021,7 +5021,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         fprintf(debug,"ncpcheck %s %d\n",gridi==gridj ? "local" : "non-local",
                 ncpcheck);
 
-        if (nbl->simple)
+        if (nbl->bSimple)
         {
             print_nblist_statistics_simple(debug,nbl,nbs,rlist);
         }
@@ -5055,14 +5055,14 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
     nnbl            = nbl_list->nnbl;
     nbl             = nbl_list->nbl;
-    CombineNBLists  = nbl_list->combined;
+    CombineNBLists  = nbl_list->bCombined;
 
     if (debug)
     {
         fprintf(debug,"ns making %d nblists\n", nnbl);
     }
 
-    if (nbl_list->simple)
+    if (nbl_list->bSimple)
     {
         switch (nb_kernel_type)
         {
@@ -5102,7 +5102,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
         nzi = nbs->zones->nizone;
     }
 
-    if (!nbl_list->simple && min_ci_balanced > 0)
+    if (!nbl_list->bSimple && min_ci_balanced > 0)
     {
         nsubpair_max = get_nsubpair_max(nbs,iloc,rlist,min_ci_balanced);
     }
@@ -5169,7 +5169,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
             {
                 inc_nrnb(nrnb,eNR_NBNXN_DIST2,nbs->work[th].ndistc);
 
-                if (nbl_list->simple)
+                if (nbl_list->bSimple)
                 {
                     np_tot += nbl[th]->ncj;
                     np_noq += nbl[th]->work->ncj_noq;
@@ -5216,7 +5216,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
     if (debug && (CombineNBLists && nnbl > 1))
     {
-        if (nbl[0]->simple)
+        if (nbl[0]->bSimple)
         {
             print_nblist_statistics_simple(debug,nbl[0],nbs,rlist);
         }
@@ -5228,7 +5228,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
     if (gmx_debug_at)
     {
-        if (nbl[0]->simple)
+        if (nbl[0]->bSimple)
         {
             print_nblist_ci_cj(debug,nbl[0]);
         }
@@ -5777,13 +5777,13 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box,
+void nbnxn_atomdata_copy_shiftvec(gmx_bool bDynamicBox,
                                    rvec *shift_vec,
                                    nbnxn_atomdata_t *nbat)
 {
     int i;
 
-    nbat->dynamic_box = dynamic_box;
+    nbat->bDynamicBox = bDynamicBox;
     for(i=0; i<SHIFTS; i++)
     {
         copy_rvec(shift_vec[i],nbat->shift_vec[i]);

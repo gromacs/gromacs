@@ -663,7 +663,7 @@ void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
     cudaStream_t  ls    = cu_nb->stream[eintLocal];
 
     /* only if we have a dynamic box */
-    if (nbatom->dynamic_box || !adat->shift_vec_uploaded)
+    if (nbatom->bDynamicBox || !adat->shift_vec_uploaded)
     {
         cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 
                           SHIFTS * sizeof(*adat->shift_vec), ls);

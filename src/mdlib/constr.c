@@ -362,7 +362,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     where();
 
     settle  = &idef->il[F_SETTLE];
-    nsettle = settle->nr/4;
+    nsettle = settle->nr/(1+NRAL(F_SETTLE));
 
     if (nsettle > 0)
     {
@@ -466,15 +466,15 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     
     if (nsettle > 0)
     {
-        int CalcVirAtomEnd;
+        int calcvir_atom_end;
 
         if (vir == NULL)
         {
-            CalcVirAtomEnd = 0;
+            calcvir_atom_end = 0;
         }
         else
         {
-            CalcVirAtomEnd = md->start + md->homenr;
+            calcvir_atom_end = md->start + md->homenr;
         }
 
         switch (econq)
@@ -495,10 +495,11 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                 if (start_th >= 0 && end_th - start_th > 0)
                 {
                     csettle(constr->settled,
-                            end_th-start_th,settle->iatoms+start_th*4,
+                            end_th-start_th,
+                            settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
                             pbc_null,
                             x[0],xprime[0],
-                            invdt,v[0],CalcVirAtomEnd,
+                            invdt,v[0],calcvir_atom_end,
                             th == 0 ? rmdr : constr->rmdr_th[th],
                             th == 0 ? &settle_error : &constr->settle_error[th],
                             &vetavar);
@@ -534,10 +535,11 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                 if (start_th >= 0 && end_th - start_th > 0)
                 {
                     settle_proj(fplog,constr->settled,econq,
-                                end_th-start_th,settle->iatoms+start_th*4,
+                                end_th-start_th,
+                                settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
                                 pbc_null,
                                 x,
-                                xprime,min_proj,CalcVirAtomEnd,
+                                xprime,min_proj,calcvir_atom_end,
                                 th == 0 ? rmdr : constr->rmdr_th[th],
                                 &vetavar);
                 }
@@ -571,7 +573,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                 sprintf(buf,
                         "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
                         "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
-                        step,ddglatnr(cr->dd,settle->iatoms[settle_error*4+1]));
+                        step,ddglatnr(cr->dd,settle->iatoms[settle_error*(1+NRAL(F_SETTLE))+1]));
                 if (fplog)
                 {
                     fprintf(fplog,"%s",buf);
@@ -860,7 +862,7 @@ t_blocka make_at2con(int start,int natoms,
 static int *make_at2settle(int natoms,const t_ilist *ilist)
 {
     int *at2s;
-    int a,s;
+    int a,stride,s;
   
     snew(at2s,natoms);
     /* Set all to no settle */
@@ -869,11 +871,13 @@ static int *make_at2settle(int natoms,const t_ilist *ilist)
         at2s[a] = -1;
     }
 
-    for(s=0; s<ilist->nr; s+=4)
+    stride = 1 + NRAL(F_SETTLE);
+
+    for(s=0; s<ilist->nr; s+=stride)
     {
-        at2s[ilist->iatoms[s+1]] = s/4;
-        at2s[ilist->iatoms[s+2]] = s/4;
-        at2s[ilist->iatoms[s+3]] = s/4;
+        at2s[ilist->iatoms[s+1]] = s/stride;
+        at2s[ilist->iatoms[s+2]] = s/stride;
+        at2s[ilist->iatoms[s+3]] = s/stride;
     }
 
     return at2s;
@@ -1273,7 +1277,7 @@ const int **atom2settle_moltype(gmx_constr_t constr)
 }
 
 
-gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
+gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop)
 {
     const gmx_moltype_t *molt;
     const t_block *cgs;
@@ -1302,7 +1306,7 @@ gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
             for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++)
             {
                 il = &molt->ilist[ftype];
-                for(i=0; i<il->nr && !bInterCG; i+=3)
+                for(i=0; i<il->nr && !bInterCG; i+=1+NRAL(ftype))
                 {
                     if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
                     {
@@ -1310,19 +1314,6 @@ gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
                     }
                 }
             }
-
-            for(ftype=F_SETTLE; ftype<=F_SETTLE; ftype++)
-            {
-                il = &molt->ilist[ftype];
-                for(i=0; i<il->nr && !bInterCG; i+=4)
-                {
-                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]] ||
-                        at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+3]])
-                    {
-                        bInterCG = TRUE;
-                    }
-                }
-            }       
             
             sfree(at2cg);
         }
@@ -1331,7 +1322,7 @@ gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
     return bInterCG;
 }
 
-gmx_bool inter_charge_group_settles(gmx_mtop_t *mtop)
+gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop)
 {
     const gmx_moltype_t *molt;
     const t_block *cgs;
@@ -1355,22 +1346,10 @@ gmx_bool inter_charge_group_settles(gmx_mtop_t *mtop)
                     at2cg[a] = cg;
             }
 
-            for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++)
-            {
-                il = &molt->ilist[ftype];
-                for(i=0; i<il->nr && !bInterCG; i+=3)
-                {
-                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
-                    {
-                        bInterCG = TRUE;
-                    }
-                }
-            }
-
             for(ftype=F_SETTLE; ftype<=F_SETTLE; ftype++)
             {
                 il = &molt->ilist[ftype];
-                for(i=0; i<il->nr && !bInterCG; i+=4)
+                for(i=0; i<il->nr && !bInterCG; i+=1+NRAL(F_SETTLE))
                 {
                     if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]] ||
                         at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+3]])

@@ -227,6 +227,8 @@ static void pp_group_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
 
     /* For the PP non-bonded cost it is (unrealistically) assumed
      * that all atoms are distributed homogeneously in space.
+     * Factor 3 is used because a water molecule has 3 atoms
+     * (and TIP4P effectively has 3 interactions with (water) atoms)).
      */
     *cost_pp = 0.5*(fqljw*nw*nqlj +
                     fqw  *nw*(3*nw + nq) +
@@ -329,9 +331,6 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 
   cost_bond = C_BOND*n_bonded_dx(mtop,TRUE);
 
-  /* For the PP non-bonded cost it is (unrealistically) assumed
-   * that all atoms are distributed homogeneously in space.
-   */
   if (ir->cutoff_scheme == ecutsGROUP)
   {
       pp_group_load(mtop,ir,box,&nq_tot,&cost_pp,&bChargePerturbed);

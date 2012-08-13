@@ -73,13 +73,13 @@ typedef struct {
     real tabq_scale;
     int  tabq_size;
     int  tabq_format;
-    /* Coulomb force table, size of array is tabsize (when used) */
+    /* Coulomb force table, size of array is tabq_size (when used) */
     real *tabq_coul_F;
-    /* Coulomb energy table, size of array is tabsize (when used) */
+    /* Coulomb energy table, size of array is tabq_size (when used) */
     real *tabq_coul_V;
-    /* Coulomb force+energy table, size of array is tabsize*4,
+    /* Coulomb force+energy table, size of array is tabq_size*4,
        entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
-       this is used with single precision SSE/AVX-128 for aligned loads */
+       this is used with single precision x86 SIMD for aligned loads */
     real *tabq_coul_FDV0;
 } interaction_const_t;
 

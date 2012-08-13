@@ -106,7 +106,7 @@ void csettle(gmx_settledata_t settled,
              real after[],	/* New coords, to be settled	*/
              real invdt,         /* 1/delta_t                    */
              real *v,            /* Also constrain v if v!=NULL  */
-             int CalcVirAtomEnd, /* Calculate r x m delta_r      */
+             int calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
              tensor rmdr,        /* sum r x m delta_r            */
              int *xerror,
              t_vetavars *vetavar     /* variables for pressure control */   
@@ -212,10 +212,10 @@ const int **atom2settle_moltype(gmx_constr_t constr);
  * are concatenated.
  */
 
-gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop);
+gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */
 
-gmx_bool inter_charge_group_settles(gmx_mtop_t *mtop);
+gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop);
 /* Returns if there are inter charge group settles */
 
 real *constr_rmsd_data(gmx_constr_t constr);

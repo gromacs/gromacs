@@ -117,10 +117,10 @@ typedef struct {
     int                      ngrp;  /* number of interaction groups             */
     nonbonded_verlet_group_t grp[2];/* local and non-local interaction group    */
 
-    gmx_bool            useGPU;           /* TRUE when GPU acceleration is used */
-    nbnxn_cuda_ptr_t    cu_nbv;           /* pointer to CUDA nb verlet data     */
-    int                 min_ci_balanced;  /* pair list balancing parameter
-                                             used for the 8x8x8 CUDA kernels    */
+    gmx_bool         bUseGPU;          /* TRUE when GPU acceleration is used */
+    nbnxn_cuda_ptr_t cu_nbv;           /* pointer to CUDA nb verlet data     */
+    int              min_ci_balanced;  /* pair list balancing parameter
+                                          used for the 8x8x8 CUDA kernels    */
 } nonbonded_verlet_t;
 
 #ifdef __cplusplus

@@ -147,7 +147,7 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
     int stride=0;
     int i,i_inrange;
     double dc,dc_new;
-    gmx_bool OutOfRange;
+    gmx_bool bOutOfRange;
     double v_r0,v_r1,v_inrange,vi,a0,a1,a2dx;
     double x_r0;
 
@@ -175,7 +175,7 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
     default: gmx_incons("Unknown table format");
     }
 
-    OutOfRange = FALSE;
+    bOutOfRange = FALSE;
     i_inrange = ntab;
     v_inrange = 0;
     dc = 0;
@@ -185,7 +185,7 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
 
         v_r0 = v_ewald_lr(beta,x_r0);
 
-        if (!OutOfRange)
+        if (!bOutOfRange)
         {
             i_inrange = i;
             v_inrange = v_r0;
@@ -224,10 +224,10 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
 
         if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
         {
-            OutOfRange = TRUE;
+            bOutOfRange = TRUE;
         }
 
-        if (!OutOfRange)
+        if (!bOutOfRange)
         {
             /* Calculate the average second derivative times dx over interval i-1 to i.
              * Using the function values at the end points and in the middle.
@@ -251,7 +251,7 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
             tabf[i*stride] += -0.5*dc;
         }
 
-        if (!OutOfRange)
+        if (!bOutOfRange)
         {
             /* Make spline s(x) = a0 + a1*(x - xr) + 0.5*a2*(x - xr)^2
              * matching the potential at the two end points
@@ -266,7 +266,7 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
                 
             if (dc_new != dc_new || dc_new < -tab_max || dc_new > tab_max)
             {
-                OutOfRange = TRUE;
+                bOutOfRange = TRUE;
             }
             else
             {

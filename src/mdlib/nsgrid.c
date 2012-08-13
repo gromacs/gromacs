@@ -726,7 +726,7 @@ void fill_grid(FILE *log,
                 if (cell_index[cg] == -1)
                 {
                     /* This cg has moved to another node */
-                    cell_index[cg] = 4*grid->ncells;
+                    cell_index[cg] = NSGRID_SIGNAL_MOVED_FAC*grid->ncells;
                     continue;
                 }
                 

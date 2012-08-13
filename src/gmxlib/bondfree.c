@@ -1429,10 +1429,10 @@ do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
 
 /* As do_dih_fup_noshiftf above, but with pre-calculated pre-factors */
 static void
-do_dih_fup_noshiftf_prec(int i,int j,int k,int l,real ddphi,
-                         real nrkj_m2,real nrkj_n2,
-                         real p,real q,
-                         rvec m,rvec n,rvec f[])
+do_dih_fup_noshiftf_precalc(int i,int j,int k,int l,real ddphi,
+                            real nrkj_m2,real nrkj_n2,
+                            real p,real q,
+                            rvec m,rvec n,rvec f[])
 {
     rvec f_i,f_j,f_k,f_l;
     rvec uvec,vvec,svec,dx_jl;
@@ -1728,11 +1728,11 @@ pdihs_noener_sse(int nbonds,
         {
             ddphi = -cp[s]*mult[s]*buf[16+s];
 
-            do_dih_fup_noshiftf_prec(ai[s],aj[s],ak[s],al[s],ddphi,
-                                     buf[ 0+s],buf[ 4+s],
-                                     buf[ 8+s],buf[12+s],
-                                     rs[0+s].v,rs[4+s].v,
-                                     f);
+            do_dih_fup_noshiftf_precalc(ai[s],aj[s],ak[s],al[s],ddphi,
+                                        buf[ 0+s],buf[ 4+s],
+                                        buf[ 8+s],buf[12+s],
+                                        rs[0+s].v,rs[4+s].v,
+                                        f);
             s++;
             i4 += 5;
         }
@@ -3393,11 +3393,17 @@ static void reduce_thread_force_buffer(int n,rvec *f,
                                        int nthreads,f_thread_t *f_t,
                                        int nblock,int block_size)
 {
+    /* The max thread number is arbitrary,
+     * we used a fixed number to avoid memory management.
+     * Using more than 16 threads is probably never useful performance wise.
+     */
+#define MAX_BONDED_THREADS 256
     int b;
 
-    if (nthreads > 256)
+    if (nthreads > MAX_BONDED_THREADS)
     {
-        gmx_fatal(FARGS,"Can not reduce bonded forces on more than 256 threads");
+        gmx_fatal(FARGS,"Can not reduce bonded forces on more than %d threads",
+                  MAX_BONDED_THREADS);
     }
 
     /* This reduction can run on any number of threads,
@@ -3406,7 +3412,7 @@ static void reduce_thread_force_buffer(int n,rvec *f,
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for(b=0; b<nblock; b++)
     {
-        rvec *fp[256];
+        rvec *fp[MAX_BONDED_THREADS];
         int nfb,ft,fb;
         int a0,a1,a;
 
@@ -3530,7 +3536,7 @@ static real calc_one_bond(FILE *fplog,int thread,
         nb0 = ((nbonds* thread   )/(fr->nthreads))*nat1;
         nbn = ((nbonds*(thread+1))/(fr->nthreads))*nat1 - nb0;
 
-        if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB)
+        if (!IS_LISTED_LJ_C(ftype))
         {
             if(ftype==F_CMAP)
             {
@@ -3643,7 +3649,7 @@ static real calc_one_bond_foreign(FILE *fplog,int ftype, const t_idef *idef,
             iatoms    = idef->il[ftype].iatoms + nbonds_np;
             if (nbonds > 0)
             {
-                if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB)
+                if (!IS_LISTED_LJ_C(ftype))
                 {
                     if(ftype==F_CMAP)
                     {

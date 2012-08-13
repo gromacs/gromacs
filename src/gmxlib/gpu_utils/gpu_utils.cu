@@ -650,7 +650,7 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
 
     if (dev_id > ndev - 1)
     {
-        return egpuInexistent;
+        return egpuNonexistent;
     }
 
     if (do_sanity_checks(dev_id, dev_prop) == 0)
@@ -794,7 +794,7 @@ gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
         gpu_info->cuda_dev_use[i] = id;
 
         checkres[i] = (id >= gpu_info->ncuda_dev) ?
-            egpuInexistent : gpu_info->cuda_dev[id].stat;
+            egpuNonexistent : gpu_info->cuda_dev[id].stat;
 
         bAllOk = bAllOk && is_compatible_gpu(checkres[i]);
     }

@@ -973,48 +973,59 @@ static void print_ddzone(FILE *fp,int d,int i,int j,gmx_ddzone_t *zone)
             zone->p1_0,zone->p1_1);
 }
 
+
+#define DDZONECOMM_MAXZONE  5
+#define DDZONECOMM_BUFSIZE  3
+
 static void dd_sendrecv_ddzone(const gmx_domdec_t *dd,
                                int ddimind,int direction,
                                gmx_ddzone_t *buf_s,int n_s,
                                gmx_ddzone_t *buf_r,int n_r)
 {
-    rvec vbuf_s[5*3],vbuf_r[5*3];
+#define ZBS  DDZONECOMM_BUFSIZE
+    rvec vbuf_s[DDZONECOMM_MAXZONE*ZBS];
+    rvec vbuf_r[DDZONECOMM_MAXZONE*ZBS];
     int i;
 
     for(i=0; i<n_s; i++)
     {
-        vbuf_s[i*3  ][0] = buf_s[i].min0;
-        vbuf_s[i*3  ][1] = buf_s[i].max1;
-        vbuf_s[i*3  ][2] = buf_s[i].min1;
-        vbuf_s[i*3+1][0] = buf_s[i].mch0;
-        vbuf_s[i*3+1][1] = buf_s[i].mch1;
-        vbuf_s[i*3+1][2] = 0;
-        vbuf_s[i*3+2][0] = buf_s[i].p1_0;
-        vbuf_s[i*3+2][1] = buf_s[i].p1_1;
-        vbuf_s[i*3+2][2] = 0;
+        vbuf_s[i*ZBS  ][0] = buf_s[i].min0;
+        vbuf_s[i*ZBS  ][1] = buf_s[i].max1;
+        vbuf_s[i*ZBS  ][2] = buf_s[i].min1;
+        vbuf_s[i*ZBS+1][0] = buf_s[i].mch0;
+        vbuf_s[i*ZBS+1][1] = buf_s[i].mch1;
+        vbuf_s[i*ZBS+1][2] = 0;
+        vbuf_s[i*ZBS+2][0] = buf_s[i].p1_0;
+        vbuf_s[i*ZBS+2][1] = buf_s[i].p1_1;
+        vbuf_s[i*ZBS+2][2] = 0;
     }
 
     dd_sendrecv_rvec(dd, ddimind, direction,
-                     vbuf_s, n_s*3,
-                     vbuf_r, n_r*3);
+                     vbuf_s, n_s*ZBS,
+                     vbuf_r, n_r*ZBS);
 
     for(i=0; i<n_r; i++)
     {
-        buf_r[i].min0 = vbuf_r[i*3  ][0];
-        buf_r[i].max1 = vbuf_r[i*3  ][1];
-        buf_r[i].min1 = vbuf_r[i*3  ][2];
-        buf_r[i].mch0 = vbuf_r[i*3+1][0];
-        buf_r[i].mch1 = vbuf_r[i*3+1][1];
-        buf_r[i].p1_0 = vbuf_r[i*3+2][0];
-        buf_r[i].p1_1 = vbuf_r[i*3+2][1];
+        buf_r[i].min0 = vbuf_r[i*ZBS  ][0];
+        buf_r[i].max1 = vbuf_r[i*ZBS  ][1];
+        buf_r[i].min1 = vbuf_r[i*ZBS  ][2];
+        buf_r[i].mch0 = vbuf_r[i*ZBS+1][0];
+        buf_r[i].mch1 = vbuf_r[i*ZBS+1][1];
+        buf_r[i].p1_0 = vbuf_r[i*ZBS+2][0];
+        buf_r[i].p1_1 = vbuf_r[i*ZBS+2][1];
     }
+
+#undef ZBS
 }
 
 static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                           rvec cell_ns_x0,rvec cell_ns_x1)
 {
     int  d,d1,dim,dim1,pos,buf_size,i,j,k,p,npulse,npulse_min;
-    gmx_ddzone_t *zp,buf_s[5],buf_r[5],buf_e[5];
+    gmx_ddzone_t *zp;
+    gmx_ddzone_t buf_s[DDZONECOMM_MAXZONE];
+    gmx_ddzone_t buf_r[DDZONECOMM_MAXZONE];
+    gmx_ddzone_t buf_e[DDZONECOMM_MAXZONE];
     rvec extr_s[2],extr_r[2];
     rvec dh;
     real dist_d,c=0,det;
@@ -4138,8 +4149,8 @@ static void clear_and_mark_ind(int ncg,int *move,
                 bLocalCG[index_gl[cg]] = FALSE;
             }
             /* Signal that this cg has moved using the ns cell index.
-             * Here we set it to -1.
-             * fill_grid will change it from -1 to 4*grid->ncells.
+             * Here we set it to -1. fill_grid will change it
+             * from -1 to NSGRID_SIGNAL_MOVED_FAC*grid->ncells.
              */
             cell_index[cg] = -1;
         }
@@ -4622,17 +4633,17 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
         }
     }
     
-    if (fr->cutoff_scheme == ecutsGROUP)
+    switch (fr->cutoff_scheme)
     {
+    case ecutsGROUP:
         /* Recalculating cg_cm might be cheaper than communicating,
          * but that could give rise to rounding issues.
          */
         home_pos_cg =
             compact_and_copy_vec_cg(dd->ncg_home,move,cgindex,
                                     nvec,cg_cm,comm,bCompact);
-    }
-    else
-    {
+    break;
+    case ecutsVERLET:
         /* Without charge groups we send the moved atom coordinates
          * over twice. This is so the code below can be used without
          * many conditionals for both for with and without charge groups.
@@ -4644,6 +4655,10 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
         {
             home_pos_cg -= *ncg_moved;
         }
+        break;
+    default:
+        gmx_incons("unimplemented");
+        home_pos_cg = 0;
     }
     
     vec = 0;
@@ -7391,6 +7406,7 @@ static gmx_bool missing_link(t_blocka *link,int cg_gl,char *bLocalCG)
     return bMiss;
 }
 
+/* Domain corners for communication, a maximum of 4 i-zones see a j domain */
 typedef struct {
     real c[DIM][4]; /* the corners for the non-bonded communication */
     real cr0;       /* corner for rounding */
@@ -7794,13 +7810,18 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     }
     
     comm  = dd->comm;
-    if (fr->cutoff_scheme == ecutsGROUP)
+
+    switch (fr->cutoff_scheme)
     {
+    case ecutsGROUP:
         cg_cm = fr->cg_cm;
-    }
-    else
-    {
+        break;
+    case ecutsVERLET:
         cg_cm = state->x;
+        break;
+    default:
+        gmx_incons("unimplemented");
+        cg_cm = NULL;
     }
 
     for(dim_ind=0; dim_ind<dd->ndim; dim_ind++)
@@ -8571,7 +8592,7 @@ static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
 
     a = fr->ns.grid->cell_index;
 
-    moved = 4*fr->ns.grid->ncells;
+    moved = NSGRID_SIGNAL_MOVED_FAC*fr->ns.grid->ncells;
 
     if (ncg_home_old >= 0)
     {
@@ -8692,13 +8713,17 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     }
     cgsort = sort->sort;
 
-    if (fr->cutoff_scheme == ecutsGROUP)
+    switch (fr->cutoff_scheme)
     {
+    case ecutsGROUP:
         ncg_new = dd_sort_order(dd,fr,ncg_home_old);
-    }
-    else
-    {
+        break;
+    case ecutsVERLET:
         ncg_new = dd_sort_order_nbnxn(dd,fr);
+        break;
+    default:
+        gmx_incons("unimplemented");
+        ncg_new = 0;
     }
 
     /* We alloc with the old size, since cgindex is still old */
@@ -9193,16 +9218,19 @@ void dd_partition_system(FILE            *fplog,
         comm_dd_ns_cell_sizes(dd,&ddbox,cell_ns_x0,cell_ns_x1,step);
     }
 
-    if (fr->cutoff_scheme == ecutsGROUP)
+    switch (fr->cutoff_scheme)
     {
+    case ecutsGROUP:
         copy_ivec(fr->ns.grid->n,ncells_old);
         grid_first(fplog,fr->ns.grid,dd,&ddbox,fr->ePBC,
                    state_local->box,cell_ns_x0,cell_ns_x1,
                    fr->rlistlong,grid_density);
-    }
-    else
-    {
+        break;
+    case ecutsVERLET:
         nbnxn_get_ncells(fr->nbv->nbs,&ncells_old[XX],&ncells_old[YY]);
+        break;
+    default:
+        gmx_incons("unimplemented");
     }
     /* We need to store tric_dir for dd_get_ns_ranges called from ns.c */
     copy_ivec(ddbox.tric_dir,comm->tric_dir);
@@ -9222,8 +9250,9 @@ void dd_partition_system(FILE            *fplog,
          */
         set_zones_ncg_home(dd);
 
-        if (fr->cutoff_scheme == ecutsVERLET)
+        switch (fr->cutoff_scheme)
         {
+        case ecutsVERLET:
             set_zones_size(dd,state_local->box,&ddbox,0,1);
 
             nbnxn_put_on_grid(fr->nbv->nbs,fr->ePBC,state_local->box,
@@ -9239,13 +9268,15 @@ void dd_partition_system(FILE            *fplog,
                               fr->nbv->grp[eintLocal].nbat);
 
             nbnxn_get_ncells(fr->nbv->nbs,&ncells_new[XX],&ncells_new[YY]);
-        }
-        else
-        {
+            break;
+        case ecutsGROUP:
             fill_grid(fplog,&comm->zones,fr->ns.grid,dd->ncg_home,
                       0,dd->ncg_home,fr->cg_cm);
             
             copy_ivec(fr->ns.grid->n,ncells_new);
+            break;
+        default:
+            gmx_incons("unimplemented");
         }
 
         bResortAll = bMasterState;

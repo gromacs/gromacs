@@ -720,7 +720,7 @@ static void make_benchmark_tprs(
         gmx_large_int_t statesteps, /* Step counter in checkpoint file               */
         real rmin,                  /* Minimal Coulomb radius                        */
         real rmax,                  /* Maximal Coulomb radius                        */
-	real ScaleRvdw,             /* Scale rvdw along with rcoulomb */
+	real bScaleRvdw,            /* Scale rvdw along with rcoulomb */
         int *ntprs,                 /* No. of TPRs to write, each with a different
                                        rcoulomb and fourierspacing                   */
         t_inputinfo *info,          /* Contains information about mdp file options   */
@@ -773,10 +773,10 @@ static void make_benchmark_tprs(
                 EELTYPE(ir->coulombtype), ir->rcoulomb, ir->rlist);
     }
 
-    if (ScaleRvdw && ir->rvdw != ir->rcoulomb)
+    if (bScaleRvdw && ir->rvdw != ir->rcoulomb)
     {
         fprintf(stdout,"NOTE: input rvdw != rcoulomb, will not scale rvdw\n");
-        ScaleRvdw = FALSE;
+        bScaleRvdw = FALSE;
     }
 
     /* Reduce the number of steps for the benchmarks */
@@ -895,7 +895,7 @@ static void make_benchmark_tprs(
                 ir->rlist = ir->rcoulomb + nlist_buffer;
             }
 
-            if (ScaleRvdw && evdwCUT == ir->vdwtype)
+            if (bScaleRvdw && evdwCUT == ir->vdwtype)
             {
                 /* For vdw cutoff, rvdw >= rlist */
                 ir->rvdw = max(info->rvdw[0], ir->rlist);
@@ -1868,7 +1868,7 @@ int gmx_tune_pme(int argc,char *argv[])
     int        ntprs=0;
     real       rmin=0.0,rmax=0.0;  /* min and max value for rcoulomb if scaling is requested */
     real       rcoulomb=-1.0;             /* Coulomb radius as set in .tpr file */
-    gmx_bool   ScaleRvdw=TRUE;
+    gmx_bool   bScaleRvdw=TRUE;
     gmx_large_int_t bench_nsteps=BENCHSTEPS;
     gmx_large_int_t new_sim_nsteps=-1;   /* -1 indicates: not set by the user */
     gmx_large_int_t cpt_steps=0;         /* Step counter in .cpt input file   */
@@ -2001,7 +2001,7 @@ int gmx_tune_pme(int argc,char *argv[])
         "If >0, maximal rcoulomb for -ntpr>1 (rcoulomb upscaling results in fourier grid downscaling)" },
       { "-rmin",     FALSE, etREAL, {&rmin},
         "If >0, minimal rcoulomb for -ntpr>1" },
-      { "-scalevdw",  FALSE, etBOOL, {&ScaleRvdw},
+      { "-scalevdw",  FALSE, etBOOL, {&bScaleRvdw},
         "Scale rvdw along with rcoulomb"},
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of [TT].tpr[tt] files to benchmark. Create this many files with different rcoulomb scaling factors depending on -rmin and -rmax. "
@@ -2224,7 +2224,7 @@ int gmx_tune_pme(int argc,char *argv[])
     /* It can be that ntprs is reduced by make_benchmark_tprs if not enough
      * different grids could be found. */
     make_benchmark_tprs(opt2fn("-s",NFILE,fnm), tpr_names, bench_nsteps+presteps,
-			cpt_steps, rmin, rmax, ScaleRvdw, &ntprs, info, fp);
+			cpt_steps, rmin, rmax, bScaleRvdw, &ntprs, info, fp);
 
     /********************************************************************************/
     /* Main loop over all scenarios we need to test: tpr files, PME nodes, repeats  */

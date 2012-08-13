@@ -252,7 +252,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
         }
     }
-    else
+
+    if (ir->cutoff_scheme == ecutsVERLET)
     {
         real rc_max;
 
@@ -273,7 +274,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
-            warning_error(wi,"With Verlet lists only cut-off, reaction-field, PME and EWALD electrostatics are supported");
+            warning_error(wi,"With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");
         }
 
         if (ir->nstlist <= 0)
@@ -283,7 +284,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
         if (ir->nstlist < 10)
         {
-            warning_note(wi,"With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note that with the Verlet scheme nstlist has no effect on the accuracy of your simulation.");
+            warning_note(wi,"With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note that with the Verlet scheme, nstlist has no effect on the accuracy of your simulation.");
         }
 
         rc_max = max(ir->rvdw,ir->rcoulomb);
@@ -300,9 +301,9 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                 warning_error(wi,"With verlet lists rlist can not be smaller than rvdw or rcoulomb");
             }
             
-            if (ir->rlist == rc_max)
+            if (ir->rlist == rc_max && ir->nstlist > 1)
             {
-                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no explicit Verlet buffer, only the effective buffer of the 4x4 atom cluster pair-list");
+                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no explicit Verlet buffer. The cluster pair list does have a buffering effect, but choosing a larger rlist might be necessary for good energy conservation.");
             }
         }
         else
@@ -312,24 +313,32 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                 warning_note(wi,"You have set rlist larger than the interaction cut-off, but you also have verlet-buffer-drift > 0. Will set rlist using verlet-buffer-drift.");
             }
 
-            if (EI_DYNAMICS(ir->eI))
+            if (ir->nstlist == 1)
             {
-                if (EI_MD(ir->eI) && ir->etc == etcNO)
-                {
-                   warning_error(wi,"Temperature coupling is required for calculating rlist using the energy drift. Set rlist and use verlet-buffer-drift=-1."); 
-                }
-
-                if (inputrec2nboundeddim(ir) < 3)
-                {
-                    warning_error(wi,"The box volume is required for calculating rlist from the energy drift and there are unbounded dimensions. Set rlist and use verlet-buffer-drift=-1.");
-                }
-                /* Set rlist temporarily so we can continue processing */
+                /* No buffer required */
                 ir->rlist = rc_max;
             }
             else
             {
-                /* Set the buffer to 5% of the cut-off */
-                ir->rlist = 1.05*rc_max;
+                if (EI_DYNAMICS(ir->eI))
+                {
+                    if (EI_MD(ir->eI) && ir->etc == etcNO)
+                    {
+                        warning_error(wi,"Temperature coupling is required for calculating rlist using the energy drift with verlet-buffer-drift > 0. Either use temperature coupling or set rlist yourself together with verlet-buffer-drift = -1."); 
+                    }
+
+                    if (inputrec2nboundeddim(ir) < 3)
+                    {
+                        warning_error(wi,"The box volume is required for calculating rlist from the energy drift with verlet-buffer-drift > 0. You are using at least one unbounded dimension, so no volume can be computed. Either use a finite box, or set rlist yourself together with verlet-buffer-drift = -1.");
+                    }
+                    /* Set rlist temporarily so we can continue processing */
+                    ir->rlist = rc_max;
+                }
+                else
+                {
+                    /* Set the buffer to 5% of the cut-off */
+                    ir->rlist = 1.05*rc_max;
+                }
             }
         }
 
@@ -1529,7 +1538,7 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   /* Neighbor searching */  
   CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
-  CTYPE ("cut-off scheme (group: using charge groups, Verlet: particle based cut-off's)");
+  CTYPE ("cut-off scheme (group: using charge groups, Verlet: particle based cut-offs)");
   EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
   CTYPE ("nblist update frequency");
   ITYPE ("nstlist",	ir->nstlist,	10);
@@ -1540,7 +1549,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Periodic boundary conditions: xyz, no, xy");
   EETYPE("pbc",         ir->ePBC,       epbc_names);
   EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
-  CTYPE ("Allowed energy drift due to the verlet buffer in kJ/mol/ps per atom,");
+  CTYPE ("Allowed energy drift due to the Verlet buffer in kJ/mol/ps per atom,");
   CTYPE ("a value of -1 means: use rlist");
   RTYPE("verlet-buffer-drift", ir->verletbuf_drift,    0.005);
   CTYPE ("nblist cut-off");
@@ -2583,8 +2592,7 @@ void do_index(const char* mdparin, const char *ndx,
 
           if (ir->etc != etcVRESCALE && ir->opts.tau_t[i] == 0)
           {
-              warning_note(wi,"Changing old tau_t=0 value for not temperature coupling groups to -1");
-              ir->opts.tau_t[i] = -1;
+              warning_note(wi,"tau-t = -1 is the new value to signal that a group should not have temperature coupling. Treating your use of tau-t = 0 as if you used -1.");
           }
 
           if (ir->opts.tau_t[i] >= 0)
@@ -2933,7 +2941,7 @@ void do_index(const char* mdparin, const char *ndx,
   bExcl = do_egp_flag(ir,groups,"energygrp-excl",egpexcl,EGP_EXCL);
     if (bExcl && ir->cutoff_scheme == ecutsVERLET) 
     {
-        warning_error(wi,"Energy groups exclusions are not (yet) implemented for the Verlet scheme");
+        warning_error(wi,"Energy group exclusions are not (yet) implemented for the Verlet scheme");
     } 
   if (bExcl && EEL_FULL(ir->coulombtype))
     warning(wi,"Can not exclude the lattice Coulomb energy between energy groups");

@@ -175,7 +175,7 @@ void settle_proj(FILE *fp,
                  const t_pbc *pbc,
                  rvec x[],
                  rvec *der,rvec *derp,
-                 int CalcVirAtomEnd,tensor rmdder,t_vetavars *vetavar)
+                 int calcvir_atom_end,tensor rmdder,t_vetavars *vetavar)
 {
     /* Settle for projection out constraint components
      * of derivatives of the coordinates.
@@ -191,7 +191,7 @@ void settle_proj(FILE *fp,
     real   invvscale,vscale_nhc,veta;
     real   kfacOH,kfacHH;
 
-    CalcVirAtomEnd *= 3;
+    calcvir_atom_end *= DIM;
 
     if (econq == econqForce)
     {
@@ -281,7 +281,7 @@ void settle_proj(FILE *fp,
         
         /* 45 flops */
 
-        if (ow1 < CalcVirAtomEnd)
+        if (ow1 < calcvir_atom_end)
         {
             /* Determining r \dot m der is easy,
              * since fc contains the mass weighted corrections for der.
@@ -300,7 +300,7 @@ void settle_proj(FILE *fp,
         }
     }
 
-    if (CalcVirAtomEnd > 0)
+    if (calcvir_atom_end > 0)
     {
         /* Correct rmdder, which will be used to calcualate the virial;
          * we need to use the unscaled multipliers in the virial.
