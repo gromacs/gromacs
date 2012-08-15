@@ -927,7 +927,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
                             {
                                 if ((fabs(vc - val_exp[ne])) > (val_exp[ne]*tolerb))
                                 {
-                                    sprintf(mylbuf,"& \\begin{colour}{Red}{\\bf %s}\\end{colour} ",vbuf);
+                                    sprintf(mylbuf,"& \\textcolor{Red}{\\bf %s} ",vbuf);
                                     bOutlier = TRUE;
                                 }
                                 else if ((fabs(vc - val_exp[ne])) > (val_exp[ne]*toler)) 

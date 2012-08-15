@@ -230,10 +230,29 @@ int gau_comp_meth_read_line(char *line,real *temp,real *pres)
     return TRUE;
 }
 
+typedef struct {
+    rvec esp;
+    real V;
+} t_espv;
+
+static int espv_comp(const void *a,const void *b)
+{
+    t_espv *va = (t_espv *)a;
+    t_espv *vb = (t_espv *)b;
+    real dv = va->V - vb->V;
+    
+    if (dv < 0)
+        return -1;
+    else if (dv > 0)
+        return 1;
+    return 0;
+}
+
 gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
                                    const char *fn,char *molnm,char *iupac,
                                    gau_atomprop_t gaps,
-                                   real th_toler,real ph_toler)
+                                   real th_toler,real ph_toler,
+                                   int maxpot)
 {
   /* Read a gaussian log file */
   char **strings=NULL;
@@ -252,12 +271,11 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   char *program=NULL,*method=NULL,*basis=NULL;
   char **ptr,**qtr,*mymeth;
   rvec xatom;
-  rvec *esp=NULL;
-  real *pot=NULL;
+  t_espv *espv=NULL;
   char **ptr2;
   gmx_bool bThermResults=FALSE;
-  real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener,temp_corr;
-  int status;
+  real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener,temp_corr,ii,deltai;
+  int status,ii0;
 
   nstrings = get_file(fn,&strings);
     
@@ -506,11 +524,11 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
                   if (k > nesp)
                   {
                       nesp++;
-                      srenew(esp,nesp);
+                      srenew(espv,nesp);
                   }
-                  esp[k-1][XX] = 100*x;
-                  esp[k-1][YY] = 100*y;
-                  esp[k-1][ZZ] = 100*z;
+                  espv[k-1].esp[XX] = 100*x;
+                  espv[k-1].esp[YY] = 100*y;
+                  espv[k-1].esp[ZZ] = 100*z;
                   if (NULL != debug)
                       fprintf(debug,"Coordinates for fit %d found on line %d\n",k,i);
               }
@@ -523,7 +541,6 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
                   bWarnESP = TRUE;
               }
               nelprop = i;
-              snew(pot,nesp);
           }
           else if ((NOTSET != nelprop) && (i >= nelprop+6) && (i < nelprop+6+natom+nfitpoints))
           {
@@ -534,7 +551,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
               if (k-1 >= nesp)
                   fprintf(stderr,"More potential points (%d) than fit centers (%d). Check line %d of file %s\n",
                           k,nesp,i+1,fn);
-              pot[k-1] = V;
+              espv[k-1].V = V;
               if (NULL != debug)
                   fprintf(debug,"Potential %d found on line %d\n",k,i);
           }
@@ -549,13 +566,25 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       gmx_molprop_set_charge(mpt,charge);
       gmx_molprop_set_mass(mpt,mass);
       
-      for(i=0; (i<nesp); i++) 
-      {
-          gmx_molprop_add_potential(mpt,calcref,"pm","Hartree/e",i,
-                                    esp[i][XX],esp[i][YY],esp[i][ZZ],pot[i]);
+      if ((maxpot > 0) && (maxpot < nesp)) {
+          qsort(espv,nesp,sizeof(espv[0]),espv_comp);
+          deltai = nesp/maxpot;
       }
-      sfree(pot);
-      sfree(esp);
+      else {
+          maxpot = nesp;
+          deltai = 1;
+      }
+      ii = 0;
+      for(i=0; (i<maxpot); i++) 
+      {
+          /* Convert to integer */
+          ii0 = ii;
+          gmx_molprop_add_potential(mpt,calcref,"pm","Hartree/e",i,
+                                    espv[ii0].esp[XX],espv[ii0].esp[YY],espv[ii0].esp[ZZ],
+                                    espv[ii0].V);
+          ii+=deltai;
+      }
+      sfree(espv);
       
       /* Generate atomic composition, needed for energetics */
       generate_composition(1,&mpt,pd,aps,TRUE,th_toler,ph_toler);
@@ -632,6 +661,7 @@ int main(int argc, char *argv[])
   static gmx_bool bVerbose = TRUE;
   static char *molnm=NULL,*iupac=NULL;
   static real th_toler=170,ph_toler=5;
+  static int  maxpot=0;
   static gmx_bool compress=FALSE;
   t_pargs pa[] = {
     { "-v",      FALSE, etBOOL, {&bVerbose},
@@ -645,7 +675,9 @@ int main(int argc, char *argv[])
     { "-molnm", FALSE, etSTR, {&molnm},
       "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
     { "-iupac", FALSE, etSTR, {&iupac},
-      "IUPAC name of the molecule in *all* input files. Do not use if you have different molecules in the input files." }
+      "IUPAC name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
+    { "-maxpot", FALSE, etINT, {&maxpot},
+      "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" }
   };
   output_env_t oenv;
   gmx_atomprop_t aps;
@@ -676,7 +708,7 @@ int main(int argc, char *argv[])
   for(i=0; (i<nfn); i++) 
   {
       mp = gmx_molprop_read_log(aps,pd,fns[i],molnm,iupac,gaps,
-                                th_toler,ph_toler);
+                                th_toler,ph_toler,maxpot);
       if (NULL != mp) 
       {
           srenew(mps,++nmp);
