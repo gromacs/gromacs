@@ -569,7 +569,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
         }
         ir->nstlist = nstlist_orig;
     }
-    else
+    else if (ir->nstlist != nstlist_orig || rlist_new != ir->rlist)
     {
         sprintf(buf,"Changing nstlist from %d to %d, rlist from %g to %g",
                 nstlist_orig,ir->nstlist,
