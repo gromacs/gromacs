@@ -333,7 +333,7 @@ static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
         if (!bCanUseGPU || hw_opt->nthreads_omp > 0)
         {
             nthreads_tmpi =
-                get_tmpi_omp_thread_distribution(hw_opt,hw_opt->nthreads_tmpi);
+                get_tmpi_omp_thread_distribution(hw_opt,hw_opt->nthreads_tot);
         }
     }
     
