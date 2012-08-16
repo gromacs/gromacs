@@ -1660,7 +1660,8 @@ int gmx_energy(int argc,char *argv[])
     "The term fluctuation gives the RMSD around the least-squares fit.[PAR]",
     
     "Some fluctuation-dependent properties can be calculated provided",
-    "the correct energy terms are selected. The following properties",
+    "the correct energy terms are selected, and that the command line option",
+    "[TT]-fluct_props[tt] is given. The following properties",
     "will be computed:[BR]",
     "Property                        Energy terms needed[BR]",
     "---------------------------------------------------[BR]",
@@ -1724,7 +1725,7 @@ int gmx_energy(int argc,char *argv[])
     
   };
   static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE,bDriftCorr=FALSE;
-  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
+  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE,bFluctProps=FALSE;
   static int  skip=0,nmol=1,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -1750,6 +1751,8 @@ int gmx_energy(int argc,char *argv[])
       "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
+    { "-fluct_props", FALSE, etBOOL, {&bFluctProps},
+      "Compute properties based on energy fluctuations, like heat capacity" },
     { "-driftcorr", FALSE, etBOOL, {&bDriftCorr},
       "Useful only for calculations of fluctuation properties. The drift in the observables will be subtracted before computing the fluctuation properties."},
     { "-fluc", FALSE, etBOOL, {&bFluct},
@@ -2484,8 +2487,9 @@ int gmx_energy(int argc,char *argv[])
                    time,reftemp,&edat,
                    nset,set,bIsEner,leg,enm,Vaver,ezero,nbmin,nbmax,
                    oenv);
-      calc_fluctuation_props(stdout,bDriftCorr,dt,nset,set,nmol,leg,&edat,
-                             nbmin,nbmax);
+      if (bFluctProps)
+          calc_fluctuation_props(stdout,bDriftCorr,dt,nset,set,nmol,leg,&edat,
+                                 nbmin,nbmax);
   }
   if (opt2bSet("-f2",NFILE,fnm)) {
       fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
