@@ -1427,8 +1427,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * at the last step.
                  */
                 fprintf(stderr,"\nWriting final coordinates.\n");
-                if (ir->ePBC != epbcNONE && !ir->bPeriodicMols &&
-                    DOMAINDECOMP(cr))
+                if (fr->bMolPBC)
                 {
                     /* Make molecules whole only for confout writing */
                     do_pbc_mtop(fplog,ir->ePBC,state->box,top_global,state_global->x);

@@ -1992,7 +1992,13 @@ void init_forcerec(FILE *fp,
     {
         if (!DOMAINDECOMP(cr))
         {
-            if (fr->cutoff_scheme == ecutsGROUP)
+            /* The group cut-off scheme and SHAKE assume charge groups
+             * are whole, but not using molpbc is faster in most cases.
+             */
+            if (fr->cutoff_scheme == ecutsGROUP ||
+                (ir->eConstrAlg == econtSHAKE &&
+                 (gmx_mtop_ftype_count(mtop,F_CONSTR) > 0 ||
+                  gmx_mtop_ftype_count(mtop,F_CONSTRNC) > 0)))
             {
                 fr->bMolPBC = ir->bPeriodicMols;
             }
