@@ -157,10 +157,12 @@ static void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol
 	printf("Warning at frame %d: coordinates for atom %d are large (%g)\n",
 	       frame,i,x[i][j]);
     }
-    if ((fabs(x[j][XX]) < tol) && 
-	(fabs(x[j][YY]) < tol) && 
-	(fabs(x[j][ZZ]) < tol))
-      nNul++;
+    if ((fabs(x[i][XX]) < tol) && 
+        (fabs(x[i][YY]) < tol) && 
+        (fabs(x[i][ZZ]) < tol))
+    {
+        nNul++;
+    }
   }
   if (nNul > 0)
     printf("Warning at frame %d: there are %d particles with all coordinates zero\n",
