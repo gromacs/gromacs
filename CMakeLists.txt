@@ -193,8 +193,22 @@ include(CheckCXXCompilerFlag)
 if(GMX_OPENMP)
     find_package(OpenMP)
     if(OPENMP_FOUND)
-        set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
-        set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
+        #- only set linker flag, if user didn't set them manual
+        #- cmake on windows doesn't support linker flags passed to target_link_libraries
+        #  (cmake treats /openmp as \openmp library file) and no openmp linker flags are needed
+        if(NOT (WIN32 AND NOT CYGWIN))
+            if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP)
+                set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
+                set(OpenMP_SHARED_LINKER_FLAGS "")
+            else()
+                if(NOT DEFINED OpenMP_LINKER_FLAGS)
+                    set(OpenMP_LINKER_FLAGS "${OpenMP_C_FLAGS}")
+                endif()
+                if(NOT DEFINED OpenMP_SHARED_LINKER_FLAGS)
+                    set(OpenMP_SHARED_LINKER_FLAGS "${OpenMP_C_FLAGS}")
+                endif()
+            endif()
+        endif()
     else(OPENMP_FOUND)
         message(WARNING
                 "Compiler not supporting OpenMP. This might hurt your performance a lot, "
@@ -986,7 +1000,10 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         "Flags used by the compiler during all build types" FORCE)
     set(CMAKE_EXE_LINKER_FLAGS 
         "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
-        CACHE STRING "Linker flags" FORCE) 
+        CACHE STRING "Linker flags for creating executables" FORCE) 
+    set(CMAKE_SHARED_LINKER_FLAGS 
+        "${GROMACS_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}" 
+        CACHE STRING "Linker flags for creating shared libraries" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 
 ######################################

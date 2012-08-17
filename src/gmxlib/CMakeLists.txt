@@ -74,7 +74,7 @@ endif()
 
 # NONBONDED_SOURCES is imported from the nonbonded subdirectory.
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${THREAD_MPI_SRC} ${NONBONDED_SOURCES})
-target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_LIB})
+target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
 endif()
