@@ -35,11 +35,8 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <algorithm>
+#include <string>
 
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
@@ -62,6 +59,8 @@
 using std::min;
 using std::max;
 
+using gmx::SelectionParserParameterPointer;
+using gmx::SelectionParserParameterList;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
@@ -956,11 +955,10 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * \returns   true if the values were parsed successfully, false otherwise.
  */
 static bool
-parse_values_bool(const char *name, int nval, t_selexpr_value *values,
+parse_values_bool(const std::string &name, int nval, t_selexpr_value *values,
                   gmx_ana_selparam_t *param, void *scanner)
 {
     bool bSetNo;
-    int  len;
 
     if (param->val.type != NO_VALUE)
     {
@@ -975,9 +973,8 @@ parse_values_bool(const char *name, int nval, t_selexpr_value *values,
 
     bSetNo = false;
     /* Check if the parameter name is given with a 'no' prefix */
-    len = name != NULL ? strlen(name) : 0;
-    if (len > 2 && name[0] == 'n' && name[1] == 'o'
-        && strncmp(name+2, param->name, len-2) == 0)
+    if (name.length() > 2 && name[0] == 'n' && name[1] == 'o'
+        && name.compare(2, name.length() - 2, param->name) == 0)
     {
         bSetNo = true;
     }
@@ -1111,11 +1108,11 @@ convert_const_values(t_selexpr_value *values)
  * have been processed, no matter is there was an error or not.
  */
 bool
-_gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *params,
+_gmx_sel_parse_params(const SelectionParserParameterList &pparams,
+                      int nparam, gmx_ana_selparam_t *params,
                       const SelectionTreeElementPointer &root, void *scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    t_selexpr_param    *pparam;
     gmx_ana_selparam_t *oparam;
     bool                bOk, rc;
     int                 i;
@@ -1154,21 +1151,21 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
     }
     if (!bOk)
     {
-        _gmx_selexpr_free_params(pparams);
         return false;
     }
     /* Parse the parameters */
-    pparam = pparams;
-    i      = 0;
-    while (pparam)
+    i = 0;
+    SelectionParserParameterList::const_iterator piter;
+    for (piter = pparams.begin(); piter != pparams.end(); ++piter)
     {
+        const SelectionParserParameterPointer &pparam = *piter;
         std::string contextStr;
         /* Find the parameter and make some checks */
-        if (pparam->name != NULL)
+        if (!pparam->name().empty())
         {
-            contextStr = gmx::formatString("In parameter '%s'", pparam->name);
+            contextStr = gmx::formatString("In parameter '%s'", pparam->name().c_str());
             i = -1;
-            oparam = gmx_ana_selparam_find(pparam->name, nparam, params);
+            oparam = gmx_ana_selparam_find(pparam->name().c_str(), nparam, params);
         }
         else if (i >= 0)
         {
@@ -1179,7 +1176,6 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
                 oparam = NULL;
                 _gmx_selparser_error(scanner, "too many NULL parameters provided");
                 bOk = false;
-                pparam = pparam->next;
                 continue;
             }
             ++i;
@@ -1188,7 +1184,6 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         {
             _gmx_selparser_error(scanner, "all NULL parameters should appear in the beginning of the list");
             bOk = false;
-            pparam = pparam->next;
             continue;
         }
         gmx::MessageStringContext  context(errors, contextStr);
@@ -1196,20 +1191,20 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         {
             _gmx_selparser_error(scanner, "unknown parameter skipped");
             bOk = false;
-            goto next_param;
+            continue;
         }
         if (oparam->val.type != NO_VALUE && pparam->value == NULL)
         {
             GMX_ASSERT(pparam->nval == 0, "Inconsistent values and value count");
             _gmx_selparser_error(scanner, "no value provided");
             bOk = false;
-            goto next_param;
+            continue;
         }
         if (oparam->flags & SPAR_SET)
         {
             _gmx_selparser_error(scanner, "parameter set multiple times, extra values skipped");
             bOk = false;
-            goto next_param;
+            continue;
         }
         oparam->flags |= SPAR_SET;
         /* Process the values for the parameter */
@@ -1218,11 +1213,11 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         {
             _gmx_selparser_error(scanner, "invalid value");
             bOk = false;
-            goto next_param;
+            continue;
         }
         if (oparam->val.type == NO_VALUE)
         {
-            rc = parse_values_bool(pparam->name, pparam->nval, pparam->value, oparam, scanner);
+            rc = parse_values_bool(pparam->name(), pparam->nval, pparam->value, oparam, scanner);
         }
         else if (oparam->flags & SPAR_RANGES)
         {
@@ -1251,9 +1246,6 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         {
             bOk = false;
         }
-        /* Advance to the next parameter */
-next_param:
-        pparam = pparam->next;
     }
     /* Check that all required parameters are present */
     for (i = 0; i < nparam; ++i)
@@ -1265,6 +1257,5 @@ next_param:
         }
     }
 
-    _gmx_selexpr_free_params(pparams);
     return bOk;
 }

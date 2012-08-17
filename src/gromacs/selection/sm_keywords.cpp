@@ -687,10 +687,13 @@ evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  *
  * Creates a \ref SEL_EXPRESSION selection element that evaluates the keyword
  * method given by \p method in the group given by \p param.
+ *
+ * The name of \p param should be empty.
  */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t *method,
-                                t_selexpr_param *param, void *scanner)
+                                const gmx::SelectionParserParameterList &params,
+                                void *scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[1024];
@@ -700,7 +703,6 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t *method,
     if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
         || method->outinit || method->pupdate)
     {
-        _gmx_selexpr_free_params(param);
         GMX_THROW(gmx::InternalError(
                 "Unsupported keyword method for arbitrary group evaluation"));
     }
@@ -733,9 +735,7 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t *method,
 
     sel->u.expr.method->param[0].val.u.g = &data->g;
 
-    sfree(param->name);
-    param->name = NULL;
-    if (!_gmx_sel_parse_params(param, sel->u.expr.method->nparams,
+    if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
                                sel->u.expr.method->param, sel, scanner))
     {
         return gmx::SelectionTreeElementPointer();

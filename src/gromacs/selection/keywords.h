@@ -40,6 +40,7 @@
 #ifndef GMX_SELECTION_KEYWORDS_H
 #define GMX_SELECTION_KEYWORDS_H
 
+#include "parsetree.h"
 #include "selelem.h"
 
 struct gmx_ana_selmethod_t;
@@ -71,11 +72,13 @@ _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags);
 /** Does custom processing for parameters of the \c same selection method. */
 int
 _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t **method,
-                              struct t_selexpr_param *params, void *scanner);
+                              const gmx::SelectionParserParameterListPointer &params,
+                              void *scanner);
 
 /** Initializes a selection element for evaluating a keyword in a given group. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t *method,
-                                struct t_selexpr_param *param, void *scanner);
+                                const gmx::SelectionParserParameterList &params,
+                                void *scanner);
 
 #endif

@@ -48,8 +48,12 @@
 #define GMX_SELECTION_PARSETREE_H
 
 #include <exception>
+#include <string>
+#include <vector>
 
 #include "gromacs/legacyheaders/types/simple.h"
+
+#include "gromacs/utility/uniqueptr.h"
 
 #include "selelem.h"
 #include "selvalue.h"
@@ -98,20 +102,74 @@ typedef struct t_selexpr_value
     struct t_selexpr_value *next;
 } t_selexpr_value;
 
+namespace gmx
+{
+
+class SelectionParserParameter;
+
+//! Smart pointer type for managing a SelectionParserParameter.
+typedef gmx::gmx_unique_ptr<SelectionParserParameter>::type
+        SelectionParserParameterPointer;
+
 /*! \internal \brief
  * Describes a parsed method parameter.
+ *
+ * \ingroup module_selection
  */
-typedef struct t_selexpr_param
+class SelectionParserParameter
 {
-    /** Name of the parameter. */
-    char                   *name;
-    /** Number of values given for this parameter. */
-    int                     nval;
-    /** Pointer to the first value. */
-    struct t_selexpr_value *value;
-    /** Pointer to the next parameter. */
-    struct t_selexpr_param *next;
-} t_selexpr_param;
+    public:
+        /*! \brief
+         * Allocates and initializes a parsed method parameter.
+         *
+         * \param[in] name   Name for the new parameter (can be NULL).
+         * \param[in] value  List of values for the parameter.
+         * \returns   Pointer to the newly allocated parameter.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        static SelectionParserParameterPointer
+        create(const char *name, t_selexpr_value *value)
+        {
+            return SelectionParserParameterPointer(
+                    new SelectionParserParameter(name, value));
+        }
+        //! \copydoc create(const char *, t_selexpr_value *)
+        static SelectionParserParameterPointer
+        create(const std::string &name, t_selexpr_value *value)
+        {
+            return SelectionParserParameterPointer(
+                    new SelectionParserParameter(name.c_str(), value));
+        }
+
+        /*! \brief
+         * Initializes a parsed method parameter.
+         *
+         * \param[in] name   Name for the new parameter (can be NULL).
+         * \param[in] value  List of values for the parameter.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        SelectionParserParameter(const char *name, t_selexpr_value *value);
+        ~SelectionParserParameter();
+
+        //! Returns the name of the parameter (may be empty).
+        const std::string &name() const { return name_; }
+
+        //! Name of the parameter.
+        std::string             name_;
+        //! Number of values given for this parameter.
+        int                     nval;
+        //! Pointer to the first value.
+        struct t_selexpr_value *value;
+};
+
+//! Container for a list of SelectionParserParameter objects.
+typedef std::vector<SelectionParserParameterPointer>
+        SelectionParserParameterList;
+//! Smart pointer type for managing a SelectionParserParameterList.
+typedef gmx::gmx_unique_ptr<SelectionParserParameterList>::type
+        SelectionParserParameterListPointer;
+
+} // namespace gmx
 
 /** Error reporting function for the selection parser. */
 void
@@ -126,16 +184,9 @@ _gmx_selexpr_create_value(e_selvalue_t type);
 /** Allocates and initializes an expression \c t_selexpr_value. */
 t_selexpr_value *
 _gmx_selexpr_create_value_expr(const gmx::SelectionTreeElementPointer &expr);
-/** Allocates and initializes a \c t_selexpr_param. */
-t_selexpr_param *
-_gmx_selexpr_create_param(char *name);
-
 /** Frees the memory allocated for a chain of values. */
 void
 _gmx_selexpr_free_values(t_selexpr_value *value);
-/** Frees the memory allocated for a chain of parameters. */
-void
-_gmx_selexpr_free_params(t_selexpr_param *param);
 
 /** Propagates the flags for selection elements. */
 void
@@ -169,11 +220,12 @@ _gmx_sel_init_keyword(struct gmx_ana_selmethod_t *method,
 /** Creates a gmx::SelectionTreeElement for a method expression from the parsed data. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_method(struct gmx_ana_selmethod_t *method,
-                     t_selexpr_param *params, const char *rpost,
-                     void *scanner);
+                     gmx::SelectionParserParameterListPointer params,
+                     const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a modifier expression from the parsed data. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_modifier(struct gmx_ana_selmethod_t *mod, t_selexpr_param *params,
+_gmx_sel_init_modifier(struct gmx_ana_selmethod_t *mod,
+                       gmx::SelectionParserParameterListPointer params,
                        const gmx::SelectionTreeElementPointer &sel,
                        void *scanner);
 /** Creates a gmx::SelectionTreeElement for evaluation of reference positions. */
@@ -223,8 +275,8 @@ _gmx_sel_handle_help_cmd(t_selexpr_value *topic, void *scanner);
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */
 bool
-_gmx_sel_parse_params(t_selexpr_param *pparams, int nparam,
-                      struct gmx_ana_selparam_t *param,
+_gmx_sel_parse_params(const gmx::SelectionParserParameterList &params,
+                      int nparam, struct gmx_ana_selparam_t *param,
                       const gmx::SelectionTreeElementPointer &root,
                       void *scanner);
 
