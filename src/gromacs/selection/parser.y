@@ -47,12 +47,13 @@
  */
 #include "gromacs/legacyheaders/smalloc.h"
 
-#include "parsetree.h"
-#include "selelem.h"
-
 #include "parser_internal.h"
 
 using gmx::sfree_guard;
+using gmx::SelectionParserParameter;
+using gmx::SelectionParserParameterList;
+using gmx::SelectionParserParameterPointer;
+using gmx::SelectionParserParameterListPointer;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
@@ -62,6 +63,7 @@ using gmx::SelectionTreeElementPointer;
 %}
 
 %code requires{
+#include "parsetree.h"
 #include "selelem.h"
 }
 
@@ -74,7 +76,8 @@ using gmx::SelectionTreeElementPointer;
     gmx::SelectionTreeElementPointer *sel;
 
     struct t_selexpr_value     *val;
-    struct t_selexpr_param     *param;
+    gmx::SelectionParserParameterPointer        *param;
+    gmx::SelectionParserParameterListPointer    *plist;
 };
 
 /* Invalid token to report lexer errors */
@@ -155,7 +158,8 @@ using gmx::SelectionTreeElementPointer;
 %type <sel>   pos_expr
 
 /* Parameter/value non-terminals */
-%type <param> method_params method_param_list method_param
+%type <plist> method_params method_param_list
+%type <param> method_param
 %type <val>   value_list value_list_contents value_item value_item_range
 %type <val>   basic_value_list basic_value_list_contents basic_value_item
 %type <val>   help_topic
@@ -164,7 +168,7 @@ using gmx::SelectionTreeElementPointer;
 %destructor { if($$) free($$);              } PARAM pos_mod
 %destructor { delete $$;                    } commands command cmd_plain selection
 %destructor { delete $$;                    } sel_expr num_expr str_expr pos_expr
-%destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
+%destructor { delete $$;                    } method_params method_param_list method_param
 %destructor { _gmx_selexpr_free_values($$); } value_list value_list_contents value_item value_item_range
 %destructor { _gmx_selexpr_free_values($$); } basic_value_list basic_value_list_contents basic_value_item
 %destructor { _gmx_selexpr_free_values($$); } help_topic
@@ -288,7 +292,7 @@ help_request:
              HELP help_topic
              {
                  BEGIN_ACTION;
-                 _gmx_sel_handle_help_cmd(process_value_list($2, NULL), scanner);
+                 _gmx_sel_handle_help_cmd(process_value_list($2), scanner);
                  END_ACTION;
              }
 ;
@@ -316,7 +320,7 @@ selection:   pos_expr           { $$ = $1; }
            | selection MODIFIER method_params
              {
                  BEGIN_ACTION;
-                 set($$, _gmx_sel_init_modifier($2, $3, get($1), scanner));
+                 set($$, _gmx_sel_init_modifier($2, get($3), get($1), scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -431,7 +435,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
                  sfree_guard posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner));
+                 set($$, _gmx_sel_init_keyword($2, process_value_list($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -439,7 +443,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
                  sfree_guard posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner));
+                 set($$, _gmx_sel_init_keyword($2, process_value_list($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -450,7 +454,7 @@ sel_expr:    pos_mod METHOD_GROUP method_params
              {
                  BEGIN_ACTION;
                  sfree_guard posmodGuard($1);
-                 set($$, _gmx_sel_init_method($2, $3, $1, scanner));
+                 set($$, _gmx_sel_init_method($2, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -498,7 +502,7 @@ num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
              {
                  BEGIN_ACTION;
                  sfree_guard posmodGuard($1);
-                 set($$, _gmx_sel_init_method($2, $3, $1, scanner));
+                 set($$, _gmx_sel_init_method($2, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -590,7 +594,7 @@ pos_expr:    '(' pos_expr ')'   { $$ = $2; }
 pos_expr:    METHOD_POS method_params
              {
                  BEGIN_ACTION;
-                 set($$, _gmx_sel_init_method($1, $2, NULL, scanner));
+                 set($$, _gmx_sel_init_method($1, get($2), NULL, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -641,23 +645,34 @@ pos_expr:    VARIABLE_POS
 
 method_params:
              method_param_list
-             { $$ = process_param_list($1); }
+             { $$ = $1; }
            | method_param_list END_OF_METHOD
-             { $$ = process_param_list($1); }
+             { $$ = $1; }
 ;
 
 method_param_list:
-             /* empty */        { $$ = NULL;              }
+             /* empty */
+             {
+                 BEGIN_ACTION;
+                 set($$, SelectionParserParameter::createList());
+                 END_ACTION;
+             }
            | method_param_list method_param
-                                { $2->next = $1; $$ = $2; }
+             {
+                 BEGIN_ACTION;
+                 SelectionParserParameterListPointer list(get($1));
+                 list->push_back(get($2));
+                 set($$, move(list));
+                 END_ACTION;
+             }
 ;
 
 method_param:
              PARAM value_list
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_param($1);
-                 $$->value = process_value_list($2, &$$->nval);
+                 sfree_guard nameGuard($1);
+                 set($$, SelectionParserParameter::create($1, process_value_list($2)));
                  END_ACTION;
              }
 ;

@@ -248,6 +248,9 @@
 
 #include "scanner.h"
 
+using gmx::SelectionParserParameter;
+using gmx::SelectionParserParameterList;
+using gmx::SelectionParserParameterListPointer;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
@@ -300,21 +303,27 @@ _gmx_selexpr_create_value_expr(const SelectionTreeElementPointer &expr)
     return value;
 }
 
-/*!
- * \param[in] name Name for the new parameter.
- * \returns   Pointer to the newly allocated parameter.
- *
- * No copy of \p name is made.
- */
-t_selexpr_param *
-_gmx_selexpr_create_param(char *name)
+namespace gmx
 {
-    t_selexpr_param *param;
-    snew(param, 1);
-    param->name = name;
-    param->next = NULL;
-    return param;
+
+SelectionParserParameter::SelectionParserParameter(const char *name,
+                                                   t_selexpr_value *value)
+    : name_(name != NULL ? name : ""), nval(0), value(value)
+{
+    t_selexpr_value *val = value;
+    while (val != NULL)
+    {
+        ++nval;
+        val = val->next;
+    }
 }
+
+SelectionParserParameter::~SelectionParserParameter()
+{
+    _gmx_selexpr_free_values(value);
+}
+
+} // namespace gmx
 
 /*!
  * \param value Pointer to the beginning of the value list to free.
@@ -335,26 +344,6 @@ _gmx_selexpr_free_values(t_selexpr_value *value)
         t_selexpr_value *old = value;
         value = value->next;
         delete old;
-    }
-}
-
-/*!
- * \param param Pointer the the beginning of the parameter list to free.
- *
- * The values of the parameters are freed with free_selexpr_values().
- */
-void
-_gmx_selexpr_free_params(t_selexpr_param *param)
-{
-    t_selexpr_param *old;
-
-    while (param)
-    {
-        _gmx_selexpr_free_values(param->value);
-        old = param;
-        param = param->next;
-        sfree(old->name);
-        sfree(old);
     }
 }
 
@@ -656,31 +645,27 @@ _gmx_sel_init_comparison(const SelectionTreeElementPointer &left,
                          const SelectionTreeElementPointer &right,
                          char *cmpop, yyscan_t scanner)
 {
-    t_selexpr_param   *params, *param;
-    const char        *name;
-
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     gmx::MessageStringContext  context(errors, "In comparison initialization");
 
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(sel, &sm_compare, scanner);
+
+    SelectionParserParameterList params;
+    const char        *name;
+    t_selexpr_value   *value;
     /* Create the parameter for the left expression */
-    name               = left->v.type == INT_VALUE ? "int1" : "real1";
-    params = param     = _gmx_selexpr_create_param(strdup(name));
-    param->nval        = 1;
-    param->value       = _gmx_selexpr_create_value_expr(left);
+    name  = left->v.type == INT_VALUE ? "int1" : "real1";
+    value = _gmx_selexpr_create_value_expr(left);
+    params.push_back(SelectionParserParameter::create(name, value));
     /* Create the parameter for the right expression */
-    name               = right->v.type == INT_VALUE ? "int2" : "real2";
-    param              = _gmx_selexpr_create_param(strdup(name));
-    param->nval        = 1;
-    param->value       = _gmx_selexpr_create_value_expr(right);
-    params->next       = param;
+    name  = right->v.type == INT_VALUE ? "int2" : "real2";
+    value = _gmx_selexpr_create_value_expr(right);
+    params.push_back(SelectionParserParameter::create(name, value));
     /* Create the parameter for the operator */
-    param              = _gmx_selexpr_create_param(strdup("op"));
-    param->nval        = 1;
-    param->value       = _gmx_selexpr_create_value(STR_VALUE);
-    param->value->u.s  = cmpop;
-    params->next->next = param;
+    value      = _gmx_selexpr_create_value(STR_VALUE);
+    value->u.s = cmpop;
+    params.push_back(SelectionParserParameter::create("op", value));
     if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
                                sel->u.expr.method->param, sel, scanner))
     {
@@ -705,9 +690,6 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
                       const char *rpost, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    t_selexpr_param   *params, *param;
-    t_selexpr_value   *arg;
-    int                nargs;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
@@ -739,24 +721,13 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
                 GMX_THROW(gmx::InternalError(
                         "Unknown type for keyword selection"));
         }
-        /* Count the arguments */
-        nargs = 0;
-        arg   = args;
-        while (arg)
-        {
-            ++nargs;
-            arg = arg->next;
-        }
         /* Initialize the selection element */
         root.reset(new SelectionTreeElement(SEL_EXPRESSION));
         _gmx_selelem_set_method(root, kwmethod, scanner);
-        params = param = _gmx_selexpr_create_param(NULL);
-        param->nval    = 1;
-        param->value   = _gmx_selexpr_create_value_expr(child);
-        param          = _gmx_selexpr_create_param(NULL);
-        param->nval    = nargs;
-        param->value   = args;
-        params->next   = param;
+        SelectionParserParameterList params;
+        t_selexpr_value *value = _gmx_selexpr_create_value_expr(child);
+        params.push_back(SelectionParserParameter::create(NULL, value));
+        params.push_back(SelectionParserParameter::create(NULL, args));
         if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
                                    root->u.expr.method->param, root, scanner))
         {
@@ -784,7 +755,8 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
  * handling somewhere else (or sacrificing the simple syntax).
  */
 SelectionTreeElementPointer
-_gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
+_gmx_sel_init_method(gmx_ana_selmethod_t *method,
+                     SelectionParserParameterListPointer params,
                      const char *rpost, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
@@ -800,13 +772,12 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     rc = _gmx_selelem_custom_init_same(&method, params, scanner);
     if (rc != 0)
     {
-        _gmx_selexpr_free_params(params);
         return SelectionTreeElementPointer();
     }
     SelectionTreeElementPointer root(new SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(root, method, scanner);
     /* Process the parameters */
-    if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
+    if (!_gmx_sel_parse_params(*params, root->u.expr.method->nparams,
                                root->u.expr.method->param, root, scanner))
     {
         return SelectionTreeElementPointer();
@@ -827,7 +798,8 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
  * selection modifiers.
  */
 SelectionTreeElementPointer
-_gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
+_gmx_sel_init_modifier(gmx_ana_selmethod_t *method,
+                       SelectionParserParameterListPointer params,
                        const SelectionTreeElementPointer &sel, yyscan_t scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
@@ -851,17 +823,12 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     }
     else
     {
-        t_selexpr_param *vparam;
-
-        vparam        = _gmx_selexpr_create_param(NULL);
-        vparam->nval  = 1;
-        vparam->value = _gmx_selexpr_create_value_expr(sel);
-        vparam->next  = params;
-        params        = vparam;
+        t_selexpr_value *value = _gmx_selexpr_create_value_expr(sel);
+        params->push_front(SelectionParserParameter::create(NULL, value));
         root          = mod;
     }
     /* Process the parameters */
-    if (!_gmx_sel_parse_params(params, mod->u.expr.method->nparams,
+    if (!_gmx_sel_parse_params(*params, mod->u.expr.method->nparams,
                                mod->u.expr.method->param, mod, scanner))
     {
         return SelectionTreeElementPointer();
@@ -883,8 +850,6 @@ SelectionTreeElementPointer
 _gmx_sel_init_position(const SelectionTreeElementPointer &expr,
                        const char *type, yyscan_t scanner)
 {
-    t_selexpr_param *params;
-
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
     sprintf(buf, "In position evaluation");
@@ -894,9 +859,9 @@ _gmx_sel_init_position(const SelectionTreeElementPointer &expr,
     _gmx_selelem_set_method(root, &sm_keyword_pos, scanner);
     _gmx_selelem_set_kwpos_type(root.get(), type);
     /* Create the parameters for the parameter parser. */
-    params        = _gmx_selexpr_create_param(NULL);
-    params->nval  = 1;
-    params->value = _gmx_selexpr_create_value_expr(expr);
+    SelectionParserParameterList params;
+    t_selexpr_value *value = _gmx_selexpr_create_value_expr(expr);
+    params.push_back(SelectionParserParameter::create(NULL, value));
     /* Parse the parameters. */
     if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
                                root->u.expr.method->param, root, scanner))

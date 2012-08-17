@@ -33,14 +33,15 @@
 /* "%code requires" blocks.  */
 
 /* Line 2068 of yacc.c  */
-#line 64 "parser.y"
+#line 65 "parser.y"
 
+#include "parsetree.h"
 #include "selelem.h"
 
 
 
 /* Line 2068 of yacc.c  */
-#line 44 "parser.h"
+#line 45 "parser.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -91,7 +92,7 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 68 "parser.y"
+#line 70 "parser.y"
 
     int                         i;
     real                        r;
@@ -101,12 +102,13 @@ typedef union YYSTYPE
     gmx::SelectionTreeElementPointer *sel;
 
     struct t_selexpr_value     *val;
-    struct t_selexpr_param     *param;
+    gmx::SelectionParserParameterPointer        *param;
+    gmx::SelectionParserParameterListPointer    *plist;
 
 
 
 /* Line 2068 of yacc.c  */
-#line 110 "parser.h"
+#line 112 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
