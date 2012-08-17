@@ -94,7 +94,8 @@ target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_L
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
 endif()
-set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
+set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+    COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 

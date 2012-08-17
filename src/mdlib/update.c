@@ -1556,8 +1556,11 @@ void update_constraints(FILE         *fplog,
         }
         else
         {
-            copy_rvecn_omp(upd->xp,state->x,start,nrend,
-                           gmx_omp_nthreads_get(emntUpdate));
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntUpdate)) schedule(static)
+            for(i=start; i<nrend; i++)
+            {
+                copy_rvec(upd->xp[i],state->x[i]);
+            }
         }
 
         dump_it_all(fplog,"After unshift",

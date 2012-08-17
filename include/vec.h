@@ -376,17 +376,6 @@ static gmx_inline void copy_rvecn(rvec *a,rvec *b,int startn, int endn)
   }
 }
 
-static gmx_inline void copy_rvecn_omp(rvec *a,rvec *b,int startn, int endn, int nth)
-{
-  int i;
-#pragma omp parallel for num_threads(nth) schedule(static)
-  for (i=startn;i<endn;i++) {
-    b[i][XX]=a[i][XX];
-    b[i][YY]=a[i][YY];
-    b[i][ZZ]=a[i][ZZ];
-  }
-}
-
 static gmx_inline void copy_dvec(const dvec a,dvec b)
 {
   b[XX]=a[XX];
