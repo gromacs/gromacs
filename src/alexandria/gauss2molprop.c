@@ -182,6 +182,9 @@ static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
     int    natom;
     double vm,ve,vdh,vvm,vve,vvdh,ee;
     
+    if (gmx_molprop_get_natom(mpt) == 0)
+        return 0;
+
     vm = ve = vdh = 0;
     sprintf(desc,"%s(0K)",method);
     while (0  < gmx_molprop_get_composition_atom(mpt,"bosque",
@@ -192,6 +195,7 @@ static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
             (1 == gau_atomprop_get_value(gaps,atomname,"exp","DHf(0K)",0,&vve)) &&
             (1 == gau_atomprop_get_value(gaps,atomname,"exp","H(0K)-H(298.15K)",298.15,&vvdh)))
         {
+         
             vm  += natom*vvm;
             ve  += natom*vve;
             vdh += natom*vvdh;
@@ -335,7 +339,6 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
               ezpe = atof(strdup(ptr[2]));
           }
 
-         
           fprintf(stdout, "na gau_(): %f \n", ezpe);
 
           bThermResults = TRUE;
@@ -629,9 +632,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
           ee = convert2gmx(atof(hfener),eg2cHartree);
           gmx_molprop_add_energy(mpt,calcref,"HF","kJ/mol",ee,0);
       }
-      
-      
-      
+            
       return mpt;
   }
   else {
@@ -642,7 +643,6 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
     sfree(strings);
     return NULL;
   }
-
 }
 
 int main(int argc, char *argv[])
