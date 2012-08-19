@@ -175,16 +175,18 @@ static int gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method
 static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
                                   gau_atomprop_t gaps,
                                   char *method,double temp,
-                                  double eg34,double ezpe,double etherm)
+                                  double eg34,double ezpe,double etherm,
+                                  gmx_bool bVerbose)
 {
     char   *atomname;
     char   desc[128];
-    int    natom;
-    double vm,ve,vdh,vvm,vve,vvdh,ee;
+    int    natom,ntot;
+    double vm,ve,vdh,vvm,vve,vvdh,ee,e0Hartree,eTHartree;
     
     if (gmx_molprop_get_natom(mpt) == 0)
         return 0;
 
+    ntot = 0;
     vm = ve = vdh = 0;
     sprintf(desc,"%s(0K)",method);
     while (0  < gmx_molprop_get_composition_atom(mpt,"bosque",
@@ -199,6 +201,7 @@ static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
             vm  += natom*vvm;
             ve  += natom*vve;
             vdh += natom*vvdh;
+            ntot += natom;
         }
         else
         {
@@ -206,10 +209,16 @@ static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
         }
     }
     /* Make sure units match! */
-    ee = convert2gmx(eg34+ve-vm,eg2cHartree);
-    gmx_molprop_add_energy(mpt,calcref,"DHf(0K)","kJ/mol",ee,0);
+    e0Hartree = eg34+ve-vm;
+    eTHartree = eg34-ezpe+etherm+ve-vm-vdh;
     
-    ee = convert2gmx(eg34-ezpe+etherm+ve-vm-vdh,eg2cHartree);
+    ee = convert2gmx(e0Hartree,eg2cHartree);
+    gmx_molprop_add_energy(mpt,calcref,"DHf(0K)","kJ/mol",ee,0);
+    if (bVerbose)
+        printf("natom %d e0Hartree %f eTHartree %f eg34 %f ve %f vm %f vdh %f ezpe %f etherm %f \n",
+               ntot,e0Hartree,eTHartree,eg34,ve,vm,vdh,ezpe,etherm);
+           
+    ee = convert2gmx(eTHartree,eg2cHartree);
     gmx_molprop_add_energy(mpt,calcref,"DHf(298.15K)","kJ/mol",ee,0);
     
     return 1;
@@ -256,7 +265,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
                                    const char *fn,char *molnm,char *iupac,
                                    gau_atomprop_t gaps,
                                    real th_toler,real ph_toler,
-                                   int maxpot)
+                                   int maxpot,gmx_bool bVerbose)
 {
   /* Read a gaussian log file */
   char **strings=NULL;
@@ -322,13 +331,16 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       else if (NULL != strstr(strings[i],"Temperature=")) 
       {
           status = gau_comp_meth_read_line(strings[i],&temp,&pres);
-          /* fprintf(stdout, "na gau_(): %f %f\n", temp, pres); */
+          if (bVerbose)
+              printf("na gau_(): temp %f pres %f\n", temp, pres);
 
           bThermResults = TRUE;
       }
       else if (NULL != strstr(strings[i],"E(ZPE)="))
       {
           status = gau_comp_meth_read_line(strings[i],&ezpe2,&etherm2);
+          if (bVerbose)
+              printf("na gau_(): ezpe2 %f etherm2 %f \n", ezpe2,etherm2);
       }
       else if (NULL != strstr(strings[i],"Zero-point correction=")) 
       {
@@ -338,8 +350,8 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
           {
               ezpe = atof(strdup(ptr[2]));
           }
-
-          fprintf(stdout, "na gau_(): %f \n", ezpe);
+          if (bVerbose)
+              printf("na gau_(): ezpe %f \n", ezpe);
 
           bThermResults = TRUE;
       }
@@ -352,20 +364,29 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
               etherm = atof(strdup(ptr[4]));
           }
 
-         
-          fprintf(stdout, "na gau_(): %f \n", etherm);
+          if (bVerbose)
+              printf("na gau_(): etherm %f \n", etherm);
 
           bThermResults = TRUE;
       }
-      else if (NULL != strstr(strings[i],"G3(0 K)=")) 
+      else if ((NULL != strstr(strings[i],"G2(0 K)=")) ||
+               (NULL != strstr(strings[i],"G3(0 K)=")) ||
+               (NULL != strstr(strings[i],"G4(0 K)=")) ||
+               (NULL != strstr(strings[i],"CBS-QB3 (0 K)=")))
       {
           status = gau_comp_meth_read_line(strings[i],&comp_0K,&comp_energy);
-          fprintf(stdout, "na gau_(): %f %f\n", comp_0K,comp_energy);
+          if (bVerbose)
+              printf("na gau_(): comp_0K %f comp_energy %f\n", comp_0K,comp_energy);
       }
-      else if (NULL != strstr(strings[i],"G3 Enthalpy=")) 
+      else if ((NULL != strstr(strings[i],"G2 Enthalpy=")) ||
+               (NULL != strstr(strings[i],"G3 Enthalpy=")) ||
+               (NULL != strstr(strings[i],"G4 Enthalpy=")) ||
+               (NULL != strstr(strings[i],"CBS-QB3 Enthalpy=")))
       {
           status = gau_comp_meth_read_line(strings[i],&comp_enthalpy,&comp_free_energy);
-          fprintf(stdout, "na gau_(): %f %f\n", comp_enthalpy, comp_free_energy);
+          if (bVerbose)
+              printf("na gau_(): comp_enthalpy %f comp_free_energy %f\n", 
+                     comp_enthalpy, comp_free_energy);
       }
       else if (NULL != strstr(strings[i],"GINC")) 
       {
@@ -610,13 +631,14 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
               mymeth = "G2";
               myener = atof(g2ener);
           }
-          else
+          else 
           {
               mymeth = "CBS-QB3";
               myener = atof(cbsener);
           }
-              
-          if (0 == gmx_molprop_add_dhform(mpt,calcref,gaps,mymeth,temp,myener,ezpe,etherm))
+          if (bVerbose)
+              printf("myener %f\n",myener);
+          if (0 == gmx_molprop_add_dhform(mpt,calcref,gaps,mymeth,temp,myener,ezpe,etherm,bVerbose))
           {
               fprintf(stderr,"No support for atomic energies in %s, method %s\n",
                       gmx_molprop_get_molname(mpt),mymeth);
@@ -658,14 +680,14 @@ int main(int argc, char *argv[])
     { efDAT, "-o",    "molprop", ffWRITE }
   };
 #define NFILE asize(fnm)
-  static gmx_bool bVerbose = TRUE;
+  static gmx_bool bVerbose = FALSE;
   static char *molnm=NULL,*iupac=NULL;
   static real th_toler=170,ph_toler=5;
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
   t_pargs pa[] = {
     { "-v",      FALSE, etBOOL, {&bVerbose},
-      "Generate verbose output in the top file and on terminal." },
+      "Generate verbose terminal output." },
     { "-th_toler", FALSE, etREAL, {&th_toler},
       "HIDDENMinimum angle to be considered a linear A-B-C bond" },
     { "-ph_toler", FALSE, etREAL, {&ph_toler},
@@ -708,7 +730,7 @@ int main(int argc, char *argv[])
   for(i=0; (i<nfn); i++) 
   {
       mp = gmx_molprop_read_log(aps,pd,fns[i],molnm,iupac,gaps,
-                                th_toler,ph_toler,maxpot);
+                                th_toler,ph_toler,maxpot,bVerbose);
       if (NULL != mp) 
       {
           srenew(mps,++nmp);
@@ -718,7 +740,6 @@ int main(int argc, char *argv[])
   printf("Succesfully read %d molprops from %d Gaussian files.\n",nmp,nfn);
   if (nmp > 0)
   {
-      //     gmx_molprops_write(ftp2fn(efDAT,NFILE,fnm),nmp,mps,(int)compress);
       gmx_molprops_write(opt2fn("-o",NFILE,fnm),nmp,mps,(int)compress);
   }
       
