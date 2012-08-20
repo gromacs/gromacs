@@ -1097,7 +1097,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi,"AdresS simulation does not support pressure coupling");
         }
-        if (EEL_PME(ir->coulombtype))
+        if (EEL_FULL(ir->coulombtype))
         {
             warning_error(wi,"AdresS simulation does not support long-range electrostatics");
         }

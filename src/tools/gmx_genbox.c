@@ -743,6 +743,12 @@ int gmx_genbox(int argc,char *argv[])
   if (bInsert && nmol_ins<=0)
     gmx_fatal(FARGS,"When specifying inserted molecules (-ci), "
 		"-nmol must be larger than 0");
+  if (!bInsert && nmol_ins > 0)
+  {
+    gmx_fatal(FARGS,
+              "You tried to insert molecules with -nmol, but did not supply "
+              "a molecule to insert with -ci.");
+  }
   if (!bProt && !bBox)
     gmx_fatal(FARGS,"When no solute (-cp) is specified, "
 		"a box size (-box) must be specified");
