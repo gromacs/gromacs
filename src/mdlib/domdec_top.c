@@ -776,7 +776,8 @@ static inline void add_ifunc(int nral,t_iatom *tiatoms,t_ilist *il)
 }
 
 static void add_posres(int mol,int a_mol,const gmx_molblock_t *molb,
-                       t_iatom *iatoms,t_idef *idef)
+                       t_iatom *iatoms,const t_iparams *ip_in,
+                       t_idef *idef)
 {
     int n,a_molb;
     t_iparams *ip;
@@ -792,9 +793,9 @@ static void add_posres(int mol,int a_mol,const gmx_molblock_t *molb,
     }
     ip = &idef->iparams_posres[n];
     /* Copy the force constants */
-    *ip = idef->iparams[iatoms[0]];
+    *ip = ip_in[iatoms[0]];
     
-    /* Get the position restriant coordinats from the molblock */
+    /* Get the position restraint coordinates from the molblock */
     a_molb = mol*molb->natoms_mol + a_mol;
     if (a_molb >= molb->nposres_xA)
     {
@@ -1068,6 +1069,33 @@ static void combine_idef(t_idef *dest,const t_idef *src,int nsrc,
             }
         }
     }
+
+    /* Position restraints need an additional treatment */
+    if (dest->il[F_POSRES].nr > 0)
+    {
+        n = dest->il[F_POSRES].nr/2;
+        if (n > dest->iparams_posres_nalloc)
+        {
+            dest->iparams_posres_nalloc = over_alloc_large(n);
+            srenew(dest->iparams_posres,dest->iparams_posres_nalloc);
+        }
+        /* Set n to the number of original position restraints in dest */
+        for(s=0; s<nsrc; s++)
+        {
+            n -= src[s].il[F_POSRES].nr/2;
+        }
+        for(s=0; s<nsrc; s++)
+        {
+            for(i=0; i<src[s].il[F_POSRES].nr/2; i++)
+            {
+                /* Correct the index into iparams_posres */
+                dest->il[F_POSRES].iatoms[n*2] = n;
+                /* Copy the position restraint force parameters */
+                dest->iparams_posres[n] = src[s].iparams_posres[i];
+                n++;
+            }
+        }
+    }
 }
 
 static int make_bondeds_zone(gmx_domdec_t *dd,
@@ -1076,6 +1104,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              gmx_bool bRCheckMB,ivec rcheck,gmx_bool bRCheck2B,
                              real rc2,
                              int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
+                             const t_iparams *ip_in,
                              t_idef *idef,gmx_vsite_t *vsite,
                              int **vsite_pbc,
                              int *vsite_pbc_nalloc,
@@ -1164,7 +1193,8 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                             tiatoms[1] = i;
                             if (ftype == F_POSRES)
                             {
-                                add_posres(mol,i_mol,&molb[mb],tiatoms,idef);
+                                add_posres(mol,i_mol,&molb[mb],tiatoms,ip_in,
+                                           idef);
                             }
                     }
                     else
@@ -1604,7 +1634,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 make_bondeds_zone(dd,zones,
                                   mtop->molblock,
                                   bRCheckMB,rcheck,bRCheck2B,rc2,
-                                  la2lc,pbc_null,cg_cm,idef_t,
+                                  la2lc,pbc_null,cg_cm,idef->iparams,
+                                  idef_t,
                                   vsite,vsite_pbc,vsite_pbc_nalloc,
                                   iz,zones->n,
                                   dd->cgindex[cg0t],dd->cgindex[cg1t]);
