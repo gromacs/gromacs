@@ -448,8 +448,6 @@ static real surface_frac(int cluster_size,real particle_distance,real rlist)
         area_rel = 1.0 + d;
         break;
     case 4:
-    case 8:
-        /* We don't have a formula for 8 (yet), use 4 which is conservative */
         /* We assume a perfect, symmetric tetrahedron geometry.
          * The surface around a tetrahedron is too complex for a full
          * analytical solution, so we use a Taylor expansion.
@@ -681,9 +679,12 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         /* Correct for the fact that we are using a Ni x Nj particle pair list
          * and not a 1 x 1 particle pair list. This reduces the drift.
          */
+        /* We don't have a formula for 8 (yet), use 4 which is conservative */
         nb_clust_frac_pairs_not_in_list_at_cutoff =
-            surface_frac(list_setup->cluster_size_i,particle_distance,rl)*
-            surface_frac(list_setup->cluster_size_j,particle_distance,rl);
+            surface_frac(min(list_setup->cluster_size_i,4),
+                         particle_distance,rl)*
+            surface_frac(min(list_setup->cluster_size_j,4),
+                         particle_distance,rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */
