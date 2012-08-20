@@ -243,6 +243,49 @@ int gau_comp_meth_read_line(char *line,real *temp,real *pres)
     return TRUE;
 }
 
+static gmx_bool read_polar(char *str,tensor T)
+{
+    char **ptr;
+    int  k;
+    gmx_bool bRes;
+    
+    bRes = TRUE;
+    ptr = split(' ',str);
+    if (NULL == ptr)
+        return FALSE;
+        
+    if (NULL != ptr[2])
+        T[XX][XX] = atof(ptr[2]);
+    else 
+        bRes = FALSE;
+    if (NULL != ptr[3])
+        T[YY][XX] = T[XX][YY] = atof(ptr[3]);
+    else 
+        bRes = FALSE;
+    if (NULL != ptr[4])
+        T[YY][YY] = atof(ptr[4]);
+    else 
+        bRes = FALSE;
+    if (NULL != ptr[5])
+        T[XX][ZZ] = T[ZZ][XX] = atof(ptr[5]);
+    else 
+        bRes = FALSE;
+    if (NULL != ptr[6])
+        T[YY][ZZ] = T[ZZ][YY] = atof(ptr[6]);
+    else 
+        bRes = FALSE;
+    if (NULL != ptr[7])
+        T[ZZ][ZZ] = atof(ptr[7]);
+    else 
+        bRes = FALSE;
+    for(k=0; (k<=7); k++)
+        if (NULL != ptr[k])
+            sfree(ptr[k]);
+    sfree(ptr);
+    
+    return bRes;
+}
+
 typedef struct {
     rvec esp;
     real V;
@@ -288,6 +331,9 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   char **ptr2;
   gmx_bool bThermResults=FALSE;
   real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener,temp_corr,ii,deltai;
+  gmx_bool bPolar, bQuad, bDipole;
+  tensor polar,quad;
+  rvec dipole;
   int status,ii0;
 
   nstrings = get_file(fn,&strings);
@@ -305,6 +351,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   g3ener  = NULL;
   g4ener  = NULL;
   cbsener = NULL;
+  bPolar  = bQuad = bDipole = FALSE;
   
   /* First loop over strings to deduct basic stuff */
   for(i=0; (i<nstrings); i++) 
@@ -320,7 +367,8 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
           }
       }
       else if ((NULL != strstr(strings[i],"Standard basis:")) || 
-               (NULL != strstr(strings[i],"Basis read from chk"))) 
+               (NULL != strstr(strings[i],"Basis read from chk")) ||
+               (NULL != strstr(strings[i],"General basis read from cards"))) 
       {
           ptr = split(' ',strings[i]);
           if (NULL != ptr[2]) 
@@ -336,6 +384,10 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
 
           bThermResults = TRUE;
       }
+      else if (NULL != strstr(strings[i],"Exact polarizability")) 
+      {
+          bPolar = read_polar(strings[i],polar);
+      }
       else if (NULL != strstr(strings[i],"E(ZPE)="))
       {
           status = gau_comp_meth_read_line(strings[i],&ezpe2,&etherm2);
@@ -344,7 +396,6 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       }
       else if (NULL != strstr(strings[i],"Zero-point correction=")) 
       {
-          
           ptr = split(' ',strings[i]);
           if (NULL != ptr[2]) 
           {
@@ -450,7 +501,10 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   if ((calcref == NOTSET) && (NULL != program) && (NULL != method) && (NULL != basis))
   {
       gmx_molprop_add_calculation(mpt,program,method,basis,reference,conformation,&calcref);
-    
+      if (bPolar)
+          gmx_molprop_add_polar(mpt,calcref,"elec","A^3",polar[XX][XX],polar[YY][YY],polar[ZZ][ZZ],
+                                trace(polar)/3.0,0);
+	
       for(i=0; (i<nstrings); i++) 
       {
           bAtomicCenter = (NULL != strstr(strings[i],"Atomic Center"));
@@ -586,7 +640,8 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       sfree(strings);
       
       if ((charge == NOTSET) || (natom == 0)) 
-          gmx_fatal(FARGS,"Error reading Gaussian log file.");
+          gmx_fatal(FARGS,"Error reading Gaussian log file. Charge = %d, natom = %d",
+                    charge,natom);
       gmx_molprop_set_charge(mpt,charge);
       gmx_molprop_set_mass(mpt,mass);
       
@@ -658,7 +713,8 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       return mpt;
   }
   else {
-    fprintf(stderr,"Error reading %s\n",fn);
+      fprintf(stderr,"Error reading %s, program = '%s' basis = '%s' method = '%s'\n",
+              fn,program,basis,method);
     for(i=0; (i<nstrings); i++) {
       sfree(strings[i]);
     }
