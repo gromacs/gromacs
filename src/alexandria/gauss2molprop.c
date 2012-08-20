@@ -286,6 +286,54 @@ static gmx_bool read_polar(char *str,tensor T)
     return bRes;
 }
 
+static gmx_bool read_dipole(char *str,rvec mu)
+{
+    char **ptr;
+    int  k;
+    gmx_bool bRes;
+    
+    bRes = TRUE;
+    ptr = split(' ',str);
+    if (NULL == ptr)
+        return FALSE;
+        
+    if (NULL != ptr[1])
+        mu[XX] = atof(ptr[1]);
+    else 
+        bRes = FALSE;
+    if (NULL != ptr[3])
+        mu[YY] = atof(ptr[3]);
+    else 
+        bRes = FALSE;
+    if (NULL != ptr[5])
+        mu[ZZ] = atof(ptr[5]);
+    else 
+        bRes = FALSE;
+    for(k=0; (k<=7); k++)
+        if (NULL != ptr[k])
+            sfree(ptr[k]);
+    sfree(ptr);
+    
+    return bRes;
+}
+
+static gmx_bool read_quad(char *str1,char *str2,tensor Q)
+{
+    gmx_bool bRes;
+    rvec q1,q2;
+    
+    bRes = read_dipole(str1,q1);
+    bRes = bRes && read_dipole(str2,q2);
+    Q[XX][XX] = q1[XX];
+    Q[YY][YY] = q1[YY];
+    Q[ZZ][ZZ] = q1[ZZ];
+    Q[XX][YY] = Q[YY][XX] = q2[XX];
+    Q[XX][ZZ] = Q[ZZ][XX] = q2[YY];
+    Q[YY][ZZ] = Q[ZZ][YY] = q2[ZZ];
+    
+    return bRes;
+}
+
 typedef struct {
     rvec esp;
     real V;
@@ -387,6 +435,16 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       else if (NULL != strstr(strings[i],"Exact polarizability")) 
       {
           bPolar = read_polar(strings[i],polar);
+      }
+      else if (NULL != strstr(strings[i],"Dipole moment")) 
+      {
+          bDipole = read_dipole(strings[i+1],dipole);
+          i += 1;
+      }
+      else if (NULL != strstr(strings[i],"Traceless Quadrupole moment")) 
+      {
+          bQuad = read_quad(strings[i+1],strings[i+2],quad);
+          i += 2;
       }
       else if (NULL != strstr(strings[i],"E(ZPE)="))
       {
@@ -504,6 +562,15 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
       if (bPolar)
           gmx_molprop_add_polar(mpt,calcref,"elec","A^3",polar[XX][XX],polar[YY][YY],polar[ZZ][ZZ],
                                 trace(polar)/3.0,0);
+      if (bDipole)
+          gmx_molprop_add_dipole(mpt,calcref,"elec","Debye",
+                                 dipole[XX],dipole[YY],dipole[ZZ],
+                                 norm(dipole),0);
+      if (bQuad)
+          gmx_molprop_add_quadrupole(mpt,calcref,"elec","Buckingham",
+                                     quad[XX][XX],quad[YY][YY],quad[ZZ][ZZ],
+                                     quad[XX][YY],quad[XX][ZZ],quad[YY][ZZ]);
+	
 	
       for(i=0; (i<nstrings); i++) 
       {
