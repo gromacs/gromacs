@@ -652,8 +652,9 @@ int gmx_genbox(int argc,char *argv[])
     "equlibrated in periodic boundary conditions to ensure a good",
     "alignment of molecules on the stacking interfaces.",
     "The [TT]-maxsol[tt] option simply adds only the first [TT]-maxsol[tt]",
-    "solvent molecules and leaves out the rest would have fit into the box.",
-    "[PAR]",
+    "solvent molecules and leaves out the rest that would have fitted",
+    "into the box. This can create a void that can cause problems later.",
+    "Choose your volume wisely.[PAR]",
     
     "The program can optionally rotate the solute molecule to align the",
     "longest molecule axis along a box edge. This way the amount of solvent",
