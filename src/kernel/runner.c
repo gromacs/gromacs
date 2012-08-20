@@ -342,10 +342,20 @@ static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
 
     if (bNthreadsAuto)
     {
-        /* We use the number of hardware threads available */
-        nthreads_tmpi =
-            get_tmpi_omp_thread_distribution(hw_opt,
-                                             tMPI_Thread_get_hw_number());
+        int nthreads_tot_max;
+
+        if ((env = getenv("GMX_MAX_THREADS")) != NULL)
+        {
+            sscanf(env,"%d",&nthreads_tot_max);
+        }
+        else
+        {
+            /* We use the number of hardware threads available */
+            nthreads_tot_max = tMPI_Thread_get_hw_number();
+        }
+
+        nthreads_tmpi = get_tmpi_omp_thread_distribution(hw_opt,
+                                                         nthreads_tot_max);
     }
 
     
@@ -861,21 +871,7 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_omp = nt_omp;
     }
 
-#ifdef GMX_THREAD_MPI
-    if ((env = getenv("GMX_MAX_THREADS")) != NULL)
-    {
-        int nthreads_max;
-
-        sscanf(env,"%d",&nthreads_max);
-
-        if (hw_opt->nthreads_tot > 0 && nthreads_max != hw_opt->nthreads_tot)
-        {
-            gmx_fatal(FARGS,"GMX_MAX_THREADS (%d) does not match -nt (%d)",
-                      nthreads_max,hw_opt->nthreads_tot);
-        }
-        hw_opt->nthreads_tot = nthreads_max;
-    }
-#else
+#ifndef GMX_THREAD_MPI
     if (hw_opt->nthreads_tot > 0)
     {
         gmx_fatal(FARGS,"Setting the total number of threads is only supported with thread-MPI and Gromacs was compiled without thread-MPI");
@@ -1070,9 +1066,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             convert_to_verlet_scheme(fplog,inputrec,mtop,det(state->box));
         }
-
-        /* override nsteps with value from cmdline */
-        override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
 
         /* Detect hardware, gather information. With tMPI only thread 0 does it
          * and after threads are started broadcasts hwinfo around. */
@@ -1381,6 +1374,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
                              Flags,&fplog);
     }
+
+    /* override nsteps with value from cmdline */
+    override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
 
     if (SIMMASTER(cr)) 
     {
