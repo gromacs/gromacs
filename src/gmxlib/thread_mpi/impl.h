@@ -415,7 +415,7 @@ struct tmpi_thread
     /* the p2p communication events (incoming envelopes + finished send 
        envelopes generate events) */
     tMPI_Event p2p_event;
-    TMPI_YIELD_WAIT_DATA; /* data associated with waiting */
+    TMPI_YIELD_WAIT_DATA /* data associated with waiting */
     struct req_list rql;  /* list of pre-allocated requests */
 
     /* collective communication structures: */
@@ -808,6 +808,10 @@ void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
 #endif
 
 
+/* reduce ops: run a single iteration of a reduce operation on a, b -> dest */
+int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
+                       tMPI_Datatype datatype, int count, tMPI_Op op,
+                       tMPI_Comm comm);
 
 
 /* and we need this prototype */
