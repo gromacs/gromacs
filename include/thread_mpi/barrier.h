@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_BARRIER_H_
-#define _TMPI_BARRIER_H_
+#ifndef TMPI_BARRIER_H_
+#define TMPI_BARRIER_H_
 
 #include "wait.h"
 
@@ -63,7 +63,7 @@ struct tMPI_Barrier_t
     tMPI_Atomic_t     count;     /*!< Number of threads remaining     */
     int               threshold; /*!< Total number of threads         */
     volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
-    TMPI_YIELD_WAIT_DATA;
+    TMPI_YIELD_WAIT_DATA
 };
 
 
@@ -108,4 +108,4 @@ int tMPI_Barrier_N(tMPI_Barrier_t *barrier);
 #define tMPI_Barrier_N(barrier)  ((barrier)->threshold)
 #endif
 
-#endif
+#endif /* TMPI_BARRIER_H_ */

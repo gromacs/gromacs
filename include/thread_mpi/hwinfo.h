@@ -48,9 +48,9 @@ files.
 
     Returns the total number of cores and SMT threads that can run.
 
-    \ret The maximum number of threads that can run simulataneously. If this
-         number cannot be determined for the current architecture, -1 is 
-         returned.
+    \returns The maximum number of threads that can run simulataneously.
+         If this number cannot be determined for the current architecture,
+         -1 is returned.
   */
 int tMPI_Get_hw_nthreads(void);
 
@@ -62,7 +62,7 @@ int tMPI_Get_hw_nthreads(void);
     equal to the number of hardware threads available, or 1 if the number
     can't be determined, or if there are no atomics for this platform.
 
-    \ret The maximum number of threads to run on.
+    \returns The maximum number of threads to run on.
   */
 int tMPI_Get_recommended_nthreads(void);
 

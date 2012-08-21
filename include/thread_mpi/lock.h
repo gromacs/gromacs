@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_FASTLOCK_H_
-#define _TMPI_FASTLOCK_H_
+#ifndef TMPI_FASTLOCK_H_
+#define TMPI_FASTLOCK_H_
 
 #include "wait.h"
 #include "atomic.h"
@@ -59,7 +59,7 @@ typedef struct tMPI_Lock tMPI_Lock_t;
 struct tMPI_Lock
 {
     tMPI_Spinlock_t   lock;      /*!< The underlying spin lock */
-    TMPI_YIELD_WAIT_DATA;
+    TMPI_YIELD_WAIT_DATA
 };
 
 
@@ -98,4 +98,4 @@ int tMPI_Lock_islocked(const tMPI_Lock_t *lock);
 
 
 
-#endif
+#endif /* TMPI_FASTLOCK_H_ */

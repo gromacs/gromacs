@@ -36,66 +36,52 @@ files.
 */
 
 
-#ifndef TMPI_WAIT_H_
-#define TMPI_WAIT_H_
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
 
-#ifndef TMPI_WAIT_FOR_NO_ONE
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_SCHED_H
-#include <sched.h>
-#endif
 
-/* for now we just do sched_yield(). It's in POSIX. */
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data)
+#include <stdlib.h>
 
-/* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  sched_yield()
 
-#else
-/* and in Windows, we do SwitchToThread() alternated with Sleep(0). This
-   is apparently recommende practice (SwitchToThread() alone just gives
-   up the slice for threads on the current core, and Sleep(0) alone could
-   lead to starvation. This mixed approach actually gives better real-world 
-   performance in the test program.*/
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA  int yield_wait_counter;
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data) { (data)->yield_wait_counter=0; }
+#include "impl.h"
 
-/* the waiting macro is so complicated because using SwitchToThread only schedules */
-#define TMPI_YIELD_WAIT(data)  { \
-    if ( ((data)->yield_wait_counter++)%100 == 0 ) \
-    {\
-        SwitchToThread();\
-    }\
-    else\
-    {\
-        Sleep(0);\
-    }\
+
+/* there are a few global variables that maintain information about the
+   running threads. Some are defined by the MPI standard: */
+/* This is declared here because it is needed for the error handling */
+tMPI_Comm TMPI_COMM_WORLD=NULL;
+
+
+void *tMPI_Malloc(size_t size)
+{
+    void *ret=(void*)malloc(size);
+
+    if (!ret)
+    {
+        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
+    }
+    return ret;
 }
 
-#endif
+void *tMPI_Realloc(void *p, size_t size)
+{
+    void *ret=(void*)realloc(p, size);
+    if (!ret)
+    {
+        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
+    }
+    return ret;
+}
 
-
-#else /* !TMPI_WAIT_FOR_NO_ONE */
-
-/* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA 
-/* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data) 
-
-/* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  tMPI_Atomic_memory_barrier()
-
-
-#endif /* !TMPI_WAIT_FOR_NO_ONE */
-
-#endif /* TMPI_WAIT_H_ */
-
+void tMPI_Free(void *p)
+{
+    free(p);
+}
