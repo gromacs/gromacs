@@ -370,7 +370,7 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   gmx_molprop_t mpt;
   real mm;
   char *atomname,*ginc,*hfener,*mp2ener,*g2ener,*g3ener,*g4ener,*cbsener;
-  char *conformation = "unknown";
+  char *conformation = "minimum";
   char *reference = "This Work";
   char *program=NULL,*method=NULL,*basis=NULL;
   char **ptr,**qtr,*mymeth;
