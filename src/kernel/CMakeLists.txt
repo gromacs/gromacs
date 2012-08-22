@@ -89,29 +89,34 @@ if(GMX_OPENMM AND MSVC)
     set_target_properties(mdrun PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT")
 endif()
 
+# Create custom install-xxxx targets and trigger the installation
+foreach(PROGRAM ${GMX_KERNEL_PROGRAMS} mdrun)
+    if (BUILD_SHARED_LIBS)
+      # If shared libraries are used, we need to install the libraries in
+      # addition to the ${PROGRAM} binary.
+      add_custom_target(install-${PROGRAM}
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries
+        -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROGRAM}
+        -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMENT "Installing ${PROGRAM}")
+    else (BUILD_SHARED_LIBS)
+      add_custom_target(install-${PROGRAM}
+       COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROGRAM}
+        -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMENT "Installing ${PROGRAM}")
+    endif (BUILD_SHARED_LIBS)
+    add_dependencies(install-${PROGRAM} ${PROGRAM})
+    install(
+      TARGETS ${PROGRAM}
+      COMPONENT ${PROGRAM}
+      RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+      )
+endforeach()
 
 install(TARGETS gmxpreprocess DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
-install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
-install(TARGETS ${GMX_KERNEL_PROGRAMS} COMPONENT runtime
+install(TARGETS ${GMX_KERNEL_PROGRAMS} mdrun COMPONENT runtime
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
-
-# Create the custom install-mdrun target
-if (BUILD_SHARED_LIBS)
-    # If shared libraries are used, we need to install the libraries in
-    # addition to the mdrun binary.
-    add_custom_target(install-mdrun
-        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries
-                -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
-        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=mdrun
-                -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
-        COMMENT "Installing mdrun")
-else (BUILD_SHARED_LIBS)
-    add_custom_target(install-mdrun
-        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=mdrun
-                -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
-        COMMENT "Installing mdrun")
-endif (BUILD_SHARED_LIBS)
-add_dependencies(install-mdrun mdrun)
 
 endif(GMX_FAHCORE)
 

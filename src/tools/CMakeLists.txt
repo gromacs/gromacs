@@ -71,8 +71,30 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     endif()
     target_link_libraries(${TOOL} gmxana ${OpenMP_LINKER_FLAGS})
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
-endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
 
+    # Create custom install-xxxx targets and trigger the installation
+    if (BUILD_SHARED_LIBS)
+      # If shared libraries are used, we need to install the libraries in
+      # addition to the ${TOOL} binary.
+      add_custom_target(install-${TOOL}
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries
+        -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${TOOL}
+        -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMENT "Installing ${TOOL}")
+    else (BUILD_SHARED_LIBS)
+      add_custom_target(install-${TOOL}
+       COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${TOOL}
+        -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMENT "Installing ${TOOL}")
+    endif (BUILD_SHARED_LIBS)
+    add_dependencies(install-${TOOL} ${TOOL})
+    install(
+      TARGETS ${TOOL}
+      COMPONENT ${TOOL}
+      RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+      )
+endforeach()
 
 install(TARGETS gmxana DESTINATION ${LIB_INSTALL_DIR} COMPONENT runtime)
 install(TARGETS ${GMX_TOOLS_PROGRAMS}
