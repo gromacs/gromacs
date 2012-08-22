@@ -131,11 +131,13 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
         filePtr = boost::get_error_info<boost::throw_file>(*boostEx);
         linePtr = boost::get_error_info<boost::throw_line>(*boostEx);
     }
+    internal::printFatalErrorHeader(fp, title,
+                                    funcPtr != NULL ? *funcPtr : NULL,
+                                    filePtr != NULL ? *filePtr : NULL,
+                                    linePtr != NULL ? *linePtr : 0);
+    internal::printFatalErrorMessageLine(fp, ex.what(), 0);
     // TODO: Treat errno information in boost exceptions
-    internal::printFatalError(fp, title, ex.what(),
-                              funcPtr != NULL ? *funcPtr : NULL,
-                              filePtr != NULL ? *filePtr : NULL,
-                              linePtr != NULL ? *linePtr : 0);
+    internal::printFatalErrorFooter(fp);
 }
 
 } // namespace gmx

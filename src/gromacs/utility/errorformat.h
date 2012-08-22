@@ -48,14 +48,30 @@ namespace internal
 {
 
 /*! \internal \brief
- * Formats common headers and footers for error messages.
+ * Formats a common header for fatal error messages.
  *
  * Does not throw.
  *
  * \ingroup module_utility
  */
-void printFatalError(FILE *fp, const char *title, const char *details,
-                     const char *func, const char *file, int line);
+void printFatalErrorHeader(FILE *fp, const char *title,
+                           const char *func, const char *file, int line);
+/*! \internal \brief
+ * Formats a line of fatal error message text.
+ *
+ * Does not throw.
+ *
+ * \ingroup module_utility
+ */
+void printFatalErrorMessageLine(FILE *fp, const char *text, int indent);
+/*! \internal \brief
+ * Formats a common footer for fatal error messages.
+ *
+ * Does not throw.
+ *
+ * \ingroup module_utility
+ */
+void printFatalErrorFooter(FILE *fp);
 
 } // namespace internal
 //! \endcond

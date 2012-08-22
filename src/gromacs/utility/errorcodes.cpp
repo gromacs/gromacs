@@ -82,7 +82,9 @@ void standardErrorHandler(int retcode, const char *msg,
                           const char *file, int line)
 {
     const char *title = getErrorCodeString(retcode);
-    internal::printFatalError(stderr, title, msg, NULL, file, line);
+    internal::printFatalErrorHeader(stderr, title, NULL, file, line);
+    internal::printFatalErrorMessageLine(stderr, msg, 0);
+    internal::printFatalErrorFooter(stderr);
     std::exit(1);
 }
 

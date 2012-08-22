@@ -35,14 +35,13 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_utility
  */
-#include "gromacs/utility/errorformat.h"
+#include "errorformat.h"
 
 #include <cstdio>
 
 #include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/utility/programinfo.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -51,8 +50,8 @@ namespace gmx
 namespace internal
 {
 
-void printFatalError(FILE *fp, const char *title, const char *details,
-                     const char *func, const char *file, int line)
+void printFatalErrorHeader(FILE *fp, const char *title,
+                           const char *func, const char *file, int line)
 {
     // In case ProgramInfo is not initialized and there is an issue with the
     // initialization, fall back to "GROMACS".
@@ -78,8 +77,17 @@ void printFatalError(FILE *fp, const char *title, const char *details,
     }
     std::fprintf(fp, "\n");
     std::fprintf(fp, "%s:\n", title);
+}
+
+void printFatalErrorMessageLine(FILE *fp, const char *text, int indent)
+{
     // TODO: Line wrapping
-    std::fprintf(fp, "%s\n", details);
+    std::fprintf(fp, "%*s%s\n", indent, "", text);
+}
+
+void printFatalErrorFooter(FILE *fp)
+{
+    std::fprintf(fp, "\n");
     std::fprintf(fp, "For more information and tips for troubleshooting, please check the GROMACS\n"
                      "website at http://www.gromacs.org/Documentation/Errors");
     std::fprintf(fp, "\n-------------------------------------------------------\n");
