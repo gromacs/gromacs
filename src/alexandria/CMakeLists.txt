@@ -14,6 +14,7 @@ set(ALEXANDRIA_SOURCES
 	molprop.c
 	molprop_util.c
 	molprop_xml.c
+        molprop_sqlite3.c
 	molselect.c
 	slater_integrals.cpp
 	DSlater_1S_1S.cpp

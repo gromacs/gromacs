@@ -55,6 +55,7 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molprop_xml.h"
+#include "molprop_sqlite3.h"
 
 typedef struct {
     char *iupac;
@@ -124,13 +125,15 @@ int main(int argc,char *argv[])
     static const char *desc[] = 
     {
       "merge_mp reads multiple molprop files and merges the molecule descriptions",
-      "into a single new file."
+      "into a single new file. By specifying the [TT]-db[TT] option additional experimental",
+      "information will be read from a SQLite3 database.[PAR]",
     };
     t_filenm fnm[] = 
     {
         { efDAT, "-f",  "data",      ffRDMULT },
         { efDAT, "-o",  "allmols",   ffWRITE },
         { efDAT, "-di", "gentop",    ffOPTRD },
+        { efDAT, "-db", "sqlite",    ffOPTRD },
         { efDAT, "-x",  "extra",     ffOPTRD }
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
@@ -172,7 +175,9 @@ int main(int argc,char *argv[])
     mp = merge_xml(nfiles,fns,NULL,NULL,NULL,&np,ap,pd,TRUE,TRUE,th_toler,ph_toler);
     
     add_properties(opt2fn_null("-x",NFILE,fnm),np,mp);
-    
+
+    gmx_molprop_read_sqlite3(np,mp,opt2fn_null("-db",NFILE,fnm));
+        
     gmx_molprops_write(opt2fn("-o",NFILE,fnm),np,mp,compress);
   
     thanx(stdout);
