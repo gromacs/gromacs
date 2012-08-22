@@ -64,6 +64,12 @@ TEST(StringUtilityTest, StartsWithWorks)
     EXPECT_FALSE(gmx::startsWith("", "foobar"));
     EXPECT_FALSE(gmx::startsWith("foo", "foobar"));
     EXPECT_FALSE(gmx::startsWith("foobar", "oob"));
+    EXPECT_TRUE(gmx::startsWith(std::string("foobar"), "foo"));
+    EXPECT_TRUE(gmx::startsWith(std::string("foobar"), ""));
+    EXPECT_TRUE(gmx::startsWith(std::string(""), ""));
+    EXPECT_FALSE(gmx::startsWith(std::string(""), "foobar"));
+    EXPECT_FALSE(gmx::startsWith(std::string("foo"), "foobar"));
+    EXPECT_FALSE(gmx::startsWith(std::string("foobar"), "oob"));
 }
 
 TEST(StringUtilityTest, EndsWithWorks)

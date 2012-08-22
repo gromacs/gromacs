@@ -39,6 +39,8 @@
 #ifndef GMX_UTILITY_STRINGUTIL_H
 #define GMX_UTILITY_STRINGUTIL_H
 
+#include <cstring>
+
 #include <string>
 #include <vector>
 
@@ -60,6 +62,11 @@ namespace gmx
 bool inline startsWith(const std::string &str, const std::string &prefix)
 {
     return str.compare(0, prefix.length(), prefix) == 0;
+}
+//! \copydoc startsWith(const std::string &, const std::string &)
+bool inline startsWith(const char *str, const char *prefix)
+{
+    return std::strncmp(str, prefix, std::strlen(prefix)) == 0;
 }
 
 /*! \brief
