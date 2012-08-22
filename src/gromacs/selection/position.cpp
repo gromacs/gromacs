@@ -135,7 +135,7 @@ gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
  * \param[in]     x    Position vector to use.
  */
 void
-gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x)
+gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
 {
     gmx_ana_pos_clear(pos);
     pos->nr = 1;

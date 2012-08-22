@@ -103,8 +103,6 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
-
-    ASSERT_FALSE(sel.isDynamic());
 }
 
 
@@ -260,7 +258,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
     EXPECT_NO_THROW(assigner.start());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
-    EXPECT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
+    ASSERT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
     ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
@@ -295,7 +293,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
-    EXPECT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
+    ASSERT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
     ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
