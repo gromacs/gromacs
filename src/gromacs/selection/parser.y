@@ -50,6 +50,9 @@
 #include "parser_internal.h"
 
 using gmx::scoped_ptr_sfree;
+using gmx::SelectionParserValue;
+using gmx::SelectionParserValueList;
+using gmx::SelectionParserValueListPointer;
 using gmx::SelectionParserParameter;
 using gmx::SelectionParserParameterList;
 using gmx::SelectionParserParameterPointer;
@@ -73,9 +76,9 @@ using gmx::SelectionTreeElementPointer;
     char                       *str;
     struct gmx_ana_selmethod_t *meth;
 
-    gmx::SelectionTreeElementPointer *sel;
-
-    struct t_selexpr_value     *val;
+    gmx::SelectionTreeElementPointer            *sel;
+    gmx::SelectionParserValue                   *val;
+    gmx::SelectionParserValueListPointer        *vlist;
     gmx::SelectionParserParameterPointer        *param;
     gmx::SelectionParserParameterListPointer    *plist;
 };
@@ -160,20 +163,20 @@ using gmx::SelectionTreeElementPointer;
 /* Parameter/value non-terminals */
 %type <plist> method_params method_param_list
 %type <param> method_param
-%type <val>   value_list value_list_contents value_item value_item_range
-%type <val>   basic_value_list basic_value_list_contents basic_value_item
-%type <val>   help_topic
+%type <vlist> value_list value_list_contents basic_value_list basic_value_list_contents
+%type <val>   value_item value_item_range basic_value_item
+%type <vlist> help_topic
 
-%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER KEYWORD_POS CMP_OP string
-%destructor { if($$) free($$);              } PARAM pos_mod
-%destructor { delete $$;                    } commands command cmd_plain selection
-%destructor { delete $$;                    } sel_expr num_expr str_expr pos_expr
-%destructor { delete $$;                    } method_params method_param_list method_param
-%destructor { _gmx_selexpr_free_values($$); } value_list value_list_contents value_item value_item_range
-%destructor { _gmx_selexpr_free_values($$); } basic_value_list basic_value_list_contents basic_value_item
-%destructor { _gmx_selexpr_free_values($$); } help_topic
+%destructor { free($$);        } HELP_TOPIC STR IDENTIFIER KEYWORD_POS CMP_OP string
+%destructor { if($$) free($$); } PARAM pos_mod
+%destructor { delete $$;       } commands command cmd_plain selection
+%destructor { delete $$;       } sel_expr num_expr str_expr pos_expr
+%destructor { delete $$;       } method_params method_param_list method_param
+%destructor { delete $$;       } value_list value_list_contents basic_value_list basic_value_list_contents
+%destructor { delete $$;       } value_item value_item_range basic_value_item
+%destructor { delete $$;       } help_topic
 
-%expect 50
+%expect 35
 %debug
 %pure-parser
 %define api.push-pull push
@@ -184,7 +187,12 @@ using gmx::SelectionTreeElementPointer;
 %%
 
 /* The start rule: allow one or more commands */
-commands:    /* empty */        { $$ = NULL; }
+commands:    /* empty */
+             {
+                 BEGIN_ACTION;
+                 set_empty($$);
+                 END_ACTION;
+             }
            | commands command
              {
                  BEGIN_ACTION;
@@ -200,7 +208,6 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
            | error CMD_SEP
              {
                  BEGIN_ACTION;
-                 $$ = NULL;
                  _gmx_selparser_error(scanner, "invalid selection '%s'",
                                       _gmx_sel_lexer_pselstr(scanner));
                  _gmx_sel_lexer_clear_method_stack(scanner);
@@ -213,6 +220,7 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
                  {
                      YYABORT;
                  }
+                 set_empty($$);
                  END_ACTION;
              }
 ;
@@ -221,11 +229,16 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
 cmd_plain:   /* empty */
              {
                  BEGIN_ACTION;
-                 $$ = NULL;
                  _gmx_sel_handle_empty_cmd(scanner);
+                 set_empty($$);
                  END_ACTION;
              }
-           | help_request       { $$ = NULL; }
+           | help_request
+             {
+                 BEGIN_ACTION;
+                 set_empty($$);
+                 END_ACTION;
+             }
            | TOK_INT
              {
                  BEGIN_ACTION;
@@ -292,17 +305,23 @@ help_request:
              HELP help_topic
              {
                  BEGIN_ACTION;
-                 _gmx_sel_handle_help_cmd(process_value_list($2), scanner);
+                 _gmx_sel_handle_help_cmd(get($2), scanner);
                  END_ACTION;
              }
 ;
 
-help_topic:  /* empty */            { $$ = NULL; }
+help_topic:  /* empty */
+             {
+                 BEGIN_ACTION;
+                 set($$, SelectionParserValue::createList());
+                 END_ACTION;
+             }
            | help_topic HELP_TOPIC
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->u.s = $2; $$->next = $1;
+                 SelectionParserValueListPointer list(get($1));
+                 list->push_back(SelectionParserValue::createString($2));
+                 set($$, move(list));
                  END_ACTION;
              }
 ;
@@ -393,6 +412,7 @@ sel_expr:    NOT sel_expr
 sel_expr:    num_expr CMP_OP num_expr
              {
                  BEGIN_ACTION;
+                 scoped_ptr_sfree opGuard($2);
                  set($$, _gmx_sel_init_comparison(get($1), get($3), $2, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -427,7 +447,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
                  scoped_ptr_sfree posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
+                 set($$, _gmx_sel_init_keyword($2, SelectionParserValueListPointer(), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -435,7 +455,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
                  scoped_ptr_sfree posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, process_value_list($3), $1, scanner));
+                 set($$, _gmx_sel_init_keyword($2, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -443,7 +463,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
                  scoped_ptr_sfree posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, process_value_list($3), $1, scanner));
+                 set($$, _gmx_sel_init_keyword($2, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -494,7 +514,7 @@ num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
              {
                  BEGIN_ACTION;
                  scoped_ptr_sfree posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
+                 set($$, _gmx_sel_init_keyword($2, SelectionParserValueListPointer(), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -567,7 +587,7 @@ str_expr:    string
              {
                  BEGIN_ACTION;
                  scoped_ptr_sfree posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, NULL, $1, scanner));
+                 set($$, _gmx_sel_init_keyword($2, SelectionParserValueListPointer(), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }
@@ -672,22 +692,38 @@ method_param:
              {
                  BEGIN_ACTION;
                  scoped_ptr_sfree nameGuard($1);
-                 set($$, SelectionParserParameter::create($1, process_value_list($2)));
+                 set($$, SelectionParserParameter::create($1, get($2)));
                  END_ACTION;
              }
 ;
 
-value_list:  /* empty */                         { $$ = NULL; }
-           | value_list_contents                 { $$ = $1;   }
+value_list:  value_list_contents                 { $$ = $1;   }
            | '{' value_list_contents '}'         { $$ = $2;   }
 ;
 
 value_list_contents:
-             value_item          { $$ = $1; }
+             /* empty */
+             {
+                 BEGIN_ACTION;
+                 set($$, SelectionParserValue::createList());
+                 END_ACTION;
+             }
            | value_list_contents value_item
-                                 { $2->next = $1; $$ = $2; }
+             {
+                 BEGIN_ACTION;
+                 SelectionParserValueListPointer list(get($1));
+                 list->push_back(get($2));
+                 set($$, move(list));
+                 END_ACTION;
+             }
            | value_list_contents ',' value_item
-                                 { $3->next = $1; $$ = $3; }
+             {
+                 BEGIN_ACTION;
+                 SelectionParserValueListPointer list(get($1));
+                 list->push_back(get($3));
+                 set($$, move(list));
+                 END_ACTION;
+             }
 ;
 
 basic_value_list:
@@ -696,35 +732,52 @@ basic_value_list:
 ;
 
 basic_value_list_contents:
-             basic_value_item    { $$ = $1; }
+             basic_value_item
+             {
+                 BEGIN_ACTION;
+                 set($$, SelectionParserValue::createList(get($1)));
+                 END_ACTION;
+             }
            | basic_value_list_contents basic_value_item
-                                 { $2->next = $1; $$ = $2; }
+             {
+                 BEGIN_ACTION;
+                 SelectionParserValueListPointer list(get($1));
+                 list->push_back(get($2));
+                 set($$, move(list));
+                 END_ACTION;
+             }
            | basic_value_list_contents ',' basic_value_item
-                                 { $3->next = $1; $$ = $3; }
+             {
+                 BEGIN_ACTION;
+                 SelectionParserValueListPointer list(get($1));
+                 list->push_back(get($3));
+                 set($$, move(list));
+                 END_ACTION;
+             }
 ;
 
 value_item:  sel_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr(get($1));
+                 set($$, SelectionParserValue::createExpr(get($1)));
                  END_ACTION;
              }
            | pos_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr(get($1));
+                 set($$, SelectionParserValue::createExpr(get($1)));
                  END_ACTION;
              }
            | num_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr(get($1));
+                 set($$, SelectionParserValue::createExpr(get($1)));
                  END_ACTION;
              }
            | str_expr            %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value_expr(get($1));
+                 set($$, SelectionParserValue::createExpr(get($1)));
                  END_ACTION;
              }
            | value_item_range    { $$ = $1; }
@@ -734,22 +787,20 @@ basic_value_item:
              integer_number      %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value(INT_VALUE);
-                 $$->u.i.i1 = $$->u.i.i2 = $1;
+                 set($$, SelectionParserValue::createInteger($1));
                  END_ACTION;
              }
            | real_number         %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
-                 $$->u.r.r1 = $$->u.r.r2 = $1;
+                 set($$, SelectionParserValue::createReal($1));
                  END_ACTION;
              }
            | string              %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->u.s = $1;
+                 scoped_ptr_sfree stringGuard($1);
+                 set($$, SelectionParserValue::createString($1));
                  END_ACTION;
              }
            | value_item_range    { $$ = $1; }
@@ -759,22 +810,19 @@ value_item_range:
              integer_number TO integer_number
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value(INT_VALUE);
-                 $$->u.i.i1 = $1; $$->u.i.i2 = $3;
+                 set($$, SelectionParserValue::createIntegerRange($1, $3));
                  END_ACTION;
              }
            | integer_number TO real_number
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
-                 $$->u.r.r1 = $1; $$->u.r.r2 = $3;
+                 set($$, SelectionParserValue::createRealRange($1, $3));
                  END_ACTION;
              }
            | real_number TO number
              {
                  BEGIN_ACTION;
-                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
-                 $$->u.r.r1 = $1; $$->u.r.r2 = $3;
+                 set($$, SelectionParserValue::createRealRange($1, $3));
                  END_ACTION;
              }
 ;

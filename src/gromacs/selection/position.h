@@ -92,7 +92,7 @@ void
 gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos);
 /** Initializes a \c gmx_ana_pos_t to represent a constant position. */
 void
-gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x);
+gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x);
 /** Frees the memory allocated for position storage. */
 void
 gmx_ana_pos_deinit(gmx_ana_pos_t *pos);

@@ -52,7 +52,9 @@
 #include <string>
 
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/uniqueptr.h"
 
 #include "selelem.h"
@@ -62,48 +64,187 @@ struct gmx_ana_indexgrps_t;
 struct gmx_ana_selmethod_t;
 struct gmx_ana_selparam_t;
 
+namespace gmx
+{
+
+class SelectionParserValue;
+
+//! Container for a list of SelectionParserValue objects.
+typedef std::list<SelectionParserValue>
+        SelectionParserValueList;
+//! Smart pointer type for managing a SelectionParserValueList.
+typedef gmx::gmx_unique_ptr<SelectionParserValueList>::type
+        SelectionParserValueListPointer;
+
 /*! \internal \brief
  * Describes a parsed value, possibly resulting from expression evaluation.
  *
- * \todo
- * Make this a proper class.
+ * All factory methods and the constructors may throw an std::bad_alloc if
+ * out of memory.
+ *
+ * \ingroup module_selection
  */
-typedef struct t_selexpr_value
+class SelectionParserValue
 {
-    //! Returns true if the value comes from expression evaluation.
-    bool hasExpressionValue() const { return expr; }
+    public:
+        //! Allocates and initializes an empty value list.
+        static SelectionParserValueListPointer createList()
+        {
+            return SelectionParserValueListPointer(new SelectionParserValueList);
+        }
+        /*! \brief
+         * Allocates and initializes a value list with a single value.
+         *
+         * \param[in] value  Initial value to put in the list.
+         * \returns   Pointer to a new value list that contains \p value.
+         */
+        static SelectionParserValueListPointer
+        createList(const SelectionParserValue &value)
+        {
+            SelectionParserValueListPointer list(new SelectionParserValueList);
+            list->push_back(value);
+            return move(list);
+        }
+        /*! \brief
+         * Allocates and initializes an expression value.
+         *
+         * \param[in] expr  Root of the expression tree to assign to the value.
+         * \returns   The newly created value.
+         */
+        static SelectionParserValue
+        createExpr(const gmx::SelectionTreeElementPointer &expr)
+        {
+            return SelectionParserValue(expr);
+        }
+        /*! \brief
+         * Allocates and initializes a constant integer value.
+         *
+         * \param[in] value  Integer value to assign to the value.
+         * \returns   The newly created value.
+         */
+        static SelectionParserValue createInteger(int value)
+        {
+            SelectionParserValue result(INT_VALUE);
+            result.u.i.i1 = result.u.i.i2 = value;
+            return result;
+        }
+        /*! \brief
+         * Allocates and initializes a constant integer range value.
+         *
+         * \param[in] from  Beginning of the range to assign to the value.
+         * \param[in] to    End of the range to assign to the value.
+         * \returns   The newly created value.
+         */
+        static SelectionParserValue createIntegerRange(int from, int to)
+        {
+            SelectionParserValue result(INT_VALUE);
+            result.u.i.i1 = from;
+            result.u.i.i2 = to;
+            return result;
+        }
+        /*! \brief
+         * Allocates and initializes a constant floating-point value.
+         *
+         * \param[in] value  Floating-point value to assign to the value.
+         * \returns   The newly created value.
+         */
+        static SelectionParserValue createReal(real value)
+        {
+            SelectionParserValue result(REAL_VALUE);
+            result.u.r.r1 = result.u.r.r2 = value;
+            return result;
+        }
+        /*! \brief
+         * Allocates and initializes a constant floating-point range value.
+         *
+         * \param[in] from  Beginning of the range to assign to the value.
+         * \param[in] to    End of the range to assign to the value.
+         * \returns   The newly created value.
+         */
+        static SelectionParserValue createRealRange(real from, real to)
+        {
+            SelectionParserValue result(REAL_VALUE);
+            result.u.r.r1 = from;
+            result.u.r.r2 = to;
+            return result;
+        }
+        /*! \brief
+         * Allocates and initializes a constant string value.
+         *
+         * \param[in] value  String to assign to the value.
+         * \returns   The newly created value.
+         */
+        static SelectionParserValue createString(const char *value)
+        {
+            SelectionParserValue result(STR_VALUE);
+            result.str = value;
+            return result;
+        }
+        /*! \brief
+         * Allocates and initializes a constant position value.
+         *
+         * \param[in] value  Position vector to assign to the value.
+         * \returns   The newly created value.
+         */
+        static SelectionParserValue createPosition(rvec value)
+        {
+            SelectionParserValue result(POS_VALUE);
+            copy_rvec(value, result.u.x);
+            return result;
+        }
 
-    //! Type of the value.
-    e_selvalue_t            type;
-    //! Expression pointer if the value is the result of an expression.
-    gmx::SelectionTreeElementPointer expr;
-    //! The actual value if \p expr is NULL.
-    union {
-        /** The integer value/range (\p type INT_VALUE); */
-        struct {
-            /** Beginning of the range. */
-            int             i1;
-            /** End of the range; equals \p i1 for a single integer. */
-            int             i2;
-        }                   i;
-        /** The real value/range (\p type REAL_VALUE); */
-        struct {
-            /** Beginning of the range. */
-            real            r1;
-            /** End of the range; equals \p r1 for a single number. */
-            real            r2;
-        }                   r;
-        /** The string value (\p type STR_VALUE); */
-        char               *s;
-        /** The position value (\p type POS_VALUE); */
-        rvec                x;
-    }                       u;
-    /** Pointer to the next value. */
-    struct t_selexpr_value *next;
-} t_selexpr_value;
+        //! Returns true if the value comes from expression evaluation.
+        bool hasExpressionValue() const { return expr; }
 
-namespace gmx
-{
+        //! Returns the string value (\a type must be ::STR_VALUE).
+        const std::string &stringValue() const
+        {
+            GMX_ASSERT(type == STR_VALUE && !hasExpressionValue(),
+                       "Attempted to retrieve string value from a non-string value");
+            return str;
+        }
+
+        // TODO: boost::any or similar could be nicer for the implementation.
+        //! Type of the value.
+        e_selvalue_t            type;
+        //! Expression pointer if the value is the result of an expression.
+        gmx::SelectionTreeElementPointer expr;
+        //! String value for \a type ::STR_VALUE.
+        std::string             str;
+        //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
+        union {
+            //! The integer value/range (\a type ::INT_VALUE).
+            struct {
+                //! Beginning of the range.
+                int             i1;
+                //! End of the range; equals \a i1 for a single integer.
+                int             i2;
+            }                   i;
+            //! The real value/range (\a type ::REAL_VALUE).
+            struct {
+                //! Beginning of the range.
+                real            r1;
+                //! End of the range; equals \a r1 for a single number.
+                real            r2;
+            }                   r;
+            //! The position value (\a type ::POS_VALUE).
+            rvec                x;
+        }                       u;
+
+    private:
+        /*! \brief
+         * Initializes a new value.
+         *
+         * \param[in] type  Type for the new value.
+         */
+        explicit SelectionParserValue(e_selvalue_t type);
+        /*! \brief
+         * Initializes a new expression value.
+         *
+         * \param[in] expr  Expression for the value.
+         */
+        explicit SelectionParserValue(const gmx::SelectionTreeElementPointer &expr);
+};
 
 class SelectionParserParameter;
 
@@ -134,44 +275,87 @@ class SelectionParserParameter
         /*! \brief
          * Allocates and initializes a parsed method parameter.
          *
-         * \param[in] name   Name for the new parameter (can be NULL).
-         * \param[in] value  List of values for the parameter.
+         * \param[in] name    Name for the new parameter (can be NULL).
+         * \param[in] values  List of values for the parameter.
          * \returns   Pointer to the newly allocated parameter.
          * \throws    std::bad_alloc if out of memory.
          */
         static SelectionParserParameterPointer
-        create(const char *name, t_selexpr_value *value)
+        create(const char *name, SelectionParserValueListPointer values)
         {
             return SelectionParserParameterPointer(
-                    new SelectionParserParameter(name, value));
+                    new SelectionParserParameter(name, move(values)));
         }
-        //! \copydoc create(const char *, t_selexpr_value *)
+        //! \copydoc create(const char *, SelectionParserValueListPointer)
         static SelectionParserParameterPointer
-        create(const std::string &name, t_selexpr_value *value)
+        create(const std::string &name, SelectionParserValueListPointer values)
         {
             return SelectionParserParameterPointer(
-                    new SelectionParserParameter(name.c_str(), value));
+                    new SelectionParserParameter(name.c_str(), move(values)));
+        }
+        /*! \brief
+         * Allocates and initializes a parsed method parameter.
+         *
+         * \param[in] name    Name for the new parameter (can be NULL).
+         * \param[in] value   Value for the parameter.
+         * \returns   Pointer to the newly allocated parameter.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This overload is a convenience wrapper for the case when creating
+         * parameters outside the actual Bison parser and only a single value
+         * is necessary.
+         */
+        static SelectionParserParameterPointer
+        create(const char *name, const SelectionParserValue &value)
+        {
+            return create(name, SelectionParserValue::createList(value));
+        }
+        /*! \brief
+         * Allocates and initializes a parsed method parameter.
+         *
+         * \param[in] name    Name for the new parameter (can be NULL).
+         * \param[in] expr    Expression value for the parameter.
+         * \returns   Pointer to the newly allocated parameter.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This overload is a convenience wrapper for the case when creating
+         * parameters outside the actual Bison parser and only a single
+         * expression value is necessary.
+         */
+        static SelectionParserParameterPointer
+        createFromExpression(const char *name,
+                             const SelectionTreeElementPointer &expr)
+        {
+            return create(name, SelectionParserValue::createExpr(expr));
+        }
+        //! \copydoc createFromExpression(const char *, const SelectionTreeElementPointer &)
+        static SelectionParserParameterPointer
+        createFromExpression(const std::string &name,
+                             const SelectionTreeElementPointer &expr)
+        {
+            return create(name.c_str(), SelectionParserValue::createExpr(expr));
         }
 
         /*! \brief
          * Initializes a parsed method parameter.
          *
-         * \param[in] name   Name for the new parameter (can be NULL).
-         * \param[in] value  List of values for the parameter.
+         * \param[in] name    Name for the new parameter (can be NULL).
+         * \param[in] values  List of values for the parameter.
          * \throws    std::bad_alloc if out of memory.
          */
-        SelectionParserParameter(const char *name, t_selexpr_value *value);
+        SelectionParserParameter(const char *name,
+                                 SelectionParserValueListPointer values);
         ~SelectionParserParameter();
 
         //! Returns the name of the parameter (may be empty).
         const std::string &name() const { return name_; }
+        //! Returns the values for the parameter.
+        const SelectionParserValueList &values() const { return *values_; }
 
         //! Name of the parameter.
         std::string             name_;
-        //! Number of values given for this parameter.
-        int                     nval;
-        //! Pointer to the first value.
-        struct t_selexpr_value *value;
+        //! Values for this parameter.
+        SelectionParserValueListPointer values_;
 };
 
 } // namespace gmx
@@ -182,16 +366,6 @@ _gmx_selparser_error(void *scanner, const char *fmt, ...);
 /** Handle exceptions caught within the Bison code. */
 bool
 _gmx_selparser_handle_exception(void *scanner, const std::exception &ex);
-
-/** Allocates and initializes a constant \c t_selexpr_value. */
-t_selexpr_value *
-_gmx_selexpr_create_value(e_selvalue_t type);
-/** Allocates and initializes an expression \c t_selexpr_value. */
-t_selexpr_value *
-_gmx_selexpr_create_value_expr(const gmx::SelectionTreeElementPointer &expr);
-/** Frees the memory allocated for a chain of values. */
-void
-_gmx_selexpr_free_values(t_selexpr_value *value);
 
 /** Propagates the flags for selection elements. */
 void
@@ -217,11 +391,12 @@ _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
                          const gmx::SelectionTreeElementPointer &right,
-                         char *cmpop, void *scanner);
+                         const char *cmpop, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a keyword expression from the parsed data. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_keyword(struct gmx_ana_selmethod_t *method,
-                      t_selexpr_value *args, const char *rpost, void *scanner);
+                      gmx::SelectionParserValueListPointer args,
+                      const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a method expression from the parsed data. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_method(struct gmx_ana_selmethod_t *method,
@@ -275,7 +450,8 @@ void
 _gmx_sel_handle_empty_cmd(void *scanner);
 /** Process help commands. */
 void
-_gmx_sel_handle_help_cmd(t_selexpr_value *topic, void *scanner);
+_gmx_sel_handle_help_cmd(const gmx::SelectionParserValueListPointer &topic,
+                         void *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */

@@ -44,31 +44,14 @@
 
 #include <exception>
 
+#include <boost/scoped_ptr.hpp>
+
+#include "gromacs/utility/gmxassert.h"
+
 #include "parsetree.h"
 #include "selelem.h"
 
 #include "scanner.h"
-
-//! Helper method to reorder a list of parameter values.
-static t_selexpr_value *
-process_value_list(t_selexpr_value *values)
-{
-    t_selexpr_value *val, *pval, *nval;
-
-    /* Count values (if needed) and reverse list */
-    pval = NULL;
-    val  = values;
-    while (val)
-    {
-        nval = val->next;
-        val->next = pval;
-        pval = val;
-        val = nval;
-    }
-    values = pval;
-
-    return values;
-}
 
 //! Error handler needed by Bison.
 static void
@@ -104,45 +87,72 @@ yyerror(yyscan_t scanner, char const *s)
     }
 //!\}
 
+#ifndef GMX_CXX11
+//! No-op to enable use of same get()/set() implementation as with C++11.
+static gmx::SelectionParserValue &move(gmx::SelectionParserValue &src)
+{
+    return src;
+}
+#endif
+
 /*! \brief
- * Retrieves a smart pointer from a semantic value.
+ * Retrieves a semantic value.
  *
- * \param[in] src  Semantic value to get the pointer from.
- * \returns   Retrieved smart pointer.
+ * \param[in] src  Semantic value to get the value from.
+ * \returns   Retrieved value.
+ * \throws    unspecified  Any exception thrown by the move constructor of
+ *      ValueType (copy constructor if GMX_CXX11 is not set).
  *
  * There should be no statements that may throw exceptions in actions before
- * this function has been called for all semantic values that have a smart
- * pointer stored.  Together with set(), this function abstracts away exception
+ * this function has been called for all semantic values that have a C++ object
+ * stored.  Together with set(), this function abstracts away exception
  * safety issues that arise from the use of a plain pointer for storing the
  * semantic values.
  *
- * Does not throw.
+ * Does not throw for smart pointer types.  If used with types that may throw,
+ * the order of operations should be such that it is exception-safe.
  */
-template <typename PointerType> static
-PointerType get(PointerType *src)
+template <typename ValueType> static
+ValueType get(ValueType *src)
 {
-    PointerType result;
-    if (src != NULL)
-    {
-        result.swap(*src);
-        delete src;
-    }
-    return move(result);
+    GMX_RELEASE_ASSERT(src != NULL, "Semantic value pointers should be non-NULL");
+    boost::scoped_ptr<ValueType> srcGuard(src);
+    return ValueType(move(*src));
 }
 /*! \brief
- * Sets a smart pointer to a semantic value.
+ * Sets a semantic value.
  *
+ * \tparam     ValueType Type of value to set.
  * \param[out] dest  Semantic value to set (typically $$).
- * \param[in]  value Pointer to put into the semantic value.
+ * \param[in]  value Value to put into the semantic value.
  * \throws     std::bad_alloc if out of memory.
+ * \throws     unspecified  Any exception thrown by the move constructor of
+ *      ValueType (copy constructor if GMX_CXX11 is not set).
  *
  * This should be the last statement before ::END_ACTION, except for a
  * possible ::CHECK_SEL.
  */
-template <typename PointerType> static
-void set(PointerType *&dest, PointerType value)
+template <typename ValueType> static
+void set(ValueType *&dest, ValueType value)
 {
-    dest = new PointerType(move(value));
+    dest = new ValueType(move(value));
+}
+/*! \brief
+ * Sets an empty semantic value.
+ *
+ * \tparam     ValueType Type of value to set (must be default constructible).
+ * \param[out] dest  Semantic value to set (typically $$).
+ * \throws     std::bad_alloc if out of memory.
+ * \throws     unspecified  Any exception thrown by the default constructor of
+ *      ValueType.
+ *
+ * This should be the last statement before ::END_ACTION, except for a
+ * possible ::CHECK_SEL.
+ */
+template <typename ValueType> static
+void set_empty(ValueType *&dest)
+{
+    dest = new ValueType;
 }
 /*! \brief
  * Checks that a valid tree was set.
