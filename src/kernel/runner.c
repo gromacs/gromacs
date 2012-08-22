@@ -79,6 +79,7 @@
 #include "gmx_fatal_collective.h"
 #include "membed.h"
 #include "md_openmm.h"
+#include "gmx_omp.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -95,13 +96,8 @@
 #include "md_openmm.h"
 #endif
 
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
-
 #include "gpu_utils.h"
 #include "nbnxn_cuda_data_mgmt.h"
-
 
 typedef struct { 
     gmx_integrator_t *func;
@@ -804,7 +800,7 @@ static void set_cpu_affinity(FILE *fplog,
         if (hw_opt->bPinHyperthreading)
         {
             /* This should ONLY be used with hyperthreading turned on */
-            n_ht_physcore = omp_get_num_procs()/2;
+            n_ht_physcore = gmx_omp_get_num_procs()/2; /* FIXME has this ben tested extensively!? */
 
             if (SIMMASTER(cr))
             {
@@ -825,7 +821,7 @@ static void set_cpu_affinity(FILE *fplog,
             int core;
 
             CPU_ZERO(&mask);
-            thread += omp_get_thread_num();
+            thread += gmx_omp_get_thread_num();
             if (n_ht_physcore <= 0)
             {
                 core = offset + thread;

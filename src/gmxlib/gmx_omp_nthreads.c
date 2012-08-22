@@ -46,11 +46,8 @@
 #include "macros.h"
 #include "network.h"
 #include "statutil.h"
+#include "gmx_omp.h"
 #include "gmx_omp_nthreads.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
 
 /*! Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */
@@ -386,18 +383,18 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 #ifndef GMX_THREAD_MPI
         if (bThisNodePMEOnly)
         {
-            omp_set_num_threads(modth.gnth_pme);
+            gmx_omp_set_num_threads(modth.gnth_pme);
         }
         else
 #endif /* GMX_THREAD_MPI */
         {
             if (bFullOmpSupport)
             {
-                omp_set_num_threads(nth);
+                gmx_omp_set_num_threads(nth);
             }
             else
             {
-                omp_set_num_threads(1);
+                gmx_omp_set_num_threads(1);
             }
         }
 #endif /* GMX_OPENMP */
@@ -445,7 +442,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 void gmx_omp_nthreads_detecthw()
 {
 #ifdef GMX_OPENMP
-    modth.max_cores = omp_get_max_threads();
+    modth.max_cores = gmx_omp_get_max_threads();
 #else
     modth.max_cores = 1;
 #endif

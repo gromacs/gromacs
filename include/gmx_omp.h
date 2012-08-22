@@ -32,17 +32,21 @@
  * used whnever OpenMP API functions are needed.
  */
 
-/*! Sets the number of threads in subsequent parallel regions, unless overridden
- *  by a num_threads clause. Acts as a wrapper for omp_get_max_threads(void). */
+/*! Returns an integer equal to or greater than the number of threads
+ *  that would be available if a parallel region without num_threads were
+ *  defined at that point in the code. Acts as a wapepr for omp_set_num_threads(void). */
 int  gmx_omp_get_max_threads(void);
+
+/*! Returns the number of processors available when the function is called.
+ *  Acts as a wrapper around omp_get_num_procs() */
+int gmx_omp_get_num_procs(void);
 
 /*! Returns the thread number of the thread executing within its thread team.
  *  Acts as a warpper for omp_get_thread_num(void). */
 int  gmx_omp_get_thread_num(void);
 
-/*! Returns an integer that is equal to or greater than the number of threads
- * that would be available if a parallel region without num_threads were
- * defined at that point in the code. Acts as a wapepr for omp_set_num_threads(void). */
+/*! Sets the number of threads in subsequent parallel regions, unless overridden
+ *  by a num_threads clause. Acts as a wrapper for omp_get_max_threads(void). */
 void gmx_omp_set_num_threads(int num_threads);
 
 #endif /* GMX_OMP_H */
