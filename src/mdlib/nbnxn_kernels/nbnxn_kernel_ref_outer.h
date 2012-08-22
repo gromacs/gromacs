@@ -29,14 +29,6 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <math.h>
-
-#include "typedefs.h"
-
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE

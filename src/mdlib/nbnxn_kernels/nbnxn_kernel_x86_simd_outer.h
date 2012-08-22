@@ -29,13 +29,6 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <math.h>
-
-#include "typedefs.h"
 
 /* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file */
 #include "gmx_x86_simd_macros.h"
