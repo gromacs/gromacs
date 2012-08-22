@@ -153,7 +153,7 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
                          int *curr_size, int *curr_alloc_size,
                          int req_size,
                          cudaStream_t s,
-                         gmx_bool doAsync);
+                         bool bAsync);
 
 /*! Waits for event e to complete, */
 int cu_wait_event(cudaEvent_t /*e*/);

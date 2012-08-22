@@ -88,14 +88,14 @@
 typedef void (*nbnxn_cu_k_ptr_t)(const cu_atomdata_t,
                                  const cu_nbparam_t,
                                  const cu_plist_t,
-                                 gmx_bool);
+                                 bool);
 
 /*********************************/
 
 /* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
-static gmx_bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
-static gmx_bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
-static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
+static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
+static bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
+static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
 
 /* Bit-pattern used for polling-based GPU synchronization. It is used as a float
@@ -157,18 +157,18 @@ nb_cu_k_legacy[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
 static inline nbnxn_cu_k_ptr_t select_nbnxn_kernel(int kver, int eeltype,
-                                                    gmx_bool doEne, gmx_bool doPrune)
+                                                   bool bDoEne, bool bDoPrune)
 {
     assert(kver < eNbnxnCuKNR);
     assert(eeltype < eelCuNR);
 
     if (NBNXN_KVER_LEGACY(kver))
     {
-        return nb_cu_k_legacy[eeltype][doEne][doPrune];
+        return nb_cu_k_legacy[eeltype][bDoEne][bDoPrune];
     }
     else
     {
-        return nb_cu_k_default[eeltype][doEne][doPrune];
+        return nb_cu_k_default[eeltype][bDoEne][bDoPrune];
     }
 }
 
@@ -233,12 +233,12 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     cu_timers_t     *t      = cu_nb->timers;
     cudaStream_t    stream  = cu_nb->stream[iloc];
 
-    gmx_bool calc_ener   = flags & GMX_FORCE_VIRIAL;
-    gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
-    gmx_bool do_time     = cu_nb->do_time;
+    bool bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool bDoTime     = cu_nb->bDoTime;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
-    calc_ener = (calc_ener || always_ener) && !never_ener; 
+    bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
     /* don't launch the kernel if there is no work to do */
     if (plist->nsci == 0)
@@ -275,7 +275,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* beginning of timed HtoD section */
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(t->start_nb_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
@@ -285,22 +285,22 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
                       adat_len * sizeof(*adat->xq), stream); 
 
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(t->stop_nb_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
     /* beginning of timed nonbonded calculation section */
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(t->start_nb_k[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
     /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(cu_nb->kernel_ver, nbp->eeltype, calc_ener,
-                                    plist->do_prune || always_prune);
+    nb_kernel = select_nbnxn_kernel(cu_nb->kernel_ver, nbp->eeltype, bCalcEner,
+                                    plist->bDoPrune || always_prune);
 
     /* kernel launch config */
     nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
@@ -317,10 +317,10 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
                 NSUBCELL, plist->na_c);
     }
 
-    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist, calc_fshift);
+    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist, bCalcFshift);
     CU_LAUNCH_ERR("k_calc_nb");
 
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(t->stop_nb_k[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
@@ -355,11 +355,11 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
 
     cu_atomdata_t   *adat   = cu_nb->atdat;
     cu_timers_t     *t      = cu_nb->timers;
-    gmx_bool        do_time = cu_nb->do_time;
+    bool            bDoTime = cu_nb->bDoTime;
     cudaStream_t    stream  = cu_nb->stream[iloc];
 
-    gmx_bool calc_ener   = flags & GMX_FORCE_VIRIAL;
-    gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
+    bool bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch copy-back if there was no work to do */
     if (cu_nb->plist[iloc]->nsci == 0)
@@ -382,13 +382,13 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* beginning of timed D2H section */
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(t->start_nb_d2h[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    if (!cu_nb->use_stream_sync)
+    if (!cu_nb->bUseStreamSync)
     {
         /* For safety reasons set a few (5%) forces to NaN. This way even if the
            polling "hack" fails with some future NVIDIA driver we'll get a crash. */
@@ -442,14 +442,14 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     if (LOCAL_I(iloc))
     {
         /* DtoH fshift */
-        if (calc_fshift)
+        if (bCalcFshift)
         {
             cu_copy_D2H_async(cu_nb->nbst.fshift, adat->fshift,
                               SHIFTS * sizeof(*cu_nb->nbst.fshift), stream);
         }
 
         /* DtoH energies */
-        if (calc_ener)
+        if (bCalcEner)
         {
             cu_copy_D2H_async(cu_nb->nbst.e_lj, adat->e_lj,
                               sizeof(*cu_nb->nbst.e_lj), stream);
@@ -458,7 +458,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
         }
     }
 
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(t->stop_nb_d2h[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
@@ -478,7 +478,7 @@ static inline bool atomic_cas(volatile unsigned int *ptr,
     return tMPI_Atomic_cas((tMPI_Atomic_t *)ptr, oldval, newval);
 #else
     gmx_incons("Atomic operations not available, atomic_cas() should not have been called!");
-    return TRUE;
+    return true;
 #endif
 }
 
@@ -513,11 +513,11 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     wallclock_gpu_t *timings = cu_nb->timings;
     nb_staging      nbst     = cu_nb->nbst;
 
-    gmx_bool    calc_ener   = flags & GMX_FORCE_VIRIAL;
-    gmx_bool    calc_fshift = flags & GMX_FORCE_VIRIAL;
+    bool    bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool    bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
-    calc_ener = (calc_ener || always_ener) && !never_ener; 
+    bCalcEner = (bCalcEner || always_ener) && !never_ener; 
 
     /* don't launch wait/update timers & counters if there was no work to do
 
@@ -539,7 +539,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         adat_end = cu_nb->atdat->natoms;
     }
 
-    if (cu_nb->use_stream_sync)
+    if (cu_nb->bUseStreamSync)
     {
         stat = cudaStreamSynchronize(cu_nb->stream[iloc]);
         CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
@@ -557,17 +557,17 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* timing data accumulation */
-    if (cu_nb->do_time)
+    if (cu_nb->bDoTime)
     {
         /* only increase counter once (at local F wait) */
         if (LOCAL_I(iloc))
         {
             timings->nb_c++;
-            timings->ktime[plist->do_prune ? 1 : 0][calc_ener ? 1 : 0].c += 1;
+            timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].c += 1;
         }
 
         /* kernel timings */
-        timings->ktime[plist->do_prune ? 1 : 0][calc_ener ? 1 : 0].t +=
+        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t +=
             cu_event_elapsed(timers->start_nb_k[iloc], timers->stop_nb_k[iloc]);
 
         /* X/q H2D and F D2H timings */
@@ -577,7 +577,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                                                  timers->stop_nb_d2h[iloc]);
 
         /* only count atdat and pair-list H2D at pair-search step */
-        if (plist->do_prune)
+        if (plist->bDoPrune)
         {
             /* atdat transfer timing (add only once, at local F wait) */
             if (LOCAL_A(aloc))
@@ -595,13 +595,13 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     /* add up enegies and shift forces (only once at local F wait) */
     if (LOCAL_I(iloc))
     {
-        if (calc_ener)
+        if (bCalcEner)
         {
             *e_lj += *nbst.e_lj;
             *e_el += *nbst.e_el;
         }
 
-        if (calc_fshift)
+        if (bCalcFshift)
         {
             for (i = 0; i < SHIFTS; i++)
             {
@@ -613,5 +613,5 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* turn off pruning (doesn't matter if this is pair-search step or not) */
-    plist->do_prune = FALSE;
+    plist->bDoPrune = false;
 }

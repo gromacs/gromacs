@@ -48,14 +48,14 @@
  *  The copy is launched in stream s or if not spefied, in stream 0.
  */
 static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes, 
-                               gmx_bool async = FALSE, cudaStream_t s = 0)
+                               bool bAsync = false, cudaStream_t s = 0)
 {
     cudaError_t stat;
     
     if (h_dest == 0 || d_src == 0 || bytes <= 0)
         return -1;
 
-    if (async)
+    if (bAsync)
     {
         stat = cudaMemcpyAsync(h_dest, d_src, bytes, cudaMemcpyDeviceToHost, s);
         CU_RET_ERR(stat, "DtoH cudaMemcpyAsync failed");
@@ -72,7 +72,7 @@ static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes,
 
 int cu_copy_D2H(void * h_dest, void * d_src, size_t bytes)
 {
-    return cu_copy_D2H_generic(h_dest, d_src, bytes, FALSE);
+    return cu_copy_D2H_generic(h_dest, d_src, bytes, false);
 }
 
 /*!
@@ -80,7 +80,7 @@ int cu_copy_D2H(void * h_dest, void * d_src, size_t bytes)
  */
 int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s = 0)
 {
-    return cu_copy_D2H_generic(h_dest, d_src, bytes, TRUE, s);
+    return cu_copy_D2H_generic(h_dest, d_src, bytes, true, s);
 }
 
 int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
@@ -98,14 +98,14 @@ int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
  *  The copy is launched in stream s or if not spefied, in stream 0.
  */
 static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes, 
-                               gmx_bool async = FALSE, cudaStream_t s = 0)
+                               bool bAsync = false, cudaStream_t s = 0)
 {
     cudaError_t stat;
 
     if (d_dest == 0 || h_src == 0 || bytes <= 0)
         return -1;
 
-    if (async)
+    if (bAsync)
     {
         stat = cudaMemcpyAsync(d_dest, h_src, bytes, cudaMemcpyHostToDevice, s);
         CU_RET_ERR(stat, "HtoD cudaMemcpyAsync failed");
@@ -121,7 +121,7 @@ static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes,
 
 int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
 {   
-    return cu_copy_H2D_generic(d_dest, h_src, bytes, FALSE);
+    return cu_copy_H2D_generic(d_dest, h_src, bytes, false);
 }
 
 /*!
@@ -129,7 +129,7 @@ int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
  */
 int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s = 0)
 {   
-    return cu_copy_H2D_generic(d_dest, h_src, bytes, TRUE, s);
+    return cu_copy_H2D_generic(d_dest, h_src, bytes, true, s);
 }
 
 int cu_copy_H2D_alloc(void ** d_dest, void * h_src, size_t bytes)
@@ -271,7 +271,7 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
                          int *curr_size, int *curr_alloc_size,
                          int req_size,
                          cudaStream_t s,
-                         gmx_bool doAsync = TRUE)
+                         bool bAsync = true)
 {
     cudaError_t stat;
 
@@ -302,7 +302,7 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
     /* upload to device */
     if (h_src)
     {
-        if (doAsync)
+        if (bAsync)
         {
             cu_copy_H2D_async(*d_dest, h_src, *curr_size * type_size, s);
         }

@@ -57,7 +57,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
             (const cu_atomdata_t atdat,
              const cu_nbparam_t nbparam,
              const cu_plist_t plist,
-             gmx_bool calc_fshift)
+             bool  bCalcFshift)
 {
     /* convenience variables */
     const nbnxn_sci_t *pl_sci   = plist.sci;
@@ -178,7 +178,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
     /* skip central shifts when summing shift forces */
     if (nb_sci.shift == CENTRAL)
     {
-        calc_fshift = FALSE;
+        bCalcFshift = false;
     }
 
     fshift_buf = make_float3(0.0f);
@@ -352,13 +352,13 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
         f_buf[2 * STRIDE_DIM + tidx] = fci_buf[ci_offset].z;
         __syncthreads();
         reduce_force_i(f_buf, f,
-                       &fshift_buf, calc_fshift,
+                       &fshift_buf, bCalcFshift,
                        tidxi, tidxj, ai);
         __syncthreads();
     }
 
     /* add up local shift forces */
-    if (calc_fshift && tidxj == 0)
+    if (bCalcFshift && tidxj == 0)
     {
         atomicAdd(&atdat.fshift[nb_sci.shift].x, fshift_buf.x);
         atomicAdd(&atdat.fshift[nb_sci.shift].y, fshift_buf.y);

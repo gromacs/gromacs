@@ -93,7 +93,7 @@ struct cu_atomdata
     int     *atom_types;        /* atom type indices, size natoms   */
  
     float3  *shift_vec;         /* shifts */
-    gmx_bool shift_vec_uploaded;/* has the shift vector already been transfered? */
+    bool    bShiftVecUploaded;  /* has the shift vector already been transfered? */
 };
 
 /*! Paramters required for the CUDA nonbonded calculations. */
@@ -135,7 +135,7 @@ struct cu_plist
     int             nexcl;      /* count for excl                               */
     int             excl_nalloc;/* allocation size of excl                      */
 
-    gmx_bool        do_prune;   /* true if pair-list pruning needs to be
+    bool            bDoPrune;   /* true if pair-list pruning needs to be
                                    done during the  current step                */
 };
 
@@ -158,8 +158,8 @@ struct nbnxn_cuda
     cuda_dev_info_t *dev_info;      /* CUDA device information                              */
     int             kernel_ver;     /* The version of the kernel to be executed on the device
                                        in use, possible values: eNbnxnCuK* */
-    gmx_bool        bUseTwoStreams; /* true if doing both local/non-local NB work on GPU */
-    gmx_bool        use_stream_sync; /* if true use memory polling-based waiting instead 
+    bool            bUseTwoStreams; /* true if doing both local/non-local NB work on GPU */
+    bool            bUseStreamSync; /* if true use memory polling-based waiting instead 
                                         of cudaStreamSynchronize                            */
     cu_atomdata_t   *atdat;         /* atom data */
     cu_nbparam_t    *nbparam;       /* parameters required for the non-bonded calc.         */
@@ -174,8 +174,8 @@ struct nbnxn_cuda
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
-     * setting do_time needs to be change if this CUDA "feature" gets fixed. */
-    gmx_bool        do_time;        /* True if event-based timing is enabled.               */
+     * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
+    bool            bDoTime;        /* True if event-based timing is enabled.               */
     cu_timers_t     *timers;        /* CUDA event-based timers.                             */
     wallclock_gpu_t *timings;       /* Timing data.                                         */
 };

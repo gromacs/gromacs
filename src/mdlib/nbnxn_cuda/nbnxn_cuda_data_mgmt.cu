@@ -155,7 +155,7 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     ad->ntypes  = ntypes;
     stat = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec"); 
-    ad->shift_vec_uploaded = FALSE;
+    ad->bShiftVecUploaded = false;
 
     stat = cudaMalloc((void**)&ad->fshift, SHIFTS*sizeof(*ad->fshift));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->fshift");
@@ -255,7 +255,7 @@ static void init_plist(cu_plist_t *pl)
     pl->cj4_nalloc  = -1;
     pl->nexcl       = -1;
     pl->excl_nalloc = -1;
-    pl->do_prune    = FALSE;
+    pl->bDoPrune    = false;
 }
 
 /*! Initilizes the timer data structure. */
@@ -382,15 +382,15 @@ void nbnxn_cuda_init(FILE *fplog,
     bNoStreamSync  = getenv("GMX_NO_CUDA_STREAMSYNC") != NULL;
 
 #ifdef TMPI_ATOMICS
-    bTMPIAtomics = TRUE;
+    bTMPIAtomics = true;
 #else
-    bTMPIAtomics = FALSE;
+    bTMPIAtomics = false;
 #endif
 
 #if defined(i386) || defined(__x86_64__)
-    bX86 = TRUE;
+    bX86 = true;
 #else
-    bX86 = FALSE;
+    bX86 = false;
 #endif
 
     if (bStreamSync && bNoStreamSync)
@@ -402,7 +402,7 @@ void nbnxn_cuda_init(FILE *fplog,
     {
         if (bStreamSync)
         {
-            nb->use_stream_sync = TRUE;
+            nb->bUseStreamSync = true;
 
             sprintf(sbuf,
                     "NOTE: Using a GPU with ECC enabled, but cudaStreamSynchronize-based waiting is\n"
@@ -417,7 +417,7 @@ void nbnxn_cuda_init(FILE *fplog,
         else
         {
             /* can use polling wait only on x86/x86_64 *if* atomics are available */
-            nb->use_stream_sync = ((bX86 && bTMPIAtomics) == FALSE);
+            nb->bUseStreamSync = ((bX86 && bTMPIAtomics) == false);
 
             if (!bX86)
             {
@@ -466,7 +466,7 @@ void nbnxn_cuda_init(FILE *fplog,
     {
         if (bNoStreamSync)
         {
-            nb->use_stream_sync = FALSE;
+            nb->bUseStreamSync = false;
 
             sprintf(sbuf,
                     "NOTE: Using a GPU with no/disabled ECC, but cudaStreamSynchronize-based waiting\n"
@@ -480,7 +480,7 @@ void nbnxn_cuda_init(FILE *fplog,
         else
         {
             /* no/off ECC, cudaStreamSynchronize not turned off by env. var. */
-            nb->use_stream_sync = TRUE;
+            nb->bUseStreamSync = true;
         }
     }
 
@@ -489,10 +489,10 @@ void nbnxn_cuda_init(FILE *fplog,
        - with the polling waiting hack (without cudaStreamSynchronize);
        - when turned off by GMX_DISABLE_CUDA_TIMING.
      */
-    nb->do_time = (!nb->bUseTwoStreams && nb->use_stream_sync &&
+    nb->bDoTime = (!nb->bUseTwoStreams && nb->bUseStreamSync &&
                    (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
 
-    if (nb->do_time)
+    if (nb->bDoTime)
     {
         init_timers(nb->timers, nb->bUseTwoStreams);
         init_timings(nb->timings);
@@ -607,9 +607,9 @@ void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
 {
     char         sbuf[STRLEN];
     cudaError_t  stat;
-    gmx_bool     do_time    = cu_nb->do_time;
+    bool         bDoTime    = cu_nb->bDoTime;
     cudaStream_t stream     = cu_nb->stream[iloc];
-    cu_plist_t  *d_plist    = cu_nb->plist[iloc];
+    cu_plist_t   *d_plist   = cu_nb->plist[iloc];
 
     if (d_plist->na_c < 0)
     {
@@ -625,7 +625,7 @@ void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
         }
     }
 
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(cu_nb->timers->start_pl_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
@@ -634,26 +634,26 @@ void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
     cu_realloc_buffered((void **)&d_plist->sci, h_plist->sci, sizeof(*d_plist->sci),
                          &d_plist->nsci, &d_plist->sci_nalloc,
                          h_plist->nsci,
-                         stream, TRUE);
+                         stream, true);
 
     cu_realloc_buffered((void **)&d_plist->cj4, h_plist->cj4, sizeof(*d_plist->cj4),
                          &d_plist->ncj4, &d_plist->cj4_nalloc,
                          h_plist->ncj4,
-                         stream, TRUE);
+                         stream, true);
 
     cu_realloc_buffered((void **)&d_plist->excl, h_plist->excl, sizeof(*d_plist->excl),
                          &d_plist->nexcl, &d_plist->excl_nalloc,
                          h_plist->nexcl,
-                         stream, TRUE);
+                         stream, true);
 
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(cu_nb->timers->stop_pl_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
     /* need to prune the pair list during the next step */
-    d_plist->do_prune = TRUE;
+    d_plist->bDoPrune = true;
 }
 
 void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
@@ -663,11 +663,11 @@ void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
     cudaStream_t  ls    = cu_nb->stream[eintLocal];
 
     /* only if we have a dynamic box */
-    if (nbatom->bDynamicBox || !adat->shift_vec_uploaded)
+    if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
         cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 
                           SHIFTS * sizeof(*adat->shift_vec), ls);
-        adat->shift_vec_uploaded = TRUE;
+        adat->bShiftVecUploaded = true;
     }
 }
 
@@ -713,16 +713,16 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
 {
     cudaError_t   stat;
     int           nalloc, natoms;
-    gmx_bool      realloced;
-    gmx_bool      do_time   = cu_nb->do_time;
+    bool          realloced;
+    bool          bDoTime   = cu_nb->bDoTime;
     cu_timers_t   *timers   = cu_nb->timers;
     cu_atomdata_t *d_atdat  = cu_nb->atdat;
     cudaStream_t  ls        = cu_nb->stream[eintLocal];
 
     natoms = nbat->natoms;
-    realloced = FALSE;
+    realloced = false;
 
-    if (do_time)
+    if (bDoTime)
     {
         /* time async copy */
         stat = cudaEventRecord(timers->start_atdat, ls);
@@ -752,7 +752,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->atom_types");
 
         d_atdat->nalloc = nalloc;
-        realloced = TRUE;
+        realloced = true;
     }
 
     d_atdat->natoms = natoms;
@@ -767,7 +767,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
                       natoms*sizeof(*d_atdat->atom_types), ls);
 
-    if (do_time)
+    if (bDoTime)
     {
         stat = cudaEventRecord(timers->stop_atdat, ls);
         CU_RET_ERR(stat, "cudaEventRecord failed");
@@ -801,7 +801,7 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
     stat = cudaEventDestroy(cu_nb->misc_ops_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_done");
 
-    if (cu_nb->do_time)
+    if (cu_nb->bDoTime)
     {
         stat = cudaEventDestroy(timers->start_atdat);
         CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_atdat");
@@ -880,12 +880,12 @@ void cu_synchstream_atdat(nbnxn_cuda_ptr_t cu_nb, int iloc)
 
 wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
 {
-    return (cu_nb != NULL && cu_nb->do_time) ? cu_nb->timings : NULL;
+    return (cu_nb != NULL && cu_nb->bDoTime) ? cu_nb->timings : NULL;
 }
 
 void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
 {
-    if (cu_nb->do_time)
+    if (cu_nb->bDoTime)
     {
         init_timings(cu_nb->timings);
     }

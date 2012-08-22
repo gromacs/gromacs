@@ -63,7 +63,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
             (const cu_atomdata_t atdat,
              const cu_nbparam_t nbparam,
              const cu_plist_t plist,
-             gmx_bool calc_fshift)
+             bool bCalcFshift)
 {
     /* convenience variables */
     const nbnxn_sci_t *pl_sci   = plist.sci;
@@ -195,7 +195,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     /* skip central shifts when summing shift forces */
     if (nb_sci.shift == CENTRAL)
     {
-        calc_fshift = FALSE;
+        bCalcFshift = false;
     }
 
     fshift_buf = make_float3(0.0f);
@@ -223,7 +223,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
             {
                 if (imask & (255U << (jm * NSUBCELL)))
                 {
-                    uint mask_ji;
+                    unsigned int mask_ji;
 
                     mask_ji = (1U << (jm * NSUBCELL));
 
@@ -376,7 +376,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
         ai  = (sci * NSUBCELL + ci_offset) * CLUSTER_SIZE + tidxi;
 #ifdef REDUCE_SHUFFLE
         reduce_force_i_warp_shfl(fci_buf[ci_offset], f,
-                                 &fshift_buf, calc_fshift,
+                                 &fshift_buf, bCalcFshift,
                                  tidxj, ai);
 #else
         f_buf[                 tidx] = fci_buf[ci_offset].x;
@@ -384,7 +384,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
         f_buf[2 * STRIDE_DIM + tidx] = fci_buf[ci_offset].z;
         __syncthreads();
         reduce_force_i(f_buf, f,
-                       &fshift_buf, calc_fshift,
+                       &fshift_buf, bCalcFshift,
                        tidxi, tidxj, ai);
         __syncthreads();
 #endif
@@ -392,9 +392,9 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 
     /* add up local shift forces */
 #ifdef REDUCE_SHUFFLE
-    if (calc_fshift && (tidxj == 0 || tidxj == 4))
+    if (bCalcFshift && (tidxj == 0 || tidxj == 4))
 #else
-    if (calc_fshift && tidxj == 0)
+    if (bCalcFshift && tidxj == 0)
 #endif
     {
         atomicAdd(&atdat.fshift[nb_sci.shift].x, fshift_buf.x);

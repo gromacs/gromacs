@@ -114,7 +114,7 @@ void reduce_force_j_warp_shfl(float3 f, float3 *fout,
  */
 static inline __device__ 
 void reduce_force_i_generic(float *f_buf, float3 *fout,
-                            float3 *fshift_buf, gmx_bool calc_fshift,
+                            float3 *fshift_buf, bool bCalcFshift,
                             int tidxi, int tidxj, int aidx)
 {
     if (tidxj == 0)
@@ -129,7 +129,7 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
 
         atomicAdd(&fout[aidx], f);
 
-        if (calc_fshift)
+        if (bCalcFshift)
         {
             *fshift_buf += f;
         }
@@ -141,7 +141,7 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
  */
 static inline __device__ 
 void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
-                         float3 *fshift_buf, gmx_bool calc_fshift,
+                         float3 *fshift_buf, bool bCalcFshift,
                          int tidxi, int tidxj, int aidx)
 {
     int     i, j; 
@@ -172,7 +172,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
 
         atomicAdd(&fout[aidx], f);
 
-        if (calc_fshift)
+        if (bCalcFshift)
         {
             *fshift_buf += f;
         }
@@ -184,16 +184,16 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
  */
 static inline __device__ 
 void reduce_force_i(float *f_buf, float3 *f,
-                    float3 *fshift_buf, gmx_bool calc_fshift,
+                    float3 *fshift_buf, bool bCalcFshift,
                     int tidxi, int tidxj, int ai)
 {
     if ((CLUSTER_SIZE & (CLUSTER_SIZE - 1)))
     {
-        reduce_force_i_generic(f_buf, f, fshift_buf, calc_fshift, tidxi, tidxj, ai);
+        reduce_force_i_generic(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
     }
     else
     {
-        reduce_force_i_pow2(f_buf, f, fshift_buf, calc_fshift, tidxi, tidxj, ai);
+        reduce_force_i_pow2(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
     }
 }
 
@@ -203,7 +203,7 @@ void reduce_force_i(float *f_buf, float3 *f,
 #if __CUDA_ARCH__ >= 300
 static inline __device__ 
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
-                              float3 *fshift_buf, gmx_bool calc_fshift,
+                              float3 *fshift_buf, bool bCalcFshift,
                               int tidxj, int aidx)
 {
     int j;
@@ -221,7 +221,7 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
     {
         atomicAdd(&fout[aidx], fin);
 
-        if (calc_fshift)
+        if (bCalcFshift)
         {
             fshift_buf->x += fin.x;
             fshift_buf->y += fin.y;
