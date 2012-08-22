@@ -54,13 +54,13 @@
 
 #define USE_CUDA_EVENT_BLOCKING_SYNC FALSE  /* makes the CPU thread block */
 
-/* coulomb force talble size chosen such that it fits along the non-bonded 
+/* coulomb force talble size chosen such that it fits along the non-bonded
    parameters in the texture cache */
 #define EWALD_COULOMB_FORCE_TABLE_SIZE (1536)
 
 #define MY_PI               (3.1415926535897932384626433832795)
 #define TWO_OVER_SQRT_PI    (2.0/sqrt(MY_PI))
-    
+
 #define TIME_GPU_TRANSFERS 1
 
 /* Functions from nbnxn_cuda.cu */
@@ -71,7 +71,7 @@ extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_c
 static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
 
 
-/*! Tabulates the Ewald Coulomb force and initializes the size/scale 
+/*! Tabulates the Ewald Coulomb force and initializes the size/scale
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
  */
@@ -101,7 +101,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
         CU_RET_ERR(stat, "cudaMalloc failed on coul_tab");
 
         nbp->coulomb_tab = coul_tab;
-        
+
         cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
         stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
                                coul_tab, &cd, tabsize*sizeof(*coul_tab));
@@ -117,7 +117,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
 }
 
 
-/*! Initilizes the atomdata structure first time, it only gets filled at 
+/*! Initilizes the atomdata structure first time, it only gets filled at
     pair-search. */
 static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 {
@@ -125,7 +125,7 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 
     ad->ntypes  = ntypes;
     stat = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
-    CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec"); 
+    CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
     ad->bShiftVecUploaded = false;
 
     stat = cudaMalloc((void**)&ad->fshift, SHIFTS*sizeof(*ad->fshift));
@@ -150,12 +150,12 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 static void init_nbparam(cu_nbparam_t *nbp,
                            const interaction_const_t *ic,
                            const nonbonded_verlet_t *nbv)
-{  
+{
     cudaError_t stat;
-    int         ntypes, nnbfp; 
+    int         ntypes, nnbfp;
 
     ntypes  = nbv->grp[0].nbat->ntype;
-    
+
     nbp->ewald_beta = ic->ewaldcoeff;
     nbp->sh_ewald   = ic->sh_ewald;
     nbp->epsfac     = ic->epsfac;
@@ -171,14 +171,14 @@ static void init_nbparam(cu_nbparam_t *nbp,
         nbp->eeltype = eelCuCUT;
     }
     else if (EEL_RF(ic->eeltype))
-    {                
+    {
         nbp->eeltype = eelCuRF;
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype==eelEWALD))
     {
         nbp->eeltype = eelCuEWALD;
     }
-    else 
+    else
     {
         gmx_fatal(FARGS, "The requested electrostatics type is not implemented in the CUDA GPU accelerated kernels!");
     }
@@ -192,7 +192,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
 
     nnbfp = 2*ntypes*ntypes;
     stat = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
-    CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp"); 
+    CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp");
     cu_copy_H2D(nbp->nbfp, nbv->grp[0].nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
 
     cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
@@ -221,7 +221,7 @@ static void init_plist(cu_plist_t *pl)
     pl->sci     = NULL;
     pl->cj4     = NULL;
     pl->excl    = NULL;
-    
+
     /* size -1 indicates that the repective array hasn't been initialized yet */
     pl->na_c        = -1;
     pl->nsci        = -1;
@@ -290,6 +290,75 @@ static void init_timings(wallclock_gpu_t *t)
     }
 }
 
+/* Decide which kernel version to use (default or legacy) based on:
+ *  - CUDA version
+ *  - non-bonded kernel selector environment variables
+ *  - GPU SM version TODO ???
+ */
+static int pick_nbnxn_kernel_version()
+{
+    bool bLegacyKernel, bDefaultKernel, bCUDA40, bCUDA32;
+    char sbuf[STRLEN];
+    int  kver;
+
+    /* legacy kernel (former k2), kept for now for backward compatiblity,
+       faster than the default with  CUDA 3.2/4.0 (TODO: on Kepler?). */
+    bLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
+    /* default kernel (former k3). */
+    bDefaultKernel = (getenv("GMX_CUDA_NB_DEFAULT") != NULL);
+
+    if ((unsigned)(bLegacyKernel + bDefaultKernel) > 1)
+    {
+        gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
+                  "of the following environment variables: \n"
+                  "GMX_CUDA_NB_DEFAULT, GMX_CUDA_NB_LEGACY");
+    }
+
+    bCUDA32 = bCUDA40 = false;
+#if CUDA_VERSION == 3200
+    bCUDA32 = true;
+    sprintf(sbuf, "3.2");
+#elif CUDA_VERSION == 4000
+    bCUDA40 = false;
+    sprintf(sbuf, "4.0");
+#endif
+
+    /* default is default ;) */
+    kver = eNbnxnCuKDefault;
+
+    if (bCUDA32 || bCUDA40)
+    {
+        /* use legacy kernel unless something else is forced by an env. var */
+        if (bDefaultKernel)
+        {
+            fprintf(stderr,
+                    "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
+                    "      non-bonded kenels perform best. However, the default kernels were\n"
+                    "      selected by the GMX_CUDA_NB_DEFAULT environment variable.\n"
+                    "      For best performance upgrade your CUDA tookit.",
+                    sbuf);
+        }
+        else
+        {
+            kver = eNbnxnCuKLegacy;
+        }
+    }
+    else
+    {
+        /* issue not if the non-default kernel is forced by an env. var */
+        if (bLegacyKernel)
+        {
+            fprintf(stderr,
+                    "\nNOTE: Legacy non-bonded CUDA kernels were selected by the GMX_CUDA_NB_LEGACY\n"
+                    "      env var. Consider using using the default kernels which should be faster!\n");
+
+            kver = eNbnxnCuKLegacy;
+        }
+    }
+
+    return kver;
+}
+
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
                      gmx_gpu_info_t *gpu_info, int my_gpu_index,
@@ -298,8 +367,7 @@ void nbnxn_cuda_init(FILE *fplog,
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
     char sbuf[STRLEN];
-    bool bStreamSync, bNoStreamSync, bLegacyKernel, bDefaultKernel,
-         bCUDA40, bCUDA32, bTMPIAtomics, bX86;
+    bool bStreamSync, bNoStreamSync, bTMPIAtomics, bX86;
 
     assert(gpu_info);
 
@@ -473,69 +541,9 @@ void nbnxn_cuda_init(FILE *fplog,
         init_timings(nb->timings);
     }
 
-    /* FIXME move this out in a function
-       Decide which kernel version to run based on:
-       - GPU SM version
-       - non-bonded kernel selector environment variables
-    */
-    /* legacy kernel (former k2), kept for now for backward compatiblity,
-       faster than the default with  CUDA 3.2/4.0 (TODO: on Kepler?). */
-    bLegacyKernel  = (getenv("GMX_CU_NB_LEGACY") != NULL);
-    /* default kernel (former k3). */
-    bDefaultKernel = (getenv("GMX_CU_NB_DEFAULT") != NULL);
-
-    if ((unsigned)(bLegacyKernel + bDefaultKernel) > 1)
-    {
-        /* TODO remove in release? */
-        gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
-                  "of the following environment variables: \n"
-                  "GMX_CU_NB_DEFAULT, GMX_CU_NB_LEGACY");
-    }
-
     /* set the kernel type for the current GPU */
-    bCUDA32 = bCUDA40 = false;
-#if CUDA_VERSION == 3200
-    bCUDA32 = true;
-    sprintf(sbuf, "3.2");
-#elif CUDA_VERSION == 4000
-    bCUDA40 = false;
-    sprintf(sbuf, "4.0");
-#endif
-
-    /* default is default ;) */
-    nb->kernel_ver = eNbnxnCuKDefault;
-
-    /* TODO: add warning to the sanity checks for the case when code compiled
-       with old nvcc is used on Kepler. */
-    if (bCUDA32 || bCUDA40)
-    {
-        /* use legacy kernel unless something else is forced by an env. var */
-        if (bDefaultKernel)
-        {
-            fprintf(stderr,
-                    "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
-                    "      non-bonded kenels perform best. However, the default kernels were\n"
-                    "      selected by the GMX_CU_NB_DEFAULT environment variable."
-                    "      Consider using using the legacy kernels or upgrade your CUDA tookit.\n",
-                    sbuf);
-        }
-        else
-        {
-            nb->kernel_ver = eNbnxnCuKLegacy;
-        }
-    }
-    else
-    {
-        /* issue not if the non-default kernel is forced by an env. var */
-        if (bLegacyKernel)
-        {
-            fprintf(stderr, "\nNOTE: Non-default non-bonded CUDA kernels were selected by the GMX_CU_NB_LEGACY\n"
-                    "      env var. Consider using using the default kernels which should be faster!\n");
-            
-            nb->kernel_ver = eNbnxnCuKLegacy;
-        }
-    }
-
+    nb->kernel_ver = pick_nbnxn_kernel_version();
+    /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
     *p_cu_nb = nb;
@@ -690,7 +698,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     if (natoms > d_atdat->nalloc)
     {
         nalloc = over_alloc_small(natoms);
-    
+
         /* free up first if the arrays have already been initialized */
         if (d_atdat->nalloc != -1)
         {
@@ -698,7 +706,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
             cu_free_buffered(d_atdat->xq);
             cu_free_buffered(d_atdat->atom_types);
         }
-        
+
         stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
         stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));
@@ -851,6 +859,6 @@ void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
 
 int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
 {
-    return cu_nb != NULL ? 
+    return cu_nb != NULL ?
         GPU_MIN_CI_BALANCED_FACTOR*cu_nb->dev_info->prop.multiProcessorCount : 0;
 }

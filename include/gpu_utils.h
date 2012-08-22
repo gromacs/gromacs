@@ -87,7 +87,6 @@ gmx_bool free_gpu(char *result_str) FUNC_TERM_INT
 FUNC_QUALIFIER
 int get_current_gpu_device_id(void) FUNC_TERM_INT
 
-/* FIXME temporary stuff */
 FUNC_QUALIFIER
 int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_INT
 FUNC_QUALIFIER
