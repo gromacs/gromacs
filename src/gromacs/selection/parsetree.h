@@ -248,11 +248,8 @@ class SelectionParserValue
 
 class SelectionParserParameter;
 
-//! Smart pointer type for managing a SelectionParserParameter.
-typedef gmx::gmx_unique_ptr<SelectionParserParameter>::type
-        SelectionParserParameterPointer;
 //! Container for a list of SelectionParserParameter objects.
-typedef std::list<SelectionParserParameterPointer>
+typedef std::list<SelectionParserParameter>
         SelectionParserParameterList;
 //! Smart pointer type for managing a SelectionParserParameterList.
 typedef gmx::gmx_unique_ptr<SelectionParserParameterList>::type
@@ -280,18 +277,16 @@ class SelectionParserParameter
          * \returns   Pointer to the newly allocated parameter.
          * \throws    std::bad_alloc if out of memory.
          */
-        static SelectionParserParameterPointer
+        static SelectionParserParameter
         create(const char *name, SelectionParserValueListPointer values)
         {
-            return SelectionParserParameterPointer(
-                    new SelectionParserParameter(name, move(values)));
+            return SelectionParserParameter(name, move(values));
         }
         //! \copydoc create(const char *, SelectionParserValueListPointer)
-        static SelectionParserParameterPointer
+        static SelectionParserParameter
         create(const std::string &name, SelectionParserValueListPointer values)
         {
-            return SelectionParserParameterPointer(
-                    new SelectionParserParameter(name.c_str(), move(values)));
+            return SelectionParserParameter(name.c_str(), move(values));
         }
         /*! \brief
          * Allocates and initializes a parsed method parameter.
@@ -305,7 +300,7 @@ class SelectionParserParameter
          * parameters outside the actual Bison parser and only a single value
          * is necessary.
          */
-        static SelectionParserParameterPointer
+        static SelectionParserParameter
         create(const char *name, const SelectionParserValue &value)
         {
             return create(name, SelectionParserValue::createList(value));
@@ -322,14 +317,14 @@ class SelectionParserParameter
          * parameters outside the actual Bison parser and only a single
          * expression value is necessary.
          */
-        static SelectionParserParameterPointer
+        static SelectionParserParameter
         createFromExpression(const char *name,
                              const SelectionTreeElementPointer &expr)
         {
             return create(name, SelectionParserValue::createExpr(expr));
         }
         //! \copydoc createFromExpression(const char *, const SelectionTreeElementPointer &)
-        static SelectionParserParameterPointer
+        static SelectionParserParameter
         createFromExpression(const std::string &name,
                              const SelectionTreeElementPointer &expr)
         {

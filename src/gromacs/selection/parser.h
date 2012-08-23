@@ -33,7 +33,7 @@
 /* "%code requires" blocks.  */
 
 /* Line 2068 of yacc.c  */
-#line 68 "parser.y"
+#line 67 "parser.y"
 
 #include "parsetree.h"
 #include "selelem.h"
@@ -92,7 +92,7 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 73 "parser.y"
+#line 72 "parser.y"
 
     int                         i;
     real                        r;
@@ -102,7 +102,7 @@ typedef union YYSTYPE
     gmx::SelectionTreeElementPointer            *sel;
     gmx::SelectionParserValue                   *val;
     gmx::SelectionParserValueListPointer        *vlist;
-    gmx::SelectionParserParameterPointer        *param;
+    gmx::SelectionParserParameter               *param;
     gmx::SelectionParserParameterListPointer    *plist;
 
 

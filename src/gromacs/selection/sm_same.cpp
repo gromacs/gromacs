@@ -211,7 +211,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
         return 0;
     }
 
-    const gmx::SelectionParserValueList &kwvalues = params->front()->values();
+    const gmx::SelectionParserValueList &kwvalues = params->front().values();
     if (kwvalues.size() != 1 || !kwvalues.front().hasExpressionValue()
         || kwvalues.front().expr->type != SEL_EXPRESSION)
     {
@@ -226,11 +226,11 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
 
     /* We do custom processing for the "as" parameter. */
     gmx::SelectionParserParameterList::iterator asparam = ++params->begin();
-    if (asparam != params->end() && (*asparam)->name() == sm_same.param[1].name)
+    if (asparam != params->end() && asparam->name() == sm_same.param[1].name)
     {
         gmx::SelectionParserParameterList kwparams;
         gmx::SelectionParserValueListPointer values(
-                new gmx::SelectionParserValueList((*asparam)->values()));
+                new gmx::SelectionParserValueList(asparam->values()));
         kwparams.push_back(
                 gmx::SelectionParserParameter::create(NULL, move(values)));
 
@@ -245,7 +245,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
             return -1;
         }
         /* Replace the second parameter with one with a value from \p kwelem. */
-        std::string pname = (*asparam)->name();
+        std::string pname = asparam->name();
         *asparam = gmx::SelectionParserParameter::createFromExpression(pname, kwelem);
     }
     return 0;
