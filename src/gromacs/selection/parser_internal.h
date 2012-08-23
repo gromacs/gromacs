@@ -93,6 +93,11 @@ static gmx::SelectionParserValue &move(gmx::SelectionParserValue &src)
 {
     return src;
 }
+//! No-op to enable use of same get()/set() implementation as with C++11.
+static gmx::SelectionParserParameter &move(gmx::SelectionParserParameter &src)
+{
+    return src;
+}
 #endif
 
 /*! \brief

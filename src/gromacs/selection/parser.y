@@ -55,7 +55,6 @@ using gmx::SelectionParserValueList;
 using gmx::SelectionParserValueListPointer;
 using gmx::SelectionParserParameter;
 using gmx::SelectionParserParameterList;
-using gmx::SelectionParserParameterPointer;
 using gmx::SelectionParserParameterListPointer;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
@@ -79,7 +78,7 @@ using gmx::SelectionTreeElementPointer;
     gmx::SelectionTreeElementPointer            *sel;
     gmx::SelectionParserValue                   *val;
     gmx::SelectionParserValueListPointer        *vlist;
-    gmx::SelectionParserParameterPointer        *param;
+    gmx::SelectionParserParameter               *param;
     gmx::SelectionParserParameterListPointer    *plist;
 };
 

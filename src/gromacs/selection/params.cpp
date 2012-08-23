@@ -58,7 +58,7 @@
 
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;
-using gmx::SelectionParserParameterPointer;
+using gmx::SelectionParserParameter;
 using gmx::SelectionParserParameterList;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
@@ -1122,10 +1122,9 @@ _gmx_sel_parse_params(const SelectionParserParameterList &pparams,
     }
     /* Parse the parameters */
     i = 0;
-    SelectionParserParameterList::const_iterator piter;
-    for (piter = pparams.begin(); piter != pparams.end(); ++piter)
+    SelectionParserParameterList::const_iterator pparam;
+    for (pparam = pparams.begin(); pparam != pparams.end(); ++pparam)
     {
-        const SelectionParserParameterPointer &pparam = *piter;
         std::string contextStr;
         /* Find the parameter and make some checks */
         if (!pparam->name().empty())
