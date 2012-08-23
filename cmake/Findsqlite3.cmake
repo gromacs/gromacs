@@ -18,4 +18,4 @@ find_library (SQLITE3_LIBRARIES sqlite3)
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (SQLITE3 DEFAULT_MSG SQLITE3_LIBRARIES SQLITE3_INCLUDE_DIR)
 
-#mark_as_advanced (SQLITE3_LIBRARIES SQLITE3_INCLUDE_DIR)
+mark_as_advanced (SQLITE3_LIBRARIES SQLITE3_INCLUDE_DIR)

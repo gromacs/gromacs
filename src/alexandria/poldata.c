@@ -785,12 +785,12 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2
         if (0 == strlen(pd->gt_bond[i].elem1)) {
             for(j=0; (j<pd->nalexandria); j++) 
                 if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
-                    strcmp(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
+                    strcpy(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
         }
         if (0 == strlen(pd->gt_bond[i].elem2)) {
             for(j=0; (j<pd->nalexandria); j++) 
                 if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
-                    strcmp(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
+                    strcpy(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
         }
         ba1 = pd->gt_bond[i].elem1;
         ba2 = pd->gt_bond[i].elem2;
@@ -828,12 +828,12 @@ int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
         if (0 == strlen(pd->gt_bond[i].elem1)) {
             for(j=0; (j<pd->nalexandria); j++) 
                 if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
-                    strcmp(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
+                    strcpy(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
         }
         if (0 == strlen(pd->gt_bond[i].elem2)) {
             for(j=0; (j<pd->nalexandria); j++) 
                 if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
-                    strcmp(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
+                    strcpy(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
         }
         ba1 = pd->gt_bond[i].elem1;
         ba2 = pd->gt_bond[i].elem2;
