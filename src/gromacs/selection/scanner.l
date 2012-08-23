@@ -137,7 +137,7 @@ COMMENT    (#.*)
 <cmdstart><<EOF>> { state->bCmdStart = true; yyterminate(); }
 <<EOF>>         { state->bCmdStart = true; return CMD_SEP; }
 
-<cmdstart>help  { BEGIN(help); return HELP; }
+help            { if (YYSTATE == cmdstart) { BEGIN(help); } return HELP; }
 <help>{
 [[:blank:]]+
 {IDENTIFIER}    { yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }

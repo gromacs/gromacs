@@ -64,6 +64,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "parsetree.h"
 #include "selectioncollection-impl.h"
@@ -287,9 +288,9 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     /* Reserved symbols should have been caught earlier */
     if (symtype == gmx::SelectionParserSymbol::ReservedSymbol)
     {
-        GMX_ERROR_NORET(gmx::eeInternalError,
-                        "Mismatch between tokenizer and reserved symbol table");
-        return INVALID;
+        GMX_THROW(gmx::InternalError(gmx::formatString(
+                        "Mismatch between tokenizer and reserved symbol table (for '%s')",
+                        symbol->name().c_str())));
     }
     /* For variable symbols, return the type of the variable value */
     if (symtype == gmx::SelectionParserSymbol::VariableSymbol)
