@@ -45,7 +45,6 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/selection/selparam.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
@@ -303,11 +302,8 @@ parse_values_range(const SelectionParserValueList &values,
     int                 i, j, n;
 
     param->flags &= ~SPAR_DYNAMIC;
-    if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid range parameter type");
-        return false;
-    }
+    GMX_RELEASE_ASSERT(param->val.type == INT_VALUE || param->val.type == REAL_VALUE,
+                       "Invalid range parameter type");
     idata = NULL;
     rdata = NULL;
     if (param->val.type == INT_VALUE)
@@ -327,11 +323,8 @@ parse_values_range(const SelectionParserValueList &values,
             _gmx_selparser_error(scanner, "expressions not supported within range parameters");
             return false;
         }
-        if (value->type != param->val.type)
-        {
-            GMX_ERROR_NORET(gmx::eeInternalError, "Invalid range value type");
-            return false;
-        }
+        GMX_RELEASE_ASSERT(value->type == param->val.type,
+                           "Invalid range value type (should have been caught earlier)");
         if (param->val.type == INT_VALUE)
         {
             int i1 = std::min(value->u.i.i1, value->u.i.i2);
@@ -491,9 +484,7 @@ parse_values_varnum(const SelectionParserValueList &values,
     if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE
         && param->val.type != STR_VALUE && param->val.type != POS_VALUE)
     {
-        GMX_ERROR_NORET(gmx::eeInternalError,
-                        "Variable-count value type not implemented");
-        return false;
+        GMX_THROW(gmx::InternalError("Variable-count value type not implemented"));
     }
 
     /* Reserve appropriate amount of memory */
@@ -517,11 +508,8 @@ parse_values_varnum(const SelectionParserValueList &values,
             _gmx_selparser_error(scanner, "expressions not supported within value lists");
             return false;
         }
-        if (value->type != param->val.type)
-        {
-            GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-            return false;
-        }
+        GMX_RELEASE_ASSERT(value->type == param->val.type,
+                           "Invalid value type (should have been caught earlier)");
         switch (param->val.type)
         {
             case INT_VALUE:
@@ -553,8 +541,7 @@ parse_values_varnum(const SelectionParserValueList &values,
                 break;
             case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
-                GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-                return false;
+                GMX_THROW(gmx::InternalError("Variable-count value type not implemented"));
         }
     }
     param->val.nr = i;
@@ -657,11 +644,8 @@ parse_values_varnum_expr(const SelectionParserValueList &values,
                          const SelectionTreeElementPointer &root,
                          void *scanner)
 {
-    if (values.size() != 1 || !values.front().hasExpressionValue())
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid expression value");
-        return false;
-    }
+    GMX_RELEASE_ASSERT(values.size() == 1 && values.front().hasExpressionValue(),
+            "Called with an invalid type of value");
 
     SelectionTreeElementPointer child
         = add_child(root, param, values.front().expr, scanner);
@@ -730,8 +714,7 @@ set_expr_value_store(const SelectionTreeElementPointer &sel,
         case POS_VALUE:   sel->v.u.p = &param->val.u.p[i]; break;
         case GROUP_VALUE: sel->v.u.g = &param->val.u.g[i]; break;
         default: /* Error */
-            GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-            return false;
+            GMX_THROW(gmx::InternalError("Invalid value type"));
     }
     sel->v.nr = 1;
     sel->v.nalloc = -1;
@@ -886,9 +869,7 @@ parse_values_std(const SelectionParserValueList &values,
                     break;
                 case NO_VALUE:
                 case GROUP_VALUE:
-                    GMX_ERROR_NORET(gmx::eeInternalError,
-                                    "Invalid non-expression value");
-                    return false;
+                    GMX_THROW(gmx::InternalError("Invalid non-expression value type"));
             }
         }
         ++i;
@@ -930,20 +911,15 @@ parse_values_bool(const std::string &name,
                   const SelectionParserValueList &values,
                   gmx_ana_selparam_t *param, void *scanner)
 {
-    bool bSetNo;
-
-    if (param->val.type != NO_VALUE)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid boolean parameter");
-        return false;
-    }
+    GMX_ASSERT(param->val.type == NO_VALUE,
+            "Boolean parser called for non-boolean parameter");
     if (values.size() > 1 || (!values.empty() && values.front().type != INT_VALUE))
     {
         _gmx_selparser_error(scanner, "parameter takes only a yes/no/on/off/0/1 value");
         return false;
     }
 
-    bSetNo = false;
+    bool bSetNo = false;
     /* Check if the parameter name is given with a 'no' prefix */
     if (name.length() > 2 && name[0] == 'n' && name[1] == 'o'
         && name.compare(2, name.length() - 2, param->name) == 0)
@@ -978,17 +954,16 @@ parse_values_enum(const SelectionParserValueList &values,
                   gmx_ana_selparam_t *param,
                   void *scanner)
 {
+    GMX_ASSERT(param->val.type == STR_VALUE,
+            "Enum parser called for non-string parameter");
     if (values.size() != 1)
     {
         _gmx_selparser_error(scanner, "a single value is required");
         return false;
     }
     const SelectionParserValue &value = values.front();
-    if (value.type != STR_VALUE || param->val.type != STR_VALUE)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid enum parameter");
-        return false;
-    }
+    GMX_RELEASE_ASSERT(value.type == param->val.type,
+                       "Invalid value type (should have been caught earlier)");
     if (value.hasExpressionValue())
     {
         _gmx_selparser_error(scanner, "expression value for enumerated parameter not supported");
@@ -1051,9 +1026,8 @@ convert_const_values(SelectionParserValueList *values)
                     *value = SelectionParserValue::createPosition(expr->v.u.p->x[0]);
                     break;
                 default:
-                    GMX_ERROR_NORET(gmx::eeInternalError,
-                                    "Unsupported value type");
-                    break;
+                    GMX_THROW(gmx::InternalError(
+                                "Unsupported constant expression value type"));
             }
         }
     }

@@ -356,8 +356,8 @@ struct gmx_ana_selcollection_t;
  * \returns       Pointer to method-specific data structure.
  *   This pointer will be passed as the last parameter of all other function
  *   calls.
- *   Should return NULL on error (only error that should occur is out of
- *   memory).
+ * \throws        unspecified Any errors should be indicated by throwing an
+ *      exception.
  *
  * Should allocate and initialize any internal data required by the method.
  * Should also initialize the value pointers (\c gmx_ana_selparam_t::val) in

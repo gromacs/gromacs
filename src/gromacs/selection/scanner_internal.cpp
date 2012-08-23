@@ -60,7 +60,6 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
@@ -133,8 +132,7 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
             case STR_VALUE:   return KEYWORD_STR;
             case GROUP_VALUE: return KEYWORD_GROUP;
             default:
-                GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported keyword type");
-                return INVALID;
+                GMX_THROW(gmx::InternalError("Unsupported keyword type"));
         }
     }
     else
@@ -175,8 +173,7 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
             case GROUP_VALUE: return METHOD_GROUP;
             default:
                 --state->msp;
-                GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported method type");
-                return INVALID;
+                GMX_THROW(gmx::InternalError("Unsupported method type"));
         }
     }
     return INVALID; /* Should not be reached */
@@ -310,9 +307,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                 case POS_VALUE:
                     break;
                 default:
-                    GMX_ERROR_NORET(gmx::eeInternalError,
-                                    "Unsupported variable type");
-                    return INVALID;
+                    GMX_THROW(gmx::InternalError("Unsupported variable type"));
             }
         }
         yylval->sel = new gmx::SelectionTreeElementPointer(var);
@@ -324,8 +319,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
             case GROUP_VALUE: return VARIABLE_GROUP;
             default:
                 delete yylval->sel;
-                GMX_ERROR_NORET(gmx::eeInternalError,
-                                "Unsupported variable type");
+                GMX_THROW(gmx::InternalError("Unsupported variable type"));
                 return INVALID;
         }
         delete yylval->sel;

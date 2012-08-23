@@ -234,7 +234,6 @@
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/messagestringcollector.h"
@@ -494,10 +493,6 @@ _gmx_selelem_init_method_params(const SelectionTreeElementPointer &sel,
     if (sel->u.expr.method->init_data)
     {
         mdata = sel->u.expr.method->init_data(nparams, param);
-        if (mdata == NULL)
-        {
-            GMX_ERROR_NORET(gmx::eeInvalidValue, "Method data initialization failed");
-        }
     }
     if (sel->u.expr.method->set_poscoll)
     {
