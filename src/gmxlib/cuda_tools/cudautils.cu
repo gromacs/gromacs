@@ -185,53 +185,6 @@ int cu_wait_event_time(cudaEvent_t end, cudaEvent_t start, float *time)
     return 0;
 }
 
-/*! 
- *  The name of the texture is passed in text_name, while its size in size.
- *  Returns the offset that needs to be used when fetching from the texture.
- */
-template <typename T>
-size_t cu_bind_texture(const char *tex_name, const T *d_ptr, int size)
-{
-    cudaError_t             stat;
-    cudaChannelFormatDesc   cd;
-    const textureReference  *tex;
-    char                    str[100];
-
-    size_t offset;
-
-    stat = cudaGetTextureReference(&tex, tex_name);
-    sprintf(str, "cudaGetTextureReference on %s failed", tex_name);
-    CU_RET_ERR(stat, str);
-    cd = cudaCreateChannelDesc<T>();
-
-    stat = cudaBindTexture(&offset, tex, d_ptr, &cd, size*sizeof(*d_ptr));
-    sprintf(str, "cudaBindTexture on %s failed ", tex_name);
-    CU_RET_ERR(stat, str);
-
-    return offset;
-}
-
-/*! Binds a float texture tex_name to the GPU global memory pointed by d_ptr.
- *
- *  Explicit instantiation of cu_bind_texture for float type.
- */
-template size_t cu_bind_texture<float>(const char *, const float *, int);
-
-void cu_unbind_texture(const char *tex_name)
-{
-    cudaError_t             stat;
-    const textureReference  *tex;
-    char                    str[100];
-
-    stat = cudaGetTextureReference(&tex, tex_name);
-    sprintf(str, "cudaGetTextureReference on %s failed", tex_name);
-    CU_RET_ERR(stat, str);
-    stat = cudaUnbindTexture(tex);
-    sprintf(str, "cudaUnbindTexture on %s failed ", tex_name);
-    CU_RET_ERR(stat, str);
-}
-
-
 /**** Operation on buffered arrays (arrays with "over-allocation" in gmx wording) *****/
 
 /*!

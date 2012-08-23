@@ -85,10 +85,10 @@
 #undef PRUNE_NBL
 
 /*! Nonbonded kernel function pointer type */
-typedef void (*nbnxn_cu_k_ptr_t)(const cu_atomdata_t,
-                                 const cu_nbparam_t,
-                                 const cu_plist_t,
-                                 bool);
+typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
+                                     const cu_nbparam_t,
+                                     const cu_plist_t,
+                                     bool);
 
 /*********************************/
 
@@ -132,8 +132,8 @@ static const int nEnergyKernelTypes = 2; /* 0 - no nergy, 1 - energy */
 static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
 
 /* Default kernels */
-static const nbnxn_cu_k_ptr_t
-nb_cu_k_default[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
+static const nbnxn_cu_kfunc_ptr_t
+nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
     { { k_nbnxn_ewald,              k_nbnxn_ewald_prune },
       { k_nbnxn_ewald_ener,         k_nbnxn_ewald_ener_prune } },
@@ -144,8 +144,8 @@ nb_cu_k_default[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 };
 
 /* Legacy kernels */
-static const nbnxn_cu_k_ptr_t
-nb_cu_k_legacy[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
+static const nbnxn_cu_kfunc_ptr_t
+nb_legacy_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
     { { k_nbnxn_ewald_legacy,       k_nbnxn_ewald_prune_legacy },
       { k_nbnxn_ewald_ener_legacy,  k_nbnxn_ewald_ener_prune_legacy } },
@@ -156,19 +156,19 @@ nb_cu_k_legacy[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
-static inline nbnxn_cu_k_ptr_t select_nbnxn_kernel(int kver, int eeltype,
-                                                   bool bDoEne, bool bDoPrune)
+static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int kver, int eeltype,
+                                                       bool bDoEne, bool bDoPrune)
 {
     assert(kver < eNbnxnCuKNR);
     assert(eeltype < eelCuNR);
 
     if (NBNXN_KVER_LEGACY(kver))
     {
-        return nb_cu_k_legacy[eeltype][bDoEne][bDoPrune];
+        return nb_legacy_kfunc_ptr[eeltype][bDoEne][bDoPrune];
     }
     else
     {
-        return nb_cu_k_default[eeltype][bDoEne][bDoPrune];
+        return nb_default_kfunc_ptr[eeltype][bDoEne][bDoPrune];
     }
 }
 
@@ -225,7 +225,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     /* CUDA kernel launch-related stuff */
     int  shmem, nblock;
     dim3 dim_block, dim_grid;
-    nbnxn_cu_k_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
+    nbnxn_cu_kfunc_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
     cu_atomdata_t   *adat   = cu_nb->atdat;
     cu_nbparam_t    *nbp    = cu_nb->nbparam;
@@ -614,4 +614,45 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 
     /* turn off pruning (doesn't matter if this is pair-search step or not) */
     plist->bDoPrune = false;
+}
+
+/*! Return the reference to the nbfp texture. */
+const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref()
+{
+    return tex_nbfp;
+}
+
+/*! Return the reference to the coulomb_tab. */
+const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref()
+{
+    return tex_coulomb_tab;
+}
+
+/*! Set up the cache configuration for the non-bonded kernels,
+ */
+void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
+{
+    cudaError_t stat;
+
+    for (int i = 0; i < eelCuNR; i++)
+        for (int j = 0; j < nEnergyKernelTypes; j++)
+            for (int k = 0; k < nPruneKernelTypes; k++)
+            {
+                /* Legacy kernel 16/48 kB Shared/L1 */
+                stat = cudaFuncSetCacheConfig(nb_legacy_kfunc_ptr[i][j][k], cudaFuncCachePreferL1);
+                CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+
+                if (devinfo->prop.major >= 3)
+                {
+                    /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
+                    stat = cudaFuncSetCacheConfig(nb_default_kfunc_ptr[i][j][k], cudaFuncCachePreferShared);
+                }
+                else
+                {
+                    /* On Fermi prefer L1 gives 2% higher performance */
+                    /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
+                    stat = cudaFuncSetCacheConfig(nb_default_kfunc_ptr[i][j][k], cudaFuncCachePreferL1);
+                }
+                CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+            }
 }

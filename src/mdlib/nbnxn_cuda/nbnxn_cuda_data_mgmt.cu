@@ -63,45 +63,12 @@
     
 #define TIME_GPU_TRANSFERS 1
 
-#define NUM_NB_KERNELS 12
+/* Functions from nbnxn_cuda.cu */
+extern void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo);
+extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref();
+extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref();
 
 static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
-
-/*! Names of default CUDA nonbonded kernel functions with mangling
-    (used to be development k3). */
-static const char * const nb_default_knames[NUM_NB_KERNELS] =
-{
-    "_Z10k_nbnxn_rf11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z13k_nbnxn_ewald11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z14k_nbnxn_cutoff11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z15k_nbnxn_rf_ener11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z16k_nbnxn_rf_prune11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z18k_nbnxn_ewald_ener11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z19k_nbnxn_ewald_prune11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z19k_nbnxn_cutoff_ener11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z20k_nbnxn_cutoff_prune11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_rf_ener_prune11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z24k_nbnxn_ewald_ener_prune11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z25k_nbnxn_cutoff_ener_prune11cu_atomdata10cu_nbparam8cu_plisti"
-};
-
-/*! Names of CUDA legacy nonbonded kernel functions with mangling (to be used
-    with CUDA 3.2/4.0 (used to be development k2). */
-static const char * const nb_legacy_knames[NUM_NB_KERNELS] =
-{
-    "_Z17k_nbnxn_rf_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z20k_nbnxn_ewald_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z21k_nbnxn_cutoff_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z22k_nbnxn_rf_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z23k_nbnxn_rf_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z25k_nbnxn_ewald_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z26k_nbnxn_ewald_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z26k_nbnxn_cutoff_ener_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z27k_nbnxn_cutoff_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z28k_nbnxn_rf_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z31k_nbnxn_ewald_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti",
-    "_Z32k_nbnxn_cutoff_ener_prune_legacy11cu_atomdata10cu_nbparam8cu_plisti"
-};
 
 
 /*! Tabulates the Ewald Coulomb force and initializes the size/scale 
@@ -134,7 +101,11 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
         CU_RET_ERR(stat, "cudaMalloc failed on coul_tab");
 
         nbp->coulomb_tab = coul_tab;
-        cu_bind_texture("tex_coulomb_tab", coul_tab, tabsize*sizeof(*coul_tab));
+        
+        cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
+        stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
+                               coul_tab, &cd, tabsize*sizeof(*coul_tab));
+        CU_RET_ERR(stat, "cudaBindTexture on coul_tab failed");
     }
 
     cu_copy_H2D(coul_tab, ftmp, tabsize*sizeof(*coul_tab));
@@ -223,7 +194,11 @@ static void init_nbparam(cu_nbparam_t *nbp,
     stat = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp"); 
     cu_copy_H2D(nbp->nbfp, nbv->grp[0].nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
-    cu_bind_texture("tex_nbfp", nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
+
+    cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
+    stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
+                           nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
+    CU_RET_ERR(stat, "cudaBindTexture on nbfp failed");
 }
 
 void reset_gpu_rlist_ewaldtab(nbnxn_cuda_ptr_t cu_nb,
@@ -561,26 +536,7 @@ void nbnxn_cuda_init(FILE *fplog,
         }
     }
 
-
-    for (int i = 0; i < NUM_NB_KERNELS; i++)
-    {
-        /* Legacy kernel 16/48 kB Shared/L1 */
-        stat = cudaFuncSetCacheConfig(nb_legacy_knames[i], cudaFuncCachePreferL1);
-        CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
-
-        if (nb->dev_info->prop.major >= 3)
-        {
-            /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
-            stat = cudaFuncSetCacheConfig(nb_default_knames[i], cudaFuncCachePreferShared);
-        }
-        else
-        {
-            /* On Fermi prefer L1 gives 2% higher performance */
-            /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
-            stat = cudaFuncSetCacheConfig(nb_default_knames[i], cudaFuncCachePreferL1);
-        }
-        CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
-    }
+    nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
     *p_cu_nb = nb;
 
@@ -792,8 +748,9 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
 
     if (nbparam->eeltype == eelCuEWALD)
     {
-        cu_unbind_texture("tex_coulomb_tab");
-        cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
+      stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
+      CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");
+      cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
     }
 
     stat = cudaEventDestroy(cu_nb->nonlocal_done);
@@ -836,7 +793,8 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
         }
     }
 
-    cu_unbind_texture("tex_nbfp");
+    stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_texref());
+    CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");
     cu_free_buffered(nbparam->nbfp);
 
     stat = cudaFree(atdat->shift_vec);

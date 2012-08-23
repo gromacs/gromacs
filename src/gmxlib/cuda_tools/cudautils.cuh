@@ -42,7 +42,6 @@
 
 #include "cuda.h"
 
-
 /* CUDA library and hardware related defines */
 /* TODO list some constants instead that can be used for consistency checks to
    detect future devices with features that make the currect code incompatible
@@ -164,18 +163,8 @@ float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*end*/);
 /*! Waits for event end to complete and calculates the time between start and end. */
 int cu_wait_event_time(cudaEvent_t /*end*/, cudaEvent_t /*begin*/, float * /*time*/);
 
-/*! Unbinds texture tex_name. */
-void cu_unbind_texture(const char * /*tex_name*/);
-
 #ifdef __cplusplus
 }
 #endif
-
-#ifdef __cplusplus
-/*! Binds texture tex_name to the GPU global memory pointed by d_ptr.*/
-template <typename T>
-size_t cu_bind_texture(const char * /*tex_name*/, const T * /*d_ptr*/, int /*size*/);
-#endif
-
 
 #endif /* CUDAUTILS_CUH */

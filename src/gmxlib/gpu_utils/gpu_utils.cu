@@ -67,8 +67,8 @@
 static int cuda_max_device_count = 32; /*! Max number of devicessupported by CUDA (for consistensy checking).
                                            In reality it 16 with CUDA <=v5.0, but let's stay on the safe side. */
 
-/*! Dummy kernel used for sanity check. */
-__device__ __global__ void k_dummy_test(){}
+/*! Dummy kernel used for sanity checking. */
+__global__ void k_dummy_test(){}
 
 
 /*! Bit-flags which refer to memtestG80 test types and are used in do_memtest to specify which tests to run. */
