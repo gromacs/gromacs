@@ -255,8 +255,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 
                         int_bit = ((wexcl >> (jm * NSUBCELL + i)) & 1);
 
-                        /* cutoff & exclusion check &
-                           check for small r2 to avoid invr6 overflow */
+                        /* cutoff & exclusion check */
 #if defined EL_EWALD || defined EL_RF
                         if (r2 < rcoulomb_sq *
                             (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
@@ -291,7 +290,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                             F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 
 #ifdef CALC_ENERGIES
-                            E_lj        += c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f;
+                            E_lj        += int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
 #endif
 
 #ifdef EL_CUTOFF
