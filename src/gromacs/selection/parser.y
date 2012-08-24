@@ -75,6 +75,8 @@ using gmx::SelectionTreeElementPointer;
     char                       *str;
     struct gmx_ana_selmethod_t *meth;
 
+    gmx::SelectionStringMatchType                smt;
+
     gmx::SelectionTreeElementPointer            *sel;
     gmx::SelectionParserValue                   *val;
     gmx::SelectionParserValueListPointer        *vlist;
@@ -150,6 +152,7 @@ using gmx::SelectionTreeElementPointer;
 %type <r>     real_number number
 %type <str>   string
 %type <str>   pos_mod
+%type <smt>   str_match_type
 
 /* Expression non-terminals */
 %type <sel>   commands command cmd_plain
@@ -441,6 +444,13 @@ pos_mod:     EMPTY_POSMOD       { $$ = NULL; }
            | KEYWORD_POS        { $$ = $1;   }
 ;
 
+/* Matching mode forcing for keyword matching */
+str_match_type:
+             '~'                { $$ = gmx::eStringMatchType_RegularExpression; }
+           | '?'                { $$ = gmx::eStringMatchType_Wildcard; }
+           | '='                { $$ = gmx::eStringMatchType_Exact; }
+;
+
 /* Keyword selections */
 sel_expr:    pos_mod KEYWORD_GROUP
              {
@@ -454,7 +464,15 @@ sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
                  scoped_ptr_sfree posmodGuard($1);
-                 set($$, _gmx_sel_init_keyword($2, get($3), $1, scanner));
+                 set($$, _gmx_sel_init_keyword_strmatch($2, gmx::eStringMatchType_Auto, get($3), $1, scanner));
+                 CHECK_SEL($$);
+                 END_ACTION;
+             }
+           | pos_mod KEYWORD_STR str_match_type basic_value_list
+             {
+                 BEGIN_ACTION;
+                 scoped_ptr_sfree posmodGuard($1);
+                 set($$, _gmx_sel_init_keyword_strmatch($2, $3, get($4), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
              }

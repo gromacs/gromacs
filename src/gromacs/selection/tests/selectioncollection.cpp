@@ -35,6 +35,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/smalloc.h"
@@ -361,6 +365,26 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
     EXPECT_STREQ("resname RA RB", sel_[0].selectionText());
     EXPECT_STREQ("resname RB RC", sel_[1].selectionText());
 }
+
+#ifdef HAVE_REGEX_H
+TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
+{
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW({
+            sc_.parseFromString("resname ~ \"R[A\"");
+            sc_.compile();
+        }, gmx::InvalidInputError);
+}
+#else
+TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
+{
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW({
+            sc_.parseFromString("resname \"R[AD]\"");
+            sc_.compile();
+        }, gmx::InvalidInputError);
+}
+#endif
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
@@ -718,18 +742,40 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
     runTest("simple.gro", selections);
 }
 
-#ifdef HAVE_REGEX_H
-TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
-#else
-TEST_F(SelectionCollectionDataTest, DISABLED_HandlesRegexMatching)
-#endif
+
+TEST_F(SelectionCollectionDataTest, HandlesForcedStringMatchingMode)
 {
     static const char * const selections[] = {
-        "resname \"R[BD]\"",
+        "name = S1 \"C?\"",
+        "name ? S1 \"C?\"",
         NULL
     };
     runTest("simple.gro", selections);
 }
+
+
+TEST_F(SelectionCollectionDataTest, HandlesWildcardMatching)
+{
+    static const char * const selections[] = {
+        "name \"S?\"",
+        "name ? \"S?\"",
+        NULL
+    };
+    runTest("simple.gro", selections);
+}
+
+
+#ifdef HAVE_REGEX_H
+TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
+{
+    static const char * const selections[] = {
+        "resname \"R[BD]\"",
+        "resname ~ \"R[BD]\"",
+        NULL
+    };
+    runTest("simple.gro", selections);
+}
+#endif
 
 
 TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
