@@ -287,6 +287,7 @@ free_data_same(void *data)
     t_methoddata_same *d = (t_methoddata_same *)data;
 
     sfree(d->as_s_sorted);
+    sfree(d);
 }
 
 /*! \brief

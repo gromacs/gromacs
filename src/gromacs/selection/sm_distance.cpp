@@ -236,6 +236,7 @@ free_data_common(void *data)
     {
         gmx_ana_nbsearch_free(d->nb);
     }
+    sfree(d);
 }
 
 /*!

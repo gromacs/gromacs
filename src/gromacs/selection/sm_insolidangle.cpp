@@ -404,6 +404,7 @@ free_data_insolidangle(void *data)
     }
     free_surface_points(d);
     sfree(d->bin);
+    sfree(d);
 }
 
 /*!
