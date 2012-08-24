@@ -494,6 +494,11 @@
             rinvsq_SSE3   = gmx_mul_pr(rinv_SSE3,rinv_SSE3);
 
 #ifdef CALC_COULOMB
+            /* Note that here we calculate force*r, not the usual force/r.
+             * This allows avoiding masking the reaction-field contribution,
+             * as frcoul is later multiplied by rinvsq which has been
+             * masked with the cut-off check.
+             */
 
 #ifdef EXCL_FORCES
             /* Only add 1/r for non-excluded atom pairs */
@@ -597,10 +602,17 @@
 
 #ifndef NO_SHIFT_EWALD
             /* Add Ewald potential shift to vc_sub for convenience */
-            vc_sub_SSE0   = gmx_add_pr(vc_sub_SSE0,gmx_and_pr(sh_ewald_SSE,wco_SSE0));
-            vc_sub_SSE1   = gmx_add_pr(vc_sub_SSE1,gmx_and_pr(sh_ewald_SSE,wco_SSE1));
-            vc_sub_SSE2   = gmx_add_pr(vc_sub_SSE2,gmx_and_pr(sh_ewald_SSE,wco_SSE2));
-            vc_sub_SSE3   = gmx_add_pr(vc_sub_SSE3,gmx_and_pr(sh_ewald_SSE,wco_SSE3));
+#ifdef CHECK_EXCLS
+            vc_sub_SSE0   = gmx_add_pr(vc_sub_SSE0,gmx_and_pr(sh_ewald_SSE,int_SSE0));
+            vc_sub_SSE1   = gmx_add_pr(vc_sub_SSE1,gmx_and_pr(sh_ewald_SSE,int_SSE1));
+            vc_sub_SSE2   = gmx_add_pr(vc_sub_SSE2,gmx_and_pr(sh_ewald_SSE,int_SSE2));
+            vc_sub_SSE3   = gmx_add_pr(vc_sub_SSE3,gmx_and_pr(sh_ewald_SSE,int_SSE3));
+#else
+            vc_sub_SSE0   = gmx_add_pr(vc_sub_SSE0,sh_ewald_SSE);
+            vc_sub_SSE1   = gmx_add_pr(vc_sub_SSE1,sh_ewald_SSE);
+            vc_sub_SSE2   = gmx_add_pr(vc_sub_SSE2,sh_ewald_SSE);
+            vc_sub_SSE3   = gmx_add_pr(vc_sub_SSE3,sh_ewald_SSE);
+#endif
 #endif
             
             vcoul_SSE0    = gmx_mul_pr(qq_SSE0,gmx_sub_pr(rinv_ex_SSE0,vc_sub_SSE0));
