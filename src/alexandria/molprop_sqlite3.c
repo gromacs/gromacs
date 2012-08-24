@@ -39,7 +39,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_SQLITE3
+#ifdef HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif
 #include "gmx_fatal.h"
@@ -53,7 +53,7 @@
 void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
 {
     int rc;
-#ifdef HAVE_SQLITE3
+#ifdef HAVE_LIBSQLITE3
     sqlite3 *db;
 
     if (NULL == sqlite_file)
@@ -69,6 +69,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
         gmx_fatal(FARGS,"Opening sqlite database %s in read-only mode. Sqlite3 code %d.",
                   sqlite_file,rc);
     /* Now database is open and everything is Hunky Dory */
+    fprintf(stderr,"Opened SQLite3 database %s\n",sqlite_file);
     
     /* Seems like we're done, close down and say goodbye */
     rc = sqlite3_close(db);
