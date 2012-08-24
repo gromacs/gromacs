@@ -392,6 +392,11 @@ const char *const SyntaxHelpText::text[] = {
     "The match type is automatically guessed from the string: if it contains",
     "other characters than letters, numbers, '*', or '?', it is interpreted",
     "as a regular expression.",
+    "To force the matching to use literal string matching, use",
+    "[TT]name = \"C*\"[tt] to match a literal C*.",
+    "To force other type of matching, use '?' or '~' in place of '=' to force",
+    "wildcard or regular expression matching, respectively.[PAR]",
+
     "Strings that contain non-alphanumeric characters should be enclosed in",
     "double quotes as in the examples. For other strings, the quotes are",
     "optional, but if the value conflicts with a reserved keyword, a syntax",

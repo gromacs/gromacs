@@ -99,6 +99,8 @@ typedef union YYSTYPE
     char                       *str;
     struct gmx_ana_selmethod_t *meth;
 
+    gmx::SelectionStringMatchType                smt;
+
     gmx::SelectionTreeElementPointer            *sel;
     gmx::SelectionParserValue                   *val;
     gmx::SelectionParserValueListPointer        *vlist;
@@ -108,7 +110,7 @@ typedef union YYSTYPE
 
 
 /* Line 2068 of yacc.c  */
-#line 112 "parser.h"
+#line 114 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

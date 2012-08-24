@@ -3,39 +3,42 @@
 <ReferenceData>
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
-      <String Name="Input">resname "R[BD]"</String>
-      <String Name="Name">resname "R[BD]"</String>
-      <String Name="Text">resname "R[BD]"</String>
+      <String Name="Input">name = S1 "C?"</String>
+      <String Name="Name">name = S1 "C?"</String>
+      <String Name="Text">name = S1 "C?"</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
-      <String Name="Input">resname ~ "R[BD]"</String>
-      <String Name="Name">resname ~ "R[BD]"</String>
-      <String Name="Text">resname ~ "R[BD]"</String>
+      <String Name="Input">name ? S1 "C?"</String>
+      <String Name="Name">name ? S1 "C?"</String>
+      <String Name="Text">name ? S1 "C?"</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
   </ParsedSelections>
   <CompiledSelections Name="Compiled">
     <Selection Name="Selection1">
       <Sequence Name="Atoms">
-        <Int Name="Length">6</Int>
-        <Int>3</Int>
+        <Int Name="Length">5</Int>
+        <Int>1</Int>
         <Int>4</Int>
-        <Int>5</Int>
-        <Int>12</Int>
+        <Int>7</Int>
+        <Int>10</Int>
         <Int>13</Int>
-        <Int>14</Int>
       </Sequence>
     </Selection>
     <Selection Name="Selection2">
       <Sequence Name="Atoms">
-        <Int Name="Length">6</Int>
+        <Int Name="Length">10</Int>
+        <Int>0</Int>
+        <Int>1</Int>
         <Int>3</Int>
         <Int>4</Int>
-        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>9</Int>
+        <Int>10</Int>
         <Int>12</Int>
         <Int>13</Int>
-        <Int>14</Int>
       </Sequence>
     </Selection>
   </CompiledSelections>

@@ -49,6 +49,8 @@
 #define USE_REGEX
 #endif
 
+#include <string>
+
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
@@ -56,6 +58,7 @@
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"
 #include "parsetree.h"
@@ -139,6 +142,8 @@ typedef struct t_methoddata_kwreal
  */
 typedef struct t_methoddata_kwstr
 {
+    /** Matching type for the strings. */
+    gmx::SelectionStringMatchType       matchType;
     /** Array of values for the keyword. */
     char             **v;
     /** Number of elements in the \p val array. */
@@ -156,7 +161,7 @@ typedef struct t_methoddata_kwstr
             regex_t    r;
 #endif
             /** The string if \p bRegExp is false; */
-            char      *s;
+            const char *s;
         }              u;
     }                 *m;
     /**< Array of strings/regular expressions to match against.*/
@@ -455,7 +460,28 @@ init_data_kwstr(int npar, gmx_ana_selparam_t *param)
     t_methoddata_kwstr *data;
 
     snew(data, 1);
+    data->matchType = gmx::eStringMatchType_Auto;
     return data;
+}
+
+/*!
+ * \param[in,out] sel   Selection element to initialize.
+ * \param[in]     matchType  Method to use to match string values.
+ *
+ * Sets the string matching method for string keyword matching.
+ */
+void
+_gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
+                                  gmx::SelectionStringMatchType matchType)
+{
+    t_methoddata_kwstr *d = (t_methoddata_kwstr *)sel->u.expr.mdata;
+
+    if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
+        || sel->u.expr.method->name != sm_keyword_str.name)
+    {
+        return;
+    }
+    d->matchType = matchType;
 }
 
 /*!
@@ -468,10 +494,7 @@ static void
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    char               *s;
     int                 i;
-    size_t              j;
-    bool                bRegExp;
 
     d->v   = param[0].val.u.s;
     d->n   = param[1].val.nr;
@@ -483,37 +506,34 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     snew(d->m, d->n);
     for (i = 0; i < d->n; ++i)
     {
-        s = param[1].val.u.s[i];
-        bRegExp = false;
-        for (j = 0; j < strlen(s); ++j)
+        const char *s = param[1].val.u.s[i];
+        bool bRegExp = (d->matchType == gmx::eStringMatchType_RegularExpression);
+        if (d->matchType == gmx::eStringMatchType_Auto)
         {
-            if (ispunct(s[j]) && s[j] != '?' && s[j] != '*')
+            for (size_t j = 0; j < strlen(s); ++j)
             {
-                bRegExp = true;
-                break;
+                if (ispunct(s[j]) && s[j] != '?' && s[j] != '*')
+                {
+                    bRegExp = true;
+                    break;
+                }
             }
         }
         if (bRegExp)
         {
-            // TODO: Get rid of these prints to stderr
 #ifdef USE_REGEX
-            char               *buf;
-            snew(buf, strlen(s) + 3);
-            sprintf(buf, "^%s$", s);
-            if (regcomp(&d->m[i].u.r, buf, REG_EXTENDED | REG_NOSUB))
+            std::string buf(gmx::formatString("^%s$", s));
+            if (regcomp(&d->m[i].u.r, buf.c_str(), REG_EXTENDED | REG_NOSUB) != 0)
             {
-                bRegExp = false;
-                fprintf(stderr, "WARNING: error in regular expression,\n"
-                                "         will match '%s' as a simple string\n", s);
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString(
+                                "Error in regular expression \"%s\"", s)));
             }
-            sfree(buf);
 #else
-            bRegExp = false;
-            fprintf(stderr, "WARNING: no regular expressions support,\n"
-                            "         will match '%s' as a simple string\n", s);
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString(
+                            "No regular expression support, cannot match \"%s\"", s)));
 #endif
         }
-        if (!bRegExp)
+        else
         {
             d->m[i].u.s = s;
         }
@@ -574,18 +594,16 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 #ifdef USE_REGEX
                 /* This branch should only be taken if regular expressions
                  * are available, but the ifdef is still needed. */
-                if (!regexec(&d->m[j].u.r, d->v[i], 0, NULL, 0))
-                {
-                    bFound = true;
-                }
+                bFound = (regexec(&d->m[j].u.r, d->v[i], 0, NULL, 0) == 0);
 #endif
+            }
+            else if (d->matchType == gmx::eStringMatchType_Exact)
+            {
+                bFound = (strcmp(d->m[j].u.s, d->v[i]) == 0);
             }
             else
             {
-                if (gmx_wcmatch(d->m[j].u.s, d->v[i]) == 0)
-                {
-                    bFound = true;
-                }
+                bFound = (gmx_wcmatch(d->m[j].u.s, d->v[i]) == 0);
             }
         }
         if (bFound)

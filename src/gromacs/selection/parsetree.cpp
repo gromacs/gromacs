@@ -253,6 +253,7 @@ using gmx::SelectionParserValueListPointer;
 using gmx::SelectionParserParameter;
 using gmx::SelectionParserParameterList;
 using gmx::SelectionParserParameterListPointer;
+using gmx::SelectionParserValue;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
@@ -636,8 +637,12 @@ _gmx_sel_init_comparison(const SelectionTreeElementPointer &left,
     return sel;
 }
 
-/*!
+/*! \brief
+ * Implementation method for keyword expression creation.
+ *
  * \param[in]  method Method to use.
+ * \param[in]  matchType String matching type (only used if \p method is
+ *      a string keyword and \p args is not empty.
  * \param[in]  args   Pointer to the first argument.
  * \param[in]  rpost  Reference position type to use (NULL = default).
  * \param[in]  scanner Scanner data structure.
@@ -646,8 +651,9 @@ _gmx_sel_init_comparison(const SelectionTreeElementPointer &left,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * selection methods that do not take parameters.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
+static SelectionTreeElementPointer
+init_keyword_internal(gmx_ana_selmethod_t *method,
+                      gmx::SelectionStringMatchType matchType,
                       SelectionParserValueListPointer args,
                       const char *rpost, yyscan_t scanner)
 {
@@ -685,6 +691,10 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
         /* Initialize the selection element */
         root.reset(new SelectionTreeElement(SEL_EXPRESSION));
         _gmx_selelem_set_method(root, kwmethod, scanner);
+        if (method->type == STR_VALUE)
+        {
+            _gmx_selelem_set_kwstr_match_type(root, matchType);
+        }
         SelectionParserParameterList params;
         params.push_back(
                 SelectionParserParameter::createFromExpression(NULL, child));
@@ -698,6 +708,49 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
     set_refpos_type(&sc->pcc, child, rpost, scanner);
 
     return root;
+}
+
+/*!
+ * \param[in]  method Method to use.
+ * \param[in]  args   Pointer to the first argument.
+ * \param[in]  rpost  Reference position type to use (NULL = default).
+ * \param[in]  scanner Scanner data structure.
+ * \returns    The created selection element.
+ *
+ * This function handles the creation of a gmx::SelectionTreeElement object for
+ * selection methods that do not take parameters.
+ */
+SelectionTreeElementPointer
+_gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
+                      SelectionParserValueListPointer args,
+                      const char *rpost, yyscan_t scanner)
+{
+    return init_keyword_internal(method, gmx::eStringMatchType_Auto, move(args),
+                                 rpost, scanner);
+}
+
+/*!
+ * \param[in]  method    Method to use.
+ * \param[in]  matchType String matching type.
+ * \param[in]  args      Pointer to the first argument.
+ * \param[in]  rpost     Reference position type to use (NULL = default).
+ * \param[in]  scanner   Scanner data structure.
+ * \returns    The created selection element.
+ *
+ * This function handles the creation of a gmx::SelectionTreeElement object for
+ * keyword string matching.
+ */
+SelectionTreeElementPointer
+_gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
+                               gmx::SelectionStringMatchType matchType,
+                               SelectionParserValueListPointer args,
+                               const char *rpost, yyscan_t scanner)
+{
+    GMX_RELEASE_ASSERT(method->type == STR_VALUE,
+            "String keyword method called for a non-string-valued method");
+    GMX_RELEASE_ASSERT(args && !args->empty(),
+            "String keyword matching method called without any values");
+    return init_keyword_internal(method, matchType, move(args), rpost, scanner);
 }
 
 /*!
