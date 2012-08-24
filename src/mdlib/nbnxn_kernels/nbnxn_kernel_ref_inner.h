@@ -37,9 +37,6 @@
 #define EXCL_FORCES
 #endif
 
-/* TODO: fix flop counts for new use of skipmask and interact (and the
- * flop count for the latter depends on EXCL_FORCES, too) */
-
         {
             int cj;
 #ifdef ENERGY_GROUPS
@@ -159,7 +156,7 @@
                         /* Need to zero the interaction if r >= rcut
                          * or there should be exclusion. */
                         VLJ     = VLJ * skipmask;
-                        /* 7 flops for LJ energy */
+                        /* 9 flops for LJ energy */
 #ifdef ENERGY_GROUPS
                         Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += VLJ;
 #else
@@ -208,7 +205,7 @@
                     vcoul  = qq*(interact*(rinv - ic->sh_ewald)
                                  -(tab_coul_FDV0[ri*4+2]
                                    -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
-                    /* 7 flops for float 1/r-table energy */
+                    /* 7 flops for float 1/r-table energy (8 with excls) */
 #else
                     vcoul  = qq*(interact*(rinv - ic->sh_ewald)
                                  -(tab_coul_V[ri]
