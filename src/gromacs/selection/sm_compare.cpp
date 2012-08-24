@@ -486,6 +486,7 @@ free_data_compare(void *data)
     {
         sfree(d->right.r);
     }
+    sfree(d);
 }
 
 /*!

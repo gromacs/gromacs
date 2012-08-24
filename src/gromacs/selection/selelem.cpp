@@ -375,7 +375,10 @@ _gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
         {
             free_func(mdata);
         }
-        sfree(mdata);
+        else
+        {
+            sfree(mdata);
+        }
     }
 }
 

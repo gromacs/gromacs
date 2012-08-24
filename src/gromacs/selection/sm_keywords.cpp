@@ -564,6 +564,7 @@ free_data_kwstr(void *data)
         }
     }
     sfree(d->m);
+    sfree(d);
 }
 
 /*!
@@ -660,6 +661,7 @@ free_data_kweval(void *data)
     t_methoddata_kweval *d = (t_methoddata_kweval *)data;
 
     _gmx_selelem_free_method(d->kwmethod, d->kwmdata);
+    sfree(d);
 }
 
 /*!
