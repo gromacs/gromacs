@@ -67,6 +67,19 @@ struct gmx_ana_selparam_t;
 namespace gmx
 {
 
+/*! \internal \brief
+ * String matching mode for string keyword expressions.
+ *
+ * \ingroup module_selection
+ */
+enum SelectionStringMatchType
+{
+    eStringMatchType_Auto,              //!< Deduce from the string.
+    eStringMatchType_Exact,             //!< Match as a literal string.
+    eStringMatchType_Wildcard,          //!< Match using ? and * as wildcards.
+    eStringMatchType_RegularExpression  //!< Match using regular expressions.
+};
+
 class SelectionParserValue;
 
 //! Container for a list of SelectionParserValue objects.
@@ -392,6 +405,12 @@ gmx::SelectionTreeElementPointer
 _gmx_sel_init_keyword(struct gmx_ana_selmethod_t *method,
                       gmx::SelectionParserValueListPointer args,
                       const char *rpost, void *scanner);
+/** Creates a gmx::SelectionTreeElement for string-matching keyword expression. */
+gmx::SelectionTreeElementPointer
+_gmx_sel_init_keyword_strmatch(struct gmx_ana_selmethod_t *method,
+                               gmx::SelectionStringMatchType matchType,
+                               gmx::SelectionParserValueListPointer args,
+                               const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a method expression from the parsed data. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_method(struct gmx_ana_selmethod_t *method,
