@@ -218,6 +218,7 @@ free_data_permute(void *data)
 
     gmx_ana_index_deinit(&d->g);
     sfree(d->rperm);
+    sfree(d);
 }
 
 /*!

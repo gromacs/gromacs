@@ -218,7 +218,8 @@
  *    and \ref SMETH_VARNUMVAL methods.
  *  - sel_freefunc() should be provided if sel_datafunc() and/or
  *    sel_initfunc() allocate any dynamic memory in addition to the data
- *    structure itself.
+ *    structure itself (or allocates the data structure using some other means
+ *    than malloc()).
  *  - sel_updatefunc_pos() only makes sense for methods with \ref SMETH_DYNAMIC
  *    set.
  *  - At least one update function should be provided unless the method type is
@@ -477,9 +478,11 @@ typedef void  (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
  *
  * This function should be provided if the internal data structure contains
  * dynamically allocated data, and should free any such data.
- * The data structure itself should not be freed; this is handled automatically.
- * If there is no dynamically allocated data within the structure,
- * this function is not needed.
+ * The data structure itself should also be freed.
+ * For convenience, if there is no dynamically allocated data within the
+ * structure and the structure is allocated using malloc()/snew(), this
+ * function is not needed: the selection engine automatically frees the
+ * structure using sfree().
  * Any memory pointers received as values of parameters are managed externally,
  * and should not be freed.
  * Pointers set as the value pointer of \ref SPAR_ENUMVAL parameters should not

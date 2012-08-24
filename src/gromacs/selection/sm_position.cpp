@@ -336,6 +336,7 @@ free_data_pos(void *data)
 
     sfree(d->type);
     gmx_ana_poscalc_free(d->pc);
+    sfree(d);
 }
 
 /*!
