@@ -409,7 +409,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     /* flush the partial energies to shmem and sum them up */
     f_buf[             tidx] = E_lj;
     f_buf[STRIDE_DIM + tidx] = E_el;
-    reduce_energy_pow2(f_buf, e_lj, e_el, tidx);
+    reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
 #endif
 #endif
 }

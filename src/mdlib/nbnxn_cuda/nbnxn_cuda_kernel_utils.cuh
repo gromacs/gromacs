@@ -36,10 +36,11 @@
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
-#define CLUSTER_SIZE_POW2_EXPONENT (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
-#define CLUSTER_SIZE_2          (CLUSTER_SIZE * CLUSTER_SIZE)
-#define STRIDE_DIM              (CLUSTER_SIZE_2)
-#define STRIDE_SI               (3*STRIDE_DIM)
+#define WARP_SIZE_POW2_EXPONENT     (5)
+#define CLUSTER_SIZE_POW2_EXPONENT  (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
+#define CLUSTER_SIZE_2              (CLUSTER_SIZE * CLUSTER_SIZE)
+#define STRIDE_DIM                  (CLUSTER_SIZE_2)
+#define STRIDE_SI                   (3*STRIDE_DIM)
 
 /*! texture ref for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
 texture<float, 1, cudaReadModeElementType> tex_nbfp;
@@ -242,10 +243,10 @@ void reduce_energy_pow2(volatile float *buf,
     int     i, j; 
     float   e1, e2;
 
-    i = CLUSTER_SIZE_2/2;
+    i = WARP_SIZE/2;
 
 # pragma unroll 10
-    for (j = 2 * CLUSTER_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = WARP_SIZE_POW2_EXPONENT - 1; j > 0; j--)
     {
         if (tidx < i)
         {
