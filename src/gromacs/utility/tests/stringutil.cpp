@@ -174,10 +174,14 @@ TEST(ReplaceAllTest, HandlesPossibleRecursiveMatches)
  * Tests for TextLineWrapper
  */
 
+//! Simple test string for wrapping.
 const char g_wrapText[] = "A quick brown fox jumps over the lazy dog";
+//! Test string for wrapping with embedded line breaks.
 const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
+//! Test string for wrapping with a long word.
 const char g_wrapTextLongWord[]
     = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
+//! Test string for wrapping with extra whitespace.
 const char g_wrapTextWhitespace[] = " A quick brown   fox jumps  \n over the lazy dog";
 
 typedef gmx::test::StringTestBase TextLineWrapperTest;
@@ -234,13 +238,13 @@ TEST_F(TextLineWrapperTest, WrapsCorrectly)
 {
     gmx::TextLineWrapper wrapper;
 
-    wrapper.setLineLength(10);
+    wrapper.settings().setLineLength(10);
     checkText(wrapper.wrapToString(g_wrapText), "WrappedAt10");
     std::vector<std::string> wrapped(wrapper.wrapToVector(g_wrapText));
     checker().checkSequence(wrapped.begin(), wrapped.end(), "WrappedToVector");
-    wrapper.setLineLength(13);
+    wrapper.settings().setLineLength(13);
     checkText(wrapper.wrapToString(g_wrapText), "WrappedAt13");
-    wrapper.setLineLength(14);
+    wrapper.settings().setLineLength(14);
     checkText(wrapper.wrapToString(g_wrapText), "WrappedAt14");
     checkText(wrapper.wrapToString(g_wrapTextLongWord), "WrappedWithLongWord");
 }
@@ -250,18 +254,55 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExistingBreaks)
     gmx::TextLineWrapper wrapper;
 
     checkText(wrapper.wrapToString(g_wrapText2), "WrappedWithNoLimit");
-    wrapper.setLineLength(10);
+    wrapper.settings().setLineLength(10);
     checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt10");
-    wrapper.setLineLength(14);
+    wrapper.settings().setLineLength(14);
     checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt14");
+}
+
+TEST_F(TextLineWrapperTest, HandlesIndent)
+{
+    gmx::TextLineWrapper wrapper;
+    wrapper.settings().setIndent(2);
+
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedWithNoLimit");
+    wrapper.settings().setLineLength(16);
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt14");
+}
+
+TEST_F(TextLineWrapperTest, HandlesHangingIndent)
+{
+    gmx::TextLineWrapper wrapper;
+    wrapper.settings().setFirstLineIndent(2);
+    wrapper.settings().setIndent(4);
+
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedWithNoLimit");
+    wrapper.settings().setLineLength(16);
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt14/12");
+}
+
+TEST_F(TextLineWrapperTest, HandlesContinuationCharacter)
+{
+    gmx::TextLineWrapper wrapper;
+    wrapper.settings().setFirstLineIndent(2);
+    wrapper.settings().setIndent(4);
+    wrapper.settings().setContinuationChar('\\');
+
+    wrapper.settings().setLineLength(16);
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt14/12");
 }
 
 TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
 {
     gmx::TextLineWrapper wrapper;
 
-    wrapper.setLineLength(14);
-    checkText(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14");
+    wrapper.settings().setLineLength(14);
+    wrapper.settings().setStripLeadingWhitespace(true);
+    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
+              "WrappedAt14StripLeading");
+    wrapper.settings().setStripLeadingWhitespace(false);
+    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
+              "WrappedAt14PreserveLeading");
 }
 
 } // namespace

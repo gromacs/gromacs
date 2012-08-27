@@ -211,7 +211,7 @@ void TextTableFormatter::addColumnLine(int index, const std::string &text)
     TextLineWrapper wrapper;
     if (column.bWrap_)
     {
-        wrapper.setLineLength(column.width());
+        wrapper.settings().setLineLength(column.width());
     }
     std::vector<std::string> lines(wrapper.wrapToVector(text));
     column.lines_.insert(column.lines_.end(), lines.begin(), lines.end());

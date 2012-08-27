@@ -42,8 +42,6 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
-
 namespace gmx
 {
 
@@ -181,6 +179,110 @@ std::string replaceAll(const std::string &input,
 std::string replaceAllWords(const std::string &input,
                             const char *from, const char *to);
 
+class TextLineWrapper;
+
+/*! \brief
+ * Stores settings for line wrapping.
+ *
+ * Methods in this class do not throw.
+ *
+ * \see TextLineWrapper
+ *
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+class TextLineWrapperSettings
+{
+    public:
+        /*! \brief
+         * Initializes default wrapper settings.
+         *
+         * Default settings are:
+         *  - No maximum line width (only explicit line breaks).
+         *  - No indentation.
+         *  - No continuation characters.
+         *  - Ignore whitespace after an explicit newline.
+         */
+        TextLineWrapperSettings();
+
+        /*! \brief
+         * Sets the maximum length for output lines.
+         *
+         * \param[in] length  Maximum length for the lines after wrapping.
+         *
+         * If this method is not called, or is called with zero \p length, the
+         * wrapper has no maximum length (only wraps at explicit line breaks).
+         */
+        void setLineLength(int length) { maxLength_ = length; }
+        /*! \brief
+         * Sets the indentation for output lines.
+         *
+         * \param[in] indent  Number of spaces to add for indentation.
+         *
+         * If this method is not called, the wrapper does not add indentation.
+         */
+        void setIndent(int indent) { indent_ = indent; }
+        /*! \brief
+         * Sets the indentation for first output line after a line break.
+         *
+         * \param[in] indent  Number of spaces to add for indentation.
+         *
+         * If this method is not called, or called with \p indent equal to -1,
+         * the value set with setIndent() is used.
+         */
+        void setFirstLineIndent(int indent) { firstLineIndent_ = indent; }
+        /*! \brief
+         * Sets whether to remove spaces after an explicit newline.
+         *
+         * \param[in] bStrip  If true, spaces after newline are ignored.
+         *
+         * If not removed, the space is added to the indentation set with
+         * setIndent().
+         * The default is to strip such whitespace.
+         */
+        void setStripLeadingWhitespace(bool bStrip)
+        {
+            bStripLeadingWhitespace_ = bStrip;
+        }
+        /*! \brief
+         * Sets a continuation marker for wrapped lines.
+         *
+         * \param[in] continuationChar  Character to use to mark continuation
+         *      lines.
+         *
+         * If set to non-zero character code, this character is added at the
+         * end of each line where a line break is added by TextLineWrapper
+         * (but not after lines produced by explicit line breaks).
+         * The default (\c '\0') is to not add continuation markers.
+         */
+        void setContinuationChar(char continuationChar)
+        {
+            continuationChar_ = continuationChar;
+        }
+
+        //! Returns the maximum length set with setLineLength().
+        int lineLength() const { return maxLength_; }
+
+    private:
+        //! Maximum length of output lines, or <= 0 if no limit.
+        int                     maxLength_;
+        //! Number of spaces to indent each output line with.
+        int                     indent_;
+        /*! \brief
+         * Number of spaces to indent the first line after a newline.
+         *
+         * If -1, \a indent_ is used.
+         */
+        int                     firstLineIndent_;
+        //! Whether to ignore or preserve space after a newline.
+        bool                    bStripLeadingWhitespace_;
+        //! If not \c '\0', mark each wrapping point with this character.
+        char                    continuationChar_;
+
+        //! Needed to access the members.
+        friend class TextLineWrapper;
+};
+
 /*! \brief
  * Wraps lines to a predefined length.
  *
@@ -188,9 +290,9 @@ std::string replaceAllWords(const std::string &input,
  * longer than a predefined length.  Explicit newlines ('\\n') are preserved.
  * Only space is considered a word separator.  If a single word exceeds the
  * maximum line length, it is still printed on a single line.
- * Extra whitespace is stripped from the start and end of produced lines.
- * If maximum line length is not set using setLineLength(), only wraps at
- * explicit newlines.
+ * Extra whitespace is stripped from the end of produced lines.
+ * Other options on the wrapping, such as the line length or indentation,
+ * can be changed using a TextLineWrapperSettings object.
  *
  * Two output formats are possible: wrapToString() produces a single string
  * with embedded newlines, and wrapToVector() produces a vector of strings,
@@ -199,7 +301,7 @@ std::string replaceAllWords(const std::string &input,
  * Typical usage:
  * \code
 gmx::TextLineWrapper wrapper;
-wrapper.setLineLength(78);
+wrapper.settings().setLineLength(78);
 printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
  * \endcode
  *
@@ -212,22 +314,32 @@ printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
 class TextLineWrapper
 {
     public:
-        //! Constructs a new line wrapper with no initial wrapping length.
-        TextLineWrapper();
-        ~TextLineWrapper();
+        //! Constructs a new line wrapper with default settings.
+        TextLineWrapper()
+        {
+        }
+        /*! \brief
+         * Constructs a new line wrapper with given settings.
+         *
+         * \param[in] settings  Wrapping settings.
+         */
+        explicit TextLineWrapper(const TextLineWrapperSettings &settings)
+            : settings_(settings)
+        {
+        }
 
         /*! \brief
-         * Sets the maximum length for output lines.
+         * Provides access to settings of this wrapper.
          *
-         * \param[in] length  Maximum length for the lines after wrapping.
-         * \returns   *this
+         * \returns  The settings object for this wrapper.
          *
-         * If this method is not called, the wrapper has no maximum length
-         * (only wraps at explicit line breaks).
+         * The returned object can be used to modify settings for the wrapper.
+         * All subsequent calls to wrapToString() and wrapToVector() use the
+         * modified settings.
          *
          * Does not throw.
          */
-        TextLineWrapper &setLineLength(int length);
+        TextLineWrapperSettings &settings() { return settings_; }
 
         /*! \brief
          * Formats a string, producing a single string with all the lines.
@@ -259,7 +371,7 @@ class TextLineWrapper
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+        TextLineWrapperSettings settings_;
 };
 
 } // namespace gmx

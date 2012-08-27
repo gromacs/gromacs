@@ -432,13 +432,17 @@ void OptionsConsoleFormatter::formatSelectionOption(
     selectionOptionFormatter_.addColumnLine(1, context.substituteMarkup(option.description()));
     file.writeString(selectionOptionFormatter_.formatRow());
 
+    TextLineWrapper wrapper;
+    wrapper.settings().setLineLength(78);
+    wrapper.settings().setFirstLineIndent(4);
+    wrapper.settings().setIndent(8);
+    wrapper.settings().setContinuationChar('\\');
     // TODO: What to do with selection variables?
     // They are not printed as values for any option.
     for (int i = 0; i < option.valueCount(); ++i)
     {
         std::string value(option.formatValue(i));
-        // TODO: Wrapping
-        file.writeLine(formatString("    %s", value.c_str()));
+        file.writeLine(wrapper.wrapToString(value));
     }
 }
 

@@ -177,6 +177,18 @@ replaceAllWords(const std::string &input, const char *from, const char *to)
     return replaceInternal(input, from, to, true);
 }
 
+
+/********************************************************************
+ * TextLineWrapperSettings
+ */
+
+TextLineWrapperSettings::TextLineWrapperSettings()
+    : maxLength_(0), indent_(0), firstLineIndent_(-1),
+      bStripLeadingWhitespace_(true), continuationChar_('\0')
+{
+}
+
+
 /********************************************************************
  * TextLineWrapper::Impl
  */
@@ -184,58 +196,73 @@ replaceAllWords(const std::string &input, const char *from, const char *to)
 /*! \internal \brief
  * Private implementation class for TextLineWrapper.
  *
+ * \todo
+ * It is a bit confusing to have this implementation class with only a static
+ * method.  This problem may solve itself, though, if this incremental wrapping
+ * method also needs to be exposed through TextLineWrapper.
+ *
  * \ingroup module_utility
  */
 class TextLineWrapper::Impl
 {
     public:
-        //! Initialize default values for the wrapper.
-        Impl() : maxLength_(0) {}
-
         /*! \brief
          * Helper method to find the next wrapped line.
          *
+         * \param[in]     settings      Wrapping settings.
          * \param[in]     input         Full input string.
          * \param[in,out] lineStartPtr
          *      Index of first character for the line to wrap.
          *      On exit, index of the first character of the next line.
          * \returns   Next output line.
          */
-        std::string wrapNextLine(const std::string &input,
-                                 size_t *lineStartPtr) const;
-
-        //! Maximum length of output lines, or <= 0 if no limit.
-        int                     maxLength_;
+        static std::string
+        wrapNextLine(const TextLineWrapperSettings &settings,
+                     const std::string &input, size_t *lineStartPtr);
 };
 
 std::string
-TextLineWrapper::Impl::wrapNextLine(const std::string &input,
-                                    size_t *lineStartPtr) const
+TextLineWrapper::Impl::wrapNextLine(const TextLineWrapperSettings &settings,
+                                    const std::string &input,
+                                    size_t *lineStartPtr)
 {
+    size_t lineStart = *lineStartPtr;
+    bool bFirstLine = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Strip leading whitespace.
-    size_t lineStart = input.find_first_not_of(' ', *lineStartPtr);
-    if (lineStart == std::string::npos)
+    if (!bFirstLine || settings.bStripLeadingWhitespace_)
     {
-        *lineStartPtr = lineStart;
-        return std::string();
+        lineStart = input.find_first_not_of(' ', lineStart);
+        if (lineStart == std::string::npos)
+        {
+            *lineStartPtr = lineStart;
+            return std::string();
+        }
     }
 
+    int indent = settings.indent_;
+    if (bFirstLine && settings.firstLineIndent_ >= 0)
+    {
+        indent = settings.firstLineIndent_;
+    }
     size_t lineEnd = std::string::npos;
     size_t nextNewline
         = std::min(input.find('\n', lineStart), input.length());
-    if (maxLength_ <= 0 || nextNewline <= lineStart + maxLength_)
+    size_t lastAllowedBreakPoint = lineStart + settings.maxLength_ - indent;
+    lastAllowedBreakPoint = input.find_first_not_of(' ', lastAllowedBreakPoint);
+    if (settings.maxLength_ <= 0 || nextNewline <= lastAllowedBreakPoint)
     {
         lineEnd = nextNewline;
     }
     else
     {
-        size_t bestSpace = input.rfind(' ', lineStart + maxLength_);
+        size_t bestSpace = input.rfind(' ', lastAllowedBreakPoint);
         if (bestSpace < lineStart || bestSpace == std::string::npos)
         {
             bestSpace = input.find(' ', lineStart);
         }
         lineEnd = std::min(bestSpace, nextNewline);
     }
+    bool bContinuation = (lineEnd != std::string::npos && lineEnd != nextNewline);
 
     if (lineEnd == std::string::npos)
     {
@@ -249,27 +276,19 @@ TextLineWrapper::Impl::wrapNextLine(const std::string &input,
     }
 
     size_t lineLength = lineEnd - lineStart;
-    return input.substr(lineStart, lineLength);
+    std::string result(indent, ' ');
+    result.append(input, lineStart, lineLength);
+    if (bContinuation && settings.continuationChar_ != '\0')
+    {
+        result.append(1, ' ');
+        result.append(1, settings.continuationChar_);
+    }
+    return result;
 }
 
 /********************************************************************
  * TextLineWrapper
  */
-
-TextLineWrapper::TextLineWrapper()
-    : impl_(new Impl)
-{
-}
-
-TextLineWrapper::~TextLineWrapper()
-{
-}
-
-TextLineWrapper &TextLineWrapper::setLineLength(int length)
-{
-    impl_->maxLength_ = length;
-    return *this;
-}
 
 std::string
 TextLineWrapper::wrapToString(const std::string &input) const
@@ -279,7 +298,7 @@ TextLineWrapper::wrapToString(const std::string &input) const
     size_t length = input.length();
     while (lineStart < length)
     {
-        result.append(impl_->wrapNextLine(input, &lineStart));
+        result.append(Impl::wrapNextLine(settings_, input, &lineStart));
         if (lineStart < length
             || (lineStart == length && input[length - 1] == '\n'))
         {
@@ -296,7 +315,7 @@ TextLineWrapper::wrapToVector(const std::string &input) const
     size_t lineStart = 0;
     while (lineStart < input.length())
     {
-        result.push_back(impl_->wrapNextLine(input, &lineStart));
+        result.push_back(Impl::wrapNextLine(settings_, input, &lineStart));
     }
     return result;
 }

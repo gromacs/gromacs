@@ -144,7 +144,7 @@ void HelpWriterContext::writeTitle(const std::string &title) const
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
     TextLineWrapper wrapper;
-    wrapper.setLineLength(78);
+    wrapper.settings().setLineLength(78);
     const char *program = ProgramInfo::getInstance().programName().c_str();
     std::string newText = replaceAll(text, "[PROGRAM]", program);
     outputFile().writeLine(wrapper.wrapToString(substituteMarkup(newText)));
