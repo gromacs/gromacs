@@ -42,8 +42,6 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
-
 namespace gmx
 {
 
@@ -181,6 +179,126 @@ std::string replaceAll(const std::string &input,
 std::string replaceAllWords(const std::string &input,
                             const char *from, const char *to);
 
+class TextLineWrapper;
+
+/*! \brief
+ * Stores settings for line wrapping.
+ *
+ * Methods in this class do not throw.
+ *
+ * \see TextLineWrapper
+ *
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+class TextLineWrapperSettings
+{
+    public:
+        /*! \brief
+         * Initializes default wrapper settings.
+         *
+         * Default settings are:
+         *  - No maximum line width (only explicit line breaks).
+         *  - No indentation.
+         *  - No continuation characters.
+         *  - Ignore whitespace after an explicit newline.
+         */
+        TextLineWrapperSettings();
+
+        /*! \brief
+         * Sets the maximum length for output lines.
+         *
+         * \param[in] length  Maximum length for the lines after wrapping.
+         *
+         * If this method is not called, or is called with zero \p length, the
+         * wrapper has no maximum length (only wraps at explicit line breaks).
+         */
+        void setLineLength(int length) { maxLength_ = length; }
+        /*! \brief
+         * Sets the indentation for output lines.
+         *
+         * \param[in] indent  Number of spaces to add for indentation.
+         *
+         * If this method is not called, the wrapper does not add indentation.
+         */
+        void setIndent(int indent) { indent_ = indent; }
+        /*! \brief
+         * Sets the indentation for first output line after a line break.
+         *
+         * \param[in] indent  Number of spaces to add for indentation.
+         *
+         * If this method is not called, or called with \p indent equal to -1,
+         * the value set with setIndent() is used.
+         */
+        void setFirstLineIndent(int indent) { firstLineIndent_ = indent; }
+        /*! \brief
+         * Sets whether to remove spaces after an explicit newline.
+         *
+         * \param[in] bStrip  If true, spaces after newline are ignored.
+         *
+         * If not removed, the space is added to the indentation set with
+         * setIndent().
+         * The default is to strip such whitespace.
+         */
+        void setStripLeadingWhitespace(bool bStrip)
+        {
+            bStripLeadingWhitespace_ = bStrip;
+        }
+        /*! \brief
+         * Sets a continuation marker for wrapped lines.
+         *
+         * \param[in] continuationChar  Character to use to mark continuation
+         *      lines.
+         *
+         * If set to non-zero character code, this character is added at the
+         * end of each line where a line break is added by TextLineWrapper
+         * (but not after lines produced by explicit line breaks).
+         * The default (\c '\0') is to not add continuation markers.
+         *
+         * Note that currently, the continuation char may cause the output line
+         * length to exceed the value set with setLineLength() by at most two
+         * characters.
+         */
+        void setContinuationChar(char continuationChar)
+        {
+            continuationChar_ = continuationChar;
+        }
+
+        //! Returns the maximum length set with setLineLength().
+        int lineLength() const { return maxLength_; }
+        //! Returns the indentation set with setIndent().
+        int indent() const { return indent_; }
+        /*! \brief
+         * Returns the indentation set with setFirstLineIndent().
+         *
+         * If setFirstLineIndent() has not been called or has been called with
+         * -1, indent() is returned.
+         */
+        int firstLineIndent() const
+        {
+            return (firstLineIndent_ >= 0 ? firstLineIndent_ : indent_);
+        }
+
+    private:
+        //! Maximum length of output lines, or <= 0 if no limit.
+        int                     maxLength_;
+        //! Number of spaces to indent each output line with.
+        int                     indent_;
+        /*! \brief
+         * Number of spaces to indent the first line after a newline.
+         *
+         * If -1, \a indent_ is used.
+         */
+        int                     firstLineIndent_;
+        //! Whether to ignore or preserve space after a newline.
+        bool                    bStripLeadingWhitespace_;
+        //! If not \c '\0', mark each wrapping point with this character.
+        char                    continuationChar_;
+
+        //! Needed to access the members.
+        friend class TextLineWrapper;
+};
+
 /*! \brief
  * Wraps lines to a predefined length.
  *
@@ -188,23 +306,30 @@ std::string replaceAllWords(const std::string &input,
  * longer than a predefined length.  Explicit newlines ('\\n') are preserved.
  * Only space is considered a word separator.  If a single word exceeds the
  * maximum line length, it is still printed on a single line.
- * Extra whitespace is stripped from the start and end of produced lines.
- * If maximum line length is not set using setLineLength(), only wraps at
- * explicit newlines.
+ * Extra whitespace is stripped from the end of produced lines.
+ * Other options on the wrapping, such as the line length or indentation,
+ * can be changed using a TextLineWrapperSettings object.
  *
- * Two output formats are possible: wrapToString() produces a single string
- * with embedded newlines, and wrapToVector() produces a vector of strings,
- * where each element is one line.
+ * Two interfaces to do the wrapping are provided:
+ *  -# High-level interface using either wrapToString() (produces a single
+ *     string with embedded newlines) or wrapToVector() (produces a vector of
+ *     strings with each line as one element).
+ *     These methods operate on std::string and wrap the entire input string.
+ *  -# Low-level interface using findNextLine() and formatLine().
+ *     findNextLine() operates either on a C string or an std::string, and does
+ *     not do any memory allocation (so it does not throw).  It finds the next
+ *     line to be wrapped, considering the wrapping settings.
+ *     formatLine() does whitespace operations on the line found by
+ *     findNextLine() and returns an std::string.
+ *     These methods allow custom wrapping implementation to either avoid
+ *     exceptions or to wrap only a part of the input string.
  *
  * Typical usage:
  * \code
 gmx::TextLineWrapper wrapper;
-wrapper.setLineLength(78);
+wrapper.settings().setLineLength(78);
 printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
  * \endcode
- *
- * Methods in this class may throw std::bad_alloc if out of memory.
- * Other exceptions are not thrown.
  *
  * \inpublicapi
  * \ingroup module_utility
@@ -212,22 +337,95 @@ printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
 class TextLineWrapper
 {
     public:
-        //! Constructs a new line wrapper with no initial wrapping length.
-        TextLineWrapper();
-        ~TextLineWrapper();
-
         /*! \brief
-         * Sets the maximum length for output lines.
-         *
-         * \param[in] length  Maximum length for the lines after wrapping.
-         * \returns   *this
-         *
-         * If this method is not called, the wrapper has no maximum length
-         * (only wraps at explicit line breaks).
+         * Constructs a new line wrapper with default settings.
          *
          * Does not throw.
          */
-        TextLineWrapper &setLineLength(int length);
+        TextLineWrapper()
+        {
+        }
+        /*! \brief
+         * Constructs a new line wrapper with given settings.
+         *
+         * \param[in] settings  Wrapping settings.
+         *
+         * Does not throw.
+         */
+        explicit TextLineWrapper(const TextLineWrapperSettings &settings)
+            : settings_(settings)
+        {
+        }
+
+        /*! \brief
+         * Provides access to settings of this wrapper.
+         *
+         * \returns  The settings object for this wrapper.
+         *
+         * The returned object can be used to modify settings for the wrapper.
+         * All subsequent calls to wrapToString() and wrapToVector() use the
+         * modified settings.
+         *
+         * Does not throw.
+         */
+        TextLineWrapperSettings &settings() { return settings_; }
+
+        /*! \brief
+         * Finds the next line to be wrapped.
+         *
+         * \param[in] input     String to wrap.
+         * \param[in] lineStart Index of first character of the line to find.
+         * \returns   Index of first character of the next line.
+         *
+         * If this is the last line, returns the length of \p input.
+         * In determining the length of the returned line, this function
+         * considers the maximum line length, leaving space for indentation,
+         * and also whitespace stripping behavior.
+         * Thus, the line returned may be longer than the maximum line length
+         * if it has leading and/or trailing space.
+         * When wrapping a line on a space (not on an explicit line break),
+         * the returned index is always on a non-whitespace character after the
+         * space.
+         *
+         * To iterate over lines in a string, use the following code:
+         * \code
+gmx::TextLineWrapper wrapper;
+// <set desired wrapping settings>
+size_t lineStart = 0;
+size_t length = input.length();
+while (lineStart < length)
+{
+    size_t nextLineStart = wrapper.findNextLine(input, lineStart);
+    std::string line = wrapper.formatLine(input, lineStart, nextLineStart));
+    // <do something with the line>
+    lineStart = nextLineStart;
+}
+return result;
+         * \endcode
+         *
+         * Does not throw.
+         */
+        size_t findNextLine(const char *input, size_t lineStart) const;
+        //! \copydoc findNextLine(const char *, size_t) const
+        size_t findNextLine(const std::string &input, size_t lineStart) const;
+        /*! \brief
+         * Formats a single line for output according to wrapping settings.
+         *
+         * \param[in] input     Input string.
+         * \param[in] lineStart Index of first character of the line to format.
+         * \param[in] lineEnd   Index of first character of the next line.
+         * \returns   The line with leading and/or trailing whitespace removed
+         *      and indentation applied.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Intended to be used on the lines found by findNextLine().
+         * When used with the lines returned from findNextLine(), the returned
+         * line conforms to the wrapper settings.
+         * Trailing whitespace is always stripped (including any newlines,
+         * i.e., the return value does not contain a newline).
+         */
+        std::string formatLine(const std::string &input,
+                               size_t lineStart, size_t lineEnd) const;
 
         /*! \brief
          * Formats a string, producing a single string with all the lines.
@@ -235,6 +433,7 @@ class TextLineWrapper
          * \param[in] input  String to wrap.
          * \returns   \p input with added newlines such that maximum line
          *      length is not exceeded.
+         * \throws    std::bad_alloc if out of memory.
          *
          * Newlines in the input are preserved, including terminal newlines.
          * Note that if the input does not contain a terminal newline, the
@@ -247,6 +446,7 @@ class TextLineWrapper
          * \param[in] input  String to wrap.
          * \returns   \p input split into lines such that maximum line length
          *      is not exceeded.
+         * \throws    std::bad_alloc if out of memory.
          *
          * The strings in the returned vector do not contain newlines at the
          * end.
@@ -257,9 +457,7 @@ class TextLineWrapper
         std::vector<std::string> wrapToVector(const std::string &input) const;
 
     private:
-        class Impl;
-
-        PrivateImplPointer<Impl> impl_;
+        TextLineWrapperSettings settings_;
 };
 
 } // namespace gmx
