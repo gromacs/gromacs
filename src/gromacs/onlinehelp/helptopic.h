@@ -30,8 +30,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares helper classes and functions for implementing
- * gmx::HelpTopicInterface.
+ * Declares helper classes for implementing gmx::HelpTopicInterface.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
@@ -49,33 +48,13 @@
 namespace gmx
 {
 
-/*! \cond libapi */
-/*! \libinternal \brief
- * Helper for writing simple help text.
- *
- * \param[in] context Context for writing the help.
- * \param[in] topic   Topic to write the help for (used for title).
- * \param[in] text    Text to write for the topic.
- * \throws    std::bad_alloc if out of memory.
- * \throws    FileIOError on any I/O error.
- *
- * Formats basic help by writing a title (obtained from \p topic), followed by
- * \p text with markup substituted and lines properly wrapped.
- *
- * \inlibraryapi
- */
-void writeBasicHelpTopic(const HelpWriterContext &context,
-                         const HelpTopicInterface &topic,
-                         const std::string &text);
-//! \endcond
-
 /*! \libinternal \brief
  * Abstract base class for help topics that have simple text and no subtopics.
  *
  * This class implements subtopic-related methods from HelpTopicInterface such
  * that there are no subtopics.  writeHelp() is also implemented such that it
- * uses writeBasicHelpTopic() to write out the text returned by a new virtual
- * method helpText().
+ * uses HelpTopicContext::writeTextBlock() to write out the text returned by a
+ * new virtual method helpText().
  *
  * \see SimpleHelpTopic
  *
@@ -111,8 +90,9 @@ class AbstractSimpleHelpTopic : public HelpTopicInterface
  * public methods for adding subtopics (as HelpTopicInterface objects).
  * Subtopic-related methods from HelpTopicInterface are implemented to access
  * the internal container.  writeHelp() is also implemented such that it
- * uses writeBasicHelpTopic() to write out the text returned by a new virtual
- * method helpText(), and a list of subtopics is written after the actual text.
+ * uses HelpTopicContext::writeTextBlock() to write out the text returned by a
+ * new virtual method helpText(), and a list of subtopics is written after the
+ * actual text.
  *
  * \see CompositeHelpTopic
  *

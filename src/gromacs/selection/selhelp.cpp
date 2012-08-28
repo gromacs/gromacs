@@ -530,7 +530,7 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
     // TODO: The markup here is not really appropriate, and printKeywordList()
     // still prints raw text, but these are waiting for discussion of the
     // markup format in #969.
-    writeBasicHelpTopic(context, *this, helpText());
+    context.writeTextBlock(helpText());
     context.writeTextBlock("[BR]");
 
     // Print the list of keywords

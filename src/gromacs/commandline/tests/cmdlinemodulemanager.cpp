@@ -176,7 +176,7 @@ TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
     CommandLine args(CommandLine::create(cmdline));
     initManager(args);
     addModule("module", "First module");
-    MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
+    MockHelpTopic &topic = addHelpTopic("topic", "");
     using ::testing::_;
     EXPECT_CALL(topic, writeHelp(_));
     int rc = 0;

@@ -63,9 +63,15 @@ enum HelpOutputFormat
  * The purpose of this class is to pass information about the output format to
  * methods that write help, and to abstract away most of the details of
  * different output formats.
- * Additionally, it can keep other context information, although it currently
- * does not.  Such additional context information would be useful for
+ * Additionally, it can keep other context information.  Currently, it keeps
+ * the section nesting depth, which is needed for properly formatting titles
+ * for nested sections in many output formats.
+ * Such additional context information could be useful also for
  * formatting links/references to other help topics.
+ *
+ * The state of a context object (excluding the fact that the output file is
+ * written to) does not change after initial construction of the object.
+ * Copy and assign create context objects that share state with the source.
  *
  * TODO: This class will need additional work as part of Redmine issue #969.
  *
@@ -81,7 +87,12 @@ class HelpWriterContext
          * \throws std::bad_alloc if out of memory.
          */
         HelpWriterContext(File *file, HelpOutputFormat format);
+        //! Creates a copy of the context.
+        HelpWriterContext(const HelpWriterContext &other);
         ~HelpWriterContext();
+
+        //! Assigns a context object.
+        HelpWriterContext &operator =(const HelpWriterContext &other);
 
         /*! \brief
          * Returns the active output format.
@@ -99,6 +110,25 @@ class HelpWriterContext
          * Does not throw.
          */
         File &outputFile() const;
+
+        /*! \brief
+         * Creates a subsection in the output help.
+         *
+         * \param[in] title  Title for the subsection.
+         * \returns   HelpWriterContext for writing the subsection.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         *
+         * Writes \p title using writeTitle() and returns a context object
+         * that can be used to write the help for the subsection.
+         * The whole subsection should be written out using the returned
+         * context before calling any further methods in the parent context.
+         *
+         * This method is only necessary if the subsection will contain further
+         * subsections.  If there is only one level of subsections, it is
+         * possible to use writeTitle() directly.
+         */
+        HelpWriterContext createSubsection(const std::string &title) const;
 
         /*! \brief
          * Substitutes markup used in help text.
@@ -133,6 +163,15 @@ class HelpWriterContext
 
     private:
         class Impl;
+
+        /*! \brief
+         * Constructs a context object with the given implementation class.
+         *
+         * \param[in] impl  Implementation object.
+         *
+         * Does not throw.
+         */
+        explicit HelpWriterContext(Impl *impl);
 
         PrivateImplPointer<Impl> impl_;
 };
