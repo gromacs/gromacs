@@ -182,10 +182,9 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
-    int  nth, nth_pmeonly, omp_maxth, gmx_maxth, nppn;
-    char *env;
+    int  nth, nth_pmeonly, gmx_maxth, nppn;
     char sbuf[STRLEN], sbuf1[STRLEN];
-    gmx_bool bSepPME, bOMP, bMaxThreadsSet, bMaxThreadsOversubscr;
+    gmx_bool bSepPME, bOMP;
 
 #ifdef GMX_OPENMP
     bOMP = TRUE;
@@ -195,9 +194,6 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
               (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
-
-    bMaxThreadsSet          = FALSE; /* true if GMX_MAX_THREADS is set */
-    bMaxThreadsOversubscr   = FALSE; /* true if GMX_MAX_THREADS > # logical cores */
 
 #ifdef GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety do the
@@ -222,9 +218,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
          * per process / default:
          * - 1 if not compiled with OpenMP or
          * - OMP_NUM_THREADS if the env. var is set, otherwise
-         * - take the max number of available or permitted (through the
-         *   GMX_MAX_THREADS env var) threads and distribute them on the
-         *   processes/tMPI threads.
+         * - take the max number of available threads and distribute them
+         *   on the processes/tMPI threads.
          * - the GMX_*_NUM_THREADS env var overrides the number of threads of
          *   the respective module and it has to be used in conjunction with
          *   OMP_NUM_THREADS.
@@ -257,38 +252,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         else if (bFullOmpSupport && bOMP)
         {
             /* max available threads per node */
-            omp_maxth = modth.max_cores;
-            /* max permitted threads per node set through env var */
-            if ((env = getenv("GMX_MAX_THREADS")) != NULL)
-            {
-                bMaxThreadsSet = TRUE;
-
-                sscanf(env, "%d",&gmx_maxth);
-                nth = min(gmx_maxth, omp_maxth);
-
-                if (MASTER(cr))
-                {
-                    if (nth < gmx_maxth)
-                    {
-                        bMaxThreadsOversubscr = TRUE;
-                        fprintf(stderr, "\nGMX_MAX_THREADS=%d set, but the number of "
-                                "available cores is only %d\n\n", gmx_maxth, nth);
-                    }
-                    else
-                    {
-                        sprintf(sbuf, "GMX_MAX_THREADS=%d set, limiting the number of threads", nth);
-                        fprintf(stderr, "\n%s\n", sbuf);
-                        if (fplog)
-                        {
-                            fprintf(fplog, "\n%s\n", sbuf);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                nth = omp_maxth;
-            }
+            nth = modth.max_cores;
 
             /* get the number of processes per node */
 #ifdef GMX_MPI
@@ -320,21 +284,11 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                 sprintf(sbuf1, " per node");
 #endif
 #endif
-                /* bail if total #th exceeds the limit set by the user,
-                 * otherwise warn about oversubscription */
-                if (bMaxThreadsSet && !bMaxThreadsOversubscr)
-                {
-                    gmx_fatal(FARGS, "You started %d %s%s which exceeds the maximum total "
-                              "number of threads set by GMX_MAX_THREADS=%s",
-                              nppn, sbuf, sbuf1, env);
-                }
-                else
-                {
-                    gmx_warning("Oversubscribing the available %d logical CPU cores%s with %d %s.\n"
-                                "         This will cause considerable performance loss!",
-                                modth.max_cores, sbuf1, nppn, sbuf);
-                    nth = 1;
-                }
+                /* warn about oversubscription */
+                gmx_warning("Oversubscribing the available %d logical CPU cores%s with %d %s.\n"
+                            "         This will cause considerable performance loss!",
+                            modth.max_cores, sbuf1, nppn, sbuf);
+                nth = 1;
             }
         }
 

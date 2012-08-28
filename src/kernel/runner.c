@@ -272,7 +272,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 
 
 static int get_tmpi_omp_thread_distribution(const gmx_hw_opt_t *hw_opt,
-                                            int nthreads_tot)
+                                            int nthreads_tot,
+                                            int ngpu)
 {
     int nthreads_tmpi;
 
@@ -281,7 +282,15 @@ static int get_tmpi_omp_thread_distribution(const gmx_hw_opt_t *hw_opt,
      * and a conditional ensures we would not have ended up here.
      * Note that separate PME nodes might be switched on later.
      */
-    if (hw_opt->nthreads_omp > 0)
+    if (ngpu > 0)
+    {
+        nthreads_tmpi = ngpu;
+        if (nthreads_tot > 0 && nthreads_tot < nthreads_tmpi)
+        {
+            nthreads_tmpi = nthreads_tot;
+        }
+    }
+    else if (hw_opt->nthreads_omp > 0)
     {
         if (hw_opt->nthreads_omp > nthreads_tot)
         {
@@ -304,57 +313,50 @@ static int get_tmpi_omp_thread_distribution(const gmx_hw_opt_t *hw_opt,
 /* Get the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
  * and how many particles there are.
+ * At the point we have already called check_and_update_hw_opt.
+ * Thus all options should be internally consistent and consistent
+ * with the hardware, except that ntmpi could be larger than #GPU.
  */
 static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
                             gmx_hw_opt_t *hw_opt,
                             t_inputrec *inputrec, gmx_mtop_t *mtop,
-                            const t_commrec *cr)
+                            const t_commrec *cr,
+                            FILE *fplog)
 {
-    int nthreads_tmpi,nthreads_new,ngpu;
+    int nthreads_tot_max,nthreads_tmpi,nthreads_new,ngpu;
     int min_atoms_per_mpi_thread;
     char *env;
     char sbuf[STRLEN];
-    gmx_bool bCanUseGPU,bNthreadsAuto,bMaxMpiThreadsSet = FALSE;
+    gmx_bool bCanUseGPU;
 
-    bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
-
-    nthreads_tmpi = 0;
     if (hw_opt->nthreads_tmpi > 0)
     {
-        nthreads_tmpi = hw_opt->nthreads_tmpi;
+        /* Trivial, return right away */
+        return hw_opt->nthreads_tmpi;
     }
-    else if (hw_opt->nthreads_tot > 0)
+
+    /* How many total (#tMPI*#OpenMP) threads can we start? */ 
+    if (hw_opt->nthreads_tot > 0)
     {
-        /* With a GPU we would like nthreads=#GPUs */
-        if (!bCanUseGPU || hw_opt->nthreads_omp > 0)
-        {
-            nthreads_tmpi =
-                get_tmpi_omp_thread_distribution(hw_opt,hw_opt->nthreads_tot);
-        }
+        nthreads_tot_max = hw_opt->nthreads_tot;
     }
-    
-    /* auto-determine the number of tMPI threads? */
-    bNthreadsAuto = (nthreads_tmpi < 1);
-
-    if (bNthreadsAuto)
+    else
     {
-        int nthreads_tot_max;
-
-        if ((env = getenv("GMX_MAX_THREADS")) != NULL)
-        {
-            sscanf(env,"%d",&nthreads_tot_max);
-        }
-        else
-        {
-            /* We use the number of hardware threads available */
-            nthreads_tot_max = tMPI_Thread_get_hw_number();
-        }
-
-        nthreads_tmpi = get_tmpi_omp_thread_distribution(hw_opt,
-                                                         nthreads_tot_max);
+        nthreads_tot_max = tMPI_Thread_get_hw_number();
     }
 
-    
+    bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
+    if (bCanUseGPU)
+    {
+        ngpu = hwinfo->gpu_info.ncuda_dev_use;
+    }
+    else
+    {
+        ngpu = 0;
+    }
+
+    nthreads_tmpi =
+        get_tmpi_omp_thread_distribution(hw_opt,nthreads_tot_max,ngpu);
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
@@ -363,7 +365,14 @@ static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
     }
     else
     {
-        min_atoms_per_mpi_thread = MIN_ATOMS_PER_THREAD;
+        if (bCanUseGPU)
+        {
+            min_atoms_per_mpi_thread = MIN_ATOMS_PER_GPU;
+        }
+        else
+        {
+            min_atoms_per_mpi_thread = MIN_ATOMS_PER_MPI_THREAD;
+        }
     }
 
     /* Check if an algorithm does not support parallel simulation.  */
@@ -371,11 +380,15 @@ static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
         ( inputrec->eI == eiLBFGS ||
           inputrec->coulombtype == eelEWALD ) )
     {
-        fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI thread.\n");
         nthreads_tmpi = 1;
+
+        md_print_warn(cr,fplog,"The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI thread.\n");
+        if (hw_opt->nthreads_tmpi > nthreads_tmpi)
+        {
+            gmx_fatal(FARGS,"You asked for more than 1 thread-MPI thread, but an algorithm doesn't support that");
+        }
     }
-    else if (bNthreadsAuto &&
-             mtop->natoms/nthreads_tmpi < min_atoms_per_mpi_thread)
+    else if (mtop->natoms/nthreads_tmpi < min_atoms_per_mpi_thread)
     {
         /* the thread number was chosen automatically, but there are too many
            threads (too few atoms per thread) */
@@ -401,22 +414,7 @@ static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
         fprintf(stderr,"\n");
         fprintf(stderr,"NOTE: Parallelization is limited by the small number of atoms,\n");
         fprintf(stderr,"      only starting %d thread-MPI threads.\n",nthreads_tmpi);
-        fprintf(stderr,"      You can use the -nt option to optimize the number of threads.\n\n");
-    }
-
-    ngpu = hwinfo->gpu_info.ncuda_dev_use;
-
-    /* If nthreads is auto-set and we're using GPUs we need to ensure one
-     * thread/device. Consistency checks will be done later. */
-    if (bNthreadsAuto && bCanUseGPU)
-    {
-        /* cr->npmenodes=-1 should be changed before calling this function */
-        if (cr->npmenodes < 0)
-        {
-            gmx_incons("cr->npmenodes < 0");
-        }
-
-        nthreads_tmpi = ngpu + cr->npmenodes;
+        fprintf(stderr,"      You can use the -nt and/or -ntmpi option to optimize the number of threads.\n\n");
     }
 
     return nthreads_tmpi;
@@ -936,6 +934,18 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
         gmx_fatal(FARGS,"You need to specify -ntomp in addition to -ntomp_pme");
     }
 
+    if (hw_opt->nthreads_tot == 1)
+    {
+        hw_opt->nthreads_tmpi = 1;
+
+        if (hw_opt->nthreads_omp > 1)
+        {
+            gmx_fatal(FARGS,"You requested %d OpenMP threads with %d total threads",
+                      hw_opt->nthreads_tmpi,hw_opt->nthreads_tot);
+        }
+        hw_opt->nthreads_omp = 1;
+    }
+
     if (hw_opt->nthreads_omp_pme <= 0 && hw_opt->nthreads_omp > 0)
     {
         hw_opt->nthreads_omp_pme = hw_opt->nthreads_omp;
@@ -1130,7 +1140,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 cr);
+                                                 cr, fplog);
         if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp <= 0)
         {
             hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
