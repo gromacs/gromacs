@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include <vector>
 
 #include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -158,6 +159,11 @@ void HelpManager::enterTopic(const std::string &name)
 void HelpManager::writeCurrentTopic() const
 {
     const HelpTopicInterface &topic = impl_->currentTopic();
+    const char               *title = topic.title();
+    if (title != NULL && title[0] != '\0')
+    {
+        impl_->rootContext_.writeTitle(title);
+    }
     topic.writeHelp(impl_->rootContext_);
 }
 

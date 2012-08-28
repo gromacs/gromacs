@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -124,7 +124,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         GMX_THROW(NotImplementedError(
                           "Root help is not implemented for this output format"));
     }
-    writeBasicHelpTopic(context, *this, helpText());
+    context.writeTextBlock(helpText());
     // TODO: If/when this list becomes long, it may be better to only print
     // "common" commands here, and have a separate topic (e.g.,
     // "help commands") that prints the full list.
