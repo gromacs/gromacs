@@ -35,6 +35,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "datastorage.h"
 
 #include <limits>
@@ -259,11 +263,13 @@ class AnalysisDataStorage::Impl
          * frame (see \a frames_).
          */
         int                     nextIndex_;
+
+        bool bCollected;
 };
 
 AnalysisDataStorage::Impl::Impl()
     : data_(NULL), bMultipoint_(false),
-      storageLimit_(0), pendingLimit_(1), firstFrameLocation_(0), nextIndex_(0)
+      storageLimit_(0), pendingLimit_(1), firstFrameLocation_(0), nextIndex_(0), bCollected(false)
 {
 }
 
@@ -293,10 +299,10 @@ AnalysisDataStorage::Impl::firstStoredIndex() const
 int
 AnalysisDataStorage::Impl::computeStorageLocation(int index) const
 {
-    if (index < firstStoredIndex() || index >= nextIndex_)
-    {
-        return -1;
-    }
+//    if (index < firstStoredIndex() || index >= nextIndex_)
+//    {
+//        return -1;
+//    }
     return index % frames_.size();
 }
 
@@ -365,6 +371,13 @@ AnalysisDataStorage::Impl::notifyPointSet(const AnalysisDataPointSetRef &points)
 void
 AnalysisDataStorage::Impl::notifyNextFrames(size_t firstLocation)
 {
+    //TODO: HACK!!! We can't assume that we always want to wait until we collect.
+#ifdef GMX_LIB_MPI
+    int initialized;
+    MPI_Initialized(&initialized);
+    if (!bCollected && storeAll() && initialized)
+        return;
+#endif
     if (firstLocation != firstFrameLocation_)
     {
         // firstLocation can only be zero here if !storeAll() because
@@ -574,10 +587,10 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
         }
         storedFrame = &impl_->frames_[storageIndex];
     }
-    GMX_RELEASE_ASSERT(!storedFrame->isStarted(),
-                       "startFrame() called twice for the same frame");
-    GMX_RELEASE_ASSERT(storedFrame->frame->frameIndex() == header.index(),
-                       "Inconsistent internal frame indexing");
+//    GMX_RELEASE_ASSERT(!storedFrame->isStarted(),
+//                       "startFrame() called twice for the same frame");
+//    GMX_RELEASE_ASSERT(storedFrame->frame->frameIndex() == header.index(),
+//                       "Inconsistent internal frame indexing");
     storedFrame->status = Impl::StoredFrame::eStarted;
     storedFrame->frame->header_ = header;
     if (impl_->isMultipoint())
@@ -639,6 +652,66 @@ AnalysisDataStorage::finishFrame(int index)
     }
 }
 
+void
+AnalysisDataStorage::collectFrames()
+{
+#ifdef GMX_LIB_MPI //otherwise nothing to do
+    using mpi::comm;
+    Impl timpl;
+    std::vector<int> recv_counts;
+    std::vector<int> recv_sel;
+    if (comm::world.isMaster())
+    {
+//NOTE: I don't think this is wrong, but this could potentially be dangerous
+        timpl.data_ = impl_->data_;
+        recv_counts.resize(comm::world.size());
+    }
+    // Determine information needed by master
+    std::vector<int> selection;
+    int recv_size=0;
+    for (size_t i=0; i<impl_->frames_.size(); i++)
+    {
+        //TODO: We should store the indices as they are returned by the
+        // scheduler and send this data structure.
+        if (impl_->frames_[i].frame->header_.x_ != 0)
+        {
+            recv_size++;
+            selection.push_back(i);
+            std::cout << "selection=" << selection[selection.size()-1] << "\n";
+        }
+    }
+    comm::world.gather(recv_size, recv_counts, 0);
+
+    if (comm::world.isMaster())
+    {
+        int totalFrames=0;
+        for (unsigned int i=0; i<comm::world.size(); i++)
+        {
+            totalFrames += recv_counts[i];
+        }
+        recv_sel.resize(totalFrames);
+        timpl.extendBuffer(this, totalFrames);
+    }
+    comm::world.gatherv(selection, recv_sel, recv_counts, 0);
+    comm::world.gatherv(impl_->frames_, selection, timpl.frames_, recv_counts, recv_sel, 0);
+
+    if (comm::world.isMaster())
+    {
+        impl_->frames_.swap(timpl.frames_);
+        //TODO: Hack! Here we correct the index numbering. Needs a better solution
+        for (unsigned int i=0; i<impl_->frames_.size(); i++)
+        {
+            std::cout << "Frames:" << impl_->frames_[i].frame->header_.index_ << " X=" << impl_->frames_[i].frame->header_.x_ << "\n";
+        }
+        std::cout << "=======================================================\n";
+    }
+    impl_->bCollected = true;
+    if (impl_->storeAll()) //Current HACK only works if we store all (e.g. not for multi-point because requestStorage(-1) doesn't work for it)
+    {
+        impl_->notifyNextFrames(0);
+    }
+#endif//GMX_LIB_MPI
+}
 
 void
 AnalysisDataStorage::finishFrame(const AnalysisDataStorageFrame &frame)
@@ -647,3 +720,27 @@ AnalysisDataStorage::finishFrame(const AnalysisDataStorageFrame &frame)
 }
 
 } // namespace gmx
+
+namespace mpi
+{
+    template <>
+    inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame::Status>::get_type(const gmx::AnalysisDataStorage::Impl::StoredFrame::Status& status)
+    {
+        return MPI_BYTE;
+    }
+    template <>
+    inline const size_t mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame::Status>::get_size(const gmx::AnalysisDataStorage::Impl::StoredFrame::Status& status)
+    {
+        return sizeof(status);
+    }
+    SET_MPI_STATIC(gmx::AnalysisDataStorage::Impl::StoredFrame::Status);
+
+    template <>
+    inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame>::get_type(const gmx::AnalysisDataStorage::Impl::StoredFrame& sf)
+    {
+        mpi_type_builder builder(sf);
+        builder.add(sf.frame);
+        builder.add(sf.status);
+        return builder.build();
+    }
+}//mpi

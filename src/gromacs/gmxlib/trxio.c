@@ -65,6 +65,16 @@
 /* Globals for gromos-87 input */
 typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
 
+typedef struct
+{
+    /* tracks of the size of a frame for skipping */
+    int entireFrameSize;
+    gmx_bool bSkip;
+    /* tracks how often frames were stored */
+    real timeStoreFreq;
+    real timeFirst;
+}trxstatus_settings;
+
 struct t_trxstatus
 {
     int __frame;
@@ -75,6 +85,7 @@ struct t_trxstatus
     int         NATOMS;
     double      DT,BOX[3];
     gmx_bool        bReadBox;
+    trxstatus_settings skip;
 };
 
 static void initcount(t_trxstatus *status)
@@ -394,6 +405,82 @@ t_trxstatus *open_trx(const char *outfile,const char *filemode)
     return stat;
 }
 
+static int convTime2Frame (double i, t_trxstatus *status)
+{
+    double tsf = status->skip.timeStoreFreq,
+           err = ((i + i*2*GMX_REAL_EPS) / tsf * tsf - i) * 2 ;
+
+    return round ((i+err) / tsf);
+}
+
+/* seeks to right before the beginning of the next frame to be analyzed */
+static int gmx_seek_frame(t_trxstatus *status,t_trxframe *fr)
+{
+    gmx_large_int_t position2Skip2 = 0; /* keeps track of which frame needs to be skipped to next */
+    int headerSize, frameSize;
+    t_trnheader header1, header2;
+    real begin = 0;
+//    double tolerance = 2*(GMX_FLOAT_EPS);//TODO RJ: Roland put this in so consider putting it back in!
+    real tolerance = GMX_REAL_EPS;
+    int bOK, d, sts, i;
+
+    if (!status->skip.bSkip && !bTimeSet(TBEGIN))
+    {
+        return 0;
+    }
+    else if (!bTimeSet(TDELTA) && bTimeSet(TBEGIN) && status->skip.timeStoreFreq != 0)
+    {
+        return 0;
+    }
+
+    //TODO RJ: I feel like there is a way to significantly simplify this, but need to varify
+    /* if this is the first time seek is called */
+    if (status->skip.timeStoreFreq == 0)
+    {
+        /* Read header to get both the size of the header and to get information so that the size of a frame can be calculated */
+        if (!fread_trnheader (status->fio,&header1,&bOK)) goto error;
+        headerSize = gmx_fio_ftell (status->fio);
+        frameSize = header1.x_size + header1.v_size + header1.f_size + header1.ir_size + header1.e_size
+                  + header1.top_size + header1.sym_size + header1.box_size + header1.pres_size + header1.vir_size;
+        status->skip.entireFrameSize = headerSize + frameSize;
+        status->skip.timeFirst = header1.t;
+
+        /* Seek to second header. This is necessary so that we can read the header to calculate how often frames were stored. */
+        if (gmx_fio_seek (status->fio, status->skip.entireFrameSize)) goto error;
+        if (!fread_trnheader (status->fio,&header2,&bOK)) goto error;
+        status->skip.timeStoreFreq = header2.t-header1.t;
+        if (bTimeSet(TBEGIN))
+        {
+            begin = convTime2Frame (rTimeValue(TBEGIN) - header1.t, status);
+        }
+
+        /* We want to round up here because we want to make sure that we are analyzing a frame after TBEGIN */
+        position2Skip2 = ceil (begin / status->skip.timeStoreFreq * (1-tolerance)) * status->skip.timeStoreFreq;
+        gmx_fio_seek (status->fio, 0);
+    }
+    /* We assume we just read a frame which is being analyzed (is after TBEGIN and is divisible by TBEGIN) */
+    else
+    {
+        begin = (fr->time - status->skip.timeFirst) / rTimeValue(TDELTA);
+        position2Skip2 = convTime2Frame (((rint (begin)) * rTimeValue(TDELTA)) + rTimeValue(TDELTA), status);
+    }
+    /* Checks to see if the position to seek to is the same as the one it just analyzed (Meaning no real seeking is needed).
+     * If it tried to seek back to this frame, it would do nothing so that when it calls gmx_next_frame it automatically gets the next frame. */
+    if (position2Skip2 > convTime2Frame (fr->time - status->skip.timeFirst, status))
+    {
+        status->__frame = (position2Skip2-1);
+        if (gmx_fio_seek (status->fio, position2Skip2 * status->skip.entireFrameSize)) goto error;
+    }
+
+    return TRUE;
+
+error:
+    printf ("Error reading header.\nSwitching to using slower method of skipping.\n");
+    gmx_fio_seek (status->fio, 0);
+    status->skip.bSkip = FALSE;
+    return FALSE;
+}
+
 static gmx_bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
 {
   t_trnheader sh;
@@ -672,112 +759,119 @@ static int pdb_first_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 
 gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe *fr)
 {
-  real pt;
-  int  ct;
-  gmx_bool bOK,bRet,bMissingData=FALSE,bSkip=FALSE;
-  int dummy=0;
+    real pt;
+    int  ct;
+    gmx_bool bOK,bRet,bMissingData=FALSE,bSkip=FALSE;
+    int dummy=0;
 
-  bRet = FALSE;
-  pt=fr->time; 
+    bRet = FALSE;
+    pt=fr->time;
 
-  do {
-    clear_trxframe(fr,FALSE);
-    fr->tppf = fr->tpf;
-    fr->tpf  = fr->time;
-    
-    switch (gmx_fio_getftp(status->fio)) {
-    case efTRJ:
-    case efTRR:
-        bRet = gmx_next_frame(status,fr);
-        break;
-    case efCPT:
-      /* Checkpoint files can not contain mulitple frames */
-      break;
-    case efG96:
+    do {
+        clear_trxframe(fr,FALSE);
+        fr->tppf = fr->tpf;
+        fr->tpf  = fr->time;
+
+        switch (gmx_fio_getftp(status->fio)) {
+        case efTRJ:
+        case efTRR:
+            gmx_seek_frame(status,fr);
+            bRet = gmx_next_frame(status,fr);
+            break;
+        case efCPT:
+            /* Checkpoint files can not contain mulitple frames */
+            break;
+        case efG96:
       gmx_fatal(FARGS,
 		"Reading trajectories in .g96 format is broken. Please use\n"
 		"a different file format.");
-      read_g96_conf(gmx_fio_getfp(status->fio),NULL,fr);
-      bRet = (fr->natoms > 0);
-      break;
-    case efG87:
-      bRet = xyz_next_x(status, gmx_fio_getfp(status->fio),oenv,&fr->time,
-                        fr->natoms, fr->x,fr->box);
-      fr->bTime = bRet;
-      fr->bX    = bRet;
-      fr->bBox  = bRet;
-      break;
-    case efXTC:
-      /* B. Hess 2005-4-20
-       * Sometimes is off by one frame
-       * and sometimes reports frame not present/file not seekable
-       */
-      /* DvdS 2005-05-31: this has been fixed along with the increased
-       * accuracy of the control over -b and -e options.
-       */
-        if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
-          if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms,TRUE)) {
-            gmx_fatal(FARGS,"Specified frame (time %f) doesn't exist or file corrupt/inconsistent.",
+            read_g96_conf(gmx_fio_getfp(status->fio),NULL,fr);
+            bRet = (fr->natoms > 0);
+            break;
+        case efG87:
+            bRet = xyz_next_x(status, gmx_fio_getfp(status->fio),oenv,&fr->time,
+                    fr->natoms, fr->x,fr->box);
+            fr->bTime = bRet;
+            fr->bX    = bRet;
+            fr->bBox  = bRet;
+            break;
+        case efXTC:
+            /* B. Hess 2005-4-20
+             * Sometimes is off by one frame
+             * and sometimes reports frame not present/file not seekable
+             */
+            /* DvdS 2005-05-31: this has been fixed along with the increased
+             * accuracy of the control over -b and -e options.
+             */
+            if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
+                 if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms,TRUE)) {
+                      gmx_fatal(FARGS,"Specified frame (time %f) doesn't exist or file corrupt/inconsistent.",
                       rTimeValue(TBEGIN));
+                }
+                initcount(status);
             }
-            initcount(status);
-        }
-      bRet = read_next_xtc(status->fio,fr->natoms,&fr->step,&fr->time,fr->box,
-			   fr->x,&fr->prec,&bOK);
-      fr->bPrec = (bRet && fr->prec > 0);
-      fr->bStep = bRet;
-      fr->bTime = bRet;
-      fr->bX    = bRet;
-      fr->bBox  = bRet;
-      if (!bOK) {
-	/* Actually the header could also be not ok,
-	   but from bOK from read_next_xtc this can't be distinguished */
-	fr->not_ok = DATA_NOT_OK;
-      }
-      break;
-    case efPDB:
-      bRet = pdb_next_x(status, gmx_fio_getfp(status->fio),fr);
-      break;
-    case efGRO:
-      bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio),fr);
-      break;
-    default:
+            bRet = read_next_xtc(status->fio,fr->natoms,&fr->step,&fr->time,fr->box,
+                    fr->x,&fr->prec,&bOK);
+            fr->bPrec = (bRet && fr->prec > 0);
+            fr->bStep = bRet;
+            fr->bTime = bRet;
+            fr->bX    = bRet;
+            fr->bBox  = bRet;
+            if (!bOK) {
+                /* Actually the header could also be not ok,
+	               but from bOK from read_next_xtc this can't be distinguished */
+                fr->not_ok = DATA_NOT_OK;
+            }
+            break;
+        case efPDB:
+            bRet = pdb_next_x(status, gmx_fio_getfp(status->fio),fr);
+            break;
+        case efGRO:
+            bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio),fr);
+            break;
+        default:
 #ifdef GMX_USE_PLUGINS
-      bRet = read_next_vmd_frame(dummy,fr);
+            bRet = read_next_vmd_frame(dummy,fr);
 #else
-      gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%s",
-                ftp2ext(gmx_fio_getftp(status->fio)),
-                gmx_fio_getname(status->fio));
+            gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%s",
+                    ftp2ext(gmx_fio_getftp(status->fio)),
+                    gmx_fio_getname(status->fio));
 #endif
+        }
+
+        if (bRet) {
+            bMissingData = (((fr->flags & TRX_NEED_X) && !fr->bX) ||
+                            ((fr->flags & TRX_NEED_V) && !fr->bV) ||
+                            ((fr->flags & TRX_NEED_F) && !fr->bF));
+            bSkip = FALSE;
+            if (!bMissingData) {
+                ct=check_times2(fr->time,fr->t0,fr->tpf,fr->tppf,fr->bDouble);
+                if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct<0)) {
+                    printcount(status, oenv,fr->time,FALSE);
+                } else if (ct > 0)
+                {
+                    bRet = FALSE;
+                }
+                else {
+                    /* This is how skipping is handled when not using TRR's gmx_seek_frame function */
+                    if (!efTRR && !status->skip.bSkip)
+                    {
+                        printcount(status, oenv,fr->time,TRUE);
+                        bSkip = TRUE;
+                    }
+                }
+            }
+        }
+
+    } while (bRet && (bMissingData || bSkip));
+
+    if (!bRet) {
+        printlast(status, oenv,pt);
+        if (fr->not_ok)
+            printincomp(status, fr);
     }
-    
-    if (bRet) {
-      bMissingData = (((fr->flags & TRX_NEED_X) && !fr->bX) ||
-		      ((fr->flags & TRX_NEED_V) && !fr->bV) ||
-		      ((fr->flags & TRX_NEED_F) && !fr->bF));
-      bSkip = FALSE;
-      if (!bMissingData) {
-	ct=check_times2(fr->time,fr->t0,fr->tpf,fr->tppf,fr->bDouble);
-	if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct<0)) {
-	  printcount(status, oenv,fr->time,FALSE);
-	} else if (ct > 0)
-	  bRet = FALSE;
-	else {
-	  printcount(status, oenv,fr->time,TRUE);
-	  bSkip = TRUE;
-	}
-      }
-    }
-    
-  } while (bRet && (bMissingData || bSkip));
-  
-  if (!bRet) {
-    printlast(status, oenv,pt);
-    if (fr->not_ok)
-      printincomp(status, fr);
-  }
-  
-  return bRet;
+
+    return bRet;
 }
 
 int read_first_frame(const output_env_t oenv,t_trxstatus **status,
@@ -802,7 +896,16 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
   switch (gmx_fio_getftp(fio)) 
   {
   case efTRJ:
+      break;
   case efTRR:
+      if (bTimeSet(TDELTA))
+      {
+          (*status)->skip.bSkip = TRUE;
+      }
+      else
+      {
+          (*status)->skip.bSkip = FALSE;
+      }
     break;
   case efCPT:
     read_checkpoint_trxframe(fio,fr);

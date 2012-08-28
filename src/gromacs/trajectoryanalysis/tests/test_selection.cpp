@@ -183,17 +183,19 @@ SelectionTester::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo::init(argc, argv);
+    int ret = 1;
+    gmx::ProgramInfo::init(&argc, &argv);
     try
     {
         gmx::SelectionTester module;
         gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
         runner.setSelectionDebugLevel(1);
-        return runner.run(argc, argv);
+        ret = runner.run(argc, argv);
     }
     catch (const std::exception &ex)
     {
         gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
     }
+    gmx::ProgramInfo::finalize();
+    return ret;
 }

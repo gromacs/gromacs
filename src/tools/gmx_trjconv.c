@@ -671,9 +671,9 @@ int gmx_trjconv(int argc,char *argv[])
             {
                     { "-skip", FALSE, etINT,
                         { &skip_nr }, "Only write every nr-th frame" },
-                    { "-dt", FALSE, etTIME,
-                        { &delta_t },
-                        "Only write frame when t MOD dt = first time (%t)" },
+//                    { "-dt", FALSE, etTIME,
+//                        { &delta_t },
+//                        "Only write frame when t MOD dt = first time (%t)" },
                     { "-round", FALSE, etBOOL,
                         { &bRound }, "Round measurements to nearest picosecond" 
                     },
@@ -788,7 +788,7 @@ int gmx_trjconv(int argc,char *argv[])
     int          nfitdim;
     gmx_rmpbc_t  gpbc=NULL;
     gmx_bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
-    gmx_bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
+    gmx_bool         bCopy,bDoIt=0,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
     gmx_bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
     gmx_bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
     gmx_bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
@@ -816,7 +816,8 @@ int gmx_trjconv(int argc,char *argv[])
 
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
-                      PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | 
+//                      PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW |
+                      PCA_CAN_TIME | PCA_CAN_VIEW |
                       PCA_TIME_UNIT | PCA_BE_NICE,
                       NFILE,fnm,NPA,pa,asize(desc),desc,
                       0,NULL,&oenv);
@@ -862,6 +863,11 @@ int gmx_trjconv(int argc,char *argv[])
 	bPBC       = pbc_enum!=epNone;
         unitcell_enum = nenum(unitcell_opt);
         ecenter    = nenum(center_opt) - ecTric;
+
+        if (bTimeSet (TDELTA))
+        {
+            delta_t = rTimeValue(TDELTA);
+        }
 
         /* set and check option dependencies */    
         if (bPFit) bFit = TRUE; /* for pfit, fit *must* be set */
@@ -950,7 +956,7 @@ int gmx_trjconv(int argc,char *argv[])
         }
         /* skipping */  
         if (skip_nr <= 0) {
-        } 
+        }
 
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS,NFILE,fnm) ||
@@ -1024,6 +1030,7 @@ int gmx_trjconv(int argc,char *argv[])
                       1,&nout,&index,&grpnm);
         } else {
             /* no index file, so read natoms from TRX */
+//            fprintf (stderr, "About to enter the failure zone!\n");
             if (!read_first_frame(oenv,&status,in_file,&fr,TRX_DONT_SKIP))
                 gmx_fatal(FARGS,"Could not read a frame from %s",in_file);
             natoms = fr.natoms;
@@ -1102,7 +1109,6 @@ int gmx_trjconv(int argc,char *argv[])
 
         if (bHaveFirstFrame) {
             set_trxframe_ePBC(&fr,ePBC);
-
             natoms = fr.natoms;
 
             if (bSetTime)
@@ -1122,6 +1128,7 @@ int gmx_trjconv(int argc,char *argv[])
             case efTRR:
             case efTRJ:
                 out=NULL;
+                fprintf (stderr, "\nEntering to write a frame...\n");
                 if (!bSplit && !bSubTraj)
                     trxout = open_trx(out_file,filemode);
                 break;
@@ -1266,7 +1273,6 @@ int gmx_trjconv(int argc,char *argv[])
 
                 bWriteFrame =
                     ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame );
-
                 if (bWriteFrame && (bDropUnder || bDropOver)) {
                     while (dropval[0][drop1]<fr.time && drop1+1<ndrop) {
                         drop0 = drop1;
@@ -1296,22 +1302,23 @@ int gmx_trjconv(int argc,char *argv[])
                         fprintf(stderr,"\nDumping frame at t= %g %s\n",
                                 output_env_conv_time(oenv,fr.time),output_env_get_time_unit(oenv));
 
-                    /* check for writing at each delta_t */
+                    // check for writing at each delta_t //
                     bDoIt=(delta_t == 0);
                     if (!bDoIt)
                     {
                         if (!bRound)
                             bDoIt=bRmod(fr.time,tzero, delta_t);
                         else
-                            /* round() is not C89 compatible, so we do this:  */
-                            bDoIt=bRmod(floor(fr.time+0.5),floor(tzero+0.5), 
-                                        floor(delta_t+0.5));
+                            // round() is not C89 compatible, so we do this:  //
+                            bDoIt=bRmod(floor(fr.time+0.5),floor(tzero+0.5),
+                                    floor(delta_t+0.5));
                     }
-
                     if (bDoIt || bTDump) {
+                        fprintf (stderr, "\nWriting");
                         /* print sometimes */
                         if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
                             fprintf(stderr," ->  frame %6d time %8.3f      \r",
+//                            fprintf(stderr," ->  frame %6d time %8.3f      \n",
                                     outframe,output_env_conv_time(oenv,fr.time));
 
                         if (!bPFit) {

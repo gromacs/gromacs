@@ -73,10 +73,10 @@ typedef struct		/* This struct describes the order and the	*/
   int	v_size;		/* Non zero if velocities are present		*/
   int	f_size;		/* Non zero if forces are present		*/
 
-  int	natoms;		/* The total number of atoms			*/
+  int	natoms;		/* The total number of atoms			*/ //size of frame NOT HEADER = 3*rvec*natoms
   int	step;		/* Current step number				*/
   int	nre;		/* Backward compatibility		        */
-  real	t;		/* Current time					*/
+  real	t;          /* Current time					*/
   real	lambda;		/* Current value of lambda			*/
   int	fep_state;  /* Current value of alchemical state */
 } t_trnheader;

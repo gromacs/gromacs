@@ -40,6 +40,7 @@
 #endif
 
 #include <string.h>
+#include <iostream>
 
 #include "oenv.h"
 #include "rmpbc.h"
@@ -56,6 +57,7 @@
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
+#include "gromacs/trajectoryanalysis/scheduler.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -68,11 +70,14 @@ namespace gmx
 class TrajectoryAnalysisRunnerCommon::Impl
 {
     public:
-        Impl(TrajectoryAnalysisSettings *settings);
+        // TODO: Change runner to const after fixing problem with counting frames.
+        Impl(TrajectoryAnalysisRunnerCommon &runner,
+            TrajectoryAnalysisSettings *settings);
         ~Impl();
 
         void finishTrajectory();
 
+        RoundRobinScheduler scheduler_;
         TrajectoryAnalysisSettings &settings_;
         TopologyInformation     topInfo_;
 
@@ -97,15 +102,18 @@ class TrajectoryAnalysisRunnerCommon::Impl
         //! Used to store the status variable from read_first_frame().
         t_trxstatus            *status_;
         output_env_t            oenv_;
+        //! Next frame that will be read in by readNextFrame()
+        size_t                  nextFrameNumber_;
 };
 
-
-TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
-    : settings_(*settings),
+TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisRunnerCommon
+        &runner, TrajectoryAnalysisSettings *settings)
+    : scheduler_(runner), settings_(*settings),
       bHelp_(false), bShowHidden_(false), bQuiet_(false),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
       grps_(NULL),
-      bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
+      bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL),
+      nextFrameNumber_(0)
 {
 }
 
@@ -153,7 +161,7 @@ TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
 
 TrajectoryAnalysisRunnerCommon::TrajectoryAnalysisRunnerCommon(
         TrajectoryAnalysisSettings *settings)
-    : impl_(new Impl(settings))
+    : impl_(new Impl(*this, settings))
 {
 }
 
@@ -343,6 +351,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     {
         return;
     }
+
     time_unit_t time_unit
         = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
     output_env_init(&impl_->oenv_, 0, NULL, time_unit, FALSE, exvgNONE, 0, 0);
@@ -360,6 +369,9 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         {
             GMX_THROW(FileIOError("Could not read coordinates from trajectory"));
         }
+        // Manually set nextFrameNumber whenever read_next_frame not called
+        // from readNextFrame.
+        impl_->nextFrameNumber_ = 1;
         impl_->bTrajOpen_ = true;
 
         if (top.hasTopology() && impl_->fr->natoms > top.topology()->atoms.nr)
@@ -402,6 +414,9 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         copy_mat(const_cast<rvec *>(top.boxtop_), impl_->fr->box);
     }
 
+    impl_->scheduler_.init();
+    readNextFrame();
+
     set_trxframe_ePBC(impl_->fr, top.ePBC());
     if (top.hasTopology() && impl_->settings_.hasRmPBC())
     {
@@ -410,20 +425,75 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     }
 }
 
+// TODO: Find a more efficient and correct way to count frames.
+// Problems caused by this poor implementation:
+// 1) Inefficient since it rewinds and reads all frames.
+// 2) Function should be const.
+// 3) Scheduler reference to runner should be const.
+// 4) Impl constructor in this file should also input a const runner.
+// 5) Rewinds input file to front and manually sets nextFrameNumber.
+// 6) Calls read_next_frame directly to bypass scheduler.
+
+size_t
+TrajectoryAnalysisRunnerCommon::getTotalNumberOfFrames()
+{
+    if (!hasTrajectory()) {
+        return 0;
+    }
+
+    rewind_trj(impl_->status_);
+    size_t numFramesRead=0;
+    // TODO: Avoid reading into official buffers
+    while (read_next_frame(impl_->oenv_, impl_->status_, impl_->fr))
+    {
+        numFramesRead++;
+    }
+
+    rewind_trj(impl_->status_);
+    impl_->nextFrameNumber_ = 0;
+    return numFramesRead;
+}
+
+
+size_t
+TrajectoryAnalysisRunnerCommon::getCurrentFrameNumber()
+{
+    return impl_->nextFrameNumber_ - 1;
+}
+
 
 bool
 TrajectoryAnalysisRunnerCommon::readNextFrame()
 {
-    bool bContinue = false;
-    if (hasTrajectory())
+    bool bContinue = hasTrajectory() && !impl_->scheduler_.done();
+    if (bContinue)
     {
-        bContinue = read_next_frame(impl_->oenv_, impl_->status_, impl_->fr);
+        size_t targetFrameNumber = impl_->scheduler_.selectNextFrameNumber();
+        if (impl_->nextFrameNumber_ > targetFrameNumber)
+        {
+            rewind_trj (impl_->status_);
+            impl_->nextFrameNumber_ = 0;
+        }
+        for (; impl_->nextFrameNumber_ <= targetFrameNumber;
+             ++impl_->nextFrameNumber_)
+        {
+            // TODO: Avoid reading into official buffers when skipping.
+            bContinue = read_next_frame(impl_->oenv_, impl_->status_, impl_->fr);
+            if (!bContinue) {
+                break;
+            }
+        }
     }
-    if (!bContinue)
+
+    if (bContinue)
+    {
+        return true;
+    }
+    else
     {
         impl_->finishTrajectory();
+        return false;
     }
-    return bContinue;
 }
 
 
