@@ -50,20 +50,6 @@
 namespace gmx
 {
 
-/*! \cond libapi */
-void writeBasicHelpTopic(const HelpWriterContext &context,
-                         const HelpTopicInterface &topic,
-                         const std::string &text)
-{
-    const char *title = topic.title();
-    if (title != NULL && title[0] != '\0')
-    {
-        context.writeTitle(title);
-    }
-    context.writeTextBlock(text);
-}
-//! \endcond
-
 /********************************************************************
  * AbstractSimpleHelpTopic
  */
@@ -81,7 +67,7 @@ AbstractSimpleHelpTopic::findSubTopic(const char *name) const
 
 void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(context, *this, helpText());
+    context.writeTextBlock(helpText());
 }
 
 /********************************************************************
@@ -138,7 +124,7 @@ AbstractCompositeHelpTopic::findSubTopic(const char *name) const
 
 void AbstractCompositeHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(context, *this, helpText());
+    context.writeTextBlock(helpText());
     writeSubTopicList(context, "\nAvailable subtopics:");
 }
 

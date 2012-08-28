@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -154,6 +155,11 @@ void HelpManager::enterTopic(const std::string &name)
 void HelpManager::writeCurrentTopic() const
 {
     const HelpTopicInterface &topic = impl_->currentTopic();
+    const char *title = topic.title();
+    if (title != NULL && title[0] != '\0')
+    {
+        impl_->rootContext_.writeTitle(title);
+    }
     topic.writeHelp(impl_->rootContext_);
 }
 

@@ -41,6 +41,8 @@
 
 #include <algorithm>
 
+#include <boost/shared_ptr.hpp>
+
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/wman.h"
 
@@ -85,16 +87,45 @@ namespace gmx
 class HelpWriterContext::Impl
 {
     public:
-        //! Initializes the context with the given output file and format.
-        explicit Impl(File *file, HelpOutputFormat format)
-            : file_(*file), format_(format)
+        /*! \internal \brief
+         * Shared, non-modifiable state for context objects.
+         *
+         * Contents of this structure are shared between all context objects
+         * that are created from a common parent, e.g., by createSubsection().
+         * This state should not be modified after construction.
+         *
+         * \ingroup module_onlinehelp
+         */
+        struct SharedState
+        {
+            //! Initializes the state with the given output file and format.
+            SharedState(File *file, HelpOutputFormat format)
+                : file_(*file), format_(format)
+            {
+            }
+
+            //! Output file to which the help is written.
+            File                   &file_;
+            //! Output format for the help output.
+            HelpOutputFormat        format_;
+        };
+
+        //! Smart pointer type for managing the shared state.
+        typedef boost::shared_ptr<const SharedState> StatePointer;
+
+        //! Initializes the context with the given state and section depth.
+        Impl(const StatePointer &state, int sectionDepth)
+            : state_(state), sectionDepth_(sectionDepth)
         {
         }
 
-        //! Output file to which the help is written.
-        File                   &file_;
-        //! Output format for the help output.
-        HelpOutputFormat        format_;
+        //! Constant state shared by all child context objects.
+        StatePointer    state_;
+        //! Number of subsections above this context.
+        int             sectionDepth_;
+
+    private:
+        GMX_DISALLOW_ASSIGN(Impl);
 };
 
 /********************************************************************
@@ -102,7 +133,7 @@ class HelpWriterContext::Impl
  */
 
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
-    : impl_(new Impl(file, format))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format)), 0))
 {
     if (format != eHelpOutputFormat_Console)
     {
@@ -113,18 +144,41 @@ HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
     }
 }
 
+HelpWriterContext::HelpWriterContext(Impl *impl)
+    : impl_(impl)
+{
+}
+
+HelpWriterContext::HelpWriterContext(const HelpWriterContext &other)
+    : impl_(new Impl(*other.impl_))
+{
+}
+
 HelpWriterContext::~HelpWriterContext()
 {
 }
 
+HelpWriterContext &HelpWriterContext::operator =(const HelpWriterContext &other)
+{
+    impl_.reset(new Impl(*other.impl_));
+    return *this;
+}
+
 HelpOutputFormat HelpWriterContext::outputFormat() const
 {
-    return impl_->format_;
+    return impl_->state_->format_;
 }
 
 File &HelpWriterContext::outputFile() const
 {
-    return impl_->file_;
+    return impl_->state_->file_;
+}
+
+HelpWriterContext
+HelpWriterContext::createSubsection(const std::string &title) const
+{
+    writeTitle(title);
+    return HelpWriterContext(new Impl(impl_->state_, impl_->sectionDepth_ + 1));
 }
 
 std::string HelpWriterContext::substituteMarkup(const std::string &text) const
