@@ -51,6 +51,7 @@
 #include "sysstuff.h"
 #include "statutil.h"
 #include "mdrun.h"
+#include "md_logging.h"
 #include "md_support.h"
 #include "network.h"
 #include "pull.h"

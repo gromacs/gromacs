@@ -37,7 +37,6 @@
 #include <config.h>
 #endif
 
-#include <stdarg.h>
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -47,6 +46,7 @@
 #include "gmx_wallcycle.h"
 #include "vcm.h"
 #include "nrnb.h"
+#include "md_logging.h"
 #include "md_support.h"
 
 /* Is the signal in one simulation independent of other simulations? */
@@ -771,55 +771,5 @@ void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
         {
             gmx_bcast(fr->natoms*sizeof(fr->v[0]),fr->v[0],cr);
         }
-    }
-}
-
-void md_print_info(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...)
-{
-    va_list ap;
-
-    if (SIMMASTER(cr))
-    {
-        va_start(ap,fmt);
-
-        vfprintf(stderr,fmt,ap);
-        
-        va_end(ap);
-    }
-    if (fplog != NULL)
-    {
-        va_start(ap,fmt);
-
-        vfprintf(fplog,fmt,ap);
-
-        va_end(ap);
-    }
-}
-
-void md_print_warn(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...)
-{
-    va_list ap;
-
-    if (SIMMASTER(cr))
-    {
-        va_start(ap,fmt);
-
-        fprintf(stderr,"\n");
-        vfprintf(stderr,fmt,ap);
-        fprintf(stderr,"\n");
-
-        va_end(ap);
-    }
-    if (fplog != NULL)
-    {
-        va_start(ap,fmt);
-
-        fprintf(fplog,"\n");
-        vfprintf(fplog,fmt,ap);
-        fprintf(fplog,"\n");
-
-        va_end(ap);
     }
 }
