@@ -366,6 +366,21 @@ class SelectionParserParameter
         std::string             name_;
         //! Values for this parameter.
         SelectionParserValueListPointer values_;
+
+#ifdef GMX_CXX11
+        //Should be implicitly created. But GCC 4.7 doesn't do it.
+        SelectionParserParameter& operator=(SelectionParserParameter&& other)
+        {
+            name_ = move(other.name_);
+            values_ = move(other.values_);
+            return *this;
+        }
+
+        SelectionParserParameter(SelectionParserParameter&& other) 
+        {
+            *this = move(other);
+        }
+#endif
 };
 
 } // namespace gmx
