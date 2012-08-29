@@ -2076,6 +2076,10 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 
     if (pme->nnodes == 1)
     {
+#ifdef GMX_MPI
+        pme->mpi_comm_d[0] = MPI_COMM_NULL;
+        pme->mpi_comm_d[1] = MPI_COMM_NULL;
+#endif
         pme->ndecompdim = 0;
         pme->nodeid_major = 0;
         pme->nodeid_minor = 0;
