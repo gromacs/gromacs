@@ -180,7 +180,8 @@ static void init_nbparam(cu_nbparam_t *nbp,
     }
     else
     {
-        gmx_fatal(FARGS, "The requested electrostatics type is not implemented in the CUDA GPU accelerated kernels!");
+        /* Shouldn't happen, as this is checked when choosing Verlet-scheme */
+        gmx_incons("The requested electrostatics type is not implemented in the CUDA GPU accelerated kernels!");
     }
 
     /* generate table for PME */
@@ -319,7 +320,7 @@ static int pick_nbnxn_kernel_version()
     bCUDA32 = true;
     sprintf(sbuf, "3.2");
 #elif CUDA_VERSION == 4000
-    bCUDA40 = false;
+    bCUDA40 = true;
     sprintf(sbuf, "4.0");
 #endif
 
@@ -478,16 +479,10 @@ void nbnxn_cuda_init(FILE *fplog,
             }
             else if (bTMPIAtomics)
             {
-                sprintf(sbuf,
-                        "NOTE: Using a GPU with ECC enabled; will use polling waiting instead of the\n"
-                        "      standard cudaStreamSynchronize which, due to a CUDA bug, causes performance\n"
-                        "      loss when used in combination with ECC.\n"
-                        "      In case of lockups or crashes try switching back to the standard waiting\n"
-                        "      using the GMX_CUDA_STREAMSYNC env. var.");
-                fprintf(stderr, "\n%s\n", sbuf);
                 if (fplog)
                 {
-                    fprintf(fplog, "\n%s\n", sbuf);
+                    fprintf(fplog,
+                            "NOTE: Using a GPU with ECC enabled; will use polling waiting.\n");
                 }
             }
             else

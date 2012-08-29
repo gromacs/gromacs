@@ -27,6 +27,7 @@
 #include "types/hwinfo.h"
 #include "types/commrec.h"
 #include "gmx_fatal.h"
+#include "gmx_fatal_collective.h"
 #include "smalloc.h"
 #include "gpu_utils.h"
 #include "statutil.h"
@@ -454,12 +455,11 @@ void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
     /* Bail if binary is not compiled with GPU on */
     if (bForceUseGPU && !bGPUBin)
     {
-        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled "
-                  "without GPU suupport!", ShortProgram());
+        gmx_fatal_collective(FARGS, cr, NULL, "GPU acceleration requested, but %s was compiled without GPU support!", ShortProgram());
     }
 
     /* run the detection if the binary was compiled with GPU support */
-    if (bGPUBin)
+    if (bGPUBin && getenv("GMX_DISABLE_GPU_DETECTION")==NULL)
     {
         detect_cuda_gpus(&hwinfo->gpu_info);
     }
