@@ -163,7 +163,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
 TEST_F(SelectionOptionTest, HandlesAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
+    gmx::SelectionOptionInfo *info = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel").storeVector(&sel).multiValue()
@@ -178,6 +178,7 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
+    ASSERT_TRUE(info != NULL);
     EXPECT_NO_THROW(info->setValueCount(2));
 }
 
@@ -185,7 +186,7 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
 TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 {
     gmx::Selection sel;
-    gmx::SelectionOptionInfo *info;
+    gmx::SelectionOptionInfo *info = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel").store(&sel)
@@ -199,6 +200,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
+    ASSERT_TRUE(info != NULL);
     EXPECT_THROW(info->setOnlyStatic(true), gmx::InvalidInputError);
 }
 
@@ -206,7 +208,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
+    gmx::SelectionOptionInfo *info = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel").storeVector(&sel).multiValue()
@@ -221,6 +223,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
+    ASSERT_TRUE(info != NULL);
     EXPECT_THROW(info->setValueCount(1), gmx::InvalidInputError);
 }
 
@@ -228,7 +231,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
+    gmx::SelectionOptionInfo *info = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel").storeVector(&sel).multiValue()
@@ -242,6 +245,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
+    ASSERT_TRUE(info != NULL);
     EXPECT_THROW(info->setValueCount(2), gmx::InvalidInputError);
 }
 
@@ -301,7 +305,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
 TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
+    gmx::SelectionOptionInfo *info = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel").storeVector(&sel).valueCount(3)
@@ -314,6 +318,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
+    ASSERT_TRUE(info != NULL);
     EXPECT_NO_THROW(info->setValueCount(2));
     EXPECT_NO_THROW(manager_.parseRequestedFromString("resname RA RB; resname RB RC"));
 }
