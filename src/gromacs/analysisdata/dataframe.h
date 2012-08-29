@@ -47,6 +47,8 @@
 #include "../utility/flags.h"
 #include "../utility/gmxassert.h"
 
+#include "external/mpp/gmxmpp.h"
+
 namespace gmx
 {
 
@@ -167,6 +169,7 @@ class AnalysisDataValue
         real                    error_;
         //! Status flags for thise value.
         FlagsTemplate<Flag>     flags_;
+        friend struct mpi::mpi_type_traits<AnalysisDataValue>;
 };
 
 //! Shorthand for reference to an array of data values.
@@ -257,6 +260,7 @@ class AnalysisDataFrameHeader
         int                     index_;
         real                    x_;
         real                    dx_;
+        friend struct mpi::mpi_type_traits<AnalysisDataFrameHeader>;
 };
 
 
@@ -588,5 +592,30 @@ class AnalysisDataFrameRef
 };
 
 } // namespace gmx
+
+namespace mpi
+{
+template <>
+inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataValue>::get_type(const gmx::AnalysisDataValue& adv)
+{
+	mpi_type_builder builder(adv);
+	builder.add(adv.value_);
+	builder.add(adv.error_);
+	builder.add(adv.flags_);
+	return builder.build();
+}
+SET_MPI_STATIC(gmx::AnalysisDataValue)
+
+template <>
+inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataFrameHeader>::get_type(const gmx::AnalysisDataFrameHeader& adfh)
+{
+	mpi_type_builder builder (adfh);
+	builder.add(adfh.index_);
+	builder.add(adfh.x_);
+	builder.add(adfh.dx_);
+	return builder.build();
+}
+SET_MPI_STATIC(gmx::AnalysisDataFrameHeader)
+}//mpi
 
 #endif

@@ -59,7 +59,9 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
+#include "external/mpp/gmxmpp.h"
 
 namespace gmx
 {
@@ -156,13 +158,13 @@ void IndexFileWriterModule::addGroup(const std::string &name, bool bDynamic)
 
 int IndexFileWriterModule::flags() const
 {
-    return efAllowMulticolumn | efAllowMultipoint;
+    return efAllowMulticolumn | efAllowMultipoint | efRequireStorage;
 }
 
 
 void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
-    if (!fnm_.empty())
+    if (!fnm_.empty() && gmx::ProgramInfo::isMaster())
     {
         fp_ = gmx_fio_fopen(fnm_.c_str(), "w");
     }
