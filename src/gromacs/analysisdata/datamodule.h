@@ -85,6 +85,8 @@ class AnalysisDataModuleInterface
             efAllowMulticolumn   = 0x04,
             //! The module can process data with missing points.
             efAllowMissing       = 0x08,
+            //! This module requires full storage for MPI
+            efRequireStorage     = 0x10,
         };
 
         virtual ~AnalysisDataModuleInterface() {};
