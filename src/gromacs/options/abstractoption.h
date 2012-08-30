@@ -79,7 +79,10 @@ typedef gmx_unique_ptr<AbstractOptionStorage>::type
  * point when the actual option is created.
  *
  * Subclasses should override createStorage() to create the correct type
- * of storage object.
+ * of storage object.  If they use their own info type derived from OptionInfo,
+ * they should also have a public typedef \c InfoType that specifies that
+ * info type.  This is required for Options::addOption() to return the correct
+ * info type.
  *
  * \ingroup module_options
  */

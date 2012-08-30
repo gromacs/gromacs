@@ -42,6 +42,7 @@
 #include "../options/abstractoption.h"
 #include "selection.h"
 #include "selectionenums.h"
+#include "selectionoptioninfo.h"
 
 namespace gmx
 {
@@ -60,10 +61,11 @@ class SelectionOptionStorage;
 class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef SelectionOptionInfo InfoType;
+
         //! Initializes an option with the given name.
-        explicit SelectionOption(const char *name)
-            : MyBase(name), infoPtr_(NULL)
-        { }
+        explicit SelectionOption(const char *name) : MyBase(name) { }
 
         /*! \brief
          * Request velocity evaluation for output positions.
@@ -109,15 +111,6 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         MyClass &dynamicOnlyWhole()
         { selectionFlags_.set(efSelection_DynamicOnlyWhole); return me(); }
 
-        /*! \brief
-         * Get an info object that can be used to alter the option after
-         * creation.
-         *
-         * \see SelectionOptionInfo
-         */
-        MyClass &getAdjuster(SelectionOptionInfo **infoPtr)
-        { infoPtr_ = infoPtr; return me(); }
-
     private:
         // Disable possibility to allow multiple occurrences, since it isn't
         // implemented.
@@ -130,7 +123,6 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         virtual AbstractOptionStoragePointer createStorage() const;
 
         SelectionFlags          selectionFlags_;
-        SelectionOptionInfo   **infoPtr_;
 
         /*! \brief
          * Needed to initialize SelectionOptionStorage from this class without

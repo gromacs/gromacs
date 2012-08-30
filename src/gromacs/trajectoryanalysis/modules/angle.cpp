@@ -155,11 +155,11 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(BooleanOption("dumpd").store(&bDumpDist_)
         .description("Write also distances with -od"));
 
-    options->addOption(SelectionOption("group1").multiValue().required()
-        .dynamicOnlyWhole().storeVector(&sel1_).getAdjuster(&sel1info_)
+    sel1info_ = options->addOption(SelectionOption("group1").multiValue()
+        .required().dynamicOnlyWhole().storeVector(&sel1_)
         .description("First analysis/vector selection"));
-    options->addOption(SelectionOption("group2").multiValue()
-        .dynamicOnlyWhole().storeVector(&sel2_).getAdjuster(&sel2info_)
+    sel2info_ = options->addOption(SelectionOption("group2").multiValue()
+        .dynamicOnlyWhole().storeVector(&sel2_)
         .description("Second analysis/vector selection"));
 }
 

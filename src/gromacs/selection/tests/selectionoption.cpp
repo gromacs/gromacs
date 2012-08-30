@@ -165,9 +165,8 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
     gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).multiValue()
-                            .getAdjuster(&info)));
+    ASSERT_NO_THROW(info = options_.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -187,9 +186,8 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
     gmx::Selection sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").store(&sel)
-                            .getAdjuster(&info)));
+    ASSERT_NO_THROW(info = options_.addOption(
+                        SelectionOption("sel").store(&sel)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -208,9 +206,8 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
     gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).multiValue()
-                            .getAdjuster(&info)));
+    ASSERT_NO_THROW(info = options_.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -230,9 +227,8 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
     gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).multiValue()
-                            .getAdjuster(&info)));
+    ASSERT_NO_THROW(info = options_.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -303,9 +299,8 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).valueCount(3)
-                            .getAdjuster(&info)));
+    ASSERT_NO_THROW(info = options_.addOption(
+                        SelectionOption("sel").storeVector(&sel).valueCount(3)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);

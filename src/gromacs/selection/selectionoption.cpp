@@ -66,10 +66,6 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
-    if (settings.infoPtr_ != NULL)
-    {
-        *settings.infoPtr_ = &info_;
-    }
 }
 
 

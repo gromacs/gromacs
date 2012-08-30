@@ -47,6 +47,7 @@
 #include "../utility/gmxassert.h"
 
 #include "abstractoption.h"
+#include "basicoptioninfo.h"
 
 namespace gmx
 {
@@ -76,6 +77,9 @@ options.addOption(BooleanOption("pbc").store(&bPBC));
 class BooleanOption : public OptionTemplate<bool, BooleanOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef BooleanOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit BooleanOption(const char *name) : MyBase(name) {}
 
@@ -105,6 +109,9 @@ options.addOption(IntegerOption("box").store(box).vector());
 class IntegerOption : public OptionTemplate<int, IntegerOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef IntegerOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit IntegerOption(const char *name) : MyBase(name) {}
 
@@ -139,6 +146,9 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 class DoubleOption : public OptionTemplate<double, DoubleOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef DoubleOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit DoubleOption(const char *name) : MyBase(name), bTime_(false)
         {
@@ -197,6 +207,9 @@ options.addOption(StringOption("type").enumValue(allowed).store(&str)
 class StringOption : public OptionTemplate<std::string, StringOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef StringOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
             : MyBase(name), enumValues_(NULL), defaultEnumIndex_(-1),
