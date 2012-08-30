@@ -55,7 +55,10 @@ AnalysisDataFrameHeader::AnalysisDataFrameHeader()
 AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, real x, real dx)
     : index_(index), x_(x), dx_(dx)
 {
-    GMX_ASSERT(index >= 0, "Invalid frame index");
+    // Because of the new global indexing system, this assertion
+    //     is no longer reflective of testing if there has been
+    //     an error somewhere.
+    //GMX_ASSERT(index >= 0, "Invalid frame index");
 }
 
 

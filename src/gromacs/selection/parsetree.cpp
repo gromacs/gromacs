@@ -310,10 +310,6 @@ SelectionParserParameter::SelectionParserParameter(
 {
 }
 
-SelectionParserParameter::~SelectionParserParameter()
-{
-}
-
 } // namespace gmx
 
 /*!

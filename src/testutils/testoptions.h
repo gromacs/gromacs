@@ -75,6 +75,10 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[]);
  * \inlibraryapi
  */
 void parseTestOptions(Options *options);
+/*! \libinternal \brief
+ * Finalizes the test utilities library.
+ */
+void finalizeTestUtils();
 
 } // namespace test
 } // namespace gmx
