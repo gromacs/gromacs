@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include "gromacs/legacyheaders/smalloc.h"
 
@@ -56,8 +57,97 @@
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 namespace
 {
+
+/*! \internal \brief
+ * Custom output interface for HelpWriterContext::Impl::processMarkup().
+ *
+ * Provides an interface that is used to implement different types of output
+ * from HelpWriterContext::Impl::processMarkup().
+ *
+ * \ingroup module_onlinehelp
+ */
+class WrapperInterface
+{
+    public:
+        virtual ~WrapperInterface() {}
+
+        /*! \brief
+         * Provides the wrapping settings.
+         *
+         * HelpWriterContext::Impl::processMarkup() may provide some default
+         * values for the settings if they are not set; this is the reason the
+         * return value is not const.
+         */
+        virtual TextLineWrapperSettings &settings() = 0;
+        //! Appends the given string to output.
+        virtual void wrap(const std::string &text)  = 0;
+};
+
+/*! \internal \brief
+ * Wraps markup output into a single string.
+ *
+ * \ingroup module_onlinehelp
+ */
+class WrapperToString : public WrapperInterface
+{
+    public:
+        //! Creates a wrapper with the given settings.
+        explicit WrapperToString(const TextLineWrapperSettings &settings)
+            : wrapper_(settings)
+        {
+        }
+
+        virtual TextLineWrapperSettings &settings()
+        {
+            return wrapper_.settings();
+        }
+        virtual void wrap(const std::string &text)
+        {
+            result_.append(wrapper_.wrapToString(text));
+        }
+        //! Returns the result string.
+        const std::string &result() const { return result_; }
+
+    private:
+        TextLineWrapper         wrapper_;
+        std::string             result_;
+};
+
+/*! \internal \brief
+ * Wraps markup output into a vector of string (one line per element).
+ *
+ * \ingroup module_onlinehelp
+ */
+class WrapperToVector : public WrapperInterface
+{
+    public:
+        //! Creates a wrapper with the given settings.
+        explicit WrapperToVector(const TextLineWrapperSettings &settings)
+            : wrapper_(settings)
+        {
+        }
+
+        virtual TextLineWrapperSettings &settings()
+        {
+            return wrapper_.settings();
+        }
+        virtual void wrap(const std::string &text)
+        {
+            const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
+            result_.insert(result_.end(), lines.begin(), lines.end());
+        }
+        //! Returns a vector with the output lines.
+        const std::vector<std::string> &result() const { return result_; }
+
+    private:
+        TextLineWrapper          wrapper_;
+        std::vector<std::string> result_;
+};
 
 /*! \internal \brief
  * Make the string uppercase.
@@ -73,10 +163,7 @@ std::string toUpperCase(const std::string &text)
     return result;
 }
 
-} // namespace
-
-namespace gmx
-{
+}   // namespace
 
 /********************************************************************
  * HelpWriterContext::Impl
@@ -96,11 +183,49 @@ class HelpWriterContext::Impl
         {
         }
 
+        /*! \brief
+         * Process markup and wrap lines within a block of text.
+         *
+         * \param[in] text     Text to process.
+         * \param     wrapper  Object used to wrap the text.
+         *
+         * The \p wrapper should take care of either writing the text to output
+         * or providing an interface for the caller to retrieve the output.
+         */
+        void processMarkup(const std::string &text,
+                           WrapperInterface  *wrapper) const;
+
         //! Output file to which the help is written.
         File                   &file_;
         //! Output format for the help output.
         HelpOutputFormat        format_;
 };
+
+void HelpWriterContext::Impl::processMarkup(const std::string &text,
+                                            WrapperInterface  *wrapper) const
+{
+    const char *program = ProgramInfo::getInstance().programName().c_str();
+    std::string result(text);
+    result = replaceAll(result, "[PROGRAM]", program);
+    switch (format_)
+    {
+        case eHelpOutputFormat_Console:
+        {
+            {
+                char            *resultStr = check_tty(result.c_str());
+                scoped_ptr_sfree resultGuard(resultStr);
+                result = resultStr;
+            }
+            if (wrapper->settings().lineLength() == 0)
+            {
+                wrapper->settings().setLineLength(78);
+            }
+            return wrapper->wrap(result);
+        }
+        default:
+            GMX_THROW(InternalError("Invalid help output format"));
+    }
+}
 
 /********************************************************************
  * HelpWriterContext
@@ -125,18 +250,22 @@ File &HelpWriterContext::outputFile() const
     return impl_->file_;
 }
 
-std::string HelpWriterContext::substituteMarkup(const std::string &text) const
+std::string
+HelpWriterContext::substituteMarkupAndWrapToString(
+        const TextLineWrapperSettings &settings, const std::string &text) const
 {
-    if (outputFormat() != eHelpOutputFormat_Console)
-    {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "This output format is not implemented"));
-    }
-    char            *resultStr = check_tty(text.c_str());
-    scoped_ptr_sfree resultGuard(resultStr);
-    return std::string(resultStr);
+    WrapperToString wrapper(settings);
+    impl_->processMarkup(text, &wrapper);
+    return wrapper.result();
+}
+
+std::vector<std::string>
+HelpWriterContext::substituteMarkupAndWrapToVector(
+        const TextLineWrapperSettings &settings, const std::string &text) const
+{
+    WrapperToVector wrapper(settings);
+    impl_->processMarkup(text, &wrapper);
+    return wrapper.result();
 }
 
 void HelpWriterContext::writeTitle(const std::string &title) const
@@ -155,18 +284,13 @@ void HelpWriterContext::writeTitle(const std::string &title) const
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
-    if (outputFormat() != eHelpOutputFormat_Console)
-    {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "This output format is not implemented"));
-    }
-    TextLineWrapper wrapper;
-    wrapper.settings().setLineLength(78);
-    const char     *program = ProgramInfo::getInstance().programName().c_str();
-    std::string     newText = replaceAll(text, "[PROGRAM]", program);
-    outputFile().writeLine(wrapper.wrapToString(substituteMarkup(newText)));
+    writeTextBlock(TextLineWrapperSettings(), text);
+}
+
+void HelpWriterContext::writeTextBlock(const TextLineWrapperSettings &settings,
+                                       const std::string             &text) const
+{
+    outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
 }
 
 } // namespace gmx
