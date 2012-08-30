@@ -181,6 +181,7 @@ AnalysisData::finishData(AnalysisDataHandle handle)
 
     if (impl_->handles_.empty())
     {
+        impl_->storage_.collectFrames();
         notifyDataFinish();
     }
 }
