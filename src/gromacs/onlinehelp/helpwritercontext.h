@@ -40,6 +40,7 @@
 #define GMX_ONLINEHELP_HELPWRITERCONTEXT_H
 
 #include <string>
+#include <vector>
 
 #include "../utility/common.h"
 
@@ -47,6 +48,7 @@ namespace gmx
 {
 
 class File;
+class TextLineWrapperSettings;
 
 /*! \cond libapi */
 //! \libinternal Output format for help writing.
@@ -131,13 +133,32 @@ class HelpWriterContext
         HelpWriterContext createSubsection(const std::string &title) const;
 
         /*! \brief
-         * Substitutes markup used in help text.
+         * Substitutes markup used in help text and wraps lines.
          *
-         * \param[in] text  Text to substitute.
-         * \returns   \p text with markup substituted.
+         * \param[in] settings Line wrapper settings.
+         * \param[in] text     Text to substitute.
+         * \returns   \p text with markup substituted and wrapped.
          * \throws    std::bad_alloc if out of memory.
+         *
+         * \see TextLineWrapper::wrapToString()
          */
-        std::string substituteMarkup(const std::string &text) const;
+        std::string
+        substituteMarkupAndWrapToString(const TextLineWrapperSettings &settings,
+                                        const std::string &text) const;
+        /*! \brief
+         * Substitutes markup used in help text and wraps lines.
+         *
+         * \param[in] settings Line wrapper settings.
+         * \param[in] text     Text to substitute.
+         * \returns   \p text with markup substituted and wrapped as a list of
+         *      lines.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * \see TextLineWrapper::wrapToVector()
+         */
+        std::vector<std::string>
+        substituteMarkupAndWrapToVector(const TextLineWrapperSettings &settings,
+                                        const std::string &text) const;
         /*! \brief
          * Writes a title for the current help topic.
          *
@@ -153,13 +174,23 @@ class HelpWriterContext
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
          *
-         * In addition to substituteMarkup(), also does line wrapping for
-         * console output.
-         *
-         * TODO: This function and substituteMarkup() should work more
-         * similarly.
+         * Convenience function that calls substituteMarkupAndWrapToString()
+         * and writes the result directly to the output file.
          */
         void writeTextBlock(const std::string &text) const;
+        /*! \brief
+         * Writes a formatted text block into the output.
+         *
+         * \param[in] settins Line wrapper settings.
+         * \param[in] text    Text to format.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         *
+         * Convenience function that calls substituteMarkupAndWrapToString()
+         * and writes the result directly to the output file.
+         */
+        void writeTextBlock(const TextLineWrapperSettings &settings,
+                            const std::string &text) const;
 
     private:
         class Impl;

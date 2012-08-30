@@ -40,6 +40,8 @@
 #include <cctype>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -53,8 +55,67 @@
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 namespace
 {
+
+class WrapperInterface
+{
+    public:
+        virtual ~WrapperInterface() {}
+
+        virtual TextLineWrapperSettings &settings() = 0;
+        virtual void wrap(const std::string &text) = 0;
+};
+
+class WrapperToString : public WrapperInterface
+{
+    public:
+        WrapperToString(const TextLineWrapperSettings &settings)
+            : wrapper_(settings)
+        {
+        }
+
+        virtual TextLineWrapperSettings &settings()
+        {
+            return wrapper_.settings();
+        }
+        virtual void wrap(const std::string &text)
+        {
+            result_.append(wrapper_.wrapToString(text));
+        }
+        const std::string &result() const { return result_; }
+
+    private:
+        TextLineWrapper         wrapper_;
+        std::string             result_;
+};
+
+class WrapperToVector : public WrapperInterface
+{
+    public:
+        WrapperToVector(const TextLineWrapperSettings &settings)
+            : wrapper_(settings)
+        {
+        }
+
+        virtual TextLineWrapperSettings &settings()
+        {
+            return wrapper_.settings();
+        }
+        virtual void wrap(const std::string &text)
+        {
+            const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
+            result_.insert(result_.end(), lines.begin(), lines.end());
+        }
+        const std::vector<std::string> &result() const { return result_; }
+
+    private:
+        TextLineWrapper         wrapper_;
+        std::vector<std::string> result_;
+};
 
 /*! \internal \brief
  * Make the string uppercase.
@@ -71,9 +132,6 @@ std::string toUpperCase(const std::string &text)
 }
 
 } // namespace
-
-namespace gmx
-{
 
 /********************************************************************
  * HelpWriterContext::Impl
@@ -119,6 +177,9 @@ class HelpWriterContext::Impl
         {
         }
 
+        void processMarkup(const std::string &text,
+                           WrapperInterface *wrapper) const;
+
         //! Constant state shared by all child context objects.
         StatePointer    state_;
         //! Number of subsections above this context.
@@ -127,6 +188,23 @@ class HelpWriterContext::Impl
     private:
         GMX_DISALLOW_ASSIGN(Impl);
 };
+
+void HelpWriterContext::Impl::processMarkup(const std::string &text,
+                                            WrapperInterface *wrapper) const
+{
+    if (wrapper->settings().lineLength() == 0)
+    {
+        wrapper->settings().setLineLength(78);
+    }
+    std::string result;
+    {
+        char *resultStr = check_tty(text.c_str());
+        scoped_ptr_sfree resultGuard(resultStr);
+        result = resultStr;
+    }
+    const char *program = ProgramInfo::getInstance().programName().c_str();
+    return wrapper->wrap(replaceAll(result, "[PROGRAM]", program));
+}
 
 /********************************************************************
  * HelpWriterContext
@@ -181,11 +259,22 @@ HelpWriterContext::createSubsection(const std::string &title) const
     return HelpWriterContext(new Impl(impl_->state_, impl_->sectionDepth_ + 1));
 }
 
-std::string HelpWriterContext::substituteMarkup(const std::string &text) const
+std::string
+HelpWriterContext::substituteMarkupAndWrapToString(
+        const TextLineWrapperSettings &settings, const std::string &text) const
 {
-    char *resultStr = check_tty(text.c_str());
-    scoped_ptr_sfree resultGuard(resultStr);
-    return std::string(resultStr);
+    WrapperToString wrapper(settings);
+    impl_->processMarkup(text, &wrapper);
+    return wrapper.result();
+}
+
+std::vector<std::string>
+HelpWriterContext::substituteMarkupAndWrapToVector(
+        const TextLineWrapperSettings &settings, const std::string &text) const
+{
+    WrapperToVector wrapper(settings);
+    impl_->processMarkup(text, &wrapper);
+    return wrapper.result();
 }
 
 void HelpWriterContext::writeTitle(const std::string &title) const
@@ -197,11 +286,13 @@ void HelpWriterContext::writeTitle(const std::string &title) const
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
-    TextLineWrapper wrapper;
-    wrapper.settings().setLineLength(78);
-    const char *program = ProgramInfo::getInstance().programName().c_str();
-    std::string newText = replaceAll(text, "[PROGRAM]", program);
-    outputFile().writeLine(wrapper.wrapToString(substituteMarkup(newText)));
+    writeTextBlock(TextLineWrapperSettings(), text);
+}
+
+void HelpWriterContext::writeTextBlock(const TextLineWrapperSettings &settings,
+                                       const std::string &text) const
+{
+    outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
 }
 
 } // namespace gmx
