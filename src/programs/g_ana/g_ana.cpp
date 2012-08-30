@@ -44,21 +44,26 @@
 int
 main(int argc, char *argv[])
 {
+    int ret = 1;
     const gmx::ProgramInfo &info =
-        gmx::ProgramInfo::init("g_ana", argc, argv);
+        gmx::ProgramInfo::init("g_ana", &argc, &argv);
     // TODO: With the addition of ProgramInfo above, this no longer needs to
     // be here, so think where it would best go.
-    CopyRight(stderr, argv[0]);
+    if (gmx::ProgramInfo::isMaster())
+    {
+        CopyRight(stderr, argv[0]);
+    }
     try
     {
         gmx::CommandLineModuleManager manager(info);
         registerTrajectoryAnalysisModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        return manager.run(argc, argv);
+        ret = manager.run(argc, argv);
     }
     catch (const std::exception &ex)
     {
         gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
     }
+    gmx::ProgramInfo::finalize();
+    return ret;
 }

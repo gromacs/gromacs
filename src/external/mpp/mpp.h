@@ -28,30 +28,12 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * main() for unit tests that use \ref module_testutils.
- *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_testutils
+ * An MPI CPP Interface
+ * \authors Simone Pellegrini, Ryan Johnson <ryanphjohnson@gmail.com>
  */
-#include <gtest/gtest.h>
 
-#include "testutils/testoptions.h"
+#pragma once
+#include "comm.h" //includes in turn all other headers
 
-#ifndef TEST_DATA_PATH
-//! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
-#endif
-
-/*! \brief
- * Initializes unit testing for \ref module_testutils.
- */
-int main(int argc, char *argv[])
-{
-    // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, &argc, argv);
-    int ret = RUN_ALL_TESTS();
-    ::gmx::test::finalizeTestUtils();
-    return ret;
-}

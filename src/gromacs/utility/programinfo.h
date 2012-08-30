@@ -92,7 +92,7 @@ class ProgramInfo
          *
          * Does not throw. Terminates the program on out-of-memory error.
          */
-        static const ProgramInfo &init(int argc, const char *const argv[]);
+        static const ProgramInfo &init(int *argc, char **argv[]);
         /*! \brief
          * Initializes global program information with explicit binary name.
          *
@@ -109,7 +109,17 @@ class ProgramInfo
          * Does not throw. Terminates the program on out-of-memory error.
          */
         static const ProgramInfo &init(const char *realBinaryName,
-                                       int argc, const char *const argv[]);
+                                       int *argc, char **argv[]);
+
+        /*! \brief
+         * Finalize global program information.
+         */
+        static void finalize();
+
+        /*! \brief
+         * Return whether the current running process is master
+         */
+        static bool isMaster();
 
         /*! \brief
          * Constructs an empty program info objects.

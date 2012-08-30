@@ -355,7 +355,6 @@ class SelectionParserParameter
          */
         SelectionParserParameter(const char *name,
                                  SelectionParserValueListPointer values);
-        ~SelectionParserParameter();
 
         //! Returns the name of the parameter (may be empty).
         const std::string &name() const { return name_; }

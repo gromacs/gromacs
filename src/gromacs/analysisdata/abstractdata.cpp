@@ -200,9 +200,19 @@ AbstractAnalysisData::requestStorage(int nframes)
 void
 AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
+    bool bParallelMPI = false;
+#ifdef GMX_LIB_MPI
+    int initialized;
+    MPI_Initialized(&initialized);
+    bParallelMPI = initialized && mpi::comm::world.size() > 1;
+#endif
     if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
         || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
+        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint))
+        //FIXME: Not nice to have method with side-effect in if statement. Maybe add method to inquire whether
+        //storage is possible.
+        || (bParallelMPI && (module->flags() & AnalysisDataModuleInterface::efRequireStorageForMPI)
+                && !requestStorage(-1)))
     {
         GMX_THROW(APIError("Data module not compatible with data object properties"));
     }
@@ -308,8 +318,6 @@ AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) co
     GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
     GMX_ASSERT(!impl_->bInFrame_,
                "notifyFrameStart() called while inside a frame");
-    GMX_ASSERT(header.index() == impl_->nframes_,
-               "Out of order frames");
     impl_->bInFrame_ = true;
     impl_->currIndex_ = header.index();
 
