@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -214,6 +215,20 @@ void TextTableFormatter::addColumnLine(int index, const std::string &text)
         wrapper.settings().setLineLength(column.width());
     }
     std::vector<std::string> lines(wrapper.wrapToVector(text));
+    column.lines_.insert(column.lines_.end(), lines.begin(), lines.end());
+}
+
+void TextTableFormatter::addColumnHelpTextBlock(
+        int index, const HelpWriterContext &context, const std::string &text)
+{
+    Impl::ColumnData &column = impl_->columnData(index);
+    TextLineWrapperSettings settings;
+    if (column.bWrap_)
+    {
+        settings.setLineLength(column.width());
+    }
+    std::vector<std::string> lines(
+            context.substituteMarkupAndWrapToVector(settings, text));
     column.lines_.insert(column.lines_.end(), lines.begin(), lines.end());
 }
 
