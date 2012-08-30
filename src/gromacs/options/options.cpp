@@ -150,7 +150,7 @@ void Options::addSubSection(Options *section)
     section->impl_->parent_ = this;
 }
 
-void Options::addOption(const AbstractOption &settings)
+OptionInfo *Options::addOption(const AbstractOption &settings)
 {
     AbstractOptionStoragePointer option(settings.createStorage());
     if (impl_->findOption(option->name().c_str()) != NULL)
@@ -158,6 +158,7 @@ void Options::addOption(const AbstractOption &settings)
         GMX_THROW(APIError("Duplicate option: " + option->name()));
     }
     impl_->options_.push_back(move(option));
+    return &impl_->options_.back()->optionInfo();
 }
 
 bool Options::isSet(const char *name) const

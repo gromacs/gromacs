@@ -45,6 +45,9 @@
 #include <string>
 
 #include "../utility/common.h"
+#include "../utility/gmxassert.h"
+
+#include "optioninfo.h"
 
 namespace gmx
 {
@@ -144,11 +147,46 @@ class Options
         /*! \brief
          * Adds a recognized option to the collection.
          *
-         * \throws APIError if invalid option settings are provided.
+         * \param[in] settings Option description.
+         * \returns   OptionInfo object for the created option (never NULL).
+         * \throws    APIError if invalid option settings are provided.
+         *
+         * This method provides the internal implementation, but in most cases
+         * the templated method is called from user code.
+         * See the templated method for more details.
+         */
+        OptionInfo *addOption(const AbstractOption &settings);
+        /*! \brief
+         * Adds a recognized option to the collection.
+         *
+         * \tparam    OptionType Type of the options description object.
+         * \param[in] settings   Option description.
+         * \returns   OptionInfo object for the created option (never NULL).
+         * \throws    APIError if invalid option settings are provided.
+         *
+         * The return value is a pointer for more convenient use in callers:
+         * often callers need to declare the variable that will hold the return
+         * value in wider scope than would be achieved by declaring it at the
+         * site where addOption() is called.
+         * The returned pointer must not be freed.
          *
          * See \link Options class documentation \endlink for example usage.
+         *
+         * \libinternal
+         * \p OptionType::InfoType must specify a type that derives from
+         * OptionInfo and matches the type that is returned by
+         * AbstractOptionStorage::optionInfo() for the storage object that
+         * corresponds to \p OptionType.
          */
-        void addOption(const AbstractOption &settings);
+        template <class OptionType>
+        typename OptionType::InfoType *addOption(const OptionType &settings)
+        {
+            OptionInfo *info
+                = addOption(static_cast<const AbstractOption &>(settings));
+            GMX_ASSERT(info->isType<typename OptionType::InfoType>(),
+                       "Mismatching option info type declaration and implementation");
+            return info->toType<typename OptionType::InfoType>();
+        }
 
         //! Returns true if option \p name is set.
         bool isSet(const char *name) const;

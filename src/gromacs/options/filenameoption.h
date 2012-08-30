@@ -42,6 +42,7 @@
 #include <string>
 
 #include "abstractoption.h"
+#include "filenameoptioninfo.h"
 #include "optionfiletype.h"
 
 namespace gmx
@@ -62,6 +63,9 @@ class FileNameOptionStorage;
 class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef FileNameOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), filetype_(eftUnknown),
