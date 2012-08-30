@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 #include <cctype>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/wman.h"
@@ -55,8 +57,67 @@
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 namespace
 {
+
+class WrapperInterface
+{
+    public:
+        virtual ~WrapperInterface() {}
+
+        virtual TextLineWrapperSettings &settings() = 0;
+        virtual void wrap(const std::string &text)  = 0;
+};
+
+class WrapperToString : public WrapperInterface
+{
+    public:
+        WrapperToString(const TextLineWrapperSettings &settings)
+            : wrapper_(settings)
+        {
+        }
+
+        virtual TextLineWrapperSettings &settings()
+        {
+            return wrapper_.settings();
+        }
+        virtual void wrap(const std::string &text)
+        {
+            result_.append(wrapper_.wrapToString(text));
+        }
+        const std::string &result() const { return result_; }
+
+    private:
+        TextLineWrapper         wrapper_;
+        std::string             result_;
+};
+
+class WrapperToVector : public WrapperInterface
+{
+    public:
+        WrapperToVector(const TextLineWrapperSettings &settings)
+            : wrapper_(settings)
+        {
+        }
+
+        virtual TextLineWrapperSettings &settings()
+        {
+            return wrapper_.settings();
+        }
+        virtual void wrap(const std::string &text)
+        {
+            const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
+            result_.insert(result_.end(), lines.begin(), lines.end());
+        }
+        const std::vector<std::string> &result() const { return result_; }
+
+    private:
+        TextLineWrapper          wrapper_;
+        std::vector<std::string> result_;
+};
 
 /*! \internal \brief
  * Make the string uppercase.
@@ -72,10 +133,7 @@ std::string toUpperCase(const std::string &text)
     return result;
 }
 
-} // namespace
-
-namespace gmx
-{
+}   // namespace
 
 /********************************************************************
  * HelpWriterContext::Impl
@@ -95,11 +153,40 @@ class HelpWriterContext::Impl
         {
         }
 
+        /*! \brief
+         * Process markup and wrap lines within a block of text.
+         *
+         * \param[in] text     Text to process.
+         * \param     wrapper  Object used to wrap the text.
+         *
+         * The \p wrapper should take care of either writing the text to output
+         * or providing an interface for the caller to retrieve the output.
+         */
+        void processMarkup(const std::string &text,
+                           WrapperInterface  *wrapper) const;
+
         //! Output file to which the help is written.
         File                   &file_;
         //! Output format for the help output.
         HelpOutputFormat        format_;
 };
+
+void HelpWriterContext::Impl::processMarkup(const std::string &text,
+                                            WrapperInterface  *wrapper) const
+{
+    if (wrapper->settings().lineLength() == 0)
+    {
+        wrapper->settings().setLineLength(78);
+    }
+    std::string result;
+    {
+        char            *resultStr = check_tty(text.c_str());
+        scoped_ptr_sfree resultGuard(resultStr);
+        result = resultStr;
+    }
+    const char *program = ProgramInfo::getInstance().programName().c_str();
+    return wrapper->wrap(replaceAll(result, "[PROGRAM]", program));
+}
 
 /********************************************************************
  * HelpWriterContext
@@ -131,11 +218,22 @@ File &HelpWriterContext::outputFile() const
     return impl_->file_;
 }
 
-std::string HelpWriterContext::substituteMarkup(const std::string &text) const
+std::string
+HelpWriterContext::substituteMarkupAndWrapToString(
+        const TextLineWrapperSettings &settings, const std::string &text) const
 {
-    char            *resultStr = check_tty(text.c_str());
-    scoped_ptr_sfree resultGuard(resultStr);
-    return std::string(resultStr);
+    WrapperToString wrapper(settings);
+    impl_->processMarkup(text, &wrapper);
+    return wrapper.result();
+}
+
+std::vector<std::string>
+HelpWriterContext::substituteMarkupAndWrapToVector(
+        const TextLineWrapperSettings &settings, const std::string &text) const
+{
+    WrapperToVector wrapper(settings);
+    impl_->processMarkup(text, &wrapper);
+    return wrapper.result();
 }
 
 void HelpWriterContext::writeTitle(const std::string &title) const
@@ -147,11 +245,13 @@ void HelpWriterContext::writeTitle(const std::string &title) const
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
-    TextLineWrapper wrapper;
-    wrapper.settings().setLineLength(78);
-    const char     *program = ProgramInfo::getInstance().programName().c_str();
-    std::string     newText = replaceAll(text, "[PROGRAM]", program);
-    outputFile().writeLine(wrapper.wrapToString(substituteMarkup(newText)));
+    writeTextBlock(TextLineWrapperSettings(), text);
+}
+
+void HelpWriterContext::writeTextBlock(const TextLineWrapperSettings &settings,
+                                       const std::string             &text) const
+{
+    outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
 }
 
 } // namespace gmx

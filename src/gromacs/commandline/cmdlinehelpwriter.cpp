@@ -356,7 +356,7 @@ void OptionsConsoleFormatter::formatFileOption(
     }
     bool bLongType = (type.length() > 12U);
     fileOptionFormatter_.addColumnLine(2, type);
-    fileOptionFormatter_.addColumnLine(3, context.substituteMarkup(option.description()));
+    fileOptionFormatter_.addColumnHelpTextBlock(3, context, option.description());
 
     // Compute layout.
     if (name.length() > 6U || firstShortValue > 0)
@@ -412,7 +412,7 @@ void OptionsConsoleFormatter::formatOption(
     }
     genericOptionFormatter_.addColumnLine(2, values);
 
-    std::string             description(context.substituteMarkup(option.description()));
+    std::string             description(option.description());
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
     if (doubleOption != NULL && doubleOption->isTime())
     {
@@ -434,7 +434,7 @@ void OptionsConsoleFormatter::formatOption(
             description.append(allowedValues[i]);
         }
     }
-    genericOptionFormatter_.addColumnLine(3, description);
+    genericOptionFormatter_.addColumnHelpTextBlock(3, context, description);
     if (values.length() > 6U)
     {
         genericOptionFormatter_.setColumnFirstLineOffset(3, 1);
@@ -451,7 +451,8 @@ void OptionsConsoleFormatter::formatSelectionOption(
     selectionOptionFormatter_.clear();
     std::string name(formatString("-%s", option.name().c_str()));
     selectionOptionFormatter_.addColumnLine(0, name);
-    selectionOptionFormatter_.addColumnLine(1, context.substituteMarkup(option.description()));
+    selectionOptionFormatter_.addColumnHelpTextBlock(1, context,
+                                                     option.description());
     file.writeString(selectionOptionFormatter_.formatRow());
 
     TextLineWrapper wrapper;
