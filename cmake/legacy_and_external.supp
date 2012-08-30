@@ -155,3 +155,23 @@
    ...
    fun:__kmpc_global_thread_num
 }
+#Openmpi
+{
+   PMPI_Init1
+   Memcheck:Param
+   sched_setaffinity(mask)
+   ...
+   fun:PMPI_Init
+}
+{
+   writev
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+}
+{
+   PMPI_Init2
+   Memcheck:Addr4
+   ...
+   fun:PMPI_Init
+}
