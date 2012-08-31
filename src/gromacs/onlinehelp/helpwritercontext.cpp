@@ -38,15 +38,13 @@
 #include "helpwritercontext.h"
 
 #include <cctype>
+#include <cstring>
 
 #include <algorithm>
 #include <string>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/wman.h"
 
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
@@ -60,6 +58,8 @@ namespace gmx
 
 namespace
 {
+
+const char g_titleChars[] = "=-~*^+#'_.";
 
 class WrapperInterface
 {
@@ -192,18 +192,26 @@ class HelpWriterContext::Impl
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
                                             WrapperInterface *wrapper) const
 {
-    if (wrapper->settings().lineLength() == 0)
-    {
-        wrapper->settings().setLineLength(78);
-    }
-    std::string result;
-    {
-        char *resultStr = check_tty(text.c_str());
-        scoped_ptr_sfree resultGuard(resultStr);
-        result = resultStr;
-    }
     const char *program = ProgramInfo::getInstance().programName().c_str();
-    return wrapper->wrap(replaceAll(result, "[PROGRAM]", program));
+    std::string result(text);
+    result = replaceAll(result, "[PROGRAM]", program);
+    switch (state_->format_)
+    {
+        case eHelpOutputFormat_Console:
+            result = replaceAll(result, "``", "`");
+            result = replaceAll(result, "\n\n::\n\n", "\n");
+            result = replaceAll(result, "::\n\n", ":\n");
+            result = replaceAll(result, "| ", "");
+            if (wrapper->settings().lineLength() == 0)
+            {
+                wrapper->settings().setLineLength(78);
+            }
+            return wrapper->wrap(result);
+        case eHelpOutputFormat_Export:
+            return wrapper->wrap(result);
+        default:
+            GMX_THROW(InternalError("Invalid help output format"));
+    }
 }
 
 /********************************************************************
@@ -213,10 +221,9 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
     : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format)), 0))
 {
-    if (format != eHelpOutputFormat_Console)
+    if (format != eHelpOutputFormat_Console
+        && format != eHelpOutputFormat_Export)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
         GMX_THROW(NotImplementedError(
                     "This output format is not implemented"));
     }
@@ -255,6 +262,8 @@ File &HelpWriterContext::outputFile() const
 HelpWriterContext
 HelpWriterContext::createSubsection(const std::string &title) const
 {
+    GMX_RELEASE_ASSERT(impl_->sectionDepth_ < static_cast<int>(std::strlen(g_titleChars)),
+                       "Too many nested subsections");
     writeTitle(title);
     return HelpWriterContext(new Impl(impl_->state_, impl_->sectionDepth_ + 1));
 }
@@ -280,7 +289,9 @@ HelpWriterContext::substituteMarkupAndWrapToVector(
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
     File &file = outputFile();
-    file.writeLine(toUpperCase(title));
+    file.writeLine(title);
+    file.writeLine(std::string(title.length(),
+                               g_titleChars[impl_->sectionDepth_]));
     file.writeLine();
 }
 

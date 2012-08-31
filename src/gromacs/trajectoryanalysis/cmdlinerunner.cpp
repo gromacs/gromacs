@@ -125,17 +125,15 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         SelectionCollection *selections,
         int *argc, char *argv[])
 {
-    Options options(NULL, NULL);
-    Options moduleOptions(module_->name(), module_->description());
+    Options options(module_->name(), module_->description());
     Options commonOptions("common", "Common analysis control");
     Options selectionOptions("selection", "Common selection control");
-    module_->initOptions(&moduleOptions, settings);
+    module_->initOptions(&options, settings);
     common->initOptions(&commonOptions);
     selections->initOptions(&selectionOptions);
 
     options.addSubSection(&commonOptions);
     options.addSubSection(&selectionOptions);
-    options.addSubSection(&moduleOptions);
 
     SelectionOptionManager seloptManager(selections);
     setManagerForSelectionOptions(&options, &seloptManager);
@@ -160,7 +158,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     {
         return false;
     }
-    module_->optionsFinished(&moduleOptions, settings);
+    module_->optionsFinished(&options, settings);
 
     common->initIndexGroups(selections);
 
@@ -292,18 +290,16 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
     TrajectoryAnalysisSettings      settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
-    Options options(NULL, NULL);
-    Options moduleOptions(impl_->module_->name(), impl_->module_->description());
+    Options options(impl_->module_->name(), impl_->module_->description());
     Options commonOptions("common", "Common analysis control");
     Options selectionOptions("selection", "Common selection control");
 
-    impl_->module_->initOptions(&moduleOptions, &settings);
+    impl_->module_->initOptions(&options, &settings);
     common.initOptions(&commonOptions);
     selections.initOptions(&selectionOptions);
 
     options.addSubSection(&commonOptions);
     options.addSubSection(&selectionOptions);
-    options.addSubSection(&moduleOptions);
 
     SelectionOptionManager seloptManager(&selections);
     setManagerForSelectionOptions(&options, &seloptManager);
