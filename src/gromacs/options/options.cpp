@@ -169,7 +169,8 @@ bool Options::isSet(const char *name) const
 
 void Options::finish()
 {
-    MessageStringCollector errors;
+    // TODO: Consider how to customize these error messages based on context.
+    ExceptionInitializer errors("Invalid input values");
     Impl::OptionList::const_iterator i;
     for (i = impl_->options_.begin(); i != impl_->options_.end(); ++i)
     {
@@ -178,10 +179,10 @@ void Options::finish()
         {
             option.finish();
         }
-        catch (const UserInputError &ex)
+        catch (UserInputError &ex)
         {
-            MessageStringContext context(&errors, "In option " + option.name());
-            errors.append(ex.what());
+            ex.prependContext("In option " + option.name());
+            errors.addCurrentExceptionAsNested();
         }
     }
     Impl::SubSectionList::const_iterator j;
@@ -192,15 +193,15 @@ void Options::finish()
         {
             section.finish();
         }
-        catch (const UserInputError &ex)
+        catch (const UserInputError &)
         {
-            errors.append(ex.what());
+            errors.addCurrentExceptionAsNested();
         }
     }
-    if (!errors.isEmpty())
+    if (errors.hasNestedExceptions())
     {
         // TODO: This exception type may not always be appropriate.
-        GMX_THROW(InvalidInputError(errors.toString()));
+        GMX_THROW(InvalidInputError(errors));
     }
 }
 
