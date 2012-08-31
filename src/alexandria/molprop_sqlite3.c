@@ -50,36 +50,99 @@
 #include "string2.h"
 #include "molprop_sqlite3.h"
 
+static void my_memcallback(void *ptr)
+{
+    ;
+}
+
+#ifdef HAVE_LIBSQLITE3
+static void check_sqlite3(sqlite3 *db,char *extra,int rc)
+{
+    const char *msg;
+    
+    if (NULL != db) 
+    {
+        if (SQLITE_OK != sqlite3_errcode(db)) 
+        {
+            msg = sqlite3_errmsg(db);
+            sqlite3_close(db);
+            sqlite3_shutdown();
+            gmx_fatal(FARGS,"%s: %s",extra,msg);  
+        }
+    }
+    else if (SQLITE_OK != rc)
+    {
+        gmx_fatal(FARGS,"%s",extra);  
+    }
+}
+#endif
+
 void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
 {
-    int rc;
 #ifdef HAVE_LIBSQLITE3
-    sqlite3 *db;
-
+    sqlite3 *db = NULL;
+    sqlite3_stmt *stmt=NULL;
+    char sql_str[1024];
+    char *iupac,*iupac2,*prop,*ref;
+    double value,error;
+    int i,cidx,expref,rc;
+    
     if (NULL == sqlite_file)
         return;
             
-    rc = sqlite3_initialize();
-    if (SQLITE_OK != rc)
-        gmx_fatal(FARGS,"Initializing sqlite. Sqlite3 code %d.",rc);
+    check_sqlite3(NULL,"Initializing sqlite",
+                  sqlite3_initialize());
         
-    db = NULL;
-    rc = sqlite3_open_v2(sqlite_file,&db,SQLITE_OPEN_READONLY,NULL);
-    if (SQLITE_OK != rc)
-        gmx_fatal(FARGS,"Opening sqlite database %s in read-only mode. Sqlite3 code %d.",
-                  sqlite_file,rc);
+    check_sqlite3(NULL,"Opening sqlite database n read-only mode",
+                  sqlite3_open_v2(sqlite_file,&db,SQLITE_OPEN_READONLY,NULL));
+    
     /* Now database is open and everything is Hunky Dory */
     fprintf(stderr,"Opened SQLite3 database %s\n",sqlite_file);
     
-    /* Seems like we're done, close down and say goodbye */
-    rc = sqlite3_close(db);
-    if (SQLITE_OK != rc)
-        gmx_fatal(FARGS,"Closing sqlite database %s. Sqlite3 code %d.",
-                  sqlite_file,rc);
+    /* Now present a query statement */
+    sprintf(sql_str,"SELECT mol.iupac,pt.prop,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (mol.iupac = \"?\")");
+    check_sqlite3(db,"Preparing statement",
+                  sqlite3_prepare_v2(db,sql_str,strlen(sql_str),&stmt,NULL));
+    for(i=0; (i<np); i++) 
+    {
+        iupac = gmx_molprop_get_iupac(mp[i]);
+        if (NULL != iupac)
+        {
+            do 
+            {
+                check_sqlite3(db,"Binding text",
+                              sqlite3_bind_text(stmt,1,iupac,-1,NULL));
+                rc = sqlite3_step(stmt);
+                check_sqlite3(db,"Stepping",rc);
+                cidx   = 0;
+                iupac2 = sqlite3_column_text(stmt,cidx++);
+                prop   = sqlite3_column_text(stmt,cidx++);
+                value  = sqlite3_column_double(stmt,cidx++);
+                error  = sqlite3_column_double(stmt,cidx++);
+                ref    = sqlite3_column_text(stmt,cidx++);
+                if (strcasecmp(iupac,iupac2) != 0)
+                    gmx_fatal(FARGS,"Selected '%s' from database but got '%s'. WTF?!",
+                              iupac,iupac2);
+                gmx_molprop_add_experiment(mp[i],ref,"minimum",&expref);
+                if (strcasecmp(prop,"Polarizability") == 0)
+                    gmx_molprop_add_polar(mp[i],expref,"Experiment","Unit",
+                                          0,0,0,value,error);
+                
+            } while (SQLITE_ROW == rc);
+            check_sqlite3(db,"Resetting sqlite3 statement",
+                          sqlite3_reset(stmt));
+        }
+    }
+    check_sqlite3(db,"Finalizing sqlite3 statement",
+                  sqlite3_finalize(stmt));
     
-    rc = sqlite3_shutdown();
-    if (SQLITE_OK != rc)
-        gmx_fatal(FARGS,"Shutting down sqlite. Sqlite3 code %d.",rc);
+    /* Seems like we're done, close down and say goodbye */
+    check_sqlite3(NULL,"Closing sqlite database",
+                  sqlite3_close(db));
+    
+    check_sqlite3(NULL,"Shutting down sqlite. Sqlite3 code %d.",
+                  sqlite3_shutdown());
+                  
 #else
     fprintf(stderr,"No support for sqlite3 database in this executable.\n");
     fprintf(stderr,"Please rebuild gromacs with cmake flag -DGMX_SQLITE3=ON set.\n");
