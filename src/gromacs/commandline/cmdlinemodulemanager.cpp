@@ -38,10 +38,13 @@
 #include "cmdlinemodulemanager.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include <map>
 #include <string>
 #include <utility>
+
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/helpformat.h"
@@ -113,32 +116,29 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
 
 void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    if (context.outputFormat() != eHelpOutputFormat_Console)
+    if (context.outputFormat() == eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                    "Root help is not implemented for this output format"));
+        context.writeTextBlock(helpText());
+        // TODO: If/when this list becomes long, it may be better to only print
+        // "common" commands here, and have a separate topic (e.g.,
+        // "help commands") that prints the full list.
+        printModuleList(context);
+        context.writeTextBlock(
+                "For additional help on a command, use '[PROGRAM] help <command>'");
     }
-    context.writeTextBlock(helpText());
-    // TODO: If/when this list becomes long, it may be better to only print
-    // "common" commands here, and have a separate topic (e.g.,
-    // "help commands") that prints the full list.
-    printModuleList(context);
-    context.writeTextBlock(
-            "For additional help on a command, use '[PROGRAM] help <command>'");
     writeSubTopicList(context,
             "\nAdditional help is available on the following topics:");
-    context.writeTextBlock(
-            "To access the help, use '[PROGRAM] help <topic>'.");
+    if (context.outputFormat() == eHelpOutputFormat_Console)
+    {
+        context.writeTextBlock(
+                "To access the help, use '[PROGRAM] help <topic>'.");
+    }
 }
 
 void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
         GMX_THROW(NotImplementedError(
                     "Module list is not implemented for this output format"));
     }
@@ -258,13 +258,16 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         void printUsage() const;
 
     private:
+        void exportHelp() const;
+
         CompositeHelpTopicPointer   rootTopic_;
+        const CommandLineModuleMap &modules_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
 };
 
 CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleMap &modules)
-    : rootTopic_(new RootHelpTopic(modules))
+    : rootTopic_(new RootHelpTopic(modules)), modules_(modules)
 {
 }
 
@@ -275,6 +278,12 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
+    // TODO: It would be nicer to use a CommandLineParser here.
+    if (argc == 2 && std::strcmp(argv[1], "-export") == 0)
+    {
+        exportHelp();
+        return 0;
+    }
     HelpWriterContext context(&File::standardOutput(),
                               eHelpOutputFormat_Console);
     HelpManager helpManager(*rootTopic_, context);
@@ -306,6 +315,36 @@ void CommandLineHelpModule::printUsage() const
 {
     HelpWriterContext context(&File::standardError(),
                               eHelpOutputFormat_Console);
+    rootTopic_->writeHelp(context);
+}
+
+void CommandLineHelpModule::exportHelp() const
+{
+    // TODO: Would be nicer to have the file names supplied by the build system
+    // and/or export a list of files from here.
+    const char *program = ProgramInfo::getInstance().programName().c_str();
+    CommandLineModuleMap::const_iterator module;
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        const char *moduleName = module->first.c_str();
+        std::string tag(formatString("%s-%s", program, moduleName));
+        File moduleHelpFile(tag + ".txt", "w");
+        HelpWriterContext context(&moduleHelpFile, eHelpOutputFormat_Export);
+        HelpWriterContext titleSec(context.createSubsection(tag));
+        std::string desc = module->second->shortDescription();
+        HelpWriterContext subtitleSec(titleSec.createSubsection(desc));
+        //moduleHelpFile.writeLine(formatString(":Author:  Gromacs team"));
+        // TODO: Implement date generation
+        moduleHelpFile.writeLine(formatString(":Date:    2012-08-24"));
+        // TODO: The current version string is too long
+        moduleHelpFile.writeLine(formatString(":Version: %s", GromacsVersion()));
+        moduleHelpFile.writeLine(formatString(":Manual section: 1"));
+        moduleHelpFile.writeLine(formatString(":Manual group:   Gromacs Manual"));
+        moduleHelpFile.writeLine();
+        module->second->writeHelp(context);
+    }
+    File topicsHelpFile("help-topics.txt", "w");
+    HelpWriterContext context(&topicsHelpFile, eHelpOutputFormat_Export);
     rootTopic_->writeHelp(context);
 }
 

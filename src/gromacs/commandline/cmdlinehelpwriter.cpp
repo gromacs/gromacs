@@ -229,6 +229,50 @@ class CommonFormatterData
 };
 
 /********************************************************************
+ * Helper functions
+ */
+
+std::string
+descriptionWithTimeUnitReplacement(const CommonFormatterData &common,
+                                   const OptionInfo &option)
+{
+    std::string description(option.description());
+    const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
+    if (doubleOption != NULL && doubleOption->isTime())
+    {
+        description = replaceAll(description, "%t", common.timeUnit);
+    }
+    return description;
+}
+
+std::string
+fileOptionFlagsAsString(const FileNameOptionInfo &option, bool bAbbrev)
+{
+    std::string type;
+    if (option.isInputOutputFile())
+    {
+        type = bAbbrev ? "In/Out" : "Input/Output";
+    }
+    else if (option.isInputFile())
+    {
+        type = "Input";
+    }
+    else if (option.isOutputFile())
+    {
+        type = "Output";
+    }
+    if (!option.isRequired())
+    {
+        type += bAbbrev ? ", Opt." : ", Optional";
+    }
+    if (option.isLibraryFile())
+    {
+        type += bAbbrev ? ", Lib." : ", Library";
+    }
+    return type;
+}
+
+/********************************************************************
  * OptionsConsoleFormatter
  */
 
@@ -329,27 +373,7 @@ void OptionsConsoleFormatter::formatFileOption(
             lastLongValue = i;
         }
     }
-    std::string type;
-    if (option.isInputOutputFile())
-    {
-        type = "In/Out";
-    }
-    else if (option.isInputFile())
-    {
-        type = "Input";
-    }
-    else if (option.isOutputFile())
-    {
-        type = "Output";
-    }
-    if (!option.isRequired())
-    {
-        type += ", Opt.";
-    }
-    if (option.isLibraryFile())
-    {
-        type += ", Lib.";
-    }
+    std::string type(fileOptionFlagsAsString(option, true));
     bool bLongType = (type.length() > 12U);
     fileOptionFormatter_.addColumnLine(2, type);
     fileOptionFormatter_.addColumnHelpTextBlock(3, context, option.description());
@@ -406,12 +430,7 @@ void OptionsConsoleFormatter::formatOption(
         values.append(option.formatValue(i));
     }
     genericOptionFormatter_.addColumnLine(2, values);
-    std::string description(option.description());
-    const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
-    if (doubleOption != NULL && doubleOption->isTime())
-    {
-        description = replaceAll(description, "%t", common_.timeUnit);
-    }
+    std::string description(descriptionWithTimeUnitReplacement(common_, option));
     genericOptionFormatter_.addColumnHelpTextBlock(3, context, description);
     if (values.length() > 6U)
     {
@@ -445,6 +464,119 @@ void OptionsConsoleFormatter::formatSelectionOption(
         std::string value(option.formatValue(i));
         file.writeLine(wrapper.wrapToString(value));
     }
+}
+
+/********************************************************************
+ * OptionsDetailsFormatter
+ */
+
+/*! \internal \brief
+ * Formatter implementation for help export to other formats.
+ *
+ * \ingroup module_commandline
+ */
+class OptionsDetailsFormatter : public OptionsFormatterInterface
+{
+    public:
+        //! Creates a helper object for formatting options help for console.
+        explicit OptionsDetailsFormatter(const CommonFormatterData &common)
+            : common_(common)
+        {
+        }
+
+        virtual void formatDescription(const HelpWriterContext &context,
+                                       const Options &section);
+        virtual void formatFileOption(const HelpWriterContext &context,
+                                      const FileNameOptionInfo &option);
+        virtual void formatOption(const HelpWriterContext &context,
+                                  const OptionInfo &option);
+        virtual void formatSelectionOption(const HelpWriterContext &context,
+                                           const OptionInfo &option);
+
+    private:
+        void formatOptionItem(const HelpWriterContext &context,
+                              const std::string &name, const std::string &args,
+                              const std::string &description);
+
+        const CommonFormatterData &common_;
+};
+
+void OptionsDetailsFormatter::formatDescription(
+        const HelpWriterContext &context, const Options &section)
+{
+    if (!section.description().empty())
+    {
+        context.writeTextBlock(section.description());
+    }
+}
+
+void OptionsDetailsFormatter::formatFileOption(
+        const HelpWriterContext &context, const FileNameOptionInfo &option)
+{
+    std::string defaultValue;
+    if (option.valueCount() == 0
+        || (option.valueCount() == 1 && option.formatValue(0).empty()))
+    {
+        defaultValue = option.formatDefaultValueIfSet();
+    }
+    else
+    {
+        defaultValue = option.formatValue(0);
+    }
+    std::string description(option.description());
+    std::string type(fileOptionFlagsAsString(option, false));
+    description.append(formatString(" (%s)", type.c_str()));
+    formatOptionItem(context, option.name(),
+                     formatString("<%s>", defaultValue.c_str()),
+                     description);
+}
+
+void OptionsDetailsFormatter::formatOption(
+        const HelpWriterContext &context, const OptionInfo &option)
+{
+    if (option.isType<BooleanOptionInfo>())
+    {
+        const std::string &name = option.name();
+        const char *args = "<[yes/no/true/false/0/1]>";
+        // TODO: It would be better not to duplicate code from
+        // formatOptionItem()
+        const char *prefix = (name.length() == 1 ? "-" : "--");
+        context.writeTextBlock(
+                formatString("%s%s %s, --no%s", prefix, name.c_str(), args, name.c_str()));
+        TextLineWrapperSettings settings;
+        settings.setIndent(4);
+        context.writeTextBlock(settings, option.description());
+    }
+    else
+    {
+        std::string description(descriptionWithTimeUnitReplacement(common_, option));
+        formatOptionItem(context, option.name(),
+                         formatString("<%s>", option.type()),
+                         description);
+    }
+}
+
+void OptionsDetailsFormatter::formatSelectionOption(
+        const HelpWriterContext &context, const OptionInfo &option)
+{
+    const char *args = (option.isType<SelectionFileOptionInfo>()
+                        ? "<selection.dat>"
+                        : "SELECTION");
+    formatOptionItem(context, option.name(), args, option.description());
+}
+
+void OptionsDetailsFormatter::formatOptionItem(const HelpWriterContext &context,
+                                               const std::string &name,
+                                               const std::string &args,
+                                               const std::string &description)
+{
+    // FIXME: This does not match with what the command-line parser understands.
+    const char *prefix = (name.length() == 1 ? "-" : "--");
+    context.writeTextBlock(
+            formatString("%s%s %s", prefix, name.c_str(), args.c_str()));
+    TextLineWrapperSettings settings;
+    settings.setIndent(4);
+    context.writeTextBlock(settings, description);
 }
 
 } // namespace
@@ -520,6 +652,9 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
         case eHelpOutputFormat_Console:
             formatter.reset(new OptionsConsoleFormatter(common));
             break;
+        case eHelpOutputFormat_Export:
+            formatter.reset(new OptionsDetailsFormatter(common));
+            break;
         default:
             // TODO: Implement once the situation with Redmine issue #969 is
             // more clear.
@@ -529,14 +664,23 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
     OptionsFilter filter(context, formatter.get());
     filter.setShowHidden(impl_->bShowHidden_);
 
+    File &file = context.outputFile();
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        context.writeTitle("Synopsis");
+        context.writeTextBlock(formatString("[PROGRAM] %s", impl_->options_.name().c_str()));
+        file.writeLine("\n\n");
+    }
+
     if (impl_->bShowDescriptions_)
     {
-        File &file = context.outputFile();
-        file.writeLine("DESCRIPTION");
-        file.writeLine("-----------");
-        file.writeLine();
+        context.writeTitle("Description");
         filter.formatSelected(OptionsFilter::eSelectDescriptions,
                               impl_->options_);
+    }
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        context.writeTitle("Options");
     }
     filter.formatSelected(OptionsFilter::eSelectFileOptions,
                           impl_->options_);

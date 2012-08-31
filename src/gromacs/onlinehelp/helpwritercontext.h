@@ -55,6 +55,7 @@ class TextLineWrapperSettings;
 enum HelpOutputFormat
 {
     eHelpOutputFormat_Console,  //!< Plain text directly on the console.
+    eHelpOutputFormat_Export,   //!< reStructured text for further processing.
     eHelpOutputFormat_NR        //!< Used for the number of output formats.
 };
 //! \endcond
