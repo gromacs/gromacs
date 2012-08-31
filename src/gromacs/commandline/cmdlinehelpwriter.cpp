@@ -556,7 +556,16 @@ void OptionsExportFormatter::formatOption(
 {
     if (option.isType<BooleanOptionInfo>())
     {
-        // Implementation depends on approach.
+        const std::string &name = option.name();
+        const char        *args = "<[yes/no/true/false/0/1]>";
+        // TODO: It would be better not to duplicate code from
+        // writeOptionItem()
+        const char *prefix = (name.length() == 1 ? "-" : "--");
+        context.writeTextBlock(
+                formatString("%s%s %s, --no%s", prefix, name.c_str(), args, name.c_str()));
+        TextLineWrapperSettings settings;
+        settings.setIndent(4);
+        context.writeTextBlock(settings, option.description());
     }
     else
     {
@@ -648,6 +657,9 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
     {
         case eHelpOutputFormat_Console:
             formatter.reset(new OptionsConsoleFormatter(common));
+            break;
+        case eHelpOutputFormat_Export:
+            formatter.reset(new OptionsExportFormatter(common));
             break;
         default:
             GMX_THROW(NotImplementedError(
