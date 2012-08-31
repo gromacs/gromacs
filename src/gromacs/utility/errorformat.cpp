@@ -81,7 +81,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
 
 void printFatalErrorMessageLine(FILE *fp, const char *text, int indent)
 {
-    // TODO: Line wrapping
+    // TODO: Line wrapping and indentation for multi-line text
     std::fprintf(fp, "%*s%s\n", indent, "", text);
 }
 
