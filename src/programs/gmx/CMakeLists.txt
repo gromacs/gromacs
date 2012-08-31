@@ -57,6 +57,21 @@ add_custom_target(links ALL
 # May be worth to wait until #685 and #969 are resolved; after these, it should
 # be possible to handle everything uniformly instead of having several
 # different CMake-side mechanisms.
+# FIXME: The list of files should not be hardcoded
+add_custom_command(OUTPUT help-topics.txt gmx-select.txt
+                   COMMAND gmx help -export rst
+                   DEPENDS gmx)
+add_custom_target(man
+                  rst2man.py gmx-select.txt ${MAN1_PATH}/gmx-select.1
+                  DEPENDS gmx-select.txt)
+add_custom_target(html
+                  COMMAND rst2html.py gmx-select.txt ${CMAKE_BINARY_DIR}/gmx-select.html
+                  COMMAND rst2html.py help-topics.txt ${CMAKE_BINARY_DIR}/help-topics.html
+                  DEPENDS help-topics.txt gmx-select.txt)
+add_custom_target(latex
+                  COMMAND rst2latex.py gmx-select.txt ${CMAKE_BINARY_DIR}/gmx-select.tex
+                  COMMAND rst2latex.py help-topics.txt ${CMAKE_BINARY_DIR}/help-topics.tex
+                  DEPENDS help-topics.txt gmx-select.txt)
 
 install(TARGETS gmx
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})

@@ -238,6 +238,46 @@ class HelpExportInterface
         virtual void exportHelpTopics(const RootHelpTopic &root) = 0;
 };
 
+/********************************************************************
+ * HelpExportReStructuredText
+ */
+
+class HelpExportReStructuredText : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport() {}
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+        virtual void finishModuleExport() {}
+        virtual void exportHelpTopics(const RootHelpTopic &root);
+};
+
+void HelpExportReStructuredText::exportModuleHelp(
+        const std::string &tag, const CommandLineModuleInterface &module)
+{
+    File              moduleHelpFile(tag + ".txt", "w");
+    HelpWriterContext context(&moduleHelpFile, eHelpOutputFormat_Export);
+    HelpWriterContext titleSec(context.createSubsection(tag));
+    std::string       desc = module.shortDescription();
+    HelpWriterContext subtitleSec(titleSec.createSubsection(desc));
+    //moduleHelpFile.writeLine(formatString(":Author:  Gromacs team"));
+    // TODO: Implement date generation
+    moduleHelpFile.writeLine(formatString(":Date:    2012-08-24"));
+    // TODO: The current version string is too long
+    moduleHelpFile.writeLine(formatString(":Version: %s", GromacsVersion()));
+    moduleHelpFile.writeLine(formatString(":Manual section: 1"));
+    moduleHelpFile.writeLine(formatString(":Manual group:   Gromacs Manual"));
+    moduleHelpFile.writeLine();
+    module.writeHelp(subtitleSec);
+}
+
+void HelpExportReStructuredText::exportHelpTopics(const RootHelpTopic &root)
+{
+    File              topicsHelpFile("help-topics.txt", "w");
+    HelpWriterContext context(&topicsHelpFile, eHelpOutputFormat_Export);
+    root.writeHelp(context);
+}
+
 }   // namespace
 
 /********************************************************************
@@ -308,6 +348,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (argc == 3 && std::strcmp(argv[1], "-export") == 0)
     {
         boost::scoped_ptr<HelpExportInterface> exporter;
+        if (std::strcmp(argv[2], "rst") == 0)
+        {
+            exporter.reset(new HelpExportReStructuredText);
+        }
+        else
         {
             GMX_THROW(InvalidInputError(
                               formatString("Unknown help export format '%s'",

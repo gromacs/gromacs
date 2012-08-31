@@ -42,15 +42,13 @@
 #include "helpwritercontext.h"
 
 #include <cctype>
+#include <cstring>
 
 #include <algorithm>
 #include <string>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/wman.h"
 
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
@@ -64,6 +62,8 @@ namespace gmx
 
 namespace
 {
+
+const char g_titleChars[] = "=-~*^+#'_.";
 
 class WrapperInterface
 {
@@ -212,17 +212,18 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
     {
         case eHelpOutputFormat_Console:
         {
-            {
-                char            *resultStr = check_tty(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = replaceAll(result, "``", "`");
+            result = replaceAll(result, "\n\n::\n\n", "\n");
+            result = replaceAll(result, "::\n\n", ":\n");
+            result = replaceAll(result, "| ", "");
             if (wrapper->settings().lineLength() == 0)
             {
                 wrapper->settings().setLineLength(78);
             }
             return wrapper->wrap(result);
         }
+        case eHelpOutputFormat_Export:
+            return wrapper->wrap(result);
         default:
             GMX_THROW(InternalError("Invalid help output format"));
     }
@@ -270,6 +271,8 @@ File &HelpWriterContext::outputFile() const
 HelpWriterContext
 HelpWriterContext::createSubsection(const std::string &title) const
 {
+    GMX_RELEASE_ASSERT(impl_->sectionDepth_ < static_cast<int>(std::strlen(g_titleChars)),
+                       "Too many nested subsections");
     writeTitle(title);
     return HelpWriterContext(new Impl(impl_->state_, impl_->sectionDepth_ + 1));
 }
@@ -295,7 +298,9 @@ HelpWriterContext::substituteMarkupAndWrapToVector(
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
     File &file = outputFile();
-    file.writeLine(toUpperCase(title));
+    file.writeLine(title);
+    file.writeLine(std::string(title.length(),
+                               g_titleChars[impl_->sectionDepth_]));
     file.writeLine();
 }
 
@@ -316,6 +321,17 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
 {
     switch (outputFormat())
     {
+        case eHelpOutputFormat_Export:
+        {
+            // FIXME: This does not match with what the command-line parser understands.
+            const char *prefix = (name.length() == 1 ? "-" : "--");
+            writeTextBlock(
+                    formatString("%s%s %s", prefix, name.c_str(), args.c_str()));
+            TextLineWrapperSettings settings;
+            settings.setIndent(4);
+            writeTextBlock(settings, description);
+            break;
+        }
         default:
             GMX_THROW(NotImplementedError(
                               "This output format is not implemented"));
