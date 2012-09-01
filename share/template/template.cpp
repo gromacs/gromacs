@@ -234,7 +234,7 @@ AnalysisTemplate::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    ProgramInfo::init(argc, argv);
+    ProgramInfo::init(&argc, &argv);
     try
     {
         AnalysisTemplate module;

@@ -28,30 +28,39 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * main() for unit tests that use \ref module_testutils.
- *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_testutils
+ * An MPI CPP Interface
+ * \authors Ryan Johnson <ryanphjohnson@gmail.com>
  */
-#include <gtest/gtest.h>
 
-#include "testutils/testoptions.h"
-
-#ifndef TEST_DATA_PATH
-//! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
+// For GMX_LIB_MPI
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
-/*! \brief
- * Initializes unit testing for \ref module_testutils.
- */
-int main(int argc, char *argv[])
-{
-    // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, &argc, argv);
-    int ret = RUN_ALL_TESTS();
-    ::gmx::test::finalizeTestUtils();
-    return ret;
+#ifdef GMX_LIB_MPI
+#include "mpp.h"
+
+namespace mpi {
+comm comm::world = comm(MPI_COMM_NULL);
+
+// returns MPI_Datatype containing all datatypes that were added to the
+//     mpi_type_builder. If none were added, it makes an empty MPI_Datatype.
+// NOTE: Sending anything other than 0 of the empty MPI_Datatype may not work.
+MPI_Datatype mpi_type_builder::build() {
+       MPI_Datatype dt;
+       if (type.size()==0) { MPI_Type_contiguous (0, MPI_INT, &dt); }
+       else {
+           MPI_Type_create_struct (type.size(), &size.front(), &addr.front(), &type.front(), &dt);
+       }
+       MPI_Type_commit (&dt);
+       for (std::vector<MPI_Datatype>::iterator it = type.begin(); it!=type.end(); ++it) {
+           //TODO: MPI_Type_free(&*it); requires isNamed vector to store isNamed in add.
+           //Might be better to replace vector<MPI_Datatype> by scoped_array<datatype> but that requires
+           //the mpi_type_builder constructor to take the number of elements.
+       }
+       return dt;
 }
+} // mpi
+#endif

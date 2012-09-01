@@ -35,6 +35,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "selectionfileoption.h"
 #include "selectionfileoptioninfo.h"
 #include "selectionoption.h"

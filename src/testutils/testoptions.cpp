@@ -74,7 +74,7 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
 {
     try
     {
-        ProgramInfo::init(*argc, argv);
+        ProgramInfo::init(argc, &argv);
         ::testing::InitGoogleMock(argc, argv);
         if (dataPath != NULL)
         {
@@ -110,6 +110,11 @@ void parseTestOptions(Options *options)
     {
         GMX_THROW_WRAPPER_TESTEXCEPTION(ex);
     }
+}
+
+void finalizeTestUtils()
+{
+    ProgramInfo::finalize();
 }
 
 } // namespace test
