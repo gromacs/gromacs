@@ -47,8 +47,8 @@ extern gmx_molselect_t gmx_molselect_init(const char *fn);
 
 extern void gmx_molselect_done(gmx_molselect_t gms);
 
-extern int gmx_molselect_status(gmx_molselect_t gms,char *iupac);
+extern int gmx_molselect_status(gmx_molselect_t gms,const char *iupac);
 
-extern int gmx_molselect_index(gmx_molselect_t gms,char *iupac);
+extern int gmx_molselect_index(gmx_molselect_t gms,const char *iupac);
 
 #endif

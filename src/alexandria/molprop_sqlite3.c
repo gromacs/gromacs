@@ -50,6 +50,19 @@
 #include "string2.h"
 #include "molprop_sqlite3.h"
 
+typedef struct {
+    char *molname,*iupac;
+} t_synonym;
+
+int syn_comp(const void *a,const void *b)
+{
+    t_synonym *sa,*sb;
+    sa = (t_synonym *)a;
+    sb = (t_synonym *)b;
+    
+    return strcmp(sa->molname,sb->molname);
+}
+
 static void my_memcallback(void *ptr)
 {
     ;
@@ -81,11 +94,13 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
 {
 #ifdef HAVE_LIBSQLITE3
     sqlite3 *db = NULL;
-    sqlite3_stmt *stmt=NULL;
+    sqlite3_stmt *stmt=NULL,*stmt2=NULL;
     char sql_str[1024];
-    char *iupac,*iupac2,*prop,*ref;
+    const char *molname,*iupac,*iupac2,*prop,*unit,*ref;
     double value,error;
-    int i,cidx,expref,rc;
+    int i,cidx,expref,rc,nbind;
+    t_synonym *syn=NULL,key,*keyptr;
+    int nsyn=0,maxsyn=0;
     
     if (NULL == sqlite_file)
         return;
@@ -93,42 +108,109 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
     check_sqlite3(NULL,"Initializing sqlite",
                   sqlite3_initialize());
         
-    check_sqlite3(NULL,"Opening sqlite database n read-only mode",
+    check_sqlite3(NULL,"Opening sqlite database in read-only mode",
                   sqlite3_open_v2(sqlite_file,&db,SQLITE_OPEN_READONLY,NULL));
     
     /* Now database is open and everything is Hunky Dory */
     fprintf(stderr,"Opened SQLite3 database %s\n",sqlite_file);
     
-    /* Now present a query statement */
-    sprintf(sql_str,"SELECT mol.iupac,pt.prop,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (mol.iupac = \"?\")");
+    /* Make renaming table */
+    sprintf(sql_str,"SELECT syn.name,mol.iupac FROM molecules as mol,synonyms as syn WHERE syn.molid=mol.molid ORDER by syn.name");
+    if (NULL != debug)
+        fprintf(debug,"sql_str = '%s'\n",sql_str);
+        
     check_sqlite3(db,"Preparing statement",
-                  sqlite3_prepare_v2(db,sql_str,strlen(sql_str),&stmt,NULL));
+                  sqlite3_prepare_v2(db,sql_str,1+strlen(sql_str),&stmt2,NULL));
+    do 
+    {
+        rc = sqlite3_step(stmt2);
+        if (SQLITE_ROW == rc)
+        {
+            cidx   = 0;
+            if (nsyn >= maxsyn) 
+            {
+                maxsyn+=1000;
+                srenew(syn,maxsyn);
+            }
+            syn[nsyn].molname = strdup((char *)sqlite3_column_text(stmt2,cidx));
+            cidx++;
+            syn[nsyn].iupac   = strdup((char *)sqlite3_column_text(stmt2,cidx));
+            cidx++;
+            nsyn++;
+        }            
+        else if (SQLITE_DONE != rc) {
+            check_sqlite3(db,"Stepping",rc);
+        }
+        else {
+            printf("Done finding rows in synonyms. There are %d synonyms (max %d).\n",nsyn,maxsyn);
+        }
+    } while (SQLITE_ROW == rc);
+    check_sqlite3(db,"Resetting sqlite3 statement",
+                  sqlite3_reset(stmt2));
+    check_sqlite3(db,"Finalizing sqlite3 statement",
+                  sqlite3_finalize(stmt2));
+    
+    /* Now present a query statement */
+    sprintf(sql_str,"SELECT mol.iupac,pt.prop,pt.unit,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)))");
+    if (NULL != debug)
+        fprintf(debug,"sql_str = '%s'\n",sql_str);
+    
+    check_sqlite3(db,"Preparing statement",
+                  sqlite3_prepare_v2(db,sql_str,1+strlen(sql_str),&stmt,NULL));
+    if (NULL != debug)
+    {
+        nbind = sqlite3_bind_parameter_count(stmt);
+        fprintf(debug,"%d binding parameter(s) in the statement\n",nbind);
+    }
     for(i=0; (i<np); i++) 
     {
-        iupac = gmx_molprop_get_iupac(mp[i]);
+        key.molname = gmx_molprop_get_molname(mp[i]);
+        key.iupac   = gmx_molprop_get_iupac(mp[i]);
+        keyptr      = bsearch(&key,syn,nsyn,sizeof(syn[0]),syn_comp);
+        if ((NULL == key.iupac) || (strcmp(key.iupac,keyptr->iupac) != 0)) {
+            fprintf(stderr,"Warning, incorrect iupac %s for %s - changing to %s\n",
+                    key.iupac,key.molname,keyptr->iupac);
+            gmx_molprop_set_iupac(mp[i],keyptr->iupac);
+        }
+        iupac = keyptr->iupac;
         if (NULL != iupac)
         {
+            check_sqlite3(db,"Binding text",
+                          sqlite3_bind_text(stmt,1,iupac,strlen(iupac)+1,my_memcallback));
             do 
             {
-                check_sqlite3(db,"Binding text",
-                              sqlite3_bind_text(stmt,1,iupac,-1,NULL));
                 rc = sqlite3_step(stmt);
-                check_sqlite3(db,"Stepping",rc);
-                cidx   = 0;
-                iupac2 = sqlite3_column_text(stmt,cidx++);
-                prop   = sqlite3_column_text(stmt,cidx++);
-                value  = sqlite3_column_double(stmt,cidx++);
-                error  = sqlite3_column_double(stmt,cidx++);
-                ref    = sqlite3_column_text(stmt,cidx++);
-                if (strcasecmp(iupac,iupac2) != 0)
-                    gmx_fatal(FARGS,"Selected '%s' from database but got '%s'. WTF?!",
-                              iupac,iupac2);
-                gmx_molprop_add_experiment(mp[i],ref,"minimum",&expref);
-                if (strcasecmp(prop,"Polarizability") == 0)
-                    gmx_molprop_add_polar(mp[i],expref,"Experiment","Unit",
-                                          0,0,0,value,error);
-                
+                if (SQLITE_ROW == rc)
+                {
+                    //printf("Found a row\n");
+                    cidx   = 0;
+                    iupac2 = (char *)sqlite3_column_text(stmt,cidx++);
+                    if (strcasecmp(iupac,iupac2) != 0)
+                        gmx_fatal(FARGS,"Selected '%s' from database but got '%s'. WTF?!",
+                                  iupac,iupac2);
+                    prop   = (char *)sqlite3_column_text(stmt,cidx++);
+                    unit   = (char *)sqlite3_column_text(stmt,cidx++);
+                    value  = sqlite3_column_double(stmt,cidx++);
+                    error  = sqlite3_column_double(stmt,cidx++);
+                    ref    = (char *)sqlite3_column_text(stmt,cidx++);
+                    gmx_molprop_add_experiment(mp[i],ref,"minimum",&expref);
+                    if (strcasecmp(prop,"Polarizability") == 0)
+                        gmx_molprop_add_polar(mp[i],expref,prop,unit,
+                                              0,0,0,value,error);
+                    else if (strcasecmp(prop,"dipole") == 0)
+                        gmx_molprop_add_dipole(mp[i],expref,prop,unit,
+                                               0,0,0,value,error);
+                    else if (strcasecmp(prop,"DHf(298.15K)") == 0)
+                        gmx_molprop_add_energy(mp[i],expref,prop,unit,value,error);
+                }
+                else if (SQLITE_DONE != rc) {
+                    check_sqlite3(db,"Stepping",rc);
+                }
+                else if (NULL != debug) {
+                    fprintf(debug,"Done finding rows for %s\n",iupac);
+                }             
             } while (SQLITE_ROW == rc);
+            sqlite3_clear_bindings(stmt);
             check_sqlite3(db,"Resetting sqlite3 statement",
                           sqlite3_reset(stmt));
         }

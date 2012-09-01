@@ -281,7 +281,7 @@ int gmx_molprop_get_multiplicity(gmx_molprop_t mp)
     return mp->multiplicity;
 }
 
-void gmx_molprop_set_formula(gmx_molprop_t mp,char *formula)
+void gmx_molprop_set_formula(gmx_molprop_t mp,const char *formula)
 {
     if (formula) 
     {
@@ -301,12 +301,12 @@ void gmx_molprop_set_formula(gmx_molprop_t mp,char *formula)
     }
 }
 
-char *gmx_molprop_get_formula(gmx_molprop_t mp)
+const char *gmx_molprop_get_formula(gmx_molprop_t mp)
 {
     return mp->formula;
 }
 
-void gmx_molprop_set_molname(gmx_molprop_t mp,char *molname)
+void gmx_molprop_set_molname(gmx_molprop_t mp,const char *molname)
 {
     if (molname) 
     {
@@ -321,52 +321,52 @@ void gmx_molprop_set_molname(gmx_molprop_t mp,char *molname)
         gmx_incons("Trying to set molname without actually supplying a valid argument");
 }
 
-char *gmx_molprop_get_molname(gmx_molprop_t mp)
+const char *gmx_molprop_get_molname(gmx_molprop_t mp)
 {
     return mp->molname;
 }
 
-void gmx_molprop_set_iupac(gmx_molprop_t mp,char *iupac)
+void gmx_molprop_set_iupac(gmx_molprop_t mp,const char *iupac)
 {
     assign_str(&mp->iupac,iupac);
 }			   
 
-char *gmx_molprop_get_iupac(gmx_molprop_t mp)
+const char *gmx_molprop_get_iupac(gmx_molprop_t mp)
 {
     return mp->iupac;
 }
 
-void gmx_molprop_set_inchi(gmx_molprop_t mp,char *inchi)
+void gmx_molprop_set_inchi(gmx_molprop_t mp,const char *inchi)
 {
     assign_str(&mp->inchi,inchi);
 }			   
 
-char *gmx_molprop_get_inchi(gmx_molprop_t mp)
+const char *gmx_molprop_get_inchi(gmx_molprop_t mp)
 {
     return mp->inchi;
 }
 
-void gmx_molprop_set_cas(gmx_molprop_t mp,char *cas)
+void gmx_molprop_set_cas(gmx_molprop_t mp,const char *cas)
 {
     assign_str(&mp->cas,cas);
 }			   
 
-char *gmx_molprop_get_cas(gmx_molprop_t mp)
+const char *gmx_molprop_get_cas(gmx_molprop_t mp)
 {
     return mp->cas;
 }
 
-void gmx_molprop_set_cid(gmx_molprop_t mp,char *cid)
+void gmx_molprop_set_cid(gmx_molprop_t mp,const char *cid)
 {
     assign_str(&mp->cid,cid);
 }			   
 
-char *gmx_molprop_get_cid(gmx_molprop_t mp)
+const char *gmx_molprop_get_cid(gmx_molprop_t mp)
 {
     return mp->cid;
 }
 
-void gmx_molprop_add_composition(gmx_molprop_t mp,const char *compname)
+void gmx_molprop_add_composition(gmx_molprop_t mp,const const char *compname)
 {
     int i,j;
   
@@ -383,7 +383,7 @@ void gmx_molprop_add_composition(gmx_molprop_t mp,const char *compname)
     mp->composition[i].catom = NULL;
 }
 
-char *gmx_molprop_get_composition(gmx_molprop_t mp)
+const char *gmx_molprop_get_composition(gmx_molprop_t mp)
 {
     if (mp->ncomp_c < mp->ncomposition) 
     {
@@ -408,7 +408,7 @@ int gmx_molprop_get_natom(gmx_molprop_t mpt)
 }
 
 int gmx_molprop_count_composition_atoms(gmx_molprop_t mp,
-                                        char *compname,char *atom)
+                                        const char *compname,const char *atom)
 {
     int i,j,n;
   
@@ -442,8 +442,8 @@ static int catom_comp(const void *a,const void *b)
     return strcasecmp(ca->cname,cb->cname);
 }
 				       
-void gmx_molprop_add_composition_atom(gmx_molprop_t mp,const char *compname,
-                                      char *atomname,int natom)
+void gmx_molprop_add_composition_atom(gmx_molprop_t mp,const const char *compname,
+                                      const char *atomname,int natom)
 {
     int i=-1,j;
   
@@ -484,8 +484,8 @@ void gmx_molprop_add_composition_atom(gmx_molprop_t mp,const char *compname,
         gmx_incons("gmx_molprop_add_composition_atom called with invalid arguments");
 }
 
-void gmx_molprop_replace_composition_atom(gmx_molprop_t mp,char *compname,
-                                          char *oldatom,char *newatom)
+void gmx_molprop_replace_composition_atom(gmx_molprop_t mp,const char *compname,
+                                          const char *oldatom,const char *newatom)
 {
     int i=-1,j,k;
   
@@ -510,7 +510,7 @@ void gmx_molprop_replace_composition_atom(gmx_molprop_t mp,char *compname,
     }
 }
 
-int gmx_molprop_get_composition_atom(gmx_molprop_t mp,char *compname,
+int gmx_molprop_get_composition_atom(gmx_molprop_t mp,const char *compname,
                                      char **atomname,int *natom)
 {
     t_composition *cc;
@@ -569,7 +569,7 @@ static int index2ref(int index,int eMPtype)
     return 0; /* To make compiler happy */
 }
 
-static void init_ce(t_calc_exp *ce,const char *program,const char *method,
+static void init_ce(t_calc_exp *ce,const const char *program,const char *method,
                     const char *basisset,const char *reference,const char *conformation)
 {
     int j;
@@ -632,7 +632,7 @@ int gmx_molprop_get_experiment(gmx_molprop_t mp,char **reference,
 }
 
 static void ce_add_energy(t_calc_exp *ce,
-                          char *type,char *unit,
+                          const char *type,const char *unit,
                           double value,double error)
 {
     int i = ce->nprop[empENERGY]++;
@@ -645,7 +645,7 @@ static void ce_add_energy(t_calc_exp *ce,
 }
 
 void gmx_molprop_add_energy(gmx_molprop_t mp,int ref,
-                            char *type,char *unit,
+                            const char *type,const char *unit,
                             double value,double error)
 {
     int i,eMP;
@@ -762,7 +762,7 @@ int gmx_molprop_get_polar(gmx_molprop_t mp,int ref,
 }
 	
 void gmx_molprop_add_potential(gmx_molprop_t mpt,int ref,
-                               char *xyz_unit,char *V_unit,
+                               const char *xyz_unit,const char *V_unit,
                                int espid,
                                double x,double y,double z,
                                double V)
@@ -824,7 +824,7 @@ int gmx_molprop_get_potential(gmx_molprop_t mpt,int ref,
 }
 
 static void ce_add_dipole(t_calc_exp *ce,		     
-                          char *type,char *unit,
+                          const char *type,const char *unit,
                           double x,double y,double z,
                           double aver,double error)  
 {
@@ -842,7 +842,7 @@ static void ce_add_dipole(t_calc_exp *ce,
 }
 
 void gmx_molprop_add_dipole(gmx_molprop_t mp,int ref,
-                            char *type,char *unit,
+                            const char *type,const char *unit,
                             double x,double y,double z,
                             double aver,double error)
 {
@@ -896,7 +896,7 @@ int gmx_molprop_get_dipole(gmx_molprop_t mp,int ref,
 }
 
 static void ce_add_quadrupole(t_calc_exp *ce,
-                              char *type,char *unit,
+                              const char *type,const char *unit,
                               double xx,double yy,double zz,
                               double xy,double xz,double yz)
 {
@@ -915,7 +915,7 @@ static void ce_add_quadrupole(t_calc_exp *ce,
 }
 
 void gmx_molprop_add_quadrupole(gmx_molprop_t mp,int ref,
-                                char *type,char *unit,
+                                const char *type,const char *unit,
                                 double xx,double yy,double zz,
                                 double xy,double xz,double yz)
 {
@@ -1000,7 +1000,7 @@ void gmx_molprop_reset(gmx_molprop_t mp)
     gmx_molprop_reset_category(mp);
 }
 
-void gmx_molprop_add_category(gmx_molprop_t mp,char *category)
+void gmx_molprop_add_category(gmx_molprop_t mp,const char *category)
 {
     int i;
   
@@ -1025,7 +1025,7 @@ void gmx_molprop_reset_composition(gmx_molprop_t mp)
     mp->ncomp_c = 0;
 }
 
-char *gmx_molprop_get_category(gmx_molprop_t mp)
+const char *gmx_molprop_get_category(gmx_molprop_t mp)
 {
     int i;
   
@@ -1039,7 +1039,7 @@ char *gmx_molprop_get_category(gmx_molprop_t mp)
     return NULL;
 }
 
-int gmx_molprop_search_category(gmx_molprop_t mp,char *catname)
+int gmx_molprop_search_category(gmx_molprop_t mp,const char *catname)
 {
     int i;
   
@@ -1094,10 +1094,10 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
     gmx_molprop *ddd = (gmx_molprop *)dst;
     gmx_molprop *sss = (gmx_molprop *)src;
     int i,nd,ns,atomid,ndcomp,dstref,srcref,datomref,satomref,mult,smult;
-    char *tmp,*name,*type,*program,*method,*basisset,*catom,*formula;
+    const char *tmp,*stmp,*dtmp;
+    char **name,*type,*program,*method,*basisset,*catom,*formula;
     int cnumber,charge,multiplicity;
     char *value,*error,*unit,*reference,*atomname,*coords,*conformation;
-    char *stmp,*dtmp;
     double mass,x,y,z,q,sq;
     
     gmx_molprop_reset(src);
@@ -1221,9 +1221,9 @@ gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mp)
     return dst;
 }
 
-void gmx_molprop_add_calculation(gmx_molprop_t mp,const char *program,char *method,
-                                 char *basisset,char *reference,
-                                 char *conformation,int *calcref)
+void gmx_molprop_add_calculation(gmx_molprop_t mp,const char *program,const char *method,
+                                 const char *basisset,const char *reference,
+                                 const char *conformation,int *calcref)
 {
     int j;
     
@@ -1234,7 +1234,7 @@ void gmx_molprop_add_calculation(gmx_molprop_t mp,const char *program,char *meth
 }
 
 void gmx_molprop_calc_add_atom(gmx_molprop_t mp,int calcref,
-                               char *atomname,int atomid,int *atomref)
+                               const char *atomname,int atomid,int *atomref)
 {
     t_calc_exp *calc;
     int index,emp;
@@ -1301,7 +1301,7 @@ int gmx_molprop_calc_get_atom(gmx_molprop_t mp,int calcref,char **atomname,int *
 }
 
 void gmx_molprop_calc_set_atomcoords(gmx_molprop_t mp,int calcref,int atomref,
-                                     char *unit,double x,double y,double z)
+                                     const char *unit,double x,double y,double z)
 {
     t_calc_exp *calc;
     int cindex,aindex,emp;
@@ -1341,7 +1341,7 @@ int gmx_molprop_calc_get_atomcoords(gmx_molprop_t mp,int calcref,int atomref,
 }
 					   
 void gmx_molprop_calc_set_atomcharge(gmx_molprop_t mp,int calcref,int atomref,
-                                     char *type,char *unit,double q)
+                                     const char *type,const char *unit,double q)
 {
     t_calc_exp *calc;
     t_calc_atom *ca;

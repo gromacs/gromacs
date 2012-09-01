@@ -68,30 +68,30 @@ extern void gmx_molprop_set_multiplicity(gmx_molprop_t mpt,int multiplicity);
 
 extern int gmx_molprop_get_multiplicity(gmx_molprop_t mpt);
 
-extern void gmx_molprop_set_formula(gmx_molprop_t mpt,char *formula);
+extern void gmx_molprop_set_formula(gmx_molprop_t mpt,const char *formula);
 
-extern char *gmx_molprop_get_formula(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_formula(gmx_molprop_t mpt);
 
-extern void gmx_molprop_set_molname(gmx_molprop_t mpt,char *molname);
+extern void gmx_molprop_set_molname(gmx_molprop_t mpt,const char *molname);
 
-extern char *gmx_molprop_get_molname(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_molname(gmx_molprop_t mpt);
 
 /* Return IUPAC name or, if not found, the molname */
-extern void gmx_molprop_set_iupac(gmx_molprop_t mpt,char *iupac);
+extern void gmx_molprop_set_iupac(gmx_molprop_t mpt,const char *iupac);
 
-extern char *gmx_molprop_get_iupac(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_iupac(gmx_molprop_t mpt);
 
-extern void gmx_molprop_set_cas(gmx_molprop_t mpt,char *cas);
+extern void gmx_molprop_set_cas(gmx_molprop_t mpt,const char *cas);
 
-extern char *gmx_molprop_get_cas(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_cas(gmx_molprop_t mpt);
 
-extern void gmx_molprop_set_cid(gmx_molprop_t mpt,char *cid);
+extern void gmx_molprop_set_cid(gmx_molprop_t mpt,const char *cid);
 
-extern char *gmx_molprop_get_cid(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_cid(gmx_molprop_t mpt);
 
-extern void gmx_molprop_set_inchi(gmx_molprop_t mpt,char *inchi);
+extern void gmx_molprop_set_inchi(gmx_molprop_t mpt,const char *inchi);
 
-extern char *gmx_molprop_get_inchi(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_inchi(gmx_molprop_t mpt);
 
 extern void gmx_molprop_delete_composition(gmx_molprop_t mpt,const char *compname);
 
@@ -99,23 +99,23 @@ extern void gmx_molprop_add_composition(gmx_molprop_t mpt,const char *compname);
 
 extern void gmx_molprop_reset_composition(gmx_molprop_t mpt);
 
-extern char *gmx_molprop_get_composition(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_composition(gmx_molprop_t mpt);
 
 extern int gmx_molprop_get_natom(gmx_molprop_t mpt);
   
 extern void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,const char *compname,
-					     char *atomname,int natom);
+					     const char *atomname,int natom);
 					     
-extern void gmx_molprop_del_composition_atom(gmx_molprop_t mpt,char *compname,
-					     char *atomname);
+extern void gmx_molprop_del_composition_atom(gmx_molprop_t mpt,const char *compname,
+					     const char *atomname);
 
-extern void gmx_molprop_replace_composition_atom(gmx_molprop_t mpt,char *compname,char *oldatom,char *newatom);
+extern void gmx_molprop_replace_composition_atom(gmx_molprop_t mpt,const char *compname,const char *oldatom,const char *newatom);
 
-extern int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,char *compname,
+extern int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,const char *compname,
 					    char **atomname,int *natom);
 
 extern int gmx_molprop_count_composition_atoms(gmx_molprop_t mpt,
-					       char *compname,char *atom);
+					       const char *compname,const char *atom);
 				
 /* Returns an internal reference that can be used when adding data values */
 extern void gmx_molprop_add_experiment(gmx_molprop_t mpt,const char *reference,
@@ -141,20 +141,20 @@ extern int gmx_molprop_get_polar(gmx_molprop_t mpt,int ref,
 /* Energies. Ref is either exp or calc ref. from add_exper,
    add_calc, get_exper or get_calc. */	    
 extern void gmx_molprop_add_energy(gmx_molprop_t mpt,int ref,
-				   char *type,char *unit,
+				   const char *type,const char *unit,
 				   double value,double error);
-				       
+
 extern int gmx_molprop_get_energy(gmx_molprop_t mpt,int ref,
 				  char **type,char **unit,
 				  double *value,double *error);
 
 /* Potential. Ref is a calc ref. from add_calc, or get_calc. */	    
 extern void gmx_molprop_add_potential(gmx_molprop_t mpt,int ref,
-				      char *xyz_unit,char *V_unit,
+				      const char *xyz_unit,const char *V_unit,
 				      int espid,
 				      double x,double y,double z,
 				      double V);
-				       
+
 extern int gmx_molprop_get_potential(gmx_molprop_t mpt,int ref,
 				     char **xyz_unit,char **V_unit,
 				     int *espid,
@@ -164,7 +164,7 @@ extern int gmx_molprop_get_potential(gmx_molprop_t mpt,int ref,
 /* Dipoles. Ref is either exp or calc ref. from add_exper,
    add_calc, get_exper or get_calc. */	    
 extern void gmx_molprop_add_dipole(gmx_molprop_t mpt,int ref,
-				   char *type,char *unit,
+				   const char *type,const char *unit,
 				   double x,double y,double z,
 				   double aver,double error);
 				       
@@ -176,7 +176,7 @@ extern int gmx_molprop_get_dipole(gmx_molprop_t mpt,int ref,
 /* Quadrupoles. Ref is either exp or calc ref. from add_exper,
    add_calc, get_exper or get_calc. */	    
 extern void gmx_molprop_add_quadrupole(gmx_molprop_t mpt,int ref,
-				       char *type,char *unit,
+				       const char *type,const char *unit,
 				       double xx,double yy,double zz,
 				       double xy,double xz,double yz);
 				       
@@ -185,14 +185,14 @@ extern int gmx_molprop_get_quadrupole(gmx_molprop_t mpt,int ref,
 				      double *xx,double *yy,double *zz,
 				      double *xy,double *xz,double *yz);
 
-extern void gmx_molprop_add_category(gmx_molprop_t mpt,char *category);
+extern void gmx_molprop_add_category(gmx_molprop_t mpt,const char *category);
 
 /* Returns one category at a time. If NULL, you got them all previously. */
-extern char *gmx_molprop_get_category(gmx_molprop_t mpt);
+extern const char *gmx_molprop_get_category(gmx_molprop_t mpt);
 
 extern void gmx_molprop_reset_category(gmx_molprop_t mpt);
 
-extern int gmx_molprop_search_category(gmx_molprop_t mpt,char *catname);
+extern int gmx_molprop_search_category(gmx_molprop_t mpt,const char *catname);
 
 extern void gmx_molprop_reset_calculation(gmx_molprop_t mpt);
 
@@ -200,31 +200,29 @@ extern void gmx_molprop_reset(gmx_molprop_t mpt);
 
 /* Returns calcref that can be used to add properties later on */
 extern void gmx_molprop_add_calculation(gmx_molprop_t mpt,
-					const char *program,char *method,
-					char *basisset,char *reference,
-					char *conformation,int *calcref);
+					const char *program,const char *method,
+					const char *basisset,const char *reference,
+					const char *conformation,int *calcref);
 
 extern int gmx_molprop_get_calculation(gmx_molprop_t mpt,char **program,char **method,
 				       char **basisset,char **reference,
 				       char **conformation,int *calcref);
 
-extern int gmx_molprop_get_calc_lot(gmx_molprop_t mpt,char *lot);
-
 /* Returns atomref that can be used to set coordinates and charges */
 extern void gmx_molprop_calc_add_atom(gmx_molprop_t mpt,int calcref,
-				      char *atomname,int atomid,int *atomref);
+				      const char *atomname,int atomid,int *atomref);
 
 extern int gmx_molprop_calc_get_atom(gmx_molprop_t mpt,int calcref,
 				     char **atomname,int *atomid,int *atomref);
 				     
 extern void gmx_molprop_calc_set_atomcoords(gmx_molprop_t mpt,int calcref,int atomref,
-					    char *unit,double x,double y,double z);
+					    const char *unit,double x,double y,double z);
 					   
 extern int gmx_molprop_calc_get_atomcoords(gmx_molprop_t mpt,int calcref,int atomref,
 					   char **unit,double *x,double *y,double *z);
 					   
 extern void gmx_molprop_calc_set_atomcharge(gmx_molprop_t mpt,int calcref,int atomref,
-					   char *type,char *unit,double q);
+					   const char *type,const char *unit,double q);
 					   
 extern int gmx_molprop_calc_get_atomcharge(gmx_molprop_t mpt,int calcref,int atomref,
 					   char **type,char **unit,double *q);

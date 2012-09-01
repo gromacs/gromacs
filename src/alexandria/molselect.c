@@ -122,7 +122,7 @@ void gmx_molselect_done(gmx_molselect_t gms)
     sfree(g);
 }
 
-int gmx_molselect_status(gmx_molselect_t gms,char *iupac)
+int gmx_molselect_status(gmx_molselect_t gms,const char *iupac)
 {
     gmx_molselect *g = (gmx_molselect *)gms;
     t_ims key;
@@ -138,7 +138,7 @@ int gmx_molselect_status(gmx_molselect_t gms,char *iupac)
         return imsUnknown;
 }
 
-int gmx_molselect_index(gmx_molselect_t gms,char *iupac)
+int gmx_molselect_index(gmx_molselect_t gms,const char *iupac)
 {
     gmx_molselect *g = (gmx_molselect *)gms;
     t_ims key;

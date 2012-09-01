@@ -286,7 +286,8 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     matrix     box;
     t_pbc      pbc;
     char       *program,*method,*basisset,*reference,*conformation,*miller,*elem;
-    char       *atomname,*unit,*molname,*type;
+    char       *atomname,*unit,*type;
+    const char *molname;
     double     xx,yy,zz;
     double     *bondorder;
     gentop_vsite_t gvt;
