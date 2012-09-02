@@ -443,7 +443,7 @@ void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro,
 
 void get_structure(t_atoms *atoms,const char *IndexFile,
                    const char *StructureFile,struct edix *edx,int nfit,
-                   atom_id ifit[],int natoms, atom_id index[])
+                   atom_id ifit[],int nav, atom_id index[])
 {
   atom_id *igro;  /*index corresponding to target or origin structure*/
   int ngro;
@@ -461,8 +461,10 @@ void get_structure(t_atoms *atoms,const char *IndexFile,
      gmx_fatal(FARGS,"You selected an index group with %d elements instead of %d",ngro,ntar);
   init_edx(edx);
   filter2edx(edx,nfit,ifit,ngro,igro,xtar,StructureFile);
+
+  /* If average and reference/fitting structure differ, append the average structure as well */
   if (ifit!=index) /*if fit structure is different append these coordinates, too -- don't mind duplicates*/
-     filter2edx(edx,natoms,index,ngro,igro,xtar,StructureFile);
+     filter2edx(edx,nav,index,ngro,igro,xtar,StructureFile);
 }
 
 int main(int argc,char *argv[])
@@ -636,12 +638,12 @@ int main(int argc,char *argv[])
     int        nvec1,*eignr1=NULL;
     rvec       *xav1,**eigvec1=NULL;
     t_atoms    *atoms=NULL;
-    int natoms;
+    int        nav;  /* Number of atoms in the average structure */
     char       *grpname;
     const char *indexfile;
     int        i;
     atom_id    *index,*ifit;
-    int        nfit;
+    int        nfit; /* Number of atoms in the reference/fit structure */
     int ev_class; /* parameter _class i.e. evMON, evRADFIX etc. */
     int nvecs;
     real *eigval1=NULL; /* in V3.3 this is parameter of read_eigenvectors */
@@ -730,7 +732,7 @@ int main(int argc,char *argv[])
     EigvecFile=opt2fn("-f",NFILE,fnm);
 
     /*read eigenvectors from eigvec.trr*/
-    read_eigenvectors(EigvecFile,&natoms,&bFit1,
+    read_eigenvectors(EigvecFile,&nav,&bFit1,
                       &xref1,&edi_params.fitmas,&xav1,&edi_params.pcamas,&nvec1,&eignr1,&eigvec1,&eigval1);
 
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
@@ -738,11 +740,11 @@ int main(int argc,char *argv[])
     atoms=&top.atoms;
 
 
-    printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
+    printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",nav);
     get_index(atoms,indexfile,1,&i,&index,&grpname); /*if indexfile != NULL parameter 'atoms' is ignored */
-    if (i!=natoms) {
+    if (i!=nav) {
         gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
-                  i,natoms);
+                  i,nav);
     }
     printf("\n");
 
@@ -768,7 +770,7 @@ int main(int argc,char *argv[])
     }
     else
     {
-        nfit=natoms;
+        nfit=nav;
         ifit=index;
     }
 
@@ -804,15 +806,15 @@ int main(int argc,char *argv[])
         }
     }
 
-    edi_params.ned=natoms;
+    edi_params.ned=nav;
 
   /*number of system atoms  */
   edi_params.nini=atoms->nr;
 
 
   /*store reference and average structure in edi_params*/
-  make_t_edx(&edi_params.sref,nfit,xref1,ifit);
-  make_t_edx(&edi_params.sav,natoms,xav1,index);
+  make_t_edx(&edi_params.sref,nfit,xref1,ifit );
+  make_t_edx(&edi_params.sav ,nav ,xav1 ,index);
 
 
   /* Store target positions in edi_params */
@@ -823,7 +825,7 @@ int main(int argc,char *argv[])
           fprintf(stderr, "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
                           "      You may want to use -ori to define the flooding potential center.\n\n");
       }
-      get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,ifit,natoms,index);
+      get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,ifit,nav,index);
   }
   else
   {
@@ -833,7 +835,7 @@ int main(int argc,char *argv[])
   /* Store origin positions */
   if (opt2bSet("-ori",NFILE,fnm))
   {
-      get_structure(atoms,indexfile,OriginFile,&edi_params.sori,nfit,ifit,natoms,index);
+      get_structure(atoms,indexfile,OriginFile,&edi_params.sori,nfit,ifit,nav,index);
   }
   else
   {

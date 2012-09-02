@@ -414,8 +414,9 @@ double do_tpi(FILE *fplog,t_commrec *cr,
         {
             copy_rvec(rerun_fr.x[i],state->x[i]);
         }
+        copy_mat(rerun_fr.box,state->box);
         
-        V = det(rerun_fr.box);
+        V = det(state->box);
         logV = log(V);
         
         bStateChanged = TRUE;
@@ -562,20 +563,19 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                 cr->nnodes = 1;
                 do_force(fplog,cr,inputrec,
                          step,nrnb,wcycle,top,top_global,&top_global->groups,
-                         rerun_fr.box,state->x,&state->hist,
+                         state->box,state->x,&state->hist,
                          f,force_vir,mdatoms,enerd,fcd,
                          state->lambda,
                          NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,
                          GMX_FORCE_NONBONDED |
-                         (bNS ? GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
+                         (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
                          (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
                 cr->nnodes = nnodes;
                 bStateChanged = FALSE;
                 bNS = FALSE;
                 
                 /* Calculate long range corrections to pressure and energy */
-                calc_dispcorr(fplog,inputrec,fr,step,top_global->natoms,
-                              rerun_fr.box,
+                calc_dispcorr(fplog,inputrec,fr,step,top_global->natoms,state->box,
                               lambda,pres,vir,&prescorr,&enercorr,&dvdlcorr);
                 /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
                 enerd->term[F_DISPCORR] = enercorr;
