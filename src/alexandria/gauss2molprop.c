@@ -353,7 +353,7 @@ static int espv_comp(const void *a,const void *b)
 }
 
 gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
-                                   const char *fn,char *molnm,char *iupac,
+                                   const char *fn,char *molnm,char *iupac,char *conformation,
                                    gau_atomprop_t gaps,
                                    real th_toler,real ph_toler,
                                    int maxpot,gmx_bool bVerbose)
@@ -370,7 +370,6 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   gmx_molprop_t mpt;
   real mm;
   char *atomname,*ginc,*hfener,*mp2ener,*g2ener,*g3ener,*g4ener,*cbsener;
-  char *conformation = "minimum";
   char *reference = "This Work";
   char *program=NULL,*method=NULL,*basis=NULL;
   char **ptr,**qtr,*mymeth;
@@ -804,7 +803,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static gmx_bool bVerbose = FALSE;
-  static char *molnm=NULL,*iupac=NULL;
+  static char *molnm=NULL,*iupac=NULL,*conf="minimum";
   static real th_toler=170,ph_toler=5;
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
@@ -821,6 +820,8 @@ int main(int argc, char *argv[])
       "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
     { "-iupac", FALSE, etSTR, {&iupac},
       "IUPAC name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
+    { "-conf",  FALSE, etSTR, {&conf},
+      "Conformation of the molecule" },
     { "-maxpot", FALSE, etINT, {&maxpot},
       "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" }
   };
@@ -852,7 +853,7 @@ int main(int argc, char *argv[])
   nmp = 0;
   for(i=0; (i<nfn); i++) 
   {
-      mp = gmx_molprop_read_log(aps,pd,fns[i],molnm,iupac,gaps,
+      mp = gmx_molprop_read_log(aps,pd,fns[i],molnm,iupac,conf,gaps,
                                 th_toler,ph_toler,maxpot,bVerbose);
       if (NULL != mp) 
       {
