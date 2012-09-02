@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
 #include <string.h>
 #include "vsite_parm.h"
 #include "smalloc.h"
@@ -1149,7 +1150,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
 {
   int      ftype,i,parnr,k,l,m,n,nvsite,kept_i,vsnral;
   atom_id  atom,constr;
-  atom_id  vsiteatoms[3];
+  atom_id  vsiteatoms[4];
   gmx_bool     bKeep,bUsed,bPresent;
   t_params *ps;
   
@@ -1168,6 +1169,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
 	if (nvsite==1) {
 	  /* store construction atoms of first vsite */
 	  vsnral=NRAL(pindex[atom].ftype)-1;
+	  assert(vsnral<=4);
 	  for(m=0; (m<vsnral); m++)
 	    vsiteatoms[m]=
 	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
