@@ -155,7 +155,7 @@
                                   (FrLJ6 - c6*sh_invrc6)/6;
                         /* Need to zero the interaction if r >= rcut
                          * or there should be exclusion. */
-                        VLJ     = VLJ * skipmask;
+                        VLJ     = VLJ * skipmask * interact;
                         /* 9 flops for LJ energy */
 #ifdef ENERGY_GROUPS
                         Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += VLJ;

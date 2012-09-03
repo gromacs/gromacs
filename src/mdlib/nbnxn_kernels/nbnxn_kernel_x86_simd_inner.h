@@ -374,7 +374,7 @@
             }
 #endif
 #endif
-#else
+#else /* EXCL_FORCES */
             /* Remove all excluded atom pairs from the list */
             wco_SSE0      = gmx_and_pr(wco_SSE0,int_SSE0);
             wco_SSE1      = gmx_and_pr(wco_SSE1,int_SSE1);
@@ -797,14 +797,23 @@
             VLJ_SSE3      = gmx_sub_pr(VLJ12_SSE3,VLJ6_SSE3);
 #endif
 #ifndef NO_LJ_SHIFT
-            /* The potential shift should be removed non-interacting pairs */
+            /* The potential shift should be removed for pairs beyond cut-off */
             VLJ_SSE0      = gmx_and_pr(VLJ_SSE0,wco_SSE0);
             VLJ_SSE1      = gmx_and_pr(VLJ_SSE1,wco_SSE1);
 #ifndef HALF_LJ
             VLJ_SSE2      = gmx_and_pr(VLJ_SSE2,wco_SSE2);
             VLJ_SSE3      = gmx_and_pr(VLJ_SSE3,wco_SSE3);
 #endif
+#ifdef CHECK_EXCLS
+            /* The potential shift should be removed for excluded pairs */
+            VLJ_SSE0      = gmx_and_pr(VLJ_SSE0,int_SSE0);
+            VLJ_SSE1      = gmx_and_pr(VLJ_SSE1,int_SSE1);
+#ifndef HALF_LJ
+            VLJ_SSE2      = gmx_and_pr(VLJ_SSE2,int_SSE2);
+            VLJ_SSE3      = gmx_and_pr(VLJ_SSE3,int_SSE3);
 #endif
+#endif
+#endif /* NO_LJ_SHIFT */
 #ifndef ENERGY_GROUPS
             VvdwtotSSE    = gmx_add_pr(VvdwtotSSE,
 #ifndef HALF_LJ
