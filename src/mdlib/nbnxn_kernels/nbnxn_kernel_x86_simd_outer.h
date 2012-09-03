@@ -341,11 +341,12 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     /* No combination rule used */
 #ifndef GMX_DOUBLE
     nbfp_ptr    = nbat->nbfp_s4;
-    nbfp_stride = 4;
+#define NBFP_STRIDE  4
 #else
     nbfp_ptr    = nbat->nbfp;
-    nbfp_stride = 2;
+#define NBFP_STRIDE  2
 #endif
+    nbfp_stride = NBFP_STRIDE;
 #endif
 
 #ifdef CALC_COUL_TAB
@@ -746,3 +747,4 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #undef UNROLLJ   
 #undef STRIDE
 #undef TAB_FDV0
+#undef NBFP_STRIDE
