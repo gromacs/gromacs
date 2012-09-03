@@ -55,6 +55,14 @@ class SelectionOptionStorage;
  *
  * Public methods in this class do not throw.
  *
+ * \todo
+ * Support for specifying that an option accepts, e.g., two to four selections.
+ * Currently, only a fixed count or any number of selections is possible.
+ * \if internal
+ * In addition to allowing this in OptionTemplate, also SelectionOptionManager
+ * needs to be updated.
+ * \endif
+ *
  * \inpublicapi
  * \ingroup module_selection
  */
