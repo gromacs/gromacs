@@ -45,7 +45,7 @@
 
 #include "smalloc.h"
 #include "string2.h"
-#include "types/hwinfo.h"
+#include "types/hw_info.h"
 
 #include "gpu_utils.h"
 #include "../cuda_tools/cudautils.cuh"

@@ -24,7 +24,7 @@
 
 #include "types/simple.h"
 #include "types/nbnxn_cuda_types_ext.h"
-#include "gmx_detectcpu.h"
+#include "gmx_detect_cpu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,10 +60,8 @@ typedef struct
 {
     gmx_bool        bCanUseGPU; /* TODO ATM this is false if -nb cpu is passed. Do we want that? */
     gmx_gpu_info_t  gpu_info;   /* TODO ATM no GPUs are detected if -nb cpu is passed. Do we wan that? */
-    gmx_detectcpu_t cpu_info;
-} gmx_hwinfo_t;
-
-/* FIXME either rename gmx_hwinfo_t to gmx_hw_info_t or gmx_gpu_info_t to gmx_gpuinfo_t */
+    gmx_cpu_info_t  cpu_info;
+} gmx_hw_info_t;
 
 #ifdef __cplusplus
 }

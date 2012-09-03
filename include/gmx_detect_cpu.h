@@ -18,8 +18,8 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _GMX_detectcpu_H_
-#define _GMX_detectcpu_H_
+#ifndef _gmx_detect_cpu_h_
+#define _gmx_detect_cpu_h_
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,7 +119,7 @@ typedef struct
 
     char                       feature[GMX_DETECTCPU_NFEATURES];
 }
-gmx_detectcpu_t;
+gmx_cpu_info_t;
 
 
 
@@ -127,14 +127,14 @@ gmx_detectcpu_t;
  * Return 0 on success, 1 if something bad happened.
  */
 int
-gmx_detectcpu                   (gmx_detectcpu_t *              data);
+gmx_detectcpu                   (gmx_cpu_info_t *               data);
 
 
 /* Formats a text string (up to n characters) from the data structure.
  * The output will have max 80 chars between newline characters.
  */
 int
-gmx_detectcpu_formatstring       (gmx_detectcpu_t                data,
+gmx_detectcpu_formatstring       (gmx_cpu_info_t                 data,
                                   char *                         s,
                                   int                            n);
 
@@ -143,7 +143,7 @@ gmx_detectcpu_formatstring       (gmx_detectcpu_t                data,
  * hardware.
  */
 int
-gmx_detectcpu_suggest_acceleration  (gmx_detectcpu_t                 data,
+gmx_detectcpu_suggest_acceleration  (gmx_cpu_info_t                  data,
                                      gmx_detectcpu_acceleration_t *  acc);
 
 /* Check if this binary was compiled with the same acceleration as we
@@ -151,7 +151,7 @@ gmx_detectcpu_suggest_acceleration  (gmx_detectcpu_t                 data,
  * if it is non-NULL, and print a warning in stdout if we don't have a match.
  */
 int
-gmx_detectcpu_check_acceleration    (gmx_detectcpu_t                data,
+gmx_detectcpu_check_acceleration    (gmx_cpu_info_t                 data,
                                      FILE *                         log);
 
 
@@ -160,4 +160,4 @@ gmx_detectcpu_check_acceleration    (gmx_detectcpu_t                data,
 #endif
 
 
-#endif /* _GMX_DETECTCPU_H_ */
+#endif /* _gmx_detect_cpu_h_ */

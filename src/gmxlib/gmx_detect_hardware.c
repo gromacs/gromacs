@@ -24,20 +24,20 @@
 #include <string.h>
 
 #include "types/enums.h"
-#include "types/hwinfo.h"
+#include "types/hw_info.h"
 #include "types/commrec.h"
 #include "gmx_fatal.h"
 #include "gmx_fatal_collective.h"
 #include "smalloc.h"
 #include "gpu_utils.h"
 #include "statutil.h"
-#include "gmx_hardware_detect.h"
+#include "gmx_detect_hardware.h"
 #include "main.h"
 #include "md_logging.h"
 
 
 /* FW decl. */
-void limit_num_gpus_used(gmx_hwinfo_t *hwinfo, int count);
+void limit_num_gpus_used(gmx_hw_info_t *hwinfo, int count);
 
 static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info, gmx_bool bPrintAll)
 {
@@ -157,7 +157,7 @@ static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
     gmx_incons("Not implemented yet");
 }
 
-void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
+void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                                       const t_commrec *cr, int ntmpi_requested,
                                       gmx_bool bUseGPU)
 {
@@ -369,15 +369,15 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hwinfo_t *hwinfo,
     }
 }
 
-void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
-                   const t_commrec *cr,
-                   gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
-                   const char *gpu_id)
+void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
+                         const t_commrec *cr,
+                         gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
+                         const char *gpu_id)
 {
     int             i;
     const char      *env;
     char            sbuf[STRLEN], stmp[STRLEN];
-    gmx_hwinfo_t    *hw;
+    gmx_hw_info_t   *hw;
     gmx_gpu_info_t  gpuinfo_auto, gpuinfo_user;
     gmx_bool        bGPUBin;
 
@@ -472,7 +472,7 @@ void gmx_hw_detect(FILE *fplog, gmx_hwinfo_t *hwinfo,
     }
 }
 
-void limit_num_gpus_used(gmx_hwinfo_t *hwinfo, int count)
+void limit_num_gpus_used(gmx_hw_info_t *hwinfo, int count)
 {
     int ndev_use;
 
@@ -498,7 +498,7 @@ void limit_num_gpus_used(gmx_hwinfo_t *hwinfo, int count)
     hwinfo->gpu_info.ncuda_dev_use = count;
 }
 
-void gmx_hw_info_free(gmx_hwinfo_t *hwinfo)
+void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
 {
     if (hwinfo)
     {

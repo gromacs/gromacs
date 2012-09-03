@@ -39,7 +39,7 @@
 #include "types/simple.h"
 #include "types/interaction_const.h"
 #include "types/nbnxn_cuda_types_ext.h"
-#include "types/hwinfo.h"
+#include "types/hw_info.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;

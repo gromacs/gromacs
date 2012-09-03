@@ -73,7 +73,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
-#include "gmx_hardware_detect.h"
+#include "gmx_detect_hardware.h"
 #include "gmx_omp_nthreads.h"
 #include "pull_rotation.h"
 #include "calc_verletbuf.h"
@@ -318,7 +318,7 @@ static int get_tmpi_omp_thread_distribution(const gmx_hw_opt_t *hw_opt,
  * Thus all options should be internally consistent and consistent
  * with the hardware, except that ntmpi could be larger than #GPU.
  */
-static int get_nthreads_mpi(gmx_hwinfo_t *hwinfo,
+static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
                             gmx_hw_opt_t *hw_opt,
                             t_inputrec *inputrec, gmx_mtop_t *mtop,
                             const t_commrec *cr,
@@ -589,7 +589,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
 }
 
 static void prepare_verlet_scheme(FILE *fplog,
-                                  gmx_hwinfo_t *hwinfo,
+                                  gmx_hw_info_t *hwinfo,
                                   t_commrec *cr,
                                   gmx_hw_opt_t *hw_opt,
                                   const char *nbpu_opt,
@@ -992,7 +992,7 @@ static void override_nsteps_cmdline(FILE *fplog,
 }
 
 /* Data structure set by SIMMASTER which needs to be passed to all nodes
- * before the other nodes have read the tpx file and called gmx_hw_detect.
+ * before the other nodes have read the tpx file and called gmx_detect_hardware.
  */
 typedef struct {
     int      cutoff_scheme; /* The cutoff-scheme from inputrec_t */
@@ -1042,7 +1042,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int         nthreads_pme=1;
     int         nthreads_pp=1;
     gmx_membed_t membed=NULL;
-    gmx_hwinfo_t *hwinfo=NULL;
+    gmx_hw_info_t *hwinfo=NULL;
     master_inf_t minf={-1,FALSE};
 
     /* CAUTION: threads may be started later on in this function, so
@@ -1073,8 +1073,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Detect hardware, gather information. With tMPI only thread 0 does it
          * and after threads are started broadcasts hwinfo around. */
         snew(hwinfo, 1);
-        gmx_hw_detect(fplog, hwinfo, cr,
-                      bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
+        gmx_detect_hardware(fplog, hwinfo, cr,
+                            bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
 
         minf.cutoff_scheme = inputrec->cutoff_scheme;
         minf.bUseGPU       = FALSE;
@@ -1214,8 +1214,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* now we have inputrec on all nodes, can run the detection */
         /* TODO: perhaps it's better to propagate within a node instead? */
         snew(hwinfo, 1);
-        gmx_hw_detect(fplog, hwinfo, cr,
-                      bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
+        gmx_detect_hardware(fplog, hwinfo, cr,
+                                 bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
     }
 #endif
 
@@ -1743,7 +1743,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr) && SIMMASTER(cr))
 #endif
     {
-        gmx_hw_info_free(hwinfo);
+        gmx_hardware_info_free(hwinfo);
     }
 
     /* Does what it says */  

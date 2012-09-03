@@ -37,7 +37,7 @@
 #define _GPU_UTILS_H_
 
 #include "types/simple.h"
-#include "types/hwinfo.h"
+#include "types/hw_info.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM_INT ;
@@ -89,6 +89,7 @@ int get_current_gpu_device_id(void) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_INT
+
 FUNC_QUALIFIER
 void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_VOID
 

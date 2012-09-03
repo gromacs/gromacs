@@ -71,7 +71,7 @@
 #include "statutil.h"
 #include "gmx_omp_nthreads.h"
 
-#include "gmx_detectcpu.h"
+#include "gmx_detect_cpu.h"
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
@@ -1373,7 +1373,7 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
-                                  const gmx_detectcpu_t *cpu_info,
+                                  const gmx_cpu_info_t *cpu_info,
                                   int *kernel_type)
 {
     *kernel_type = nbk4x4_PlainC;
@@ -1415,13 +1415,13 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 
 static void pick_nbnxn_kernel(FILE *fp,
                               const t_commrec *cr,
-                              const gmx_hwinfo_t *hwinfo,
+                              const gmx_hw_info_t *hwinfo,
                               gmx_bool use_cpu_acceleration,
                               gmx_bool *bUseGPU,
                               int *kernel_type)
 {
     gmx_bool bEmulateGPU, bGPU;
-    gmx_detectcpu_t cpu_information;
+    gmx_cpu_info_t cpu_information;
     char gpu_err_str[STRLEN];
 
     assert(kernel_type);
