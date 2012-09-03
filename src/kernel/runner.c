@@ -443,7 +443,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     int  i;
     t_state state_tmp;
     gmx_bool bBox,bDD,bCont;
-    const char *nstl_fmt="\nFor optimal performace with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
+    const char *nstl_fmt="\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
     const char *vbd_err="Can not increase nstlist for GPU run because verlet-buffer-drift is not set or used";
     const char *box_err="Can not increase nstlist for GPU run because the box is too small";
     const char *dd_err ="Can not increase nstlist for GPU run because of domain decomposition limitations";
@@ -456,10 +456,6 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     env = getenv(NSTLIST_ENVVAR);
     if (env == NULL)
     {
-        if (MASTER(cr))
-        {
-            fprintf(stderr,nstl_fmt,ir->nstlist);
-        }
         if (fp != NULL)
         {
             fprintf(fp,nstl_fmt,ir->nstlist);
@@ -1448,6 +1444,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Initialize per-node process ID and counters. */
     gmx_init_intra_counters(cr);
+
+#ifdef GMX_MPI
+    md_print_info(cr,fplog,"Using %d MPI %s\n",
+                  cr->nnodes,
+#ifdef GMX_THREAD_MPI
+                  cr->nnodes==1 ? "thread" : "threads"
+#else
+                  cr->nnodes==1 ? "process" : "processes"
+#endif
+                  );
+#endif
 
     gmx_omp_nthreads_init(fplog, cr,
                           hw_opt->nthreads_omp,
