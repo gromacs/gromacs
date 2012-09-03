@@ -59,7 +59,8 @@ extern "C" {
 #ifndef GMX_DOUBLE
 #define NBNXN_AVOID_SING_R2_INC  1.0e-12f
 #else
-#define NBNXN_AVOID_SING_R2_INC  1.0e-100
+/* The double prec. x86 SIMD kernels use a single prec. invsqrt, so > 1e-38 */
+#define NBNXN_AVOID_SING_R2_INC  1.0e-36
 #endif
 
 /* Due to the cluster size the effective pair-list is longer than
