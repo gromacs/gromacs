@@ -177,26 +177,40 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
     SelectionList::const_iterator first = selections.begin();
     SelectionList::const_iterator last = first;
     RequestList::const_iterator i;
-    // TODO: Improve error messages.
     for (i = requests_.begin(); i != requests_.end(); ++i)
     {
         const SelectionRequest &request = *i;
         if (request.count() > 0)
         {
-            if (selections.end() - first < request.count())
+            int remaining = selections.end() - first;
+            if (remaining < request.count())
             {
-                GMX_THROW(InvalidInputError("Too few selections provided"));
+                int assigned = first - selections.begin();
+                GMX_THROW(InvalidInputError(formatString(
+                                "Too few selections provided for '%s': "
+                                "Expected %d selections, but only %d left "
+                                "after assigning the first %d to other selections.",
+                                request.name().c_str(), request.count(),
+                                remaining, assigned)));
             }
             last = first + request.count();
         }
         else
         {
-            if (i != requests_.end() - 1)
+            RequestList::const_iterator nextRequest = i;
+            ++nextRequest;
+            if (nextRequest != requests_.end())
             {
-                GMX_THROW(InvalidInputError(
-                            formatString("Request for selection '%s' must "
-                                         "not be followed by others",
-                                         request.name().c_str())));
+                const char *name = request.name().c_str();
+                const char *conflictName = nextRequest->name().c_str();
+                GMX_THROW(InvalidInputError(formatString(
+                                "Ambiguous selections for '%s' and '%s': "
+                                "Any number of selections is acceptable for "
+                                "'%s', but you have requested subsequent "
+                                "selections to be assigned to '%s'. "
+                                "Resolution for such cases is not implemented, "
+                                "and may be impossible.",
+                                name, conflictName, name, conflictName)));
             }
             last = selections.end();
         }
@@ -206,7 +220,14 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
     }
     if (last != selections.end())
     {
-        GMX_THROW(InvalidInputError("Too many selections provided"));
+        int count = selections.end() - selections.begin();
+        int remaining = selections.end() - last;
+        int assigned = last - selections.begin();
+        GMX_THROW(InvalidInputError(formatString(
+                        "Too many selections provided: "
+                        "Expected %d selections, but %d provided. "
+                        "Last %d selections could not be assigned to any option.",
+                        assigned, count, remaining)));
     }
 }
 
@@ -298,7 +319,17 @@ void
 SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
 {
     SelectionList selections = impl_->collection_.parseFromFile(filename);
-    impl_->placeSelectionsInRequests(selections);
+    try
+    {
+        impl_->placeSelectionsInRequests(selections);
+    }
+    catch (GromacsException &ex)
+    {
+        ex.prependContext(formatString(
+                    "Error in adding selections from file '%s'",
+                    filename.c_str()));
+        throw;
+    }
 }
 
 void

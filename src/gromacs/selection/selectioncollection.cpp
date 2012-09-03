@@ -499,15 +499,25 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive)
 SelectionList
 SelectionCollection::parseFromFile(const std::string &filename)
 {
-    yyscan_t scanner;
 
-    File file(filename, "r");
-    // TODO: Exception-safe way of using the lexer.
-    _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
-                        impl_->bExternalGroupsSet_,
-                        impl_->grps_);
-    _gmx_sel_set_lex_input_file(scanner, file.handle());
-    return runParser(scanner, false, -1);
+    try
+    {
+        yyscan_t scanner;
+        File file(filename, "r");
+        // TODO: Exception-safe way of using the lexer.
+        _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
+                            impl_->bExternalGroupsSet_,
+                            impl_->grps_);
+        _gmx_sel_set_lex_input_file(scanner, file.handle());
+        return runParser(scanner, false, -1);
+    }
+    catch (GromacsException &ex)
+    {
+        ex.prependContext(formatString(
+                    "Error in parsing selections from file '%s'",
+                    filename.c_str()));
+        throw;
+    }
 }
 
 
