@@ -367,9 +367,9 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     if (SIMMASTER(cr))
     {
 #ifdef GMX_THREAD_MPI
-        const char *mpi_str="tMPI thread";
+        const char *mpi_str="per tMPI thread";
 #else
-        const char *mpi_str="MPI process";
+        const char *mpi_str="per MPI process";
 #endif
 
         if (!bOMP && bFullOmpSupport)
@@ -381,13 +381,15 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         /* for group scheme we print PME threads info only */
         if (bFullOmpSupport)
         {
-            fprintf(stderr, "Using %d OpenMP thread%s per %s\n",
-                    modth.gnth,modth.gnth > 1 ? "s" : "",mpi_str);
+            fprintf(stderr, "Using %d OpenMP thread%s %s\n",
+                    modth.gnth,modth.gnth > 1 ? "s" : "",
+                    cr->nnodes > 1 ? mpi_str : "");
         }
         if (bSepPME && modth.gnth_pme != modth.gnth)
         {
-            fprintf(stderr, "Using %d OpenMP thread%s per %s for PME\n",
-                    modth.gnth_pme,modth.gnth_pme > 1 ? "s" : "",mpi_str);
+            fprintf(stderr, "Using %d OpenMP thread%s %s for PME\n",
+                    modth.gnth_pme,modth.gnth_pme > 1 ? "s" : "",
+                    cr->nnodes > 1 ? mpi_str : "");
             
         }
     }

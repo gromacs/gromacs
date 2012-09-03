@@ -36,14 +36,6 @@
 #ifndef NBNXN_CUDA_TYPES_EXT_H
 #define NBNXN_CUDA_TYPES_EXT_H
 
-/* FIXME we should probably remove the nbnxn prefix of the file! */
-
-/* This is a heuristically determined parameter for the Fermi architecture for 
- * the minimum size of ci lists by multiplying this constant with the # of 
- * multiprocessors on the current device. 
- */
-#define GPU_MIN_CI_BALANCED_FACTOR 40
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -54,6 +46,7 @@ typedef struct nbnxn_cuda *nbnxn_cuda_ptr_t;
 /* CUDA GPU device info */
 typedef struct cuda_dev_info *cuda_dev_info_ptr_t;
 
+/* Types defined for the structs below. */
 typedef struct wallclock_gpu wallclock_gpu_t;
 typedef struct nbnxn_cuda_ktime nbnxn_cuda_ktime_t;
 
@@ -64,6 +57,7 @@ struct nbnxn_cuda_ktime
     int     c;
 }; 
 
+/* GPU timings for kernels and H2d/D2H transfers. */
 struct wallclock_gpu
 {
     nbnxn_cuda_ktime_t ktime[2][2]; /* table containing the timings of the four 

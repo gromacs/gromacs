@@ -32,6 +32,7 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#include "../../gmxlib/cuda_tools/vectype_ops.cuh"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
@@ -40,12 +41,6 @@
 #define CL_SIZE_POW2_EXPONENT       (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE                 (CL_SIZE_SQ)
-
-/*! texture ref for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
-texture<float, 1, cudaReadModeElementType> tex_nbfp;
-
-/*! texture ref for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
-texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture. 
  *  Original idea: OpenMM 
@@ -148,7 +143,9 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     float3  f = make_float3(0.0f);
 
     /* Reduce the initial CL_SIZE values for each i atom to half
-       every step by using CL_SIZE * i threads. */
+     * every step by using CL_SIZE * i threads.
+     * Can't just use i as loop variable because than nvcc refuses to unroll.
+     */
     i = CL_SIZE/2;
     # pragma unroll 5
     for (j = CL_SIZE_POW2_EXPONENT - 1; j > 0; j--)
@@ -244,6 +241,7 @@ void reduce_energy_pow2(volatile float *buf,
 
     i = WARP_SIZE/2;
 
+    /* Can't just use i as loop variable because than nvcc refuses to unroll. */
 # pragma unroll 10
     for (j = WARP_SIZE_POW2_EXPONENT - 1; j > 0; j--)
     {

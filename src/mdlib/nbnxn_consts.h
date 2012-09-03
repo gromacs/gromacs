@@ -75,6 +75,10 @@ extern "C" {
 #define NBNXN_AVOID_SING_R2_INC  1.0e-36
 #endif
 
+/* Coulomb force table size chosen such that it fits along the non-bonded
+   parameters in the texture cache. */
+#define GPU_EWALD_COULOMB_FORCE_TABLE_SIZE 1536
+
 #ifdef __cplusplus
 }
 #endif

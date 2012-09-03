@@ -68,9 +68,9 @@
 #include "copyrite.h"
 #include "mtop_util.h"
 #include "nbnxn_search.h"
+#include "nbnxn_consts.h"
 #include "statutil.h"
 #include "gmx_omp_nthreads.h"
-
 #include "gmx_detect_cpu.h"
 
 #ifdef _MSC_VER
@@ -1499,12 +1499,6 @@ static void pick_nbnxn_kernel(FILE *fp,
 static void init_verlet_ewald_f_table(interaction_const_t *ic,
                                       int verlet_kernel_type)
 {
-        /* Table size identical to the CUDA implementation in:
-         * bnxn_cuda/nbnxn_cuda_data_mgmt.cu, but we can't include
-         * that file here. TODO fix this during modularization
-         */
-#define GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE 1536
-
     if (nbnxn_kernel_pairlist_simple(verlet_kernel_type))
     {
         /* With a spacing of 0.0005 we are at the force summation accuracy
@@ -1521,7 +1515,7 @@ static void init_verlet_ewald_f_table(interaction_const_t *ic,
     }
     else
     {
-        ic->tabq_size = GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE;
+        ic->tabq_size = GPU_EWALD_COULOMB_FORCE_TABLE_SIZE;
         /* Subtract 2 iso 1 to avoid access out of range due to rounding */
         ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
         if (verlet_kernel_type == nbk8x8x8_CUDA)

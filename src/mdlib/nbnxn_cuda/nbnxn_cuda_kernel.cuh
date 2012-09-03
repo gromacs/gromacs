@@ -35,13 +35,14 @@
 
 #if __CUDA_ARCH__ >= 300
 #define REDUCE_SHUFFLE
-/* On Kepler storing i-atom types in shmem gives a few %, on Fermi not */ 
+/* On Kepler pre-loading i-atom types to shmem gives a few %,
+   but on Fermi it does not */
 #define IATYPE_SHMEM
 #endif
 
 /*
    Kernel launch parameters:
-    - #blocks   = #pair lists, blockId = neigbor_listId
+    - #blocks   = #pair lists, blockId = pair list Id
     - #threads  = CL_SIZE^2
     - shmem     = CL_SIZE^2 * sizeof(float)
 
@@ -114,39 +115,39 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
         ai, aj,
         cij4_start, cij4_end,
         typei, typej,
-        i, jm, j4;
+        i, jm, j4, wexcl_idx;
     float qi, qj_f,
           r2, inv_r, inv_r2, inv_r6,
           c6, c12,
+          int_bit,
 #ifdef CALC_ENERGIES
           E_lj, E_el,
 #endif
-          F_invr; 
-    float4  xqbuf;
-    float3  xi, xj, rv;
+          F_invr;
+    unsigned int wexcl, imask, mask_ji;
+    float4 xqbuf;
+    float3 xi, xj, rv, f_ij, fcj_buf, fshift_buf;
+    float3 fci_buf[NCL_PER_SUPERCL];    /* i force buffer */
+    nbnxn_sci_t nb_sci;
+
+    /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
 #ifdef IATYPE_SHMEM
+    /* shmem buffer for i atom-type pre-loading */
     int *atib = (int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
 #endif
-    float3  f_ij, fcj_buf, fshift_buf;
-    nbnxn_sci_t nb_sci;
-    unsigned int wexcl;
-    float int_bit;
-    int wexcl_idx;
-    unsigned imask;
 
 #ifndef REDUCE_SHUFFLE
-    /* j force reduction buffer */
+    /* shmem j force buffer */
 #ifdef IATYPE_SHMEM
     float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
 #else
     float *f_buf = (float *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
 #endif
 #endif
-    float3 fci_buf[NCL_PER_SUPERCL];           /* i force buffer */
 
-    nb_sci      = pl_sci[bidx];         /* cluster index */
-    sci         = nb_sci.sci;           /* i cluster index = current block index */
+    nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
+    sci         = nb_sci.sci;           /* super-cluster */
     cij4_start  = nb_sci.cj4_ind_start; /* first ...*/
     cij4_end    = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
@@ -223,8 +224,6 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
             {
                 if (imask & (255U << (jm * NCL_PER_SUPERCL)))
                 {
-                    unsigned int mask_ji;
-
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
                     cj      = pl_cj4[j4].cj[jm];
@@ -246,8 +245,10 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                     {
                         if (imask & mask_ji)
                         {
-                            ci      = sci * NCL_PER_SUPERCL + i;      /* i cluster index */
-                            ai      = ci * CL_SIZE + tidxi;  /* i atom index */
+                            ci_offset   = i;    /* i force buffer offset */
+
+                            ci      = sci * NCL_PER_SUPERCL + i; /* i cluster index */
+                            ai      = ci * CL_SIZE + tidxi;      /* i atom index */
 
                             /* all threads load an atom from i cluster ci into shmem! */
                             xqbuf   = xqib[i * CL_SIZE + tidxi];
@@ -260,7 +261,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef PRUNE_NBL
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
-                               cluster-pair in imask gets set to 0 */
+                               cluster-pair in imask gets set to 0. */
                             if (!__any(r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
@@ -290,47 +291,47 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                                 c12     = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej) + 1);
 
                                 /* avoid NaN for excluded pairs at r=0 */
-                                r2 += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
+                                r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
 
-                                inv_r       = rsqrt(r2);
-                                inv_r2      = inv_r * inv_r;
-                                inv_r6      = inv_r2 * inv_r2 * inv_r2;
+                                inv_r   = rsqrt(r2);
+                                inv_r2  = inv_r * inv_r;
+                                inv_r6  = inv_r2 * inv_r2 * inv_r2;
 #if defined EL_EWALD || defined EL_RF
                                 /* We could mask inv_r2, but with Ewald
                                  * masking both inv_r6 and F_invr is faster */
-                                inv_r6      *= int_bit;
+                                inv_r6  *= int_bit;
 #endif
 #ifdef EL_EWALD
                                 /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
-                                inv_r6      *= r2 < rvdw_sq;
+                                inv_r6  *= r2 < rvdw_sq;
 #endif
 
-                                F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
+                                F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 
 #ifdef CALC_ENERGIES
-                                E_lj        += int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
+                                E_lj    += int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
 #endif
 
 #ifdef EL_CUTOFF
-                                F_invr      += qi * qj_f * inv_r2 * inv_r;
+                                F_invr  += qi * qj_f * inv_r2 * inv_r;
 #endif
 #ifdef EL_RF
-                                F_invr      += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
+                                F_invr  += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
 #endif
 #ifdef EL_EWALD
-                                F_invr      += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
+                                F_invr  += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
 #endif
 
 #ifdef CALC_ENERGIES
 #ifdef EL_CUTOFF
-                                E_el        += qi * qj_f * (inv_r - c_rf);
+                                E_el    += qi * qj_f * (inv_r - c_rf);
 #endif
 #ifdef EL_RF
-                                E_el        += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
+                                E_el    += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
 #endif
 #ifdef EL_EWALD
                                 /* 1.0f - erff is faster than erfcf */
-                                E_el        += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
+                                E_el    += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
 #endif
 #endif
                                 f_ij    = rv * F_invr;
@@ -339,7 +340,6 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                                 fcj_buf -= f_ij;
 
                                 /* accumulate i forces in registers */
-                                ci_offset = i;
                                 fci_buf[ci_offset] += f_ij;
                             }
                         }
@@ -362,7 +362,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                 }
             }
 #ifdef PRUNE_NBL
-            /* Update the imask with the new one which does not contain the 
+            /* Update the imask with the new one which does not contain the
                out of range clusters anymore. */
             pl_cj4[j4].imei[widx].imask = imask;
 #endif
@@ -389,7 +389,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #endif
     }
 
-    /* add up local shift forces */
+    /* add up local shift forces into global mem */
 #ifdef REDUCE_SHUFFLE
     if (bCalcFshift && (tidxj == 0 || tidxj == 4))
 #else
@@ -403,10 +403,10 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 
 #ifdef CALC_ENERGIES
 #ifdef REDUCE_SHUFFLE
-    /* sum the energies over the warp and to global memory */
+    /* reduce the energies over warps and store into global memory */
     reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx);
 #else
-    /* flush the partial energies to shmem and sum them up */
+    /* flush the energies to shmem and reduce them */
     f_buf[              tidx] = E_lj;
     f_buf[FBUF_STRIDE + tidx] = E_el;
     reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);

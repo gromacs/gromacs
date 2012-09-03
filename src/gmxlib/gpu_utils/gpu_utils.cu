@@ -245,7 +245,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
  * \param[in] gpu_name  the name of the CUDA device
  * \returns             TRUE if the device is supported, otherwise FALSE
  */
-static gmx_bool is_gmx_openmm_supported_gpu_name(char *gpuName)
+static bool is_gmx_openmm_supported_gpu_name(char *gpuName)
 {
     size_t i;
     for (i = 0; i < NB_GPUS; i++)
@@ -263,7 +263,6 @@ static gmx_bool is_gmx_openmm_supported_gpu_name(char *gpuName)
  * \param[out] gpu_name Set to contain the name of the CUDA device, if NULL passed, no device name is set. 
  * \returns             TRUE if the device is supported, otherwise FALSE
  * 
- * FIXME retval incorrect
  */
 gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name)
 {
@@ -574,7 +573,7 @@ int do_timed_memtest(int dev_id, int time_constr)
     return res;
 }
 
-/* TODO docs */
+/* Initializez the GPU with the given index (into the gpu_info.cuda_dev array. */
 gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info)
 {
     cudaError_t stat;
@@ -605,7 +604,8 @@ gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info)
     return (stat == cudaSuccess);
 }
 
-/* TODO docs */
+/* Frees up the CUDA GPU which is in use by the active context at the time of
+   calling by explicitry destroying the context. */
 gmx_bool free_gpu(char *result_str)
 {
     cudaError_t stat;
@@ -630,12 +630,12 @@ gmx_bool free_gpu(char *result_str)
     return (stat == cudaSuccess);
 }
 
-static gmx_bool is_gmx_supported_gpu(const cudaDeviceProp *dev_prop)
+static bool is_gmx_supported_gpu(const cudaDeviceProp *dev_prop)
 {
     return (dev_prop->major >= 2);
 }
 
-gmx_bool is_compatible_gpu(int stat)
+static bool is_compatible_gpu(int stat)
 {
     return (stat == egpuCompatible);
 }
@@ -670,52 +670,8 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
     }
 }
 
-/* XXX not used */
-void detect_compatible_cuda_gpus(gmx_gpu_info_t *gpu_info)
-{
-    int             i, ndev, ncompat_dev, is_sane;
-    cudaError_t     stat;
-    cudaDeviceProp  *dev_props;
-    int             *compat_dev_ids;
-    cuda_dev_info_t *compat_devs;
 
-    assert(gpu_info);
-
-    stat = cudaGetDeviceCount(&ndev);
-    CU_RET_ERR(stat, "cudaGetDeviceCount failed");
-
-    snew(dev_props, ndev);
-    snew(compat_dev_ids, ndev);
-
-    /* go through all devices and check which is comaptible */
-    ncompat_dev = 0;
-    for (i = 0; i < ndev; i++)
-    {
-        is_sane = (do_sanity_checks(i, &dev_props[i]) == 0);
-
-        if (is_sane && is_gmx_supported_gpu(&dev_props[i]))
-        {
-            compat_dev_ids[ncompat_dev] = i;
-            ncompat_dev++;
-        }
-    }
-
-    /* build the list of compatible devices */
-    snew(compat_devs, ncompat_dev);
-    for (i = 0; i < ncompat_dev; i++)
-    {
-        compat_devs[i].id       = compat_dev_ids[i];
-        compat_devs[i].prop     = dev_props[i];
-        compat_devs[i].stat     = egpuCompatible;
-    }
-
-    sfree(dev_props);
-    sfree(compat_dev_ids);
-
-    gpu_info->ncuda_dev = ncompat_dev;
-    gpu_info->cuda_dev  = compat_devs;
-}
-
+/* Detect all NVIDIA GPUs, check for compatiblity and fill the gpu_info->cuda_dev array. */
 void detect_cuda_gpus(gmx_gpu_info_t *gpu_info)
 {
     int             i, ndev, checkres;
@@ -742,6 +698,8 @@ void detect_cuda_gpus(gmx_gpu_info_t *gpu_info)
     gpu_info->cuda_dev  = devs;
 }
 
+/* Select the GPUs compatible with GROMACS and fill gpu_info->cuda_dev_use
+   with their indices into gpu_info->cuda_dev. */
 void pick_compatible_gpus(gmx_gpu_info_t *gpu_info)
 {
     int i, ncompat;
@@ -764,11 +722,13 @@ void pick_compatible_gpus(gmx_gpu_info_t *gpu_info)
     sfree(compat);
 }
 
+/* Given an array of GPU IDs check for the existence/compatibility of GPUs
+   with the provided IDs and return the information on these. */
 gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
                                 const int *requested_devs, int count)
 {
     int i, id;
-    gmx_bool bAllOk;
+    bool bAllOk;
 
     assert(checkres);
     assert(gpu_info);
@@ -785,7 +745,7 @@ gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
     gpu_info->ncuda_dev_use = count;
     snew(gpu_info->cuda_dev_use, count);
 
-    bAllOk = TRUE;
+    bAllOk = true;
     for (i = 0; i < count; i++)
     {
         id = requested_devs[i];
@@ -802,36 +762,7 @@ gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
     return bAllOk;
 }
 
-/* XXX not used */
-gmx_bool detect_check_cuda_gpus(gmx_gpu_info_t *gpu_info,
-                                const int *requested_devs, int count)
-{
-    int             i, tmp_res;
-    cuda_dev_info_t *devinfo;
-    gmx_bool        bAllOk;
-
-    assert(gpu_info);
-    assert(requested_devs);
-
-    snew(devinfo, count);
-
-    bAllOk = TRUE;
-    for (i = 0; i < count; i++)
-    {
-        tmp_res = is_gmx_supported_gpu_id(requested_devs[i], &devinfo[i].prop);
-
-        devinfo[i].id        = requested_devs[i];
-        devinfo[i].stat      = tmp_res;
-
-        bAllOk = bAllOk && (tmp_res == egpuCompatible);
-    }
-
-    gpu_info->ncuda_dev = count;
-    gpu_info->cuda_dev  = devinfo;
-
-    return bAllOk;
-}
-
+/* Frees the cuda_dev and cuda_dev_use array fields of gpu_info. */
 void free_gpu_info(const gmx_gpu_info_t *gpu_info)
 {
     if (gpu_info == NULL)
@@ -892,7 +823,7 @@ int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int idx)
     return gpu_info->cuda_dev[gpu_info->cuda_dev_use[idx]].id;
 }
 
-
+/* Returns the ID of the active GPU in the active context. */
 int get_current_gpu_device_id(void)
 {
     int gpuid;

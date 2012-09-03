@@ -45,6 +45,7 @@
 #include "types/nb_verlet.h"
 #include "types/interaction_const.h"
 #include "types/force_flags.h"
+#include "../nbnxn_consts.h"
 
 #include "nbnxn_cuda_types.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
@@ -52,22 +53,20 @@
 #include "pmalloc_cuda.h"
 #include "gpu_utils.h"
 
-#define USE_CUDA_EVENT_BLOCKING_SYNC FALSE  /* makes the CPU thread block */
+static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 
-/* coulomb force talble size chosen such that it fits along the non-bonded
-   parameters in the texture cache */
-#define EWALD_COULOMB_FORCE_TABLE_SIZE (1536)
-
-#define MY_PI               (3.1415926535897932384626433832795)
-#define TWO_OVER_SQRT_PI    (2.0/sqrt(MY_PI))
-
-#define TIME_GPU_TRANSFERS 1
+/* This is a heuristically determined parameter for the Fermi architecture for
+ * the minimum size of ci lists by multiplying this constant with the # of
+ * multiprocessors on the current device.
+ */
+static unsigned int gpu_min_ci_balanced_factor = 40;
 
 /* Functions from nbnxn_cuda.cu */
 extern void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo);
 extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref();
 extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref();
 
+/* Fw. decl. */
 static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
 
 
@@ -82,7 +81,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
     double      tabscale;
     cudaError_t stat;
 
-    tabsize     = EWALD_COULOMB_FORCE_TABLE_SIZE;
+    tabsize     = GPU_EWALD_COULOMB_FORCE_TABLE_SIZE;
     /* Subtract 2 iso 1 to avoid access out of range due to rounding */
     tabscale    = (tabsize - 2) / sqrt(nbp->rcoulomb_sq);
 
@@ -235,10 +234,10 @@ static void init_plist(cu_plist_t *pl)
 }
 
 /*! Initilizes the timer data structure. */
-static void init_timers(cu_timers_t *t, gmx_bool bUseTwoStreams)
+static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
 {
     cudaError_t stat;
-    int eventflags = ( USE_CUDA_EVENT_BLOCKING_SYNC ? cudaEventBlockingSync: cudaEventDefault );
+    int eventflags = ( bUseCudaEventBlockingSync ? cudaEventBlockingSync: cudaEventDefault );
 
     stat = cudaEventCreateWithFlags(&(t->start_atdat), eventflags);
     CU_RET_ERR(stat, "cudaEventCreate on start_atdat failed");
@@ -855,5 +854,6 @@ void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
 int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
 {
     return cu_nb != NULL ?
-        GPU_MIN_CI_BALANCED_FACTOR*cu_nb->dev_info->prop.multiProcessorCount : 0;
+        gpu_min_ci_balanced_factor*cu_nb->dev_info->prop.multiProcessorCount : 0;
+
 }

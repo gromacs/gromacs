@@ -797,7 +797,8 @@ static void set_cpu_affinity(FILE *fplog,
         if (hw_opt->bPinHyperthreading)
         {
             /* This should ONLY be used with hyperthreading turned on */
-            n_ht_physcore = gmx_omp_get_num_procs()/2; /* FIXME has this ben tested extensively!? */
+            /* FIXME remove this when the hardware detection will have the #threads/package info */
+            n_ht_physcore = gmx_omp_get_num_procs()/2;
 
             if (SIMMASTER(cr))
             {

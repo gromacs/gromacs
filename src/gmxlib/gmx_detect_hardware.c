@@ -35,6 +35,9 @@
 #include "main.h"
 #include "md_logging.h"
 
+/* We can't have more than 10 GPU id's passed by the user as we assume the id-s
+ * to be represented by single digits. */
+static int max_gpu_ids_user = 10;
 
 /* FW decl. */
 void limit_num_gpus_used(gmx_hw_info_t *hwinfo, int count);
@@ -125,9 +128,6 @@ static void print_gpu_use_stats(FILE *fplog,
     md_print_info(cr, fplog, "%s\n\n", sbuf);
 }
 
-/* We can't have more than 10 GPU id's as we use single char numbers */
-#define MAX_GPU_IDS  10
-
 /* Parse a "plain" GPU ID string which contains a sequence of digits corresponding
  * to GPU IDs; the order will indicate the process/tMPI thread - GPU assignment. */
 static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
@@ -136,9 +136,9 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 
     *nid = strlen(idstr);
 
-    if (*nid > MAX_GPU_IDS)
+    if (*nid > max_gpu_ids_user)
     {
-        gmx_fatal(FARGS,"%d GPU id's passed in a string, but not more than %d are supported",*nid,MAX_GPU_IDS);
+        gmx_fatal(FARGS,"%d GPU id's passed in a string, but not more than %d are supported",*nid,max_gpu_ids_user);
     }
 
     for (i = 0; i < *nid; i++)
@@ -153,7 +153,7 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 
 static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
 {
-    /* TODO implement */
+    /* XXX implement cvs format to support more than 10 GPUs */
     gmx_incons("Not implemented yet");
 }
 
@@ -425,9 +425,11 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
         /* parse GPU IDs if the user passed any */
         if (env != NULL)
         {
-            int gpuid[MAX_GPU_IDS];
+            int *gpuid, *checkres;
             int nid, res;
-            int checkres[MAX_GPU_IDS];
+
+            snew(gpuid, max_gpu_ids_user);
+            snew(checkres, max_gpu_ids_user);
 
             parse_gpu_id_plain_string(env, &nid, gpuid);
 
@@ -456,6 +458,9 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
             }
 
             hwinfo->gpu_info.bUserSet = TRUE;
+
+            sfree(gpuid);
+            sfree(checkres);
         }
         else
         {

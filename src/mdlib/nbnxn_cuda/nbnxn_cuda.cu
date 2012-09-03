@@ -59,11 +59,17 @@
 #include "pmalloc_cuda.h"
 
 
-/***** The kernels come here *****/
+/*! Texture reference for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
+texture<float, 1, cudaReadModeElementType> tex_nbfp;
+
+/*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
+texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
+
+/* Convenience defines */
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
-#include "../../gmxlib/cuda_tools/vectype_ops.cuh"
+/***** The kernels come here *****/
 #include "nbnxn_cuda_kernel_utils.cuh"
 
 /* Generate all combinations of kernels through multiple inclusion:

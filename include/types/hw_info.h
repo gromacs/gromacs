@@ -58,9 +58,11 @@ typedef struct
 
 typedef struct
 {
-    gmx_bool        bCanUseGPU; /* TODO ATM this is false if -nb cpu is passed. Do we want that? */
-    gmx_gpu_info_t  gpu_info;   /* TODO ATM no GPUs are detected if -nb cpu is passed. Do we wan that? */
-    gmx_cpu_info_t  cpu_info;
+    gmx_bool        bCanUseGPU; /* True if compatible GPUs are detected during hardware detection */
+    gmx_gpu_info_t  gpu_info;   /* Information about GPUs detected in the system */
+    gmx_cpu_info_t  cpu_info;   /* information about CPU detected;
+                                   NOTE: this will only detect the CPU thread 0 of the
+                                   current process runs on. */
 } gmx_hw_info_t;
 
 #ifdef __cplusplus

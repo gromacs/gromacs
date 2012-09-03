@@ -500,7 +500,6 @@ if(GMX_GPU)
     endif()
 
     # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
-    # TODO: tested only with MSVC 2010, needs testing test with msvc+icc & cygwin
     if(MSVC)
         find_package(CUDA 4.1)
     else()
