@@ -186,10 +186,9 @@ static int read_g96_vel(char line[],FILE *fp,const char *infile,
   return natoms;
 }
 
-int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
+int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr, char *line)
 {
   t_symtab *symtab=NULL;
-  char line[STRLEN+1]; 
   gmx_bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
   int    natoms,nbp;
   double db1,db2,db3,db4,db5,db6,db7,db8,db9;
@@ -1339,6 +1338,7 @@ void get_stx_coordnum(const char *infile,int *natoms)
   FILE *in;
   int ftp,tpxver,tpxgen;
   t_trxframe fr;
+  char g96_line[STRLEN+1];
 
   ftp=fn2ftp(infile);
   range_check(ftp,0,efNR);
@@ -1354,7 +1354,7 @@ void get_stx_coordnum(const char *infile,int *natoms)
     fr.x = NULL;
     fr.v = NULL;
     fr.f = NULL;
-    *natoms=read_g96_conf(in,infile,&fr);
+    *natoms=read_g96_conf(in,infile,&fr,g96_line);
     gmx_fio_fclose(in);
     break;
   case efXYZ:
@@ -1395,6 +1395,7 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
   t_trxframe fr;
   int        i,ftp,natoms;
   real       d;
+  char       g96_line[STRLEN+1];
 
   if (atoms->nr == 0)
     fprintf(stderr,"Warning: Number of atoms in %s is 0\n",infile);
@@ -1420,7 +1421,7 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     fr.v = v;
     fr.f = NULL;
     in = gmx_fio_fopen(infile,"r");
-    read_g96_conf(in, infile, &fr);
+    read_g96_conf(in, infile, &fr, g96_line);
     gmx_fio_fclose(in);
     copy_mat(fr.box,box);
     break;
