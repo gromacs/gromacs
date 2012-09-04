@@ -245,7 +245,7 @@ static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
     CU_RET_ERR(stat, "cudaEventCreate on stop_atdat failed");
 
     /* The non-local counters/stream (second in the array) are needed only with DD. */
-    for (int i = 0; i <= bUseTwoStreams ? 1 : 0; i++)
+    for (int i = 0; i <= (bUseTwoStreams ? 1 : 0); i++)
     {
         stat = cudaEventCreateWithFlags(&(t->start_nb_k[i]), eventflags);
         CU_RET_ERR(stat, "cudaEventCreate on start_nb_k failed");
