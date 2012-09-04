@@ -61,6 +61,7 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -292,14 +293,14 @@ AbstractPlotModule::setYFormat(int width, int precision, char format)
 int
 AbstractPlotModule::flags() const
 {
-    return efAllowMulticolumn | efAllowMultipoint;
+    return efAllowMulticolumn | efAllowMultipoint | efRequireStorageForMPI;
 }
 
 
 void
 AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
 {
-    if (!impl_->filename_.empty())
+    if (!impl_->filename_.empty() && gmx::ProgramInfo::isMaster())
     {
         if (impl_->bPlain_)
         {

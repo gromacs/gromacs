@@ -35,6 +35,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "datastorage.h"
 
 #include <limits>
@@ -259,6 +263,7 @@ class AnalysisDataStorage::Impl
          * frame (see \a frames_).
          */
         int                     nextIndex_;
+        //! Flag for telling whether collectFrames() has been called
 };
 
 AnalysisDataStorage::Impl::Impl()
@@ -293,7 +298,7 @@ AnalysisDataStorage::Impl::firstStoredIndex() const
 int
 AnalysisDataStorage::Impl::computeStorageLocation(int index) const
 {
-    if (index < firstStoredIndex() || index >= nextIndex_)
+    if (index < firstStoredIndex())
     {
         return -1;
     }
@@ -574,10 +579,6 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
         }
         storedFrame = &impl_->frames_[storageIndex];
     }
-    GMX_RELEASE_ASSERT(!storedFrame->isStarted(),
-                       "startFrame() called twice for the same frame");
-    GMX_RELEASE_ASSERT(storedFrame->frame->frameIndex() == header.index(),
-                       "Inconsistent internal frame indexing");
     storedFrame->status = Impl::StoredFrame::eStarted;
     storedFrame->frame->header_ = header;
     if (impl_->isMultipoint())
@@ -639,6 +640,58 @@ AnalysisDataStorage::finishFrame(int index)
     }
 }
 
+void
+AnalysisDataStorage::collectFrames()
+{
+#ifdef GMX_LIB_MPI //otherwise nothing to do
+    using mpi::comm;
+    Impl timpl;
+    std::vector<int> recv_counts;
+    std::vector<int> recv_sel;
+    if (comm::world.isMaster())
+    {
+        timpl.data_ = impl_->data_;
+        recv_counts.resize(comm::world.size());
+    }
+    // Determine information needed by master
+    std::vector<int> selection;
+    int recv_size=0;
+    // It would be nice to have gather work with in-place. Then
+    // this for loop isn't necessary on the master
+    // (master wouldn't need to send to itself). Also we could
+    // get rid of the whole timpl.
+    for (size_t i=0; i<impl_->frames_.size(); i++)
+    {
+        GMX_ASSERT (comm::world.isMaster() || !impl_->frames_[i].isNotified(),
+                    "Tried to collect an already notified frame!");
+        if (impl_->frames_[i].isFinished())
+        {
+            recv_size++;
+            selection.push_back(i);
+        }
+    }
+    comm::world.gather(recv_size, recv_counts, 0);
+
+    if (comm::world.isMaster())
+    {
+        size_t totalFrames=0;
+        for (unsigned int i=0; i<comm::world.size(); i++)
+        {
+            totalFrames += recv_counts[i];
+        }
+        recv_sel.resize(totalFrames);
+        timpl.extendBuffer(this, std::max(totalFrames, impl_->frames_.size()));
+    }
+    comm::world.gatherv(selection, recv_sel, recv_counts, 0);
+    comm::world.gatherv(impl_->frames_, selection, timpl.frames_, recv_counts, recv_sel, 0);
+
+    if (comm::world.isMaster())
+    {
+        impl_->frames_.swap(timpl.frames_);
+    }
+    impl_->notifyNextFrames(0);
+#endif//GMX_LIB_MPI
+}
 
 void
 AnalysisDataStorage::finishFrame(const AnalysisDataStorageFrame &frame)
@@ -647,3 +700,29 @@ AnalysisDataStorage::finishFrame(const AnalysisDataStorageFrame &frame)
 }
 
 } // namespace gmx
+
+namespace mpi
+{
+    //! mpi_type_traits for the enum Status
+    template <>
+    inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame::Status>::get_type(const gmx::AnalysisDataStorage::Impl::StoredFrame::Status& status)
+    {
+        return MPI_BYTE;
+    }
+    template <>
+    inline size_t mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame::Status>::get_size(const gmx::AnalysisDataStorage::Impl::StoredFrame::Status& status)
+    {
+        return sizeof(status);
+    }
+    //! declaring Status is a named data type
+    SET_MPI_PRIMITIVE(gmx::AnalysisDataStorage::Impl::StoredFrame::Status);
+
+    template <>
+    inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame>::get_type(const gmx::AnalysisDataStorage::Impl::StoredFrame& sf)
+    {
+        mpi_type_builder builder(sf, 2);
+        builder.add(sf.frame);
+        builder.add(sf.status);
+        return builder.build();
+    }
+}//mpi

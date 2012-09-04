@@ -46,6 +46,8 @@
 #include "../utility/common.h"
 #include "../utility/gmxassert.h"
 
+#include "external/mpp/gmxmpp.h"
+
 #include "dataframe.h"
 
 namespace gmx
@@ -206,7 +208,7 @@ class AnalysisDataStorageFrame
          * constructor/destructor.
          */
         friend class AnalysisDataStorage;
-
+        friend struct mpi::mpi_type_traits<AnalysisDataStorageFrame>;
         GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisDataStorageFrame);
 };
 
@@ -388,6 +390,9 @@ class AnalysisDataStorage
          */
         void finishFrame(const AnalysisDataStorageFrame &frame);
 
+        //! Collects all stored frames onto rank 0
+        void collectFrames (void);
+
     private:
         class Impl;
 
@@ -397,8 +402,22 @@ class AnalysisDataStorage
          * Needed because the frame object needs to trigger notifications.
          */
         friend void AnalysisDataStorageFrame::finishPointSet();
+        template <class T>
+            friend struct mpi::mpi_type_traits;
 };
 
 } // namespace gmx
+
+namespace mpi
+{
+template <>
+inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataStorageFrame>::get_type(const gmx::AnalysisDataStorageFrame& adsf)
+{
+	mpi_type_builder builder(adsf, 2);
+	builder.add(adsf.header_);
+	builder.add(adsf.values_);
+	return builder.build();
+}
+}//mpi
 
 #endif

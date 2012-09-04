@@ -52,6 +52,8 @@
 
 #include "gromacs/legacyheaders/futil.h"
 #include "gromacs/legacyheaders/thread_mpi/mutex.h"
+#include "gromacs/legacyheaders/network.h"
+#include "external/mpp/gmxmpp.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/path.h"
@@ -72,6 +74,9 @@ boost::scoped_ptr<ProgramInfo> g_programInfo;
  * ProgramInfo::Impl
  */
 
+// TODO: This class currently does two jobs. It stores program information
+// and also initializes MPI. The latter should probably be in some separate
+// init functionality.
 class ProgramInfo::Impl
 {
     public:
@@ -159,32 +164,38 @@ const ProgramInfo &ProgramInfo::getInstance()
 }
 
 // static
-const ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
+const ProgramInfo &ProgramInfo::init(int *argc, char **argv[])
 {
     return init(NULL, argc, argv);
 }
 
 // static
 const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
-                                     int argc, const char *const argv[])
+                                     int *argc, char **argv[])
 {
+    #ifdef GMX_LIB_MPI
+    if (argc != NULL && !gmx_mpi_initialized())
+    {
+        mpi::init (argc, argv);
+    }
+    #endif
     try
     {
         tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
         if (g_programInfo.get() == NULL)
         {
-            // TODO: Remove this hack with negative argc once there is no need for
+            // TODO: Remove this hack with NULL argc once there is no need for
             // set_program_name().
-            if (argc < 0)
+            if (argc == NULL )
             {
                 if (g_partialProgramInfo.get() == NULL)
                 {
                     g_partialProgramInfo.reset(
-                            new ProgramInfo(realBinaryName, -argc, argv));
+                            new ProgramInfo(realBinaryName, 1, *argv));
                 }
                 return *g_partialProgramInfo;
             }
-            g_programInfo.reset(new ProgramInfo(realBinaryName, argc, argv));
+            g_programInfo.reset(new ProgramInfo(realBinaryName, *argc, *argv));
         }
         return *g_programInfo;
     }
@@ -193,6 +204,24 @@ const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
         printFatalErrorMessage(stderr, ex);
         std::exit(1);
     }
+}
+
+// static
+void ProgramInfo::finalize()
+{
+#ifdef GMX_LIB_MPI
+    mpi::finalize();
+#endif
+}
+
+// static
+bool ProgramInfo::isMaster()
+{
+#ifdef GMX_LIB_MPI
+	return mpi::comm::world.isMaster();
+#else
+	return true;
+#endif
 }
 
 ProgramInfo::ProgramInfo()
