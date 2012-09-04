@@ -52,7 +52,7 @@ static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes,
 {
     cudaError_t stat;
     
-    if (h_dest == 0 || d_src == 0 || bytes <= 0)
+    if (h_dest == NULL || d_src == NULL || bytes == 0)
         return -1;
 
     if (bAsync)
@@ -85,7 +85,7 @@ int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s 
 
 int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
 { 
-    if (h_dest == 0 || d_src == 0 || bytes <= 0)
+    if (h_dest == NULL || d_src == NULL || bytes == 0)
         return -1;
 
     smalloc(*h_dest, bytes);
@@ -102,7 +102,7 @@ static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes,
 {
     cudaError_t stat;
 
-    if (d_dest == 0 || h_src == 0 || bytes <= 0)
+    if (d_dest == NULL || h_src == NULL || bytes == 0)
         return -1;
 
     if (bAsync)
@@ -136,7 +136,7 @@ int cu_copy_H2D_alloc(void ** d_dest, void * h_src, size_t bytes)
 {
     cudaError_t stat;
 
-    if (d_dest == 0 || h_src == 0 || bytes <= 0)
+    if (d_dest == NULL || h_src == NULL || bytes == 0)
         return -1;
 
     stat = cudaMalloc(d_dest, bytes);
