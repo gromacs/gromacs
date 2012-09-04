@@ -121,7 +121,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
     unsigned int imask_prune;
 #endif
     float4 xqbuf;
-    float3 xi, xj, rv, f_ij, fcj_buf, fshift_buf, shift;
+    float3 xi, xj, rv, f_ij, fcj_buf, fshift_buf;
     float3 fci_buf[NCL_PER_SUPERCL];    /* i force buffer */
     nbnxn_sci_t nb_sci;
 
@@ -214,7 +214,6 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
                     qj_f    = nbparam.epsfac * xqbuf.w;
                     typej   = atom_types[aj];
-                    xj      -= shift;
 
                     fcj_buf = make_float3(0.0f);
 
