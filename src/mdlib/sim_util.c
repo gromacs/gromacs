@@ -158,13 +158,10 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
     fprintf(out,"step %s",gmx_step_str(step,buf));
     if ((step >= ir->nstlist))
     {
-        if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0))
-        {
-            /* We have done a full cycle let's update time_per_step */
-            runtime->last = gmx_gettime();
-            dt = difftime(runtime->last,runtime->real);
-            runtime->time_per_step = dt/(step - ir->init_step + 1);
-        }
+        runtime->last = gmx_gettime();
+        dt = difftime(runtime->last,runtime->real);
+        runtime->time_per_step = dt/(step - ir->init_step + 1);
+
         dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
 
         if (ir->nsteps >= 0)
