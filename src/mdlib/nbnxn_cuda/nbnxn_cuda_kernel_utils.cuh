@@ -37,10 +37,9 @@
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
 #define WARP_SIZE_POW2_EXPONENT     (5)
-#define CLUSTER_SIZE_POW2_EXPONENT  (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
-#define CLUSTER_SIZE_2              (CLUSTER_SIZE * CLUSTER_SIZE)
-#define STRIDE_DIM                  (CLUSTER_SIZE_2)
-#define STRIDE_SI                   (3*STRIDE_DIM)
+#define CL_SIZE_POW2_EXPONENT       (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
+#define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
+#define FBUF_STRIDE                 (CL_SIZE_SQ)
 
 /*! texture ref for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
 texture<float, 1, cudaReadModeElementType> tex_nbfp;
@@ -73,11 +72,11 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
     if (tidxi == 0)
     {
         float3 f = make_float3(0.0f);
-        for (int j = tidxj * CLUSTER_SIZE; j < (tidxj + 1) * CLUSTER_SIZE; j++)
+        for (int j = tidxj * CL_SIZE; j < (tidxj + 1) * CL_SIZE; j++)
         {
-            f.x += f_buf[                 j];
-            f.y += f_buf[    STRIDE_DIM + j];
-            f.z += f_buf[2 * STRIDE_DIM + j];
+            f.x += f_buf[                  j];
+            f.y += f_buf[    FBUF_STRIDE + j];
+            f.z += f_buf[2 * FBUF_STRIDE + j];
         }
 
         atomicAdd(&fout[aidx], f);
@@ -121,11 +120,11 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
     if (tidxj == 0)
     {
         float3 f = make_float3(0.0f);
-        for (int j = tidxi; j < CLUSTER_SIZE_2; j += CLUSTER_SIZE)
+        for (int j = tidxi; j < CL_SIZE_SQ; j += CL_SIZE)
         {
-            f.x += f_buf[                 j];
-            f.y += f_buf[    STRIDE_DIM + j];
-            f.z += f_buf[2 * STRIDE_DIM + j];
+            f.x += f_buf[                  j];
+            f.y += f_buf[    FBUF_STRIDE + j];
+            f.z += f_buf[2 * FBUF_STRIDE + j];
         }
 
         atomicAdd(&fout[aidx], f);
@@ -148,18 +147,18 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     int     i, j; 
     float3  f = make_float3(0.0f);
 
-    /* Reduce the initial CLUSTER_SIZE values for each i atom to half
-       every step by using CLUSTER_SIZE * i threads. */
-    i = CLUSTER_SIZE/2;
+    /* Reduce the initial CL_SIZE values for each i atom to half
+       every step by using CL_SIZE * i threads. */
+    i = CL_SIZE/2;
     # pragma unroll 5
-    for (j = CLUSTER_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = CL_SIZE_POW2_EXPONENT - 1; j > 0; j--)
     {
         if (tidxj < i)
         {
 
-            f_buf[                 tidxj * CLUSTER_SIZE + tidxi] += f_buf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
-            f_buf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += f_buf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
-            f_buf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += f_buf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
+            f_buf[                  tidxj * CL_SIZE + tidxi] += f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
+            f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+            f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
         }
         i >>= 1;
     }
@@ -167,9 +166,9 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     /* i == 1, last reduction step, writing to global mem */
     if (tidxj == 0)
     {
-        f.x = f_buf[                 tidxj * CLUSTER_SIZE + tidxi] + f_buf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
-        f.y = f_buf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
-        f.z = f_buf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
+        f.x = f_buf[                  tidxj * CL_SIZE + tidxi] + f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
+        f.y = f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] + f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+        f.z = f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] + f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
 
         atomicAdd(&fout[aidx], f);
 
@@ -188,7 +187,7 @@ void reduce_force_i(float *f_buf, float3 *f,
                     float3 *fshift_buf, bool bCalcFshift,
                     int tidxi, int tidxj, int ai)
 {
-    if ((CLUSTER_SIZE & (CLUSTER_SIZE - 1)))
+    if ((CL_SIZE & (CL_SIZE - 1)))
     {
         reduce_force_i_generic(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
     }
@@ -212,9 +211,9 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
 #pragma unroll 2
     for (j = 0; j < 2; j++)
     {
-        fin.x += __shfl_down(fin.x,  CLUSTER_SIZE<<j);
-        fin.y += __shfl_down(fin.y,  CLUSTER_SIZE<<j);
-        fin.z += __shfl_down(fin.z,  CLUSTER_SIZE<<j);
+        fin.x += __shfl_down(fin.x,  CL_SIZE<<j);
+        fin.y += __shfl_down(fin.y,  CL_SIZE<<j);
+        fin.z += __shfl_down(fin.z,  CL_SIZE<<j);
     }
 
     /* The first thread in the warp writes the reduced force */
@@ -250,8 +249,8 @@ void reduce_energy_pow2(volatile float *buf,
     {
         if (tidx < i)
         {
-            buf[             tidx] += buf[             tidx + i];
-            buf[STRIDE_DIM + tidx] += buf[STRIDE_DIM + tidx + i];
+            buf[              tidx] += buf[              tidx + i];
+            buf[FBUF_STRIDE + tidx] += buf[FBUF_STRIDE + tidx + i];
         }
         i >>= 1;
     }
@@ -259,8 +258,8 @@ void reduce_energy_pow2(volatile float *buf,
     /* last reduction step, writing to global mem */
     if (tidx == 0)
     {
-        e1 = buf[             tidx] + buf[             tidx + i];
-        e2 = buf[STRIDE_DIM + tidx] + buf[STRIDE_DIM + tidx + i];
+        e1 = buf[              tidx] + buf[              tidx + i];
+        e2 = buf[FBUF_STRIDE + tidx] + buf[FBUF_STRIDE + tidx + i];
 
         atomicAdd(e_lj, e1);
         atomicAdd(e_el, e2); 

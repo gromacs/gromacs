@@ -42,8 +42,8 @@
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = neigbor_listId
-    - #threads  = CLUSTER_SIZE^2
-    - shmem     = CLUSTER_SIZE^2 * sizeof(float)
+    - #threads  = CL_SIZE^2
+    - shmem     = CL_SIZE^2 * sizeof(float)
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
@@ -126,7 +126,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     float3  xi, xj, rv;
     extern __shared__  float4 xqib[];
 #ifdef IATYPE_SHMEM
-    int *atib = (int *)(xqib + NSUBCELL * CLUSTER_SIZE);
+    int *atib = (int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
 #endif
     float3  f_ij, fcj_buf, fshift_buf;
     nbnxn_sci_t nb_sci;
@@ -138,12 +138,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifndef REDUCE_SHUFFLE
     /* j force reduction buffer */
 #ifdef IATYPE_SHMEM
-    float *f_buf = (float *)(atib + NSUBCELL * CLUSTER_SIZE);
+    float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
 #else
-    float *f_buf = (float *)(xqib + NSUBCELL * CLUSTER_SIZE);
+    float *f_buf = (float *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
 #endif
 #endif
-    float3 fci_buf[NSUBCELL];           /* i force buffer */
+    float3 fci_buf[NCL_PER_SUPERCL];           /* i force buffer */
 
     nb_sci      = pl_sci[bidx];         /* cluster index */
     sci         = nb_sci.sci;           /* i cluster index = current block index */
@@ -153,17 +153,17 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     /* Store the i-atom x and q in shared memory */
     /* Note: the thread indexing here is inverted with respect to the
        inner-loop as this results in slighlty higher performance */
-    ci = sci * NSUBCELL + tidxi;
-    ai = ci * CLUSTER_SIZE + tidxj;
-    xqib[tidxi * CLUSTER_SIZE + tidxj] = xq[ai] + shift_vec[nb_sci.shift];
+    ci = sci * NCL_PER_SUPERCL + tidxi;
+    ai = ci * CL_SIZE + tidxj;
+    xqib[tidxi * CL_SIZE + tidxj] = xq[ai] + shift_vec[nb_sci.shift];
 #ifdef IATYPE_SHMEM
-    ci = sci * NSUBCELL + tidxj;
-    ai = ci * CLUSTER_SIZE + tidxi;
-    atib[tidxj * CLUSTER_SIZE + tidxi] = atom_types[ai];
+    ci = sci * NCL_PER_SUPERCL + tidxj;
+    ai = ci * CL_SIZE + tidxi;
+    atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
 #endif
     __syncthreads();
 
-    for(ci_offset = 0; ci_offset < NSUBCELL; ci_offset++)
+    for(ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
         fci_buf[ci_offset] = make_float3(0.0f);
     }
@@ -173,16 +173,16 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     E_el = 0.0f;
 
 #if defined EL_EWALD || defined EL_RF
-    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*NSUBCELL)
+    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*NCL_PER_SUPERCL)
     {
         /* we have the diagonal: add the charge self interaction energy term */
-        for (i = 0; i < NSUBCELL; i++)
+        for (i = 0; i < NCL_PER_SUPERCL; i++)
         {
-            qi    = xqib[i * CLUSTER_SIZE + tidxi].w;
+            qi    = xqib[i * CL_SIZE + tidxi].w;
             E_el += qi*qi;
         }
         /* divide the self term equally over the j-threads */
-        E_el /= CLUSTER_SIZE;
+        E_el /= CL_SIZE;
 #ifdef EL_RF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
@@ -221,14 +221,14 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #endif
             for (jm = 0; jm < 4; jm++)
             {
-                if (imask & (255U << (jm * NSUBCELL)))
+                if (imask & (255U << (jm * NCL_PER_SUPERCL)))
                 {
                     unsigned int mask_ji;
 
-                    mask_ji = (1U << (jm * NSUBCELL));
+                    mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
                     cj      = pl_cj4[j4].cj[jm];
-                    aj      = cj * CLUSTER_SIZE + tidxj;
+                    aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
                     xqbuf   = xq[aj];
@@ -242,15 +242,15 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && (defined EL_EWALD || defined EL_RF))
 #pragma unroll 8
 #endif
-                    for(i = 0; i < NSUBCELL; i++)
+                    for(i = 0; i < NCL_PER_SUPERCL; i++)
                     {
                         if (imask & mask_ji)
                         {
-                            ci      = sci * NSUBCELL + i;      /* i cluster index */
-                            ai      = ci * CLUSTER_SIZE + tidxi;  /* i atom index */
+                            ci      = sci * NCL_PER_SUPERCL + i;      /* i cluster index */
+                            ai      = ci * CL_SIZE + tidxi;  /* i atom index */
 
                             /* all threads load an atom from i cluster ci into shmem! */
-                            xqbuf   = xqib[i * CLUSTER_SIZE + tidxi];
+                            xqbuf   = xqib[i * CL_SIZE + tidxi];
                             xi      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
 
                             /* distance between i and j atoms */
@@ -280,7 +280,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                                 /* load the rest of the i-atom parameters */
                                 qi      = xqbuf.w;
 #ifdef IATYPE_SHMEM
-                                typei   = atib[i * CLUSTER_SIZE + tidxi];
+                                typei   = atib[i * CL_SIZE + tidxi];
 #else
                                 typei   = atom_types[ai];
 #endif
@@ -353,9 +353,9 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                     reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj);
 #else
                     /* store j forces in shmem */
-                    f_buf[                 tidx] = fcj_buf.x;
-                    f_buf[    STRIDE_DIM + tidx] = fcj_buf.y;
-                    f_buf[2 * STRIDE_DIM + tidx] = fcj_buf.z;
+                    f_buf[                  tidx] = fcj_buf.x;
+                    f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
+                    f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
 
                     reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
 #endif
@@ -370,17 +370,17 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     }
 
     /* reduce i forces */
-    for(ci_offset = 0; ci_offset < NSUBCELL; ci_offset++)
+    for(ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
-        ai  = (sci * NSUBCELL + ci_offset) * CLUSTER_SIZE + tidxi;
+        ai  = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
 #ifdef REDUCE_SHUFFLE
         reduce_force_i_warp_shfl(fci_buf[ci_offset], f,
                                  &fshift_buf, bCalcFshift,
                                  tidxj, ai);
 #else
-        f_buf[                 tidx] = fci_buf[ci_offset].x;
-        f_buf[    STRIDE_DIM + tidx] = fci_buf[ci_offset].y;
-        f_buf[2 * STRIDE_DIM + tidx] = fci_buf[ci_offset].z;
+        f_buf[                  tidx] = fci_buf[ci_offset].x;
+        f_buf[    FBUF_STRIDE + tidx] = fci_buf[ci_offset].y;
+        f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
         __syncthreads();
         reduce_force_i(f_buf, f,
                        &fshift_buf, bCalcFshift,
@@ -407,8 +407,8 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx);
 #else
     /* flush the partial energies to shmem and sum them up */
-    f_buf[             tidx] = E_lj;
-    f_buf[STRIDE_DIM + tidx] = E_el;
+    f_buf[              tidx] = E_lj;
+    f_buf[FBUF_STRIDE + tidx] = E_el;
     reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
 #endif
 #endif

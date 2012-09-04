@@ -60,8 +60,8 @@
 
 
 /***** The kernels come here *****/
-
-#define CLUSTER_SIZE            (NBNXN_GPU_CLUSTER_SIZE)
+#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
 #include "../../gmxlib/cuda_tools/vectype_ops.cuh"
 #include "nbnxn_cuda_kernel_utils.cuh"
@@ -182,22 +182,22 @@ static inline int calc_shmem_required(int kver)
     if (NBNXN_KVER_LEGACY(kver))
     {
         /* i-atom x+q in shared memory */
-        shmem =  NSUBCELL * CLUSTER_SIZE * sizeof(float4);
+        shmem =  NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
         /* force reduction buffers in shared memory */
-        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+        shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
     }
     else
     {
         /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
         /* i-atom x+q in shared memory */
-        shmem  = NSUBCELL * CLUSTER_SIZE * sizeof(float4);
+        shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
 #ifdef IATYPE_SHMEM
         /* i-atom types in shared memory */
-        shmem += NSUBCELL * CLUSTER_SIZE * sizeof(int);
+        shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
 #endif
 #if __CUDA_ARCH__ < 300
         /* force reduction buffers in shared memory */
-        shmem += CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
+        shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
 #endif
     }
 
@@ -305,7 +305,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
 
     /* kernel launch config */
     nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
-    dim_block = dim3(CLUSTER_SIZE, CLUSTER_SIZE, 1);
+    dim_block = dim3(CL_SIZE, CL_SIZE, 1);
     dim_grid  = dim3(nblock, 1, 1);
     shmem     = calc_shmem_required(cu_nb->kernel_ver);
 
@@ -314,8 +314,8 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
                 "Grid: %dx%d\n\t#Cells/Subcells: %d/%d (%d)\n",
                 dim_block.x, dim_block.y, dim_block.z,
-                dim_grid.x, dim_grid.y, plist->nsci*NSUBCELL,
-                NSUBCELL, plist->na_c);
+                dim_grid.x, dim_grid.y, plist->nsci*NCL_PER_SUPERCL,
+                NCL_PER_SUPERCL, plist->na_c);
     }
 
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist, bCalcFshift);

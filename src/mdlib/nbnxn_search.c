@@ -59,7 +59,7 @@
 #include "gmx_x86_simd_double.h"
 #endif
 
-#if defined NBNXN_SEARCH_SSE_SINGLE && NSUBCELL == 8
+#if defined NBNXN_SEARCH_SSE_SINGLE && GPU_NSUBCELL == 8
 #define NBNXN_8BB_SSE
 #endif
 
@@ -181,7 +181,7 @@
 /* This define is a lazy way to avoid interdependence of the grid
  * and searching data structures.
  */
-#define NBNXN_NA_SC_MAX (NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
+#define NBNXN_NA_SC_MAX (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 #ifdef NBNXN_SEARCH_SSE
 #define GMX_MM128_HERE
@@ -649,8 +649,8 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         {
             /* Approximately cubic sub cells */
             tlen   = pow(grid->na_c/atom_density,1.0/3.0);
-            tlen_x = tlen*NSUBCELL_X;
-            tlen_y = tlen*NSUBCELL_Y;
+            tlen_x = tlen*GPU_NSUBCELL_X;
+            tlen_y = tlen*GPU_NSUBCELL_Y;
         }
         /* We round ncx and ncy down, because we get less cell pairs
          * in the nbsist when the fixed cell dimensions (x,y) are
@@ -699,9 +699,9 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         srenew(grid->nsubc,grid->nc_nalloc);
         srenew(grid->bbcz,grid->nc_nalloc*NNBSBB_D);
 #ifdef NBNXN_8BB_SSE
-        bb_nalloc = grid->nc_nalloc*NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX;
+        bb_nalloc = grid->nc_nalloc*GPU_NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX;
 #else
-        bb_nalloc = grid->nc_nalloc*NSUBCELL*NNBSBB_B;
+        bb_nalloc = grid->nc_nalloc*GPU_NSUBCELL*NNBSBB_B;
 #endif
         sfree_aligned(grid->bb);
         /* This snew also zeros the contents, this avoid possible
@@ -1131,7 +1131,7 @@ static void print_bbsizes_supersub(FILE *fp,
         {
             int cs_w,i,d;
 
-            cs_w = (c*NSUBCELL + s)/SSE_F_WIDTH;
+            cs_w = (c*GPU_NSUBCELL + s)/SSE_F_WIDTH;
             for(i=0; i<SSE_F_WIDTH; i++)
             {
                 for(d=0; d<DIM; d++)
@@ -1147,7 +1147,7 @@ static void print_bbsizes_supersub(FILE *fp,
         {
             int cs,d;
 
-            cs = c*NSUBCELL + s;
+            cs = c*GPU_NSUBCELL + s;
             for(d=0; d<DIM; d++)
             {
                 ba[d] +=
@@ -1161,13 +1161,13 @@ static void print_bbsizes_supersub(FILE *fp,
     dsvmul(1.0/ns,ba,ba);
 
     fprintf(fp,"ns bb: %4.2f %4.2f %4.2f  %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            nbs->box[XX][XX]/(grid->ncx*NSUBCELL_X),
-            nbs->box[YY][YY]/(grid->ncy*NSUBCELL_Y),
-            nbs->box[ZZ][ZZ]*grid->ncx*grid->ncy/(grid->nc*NSUBCELL_Z),
+            nbs->box[XX][XX]/(grid->ncx*GPU_NSUBCELL_X),
+            nbs->box[YY][YY]/(grid->ncy*GPU_NSUBCELL_Y),
+            nbs->box[ZZ][ZZ]*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z),
             ba[XX],ba[YY],ba[ZZ],
-            ba[XX]*grid->ncx*NSUBCELL_X/nbs->box[XX][XX],
-            ba[YY]*grid->ncy*NSUBCELL_Y/nbs->box[YY][YY],
-            ba[ZZ]*grid->nc*NSUBCELL_Z/(grid->ncx*grid->ncy*nbs->box[ZZ][ZZ]));
+            ba[XX]*grid->ncx*GPU_NSUBCELL_X/nbs->box[XX][XX],
+            ba[YY]*grid->ncy*GPU_NSUBCELL_Y/nbs->box[YY][YY],
+            ba[ZZ]*grid->nc*GPU_NSUBCELL_Z/(grid->ncx*grid->ncy*nbs->box[ZZ][ZZ]));
 }
 
 static void copy_int_to_nbat_int(const int *a,int na,int na_round,
@@ -1377,8 +1377,8 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
                 int *flags)
 {
     int subc,s,a,n1,n2,a_lj_max,i,j;
-    int sort1[NBNXN_NA_SC_MAX/NSUBCELL];
-    int sort2[NBNXN_NA_SC_MAX/NSUBCELL];
+    int sort1[NBNXN_NA_SC_MAX/GPU_NSUBCELL];
+    int sort2[NBNXN_NA_SC_MAX/GPU_NSUBCELL];
     gmx_bool haveQ;
 
     *flags = 0;
@@ -1662,8 +1662,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     }
 
     subdiv_x = grid->na_c;
-    subdiv_y = NSUBCELL_X*subdiv_x;
-    subdiv_z = NSUBCELL_Y*subdiv_y;
+    subdiv_y = GPU_NSUBCELL_X*subdiv_x;
+    subdiv_z = GPU_NSUBCELL_Y*subdiv_y;
 
     /* Sort the atoms within each x,y column in 3 dimensions */
     for(cxy=cxy_start; cxy<cxy_end; cxy++)
@@ -1683,29 +1683,29 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                    ncz*grid->na_sc*SGSF,sort_work);
 
         /* This loop goes over the supercells and subcells along z at once */
-        for(sub_z=0; sub_z<ncz*NSUBCELL_Z; sub_z++)
+        for(sub_z=0; sub_z<ncz*GPU_NSUBCELL_Z; sub_z++)
         {
             ash_z = ash + sub_z*subdiv_z;
             na_z  = min(subdiv_z,na-(ash_z-ash));
 
             /* We have already sorted on z */
 
-            if (sub_z % NSUBCELL_Z == 0)
+            if (sub_z % GPU_NSUBCELL_Z == 0)
             {
-                cz = sub_z/NSUBCELL_Z;
+                cz = sub_z/GPU_NSUBCELL_Z;
                 c  = grid->cxy_ind[cxy] + cz ;
 
                 /* The number of atoms in this supercell */
                 na_c = min(grid->na_sc,na-(ash_z-ash));
 
-                grid->nsubc[c] = min(NSUBCELL,(na_c+grid->na_c-1)/grid->na_c);
+                grid->nsubc[c] = min(GPU_NSUBCELL,(na_c+grid->na_c-1)/grid->na_c);
 
                 /* Store the z-boundaries of the super cell */
                 grid->bbcz[c*NNBSBB_D  ] = x[nbs->a[ash_z]][ZZ];
                 grid->bbcz[c*NNBSBB_D+1] = x[nbs->a[ash_z+na_c-1]][ZZ];
             }
 
-#if NSUBCELL_Y > 1
+#if GPU_NSUBCELL_Y > 1
             /* Sort the atoms along y */
             sort_atoms(YY,(sub_z & 1),
                        nbs->a+ash_z,na_z,x,
@@ -1713,28 +1713,28 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                        subdiv_y*SGSF,sort_work);
 #endif
 
-            for(sub_y=0; sub_y<NSUBCELL_Y; sub_y++)
+            for(sub_y=0; sub_y<GPU_NSUBCELL_Y; sub_y++)
             {
                 ash_y = ash_z + sub_y*subdiv_y;
                 na_y  = min(subdiv_y,na-(ash_y-ash));
 
-#if NSUBCELL_X > 1
+#if GPU_NSUBCELL_X > 1
                 /* Sort the atoms along x */
-                sort_atoms(XX,((cz*NSUBCELL_Y + sub_y) & 1),
+                sort_atoms(XX,((cz*GPU_NSUBCELL_Y + sub_y) & 1),
                            nbs->a+ash_y,na_y,x,
                            grid->c0[XX]+cx*grid->sx,grid->inv_sx,
                            subdiv_x*SGSF,sort_work);
 #endif
 
-                for(sub_x=0; sub_x<NSUBCELL_X; sub_x++)
+                for(sub_x=0; sub_x<GPU_NSUBCELL_X; sub_x++)
                 {
                     ash_x = ash_y + sub_x*subdiv_x;
                     na_x  = min(subdiv_x,na-(ash_x-ash));
 
                     fill_cell(nbs,grid,nbat,
                               ash_x,ash_x+na_x,atinfo,x,
-                              grid->na_c*(cx*NSUBCELL_X+sub_x) + (dd_zone >> 2),
-                              grid->na_c*(cy*NSUBCELL_Y+sub_y) + (dd_zone & 3),
+                              grid->na_c*(cx*GPU_NSUBCELL_X+sub_x) + (dd_zone >> 2),
+                              grid->na_c*(cy*GPU_NSUBCELL_Y+sub_y) + (dd_zone & 3),
                               grid->na_c*sub_z,
                               bb_work_align);
                 }
@@ -2097,7 +2097,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     grid->na_c      = kernel_to_ci_size(nb_kernel_type);
     grid->na_cj     = kernel_to_cj_size(nb_kernel_type);
-    grid->na_sc     = (grid->bSimple ? 1 : NSUBCELL)*grid->na_c;
+    grid->na_sc     = (grid->bSimple ? 1 : GPU_NSUBCELL)*grid->na_c;
     grid->na_c_2log = get_2log(grid->na_c);
 
     nbat->na_c = grid->na_c;
@@ -2747,11 +2747,11 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
 #define NWARP       2
 #define WARP_SIZE  32
 
-    /* We can have maximally nsupercell*NSUBCELL sj lists */
+    /* We can have maximally nsupercell*GPU_NSUBCELL sj lists */
     /* We can store 4 j-subcell - i-supercell pairs in one struct.
      * since we round down, we need one extra entry.
      */
-    ncj4_max = ((nbl->work->cj_ind + nsupercell*NSUBCELL + 4-1) >> 2);
+    ncj4_max = ((nbl->work->cj_ind + nsupercell*GPU_NSUBCELL + 4-1) >> 2);
 
     if (ncj4_max > nbl->cj4_nalloc)
     {
@@ -2855,9 +2855,9 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 
     snew(nbl->work,1);
 #ifdef NBNXN_BBXXXX
-    snew_aligned(nbl->work->bb_ci,NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX,16);
+    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX,16);
 #else
-    snew_aligned(nbl->work->bb_ci,NSUBCELL*NNBSBB_B,16);
+    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL*NNBSBB_B,16);
 #endif
     snew_aligned(nbl->work->x_ci,NBNXN_NA_SC_MAX*DIM,16);
 #ifdef NBNXN_SEARCH_SSE
@@ -2866,7 +2866,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     snew_aligned(nbl->work->x_ci_x86_simd256,1,32);
 #endif
 #endif
-    snew_aligned(nbl->work->d2,NSUBCELL,16);
+    snew_aligned(nbl->work->d2,GPU_NSUBCELL,16);
 }
 
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
@@ -2960,7 +2960,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
 {
     const nbnxn_grid_t *grid;
     int i,j4,j,si,b;
-    int c[NSUBCELL+1];
+    int c[GPU_NSUBCELL+1];
 
     /* This code only produces correct statistics with domain decomposition */
     grid = &nbs->grid[0];
@@ -2977,7 +2977,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
     fprintf(fp,"nbl average i sub cell list length %.1f\n",
             nbl->nci_tot/(0.25*nbl->ncj4));
 
-    for(si=0; si<=NSUBCELL; si++)
+    for(si=0; si<=GPU_NSUBCELL; si++)
     {
         c[si] = 0;
     }
@@ -2988,9 +2988,9 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
             for(j=0; j<4; j++)
             {
                 b = 0;
-                for(si=0; si<NSUBCELL; si++)
+                for(si=0; si<GPU_NSUBCELL; si++)
                 {
-                    if (nbl->cj4[j4].imei[0].imask & (1U << (j*NSUBCELL + si)))
+                    if (nbl->cj4[j4].imei[0].imask & (1U << (j*GPU_NSUBCELL + si)))
                     {
                         b++;
                     }
@@ -2999,7 +2999,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
             }
         }
     }
-    for(b=0; b<=NSUBCELL; b++)
+    for(b=0; b<=GPU_NSUBCELL; b++)
     {
         fprintf(fp,"nbl j-list #i-subcell %d %7d %4.1f\n",
                 b,c[b],100.0*c[b]/(double)(nbl->ncj4*NBNXN_GPU_JGROUP_SIZE));
@@ -3023,7 +3023,7 @@ static void print_supersub_nsp(const char *fn,
         nsp = 0;
         for(j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
         {
-            for(p=0; p<NBNXN_GPU_JGROUP_SIZE*NSUBCELL; p++)
+            for(p=0; p<NBNXN_GPU_JGROUP_SIZE*GPU_NSUBCELL; p++)
             {
                 nsp += (nbl->cj4[j4].imei[0].imask >> p) & 1;
             }
@@ -3103,7 +3103,7 @@ static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
         for(ei=ej; ei<nbl->na_ci; ei++)
         {
             excl[w]->pair[(ej&(4-1))*nbl->na_ci+ei] &=
-                ~(1U << (sj_offset*NSUBCELL+si));
+                ~(1U << (sj_offset*GPU_NSUBCELL+si));
         }
     }
 }
@@ -3321,9 +3321,9 @@ static void make_cluster_list(const nbnxn_search_t nbs,
         cj_offset = nbl->work->cj_ind - cj4_ind*NBNXN_GPU_JGROUP_SIZE;
         cj4       = &nbl->cj4[cj4_ind];
 
-        cj = scj*NSUBCELL + cjo;
+        cj = scj*GPU_NSUBCELL + cjo;
 
-        cj_gl = gridj->cell0*NSUBCELL + cj;
+        cj_gl = gridj->cell0*GPU_NSUBCELL + cj;
 
         /* Initialize this j-subcell i-subcell list */
         cj4->cj[cj_offset] = cj_gl;
@@ -3372,7 +3372,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
 #endif
             {
                 /* Flag this i-subcell to be taken into account */
-                imask |= (1U << (cj_offset*NSUBCELL+ci));
+                imask |= (1U << (cj_offset*GPU_NSUBCELL+ci));
 
 #ifdef PRUNE_LIST_CPU_ONE
                 ci_last = ci;
@@ -3390,7 +3390,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
         {
             if (!nbs->subc_dc(na_c,ci_last,x_ci,cj_gl,stride,x,rl2))
             {
-                imask &= ~(1U << (cj_offset*NSUBCELL+ci_last));
+                imask &= ~(1U << (cj_offset*GPU_NSUBCELL+ci_last));
                 npair--;
             }
         }
@@ -3617,7 +3617,7 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
      */
     ndirect = 0;
     while (cj_ind_first + ndirect <= cj_ind_last &&
-           nbl_cj(nbl,cj_ind_first+ndirect) == sci*NSUBCELL + ndirect)
+           nbl_cj(nbl,cj_ind_first+ndirect) == sci*GPU_NSUBCELL + ndirect)
     {
         ndirect++;
     }
@@ -3697,14 +3697,14 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
 /* Macro for converting an atom number to a cluster number */
 #define A2CI(a)   ((a) >> NBNXN_CPU_CLUSTER_I_SIZE_2LOG)
 
-                        if (nbl_imask0(nbl,found) & (1U << (AMODI(found)*NSUBCELL + si)))
+                        if (nbl_imask0(nbl,found) & (1U << (AMODI(found)*GPU_NSUBCELL + si)))
                         {
                             w       = (inner_e >> 2);
 
                             get_nbl_exclusions_1(nbl,A2CI(found),w,&nbl_excl);
 
                             nbl_excl->pair[AMODI(inner_e)*nbl->na_ci+inner_i] &=
-                                ~(1U << (AMODI(found)*NSUBCELL + si));
+                                ~(1U << (AMODI(found)*GPU_NSUBCELL + si));
                         }
 
 #undef AMODI
@@ -3871,7 +3871,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
     cj4_end   = nbl->sci[nbl->nsci-1].cj4_ind_end;
     j4len = cj4_end - cj4_start;
 
-    if (j4len > 1 && j4len*NSUBCELL*NBNXN_GPU_JGROUP_SIZE > nsp_max)
+    if (j4len > 1 && j4len*GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE > nsp_max)
     {
         /* Remove the last ci entry and process the cj4's again */
         nbl->nsci -= 1;
@@ -3886,7 +3886,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
         {
             nsp_cj4_p = nsp_cj4;
             nsp_cj4   = 0;
-            for(p=0; p<NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
+            for(p=0; p<GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
             {
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
@@ -4007,8 +4007,8 @@ static void set_icell_bb_supersub(const float *bb,int ci,
     int ia,m,i;
 
 #ifdef NBNXN_BBXXXX
-    ia = ci*(NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX;
-    for(m=0; m<(NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
+    ia = ci*(GPU_NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX;
+    for(m=0; m<(GPU_NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
     {
         for(i=0; i<SSE_F_WIDTH; i++)
         {
@@ -4021,8 +4021,8 @@ static void set_icell_bb_supersub(const float *bb,int ci,
         }
     }
 #else
-    ia = ci*NSUBCELL*NNBSBB_B;
-    for(i=0; i<NSUBCELL*NNBSBB_B; i+=NNBSBB_B)
+    ia = ci*GPU_NSUBCELL*NNBSBB_B;
+    for(i=0; i<GPU_NSUBCELL*NNBSBB_B; i+=NNBSBB_B)
     {
         bb_ci[BBL_X] = bb[ia+BBL_X] + shx;
         bb_ci[BBL_Y] = bb[ia+BBL_Y] + shy;
@@ -4065,8 +4065,8 @@ static void icell_set_x_supersub(int ci,
 
     x_ci = work->x_ci;
 
-    ia = ci*NSUBCELL*na_c;
-    for(i=0; i<NSUBCELL*na_c; i++)
+    ia = ci*GPU_NSUBCELL*na_c;
+    for(i=0; i<GPU_NSUBCELL*na_c; i++)
     {
         x_ci[i*DIM + XX] = x[(ia+i)*stride + XX] + shx;
         x_ci[i*DIM + YY] = x[(ia+i)*stride + YY] + shy;
@@ -4087,12 +4087,12 @@ static void icell_set_x_supersub_sse8(int ci,
 
     x_ci = work->x_ci;
 
-    for(si=0; si<NSUBCELL; si++)
+    for(si=0; si<GPU_NSUBCELL; si++)
     {
         for(i=0; i<na_c; i+=SSE_F_WIDTH)
         {
             io = si*na_c + i;
-            ia = ci*NSUBCELL*na_c + io;
+            ia = ci*GPU_NSUBCELL*na_c + io;
             for(j=0; j<SSE_F_WIDTH; j++)
             {
                 x_ci[io*DIM + j + XX*SSE_F_WIDTH] = x[(ia+j)*stride+XX] + shx;
@@ -4175,9 +4175,9 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
 
     grid = &nbs->grid[0];
 
-    ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*NSUBCELL_X);
-    ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*NSUBCELL_Y);
-    ls[ZZ] = (grid->c1[ZZ] - grid->c0[ZZ])*grid->ncx*grid->ncy/(grid->nc*NSUBCELL_Z);
+    ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*GPU_NSUBCELL_X);
+    ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*GPU_NSUBCELL_Y);
+    ls[ZZ] = (grid->c1[ZZ] - grid->c0[ZZ])*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z);
 
     /* The average squared length of the diagonal of a sub cell */
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
@@ -4235,12 +4235,12 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
 
         /* Since the target value is a maximum (this avoid high outliers,
          * which lead to load imbalance), not average, we get more lists
-         * than we ask for (to compensate we need to add NSUBCELL*4/4).
+         * than we ask for (to compensate we need to add GPU_NSUBCELL*4/4).
          * But more importantly, the optimal GPU performance moves
          * to lower number of block for very small blocks.
          * To compensate we add the maximum pair count per cj4.
          */
-        nsubpair_max += NSUBCELL*NBNXN_CPU_CLUSTER_I_SIZE;
+        nsubpair_max += GPU_NSUBCELL*NBNXN_CPU_CLUSTER_I_SIZE;
     }
 
     if (debug)
@@ -4459,8 +4459,8 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
     bby = 0.5*(gridi->sy + gridj->sy);
     if (!simple)
     {
-        bbx /= NSUBCELL_X;
-        bby /= NSUBCELL_Y;
+        bbx /= GPU_NSUBCELL_X;
+        bby /= GPU_NSUBCELL_Y;
     }
 
     rbb2 = sqr(max(0,rlist - 0.5*sqrt(bbx*bbx + bby*bby)));

@@ -48,7 +48,8 @@
 #include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
 
-#define NA_C  NBNXN_GPU_CLUSTER_SIZE
+#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
 void
 nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
@@ -104,9 +105,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     int           npair_tot,npair;
     int           nhwu,nhwu_pruned;
 
-    if (nbl->na_ci != NA_C)
+    if (nbl->na_ci != CL_SIZE)
     {
-        gmx_fatal(FARGS,"The neighborlist cluster size in the GPU reference kernel is %d, expected it to be %d",nbl->na_ci,NA_C);
+        gmx_fatal(FARGS,"The neighborlist cluster size in the GPU reference kernel is %d, expected it to be %d",nbl->na_ci,CL_SIZE);
     }
 
     if (clearF == enbvClearFYes)
@@ -153,17 +154,17 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         Vvdwtot          = 0;              
 
         if (nbln->shift == CENTRAL &&
-            nbl->cj4[cj4_ind0].cj[0] == sci*NSUBCELL)
+            nbl->cj4[cj4_ind0].cj[0] == sci*NCL_PER_SUPERCL)
         {
             /* we have the diagonal:
              * add the charge self interaction energy term
              */
-            for(im=0; im<NSUBCELL; im++)
+            for(im=0; im<NCL_PER_SUPERCL; im++)
             {
-                ci = sci*NSUBCELL + im;
-                for (ic=0; ic<NA_C; ic++)
+                ci = sci*NCL_PER_SUPERCL + im;
+                for (ic=0; ic<CL_SIZE; ic++)
                 {
-                    ia     = ci*NA_C + ic;
+                    ia     = ci*CL_SIZE + ic;
                     iq     = x[ia*nbat->xstride+3];
                     vctot += iq*iq;
                 }
@@ -188,22 +189,22 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
             {
                 cj               = nbl->cj4[cj4_ind].cj[jm];
 
-                for(im=0; im<NSUBCELL; im++)
+                for(im=0; im<NCL_PER_SUPERCL; im++)
                 {
                     /* We're only using the first imask,
                      * but here imei[1].imask is identical.
                      */
-                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm*NSUBCELL+im)) & 1)
+                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm*NCL_PER_SUPERCL+im)) & 1)
                     {
                         gmx_bool within_rlist;
 
-                        ci               = sci*NSUBCELL + im;
+                        ci               = sci*NCL_PER_SUPERCL + im;
 
                         within_rlist     = FALSE;
                         npair            = 0;
-                        for(ic=0; ic<NA_C; ic++)
+                        for(ic=0; ic<CL_SIZE; ic++)
                         {
-                            ia               = ci*NA_C + ic;
+                            ia               = ci*CL_SIZE + ic;
                     
                             is               = ia*nbat->xstride;
                             ifs              = ia*nbat->fstride;
@@ -217,9 +218,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             fiy              = 0;
                             fiz              = 0;
 
-                            for(jc=0; jc<NA_C; jc++)
+                            for(jc=0; jc<CL_SIZE; jc++)
                             {
-                                ja               = cj*NA_C + jc;
+                                ja               = cj*CL_SIZE + jc;
 
                                 if (nbln->shift == CENTRAL &&
                                     ci == cj && ja <= ia)
@@ -227,7 +228,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                     continue;
                                 }
                         
-                                int_bit = ((excl[jc>>2]->pair[(jc & 3)*NA_C+ic] >> (jm*NSUBCELL+im)) & 1); 
+                                int_bit = ((excl[jc>>2]->pair[(jc & 3)*CL_SIZE+ic] >> (jm*NCL_PER_SUPERCL+im)) & 1); 
 
                                 js               = ja*nbat->xstride;
                                 jfs              = ja*nbat->fstride;
@@ -328,7 +329,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             /* Count in half work-units.
                              * In CUDA one work-unit is 2 warps.
                              */
-                            if ((ic+1) % (NA_C/2) == 0)
+                            if ((ic+1) % (CL_SIZE/2) == 0)
                             {
                                 npair_tot += npair;
 
