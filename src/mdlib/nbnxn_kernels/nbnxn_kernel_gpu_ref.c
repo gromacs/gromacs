@@ -45,6 +45,7 @@
 #include "typedefs.h"
 #include "force.h"
 #include "nbnxn_kernel_gpu_ref.h"
+#include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
 
 #define NA_C  NBNXN_GPU_CLUSTER_SIZE

@@ -49,6 +49,7 @@
 #include "vec.h"
 #include "coulomb.h"
 #include "calc_verletbuf.h"
+#include "../mdlib/nbnxn_consts.h"
 
 /* Struct for unique atom type for calculating the energy drift.
  * The atom displacement depends on mass and constraints.

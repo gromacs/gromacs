@@ -47,6 +47,11 @@ extern "C" {
  */
 gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
 
+/* Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. This function gives the extra distance.
+ */
+real nbnxn_get_rlist_effective_inc(int cluster_size,real atom_density);
+
 /* Allocates and initializes a pair search data structure */
 void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        ivec *n_dd_cells,

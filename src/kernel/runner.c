@@ -77,6 +77,8 @@
 #include "gmx_omp_nthreads.h"
 #include "pull_rotation.h"
 #include "calc_verletbuf.h"
+#include "nbnxn_search.h"
+#include "../mdlib/nbnxn_consts.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
 #include "md_openmm.h"
@@ -499,7 +501,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     verletbuf_get_list_setup(TRUE,&ls);
 
     /* Allow rlist to make the list double the size of the cut-off sphere */
-    rlist_inc = nbnxn_rlist_inc(NBNXN_GPU_CLUSTER_SIZE,mtop->natoms/det(box));
+    rlist_inc = nbnxn_get_rlist_effective_inc(NBNXN_GPU_CLUSTER_SIZE,mtop->natoms/det(box));
     rlist_ok  = (max(ir->rvdw,ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC,1.0/3.0) - rlist_inc;
     rlist_max = (max(ir->rvdw,ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC,1.0/3.0) - rlist_inc;
     if (debug)

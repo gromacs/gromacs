@@ -43,6 +43,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "nbnxn_search.h"
+#include "nbnxn_consts.h"
 #include "gmx_cyclecounter.h"
 #include "gmxfio.h"
 #include "gmx_omp_nthreads.h"
@@ -4103,6 +4104,16 @@ static void icell_set_x_supersub_sse8(int ci,
 }
 #endif
 
+static real nbnxn_rlist_inc_nonloc_fac = 0.6;
+
+/* Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. This function gives the extra distance.
+ */
+real nbnxn_get_rlist_effective_inc(int cluster_size,real atom_density)
+{
+    return ((0.5 + nbnxn_rlist_inc_nonloc_fac)*sqr(((cluster_size) - 1.0)/(cluster_size))*pow((cluster_size)/(atom_density),1.0/3.0));
+}
+
 /* Estimates the interaction volume^2 for non-local interactions */
 static real nonlocal_vol2(const gmx_domdec_zones_t *zones,rvec ls,real r)
 {
@@ -4172,7 +4183,7 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + NBNXN_RLIST_INC_NONLOC_FAC*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_nonloc_fac*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {

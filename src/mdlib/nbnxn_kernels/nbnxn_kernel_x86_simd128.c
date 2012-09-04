@@ -43,6 +43,7 @@
 #include "smalloc.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
+#include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
 
 #ifdef GMX_X86_SSE2

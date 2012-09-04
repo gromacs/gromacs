@@ -42,6 +42,9 @@
 #include "physics.h"
 #include "vec.h"
 #include "mtop_util.h"
+#include "types/commrec.h"
+#include "nbnxn_search.h"
+#include "nbnxn_consts.h"
 
 
 /* Computational cost of bonded, non-bonded and PME calculations.
@@ -290,7 +293,7 @@ static void pp_verlet_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     *nq_tot = nqlj + nq;
 
     /* Effective cut-off for cluster pair list of 4x4 atoms */
-    r_eff = ir->rlist + nbnxn_rlist_inc(NBNXN_CPU_CLUSTER_I_SIZE,mtop->natoms/det(box));
+    r_eff = ir->rlist + nbnxn_get_rlist_effective_inc(NBNXN_CPU_CLUSTER_I_SIZE,mtop->natoms/det(box));
 
     if (debug)
     {

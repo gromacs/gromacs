@@ -41,6 +41,7 @@
 #include "force.h"
 #include "gmx_omp_nthreads.h"
 #include "nbnxn_kernel_ref.h"
+#include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
 
 /* Analytical reaction-field kernels */

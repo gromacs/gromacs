@@ -40,35 +40,6 @@
 extern "C" {
 #endif
 
-/* With CPU kernels the i-cluster size is always 4 atoms.
- * Without SSE the j-cluster size is also 4.
- */
-#define NBNXN_CPU_CLUSTER_I_SIZE       4
-
-#define NBNXN_CPU_CLUSTER_I_SIZE_2LOG  2
-
-/* With GPU kernels the cluster size is 8 atoms */
-#define NBNXN_GPU_CLUSTER_SIZE         8
-
-/* With GPU kernels we group cell pairs in 4 to optimize memory usage */
-#define NBNXN_GPU_JGROUP_SIZE  4
-
-/* To avoid NaN when excluded atoms are at zero distance, we add a small
- * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.
- */
-#ifndef GMX_DOUBLE
-#define NBNXN_AVOID_SING_R2_INC  1.0e-12f
-#else
-/* The double prec. x86 SIMD kernels use a single prec. invsqrt, so > 1e-38 */
-#define NBNXN_AVOID_SING_R2_INC  1.0e-36
-#endif
-
-/* Due to the cluster size the effective pair-list is longer than
- * that of a simple atom pair-list. nbnxn_rlist_inc gives the extra distance.
- */
-#define NBNXN_RLIST_INC_NONLOC_FAC 0.6
-#define nbnxn_rlist_inc(cluster_size,atom_density) ((0.5 + NBNXN_RLIST_INC_NONLOC_FAC)*sqr(((cluster_size) - 1.0)/(cluster_size))*pow((cluster_size)/(atom_density),1.0/3.0))
-
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
  * to avoid cache invalidation of the real contents
@@ -77,11 +48,6 @@ extern "C" {
 typedef struct {
     int dummy[16];
 } gmx_cache_protect_t;
-
-#define NSUBCELL_Z 2
-#define NSUBCELL_Y 2
-#define NSUBCELL_X 2
-#define NSUBCELL   (NSUBCELL_Z*NSUBCELL_Y*NSUBCELL_X)
 
 /* Abstract type for pair searching data */
 typedef struct nbnxn_search * nbnxn_search_t;
