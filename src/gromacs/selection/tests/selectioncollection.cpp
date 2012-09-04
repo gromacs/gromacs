@@ -495,7 +495,7 @@ TEST_F(SelectionCollectionDataTest, HandlesResnr)
 {
     static const char * const selections[] = {
         "resnr 1 2 5",
-        "resnr 4 to 3",
+        "resid 4 to 3",
         NULL
     };
     runTest("simple.gro", selections);
@@ -505,6 +505,7 @@ TEST_F(SelectionCollectionDataTest, HandlesResIndex)
 {
     static const char * const selections[] = {
         "resindex 1 4",
+        "residue 1 3",
         NULL
     };
     runTest("simple.pdb", selections);
@@ -516,7 +517,7 @@ TEST_F(SelectionCollectionDataTest, HandlesAtomname)
 {
     static const char * const selections[] = {
         "name CB",
-        "name S1 S2",
+        "atomname S1 S2",
         NULL
     };
     runTest("simple.gro", selections);
