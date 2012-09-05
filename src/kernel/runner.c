@@ -772,6 +772,8 @@ static void set_cpu_affinity(FILE *fplog,
             MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->nodeid_intra,
                            &comm_intra);
             MPI_Scan(&local_nthreads,&thread,1,MPI_INT,MPI_SUM,comm_intra);
+            /* MPI_Scan is inclusive, but here we need exclusive */
+            thread -= local_nthreads;
             MPI_Comm_free(&comm_intra);
         }
 #endif
@@ -827,6 +829,7 @@ static void set_cpu_affinity(FILE *fplog,
                 core = offset + thread/2 + (thread % 2)*n_ht_physcore;
             }
             CPU_SET(core, &mask);
+            printf("thread %d core %d\n",thread,core);
             sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
         }
     }
