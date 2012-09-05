@@ -175,6 +175,14 @@ int main(int argc,char *argv[])
     "slower than single parallelization, except at the scaling limit, where",
     "especially OpenMP parallelization of PME reduces the communication cost.",
     "[PAR]",
+    "To quickly test the performance of the new Verlet cut-off scheme",
+    "with old [TT].tpr[tt] files, either on CPUs or CPUs+GPUs, you can use",
+    "the [TT]-testverlet[tt] option. This should not be used for production,",
+    "since it can slightly modify potentials and it will remove charge groups",
+    "making analysis difficult, as the [TT].tpr[tt] file will still contain",
+    "charge groups. For production simulations it is highly recommended",
+    "to specify [TT]cutoff-scheme = Verlet[tt] in the [TT].mdp[tt] file.",
+    "[PAR]",
     "With GPUs (only supported with the Verlet cut-off scheme), the number",
     "of GPUs should match the number of MPI processes or MPI threads,",
     "excluding PME-only processes/threads. With thread-MPI the number",
@@ -454,6 +462,7 @@ int main(int argc,char *argv[])
   gmx_bool bDDBondCheck = TRUE;
   gmx_bool bDDBondComm  = TRUE;
   gmx_bool bTunePME     = TRUE;
+  gmx_bool bTestVerlet  = TRUE;
   gmx_bool bVerbose     = FALSE;
   gmx_bool bCompact     = TRUE;
   gmx_bool bSepPot      = FALSE;
@@ -540,6 +549,8 @@ int main(int argc,char *argv[])
       "Calculate non-bonded interactions on" },
     { "-tunepme", FALSE, etBOOL, {&bTunePME},  
       "Optimize PME load between GPU and CPU" },
+    { "-testverlet", FALSE, etBOOL, {&bTestVerlet},
+      "Test the Verlet non-bonded scheme" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -719,6 +730,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
   Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
   Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
+  Flags = Flags | (bTestVerlet   ? MD_TESTVERLET   : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);

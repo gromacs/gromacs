@@ -48,7 +48,7 @@ void md_print_info(const t_commrec *cr, FILE *fplog,
 {
     va_list ap;
 
-    if (SIMMASTER(cr))
+    if (cr == NULL || SIMMASTER(cr))
     {
         va_start(ap,fmt);
 
@@ -71,7 +71,7 @@ void md_print_warn(const t_commrec *cr, FILE *fplog,
 {
     va_list ap;
 
-    if (SIMMASTER(cr))
+    if (cr == NULL || SIMMASTER(cr))
     {
         va_start(ap,fmt);
 

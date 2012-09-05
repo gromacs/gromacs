@@ -82,6 +82,7 @@ extern "C" {
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 #define MD_TUNEPME        (1<<20)
+#define MD_TESTVERLET     (1<<22)
 
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR

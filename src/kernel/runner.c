@@ -651,19 +651,48 @@ static void convert_to_verlet_scheme(FILE *fplog,
 {
     char *conv_mesg="Converting input file with group cut-off scheme to the Verlet cut-off scheme";
 
-    if (fplog != NULL)
-    {
-        fprintf(fplog,"\n%s\n\n",conv_mesg);
-    }
-    fprintf(stderr,"\n%s\n\n",conv_mesg);
+    md_print_warn(NULL,fplog,"%s\n",conv_mesg);
 
-    if (!(ir->vdwtype == evdwCUT &&
-          (ir->coulombtype == eelCUT ||
-           EEL_RF(ir->coulombtype) ||
-           ir->coulombtype == eelPME) &&
-          ir->rcoulomb == ir->rvdw))
+    ir->cutoff_scheme   = ecutsVERLET;
+    ir->verletbuf_drift = 0.005;
+
+    if (ir->rcoulomb != ir->rvdw)
     {
-        gmx_fatal(FARGS,"Can only convert tpr files to the Verlet cut-off scheme if they use cut-off VdW interactions, rcoulomb=rvdw and PME, RF or cut-off electrostatics");
+        gmx_fatal(FARGS,"The VdW and Coulomb cut-offs are different, whereas the Verlet scheme only supports equal cut-offs");
+    }
+
+    if (ir->vdwtype == evdwUSER || EEL_USER(ir->coulombtype))
+    {
+        gmx_fatal(FARGS,"User non-bonded potentials are not (yet) supported with the Verlet scheme");
+    }
+    else if (EVDW_SWITCHED(ir->vdwtype) || EEL_SWITCHED(ir->coulombtype))
+    {
+        md_print_warn(NULL,fplog,"Converting switched or shifted interactions to a shifted potential (without force shift), this will lead to slightly different interaction potentials");
+
+        if (EVDW_SWITCHED(ir->vdwtype))
+        {
+            ir->vdwtype = evdwCUT;
+        }
+        if (EEL_SWITCHED(ir->coulombtype))
+        {
+            if (EEL_FULL(ir->coulombtype))
+            {
+                /* With full electrostatic only PME can be switched */
+                ir->coulombtype = eelPME;
+            }
+            else
+            {
+                md_print_warn(NULL,fplog,"NOTE: Replacing %s electrostatics with reaction-field with epsilon-rf=inf\n",eel_names[ir->coulombtype]);
+                ir->coulombtype = eelRF;
+                ir->epsilon_rf  = 0.0;
+            }
+        }
+
+        /* We set the target energy drift to a small number.
+         * Note that this is only for testing. For production the user
+         * should think about this and set the mdp options.
+         */
+        ir->verletbuf_drift = 1e-4;
     }
 
     if (inputrec2nboundeddim(ir) != 3)
@@ -681,10 +710,7 @@ static void convert_to_verlet_scheme(FILE *fplog,
         gmx_fatal(FARGS,"Will not convert old tpr files to the Verlet cut-off scheme with free-energy calculations or implicit solvent");
     }
 
-    ir->cutoff_scheme   = ecutsVERLET;
-    ir->verletbuf_drift = 0.005;
-
-    if (EI_DYNAMICS(ir->eI))
+    if (EI_DYNAMICS(ir->eI) && !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         verletbuf_list_setup_t ls;
 
@@ -1039,7 +1065,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
 
         if (inputrec->cutoff_scheme != ecutsVERLET &&
-            getenv("GMX_VERLET_SCHEME") != NULL)
+            ((Flags & MD_TESTVERLET) || getenv("GMX_VERLET_SCHEME") != NULL))
         {
             convert_to_verlet_scheme(fplog,inputrec,mtop,det(state->box));
         }
@@ -1061,14 +1087,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
         else if (hwinfo->bCanUseGPU)
         {
+            md_print_warn(cr,fplog,
+                          "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
+                          "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n"
+                          "      (for quick performance testing you can use the -testverlet option)\n");
+
             if (bForceUseGPU)
             {
                 gmx_fatal(FARGS,"GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
-
-            md_print_warn(cr,fplog,
-                          "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                          "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n");
         }
     }
 #ifndef GMX_THREAD_MPI
