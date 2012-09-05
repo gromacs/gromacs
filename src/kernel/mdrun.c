@@ -462,7 +462,7 @@ int main(int argc,char *argv[])
   gmx_bool bDDBondCheck = TRUE;
   gmx_bool bDDBondComm  = TRUE;
   gmx_bool bTunePME     = TRUE;
-  gmx_bool bTestVerlet  = TRUE;
+  gmx_bool bTestVerlet  = FALSE;
   gmx_bool bVerbose     = FALSE;
   gmx_bool bCompact     = TRUE;
   gmx_bool bSepPot      = FALSE;

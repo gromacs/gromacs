@@ -700,11 +700,6 @@ static void convert_to_verlet_scheme(FILE *fplog,
         gmx_fatal(FARGS,"Can only convert old tpr files to the Verlet cut-off scheme with 3D pbc");
     }
 
-    if (EI_DYNAMICS(ir->eI) && ir->etc == etcNO)
-    {
-        gmx_fatal(FARGS,"Will not convert old tpr files to the Verlet cut-off scheme without temperature coupling");
-    }
-
     if (ir->efep != efepNO || ir->implicit_solvent != eisNO)
     {
         gmx_fatal(FARGS,"Will not convert old tpr files to the Verlet cut-off scheme with free-energy calculations or implicit solvent");
@@ -829,7 +824,6 @@ static void set_cpu_affinity(FILE *fplog,
                 core = offset + thread/2 + (thread % 2)*n_ht_physcore;
             }
             CPU_SET(core, &mask);
-            printf("thread %d core %d\n",thread,core);
             sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
         }
     }
