@@ -36,8 +36,8 @@ files.
 */
 
 
-#ifndef _TMPI_THREAD_H_
-#define _TMPI_THREAD_H_
+#ifndef TMPI_THREADS_H_
+#define TMPI_THREADS_H_
 
 /*! \file threads.h
  *
@@ -102,8 +102,8 @@ typedef struct tMPI_Thread* tMPI_Thread_t;
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Mutex* mutex;
+    tMPI_Atomic_t initialized; /*!< Whether \a mutex has been initialized. */
+    struct tMPI_Mutex* mutex;  /*!< Actual mutex data structure. */
 }  tMPI_Thread_mutex_t;
 /*! \brief Static initializer for tMPI_Thread_mutex_t
  *
@@ -124,8 +124,8 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Thread_key *key;
+    tMPI_Atomic_t initialized; /*!< Whether \a key has been initialized. */
+    struct tMPI_Thread_key *key; /*!< Actual key data structure. */
 } tMPI_Thread_key_t;
 
 
@@ -147,7 +147,7 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t once;
+    tMPI_Atomic_t once; /*!< Whether the operation has been performed. */
 } tMPI_Thread_once_t;
 /*! \brief Static initializer for tMPI_Thread_once_t
  *
@@ -177,8 +177,8 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Thread_cond* condp;
+    tMPI_Atomic_t initialized;      /*!< Whether \a condp has been initialized. */
+    struct tMPI_Thread_cond* condp; /*!< Actual condition variable data structure. */
 } tMPI_Thread_cond_t;
 /*! \brief Static initializer for tMPI_Thread_cond_t
   *
@@ -200,8 +200,8 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Thread_barrier* barrierp;
+    tMPI_Atomic_t initialized; /*!< Whether \a barrierp has been initialized. */
+    struct tMPI_Thread_barrier* barrierp; /*!< Actual barrier data structure. */
     volatile int threshold; /*!< Total number of members in barrier     */
     volatile int count;     /*!< Remaining count before completion      */
     volatile int cycle;     /*!< Alternating 0/1 to indicate round      */
@@ -238,6 +238,7 @@ enum tMPI_Thread_support
   \param message  format string for error message.
 */
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
+/** Convenience macro for the first two arguments to tMPI_Fatal_error(). */
 #define TMPI_FARGS __FILE__,__LINE__
 
 
@@ -260,9 +261,10 @@ enum tMPI_Thread_support tMPI_Thread_support(void);
 
     Returns the total number of cores and SMT threads that can run.
 
-    \ret The maximum number of threads that can run simulataneously. If this
-         number cannot be determined for the current architecture, 0 is 
-         returned. */
+    \returns The maximum number of threads that can run simulataneously.
+        If this number cannot be determined for the current architecture,
+        0 is returned.
+ */
 int tMPI_Thread_get_hw_number(void);
 
 
@@ -367,10 +369,10 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
  *
  *  This routine always return directly. If the mutex was available and
  *  we successfully locked it we return 0, otherwise a non-zero
- *  error code (usually meaning the mutex was already locked).
+ *  return code (usually meaning the mutex was already locked).
  *
  *  \param mtx  Pointer to the mutex to try and lock
- *  \return 0 or a non-zero error code.
+ *  \return 0 or a non-zero return error code.
  */
 int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
 
@@ -600,5 +602,5 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 }
 #endif
 
-#endif /* _TMPI_THREAD_H_ */
+#endif /* TMPI_THREADS_H_ */
 

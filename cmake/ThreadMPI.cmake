@@ -26,11 +26,17 @@ MACRO(TEST_TMPI_ATOMICS VARIABLE)
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TEST_TMPI_ATOMICS VARIABLE)
 
+MACRO(TMPI_MAKE_CXX_LIB)
+    set(TMPI_CXX_LIB 1)
+    # the C++ library
+    set(THREAD_MPI_CXX_SRC
+        thread_mpi/system_error.cpp )
+ENDMACRO(TMPI_MAKE_CXX_LIB)
+
 test_tmpi_atomics(TMPI_ATOMICS)
 
 # do we want to only the atomics of tMPI (with GPU + MPI)
 if(NOT TEST_TMPI_ATOMICS_ONLY)
-
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
@@ -48,7 +54,8 @@ if (CMAKE_USE_PTHREADS_INIT)
         thread_mpi/group.c         thread_mpi/tmpi_init.c
         thread_mpi/topology.c      thread_mpi/list.c          
         thread_mpi/type.c          thread_mpi/lock.c
-        thread_mpi/numa_malloc.c   thread_mpi/once.c)
+        thread_mpi/numa_malloc.c   thread_mpi/once.c 
+        thread_mpi/scan.c          thread_mpi/tmpi_malloc.c)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else (CMAKE_USE_PTHREADS_INIT)
     if (CMAKE_USE_WIN32_THREADS_INIT)
@@ -67,10 +74,12 @@ else (CMAKE_USE_PTHREADS_INIT)
             thread_mpi/topology.c      thread_mpi/list.c
             thread_mpi/type.c          thread_mpi/lock.c
             thread_mpi/winthreads.c    thread_mpi/once.c
-            thread_mpi/numa_malloc.c)
+            thread_mpi/numa_malloc.c
+            thread_mpi/scan.c          thread_mpi/tmpi_malloc.c)
         set(THREAD_LIBRARY )
     endif (CMAKE_USE_WIN32_THREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
+
 
 # the spin-waiting option
 option(THREAD_MPI_WAIT_FOR_NO_ONE "Use busy waits without yielding to the OS scheduler. Turning this on might improve performance (very) slightly at the cost of very poor performance if the threads are competing for CPU time." OFF)
@@ -102,18 +111,6 @@ else (THREAD_MPI_PROFILING)
 endif (THREAD_MPI_PROFILING)
 
 include(CheckCSourceCompiles)
-
-# Windows NUMA allocator
-if (THREAD_WINDOWS)
-	check_c_source_compiles(
-	"#include <windows.h>
-	int main(void) { PROCESSOR_NUMBER a; return 0; }"
-	HAVE_PROCESSOR_NUMBER)
-	if(HAVE_PROCESSOR_NUMBER)
-            #add_definitions(-DTMPI_WINDOWS_NUMA_API)
-            set(TMPI_WINDOWS_NUMA_API 1)
-	endif(HAVE_PROCESSOR_NUMBER)
-endif(THREAD_WINDOWS)
 
 # option to set affinity 
 option(THREAD_MPI_SET_AFFINITY "Set thread affinity to a core if number of threads equal to number of hardware threads." ON)

@@ -700,35 +700,6 @@ static void convert_to_verlet_scheme(FILE *fplog,
     gmx_mtop_remove_chargegroups(mtop);
 }
 
-#ifdef GMX_THREAD_MPI
-/* TODO implement MPI_Scan in thread-MPI */
-/* thread-MPI currently lacks MPI_Scan, so here's a partial implementation */
-static
-int MPI_Scan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
-             MPI_Op op, MPI_Comm comm)
-{
-    int rank,size,i;
-    int *buf;
-    int ret;
-
-    if (!(count == 1 && datatype == MPI_INT && op == MPI_SUM))
-    {
-        gmx_incons("Invalid use of temporary TMPI MPI_Scan function");
-    }
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &size);
-    snew(buf, size);
-    for(i=0; i<size; i++)
-    {
-        buf[i] = (i <= rank) ? 0 : ((int *)sendbuf)[0];
-    }
-    ret = MPI_Allreduce(MPI_IN_PLACE, buf, size, datatype, op, comm);
-    ((int *)recvbuf)[0] = buf[rank];
-    sfree(buf);
-
-    return ret;
-}
-#endif
 
 /* Set CPU affinity. Can be important for performance.
    On some systems (e.g. Cray) CPU Affinity is set by default.

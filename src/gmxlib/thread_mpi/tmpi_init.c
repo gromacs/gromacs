@@ -71,7 +71,7 @@ files.
 
 /* there are a few global variables that maintain information about the
    running threads. Some are defined by the MPI standard: */
-tMPI_Comm TMPI_COMM_WORLD=NULL;
+/* TMPI_COMM_WORLD is in tmpi_malloc.c due to technical reasons */
 tMPI_Group TMPI_GROUP_EMPTY=NULL;
 
 
@@ -136,33 +136,6 @@ void tMPI_Trace_print(const char *fmt, ...)
     tMPI_Thread_mutex_unlock(&mtx);
 }
 #endif
-
-
-void *tMPI_Malloc(size_t size)
-{
-    void *ret=(void*)malloc(size);
-
-    if (!ret)
-    {
-        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
-    }
-    return ret;
-}
-
-void *tMPI_Realloc(void *p, size_t size)
-{
-    void *ret=(void*)realloc(p, size);
-    if (!ret)
-    {
-        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
-    }
-    return ret;
-}
-
-void tMPI_Free(void *p)
-{
-    free(p);
-}
 
 
 #if 0

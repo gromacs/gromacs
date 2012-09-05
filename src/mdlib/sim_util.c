@@ -1209,7 +1209,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     
     if (ed)
     {
-        do_flood(fplog,cr,x,f,ed,box,step);
+        do_flood(fplog,cr,x,f,ed,box,step,bNS);
     }
 
     if (bUseOrEmulGPU && !bDiffKernels)
@@ -1749,7 +1749,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
 
     if (ed)
     {
-        do_flood(fplog,cr,x,f,ed,box,step);
+        do_flood(fplog,cr,x,f,ed,box,step,bNS);
     }
 
     if (DOMAINDECOMP(cr))
