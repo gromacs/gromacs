@@ -78,15 +78,15 @@ void cat(FILE *out,char *fn,real t)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "do_shift reads a trajectory file and computes the chemical",
+    "[TT]do_shift[tt] reads a trajectory file and computes the chemical",
     "shift for each time frame (or every [BB]dt[bb] ps) by",
     "calling the 'total' program. If you do not have the total program,",
     "get it. do_shift assumes that the total executable is in",
-    "/home/mdgroup/total/total. If that is not the case, then you should",
+    "[TT]/home/mdgroup/total/total[tt]. If that is not the case, then you should",
     "set an environment variable [BB]TOTAL[bb] as in: [PAR]",
     "[TT]setenv TOTAL /usr/local/bin/total[tt][PAR]",
     "where the right hand side should point to the total executable.[PAR]",
-    "Output is printed in files shift.out where t is the time of the frame.[PAR]",
+    "Output is printed in files [TT]shift.out[tt] where t is the time of the frame.[PAR]",
     "The program also needs an input file called [BB]random.dat[bb] which",
     "contains the random coil chemical shifts of all protons."
   };

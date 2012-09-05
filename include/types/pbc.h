@@ -32,8 +32,8 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifndef _matrix_h
-#define _matrix_h
+#ifndef _pbc_h
+#define _pbc_h
 
 
 #include "simple.h"

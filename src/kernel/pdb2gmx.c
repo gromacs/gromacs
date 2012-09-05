@@ -177,19 +177,6 @@ static const char *get_argtp(int resnr,int nrr,const rtprename_t *rr)
   return select_res(eargNR,resnr,lh,expl,"ARGININE",nrr,rr);
 }
 
-static const char *get_cystp(int resnr,int nrr,const rtprename_t *rr)
-{
-  enum { ecys, ecysH, ecysNR };
-  const char *lh[ecysNR] = { "CYS2", "CYS" };
-  const char *expl[ecysNR] = {
-    "Cysteine in disulfide bridge",
-    "Protonated"
-  };
-
-  return select_res(ecysNR,resnr,lh,expl,"CYSTEINE",nrr,rr);
-
-}
-
 static const char *get_histp(int resnr,int nrr,const rtprename_t *rr)
 {
   const char *expl[ehisNR] = {
@@ -825,41 +812,60 @@ modify_chain_numbers(t_atoms *       pdba,
     int   old_prev_chainnum;
     int   old_this_chainnum;
     t_resinfo *ri;
+    char  select[STRLEN];
     int   new_chainnum;
-    
+    int           this_atomnum;
+    int           prev_atomnum;
+    const char *  prev_atomname;
+    const char *  this_atomname;
+    const char *  prev_resname;
+    const char *  this_resname;
+    int           prev_resnum;
+    int           this_resnum;
+    char          prev_chainid;
+    char          this_chainid;
+    int           prev_chainnumber;
+    int           this_chainnumber;
+   
     enum 
     { 
         SPLIT_ID_OR_TER, 
         SPLIT_ID_AND_TER,
         SPLIT_ID_ONLY,
-        SPLIT_TER_ONLY
+        SPLIT_TER_ONLY,
+        SPLIT_INTERACTIVE
     }
     splitting;
     
-    printf("Splitting PDB chains based on ");
     splitting = SPLIT_TER_ONLY; /* keep compiler happy */
     
     /* Be a bit flexible to catch typos */
-    if (!strncmp(chainsep,"id_o",4) || !strncmp(chainsep,"int",3))
+    if (!strncmp(chainsep,"id_o",4))
     {
         /* For later interactive splitting we tentatively assign new chain numbers at either changing id or ter records */
         splitting = SPLIT_ID_OR_TER;
-        printf("TER records or changing chain id.\n");
+        printf("Splitting chemical chains based on TER records or chain id changing.\n");
+    }
+    else if (!strncmp(chainsep,"int",3))
+    {
+        /* For later interactive splitting we tentatively assign new chain numbers at either changing id or ter records */
+        splitting = SPLIT_INTERACTIVE;
+        printf("Splitting chemical chains interactively.\n");
     }
     else if (!strncmp(chainsep,"id_a",4))
     {
         splitting = SPLIT_ID_AND_TER;
-        printf("TER records and chain id.\n");
+        printf("Splitting chemical chains based on TER records and chain id changing.\n");
     }
     else if (strlen(chainsep)==2 && !strncmp(chainsep,"id",4))
     {
         splitting = SPLIT_ID_ONLY;
-        printf("changing chain id only (ignoring TER records).\n");
+        printf("Splitting chemical chains based on changing chain id only (ignoring TER records).\n");
     }
     else if (chainsep[0]=='t')
     {
         splitting = SPLIT_TER_ONLY;
-        printf("TER records only (ignoring chain id).\n");
+        printf("Splitting chemical chains based on TER records only (ignoring chain id).\n");
     }
     else
     {
@@ -872,11 +878,32 @@ modify_chain_numbers(t_atoms *       pdba,
     old_prev_chainnum = -1;
     new_chainnum  = -1;
     
+    this_atomname       = NULL;
+    this_atomnum        = -1;
+    this_resname        = NULL;
+    this_resnum         = -1;
+    this_chainid        = '?';
+    this_chainnumber    = -1;
+
     for(i=0;i<pdba->nres;i++)
     {
         ri = &pdba->resinfo[i];
-        old_this_chainid  = ri->chainid;
-        old_this_chainnum = ri->chainnum;
+        old_this_chainid   = ri->chainid;
+        old_this_chainnum  = ri->chainnum;
+
+        prev_atomname      = this_atomname;
+        prev_atomnum       = this_atomnum;
+        prev_resname       = this_resname;
+        prev_resnum        = this_resnum;
+        prev_chainid       = this_chainid;
+        prev_chainnumber   = this_chainnumber;
+
+        this_atomname      = *(pdba->atomname[i]);
+        this_atomnum       = (pdba->pdbinfo != NULL) ? pdba->pdbinfo[i].atomnr : i+1;
+        this_resname       = *ri->name;
+        this_resnum        = ri->nr;
+        this_chainid       = ri->chainid;
+        this_chainnumber   = ri->chainnum;
 
         switch (splitting)
         {
@@ -906,6 +933,27 @@ modify_chain_numbers(t_atoms *       pdba,
                 {
                     new_chainnum++;
                 }
+                break;
+            case SPLIT_INTERACTIVE:
+                if(old_this_chainid != old_prev_chainid || old_this_chainnum != old_prev_chainnum)
+                {
+                    if(i>0)
+                    {
+                        printf("Split the chain (and introduce termini) between residue %s%d (chain id '%c', atom %d %s)\n" 
+                               "and residue %s%d (chain id '%c', atom %d %s) ? [n/y]\n",
+                               prev_resname,prev_resnum,prev_chainid,prev_atomnum,prev_atomname,
+                               this_resname,this_resnum,this_chainid,this_atomnum,this_atomname);
+                        
+                        if(NULL==fgets(select,STRLEN-1,stdin))
+                        {
+                            gmx_fatal(FARGS,"Error reading from stdin");
+                        }
+                    }
+                    if(i==0 || select[0] == 'y')
+                    {
+                        new_chainnum++;
+                    }
+                }               
                 break;
             default:
                 gmx_fatal(FARGS,"Internal inconsistency - this shouldn't happen...");
@@ -946,34 +994,34 @@ typedef struct {
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
-    "This program reads a pdb (or gro) file, reads",
+    "This program reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",
     "some database files, adds hydrogens to the molecules and generates",
-    "coordinates in Gromacs (Gromos), or optionally pdb, format",
-    "and a topology in Gromacs format.",
+    "coordinates in GROMACS (GROMOS), or optionally [TT].pdb[tt], format",
+    "and a topology in GROMACS format.",
     "These files can subsequently be processed to generate a run input file.",
     "[PAR]",
-    "pdb2gmx will search for force fields by looking for",
+    "[TT]pdb2gmx[tt] will search for force fields by looking for",
     "a [TT]forcefield.itp[tt] file in subdirectories [TT]<forcefield>.ff[tt]",
-    "of the current working directory and of the Gromacs library directory",
+    "of the current working directory and of the GROMACS library directory",
     "as inferred from the path of the binary or the [TT]GMXLIB[tt] environment",
     "variable.",
     "By default the forcefield selection is interactive,",
     "but you can use the [TT]-ff[tt] option to specify one of the short names",
-    "in the list on the command line instead. In that case pdb2gmx just looks",
+    "in the list on the command line instead. In that case [TT]pdb2gmx[tt] just looks",
     "for the corresponding [TT]<forcefield>.ff[tt] directory.",
     "[PAR]",
     "After choosing a force field, all files will be read only from",
     "the corresponding force field directory.",
     "If you want to modify or add a residue types, you can copy the force",
-    "field directory from the Gromacs library directory to your current",
+    "field directory from the GROMACS library directory to your current",
     "working directory. If you want to add new protein residue types,",
-    "you will need to modify residuetypes.dat in the library directory",
+    "you will need to modify [TT]residuetypes.dat[tt] in the library directory",
     "or copy the whole library directory to a local directory and set",
     "the environment variable [TT]GMXLIB[tt] to the name of that directory.",
-    "Check chapter 5 of the manual for more information about file formats.",
+    "Check Chapter 5 of the manual for more information about file formats.",
     "[PAR]",
     
-    "Note that a pdb file is nothing more than a file format, and it",
+    "Note that a [TT].pdb[tt] file is nothing more than a file format, and it",
     "need not necessarily contain a protein structure. Every kind of",
     "molecule for which there is support in the database can be converted.",
     "If there is no support in the database, you can add it yourself.[PAR]",
@@ -981,47 +1029,63 @@ int main(int argc, char *argv[])
     "The program has limited intelligence, it reads a number of database",
     "files, that allow it to make special bonds (Cys-Cys, Heme-His, etc.),",
     "if necessary this can be done manually. The program can prompt the",
-    "user to select which kind of LYS, ASP, GLU, CYS or HIS residue she",
-    "wants. For LYS the choice is between neutral (two protons on NZ) or",
-    "protonated (three protons, default), for ASP and GLU unprotonated",
-    "(default) or protonated, for HIS the proton can be either on ND1,",
+    "user to select which kind of LYS, ASP, GLU, CYS or HIS residue is",
+    "desired. For Lys the choice is between neutral (two protons on NZ) or",
+    "protonated (three protons, default), for Asp and Glu unprotonated",
+    "(default) or protonated, for His the proton can be either on ND1,",
     "on NE2 or on both. By default these selections are done automatically.",
     "For His, this is based on an optimal hydrogen bonding",
     "conformation. Hydrogen bonds are defined based on a simple geometric",
     "criterion, specified by the maximum hydrogen-donor-acceptor angle",
     "and donor-acceptor distance, which are set by [TT]-angle[tt] and",
     "[TT]-dist[tt] respectively.[PAR]",
-      
+     
+    "The protonation state of N- and C-termini can be chosen interactively",
+    "with the [TT]-ter[tt] flag.  Default termini are ionized (NH3+ and COO-),",
+    "respectively.  Some force fields support zwitterionic forms for chains of",
+    "one residue, but for polypeptides these options should NOT be selected.",
+    "The AMBER force fields have unique forms for the terminal residues,",
+    "and these are incompatible with the [TT]-ter[tt] mechanism. You need",
+    "to prefix your N- or C-terminal residue names with \"N\" or \"C\"",
+    "respectively to use these forms, making sure you preserve the format",
+    "of the coordinate file. Alternatively, use named terminating residues",
+    "(e.g. ACE, NME).[PAR]",
+
     "The separation of chains is not entirely trivial since the markup",
     "in user-generated PDB files frequently varies and sometimes it",
     "is desirable to merge entries across a TER record, for instance",
     "if you want a disulfide bridge or distance restraints between",
     "two protein chains or if you have a HEME group bound to a protein.",
     "In such cases multiple chains should be contained in a single",
-    "[TT]molecule_type[tt] definition.",
-    "To handle this, pdb2gmx has an option [TT]-chainsep[tt] so you can",
-    "choose whether a new chain should start when we find a TER record,",
-    "when the chain id changes, combinations of either or both of these",
-    "or fully interactively.[PAR]",
-    
-    "pdb2gmx will also check the occupancy field of the pdb file.",
+    "[TT]moleculetype[tt] definition.",
+    "To handle this, [TT]pdb2gmx[tt] uses two separate options.",
+    "First, [TT]-chainsep[tt] allows you to choose when a new chemical chain should",
+    "start, and termini added when applicable. This can be done based on the",
+    "existence of TER records, when the chain id changes, or combinations of either",
+    "or both of these. You can also do the selection fully interactively.",
+    "In addition, there is a [TT]-merge[tt] option that controls how multiple chains",
+    "are merged into one moleculetype, after adding all the chemical termini (or not).",
+    "This can be turned off (no merging), all non-water chains can be merged into a",
+    "single molecule, or the selection can be done interactively.[PAR]",
+      
+    "[TT]pdb2gmx[tt] will also check the occupancy field of the [TT].pdb[tt] file.",
     "If any of the occupancies are not one, indicating that the atom is",
     "not resolved well in the structure, a warning message is issued.",
-    "When a pdb file does not originate from an X-Ray structure determination",
+    "When a [TT].pdb[tt] file does not originate from an X-ray structure determination",
     "all occupancy fields may be zero. Either way, it is up to the user",
     "to verify the correctness of the input data (read the article!).[PAR]", 
     
-    "During processing the atoms will be reordered according to Gromacs",
+    "During processing the atoms will be reordered according to GROMACS",
     "conventions. With [TT]-n[tt] an index file can be generated that",
     "contains one group reordered in the same way. This allows you to",
-    "convert a Gromos trajectory and coordinate file to Gromos. There is",
+    "convert a GROMOS trajectory and coordinate file to GROMOS. There is",
     "one limitation: reordering is done after the hydrogens are stripped",
     "from the input and before new hydrogens are added. This means that",
     "you should not use [TT]-ignh[tt].[PAR]",
 
     "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
-    "identifiers. Therefore it is useful to enter a pdb file name at",
-    "the [TT]-o[tt] option when you want to convert a multi-chain pdb file.",
+    "identifiers. Therefore it is useful to enter a [TT].pdb[tt] file name at",
+    "the [TT]-o[tt] option when you want to convert a multi-chain [TT].pdb[tt] file.",
     "[PAR]",
     
     "The option [TT]-vsite[tt] removes hydrogen and fast improper dihedral",
@@ -1030,7 +1094,7 @@ int main(int argc, char *argv[])
     "position relative to neighboring atoms. Additionally, all atoms in the",
     "aromatic rings of the standard amino acids (i.e. PHE, TRP, TYR and HIS)",
     "can be converted into virtual sites, eliminating the fast improper dihedral",
-    "fluctuations in these rings. Note that in this case all other hydrogen",
+    "fluctuations in these rings. [BB]Note[bb] that in this case all other hydrogen",
     "atoms are also converted to virtual sites. The mass of all atoms that are",
     "converted into virtual sites, is added to the heavy atoms.[PAR]",
     "Also slowing down of dihedral motion can be done with [TT]-heavyh[tt]",
@@ -1084,7 +1148,7 @@ int main(int argc, char *argv[])
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  gmx_bool       bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE,bMerge;
+  gmx_bool       bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE,bCheckMerge;
   real       mHmult=0;
   t_hackblock *hb_chain;
   t_restp    *restp_chain;
@@ -1106,6 +1170,8 @@ int main(int argc, char *argv[])
   int           nid_used;
   int           this_chainstart;
   int           prev_chainstart;
+  gmx_bool      bMerged;
+  int           nchainmerges;
     
   gmx_atomprop_t aps;
   
@@ -1134,19 +1200,22 @@ int main(int argc, char *argv[])
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   static const char *watstr[] = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
   static const char *chainsep[] = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive", NULL };
+  static const char *merge[] = {NULL, "no", "all", "interactive", NULL };
   static const char *ff = "select";
 
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
-      "HIDDENWrite the residue database in new format to 'new.rtp'"},
+      "HIDDENWrite the residue database in new format to [TT]new.rtp[tt]"},
     { "-lb",     FALSE, etREAL, {&long_bond_dist},
       "HIDDENLong bond warning distance" },
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
     { "-chainsep", FALSE, etENUM, {chainsep},
-      "Condition in PDB files when a new chain and molecule_type should be started" },
+      "Condition in PDB files when a new chain should be started (adding termini)" },
+    { "-merge",  FALSE, etENUM, {&merge},
+      "Merge multiple chains into a single [moleculetype]" },         
     { "-ff",     FALSE, etSTR,  {&ff},
-      "Force field, interactive by default. Use -h for information." },
+      "Force field, interactive by default. Use [TT]-h[tt] for information." },
     { "-water",  FALSE, etENUM, {watstr},
       "Water model to use" },
     { "-inter",  FALSE, etBOOL, {&bInter},
@@ -1154,30 +1223,30 @@ int main(int argc, char *argv[])
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
       "Interactive SS bridge selection" },
     { "-ter",    FALSE, etBOOL, {&bTerMan}, 
-      "Interactive termini selection, iso charged" },
+      "Interactive termini selection, instead of charged (default)" },
     { "-lys",    FALSE, etBOOL, {&bLysMan}, 
-      "Interactive Lysine selection, iso charged" },
+      "Interactive lysine selection, instead of charged" },
     { "-arg",    FALSE, etBOOL, {&bArgMan}, 
-      "Interactive Arganine selection, iso charged" },
+      "Interactive arginine selection, instead of charged" },
     { "-asp",    FALSE, etBOOL, {&bAspMan}, 
-      "Interactive Aspartic Acid selection, iso charged" },
+      "Interactive aspartic acid selection, instead of charged" },
     { "-glu",    FALSE, etBOOL, {&bGluMan}, 
-      "Interactive Glutamic Acid selection, iso charged" },
+      "Interactive glutamic acid selection, instead of charged" },
     { "-gln",    FALSE, etBOOL, {&bGlnMan}, 
-      "Interactive Glutamine selection, iso neutral" },
+      "Interactive glutamine selection, instead of neutral" },
     { "-his",    FALSE, etBOOL, {&bHisMan},
-      "Interactive Histidine selection, iso checking H-bonds" },
+      "Interactive histidine selection, instead of checking H-bonds" },
     { "-angle",  FALSE, etREAL, {&angle}, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
       "Maximum donor-acceptor distance for a H-bond (nm)" },
     { "-una",    FALSE, etBOOL, {&bUnA}, 
-      "Select aromatic rings with united CH atoms on Phenylalanine, "
-      "Tryptophane and Tyrosine" },
+      "Select aromatic rings with united CH atoms on phenylalanine, "
+      "tryptophane and tyrosine" },
     { "-sort",   FALSE, etBOOL, {&bSort}, 
       "HIDDENSort the residues according to database, turning this off is dangerous as charge groups might be broken in parts" },
     { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
-      "Ignore hydrogen atoms that are in the pdb file" },
+      "Ignore hydrogen atoms that are in the coordinate file" },
     { "-missing",FALSE, etBOOL, {&bAllowMissing}, 
       "Continue when atoms are missing, dangerous" },
     { "-v",      FALSE, etBOOL, {&bVerbose}, 
@@ -1191,13 +1260,13 @@ int main(int argc, char *argv[])
     { "-deuterate", FALSE, etBOOL, {&bDeuterate},
       "Change the mass of hydrogens to 2 amu" },
     { "-chargegrp", TRUE, etBOOL, {&bChargeGroups},
-      "Use charge groups in the rtp file"  },
+      "Use charge groups in the [TT].rtp[tt] file"  },
     { "-cmap", TRUE, etBOOL, {&bCmap},
-      "Use cmap torsions (if enabled in the rtp file)"  },
+      "Use cmap torsions (if enabled in the [TT].rtp[tt] file)"  },
     { "-renum", TRUE, etBOOL, {&bRenumRes},
       "Renumber the residues consecutively in the output"  },
     { "-rtpres", TRUE, etBOOL, {&bRTPresname},
-      "Use rtp entry names as residue names"  }
+      "Use [TT].rtp[tt] entry names as residue names"  }
   };
 #define NPARGS asize(pa)
   
@@ -1273,7 +1342,7 @@ int main(int argc, char *argv[])
   for(i=0; i<nrrn; i++) {
     fp = fflib_open(rrn[i]);
     read_rtprename(rrn[i],fp,&nrtprename,&rtprename);
-    fclose(fp);
+    ffclose(fp);
     sfree(rrn[i]);
   }
   sfree(rrn);
@@ -1320,8 +1389,7 @@ int main(int argc, char *argv[])
     
   modify_chain_numbers(&pdba_all,chainsep[0]);
 
-    
-  bMerge = !strncmp(chainsep[0],"int",3);
+  nchainmerges        = 0;
     
   this_atomname       = NULL;
   this_atomnum        = -1;
@@ -1330,8 +1398,12 @@ int main(int argc, char *argv[])
   this_chainid        = '?';
   this_chainnumber    = -1;
   this_chainstart     = 0;
+  /* Keep the compiler happy */
+  prev_chainstart     = 0;
     
   pdb_ch=NULL;
+
+  bMerged = FALSE;
   for (i=0; (i<natom); i++) 
   {
       ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
@@ -1342,7 +1414,10 @@ int main(int argc, char *argv[])
       prev_resnum        = this_resnum;
       prev_chainid       = this_chainid;
       prev_chainnumber   = this_chainnumber;
-      prev_chainstart    = this_chainstart;
+      if (!bMerged)
+      {
+          prev_chainstart    = this_chainstart;
+      }
       
       this_atomname      = *pdba_all.atomname[i];
       this_atomnum       = (pdba_all.pdbinfo != NULL) ? pdba_all.pdbinfo[i].atomnr : i+1;
@@ -1355,29 +1430,36 @@ int main(int argc, char *argv[])
       if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat != bPrevWat)) 
       {
           this_chainstart = pdba_all.atom[i].resind;
-          if (bMerge && i>0 && !bWat) 
+          
+          bMerged = FALSE;
+          if (i>0 && !bWat) 
           {
-              printf("Merge chain ending with residue %s%d (chain id '%c', atom %d %s) with\n"
-                     "chain starting with residue %s%d (chain id '%c', atom %d %s)? [n/y]\n",
-                     prev_resname,prev_resnum,prev_chainid,prev_atomnum,prev_atomname,
-                     this_resname,this_resnum,this_chainid,this_atomnum,this_atomname);
-              
-              if(NULL==fgets(select,STRLEN-1,stdin))
+              if(!strncmp(merge[0],"int",3))
               {
-                  gmx_fatal(FARGS,"Error reading from stdin");
+                  printf("Merge chain ending with residue %s%d (chain id '%c', atom %d %s) and chain starting with\n"
+                         "residue %s%d (chain id '%c', atom %d %s) into a single moleculetype (keeping termini)? [n/y]\n",
+                         prev_resname,prev_resnum,prev_chainid,prev_atomnum,prev_atomname,
+                         this_resname,this_resnum,this_chainid,this_atomnum,this_atomname);
+                  
+                  if(NULL==fgets(select,STRLEN-1,stdin))
+                  {
+                      gmx_fatal(FARGS,"Error reading from stdin");
+                  }
+                  bMerged = (select[0] == 'y');
               }
-          } 
-          else
-          {
-              select[0] = 'n';
+              else if(!strncmp(merge[0],"all",3))
+              {
+                  bMerged = TRUE;
+              }
           }
           
-          if (select[0] == 'y') 
-          {
+          if (bMerged)
+          { 
               pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] = 
               pdba_all.atom[i].resind - prev_chainstart;
               pdb_ch[nch-1].nterpairs++;
               srenew(pdb_ch[nch-1].chainstart,pdb_ch[nch-1].nterpairs+1);
+              nchainmerges++;
           }
           else 
           {
@@ -1482,9 +1564,9 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (bMerge)
-    printf("\nMerged %d chains into one molecule definition\n\n",
-	   pdb_ch[0].nterpairs);
+  if (nchainmerges>0)
+    printf("\nMerged chains into joint molecule definitions at %d places.\n\n",
+           nchainmerges);
 
   printf("There are %d chains and %d blocks of water and "
 	 "%d residues with %d atoms\n",
@@ -1560,23 +1642,25 @@ int main(int argc, char *argv[])
 		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab,
 		  nrtprename,rtprename);
       
-    for(i=0; i<cc->nterpairs; i++) {
-        
-      cc->chainstart[cc->nterpairs] = pdba->nres;
-                
-      find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
-		  &(cc->r_start[i]),&(cc->r_end[i]),rt);    
+        cc->chainstart[cc->nterpairs] = pdba->nres;
+        j = 0;
+        for(i=0; i<cc->nterpairs; i++)
+        {
+            find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
+                        &(cc->r_start[j]),&(cc->r_end[j]),rt);    
       
-        
-      if ( (cc->r_start[i]<0) || (cc->r_end[i]<0) ) {
-	printf("Problem with chain definition, or missing terminal residues.\n"
-	       "This chain does not appear to contain a recognized chain molecule.\n"
-           "If this is incorrect, you can edit residuetypes.dat to modify the behavior.\n");
-           
-	cc->nterpairs = i;
-	break;
-      }
-    }
+            if (cc->r_start[j] >= 0 && cc->r_end[j] >= 0)
+            {
+                j++;
+            }
+        }
+        cc->nterpairs = j;
+        if (cc->nterpairs == 0)
+        {
+            printf("Problem with chain definition, or missing terminal residues.\n"
+                   "This chain does not appear to contain a recognized chain molecule.\n"
+                   "If this is incorrect, you can edit residuetypes.dat to modify the behavior.\n");
+        }
 
     /* Check for disulfides and other special bonds */
     nssbonds = mk_specbonds(pdba,x,bCysMan,&ssbonds,bVerbose);
@@ -1621,14 +1705,20 @@ int main(int argc, char *argv[])
             {
                 if(bTerMan && ntdblist>1)
                 {
-                    cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select start terminus type");
+                    sprintf(select,"Select start terminus type for %s-%d",
+                            *pdba->resinfo[cc->r_start[i]].name,
+                            pdba->resinfo[cc->r_start[i]].nr);
+                    cc->ntdb[i] = choose_ter(ntdblist,tdblist,select);
                 }
                 else
                 {
                     cc->ntdb[i] = tdblist[0];
                 }
                 
-                printf("Start terminus: %s\n",(cc->ntdb[i])->name);
+                printf("Start terminus %s-%d: %s\n",
+                       *pdba->resinfo[cc->r_start[i]].name,
+                       pdba->resinfo[cc->r_start[i]].nr,
+                       (cc->ntdb[i])->name);
                 sfree(tdblist);
             }
         }
@@ -1654,13 +1744,19 @@ int main(int argc, char *argv[])
             {
                 if(bTerMan && ntdblist>1)
                 {
-                    cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select end terminus type");
+                    sprintf(select,"Select end terminus type for %s-%d",
+                            *pdba->resinfo[cc->r_end[i]].name,
+                            pdba->resinfo[cc->r_end[i]].nr);
+                    cc->ctdb[i] = choose_ter(ntdblist,tdblist,select);
                 }
                 else
                 {
                     cc->ctdb[i] = tdblist[0];
                 }
-                printf("End terminus: %s\n",(cc->ctdb[i])->name);
+                printf("End terminus %s-%d: %s\n",
+                       *pdba->resinfo[cc->r_end[i]].name,
+                       pdba->resinfo[cc->r_end[i]].nr,
+                       (cc->ctdb[i])->name);
                 sfree(tdblist);
             }
         }
@@ -1819,7 +1915,7 @@ int main(int argc, char *argv[])
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,
 	    nrtp,restp,
 	    restp_chain,hb_chain,
-	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->r_start,cc->r_end,bAllowMissing,
+	    cc->nterpairs,cc->ntdb,cc->ctdb,bAllowMissing,
 	    bVsites,bVsiteAromatics,forcefield,ffdir,
 	    mHmult,nssbonds,ssbonds,
 	    long_bond_dist,short_bond_dist,bDeuterate,bChargeGroups,bCmap,

@@ -10,7 +10,7 @@
 ********************************************************************
 
 #define _FF_AMBER
-#define _FF_AMBER96
+#define _FF_AMBER94
 
 [ defaults ]
 ; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ

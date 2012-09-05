@@ -472,11 +472,11 @@ t_xhighway *GetXHW(t_x11 *x11,const char *infile)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "highway is the gromacs highway simulator. It is an X-windows",
+    "[TT]highway[tt] is the GROMCAS highway simulator. It is an X-windows",
     "gadget that shows a (periodic) Autobahn with a user defined",
     "number of cars. Fog can be turned on or off to increase the",
     "number of crashes. Nice for a background CPU-eater. A sample",
-    "input file is in $GMXDATA/top/highway.dat"
+    "input file is in [TT]$GMXDATA/top/highway.dat[tt]"
   };
   output_env_t oenv;
   t_x11      *x11;
@@ -486,7 +486,7 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,
 		    0,NULL,asize(desc),desc,0,NULL,&oenv);
   

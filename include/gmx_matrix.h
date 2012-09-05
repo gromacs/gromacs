@@ -1,5 +1,4 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * $Id: gmx_matrix.h,v 1.2 2008/11/26 11:06:21 spoel Exp $
  * 
  *                This source code is part of
  * 

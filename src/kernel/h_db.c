@@ -110,25 +110,6 @@ void read_ab(char *line,const char *fn,t_hack *hack)
     hack->newx[i]=NOTSET;
 }
 
-static void dump_h_db(const char *fn,int nah,t_hackblock *ah)
-{
-  FILE *fp;
-  char buf[STRLEN],nname[STRLEN];
-  int  i,j,k;
-  
-  sprintf(buf,"%s_new.hdb",fn);
-  fp = gmx_fio_fopen(buf,"w");
-  for(i=0; (i<nah); i++) {
-    fprintf(fp,"%-8s%-8d\n",ah[i].name,ah[i].nhack);
-    for(k=0; (k<ah[i].nhack); k++) {
-      strcpy(nname,ah[i].hack[k].a[0]);
-      nname[0] = 'H';
-      print_ab(fp,&ah[i].hack[k],nname);
-    }
-  }
-  gmx_fio_fclose(fp);
-}
-
 static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
 {	
   FILE   *in;
@@ -183,8 +164,10 @@ static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
   /* Sort the list (necessary to be able to use bsearch */
   qsort(aah,nah,(size_t)sizeof(**ah),compaddh);
 
+  /*
   if (debug)
     dump_h_db(hfn,nah,aah);
+  */
   
   *nahptr = nah;
   *ah     = aah;

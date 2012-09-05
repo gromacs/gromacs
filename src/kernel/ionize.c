@@ -488,42 +488,6 @@ void rand_vector(rvec v,int *seed)
   polar2cart(phi,theta,v);
 }
 
-real electron_cross_section(FILE *fp,rvec v,real mass,int nelec)
-{
-  /* Compute cross section for electrons */
-  real T,B,U,S,Q,R,N,t,u,lnt,sigma;
-  real a0 = 0.05292; /* nm */
-  
-  /* Have to determine T (kinetic energy of electron) */
-  T = 0.5*mass*iprod(v,v);
-  
-  /* R is the binding energy of the electron in hydrogen */
-  R = 13.61*ELECTRONVOLT;
-  
-  /* Have to determine the binding energy B, differs per orbital of course */
-  B = R;
-  
-  /* Have to determine the orbital kinetic energy U */
-  U = R;
-  
-  /* Have to know number of electrons */
-  N = nelec;
-  
-  /* Magic constant Q */
-  Q = 1;
-  
-  /* Some help variables */
-  t     = T/B;
-  u     = U/B;
-  S     = 4*M_PI*sqr(a0)*N*sqr(R/B);
-  lnt   = log(t);
-  
-  /* Resulting variable */
-  sigma = (S/(t+u+1))*( 0.5*Q*lnt*(1-1/sqr(t)) + (2-Q)*(1-1/t-lnt/(t+1)) ); 
-  
-  return sigma;
-}
-
 gmx_bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
 		 int *seed,real dt)
 {
@@ -748,7 +712,7 @@ void ionize(FILE *fp,const output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
 	}
 	if (debug)
 	  fprintf(debug,"i = %d, nK = %d, nL = %d, bL = %s, bKHole = %s\n",
-		  i,nK,nL,BOOL(bL),BOOL(bKHole));
+		  i,nK,nL,EBOOL(bL),EBOOL(bKHole));
 	if (E_lost < 0) {
 	  E_lost  = 0.0;
 	  bIonize = FALSE;

@@ -74,7 +74,7 @@ static atom_id pdbasearch_atom(const char *name,int resind,t_atoms *pdba,
   for(i=0; (i<pdba->nr) && (pdba->atom[i].resind != resind); i++)
     ;
     
-  return search_atom(name,i,pdba->nr,pdba->atom,pdba->atomname,
+  return search_atom(name,i,pdba,
 		     searchtype,bAllowMissing);
 }
 
@@ -146,8 +146,9 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   for(rnr=0; rnr < pdba->nres; rnr++) {
     ahptr=search_h_db(nah,ah,*pdba->resinfo[rnr].rtp);
     if ( ahptr ) {
-      if (hb[rnr].name==NULL)
-	hb[rnr].name=strdup(ahptr->name);
+      if (hb[rnr].name==NULL) {
+	    hb[rnr].name=strdup(ahptr->name);
+      }
       merge_hacks(ahptr, &hb[rnr]);
     }
   }
@@ -166,17 +167,22 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
        all hacks involving atoms from resp. previous or next residue
        (i.e. which name begins with '-' (N) or '+' (C) */
     bIgnore = FALSE;
-    if ( bN ) /* N-terminus: ignore '-' */
-      for(k=0; k<4 && hbr->hack[j].a[k] && !bIgnore; k++)
-	bIgnore = hbr->hack[j].a[k][0]=='-';
-    if ( bC ) /* C-terminus: ignore '+' */
-      for(k=0; k<4 && hbr->hack[j].a[k] && !bIgnore; k++)
-	bIgnore = hbr->hack[j].a[k][0]=='+';
+    if ( bN ) { /* N-terminus: ignore '-' */
+      for(k=0; k<4 && hbr->hack[j].a[k] && !bIgnore; k++) {
+	    bIgnore = hbr->hack[j].a[k][0]=='-';
+      }
+    }
+    if ( bC ) { /* C-terminus: ignore '+' */
+      for(k=0; k<4 && hbr->hack[j].a[k] && !bIgnore; k++) {
+	    bIgnore = hbr->hack[j].a[k][0]=='+';
+      }
+    }
     /* must be either hdb entry (tp>0) or add from tdb (oname==NULL)
        and first control aton (AI) matches this atom or
        delete/replace from tdb (oname!=NULL) and oname matches this atom */
-    if (debug) fprintf(debug," %s",
-		       hbr->hack[j].oname?hbr->hack[j].oname:hbr->hack[j].AI);
+    if (debug) {
+        fprintf(debug," %s",hbr->hack[j].oname?hbr->hack[j].oname:hbr->hack[j].AI);
+    }
 
     if ( !bIgnore &&
          ( ( ( hbr->hack[j].tp > 0 || hbr->hack[j].oname==NULL ) &&
@@ -184,56 +190,60 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
            ( hbr->hack[j].oname!=NULL &&
              strcmp(atomname, hbr->hack[j].oname) == 0) ) ) {
       /* now expand all hacks for this atom */
-      if (debug) fprintf(debug," +%dh",hbr->hack[j].nr);
+      if (debug) {
+         fprintf(debug," +%dh",hbr->hack[j].nr);
+      }
       srenew(*abi,*nabi + hbr->hack[j].nr);
       for(k=0; k < hbr->hack[j].nr; k++) {
-	copy_t_hack(&hbr->hack[j], &(*abi)[*nabi + k]);
-	(*abi)[*nabi + k].bXSet = FALSE;
-	/* if we're adding (oname==NULL) and don't have a new name (nname) 
-	   yet, build it from atomname */
-	if ( (*abi)[*nabi + k].nname==NULL ) {
-	  if ( (*abi)[*nabi + k].oname==NULL ) {
-	    (*abi)[*nabi + k].nname=strdup(atomname);
-	    (*abi)[*nabi + k].nname[0]='H';
-	  }
-	} else {
-	  if (gmx_debug_at) {
-	    fprintf(debug,"Hack '%s' %d, replacing nname '%s' with '%s' (old name '%s')\n",
-		    atomname,j,
-		    (*abi)[*nabi + k].nname,hbr->hack[j].nname,
-		    (*abi)[*nabi + k].oname ? (*abi)[*nabi + k].oname : "");
-	  }
-	  sfree((*abi)[*nabi + k].nname);
-	  (*abi)[*nabi + k].nname=strdup(hbr->hack[j].nname);
-	}
+	    copy_t_hack(&hbr->hack[j], &(*abi)[*nabi + k]);
+	    (*abi)[*nabi + k].bXSet = FALSE;
+	    /* if we're adding (oname==NULL) and don't have a new name (nname) 
+	    yet, build it from atomname */
+	    if ( (*abi)[*nabi + k].nname==NULL ) {
+	        if ( (*abi)[*nabi + k].oname==NULL ) {
+	            (*abi)[*nabi + k].nname=strdup(atomname);
+	            (*abi)[*nabi + k].nname[0]='H';
+	        }
+	    } else {
+	        if (gmx_debug_at) {
+	            fprintf(debug,"Hack '%s' %d, replacing nname '%s' with '%s' (old name '%s')\n",
+		            atomname,j,
+		            (*abi)[*nabi + k].nname,hbr->hack[j].nname,
+		            (*abi)[*nabi + k].oname ? (*abi)[*nabi + k].oname : "");
+	        }
+	    sfree((*abi)[*nabi + k].nname);
+	    (*abi)[*nabi + k].nname=strdup(hbr->hack[j].nname);
+	    }
 
-	if (hbr->hack[j].tp == 10 && k == 2) {
-	  /* This is a water virtual site, not a hydrogen */
-	  /* Ugly hardcoded name hack */
-	  (*abi)[*nabi + k].nname[0] = 'M';
-	} else if (hbr->hack[j].tp == 11 && k >= 2) {
-	  /* This is a water lone pair, not a hydrogen */
-	  /* Ugly hardcoded name hack */
-	  srenew((*abi)[*nabi + k].nname,4);
-	  (*abi)[*nabi + k].nname[0] = 'L';
-	  (*abi)[*nabi + k].nname[1] = 'P';
-	  (*abi)[*nabi + k].nname[2] = '1' + k - 2;
-	  (*abi)[*nabi + k].nname[3] = '\0';
-	} else if ( hbr->hack[j].nr > 1 ) {
-	  /* adding more than one atom, number them */
-	  l = strlen((*abi)[*nabi + k].nname);
-	  srenew((*abi)[*nabi + k].nname, l+2);
-	  (*abi)[*nabi + k].nname[l]   = '1' + k;
-	  (*abi)[*nabi + k].nname[l+1] = '\0';
-	}
+	    if (hbr->hack[j].tp == 10 && k == 2) {
+	        /* This is a water virtual site, not a hydrogen */
+	        /* Ugly hardcoded name hack */
+	        (*abi)[*nabi + k].nname[0] = 'M';
+	    } else if (hbr->hack[j].tp == 11 && k >= 2) {
+	        /* This is a water lone pair, not a hydrogen */
+	        /* Ugly hardcoded name hack */
+	        srenew((*abi)[*nabi + k].nname,4);
+	        (*abi)[*nabi + k].nname[0] = 'L';
+	        (*abi)[*nabi + k].nname[1] = 'P';
+	        (*abi)[*nabi + k].nname[2] = '1' + k - 2;
+	        (*abi)[*nabi + k].nname[3] = '\0';
+	    } else if ( hbr->hack[j].nr > 1 ) {
+	        /* adding more than one atom, number them */
+	        l = strlen((*abi)[*nabi + k].nname);
+	        srenew((*abi)[*nabi + k].nname, l+2);
+	        (*abi)[*nabi + k].nname[l]   = '1' + k;
+	        (*abi)[*nabi + k].nname[l+1] = '\0';
+	    }
       }
       (*nabi) += hbr->hack[j].nr;
       
       /* add hacks to atoms we've just added */
-      if ( hbr->hack[j].tp > 0 || hbr->hack[j].oname==NULL )
-	for(k=0; k < hbr->hack[j].nr; k++)
-	  expand_hackblocks_one(hbr, (*abi)[*nabi-hbr->hack[j].nr+k].nname, 
+      if ( hbr->hack[j].tp > 0 || hbr->hack[j].oname==NULL ) {
+	      for(k=0; k < hbr->hack[j].nr; k++) {
+	        expand_hackblocks_one(hbr, (*abi)[*nabi-hbr->hack[j].nr+k].nname, 
 				nabi, abi, bN, bC);
+          }
+      }
     }
   }
 }
@@ -313,30 +323,31 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
     for(j=0; j < nab[i]; j+=ab[i][j].nr) {
       /* check if we're adding: */
       if (ab[i][j].oname==NULL && ab[i][j].tp > 0) {
-	bFoundAll = TRUE;
-	for(m=0; (m<ab[i][j].nctl && bFoundAll); m++) {
-	  ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba,
+	    bFoundAll = TRUE;
+	    for(m=0; (m<ab[i][j].nctl && bFoundAll); m++) {
+	        ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba,
 			       bCheckMissing ? "atom" : "check",
 			       !bCheckMissing);
-	  if (ia < 0) {
-	    /* not found in original atoms, might still be in t_hack (ab) */
-	    hacksearch_atom(&ii, &jj, ab[i][j].a[m], nab, ab, rnr, pdba);
-	    if (ii >= 0) {
-	      copy_rvec(ab[ii][jj].newx, xa[m]);
-	    } else {
-	      bFoundAll = FALSE;
-	      if (bCheckMissing) {
-		gmx_fatal(FARGS,"Atom %s not found in residue %s %d"
-			  ", rtp entry %s"
-			  " while adding hydrogens",
-			  ab[i][j].a[m],
-			  *pdba->resinfo[rnr].name,
-			  pdba->resinfo[rnr].nr,
-			  *pdba->resinfo[rnr].rtp);
-	      }
-	    }
-	  } else
+	    if (ia < 0) {
+	        /* not found in original atoms, might still be in t_hack (ab) */
+	        hacksearch_atom(&ii, &jj, ab[i][j].a[m], nab, ab, rnr, pdba);
+	        if (ii >= 0) {
+	            copy_rvec(ab[ii][jj].newx, xa[m]);
+	        } else {
+	            bFoundAll = FALSE;
+	            if (bCheckMissing) {
+		            gmx_fatal(FARGS,"Atom %s not found in residue %s %d"
+			            ", rtp entry %s"
+			            " while adding hydrogens",
+			            ab[i][j].a[m],
+			            *pdba->resinfo[rnr].name,
+			            pdba->resinfo[rnr].nr,
+			            *pdba->resinfo[rnr].rtp);
+	            }
+	        }
+	  } else {
 	    copy_rvec(x[ia], xa[m]);
+      }
 	}
 	if (bFoundAll) {
 	  for(m=0; (m<MAXH); m++)
@@ -636,19 +647,25 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
   
   atoms=NULL;
   if ( !protdata->bInit ) {
-    if (debug) fprintf(debug,"protonate: Initializing protdata\n");
+    if (debug) {
+         fprintf(debug,"protonate: Initializing protdata\n");
+    }
+
     /* set forcefield to use: */
-    strcpy(protdata->FF,"ffgmx2");
+    strcpy(protdata->FF,"gmx2.ff");
+
     /* get the databases: */
     protdata->nah = read_h_db(protdata->FF,&protdata->ah);
     open_symtab(&protdata->tab); 
     protdata->atype = read_atype(protdata->FF,&protdata->tab);
     nntdb = read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype);
-    if (nntdb < 1)
-      gmx_fatal(FARGS,"no n-terminus db");
+    if (nntdb < 1) {
+      gmx_fatal(FARGS,"no N-terminus database");
+    }
     nctdb = read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype);
-    if (nctdb < 1)
-      gmx_fatal(FARGS,"no c-terminus db");
+    if (nctdb < 1) {
+      gmx_fatal(FARGS,"no C-terminus database");
+    }
     
     /* set terminus types: -NH3+ (different for Proline) and -COO- */
     atoms=*atomsptr;
@@ -656,15 +673,16 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     snew(protdata->sel_ctdb, NTERPAIRS);
 
     if (nntdb>=4 && nctdb>=2) {
-      /* Yuk, yuk, hardcoded default termini selections !!! */
-      if (strncmp(*atoms->resinfo[atoms->atom[atoms->nr-1].resind].name,"PRO",3)==0)
-	nt = 3;
-      else
-	nt = 1;
-      ct = 1;
+        /* Yuk, yuk, hardcoded default termini selections !!! */
+        if (strncmp(*atoms->resinfo[atoms->atom[atoms->nr-1].resind].name,"PRO",3)==0) {
+	        nt = 3;
+        } else {
+    	    nt = 1;
+        }
+        ct = 1;
     } else {
-      nt = 0;
-      ct = 0;
+        nt = 0;
+        ct = 0;
     }
     protdata->sel_ntdb[0]=&(protdata->ntdb[nt]);
     protdata->sel_ctdb[0]=&(protdata->ctdb[ct]);
@@ -689,8 +707,10 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     /* set flag to show we're initialized: */
     protdata->bInit=TRUE;
   } else {
-    if (debug) fprintf(debug,"protonate: using available protdata\n");
-    /* add_h will need the unprotonated topoloy again: */
+    if (debug) {
+        fprintf(debug,"protonate: using available protdata\n");
+    }
+    /* add_h will need the unprotonated topology again: */
     atoms = protdata->upatoms;
     bUpdate_pdba=FALSE;
     bKeep_old_pdba=FALSE;
@@ -701,12 +721,15 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
 	       NTERPAIRS, protdata->sel_ntdb, protdata->sel_ctdb,
 	       protdata->rN, protdata->rC, TRUE,
 	       &protdata->nab, &protdata->ab, bUpdate_pdba, bKeep_old_pdba);
-  if ( ! protdata->patoms )
+  if ( ! protdata->patoms ) {
     /* store protonated topology */
     protdata->patoms = atoms;
+  }
   *atomsptr = protdata->patoms;
-  if (debug) fprintf(debug,"natoms: %d -> %d (nadd=%d)\n",
-		     protdata->upatoms->nr, protdata->patoms->nr, nadd);
+  if (debug) {
+    fprintf(debug,"natoms: %d -> %d (nadd=%d)\n",
+		    protdata->upatoms->nr, protdata->patoms->nr, nadd);
+  }
   return nadd;
 #undef NTERPAIRS  
 }

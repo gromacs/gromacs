@@ -63,7 +63,7 @@ static void get_xlatoms(const char *fn,FILE *fp,
 {
     char filebase[STRLEN];
     char line[STRLEN];
-    char rbuf[1024],abuf[1024],repbuf[1024],dumbuf[1024];
+    char abuf[1024],rbuf[1024],repbuf[1024],dumbuf[1024];
     char *_ptr;
     int  n,na,idum;
     t_xlate_atom *xl;
@@ -161,7 +161,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         {
             fp = fflib_open(f[i]);
             get_xlatoms(f[i],fp,&nxlate,&xlatom);
-            fclose(fp);
+            ffclose(fp);
             sfree(f[i]);
         }
         sfree(f);

@@ -66,8 +66,8 @@ if(NOT IS_DIRECTORY ${OpenMM_ROOT_DIR})
 endif()
 
 if(NOT IS_DIRECTORY ${OpenMM_ROOT_DIR})
-    message(FATAL_ERROR "Can't find OpenMM! Either set the OPENMM_ROOT_DIR environment " 
-    "variable to the path where your OpenMM installation is located or install it to the default location (/usr/local/openmm)!")
+    message(FATAL_ERROR "Could not find OpenMM! Set the OPENMM_ROOT_DIR environment "
+    "variable to contain the path of the OpenMM installation.")
 endif()
 
 if(NOT IS_DIRECTORY ${OpenMM_LIBRARY_DIR})
@@ -82,7 +82,7 @@ if(IS_DIRECTORY "${OpenMM_LIBRARY_DIR}/plugins")
     set(OpenMM_PLUGIN_DIR ${OpenMM_PLUGIN_DIR} CACHE PATH "OpenMM plugins directory")
 else()
     message(WARNING "Could not detect the OpenMM plugin directory at the default location (${OpenMM_LIBRARY_DIR}/plugins)."
-            "Check you OpenMM installation or manually set the OPENMM_PLUGIN_DIR environment variable!")
+            "Check your OpenMM installation or set the OPENMM_PLUGIN_DIR environment variable!")
 endif()
 
 if(NOT OpenMM_INCLUDE_DIR)

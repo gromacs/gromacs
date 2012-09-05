@@ -366,7 +366,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
     
     natoms              = mdatoms->nr;
 	ni0                 = mdatoms->start;
-	ni1                 = mdatoms->homenr;
+	ni1                 = mdatoms->start+mdatoms->homenr;
     factor  = 0.5*ONE_4PI_EPS0;
     n = 0;
     
@@ -583,7 +583,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
     
     natoms              = mdatoms->nr;
 	ni0                 = mdatoms->start;
-	ni1                 = mdatoms->homenr;
+	ni1                 = mdatoms->start+mdatoms->homenr;
 
     n = 0;
     prod = 0;
@@ -972,7 +972,7 @@ genborn_allvsall_calc_chainrule(t_forcerec *           fr,
     
     natoms              = mdatoms->nr;
 	ni0                 = mdatoms->start;
-	ni1                 = mdatoms->homenr;
+	ni1                 = mdatoms->start+mdatoms->homenr;
     dadx                = fr->dadx;
     
     aadata = (gmx_allvsallgb2_data_t *)work;

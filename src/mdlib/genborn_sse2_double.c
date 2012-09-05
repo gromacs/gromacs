@@ -1,5 +1,4 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * $Id: gmx_matrix.c,v 1.4 2008/12/02 18:27:57 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -58,14 +57,13 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
 /* Only compile this file if SSE2 intrinsics are available */
-#if ( (defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2)) && defined(GMX_DOUBLE) ) 
+#if 0 && defined (GMX_X86_SSE2)
 #include <gmx_sse2_double.h>
-#include <xmmintrin.h>
 #include <emmintrin.h>
 
 #include "genborn_sse2_double.h"
@@ -792,145 +790,142 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
     
 	rb     = born->work; 
     
-    jjnr   = nl->jjnr;
-    
+  jjnr   = nl->jjnr;
+  
 	/* Loop to get the proper form for the Born radius term, sse style */	
-    n0 = md->start;
-    n1 = md->start+md->homenr+1+natoms/2;
+  n0 = 0;
+  n1 = natoms;
     
 	if(gb_algorithm==egbSTILL) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = (2 * rbi * rbi * dvda[k])/ONE_4PI_EPS0;
+      rbi   = born->bRad[i];
+			rb[i] = (2 * rbi * rbi * dvda[i])/ONE_4PI_EPS0;
 		}
 	}
 	else if(gb_algorithm==egbHCT) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = rbi * rbi * dvda[k];
+      rbi   = born->bRad[i];
+			rb[i] = rbi * rbi * dvda[i];
 		}
 	}
 	else if(gb_algorithm==egbOBC) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = rbi * rbi * born->drobc[k] * dvda[k];
+      rbi   = born->bRad[i];
+			rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
 		}
 	}
     
-    jz = _mm_setzero_pd();
-    
-    n = j3A = j3B = 0;
-    
+  jz = _mm_setzero_pd();
+  
+  n = j3A = j3B = 0;
+  
 	for(i=0;i<nl->nri;i++)
 	{
-        ii     = nl->iinr[i];
+    ii     = nl->iinr[i];
 		ii3	   = ii*3;
-        is3    = 3*nl->shift[i];     
-        shX    = shiftvec[is3];  
-        shY    = shiftvec[is3+1];
-        shZ    = shiftvec[is3+2];
-        nj0    = nl->jindex[i];      
-        nj1    = nl->jindex[i+1];    
-        
-        ix     = _mm_set1_pd(shX+x[ii3+0]);
+    is3    = 3*nl->shift[i];     
+    shX    = shiftvec[is3];  
+    shY    = shiftvec[is3+1];
+    shZ    = shiftvec[is3+2];
+    nj0    = nl->jindex[i];      
+    nj1    = nl->jindex[i+1];    
+    
+    ix     = _mm_set1_pd(shX+x[ii3+0]);
 		iy     = _mm_set1_pd(shY+x[ii3+1]);
 		iz     = _mm_set1_pd(shZ+x[ii3+2]);
-				
+    
 		rbai   = _mm_load1_pd(rb+ii);			
 		fix    = _mm_setzero_pd();
 		fiy    = _mm_setzero_pd();
 		fiz    = _mm_setzero_pd();	
+    
         
-        
-        for(k=nj0;k<nj1-1;k+=2)
+    for(k=nj0;k<nj1-1;k+=2)
 		{
 			jnrA        = jjnr[k];   
 			jnrB        = jjnr[k+1];
-            
-            j3A         = 3*jnrA;  
+      
+      j3A         = 3*jnrA;  
 			j3B         = 3*jnrB;
             
-            GMX_MM_LOAD_1RVEC_2POINTERS_PD(x+j3A,x+j3B,jx,jy,jz);
-            
+      GMX_MM_LOAD_1RVEC_2POINTERS_PD(x+j3A,x+j3B,jx,jy,jz);
+      
 			dx          = _mm_sub_pd(ix,jx);
 			dy          = _mm_sub_pd(iy,jy);
 			dz          = _mm_sub_pd(iz,jz);
-            
-            GMX_MM_LOAD_2VALUES_PD(rb+jnrA,rb+jnrB,rbaj);
-            
+      
+      GMX_MM_LOAD_2VALUES_PD(rb+jnrA,rb+jnrB,rbaj);
+      
 			/* load chain rule terms for j1-4 */
 			f_gb        = _mm_load_pd(dadx);
 			dadx += 2;
 			f_gb_ai     = _mm_load_pd(dadx);
 			dadx += 2;
 			
-            /* calculate scalar force */
-            f_gb    = _mm_mul_pd(f_gb,rbai); 
-            f_gb_ai = _mm_mul_pd(f_gb_ai,rbaj);
-            f_gb    = _mm_add_pd(f_gb,f_gb_ai);
-            
-            tx     = _mm_mul_pd(f_gb,dx);
-            ty     = _mm_mul_pd(f_gb,dy);
-            tz     = _mm_mul_pd(f_gb,dz);
-            
-            fix    = _mm_add_pd(fix,tx);
-            fiy    = _mm_add_pd(fiy,ty);
-            fiz    = _mm_add_pd(fiz,tz);
-            
-            GMX_MM_DECREMENT_1RVEC_2POINTERS_PD(f+j3A,f+j3B,tx,ty,tz);
+      /* calculate scalar force */
+      f_gb    = _mm_mul_pd(f_gb,rbai); 
+      f_gb_ai = _mm_mul_pd(f_gb_ai,rbaj);
+      f_gb    = _mm_add_pd(f_gb,f_gb_ai);
+      
+      tx     = _mm_mul_pd(f_gb,dx);
+      ty     = _mm_mul_pd(f_gb,dy);
+      tz     = _mm_mul_pd(f_gb,dz);
+      
+      fix    = _mm_add_pd(fix,tx);
+      fiy    = _mm_add_pd(fiy,ty);
+      fiz    = _mm_add_pd(fiz,tz);
+      
+      GMX_MM_DECREMENT_1RVEC_2POINTERS_PD(f+j3A,f+j3B,tx,ty,tz);
 		}
-        
+    
 		/*deal with odd elements */
 		if(k<nj1) 
         {
-			jnrA        = jjnr[k];   
-            j3A         = 3*jnrA;  
-            
-            GMX_MM_LOAD_1RVEC_1POINTER_PD(x+j3A,jx,jy,jz);
-            
-			dx          = _mm_sub_sd(ix,jx);
-			dy          = _mm_sub_sd(iy,jy);
-			dz          = _mm_sub_sd(iz,jz);
-            
-            GMX_MM_LOAD_1VALUE_PD(rb+jnrA,rbaj);
-            
-			/* load chain rule terms */
-			f_gb        = _mm_load_pd(dadx);
-			dadx += 2;
-			f_gb_ai     = _mm_load_pd(dadx);
-			dadx += 2;
-			
-            /* calculate scalar force */
-            f_gb    = _mm_mul_sd(f_gb,rbai); 
-            f_gb_ai = _mm_mul_sd(f_gb_ai,rbaj);
-            f_gb    = _mm_add_sd(f_gb,f_gb_ai);
-            
-            tx     = _mm_mul_sd(f_gb,dx);
-            ty     = _mm_mul_sd(f_gb,dy);
-            tz     = _mm_mul_sd(f_gb,dz);
-            
-            fix    = _mm_add_sd(fix,tx);
-            fiy    = _mm_add_sd(fiy,ty);
-            fiz    = _mm_add_sd(fiz,tz);
-            
-            GMX_MM_DECREMENT_1RVEC_1POINTER_PD(f+j3A,tx,ty,tz);
+          jnrA        = jjnr[k];   
+          j3A         = 3*jnrA;  
+          
+          GMX_MM_LOAD_1RVEC_1POINTER_PD(x+j3A,jx,jy,jz);
+          
+          dx          = _mm_sub_sd(ix,jx);
+          dy          = _mm_sub_sd(iy,jy);
+          dz          = _mm_sub_sd(iz,jz);
+          
+          GMX_MM_LOAD_1VALUE_PD(rb+jnrA,rbaj);
+          
+          /* load chain rule terms */
+          f_gb        = _mm_load_pd(dadx);
+          dadx += 2;
+          f_gb_ai     = _mm_load_pd(dadx);
+          dadx += 2;
+          
+          /* calculate scalar force */
+          f_gb    = _mm_mul_sd(f_gb,rbai); 
+          f_gb_ai = _mm_mul_sd(f_gb_ai,rbaj);
+          f_gb    = _mm_add_sd(f_gb,f_gb_ai);
+          
+          tx     = _mm_mul_sd(f_gb,dx);
+          ty     = _mm_mul_sd(f_gb,dy);
+          tz     = _mm_mul_sd(f_gb,dz);
+          
+          fix    = _mm_add_sd(fix,tx);
+          fiy    = _mm_add_sd(fiy,ty);
+          fiz    = _mm_add_sd(fiz,tz);
+          
+          GMX_MM_DECREMENT_1RVEC_1POINTER_PD(f+j3A,tx,ty,tz);
         } 
-        
+    
 		/* fix/fiy/fiz now contain four partial force terms, that all should be
-         * added to the i particle forces and shift forces. 
-         */
+     * added to the i particle forces and shift forces. 
+     */
  		gmx_mm_update_iforce_1atom_pd(&fix,&fiy,&fiz,f+ii3,fshift+is3);
 	}	
-    
+  
 	return 0;	
 }
 

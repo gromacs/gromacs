@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,7 +52,7 @@
 #include "smalloc.h"
 #include "statutil.h"
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #include <io.h>
 #endif
@@ -60,7 +61,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 

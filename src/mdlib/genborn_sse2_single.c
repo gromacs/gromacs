@@ -56,16 +56,15 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
 
 /* Only compile this file if SSE intrinsics are available */
-#if ( (defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2)) && !defined(GMX_DOUBLE) )
+#if 0 && defined (GMX_X86_SSE2)
 
 #include <gmx_sse2_single.h>
-#include <xmmintrin.h>
 #include <emmintrin.h>
 
 #include "genborn_sse2_single.h"
@@ -1344,34 +1343,31 @@ float calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float
 	/* Loop to get the proper form for the Born radius term, sse style */
 	offset=natoms%4;
 	
-    n0 = md->start;
-    n1 = md->start+md->homenr+1+natoms/2;
-    
+  n0 = 0;
+  n1 = natoms;
+  
 	if(gb_algorithm==egbSTILL) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = (2 * rbi * rbi * dvda[k])/ONE_4PI_EPS0;
+      rbi   = born->bRad[i];
+			rb[i] = (2 * rbi * rbi * dvda[i])/ONE_4PI_EPS0;
 		}
 	}
 	else if(gb_algorithm==egbHCT) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = rbi * rbi * dvda[k];
+      rbi   = born->bRad[i];
+			rb[i] = rbi * rbi * dvda[i];
 		}
 	}
 	else if(gb_algorithm==egbOBC) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = rbi * rbi * born->drobc[k] * dvda[k];
+      rbi   = born->bRad[i];
+			rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
 		}
 	}
     

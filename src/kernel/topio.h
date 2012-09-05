@@ -65,6 +65,6 @@ extern char **do_top(gmx_bool         bVerbose,
 
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
-void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir);
+void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir,warninp_t    wi);
 
 #endif	/* _topio_h */

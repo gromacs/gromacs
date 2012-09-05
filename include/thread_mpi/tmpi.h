@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_H_
-#define _TMPI_H_
+#ifndef TMPI_TMPI_H_
+#define TMPI_TMPI_H_
 
 /** \file 
  *
@@ -62,6 +62,11 @@ extern "C"
 #if 0
 } /* Avoids screwing up auto-indentation */
 #endif
+
+/** tMPI definition. 
+
+Use this to check for thread_mpi with the preprocessor. */
+#define TMPI 
 
 
 
@@ -206,7 +211,7 @@ extern tMPI_Comm TMPI_COMM_WORLD;
 #define TMPI_GROUP_NULL NULL
 
 /** the empty group */
-extern tMPI_Group tMPI_GROUP_EMPTY;
+extern tMPI_Group TMPI_GROUP_EMPTY;
 
 
 /** The maximum processor name returned using tMPI_Get_processor_name(). */
@@ -931,7 +936,7 @@ int tMPI_Testany(int count, tMPI_Request *array_of_requests,
 /** Wait until some of several messages are transferred. Waits until at least
     one message is transferred.
    
-    \param[in]      count               The number of requests
+    \param[in]      incount             The number of requests
     \param[in,out]  array_of_requests   List of count requests obtained with
                                         tMPI_Isend()/tMPI_Irecv().
     \param[out]     outcount            Number of completed requests
@@ -947,7 +952,7 @@ int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
 
 /** Test whether some of several messages are transferred. 
 
-    \param[in]      count               The number of requests
+    \param[in]      incount             The number of requests
     \param[in,out]  array_of_requests   List of count requests obtained with
                                         tMPI_Isend()/tMPI_Irecv().
     \param[out]     outcount            Number of completed requests
@@ -1196,7 +1201,7 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
     \param[in]  sendbuf     The operand parameters. Any process may specify 
                             TMPI_IN_PLACE, in which case recvbuf will hold
                             the operand parameters for that process.
-    \param[out] recvbuf     The result buffer.
+    \param[in,out] recvbuf  The result buffer.
     \param[in]  count       The number of items to do operation on.
     \param[in]  datatype    The data type of the items.
     \param[in]  op          The operation to perform.
@@ -1231,6 +1236,27 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count, 
                      tMPI_Datatype datatype, tMPI_Op op, int root, 
                      tMPI_Comm comm);
+
+/** Do a partial reduce operation, based on rank: the results of the 
+    reduction operation of ranks 0 - i will be put in the recvbuf of
+    rank i.
+  
+    Collective function.
+
+    \param[in]     sendbuf     The operand parameters. All ranks may specify 
+                               TMPI_IN_PLACE, in which case recvbuf will hold
+                               the operand parameters.
+    \param[in,out] recvbuf     The result buffer.
+    \param[in]     count       The number of items to do operation on.
+    \param[in]     datatype    The data type of the items.
+    \param[in]     op          The operation to perform.
+    \param[in]     comm        The communicator.
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Scan(void* sendbuf, void* recvbuf, int count, 
+              tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
+
+
 /*! \} */
 
 
@@ -1239,4 +1265,4 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 } /* closing extern "C" */
 #endif
 
-#endif /* _TMPI_H_ */
+#endif /* TMPI_TMPI_H_ */

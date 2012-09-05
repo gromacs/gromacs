@@ -137,4 +137,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 
 extern void dumpN(const real *e, const int nn, char *fn);
 
+/* Fix NaN that might appear in the theoretical acf. */
+extern void fixGemACF(double *ct, int len);
+
 #endif

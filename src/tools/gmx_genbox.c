@@ -45,7 +45,7 @@
 #include "confio.h"
 #include "copyrite.h"
 #include "txtdump.h"
-#include "math.h"
+#include <math.h>
 #include "macros.h"
 #include "random.h"
 #include "futil.h"
@@ -87,7 +87,8 @@ static gmx_bool in_box(t_pbc *pbc,rvec x)
   rvec box_center,dx;
   int  shift;
   
-  calc_box_center(ecenterTRIC,pbc->box,box_center);
+  /* pbc_dx_aiuc only works correctly with the rectangular box center */
+  calc_box_center(ecenterRECT,pbc->box,box_center);
   
   shift = pbc_dx_aiuc(pbc,x,box_center,dx);
   
@@ -118,9 +119,8 @@ typedef struct {
 
 void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
 {
-  int atnr,i,j,moltp=0,nrmoltypes,resnr;
+  int atnr,i,j,moltp=0,nrmoltypes,resi_o,resi_n,resnr;
   t_moltypes *moltypes;
-  int *tps;
   t_atoms *atoms,*newatoms;
   rvec *newx, *newv=NULL;
   real *newr;
@@ -130,7 +130,6 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
   atoms = *atoms_solvt;
 
   /* copy each residue from *atoms to a molecule in *molecule */
-  snew(tps,atoms->nr);
   moltypes=NULL;
   nrmoltypes=0;
   atnr=0;
@@ -156,7 +155,6 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
       }
       moltypes[moltp].nmol++;
     }
-    tps[i]=moltp;
   }
   
   fprintf(stderr,"Found %d%s molecule type%s:\n",
@@ -189,18 +187,40 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
     if (v) snew(newv,atoms->nr);
     snew(newr,atoms->nr);
     
-    for (i=0; i<atoms->nr; i++) {
-      resnr = moltypes[tps[i]].res0 +
-	(moltypes[tps[i]].i-moltypes[tps[i]].i0) / moltypes[tps[i]].natoms;
-      newatoms->atom[moltypes[tps[i]].i].resind = resnr;
-      newatoms->resinfo[resnr] = atoms->resinfo[atoms->atom[i].resind];
-      newatoms->resinfo[resnr].nr = resnr + 1;
-      newatoms->atomname[moltypes[tps[i]].i] = atoms->atomname[i];
-      newatoms->atom[moltypes[tps[i]].i] = atoms->atom[i];
-      copy_rvec(x[i],newx[moltypes[tps[i]].i]);
-      if (v) copy_rvec(v[i],newv[moltypes[tps[i]].i]);
-      newr[moltypes[tps[i]].i] = r[i];
-      moltypes[tps[i]].i++;
+    resi_n = 0;
+    resnr = 1;
+    j = 0;
+    for(moltp=0; moltp<nrmoltypes; moltp++) {
+      i = 0;
+      while (i < atoms->nr) {
+	resi_o = atoms->atom[i].resind;
+	if (strcmp(*atoms->resinfo[resi_o].name,moltypes[moltp].name) == 0) {
+	  /* Copy the residue info */
+	  newatoms->resinfo[resi_n]    = atoms->resinfo[resi_o];
+	  newatoms->resinfo[resi_n].nr = resnr;
+	  /* Copy the atom info */
+	  do {
+	    newatoms->atom[j]        = atoms->atom[i];
+	    newatoms->atomname[j]    = atoms->atomname[i];
+	    newatoms->atom[j].resind = resi_n;
+	    copy_rvec(x[i],newx[j]);
+	    if (v != NULL) {
+	      copy_rvec(v[i],newv[j]);
+	    }
+	    newr[j] = r[i];
+	    i++;
+	    j++;
+	  } while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+	  /* Increase the new residue counters */
+	  resi_n++;
+	  resnr++;
+	} else {
+	  /* Skip this residue */
+	  do {
+	    i++;
+	  } while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+	}
+      }
     }
     
     /* put them back into the original arrays and throw away temporary arrays */
@@ -581,12 +601,12 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 int gmx_genbox(int argc,char *argv[])
 {
   const char *desc[] = {
-    "Genbox can do one of 3 things:[PAR]",
+    "[TT]genbox[tt] can do one of 3 things:[PAR]",
     
-    "1) Generate a box of solvent. Specify -cs and -box. Or specify -cs and",
-    "-cp with a structure file with a box, but without atoms.[PAR]",
+    "1) Generate a box of solvent. Specify [TT]-cs[tt] and [TT]-box[tt]. Or specify [TT]-cs[tt] and",
+    "[TT]-cp[tt] with a structure file with a box, but without atoms.[PAR]",
     
-    "2) Solvate a solute configuration, eg. a protein, in a bath of solvent ",
+    "2) Solvate a solute configuration, e.g. a protein, in a bath of solvent ",
     "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
     "The box specified in the solute coordinate file ([TT]-cp[tt]) is used,",
     "unless [TT]-box[tt] is set.",
@@ -595,9 +615,9 @@ int gmx_genbox(int argc,char *argv[])
     "to change the box dimensions and center the solute.",
     "Solvent molecules are removed from the box where the ",
     "distance between any atom of the solute molecule(s) and any atom of ",
-    "the solvent molecule is less than the sum of the VanderWaals radii of ",
-    "both atoms. A database ([TT]vdwradii.dat[tt]) of VanderWaals radii is ",
-    "read by the program, atoms not in the database are ",
+    "the solvent molecule is less than the sum of the van der Waals radii of ",
+    "both atoms. A database ([TT]vdwradii.dat[tt]) of van der Waals radii is ",
+    "read by the program, and atoms not in the database are ",
     "assigned a default distance [TT]-vdwd[tt].",
     "Note that this option will also influence the distances between",
     "solvent molecules if they contain atoms that are not in the database.",
@@ -607,12 +627,16 @@ int gmx_genbox(int argc,char *argv[])
     "at random positions.",
     "The program iterates until [TT]nmol[tt] molecules",
     "have been inserted in the box. To test whether an insertion is ",
-    "successful the same VanderWaals criterium is used as for removal of ",
-    "solvent molecules. When no appropriately ",
-    "sized holes (holes that can hold an extra molecule) are available the ",
+    "successful the same van der Waals criterium is used as for removal of ",
+    "solvent molecules. When no appropriately-sized ",
+    "holes (holes that can hold an extra molecule) are available, the ",
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
-    "Increase -try if you have several small holes to fill.[PAR]",
-    
+    "Increase [TT]-try[tt] if you have several small holes to fill.[PAR]",
+
+    "If you need to do more than one of the above operations, it can be",
+    "best to call [TT]genbox[tt] separately for each operation, so that",
+    "you are sure of the order in which the operations occur.[PAR]",
+
     "The default solvent is Simple Point Charge water (SPC), with coordinates ",
     "from [TT]$GMXLIB/spc216.gro[tt]. These coordinates can also be used",
     "for other 3-site water models, since a short equibilibration will remove",
@@ -628,23 +652,24 @@ int gmx_genbox(int argc,char *argv[])
     "equlibrated in periodic boundary conditions to ensure a good",
     "alignment of molecules on the stacking interfaces.",
     "The [TT]-maxsol[tt] option simply adds only the first [TT]-maxsol[tt]",
-    "solvent molecules and leaves out the rest would have fit into the box.",
-    "[PAR]",
+    "solvent molecules and leaves out the rest that would have fitted",
+    "into the box. This can create a void that can cause problems later.",
+    "Choose your volume wisely.[PAR]",
     
     "The program can optionally rotate the solute molecule to align the",
     "longest molecule axis along a box edge. This way the amount of solvent",
     "molecules necessary is reduced.",
     "It should be kept in mind that this only works for",
-    "short simulations, as eg. an alpha-helical peptide in solution can ",
+    "short simulations, as e.g. an alpha-helical peptide in solution can ",
     "rotate over 90 degrees, within 500 ps. In general it is therefore ",
     "better to make a more or less cubic box.[PAR]",
     
-    "Setting -shell larger than zero will place a layer of water of",
+    "Setting [TT]-shell[tt] larger than zero will place a layer of water of",
     "the specified thickness (nm) around the solute. Hint: it is a good",
-    "idea to put the protein in the center of a box first (using editconf).",
+    "idea to put the protein in the center of a box first (using [TT]editconf[tt]).",
     "[PAR]",
     
-    "Finally, genbox will optionally remove lines from your topology file in ",
+    "Finally, [TT]genbox[tt] will optionally remove lines from your topology file in ",
     "which a number of solvent molecules is already added, and adds a ",
     "line with the total number of solvent molecules in your coordinate file."
   };
@@ -689,21 +714,21 @@ int gmx_genbox(int argc,char *argv[])
   output_env_t oenv;
   t_pargs pa[] = {
     { "-box",    FALSE, etRVEC, {new_box},   
-      "box size" },
+      "Box size" },
     { "-nmol",   FALSE, etINT , {&nmol_ins},  
-      "no of extra molecules to insert" },
+      "Number of extra molecules to insert" },
     { "-try",    FALSE, etINT , {&nmol_try},  
-      "try inserting -nmol*-try times" },
+      "Try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
     { "-seed",   FALSE, etINT , {&seed},      
-      "random generator seed"},
+      "Random generator seed"},
     { "-vdwd",   FALSE, etREAL, {&r_distance},
-      "default vdwaals distance"},
+      "Default van der Waals distance"},
     { "-shell",  FALSE, etREAL, {&r_shell},
-      "thickness of optional water layer around solute" },
+      "Thickness of optional water layer around solute" },
     { "-maxsol", FALSE, etINT,  {&max_sol},
-      "maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
+      "Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
     { "-vel",    FALSE, etBOOL, {&bReadV},
-      "keep velocities from input solute and solvent" }
+      "Keep velocities from input solute and solvent" }
   };
 
   CopyRight(stderr,argv[0]);
@@ -719,6 +744,12 @@ int gmx_genbox(int argc,char *argv[])
   if (bInsert && nmol_ins<=0)
     gmx_fatal(FARGS,"When specifying inserted molecules (-ci), "
 		"-nmol must be larger than 0");
+  if (!bInsert && nmol_ins > 0)
+  {
+    gmx_fatal(FARGS,
+              "You tried to insert molecules with -nmol, but did not supply "
+              "a molecule to insert with -ci.");
+  }
   if (!bProt && !bBox)
     gmx_fatal(FARGS,"When no solute (-cp) is specified, "
 		"a box size (-box) must be specified");

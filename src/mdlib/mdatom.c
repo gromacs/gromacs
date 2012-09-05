@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -42,6 +43,7 @@
 #include "main.h"
 #include "qmmm.h"
 #include "mtop_util.h"
+#include "gmx_omp_nthreads.h"
 
 #define ALMOST_ZERO 1e-30
 
@@ -96,10 +98,8 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	      int start,int homenr,
 	      t_mdatoms *md)
 {
-  t_atoms   *atoms_mol;
-  int       i,g,ag,as,ae,molb;
-  real      mA,mB,fac;
-  t_atom    *atom;
+  gmx_mtop_atomlookup_t alook;
+  int       i;
   t_grpopts *opts;
   gmx_groups_t *groups;
   gmx_molblock_t *molblock;
@@ -110,7 +110,11 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 
   molblock = mtop->molblock;
 
-  if (index == NULL) {
+  /* Index==NULL indicates particle decomposition,
+   * unless we have an empty DD node, so also check for homenr and start.
+   * This should be signaled properly with an extra parameter or nindex==-1.
+   */
+  if (index == NULL && (homenr > 0 || start > 0)) {
     md->nr = mtop->natoms;
   } else {
     md->nr = nindex;
@@ -164,47 +168,68 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     
     if (ir->bQMMM)
       srenew(md->bQM,md->nalloc);
+    if (ir->bAdress)
+      srenew(md->wf,md->nalloc);
+      srenew(md->tf_table_index,md->nalloc);
+
+      md->purecg = FALSE;
+      md->pureex = FALSE;
   }
 
-  for(i=0; (i<md->nr); i++) {
+  alook = gmx_mtop_atomlookup_init(mtop);
+
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) schedule(static)
+  for(i=0; i<md->nr; i++) {
+    int     g,ag,molb;
+    real    mA,mB,fac;
+    t_atom  *atom;
+
     if (index == NULL) {
       ag = i;
-      gmx_mtop_atomnr_to_atom(mtop,ag,&atom);
     } else {
       ag   = index[i];
-      molb = -1;
-      ae   = 0;
-      do {
-	molb++;
-	as = ae;
-	ae = as + molblock[molb].nmol*molblock[molb].natoms_mol;
-      } while (ag >= ae);
-      atoms_mol = &mtop->moltype[molblock[molb].type].atoms;
-      atom = &atoms_mol->atom[(ag - as) % atoms_mol->nr];
     }
+    gmx_mtop_atomnr_to_atom(alook,ag,&atom);
 
     if (md->cFREEZE) {
       md->cFREEZE[i] = ggrpnr(groups,egcFREEZE,ag);
     }
-    if (EI_ENERGY_MINIMIZATION(ir->eI)) {
-      mA = 1.0;
-      mB = 1.0;
-    } else if (ir->eI == eiBD) {
-      /* Make the mass proportional to the friction coefficient for BD.
-       * This is necessary for the constraint algorithms.
-       */
-      if (ir->bd_fric) {
-	mA = ir->bd_fric*ir->delta_t;
-	mB = ir->bd_fric*ir->delta_t;
-      } else {
-	fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
-	mA = atom->m*fac;
-	mB = atom->mB*fac;
-      }
-    } else {
-      mA = atom->m;
-      mB = atom->mB;
-    }
+        if (EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            /* Displacement is proportional to F, masses used for constraints */
+            mA = 1.0;
+            mB = 1.0;
+        }
+        else if (ir->eI == eiBD)
+        {
+            /* With BD the physical masses are irrelevant.
+             * To keep the code simple we use most of the normal MD code path
+             * for BD. Thus for constraining the masses should be proportional
+             * to the friction coefficient. We set the absolute value such that
+             * m/2<(dx/dt)^2> = m/2*2kT/fric*dt = kT/2 => m=fric*dt/2
+             * Then if we set the (meaningless) velocity to v=dx/dt, we get the
+             * correct kinetic energy and temperature using the usual code path.
+             * Thus with BD v*dt will give the displacement and the reported
+             * temperature can signal bad integration (too large time step).
+             */
+            if (ir->bd_fric > 0)
+            {
+                mA = 0.5*ir->bd_fric*ir->delta_t;
+                mB = 0.5*ir->bd_fric*ir->delta_t;
+            }
+            else
+            {
+                /* The friction coefficient is mass/tau_t */
+                fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
+                mA = 0.5*atom->m*fac;
+                mB = 0.5*atom->mB*fac;
+            }
+        }
+        else
+        {
+            mA = atom->m;
+            mB = atom->mB;
+        }
     if (md->nMassPerturbed) {
       md->massA[i]	= mA;
       md->massB[i]	= mB;
@@ -257,7 +282,25 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	md->bQM[i]      = FALSE;
       }
     }
+    /* Initialize AdResS weighting functions to adressw */
+    if (ir->bAdress){
+       md->wf[i]           = 1.0;
+        /* if no tf table groups specified, use default table */
+       md->tf_table_index[i] = DEFAULT_TF_TABLE;
+       if (ir->adress->n_tf_grps > 0){
+            /* if tf table groups specified, tf is only applied to thoose energy groups*/
+            md->tf_table_index[i] = NO_TF_TABLE;
+            /* check wether atom is in one of the relevant energy groups and assign a table index */
+            for (g=0; g<ir->adress->n_tf_grps; g++){
+                if (md->cENER[i] == ir->adress->tf_table_index[g]){
+                   md->tf_table_index[i] = g;
+                }
+            }
+        }
+    }
   }
+
+  gmx_mtop_atomlookup_destroy(alook);
 
   md->start  = start;
   md->homenr = homenr;

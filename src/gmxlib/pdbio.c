@@ -260,7 +260,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   else
     bOccup = FALSE;
 
-  fprintf(out,"MODEL %8d\n",model_nr>=0 ? model_nr : 1);
+  fprintf(out,"MODEL %8d\n",model_nr>0 ? model_nr : 1);
 
   lastchainresind   = -1;
   lastchainnum      = -1;
@@ -436,9 +436,9 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
 
 void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 {
-  int  i,atomnumber;
+  int  i,atomnumber,len;
   size_t k;
-  char anm[6],anm_copy[6];
+  char anm[6],anm_copy[6],*ptr;
   char nc='\0';
   real eval;
   
@@ -448,8 +448,9 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
   for(i=0; (i<atoms->nr); i++) {
     strcpy(anm,atoms->pdbinfo[i].atomnm);
     strcpy(anm_copy,atoms->pdbinfo[i].atomnm);
+    len = strlen(anm);
     atomnumber = NOTSET;
-    if (anm[0] != ' ') {
+    if ((anm[0] != ' ') && ((len <=2) || ((len > 2) && !isdigit(anm[2])))) {
       anm_copy[2] = nc;
       if (gmx_atomprop_query(aps,epropElement,"???",anm_copy,&eval))
 	atomnumber = gmx_nint(eval);
@@ -469,7 +470,8 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 	atomnumber = gmx_nint(eval);
     }
     atoms->atom[i].atomnumber = atomnumber;
-    sprintf(atoms->atom[i].elem,"%2s",gmx_atomprop_element(aps,atomnumber));
+    ptr = gmx_atomprop_element(aps,atomnumber);
+    strncpy(atoms->atom[i].elem,ptr==NULL ? "" : ptr,4);
     if (debug)
       fprintf(debug,"Atomnumber for atom '%s' is %d\n",anm,atomnumber);
   }
@@ -747,8 +749,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
                 {
                     c=line+6;
                     /* skip HEADER or TITLE and spaces */
-                    while (c && (c[0]!=' ')) c++;
-                    while (c && (c[0]==' ')) c++;
+                    while (c[0]!=' ') c++;
+                    while (c[0]==' ') c++;
                     /* truncate after title */
                     d=strstr(c,"      ");
                     if (d) 
@@ -770,8 +772,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
                         c=line;
                     }
                     /* skip 'MOLECULE:' and spaces */
-                    while (c && (c[0]!=' ')) c++;
-                    while (c && (c[0]==' ')) c++;
+                    while (c[0]!=' ') c++;
+                    while (c[0]==' ') c++;
                     /* truncate after title */
                     d=strstr(c,"   ");
                     if (d) 

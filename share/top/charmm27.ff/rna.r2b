@@ -1,6 +1,6 @@
 ; rtp residue to rtp building block table
 ;GMX   Force-field
-A     RA	RA5	RA3	RA
-G     RG	RG5	RG3	RG
-C     RC	RC5	RC3	RC
-U     RU	RU5	RU3	RU
+A     RA	
+G     RG	
+C     RC	
+U     RU	

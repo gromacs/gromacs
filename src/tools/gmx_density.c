@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -141,7 +141,7 @@ void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
 }
 
 void calc_electron_density(const char *fn, atom_id **index, int gnx[], 
-			   real ***slDensity, int *nslices, t_topology *top,
+			   double ***slDensity, int *nslices, t_topology *top,
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
 			   t_electron eltab[], int nr,gmx_bool bCenter,
@@ -149,10 +149,10 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
+  double invvol;
   int natoms;            /* nr. atoms in trj */
   t_trxstatus *status;  
   int i,n,               /* loop indices */
-      ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   t_electron *found;     /* found by bsearch */
@@ -162,17 +162,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   real t, 
         z;
 
-  switch(axis) {
-  case 0:
-    ax1 = 1; ax2 = 2;
-    break;
-  case 1:
-    ax1 = 0; ax2 = 2;
-    break;
-  case 2:
-    ax1 = 0; ax2 = 1;
-    break;
-  default:
+  if (axis < 0 || axis >= DIM) {
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
@@ -196,6 +186,8 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
+    invvol = *nslices/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
+
     for (n = 0; n < nr_grps; n++) {      
       for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
 	  z = x0[index[n][i]][axis];
@@ -219,8 +211,8 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 	    fprintf(stderr,"Couldn't find %s. Add it to the .dat file\n",
 		    *(top->atoms.atomname[index[n][i]]));
 	  else  
-	    (*slDensity)[n][slice] += found->nr_el - 
-	                              top->atoms.atom[index[n][i]].q;
+	    (*slDensity)[n][slice] += (found->nr_el - 
+				       top->atoms.atom[index[n][i]].q)*invvol;
 	  free(sought.atomname);
 	}
     }
@@ -240,20 +232,20 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++)
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
-	( nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+      (*slDensity)[n][i] /= nr_frames;
   }
 
   sfree(x0);  /* free memory used by coordinate array */
 }
 
 void calc_density(const char *fn, atom_id **index, int gnx[], 
-		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
+		  double ***slDensity, int *nslices, t_topology *top, int ePBC,
 		  int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                   const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
+  double invvol;
   int natoms;            /* nr. atoms in trj */
   t_trxstatus *status;  
   int  **slCount,         /* nr. of atoms in one slice for a group */
@@ -267,17 +259,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   char *buf;             /* for tmp. keeping atomname */
   gmx_rmpbc_t  gpbc=NULL;
 
-  switch(axis) {
-  case 0:
-    ax1 = 1; ax2 = 2;
-    break;
-  case 1:
-    ax1 = 0; ax2 = 2;
-    break;
-  case 2:
-    ax1 = 0; ax2 = 1;
-    break;
-  default:
+  if (axis < 0 || axis >= DIM) {
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
@@ -302,6 +284,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
+    invvol = *nslices/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
     teller++;
     
     for (n = 0; n < nr_grps; n++) {      
@@ -314,10 +297,9 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
       
 	/* determine which slice atom is in */
 	slice = (int)(z / (*slWidth)); 
-	(*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
+	(*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m*invvol;
       }
     }
-
     nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
   gmx_rmpbc_done(gpbc);
@@ -334,15 +316,14 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++) {
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
-	(nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+      (*slDensity)[n][i] /= nr_frames;
     }
   }
 
   sfree(x0);  /* free memory used by coordinate array */
 }
 
-void plot_density(real *slDensity[], const char *afile, int nslices,
+void plot_density(double *slDensity[], const char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
 		  gmx_bool bSymmetrize, const output_env_t oenv)
@@ -384,14 +365,16 @@ void plot_density(real *slDensity[], const char *afile, int nslices,
 int gmx_density(int argc,char *argv[])
 {
   const char *desc[] = {
-    "Compute partial densities across the box, using an index file. Densities",
-    "in kg/m^3, number densities or electron densities can be",
+    "Compute partial densities across the box, using an index file.[PAR]",
+    "For the total density of NPT simulations, use [TT]g_energy[tt] instead.",
+    "[PAR]",
+    "Densities are in kg/m^3, and number densities or electron densities can also be",
     "calculated. For electron densities, a file describing the number of",
     "electrons for each type of atom should be provided using [TT]-ei[tt].",
     "It should look like:[BR]",
-    "   2[BR]",
-    "   atomname = nrelectrons[BR]",
-    "   atomname = nrelectrons[BR]",
+    "   [TT]2[tt][BR]",
+    "   [TT]atomname = nrelectrons[tt][BR]",
+    "   [TT]atomname = nrelectrons[tt][BR]",
     "The first line contains the number of lines to read from the file.",
     "There should be one line for each unique atom name in your system.",
     "The number of electrons for each atom is modified by its atomic",
@@ -411,11 +394,11 @@ int gmx_density(int argc,char *argv[])
     { "-d", FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
     { "-sl",  FALSE, etINT, {&nslices},
-      "Divide the box in #nr slices." },
+      "Divide the box in this number of slices." },
     { "-dens",    FALSE, etENUM, {dens_opt},
       "Density"},
     { "-ng",       FALSE, etINT, {&ngrps},
-      "Number of groups to compute densities of" },
+      "Number of groups of which to compute densities." },
     { "-symm",    FALSE, etBOOL, {&bSymmetrize},
       "Symmetrize the density along the axis, with respect to the center. Useful for bilayers." },
     { "-center",  FALSE, etBOOL, {&bCenter},
@@ -426,7 +409,7 @@ int gmx_density(int argc,char *argv[])
     "When calculating electron densities, atomnames are used instead of types. This is bad.",
   };
   
-  real **density;        /* density per slice          */
+  double **density;      /* density per slice          */
   real slWidth;          /* width of one slice         */
   char **grpname;        /* groupnames                 */
   int  nr_electrons;     /* nr. electrons              */

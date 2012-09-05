@@ -41,7 +41,6 @@
 #include "typedefs.h"
 #include "bondf.h"
 #include "disre.h"
-#include "dihre.h"
 #include "orires.h"
 #include "genborn.h"
 
@@ -90,7 +89,7 @@ const t_interaction_function interaction_function[F_NRE]=
 {
   def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),
   def_bond    ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds      ),
-  def_bond    ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE,  morse_bonds   ),
+  def_bond    ("MORSE",    "Morse",           2, 3, 3,  eNR_MORSE,  morse_bonds   ),
   def_bond    ("CUBICBONDS","Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubic_bonds),
   def_bondnb  ("CONNBONDS","Connect Bonds",   2, 0, 0,  0,      unimplemented     ),
   def_bonded  ("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds         ),
@@ -100,9 +99,10 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded  ("RESTRAINTPOT", "Restraint Pot.", 2, 4, 4,  eNR_RESTRBONDS,  restraint_bonds ),
   def_angle   ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles        ),
   def_angle   ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
+  def_angle   ("LINEAR_ANGLES", "Lin. Angle", 3, 2, 2,  eNR_LINEAR_ANGLES, linear_angles ),
   def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0,0,          cross_bond_bond ),
   def_bonded  ("CROSS_BOND_ANGLE","BA-Cross",   3, 4, 0,0,          cross_bond_angle ),
-  def_angle   ("UREY_BRADLEY","U-B",          3, 4, 0,  0,          urey_bradley ),
+  def_angle   ("UREY_BRADLEY","U-B",          3, 4, 4,  0,          urey_bradley ),
   def_angle   ("QANGLES","Quartic Angles",    3, 6, 0,  eNR_QANGLES, quartic_angles ),
   def_bondedt ("TABANGLES", "Tab. Angles",    3, 2, 2,  eNR_TABANGLES, tab_angles ),
   def_bonded  ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs         ),
@@ -112,11 +112,11 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded  ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_PROPER, pdihs         ),
   def_bondedt ("TABDIHS", "Tab. Dih.",        4, 2, 2,  eNR_TABDIHS, tab_dihs     ),
   def_bonded  ("CMAP",  "CMAP Dih.",          5, -1, -1,  eNR_CMAP,   unimplemented ),
-  def_bonded  ("GB12",     "GB 1-2 Pol.",     2, 2, 2,  eNR_GB,     unimplemented ),
-  def_bonded  ("GB13",     "GB 1-3 Pol.",     2, 2, 2,  eNR_GB,     unimplemented ),
-  def_bonded  ("GB14",     "GB 1-4 Pol.",     2, 2, 2,  eNR_GB,     unimplemented ),
+  def_bonded  ("GB12",     "GB 1-2 Pol.",     2, 4, 0,  eNR_GB,     unimplemented ),
+  def_bonded  ("GB13",     "GB 1-3 Pol.",     2, 4, 0,  eNR_GB,     unimplemented ),
+  def_bonded  ("GB14",     "GB 1-4 Pol.",     2, 4, 0,  eNR_GB,     unimplemented ),
   def_nofc    ("GBPOL",    "GB Polarization" ),
-  def_nofc    ("NPSOLVATION", "Nonpolar sol." ),
+  def_nofc    ("NPSOLVATION", "Nonpolar Sol." ),
   def_bondedz ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
   def_nofc    ("COUL14",   "Coulomb-14"                                           ),
   def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 0,  eNR_NB14,   unimplemented ),
@@ -134,18 +134,19 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bondnb  ("POLARIZATION", "Polarization",2, 1, 0,  0,          polarize      ),
   def_bonded  ("WATERPOL", "Water Pol.",      5, 6, 0,  eNR_WPOL,   water_pol     ),
   def_bonded  ("THOLE",    "Thole Pol.",      4, 3, 0,  eNR_THOLE,  thole_pol     ),
+  def_bondnb  ("ANHARM_POL", "Anharm. Pol.",2, 3, 0, 0,          anharm_polarize      ),
   def_bonded  ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, unimplemented ),
   def_bonded  ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres     ),
-  def_nofc    ("DRVIOL",   "D.R.Viol. (nm)"                                       ),    
+  def_nofc    ("DISRESVIOL",   "D.R.Viol. (nm)"                                       ),
   def_bonded  ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires        ),
   def_nofc    ("ORDEV",    "Ori. R. RMSD"                                         ),  
   def_bonded  ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),
   def_bonded  ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz       ),
-  def_bonded  ("DIHRES",   "Dih. Rest.",      4, 5, 0,  eNR_DIHRES, ta_dihres     ),
-  def_nofc    ("DIHVIOL",  "Dih. Rest. viol."                                     ),    
+  def_bonded  ("DIHRES",   "Dih. Rest.",      4, 3, 3,  eNR_DIHRES, dihres        ),
+  def_nofc    ("DIHRESVIOL",  "Dih. Rest. Viol."                                     ), /* obsolete */
   def_shkcb   ("CONSTR",   "Constraint",      2, 1, 1                             ),
   def_shk     ("CONSTRNC", "Constr. No Conn.",2, 1, 1                             ),
-  def_shkcb   ("SETTLE",   "Settle",          1, 2, 0                             ),
+  def_shkcb   ("SETTLE",   "Settle",          3, 2, 0                             ),
   def_vsite   ("VSITE2",   "Virtual site 2",  3, 1                                ),
   def_vsite   ("VSITE3",   "Virtual site 3",  4, 2                                ),
   def_vsite   ("VSITE3FD", "Virtual site 3fd",4, 2                                ),
@@ -167,17 +168,12 @@ const t_interaction_function interaction_function[F_NRE]=
    */
   def_nofc    ("PDISPCORR","Pres. DC"         ),  
   def_nofc    ("PRES",     "Pressure"         ),
-  def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
-  def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
-  def_nofc    ("DH/DL_CON","dH/dl constr."    )
+  def_nofc    ("DH/DL_CON","dH/dl constr."    ), /* obsolete */
+  def_nofc    ("DV/DL",    "dVremain/dl"      ),
+  def_nofc    ("DK/DL",    "dEkin/dl"         ),
+  def_nofc    ("DVC/DL",   "dVcoul/dl"        ),
+  def_nofc    ("DVV/DL",   "dVvdw/dl"         ),
+  def_nofc    ("DVB/DL",   "dVbonded/dl"      ),
+  def_nofc    ("DVR/DL",   "dVrestraint/dl"   ),
+  def_nofc    ("DVT/DL",   "dVtemperature/dl" )
 };
-
-gmx_bool have_interaction(t_idef *idef,int ftype)
-{
-  int i;
-  
-  for(i=0; (i<idef->ntypes); i++)
-    if (idef->functype[i] == ftype)
-      return TRUE;
-  return FALSE;
-}

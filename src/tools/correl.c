@@ -182,20 +182,3 @@ void correl(real data1[],real data2[],int n,real ans[])
   realft(ans,no2,-1);
   sfree(fft);
 }
-
-void complex_mult(int n,real buf1[],real buf2[],real ans[])
-{
-  int  i,no2,n_2,k;
-  real no2_1;
-  
-  n_2   = (n+1)/2;
-  no2_1 = 1.0/n;
-  for(i=1; (i<n_2); i++) {
-    k = n-i;
-    ans[i] = (buf1[i]*buf2[i] + buf2[k]*buf1[k])*no2_1;
-    ans[k] = (buf1[k]*buf2[i] - buf2[i]*buf1[k])*no2_1;
-  }
-  if ((n % 2) == 0)
-    ans[n/2] = (buf1[n/2]*buf2[n/2])*no2_1;
-  ans[0] = buf1[0]*buf2[0]*no2_1;
-}

@@ -138,9 +138,9 @@ void pr_progress(FILE *fp,int nit,tensor P,real epot,real eFF,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "optwat optimizes the force field parameter set of a molecular crystal",
+    "[TT]optwat[tt] optimizes the force field parameter set of a molecular crystal",
     "to reproduce the pressure tensor and experimental energy.[PAR]",
-    "Note that for good results the tpx file must contain input for a",
+    "Note that for good results the [TT].tpx[tt] file must contain input for a",
     "simulated annealing run, or a single point energy calculation at 0 K"
   };
   t_filenm fnm[] = {
@@ -167,9 +167,9 @@ int main(int argc,char *argv[])
     { "-frac",   FALSE, etREAL, {&frac},
       "Maximum fraction by which to change parameters. Actual fraction is random between 0 and this parameter" },
     { "-pindex", FALSE, etINT,  {&pindex},
-      "Index of P[X][X] in the energy file (check with g_energy and subtract 1)" },
+      "Index of P[X][X] in the energy file (check with [TT]g_energy[tt] and subtract 1)" },
     { "-eindex", FALSE, etINT,  {&pindex},
-      "Index of Epot in the energy file (check with g_energy and subtract 1)" },
+      "Index of Epot in the energy file (check with [TT]g_energy[tt] and subtract 1)" },
     { "-kp",     FALSE, etREAL, {&kp},
       "Force constant for pressure components"},
     { "-ke",     FALSE, etREAL, {&ke},

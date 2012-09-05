@@ -53,22 +53,6 @@
 
 #define NOMIN 'X'
 
-static void dump_dih(int nframes,char *title,real time[],real dih[])
-{
-  FILE *out;
-  char fname[256];
-  int  i;
-
-  sprintf(fname,"dih.%s",title);
-  printf("A dihedral transition occurred in %s\n",fname);
-  printf("Do you want to plot it to %s ? (y/n) ",fname);
-  fflush(stdout);
-  out=ffopen(fname,"w");
-  for(i=0; (i<nframes); i++)
-    fprintf(out,"%10.3f  %12.5e\n",time[i],dih[i]);
-  ffclose(out);
-}
-
 static void ana_dih(FILE *out,char *index,int nframes,real dih[],t_dih *dd)
 {
   int i;
@@ -295,7 +279,7 @@ static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
 int gmx_dih(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_dih can do two things. The default is to analyze dihedral transitions",
+    "[TT]g_dih[tt] can do two things. The default is to analyze dihedral transitions",
     "by merely computing all the dihedral angles defined in your topology",
     "for the whole trajectory. When a dihedral flips over to another minimum",
     "an angle/time plot is made.[PAR]",

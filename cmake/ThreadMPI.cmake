@@ -13,15 +13,30 @@ MACRO(TEST_TMPI_ATOMICS VARIABLE)
 
         if (TEST_ATOMICS)
             message(STATUS "Atomics found")
-            set(${VARIABLE} CACHE INTERNAL 1)
+            set(${VARIABLE} TRUE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         else (TEST_ATOMICS)
-            message(WARNING "Atomics not found for this compiler+cpu combination. Thread support will be unbearably slow: disable threads. Atomics should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-            set(${VARIABLE} CACHE INTERNAL 0)
+            if (TEST_TMPI_ATOMICS_ONLY)
+                message(WARNING "Atomic operations not found for this CPU+compiler combination. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+            else (TEST_TMPI_ATOMICS_ONLY)
+                message(WARNING "Atomic operations not found for this
+            CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+            endif (TEST_TMPI_ATOMICS_ONLY)
+            set(${VARIABLE} FALSE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         endif(TEST_ATOMICS)
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TEST_TMPI_ATOMICS VARIABLE)
 
+MACRO(TMPI_MAKE_CXX_LIB)
+    set(TMPI_CXX_LIB 1)
+    # the C++ library
+    set(THREAD_MPI_CXX_SRC
+        thread_mpi/system_error.cpp )
+ENDMACRO(TMPI_MAKE_CXX_LIB)
 
+test_tmpi_atomics(TMPI_ATOMICS)
+
+# do we want to only the atomics of tMPI (with GPU + MPI)
+if(NOT TEST_TMPI_ATOMICS_ONLY)
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
@@ -37,10 +52,10 @@ if (CMAKE_USE_PTHREADS_INIT)
         thread_mpi/event.c         thread_mpi/reduce_fast.c
         thread_mpi/gather.c        thread_mpi/scatter.c
         thread_mpi/group.c         thread_mpi/tmpi_init.c
-        thread_mpi/hwinfo.c        thread_mpi/topology.c
-        thread_mpi/list.c          thread_mpi/type.c
-        thread_mpi/lock.c          
-        thread_mpi/once.c)
+        thread_mpi/topology.c      thread_mpi/list.c          
+        thread_mpi/type.c          thread_mpi/lock.c
+        thread_mpi/numa_malloc.c   thread_mpi/once.c 
+        thread_mpi/scan.c          thread_mpi/tmpi_malloc.c)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else (CMAKE_USE_PTHREADS_INIT)
     if (CMAKE_USE_WIN32_THREADS_INIT)
@@ -56,13 +71,15 @@ else (CMAKE_USE_PTHREADS_INIT)
             thread_mpi/event.c         thread_mpi/reduce_fast.c
             thread_mpi/gather.c        thread_mpi/scatter.c
             thread_mpi/group.c         thread_mpi/tmpi_init.c
-            thread_mpi/hwinfo.c        thread_mpi/topology.c
-            thread_mpi/list.c          thread_mpi/type.c
-            thread_mpi/lock.c          thread_mpi/winthreads.c
-            thread_mpi/once.c)
+            thread_mpi/topology.c      thread_mpi/list.c
+            thread_mpi/type.c          thread_mpi/lock.c
+            thread_mpi/winthreads.c    thread_mpi/once.c
+            thread_mpi/numa_malloc.c
+            thread_mpi/scan.c          thread_mpi/tmpi_malloc.c)
         set(THREAD_LIBRARY )
     endif (CMAKE_USE_WIN32_THREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
+
 
 # the spin-waiting option
 option(THREAD_MPI_WAIT_FOR_NO_ONE "Use busy waits without yielding to the OS scheduler. Turning this on might improve performance (very) slightly at the cost of very poor performance if the threads are competing for CPU time." OFF)
@@ -93,6 +110,40 @@ else (THREAD_MPI_PROFILING)
     add_definitions()
 endif (THREAD_MPI_PROFILING)
 
+include(CheckCSourceCompiles)
+
+# option to set affinity 
+option(THREAD_MPI_SET_AFFINITY "Set thread affinity to a core if number of threads equal to number of hardware threads." ON)
+mark_as_advanced(THREAD_MPI_SET_AFFINITY)
+if (THREAD_MPI_SET_AFFINITY)
+    add_definitions(-DTMPI_SET_AFFINITY)
+else (THREAD_MPI_SET_AFFINITY)
+    add_definitions()
+endif (THREAD_MPI_SET_AFFINITY)
+
+include(CheckFunctionExists)
+if (THREAD_PTHREADS)
+    set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+    # check for sched_setaffinity
+    check_c_source_compiles(
+        "#define _GNU_SOURCE
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+int main(void) { cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(0, &set);
+    pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+    return 0;
+}"
+        PTHREAD_SETAFFINITY
+    )
+    if (PTHREAD_SETAFFINITY)
+        set(HAVE_PTHREAD_SETAFFINITY 1)
+    endif (PTHREAD_SETAFFINITY)
+endif (THREAD_PTHREADS)
+
 
 # this runs on POSIX systems
 check_include_files(unistd.h        HAVE_UNISTD_H)
@@ -101,6 +152,5 @@ check_include_files(sys/time.h      HAVE_SYS_TIME_H)
 check_function_exists(sysconf       HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
-#check_function_exists(GetSystemInfo HAVE_SYSTEM_INFO)
 
-test_tmpi_atomics(TMPI_ATOMICS)
+endif(NOT TEST_TMPI_ATOMICS_ONLY)

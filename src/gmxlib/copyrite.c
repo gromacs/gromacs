@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include <thread_mpi.h>
 #endif
 
@@ -48,7 +48,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "macros.h"
-#include "time.h"
+#include <time.h>
 #include "random.h"
 #include "statutil.h"
 #include "copyrite.h"
@@ -145,7 +145,7 @@ static void ster_print(FILE *out,const char *s)
   int  slen;
   char buf[128];
   
-  sprintf(buf,":-)  %s  (-:",s);
+  snprintf(buf,128,":-)  %s  (-:",s);
   slen=strlen(buf);
   space(out,(80-slen)/2);
   fprintf(out,"%s\n",buf);
@@ -258,7 +258,7 @@ void CopyRight(FILE *out,const char *szProgram)
 
   fprintf(out,"\n");
 
-  sprintf(buf,"%s",Program());
+  snprintf(buf,256,"%s",Program());
 #ifdef GMX_DOUBLE
   strcat(buf," (double precision)");
 #endif
@@ -328,8 +328,8 @@ void please_cite(FILE *fp,const char *key)
       "Algorithms for Constrained Molecular Dynamics",
       "J. Comp. Chem.",
       16, 1995, "1192-1209" },
-    { "Essman95a",
-      "U. Essman, L. Perela, M. L. Berkowitz, T. Darden, H. Lee and L. G. Pedersen ",
+    { "Essmann95a",
+      "U. Essmann, L. Perera, M. L. Berkowitz, T. Darden, H. Lee and L. G. Pedersen ",
       "A smooth particle mesh Ewald method",
       "J. Chem. Phys.",
       103, 1995, "8577-8592" },
@@ -358,6 +358,11 @@ void please_cite(FILE *fp,const char *key)
       "GROMACS 4: Algorithms for highly efficient, load-balanced, and scalable molecular simulation",
       "J. Chem. Theory Comput.",
       4, 2008, "435-447" },
+    { "Hub2010",
+      "J. S. Hub, B. L. de Groot and D. van der Spoel",
+      "g_wham - A free weighted histogram analysis implementation including robust error and autocorrelation estimates",
+      "J. Chem. Theory Comput.",
+      6, 2010, "3713-3720"}, 
     { "In-Chul99a",
       "Y. In-Chul and M. L. Berkowitz",
       "Ewald summation for systems with slab geometry",
@@ -393,6 +398,16 @@ void please_cite(FILE *fp,const char *key)
       "Auger Electron Cascades in Water and Ice",
       "Chem. Phys.",
       299, 2004, "277-283" },
+    { "Pascal2011a",
+      "T. A. Pascal and S. T. Lin and W. A. Goddard III",
+      "Thermodynamics of liquids: standard molar entropies and heat capacities of common solvents from 2PT molecular dynamics",
+      "Phys. Chem. Chem. Phys.",
+      13, 2011, "169-181" },
+    { "Caleman2011b",
+      "C. Caleman and M. Hong and J. S. Hub and L. T. da Costa and P. J. van Maaren and D. van der Spoel",
+      "Force Field Benchmark 1: Density, Heat of Vaporization, Heat Capacity, Surface Tension and Dielectric Constant of 152 Organic Liquids",
+      "Submitted",
+      0, 2011, "" },
     { "Lindahl2001a",
       "E. Lindahl and B. Hess and D. van der Spoel",
       "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
@@ -508,12 +523,46 @@ void please_cite(FILE *fp,const char *key)
       "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
       "J. Phys. Chem. B",
       0, 2010, "???" },
+    { "Fritsch12",
+      "S. Fritsch, C. Junghans and K. Kremer",
+      "Adaptive molecular simulation study on structure formation of toluene around C60 using Gromacs",
+      "J. Chem. Theo. Comp.",
+      0, 2012, "doi:10.1021/ct200706f" },
+    { "Junghans10",
+      "C. Junghans and S. Poblete",
+      "A reference implementation of the adaptive resolution scheme in ESPResSo",
+      "Comp. Phys. Comm.",
+      181, 2010, "1449" },
     { "Wang2010",
       "H. Wang, F. Dommert, C.Holm",
       "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
       "J. Chem. Phys. B",
-      133, 2010, "034117"
-    }
+      133, 2010, "034117" },
+    { "Kutzner2011",
+      "C. Kutzner and J. Czub and H. Grubmuller",
+      "Keep it Flexible: Driving Macromolecular Rotary Motions in Atomistic Simulations with GROMACS",
+      "J. Chem. Theory Comput.",
+      7, 2011, "1381-1393" },
+    { "Hoefling2011",
+      "M. Hoefling, N. Lima, D. Haenni, C.A.M. Seidel, B. Schuler, H. Grubmuller",
+      "Structural Heterogeneity and Quantitative FRET Efficiency Distributions of Polyprolines through a Hybrid Atomistic Simulation and Monte Carlo Approach",
+      "PLoS ONE",
+      6, 2011, "e19791" },
+    { "Hockney1988",
+      "R. W. Hockney and J. W. Eastwood",
+      "Computer simulation using particles",
+      "IOP, Bristol",
+      1, 1988, "1" },
+    { "Ballenegger2012",
+      "V. Ballenegger, J.J. Cerda, and C. Holm",
+      "How to Convert SPME to P3M: Influence Functions and Error Estimates",
+      "J. Chem. Theory Comput.",
+      8, 2012, "936-947" },
+    { "Garmay2012",
+      "Garmay Yu, Shvetsov A, Karelov D, Lebedev D, Radulescu A, Petukhov M, Isaev-Ivanov V",
+      "Correlated motion of protein subdomains and large-scale conformational flexibility of RecA protein filament",
+      "Journal of Physics: Conference Series",
+      340, 2012, "012094" }
   };
 #define NSTR (int)asize(citedb)
   
@@ -568,16 +617,40 @@ const char *GromacsVersion()
 
 void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Version:        %s\n", _gmx_ver_string);
+    fprintf(fp, "Version:          %s\n", _gmx_ver_string);
 #ifdef USE_VERSION_H
-    fprintf(fp, "GIT SHA1 hash:  %s\n", _gmx_full_git_hash);
+    fprintf(fp, "GIT SHA1 hash:    %s\n", _gmx_full_git_hash);
     /* Only print out the branch information if present.
      * The generating script checks whether the branch point actually
      * coincides with the hash reported above, and produces an empty string
      * in such cases. */
     if (_gmx_central_base_hash[0] != 0)
     {
-        fprintf(fp, "Branched from:  %s\n", _gmx_central_base_hash);
+        fprintf(fp, "Branched from:    %s\n", _gmx_central_base_hash);
     }
+#endif
+
+#ifdef GMX_DOUBLE
+    fprintf(fp, "Precision:        double\n");
+#else
+    fprintf(fp, "Precision:        single\n");
+#endif
+
+#ifdef GMX_THREAD_MPI
+    fprintf(fp, "Parallellization: thread_mpi\n");
+#elif defined(GMX_MPI)
+    fprintf(fp, "Parallellization: MPI\n");
+#else
+    fprintf(fp, "Parallellization: none\n");
+#endif
+
+#ifdef GMX_FFT_FFTPACK
+    fprintf(fp, "FFT Library:      fftpack\n");
+#elif defined(GMX_FFT_FFTW3)
+    fprintf(fp, "FFT Library:      fftw3\n");
+#elif defined(GMX_FFT_MKL)
+    fprintf(fp, "FFT Library:      MKL\n");
+#else
+    fprintf(fp, "FFT Library:      unknown\n");
 #endif
 }

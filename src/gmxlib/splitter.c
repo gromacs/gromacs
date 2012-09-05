@@ -47,7 +47,7 @@
 #include "mshift.h"
 #include "invblock.h"
 #include "txtdump.h"
-#include "math.h"
+#include <math.h>
 #include "assert.h"
 #include "gmx_fatal.h"
 #include "splitter.h"
@@ -188,10 +188,11 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
       /* Only the first particle is stored for settles ... */
       ai=ilist->iatoms[i+1];
       nodeid=hid[ai];
-      if ((nodeid != hid[ai+1]) ||
-	  (nodeid != hid[ai+2]))
+      if (nodeid != hid[ilist->iatoms[i+2]] ||
+          nodeid != hid[ilist->iatoms[i+3]])
 	gmx_fatal(FARGS,"Settle block crossing node boundaries\n"
-		  "constraint between atoms (%d-%d)",ai+1,ai+2+1);
+		  "constraint between atoms %d, %d, %d)",
+              ai,ilist->iatoms[i+2],ilist->iatoms[i+3]);
     }
     else if(interaction_function[ftype].flags & IF_VSITE) 
 	{
@@ -518,7 +519,7 @@ static int mk_grey(int nnodes,egCol egc[],t_graph *g,int *AtomI,
   ng=0;
   ai=*AtomI;
   
-  g0=g->start;
+  g0=g->at_start;
   /* Loop over all the bonds */
   for(j=0; (j<g->nedge[ai]); j++) {
     aj=g->edge[ai][j]-g0;
@@ -574,7 +575,7 @@ static int mk_sblocks(FILE *fp,t_graph *g,int maxsid,t_sid sid[])
   nnodes=g->nnodes;
   snew(egc,nnodes);
   
-  g0=g->start;
+  g0=g->at_start;
   nW=g->nbound;
   nG=0;
   nB=0;

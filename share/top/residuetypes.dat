@@ -10,6 +10,7 @@ ASP	Protein
 ASP1	Protein
 ASPH	Protein
 ASH 	Protein
+CT3 	Protein
 CYS 	Protein
 CYS1	Protein
 CYS2 	Protein
@@ -34,6 +35,7 @@ HSP	Protein
 HYP  	Protein
 ILE  	Protein
 LEU  	Protein
+LSN	Protein
 LYS  	Protein
 LYSH 	Protein
 MELEU	Protein

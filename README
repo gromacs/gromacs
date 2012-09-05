@@ -2,20 +2,18 @@
                Welcome to the official version of GROMACS!
 
 If you are familiar with unix, it should be fairly trivial to compile and
-install GROMACS. Installation instructions are available in the INSTALL file,
-and a more extended step-by-step guide can be found on http://www.gromacs.org .
+install GROMACS. Installation instructions for CMake are available in the
+INSTALL.* files (the use of autotools is no longer available). A more
+extended step-by-step guide can be found on our website http://www.gromacs.org.
 
 Of course we will do our utmost to help you with any problems, but PLEASE 
 READ THE INSTALLATION INSTRUCTIONS BEFORE CONTACTING US!
 
 There are also several other online resources available from the homepage, 
-and special information for developers. We recommend all users to subscribe
-at least to the gmx-announce list - there is almost no traffic at all, but 
-you get notice of new versions or severe bugs, and it gives us a possibility
-to keep track of the number of users since no signature is required anymore.
+and special information for developers.
 
 If you are a developer, or change the source for any other reason, check
-out http://www.gromacs.org/developer for details on using automake & autoconf!
+out http://www.gromacs.org/Developer_Zone.
 
                                * * * * *
 
@@ -66,11 +64,3 @@ Don't hesitate to contact us at gromacs@gromacs.org if you are interested.
                        Good luck with your simulations!
 
                               The GROMACS Crew
-
-
-
-
-
-
-
-

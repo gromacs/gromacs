@@ -125,7 +125,7 @@ real calc_lie(t_liedata *ld,t_energy ee[],real lie_lj,real lie_qq,
 int gmx_lie(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_lie computes a free energy estimate based on an energy analysis",
+    "[TT]g_lie[tt] computes a free energy estimate based on an energy analysis",
     "from. One needs an energy file with the following components:",
     "Coul (A-B) LJ-SR (A-B) etc."
   };
@@ -173,9 +173,9 @@ int gmx_lie(int argc,char *argv[])
   snew(fr,1);
   out = xvgropen(ftp2fn(efXVG,NFILE,fnm),"LIE free energy estimate",
 		 "Time (ps)","DGbind (kJ/mol)",oenv);
-  do {
-    bCont = do_enx(fp,fr);
-    ct    = check_times(fr->t);
+  while(do_enx(fp,fr))
+  {
+    ct = check_times(fr->t);
     if (ct == 0) {
       lie = calc_lie(ld,fr->ener,lie_lj,lie_qq,fac_lj,fac_qq);
       lieaver += lie;
@@ -183,7 +183,7 @@ int gmx_lie(int argc,char *argv[])
       nframes ++;
       fprintf(out,"%10g  %10g\n",fr->t,lie);
     }
-  } while (bCont);
+  }
   close_enx(fp);
   ffclose(out);
   fprintf(stderr,"\n");

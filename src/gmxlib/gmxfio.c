@@ -53,7 +53,7 @@
 #include "gmxfio.h"
 #include "md5.h"
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 
@@ -68,7 +68,7 @@
 static t_fileio *open_files = NULL;
 
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* this mutex locks the open_files structure so that no two threads can 
    modify it.        
 
@@ -184,12 +184,7 @@ const char *gmx_fio_dbgstr(t_fileio *fio, const char *desc, char *buf)
     }
     else
     {
-#if (defined( _WIN32 ) || defined( _WIN64 ) )
-        /* windows doesn't do standard C */
-#define snprintf sprintf_s
-#endif
-        snprintf(buf, GMX_FIO_BUFLEN, "  ; %s %s", 
-                 fio->comment ? fio->comment : "", desc);
+        snprintf(buf, GMX_FIO_BUFLEN, "  ; %s %s", fio->comment ? fio->comment : "", desc);
     }
     return buf;
 }
@@ -253,15 +248,15 @@ static void gmx_fio_set_iotype(t_fileio *fio)
    type of access to the fio's elements. */
 void gmx_fio_lock(t_fileio *fio)
 {
-#ifdef GMX_THREADS
-    tMPI_Spinlock_lock(&(fio->mtx));
+#ifdef GMX_THREAD_MPI
+    tMPI_Lock_lock(&(fio->mtx));
 #endif
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
-#ifdef GMX_THREADS
-    tMPI_Spinlock_unlock(&(fio->mtx));
+#ifdef GMX_THREAD_MPI
+    tMPI_Lock_unlock(&(fio->mtx));
 #endif
 }
 
@@ -275,8 +270,8 @@ static void gmx_fio_make_dummy(void)
         open_files->fn=NULL;
         open_files->next=open_files;
         open_files->prev=open_files;
-#ifdef GMX_THREADS
-        tMPI_Spinlock_init(&(open_files->mtx));
+#ifdef GMX_THREAD_MPI
+        tMPI_Lock_init(&(open_files->mtx));
 #endif
     }
 }
@@ -298,7 +293,7 @@ static void gmx_fio_make_dummy(void)
 static void gmx_fio_insert(t_fileio *fio)
 {
     t_fileio *prev;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     /* first lock the big open_files mutex. */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 #endif
@@ -330,7 +325,7 @@ static void gmx_fio_insert(t_fileio *fio)
     gmx_fio_unlock(open_files);
     gmx_fio_unlock(fio);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     /* now unlock the big open_files mutex.  */
     tMPI_Thread_mutex_unlock(&open_file_mutex);
 #endif
@@ -367,7 +362,7 @@ static t_fileio *gmx_fio_get_first(void)
     t_fileio *ret;
     /* first lock the big open_files mutex and the dummy's mutex */
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     /* first lock the big open_files mutex. */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 #endif
@@ -404,7 +399,7 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     if (fio->next==open_files)
     {
         ret=NULL;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&open_file_mutex);
 #endif
     }
@@ -421,7 +416,7 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
 static void gmx_fio_stop_getting_next(t_fileio *fio)
 {
     gmx_fio_unlock(fio);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&open_file_mutex);
 #endif
 }
@@ -490,8 +485,8 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     }
 
     snew(fio, 1);
-#ifdef GMX_THREADS
-    tMPI_Spinlock_init(&(fio->mtx));
+#ifdef GMX_THREAD_MPI
+    tMPI_Lock_init(&(fio->mtx));
 #endif
     bRead = (newmode[0]=='r' && newmode[1]!='+');
     bReadWrite = (newmode[1]=='+');
@@ -545,6 +540,13 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
             /* If it is not, open it as a regular file */
             fio->fp = ffopen(fn,newmode);
         }
+
+        /* for appending seek to end of file to make sure ftell gives correct position
+         * important for checkpointing */
+        if (newmode[0]=='a')
+        {
+            gmx_fseek(fio->fp, 0, SEEK_END);
+        }
     }
     else
     {
@@ -597,7 +599,7 @@ int gmx_fio_close(t_fileio *fio)
 {
     int rc = 0;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     /* first lock the big open_files mutex. */
     /* We don't want two processes operating on the list at the same time */
     tMPI_Thread_mutex_lock(&open_file_mutex);
@@ -611,7 +613,7 @@ int gmx_fio_close(t_fileio *fio)
 
     sfree(fio);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&open_file_mutex);
 #endif
 
@@ -786,7 +788,7 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
         char buf[STRLEN];
         sprintf(
             buf,
-            "Cannot write file '%s'; maybe you are out of disk space or quota?",
+            "Cannot write file '%s'; maybe you are out of disk space?",
             fio->fn);
         gmx_file(buf);
     }
@@ -1087,7 +1089,7 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
     gmx_fio_lock(fio);
     if (fio->fp)
     {
-        gmx_fseek(fio->fp, fpos, SEEK_SET);
+        rc = gmx_fseek(fio->fp, fpos, SEEK_SET);
     }
     else
     {
@@ -1143,12 +1145,12 @@ int xtc_seek_frame(t_fileio *fio, int frame, int natoms)
     return ret;
 }
 
-int xtc_seek_time(t_fileio *fio, real time, int natoms)
+int xtc_seek_time(t_fileio *fio, real time, int natoms,gmx_bool bSeekForwardOnly)
 {
     int ret;
 
     gmx_fio_lock(fio);
-    ret=xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms);
+    ret=xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms, bSeekForwardOnly);
     gmx_fio_unlock(fio);
 
     return ret;

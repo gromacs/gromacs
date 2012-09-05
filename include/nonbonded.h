@@ -46,7 +46,8 @@
 extern "C" {
 #endif
 
-void gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly);
+void gmx_setup_kernels(FILE *fplog,t_forcerec *fr,gmx_bool bGenericKernelOnly);
+void gmx_setup_adress_kernels(FILE *fplog,gmx_bool bGenericKernelOnly);
 
 #define GMX_DONB_LR             (1<<0)
 #define GMX_DONB_FORCES         (1<<1)
@@ -56,7 +57,7 @@ void
 do_nonbonded(t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f[],t_mdatoms *md,t_blocka *excl,
              real egnb[],real egcoul[],real egb[],rvec box_size,
-             t_nrnb *nrnb,real lambda,real *dvdlambda,
+             t_nrnb *nrnb,real *lambda,real dvdlambda[],
              int nls,int eNL,int flags);
 
 /* Calculate VdW/charge pair interactions (usually 1-4 interactions).
@@ -67,7 +68,7 @@ do_listed_vdw_q(int ftype,int nbonds,
 		const t_iatom iatoms[],const t_iparams iparams[],
 		const rvec x[],rvec f[],rvec fshift[],
 		const t_pbc *pbc,const t_graph *g,
-		real lambda,real *dvdlambda,
+		real *lambda,real *dvdlambda,
 		const t_mdatoms *md,
 		const t_forcerec *fr,gmx_grppairener_t *grppener,
 		int *global_atom_index);

@@ -71,11 +71,12 @@ static void insert_ion(int nsa,int *nwater,
   real extr_e,poti,rmin2;
   rvec xei,dx;
   gmx_bool bSub=FALSE;
-  int  maxrand;
+  gmx_large_int_t maxrand;
   
   ei=-1;
   nw = *nwater;
-  maxrand = 1000*nw;
+  maxrand  = nw;
+  maxrand *= 1000;
   if (bRandom) {
     do {
       ei = nw*rando(seed);
@@ -301,10 +302,10 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 	fprintf(fpout,"%-10s  %d\n",grpname,nsol_last);  
       }
       if (p_num > 0) {
-	fprintf(fpout,"%-10s  %d\n",p_name,p_num);  
+	fprintf(fpout,"%-15s  %d\n",p_name,p_num);  
       }
       if (n_num > 0) {
-	fprintf(fpout,"%-10s  %d\n",n_name,n_num);
+	fprintf(fpout,"%-15s  %d\n",n_name,n_num);
       }
     }
   }
@@ -319,10 +320,10 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 int gmx_genion(int argc, char *argv[])
 {
   const char *desc[] = {
-    "genion replaces solvent molecules by monoatomic ions at",
+    "[TT]genion[tt] replaces solvent molecules by monoatomic ions at",
     "the position of the first atoms with the most favorable electrostatic",
     "potential or at random. The potential is calculated on all atoms, using",
-    "normal GROMACS particle based methods (in contrast to other methods",
+    "normal GROMACS particle-based methods (in contrast to other methods",
     "based on solving the Poisson-Boltzmann equation).",
     "The potential is recalculated after every ion insertion.",
     "If specified in the run input file, a reaction field, shift function",
@@ -333,14 +334,17 @@ int gmx_genion(int argc, char *argv[])
     "The user should add the ion molecules to the topology file or use",
     "the [TT]-p[tt] option to automatically modify the topology.[PAR]",
     "The ion molecule type, residue and atom names in all force fields",
-    "are the capitalized element names without sign. Ions which can have",
-    "multiple charge states get the multiplicilty added, without sign,",
-    "for the uncommon states only.[PAR]",
+    "are the capitalized element names without sign. This molecule name",
+    "should be given with [TT]-pname[tt] or [TT]-nname[tt], and the",
+    "[TT][molecules][tt] section of your topology updated accordingly,",
+    "either by hand or with [TT]-p[tt]. Do not use an atom name instead!",
+    "[PAR]Ions which can have multiple charge states get the multiplicity",
+    "added, without sign, for the uncommon states only.[PAR]",
     "With the option [TT]-pot[tt] the potential can be written as B-factors",
-    "in a pdb file (for visualisation using e.g. rasmol).",
+    "in a [TT].pdb[tt] file (for visualisation using e.g. Rasmol).",
     "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
     "with the [TT]-scale[tt] option.[PAR]",
-    "For larger ions, e.g. sulfate we recommended to use genbox."
+    "For larger ions, e.g. sulfate we recommended using [TT]genbox[tt]."
   };
   const char *bugs[] = {
     "Calculation of the potential is not reliable, therefore the [TT]-random[tt] option is now turned on by default.",
@@ -361,9 +365,9 @@ int gmx_genion(int argc, char *argv[])
     { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
     { "-random",FALSE,etBOOL, {&bRandom},"Use random placement of ions instead of based on potential. The rmin option should still work" },
     { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" },
-    { "-scale", FALSE, etREAL, {&scale}, "Scaling factor for the potential for -pot" },
+    { "-scale", FALSE, etREAL, {&scale}, "Scaling factor for the potential for [TT]-pot[tt]" },
     { "-conc",  FALSE, etREAL, {&conc},  
-      "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input tpr file. Overrides the -np and  nn options." },
+      "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
     { "-neutral", FALSE, etBOOL, {&bNeutral},
       "This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated." }
   };

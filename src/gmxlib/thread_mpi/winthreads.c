@@ -86,9 +86,444 @@ static CRITICAL_SECTION barrier_init; /* mutex for initializing barriers */
 static tMPI_Spinlock_t init_init=TMPI_SPINLOCK_INITIALIZER;
 
 /* whether tMPI_Thread_create has initialized these mutexes */
-tMPI_Atomic_t init_inited={ 0 };
+static tMPI_Atomic_t init_inited={ 0 };
+
+/* whether the main thread affinity has been set */
+static tMPI_Spinlock_t main_thread_aff_lock=TMPI_SPINLOCK_INITIALIZER;
+static tMPI_Atomic_t main_thread_aff_set={ 0 };
+
+/*
+    NUMA and Processor Group awareness support.
+
+    NUMA support is implemented to maximize the chance that memory access 
+    patterns remain Local to the NUMA node.
+    NUMA node processor affinity is utilized to prevent scheduler associated 
+    drift across NUMA nodes.
+    Process Group support is implemented to enable > 64 processors to be 
+    utilized.  This is only supported when building 64bit.
+
+    The high level approach is:
+    1. Build a description of CPU topology, including processor numbers, NUMA 
+        node numbers, and affinity masks.
+    2. For processor intensive worker threads, create threads such that 
+        the processor affinity and thread stack is kept local within a NUMA node.
+    3. Employ simple round-robin affinity and node assignment approach when 
+        creating threads.
+    4. Use GetProcAddress() to obtain function pointers to functions that 
+        are operating system version dependent, to allow maximum binary 
+        compatibility. 
+
+    Scott Field (sfield@microsoft.com)      Jan-2011    
+*/
 
 
+typedef struct {
+    PROCESSOR_NUMBER    ProcessorNumber;
+    GROUP_AFFINITY      GroupAffinity;
+    USHORT              NumaNodeNumber;
+} MPI_NUMA_PROCESSOR_INFO;
+
+
+/* thread/processor index, to allow setting round-robin affinity. */
+volatile ULONG g_ulThreadIndex;                 
+/* a value of zero implies the system is not NUMA */
+ULONG g_ulHighestNumaNodeNumber=0;
+/* total number of processors in g_MPI_ProcessInfo array */
+ULONG g_ulTotalProcessors;
+/* array describing available processors, affinity masks, and NUMA node */
+MPI_NUMA_PROCESSOR_INFO *g_MPI_ProcessorInfo;   
+
+/* function prototypes and variables to support obtaining function addresses 
+   dynamically -- supports down-level operating systems */
+
+typedef BOOL (WINAPI *func_GetNumaHighestNodeNumber_t)( PULONG 
+                                                        HighestNodeNumber );
+typedef BOOL (WINAPI *func_SetThreadGroupAffinity_t)( HANDLE hThread, 
+                            const GROUP_AFFINITY *GroupAffinity, 
+                            PGROUP_AFFINITY PreviousGroupAffinity );
+typedef BOOL (WINAPI *func_SetThreadIdealProcessorEx_t)( HANDLE hThread, 
+                            PPROCESSOR_NUMBER lpIdealProcessor, 
+                            PPROCESSOR_NUMBER lpPreviousIdealProcessor );
+typedef BOOL (WINAPI *func_GetNumaNodeProcessorMaskEx_t)( USHORT Node, 
+                            PGROUP_AFFINITY ProcessorMask );
+typedef BOOL (WINAPI *func_GetNumaProcessorNodeEx_t)( 
+                            PPROCESSOR_NUMBER Processor, 
+                            PUSHORT NodeNumber );
+typedef VOID (WINAPI *func_GetCurrentProcessorNumberEx_t)( 
+                            PPROCESSOR_NUMBER ProcNumber );
+
+typedef HANDLE (WINAPI *func_CreateRemoteThreadEx_t)(
+                            HANDLE hProcess,
+                            LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                            SIZE_T dwStackSize,
+                            LPTHREAD_START_ROUTINE lpStartAddress,
+                            LPVOID lpParameter,
+                            DWORD dwCreationFlags,
+                            LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+                            LPDWORD lpThreadId);
+
+typedef BOOL (WINAPI *func_InitializeProcThreadAttributeList_t)(
+                            LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, 
+                            DWORD dwAttributeCount, 
+                            DWORD dwFlags, 
+                            PSIZE_T lpSize);
+typedef BOOL (WINAPI *func_UpdateProcThreadAttribute_t)(
+                            LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+                            DWORD dwFlags,
+                            DWORD_PTR Attribute,
+                            PVOID lpValue,
+                            SIZE_T cbSize,
+                            PVOID lpPreviousValue,
+                            PSIZE_T lpReturnSize);
+typedef VOID (WINAPI *func_DeleteProcThreadAttributeList_t)(
+                            LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList);
+typedef DWORD (WINAPI *func_GetActiveProcessorCount_t)(WORD GroupNumber);
+typedef WORD (WINAPI *func_GetActiveProcessorGroupCount_t)(void);
+
+
+/* WinXP SP2, WinXP64, WinSrv 2003 */
+func_GetNumaHighestNodeNumber_t             func_GetNumaHighestNodeNumber;              
+/* Windows 7, WinSrv 2008R2 */
+func_SetThreadGroupAffinity_t               func_SetThreadGroupAffinity;                
+func_SetThreadIdealProcessorEx_t            func_SetThreadIdealProcessorEx; 
+func_GetNumaNodeProcessorMaskEx_t           func_GetNumaNodeProcessorMaskEx;
+func_GetNumaProcessorNodeEx_t               func_GetNumaProcessorNodeEx;    
+func_GetCurrentProcessorNumberEx_t          func_GetCurrentProcessorNumberEx;
+func_GetActiveProcessorCount_t              func_GetActiveProcessorCount;    
+func_GetActiveProcessorGroupCount_t         func_GetActiveProcessorGroupCount;
+func_CreateRemoteThreadEx_t                 func_CreateRemoteThreadEx;        
+/* Windows Vista, WinSrv 2008 */ 
+func_InitializeProcThreadAttributeList_t    func_InitializeProcThreadAttributeList;     
+func_UpdateProcThreadAttribute_t            func_UpdateProcThreadAttribute;             
+func_DeleteProcThreadAttributeList_t        func_DeleteProcThreadAttributeList;         
+
+
+/* Set the main thread's affinity */
+static int tMPI_Set_main_thread_affinity(void)
+{
+    /* calling thread PROCESSOR_NUMBER */
+    PROCESSOR_NUMBER CurrentProcessorNumber;      
+    /* calling thread GROUP_AFFINITY */
+    GROUP_AFFINITY CurrentThreadGroupAffinity; 
+    /* calling thread NUMA node */
+    USHORT CurrentNumaNodeNumber;
+
+
+    /* we can pre-check because it's atomic */
+    if (tMPI_Atomic_get(&main_thread_aff_set) == 0)
+    {
+        /* this can be a spinlock because the chances of collision are low. */
+        tMPI_Spinlock_lock( &main_thread_aff_lock );
+        if( g_ulHighestNumaNodeNumber != 0 )
+        {
+            func_GetCurrentProcessorNumberEx(&CurrentProcessorNumber);
+
+
+            /* set the NUMA node affinity for the current thread
+               failures to set the current thread affinity are ignored, 
+               as a fringe case can arise on >32 processor systems with a 32bit 
+               build/code.
+               */
+            func_SetThreadIdealProcessorEx(GetCurrentThread(), 
+                                           &CurrentProcessorNumber, 
+                                           NULL);
+
+            if(func_GetNumaProcessorNodeEx(&CurrentProcessorNumber, 
+                                           &CurrentNumaNodeNumber))
+            {
+                /* for the NUMA node number associated with the current processor 
+                   number, get the group affinity mask */
+                if(func_GetNumaNodeProcessorMaskEx(CurrentNumaNodeNumber, 
+                                                   &CurrentThreadGroupAffinity))
+                {
+                    /* set the current thread affinity to prevent it from running on 
+                       other NUMA nodes */
+                    func_SetThreadGroupAffinity(GetCurrentThread(), 
+                                                &CurrentThreadGroupAffinity, 
+                                                NULL);
+                }
+            }
+        }
+        else
+        {
+            /* No NUMA. For now, we just do a similar thing. */
+            if ( (func_GetCurrentProcessorNumberEx != NULL)  &&
+                 (func_SetThreadIdealProcessorEx))
+            {
+                func_GetCurrentProcessorNumberEx(&CurrentProcessorNumber);
+                func_SetThreadIdealProcessorEx(GetCurrentThread(), 
+                                               &CurrentProcessorNumber, 
+                                               NULL);
+            }
+        }
+        tMPI_Atomic_set( &main_thread_aff_set, 1);
+        tMPI_Spinlock_unlock( &main_thread_aff_lock );
+    }
+    return 0;
+}
+
+/*  returns 0 on success.
+    Success is returned if the system is non-NUMA, OR the system doesn't 
+    support appropriate NUMA APIs, OR the system is NUMA and we successfully 
+    initialized support.
+    
+    returns -1 on error.
+    This can happen if an API returned an error, a memory allocation failed, or 
+    we failed to initialize affinity mapping information.
+*/
+int tMPI_Init_NUMA(void)
+{
+    /* module handle to kernel32.dll -- we already reference it, so it's already loaded */
+    HMODULE hModKernel32 = NULL;                    
+    /* 0-based NUMA node count -- does not imply all nodes have available (eg: hot-plug) processors */
+    ULONG ulHighestNumaNodeNumber;                  
+    /* total number of processors available per affinity masks */
+    DWORD dwTotalProcessors = 0;                    
+    ULONG i = 0;
+
+    /* calling thread PROCESSOR_NUMBER */
+    PROCESSOR_NUMBER CurrentProcessorNumber;      
+    /* calling thread GROUP_AFFINITY */
+    GROUP_AFFINITY CurrentThreadGroupAffinity; 
+    /* calling thread NUMA node */
+    USHORT CurrentNumaNodeNumber;
+
+    WORD wActiveGroupCount;
+    WORD GroupIndex;
+
+    /* array of processor information structures */
+    MPI_NUMA_PROCESSOR_INFO *pMPI_ProcessorInfo = NULL; 
+
+    /* assume an error condition */
+    int iRet = -1;
+
+    hModKernel32 = GetModuleHandleA("kernel32.dll");
+
+    if( hModKernel32 == NULL )
+    {
+        return 0;
+    }
+
+    /* obtain addresses of relevant NUMA functions, most of which are 
+       Windows 7 / Windows Server 2008R2 only functions
+       this is done using GetProcAddress to enable the binary to run on older 
+       Windows versions.
+    */
+
+    func_GetNumaHighestNodeNumber = (func_GetNumaHighestNodeNumber_t) GetProcAddress( hModKernel32, "GetNumaHighestNodeNumber" );
+
+    if( func_GetNumaHighestNodeNumber == NULL )
+    {
+        return 0;
+    }
+
+    /* determine if we're on a NUMA system and if so, determine the number of 
+       (potential) nodes */
+
+    if(!func_GetNumaHighestNodeNumber( &ulHighestNumaNodeNumber ))
+    {
+        return -1;
+    }
+
+    if( ulHighestNumaNodeNumber == 0 )
+    {
+        /* system is not NUMA */
+        return 0;
+    }
+
+    func_SetThreadGroupAffinity = (func_SetThreadGroupAffinity_t)GetProcAddress( hModKernel32, "SetThreadGroupAffinity" );
+    func_SetThreadIdealProcessorEx = (func_SetThreadIdealProcessorEx_t)GetProcAddress( hModKernel32, "SetThreadIdealProcessorEx" );
+    func_CreateRemoteThreadEx = (func_CreateRemoteThreadEx_t)GetProcAddress( hModKernel32, "CreateRemoteThreadEx" );
+    func_GetNumaNodeProcessorMaskEx = (func_GetNumaNodeProcessorMaskEx_t)GetProcAddress( hModKernel32, "GetNumaNodeProcessorMaskEx" );
+    func_GetNumaProcessorNodeEx = (func_GetNumaProcessorNodeEx_t)GetProcAddress( hModKernel32, "GetNumaProcessorNodeEx" );
+    func_GetCurrentProcessorNumberEx = (func_GetCurrentProcessorNumberEx_t)GetProcAddress( hModKernel32, "GetCurrentProcessorNumberEx" );
+    func_GetActiveProcessorCount = (func_GetActiveProcessorCount_t)GetProcAddress( hModKernel32, "GetActiveProcessorCount" );
+    func_GetActiveProcessorGroupCount = (func_GetActiveProcessorGroupCount_t)GetProcAddress( hModKernel32, "GetActiveProcessorGroupCount" );
+    func_InitializeProcThreadAttributeList = (func_InitializeProcThreadAttributeList_t)GetProcAddress( hModKernel32, "InitializeProcThreadAttributeList" );
+    func_UpdateProcThreadAttribute = (func_UpdateProcThreadAttribute_t)GetProcAddress( hModKernel32, "UpdateProcThreadAttribute" );
+    func_DeleteProcThreadAttributeList = (func_DeleteProcThreadAttributeList_t)GetProcAddress( hModKernel32, "DeleteProcThreadAttributeList" );
+
+    if( (func_SetThreadGroupAffinity == NULL) ||
+        (func_SetThreadIdealProcessorEx == NULL) ||
+        (func_CreateRemoteThreadEx == NULL) ||
+        (func_GetNumaNodeProcessorMaskEx == NULL) ||
+        (func_GetNumaProcessorNodeEx == NULL) ||
+        (func_GetCurrentProcessorNumberEx == NULL) ||
+        (func_GetActiveProcessorCount == NULL) ||
+        (func_GetActiveProcessorGroupCount == NULL) ||
+        (func_InitializeProcThreadAttributeList == NULL) ||
+        (func_UpdateProcThreadAttribute == NULL) ||
+        (func_DeleteProcThreadAttributeList == NULL) )
+    {
+        /* if any addresses couldn't be located, assume NUMA functionality 
+           isn't supported */
+        return 0;
+    }
+
+    /* count the active processors across the groups */
+
+    func_GetCurrentProcessorNumberEx(&CurrentProcessorNumber);
+
+    wActiveGroupCount = func_GetActiveProcessorGroupCount();
+    
+    dwTotalProcessors = func_GetActiveProcessorCount( ALL_PROCESSOR_GROUPS );
+
+#if !((defined WIN64 || defined _WIN64))
+    /* WOW64 doesn't allow setting the affinity correctly beyond 32 
+       processors -- the KAFFINITY mask is only 32 bits wide
+       This check is only here for completeness -- large systems should be 
+       running 64bit Gromacs code, where the processor quantity is not 
+       constrained.
+       By failing here, the WOW64 32bit client will use normal CreateThread(), 
+       which can schedule up to 64 un-affinitized threads
+    */
+
+    if( dwTotalProcessors > 32 )
+    {
+        return 0;
+    }
+#endif
+
+    /* allocate array of processor info blocks */
+
+    pMPI_ProcessorInfo = tMPI_Malloc( sizeof(MPI_NUMA_PROCESSOR_INFO) * 
+                                      dwTotalProcessors );
+    if(pMPI_ProcessorInfo == NULL)
+    {
+        tMPI_Fatal_error(TMPI_FARGS,"tMPI_Malloc failed for processor information");
+        goto cleanup;
+    }
+
+    /* zero fill to cover reserved must be-zero fields */
+    memset(pMPI_ProcessorInfo, 0, sizeof(MPI_NUMA_PROCESSOR_INFO) * dwTotalProcessors);
+
+    /* loop through each processor group, and for each group, capture the 
+       processor numbers and NUMA node information. */
+
+    for(GroupIndex = 0 ; GroupIndex < wActiveGroupCount ; GroupIndex++)
+    {
+        DWORD dwGroupProcessorCount;
+        BYTE ProcessorIndex;
+
+        dwGroupProcessorCount = func_GetActiveProcessorCount( GroupIndex );
+
+        for(ProcessorIndex = 0 ; ProcessorIndex < dwGroupProcessorCount ; 
+            ProcessorIndex++)
+        {
+            PROCESSOR_NUMBER *pProcessorNumber = &(pMPI_ProcessorInfo[i].ProcessorNumber);
+            GROUP_AFFINITY *pGroupAffinity = &(pMPI_ProcessorInfo[i].GroupAffinity);
+            USHORT *pNodeNumber = &(pMPI_ProcessorInfo[i].NumaNodeNumber);
+
+            pProcessorNumber->Group = GroupIndex;
+            pProcessorNumber->Number = ProcessorIndex;
+
+            /* save an index to the processor array entry for the current processor
+               this is used to enable subsequent threads to be created in a round 
+               robin fashion starting at the next array entry
+            */
+
+            if( (CurrentProcessorNumber.Group == pProcessorNumber->Group ) &&
+                (CurrentProcessorNumber.Number == pProcessorNumber->Number) )
+            {
+                /* set global: current thread index into processor array */
+                g_ulThreadIndex = i;
+            }
+
+            /* capture the node number and group affinity associated with processor entry
+               any failures here are assumed to be catastrophic and disable 
+               the group & NUMA aware thread support
+            */
+
+            if(!func_GetNumaProcessorNodeEx(pProcessorNumber, pNodeNumber))
+            {
+                tMPI_Fatal_error(TMPI_FARGS,
+                                 "Processor enumeration, GetNumaProcessorNodeEx failed, error code=%d",
+                                 GetLastError());
+                goto cleanup;
+            }
+
+            if(!func_GetNumaNodeProcessorMaskEx(*pNodeNumber, pGroupAffinity))
+            {
+                tMPI_Fatal_error(TMPI_FARGS,
+                                 "Processor enumeration, GetNumaNodeProcessorMaskEx failed, error code=%d",
+                                 GetLastError());
+                goto cleanup;
+            }
+
+            /* future enhancement: construct GroupAffinity (single) processor 
+               mask within NUMA node for this processor entry */
+
+            /* increment processor array index */
+            i++;
+
+            /* sanity check, should never happen */
+
+            if(i > dwTotalProcessors)
+            {
+                tMPI_Fatal_error(TMPI_FARGS,"Processor enumeration exceeds allocated memory!");
+                goto cleanup;
+            }
+        }
+    }
+
+#if 0
+    /* set the NUMA node affinity for the current thread
+       failures to set the current thread affinity are ignored, 
+       as a fringe case can arise on >32 processor systems with a 32bit 
+       build/code.
+    */
+    func_SetThreadIdealProcessorEx(GetCurrentThread(), 
+                                   &CurrentProcessorNumber, 
+                                   NULL);
+
+    if(func_GetNumaProcessorNodeEx(&CurrentProcessorNumber, 
+                                   &CurrentNumaNodeNumber))
+    {
+        /* for the NUMA node number associated with the current processor 
+           number, get the group affinity mask */
+        if(func_GetNumaNodeProcessorMaskEx(CurrentNumaNodeNumber, 
+                                           &CurrentThreadGroupAffinity))
+        {
+            /* set the current thread affinity to prevent it from running on 
+               other NUMA nodes */
+            func_SetThreadGroupAffinity(GetCurrentThread(), 
+                                        &CurrentThreadGroupAffinity, 
+                                        NULL);
+        }
+    }
+#endif
+ 
+    /* capture number of processors, highest NUMA node number, and processor 
+       array */
+    g_ulTotalProcessors = dwTotalProcessors;
+    g_ulHighestNumaNodeNumber = ulHighestNumaNodeNumber;
+    g_MPI_ProcessorInfo = pMPI_ProcessorInfo;
+
+    iRet = 0 ;
+
+#if 0   
+    // TODO: debug DISCARD                        
+    printf("primary thread tid=%lu group=%lu mask=0x%I64x group=%lu number=%lu ulThreadIndex=%lu\n",
+        GetCurrentThreadId(),
+        CurrentThreadGroupAffinity.Group,
+        (ULONGLONG)CurrentThreadGroupAffinity.Mask,
+        (ULONG)CurrentProcessorNumber.Group,
+        (ULONG)CurrentProcessorNumber.Number,
+        g_ulThreadIndex);
+#endif
+
+cleanup:
+
+    if( iRet != 0 )
+    {
+        if( pMPI_ProcessorInfo )
+        {
+            tMPI_Free( pMPI_ProcessorInfo );
+        }
+    }
+
+    return 0;
+}
 
 static void tMPI_Init_initers(void)
 {
@@ -108,6 +543,9 @@ static void tMPI_Init_initers(void)
             InitializeCriticalSection(&cond_init);
             InitializeCriticalSection(&barrier_init);
 
+            /* fatal errors are handled by the routine by calling tMPI_Fatal_error() */
+            tMPI_Init_NUMA();	
+
             tMPI_Atomic_memory_barrier_rel();
             tMPI_Atomic_set(&init_inited, 1);
         }
@@ -116,7 +554,8 @@ static void tMPI_Init_initers(void)
     }
 }
 
-
+/* TODO: this needs to go away!  (there's another one in pthreads.c)
+   fatal errors are thankfully really rare*/
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...)
 {
     va_list ap;
@@ -151,6 +590,159 @@ static DWORD WINAPI tMPI_Win32_thread_starter( LPVOID lpParam )
     return 0;
 }
 
+HANDLE tMPI_Thread_create_NUMA(LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                               SIZE_T dwStackSize,
+                               LPTHREAD_START_ROUTINE lpStartAddress,
+                               LPVOID lpParameter,
+                               DWORD dwCreationFlags,
+                               LPDWORD lpThreadId)
+{
+    LPPROC_THREAD_ATTRIBUTE_LIST pAttributeList = NULL;
+    HANDLE hThread = NULL;
+    SIZE_T cbAttributeList = 0;
+    GROUP_AFFINITY GroupAffinity;
+    PROCESSOR_NUMBER IdealProcessorNumber;
+    ULONG CurrentProcessorIndex;
+
+    /* for each thread created, round-robin through the set of valid 
+       processors and affinity masks.
+       the assumption is that callers of tMPI_Thread_create_NUMA are creating 
+       threads that saturate a given processor.
+       for cases where threads are being created that rarely do work, standard 
+       thread creation (eg: CreateThread) should be invoked instead.
+    */
+
+    CurrentProcessorIndex = (ULONG)InterlockedIncrement((volatile LONG *)&g_ulThreadIndex);
+    CurrentProcessorIndex = CurrentProcessorIndex % g_ulTotalProcessors;
+
+    /* group, mask. */
+
+    memcpy(&GroupAffinity, 
+           &(g_MPI_ProcessorInfo[CurrentProcessorIndex].GroupAffinity), 
+           sizeof(GROUP_AFFINITY));
+
+    /* group, processor number */
+    
+    memcpy(&IdealProcessorNumber, 
+           &(g_MPI_ProcessorInfo[CurrentProcessorIndex].ProcessorNumber), 
+           sizeof(PROCESSOR_NUMBER)); 
+
+    /* determine size of allocation for AttributeList */
+
+    if(!func_InitializeProcThreadAttributeList(pAttributeList,
+                                               2,
+                                               0,
+                                               &cbAttributeList))
+    {
+        DWORD dwLastError = GetLastError();
+        if( dwLastError != ERROR_INSUFFICIENT_BUFFER )
+        {
+            tMPI_Fatal_error(TMPI_FARGS,
+                             "InitializeProcThreadAttributeList, error code=%d",
+                             dwLastError);
+            goto cleanup;
+        }
+    }
+
+    pAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)tMPI_Malloc( cbAttributeList );
+    if( pAttributeList == NULL )
+    {
+        tMPI_Fatal_error(TMPI_FARGS,"Failed to allocate pAttributeList");
+        goto cleanup;
+    }
+
+    memset( pAttributeList, 0, cbAttributeList );
+
+    if(!func_InitializeProcThreadAttributeList(pAttributeList,
+                                               2,
+                                               0,
+                                               &cbAttributeList))
+    {
+        tMPI_Fatal_error(TMPI_FARGS,
+                         "InitializeProcThreadAttributeList, error code=%d",
+                         GetLastError());
+        goto cleanup;
+    }
+
+    if(!func_UpdateProcThreadAttribute(pAttributeList,
+                                       0,
+                                       PROC_THREAD_ATTRIBUTE_GROUP_AFFINITY,
+                                       &GroupAffinity,
+                                       sizeof(GroupAffinity),
+                                       NULL,
+                                       NULL))
+    {
+        tMPI_Fatal_error(TMPI_FARGS,"UpdateProcThreadAttribute, error code=%d",
+                         GetLastError());
+        goto cleanup;
+    }
+
+    if(!func_UpdateProcThreadAttribute(pAttributeList,
+                                       0,
+                                       PROC_THREAD_ATTRIBUTE_IDEAL_PROCESSOR,
+                                       &IdealProcessorNumber,
+                                       sizeof(IdealProcessorNumber),
+                                       NULL,
+                                       NULL))
+    {
+        tMPI_Fatal_error(TMPI_FARGS,"UpdateProcThreadAttribute, error code=%d",
+                         GetLastError());
+        goto cleanup;
+    }
+
+
+    hThread = func_CreateRemoteThreadEx( GetCurrentProcess(),
+                                         lpThreadAttributes,
+                                         dwStackSize,
+                                         lpStartAddress,
+                                         lpParameter,
+                                         dwCreationFlags,
+                                         pAttributeList,
+                                         lpThreadId);
+            
+    func_DeleteProcThreadAttributeList( pAttributeList );
+
+#if 0   
+	// TODO: debug only or DISCARD
+    if( hThread )
+    {
+        PROCESSOR_NUMBER ProcNumber;
+        USHORT NodeNumber;
+
+        GetThreadIdealProcessorEx(hThread, &ProcNumber);
+        GetNumaProcessorNodeEx(&ProcNumber, &NodeNumber);
+
+        printf("started thread tid=%lu group=%lu mask=0x%I64x number=%lu numanode=%lu\n",
+            *lpThreadId,
+            GroupAffinity.Group,
+            (ULONGLONG)GroupAffinity.Mask,
+            ProcNumber.Number,
+            NodeNumber
+            );
+    }
+#endif
+
+cleanup:
+    
+    if( pAttributeList )
+    {
+        tMPI_Free( pAttributeList );
+    }
+
+    return hThread;
+}
+
+int tMPI_Thread_get_hw_number(void)
+{
+    int ret;
+
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo( &sysinfo );
+
+    ret=sysinfo.dwNumberOfProcessors;
+    return ret;
+}
+
 
 int tMPI_Thread_create(tMPI_Thread_t *thread,
                        void *(*start_routine)(void *), void *arg)
@@ -161,13 +753,65 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
     tMPI_Init_initers();
 
     /* a small memory leak to be sure that it doesn't get deallocated 
-       once this function ends */
+       once this function ends, before the newly created thread uses it. */
     prm=(struct tMPI_Thread_starter_param*)
-              malloc(sizeof(struct tMPI_Thread_starter_param));
+              tMPI_Malloc(sizeof(struct tMPI_Thread_starter_param));
     prm->start_routine= start_routine;
     prm->param=arg;
 
-    *thread=(struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
+    *thread=(struct tMPI_Thread*)tMPI_Malloc(sizeof(struct tMPI_Thread)*1);
+
+    if(thread==NULL)
+    {
+        tMPI_Fatal_error(TMPI_FARGS,"Invalid thread pointer.");
+        return EINVAL;
+    }
+    /* just create a plain thread. */
+    (*thread)->th = CreateThread(NULL,
+                                 0,
+                                 tMPI_Win32_thread_starter,
+                                 prm,
+                                 0, 
+                                 &thread_id);
+
+    if((*thread)->th==NULL)
+    {
+        tMPI_Free(thread);
+        tMPI_Fatal_error(TMPI_FARGS,"Failed to create thread, error code=%d",
+                         GetLastError());
+        return -1;
+    }
+
+    /* inherit the thread priority from the parent thread. */
+    /* TODO: is there value in setting this, vs. just allowing it to default 
+       from the process?  currently, this limits the effectivenes of changing 
+       the priority in eg: TaskManager. */
+    SetThreadPriority(((*thread)->th), GetThreadPriority(GetCurrentThread()));
+
+    return 0;
+}
+
+
+
+
+
+int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
+                           void *(*start_routine)(void *), void *arg)
+{
+    DWORD thread_id;
+    struct tMPI_Thread_starter_param *prm;
+
+    tMPI_Init_initers();
+    tMPI_Set_main_thread_affinity();
+
+    /* a small memory leak to be sure that it doesn't get deallocated 
+       once this function ends, before the newly created thread uses it. */
+    prm=(struct tMPI_Thread_starter_param*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_starter_param));
+    prm->start_routine= start_routine;
+    prm->param=arg;
+
+    *thread=(struct tMPI_Thread*)tMPI_Malloc(sizeof(struct tMPI_Thread)*1);
 
     if(thread==NULL)
     {
@@ -175,16 +819,38 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
         return EINVAL;
     }
 
-    (*thread)->th = CreateThread(NULL, 0, tMPI_Win32_thread_starter, prm, 0, 
-                                 &thread_id);
+    if( g_ulHighestNumaNodeNumber != 0 )
+    {
+        /* if running on a NUMA system, use the group and NUMA aware thread 
+           creation logic */
+        (*thread)->th = tMPI_Thread_create_NUMA(NULL,
+                                                0,
+                                                tMPI_Win32_thread_starter,
+                                                prm,
+                                                0, 
+                                                &thread_id);
+    } else {
+        /* TODO: for now, non-NUMA systems don't set thread affinity. */
+        (*thread)->th = CreateThread(NULL,
+                                     0,
+                                     tMPI_Win32_thread_starter,
+                                     prm,
+                                     0, 
+                                     &thread_id);
+    }
 
     if((*thread)->th==NULL)
     {
+        tMPI_Free(thread);
         tMPI_Fatal_error(TMPI_FARGS,"Failed to create thread, error code=%d",
                          GetLastError());
         return -1;
     }
-    /* inherit the thread priority from the paren thread. */
+
+    /* inherit the thread priority from the parent thread. */
+    /* TODO: is there value in setting this, vs. just allowing it to default 
+       from the process?  currently, this limits the effectivenes of changing 
+       the priority in eg: TaskManager. */
     SetThreadPriority(((*thread)->th), GetThreadPriority(GetCurrentThread()));
 
     return 0;
@@ -217,7 +883,7 @@ int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
         }
     }
     CloseHandle(thread->th);
-    free(thread);
+    tMPI_Free(thread);
 
     return 0;
 }
@@ -269,7 +935,7 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx)
     }
 
     DeleteCriticalSection(&(mtx->mutex->cs));
-    free(mtx->mutex);
+    tMPI_Free(mtx->mutex);
 
     return 0;
 }
@@ -383,7 +1049,7 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
 int tMPI_Thread_key_delete(tMPI_Thread_key_t key)
 {
     TlsFree(key.key->wkey);
-    free(key.key);
+    tMPI_Free(key.key);
 
     return 0;
 }
@@ -490,7 +1156,7 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond)
     /* windows doesnt have this function */
 #else
     DeleteCriticalSection(&(cond->condp->wtr_lock));
-    free(cond->condp);
+    tMPI_Free(cond->condp);
 #endif
     return 0;
 }
@@ -732,7 +1398,7 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier)
 
     tMPI_Thread_cond_destroy(&(barrier->barrierp->cv));
 
-    free(barrier->barrierp);
+    tMPI_Free(barrier->barrierp);
 
     return 0;
 }

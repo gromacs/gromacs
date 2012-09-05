@@ -296,12 +296,12 @@ static void cluster_em_all(FILE *fp,int npdb,t_pdbfile *pdbf[],
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "anadock analyses the results of an Autodock run and clusters the",
+    "[TT]g_anadock[tt] analyses the results of an Autodock run and clusters the",
     "structures together, based on distance or RMSD. The docked energy",
     "and free energy estimates are analysed, and for each cluster the",
     "energy statistics are printed.[PAR]",
     "An alternative approach to this is to cluster the structures first",
-    "(using [TT]g_cluster[tt] and then sort the clusters on either lowest",
+    "using [TT]g_cluster[tt] and then sort the clusters on either lowest",
     "energy or average energy."
   };
   t_filenm fnm[] = {

@@ -52,6 +52,10 @@ files.
 
 #ifdef THREAD_PTHREADS 
 
+#ifdef HAVE_PTHREAD_SETAFFINITY
+#define _GNU_SOURCE
+#endif
+
 /* pthread.h must be the first header, apart from the defines in config.h */
 #include <pthread.h>
 
@@ -64,6 +68,7 @@ files.
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+
 
 #include "thread_mpi/atomic.h"
 #include "thread_mpi/threads.h"
@@ -82,10 +87,13 @@ static pthread_mutex_t cond_init=PTHREAD_MUTEX_INITIALIZER;
 /* mutex for initializing barriers */
 static pthread_mutex_t barrier_init=PTHREAD_MUTEX_INITIALIZER; 
 
+/* mutex for initializing barriers */
+static pthread_mutex_t aff_init=PTHREAD_MUTEX_INITIALIZER; 
+static int aff_thread_number=0;
 
 
-
-
+/* TODO: this needs to go away!  (there's another one in winthreads.c)
+   fatal errors are thankfully really rare*/
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...)
 {
     va_list ap;
@@ -102,6 +110,25 @@ void tMPI_Fatal_error(const char *file, int line, const char *message, ...)
 enum tMPI_Thread_support tMPI_Thread_support(void)
 {
     return TMPI_THREAD_SUPPORT_YES;
+}
+
+
+int tMPI_Thread_get_hw_number(void)
+{
+    int ret=0;
+#ifdef HAVE_SYSCONF
+#if defined(_SC_NPROCESSORS_ONLN)
+    ret=sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROC_ONLN)
+    ret=sysconf(_SC_NPROC_ONLN);
+#elif defined(_SC_NPROCESSORS_CONF)
+    ret=sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(_SC_NPROC_CONF)
+    ret=sysconf(_SC_NPROC_CONF);
+#endif
+#endif
+
+    return ret;
 }
 
 int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
@@ -121,13 +148,78 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
     if(ret!=0)
     {
         /* Cannot use tMPI_error() since messages use threads for locking */
-        tMPI_Fatal_error(TMPI_FARGS,"Failed to create POSIX thread, rc=%d",ret);
+        tMPI_Fatal_error(TMPI_FARGS,"Failed to create POSIX thread:%s, rc=%d",
+                         strerror(errno), ret);
         /* Use system memory allocation routines */
         return -1;
     }
 
     return 0;
 }
+
+
+/* set thread's own affinity to a processor number n */
+static int tMPI_Set_affinity(int n)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY
+    cpu_set_t set;
+
+    CPU_ZERO(&set);
+    CPU_SET(n, &set);
+    return pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+#endif
+    return 0;
+}
+
+int tMPI_Thread_create_aff(tMPI_Thread_t *thread, 
+                           void *(*start_routine)(void *),
+                           void *arg)
+{
+    int ret;
+
+#ifdef TMPI_SET_AFFINITY
+    /* set the calling thread's affinity mask */
+    pthread_mutex_lock( &(aff_init) );
+    if (aff_thread_number==0)
+    {
+        tMPI_Set_affinity(aff_thread_number++);
+    }
+    pthread_mutex_unlock( &(aff_init) );
+#endif
+
+    if(thread==NULL)
+    {
+        tMPI_Fatal_error(TMPI_FARGS,"Invalid thread pointer.");
+        return EINVAL;
+    }
+
+    *thread=(struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
+    ret=pthread_create(&((*thread)->th),NULL,start_routine,arg);
+
+    if(ret!=0)
+    {
+        /* Cannot use tMPI_error() since messages use threads for locking */
+        tMPI_Fatal_error(TMPI_FARGS,"Failed to create POSIX thread:%s, rc=%d",
+                         strerror(errno), ret);
+        /* Use system memory allocation routines */
+        return -1;
+    }
+    else
+    {
+#ifdef TMPI_SET_AFFINITY
+        /* now set the affinity of the new thread */
+        pthread_mutex_lock( &(aff_init) );
+        ret=tMPI_Set_affinity(aff_thread_number++);
+        pthread_mutex_unlock( &(aff_init) );
+        /* failure is non-fatal, so we won't check the result */
+        return 0;
+#else
+        return 0;
+#endif
+    }
+}
+
+
 
 
 

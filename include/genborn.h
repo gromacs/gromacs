@@ -37,6 +37,7 @@
 #define _genborn_h
 
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "grompp.h"
 
 #ifdef __cplusplus
@@ -88,7 +89,7 @@ convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist
 /* Functions for calculating adjustments due to ie chain rule terms */
 void
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
-			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, t_nrnb *nrnb, gmx_bool bRad,
+			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, int sa_algorithm, t_nrnb *nrnb, gmx_bool bRad,
 			   const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd);
 
 

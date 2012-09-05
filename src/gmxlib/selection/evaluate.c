@@ -51,6 +51,7 @@
 #include <maths.h>
 #include <smalloc.h>
 #include <vec.h>
+#include <assert.h>
 
 #include <indexutil.h>
 #include <poscalc.h>
@@ -1068,24 +1069,27 @@ int
 _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
                              gmx_ana_index_t *g)
 {
-    t_selelem  *left, *right;
     int         n, i, i1, i2;
     real        lval, rval=0., val=0.;
     int         rc;
+    gmx_bool    bArithNeg;
 
-    left  = sel->child;
-    right = left->next;
+    t_selelem  *const left  = sel->child;
+    t_selelem  *const right = left->next;
 
     if (left->mempool)
     {
         _gmx_selvalue_setstore(&left->v, sel->v.u.ptr);
-        rc = _gmx_selelem_mempool_reserve(right, g->isize);
-        if (rc != 0)
+        if (right)
         {
-            return rc;
+            rc = _gmx_selelem_mempool_reserve(right, g->isize);
+            if (rc != 0)
+            {
+                return rc;
+            }
         }
     }
-    else if (right->mempool)
+    else if (right && right->mempool)
     {
         _gmx_selvalue_setstore(&right->v, sel->v.u.ptr);
     }
@@ -1093,10 +1097,13 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
 
     n = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
     sel->v.nr = n;
+
+    bArithNeg = (sel->u.arith.type == ARITH_NEG);
+    assert(right || bArithNeg);
     for (i = i1 = i2 = 0; i < n; ++i)
     {
         lval = left->v.u.r[i1];
-        if (sel->u.arith.type != ARITH_NEG)
+        if (!bArithNeg)
         {
             rval = right->v.u.r[i2];
         }
@@ -1114,7 +1121,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
         {
             ++i1;
         }
-        if (sel->u.arith.type != ARITH_NEG && !(right->flags & SEL_SINGLEVAL))
+        if (!bArithNeg && !(right->flags & SEL_SINGLEVAL))
         {
             ++i2;
         }
@@ -1123,9 +1130,12 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
     if (left->mempool)
     {
         _gmx_selvalue_setstore(&left->v, NULL);
-        _gmx_selelem_mempool_release(right);
+        if (right)
+        {
+            _gmx_selelem_mempool_release(right);
+        }
     }
-    else if (right->mempool)
+    else if (right && right->mempool)
     {
         _gmx_selvalue_setstore(&right->v, NULL);
     }

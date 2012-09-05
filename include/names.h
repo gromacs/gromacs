@@ -52,6 +52,7 @@ extern const char *etcoupl_names[etcNR+1];
 extern const char *epcoupl_names[epcNR+1];
 extern const char *epcoupltype_names[epctNR+1];
 extern const char *erefscaling_names[erscNR+1];
+extern const char *ecutscheme_names[ecutsNR+1];
 extern const char *ens_names[ensNR+1];
 extern const char *ei_names[eiNR+1];
 extern const char *yesno_names[BOOL_NR+1];
@@ -67,10 +68,14 @@ extern const char *edisreweighting_names[edrwNR+1];
 extern const char *enbf_names[eNBF_NR+1];
 extern const char *ecomb_names[eCOMB_NR+1];
 extern const char *gtypes[egcNR+1];
+extern const char *esimtemp_names[esimtempNR+1];
 extern const char *efep_names[efepNR+1];
-extern const char *separate_dhdl_file_names[efepNR+1];
-extern const char *dhdl_derivatives_names[efepNR+1];
-extern const char *efep_names[efepNR+1];
+extern const char *efpt_names[efptNR+1];
+extern const char *elamstats_names[elamstatsNR+1];
+extern const char *elmcmove_names[elmcmoveNR+1];
+extern const char *elmceq_names[elmceqNR+1];
+extern const char *separate_dhdl_file_names[esepdhdlfileNR+1];
+extern const char *dhdl_derivatives_names[edhdlderivativesNR+1];
 extern const char *esol_names[esolNR+1];
 extern const char *enlist_names[enlistNR+1];
 extern const char *edispc_names[edispcNR+1];
@@ -82,15 +87,22 @@ extern const char *esa_names[esaNR+1];
 extern const char *ewt_names[ewtNR+1];
 extern const char *epull_names[epullNR+1];
 extern const char *epullg_names[epullgNR+1];
+extern const char *erotg_names[erotgNR+1];
+extern const char *erotg_originnames[erotgNR+1];
+extern const char *erotg_fitnames[erotgFitNR+1];
 extern const char *eQMmethod_names[eQMmethodNR+1];
 extern const char *eQMbasis_names[eQMbasisNR+1];
 extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
 extern const char *eMultentOpt_names[eMultentOptNR+1];
+extern const char *eAdresstype_names[eAdressNR+1];
+extern const char *eAdressICtype_names[eAdressICNR+1];
+extern const char *eAdressSITEtype_names[eAdressSITENR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
 
-#define BOOL(e)        ENUM_NAME(e,BOOL_NR,bool_names)
+#define EBOOL(e)       ENUM_NAME(e,BOOL_NR,bool_names)
+#define ECUTSCHEME(e)  ENUM_NAME(e,ecutsNR,ecutscheme_names)
 #define ENS(e)         ENUM_NAME(e,ensNR,ens_names)
 #define EI(e)          ENUM_NAME(e,eiNR,ei_names)
 #define EPBC(e)        ENUM_NAME(e,epbcNR,epbc_names)
@@ -107,9 +119,10 @@ extern const char *eMultentOpt_names[eMultentOptNR+1];
 #define EDISREWEIGHTING(e)  ENUM_NAME(e,edrwNR,edisreweighting_names)
 #define ENBFNAME(e)    ENUM_NAME(e,eNBF_NR,enbf_names)
 #define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
+#define ESIMTEMP(e)    ENUM_NAME(e,esimtempNR,esimtemp_names)
 #define EFEPTYPE(e)    ENUM_NAME(e,efepNR,efep_names)
-#define SEPDHDLFILETYPE(e) ENUM_NAME(e,sepdhdlfileNR,separate_dhdl_file_names)
-#define DHDLDERIVATIVESTYPE(e) ENUM_NAME(e,dhdlderivativesNR,dhdl_derivatives_names)
+#define SEPDHDLFILETYPE(e) ENUM_NAME(e,esepdhdlfileNR,separate_dhdl_file_names)
+#define DHDLDERIVATIVESTYPE(e) ENUM_NAME(e,edhdlderivativesNR,dhdl_derivatives_names)
 #define ESOLTYPE(e)    ENUM_NAME(e,esolNR,esol_names)
 #define ENLISTTYPE(e)  ENUM_NAME(e,enlistNR,enlist_names)
 #define EDISPCORR(e)   ENUM_NAME(e,edispcNR,edispc_names)
@@ -121,10 +134,16 @@ extern const char *eMultentOpt_names[eMultentOptNR+1];
 #define EWALLTYPE(e)   ENUM_NAME(e,ewtNR,ewt_names)
 #define EPULLTYPE(e)   ENUM_NAME(e,epullNR,epull_names)
 #define EPULLGEOM(e)   ENUM_NAME(e,epullgNR,epullg_names)
+#define EROTGEOM(e)    ENUM_NAME(e,erotgNR,erotg_names)
+#define EROTORIGIN(e)  ENUM_NAME(e,erotgOriginNR,erotg_originnames)
+#define EROTFIT(e)     ENUM_NAME(e,erotgFitNR,erotg_fitnames)
 #define EQMMETHOD(e)   ENUM_NAME(e,eQMmethodNR,eQMmethod_names)
 #define EQMBASIS(e)    ENUM_NAME(e,eQMbasisNR,eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e,eQMMMschemeNR,eQMMMscheme_names)
 #define EMULTENTOPT(e) ENUM_NAME(e,eMultentOptNR,eMultentOpt_names)
+#define EADRESSTYPE(e) ENUM_NAME(e,eAdressNR,eAdresstype_names)
+#define EADRESSICTYPE(e) ENUM_NAME(e,eAdressICNR,eAdressICtype_names)
+#define EADRESSSITETYPE(e) ENUM_NAME(e,eAdressSITENR,eAdressSITEtype_names)
 
 #ifdef __cplusplus
 }

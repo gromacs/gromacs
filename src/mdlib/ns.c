@@ -61,6 +61,7 @@
 #include "mtop_util.h"
 
 #include "domdec.h"
+#include "adress.h"
 
 
 /* 
@@ -277,32 +278,32 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    /* Start with GB */
    if(fr->bGB)
    {
-       icoul=4;
+       icoul=enbcoulGB;
    }
    else if (fr->bcoultab)
    {
-       icoul = 3;
+       icoul = enbcoulTAB;
    }
    else if (EEL_RF(fr->eeltype))
    {
-       icoul = 2;
+       icoul = enbcoulRF;
    }
    else 
    {
-       icoul = 1;
+       icoul = enbcoulOOR;
    }
    
    if (fr->bvdwtab)
    {
-       ivdw = 3;
+       ivdw = enbvdwTAB;
    }
    else if (fr->bBHAM)
    {
-       ivdw = 2;
+       ivdw = enbvdwBHAM;
    }
    else 
    {
-       ivdw = 1;
+       ivdw = enbvdwLJ;
    }
 
    fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
@@ -316,10 +317,6 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        if (log != NULL)
        {
            fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
-       }
-       if (!fr->bExcl_IntraCGAll_InterCGNone)
-       {
-           gmx_fatal(FARGS,"The charge-group - charge-group force loops only support systems with all intra-cg interactions excluded and no inter-cg exclusions, this is not the case for this system.");
        }
    }
    
@@ -351,9 +348,9 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        
        if (fr->efep != efepNO) 
        {
-           if (fr->bEwald)
+           if ((fr->bEwald) && (fr->sc_alphacoul > 0)) /* need to handle long range differently if using softcore */
            {
-               icoulf = 5;
+               icoulf = enbcoulFEWALD;
            }
            else
            {
@@ -547,7 +544,8 @@ static inline void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,gmx_bool bLR)
 
 static inline void add_j_to_nblist_cg(t_nblist *nlist,
                                       atom_id j_start,int j_end,
-                                      t_excl *bexcl,gmx_bool bLR)
+                                      t_excl *bexcl,gmx_bool i_is_j,
+                                      gmx_bool bLR)
 {
     int nrj=nlist->nrj;
     int j;
@@ -576,6 +574,14 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
     for(j=j_start; j<j_end; j++)
     {
         nlist->excl[nrj*MAX_CGCGSIZE + j - j_start] = bexcl[j];
+    }
+    if (i_is_j)
+    {
+        /* Avoid double counting of intra-cg interactions */
+        for(j=1; j<j_end-j_start; j++)
+        {
+            nlist->excl[nrj*MAX_CGCGSIZE + j] |= (1<<j) - 1;
+        }
     }
 
     nlist->nrj ++;
@@ -1257,7 +1263,7 @@ put_in_list_cg(gmx_bool              bHaveVdW[],
             /* Here we add the j charge group jcg to the list,
              * exclusions are also added to the list.
              */
-            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bExcl,bLR);
+            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bExcl,icg==jcg,bLR);
         }
     }
 
@@ -1784,7 +1790,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                          int jgid,int nlr,
                          atom_id lr[],t_excl bexcl[],int shift,
                          rvec x[],rvec box_size,t_nrnb *nrnb,
-                         real lambda,real *dvdlambda,
+                         real *lambda,real *dvdlambda,
                          gmx_grppairener_t *grppener,
                          gmx_bool bDoVdW,gmx_bool bDoCoul,
                          gmx_bool bEvaluateNow,put_in_list_t *put_in_list,
@@ -1912,7 +1918,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        t_grid *grid,rvec x[],
                        t_excl bexcl[],gmx_bool *bExcludeAlleg,
                        t_nrnb *nrnb,t_mdatoms *md,
-                       real lambda,real *dvdlambda,
+                       real *lambda,real *dvdlambda,
                        gmx_grppairener_t *grppener,
                        put_in_list_t *put_in_list,
                        gmx_bool bHaveVdW[],
@@ -2191,6 +2197,13 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                     if (dx0 > dx1)
                     {
                         continue;
+                    }
+                    /* Adress: an explicit cg that has a weigthing function of 0 is excluded
+                     *  from the neigbour list as it will not interact  */
+                    if (fr->adress_type != eAdressOff){
+                        if (md->wf[cgs->index[icg]]==0 && egp_explicit(fr, igid)){
+                            continue;
+                        }
                     }
                     /* Get shift vector */	  
                     shift=XYZ2IS(tx,ty,tz);
@@ -2506,7 +2519,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb,t_mdatoms *md,
-                      real lambda,real *dvdlambda,
+                      real *lambda,real *dvdlambda,
                       gmx_grppairener_t *grppener,
                       gmx_bool bFillGrid,
                       gmx_bool bDoLongRange,
@@ -2572,7 +2585,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         {
             dd_zones = NULL;
 
-            get_nsgrid_boundaries(grid,NULL,box,NULL,NULL,NULL,
+            get_nsgrid_boundaries(grid->nboundeddim,box,NULL,NULL,NULL,NULL,
                                   cgs->nr,fr->cg_cm,grid_x0,grid_x1,&grid_dens);
 
             grid_first(log,grid,NULL,NULL,fr->ePBC,box,grid_x0,grid_x1,

@@ -35,10 +35,11 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_FASTLOCK_H_
-#define _TMPI_FASTLOCK_H_
+#ifndef TMPI_FASTLOCK_H_
+#define TMPI_FASTLOCK_H_
 
 #include "wait.h"
+#include "atomic.h"
 
 /** Fast (possibly busy-wait-based) lock type
  *
@@ -97,4 +98,4 @@ int tMPI_Lock_islocked(const tMPI_Lock_t *lock);
 
 
 
-#endif
+#endif /* TMPI_FASTLOCK_H_ */

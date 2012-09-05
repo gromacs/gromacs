@@ -408,7 +408,8 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
   int     nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
   t_trxstatus *out=NULL;
   t_trxstatus *status;
-  int     noutvec_extr,*imin,*imax;
+  int     noutvec_extr,imin,imax;
+  real    *pmin,*pmax;
   atom_id *all_at;
   matrix  box;
   rvec    *xread,*x;
@@ -446,8 +447,6 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     
     if (top)
       gpbc = gmx_rmpbc_init(&top->idef,ePBC,nat,box);
-    if (top)
-    gmx_rmpbc_done(gpbc);
 
     for(i=0; i<nat; i++)
       all_at[i]=i;
@@ -615,29 +614,31 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
   }
   
   if (extremefile) {
+    snew(pmin,noutvec_extr);
+    snew(pmax,noutvec_extr);
     if (extreme==0) {
       fprintf(stderr,"%11s %17s %17s\n","eigenvector","Minimum","Maximum");
       fprintf(stderr,
-	      "%11s %10s %10s %10s %10s\n","","value","time","value","time");
-      snew(imin,noutvec_extr);
-      snew(imax,noutvec_extr);
+	      "%11s %10s %10s %10s %10s\n","","value","frame","value","frame");
+      imin = 0;
+      imax = 0;
       for(v=0; v<noutvec_extr; v++) {
 	for(i=0; i<nframes; i++) {
-	  if (inprod[v][i]<inprod[v][imin[v]])
-	    imin[v]=i;
-	  if (inprod[v][i]>inprod[v][imax[v]])
-	    imax[v]=i;
+	  if (inprod[v][i]<inprod[v][imin])
+	    imin = i;
+	  if (inprod[v][i]>inprod[v][imax])
+	    imax = i;
 	}
-	min=inprod[v][imin[v]];
-	max=inprod[v][imax[v]];
-	fprintf(stderr,"%7d     %10.6f %10.1f %10.6f %10.1f\n",
+	pmin[v] = inprod[v][imin];
+	pmax[v] = inprod[v][imax];
+	fprintf(stderr,"%7d     %10.6f %10d %10.6f %10d\n",
 		eignr[outvec[v]]+1,
-		min,inprod[noutvec][imin[v]],max,inprod[noutvec][imax[v]]); 
+		pmin[v],imin,pmax[v],imax); 
       }
     }
     else {
-      min=-extreme;
-      max=+extreme;
+      pmin[0] = -extreme;
+      pmax[0] =  extreme;
     }
     /* build format string for filename: */
     strcpy(str,extremefile);/* copy filename */
@@ -661,12 +662,14 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	for(i=0; i<natoms; i++)
 	  for(d=0; d<DIM; d++) 
 	    xread[index[i]][d] = 
-	      (xav[i][d] + (min*(nextr-frame-1)+max*frame)/(nextr-1)
+	      (xav[i][d] + (pmin[v]*(nextr-frame-1)+pmax[v]*frame)/(nextr-1)
 	      *eigvec[outvec[v]][i][d]/sqrtm[i]);
 	write_trx(out,natoms,index,atoms,0,frame,topbox,xread,NULL,NULL);
       }
       close_trx(out);
     }
+    sfree(pmin);
+    sfree(pmax);
   }
   fprintf(stderr,"\n");
 }
@@ -791,10 +794,10 @@ int gmx_anaeig(int argc,char *argv[])
     "[TT]-last[tt] have been set explicitly, in which case all eigenvectors",
     "will be written to separate files. Chain identifiers will be added",
     "when writing a [TT].pdb[tt] file with two or three structures (you",
-    "can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
+    "can use [TT]rasmol -nmrpdb[tt] to view such a [TT].pdb[tt] file).[PAR]",
     
     "  Overlap calculations between covariance analysis:[BR]",
-    "  NOTE: the analysis should use the same fitting structure[PAR]",
+    "  [BB]Note:[bb] the analysis should use the same fitting structure[PAR]",
     
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",
@@ -820,7 +823,7 @@ int gmx_anaeig(int argc,char *argv[])
     "computed based on the Quasiharmonic approach and based on",
     "Schlitter's formula."
   };
-  static int  first=1,last=8,skip=1,nextr=2,nskip=6;
+  static int  first=1,last=-1,skip=1,nextr=2,nskip=6;
   static real max=0.0,temp=298.15;
   static gmx_bool bSplit=FALSE,bEntropy=FALSE;
   t_pargs pa[] = {
@@ -963,6 +966,9 @@ int gmx_anaeig(int argc,char *argv[])
   }
     
   if (bEntropy) {
+    if (bDMA1) {
+      gmx_fatal(FARGS,"Can not calculate entropies from mass-weighted eigenvalues, redo the analysis without mass-weighting");
+    }
     calc_entropy_qh(stdout,neig1,eigval1,temp,nskip);
     calc_entropy_schlitter(stdout,neig1,nskip,eigval1,temp);
   }

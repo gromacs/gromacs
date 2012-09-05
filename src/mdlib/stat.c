@@ -65,8 +65,10 @@
 #include "partdec.h"
 #include "constr.h"
 #include "checkpoint.h"
-#include "mdrun.h"
 #include "xvgr.h"
+#include "md_support.h"
+#include "mdrun.h"
+#include "sim_util.h"
 
 typedef struct gmx_global_stat
 {
@@ -265,32 +267,33 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           where();
           if (inputrec->efep != efepNO) 
           {
-              idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
-              idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
+              idvdll  = add_bind(rb,efptNR,enerd->dvdl_lin);
+              idvdlnl = add_bind(rb,efptNR,enerd->dvdl_nonlin);
               if (enerd->n_lambda > 0) 
               {
                   iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
               }
           }
       }
+  }
 
-      if (vcm) 
+  if (vcm)
+  {
+      icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
+      where();
+      imass = add_binr(rb,vcm->nr,vcm->group_mass);
+      where();
+      if (vcm->mode == ecmANGULAR)
       {
-          icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
+          icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
           where();
-          imass = add_binr(rb,vcm->nr,vcm->group_mass);
+          icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
           where();
-          if (vcm->mode == ecmANGULAR) 
-          {
-              icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
-              where();
-              icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
-              where();
-              ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-              where();
-          }
+          ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+          where();
       }
   }
+
   if (DOMAINDECOMP(cr)) 
   {
       nb = cr->dd->nbonded_local;
@@ -366,28 +369,11 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           }
           if (inputrec->efep != efepNO) 
           {
-              extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
-              extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
+              extract_bind(rb,idvdll ,efptNR,enerd->dvdl_lin);
+              extract_bind(rb,idvdlnl,efptNR,enerd->dvdl_nonlin);
               if (enerd->n_lambda > 0) 
               {
                   extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
-              }
-          }
-          /* should this be here, or with ekin?*/
-          if (vcm) 
-          {
-              extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
-              where();
-              extract_binr(rb,imass,vcm->nr,vcm->group_mass);
-              where();
-              if (vcm->mode == ecmANGULAR) 
-              {
-                  extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
-                  where();
-                  extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
-                  where();
-                  extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-                  where();
               }
           }
           if (DOMAINDECOMP(cr)) 
@@ -401,8 +387,23 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           where();
 
           filter_enerdterm(copyenerd,FALSE,enerd->term,bTemp,bPres,bEner);    
-/* Small hack for temp only - not entirely clear if still needed?*/
-          /* enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes); */
+      }
+  }
+
+  if (vcm)
+  {
+      extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
+      where();
+      extract_binr(rb,imass,vcm->nr,vcm->group_mass);
+      where();
+      if (vcm->mode == ecmANGULAR)
+      {
+          extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
+          where();
+          extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
+          where();
+          extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+          where();
       }
   }
 
@@ -448,6 +449,8 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
     of->fp_field = NULL;
     
     of->eIntegrator     = ir->eI;
+    of->bExpanded       = ir->bExpanded;
+    of->elamstats       = ir->expandedvals->elamstats;
     of->simulation_part = ir->simulation_part;
 
     if (MASTER(cr))
@@ -482,8 +485,8 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
         }
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
-        if (ir->efep != efepNO && ir->nstdhdl > 0 &&
-            (ir->separate_dhdl_file == sepdhdlfileYES ) && 
+        if ((ir->efep != efepNO || ir->bSimTemp) && ir->fepvals->nstdhdl > 0 &&
+            (ir->fepvals->separate_dhdl_file == esepdhdlfileYES ) &&
             EI_DYNAMICS(ir->eI))
         {
             if (bAppendFiles)
@@ -649,20 +652,20 @@ void write_traj(FILE *fplog,t_commrec *cr,
          if (mdof_flags & MDOF_CPT)
          {
              write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
-                              fplog,cr,of->eIntegrator,
-                              of->simulation_part,step,t,state_global);
+                              fplog,cr,of->eIntegrator,of->simulation_part,
+                              of->bExpanded,of->elamstats,step,t,state_global);
          }
 
          if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
          {
-            fwrite_trn(of->fp_trn,step,t,state_local->lambda,
+            fwrite_trn(of->fp_trn,step,t,state_local->lambda[efptFEP],
                        state_local->box,top_global->natoms,
                        (mdof_flags & MDOF_X) ? state_global->x : NULL,
                        (mdof_flags & MDOF_V) ? global_v : NULL,
                        (mdof_flags & MDOF_F) ? f_global : NULL);
             if (gmx_fio_flush(of->fp_trn) != 0)
             {
-                gmx_file("Cannot write trajectory; maybe you are out of quota?");
+                gmx_file("Cannot write trajectory; maybe you are out of disk space?");
             }
             gmx_fio_check_file_position(of->fp_trn);
         }      
@@ -702,7 +705,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             if (write_xtc(of->fp_xtc,*n_xtc,step,t,
                           state_local->box,xxtc,of->xtc_prec) == 0)
             {
-                gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
+                gmx_fatal(FARGS,"XTC error - maybe you are out of disk space?");
             }
             gmx_fio_check_file_position(of->fp_xtc);
         }

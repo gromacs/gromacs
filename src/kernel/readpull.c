@@ -52,7 +52,7 @@
 #include "symtab.h"
 #include "readinp.h"
 #include "readir.h"
-#include "string.h"
+#include <string.h>
 #include "mdatoms.h"
 #include "pbc.h"
 #include "pull.h"
@@ -289,14 +289,20 @@ void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
   t_pbc     pbc;
   int       ndim,g,m;
   double    t_start,tinvrate;
+  real      lambda=0;
   rvec      init;
   dvec      dr,dev;
 
-  init_pull(NULL,ir,0,NULL,mtop,NULL,oenv,FALSE,0);
+  /* need to pass in the correct masses if free energy is on*/
+  if (ir->efep)
+  {
+      lambda = ir->fepvals->all_lambda[efptMASS][ir->fepvals->init_fep_state];
+  }
+  init_pull(NULL,ir,0,NULL,mtop,NULL,oenv,lambda,FALSE,0); 
   md = init_mdatoms(NULL,mtop,ir->efep);
   atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
   if (ir->efep)
-    update_mdatoms(md,ir->init_lambda);
+    update_mdatoms(md,ir->fepvals->init_lambda);
   
   pull = ir->pull;
   if (pull->eGeom == epullgPOS)

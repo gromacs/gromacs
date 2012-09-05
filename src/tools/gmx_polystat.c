@@ -96,7 +96,7 @@ static void calc_int_dist(double *intd, rvec *x, int i0, int i1)
 int gmx_polystat(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_polystat plots static properties of polymers as a function of time",
+    "[TT]g_polystat[tt] plots static properties of polymers as a function of time",
     "and prints the average.[PAR]",
     "By default it determines the average end-to-end distance and radii",
     "of gyration of polymers. It asks for an index group and split this",

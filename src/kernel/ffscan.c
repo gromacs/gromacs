@@ -62,7 +62,7 @@ int main(int argc,char *argv[])
     "using command line arguments. All parameters that reproduce the energy",
     "within a given absolute tolerance are printed to a log file.[PAR]",
     "Obviously polarizable models can be used, and shell optimisation is",
-    "performed if necessary. Also, like in mdrun table functions can be used",
+    "performed if necessary. Also, like in [TT]mdrun[tt] table functions can be used",
     "for user defined potential functions.[PAR]",
     "If the option -ga with appropriate file is passed, a genetic algorithm will",
     "be used rather than a grid scan."

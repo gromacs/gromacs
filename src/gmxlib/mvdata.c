@@ -50,6 +50,9 @@
 #include "tgroup.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
+/* Probably the test for (nr) > 0 in the next macro is only needed
+ * on BlueGene(/L), where IBM's MPI_Bcast will segfault after
+ * dereferencing a null pointer, even when no data is to be transferred. */
 #define  nblock_bc(cr,nr,d) { if ((nr) > 0) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr)); }
 #define    snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
 /* Dirty macro with bAlloc not as an argument */
@@ -215,6 +218,10 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
   block_bc(cr,state->nrng);
   block_bc(cr,state->nrngi);
   block_bc(cr,state->flags);
+  if (state->lambda==NULL)
+  {
+      snew_bc(cr,state->lambda,efptNR)
+  }
 }
 
 void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc)
@@ -235,7 +242,8 @@ void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc)
   for(i=0; i<estNR; i++) {
     if (state->flags & (1<<i)) {
       switch (i) {
-      case estLAMBDA:  block_bc(cr,state->lambda); break;
+      case estLAMBDA:  nblock_bc(cr,efptNR,state->lambda); break;
+      case estFEPSTATE: block_bc(cr,state->fep_state); break;
       case estBOX:     block_bc(cr,state->box); break;
       case estBOX_REL: block_bc(cr,state->box_rel); break;
       case estBOXV:    block_bc(cr,state->boxv); break;
@@ -304,19 +312,6 @@ static void bc_ilists(const t_commrec *cr,t_ilist *ilist)
   }
 
   if (debug) fprintf(debug,"after bc_ilists\n");
-}
-
-static void bc_idef(const t_commrec *cr,t_idef *idef)
-{
-  block_bc(cr,idef->ntypes);
-  block_bc(cr,idef->atnr);
-  snew_bc(cr,idef->functype,idef->ntypes);
-  snew_bc(cr,idef->iparams,idef->ntypes);
-  nblock_bc(cr,idef->ntypes,idef->functype);
-  nblock_bc(cr,idef->ntypes,idef->iparams);
-  block_bc(cr,idef->fudgeQQ);
-  bc_ilists(cr,idef->il);
-  block_bc(cr,idef->ilsort);
 }
 
 static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
@@ -458,22 +453,167 @@ static void bc_pull(const t_commrec *cr,t_pull *pull)
   }
 }
 
+static void bc_rotgrp(const t_commrec *cr,t_rotgrp *rotg)
+{
+  block_bc(cr,*rotg);
+  if (rotg->nat > 0) {
+    snew_bc(cr,rotg->ind,rotg->nat);
+    nblock_bc(cr,rotg->nat,rotg->ind);
+    snew_bc(cr,rotg->x_ref,rotg->nat);
+    nblock_bc(cr,rotg->nat,rotg->x_ref);
+  }
+}
+
+static void bc_rot(const t_commrec *cr,t_rot *rot)
+{
+  int g;
+
+  block_bc(cr,*rot);
+  snew_bc(cr,rot->grp,rot->ngrp);
+  for(g=0; g<rot->ngrp; g++)
+    bc_rotgrp(cr,&rot->grp[g]);
+}
+
+static void bc_adress(const t_commrec *cr,t_adress *adress)
+{
+  block_bc(cr,*adress);
+  if (adress->n_tf_grps > 0) {
+      snew_bc(cr, adress->tf_table_index, adress->n_tf_grps);
+      nblock_bc(cr, adress->n_tf_grps, adress->tf_table_index);
+  }
+  if (adress->n_energy_grps > 0) {
+      snew_bc(cr, adress->group_explicit, adress->n_energy_grps);
+      nblock_bc(cr, adress->n_energy_grps, adress->group_explicit);
+  }
+}
+static void bc_fepvals(const t_commrec *cr,t_lambda *fep)
+{
+    gmx_bool bAlloc=TRUE;
+    int i;
+
+    block_bc(cr,fep->nstdhdl);
+    block_bc(cr,fep->init_lambda);
+    block_bc(cr,fep->init_fep_state);
+    block_bc(cr,fep->delta_lambda);
+    block_bc(cr,fep->bPrintEnergy);
+    block_bc(cr,fep->n_lambda);
+    snew_bc(cr,fep->all_lambda,efptNR);
+    nblock_bc(cr,efptNR,fep->all_lambda);
+    for (i=0;i<efptNR;i++) {
+        snew_bc(cr,fep->all_lambda[i],fep->n_lambda);
+        nblock_bc(cr,fep->n_lambda,fep->all_lambda[i]);
+    }
+    block_bc(cr,fep->sc_alpha);
+    block_bc(cr,fep->sc_power);
+    block_bc(cr,fep->sc_r_power);
+    block_bc(cr,fep->sc_sigma);
+    block_bc(cr,fep->sc_sigma_min);
+    block_bc(cr,fep->bScCoul);
+    nblock_bc(cr,efptNR,&(fep->separate_dvdl[0]));
+    block_bc(cr,fep->dhdl_derivatives);
+    block_bc(cr,fep->dh_hist_size);
+    block_bc(cr,fep->dh_hist_spacing);
+    if (debug)
+    {
+        fprintf(debug,"after bc_fepvals\n");
+    }
+}
+
+static void bc_expandedvals(const t_commrec *cr,t_expanded *expand, int n_lambda)
+{
+    gmx_bool bAlloc=TRUE;
+    int i;
+
+    block_bc(cr,expand->nstexpanded);
+    block_bc(cr,expand->elamstats);
+    block_bc(cr,expand->elmcmove);
+    block_bc(cr,expand->elmceq);
+    block_bc(cr,expand->equil_n_at_lam);
+    block_bc(cr,expand->equil_wl_delta);
+    block_bc(cr,expand->equil_ratio);
+    block_bc(cr,expand->equil_steps);
+    block_bc(cr,expand->equil_samples);
+    block_bc(cr,expand->lmc_seed);
+    block_bc(cr,expand->minvar);
+    block_bc(cr,expand->minvar_const);
+    block_bc(cr,expand->c_range);
+    block_bc(cr,expand->bSymmetrizedTMatrix);
+    block_bc(cr,expand->nstTij);
+    block_bc(cr,expand->lmc_repeats);
+    block_bc(cr,expand->lmc_forced_nstart);
+    block_bc(cr,expand->gibbsdeltalam);
+    block_bc(cr,expand->wl_scale);
+    block_bc(cr,expand->wl_ratio);
+    block_bc(cr,expand->init_wl_delta);
+    block_bc(cr,expand->bInit_weights);
+    snew_bc(cr,expand->init_lambda_weights,n_lambda);
+    nblock_bc(cr,n_lambda,expand->init_lambda_weights);
+    block_bc(cr,expand->mc_temp);
+    if (debug)
+    {
+        fprintf(debug,"after bc_expandedvals\n");
+    }
+}
+
+static void bc_simtempvals(const t_commrec *cr,t_simtemp *simtemp, int n_lambda)
+{
+    gmx_bool bAlloc=TRUE;
+    int i;
+
+    block_bc(cr,simtemp->simtemp_low);
+    block_bc(cr,simtemp->simtemp_high);
+    block_bc(cr,simtemp->eSimTempScale);
+    snew_bc(cr,simtemp->temperatures,n_lambda);
+    nblock_bc(cr,n_lambda,simtemp->temperatures);
+    if (debug)
+    {
+        fprintf(debug,"after bc_simtempvals\n");
+    }
+}
+
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
   gmx_bool bAlloc=TRUE;
   int i;
-  
+
   block_bc(cr,*inputrec);
-  snew_bc(cr,inputrec->flambda,inputrec->n_flambda);
-  nblock_bc(cr,inputrec->n_flambda,inputrec->flambda);
+
   bc_grpopts(cr,&(inputrec->opts));
+
+  /* even if efep is efepNO, we need to initialize to make sure that
+   * n_lambda is set to zero */
+
+  snew_bc(cr,inputrec->fepvals,1);
+  if (inputrec->efep != efepNO || inputrec->bSimTemp) 
+  {
+      bc_fepvals(cr,inputrec->fepvals);
+  }
+  /* need to initialize this as well because of data checked for in the logic */
+  snew_bc(cr,inputrec->expandedvals,1);
+  if (inputrec->bExpanded)
+  {
+      bc_expandedvals(cr,inputrec->expandedvals,inputrec->fepvals->n_lambda);
+  }
+  snew_bc(cr,inputrec->simtempvals,1);
+  if (inputrec->bSimTemp)
+  {
+      bc_simtempvals(cr,inputrec->simtempvals,inputrec->fepvals->n_lambda);
+  }
   if (inputrec->ePull != epullNO) {
     snew_bc(cr,inputrec->pull,1);
     bc_pull(cr,inputrec->pull);
   }
+  if (inputrec->bRot) {
+    snew_bc(cr,inputrec->rot,1);
+    bc_rot(cr,inputrec->rot);
+  }
   for(i=0; (i<DIM); i++) {
     bc_cosines(cr,&(inputrec->ex[i]));
     bc_cosines(cr,&(inputrec->et[i]));
+  }
+  if (inputrec->bAdress) {
+      snew_bc(cr,inputrec->adress,1);
+      bc_adress(cr,inputrec->adress);
   }
 }
 

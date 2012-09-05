@@ -55,7 +55,7 @@
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_anavel computes temperature profiles in a sample. The sample",
+    "[TT]g_anavel[tt] computes temperature profiles in a sample. The sample",
     "can be analysed radial, i.e. the temperature as a function of",
     "distance from the center, cylindrical, i.e. as a function of distance",
     "from the vector (0,0,1) through the center of the box, or otherwise",

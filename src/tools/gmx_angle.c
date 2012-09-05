@@ -56,7 +56,7 @@
 
 
 static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
-                         real dt)
+                         real *time)
 {
   int    i,j,k,l,m,na;
   t_fileio *trn;
@@ -84,7 +84,7 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
 	}
       }
     }
-    fwrite_trn(trn,i,(real)i*dt,0,box,na,x,NULL,NULL);
+    fwrite_trn(trn,i,time[i],0,box,na,x,NULL,NULL);
   }
   close_trn(trn);
   sfree(x);
@@ -93,21 +93,25 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
 int gmx_g_angle(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "g_angle computes the angle distribution for a number of angles",
+    "[TT]g_angle[tt] computes the angle distribution for a number of angles",
     "or dihedrals. This way you can check whether your simulation",
-    "is correct. With option -ov you can plot the average angle of",
-    "a group of angles as a function of time. With the -all option",
+    "is correct. With option [TT]-ov[tt] you can plot the average angle of",
+    "a group of angles as a function of time. With the [TT]-all[tt] option",
     "the first graph is the average, the rest are the individual angles.[PAR]",
-    "With the -of option g_angle also calculates the fraction of trans",
+    "With the [TT]-of[tt] option, [TT]g_angle[tt] also calculates the fraction of trans",
     "dihedrals (only for dihedrals) as function of time, but this is",
     "probably only fun for a selected few.[PAR]",
-    "With option -oc a dihedral correlation function is calculated.[PAR]",
-    "It should be noted that the indexfile should contain",
+    "With option [TT]-oc[tt] a dihedral correlation function is calculated.[PAR]",
+    "It should be noted that the index file should contain",
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash.[PAR]",
     "With option [TT]-or[tt] a trajectory file is dumped containing cos and",
     "sin of selected dihedral angles which subsequently can be used as",
-    "input for a PCA analysis using [TT]g_covar[tt]."
+    "input for a PCA analysis using [TT]g_covar[tt].[PAR]",
+    "Option [TT]-ot[tt] plots when transitions occur between",
+    "dihedral rotamers of multiplicity 3 and [TT]-oh[tt]",
+    "records a histogram of the times between such transitions,",
+    "assuming the input trajectory frames are equally spaced in time."
   };
   static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static gmx_bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
@@ -122,7 +126,7 @@ int gmx_g_angle(int argc,char *argv[])
     { "-periodic", FALSE, etBOOL, {&bPBC},
       "Print dihedral angles modulo 360 degrees" },
     { "-chandler", FALSE,  etBOOL, {&bChandler},
-      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
+      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 or phi > 60." },
     { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
       "Average the correlation functions for the individual angles/dihedrals" }
   };
@@ -213,7 +217,11 @@ int gmx_g_angle(int argc,char *argv[])
   bAver=opt2bSet("-ov",NFILE,fnm);
   bTrans=opt2bSet("-ot",NFILE,fnm);
   bFrac=opt2bSet("-of",NFILE,fnm);
-
+  if (bTrans && opt[0][0] != 'd') {
+    fprintf(stderr, "Option -ot should only accompany -type dihedral. Disabling -ot.\n");
+    bTrans = FALSE;
+  }
+  
   if (bChandler && !bCorr)
     bCorr=TRUE;
     
@@ -265,7 +273,7 @@ int gmx_g_angle(int argc,char *argv[])
     ffclose(out);
   }
   if (opt2bSet("-or",NFILE,fnm)) 
-    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),dt);
+    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),time);
   
   if (bFrac) {
     sprintf(title,"Trans fraction: %s",grpname);
@@ -285,7 +293,7 @@ int gmx_g_angle(int argc,char *argv[])
   
   if (bTrans) 
     ana_dih_trans(opt2fn("-ot",NFILE,fnm),opt2fn("-oh",NFILE,fnm),
-		  dih,nframes,nangles,grpname,time[0],dt,bRb,oenv);
+		  dih,nframes,nangles,grpname,time,bRb,oenv);
 		  
   if (bCorr) {
     /* Autocorrelation function */

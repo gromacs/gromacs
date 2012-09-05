@@ -1,4 +1,5 @@
 /*
+ * $Id: levenmar.c,v 1.20 2004/01/23 18:11:02 lindahl Exp $
  * 
  *                This source code is part of
  * 
@@ -73,16 +74,6 @@ static int *ivector(int nl, int nh)
   if (!v) nrerror("allocation failure in ivector()", TRUE);
   return v-nl;
 }
-
-static double *dvector(int nl, int nh)
-{
-  double *v;
-	
-  v=(double *)malloc((unsigned) (nh-nl+1)*sizeof(double));
-  if (!v) nrerror("allocation failure in dvector()", TRUE);
-  return v-nl;
-}
-
 
 
 static real **matrix1(int nrl, int nrh, int ncl, int nch)
@@ -178,31 +169,6 @@ static void free_matrix(real **m, int nrl, int nrh, int ncl)
 	for(i=nrh;i>=nrl;i--) free((char*) (m[i]+ncl));
 	free((char*) (m+nrl));
 }
-
-static void free_dmatrix(double **m, int nrl, int nrh, int ncl)
-{
-	int i;
-
-	for(i=nrh;i>=nrl;i--) free((char*) (m[i]+ncl));
-	free((char*) (m+nrl));
-}
-
-static void free_imatrix(int **m, int nrl, int nrh, int ncl)
-{
-	int i;
-
-	for(i=nrh;i>=nrl;i--) free((char*) (m[i]+ncl));
-	free((char*) (m+nrl));
-}
-
-
-
-static void free_submatrix(real **b, int nrl)
-{
-	free((char*) (b+nrl));
-}
-
-
 
 static real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
 {

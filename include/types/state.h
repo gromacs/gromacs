@@ -50,22 +50,24 @@ extern "C" {
 
 /* for now, define the length of the NH chains here */
 #define NHCHAINLENGTH 10
+#define MAXLAMBDAS 1024
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-enum { estLAMBDA,
-       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
-       estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
-       estDISRE_INITF, estDISRE_RM3TAV,
-       estORIRE_INITF, estORIRE_DTAV,
-       estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI,estFVIR_PREV,
-       estNR };
+  enum { estLAMBDA,
+         estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
+         estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI, 
+         estDISRE_INITF, estDISRE_RM3TAV,
+         estORIRE_INITF, estORIRE_DTAV,
+         estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
+         estFEPSTATE, estMC_RNG, estMC_RNGI,
+         estNR };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estFVIR_PREV)))
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
 
-/* The names of the state entries, defined in src/gmxib/checkpoint.c */
+/* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
 
 typedef struct
@@ -108,7 +110,33 @@ typedef struct
 
     double start_time;     /* the start time of these energy diff blocks */
     double start_lambda;   /* lambda at start time */
+
+    gmx_bool start_lambda_set; /* whether the lambda value is set. Here
+                                  For backward-compatibility. */
 } delta_h_history_t; 
+
+typedef struct
+{
+  int nlambda;               /* total number of lambda states - for history*/
+
+  gmx_bool bEquil;           /* reached equilibration */
+  int  *n_at_lam;            /* number of points observed at each lambda */
+  real *wl_histo;            /* histogram for WL flatness determination */
+  real wl_delta;             /* current wang-landau delta */
+
+  real *sum_weights;         /* weights of the states */
+  real *sum_dg;              /* free energies of the states -- not actually used for weighting, but informational */
+  real *sum_minvar;          /* corrections to weights for minimum variance */
+  real *sum_variance;        /* variances of the states */
+
+  real **accum_p;            /* accumulated bennett weights for n+1 */
+  real **accum_m;            /* accumulated bennett weights for n-1 */
+  real **accum_p2;           /* accumulated squared bennett weights for n+1 */
+  real **accum_m2;           /* accumulated squared bennett weights for n-1 */
+
+  real **Tij;                /* transition matrix */
+  real **Tij_empirical;      /* Empirical transition matrix */
+} df_history_t;
 
 typedef struct
 {
@@ -130,11 +158,12 @@ typedef struct
   int           natoms;
   int           ngtc;
   int           nnhpres;
-  int           nhchainlength; /* length of each nose-hoover chain      */
+  int           nhchainlength; /* number of nose-hoover chains               */
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */
-  real          lambda; /* the free energy switching parameter          */
+  int           fep_state; /* indicates which of the alchemical states we are in                 */
+  real          *lambda; /* lambda vector                               */
   matrix 	box;    /* box vector coordinates                      	*/
   matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
@@ -157,12 +186,17 @@ typedef struct
   unsigned int  *ld_rng;  /* RNG random state                           */
   int           *ld_rngi; /* RNG index                                  */
 
+  int           nmcrng;   /* number of RNG states                       */
+  unsigned int  *mc_rng;  /* lambda MC RNG random state                 */
+  int           *mc_rngi; /* lambda MC RNG index                        */
+
   history_t     hist;   /* Time history for restraints                  */
 
   ekinstate_t   ekinstate; /* The state of the kinetic energy data      */
 
   energyhistory_t  enerhist; /* Energy history for statistics           */
-	
+  df_history_t  dfhist; /*Free energy history for free energy analysis  */
+
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
   int           ncg_gl; /* The number of local charge groups            */

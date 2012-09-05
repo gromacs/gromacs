@@ -1,5 +1,4 @@
 /*
- * $Id: ehdata.h,v 1.8 2003/11/17 21:50:46 spoel Exp $
  * 
  *                This source code is part of
  * 

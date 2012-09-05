@@ -136,6 +136,27 @@ extern "C" {
 #define unit_density_SI unit_mass_SI "/" unit_length_SI "^3"
 #define unit_invvisc_SI unit_length_SI " " unit_time_SI "/" unit_mass_SI
 
+  /* The routines below can be used for converting units from or to GROMACS
+     internal units. */
+  enum { eg2cAngstrom, eg2cNm, eg2cBohr, eg2cKcal_Mole, 
+	 eg2cHartree, eg2cHartree_e, eg2cAngstrom3, eg2cCoulomb,
+	 eg2cDebye, eg2cElectron, eg2cBuckingham, eg2cNR };
+  
+  /* Convert value x to GROMACS units. Energy -> Energy, Length -> Length etc. 
+     The type of x is deduced from unit, 
+     which should be taken from the enum above. */
+  extern double convert2gmx(double x,int unit);
+  
+  /* Convert value x from GROMACS units to the desired one. 
+     The type of return value is deduced from unit, see above */
+  extern double gmx2convert(double x,int unit);
+
+  /* Convert the string to one of the units supported. Returns -1 if not found. */
+  extern int string2unit(char *string);
+  
+  /* Convert the unit to a string. Return NULL when unit is out of range. */
+  extern const char *unit2string(int unit);
+
 #ifdef __cplusplus
 }
 #endif

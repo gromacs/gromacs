@@ -60,7 +60,8 @@ static char *trim_string(const char *s,char *out, int maxlen)
   int len,i;
  
   if(strlen(s)>(size_t)(maxlen-1))
-    gmx_fatal(FARGS,"Character buffer size too small\n");
+    gmx_fatal(FARGS,"String '%s' (%d) is longer than buffer (%d).\n", 
+              s, strlen(s), maxlen-1);
   
   for (; (*s)&&((*s)==' '); s++);
   for (len=strlen(s); (len>0); len--) if (s[len-1]!=' ') break;
@@ -157,9 +158,9 @@ static char **enter_buf(t_symtab *symtab,char *name)
 
 char **put_symtab(t_symtab *symtab,const char *name)
 {
-  char buf[256];
+  char buf[1024];
   
-  return enter_buf(symtab,trim_string(name,buf,255));
+  return enter_buf(symtab,trim_string(name,buf,1023));
 }
 
 void open_symtab(t_symtab *symtab)

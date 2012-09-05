@@ -207,7 +207,7 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
             }
             break;
         default:
-            gmx_incons("Unknown block type");
+            gmx_incons("Unknown block type: this file is corrupted or from the future");
     }
 }
 
@@ -314,6 +314,19 @@ void add_subblocks_enxblock(t_enxblock *eb, int n)
     }
 }
 
+static void enx_warning(const char *msg)
+{
+    if (getenv("GMX_ENX_NO_FATAL") != NULL)
+    {
+        gmx_warning(msg);
+    }
+    else
+    {
+        gmx_fatal(FARGS,"%s\n%s",
+                  msg,
+                  "If you want to use the correct frames before the corrupted frame and avoid this fatal error set the env.var. GMX_ENX_NO_FATAL");
+    }
+}
 
 static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
                         int n,gmx_enxnm_t **nms)
@@ -343,30 +356,19 @@ static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
         }
         if(!xdr_string(xdr,&(nm->name),STRLEN))
         {
-            gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+            gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
         if (file_version >= 2)
         {
             if(!xdr_string(xdr,&(nm->unit),STRLEN))
             {
-                gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+                gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
             }
         }
         else
         {
             nm->unit = strdup("kJ/mol");
         }
-    }
-}
-
-static void gen_units(int n,char ***units)
-{
-    int i;
-
-    snew(*units,n);
-    for(i=0; i<n; i++)
-    {
-        (*units)[i] = strdup("kJ/mol");
     }
 }
 
@@ -386,7 +388,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
     {
         if(!bRead)
         {
-            gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+            gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
         *nre=0;
         return;
@@ -429,7 +431,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
                        int nre_test,gmx_bool *bWrongPrecision,gmx_bool *bOK)
 {
     int  magic=-7777777;
-    real r;
+    real first_real_to_check;
     int  b,i,zero=0,dum=0;
     gmx_bool bRead = gmx_fio_getread(ef->fio);
     int  tempfix_nr=0;
@@ -441,7 +443,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     xdr_datatype dtreal=xdr_datatype_double; 
 #endif
     
-    if (nre_test >= 0)
+    if (bWrongPrecision)
     {
         *bWrongPrecision = FALSE;
     }
@@ -457,16 +459,16 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
      * (which is the case for for instance the block sizes for variable
      * number of blocks, where this number is read before).
      */
-    r = -2e10;
-    if (!gmx_fio_do_real(ef->fio, r))
+    first_real_to_check = -2e10;
+    if (!gmx_fio_do_real(ef->fio, first_real_to_check))
     {
         return FALSE;
     }
-    if (r > -1e10)
+    if (first_real_to_check > -1e10)
     {
         /* Assume we are reading an old format */
         *file_version = 1;
-        fr->t = r;
+        fr->t = first_real_to_check;
         if (!gmx_fio_do_int(ef->fio, dum))   *bOK = FALSE;
         fr->step = dum;
     }
@@ -475,7 +477,9 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         if (!gmx_fio_do_int(ef->fio, magic))       *bOK = FALSE;
         if (magic != -7777777)
         {
-            gmx_fatal(FARGS,"Energy header magic number mismatch, this is not a GROMACS edr file");
+            enx_warning("Energy header magic number mismatch, this is not a GROMACS edr file");
+            *bOK=FALSE;
+            return FALSE;
         }
         *file_version = enx_version;
         if (!gmx_fio_do_int(ef->fio, *file_version)) *bOK = FALSE;
@@ -522,11 +526,16 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
 
     if (!gmx_fio_do_int(ef->fio, fr->nblock))  *bOK = FALSE;
+    if (fr->nblock < 0) *bOK=FALSE;
 
     if (ndisre!=0)
     {
         if (*file_version >= 4)
-            gmx_incons("Distance restraint blocks in old style in new style file");
+        {
+            enx_warning("Distance restraint blocks in old style in new style file");
+            *bOK=FALSE;
+            return FALSE;
+        }
         fr->nblock+=1;
     }
 
@@ -540,8 +549,20 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         return *bOK;
     }
 
+    /* we now know what these should be, or we've already bailed out because
+       of wrong precision */
+    if ( *file_version==1 && (fr->t < 0 || fr->t > 1e20 || fr->step < 0 ) )
+    {
+        enx_warning("edr file with negative step number or unreasonable time (and without version number).");
+        *bOK=FALSE;
+        return FALSE;
+    }
+
+
     if (*bOK && bRead)
+    {
         add_blocks_enxframe(fr, fr->nblock);
+    }
 
     startb=0;
     if (ndisre>0)
@@ -572,7 +593,9 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             else
             {
                 if (fr->block[b].nsub != 1)
+                {
                     gmx_incons("Writing an old version .edr file with too many subblocks");
+                }
                 if (fr->block[b].sub[0].type != dtreal)
                 {
                     gmx_incons("Writing an old version .edr file the wrong subblock type");
@@ -664,7 +687,7 @@ void close_enx(ener_file_t ef)
 {
     if(gmx_fio_close(ef->fio) != 0)
     {
-        gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of quota?");  
+        gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of disk space?");
     }
 }
 
@@ -690,7 +713,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
     gmx_enxnm_t *nms=NULL;
     int        file_version=-1;
     t_enxframe *fr;
-    gmx_bool       bWrongPrecision,bDum=TRUE;
+    gmx_bool       bWrongPrecision,bOK=TRUE;
     struct ener_file *ef;
 
     snew(ef,1);
@@ -701,8 +724,8 @@ ener_file_t open_enx(const char *fn,const char *mode)
         gmx_fio_setprecision(ef->fio,FALSE);
         do_enxnms(ef,&nre,&nms);
         snew(fr,1);
-        do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
-        if(!bDum)
+        do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
+        if(!bOK)
         {
             gmx_file("Cannot read energy file header. Corrupt file?");
         }
@@ -721,10 +744,10 @@ ener_file_t open_enx(const char *fn,const char *mode)
             gmx_fio_checktype(ef->fio);
             gmx_fio_setprecision(ef->fio,TRUE);
             do_enxnms(ef,&nre,&nms);
-            do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
-            if(!bDum)
+            do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
+            if(!bOK)
             {
-                gmx_file("Cannot write energy file header; maybe you are out of quota?");
+                gmx_file("Cannot write energy file header; maybe you are out of disk space?");
             }
 
             if (((fr->e_size && (fr->nre == nre) && 
@@ -854,7 +877,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
         }
         else
         {
-            gmx_file("Cannot write energy file header; maybe you are out of quota?");
+            gmx_file("Cannot write energy file header; maybe you are out of disk space?");
         }
         return FALSE;
     }
@@ -973,7 +996,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
                     bOK1=gmx_fio_ndo_string(ef->fio, sub->sval, sub->nr);
                     break;
                 default:
-                    gmx_incons("Reading unknown block type");
+                    gmx_incons("Reading unknown block data type: this file is corrupted or from the future");
             }
             bOK = bOK && bOK1;
         }
@@ -983,7 +1006,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
     {
         if( gmx_fio_flush(ef->fio) != 0)
         {
-            gmx_file("Cannot write energy file; maybe you are out of quota?");
+            gmx_file("Cannot write energy file; maybe you are out of disk space?");
         }
     }
     
@@ -1077,21 +1100,29 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
 
   if (ir->etc == etcNOSEHOOVER) 
   {
+      char cns[20];
+
+      cns[0] = '\0';
+
       for(i=0; i<state->ngtc; i++) {
           ni = groups->grps[egcTC].nm_ind[i];
           bufi = *(groups->grpname[ni]);
           for(j=0; (j<state->nhchainlength); j++) 
           {
-              sprintf(buf,"Xi-%d-%s",j,bufi);
+              if (IR_NVT_TROTTER(ir))
+              {
+                  sprintf(cns,"-%d",j);
+              }
+              sprintf(buf,"Xi%s-%s",cns,bufi);
               state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-              sprintf(buf,"vXi-%d-%s",j,bufi);
+              sprintf(buf,"vXi%s-%s",cns,bufi);
               state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
           }
 
       }
       fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n",state->ngtc,fn);
 
-      if (IR_NPT_TROTTER(ir)) 
+      if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
       {
           for(i=0; i<state->nnhpres; i++) {
               bufi = baro_nm[0]; /* All barostat DOF's together for now */

@@ -1,5 +1,4 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * $Id: gmx_matrix.c,v 1.4 2008/12/02 18:27:57 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -36,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include <gmx_random.h>
 
@@ -46,7 +46,7 @@
 #endif
 #include <time.h>
 #include <math.h>
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <process.h>
 #endif
 
@@ -63,7 +63,7 @@
  * have to generate new initialization data for the table in
  * gmx_random_gausstable.h
  *
- * We have included the routine print_gaussian_table() in this file
+ * A routine print_gaussian_table() is in contrib/random.c
  * for convenience - use it if you need a different size of the table.
  */
 #define GAUSS_TABLE 14 /* the size of the gauss table is 2^GAUSS_TABLE */
@@ -71,7 +71,7 @@
 
 
 struct gmx_rng {
-  unsigned int  mt[624];  
+  unsigned int  mt[RNG_N];
   int           mti;
   int           has_saved;  
   double        gauss_saved;
@@ -197,7 +197,7 @@ gmx_rng_make_seed(void)
     fclose(fp);
   } else {
     /* No random device available, use time-of-day and process id */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     my_pid = (long)_getpid();
 #else
     my_pid = (long)getpid();
@@ -208,67 +208,69 @@ gmx_rng_make_seed(void)
 }
 
 
-/* The random number state contains 624 entries that are returned one by
+/* The random number state contains RNG_N entries that are returned one by
  * one as random numbers. When we run out of them, this routine is called to
- * regenerate 624 new entries.
+ * regenerate RNG_N new entries.
  */
 static void
 gmx_rng_update(gmx_rng_t rng)
 {
-  unsigned int lastx,x1,x2,y,*mt;
-  int mti,k;
-  const unsigned int mag01[2]={0x0UL, RNG_MATRIX_A};
+    unsigned int lastx,x1,x2,y,*mt;
+    int mti,k;
+    const unsigned int mag01[2] = {0x0UL, RNG_MATRIX_A};
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
     /* update random numbers */
-  mt=rng->mt;   /* pointer to array - avoid repeated dereferencing */
-  mti=rng->mti;
-  
-  x1=mt[0];
-  for (k=0;k<RNG_N-RNG_M-3;k+=4) {
-    x2=mt[k+1];
-    y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+2];
-    y= (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+1] = mt[k+RNG_M+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+3];
-    y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+2]= mt[k+RNG_M+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+4];
-    y= (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+3] = mt[k+RNG_M+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  }
-  x2=mt[k+1];
-  y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  x1=mt[k+1];
-  y=(x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  x2=mt[k+1];
-  y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  for (;k<RNG_N-1;k+=4) {
-    x1=mt[k+1];
-    y = (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k] = mt[k+(RNG_M-RNG_N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+2];
-    y = (x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+1] = mt[k+(RNG_M-RNG_N)+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+3];
-    y = (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+2] = mt[k+(RNG_M-RNG_N)+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+4];
-    y = (x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+3] = mt[k+(RNG_M-RNG_N)+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  }
-  y = (x2&RNG_UPPER_MASK)|(mt[0]&RNG_LOWER_MASK);
-  mt[RNG_N-1] = mt[RNG_M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  
-  rng->mti = 0;
+    mt = rng->mt;   /* pointer to array - avoid repeated dereferencing */
+    mti = rng->mti;
+
+    x1        = mt[0];
+    for (k = 0; k < RNG_N-RNG_M-3; k += 4)
+    {
+        x2      = mt[k+1];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k]   = mt[k+RNG_M]   ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+2];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+1] = mt[k+RNG_M+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+3];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+2] = mt[k+RNG_M+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+4];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+3] = mt[k+RNG_M+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    x2        = mt[k+1];
+    y         = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    x1        = mt[k+1];
+    y         = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    x2        = mt[k+1];
+    y         = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    for (; k < RNG_N-1; k += 4)
+    {
+        x1      = mt[k+1];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k]   = mt[k+(RNG_M-RNG_N)]   ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+2];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+1] = mt[k+(RNG_M-RNG_N)+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+3];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+2] = mt[k+(RNG_M-RNG_N)+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+4];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+3] = mt[k+(RNG_M-RNG_N)+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    y = (x2 & RNG_UPPER_MASK) | (mt[0] & RNG_LOWER_MASK);
+    mt[RNG_N-1] = mt[RNG_M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+
+    rng->mti = 0;
 }
 
 
@@ -307,7 +309,7 @@ gmx_rng_uniform_uint32(gmx_rng_t rng)
 {
   unsigned int y;
   
-  if(rng->mti==624) 
+  if(rng->mti==RNG_N)
     gmx_rng_update(rng);
   y=rng->mt[rng->mti++];
   
@@ -351,60 +353,4 @@ gmx_rng_gaussian_table(gmx_rng_t rng)
   return gaussian_table[i >> GAUSS_SHIFT];
 }
 
-
-/*
- * Print a lookup table for Gaussian numbers with 4 entries on each
- * line, formatted for inclusion in this file. Size is 2^bits.
- */
-void
-print_gaussian_table(int bits)
-{
-  int n,nh,i,j;
-  double invn,fac,x,invgauss,det,dx;
-  real  *table;
-  
-  n = 1 << bits;
-  table = (real *)malloc(n*sizeof(real));
-  
-  /* Fill a table of size n such that random draws from it
-    * produce a Gaussian distribution.
-    * We integrate the Gaussian distribution G approximating:
-    *   integral(x->x+dx) G(y) dy
-    * with:
-    *   G(x) dx + G'(x) dx^2/2 = G(x) dx - G(x) x dx^2/2
-    * Then we need to find dx such that the integral is 1/n.
-    * The last step uses dx = 1/x as the approximation is not accurate enough.
-    */
-  invn = 1.0/n;
-  fac = sqrt(2*M_PI);
-  x = 0.5*fac*invn;
-  nh = n/2;
-  for(i=0; i<nh; i++) {
-    if (i > 0) {
-      if (i < nh-1) {
-	invgauss = fac*exp(0.5*x*x);
-	/* det is larger than 0 for all x, except for the last */
-	det = 1 - 2*invn*x*invgauss;
-	dx = (1 - sqrt(det))/x;
-      } else {
-	dx = 1/x;
-      }
-      x = x + dx;
-    }
-    table[nh-1-i] = -x;
-    table[nh+i]   =  x;
-  }
-  printf("static const real *\ngaussian_table[%d] = {\n",n);
-  for(i=0;i<n;i+=4) {
-    printf("  ");
-    for(j=0;j<4;j++) {
-      printf("%14.7e",table[i+j]);
-      if(i+j<(n-1))
-	printf(",");
-    }
-    printf("\n");
-  }
-  printf("};\n");
-  free(table);
-}
 

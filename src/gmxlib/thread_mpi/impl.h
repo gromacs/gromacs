@@ -62,7 +62,6 @@ files.
 #include "thread_mpi/tmpi.h"
 #include "thread_mpi/collective.h"
 #include "thread_mpi/barrier.h"
-#include "thread_mpi/hwinfo.h"
 #include "thread_mpi/lock.h"
 #ifdef TMPI_PROFILE
 #include "profile.h"
@@ -91,14 +90,11 @@ typedef int tmpi_bool;
 **************************************************************************/
 
 
-/* Buffer structure. Every thread structure has several of these ready to
-   be used when the data transmission is small enough for double copying to 
-   occur (i.e. the size of the transmission is less than N*MAX_COPY_BUFFER_SIZE,
-   where N is the number of receiving threads).
-
-   These buffers come in two sizes: one pre-allocated to MAX_COPY_BUFFER_SIZE
-   (for point-to-point transmissions, and one pre-allocated to 
-   Nthreads*MAX_COPY_BUFFE_SIZE). */
+/* Buffer structure for collective communications. Every thread structure 
+   has several of these ready to be used when the collective data 
+   transmission is small enough for double copying to occur (i.e. the size 
+   of the transmission is less than N*MAX_COPY_BUFFER_SIZE, where N is the 
+   number of receiving threads).  */
 struct copy_buffer
 {
     void *buf; /* the actual buffer */
@@ -693,6 +689,7 @@ void tMPI_Trace_print(const char *fmt, ...);
 /* error-checking malloc/realloc: */
 void *tMPI_Malloc(size_t size);
 void *tMPI_Realloc(void *p, size_t size);
+void tMPI_Free(void *p);
 
 
 /* get the current thread structure pointer */
@@ -811,6 +808,10 @@ void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
 #endif
 
 
+/* reduce ops: run a single iteration of a reduce operation on a, b -> dest */
+int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
+                       tMPI_Datatype datatype, int count, tMPI_Op op,
+                       tMPI_Comm comm);
 
 
 /* and we need this prototype */

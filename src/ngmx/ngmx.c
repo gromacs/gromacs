@@ -60,8 +60,6 @@
 void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[],
               const output_env_t oenv);
 
-int EventSignaller(t_manager *man);
-
 static void dump_xw(char *dispname,Window w,char *fn)
 {
   char comm[256];
@@ -267,7 +265,7 @@ static gmx_bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
-    "ngmx is the Gromacs trajectory viewer. This program reads a",
+    "[TT]ngmx[tt] is the GROMACS trajectory viewer. This program reads a",
     "trajectory file, a run input file and an index file and plots a",
     "3D structure of your molecule on your standard X Window",
     "screen. No need for a high end graphics workstation, it even",
@@ -279,8 +277,8 @@ int main(int argc, char *argv[])
     "runs on MIT-X (real X), open windows and motif,",
     "user friendly menus, option to remove periodicity, option to",
     "show computational box.[PAR]",
-    "Some of the more common X command line options can be used:[BR]",
-    "-bg, -fg change colors, -font fontname, changes the font."
+    "Some of the more common X command line options can be used: ",
+    "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
   };
   const char *bugs[] = {
     "Balls option does not work",
@@ -296,7 +294,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,NFILE,fnm,
 		    0,NULL,asize(desc),desc,asize(bugs),bugs,&oenv);
   
