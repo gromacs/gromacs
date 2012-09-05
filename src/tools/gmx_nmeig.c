@@ -57,11 +57,78 @@
 #include "eigensolver.h"
 #include "eigio.h"
 #include "mtxio.h"
+#include "mtop_util.h"
 #include "sparsematrix.h"
 #include "physics.h"
 #include "main.h"
 #include "gmx_ana.h"
 
+static double cv_corr(double nu,double T)
+{
+    double x = PLANCK*nu/(BOLTZ*T);
+    double ex = exp(x);
+    
+    if (nu <= 0)
+        return BOLTZ*KILO;
+    else
+        return BOLTZ*KILO*(ex*sqr(x)/sqr(ex-1) - 1);
+}
+
+static double u_corr(double nu,double T)
+{
+    double x = PLANCK*nu/(BOLTZ*T);
+    double ex = exp(x);
+   
+    if (nu <= 0)
+        return BOLTZ*T;
+    else
+        return BOLTZ*T*(0.5*x - 1 + x/(ex-1));
+}
+
+static int get_nharm_mt(gmx_moltype_t *mt)
+{
+    static int harm_func[] = { F_BONDS };
+    int    i,ft,nh;
+    
+    nh = 0;
+    for(i=0; (i<asize(harm_func)); i++) 
+    {
+        ft = harm_func[i];
+        nh += mt->ilist[ft].nr/(interaction_function[ft].nratoms+1);
+    }
+    return nh;
+}
+
+static int get_nvsite_mt(gmx_moltype_t *mt)
+{
+    static int vs_func[] = { F_VSITE2, F_VSITE3, F_VSITE3FD, F_VSITE3FAD,
+                             F_VSITE3OUT, F_VSITE4FD, F_VSITE4FDN, F_VSITEN };
+    int    i,ft,nh;
+    
+    nh = 0;
+    for(i=0; (i<asize(vs_func)); i++) 
+    {
+        ft = vs_func[i];
+        nh += mt->ilist[ft].nr/(interaction_function[ft].nratoms+1);
+    }
+    return nh;
+}
+
+static int get_nharm(gmx_mtop_t *mtop,int *nvsites)
+{
+    int j,mt,nh,nv;
+    
+    nh = 0;
+    nv = 0;
+    for(j=0; (j<mtop->nmolblock); j++) 
+    {
+        mt = mtop->molblock[j].type;
+        nh += mtop->molblock[j].nmol * get_nharm_mt(&(mtop->moltype[mt]));
+        nv += mtop->molblock[j].nmol * get_nvsite_mt(&(mtop->moltype[mt]));
+    }
+    *nvsites = nv;
+    return nh;
+}
 
 static void
 nma_full_hessian(real *           hess,
@@ -188,7 +255,7 @@ nma_sparse_hessian(gmx_sparsematrix_t *     sparse_hessian,
 int gmx_nmeig(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,",
+    "[TT]g_nmeig[tt] calculates the eigenvectors/values of a (Hessian) matrix,",
     "which can be calculated with [TT]mdrun[tt].",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "The structure is written first with t=0. The eigenvectors",
@@ -196,13 +263,29 @@ int gmx_nmeig(int argc,char *argv[])
     "The eigenvectors can be analyzed with [TT]g_anaeig[tt].",
     "An ensemble of structures can be generated from the eigenvectors with",
     "[TT]g_nmens[tt]. When mass weighting is used, the generated eigenvectors",
-    "will be scaled back to plain cartesian coordinates before generating the",
-    "output - in this case they will no longer be exactly orthogonal in the",
-    "standard cartesian norm (But in the mass weighted norm they would be)."
+    "will be scaled back to plain Cartesian coordinates before generating the",
+    "output. In this case, they will no longer be exactly orthogonal in the",
+    "standard Cartesian norm, but in the mass-weighted norm they would be.[PAR]",
+    "This program can be optionally used to compute quantum corrections to heat capacity",
+    "and enthalpy by providing an extra file argument [TT]-qcorr[tt]. See the GROMACS",
+    "manual, Chapter 1, for details. The result includes subtracting a harmonic",
+    "degree of freedom at the given temperature.",
+    "The total correction is printed on the terminal screen.",
+    "The recommended way of getting the corrections out is:[PAR]",
+    "[TT]g_nmeig -s topol.tpr -f nm.mtx -first 7 -last 10000 -T 300 -qc [-constr][tt][PAR]",
+    "The [TT]-constr[tt] option should be used when bond constraints were used during the",
+    "simulation [BB]for all the covalent bonds[bb]. If this is not the case, ",
+    "you need to analyze the [TT]quant_corr.xvg[tt] file yourself.[PAR]",
+    "To make things more flexible, the program can also take virtual sites into account",
+    "when computing quantum corrections. When selecting [TT]-constr[tt] and",
+    "[TT]-qc[tt], the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as well.",
+    "Again, if you think you know it better, please check the [TT]eigenfreq.xvg[tt]",
+    "output." 
   };
     
-  static gmx_bool bM=TRUE;
-  static int  begin=1,end=50;
+  static gmx_bool bM=TRUE,bCons=FALSE;
+  static int  begin=1,end=50,maxspec=4000;
+  static real T=298.15,width=1;
   t_pargs pa[] = 
   {
     { "-m",  FALSE, etBOOL, {&bM},
@@ -212,58 +295,95 @@ int gmx_nmeig(int argc,char *argv[])
     { "-first", FALSE, etINT, {&begin},     
       "First eigenvector to write away" },
     { "-last",  FALSE, etINT, {&end}, 
-      "Last eigenvector to write away" }
+      "Last eigenvector to write away" },
+    { "-maxspec", FALSE, etINT, {&maxspec},
+      "Highest frequency (1/cm) to consider in the spectrum" },
+    { "-T",     FALSE, etREAL, {&T},
+      "Temperature for computing quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations" },
+    { "-constr", FALSE, etBOOL, {&bCons},
+      "If constraints were used in the simulation but not in the normal mode analysis (this is the recommended way of doing it) you will need to set this for computing the quantum corrections." },
+    { "-width",  FALSE, etREAL, {&width},
+      "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
   };
-  FILE       *out;
+  FILE       *out,*qc,*spec;
   int        status,trjout;
   t_topology top;
+  gmx_mtop_t mtop;
   int        ePBC;
   rvec       *top_x;
   matrix     box;
   real       *eigenvalues;
   real       *eigenvectors;
-  real       rdum,mass_fac;
-  int        natoms,ndim,nrow,ncol,count;
-  char       *grpname,title[256];
+  real       rdum,mass_fac,qcvtot,qutot,qcv,qu;
+  int        natoms,ndim,nrow,ncol,count,nharm,nvsite;
+  char       *grpname;
   int        i,j,k,l,d,gnx;
-  gmx_bool       bSuck;
+  gmx_bool   bSuck;
   atom_id    *index;
-  real       value;
+  t_tpxheader tpx;
+  int        version,generation;
+  real       value,omega,nu;
   real       factor_gmx_to_omega2;
   real       factor_omega_to_wavenumber;
+  real       *spectrum=NULL;
+  real       wfac;
   t_commrec  *cr;
   output_env_t oenv;
-  
+  const char *qcleg[] = { "Heat Capacity cV (J/mol K)", 
+                          "Enthalpy H (kJ/mol)" };
   real *                 full_hessian   = NULL;
   gmx_sparsematrix_t *   sparse_hessian = NULL;
 
   t_filenm fnm[] = { 
     { efMTX, "-f", "hessian",    ffREAD  }, 
-    { efTPS, NULL, NULL,         ffREAD  },
+    { efTPX, NULL, NULL,         ffREAD  },
     { efXVG, "-of", "eigenfreq", ffWRITE },
     { efXVG, "-ol", "eigenval",  ffWRITE },
+    { efXVG, "-os", "spectrum",  ffOPTWR },
+    { efXVG, "-qc", "quant_corr",  ffOPTWR },
     { efTRN, "-v", "eigenvec",  ffWRITE }
-  }; 
+  };
 #define NFILE asize(fnm) 
 
-	cr = init_par(&argc,&argv);
+  cr = init_par(&argc,&argv);
 
-	if(MASTER(cr))
-		CopyRight(stderr,argv[0]); 
-	
+  if (MASTER(cr))
+    CopyRight(stderr,argv[0]); 
+  
   parse_common_args(&argc,argv,PCA_BE_NICE | (MASTER(cr) ? 0 : PCA_QUIET),
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
+                    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&top_x,NULL,box,bM);
+  /* Read tpr file for volume and number of harmonic terms */
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,TRUE,&version,&generation);
+  snew(top_x,tpx.natoms);
+  
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),NULL,box,&natoms,
+           top_x,NULL,NULL,&mtop);
+  if (bCons)
+  {
+      nharm = get_nharm(&mtop,&nvsite);
+  }
+  else
+  {
+      nharm = 0;
+      nvsite = 0;
+  }
+  top = gmx_mtop_t_to_t_topology(&mtop);
 
-  natoms = top.atoms.nr;
+  bM = TRUE;
   ndim = DIM*natoms;
 
-  if(begin<1)
+  if (opt2bSet("-qc",NFILE,fnm)) 
+  {
+      begin = 7+DIM*nvsite;
+      end = DIM*natoms;
+  }
+  if (begin < 1)
       begin = 1;
-  if(end>ndim)
+  if (end > ndim)
       end = ndim;
-
+  printf("Using begin = %d and end = %d\n",begin,end);
+  
   /*open Hessian matrix */
   gmx_mtxio_read(ftp2fn(efMTX,NFILE,fnm),&nrow,&ncol,&full_hessian,&sparse_hessian);
     
@@ -307,10 +427,11 @@ int gmx_nmeig(int argc,char *argv[])
       fprintf(stderr,"Converted sparse to full matrix storage.\n");
   }
   
-  if(full_hessian != NULL)
+  if (full_hessian != NULL)
   {
       /* Using full matrix storage */
-      nma_full_hessian(full_hessian,nrow,bM,&top,begin,end,eigenvalues,eigenvectors);
+      nma_full_hessian(full_hessian,nrow,bM,&top,begin,end,
+                       eigenvalues,eigenvectors);
   }
   else
   {
@@ -318,7 +439,6 @@ int gmx_nmeig(int argc,char *argv[])
       snew(eigenvectors,ncol*end);
       nma_sparse_hessian(sparse_hessian,bM,&top,end,eigenvalues,eigenvectors);
   }
-  
   
   /* check the output, first 6 eigenvalues should be reasonably small */  
   bSuck=FALSE;
@@ -334,10 +454,9 @@ int gmx_nmeig(int argc,char *argv[])
       fprintf(stderr,"properly energy minimized.\n");
   }
                       
-                      
   /* now write the output */
   fprintf (stderr,"Writing eigenvalues...\n");
-  out=xvgropen(opt2fn("-ol",NFILE,fnm), 
+  out=xvgropen(opt2fn("-ol",NFILE,fnm),
                "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]",
                oenv);
   if (output_env_get_print_xvgr_codes(oenv)) {
@@ -350,10 +469,16 @@ int gmx_nmeig(int argc,char *argv[])
   for (i=0; i<=(end-begin); i++)
       fprintf (out,"%6d %15g\n",begin+i,eigenvalues[i]);
   ffclose(out);
-  
 
-  
-  fprintf(stderr,"Writing eigenfrequencies - negative eigenvalues will be set to zero.\n");
+
+  if (opt2bSet("-qc",NFILE,fnm)) {
+    qc = xvgropen(opt2fn("-qc",NFILE,fnm),"Quantum Corrections","Eigenvector index","",oenv);
+    xvgr_legend(qc,asize(qcleg),qcleg,oenv);
+    qcvtot = qutot = 0;
+  }
+  else
+    qc = NULL;
+  printf("Writing eigenfrequencies - negative eigenvalues will be set to zero.\n");
 
   out=xvgropen(opt2fn("-of",NFILE,fnm), 
                "Eigenfrequencies","Eigenvector index","Wavenumber [cm\\S-1\\N]",
@@ -364,7 +489,22 @@ int gmx_nmeig(int argc,char *argv[])
     else 
       fprintf(out,"@ subtitle \"not mass weighted\"\n");
   }
-  
+  /* Spectrum ? */
+  spec = NULL;
+  if (opt2bSet("-os",NFILE,fnm) && (maxspec > 0))
+  {
+      snew(spectrum,maxspec);
+      spec=xvgropen(opt2fn("-os",NFILE,fnm), 
+                    "Vibrational spectrum based on harmonic approximation",
+                    "\\f{12}w\\f{4} (cm\\S-1\\N)",
+                    "Intensity [Gromacs units]",
+                    oenv);
+      for(i=0; (i<maxspec); i++)
+      {
+          spectrum[i] = 0;
+      }
+  }
+
   /* Gromacs units are kJ/(mol*nm*nm*amu),
    * where amu is the atomic mass unit.
    *
@@ -375,17 +515,56 @@ int gmx_nmeig(int argc,char *argv[])
    */
   factor_gmx_to_omega2       = 1.0E21/(AVOGADRO*AMU);
   factor_omega_to_wavenumber = 1.0E-5/(2.0*M_PI*SPEED_OF_LIGHT);  
-    
-  for (i=0; i<=(end-begin); i++)
+  
+  for (i=begin; (i<=end); i++)
   {
-      value = eigenvalues[i];
-      if(value < 0)
+      value = eigenvalues[i-begin];
+      if (value < 0)
           value = 0;
-      value=sqrt(value*factor_gmx_to_omega2)*factor_omega_to_wavenumber;
-      fprintf (out,"%6d %15g\n",begin+i,value);
+      omega = sqrt(value*factor_gmx_to_omega2);
+      nu    = 1e-12*omega/(2*M_PI);
+      value = omega*factor_omega_to_wavenumber;
+      fprintf (out,"%6d %15g\n",i,value);
+      if (NULL != spec)
+      {
+          wfac = eigenvalues[i-begin]/(width*sqrt(2*M_PI));
+          for(j=0; (j<maxspec); j++)
+          {
+              spectrum[j] += wfac*exp(-sqr(j-value)/(2*sqr(width)));
+          }
+      }
+      if (NULL != qc) {
+          qcv = cv_corr(nu,T);
+          qu  = u_corr(nu,T);
+          if (i > end-nharm) 
+          {
+              qcv += BOLTZ*KILO;
+              qu  += BOLTZ*T;
+          }
+          fprintf (qc,"%6d %15g %15g\n",i,qcv,qu);
+          qcvtot += qcv;
+          qutot += qu;
+      }
   }
   ffclose(out);
-  
+  if (NULL != spec)
+  {
+      for(j=0; (j<maxspec); j++)
+      {
+          fprintf(spec,"%10g  %10g\n",1.0*j,spectrum[j]);
+      }
+      ffclose(spec);
+  }
+  if (NULL != qc) {
+    printf("Quantum corrections for harmonic degrees of freedom\n");
+    printf("Use appropriate -first and -last options to get reliable results.\n");
+    printf("There were %d constraints and %d vsites in the simulation\n",
+           nharm,nvsite);
+    printf("Total correction to cV = %g J/mol K\n",qcvtot);
+    printf("Total correction to  H = %g kJ/mol\n",qutot);
+    ffclose(qc);
+    please_cite(stdout,"Caleman2011b");
+  }
   /* Writing eigenvectors. Note that if mass scaling was used, the eigenvectors 
    * were scaled back from mass weighted cartesian to plain cartesian in the
    * nma_full_hessian() or nma_sparse_hessian() routines. Mass scaled vectors

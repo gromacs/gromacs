@@ -65,11 +65,11 @@
 int gmx_densmap(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_densmap computes 2D number-density maps.",
+    "[TT]g_densmap[tt] computes 2D number-density maps.",
     "It can make planar and axial-radial density maps.",
     "The output [TT].xpm[tt] file can be visualized with for instance xv",
-    "and can be converted to postscript with xpm2ps.",
-	"Optionally, output can be in text form to a .dat file.",
+    "and can be converted to postscript with [TT]xpm2ps[tt].",
+    "Optionally, output can be in text form to a [TT].dat[tt] file with [TT]-od[tt], instead of the usual [TT].xpm[tt] file with [TT]-o[tt].",
     "[PAR]",
     "The default analysis is a 2-D number-density map for a selected",
     "group of atoms in the x-y plane.",

@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <assert.h>
 
 #include "typedefs.h"
 #include "smalloc.h"
@@ -59,8 +60,8 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int   i,j,mi,mj,jmax,nd;
-    double Ekin,Efac,reft,kT;
+    int   i,j,mi,mj,jmax;
+    double Ekin,Efac,reft,kT,nd;
     double dt;
     t_grp_tcstat *tcstat;
     double *ivxi,*ixi;
@@ -83,7 +84,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
 
     for (i=0; i<nvar; i++) 
     {
-    
+
         /* make it easier to iterate by selecting 
            out the sub-array that corresponds to this T group */
         
@@ -91,7 +92,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
         ixi = &xi[i*nh];
         if (bBarostat) {
             iQinv = &(MassQ->QPinv[i*nh]); 
-            nd = 1; /* THIS WILL CHANGE IF NOT ISOTROPIC */
+            nd = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
             reft = max(0.0,opts->ref_t[0]);
             Ekin = sqr(*veta)/MassQ->Winv;
         } else {
@@ -211,15 +212,14 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
     alpha *= ekind->tcstat[0].ekinscalef_nhc;
     msmul(ekind->ekin,alpha,ekinmod);  
-    
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
-    
-    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres,0.0) + pcorr;
-    
+
+    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres);
+
     vol = det(box);
     GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   /* W is in ps^2 * bar * nm^3 */
-    
+
     *veta += 0.5*dt*GW;   
 }
 
@@ -232,10 +232,10 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
  */
 
 real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
-               tensor pres,real Elr)
+               tensor pres)
 {
     int  n,m;
-    real fac,Plr;
+    real fac;
     
     if (ePBC==epbcNONE || (ePBC==epbcXY && nwall!=2))
         clear_mat(pres);
@@ -245,21 +245,10 @@ real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
          * het systeem...       
          */
         
-        /* Long range correction for periodic systems, see
-         * Neumann et al. JCP
-         * divide by 6 because it is multiplied by fac later on.
-         * If Elr = 0, no correction is made.
-         */
-        
-        /* This formula should not be used with Ewald or PME, 
-         * where the full long-range virial is calculated. EL 990823
-         */
-        Plr = Elr/6.0;
-        
         fac=PRESFAC*2.0/det(box);
         for(n=0; (n<DIM); n++)
             for(m=0; (m<DIM); m++)
-                pres[n][m]=(ekin[n][m]-vir[n][m]+Plr)*fac;
+                pres[n][m] = (ekin[n][m] - vir[n][m])*fac;
         
         if (debug) {
             pr_rvecs(debug,0,"PC: pres",pres,DIM);
@@ -417,7 +406,12 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
     
     if (maxchange > 0.01 && fplog) {
       char buf[22];
-      fprintf(fplog,"\nStep %s  Warning: Pressure scaling more than 1%%.\n",
+      fprintf(fplog,
+              "\nStep %s  Warning: Pressure scaling more than 1%%. "
+              "This may mean your system\n is not yet equilibrated. "
+              "Use of Parrinello-Rahman pressure coupling during\n"
+              "equilibration can lead to simulation instability, "
+              "and is discouraged.\n",
 	      gmx_step_str(step,buf));
     }
   }
@@ -583,22 +577,221 @@ void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt)
         {
             T = ekind->tcstat[i].Th;
         }
-    
-    if ((opts->tau_t[i] > 0) && (T > 0.0)) {
- 
-      reft = max(0.0,opts->ref_t[i]);
-      lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-      ekind->tcstat[i].lambda = max(min(lll,1.25),0.8);
+
+        if ((opts->tau_t[i] > 0) && (T > 0.0)) {  
+            reft = max(0.0,opts->ref_t[i]);
+            lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
+            ekind->tcstat[i].lambda = max(min(lll,1.25),0.8);
+        }
+        else {
+            ekind->tcstat[i].lambda = 1.0;
+        }
+
+        if (debug)
+        {
+            fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
+                    i,T,ekind->tcstat[i].lambda);
+        }
     }
-    else {
-       ekind->tcstat[i].lambda = 1.0;
+}
+
+static int poisson_variate(real lambda,gmx_rng_t rng) {
+
+    real L;
+    int k=0;
+    real p=1.0;
+
+    L = exp(-lambda);
+
+    do
+    {
+        k = k+1;
+        p *= gmx_rng_uniform_real(rng);
+    } while (p>L);
+
+    return k-1;
+}
+
+void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock,gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac)
+{
+    t_grpopts *opts;
+    int    i,j,k,d,len,n,ngtc,gc=0;
+    int    nshake, nsettle, nrandom, nrand_group;
+    real   boltz,scal,reft,prand;
+    t_iatom *iatoms;
+
+    /* convenience variables */
+    opts = &ir->opts;
+    ngtc = opts->ngtc;
+
+    /* idef is only passed in if it's chance-per-particle andersen, so
+       it essentially serves as a boolean to determine which type of
+       andersen is being used */
+    if (idef) {
+
+        /* randomly atoms to randomize.  However, all constraint
+           groups have to have either all of the atoms or none of the
+           atoms randomize.
+
+           Algorithm:
+           1. Select whether or not to randomize each atom to get the correct probability.
+           2. Cycle through the constraint groups.
+              2a. for each constraint group, determine the fraction f of that constraint group that are
+                  chosen to be randomized.
+              2b. all atoms in the constraint group are randomized with probability f.
+        */
+
+        nrandom = 0;
+        if ((rate < 0.05) && (md->homenr > 50))
+        {
+            /* if the rate is relatively high, use a standard method, if low rate,
+             * use poisson */
+            /* poisson distributions approxmation, more efficient for
+             * low rates, fewer random numbers required */
+            nrandom = poisson_variate(md->homenr*rate,rng);  /* how many do we randomize? Use Poisson. */
+            /* now we know how many, choose them randomly. No worries about repeats, at this rate, it's negligible.
+               worst thing that happens, it lowers the true rate an negligible amount */
+            for (i=0;i<nrandom;i++)
+            {
+                randatom[(int)(gmx_rng_uniform_real(rng)*md->homenr)] = TRUE;
+            }
+        }
+        else
+        {
+            for (i=0;i<md->homenr;i++)
+            {
+                if (gmx_rng_uniform_real(rng)<rate)
+                {
+                    randatom[i] = TRUE;
+                    nrandom++;
+                }
+            }
+        }
+
+        /* instead of looping over the constraint groups, if we had a
+           list of which atoms were in which constraint groups, we
+           could then loop over only the groups that are randomized
+           now.  But that is not available now.  Create later after
+           determining whether there actually is any slowing. */
+
+        /* first, loop through the settles to make sure all groups either entirely randomized, or not randomized. */
+
+        nsettle  = idef->il[F_SETTLE].nr/2;
+        for (i=0;i<nsettle;i++)
+        {
+            iatoms = idef->il[F_SETTLE].iatoms;
+            nrand_group = 0;
+            for (k=0;k<3;k++)  /* settles are always 3 atoms, hardcoded */
+            {
+                if (randatom[iatoms[2*i+1]+k])
+                {
+                    nrand_group++;     /* count the number of atoms to be shaken in the settles group */
+                    randatom[iatoms[2*i+1]+k] = FALSE;
+                    nrandom--;
+                }
+            }
+            if (nrand_group > 0)
+            {
+                prand = (nrand_group)/3.0;  /* use this fraction to compute the probability the
+                                               whole group is randomized */
+                if (gmx_rng_uniform_real(rng)<prand)
+                {
+                    for (k=0;k<3;k++)
+                    {
+                        randatom[iatoms[2*i+1]+k] = TRUE;   /* mark them all to be randomized */
+                    }
+                    nrandom+=3;
+                }
+            }
+        }
+
+        /* now loop through the shake groups */
+        nshake = nblocks;
+        for (i=0;i<nshake;i++)
+        {
+            iatoms = &(idef->il[F_CONSTR].iatoms[sblock[i]]);
+            len = sblock[i+1]-sblock[i];
+            nrand_group = 0;
+            for (k=0;k<len;k++)
+            {
+                if (k%3 != 0)
+                {  /* only 2/3 of the sblock items are atoms, the others are labels */
+                    if (randatom[iatoms[k]])
+                    {
+                        nrand_group++;
+                        randatom[iatoms[k]] = FALSE;  /* need to mark it false here in case the atom is in more than
+                                                         one group in the shake block */
+                        nrandom--;
+                    }
+                }
+            }
+            if (nrand_group > 0)
+            {
+                prand = (nrand_group)/(1.0*(2*len/3));
+                if (gmx_rng_uniform_real(rng)<prand)
+                {
+                    for (k=0;k<len;k++)
+                    {
+                        if (k%3 != 0)
+                        {  /* only 2/3 of the sblock items are atoms, the others are labels */
+                            randatom[iatoms[k]] = TRUE; /* randomize all of them */
+                            nrandom++;
+                        }
+                    }
+                }
+            }
+        }
+        if (nrandom > 0)
+        {
+            n = 0;
+            for (i=0;i<md->homenr;i++)  /* now loop over the list of atoms */
+            {
+                if (randatom[i])
+                {
+                    randatom_list[n] = i;
+                    n++;
+                }
+            }
+            nrandom = n;  /* there are some values of nrandom for which
+                             this algorithm won't work; for example all
+                             water molecules and nrandom =/= 3.  Better to
+                             recount and use this number (which we
+                             calculate anyway: it will not affect
+                             the average number of atoms accepted.
+                          */
+        }
+    }
+    else
+    {
+        /* if it's andersen-massive, then randomize all the atoms */
+        nrandom = md->homenr;
+        for (i=0;i<nrandom;i++)
+        {
+            randatom_list[i] = i;
+        }
     }
 
-    if (debug)
-      fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
-	      i,T,ekind->tcstat[i].lambda);
-  }
+    /* randomize the velocities of the selected particles */
+
+    for (i=0;i<nrandom;i++)  /* now loop over the list of atoms */
+    {
+        n = randatom_list[i];
+        if (md->cTC)
+        {
+            gc   = md->cTC[n];  /* assign the atom to a temperature group if there are more than one */
+        }
+        if (randomize[gc])
+        {
+            scal = sqrt(boltzfac[gc]*md->invmass[n]);
+            for (d=0;d<DIM;d++)
+            {
+                state->v[n][d] = scal*gmx_rng_gaussian_table(rng);
+            }
+        }
+        randatom[n] = FALSE; /* unmark this atom for randomization */
+    }
 }
+
 
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
                        double xi[],double vxi[], t_extmass *MassQ)
@@ -608,7 +801,8 @@ void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
     
     /* note that this routine does not include Nose-hoover chains yet. Should be easy to add. */
     
-    for(i=0; (i<opts->ngtc); i++) {
+    for(i=0; (i<opts->ngtc); i++)
+    {
         reft = max(0.0,opts->ref_t[i]);
         oldvxi = vxi[i];
         vxi[i]  += dt*MassQ->Qinv[i]*(ekind->tcstat[i].Th - reft);
@@ -616,7 +810,7 @@ void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
     }
 }
 
-t_state *init_bufstate(const t_state *template_state) 
+t_state *init_bufstate(const t_state *template_state)
 {
     t_state *state;
     int nc = template_state->nhchainlength;
@@ -657,7 +851,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     tensor dumpres,dumvir;
     double *scalefac,dtc;
     int *trotter_seq;
-    rvec sumv,consk;
+    rvec sumv={0,0,0},consk;
     gmx_bool bCouple;
 
     if (trotter_seqno <= ettTSEQ2)
@@ -684,6 +878,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     dtc = ir->nsttcouple*ir->delta_t;
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
+    assert(ngtc>0);
     snew(scalefac,opts->ngtc);
     for (i=0;i<ngtc;i++) 
     {
@@ -735,7 +930,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
             /* modify the velocities as well */
             for (n=md->start;n<md->start+md->homenr;n++) 
             {
-                if (md->cTC) 
+                if (md->cTC)   /* does this conditional need to be here? is this always true?*/
                 { 
                     gc = md->cTC[n];
                 }
@@ -774,7 +969,8 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     sfree(scalefac);
 }
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter) 
+
+extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
 {
     int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
     t_grp_tcstat *tcstat;
@@ -782,15 +978,17 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     real ecorr,pcorr,dvdlcorr;
     real bmass,qmass,reft,kT,dt,ndj,nd;
     tensor dumpres,dumvir;
-    int **trotter_seq;
 
     opts = &(ir->opts); /* just for ease of referencing */
-    ngtc = state->ngtc;
+    ngtc = ir->opts.ngtc;
     nnhpres = state->nnhpres;
     nh = state->nhchainlength; 
 
     if (ir->eI == eiMD) {
-        snew(MassQ->Qinv,ngtc);
+        if (bInit)
+        {
+            snew(MassQ->Qinv,ngtc);
+        }
         for(i=0; (i<ngtc); i++) 
         { 
             if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
@@ -806,15 +1004,20 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     else if (EI_VV(ir->eI))
     {
     /* Set pressure variables */
-        
-        if (state->vol0 == 0) 
+
+        if (bInit)
         {
-            state->vol0 = det(state->box); /* because we start by defining a fixed compressibility, 
-                                              we need the volume at this compressibility to solve the problem */ 
+            if (state->vol0 == 0)
+            {
+                state->vol0 = det(state->box); 
+                /* because we start by defining a fixed
+                   compressibility, we need the volume at this
+                   compressibility to solve the problem. */
+            }
         }
 
         /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
-        /* Investigate this more -- is this the right mass to make it? */
+        /* Consider evaluating eventually if this the right mass to use.  All are correct, some might be more stable  */
         MassQ->Winv = (PRESFAC*trace(ir->compress)*BOLTZ*opts->ref_t[0])/(DIM*state->vol0*sqr(ir->tau_p/M_2PI));
         /* An alternate mass definition, from Tuckerman et al. */ 
         /* MassQ->Winv = 1.0/(sqr(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*BOLTZ*opts->ref_t[0]); */
@@ -823,43 +1026,65 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             for (n=0;n<DIM;n++) 
             {
                 MassQ->Winvm[d][n]= PRESFAC*ir->compress[d][n]/(state->vol0*sqr(ir->tau_p/M_2PI)); 
-                /* not clear this is correct yet for the anisotropic case*/
-            } 
-        }           
+                /* not clear this is correct yet for the anisotropic case. Will need to reevaluate
+                 before using MTTK for anisotropic states.*/
+            }
+        }
         /* Allocate space for thermostat variables */
-        snew(MassQ->Qinv,ngtc*nh);
-        
-        /* now, set temperature variables */
-        for(i=0; i<ngtc; i++) 
+        if (bInit)
         {
-            if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
+            snew(MassQ->Qinv,ngtc*nh);
+        }
+
+        /* now, set temperature variables */
+        for (i=0; i<ngtc; i++)
+        {
+            if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
             {
                 reft = max(0.0,opts->ref_t[i]);
                 nd = opts->nrdf[i];
                 kT = BOLTZ*reft;
-                for (j=0;j<nh;j++) 
+                for (j=0;j<nh;j++)
                 {
-                    if (j==0) 
+                    if (j==0)
                     {
                         ndj = nd;
-                    } 
-                    else 
+                    }
+                    else
                     {
                         ndj = 1;
                     }
                     MassQ->Qinv[i*nh+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
                 }
             }
-            else 
+            else
             {
                 reft=0.0;
-                for (j=0;j<nh;j++) 
+                for (j=0;j<nh;j++)
                 {
                     MassQ->Qinv[i*nh+j] = 0.0;
                 }
             }
         }
     }
+}
+
+int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
+{
+    int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
+    t_grp_tcstat *tcstat;
+    t_grpopts *opts;
+    real ecorr,pcorr,dvdlcorr;
+    real bmass,qmass,reft,kT,dt,ndj,nd;
+    tensor dumpres,dumvir;
+    int **trotter_seq;
+
+    opts = &(ir->opts); /* just for ease of referencing */
+    ngtc = state->ngtc;
+    nnhpres = state->nnhpres;
+    nh = state->nhchainlength;
+
+    init_npt_masses(ir, state, MassQ, TRUE);
     
     /* first, initialize clear all the trotter calls */
     snew(trotter_seq,ettTSEQMAX);
@@ -891,41 +1116,59 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
             /* first, a round that estimates veta. */
-            trotter_seq[0][0] = etrtBAROV; 
-            
+            trotter_seq[0][0] = etrtBAROV;
+
             /* trotter_seq[1] is etrtNHC for 1/2 step velocities - leave zero */
-            
+
             /* The first half trotter update */
             trotter_seq[2][0] = etrtBAROV;
             trotter_seq[2][1] = etrtNHC;
             trotter_seq[2][2] = etrtBARONHC;
-            
+
             /* The second half trotter update */
             trotter_seq[3][0] = etrtBARONHC;
             trotter_seq[3][1] = etrtNHC;
             trotter_seq[3][2] = etrtBAROV;
 
             /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
-
+            
         } 
-        else 
+        else if (IR_NVT_TROTTER(ir))
         {
-            if (IR_NVT_TROTTER(ir)) 
-            {
-                /* This is the easy version - there are only two calls, both the same. 
-                   Otherwise, even easier -- no calls  */
-                trotter_seq[2][0] = etrtNHC;
-                trotter_seq[3][0] = etrtNHC;
-            }
+            /* This is the easy version - there are only two calls, both the same.
+               Otherwise, even easier -- no calls  */
+            trotter_seq[2][0] = etrtNHC;
+            trotter_seq[3][0] = etrtNHC;
         }
-    } else if (ir->eI==eiVVAK) {
-        if (IR_NPT_TROTTER(ir)) 
+        else if (IR_NPH_TROTTER(ir))
         {
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
             /* first, a round that estimates veta. */
-            trotter_seq[0][0] = etrtBAROV; 
-            
+            trotter_seq[0][0] = etrtBAROV;
+
+            /* trotter_seq[1] is etrtNHC for 1/2 step velocities - leave zero */
+
+            /* The first half trotter update */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtBARONHC;
+
+            /* The second half trotter update */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtBAROV;
+
+            /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
+        }
+    }
+    else if (ir->eI==eiVVAK)
+    {
+        if (IR_NPT_TROTTER(ir))
+        {
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV;
+
             /* The first half trotter update, part 1 -- double update, because it commutes */
             trotter_seq[1][0] = etrtNHC;
 
@@ -937,22 +1180,39 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             trotter_seq[3][0] = etrtBARONHC;
             trotter_seq[3][1] = etrtBAROV;
 
-            /* The second half trotter update -- blank for now */
+            /* The second half trotter update */
             trotter_seq[4][0] = etrtNHC;
         } 
-        else 
+        else if (IR_NVT_TROTTER(ir))
         {
-            if (IR_NVT_TROTTER(ir)) 
-            {
-                /* This is the easy version - there is only one call, both the same. 
-                   Otherwise, even easier -- no calls  */
-                trotter_seq[1][0] = etrtNHC;
-                trotter_seq[4][0] = etrtNHC;
-            }
+            /* This is the easy version - there is only one call, both the same.
+               Otherwise, even easier -- no calls  */
+            trotter_seq[1][0] = etrtNHC;
+            trotter_seq[4][0] = etrtNHC;
+        }
+        else if (IR_NPH_TROTTER(ir))
+        {
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV; 
+
+            /* The first half trotter update, part 1 -- leave zero */
+            trotter_seq[1][0] = etrtNHC;
+
+            /* The first half trotter update, part 2 */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtBARONHC;
+
+            /* The second half trotter update, part 1 */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtBAROV;
+
+            /* The second half trotter update -- blank for now */
         }
     }
 
-    switch (ir->epct) 
+    switch (ir->epct)
     {
     case epctISOTROPIC:  
     default:
@@ -962,7 +1222,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     snew(MassQ->QPinv,nnhpres*opts->nhchainlength);
 
     /* barostat temperature */
-    if ((ir->tau_p > 0) && (opts->ref_t[0] > 0)) 
+    if ((ir->tau_p > 0) && (opts->ref_t[0] > 0))
     {
         reft = max(0.0,opts->ref_t[0]);
         kT = BOLTZ*reft;
@@ -1035,7 +1295,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
         }
     }
     
-    if (IR_NPT_TROTTER(ir)) 
+    if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
     {
         /* add the energy from the barostat thermostat chain */
         for (i=0;i<state->nnhpres;i++) {
@@ -1110,32 +1370,50 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 static real vrescale_gamdev(int ia, gmx_rng_t rng)
 /* Gamma distribution, adapted from numerical recipes */
 {
-  int j;
-  real am,e,s,v1,v2,x,y;
-  
-  if (ia < 6) {
-    x = 1.0;
-    for(j=1; j<=ia; j++) {
-      x *= gmx_rng_uniform_real(rng);
-    }
-    x = -log(x);
-  } else {
-    do {
-      do {
-        do {
-          v1 = gmx_rng_uniform_real(rng);
-          v2 = 2.0*gmx_rng_uniform_real(rng)-1.0;
-        } while (v1*v1 + v2*v2 > 1.0);
-        y = v2/v1;
-        am = ia - 1;
-        s = sqrt(2.0*am + 1.0);
-        x = s*y + am;
-      } while (x <= 0.0);
-      e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
-    } while (gmx_rng_uniform_real(rng) > e);
-  }
+    int j;
+    real am,e,s,v1,v2,x,y;
 
-  return x;
+    if (ia < 6)
+    {
+        do
+        {
+            x = 1.0;
+            for(j=1; j<=ia; j++)
+            {
+                x *= gmx_rng_uniform_real(rng);
+            }
+        }
+        while (x == 0);
+        x = -log(x);
+    }
+    else
+    {
+        do
+        {
+            do
+            {
+                do
+                {
+                    v1 = gmx_rng_uniform_real(rng);
+                    v2 = 2.0*gmx_rng_uniform_real(rng)-1.0;
+                }
+                while (v1*v1 + v2*v2 > 1.0 ||
+                       v1*v1*GMX_REAL_MAX < 3.0*ia);
+                /* The last check above ensures that both x (3.0 > 2.0 in s)
+                 * and the pre-factor for e do not go out of range.
+                 */
+                y = v2/v1;
+                am = ia - 1;
+                s = sqrt(2.0*am + 1.0);
+                x = s*y + am;
+            }
+            while (x <= 0.0);
+            e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
+        }
+        while (gmx_rng_uniform_real(rng) > e);
+    }
+
+    return x;
 }
 
 static real vrescale_sumnoises(int nn,gmx_rng_t rng)
@@ -1205,7 +1483,7 @@ void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
             Ek = trace(ekind->tcstat[i].ekinh);
         }
         
-        if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0)
+        if (opts->tau_t[i] > 0 && opts->nrdf[i] > 0 && Ek > 0)
         {
             Ek_ref1 = 0.5*opts->ref_t[i]*BOLTZ;
             Ek_ref  = Ek_ref1*opts->nrdf[i];

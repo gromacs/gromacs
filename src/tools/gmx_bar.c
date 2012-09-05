@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
@@ -56,6 +57,11 @@
 #include "gmx_ana.h"
 #include "maths.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef isdigit
+#endif
 
 /* the dhdl.xvg data from a simulation (actually obsolete, but still
     here for reading the dhdl.xvg file*/
@@ -116,6 +122,7 @@ typedef struct samples_t
 
     /* allocation data: (not NULL for data 'owned' by this struct) */
     double *du_alloc, *t_alloc; /* allocated delta u arrays  */
+    size_t ndu_alloc, nt_alloc; /* pre-allocated sizes */
     hist_t *hist_alloc; /* allocated hist */
 
     gmx_large_int_t ntot; /* total number of samples */
@@ -138,7 +145,7 @@ typedef struct sample_range_t
     foreign lambda) */
 typedef struct sample_coll_t
 {
-    double native_lambda;  /* these should be the same for all samples in the */
+    double native_lambda;  /* these should be the same for all samples in the histogram?*/
     double foreign_lambda; /* collection */
     double temp; /* the temperature */
 
@@ -240,28 +247,11 @@ static void samples_init(samples_t *s, double native_lambda,
     s->du_alloc=NULL;
     s->t_alloc=NULL;
     s->hist_alloc=NULL;
+    s->ndu_alloc=0;
+    s->nt_alloc=0;
 
     s->ntot=0;
     s->filename=filename;
-}
-
-/* destroy the data structures directly associated with the structure, not
-   the data it points to */
-static void samples_destroy(samples_t *s)
-{
-    if (s->du_alloc)
-    {
-        sfree(s->du_alloc);
-    }
-    if (s->t_alloc)
-    {
-        sfree(s->t_alloc);
-    }
-    if (s->hist_alloc)
-    {
-        hist_destroy(s->hist_alloc);
-        sfree(s->hist_alloc);
-    }
 }
 
 static void sample_range_init(sample_range_t *r, samples_t *s)
@@ -1956,7 +1946,7 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
     {
         if (*temp <= 0)
         {
-            gmx_fatal(FARGS,"Did not find a temperature in the subtitle in file '%s', use the -temp option of g_bar",fn);
+            gmx_fatal(FARGS,"Did not find a temperature in the subtitle in file '%s', use the -temp option of [TT]g_bar[tt]",fn);
         }
         ba->temp = *temp;
     }
@@ -2041,7 +2031,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
         gmx_fatal(FARGS,"File '%s' contains fewer than two columns", fn);
     }
 
-    if ( ( *temp != barsim->temp) && (*temp > 0) )
+    if ( !gmx_within_tol(*temp,barsim->temp,GMX_FLOAT_EPS) && (*temp > 0) )
     {
         gmx_fatal(FARGS,"Temperature in file %s different from earlier files or setting\n", fn);
     }
@@ -2070,16 +2060,17 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
     printf("\n\n");
 }
 
-static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk, 
-                                       double start_time, double delta_time,
-                                       double native_lambda, double temp,
-                                       const char *filename)
+static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk, 
+                                 double start_time, double delta_time,
+                                 double native_lambda, double temp,
+                                 double *last_t, const char *filename)
 {
     int j;
     gmx_bool allocated;
     double foreign_lambda;
     int derivative;
-    samples_t *s;
+    samples_t *s; /* convenience pointer */
+    int startj;
 
     /* check the block types etc. */
     if ( (blk->nsub < 3) ||
@@ -2092,45 +2083,74 @@ static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk,
          (blk->sub[0].nr < 1) ||
          (blk->sub[1].nr < 1) )
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g.", 
+                  filename, start_time);
     }
    
     derivative = blk->sub[0].ival[0]; 
     foreign_lambda = blk->sub[1].dval[0];
 
-    /* initialize the samples structure */
-    snew(s, 1);
-    *nsamples=1;
-    samples_init(s, native_lambda, foreign_lambda, temp,
-                 derivative!=0, filename);
+    if (! *smp)
+    {
+        /* initialize the samples structure if it's empty. */
+        snew(*smp, 1);
+        samples_init(*smp, native_lambda, foreign_lambda, temp,
+                     derivative!=0, filename);
+        (*smp)->start_time=start_time;
+        (*smp)->delta_time=delta_time;
+    }
 
-    s->start_time=start_time;
-    s->delta_time=delta_time;
+    /* set convenience pointer */
+    s=*smp;
+
+    /* now double check */
+    if ( ! lambda_same(s->foreign_lambda, foreign_lambda) ||
+         (  (derivative!=0) != (s->derivative!=0) ) )
+    {
+        fprintf(stderr, "Got foreign lambda=%g, expected: %g\n", 
+                foreign_lambda, s->foreign_lambda);
+        fprintf(stderr, "Got derivative=%d, expected: %d\n", 
+                derivative, s->derivative);
+        gmx_fatal(FARGS, "Corrupted data in file %s around t=%g.", 
+                  filename, start_time);
+    }
 
     /* make room for the data */
-    snew(s->du, blk->sub[2].nr);
-    s->ndu = blk->sub[2].nr;
-    s->ntot = s->ndu;
+    if (s->ndu_alloc < (size_t)(s->ndu + blk->sub[2].nr) )
+    {
+        s->ndu_alloc += (s->ndu_alloc < (size_t)blk->sub[2].nr) ?  
+                            blk->sub[2].nr*2 : s->ndu_alloc;
+        srenew(s->du_alloc, s->ndu_alloc);
+        s->du=s->du_alloc;
+    }
+    startj = s->ndu;
+    s->ndu += blk->sub[2].nr;
+    s->ntot += blk->sub[2].nr;
+    *ndu = blk->sub[2].nr;
 
     /* and copy the data*/
     for(j=0;j<blk->sub[2].nr;j++)
     {
         if (blk->sub[2].type == xdr_datatype_float)
         {
-            s->du[j] = blk->sub[2].fval[j];
+            s->du[startj+j] = blk->sub[2].fval[j];
         }
         else
         {
-            s->du[j] = blk->sub[2].dval[j];
+            s->du[startj+j] = blk->sub[2].dval[j];
         }
     }
-    return s;
+    if (start_time + blk->sub[2].nr*delta_time > *last_t)
+    {
+        *last_t = start_time + blk->sub[2].nr*delta_time;
+    }
 }
 
 static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
                                       double start_time, double delta_time,
                                       double native_lambda, double temp,
-                                      const char *filename)
+                                      double *last_t, const char *filename)
 {
     int i,j;
     samples_t *s;
@@ -2146,7 +2166,9 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
          (blk->sub[0].nr < 2)  ||
          (blk->sub[1].nr < 2) )
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g", 
+                  filename, start_time);
     }
 
     nhist=blk->nsub-2;
@@ -2156,7 +2178,9 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     }
     if (nhist > 2)
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g", 
+                  filename, start_time);
     }
 
     snew(s, 1);
@@ -2219,6 +2243,10 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
         }
     }
 
+    if (start_time + s->hist->sum*delta_time > *last_t)
+    {
+        *last_t = start_time + s->hist->sum*delta_time;
+    }
     return s;
 }
 
@@ -2232,11 +2260,12 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
     gmx_enxnm_t *enm=NULL;
     double first_t=-1;
     double last_t=-1;
-    int *nhists=NULL;
-    int *npts=NULL;
-    double *lambdas=NULL;
+    samples_t **samples_rawdh=NULL; /* contains samples for raw delta_h  */
+    int *nhists=NULL;       /* array to keep count & print at end */
+    int *npts=NULL;         /* array to keep count & print at end */
+    double *lambdas=NULL;   /* array to keep count & print at end */
     double native_lambda=-1;
-
+    double end_time;        /* the end time of the last batch of samples */
     int nsamples=0;
 
     fp = open_enx(fn,"r");
@@ -2280,14 +2309,13 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 
                 if (delta_lambda>0)
                 {
-                    gmx_fatal(FARGS, "Lambda values change in %s: can't apply BAR method", fn);
+                    gmx_fatal(FARGS, "Lambda values not constant in %s: can't apply BAR method", fn);
                 }
                 if ( ( *temp != rtemp) && (*temp > 0) )
                 {
                     gmx_fatal(FARGS,"Temperature in file %s different from earlier files or setting\n", fn);
                 }
                 *temp=rtemp;
-                native_lambda=start_lambda;
 
                 if (first_t < 0)
                     first_t=start_time;
@@ -2305,73 +2333,111 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 
         if (nsamples > 0)
         {
+            /* check the native lambda */
+            if (!lambda_same(start_lambda, native_lambda) )
+            {
+                gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %g, and becomes %g at time %g", 
+                          fn, native_lambda, start_lambda, start_time);
+            }
             /* check the number of samples against the previous number */
             if ( ((nblocks_raw+nblocks_hist)!=nsamples) || (nlam!=1 ) )
             {
                 gmx_fatal(FARGS, "Unexpected block count in %s: was %d, now %d\n",
                           fn, nsamples+1, nblocks_raw+nblocks_hist+nlam);
             }
+            /* check whether last iterations's end time matches with 
+               the currrent start time */
+            if ( (fabs(last_t - start_time) > 2*delta_time)  && last_t>=0)
+            {
+                /* it didn't. We need to store our samples and reallocate */
+                for(i=0;i<nsamples;i++)
+                {
+                    if (samples_rawdh[i])
+                    {
+                        /* insert it into the existing list */
+                        lambda_list_insert_sample(lambda_head, 
+                                                  samples_rawdh[i]);
+                        /* and make sure we'll allocate a new one this time
+                           around */
+                        samples_rawdh[i]=NULL;
+                    }
+                }
+            }
         }
         else
         {
+            /* this is the first round; allocate the associated data 
+               structures */
+            native_lambda=start_lambda;
             nsamples=nblocks_raw+nblocks_hist;
             snew(nhists, nsamples);
             snew(npts, nsamples);
             snew(lambdas, nsamples);
+            snew(samples_rawdh, nsamples);
             for(i=0;i<nsamples;i++)
             {
                 nhists[i]=0;
                 npts[i]=0;
                 lambdas[i]=-1;
+                samples_rawdh[i]=NULL; /* init to NULL so we know which
+                                          ones contain values */
             }
         }
 
         /* and read them */
-        k=0;
+        k=0; /* counter for the lambdas, etc. arrays */
         for(i=0;i<fr->nblock;i++)
         {
-            int j;
-            int nb=0;
-            samples_t *s=NULL; /* this is where the data will go */
-
             if (fr->block[i].id == enxDH)
             {
-                s=read_edr_rawdh_block(&nb, &(fr->block[i]), 
-                                       start_time, delta_time, 
-                                       start_lambda, rtemp, fn);
-                npts[k] += s->ndu;
-                lambdas[k]=s->foreign_lambda;
+                int ndu;
+                read_edr_rawdh_block(&(samples_rawdh[k]),
+                                     &ndu,
+                                     &(fr->block[i]), 
+                                     start_time, delta_time, 
+                                     start_lambda, rtemp, 
+                                     &last_t, fn);
+                npts[k] += ndu;
+                if (samples_rawdh[k])
+                {
+                    lambdas[k]=samples_rawdh[k]->foreign_lambda;
+                }
                 k++;
             }
             else if (fr->block[i].id == enxDHHIST)
             {
+                int j;
+                int nb=0;
+                samples_t *s; /* this is where the data will go */
                 s=read_edr_hist_block(&nb, &(fr->block[i]), 
                                       start_time, delta_time, 
-                                      start_lambda, rtemp, fn);
+                                      start_lambda, rtemp, 
+                                      &last_t, fn);
                 nhists[k] += nb;
                 if (nb>0)
                 {
                     lambdas[k]= s->foreign_lambda;
                 }
                 k++;
-            }
-            for(j=0;j<nb;j++)
-            {
-                double endt;
-                lambda_list_insert_sample(lambda_head, s+j);
-                if (s[j].hist)
+                /* and insert the new sample immediately */
+                for(j=0;j<nb;j++)
                 {
-                    endt=s[j].hist->sum*delta_time + start_time;
+                    lambda_list_insert_sample(lambda_head, s+j);
                 }
-                else
-                {
-                    endt=s[j].ndu*delta_time + start_time;
-                }
-                if (endt > last_t)
-                    last_t = endt;
             }
         }
     }
+    /* Now store all our extant sample collections */
+    for(i=0;i<nsamples;i++)
+    {
+        if (samples_rawdh[i])
+        {
+            /* insert it into the existing list */
+            lambda_list_insert_sample(lambda_head, samples_rawdh[i]);
+        }
+    }
+
+
     fprintf(stderr, "\n");
     printf("%s: %.1f - %.1f; lambda = %.3f\n    foreign lambdas:", 
            fn, first_t, last_t, native_lambda);
@@ -2396,62 +2462,61 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 int gmx_bar(int argc,char *argv[])
 {
     static const char *desc[] = {
-        "g_bar calculates free energy difference estimates through ",
+        "[TT]g_bar[tt] calculates free energy difference estimates through ",
         "Bennett's acceptance ratio method (BAR). It also automatically",
         "adds series of individual free energies obtained with BAR into",
         "a combined free energy estimate.[PAR]",
 
         "Every individual BAR free energy difference relies on two ",
         "simulations at different states: say state A and state B, as",
-        "controlled by a parameter 'lambda' (see the mdp parameter",
-        "'init_lambda'). The BAR method calculates a ratio of weighted",
+        "controlled by a parameter, [GRK]lambda[grk] (see the [TT].mdp[tt] parameter",
+        "[TT]init_lambda[tt]). The BAR method calculates a ratio of weighted",
         "average of the Hamiltonian difference of state B given state A and",
-        "vice versa. If the Hamiltonian does not linearly depend on lambda",
+        "vice versa. If the Hamiltonian does not depend linearly on [GRK]lambda[grk]",
         "(in which case we can extrapolate the derivative of the Hamiltonian",
-        "w.r.t. lambda, as is the default when 'free_energy' is on), the",
-        "energy differences to the other state need to be calculated",
+        "with respect to [GRK]lambda[grk], as is the default when [TT]free_energy[tt] is on),",
+        "the energy differences to the other state need to be calculated",
         "explicitly during the simulation. This can be controlled with",
-        "the mdp option 'foreign_lambda'.[PAR]",
+        "the [TT].mdp[tt] option [TT]foreign_lambda[tt].[PAR]",
 
-        "Input option [TT]-f[tt] expects multiple dhdl files. ",
+        "Input option [TT]-f[tt] expects multiple [TT]dhdl.xvg[tt] files. ",
         "Two types of input files are supported:[BR]",
-        "* Files with only one y-value, for such files it is assumed ",
-        "that the y-value is dH/dlambda and that the Hamiltonian depends ",
-        "linearly on lambda. The lambda value of the simulation is inferred ",
-        "from the subtitle if present, otherwise from a number in the",
-        "subdirectory in the file name.",
+        "[TT]*[tt]  Files with only one [IT]y[it]-value, for such files it is assumed ",
+        "   that the [IT]y[it]-value is dH/d[GRK]lambda[grk] and that the Hamiltonian depends ",
+        "   linearly on [GRK]lambda[grk]. The [GRK]lambda[grk] value of the simulation is inferred ",
+        "   from the subtitle (if present), otherwise from a number in the",
+        "   subdirectory in the file name.",
         "[BR]",
-        "* Files with more than one y-value. The files should have columns ",
-        "with dH/dlambda and Delta lambda. The lambda values are inferred ",
-        "from the legends: ",
-        "lambda of the simulation from the legend of dH/dlambda ",
-        "and the foreign lambda's from the legends of Delta H.[BR]",
-        "The lambda of the simulation is parsed from dhdl.xvg file's legend ",
-        "containing the string 'dH', the foreign lambda's from the legend ",
+        "[TT]*[tt]  Files with more than one [IT]y[it]-value. The files should have columns ",
+        "   with dH/d[GRK]lambda[grk] and [GRK]Delta[grk][GRK]lambda[grk]. The [GRK]lambda[grk] values are inferred ",
+        "   from the legends: [GRK]lambda[grk] of the simulation from the legend of dH/d[GRK]lambda[grk] ",
+        "   and the foreign [GRK]lambda[grk] values from the legends of Delta H.[PAR]",
+        "The [GRK]lambda[grk] of the simulation is parsed from [TT]dhdl.xvg[tt] file's legend ",
+        "containing the string 'dH', the foreign [GRK]lambda[grk] values from the legend ",
         "containing the capitalized letters 'D' and 'H'. The temperature ",
         "is parsed from the legend line containing 'T ='.[PAR]",
 
-        "The input option [TT]-g[tt] expects multiple .edr files. ",
+        "The input option [TT]-g[tt] expects multiple [TT].edr[tt] files. ",
         "These can contain either lists of energy differences (see the",
-        "mdp option separate_dhdl_file), or a series of histograms",
-        "(see the mdp options dh_hist_size and dh_hist_spacing).",
-        "The temperature and lambda values are automatically deduced from",
-        "the ener.edr file.[PAR]"
+        "[TT].mdp[tt] option [TT]separate_dhdl_file[tt]), or a series of histograms",
+        "(see the [TT].mdp[tt] options [TT]dh_hist_size[tt] and [TT]dh_hist_spacing[tt]).",
+        "The temperature and [GRK]lambda[grk] values are automatically deduced from",
+        "the [TT]ener.edr[tt] file.[PAR]"
 
         "The free energy estimates are determined using BAR with bisection, ",
-        "the precision of the output is set with [TT]-prec[tt]. ",
+        "with the precision of the output set with [TT]-prec[tt]. ",
         "An error estimate taking into account time correlations ",
         "is made by splitting the data into blocks and determining ",
         "the free energy differences over those blocks and assuming ",
         "the blocks are independent. ",
         "The final error estimate is determined from the average variance ",
-        "over 5 blocks. A range of blocks numbers for error estimation can ",
+        "over 5 blocks. A range of block numbers for error estimation can ",
         "be provided with the options [TT]-nbmin[tt] and [TT]-nbmax[tt].[PAR]",
 
-        "g_bar tries to aggregate samples with the same 'native' and 'foreign'",
-        "lambda values, but always assumes independent samples: note that",
+        "[TT]g_bar[tt] tries to aggregate samples with the same 'native' and 'foreign'",
+        "[GRK]lambda[grk] values, but always assumes independent samples. [BB]Note[bb] that",
         "when aggregating energy differences/derivatives with different",
-        "sampling intervals, this is almost certainly not correct: usually",
+        "sampling intervals, this is almost certainly not correct. Usually",
         "subsequent energies are correlated and different time intervals mean",
         "different degrees of correlation between samples.[PAR]",
 
@@ -2461,12 +2526,12 @@ int gmx_bar(int argc,char *argv[])
         "difference estimates and phase space overlap measures in units of ",
         "kT (together with their computed error estimate). The printed ",
         "values are:[BR]",
-        "*  lam_A: the lambda values for point A.[BR]",
-        "*  lam_B: the lambda values for point B.[BR]",
-        "*     DG: the free energy estimate.[BR]",
-        "*    s_A: an estimate of the relative entropy of B in A.[BR]",
-        "*    s_A: an estimate of the relative entropy of A in B.[BR]",
-        "*  stdev: an estimate expected per-sample standard deviation.[PAR]",
+        "[TT]*[tt]  lam_A: the [GRK]lambda[grk] values for point A.[BR]",
+        "[TT]*[tt]  lam_B: the [GRK]lambda[grk] values for point B.[BR]",
+        "[TT]*[tt]     DG: the free energy estimate.[BR]",
+        "[TT]*[tt]    s_A: an estimate of the relative entropy of B in A.[BR]",
+        "[TT]*[tt]    s_A: an estimate of the relative entropy of A in B.[BR]",
+        "[TT]*[tt]  stdev: an estimate expected per-sample standard deviation.[PAR]",
         
         "The relative entropy of both states in each other's ensemble can be ",
         "interpreted as a measure of phase space overlap: ", 
@@ -2474,17 +2539,16 @@ int gmx_bar(int argc,char *argv[])
         "ensemble of lambda_A (and vice versa for s_B), is a ", 
         "measure of the 'distance' between Boltzmann distributions of ",
         "the two states, that goes to zero for identical distributions. See ",
-        "Wu & Kofke, J. Chem. Phys. 123 084109 (2009) for more information.",
+        "Wu & Kofke, J. Chem. Phys. 123 084109 (2005) for more information.",
         "[PAR]",
         "The estimate of the expected per-sample standard deviation, as given ",
-        "in Bennett's original BAR paper: ",
-        "Bennett, J. Comp. Phys. 22, p 245 (1976), Eq. 10 gives an estimate ",
-        "of the quality of sampling (not directly of the actual statistical ", 
-        "error, because it assumes independent samples).[PAR]",
+        "in Bennett's original BAR paper: Bennett, J. Comp. Phys. 22, p 245 (1976).", 
+        "Eq. 10 therein gives an estimate of the quality of sampling (not directly",  
+        "of the actual statistical error, because it assumes independent samples).[PAR]",
 
         "To get a visual estimate of the phase space overlap, use the ",
-        "-oh option to write series of histograms, together with the ",
-        "-nbin option.[PAR]"
+        "[TT]-oh[tt] option to write series of histograms, together with the ",
+        "[TT]-nbin[tt] option.[PAR]"
     };
     static real begin=0,end=-1,temp=-1;
     int nd=2,nbmin=5,nbmax=5;
@@ -2608,14 +2672,13 @@ int gmx_bar(int argc,char *argv[])
         return 0;
     }
 
-#if 1
     if (sum_disc_err > prec)
     {
         prec=sum_disc_err;
         nd = ceil(-log10(prec));
         printf("WARNING: setting the precision to %g because that is the minimum\n         reasonable number, given the expected discretization error.\n", prec);
     }
-#endif
+
 
     sprintf(lamformat,"%%6.3f");
     sprintf( dgformat,"%%%d.%df",3+nd,nd);
@@ -2633,15 +2696,15 @@ int gmx_bar(int argc,char *argv[])
     fpb = NULL;
     if (opt2bSet("-o",NFILE,fnm))
     {
-        sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
+        sprintf(buf,"%s (%s)","\\DeltaG","kT");
         fpb = xvgropen_type(opt2fn("-o",NFILE,fnm),"Free energy differences",
                             "\\lambda",buf,exvggtXYDY,oenv);
     }
-    
+
     fpi = NULL;
     if (opt2bSet("-oi",NFILE,fnm))
     {
-        sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
+        sprintf(buf,"%s (%s)","\\DeltaG","kT");
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
                       "\\lambda",buf,oenv);
     }

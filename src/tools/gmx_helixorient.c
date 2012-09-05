@@ -39,7 +39,7 @@
 
 #include "smalloc.h"
 #include "macros.h"
-#include "math.h"
+#include <math.h>
 #include "xvgr.h"
 #include "copyrite.h"
 #include "statutil.h"
@@ -58,22 +58,22 @@
 int gmx_helixorient(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_helixorient calculates the coordinates and direction of the average",
+    "[TT]g_helixorient[tt] calculates the coordinates and direction of the average",
     "axis inside an alpha helix, and the direction/vectors of both the",
-    "alpha carbon and (optionally) a sidechain atom relative to the axis.[PAR]",
-    "As input, you need to specify an index group with alpha carbon atoms",
-    "corresponding to an alpha helix of continuous residues. Sidechain",
+    "C[GRK]alpha[grk] and (optionally) a sidechain atom relative to the axis.[PAR]",
+    "As input, you need to specify an index group with C[GRK]alpha[grk] atoms",
+    "corresponding to an [GRK]alpha[grk]-helix of continuous residues. Sidechain",
     "directions require a second index group of the same size, containing",
     "the heavy atom in each residue that should represent the sidechain.[PAR]",
-    "Note that this program does not do any fitting of structures.[PAR]",
-    "We need four Calpha coordinates to define the local direction of the helix",
+    "[BB]Note[bb] that this program does not do any fitting of structures.[PAR]",
+    "We need four C[GRK]alpha[grk] coordinates to define the local direction of the helix",
     "axis.[PAR]",
     "The tilt/rotation is calculated from Euler rotations, where we define",
-    "the helix axis as the local X axis, the residues/CA-vector as Y, and the",
-    "Z axis from their cross product. We use the Euler Y-Z-X rotation, meaning",
+    "the helix axis as the local [IT]x[it]-axis, the residues/C[GRK]alpha[grk] vector as [IT]y[it], and the",
+    "[IT]z[it]-axis from their cross product. We use the Euler Y-Z-X rotation, meaning",
     "we first tilt the helix axis (1) around and (2) orthogonal to the residues",
     "vector, and finally apply the (3) rotation around it. For debugging or other",
-    "purposes, we also write out the actual Euler rotation angles as theta1-3.xvg"
+    "purposes, we also write out the actual Euler rotation angles as [TT]theta[1-3].xvg[tt]"
     };
   
     t_topology *top=NULL;

@@ -5,8 +5,8 @@ Name: libmd
 Description: Gromacs md lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
-Requires: libgmx@LIBSUFFIX@ @PKG_FFT@ @PKG_XML@
+Requires: libgmx@GMX_LIBS_SUFFIX@ @PKG_FFT@ @PKG_XML@
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
-Libs: -L${libdir} -lmd@LIBSUFFIX@ @PKG_FFT_LIBS@
+Libs: -L${libdir} -lmd@GMX_LIBS_SUFFIX@ @PKG_FFT_LIBS@
 Cflags: -I${includedir} @PKG_CFLAGS@
 

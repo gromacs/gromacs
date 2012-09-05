@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -46,7 +47,7 @@
 #include <ctype.h>
 
 /* Necessary for getcwd */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #include <io.h>
 #endif
@@ -213,7 +214,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     }
   }
   if (debug)
-    fprintf(debug,"Added %d command line arguments",i);
+    fprintf(debug,"GMXCPP: added %d command line arguments\n",i);
   
   snew(cpp,1);
   *handle      = cpp;
@@ -247,6 +248,9 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   {
     gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
   }
+  if (NULL != debug) {
+    fprintf(debug,"GMXCPP: cpp file open %s\n",cpp->fn);
+  }
   /* If the file name has a path component, we need to change to that
    * directory. Note that we - just as C - always use UNIX path separators
    * internally in include file names.
@@ -270,11 +274,14 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     cpp->fn   = strdup(ptr+1);
     snew(cpp->cwd,STRLEN);
       
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
       pdum=_getcwd(cpp->cwd,STRLEN);
       _chdir(cpp->path);
 #else
       pdum=getcwd(cpp->cwd,STRLEN);
+      if (NULL != debug) {
+	fprintf(debug,"GMXCPP: cwd %s\n",cpp->cwd);
+      }
       if (-1 == chdir(cpp->path))
 	gmx_fatal(FARGS,"Can not chdir to %s when processing topology. Reason: %s",
 		  cpp->path,strerror(errno));
@@ -292,6 +299,9 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   cpp->child   = NULL;
   cpp->parent  = NULL;
   if (cpp->fp == NULL) {
+    if (NULL != debug) {
+      fprintf(debug,"GMXCPP: opening file %s\n",cpp->fn);
+    }
     cpp->fp = fopen(cpp->fn, "r");
   }
   if (cpp->fp == NULL) {
@@ -381,6 +391,9 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
       }
       else if (len >= 0)
 	len++;
+    }
+    if (len == -1) {
+      return eCPP_SYNTAX;
     }
     snew(inc_fn,len+1);
     strncpy(inc_fn,dval+i0,len);
@@ -570,12 +583,12 @@ int cpp_close_file(gmx_cpp_t *handlep)
   if (!handle->fp)
     return eCPP_FILE_NOT_OPEN;
   if (debug)
-    fprintf(debug,"Closing file %s\n",handle->fn);
+    fprintf(debug,"GMXCPP: closing file %s\n",handle->fn);
   fclose(handle->fp);
   if (NULL != handle->cwd) {
     if (NULL != debug)
       fprintf(debug,"GMXCPP: chdir to %s\n",handle->cwd);
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
       _chdir(handle->cwd);
 #else
       if (-1 == chdir(handle->cwd))

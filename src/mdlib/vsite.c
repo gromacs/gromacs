@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -694,8 +695,9 @@ static void spread_vsite3(t_iatom ia[],real a,real b,
 }
 
 static void spread_vsite3FD(t_iatom ia[],real a,real b,
-			    rvec x[],rvec f[],rvec fshift[],
-			    t_pbc *pbc,t_graph *g)
+                            rvec x[],rvec f[],rvec fshift[],
+                            gmx_bool VirCorr,matrix dxdf,
+                            t_pbc *pbc,t_graph *g)
 {
   real fx,fy,fz,c,invl,fproj,a1;
   rvec xvi,xij,xjk,xix,fv,temp;
@@ -771,12 +773,38 @@ static void spread_vsite3FD(t_iatom ia[],real a,real b,
     fshift[    skj][ZZ] += a*temp[ZZ];
   }
 
+    if (VirCorr)
+    {
+        /* When VirCorr=TRUE, the virial for the current forces is not
+         * calculated from the redistributed forces. This means that
+         * the effect of non-linear virtual site constructions on the virial
+         * needs to be added separately. This contribution can be calculated
+         * in many ways, but the simplest and cheapest way is to use
+         * the first constructing atom ai as a reference position in space:
+         * subtract (xv-xi)*fv and add (xj-xi)*fj + (xk-xi)*fk.
+         */
+        rvec xiv;
+        int  i,j;
+
+        pbc_rvec_sub(pbc,x[av],x[ai],xiv);
+
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                /* As xix is a linear combination of j and k, use that here */
+                dxdf[i][j] += -xiv[i]*fv[j] + xix[i]*temp[j];
+            }
+        }
+    }
+
   /* TOTAL: 61 flops */
 }
 
 static void spread_vsite3FAD(t_iatom ia[],real a,real b,
-			     rvec x[],rvec f[],rvec fshift[],
-			     t_pbc *pbc,t_graph *g)
+                             rvec x[],rvec f[],rvec fshift[],
+                             gmx_bool VirCorr,matrix dxdf,
+                             t_pbc *pbc,t_graph *g)
 {
   rvec    xvi,xij,xjk,xperp,Fpij,Fppp,fv,f1,f2,f3;
   real    a1,b1,c1,c2,invdij,invdij2,invdp,fproj;
@@ -860,13 +888,34 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
     fshift[    skj][YY] +=                          f2[YY];
     fshift[    skj][ZZ] +=                          f2[ZZ];
   }
+
+    if (VirCorr)
+    {
+        rvec xiv;
+        int  i,j;
+
+        pbc_rvec_sub(pbc,x[av],x[ai],xiv);
+
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                /* Note that xik=xij+xjk, so we have to add xij*f2 */
+                dxdf[i][j] +=
+                    - xiv[i]*fv[j]
+                    + xij[i]*(f1[j] + (1 - c2)*f2[j] - f3[j])
+                    + xjk[i]*f2[j];
+            }
+        }
+    }
   
   /* TOTAL: 113 flops */
 }
 
 static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
-			     rvec x[],rvec f[],rvec fshift[],
-			     t_pbc *pbc,t_graph *g)
+                             rvec x[],rvec f[],rvec fshift[],
+                             gmx_bool VirCorr,matrix dxdf,
+                             t_pbc *pbc,t_graph *g)
 {
   rvec    xvi,xij,xik,fv,fj,fk;
   real    cfx,cfy,cfz;
@@ -927,12 +976,29 @@ static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
     rvec_inc(fshift[sji],fj);
     rvec_inc(fshift[ski],fk);
   }
+
+    if (VirCorr)
+    {
+        rvec xiv;
+        int  i,j;
+
+        pbc_rvec_sub(pbc,x[av],x[ai],xiv);
+
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                dxdf[i][j] += -xiv[i]*fv[j] + xij[i]*fj[j] + xik[i]*fk[j];
+            }
+        }
+    }
   
   /* TOTAL: 54 flops */
 }
 
 static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
                             rvec x[],rvec f[],rvec fshift[],
+                            gmx_bool VirCorr,matrix dxdf,
                             t_pbc *pbc,t_graph *g)
 {
   real    d,invl,fproj,a1;
@@ -1007,12 +1073,29 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
     }
   }
 
+    if (VirCorr)
+    {
+        rvec xiv;
+        int  i,j;
+
+        pbc_rvec_sub(pbc,x[av],x[ai],xiv);
+
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                dxdf[i][j] += -xiv[i]*fv[j] + xix[i]*temp[j];
+            }
+        }
+    }
+
   /* TOTAL: 77 flops */
 }
 
 
 static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
                              rvec x[],rvec f[],rvec fshift[],
+                             gmx_bool VirCorr,matrix dxdf,
                              t_pbc *pbc,t_graph *g)
 {
     rvec xvi,xij,xik,xil,ra,rb,rja,rjb,rab,rm,rt;
@@ -1135,6 +1218,22 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
         rvec_inc(fshift[sik],fk);
         rvec_inc(fshift[sil],fl);
     }
+
+    if (VirCorr)
+    {
+        rvec xiv;
+        int  i,j;
+
+        pbc_rvec_sub(pbc,x[av],x[ai],xiv);
+
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                dxdf[i][j] += -xiv[i]*fv[j] + xij[i]*fj[j] + xik[i]*fk[j] + xil[i]*fl[j];
+            }
+        }
+    }
     
     /* Total: 207 flops (Yuck!) */
 }
@@ -1179,10 +1278,11 @@ static int spread_vsiten(t_iatom ia[],t_iparams ip[],
 
 
 void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
-		    rvec x[],rvec f[],rvec *fshift,
-		    t_nrnb *nrnb,t_idef *idef,
-		    int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
-		    t_commrec *cr)
+                    rvec x[],rvec f[],rvec *fshift,
+                    gmx_bool VirCorr,matrix vir,
+                    t_nrnb *nrnb,t_idef *idef,
+                    int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
+                    t_commrec *cr)
 {
   real      a1,b1,c1;
   int       i,inc,m,nra,nr,tp,ftype;
@@ -1191,6 +1291,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
   t_iparams *ip;
   t_pbc     pbc,*pbc_null,*pbc_null2;
   int       *vsite_pbc;
+  matrix    dxdf;
 
   /* We only need to do pbc when we have inter-cg vsites */
   if ((DOMAINDECOMP(cr) || bMolPBC) && vsite->n_intercg_vsite) {
@@ -1210,6 +1311,11 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
   {
     pd_clear_nonlocal_constructs(vsite->vsitecomm,f);
   }
+
+    if (vir != NULL)
+    {
+        clear_mat(dxdf);
+    }
 	
   ip     = idef->iparams;
 
@@ -1266,30 +1372,30 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 	  break;
 	case F_VSITE3FD:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3FD(ia,a1,b1,x,f,fshift,pbc_null2,g);
+	  spread_vsite3FD(ia,a1,b1,x,f,fshift,VirCorr,dxdf,pbc_null2,g);
 	  nd3FD++;
 	  break;
 	case F_VSITE3FAD:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3FAD(ia,a1,b1,x,f,fshift,pbc_null2,g);
+	  spread_vsite3FAD(ia,a1,b1,x,f,fshift,VirCorr,dxdf,pbc_null2,g);
 	  nd3FAD++;
 	  break;
 	case F_VSITE3OUT:
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  spread_vsite3OUT(ia,a1,b1,c1,x,f,fshift,pbc_null2,g);
+	  spread_vsite3OUT(ia,a1,b1,c1,x,f,fshift,VirCorr,dxdf,pbc_null2,g);
 	  nd3OUT++;
 	  break;
 	case F_VSITE4FD:
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  spread_vsite4FD(ia,a1,b1,c1,x,f,fshift,pbc_null2,g);
+	  spread_vsite4FD(ia,a1,b1,c1,x,f,fshift,VirCorr,dxdf,pbc_null2,g);
 	  nd4FD++;
 	  break;
 	case F_VSITE4FDN:
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  spread_vsite4FDN(ia,a1,b1,c1,x,f,fshift,pbc_null2,g);
+	  spread_vsite4FDN(ia,a1,b1,c1,x,f,fshift,VirCorr,dxdf,pbc_null2,g);
 	  nd4FDN++;
 	  break;
 	case F_VSITEN:
@@ -1308,7 +1414,20 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
       }
     }
   }
-	
+
+    if (VirCorr)
+    {
+        int i,j;
+
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                vir[i][j] += -0.5*dxdf[i][j];
+            }
+        }
+    }
+
   inc_nrnb(nrnb,eNR_VSITE2,   nd2     );
   inc_nrnb(nrnb,eNR_VSITE3,   nd3     );
   inc_nrnb(nrnb,eNR_VSITE3FD, nd3FD   );

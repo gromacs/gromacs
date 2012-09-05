@@ -172,41 +172,6 @@ void done_mi(t_molinfo *mi)
 
 /* PRINTING STRUCTURES */
 
-static void print_nbt (FILE *out,char *title,gpp_atomtype_t at,
-		       int ftype,t_params *nbt)
-{
-  int f,i,j,k,l,nrfp,ntype;
-  
-  if (ftype == F_LJ)
-    f=1;
-  else
-    f=2;
-  nrfp=NRFP(ftype);
-  
-  if (nbt->nr) {
-    /* header */
-    fprintf (out,"; %s\n",title);
-    fprintf (out,"[ %s ]\n",dir2str(d_nonbond_params));
-    fprintf (out,"; %6s  %8s","ai","aj");
-    fprintf (out,"  %8s","funct");
-    for (j=0; (j<nrfp); j++)
-      fprintf (out,"  %11c%1d",'c',j);
-    fprintf (out,"\n");
-    
-    /* print non-bondtypes */
-    ntype = get_atomtype_ntypes(at);
-    for (i=k=0; (i<ntype); i++)
-      for(j=0; (j<ntype); j++,k++) {
-	fprintf (out,"%8s  %8s  %8d",
-		 get_atomtype_name(i,at),get_atomtype_name(f,at),f);
-	for(l=0; (l<nrfp); l++)
-	  fprintf (out,"  %12.5e",nbt->param[k].c[l]);
-	fprintf (out,"\n");
-      }
-  }
-  fprintf (out,"\n");
-}
-
 void print_bt(FILE *out, directive d, gpp_atomtype_t at,
 	      int ftype,int fsubtype,t_params plist[],
 	      gmx_bool bFullDih)

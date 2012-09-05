@@ -37,7 +37,7 @@
 #endif
 
 #include "smalloc.h"
-#include "math.h"
+#include <math.h>
 #include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"
@@ -166,26 +166,26 @@ void print_dir(FILE *fp,real *Uaver)
 int gmx_rmsf(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard ",
-    "deviation) of atomic positions ",
-    "after (optionally) fitting to a reference frame.[PAR]",
+    "[TT]g_rmsf[tt] computes the root mean square fluctuation (RMSF, i.e. standard ",
+    "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
+    "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
     "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
-    "values, which are written to a pdb file with the coordinates, of the",
-    "structure file, or of a pdb file when [TT]-q[tt] is specified.",
+    "values, which are written to a [TT].pdb[tt] file with the coordinates, of the",
+    "structure file, or of a [TT].pdb[tt] file when [TT]-q[tt] is specified.",
     "Option [TT]-ox[tt] writes the B-factors to a file with the average",
     "coordinates.[PAR]",
     "With the option [TT]-od[tt] the root mean square deviation with",
     "respect to the reference structure is calculated.[PAR]",
-    "With the option [TT]aniso[tt] g_rmsf will compute anisotropic",
+    "With the option [TT]-aniso[tt], [TT]g_rmsf[tt] will compute anisotropic",
     "temperature factors and then it will also output average coordinates",
-    "and a pdb file with ANISOU records (corresonding to the [TT]-oq[tt]",
+    "and a [TT].pdb[tt] file with ANISOU records (corresonding to the [TT]-oq[tt]",
     "or [TT]-ox[tt] option). Please note that the U values",
-    "are orientation dependent, so before comparison with experimental data",
+    "are orientation-dependent, so before comparison with experimental data",
     "you should verify that you fit to the experimental coordinates.[PAR]",
-    "When a pdb input file is passed to the program and the [TT]-aniso[tt]",
+    "When a [TT].pdb[tt] input file is passed to the program and the [TT]-aniso[tt]",
     "flag is set",
     "a correlation plot of the Uij will be created, if any anisotropic",
-    "temperature factors are present in the pdb file.[PAR]",
+    "temperature factors are present in the [TT].pdb[tt] file.[PAR]",
     "With option [TT]-dir[tt] the average MSF (3x3) matrix is diagonalized.",
     "This shows the directions in which the atoms fluctuate the most and",
     "the least."
@@ -457,7 +457,7 @@ int gmx_rmsf(int argc,char *argv[])
   }
 
   if (opt2bSet("-oq",NFILE,fnm)) {
-    /* Write a pdb file with B-factors and optionally anisou records */
+    /* Write a .pdb file with B-factors and optionally anisou records */
     for(i=0; i<isize; i++)
       rvec_inc(xref[index[i]],xcm);
     write_sto_conf_indexed(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,
@@ -468,7 +468,7 @@ int gmx_rmsf(int argc,char *argv[])
     for(i=0; i<isize; i++)
       for(d=0; d<DIM; d++)
 	xref[index[i]][d] = xcm[d] + xav[i*DIM + d];
-    /* Write a pdb file with B-factors and optionally anisou records */
+    /* Write a .pdb file with B-factors and optionally anisou records */
     write_sto_conf_indexed(opt2fn("-ox",NFILE,fnm),title,pdbatoms,xref,NULL,
 			   ePBC,pdbbox,isize,index);
   }

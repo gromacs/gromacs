@@ -42,11 +42,12 @@
 #include "smalloc.h"
 #include "gstat.h"
 #include "gmx_fatal.h"
+#include "index.h"
 	
 t_dlist *mk_dlist(FILE *log, 
 		  t_atoms *atoms, int *nlist,
 		  gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
-		  int maxchi,int r0,int naa,char **aa)
+		  int maxchi, int r0, gmx_residuetype_t rt)
 {
   int     ires,i,j,k,ii;
   t_dihatms atm,prev;
@@ -167,11 +168,7 @@ t_dlist *mk_dlist(FILE *log,
       }
       if ((atm.minC != -1) && (atm.minO != -1))
 	nc[6]++;
-      for(k=0; (k<naa); k++) {
-	if (gmx_strcasecmp(aa[k],thisres) == 0)
-	  break;
-      }
-      dl[nl].index=k;
+      dl[nl].index=gmx_residuetype_get_index(rt,thisres);
       
       sprintf(dl[nl].name,"%s%d",thisres,ires+r0);
       nl++;

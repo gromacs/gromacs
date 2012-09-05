@@ -93,6 +93,7 @@ void update_coords(FILE         *fplog,
 			  t_inputrec   *inputrec,  /* input record and box stuff	*/
 			  t_mdatoms    *md,
 			  t_state      *state,
+		          gmx_bool     bMolPBC,
 			  rvec         *f,    /* forces on home particles */
 			  gmx_bool         bDoLR,
 			  rvec         *f_lr,
@@ -110,6 +111,8 @@ void update_coords(FILE         *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
+
 void update_constraints(FILE         *fplog,
 			       gmx_large_int_t   step,
 			       real         *dvdlambda, /* FEP stuff */
@@ -117,6 +120,7 @@ void update_constraints(FILE         *fplog,
 			       gmx_ekindata_t *ekind,
 			       t_mdatoms    *md,
 			       t_state      *state,
+	        	       gmx_bool     bMolPBC,
 			       t_graph      *graph,	
 			       rvec         force[],    /* forces on home particles */
 			       t_idef       *idef,
@@ -168,6 +172,7 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
  *
  */
 
+
 void
 init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir);
 
@@ -179,6 +184,8 @@ restore_ekinstate_from_state(t_commrec *cr,
 			     gmx_ekindata_t *ekind,ekinstate_t *ekinstate);
 
 void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt);
+
+void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock,gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac);
 
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			      double xi[],double vxi[],t_extmass *MassQ);
@@ -217,11 +224,10 @@ void update_annealing_target_temp(t_grpopts *opts,real t);
 real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
 
-real calc_pres(int ePBC,int nwall,matrix box,
-		      tensor ekin,tensor vir,tensor pres,real Elr);
+real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
+	       tensor pres);
 /* Calculate the pressure tensor, returns the scalar pressure.
- * The unit of pressure is bar, If Elr != 0
- * a long range correction based on Ewald/PPPM is made (see c-code)
+ * The unit of pressure is bar.
  */
 
 void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,

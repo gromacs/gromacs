@@ -175,12 +175,13 @@ int
 gmx_select(int argc, char *argv[])
 {
     const char *desc[] = {
-        "g_select writes out basic data about dynamic selections.",
+        "[TT]g_select[tt] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",
         "Any combination of the output options is possible, but note",
-        "that [TT]-om[tt] only operates on the first selection.[PAR]",
+        "that [TT]-om[tt] only operates on the first selection.",
+        "[TT]-os[tt] is the default output option if none is selected.[PAR]",
         "With [TT]-os[tt], calculates the number of positions in each",
         "selection for each frame. With [TT]-norm[tt], the output is",
         "between 0 and 1 and describes the fraction from the maximum",
@@ -202,7 +203,7 @@ gmx_select(int argc, char *argv[])
         "of positions is omitted from the output. In this case, only one",
         "selection can be given.[PAR]",
         "With [TT]-on[tt], the selected atoms are written as a index file",
-        "compatible with make_ndx and the analyzing tools. Each selection",
+        "compatible with [TT]make_ndx[tt] and the analyzing tools. Each selection",
         "is written as a selection group and for dynamic selections a",
         "group is written for each frame.[PAR]",
         "For residue numbers, the output of [TT]-oi[tt] can be controlled",

@@ -37,6 +37,12 @@
 
 #include "types/simple.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef toupper
+#endif
+
 
 /** @file
  *

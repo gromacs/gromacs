@@ -33,6 +33,9 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
+#ifndef _types_graph_h
+#define _types_graph_h
+
 #include "idef.h"
 
 #ifdef __cplusplus
@@ -43,10 +46,11 @@ extern "C" {
 typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
 
 typedef struct {
-  int      nnodes;	/* The number of nodes				*/
+  int      nnodes;	/* The number of nodes, nnodes=at_end-at_start	*/
   int      nbound;	/* The number of nodes with edges		*/
-  int      start;	/* The first atom in this graph			*/
-  int      end;		/* The last atom in this graph			*/
+  int      natoms;      /* Total range for this graph: 0 to natoms      */
+  int      at_start;	/* The first connected atom in this graph	*/
+  int      at_end;	/* The last+1 connected atom in this graph	*/
   int      *nedge;	/* For each node the number of edges		*/
   atom_id  **edge;	/* For each node, the actual edges (bidirect.)	*/
   gmx_bool     bScrewPBC;   /* Screw boundary conditions                    */
@@ -56,9 +60,10 @@ typedef struct {
 } t_graph;
 
 
-#define SHIFT_IVEC(g,i) ((g)->ishift[(i)-(g)->start])
+#define SHIFT_IVEC(g,i) ((g)->ishift[i])
 
 #ifdef __cplusplus
 }
 #endif
 
+#endif /* _types_graph_h */

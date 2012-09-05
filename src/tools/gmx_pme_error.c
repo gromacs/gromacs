@@ -1,5 +1,4 @@
-/* $Id: gmx_tune_pme.c 9 2009-08-11 09:43:30Z dommert $
- * 
+/*
  *                This source code is part of
  *
  *                 G   R   O   M   A   C   S
@@ -110,29 +109,6 @@ typedef struct
     real *e_rec;                /* Reciprocal space part of PME error                 */ 
     gmx_bool bTUNE;                 /* flag for tuning */
 } t_inputinfo;
-
-
-static void sep_line(FILE *fp)
-{
-    fprintf(fp, "\n------------------------------------------------------------\n");
-}
-
-
-
-static gmx_bool is_equal(real a, real b)
-{
-    real diff, eps=1.0e-6;
-    
-    
-    diff = a - b;
-    
-    if (diff < 0.0) diff = -diff;
-    
-    if (diff < eps)
-        return TRUE;
-    else
-        return FALSE;
-}
 
 
 /* Returns TRUE when atom is charged */
@@ -446,6 +422,10 @@ static real estimate_reciprocal(
         real q[],           /* array of charges */
         int nr,             /* number of charges = size of the charge array */
         FILE *fp_out,
+        gmx_bool bVerbose,
+        unsigned int seed,  /* The seed for the random number generator */
+        int *nsamples,      /* Return the number of samples used if Monte Carlo
+                             * algorithm is used for self energy error estimate */
         t_commrec *cr)
 {
     real e_rec=0;   /* reciprocal error estimate */
@@ -468,31 +448,24 @@ static real estimate_reciprocal(
     real tmp=0;     /* variables to compute different factors from vectors */
     real tmp1=0;
     real tmp2=0;
-    real xtmp=0;
-    real ytmp=0;
-    real ztmp=0;
-    double ewald_error;
+    gmx_bool bFraction;
     
     /* Random number generator */
-    
     gmx_rng_t rng=NULL;
-    /*rng=gmx_rng_init(gmx_rng_make_seed());  */
+    int *numbers=NULL;
 
     /* Index variables for parallel work distribution */
     int startglobal,stopglobal;
     int startlocal, stoplocal;
     int x_per_core;
-    int nrsamples;
-    real xtot;    
+    int xtot;
 
-/* #define TAKETIME */
 #ifdef TAKETIME
     double t0=0.0;
     double t1=0.0;
-    double t2=0.0;
 #endif
 
-    rng=gmx_rng_init(cr->nodeid);
+    rng=gmx_rng_init(seed);
 
     clear_rvec(gridpx);
     clear_rvec(gridpxy);
@@ -511,7 +484,7 @@ static real estimate_reciprocal(
     xtot = stopglobal*2+1;
     if (PAR(cr))
     {
-        x_per_core = ceil(xtot / cr->nnodes);
+        x_per_core = ceil((real)xtot / (real)cr->nnodes);
         startlocal = startglobal + x_per_core*cr->nodeid;
         stoplocal = startlocal + x_per_core -1;
         if (stoplocal > stopglobal)
@@ -524,14 +497,16 @@ static real estimate_reciprocal(
         x_per_core = xtot;
     }
 /*     
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 */
 
+#ifdef GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
         t0 = MPI_Wtime();
+#endif
 #endif
     
     if (MASTER(cr)){
@@ -633,46 +608,61 @@ static real estimate_reciprocal(
         
     }
 
-/* 
-#ifdef GMX_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-*/
-
     if (MASTER(cr))
         fprintf(stderr, "\n");
-    if (info->fracself>0)
+    
+    /* Use just a fraction of all charges to estimate the self energy error term? */
+    bFraction =  (info->fracself > 0.0) && (info->fracself < 1.0);
+
+    if (bFraction)
     {
-        nrsamples=ceil(info->fracself*nr);
+        /* Here xtot is the number of samples taken for the Monte Carlo calculation
+         * of the average of term IV of equation 35 in Wang2010. Round up to a
+         * number of samples that is divisible by the number of nodes */
+        x_per_core  = ceil(info->fracself * nr / (real)cr->nnodes);
+        xtot = x_per_core * cr->nnodes;
     }
     else
     {
-        nrsamples=nr;
+        /* In this case we use all nr particle positions */
+        xtot = nr;
+        x_per_core = ceil( (real)xtot / (real)cr->nnodes );
     }
-    
-    
-    xtot=nrsamples;
 
+    startlocal = x_per_core *  cr->nodeid;
+    stoplocal  = min(startlocal + x_per_core, xtot);  /* min needed if xtot == nr */
 
-    startglobal=0;
-    stopglobal=nr;
-
-    if(PAR(cr))
+    if (bFraction)
     {
-        x_per_core=ceil(xtot/cr->nnodes);
-        startlocal=startglobal+x_per_core*cr->nodeid;
-        stoplocal=startglobal+x_per_core*(cr->nodeid+1);
-        if (stoplocal>stopglobal)
-            stoplocal=stopglobal;
-    }
-    else
-    {
-        startlocal=startglobal;
-        stoplocal=stopglobal;
-        x_per_core=xtot;
+        /* Make shure we get identical results in serial and parallel. Therefore,
+         * take the sample indices from a single, global random number array that
+         * is constructed on the master node and that only depends on the seed */
+        snew(numbers, xtot);
+        if (MASTER(cr))
+        {
+            for (i=0; i<xtot; i++)
+            {
+                numbers[i] = floor(gmx_rng_uniform_real(rng) * nr );
+            }
+        }
+        /* Broadcast the random number array to the other nodes */
+        if (PAR(cr))
+        {
+            nblock_bc(cr,xtot,numbers);
+        }
+
+        if (bVerbose && MASTER(cr))
+        {
+            fprintf(stdout, "Using %d sample%s to approximate the self interaction error term",
+                    xtot, xtot==1?"":"s");
+            if (PAR(cr))
+                fprintf(stdout, " (%d sample%s per node)", x_per_core, x_per_core==1?"":"s");
+            fprintf(stdout, ".\n");
+        }
     }
 
-
+    /* Return the number of positions used for the Monte Carlo algorithm */
+    *nsamples = xtot;
 
     for(i=startlocal;i<stoplocal;i++)
     {
@@ -680,14 +670,15 @@ static real estimate_reciprocal(
         e_rec3y=0;
         e_rec3z=0;
 
-        if (info->fracself<0) {
-            ci=i;
-        }else {
-            ci=floor(gmx_rng_uniform_real(rng) * nr );
-            if (ci==nr)
-            {
-                ci=nr-1;
-            }
+        if (bFraction)
+        {
+            /* Randomly pick a charge */
+            ci = numbers[i];
+        }
+        else
+        {
+            /* Use all charges */
+            ci = i;
         }
 
         /* for(nx=startlocal; nx<=stoplocal; nx++)*/
@@ -726,19 +717,18 @@ static real estimate_reciprocal(
         svmul(e_rec3z,info->recipbox[ZZ],tmpvec);
         rvec_inc(tmpvec2,tmpvec);
 
-        e_rec3 += q[ci]*q[ci]*q[ci]*q[ci]*norm2(tmpvec2) / ( nrsamples * M_PI * info->volume * M_PI * info->volume); 
+        e_rec3 += q[ci]*q[ci]*q[ci]*q[ci]*norm2(tmpvec2) / ( xtot * M_PI * info->volume * M_PI * info->volume);
         if (MASTER(cr)){
             fprintf(stderr, "\rCalculating reciprocal error part 2 ... %3.0f%%",
                     100.0*(i+1)/stoplocal);
 
         }
-       
     }
 
     if (MASTER(cr))
         fprintf(stderr, "\n");
 
-
+#ifdef GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
     {
@@ -746,27 +736,13 @@ static real estimate_reciprocal(
         fprintf(fp_out, "Recip. err. est. took   : %lf s\n", t1);
     }
 #endif
+#endif
    
 #ifdef DEBUG
     if (PAR(cr))
     {
         fprintf(stderr, "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n", 
                 cr->nodeid, startlocal, stoplocal, e_rec3);
-    }
-#endif
-   
-
-/*
-#ifdef GMX_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  */ 
-
-#ifdef TAKETIME
-    if (MASTER(cr))
-    {
-        t2= MPI_Wtime() - t0;
-        fprintf(fp_out, "barrier   : %lf s\n", t2-t1);
     }
 #endif
 
@@ -777,10 +753,6 @@ static real estimate_reciprocal(
         gmx_sum(1,&e_rec3,cr);
     }
     
-#ifdef TAKETIME
-    if (MASTER(cr))
-        fprintf(fp_out, "final reduce : %lf s\n", MPI_Wtime() - t0-t2);
-#endif
     /* e_rec1*=8.0 * q2_all / info->volume / info->volume / nr ;
        e_rec2*=  q2_all / M_PI / M_PI / info->volume / info->volume / nr ;
        e_rec3/= M_PI * M_PI * info->volume * info->volume * nr ; 
@@ -816,8 +788,9 @@ static void create_info(t_inputinfo *info)
  */
 static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_commrec *cr)
 {
-    int i,anr_global;
+    int i;
     int nq; /* number of charged particles */
+    gmx_mtop_atomloop_all_t aloop;
     t_atom *atom;
     
     
@@ -826,10 +799,11 @@ static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_
         snew(*q, mtop->natoms);
         snew(*x, mtop->natoms);
         nq=0;
-        for (i=0; i<mtop->natoms; i++)
+
+        aloop = gmx_mtop_atomloop_all_init(mtop);
+
+        while (gmx_mtop_atomloop_all_next(aloop,&i,&atom))
         {
-            anr_global = i;
-            gmx_mtop_atomnr_to_atom(mtop,anr_global,&atom);
             if (is_charge(atom->q))
             {
                 (*q)[nq] = atom->q;
@@ -915,12 +889,11 @@ static void bcast_info(t_inputinfo *info, t_commrec *cr)
  * b) a total charge of zero.
  */
 static void estimate_PME_error(t_inputinfo *info, t_state *state, 
-        gmx_mtop_t *mtop, FILE *fp_out, t_commrec *cr)
+        gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
+        t_commrec *cr)
 {
     rvec *x=NULL; /* The coordinates */
     real *q=NULL; /* The charges     */
-    real q2all=0.0;
-    real q2allnr=0.0;
     real  edir=0.0; /* real space error */
     real  erec=0.0; /* reciprocal space error */
     real  derr=0.0; /* difference of real and reciprocal space error */
@@ -928,6 +901,8 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
     real  beta=0.0; /* splitting parameter beta */
     real  beta0=0.0; /* splitting parameter beta */
     int ncharges; /* The number of atoms with charges */
+    int nsamples; /* The number of samples used for the calculation of the
+                   * self-energy error term */
     int i=0;
     
     if (MASTER(cr))
@@ -960,7 +935,8 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
     info->e_dir[0] = estimate_direct(info);
 
     /* Calculate reciprocal space error */
-    info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, cr);
+    info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose,
+                                         seed, &nsamples, cr);
 
     if (PAR(cr))
         bcast_info(info, cr);
@@ -969,6 +945,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
     {
         fprintf(fp_out, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
         fprintf(fp_out, "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
+        fprintf(fp_out, "Self-energy error term was estimated using %d samples\n", nsamples);
         fflush(fp_out);
         fprintf(stderr, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
         fprintf(stderr, "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
@@ -989,7 +966,8 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
         else
             info->ewald_beta[0]-=0.1;
         info->e_dir[0] = estimate_direct(info);
-        info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, cr);
+        info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose,
+                                             seed, &nsamples, cr);
 
         if (PAR(cr))
             bcast_info(info, cr);
@@ -1008,7 +986,8 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
             derr0=derr;
 
             info->e_dir[0] = estimate_direct(info);
-            info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, cr);
+            info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose,
+                                                 seed, &nsamples, cr);
 
             if (PAR(cr))
                 bcast_info(info, cr);
@@ -1047,29 +1026,23 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
 
 }
 
-#define BENCHSTEPS (1000)
 
 int gmx_pme_error(int argc,char *argv[])
 {
     const char *desc[] = {
-            "g_pme_error estimates the error of the electrostatic forces",
-            "if using the SPME algorithm. The flag [TT]-tune[tt] will determine",
+            "[TT]g_pme_error[tt] estimates the error of the electrostatic forces",
+            "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
             "the splitting parameter such that the error is equally",
             "distributed over the real and reciprocal space part.",
-            "As a part of the error stems from self interaction of the particles "
-            "and is computationally very demanding a good a approximation is possible",
-            "if just a fraction of the particles is used to calculate the average",
-            "of this error by using the flag [TT]-self[tt].[PAR]",
+            "The part of the error that stems from self interaction of the particles "
+            "is computationally demanding. However, a good a approximation is to",
+            "just use a fraction of the particles for this term which can be",
+            "indicated by the flag [TT]-self[tt].[PAR]",
     };
 
-    int        repeats=2;
-    real       fs=0.0;             /* 0 indicates: not set by the user */
-
+    real        fs=0.0;             /* 0 indicates: not set by the user */
     real        user_beta=-1.0;
-    real        fracself=-1.0;
-    
-    
-    t_perf      **perfdata;
+    real        fracself=1.0;
     t_inputinfo info;
     t_state     state;     /* The state from the tpr input file */
     gmx_mtop_t  mtop;      /* The topology from the tpr input file */
@@ -1078,28 +1051,29 @@ int gmx_pme_error(int argc,char *argv[])
     t_commrec   *cr;
     unsigned long PCA_Flags;
     gmx_bool        bTUNE=FALSE;
+    gmx_bool    bVerbose=FALSE;
+    int         seed=0;
 
 
     static t_filenm fnm[] = {
-      /* g_tune_pme */
       { efTPX, "-s",     NULL,    ffREAD },
       { efOUT, "-o",    "error",  ffWRITE },
       { efTPX, "-so",   "tuned",  ffOPTWR }
     };
 
-
     output_env_t oenv=NULL;
 
     t_pargs pa[] = {
-      /***********************/
-      /* g_tune_pme options: */
-      /***********************/
         { "-beta",     FALSE, etREAL, {&user_beta},
-            "If positive, overwrite ewald_beta from tpr file with this value" },
+            "If positive, overwrite ewald_beta from [TT].tpr[tt] file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},
-            "If flag is set the splitting parameter will be tuned to distribute the error equally in real and rec. space" },
+            "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
         { "-self",     FALSE, etREAL, {&fracself},
-            "If positive, determine selfinteraction error just over this fraction (default=1.0)" }
+            "If between 0.0 and 1.0, determine self interaction error from just this fraction of the charged particles" },
+        { "-seed",     FALSE, etINT,  {&seed},
+          "Random number seed used for Monte Carlo algorithm when [TT]-self[tt] is set to a value between 0.0 and 1.0" },
+        { "-v",        FALSE, etBOOL, {&bVerbose},
+            "Be loud and noisy" }
     };
 
     
@@ -1107,6 +1081,10 @@ int gmx_pme_error(int argc,char *argv[])
     
     cr = init_par(&argc,&argv);
     
+#ifdef GMX_LIB_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
     if (MASTER(cr))
       CopyRight(stderr,argv[0]);
     
@@ -1162,21 +1140,22 @@ int gmx_pme_error(int argc,char *argv[])
     if (PAR(cr))
         bcast_info(&info, cr);
     
-    /* Get an error estimate of the input tpr file */
-    estimate_PME_error(&info, &state, &mtop, fp, cr);
+    /* Get an error estimate of the input tpr file and do some tuning if requested */
+    estimate_PME_error(&info, &state, &mtop, fp, bVerbose, seed, cr);
     
     if (MASTER(cr))
     {
-        ir->ewald_rtol=info.ewald_rtol[0];
-        write_tpx_state(opt2fn("-so",NFILE,fnm),ir,&state,&mtop);
+        /* Write out optimized tpr file if requested */
+        if ( opt2bSet("-so",NFILE,fnm) || bTUNE )
+        {
+            ir->ewald_rtol=info.ewald_rtol[0];
+            write_tpx_state(opt2fn("-so",NFILE,fnm),ir,&state,&mtop);
+        }
         please_cite(fp,"Wang2010");
         fclose(fp);
     }
     
-    if (gmx_parallel_env_initialized())
-    {
-        gmx_finalize();
-    }
+    gmx_finalize_par();
     
     return 0;
 }

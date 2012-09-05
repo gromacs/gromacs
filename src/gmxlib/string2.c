@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #ifdef GMX_CRAY_XT3
 #undef HAVE_PWD_H
@@ -57,6 +58,7 @@
 #include <pwd.h>
 #endif
 #include <time.h>
+#include <assert.h>
 
 #include "typedefs.h"
 #include "smalloc.h"
@@ -71,6 +73,7 @@ int continuing(char *s)
  */
 {
   int sl;
+  assert(s);
 
   rtrim(s);
   sl = strlen(s);
@@ -176,9 +179,12 @@ gmx_ctime_r(const time_t *clock,char *buf, int n)
 {
     char tmpbuf[STRLEN];
   
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     /* Windows */
     ctime_s( tmpbuf, STRLEN, clock );
+#elif (defined(__sun))
+    /*Solaris*/
+    ctime_r(clock, tmpbuf, n);
 #else
     ctime_r(clock,tmpbuf);
 #endif
@@ -192,10 +198,10 @@ void nice_header (FILE *out,const char *fn)
 {
   const char *unk = "onbekend";
   time_t clock;
-  char   *user=NULL;
+  const char *user=unk;
   int    gh;
   uid_t  uid;
-  char   buf[256];
+  char   buf[256]="";
   char   timebuf[STRLEN];
 #ifdef HAVE_PWD_H
   struct passwd *pw;

@@ -26,7 +26,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -198,11 +198,24 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
 #endif
 }
 
+/* IBM's BlueGene(/L) MPI_Bcast dereferences the data pointer
+ * even when 0 == nbytes, so we protect calls to it on BlueGene.
+ * Fortunately dd_bcast() and dd_bcastc() are only
+ * called during DD setup and partition.
+ */
+
 void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data)
 {
 #ifdef GMX_MPI
+#ifdef GMX_BLUEGENE
+    if (nbytes > 0)
+    {
+#endif
     MPI_Bcast(data,nbytes,MPI_BYTE,
               DDMASTERRANK(dd),dd->mpi_comm_all);
+#ifdef GMX_BLUEGENE
+    }
+#endif
 #endif
 }
 
@@ -213,8 +226,15 @@ void dd_bcastc(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
         memcpy(dest,src,nbytes);
     }
 #ifdef GMX_MPI
+#ifdef GMX_BLUEGENE
+    if (nbytes > 0)
+    {
+#endif
     MPI_Bcast(dest,nbytes,MPI_BYTE,
               DDMASTERRANK(dd),dd->mpi_comm_all);
+#ifdef GMX_BLUEGENE
+    }
+#endif
 #endif
 }
 

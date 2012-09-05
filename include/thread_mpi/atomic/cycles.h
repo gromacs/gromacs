@@ -1,3 +1,7 @@
+/*
+ * define HAVE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
+ * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
+ */
 
 /* check for cycle counters on supported platforms */
 #if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__)  || defined(__PGIC__)) && (defined(__i386__) || defined(__x86_64__)))
@@ -11,7 +15,11 @@ static __inline__ tmpi_cycles_t tmpi_cycles_read(void)
     tmpi_cycles_t   cycle;
     unsigned       low,high;
 
+#ifdef HAVE_RDTSCP
+    __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
+#else
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
+#endif
 
     cycle = ((unsigned long long)low) | (((unsigned long long)high)<<32);
 
@@ -40,7 +48,12 @@ static __inline__ tmpi_cycles_t tmpi_cycles_read(void)
 typedef __int64 tmpi_cycles_t;
 static __inline tmpi_cycles_t tmpi_cycles_read(void)
 {
-    return __rdtsc();
+#ifdef HAVE_RDTSCP
+    unsigned int ui;
+    return __rdtscp(&ui);
+#else
+	return __rdtsc();
+#endif
 }
 #endif
 

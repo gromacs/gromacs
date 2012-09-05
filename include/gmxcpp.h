@@ -33,7 +33,8 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-
+#ifndef _gmxcpp_h
+#define _gmxcpp_h
 typedef struct gmx_cpp *gmx_cpp_t; 
 	
 	/* The possible return codes for these functions */
@@ -82,3 +83,4 @@ int cpp_close_file(gmx_cpp_t *handlep);
    NOT THREAD SAFE 
    */
 char *cpp_error(gmx_cpp_t *handlep,int status);
+#endif

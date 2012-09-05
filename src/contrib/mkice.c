@@ -488,7 +488,7 @@ void virial(FILE *fp,gmx_bool bFull,int nmol,rvec x[],matrix box,real rcut,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "mkice generates an ice crystal in the Ih crystal form which is the",
+    "[TT]mkice[tt] generates an ice crystal in the Ih crystal form which is the",
     "most stable form. The rectangular unitcell contains eight molecules",
     "and all oxygens are tetrahedrally coordinated.[PAR]",
     "If an input file is given it is interpreted as a series of oxygen",

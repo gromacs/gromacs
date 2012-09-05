@@ -151,16 +151,15 @@ static void tot_nmat(int nres, int natoms, int nframes, int **nmat,
 int gmx_mdmat(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_mdmat makes distance matrices consisting of the smallest distance",
-    "between residue pairs. With -frames these distance matrices can be",
-    "stored as a function",
-    "of time, to be able to see differences in tertiary structure as a",
-    "funcion of time. If you choose your options unwise, this may generate",
-    "a large output file. Default only an averaged matrix over the whole",
+    "[TT]g_mdmat[tt] makes distance matrices consisting of the smallest distance",
+    "between residue pairs. With [TT]-frames[tt], these distance matrices can be",
+    "stored in order to see differences in tertiary structure as a",
+    "function of time. If you choose your options unwisely, this may generate",
+    "a large output file. By default, only an averaged matrix over the whole",
     "trajectory is output.",
     "Also a count of the number of different atomic contacts between",
     "residues over the whole trajectory can be made.",
-    "The output can be processed with xpm2ps to make a PostScript (tm) plot."
+    "The output can be processed with [TT]xpm2ps[tt] to make a PostScript (tm) plot."
   };
   static real truncate=1.5;
   static gmx_bool bAtom=FALSE;
@@ -169,7 +168,7 @@ int gmx_mdmat(int argc,char *argv[])
     { "-t",   FALSE, etREAL, {&truncate},
       "trunc distance" },
     { "-nlevels",   FALSE, etINT,  {&nlevels},
-      "Discretize distance in # levels" }
+      "Discretize distance in this number of levels" }
   };
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },

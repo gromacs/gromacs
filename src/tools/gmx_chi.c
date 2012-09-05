@@ -51,7 +51,7 @@
 #include "smalloc.h"
 #include "statutil.h"
 #include "tpxio.h"
-#include "string.h"
+#include <string.h>
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
@@ -385,7 +385,7 @@ static int reset_em_all(int nlist,t_dlist dlist[],int nf,
   return j ; 
 }
 
-static void histogramming(FILE *log,int nbin, int naa,char **aa,
+static void histogramming(FILE *log,int nbin,gmx_residuetype_t rt,
 			  int nf,int maxchi,real **dih,
 			  int nlist,t_dlist dlist[],
 			  atom_id index[],
@@ -426,7 +426,10 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   gmx_bool    bBfac,bOccup;
   char    hisfile[256],hhisfile[256],sshisfile[256],title[256],*ss_str=NULL;
   char **leg; 
-  
+  const char *residue_name;
+  int     rt_size;
+
+  rt_size = gmx_residuetype_get_size(rt);
   if (bSSHisto) {
     fp = ffopen(ssdump,"r");
     if(1 != fscanf(fp,"%d",&nres))
@@ -444,8 +447,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
     /* Four dimensional array... Very cool */
     snew(his_aa_ss,3);
     for(i=0; (i<3); i++) {
-      snew(his_aa_ss[i],naa+1);
-      for(j=0; (j<=naa); j++) {
+      snew(his_aa_ss[i],rt_size+1);
+      for(j=0; (j<=rt_size); j++) {
 	snew(his_aa_ss[i][j],edMax);
 	for(Dih=0; (Dih<edMax); Dih++)
 	  snew(his_aa_ss[i][j][Dih],nbin+1);
@@ -454,8 +457,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   }
   snew(his_aa,edMax);
   for(Dih=0; (Dih<edMax); Dih++) {
-    snew(his_aa[Dih],naa+1);
-    for(i=0; (i<=naa); i++) {
+    snew(his_aa[Dih],rt_size+1);
+    for(i=0; (i<=rt_size); i++) {
       snew(his_aa[Dih][i],nbin+1);
     }
   }
@@ -611,7 +614,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   /* finished -jc stuff */ 
 
   snew(normhisto,nbin);
-  for(i=0; (i<naa); i++) {
+  for(i=0; (i<rt_size); i++) {
     for(Dih=0; (Dih<edMax); Dih++){
       /* First check whether something is in there */
       for(j=0; (j<nbin); j++)
@@ -625,23 +628,24 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 	if (bNormalize)
 	  normalize_histo(nbin,his_aa[Dih][i],(360.0/nbin),normhisto);
 	
+	residue_name = gmx_residuetype_get_name(rt,i);
 	switch (Dih) {
 	case edPhi:
-	  sprintf(hisfile,"histo-phi%s",aa[i]);
-	  sprintf(title,"\\xf\\f{} Distribution for %s",aa[i]);
+	  sprintf(hisfile,"histo-phi%s",residue_name);
+	  sprintf(title,"\\xf\\f{} Distribution for %s",residue_name);
 	  break;
 	case edPsi:
-	  sprintf(hisfile,"histo-psi%s",aa[i]);
-	  sprintf(title,"\\xy\\f{} Distribution for %s",aa[i]);
+	  sprintf(hisfile,"histo-psi%s",residue_name);
+	  sprintf(title,"\\xy\\f{} Distribution for %s",residue_name);
 	  break;
 	case edOmega:
-	  sprintf(hisfile,"histo-omega%s",aa[i]);
-	  sprintf(title,"\\xw\\f{} Distribution for %s",aa[i]);
+	  sprintf(hisfile,"histo-omega%s",residue_name);
+	  sprintf(title,"\\xw\\f{} Distribution for %s",residue_name);
 	  break;
 	default:
-	  sprintf(hisfile,"histo-chi%d%s",Dih-NONCHI+1,aa[i]);
+	  sprintf(hisfile,"histo-chi%d%s",Dih-NONCHI+1,residue_name);
 	  sprintf(title,"\\xc\\f{}\\s%d\\N Distribution for %s",
-		  Dih-NONCHI+1,aa[i]);
+		  Dih-NONCHI+1,residue_name);
 	}
 	strcpy(hhisfile,hisfile);
 	strcat(hhisfile,".xvg");
@@ -689,7 +693,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   if (bSSHisto) {
     /* Four dimensional array... Very cool */
     for(i=0; (i<3); i++) {
-      for(j=0; (j<=naa); j++) {
+      for(j=0; (j<=rt_size); j++) {
 	for(Dih=0; (Dih<edMax); Dih++)
 	  sfree(his_aa_ss[i][j][Dih]);
 	sfree(his_aa_ss[i][j]);
@@ -1002,64 +1006,66 @@ static void order_params(FILE *log,
 int gmx_chi(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_chi computes phi, psi, omega and chi dihedrals for all your ",
+    "[TT]g_chi[tt] computes [GRK]phi[grk], [GRK]psi[grk], [GRK]omega[grk], and [GRK]chi[grk] dihedrals for all your ",
     "amino acid backbone and sidechains.",
     "It can compute dihedral angle as a function of time, and as",
     "histogram distributions.",
-    "The distributions (histo-(dihedral)(RESIDUE).xvg) are cumulative over all residues of each type.[PAR]", 
+    "The distributions [TT](histo-(dihedral)(RESIDUE).xvg[tt]) are cumulative over all residues of each type.[PAR]", 
     "If option [TT]-corr[tt] is given, the program will",
     "calculate dihedral autocorrelation functions. The function used",
-    "is C(t) = < cos(chi(tau)) cos(chi(tau+t)) >. The use of cosines",
+    "is C(t) = [CHEVRON][COS][GRK]chi[grk]([GRK]tau[grk])[cos] [COS][GRK]chi[grk]([GRK]tau[grk]+t)[cos][chevron]. The use of cosines",
     "rather than angles themselves, resolves the problem of periodicity.",
-    "(Van der Spoel & Berendsen (1997), [BB]Biophys. J. 72[bb], 2032-2041).",
+    "(Van der Spoel & Berendsen (1997), Biophys. J. 72, 2032-2041).",
     "Separate files for each dihedral of each residue", 
-    "(corr(dihedral)(RESIDUE)(nresnr).xvg) are output, as well as a", 
+    "[TT](corr(dihedral)(RESIDUE)(nresnr).xvg[tt]) are output, as well as a", 
     "file containing the information for all residues (argument of [TT]-corr[tt]).[PAR]", 
     "With option [TT]-all[tt], the angles themselves as a function of time for", 
-    "each residue are printed to separate files (dihedral)(RESIDUE)(nresnr).xvg.", 
+    "each residue are printed to separate files [TT](dihedral)(RESIDUE)(nresnr).xvg[tt].", 
     "These can be in radians or degrees.[PAR]", 
     "A log file (argument [TT]-g[tt]) is also written. This contains [BR]",
     "(a) information about the number of residues of each type.[BR]", 
-    "(b) The NMR 3J coupling constants from the Karplus equation.[BR]", 
+    "(b) The NMR ^3J coupling constants from the Karplus equation.[BR]", 
     "(c) a table for each residue of the number of transitions between ", 
-    "rotamers per nanosecond,  and the order parameter S2 of each dihedral.[BR]",
-    "(d) a table for each residue of the rotamer occupancy.[BR]", 
-    "All rotamers are taken as 3-fold, except for omegas and chi-dihedrals",
-    "to planar groups (i.e. chi2 of aromatics asp and asn, chi3 of glu", 
-    "and gln, and chi4 of arg), which are 2-fold. \"rotamer 0\" means ", 
+    "rotamers per nanosecond,  and the order parameter S^2 of each dihedral.[BR]",
+    "(d) a table for each residue of the rotamer occupancy.[PAR]", 
+    "All rotamers are taken as 3-fold, except for [GRK]omega[grk] and [GRK]chi[grk] dihedrals",
+    "to planar groups (i.e. [GRK]chi[grk][SUB]2[sub] of aromatics, Asp and Asn; [GRK]chi[grk][SUB]3[sub] of Glu",
+    "and Gln; and [GRK]chi[grk][SUB]4[sub] of Arg), which are 2-fold. \"rotamer 0\" means ",
     "that the dihedral was not in the core region of each rotamer. ", 
     "The width of the core region can be set with [TT]-core_rotamer[tt][PAR]", 
 
-    "The S2 order parameters are also output to an xvg file", 
-    "(argument [TT]-o[tt] ) and optionally as a pdb file with", 
-    "the S2 values as B-factor (argument [TT]-p[tt]). ", 
+    "The S^2 order parameters are also output to an [TT].xvg[tt] file", 
+    "(argument [TT]-o[tt] ) and optionally as a [TT].pdb[tt] file with", 
+    "the S^2 values as B-factor (argument [TT]-p[tt]). ", 
     "The total number of rotamer transitions per timestep", 
     "(argument [TT]-ot[tt]), the number of transitions per rotamer", 
-    "(argument [TT]-rt[tt]), and the 3J couplings (argument [TT]-jc[tt]), ", 
-    "can also be written to .xvg files.[PAR]", 
+    "(argument [TT]-rt[tt]), and the ^3J couplings (argument [TT]-jc[tt]), ", 
+    "can also be written to [TT].xvg[tt] files. Note that the analysis",
+    "of rotamer transitions assumes that the supplied trajectory frames",
+    "are equally spaced in time.[PAR]",
 
-    "If [TT]-chi_prod[tt] is set (and maxchi > 0), cumulative rotamers, e.g.", 
-    "1+9(chi1-1)+3(chi2-1)+(chi3-1) (if the residue has three 3-fold ", 
-    "dihedrals and maxchi >= 3)", 
+    "If [TT]-chi_prod[tt] is set (and [TT]-maxchi[tt] > 0), cumulative rotamers, e.g.", 
+    "1+9([GRK]chi[grk][SUB]1[sub]-1)+3([GRK]chi[grk][SUB]2[sub]-1)+([GRK]chi[grk][SUB]3[sub]-1) (if the residue has three 3-fold ",
+    "dihedrals and [TT]-maxchi[tt] >= 3)", 
     "are calculated. As before, if any dihedral is not in the core region,", 
     "the rotamer is taken to be 0. The occupancies of these cumulative ",
     "rotamers (starting with rotamer 0) are written to the file", 
     "that is the argument of [TT]-cp[tt], and if the [TT]-all[tt] flag", 
     "is given, the rotamers as functions of time", 
-    "are written to chiproduct(RESIDUE)(nresnr).xvg ", 
-    "and their occupancies to histo-chiproduct(RESIDUE)(nresnr).xvg.[PAR]", 
+    "are written to [TT]chiproduct(RESIDUE)(nresnr).xvg[tt] ", 
+    "and their occupancies to [TT]histo-chiproduct(RESIDUE)(nresnr).xvg[tt].[PAR]", 
 
-    "The option [TT]-r[tt] generates a contour plot of the average omega angle",
-    "as a function of the phi and psi angles, that is, in a Ramachandran plot",
-    "the average omega angle is plotted using color coding.", 
+    "The option [TT]-r[tt] generates a contour plot of the average [GRK]omega[grk] angle",
+    "as a function of the [GRK]phi[grk] and [GRK]psi[grk] angles, that is, in a Ramachandran plot",
+    "the average [GRK]omega[grk] angle is plotted using color coding.", 
 
   };
   
   const char *bugs[] = {
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
-    "Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like g_rama.", 
-    "-r0 option does not work properly", 
-    "Rotamers with multiplicity 2 are printed in chi.log as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0" 
+    "[GRK]phi[grk] and [GRK]psi[grk] dihedrals are calculated in a non-standard way, using H-N-CA-C for [GRK]phi[grk] instead of C(-)-N-CA-C, and N-CA-C-O for [GRK]psi[grk] instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like [TT]g_rama[tt].", 
+    "[TT]-r0[tt] option does not work properly", 
+    "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0" 
   };
 
   /* defaults */ 
@@ -1075,13 +1081,13 @@ int gmx_chi(int argc,char *argv[])
     { "-r0",  FALSE, etINT, {&r0},
       "starting residue" },
     { "-phi",  FALSE, etBOOL, {&bPhi},
-      "Output for Phi dihedral angles" },
+      "Output for [GRK]phi[grk] dihedral angles" },
     { "-psi",  FALSE, etBOOL, {&bPsi},
-      "Output for Psi dihedral angles" },
+      "Output for [GRK]psi[grk] dihedral angles" },
     { "-omega",FALSE, etBOOL, {&bOmega},  
-      "Output for Omega dihedrals (peptide bonds)" },
+      "Output for [GRK]omega[grk] dihedrals (peptide bonds)" },
     { "-rama", FALSE, etBOOL, {&bRama},
-      "Generate Phi/Psi and Chi1/Chi2 ramachandran plots" },
+      "Generate [GRK]phi[grk]/[GRK]psi[grk] and [GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
     { "-viol", FALSE, etBOOL, {&bViol},
       "Write a file that gives 0 or 1 for violated Ramachandran angles" },
     { "-periodic", FALSE, etBOOL, {&bPBC},
@@ -1091,45 +1097,45 @@ int gmx_chi(int argc,char *argv[])
     { "-rad",  FALSE, etBOOL, {&bRAD},
       "in angle vs time files, use radians rather than degrees."}, 
     { "-shift", FALSE, etBOOL, {&bShift},
-	"Compute chemical shifts from Phi/Psi angles" },
+	"Compute chemical shifts from [GRK]phi[grk]/[GRK]psi[grk] angles" },
     { "-binwidth", FALSE, etINT, {&ndeg},
       "bin width for histograms (degrees)" },
     { "-core_rotamer", FALSE, etREAL, {&core_frac},
-      "only the central -core_rotamer*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
+      "only the central [TT]-core_rotamer[tt]*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
     { "-maxchi", FALSE, etENUM, {maxchistr},
-      "calculate first ndih Chi dihedrals" },
+      "calculate first ndih [GRK]chi[grk] dihedrals" },
     { "-normhisto", FALSE, etBOOL, {&bNormHisto},
       "Normalize histograms" },
     { "-ramomega",FALSE,etBOOL, {&bRamOmega},
-      "compute average omega as a function of phi/psi and plot it in an xpm plot" },
+      "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an [TT].xpm[tt] plot" },
     { "-bfact", FALSE, etREAL, {&bfac_init},
-      "B-factor value for pdb file for atoms with no calculated dihedral order parameter"},
+      "B-factor value for [TT].pdb[tt] file for atoms with no calculated dihedral order parameter"},
     { "-chi_prod",FALSE,etBOOL, {&bChiProduct},
       "compute a single cumulative rotamer for each residue"},
     { "-HChi",FALSE,etBOOL, {&bHChi},
       "Include dihedrals to sidechain hydrogens"}, 
     { "-bmax",  FALSE, etREAL, {&bfac_max},
-      "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax <= 0 means no limit." }
+      "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
   };
 
   FILE       *log;
-  int        natoms,nlist,naa,idum,nbin; 
+  int        natoms,nlist,idum,nbin;
   t_atoms    atoms;
   rvec       *x;
   int        ePBC;
   matrix     box;
   char       title[256],grpname[256]; 
   t_dlist    *dlist;
-  char       **aa;
   gmx_bool       bChi,bCorr,bSSHisto;
   gmx_bool       bDo_rt, bDo_oh, bDo_ot, bDo_jc ; 
   real       dt=0, traj_t_ns;
   output_env_t oenv;
+  gmx_residuetype_t rt;
   
   atom_id    isize,*index;
   int        ndih,nactdih,nf;
   real       **dih,*trans_frac,*aver_angle,*time;
-  int        i,j,**chi_lookup,*xity; 
+  int        i,j,**chi_lookup,*multiplicity; 
   
   t_filenm  fnm[] = {
     { efSTX, "-s",  NULL,     ffREAD  },
@@ -1203,8 +1209,8 @@ int gmx_chi(int argc,char *argv[])
   read_stx_conf(ftp2fn(efSTX,NFILE,fnm),title,&atoms,x,NULL,&ePBC,box);
   fprintf(log,"Title: %s\n",title);
   
-  naa=get_strings("aminoacids.dat",&aa);
-  dlist=mk_dlist(log,&atoms,&nlist,bPhi,bPsi,bChi,bHChi,maxchi,r0,naa,aa);
+  gmx_residuetype_init(&rt);
+  dlist=mk_dlist(log,&atoms,&nlist,bPhi,bPsi,bChi,bHChi,maxchi,r0,rt);
   fprintf(stderr,"%d residues with dihedrals found\n", nlist);
   
   if (nlist == 0) 
@@ -1239,7 +1245,7 @@ int gmx_chi(int argc,char *argv[])
     dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega,bRAD,oenv);
   
   /* Histogramming & J coupling constants & calc of S2 order params */
-  histogramming(log,nbin,naa,aa,nf,maxchi,dih,nlist,dlist,index,
+  histogramming(log,nbin,rt,nf,maxchi,dih,nlist,dlist,index,
 		bPhi,bPsi,bOmega,bChi,
 		bNormHisto,bSSHisto,ftp2fn(efDAT,NFILE,fnm),bfac_max,&atoms,
 		bDo_jc,opt2fn("-jc",NFILE,fnm),oenv);
@@ -1248,8 +1254,8 @@ int gmx_chi(int argc,char *argv[])
    *
    * added multiplicity */ 
 
-  snew(xity,ndih) ;
-  mk_multiplicity_lookup(xity, maxchi, dih, nlist, dlist,ndih); 
+  snew(multiplicity,ndih) ;
+  mk_multiplicity_lookup(multiplicity, maxchi, dih, nlist, dlist,ndih); 
  
   strcpy(grpname, "All residues, "); 
   if(bPhi) 
@@ -1266,8 +1272,8 @@ int gmx_chi(int argc,char *argv[])
 
   low_ana_dih_trans(bDo_ot, opt2fn("-ot",NFILE,fnm),
 		    bDo_oh, opt2fn("-oh",NFILE,fnm),maxchi, 
-		    dih, nlist, dlist, nf, nactdih, grpname, xity, 
-		    *time,  dt, FALSE, core_frac,oenv) ; 
+		    dih, nlist, dlist, nf, nactdih, grpname, multiplicity, 
+		    time, FALSE, core_frac,oenv);
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,
@@ -1299,7 +1305,7 @@ int gmx_chi(int argc,char *argv[])
     mk_chi_lookup(chi_lookup, maxchi, dih, nlist, dlist); 
     
     get_chi_product_traj(dih,nf,nactdih,nlist,
-			 maxchi,dlist,time,chi_lookup,xity,
+			 maxchi,dlist,time,chi_lookup,multiplicity,
 			 FALSE,bNormHisto, core_frac,bAll,
 			 opt2fn("-cp",NFILE,fnm),oenv); 
 
@@ -1318,6 +1324,8 @@ int gmx_chi(int argc,char *argv[])
   if (bCorr)
     do_view(oenv,opt2fn("-corr",NFILE,fnm),"-nxy");
     
+  gmx_residuetype_destroy(rt);
+
   thanx(stderr);
     
   return 0;

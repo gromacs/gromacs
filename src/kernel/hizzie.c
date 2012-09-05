@@ -189,30 +189,48 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   gmx_bool bHDd,bHEd;
   rvec xh1,xh2;
   int  natom;
-  int  i,nd,na,aj,hisind,his0,type=-1;
+  int  i,j,nd,na,aj,hisind,his0,type=-1;
   int  nd1,ne2,cg,cd2,ce1;
   t_blocka *hb;
   real d;
   char *atomnm;
   
   natom=pdba->nr;
+
+  i = 0;
+  while (i < natom &&
+	 gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name,"HIS") != 0)
+  {
+    i++;
+  }
+  if (natom == i)
+  {
+    return;
+  }
+
+  /* A histidine residue exists that requires automated assignment, so
+   * doing the analysis of donors and acceptors is worthwhile. */
+  fprintf(stderr,
+	  "Analysing hydrogen-bonding network for automated assigment of histidine\n"
+	  " protonation.");
+
   snew(donor,natom);
   snew(acceptor,natom);
   snew(hbond,natom);
   snew(hb,1);
   
   nd=na=0;
-  for(i=0; (i<natom); i++) {
-    if (in_strings(*pdba->atomname[i],NPA,prot_acc) != -1) {
-      acceptor[i] = TRUE;
+  for(j=0; (j<natom); j++) {
+    if (in_strings(*pdba->atomname[j],NPA,prot_acc) != -1) {
+      acceptor[j] = TRUE;
       na++;
     }
-    if (in_strings(*pdba->atomname[i],NPD,prot_don) != -1) {
-      donor[i] = TRUE;
+    if (in_strings(*pdba->atomname[j],NPD,prot_don) != -1) {
+      donor[j] = TRUE;
       nd++;
     }
   }
-  fprintf(stderr,"There are %d donors and %d acceptors\n",nd,na);
+  fprintf(stderr," %d donors and %d acceptors were found.\n",nd,na);
   chk_allhb(pdba,x,hb,donor,acceptor,dist);
   if (debug)
     pr_hbonds(debug,hb,pdba);
@@ -220,10 +238,14 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   
   /* Now do the HIS stuff */
   hisind=-1;
-  for(i=0; (i<natom); ) {
+  while (i < natom)
+  {
     if (gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name,"HIS") != 0) 
+    {
       i++;
-    else {
+    }
+    else
+    {
       if (pdba->atom[i].resind != hisind) {
 	hisind=pdba->atom[i].resind;
 	

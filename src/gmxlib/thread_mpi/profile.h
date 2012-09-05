@@ -74,6 +74,7 @@ enum tmpi_functions
 
     TMPIFN_Reduce,
     TMPIFN_Allreduce,
+    TMPIFN_Scan,
 
     TMPIFN_Nfunctions
 };

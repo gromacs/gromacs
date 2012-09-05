@@ -52,7 +52,7 @@ enum {
 
 typedef struct {
   char          **name;         /* Name of the molecule type  	        */
-  t_atoms	atoms;		/* The atoms		       	        */
+  t_atoms       atoms;          /* The atoms                  	        */
   t_ilist       ilist[F_NRE];
   t_block       cgs;            /* The charge groups                    */
   t_blocka      excls;          /* The exclusions                       */
@@ -71,9 +71,9 @@ typedef struct {
 typedef struct {
   t_grps         grps[egcNR];   /* Groups of things                     */
   int            ngrpname;      /* Number of groupnames                 */
-  char           ***grpname;	/* Names of the groups		        */
+  char           ***grpname;    /* Names of the groups                  */
   int            ngrpnr[egcNR];
-  unsigned char  *grpnr[egcNR]; /* Group numbers or NULL		*/
+  unsigned char  *grpnr[egcNR]; /* Group numbers or NULL                */
 } gmx_groups_t;
 
 /* This macro gives the group number of group type egc for atom i.
@@ -85,7 +85,7 @@ typedef struct {
 /* The global, complete system topology struct, based on molecule types.
    This structure should contain no data that is O(natoms) in memory. */
 typedef struct {
-  char           **name;	/* Name of the topology	       	        */
+  char           **name;        /* Name of the topology                 */
   gmx_ffparams_t ffparams;
   int            nmoltype;
   gmx_moltype_t  *moltype;
@@ -97,12 +97,12 @@ typedef struct {
   t_atomtypes    atomtypes;     /* Atomtype properties                  */
   t_block        mols;          /* The molecules                        */
   gmx_groups_t   groups;
-  t_symtab	 symtab;        /* The symbol table			*/
+  t_symtab       symtab;        /* The symbol table                     */
 } gmx_mtop_t;
 
 /* The mdrun node-local topology struct, completely written out */
 typedef struct {
-  t_idef	idef;		/* The interaction function definition	*/
+  t_idef        idef;           /* The interaction function definition	*/
   t_atomtypes   atomtypes;      /* Atomtype properties                  */
   t_block       cgs;            /* The charge groups                    */
   t_blocka      excls;          /* The exclusions                       */
@@ -110,14 +110,14 @@ typedef struct {
 
 /* The old topology struct, completely written out, used in analysis tools */
 typedef struct {
-  char  	**name;		/* Name of the topology	       	        */
-  t_idef	idef;		/* The interaction function definition	*/
-  t_atoms	atoms;		/* The atoms		       	        */
+  char          **name;         /* Name of the topology                 */
+  t_idef        idef;           /* The interaction function definition	*/
+  t_atoms       atoms;          /* The atoms                            */
   t_atomtypes   atomtypes;      /* Atomtype properties                  */
   t_block       cgs;            /* The charge groups                    */
   t_block       mols;           /* The molecules                        */
   t_blocka      excls;          /* The exclusions                       */
-  t_symtab	symtab;		/* The symbol table			*/
+  t_symtab      symtab;         /* The symbol table                     */
 } t_topology;
 
 #ifdef __cplusplus

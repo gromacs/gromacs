@@ -53,7 +53,7 @@ char *replace(const char *string,const char *search,const char *replace)
   stringlen=strlen(string);
   if ((string == NULL) || (slen == 0) || (stringlen == 0)) {
     if (string)
-      buf=strdup(string);
+      buf=gmx_strdup(string);
     return buf;
   }
   rlen=strlen(replace);
@@ -97,7 +97,7 @@ char *replaceww(const char *string,const char *search,const char *replace)
   stringlen=strlen(string);
   if ((string == NULL) || (searchlen == 0) || (stringlen == 0)) {
     if (string)
-      buf=strdup(string);
+      buf=gmx_strdup(string);
     return buf;
   }  
   replacelen=strlen(replace);

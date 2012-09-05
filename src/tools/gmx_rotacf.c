@@ -57,26 +57,23 @@
 int gmx_rotacf(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_rotacf calculates the rotational correlation function",
-    "for molecules. Three atoms (i,j,k) must be given in the index",
-    "file, defining two vectors ij and jk. The rotational acf",
+    "[TT]g_rotacf[tt] calculates the rotational correlation function",
+    "for molecules. Atom triplets (i,j,k) must be given in the index",
+    "file, defining two vectors ij and jk. The rotational ACF",
     "is calculated as the autocorrelation function of the vector",
     "n = ij x jk, i.e. the cross product of the two vectors.",
     "Since three atoms span a plane, the order of the three atoms",
-    "does not matter. Optionally, controlled by the -d switch, you can",
+    "does not matter. Optionally, by invoking the [TT]-d[tt] switch, you can",
     "calculate the rotational correlation function for linear molecules",
-    "by specifying two atoms (i,j) in the index file.",
+    "by specifying atom pairs (i,j) in the index file.",
     "[PAR]",
     "EXAMPLES[PAR]",
-    "g_rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",
-    "-fa expfit-x-P1 -beginfit 2.5 -endfit 20.0[PAR]",
+    "[TT]g_rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",
+    "-fa expfit-x-P1 -beginfit 2.5 -endfit 20.0[tt][PAR]",
     "This will calculate the rotational correlation function using a first",
     "order Legendre polynomial of the angle of a vector defined by the index",
-    "file. The correlation function will be fitted from 2.5 ps till 20.0 ps",
-    "to a two parameter exponential.",
-
-
-    ""
+    "file. The correlation function will be fitted from 2.5 ps until 20.0 ps",
+    "to a two-parameter exponential."
   };
   static gmx_bool bVec    = FALSE,bAver=TRUE;
 

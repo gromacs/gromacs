@@ -40,6 +40,9 @@ ASPP    4
 1	5	HA	CA	N	C	CB
 2	6	HB	CB	CG	CA
 1	2	HD2	OD2	CG	CB
+CT3     2
+1	1	HN	N	-C	CH3
+3       4       HH3	CH3	N	HN
 CYS2    3       
 1	1	HN	N	-C	CA
 1	5	HA	CA	N	C	CB

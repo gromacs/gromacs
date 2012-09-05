@@ -64,6 +64,13 @@ typedef struct
   int	natoms;		/* The total number of atoms			*/
   int   ngtc;           /* The number of temperature coupling groups    */
   real	lambda;		/* Current value of lambda			*/
+  int   fep_state;      /* Current value of the alchemical state --
+                         * not yet printed out.  */
+  /*a better decision will eventually (5.0 or later) need to be made
+    on how to treat the alchemical state of the system, which can now
+    vary through a simulation, and cannot be completely described
+    though a single lambda variable, or even a single state
+    index. Eventually, should probably be a vector. MRS*/
 } t_tpxheader;
 
 /* 

@@ -96,7 +96,7 @@ gmx_qsort(void *           base,
           size_t           size,
           int            (*compar)(const void *, const void *))
 {
-#define QSORT_EXCH(a, b, t) (t = a, a = b, b = t);
+#define QSORT_EXCH(a, b, t) (t = a, a = b, b = t)
 #define QSORT_SWAP(a, b) swaptype != 0 ? qsort_swapfunc(a, b, size, swaptype) : \
                             (void)QSORT_EXCH(*(int *)(a), *(int *)(b), t)    
     

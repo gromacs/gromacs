@@ -118,12 +118,13 @@ files.
 
 
 #include "thread_mpi/atomic.h"
+#include "thread_mpi/numa_malloc.h"
 #include "thread_mpi/threads.h"
 #include "thread_mpi/barrier.h"
 #include "thread_mpi/event.h"
+#include "thread_mpi/lock.h"
 #include "thread_mpi/tmpi.h"
 #include "thread_mpi/collective.h"
-#include "thread_mpi/hwinfo.h"
 
 #include "thread_mpi/mpi_bindings.h"
 

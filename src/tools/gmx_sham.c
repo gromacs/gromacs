@@ -67,9 +67,10 @@ static int index3(int *ibox,int x,int y,int z)
   return (ibox[2]*(ibox[1]*x+y)+z);
 }
 
-static int indexn(int ndim,int *ibox,int *nxyz) 
+static gmx_large_int_t indexn(int ndim, const int *ibox, const int *nxyz)
 {
-  int d,dd,k,kk;
+    gmx_large_int_t d, dd;
+    int k, kk;
   
   /* Compute index in 1-D array */
   d = 0;
@@ -180,7 +181,7 @@ static void normalize_p_e(int len,double *P,int *nbin,real *E,real pmin)
 }
 
 typedef struct {
-  int index;
+  gmx_large_int_t index;
   real ener;
 } t_minimum;
 
@@ -197,70 +198,183 @@ static int comp_minima(const void *a,const void *b)
     return 0;
 }
 
+static inline
+void print_minimum(FILE *fp, int num, const t_minimum *min)
+{
+    fprintf(fp,
+            "Minimum %d at index " gmx_large_int_pfmt " energy %10.3f\n",
+            num, min->index, min->ener);
+}
+
+static inline
+void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
+{
+    print_minimum(fp, num, min);
+    mm[num].index = min->index;
+    mm[num].ener  = min->ener;
+}
+
+static inline
+gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
+                                     int dimension_index,
+                                     int dimension_min,
+                                     int neighbour_index,
+                                     real *W)
+{
+    return ((dimension_index == dimension_min) ||
+            ((dimension_index > dimension_min) &&
+             (this_min->ener < W[neighbour_index])));
+    /* Note over/underflow within W cannot occur. */
+}
+
+static inline
+gmx_bool is_local_minimum_from_above(const t_minimum *this_min,
+                                     int dimension_index,
+                                     int dimension_max,
+                                     int neighbour_index,
+                                     real *W)
+{
+    return ((dimension_index == dimension_max) ||
+            ((dimension_index < dimension_max) &&
+             (this_min->ener < W[neighbour_index])));
+    /* Note over/underflow within W cannot occur. */
+}
+
 static void pick_minima(const char *logfile,int *ibox,int ndim,int len,real W[])
 {
-  FILE *fp;
-  int  i,j,k,ijk,nmin;
-  gmx_bool bMin;
-  t_minimum *mm;
+    FILE *fp;
+    int  i,j,k,nmin;
+    t_minimum *mm, this_min;
+    int *this_point;
+    int loopmax, loopcounter;
   
-  snew(mm,len);
-  nmin = 0;
-  fp = ffopen(logfile,"w");
-  for(i=0; (i<ibox[0]); i++) {
-    for(j=0; (j<ibox[1]); j++) {
-      if (ndim == 3) {
-	for(k=0; (k<ibox[2]); k++) {
-	  ijk    = index3(ibox,i,j,k);
-	  bMin   = (((i == 0)       || ((i > 0)       && 
-					(W[ijk] < W[index3(ibox,i-1,j,k)]))) &&
-		    ((i == ibox[0]-1) || ((i < ibox[0]-1) && 
-					(W[ijk] < W[index3(ibox,i+1,j,k)]))) &&
-		    ((j == 0)       || ((j > 0)       && 
-					(W[ijk] < W[index3(ibox,i,j-1,k)]))) &&
-		    ((j == ibox[1]-1) || ((j < ibox[1]-1) && 
-					(W[ijk] < W[index3(ibox,i,j+1,k)]))) &&
-		    ((k == 0)       || ((k > 0)       && 
-					(W[ijk] < W[index3(ibox,i,j,k-1)]))) &&
-		    ((k == ibox[2]-1) || ((k < ibox[2]-1) && 
-					(W[ijk] < W[index3(ibox,i,j,k+1)]))));
-	  if (bMin) {
-	    fprintf(fp,"Minimum %d at index %6d energy %10.3f\n",
-		    nmin,ijk,W[ijk]);
-	    mm[nmin].index = ijk;
-	    mm[nmin].ener  = W[ijk];
-	    nmin++;
-	  }
-	}
-      }
-      else {
-	ijk    = index2(ibox,i,j);
-	bMin   = (((i == 0)       || ((i > 0)       && 
-				      (W[ijk] < W[index2(ibox,i-1,j)]))) &&
-		  ((i == ibox[0]-1) || ((i < ibox[0]-1) && 
-				      (W[ijk] < W[index2(ibox,i+1,j)]))) &&
-		  ((j == 0)       || ((j > 0)       && 
-				      (W[ijk] < W[index2(ibox,i,j-1)]))) &&
-		  ((j == ibox[1]-1) || ((j < ibox[1]-1) && 
-				      (W[ijk] < W[index2(ibox,i,j+1)]))));
-	if (bMin) {
-	  fprintf(fp,"Minimum %d at index %6d energy %10.3f\n",
-		  nmin,ijk,W[ijk]);
-	  mm[nmin].index = ijk;
-	  mm[nmin].ener  = W[ijk];
-	  nmin++;
-	}
-      }
+    snew(mm,len);
+    nmin = 0;
+    fp = ffopen(logfile,"w");
+    /* Loop over each element in the array of dimenion ndim seeking
+     * minima with respect to every dimension. Specialized loops for
+     * speed with ndim == 2 and ndim == 3. */
+    switch(ndim)
+    {
+    case 0:
+        /* This is probably impossible to reach anyway. */
+        break;
+    case 2:
+        for(i=0; (i<ibox[0]); i++) {
+            for(j=0; (j<ibox[1]); j++) {
+                /* Get the index of this point in the flat array */
+                this_min.index = index2(ibox,i,j);
+                this_min.ener = W[this_min.index];
+                if (is_local_minimum_from_below(&this_min, i, 0,         index2(ibox,i-1,j  ), W) &&
+                    is_local_minimum_from_above(&this_min, i, ibox[0]-1, index2(ibox,i+1,j  ), W) &&
+                    is_local_minimum_from_below(&this_min, j, 0,         index2(ibox,i  ,j-1), W) &&
+                    is_local_minimum_from_above(&this_min, j, ibox[1]-1, index2(ibox,i  ,j+1), W))
+                {
+                    add_minimum(fp, nmin, &this_min, mm);
+                    nmin++;
+                }
+            }
+        }
+        break;
+    case 3:
+        for(i=0; (i<ibox[0]); i++) {
+            for(j=0; (j<ibox[1]); j++) {
+                for(k=0; (k<ibox[2]); k++) {
+                    /* Get the index of this point in the flat array */
+                    this_min.index = index3(ibox,i,j,k);
+                    this_min.ener = W[this_min.index];
+                    if (is_local_minimum_from_below(&this_min, i, 0,         index3(ibox,i-1,j  ,k  ), W) &&
+                        is_local_minimum_from_above(&this_min, i, ibox[0]-1, index3(ibox,i+1,j  ,k  ), W) &&
+                        is_local_minimum_from_below(&this_min, j, 0,         index3(ibox,i  ,j-1,k  ), W) &&
+                        is_local_minimum_from_above(&this_min, j, ibox[1]-1, index3(ibox,i  ,j+1,k  ), W) &&
+                        is_local_minimum_from_below(&this_min, k, 0,         index3(ibox,i  ,j  ,k-1), W) &&
+                        is_local_minimum_from_above(&this_min, k, ibox[2]-1, index3(ibox,i  ,j  ,k+1), W))
+                    {
+                        add_minimum(fp, nmin, &this_min, mm);
+                        nmin++;
+                    }
+                }
+            }
+        }
+        break;
+    default:
+        /* Note this treats ndim == 1 and ndim > 3 */
+
+        /* Set up an ndim-dimensional vector to loop over the points
+         * on the grid. (0,0,0, ... 0) is an acceptable place to
+         * start. */
+        snew(this_point, ndim);
+
+        /* Determine the number of points of the ndim-dimensional
+         * grid. */
+        loopmax = ibox[0];
+        for (i = 1; i < ndim; i++)
+        {
+            loopmax *= ibox[i];
+        }
+
+        loopcounter = 0;
+        while (loopmax > loopcounter)
+        {
+            gmx_bool bMin = TRUE;
+
+            /* Get the index of this_point in the flat array */
+            this_min.index = indexn(ndim, ibox, this_point);
+            this_min.ener = W[this_min.index];
+
+            /* Is this_point a minimum from above and below in each
+             * dimension? */
+            for (i = 0; bMin && (i < ndim); i++)
+            {
+                /* Save the index of this_point within the curent
+                 * dimension so we can change that index in the
+                 * this_point array for use with indexn(). */
+                int index = this_point[i];
+                this_point[i]--;
+                bMin = bMin &&
+                    is_local_minimum_from_below(&this_min, index, 0,         indexn(ndim, ibox, this_point), W);
+                this_point[i] += 2;
+                bMin = bMin &&
+                    is_local_minimum_from_above(&this_min, index, ibox[i]-1, indexn(ndim, ibox, this_point), W);
+                this_point[i]--;
+            }
+            if (bMin)
+            {
+                add_minimum(fp, nmin, &this_min, mm);
+                nmin++;
+            }
+
+            /* update global loop counter */
+            loopcounter++;
+
+            /* Avoid underflow of this_point[i] */
+            if (loopmax > loopcounter)
+            {
+                /* update this_point non-recursively */
+                i = ndim-1;
+                this_point[i]++;
+                while (ibox[i] == this_point[i])
+                {
+                    this_point[i] = 0;
+                    i--;
+                    /* this_point[i] cannot underflow because
+                     * loopmax > loopcounter. */
+                    this_point[i]++;
+                }
+            }
+        }
+
+        sfree(this_point);
+        break;
     }
-  }
-  qsort(mm,nmin,sizeof(mm[0]),comp_minima);
-  fprintf(fp,"Minima sorted after energy\n");
-  for(i=0; (i<nmin); i++) {
-    fprintf(fp,"Minimum %d at index %6d energy %10.3f\n",
-	    i,mm[i].index,mm[i].ener);
-  }
-  ffclose(fp);
-  sfree(mm);
+    qsort(mm,nmin,sizeof(mm[0]),comp_minima);
+    fprintf(fp,"Minima sorted after energy\n");
+    for(i=0; (i<nmin); i++)
+    {
+        print_minimum(fp, i, &mm[i]);
+    }
+    ffclose(fp);
+    sfree(mm);
 }
 
 static void do_sham(const char *fn,const char *ndx,
@@ -677,19 +791,19 @@ static void ehisto(const char *fh,int n,real **enerT, const output_env_t oenv)
 int gmx_sham(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.",
-    "g_sham reads one or more xvg files and analyzes data sets.",
-    "g_sham basic purpose is plotting Gibbs free energy landscapes",
+    "[TT]g_sham[tt] makes multi-dimensional free-energy, enthalpy and entropy plots.",
+    "[TT]g_sham[tt] reads one or more [TT].xvg[tt] files and analyzes data sets.",
+    "The basic purpose of [TT]g_sham[tt] is to plot Gibbs free energy landscapes",
     "(option [TT]-ls[tt])",
-    "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt])",
+    "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt]),",
     "but it can also",
     "make enthalpy (option [TT]-lsh[tt]) and entropy (option [TT]-lss[tt])",
     "plots. The histograms can be made for any quantities the user supplies.",
     "A line in the input file may start with a time",
-    "(see option [TT]-time[tt]) and any number of y values may follow.",
+    "(see option [TT]-time[tt]) and any number of [IT]y[it]-values may follow.",
     "Multiple sets can also be",
     "read when they are separated by & (option [TT]-n[tt]),",
-    "in this case only one y value is read from each line.",
+    "in this case only one [IT]y[it]-value is read from each line.",
     "All lines starting with # and @ are skipped.",
     "[PAR]",
     "Option [TT]-ge[tt] can be used to supply a file with free energies",
@@ -699,21 +813,21 @@ int gmx_sham(int argc,char *argv[])
     "[PAR]",
     "Option [TT]-ene[tt] can be used to supply a file with energies.",
     "These energies are used as a weighting function in the single",
-    "histogram analysis method due to Kumar et. al. When also temperatures",
-    "are supplied (as a second column in the file) an experimental",
+    "histogram analysis method by Kumar et al. When temperatures",
+    "are supplied (as a second column in the file), an experimental",
     "weighting scheme is applied. In addition the vales",
     "are used for making enthalpy and entropy plots.",
     "[PAR]",
-    "With option [TT]-dim[tt] dimensions can be gives for distances.",
+    "With option [TT]-dim[tt], dimensions can be gives for distances.",
     "When a distance is 2- or 3-dimensional, the circumference or surface",
     "sampled by two particles increases with increasing distance.",
     "Depending on what one would like to show, one can choose to correct",
     "the histogram and free-energy for this volume effect.",
-    "The probability is normalized by r and r^2 for a dimension of 2 and 3",
+    "The probability is normalized by r and r^2 for dimensions of 2 and 3, ",
     "respectively.",
     "A value of -1 is used to indicate an angle in degrees between two",
     "vectors: a sin(angle) normalization will be applied.",
-    "Note that for angles between vectors the inner-product or cosine",
+    "[BB]Note[bb] that for angles between vectors the inner-product or cosine",
     "is the natural quantity to use, as it will produce bins of the same",
     "volume."
   };
@@ -737,7 +851,7 @@ int gmx_sham(int argc,char *argv[])
     { "-ttol",     FALSE, etREAL, {&ttol},
       "Tolerance on time in appropriate units (usually ps)" },
     { "-n",       FALSE, etINT, {&nsets_in},
-      "Read # sets separated by &" },
+      "Read this number of sets separated by lines containing only an ampersand" },
     { "-d",       FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
     { "-bw",      FALSE, etREAL, {&binwidth},
@@ -778,6 +892,7 @@ int gmx_sham(int argc,char *argv[])
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
   const char     *fn_ge,*fn_ene;
   output_env_t oenv;
+  gmx_large_int_t num_grid_points;
     
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
@@ -792,7 +907,7 @@ int gmx_sham(int argc,char *argv[])
     { efXPM, "-lss",  "entropy",  ffOPTWR  },
     { efXPM, "-map",  "map",      ffOPTWR  },
     { efPDB, "-ls3",  "gibbs3",   ffOPTWR  },
-    { efXVG, "-mdata","mapdata",  ffOPTWR  },
+    { efXVG, "-mdata","mapdata",  ffOPTRD  },
     { efLOG, "-g",    "shamlog",  ffOPTWR  }
   }; 
 #define NFILE asize(fnm) 
@@ -851,10 +966,10 @@ int gmx_sham(int argc,char *argv[])
   if (fn_ene && et_val)
     ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val,oenv);
 
-  snew(idim,nset);
-  snew(ibox,nset);
-  snew(rmin,nset);
-  snew(rmax,nset);
+  snew(idim,max(3,nset));
+  snew(ibox,max(3,nset));
+  snew(rmin,max(3,nset));
+  snew(rmax,max(3,nset));
   for(i=0; (i<min(3,nset)); i++) {
     idim[i] = nrdim[i];
     ibox[i] = nrbox[i];
@@ -867,6 +982,22 @@ int gmx_sham(int argc,char *argv[])
     rmin[i] = xmin[2];
     rmax[i] = xmax[2];
   }
+
+  /* Check that the grid size is manageable. */
+  num_grid_points = ibox[0];
+  for(i = 1; i < nset; i++)
+  {
+      gmx_large_int_t result;
+      if (!check_int_multiply_for_overflow(num_grid_points, ibox[i], &result))
+      {
+          gmx_fatal(FARGS,
+                    "The number of dimensions and grid points is too large for this tool\n"
+                    "to handle with what it knows about the architecture upon which it\n"
+                    "is running. Use a different machine or consult the GROMACS mailing list.");
+      }
+      num_grid_points = result;
+  }
+  /* The number of grid points fits in a gmx_large_int_t. */
 
   do_sham(opt2fn("-dist",NFILE,fnm),opt2fn("-bin",NFILE,fnm),
 	  opt2fn("-lp",NFILE,fnm),

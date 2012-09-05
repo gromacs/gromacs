@@ -87,3 +87,6 @@ CA		opls_912B	12.011	0.12
 [ delete ]
 H
 
+[ PGLU-NH ]
+[ replace ]
+CA              opls_246        12.011  0.14

@@ -16,28 +16,52 @@ if (! $?GMXMAN) setenv GMXMAN ""
 # remove previous gromacs part from ld_library_path
 set tmppath = ""
 foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
-  if ( "$i" != "$GMXLDLIB" ) set tmppath = "${tmppath}:$i"
+  if ( "$i" != "$GMXLDLIB" ) then
+    if ("${tmppath}" == "") then
+      set tmppath = "$i"
+    else
+      set tmppath = "${tmppath}:$i"
+    endif
+  endif
 end
 setenv LD_LIBRARY_PATH $tmppath
 
 # remove previous gromacs part from PKG_CONFIG_PATH
 set tmppath = ""
 foreach i ( `echo $PKG_CONFIG_PATH | sed "s/:/ /g"` )
-  if ( "$i" != "$GMXLDLIB/pkgconfig" ) set tmppath = "${tmppath}:$i"
+  if ( "$i" != "$GMXLDLIB/pkgconfig" ) then
+    if ("${tmppath}" == "") then
+      set tmppath = "$i"
+    else
+      set tmppath = "${tmppath}:$i"
+    endif
+  endif
 end
 setenv PKG_CONFIG_PATH $tmppath
 
 # remove gromacs stuff from binary path
 set tmppath = ""
 foreach i ( `echo $PATH | sed "s/:/ /g"` )
-  if ( "$i" != "$GMXBIN" ) set tmppath = "${tmppath}:$i"
+  if ( "$i" != "$GMXBIN" ) then
+    if ("${tmppath}" == "") then
+      set tmppath = "$i"
+    else
+      set tmppath = "${tmppath}:$i"
+    endif
+  endif
 end
 setenv PATH $tmppath
 
 # and remove stuff from manual path
 set tmppath = ""
 foreach i ( `echo $MANPATH | sed "s/:/ /g"` )
-  if ( "$i" != "$GMXMAN" ) set tmppath = "${tmppath}:$i"
+  if ( "$i" != "$GMXMAN" ) then 
+    if ("${tmppath}" == "") then
+      set tmppath = "$i"
+    else
+      set tmppath = "${tmppath}:$i"
+    endif
+  endif
 end
 setenv MANPATH $tmppath
 
@@ -51,11 +75,16 @@ setenv GMXLDLIB @LIB_INSTALL_DIR@
 setenv GMXMAN @MAN_INSTALL_DIR@
 setenv GMXDATA @DATA_INSTALL_DIR@
 
-# old variables begin with ':' now, or are empty.
-setenv PATH ${GMXBIN}${PATH}
+#make them begin with :
+if ($?LD_LIBRARY_PATH) setenv LD_LIBRARY_PATH ":${LD_LIBRARY_PATH}"
+if ($?PKG_CONFIG_PATH) setenv PKG_CONFIG_PATH ":${PKG_CONFIG_PATH}"
+
+#path is never empty
+setenv PATH ${GMXBIN}:${PATH}
 setenv LD_LIBRARY_PATH ${GMXLDLIB}${LD_LIBRARY_PATH}
 setenv PKG_CONFIG_PATH ${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
-setenv MANPATH ${GMXMAN}${MANPATH}
+#debian/ubuntu needs a : at the end
+setenv MANPATH ${GMXMAN}:${MANPATH}
 
 setenv GMXFONT	10x20
 

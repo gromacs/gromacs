@@ -39,7 +39,7 @@
 
 #include "smalloc.h"
 #include "macros.h"
-#include "math.h"
+#include <math.h>
 #include "xvgr.h"
 #include "copyrite.h"
 #include "statutil.h"
@@ -69,15 +69,20 @@ static void add_contact_time(int **ccount,int *ccount_nalloc,int t)
 int gmx_dist(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_dist can calculate the distance between the centers of mass of two",
+    "[TT]g_dist[tt] can calculate the distance between the centers of mass of two",
     "groups of atoms as a function of time. The total distance and its",
-    "x, y and z components are plotted.[PAR]",
+    "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-components are plotted.[PAR]",
     "Or when [TT]-dist[tt] is set, print all the atoms in group 2 that are",
     "closer than a certain distance to the center of mass of group 1.[PAR]",
     "With options [TT]-lt[tt] and [TT]-dist[tt] the number of contacts",
     "of all atoms in group 2 that are closer than a certain distance",
     "to the center of mass of group 1 are plotted as a function of the time",
-    "that the contact was continously present.[PAR]",
+    "that the contact was continuously present. The [TT]-intra[tt] switch enables",
+    "calculations of intramolecular distances avoiding distance calculation to its",
+    "periodic images. For a proper function, the molecule in the input trajectory",
+    "should be whole (e.g. by preprocessing with [TT]trjconv -pbc[tt]) or a matching",
+    "topology should be provided. The [TT]-intra[tt] switch will only give",
+    "meaningful results for intramolecular and not intermolecular distances.[PAR]",
     "Other programs that calculate distances are [TT]g_mindist[tt]",
     "and [TT]g_bond[tt]."
   };
@@ -100,7 +105,7 @@ int gmx_dist(int argc,char *argv[])
   rvec    *com;
   real    *mass;
   FILE    *fp=NULL,*fplt=NULL;
-  gmx_bool    bCutoff,bPrintDist,bLifeTime;
+  gmx_bool    bCutoff,bPrintDist,bLifeTime,bIntra=FALSE;
   t_pbc   *pbc;
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];
@@ -111,7 +116,9 @@ int gmx_dist(int argc,char *argv[])
 
   static real cut=0;
   
-  static t_pargs pa[] = {
+  t_pargs pa[] = {
+    { "-intra",      FALSE, etBOOL, {&bIntra},
+      "Calculate distances without considering periodic boundaries, e.g. intramolecular." },
     { "-dist",      FALSE, etREAL, {&cut},
       "Print all atoms in group 2 closer than dist to the center of mass of group 1" }
   };
@@ -182,13 +189,13 @@ int gmx_dist(int argc,char *argv[])
   else
     pbc = NULL;
     
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,max,box);
   do {
     /* initialisation for correct distance calculations */
     if (pbc) {
       set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      gmx_rmpbc(gpbc,natoms,box,x);
+      gmx_rmpbc(gpbc,max,box,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
@@ -209,7 +216,7 @@ int gmx_dist(int argc,char *argv[])
       /* write to output */
       fprintf(fp,"%12.7f ",t);
       for(g=0;(g<ngrps/2);g++) {
-	if (pbc)
+	if (pbc && (!bIntra))
 	  pbc_dx(pbc,com[2*g],com[2*g+1],dx);
 	else
 	  rvec_sub(com[2*g],com[2*g+1],dx);
@@ -221,7 +228,7 @@ int gmx_dist(int argc,char *argv[])
     } else {
       for(i=0;(i<isize[1]);i++) { 
 	j=index[1][i];
-	if (pbc)
+	if (pbc && (!bIntra))
 	  pbc_dx(pbc,x[j],com[0],dx);
 	else
 	  rvec_sub(x[j],com[0],dx);

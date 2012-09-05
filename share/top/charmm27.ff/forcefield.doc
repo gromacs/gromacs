@@ -1,4 +1,4 @@
-CHARMM27 all-atom force field (with CMAP) - version 2.0beta
+CHARMM27 all-atom force field (with CMAP) - version 2.0
 
 *******************************************************************************
 *                    CHARMM port writted by                                   *
@@ -10,17 +10,11 @@ CHARMM27 all-atom force field (with CMAP) - version 2.0beta
 
 
 Parameters derived from c32b1 version of CHARMM
+NOTE: Atom-based charge groups
 
 References:
 
-Port
-
-Bjelkmar, P., Larsson, P., Cuendet, M. A, Bess, B., Lindahl, E.
-Implementation of the CHARMM force field in GROMACS: Analysis of protein
-stability effects from correction maps, virtual interaction sites, and
-water models., Journal of Chemical Theory and Computation, 6: 459-466, 2010.
-
-Protein parameterization
+Proteins
 
 MacKerell, Jr., A. D., Feig, M., Brooks, C.L., III, Extending the
 treatment of backbone energetics in protein force fields: limitations
@@ -34,13 +28,13 @@ MacKerell, Jr., A. D.,  et al. All-atom
 empirical potential for molecular modeling and dynamics Studies of
 proteins.  Journal of Physical Chemistry B, 1998, 102, 3586-3616.
 
-Lipid parameterization
+Lipids
 
 Feller, S. and MacKerell, Jr., A.D. An Improved Empirical Potential
 Energy Function for  Molecular Simulations of Phospholipids, Journal
 of Physical Chemistry B, 2000, 104: 7510-7515.
 
-Nucleic Acids parameterization
+Nucleic Acids
 
 Foloppe, N. and MacKerell, Jr., A.D. "All-Atom Empirical Force Field for
 Nucleic Acids: 2) Parameter Optimization Based on Small Molecule and
@@ -51,3 +45,11 @@ and
 MacKerell, Jr., A.D. and Banavali, N. "All-Atom Empirical Force Field for
 Nucleic Acids: 2) Application to Molecular Dynamics Simulations of DNA
 and RNA in Solution.  2000, 21: 105-120.
+
+
+
+If using there parameters for research please cite:
+Bjelkmar, P., Larsson, P., Cuendet, M. A, Bess, B., Lindahl, E.
+Implementation of the CHARMM force field in GROMACS: Analysis of protein
+stability effects from correction maps, virtual interaction sites, and
+water models., Journal of Chemical Theory and Computation, 6: 459-466, 2010.

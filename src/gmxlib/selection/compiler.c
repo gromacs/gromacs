@@ -266,6 +266,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <vec.h>
+#include <assert.h>
 
 #include <indexutil.h>
 #include <poscalc.h>
@@ -1126,6 +1127,9 @@ setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
 static void
 init_item_evaloutput(t_selelem *sel)
 {
+    assert(!(sel->child == NULL &&
+             (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)));
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -1438,6 +1442,7 @@ init_item_minmax_groups(t_selelem *sel)
                  && ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                      || (sel->cdata->flags & SEL_CDATA_FULLEVAL)))
         {
+            assert(sel->child);
             sel->cdata->gmin = sel->child->cdata->gmin;
             sel->cdata->gmax = sel->child->cdata->gmax;
         }
@@ -1770,6 +1775,16 @@ init_method(t_selelem *sel, t_topology *top, int isize)
                 }
             }
         }
+        /* Clear the values for dynamic output to avoid valgrind warnings. */
+        if ((sel->flags & SEL_DYNAMIC) && sel->v.type == REAL_VALUE)
+        {
+            int i;
+
+            for (i = 0; i < sel->v.nr; ++i)
+            {
+                sel->v.u.r[i] = 0.0;
+            }
+        }
     }
 
     return 0;
@@ -1955,10 +1970,17 @@ evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
             {
                 gmx_ana_index_reserve(sel->child->v.u.g, gmin->isize);
                 gmx_ana_index_copy(sel->child->v.u.g, gmin, FALSE);
-                if (sel->child->u.cgrp.isize > 0)
+                if (sel->child->u.cgrp.nalloc_index > 0)
                 {
+                    /* Keep the name as in evaluate_boolean_static_part(). */
+                    char *name = sel->child->u.cgrp.name;
                     gmx_ana_index_reserve(&sel->child->u.cgrp, gmin->isize);
                     gmx_ana_index_copy(&sel->child->u.cgrp, gmin, FALSE);
+                    sel->child->u.cgrp.name = name;
+                }
+                else
+                {
+                    sel->child->u.cgrp.isize = sel->child->v.u.g->isize;
                 }
             }
             break;
@@ -2017,6 +2039,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
+            assert(g);
             rc = _gmx_sel_evaluate_method_params(data, sel, g);
             if (rc != 0)
             {
@@ -2123,6 +2146,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             else if (sel->u.cgrp.isize == 0)
             {
+                assert(g);
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
                 rc = sel->cdata->evaluate(data, sel, g);
                 if (bDoMinMax)
@@ -2352,6 +2376,9 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
 static void
 postprocess_item_subexpressions(t_selelem *sel)
 {
+    assert(!(sel->child == NULL &&
+             (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)));
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -2381,10 +2408,8 @@ postprocess_item_subexpressions(t_selelem *sel)
         sel->u.cgrp.name = name;
 
         sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
-        if (sel->cdata)
-        {
-            sel->cdata->evaluate = sel->evaluate;
-        }
+        sel->cdata->evaluate = sel->evaluate;
+
         _gmx_selelem_free_values(sel->child);
         sel->child->mempool = NULL;
         _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);

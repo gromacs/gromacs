@@ -264,7 +264,7 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
                          : "r" (mask), "r" (p), "m" (*p)
                          : "cc", "memory");
     
-    return ((old & mask) != 0);    
+    return (old & mask);    
 }
 
 

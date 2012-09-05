@@ -50,12 +50,22 @@ typedef real *splinevec[DIM];
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
 int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
-			int nnodes_major,int nnodes_minor,
-			t_inputrec *ir,int homenr,
-			gmx_bool bFreeEnergy, gmx_bool bReproducible);
+                 int nnodes_major,int nnodes_minor,
+                 t_inputrec *ir,int homenr,
+                 gmx_bool bFreeEnergy, gmx_bool bReproducible, int nthread);
+/* Initialize the pme data structures resepectively.
+ * Return value 0 indicates all well, non zero is an error code.
+ */
+
+int gmx_pme_reinit(gmx_pme_t *         pmedata,
+		   t_commrec *         cr,
+		   gmx_pme_t           pme_src,
+		   const t_inputrec *  ir,
+		   ivec                grid_size);
+/* As gmx_pme_init, but takes most settings, except the grid, from pme_src */
 			
 int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
-/* Initialize and destroy the pme data structures resepectively.
+/* Destroy the pme data structures resepectively.
  * Return value 0 indicates all well, non zero is an error code.
  */
 
@@ -63,6 +73,8 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
 #define GMX_PME_CALC_ENER_VIR (1<<3)
+/* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
+#define GMX_PME_CALC_POT      (1<<4)
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 int gmx_pme_do(gmx_pme_t pme,

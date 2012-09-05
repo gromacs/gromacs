@@ -1,6 +1,7 @@
 [ implicit_genborn_params ]
 
 ; atype      sar      st     pi       gbr       hct
+;H0           0.1      1      1        0.125     0.85 ; H
 C            0.172    1      1.554    0.1875    0.72 ; C
 CA           0.18     1      1.037    0.1875    0.72 ; C
 CB           0.172    0.012  1.554    0.1875    0.72 ; C

@@ -94,11 +94,11 @@ struct t_fileio
 
     t_fileio *next, *prev; /* next and previous file pointers in the
                               linked list */
-#ifdef GMX_THREADS
-    tMPI_Spinlock_t  mtx;  /* content locking mutex. This is a spinlock
-                              for performance reasons: in some cases every
-                              single byte that gets read/written requires
-                              a lock */
+#ifdef GMX_THREAD_MPI
+    tMPI_Lock_t  mtx;  /* content locking mutex. This is a fast lock
+                          for performance reasons: in some cases every
+                          single byte that gets read/written requires
+                          a lock */
 #endif
 }; 
 

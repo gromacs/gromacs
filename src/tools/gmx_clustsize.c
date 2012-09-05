@@ -88,6 +88,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   gmx_mtop_t *mtop=NULL;
   int     ePBC=-1;
   t_block *mols=NULL;
+  gmx_mtop_atomlookup_t alook;
   t_atom  *atom;
   int     version,generation,ii,jj,nsame;
   real    temp,tfac;
@@ -142,6 +143,8 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   else
     rd_index(ndx,1,&nindex,&index,&gname);
   
+  alook = gmx_mtop_atomlookup_init(mtop);
+
   snew(clust_index,nindex);
   snew(clust_size,nindex);
   cut2   = cut*cut;
@@ -208,7 +211,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	       * cluster cj and if so, put them in ci
 	       */
 	      for(k=0; (k<nindex); k++) {
-		if ((clust_index[k] == cj)) {
+		if (clust_index[k] == cj) {
 		  if (clust_size[cj] <= 0)
 		    gmx_fatal(FARGS,"negative cluster size %d for element %d",
 				clust_size[cj],cj);
@@ -254,7 +257,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
     if (fr.bV) {
       if (!tpr) {
 	if (bTPRwarn) {
-	  printf("You need a tpr file to analyse temperatures\n");
+	  printf("You need a [TT].tpr[tt] file to analyse temperatures\n");
 	  bTPRwarn = FALSE;
 	}
       }
@@ -266,7 +269,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	  for(i=0; (i<nindex); i++) 
 	    if (clust_index[i] == max_clust_ind) {
 	      ai    = index[i];
-	      gmx_mtop_atomnr_to_atom(mtop,ai,&atom);
+	      gmx_mtop_atomnr_to_atom(alook,ai,&atom);
 	      ekin += 0.5*atom->m*iprod(v[ai],v[ai]);
 	    }
 	  temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
@@ -281,6 +284,9 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   ffclose(gp);
   ffclose(hp);
   ffclose(tp);
+
+  gmx_mtop_atomlookup_destroy(alook);
+
   if (max_clust_ind >= 0) {
     fp = ffopen(mcn,"w");
     fprintf(fp,"[ max_clust ]\n");
@@ -356,18 +362,18 @@ int gmx_clustsize(int argc,char *argv[])
 {
   const char *desc[] = {
     "This program computes the size distributions of molecular/atomic clusters in",
-    "the gas phase. The output is given in the form of a XPM file.",
-    "The total number of clusters is written to a XVG file.[PAR]",
+    "the gas phase. The output is given in the form of an [TT].xpm[tt] file.",
+    "The total number of clusters is written to an [TT].xvg[tt] file.[PAR]",
     "When the [TT]-mol[tt] option is given clusters will be made out of",
     "molecules rather than atoms, which allows clustering of large molecules.",
     "In this case an index file would still contain atom numbers",
     "or your calculation will die with a SEGV.[PAR]",
     "When velocities are present in your trajectory, the temperature of",
-    "the largest cluster will be printed in a separate xvg file assuming",
+    "the largest cluster will be printed in a separate [TT].xvg[tt] file assuming",
     "that the particles are free to move. If you are using constraints,",
     "please correct the temperature. For instance water simulated with SHAKE",
     "or SETTLE will yield a temperature that is 1.5 times too low. You can",
-    "compensate for this with the -ndf option. Remember to take the removal",
+    "compensate for this with the [TT]-ndf[tt] option. Remember to take the removal",
     "of center of mass motion into account.[PAR]",
     "The [TT]-mc[tt] option will produce an index file containing the",
     "atom numbers of the largest cluster."
@@ -388,13 +394,13 @@ int gmx_clustsize(int argc,char *argv[])
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Largest distance (nm) to be considered in a cluster" },
     { "-mol",      FALSE, etBOOL, {&bMol},
-      "Cluster molecules rather than atoms (needs tpr file)" },
+      "Cluster molecules rather than atoms (needs [TT].tpr[tt] file)" },
     { "-pbc",      FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions" },
     { "-nskip",    FALSE, etINT,  {&nskip},
       "Number of frames to skip between writing" },
     { "-nlevels",  FALSE, etINT,  {&nlevels},
-      "Number of levels of grey in xpm output" },
+      "Number of levels of grey in [TT].xpm[tt] output" },
     { "-ndf",      FALSE, etINT,  {&ndf},
       "Number of degrees of freedom of the entire system for temperature calculation. If not set, the number of atoms times three is used." },
     { "-rgblo",    FALSE, etRVEC, {rlo},

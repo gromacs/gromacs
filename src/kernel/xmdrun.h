@@ -47,7 +47,7 @@
 #include "filenm.h"
 #include "mshift.h"
 #include "force.h"
-#include "time.h"
+#include <time.h>
 #include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"

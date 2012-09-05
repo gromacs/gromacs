@@ -160,16 +160,6 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   return curr;
 }
 
-static void done_corr(t_corr *curr)
-{
-  int i;
-  
-  sfree(curr->n_offs);
-  for(i=0; (i<curr->nrestart); i++)
-    sfree(curr->x0[i]);
-  sfree(curr->x0);
-}
-
 static void corr_print(t_corr *curr,gmx_bool bTen,const char *fn,const char *title,
                        const char *yaxis,
 		       real msdtime,real beginfit,real endfit,
@@ -410,6 +400,10 @@ static void prep_data(gmx_bool bMol,int gnx,atom_id index[],
 
         for(m=DIM-1; m>=0; m--) 
         {
+            if (hbox[m] == 0)
+            {
+                continue;
+            }
             while(xcur[ind][m]-xprev[ind][m] <= -hbox[m])
                 rvec_inc(xcur[ind],box[m]);
             while(xcur[ind][m]-xprev[ind][m] >  hbox[m])
@@ -866,7 +860,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 int gmx_msd(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_msd computes the mean square displacement (MSD) of atoms from",
+    "[TT]g_msd[tt] computes the mean square displacement (MSD) of atoms from",
     "a set of initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation.",
     "The time between the reference points for the MSD calculation",
@@ -881,7 +875,8 @@ int gmx_msd(int argc,char *argv[])
     "types of mean square displacement: [TT]-type[tt], [TT]-lateral[tt]",
     "and [TT]-ten[tt]. Option [TT]-ten[tt] writes the full MSD tensor for",
     "each group, the order in the output is: trace xx yy zz yx zx zy.[PAR]",
-    "If [TT]-mol[tt] is set, g_msd plots the MSD for individual molecules: ",
+    "If [TT]-mol[tt] is set, [TT]g_msd[tt] plots the MSD for individual molecules",
+    "(including making molecules whole across periodic boundaries): ",
     "for each individual molecule a diffusion constant is computed for ",
     "its center of mass. The chosen index group will be split into ",
     "molecules.[PAR]",
@@ -890,7 +885,7 @@ int gmx_msd(int argc,char *argv[])
     "With the option [TT]-rmcomm[tt], the center of mass motion of a ",
     "specific group can be removed. For trajectories produced with ",
     "GROMACS this is usually not necessary, ",
-    "as mdrun usually already removes the center of mass motion.",
+    "as [TT]mdrun[tt] usually already removes the center of mass motion.",
     "When you use this option be sure that the whole system is stored",
     "in the trajectory file.[PAR]",
     "The diffusion coefficient is determined by linear regression of the MSD,",
@@ -903,7 +898,7 @@ int gmx_msd(int argc,char *argv[])
     "Note that this diffusion coefficient and error estimate are only",
     "accurate when the MSD is completely linear between",
     "[TT]-beginfit[tt] and [TT]-endfit[tt].[PAR]",
-    "Option [TT]-pdb[tt] writes a pdb file with the coordinates of the frame",
+    "Option [TT]-pdb[tt] writes a [TT].pdb[tt] file with the coordinates of the frame",
     "at time [TT]-tpdb[tt] with in the B-factor field the square root of",
     "the diffusion coefficient of the molecule.",
     "This option implies option [TT]-mol[tt]."
@@ -932,7 +927,7 @@ int gmx_msd(int argc,char *argv[])
     { "-rmcomm",      FALSE, etBOOL, {&bRmCOMM},
       "Remove center of mass motion" },
     { "-tpdb",FALSE, etTIME, {&t_pdb},
-      "The frame to use for option -pdb (%t)" },
+      "The frame to use for option [TT]-pdb[tt] (%t)" },
     { "-trestart",FALSE, etTIME, {&dt},
       "Time between restarting points in trajectory (%t)" },
     { "-beginfit",FALSE, etTIME, {&beginfit},

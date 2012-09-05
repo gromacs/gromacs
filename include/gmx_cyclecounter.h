@@ -19,6 +19,12 @@
 #ifndef _GMX_CYCLECOUNTER_H_
 #define _GMX_CYCLECOUNTER_H_
 
+/*
+ * define HAVE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
+ * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
+ */
+
+
 /** @file gmx_cyclecounter.h
  *
  *  @brief High-resolution timestamp or CPU clock cycle counters.
@@ -135,6 +141,11 @@ gmx_cycles_t;
 #elif (defined(__MWERKS__) && (defined(MAC) || defined(macintosh)))
 /* Metrowerks on macintosh */
 typedef unsigned long long 
+gmx_cycles_t;
+
+#elif defined(__sun) && defined(__sparcv9)
+
+typedef unsigned long
 gmx_cycles_t;
 
 #else
@@ -273,6 +284,13 @@ static __inline__ int gmx_cycles_have_counter(void)
     /* Metrowerks on macintosh */
     return 1;
 }
+#elif defined(__sun) && defined(__sparcv9)
+
+static __inline__ int gmx_cycles_have_counter(void)
+{ 
+    /* Solaris on SPARC*/
+    return 1;
+}
 #else
 static int gmx_cycles_have_counter(void)
 { 
@@ -311,7 +329,11 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     gmx_cycles_t   cycle;
     unsigned       low,high;
     
+#ifdef HAVE_RDTSCP
+    __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
+#else
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
+#endif
     
     cycle = ((unsigned long long)low) | (((unsigned long long)high)<<32); 
     
@@ -320,7 +342,12 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 #elif defined(_MSC_VER)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 { 
+#ifdef HAVE_RDTSCP
+    unsigned int ui;
+    return __rdtscp(&ui);
+#else
 	return __rdtsc();
+#endif
 }
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 static inline gmx_cycles_t gmx_cycles_read(void)
@@ -458,6 +485,15 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     
     return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;  
 }
+#elif defined(__sun) && defined(__sparcv9)
+
+static __inline__ gmx_cycles_t gmx_cycles_read(void)
+{
+     gmx_cycles_t ret;
+     __asm__ __volatile__("rd %%tick, %0" : "=r" (ret));
+     return ret;
+}
+
 #else
 static gmx_cycles_t gmx_cycles_read(void)
 { 

@@ -181,7 +181,7 @@ static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
 int gmx_rotmat(int argc,char *argv[])
 {
     const char *desc[] = {
-        "g_rotmat plots the rotation matrix required for least squares fitting",
+        "[TT]g_rotmat[tt] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
         "The output are the three vectors that give the new directions",
@@ -193,17 +193,17 @@ int gmx_rotmat(int argc,char *argv[])
         "determining the orientation of a molecule",
         "at an interface, possibly on a trajectory produced with",
         "[TT]trjconv -fit rotxy+transxy[tt] to remove the rotation",
-        "in the xy-plane.",
+        "in the [IT]x-y[it] plane.",
         "[PAR]",
         "Option [TT]-ref[tt] determines a reference structure for fitting,",
         "instead of using the structure from [TT]-s[tt]. The structure with",
         "the lowest sum of RMSD's to all other structures is used.",
         "Since the computational cost of this procedure grows with",
         "the square of the number of frames, the [TT]-skip[tt] option",
-        "can be useful. A full fit or only a fit in the x/y plane can",
+        "can be useful. A full fit or only a fit in the [IT]x-y[it] plane can",
         "be performed.",
         "[PAR]",
-        "Option [TT]-fitxy[tt] fits in the x/y plane before determining",
+        "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
     const char *reffit[] = 
@@ -214,7 +214,7 @@ int gmx_rotmat(int argc,char *argv[])
         { "-ref", FALSE, etENUM, {reffit},
           "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, {&skip},
-          "Use every nr-th frame for -ref" },
+          "Use every nr-th frame for [TT]-ref[tt]" },
         { "-fitxy", FALSE, etBOOL, {&bFitXY},
           "Fit the x/y rotation before determining the rotation" },
         { "-mw", FALSE, etBOOL, {&bMW},

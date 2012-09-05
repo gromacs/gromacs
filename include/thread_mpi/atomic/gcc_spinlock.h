@@ -78,7 +78,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 
 static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
-    return (__sync_lock_test_and_set(&(x->lock), 1) == 1);
+    return __sync_lock_test_and_set(&(x->lock), 1) ;
 }
 
 

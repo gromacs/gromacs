@@ -21,6 +21,7 @@
 #endif
 
 #include <stdio.h>
+#include <assert.h>
 #include "domdec.h"
 #include "network.h"
 #include "perf_est.h"
@@ -36,6 +37,11 @@
 static int factorize(int n,int **fac,int **mfac)
 {
     int d,ndiv;
+
+    if (n <= 0)
+    {
+        gmx_fatal(FARGS, "Can only factorize positive integers.");
+    }
 
     /* Decompose n in factors */
     snew(*fac,n/2);
@@ -270,6 +276,19 @@ static gmx_bool inhomogeneous_z(const t_inputrec *ir)
             ir->ePBC==epbcXYZ && ir->ewald_geometry==eewg3DC);
 }
 
+/* Avoid integer overflows */
+static float comm_pme_cost_vol(int npme, int a, int b, int c)
+{
+    float comm_vol;
+
+    comm_vol = npme - 1;
+    comm_vol *= npme;
+    comm_vol *= div_up(a, npme);
+    comm_vol *= div_up(b, npme);
+    comm_vol *= c;
+    return comm_vol;
+}
+
 static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
                            matrix box,gmx_ddbox_t *ddbox,
                            int natoms,t_inputrec *ir,
@@ -287,6 +306,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
      */
     float pbcdx_rect_fac = 0.1;
     float pbcdx_tric_fac = 0.2;
+    float temp;
     
     /* Check the DD algorithm restrictions */
     if ((ir->ePBC == epbcXY && ir->nwall < 2 && nc[ZZ] > 1) ||
@@ -299,6 +319,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     {
         return -1;
     }
+
+    assert(ddbox->npbcdim<=DIM);
 
     /* Check if the triclinic requirements are met */
     for(i=0; i<DIM; i++)
@@ -410,7 +432,14 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         {
             nk = (i==0 ? ir->nkx : ir->nky);
             overlap = (nk % npme[i] == 0 ? ir->pme_order-1 : ir->pme_order);
-            comm_pme += npme[i]*overlap*ir->nkx*ir->nky*ir->nkz/nk;
+            temp = npme[i];
+            temp *= overlap;
+            temp *= ir->nkx;
+            temp *= ir->nky;
+            temp *= ir->nkz;
+            temp /= nk;
+            comm_pme += temp;
+/* Old line comm_pme += npme[i]*overlap*ir->nkx*ir->nky*ir->nkz/nk; */
         }
     }
 
@@ -420,8 +449,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
      * are similar and therefore these formulas also prefer load balance
      * in the FFT and pme_solve calculation.
      */
-    comm_pme += (npme[YY] - 1)*npme[YY]*div_up(ir->nky,npme[YY])*div_up(ir->nkz,npme[YY])*ir->nkx;
-    comm_pme += (npme[XX] - 1)*npme[XX]*div_up(ir->nkx,npme[XX])*div_up(ir->nky,npme[XX])*ir->nkz;
+    comm_pme += comm_pme_cost_vol(npme[YY], ir->nky, ir->nkz, ir->nkx);
+    comm_pme += comm_pme_cost_vol(npme[XX], ir->nkx, ir->nky, ir->nkz);
     
     /* Add cost of pbc_dx for bondeds */
     cost_pbcdx = 0;
@@ -635,54 +664,78 @@ real dd_choose_grid(FILE *fplog,
                     real cellsize_limit,real cutoff_dd,
                     gmx_bool bInterCGBondeds,gmx_bool bInterCGMultiBody)
 {
-    int  npme,nkx,nky;
-    int  ldiv;
+    gmx_large_int_t nnodes_div,ldiv;
     real limit;
     
     if (MASTER(cr))
     {
+        nnodes_div = cr->nnodes;
+        if (EEL_PME(ir->coulombtype))
+        {
+            if (cr->npmenodes > 0)
+            {
+                if (cr->nnodes <= 2)
+                {
+                    gmx_fatal(FARGS,
+                              "Can not have separate PME nodes with 2 or less nodes");
+                }
+                if (cr->npmenodes >= cr->nnodes)
+                {
+                    gmx_fatal(FARGS,
+                              "Can not have %d separate PME nodes with just %d total nodes",
+                              cr->npmenodes, cr->nnodes);
+                }
+
+                /* If the user purposely selected the number of PME nodes,
+                 * only check for large primes in the PP node count.
+                 */
+                nnodes_div -= cr->npmenodes;
+            }
+        }
+        else
+        {
+            cr->npmenodes = 0;
+        }
+
         if (cr->nnodes > 12)
         {
-            ldiv = largest_divisor(cr->nnodes);
+            ldiv = largest_divisor(nnodes_div);
             /* Check if the largest divisor is more than nnodes^2/3 */
-            if (ldiv*ldiv*ldiv > cr->nnodes*cr->nnodes)
+            if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
             {
                 gmx_fatal(FARGS,"The number of nodes you selected (%d) contains a large prime factor %d. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
-                          cr->nnodes,ldiv);
+                          nnodes_div,ldiv);
             }
         }
 
         if (EEL_PME(ir->coulombtype))
         {
-            if (cr->npmenodes >= 0)
+            if (cr->npmenodes < 0)
             {
-                if (cr->nnodes <= 2 && cr->npmenodes > 0)
-                {
-                    gmx_fatal(FARGS,
-                              "Can not have separate PME nodes with 2 or less nodes");
-                }
-            }
-            else
-            {
-                if (cr->nnodes <= 10)
+                /* Use PME nodes when the number of nodes is more than 16 */
+                if (cr->nnodes <= 18)
                 {
                     cr->npmenodes = 0;
+                    if (fplog)
+                    {
+                        fprintf(fplog,"Using %d separate PME nodes, as there are too few total\n nodes for efficient splitting\n",cr->npmenodes);
+                    }
                 }
                 else
                 {
                     cr->npmenodes = guess_npme(fplog,mtop,ir,box,cr->nnodes);
+                    if (fplog)
+                    {
+                        fprintf(fplog,"Using %d separate PME nodes, as guessed by mdrun\n",cr->npmenodes);
+                    }
                 }
             }
-            if (fplog)
+            else
             {
-                fprintf(fplog,"Using %d separate PME nodes\n",cr->npmenodes);
-            }
-        }
-        else
-        {
-            if (cr->npmenodes < 0)
-            {
-                cr->npmenodes = 0;
+                if (fplog)
+                {
+                    fprintf(fplog,"Using %d separate PME nodes, per user request\n",cr->npmenodes);
+                }
             }
         }
         

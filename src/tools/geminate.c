@@ -47,17 +47,13 @@
 #include <gsl/gsl_version.h>
 #endif
 
+#include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "geminate.h"
+#include "gmx_omp.h"
 
-#ifdef DOUSEOPENMP
-#define HAVE_OPENMP
-#endif
-#ifdef HAVE_OPENMP
-#include <omp.h>
-#endif
 
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
@@ -90,10 +86,6 @@ static gem_complex gem_c(double x)
   value.i=0;
   return value;
 }
-
-/* Real and Imaginary part of a complex number z -- Re (z) and Im (z)        */
-static double gem_Re(gem_complex z) {return z.r;}
-static double gem_Im(gem_complex z) {return z.i;}
 
 /* Magnitude of a complex number z                                           */
 static double gem_cx_abs(gem_complex z) { return (sqrt(z.r*z.r+z.i*z.i)); }
@@ -186,34 +178,6 @@ static gem_complex gem_rxcdiv(double r, gem_complex z)
   return value;
 }
 
-/* Integer power of a complex number z -- z^x                                */
-static gem_complex gem_cxintpow(gem_complex z, int x)
-{
-  int i;
-  gem_complex value;
-
-  value.r = 1.;
-  value.i = 0.;
-
-  if(x>0)
-    {
-      for(i=0; i < x; i++)
-	value = gem_cxmul(value, z);
-      return value;
-    }
-  else
-    { 
-      if(x<0) {
-	for(i=0; i > x; i--)
-	  value = gem_cxdiv(value, z);
-	return value;
-      }
-      else {
-	return value;
-      }
-    }
-}
-
 /* Exponential of a complex number-- exp (z)=|exp(z.r)|*{cos(z.i)+I*sin(z.i)}*/
 static gem_complex gem_cxdexp(gem_complex z)
 {
@@ -263,18 +227,6 @@ static gem_complex gem_cxdsqrt(gem_complex z)
   return value;
 }
 
-/* square root of a real number r  */
-static gem_complex gem_cxrsqrt(double r) {
-  if (r < 0)
-    {
-      return(gem_cmplx(0, sqrt(-r)));
-    }
-  else
-    {
-      return(gem_c(sqrt(r)));
-    }
-}
-
 /* Complex power of a complex number z1^z2                                   */
 static gem_complex gem_cxdpow(gem_complex z1, gem_complex z2)
 {
@@ -283,8 +235,6 @@ static gem_complex gem_cxdpow(gem_complex z1, gem_complex z2)
   return value;
 }
 
-/* Print out a complex number z as z: z.r, z.i                               */
-static void gem_cxprintf(gem_complex z) { fprintf(stdout, "z: %lg + %lg_i\n", z.r, z.i); }
 /* ------------ end of complex.c ------------ */
 
 /* This next part was derived from cubic.c, also received from Omer Markovitch.
@@ -419,66 +369,6 @@ static double gem_omega(double x)
   return ans;
 }
 
-/* W(x,y)=exp(-x^2)*omega(x+y)=exp(2xy+y^2)*erfc(x+y)                        */
-static double gem_W(double x, double y){ return(exp(-x*x)*gem_omega(x+y)); }
-
-/**************************************************************/
-/* Complex error function and related functions               */
-/* x, y     : real variables                                  */
-/* z        : complex variable                                */
-/* cerf(z)  : error function                                  */
-/* comega(z): exp(z*z)*cerfc(z)                               */
-/* W(x,z)   : exp(-x*x)*comega(x+z)=exp(2*x*z+z^2)*cerfc(x+z) */
-/**************************************************************/
-static gem_complex gem_cerf(gem_complex z)
-{
-  gem_complex value;
-  double x,y;
-  double sumr,sumi,n,n2,f,temp,temp1;
-  double x2,cos_2xy,sin_2xy,cosh_2xy,sinh_2xy,cosh_ny,sinh_ny;
-
-  x    = z.r;
-  y    = z.i;
-  x2   = x*x;
-  sumr = 0.;
-  sumi = 0.;
-  cos_2xy  = cos(2.*x*y);
-  sin_2xy  = sin(2.*x*y);
-  cosh_2xy = cosh(2.*x*y);
-  sinh_2xy = sinh(2.*x*y);
-
-  for(n=1.0,temp=0.; n<=2000.; n+=1.0)
-    {
-      n2      = n*n;
-      cosh_ny = cosh(n*y);
-      sinh_ny = sinh(n*y);
-      f       = exp(-n2/4.)/(n2+4.*x2);
-      sumr    += (2.*x - 2.*x*cosh_ny*cos_2xy+n*sinh_ny*sin_2xy)*f;
-      sumi    += (2.*x*cosh_ny*sin_2xy + n*sinh_ny*cos_2xy)*f;
-      temp1    = sqrt(sumr*sumr+sumi*sumi);
-      if(fabs((temp1-temp)/temp1)<1.E-16) {
-	break;
-      }
-      temp = temp1;
-    }
-
-  if(n==2000.) {
-    fprintf(stderr, "iteration exceeds %lg\n",n);
-  }
-  
-  sumr*=2./PI;
-  sumi*=2./PI;
-
-  if(x!=0.) {
-    f = 1./2./PI/x;
-  } else {
-    f = 0.;
-  }
-  value.r = gem_erf(x) + (f*(1.-cos_2xy) + sumr)*exp(-x2);
-  value.i = (f*sin_2xy+sumi)*exp(-x2);
-  return value;
-}
-
 /*---------------------------------------------------------------------------*/
 /* Utilzed the series approximation of erf(z=x+iy)                           */
 /* Relative error=|err(z)|/|erf(z)|<EPS                                      */
@@ -535,9 +425,6 @@ static gem_complex gem_comega(gem_complex z)
   return (value);
 }
 
-/* W(x,z) exp(-x^2)*omega(x+z)                                               */
-static gem_complex gem_cW(double x, gem_complex z){ return(gem_cxrmul(gem_comega(gem_cxradd(z,x)),exp(-x*x))); }
-
 /* ------------ end of [cr]error.c ------------ */
 
 /*_ REVERSIBLE GEMINATE RECOMBINATION
@@ -581,13 +468,11 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
   part3 = gem_cxmul(gamma, gem_cxmul(gem_cxadd(alpha, beta) , gem_cxsub(alpha, beta)));  /* 3(1+2)(1-2) */
   part4 = gem_cxmul(gem_cxsub(gamma, alpha), gem_cxmul(gem_cxsub(alpha, beta), gem_cxsub(beta, gamma))); /* (3-1)(1-2)(2-3) */
 
-#ifdef HAVE_OPENMP
 #pragma omp parallel for				\
-  private(i, tsqrt, oma, omb, omc, c1, c2, c3, c4),	\
-  reduction(+:sumimaginary),				\
-  default(shared),					\
+  private(i, tsqrt, oma, omb, omc, c1, c2, c3, c4)	\
+  reduction(+:sumimaginary)				\
+  default(shared)					\
   schedule(guided)
-#endif
   for (i=0; i<manytimes; i++){
     tsqrt = sqrt(time[i]);
     oma   = gem_comega(gem_cxrmul(alpha, tsqrt));
@@ -668,7 +553,6 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
   
 /*   p->logMult      = pow((float)len, 1.0/nLin);/\* pow(t[len-1]-t[0], 1.0/p->nLin); *\/ */
   p->ballistic    =  ballistic;
-  p->bDt;
   return p;
 }
 
@@ -700,14 +584,14 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
     	 gsl_vector_get(p, 0), gsl_vector_get(p, 1),
     	 GD->params);
   
+  fixGemACF(GD->ctTheory, nFitPoints);
+
   /* Removing a bunch of points from the log-part. */
-#ifdef HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic)	\
   firstprivate(nData, ctTheory, y, nFitPoints)	\
   private (i, iLog, r)			\
   reduction(+:residual2)			\
   default(shared)
-#endif
   for(i=0; i<nFitPoints; i++)
     {
       iLog = GD->logtime[i];
@@ -773,9 +657,9 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 #endif /* HAVE_LIBGSL */
 
 #ifdef HAVE_LIBGSL
-#ifdef HAVE_OPENMP
-  nThreads = omp_get_num_procs();
-  omp_set_num_threads(nThreads);
+#ifdef GMX_OPENMP
+  nThreads = gmx_omp_get_max_threads();
+  gmx_omp_set_num_threads(nThreads);
   fprintf(stdout, "We will be using %i threads.\n", nThreads);
 #endif
 
@@ -876,12 +760,19 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	    params->kd,
 	    s->fval, size, d2);
 
-    if (iter%10 == 1)
+    if (iter%1 == 0)
       {
 	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
+	/* fixGemACF(GD->ctTheory, nFitPoints); */
 	sprintf(dumpname, "Iter_%i.xvg", iter);
 	for(i=0; i<GD->nData; i++)
-	  dumpdata[i] = (real)(GD->ctTheory[i]);
+	  {
+	    dumpdata[i] = (real)(GD->ctTheory[i]);
+	    if (!gmx_isfinite(dumpdata[i]))
+	      {
+		gmx_fatal(FARGS, "Non-finite value in acf.");
+	      }
+	  }
 	dumpN(dumpdata, GD->nData, dumpname);
       }
   }
@@ -1212,4 +1103,91 @@ static real* d2r(const double *d, const int nn)
     r[i] = (real)d[i];
 
   return r;
+}
+
+static void _patchBad(double *ct, int n, double dy)
+{
+  /* Just do lin. interpolation for now. */
+  int i;
+
+  for (i=1; i<n; i++)
+    {
+      ct[i] = ct[0]+i*dy;
+    }
+}
+
+static void patchBadPart(double *ct, int n)
+{
+  _patchBad(ct,n,(ct[n] - ct[0])/n);
+}
+
+static void patchBadTail(double *ct, int n)
+{
+  _patchBad(ct+1,n-1,ct[1]-ct[0]);
+
+}
+
+extern void fixGemACF(double *ct, int len)
+{
+  int i, j, b, e;
+  gmx_bool bBad;
+
+  /* Let's separate two things:
+   * - identification of bad parts
+   * - patching of bad parts.
+   */
+  
+  b = 0; /* Start of a bad stretch */
+  e = 0; /* End of a bad stretch */
+  bBad = FALSE;
+
+  /* An acf of binary data must be one at t=0. */
+  if (abs(ct[0]-1.0) > 1e-6)
+    {
+      ct[0] = 1.0;
+      fprintf(stderr, "|ct[0]-1.0| = %1.6d. Setting ct[0] to 1.0.\n", abs(ct[0]-1.0));
+    }
+
+  for (i=0; i<len; i++)
+    {
+      
+#ifdef HAS_ISFINITE
+      if (isfinite(ct[i]))
+#elif defined(HAS__ISFINITE)
+      if (_isfinite(ct[i]))
+#else
+      if(1)
+#endif
+	{
+	  if (!bBad)
+	    {
+	      /* Still on a good stretch. Proceed.*/
+	      continue;
+	    }
+
+	  /* Patch up preceding bad stretch. */
+	  if (i == (len-1))
+	    {
+	      /* It's the tail */
+	      if (b <= 1)
+		{
+		  gmx_fatal(FARGS, "The ACF is mostly NaN or Inf. Aborting.");
+		}
+	      patchBadTail(&(ct[b-2]), (len-b)+1);
+	    }
+
+	  e = i;
+	  patchBadPart(&(ct[b-1]), (e-b)+1);
+	  bBad = FALSE;
+	}
+      else
+	{
+	  if (!bBad)
+	    {
+	      b = i;
+	  
+	      bBad = TRUE;
+	    }
+	}
+    }
 }

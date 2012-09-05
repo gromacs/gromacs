@@ -169,7 +169,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
                 at = type[i];
                 Cd = nbfp[ntw[w]+2*at];
                 Cr = nbfp[ntw[w]+2*at+1];
-                if (!((Cd==0 && Cr==0) || egp_flags[ggid] & EGP_EXCL))
+                if (!((Cd==0 && Cr==0) || (egp_flags[ggid] & EGP_EXCL)))
                 {
                     if (w == 0)
                     {
@@ -317,6 +317,6 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     {
         fr->vir_wall_z[i] = -0.5*xf_z[i];
     }
-    
+
     return dvdlambda;
 }

@@ -52,8 +52,8 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
                             real *rcoul1,real *rcoul2)
 {
     real r2v1,r2v2,r2c1,r2c2,r2;
-    int  mb,m,cg,a_mol,a0,a1,a;
-    t_iparams *ip;
+    int  ntype,i,j,mb,m,cg,a_mol,a0,a1,a;
+    gmx_bool *bLJ;
     gmx_molblock_t *molb;
     gmx_moltype_t *molt;
     t_block *cgs;
@@ -65,7 +65,20 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
     r2c1 = 0;
     r2c2 = 0;
 
-    ip = mtop->ffparams.iparams;
+    ntype = mtop->ffparams.atnr;
+    snew(bLJ,ntype);
+    for(i=0; i<ntype; i++)
+    {
+        bLJ[i] = FALSE;
+        for(j=0; j<ntype; j++)
+        {
+            if (mtop->ffparams.iparams[i*ntype+j].lj.c6  != 0 ||
+                mtop->ffparams.iparams[i*ntype+j].lj.c12 != 0)
+            {
+                bLJ[i] = TRUE;
+            }
+        }
+    }
 
     a_mol = 0;
     for(mb=0; mb<mtop->nmolblock; mb++)
@@ -91,11 +104,8 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
                     for(a=a0; a<a1; a++)
                     {
                         r2 = distance2(cen,x[a_mol+a]);
-                        if (r2 > r2v2 &&
-                            (ip[atom[a].type ].lj.c6  != 0 ||
-                             ip[atom[a].type ].lj.c12 != 0 ||
-                             ip[atom[a].typeB].lj.c6  != 0 ||
-                             ip[atom[a].typeB].lj.c12 != 0))
+                        if (r2 > r2v2 && (bLJ[atom[a].type ] ||
+                                          bLJ[atom[a].typeB]))
                         {
                             if (r2 > r2v1)
                             {
@@ -126,6 +136,8 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
             a_mol += molb->natoms_mol;
         }
     }
+
+    sfree(bLJ);
 
     *rvdw1  = sqrt(r2v1);
     *rvdw2  = sqrt(r2v2);

@@ -509,7 +509,7 @@ real fit_acf(int ncorr,int fitfn,const output_env_t oenv,gmx_bool bVerbose,
 	     real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
-  real    tStart,tail_corr,sum,sumtot=0,ct_estimate,*sig;
+  real    tStart,tail_corr,sum,sumtot=0,c_start,ct_estimate,*sig;
   int     i,j,jmax,nf_int;
   gmx_bool    bPrint;
 
@@ -542,28 +542,54 @@ real fit_acf(int ncorr,int fitfn,const output_env_t oenv,gmx_bool bVerbose,
 	   "Fit from","Integral","Tail Value","Sum (ps)"," a1 (ps)",
 	   (nfp_ffn[fitfn]>=2) ? " a2 ()" : "",
 	   (nfp_ffn[fitfn]>=3) ? " a3 (ps)" : "");
-  if (tbeginfit > 0)
-    jmax = 3;
-  else
-    jmax = 1;
-  if (fitfn == effnEXP3) {
-    fitparm[0] = 0.002*ncorr*dt;
-    fitparm[1] = 0.95;
-    fitparm[2] = 0.2*ncorr*dt;
-  } else {
-    /* Good initial guess, this increases the probability of convergence */
-    fitparm[0] = ct_estimate;
-    fitparm[1] = 1.0;
-    fitparm[2] = 1.0;
-  }
 
-  /* Generate more or less appropriate sigma's */
   snew(sig,ncorr);
-  for(i=0; i<ncorr; i++)
-    sig[i] = sqrt(ct_estimate+dt*i);
 
-  for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
-    /* Use the previous fitparm as starting values for the next fit */
+  if (tbeginfit > 0) {
+    jmax = 3;
+  } else {
+    jmax = 1;
+  }
+  for(j=0; ((j<jmax) && (tStart < tendfit) && (tStart < ncorr*dt)); j++) {
+    /* Estimate the correlation time for better fitting */
+    c_start = -1;
+    ct_estimate = 0;
+    for(i=0; (i<ncorr) && (dt*i < tStart || c1[i]>0); i++) {
+      if (c_start < 0) {
+	if (dt*i >= tStart) {
+	  c_start     = c1[i];
+	  ct_estimate = 0.5*c1[i];
+	}
+      } else {
+	ct_estimate += c1[i];
+      }
+    }
+    if (c_start > 0) {
+      ct_estimate *= dt/c_start;
+    } else {
+      /* The data is strange, so we need to choose somehting */
+      ct_estimate = tendfit;
+    }
+    if (debug) {
+      fprintf(debug,"tStart %g ct_estimate: %g\n",tStart,ct_estimate);
+    }
+    
+    if (fitfn == effnEXP3) {
+      fitparm[0] = 0.002*ncorr*dt;
+      fitparm[1] = 0.95;
+      fitparm[2] = 0.2*ncorr*dt;
+    } else {
+      /* Good initial guess, this increases the probability of convergence */
+      fitparm[0] = ct_estimate;
+      fitparm[1] = 1.0;
+      fitparm[2] = 1.0;
+    }
+
+    /* Generate more or less appropriate sigma's */
+    for(i=0; i<ncorr; i++) {
+      sig[i] = sqrt(ct_estimate+dt*i);
+    }
+
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
     tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,oenv,
@@ -741,7 +767,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
     { "-fitfn",    FALSE, etENUM, {s_ffn},
       "Fit function" },
     { "-ncskip",   FALSE, etINT,  {&acf.nskip},
-      "Skip N points in the output file of correlation functions" },
+      "Skip this many points in the output file of correlation functions" },
     { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, {&acf.tendfit},

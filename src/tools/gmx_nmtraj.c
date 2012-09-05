@@ -64,7 +64,7 @@ int gmx_nmtraj(int argc,char *argv[])
     const char *desc[] = 
     {
         "[TT]g_nmtraj[tt] generates an virtual trajectory from an eigenvector, ",
-        "corresponding to a harmonic cartesian oscillation around the average ",
+        "corresponding to a harmonic Cartesian oscillation around the average ",
         "structure. The eigenvectors should normally be mass-weighted, but you can ",
         "use non-weighted eigenvectors to generate orthogonal motions. ",
         "The output frames are written as a trajectory file covering an entire period, and ",
@@ -72,10 +72,10 @@ int gmx_nmtraj(int argc,char *argv[])
         "PDB format you can view it directly in PyMol and also render a photorealistic movie. ",
         "Motion amplitudes are calculated from the eigenvalues and a preset temperature, ",
         "assuming equipartition of the energy over all modes. To make the motion clearly visible ",
-        "in PyMol you might want to amplify it by setting an unrealistic high temperature. ", 
-        "However, be aware that both the linear cartesian displacements and mass weighting will ",
+        "in PyMol you might want to amplify it by setting an unrealistically high temperature. ", 
+        "However, be aware that both the linear Cartesian displacements and mass weighting will ",
         "lead to serious structure deformation for high amplitudes - this is is simply a limitation ",
-        "of the cartesian normal mode model. By default the selected eigenvector is set to 7, since ",
+        "of the Cartesian normal mode model. By default the selected eigenvector is set to 7, since ",
         " the first six normal modes are the translational and rotational degrees of freedom." 
     };
 
@@ -89,7 +89,7 @@ int gmx_nmtraj(int argc,char *argv[])
     {
         { "-eignr",     FALSE, etSTR,  {&eignrvec}, "String of eigenvectors to use (first is 1)" },
         { "-phases",    FALSE, etSTR,  {&phasevec}, "String of phases (default is 0.0)" },
-        { "-temp",      FALSE, etREAL, {&temp},      "Temperature in Kelvin" },
+        { "-temp",      FALSE, etREAL, {&temp},      "Temperature (K)" },
         { "-amplitude", FALSE, etREAL, {&refamplitude}, "Amplitude for modes with eigenvalue<=0" },
         { "-nframes",   FALSE, etINT,  {&nframes},   "Number of frames to generate" }
     };

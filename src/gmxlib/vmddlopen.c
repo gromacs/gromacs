@@ -82,7 +82,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #endif
 
 
-#ifdef GMX_DLOPEN
+#ifdef GMX_USE_PLUGINS
 #if defined(__hpux)
 
 #include <dl.h>

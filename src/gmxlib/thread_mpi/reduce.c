@@ -58,17 +58,9 @@ files.
 #include "collective.h"
 
 
-
-/* run a single binary reduce operation on src_a and src_b, producing dest. 
-      dest and src_a may be identical */
-static int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
-                              tMPI_Datatype datatype, int count, tMPI_Op op,
-                              tMPI_Comm comm);
-
-
-static int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
-                              tMPI_Datatype datatype, int count, tMPI_Op op, 
-                              tMPI_Comm comm)
+int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
+                       tMPI_Datatype datatype, int count, tMPI_Op op, 
+                       tMPI_Comm comm)
 {
     tMPI_Op_fn fn=datatype->op_functions[op];
 
@@ -178,12 +170,6 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                     a=recvbuf;
                     b=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[nbr]));
                 }
-                /* here we check for overlapping buffers */
-                if (a==b)
-                {
-                    return tMPI_Error(comm, TMPI_ERR_XFER_BUF_OVERLAP);
-                }
-
 
                 if ((ret=tMPI_Reduce_run_op(recvbuf, a, b, datatype, 
                                             count, op, comm)) != TMPI_SUCCESS)
@@ -348,4 +334,5 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 #endif
     return ret;
 }
+
 

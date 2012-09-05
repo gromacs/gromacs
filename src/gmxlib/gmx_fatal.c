@@ -56,7 +56,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -64,7 +64,7 @@ static gmx_bool bDebug = FALSE;
 static char *fatal_tmp_file = NULL;
 static FILE *log_file = NULL;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
@@ -74,12 +74,12 @@ static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 gmx_bool bDebugMode(void)
 {
     gmx_bool ret;
-/*#ifdef GMX_THREADS*/
+/*#ifdef GMX_THREAD_MPI*/
 #if 0
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     ret=bDebug;
-/*#ifdef GMX_THREADS*/
+/*#ifdef GMX_THREAD_MPI*/
 #if 0
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -100,7 +100,7 @@ void _where(const char *file,int line)
   char *temp; 
   
   if ( bFirst ) {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&where_mutex);
     if (bFirst) /* we repeat the check in the locked section because things
                    might have changed */
@@ -109,7 +109,7 @@ void _where(const char *file,int line)
         if ((temp=getenv("WHERE")) != NULL)
             nskip = strtol(temp, NULL, 10); 
         bFirst = FALSE;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     }
     tMPI_Thread_mutex_unlock(&where_mutex);
 #endif
@@ -192,7 +192,7 @@ static int fatal_errno = 0;
 
 static void quit_gmx(const char *msg)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     if (fatal_errno == 0) 
@@ -215,8 +215,7 @@ static void quit_gmx(const char *msg)
         perror(msg);
     }
 
-#ifndef GMX_THREADS 
-    if (gmx_parallel_env_initialized())
+#ifdef GMX_LIB_MPI
     {
         int  nnodes;
         int  noderank;
@@ -225,25 +224,30 @@ static void quit_gmx(const char *msg)
         noderank = gmx_node_rank();
 
         if (nnodes > 1) 
+        {
             fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",
                     noderank);
+        }
         gmx_abort(noderank,nnodes,-1);
     } 
-    else 
 #endif
+
+    if (debug)
     {
-        if (debug)
-            fflush(debug);
-        if (bDebugMode()) {
-            fprintf(stderr,"dump core (y/n):"); 
-            fflush(stderr);
-            if (toupper(getc(stdin))!='N') 
-                (void) abort(); 
+        fflush(debug);
+    }
+    if (bDebugMode())
+    {
+        fprintf(stderr,"dump core (y/n):"); 
+        fflush(stderr);
+        if (toupper(getc(stdin))!='N') 
+        {
+            (void) abort();
         }
     }
 
     exit(fatal_errno);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
@@ -253,7 +257,7 @@ static void quit_gmx(const char *msg)
  */
 static void quit_gmx_noquit(const char *msg)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     if (!fatal_errno) 
@@ -272,26 +276,30 @@ static void quit_gmx_noquit(const char *msg)
         perror(msg);
     }
 
-    if (!gmx_parallel_env_initialized())
+#ifndef GMX_LIB_MPI
+    if (debug)
     {
-        if (debug)
-            fflush(debug);
-        if (bDebugMode()) {
-            fprintf(stderr,"dump core (y/n):"); 
-            fflush(stderr);
-            if (toupper(getc(stdin))!='N') 
-                (void) abort(); 
+        fflush(debug);
+    }
+    if (bDebugMode())
+    {
+        fprintf(stderr,"dump core (y/n):"); 
+        fflush(stderr);
+        if (toupper(getc(stdin))!='N') 
+        {
+            (void) abort(); 
         }
     }
+#endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
 
 void _set_fatal_tmp_file(const char *fn, const char *file, int line)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (fatal_tmp_file == NULL)
@@ -299,14 +307,14 @@ void _set_fatal_tmp_file(const char *fn, const char *file, int line)
   else
     fprintf(stderr,"BUGWARNING: fatal_tmp_file already set at %s:%d",
 	    file,line);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
 void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (strcmp(fn,fatal_tmp_file) == 0) {
@@ -315,14 +323,14 @@ void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
   } else
     fprintf(stderr,"BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
 	    fn,file,line);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
 static void clean_fatal_tmp_file()
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (fatal_tmp_file) {
@@ -331,7 +339,7 @@ static void clean_fatal_tmp_file()
     sfree(fatal_tmp_file);
     fatal_tmp_file = NULL;
   }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
@@ -427,13 +435,13 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
   
   va_end(ap);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
   tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
 
   fatal_errno = f_errno;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
   tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 
@@ -441,7 +449,7 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 }
 
 void gmx_fatal_collective(int f_errno,const char *file,int line,
-                          t_commrec *cr,gmx_domdec_t *dd,
+                          const t_commrec *cr,gmx_domdec_t *dd,
                           const char *fmt,...)
 {
     gmx_bool    bFinalize;
@@ -454,20 +462,17 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
     bFinalize = TRUE;
 
 #ifdef GMX_MPI
-    if (gmx_parallel_env_initialized())
+    /* Check if we are calling on all processes in MPI_COMM_WORLD */ 
+    if (cr != NULL)
     {
-        /* Check if we are calling on all processes in MPI_COMM_WORLD */ 
-        if (cr != NULL)
-        {
-            MPI_Comm_compare(cr->mpi_comm_mysim,MPI_COMM_WORLD,&result);
-        }
-        else
-        {
-            MPI_Comm_compare(dd->mpi_comm_all,MPI_COMM_WORLD,&result);
-        }
-        /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
-        bFinalize = (result != MPI_UNEQUAL);
+        MPI_Comm_compare(cr->mpi_comm_mysim,MPI_COMM_WORLD,&result);
     }
+    else
+    {
+        MPI_Comm_compare(dd->mpi_comm_all,MPI_COMM_WORLD,&result);
+    }
+    /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
+    bFinalize = (result != MPI_UNEQUAL);
 #endif
 
     if ((cr != NULL && MASTER(cr)  ) ||
@@ -481,13 +486,13 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
         
         va_end(ap);
         
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
         
         fatal_errno = f_errno;
         
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 
@@ -501,28 +506,25 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
     }
 
 #ifdef GMX_MPI
-    if (gmx_parallel_env_initialized())
+    if (bFinalize)
     {
-        if (bFinalize)
-        {
-            /* Broadcast the fatal error number possibly modified
-             * on the master process, in case the user would like
-             * to use the return status on a non-master process.
-             * The master process in cr and dd always has global rank 0.
-             */
-            MPI_Bcast(&fatal_errno,sizeof(fatal_errno),MPI_BYTE,
-                      0,MPI_COMM_WORLD);
+        /* Broadcast the fatal error number possibly modified
+         * on the master process, in case the user would like
+         * to use the return status on a non-master process.
+         * The master process in cr and dd always has global rank 0.
+         */
+        MPI_Bcast(&fatal_errno,sizeof(fatal_errno),MPI_BYTE,
+                  0,MPI_COMM_WORLD);
 
-            /* Finalize nicely instead of aborting */
-            MPI_Finalize();
-        }
-        else
-        {
-            /* Let all other processes wait till the master has printed
-             * the error message and issued MPI_Abort.
-             */
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
+        /* Finalize nicely instead of aborting */
+        MPI_Finalize();
+    }
+    else
+    {
+        /* Let all other processes wait till the master has printed
+         * the error message and issued MPI_Abort.
+         */
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 #endif
 
@@ -553,7 +555,7 @@ gmx_bool gmx_debug_at=FALSE;
 
 void init_debug (const int dbglevel,const char *dbgfile)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     if (!bDebug) /* another thread hasn't already run this*/
@@ -564,7 +566,7 @@ void init_debug (const int dbglevel,const char *dbgfile)
         if (dbglevel >= 2)
             gmx_debug_at = TRUE;
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
@@ -599,7 +601,7 @@ void doexceptions(void)
   
   int onoff,en_mask,abort_action,i;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
   onoff   = _DEBUG;
@@ -610,7 +612,7 @@ void doexceptions(void)
   
   for(i=0; (i<asize(hs)); i++)
     signal(hs[i],handle_signals);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
@@ -622,11 +624,11 @@ static void (*gmx_error_handler)(const char *msg) = quit_gmx;
 
 void set_gmx_error_handler(void (*func)(const char *msg))
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     gmx_error_handler = func;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }

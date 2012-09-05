@@ -55,20 +55,24 @@ files.
 #endif
 #endif
 
-/* we put all of these on their own cache line by specifying an alignment: */
+/* we put all of these on their own cache line by padding the data structure
+   to the size of a cache line on x86 (64 bytes): */
 typedef struct tMPI_Atomic
 {
-    int value __attribute__ ((aligned(64))); 
+    int value; 
+    char padding[64-sizeof(int)];
 } tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    void* value __attribute__ ((aligned(64)));   
+    void* value; 
+    char padding[64-sizeof(void*)];
 } tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
-    unsigned int lock __attribute__ ((aligned(64)));
+    unsigned int lock; 
+    char padding[64-sizeof(unsigned int)];
 } tMPI_Spinlock_t;
 
 
@@ -158,8 +162,8 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
     volatile int ret=b;
     __asm__ __volatile__("\txchgl %0, %1;" 
-                         :"=r"(ret)
-                         :"m"(a->value), "0"(ret)
+                         :"+r"(ret), "+m"(a->value)
+                         : 
                          :"memory");
     return (int)ret;
 }
@@ -174,14 +178,14 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
                          :"memory");
 */
     __asm__ __volatile__("\txchgl %0, %1;" 
-                         :"=r"(ret)
-                         :"m"(a->value), "0"(ret)
+                         :"+r"(ret), "+m"(a->value)
+                         :
                          :"memory");
 
 #else
     __asm__ __volatile__("\txchgq %0, %1;" 
-                         :"=r"(ret)
-                         :"m"(a->value), "0"(ret)
+                         :"+r"(ret), "+m"(a->value)
+                         :
                          :"memory");
 #endif
     return (void*)ret;
@@ -219,7 +223,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
                                                      value with 0 */
                          "\tjne 1b"               /* jump backward if we didn't
                                                      just lock */
-                         : "=m" (x->lock)         /* input & output var */
+                         : "+m" (x->lock)         /* input & output var */
                          : 
                          : "%eax", "memory"/* we changed memory */
                         );
@@ -239,15 +243,16 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 
 static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
-    int old_value;
+    int old_value=1;
         
-    __asm__ __volatile__("\tmovl $1, %0\n"     /* set eax to 1, the locked
+    __asm__ __volatile__("\tmovl %2, %0\n"     /* set eax to 1, the locked
                                                   value of the lock */
                          "\txchgl %0, %1\n"    /* atomically exchange 
                                                   eax with the address in
                                                   rdx. */
-                         :"=r" (old_value), "=m" (x->lock)
-                         : : "memory");
+                         : "+r"(old_value), "+m" (x->lock)
+                         : "i" (1)
+                         : "memory");
     return (old_value);
 }
 
@@ -270,7 +275,7 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
                          "\tjmp 1b\n"             /* and jump back */  
                          "2:\tnop\n"              /* jump target for end 
                                                      of wait */
-                         : "=m"(x->lock)         /* input & output var */
+                         : "+m"(x->lock)         /* input & output var */
                          : 
                          : "memory"/* we changed memory */
                         );

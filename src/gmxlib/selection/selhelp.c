@@ -113,7 +113,7 @@ static const char *help_eval[] = {
     "remaining expressions are not evaluated at all.",
     "This can be used to optimize the selections: you should write the",
     "most restrictive and/or the most inexpensive expressions first in",
-    "gmx_boolean expressions.",
+    "boolean expressions.",
     "The relative ordering between dynamic and static expressions does not",
     "matter: all static expressions are evaluated only once, before the first",
     "frame, and the result becomes the leftmost expression.[PAR]",
@@ -186,6 +186,14 @@ static const char *help_limits[] = {
     "of groups of three or four atoms).",
     "For such programs, it is up to the user to provide a proper selection",
     "expression that always returns such positions.",
+    "[PAR]",
+
+    "Due to technical reasons, having a negative value as the first value in",
+    "expressions like[BR]",
+    "[TT]charge -1 to -0.7[tt][BR]",
+    "result in a syntax error. A workaround is to write[BR]",
+    "[TT]charge {-1 to -0.7}[tt][BR]",
+    "instead.",
 };
 
 static const char *help_positions[] = {
@@ -193,7 +201,7 @@ static const char *help_positions[] = {
 
     "Possible ways of specifying positions in selections are:[PAR]",
 
-    "1. A constant position can be defined as [TT](XX, YY, ZZ)[tt], where",
+    "1. A constant position can be defined as [TT][XX, YY, ZZ][tt], where",
     "[TT]XX[tt], [TT]YY[tt] and [TT]ZZ[tt] are real numbers.[PAR]",
 
     "2. [TT]com of ATOM_EXPR [pbc][tt] or [TT]cog of ATOM_EXPR [pbc][tt]",

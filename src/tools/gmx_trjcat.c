@@ -57,7 +57,6 @@
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "wgms.h"
-#include "magic.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "xdrf.h"
@@ -392,12 +391,12 @@ int gmx_trjcat(int argc, char *argv[])
     const char
     *desc[] =
         {
-            "trjcat concatenates several input trajectory files in sorted order. ",
+            "[TT]trjcat[tt] concatenates several input trajectory files in sorted order. ",
             "In case of double time frames the one in the later file is used. ",
             "By specifying [TT]-settime[tt] you will be asked for the start time ",
             "of each file. The input files are taken from the command line, ",
-            "such that a command like [TT]trjcat -o fixed.trr *.trr[tt] should do ",
-            "the trick. Using [TT]-cat[tt] you can simply paste several files ",
+            "such that a command like [TT]trjcat -f *.trr -o fixed.trr[tt] should do ",
+            "the trick. Using [TT]-cat[tt], you can simply paste several files ",
             "together without removal of frames with identical time stamps.[PAR]",
             "One important option is inferred when the output file is amongst the",
             "input files. In that case that particular file will be appended to",
@@ -405,15 +404,15 @@ int gmx_trjcat(int argc, char *argv[])
             "Obviously the file to append to has to be the one with lowest starting",
             "time since one can only append at the end of a file.[PAR]",
             "If the [TT]-demux[tt] option is given, the N trajectories that are",
-            "read, are written in another order as specified in the xvg file.",
-            "The xvg file should contain something like:[PAR]",
-            "0  0  1  2  3  4  5[BR]",
-            "2  1  0  2  3  5  4[BR]",
+            "read, are written in another order as specified in the [TT].xvg[tt] file.",
+            "The [TT].xvg[tt] file should contain something like:[PAR]",
+            "[TT]0  0  1  2  3  4  5[BR]",
+            "2  1  0  2  3  5  4[tt][BR]",
             "Where the first number is the time, and subsequent numbers point to",
             "trajectory indices.",
             "The frames corresponding to the numbers present at the first line",
             "are collected into the output trajectory. If the number of frames in",
-            "the trajectory does not match that in the xvg file then the program",
+            "the trajectory does not match that in the [TT].xvg[tt] file then the program",
             "tries to be smart. Beware." };
     static gmx_bool bVels = TRUE;
     static int prec = 3;
@@ -438,7 +437,7 @@ int gmx_trjcat(int argc, char *argv[])
             { "-dt", FALSE, etTIME,
                 { &dt }, "Only write frame when t MOD dt = first time (%t)" },
             { "-prec", FALSE, etINT,
-                { &prec }, "Precision for .xtc and .gro writing in number of decimal places" },
+                { &prec }, "Precision for [TT].xtc[tt] and [TT].gro[tt] writing in number of decimal places" },
             { "-vel", FALSE, etBOOL,
                 { &bVels }, "Read and write velocities if possible" },
             { "-settime", FALSE, etBOOL,
@@ -446,11 +445,11 @@ int gmx_trjcat(int argc, char *argv[])
             { "-sort", FALSE, etBOOL,
                 { &bSort }, "Sort trajectory files (not frames)" },
             { "-keeplast", FALSE, etBOOL,
-                { &bKeepLast }, "keep overlapping frames at end of trajectory" },
+                { &bKeepLast }, "Keep overlapping frames at end of trajectory" },
             { "-overwrite", FALSE, etBOOL,
-                { &bOverwrite }, "overwrite overlapping frames during appending" },
+                { &bOverwrite }, "Overwrite overlapping frames during appending" },
             { "-cat", FALSE, etBOOL,
-                { &bCat }, "do not discard double time frames" } };
+                { &bCat }, "Do not discard double time frames" } };
 #define npargs asize(pa)
     int ftpin, i, frame, frame_out, step = 0, trjout = 0;
     t_trxstatus *status;
@@ -567,6 +566,7 @@ int gmx_trjcat(int argc, char *argv[])
                 snew(fnms_out[i],strlen(buf)+32);
                 sprintf(fnms_out[i],"%d_%s",i,buf);
             }
+            sfree(buf);
         }
         do_demux(nfile_in,fnms,fnms_out,n,val,t,dt_remd,isize,index,dt,oenv);
     }
@@ -684,7 +684,7 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     searchtime = last_frame_time;
                 }
-                if (xtc_seek_time(stfio,searchtime,fr.natoms))
+                if (xtc_seek_time(stfio,searchtime,fr.natoms,TRUE))
                 {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }

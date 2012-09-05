@@ -44,18 +44,14 @@
 extern "C" {
 #endif
 
-gmx_bool gmx_parallel_env_initialized(void); 
-/* 1 when running in a parallel environment, so could also be 1 if
-   mdrun was started with: mpirun -np 1.
-  
-   Use this function only to check whether a parallel environment has
-   been initialized, for example when checking whether gmx_finalize()
-   needs to be called. Use PAR(cr) to check whether the simulation actually
-   has more than one node/thread. */
-
+char *gmx_gethostname(char *name, size_t len);
+/* Sets the hostname to the value given by gethostname, if available,
+ * and to "unknown" otherwise. name should have at least size len.
+ * Returns name.
+ */
 
 void gmx_log_open(const char *fn,const t_commrec *cr,
-                          gmx_bool bMasterOnly, unsigned long Flags, FILE**);
+                          gmx_bool bMasterOnly, gmx_bool bAppendFiles, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
@@ -65,13 +61,15 @@ void gmx_log_close(FILE *fp);
 
 void check_multi_int(FILE *log,const gmx_multisim_t *ms,
 			    int val,const char *name);
+void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
+                           gmx_large_int_t val,const char *name);
 /* Check if val is the same on all processors for a mdrun -multi run
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match.
  */
 
-void init_multisystem(t_commrec *cr,int nsim,int nfile,
-                             const t_filenm fnm[], gmx_bool bParFn);
+void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
+                      int nfile, const t_filenm fnm[], gmx_bool bParFn);
 /* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.
@@ -83,7 +81,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr);
  * (see network.h). The command line arguments are communicated so that they can be
  * parsed on each processor.
  * Arguments are the number of command line arguments, and a pointer to the
- * array of argument strings.
+ * array of argument strings. Both are allowed to be NULL.
  */
 
 t_commrec *init_par_threads(const t_commrec *cro);
@@ -92,9 +90,6 @@ t_commrec *init_par_threads(const t_commrec *cro);
    the individual threads. Copies the original commrec to 
    thread-local versions (a small memory leak results because we don't 
    deallocate the old shared version).  */
-
-t_commrec *init_cr_nopar(void);
-/* Returns t_commrec for non-parallel functionality */
 
 #ifdef __cplusplus
 }

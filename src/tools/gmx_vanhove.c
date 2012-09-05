@@ -60,10 +60,10 @@
 int gmx_vanhove(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_vanhove computes the Van Hove correlation function.",
-    "The Van Hove G(r,t) is the probability that a particle that is at r0",
-    "at time zero can be found at position r0+r at time t.",
-    "g_vanhove determines G not for a vector r, but for the length of r.",
+    "[TT]g_vanhove[tt] computes the Van Hove correlation function.",
+    "The Van Hove G(r,t) is the probability that a particle that is at r[SUB]0[sub]",
+    "at time zero can be found at position r[SUB]0[sub]+r at time t.",
+    "[TT]g_vanhove[tt] determines G not for a vector r, but for the length of r.",
     "Thus it gives the probability that a particle moves a distance of r",
     "in time t.",
     "Jumps across the periodic boundaries are removed.",
@@ -71,7 +71,7 @@ int gmx_vanhove(int argc,char *argv[])
     "or anisotropic pressure coupling.",
     "[PAR]",
     "With option [TT]-om[tt] the whole matrix can be written as a function",
-    "of t and r or as a function of sqrt(t) and r (option [TT]-sqrt[tt]).",
+    "of t and r or as a function of [SQRT]t[sqrt] and r (option [TT]-sqrt[tt]).",
     "[PAR]",
     "With option [TT]-or[tt] the Van Hove function is plotted for one",
     "or more values of t. Option [TT]-nr[tt] sets the number of times,",
@@ -94,25 +94,25 @@ int gmx_vanhove(int argc,char *argv[])
   static real sbin=0,rmax=2,rbin=0.01,mmax=0,rint=0;
   t_pargs pa[] = {
     { "-sqrt",    FALSE, etREAL,{&sbin},
-      "Use sqrt(t) on the matrix axis which binspacing # in sqrt(ps)" },
+      "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in [SQRT]ps[sqrt]" },
     { "-fm",      FALSE, etINT, {&fmmax},
       "Number of frames in the matrix, 0 is plot all" },
     { "-rmax",    FALSE, etREAL, {&rmax},
       "Maximum r in the matrix (nm)" },
     { "-rbin",    FALSE, etREAL, {&rbin},
-      "Binwidth in the matrix and for -or (nm)" },
+      "Binwidth in the matrix and for [TT]-or[tt] (nm)" },
     { "-mmax",    FALSE, etREAL, {&mmax},
       "Maximum density in the matrix, 0 is calculate (1/nm)" },
     { "-nlevels" ,FALSE, etINT,  {&nlev}, 
       "Number of levels in the matrix" },
     { "-nr",      FALSE, etINT, {&nr},
-      "Number of curves for the -or output" },
+      "Number of curves for the [TT]-or[tt] output" },
     { "-fr",      FALSE, etINT, {&fshift},
-      "Frame spacing for the -or output" },
+      "Frame spacing for the [TT]-or[tt] output" },
     { "-rt",      FALSE, etREAL, {&rint},
-      "Integration limit for the -ot output (nm)" },
+      "Integration limit for the [TT]-ot[tt] output (nm)" },
     { "-ft",      FALSE, etINT, {&ftmax},
-      "Number of frames in the -ot output, 0 is plot all" }
+      "Number of frames in the [TT]-ot[tt] output, 0 is plot all" }
   };
 #define NPA asize(pa)
 

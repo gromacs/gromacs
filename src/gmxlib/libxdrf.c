@@ -86,7 +86,7 @@ static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* we need this because of the global variables above for FORTRAN binding. 
    The I/O operations are going to be slow. */
 static tMPI_Thread_mutex_t xdr_fortran_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
@@ -94,13 +94,13 @@ static tMPI_Thread_mutex_t xdr_fortran_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 
 static void xdr_fortran_lock(void)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&xdr_fortran_mutex);
 #endif
 }
 static void xdr_fortran_unlock(void)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&xdr_fortran_mutex);
 #endif
 }
@@ -376,7 +376,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     char newtype[5];
 
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
     {
         tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
@@ -461,7 +461,7 @@ int xdrclose(XDR *xdrs) {
     int xdrid;
     int rc = 0;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
     {
         tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
@@ -746,7 +746,7 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
     int bytes[32];
     int i, j, num_of_bytes, p, num;
     
-    bytes[1] = bytes[2] = bytes[3] = 0;
+    bytes[0] = bytes[1] = bytes[2] = bytes[3] = 0;
     num_of_bytes = 0;
     while (num_of_bits > 8) {
 	bytes[num_of_bytes++] = receivebits(buf, 8);
@@ -803,7 +803,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
-    int prealloc_size=3*16;
+    unsigned prealloc_size=3*16;
     int prealloc_ip[3*16], prealloc_buf[3*20];
     int we_should_free=0;
 
@@ -1683,7 +1683,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
 
      
 
-int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
+int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms,gmx_bool bSeekForwardOnly)
 {
     float t;
     float dt;
@@ -1693,6 +1693,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     int res;
     int dt_sign = 0;
 
+    if (bSeekForwardOnly)
+    {
+        low = gmx_ftell(fp);
+    }
     if (gmx_fseek(fp,0,SEEK_END))
     {
         return -1;
@@ -1705,7 +1709,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     /* round to int  */
     high /= XDR_INT_SIZE;
     high *= XDR_INT_SIZE;
-    offset = ((high / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
+    offset = (((high-low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp,offset,SEEK_SET))
     {

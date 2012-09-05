@@ -707,7 +707,7 @@ static void do_maaren(FILE *fp,int eel,int pts_nm,int npow)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "gen_table generates tables for mdrun for use with the USER defined",
+    "[TT]gen_table[tt] generates tables for [TT]mdrun[tt] for use with the USER defined",
     "potentials. Note that the format has been update for higher",
     "accuracy in the forces starting with version 4.0. Using older",
     "tables with 4.0 will silently crash your simulations, as will",

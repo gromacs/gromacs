@@ -252,7 +252,7 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
     int ret;
     /* Return 0 if we got the lock */
     __fence();
-    ret=__check_lock_mp((int*)&(x->lock), 0, 1) != 0;
+    ret=__check_lock_mp((int*)&(x->lock), 0, 1);
     tMPI_Atomic_memory_barrier_acq();
     return ret;
 }
@@ -270,7 +270,7 @@ static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
     int ret;
     __fence();
     ret=((x->lock) != 0);
-    tMPI_Atomic_memory_acq();
+    tMPI_Atomic_memory_barrier_acq();
     return ret;
 }
 

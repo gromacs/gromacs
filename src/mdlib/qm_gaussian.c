@@ -87,7 +87,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 			   {1,6,11},
 			   {4,6,0}};
   char
-    *buf;
+    *buf=NULL;
   int
     i;
   
@@ -115,28 +115,25 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
   /* we read the number of cpus and environment from the environment
    * if set.  
    */
-    snew(buf,20);
     buf = getenv("NCPUS");
     if (buf)
       sscanf(buf,"%d",&qm->nQMcpus);
     else
       qm->nQMcpus=1;
     fprintf(stderr,"number of CPUs for gaussian = %d\n",qm->nQMcpus);
-    snew(buf,50);
     buf = getenv("MEM");
     if (buf)
       sscanf(buf,"%d",&qm->QMmem);
     else
       qm->QMmem=50000000;
     fprintf(stderr,"memory for gaussian = %d\n",qm->QMmem);
-    snew(buf,30);
     buf = getenv("ACC");
     if (buf)
       sscanf(buf,"%d",&qm->accuracy);
     else
       qm->accuracy=8;  
     fprintf(stderr,"accuracy in l510 = %d\n",qm->accuracy); 
-    snew(buf,30);
+
     buf = getenv("CPMCSCF");
     if (buf)
 	{
@@ -149,7 +146,6 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
       fprintf(stderr,"using cp-mcscf in l1003\n");
     else
       fprintf(stderr,"NOT using cp-mcscf in l1003\n"); 
-    snew(buf,50);
     buf = getenv("SASTEP");
     if (buf)
       sscanf(buf,"%d",&qm->SAstep);
@@ -160,8 +156,6 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
      * if set.  
      */
     fprintf(stderr,"Level of SA at start = %d\n",qm->SAstep);
-        
-
     /* punch the LJ C6 and C12 coefficients to be picked up by
      * gaussian and usd to compute the LJ interaction between the
      * MM and QM atoms.
@@ -181,35 +175,27 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
       fclose(out);
     }
     /* gaussian settings on the system */
-    snew(buf,200);
     buf = getenv("GAUSS_DIR");
     fprintf(stderr,"%s",buf);
 
     if (buf){
-      snew(qm->gauss_dir,200);
-      sscanf(buf,"%s",qm->gauss_dir);
+      qm->gauss_dir=strdup(buf);
     }
     else
       gmx_fatal(FARGS,"no $GAUSS_DIR, check gaussian manual\n");
     
-    snew(buf,200);    
     buf = getenv("GAUSS_EXE");
     if (buf){
-      snew(qm->gauss_exe,200);
-      sscanf(buf,"%s",qm->gauss_exe);
+      qm->gauss_exe=strdup(buf);
     }
     else
       gmx_fatal(FARGS,"no $GAUSS_EXE, check gaussian manual\n");
-    
-    snew(buf,200);
     buf = getenv("DEVEL_DIR");
     if (buf){
-      snew(qm->devel_dir,200);
-      sscanf(buf,"%s",qm->devel_dir);
+      qm->devel_dir = strdup (buf);
     }
     else
       gmx_fatal(FARGS,"no $DEVEL_DIR, this is were the modified links reside.\n");
-    
     
     /*  if(fr->bRF){*/
     /* reactionfield, file is needed using gaussian */
@@ -473,17 +459,17 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 	    eQMmethod_names[qm->QMmethod]);
     
     if(qm->QMmethod>=eQMmethodRHF){
-      fprintf(out,"/%s",
-	      eQMbasis_names[qm->QMbasis]);
       if(qm->QMmethod==eQMmethodCASSCF){
 	/* in case of cas, how many electrons and orbitals do we need?
 	 */
 	fprintf(out,"(%d,%d)",
 		qm->CASelectrons,qm->CASorbitals);
       }
+      fprintf(out,"/%s",
+	      eQMbasis_names[qm->QMbasis]);
     }
   }
-  if(QMMMrec->QMMMscheme==eQMMMschemenormal){
+  if(QMMMrec->QMMMscheme==eQMMMschemenormal && mm->nrMMatoms){
     fprintf(out," %s",
 	    "Charge ");
   }
@@ -888,7 +874,7 @@ int hop(int step, t_QMrec *qm)
 void do_gaussian(int step,char *exe)
 {
   char
-    buf[100];
+    buf[STRLEN];
 
   /* make the call to the gaussian binary through system()
    * The location of the binary will be picked up from the 

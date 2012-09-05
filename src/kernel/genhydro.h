@@ -51,7 +51,7 @@ extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
  * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.
  * rN[i] is the residue number of the N-terminus of chain i,
  * rC[i] is the residue number of the C-terminus of chain i
- * if bMissing==TRUE, conitue when atoms are not found
+ * if bMissing==TRUE, continue when atoms are not found
  * if nabptr && abptrb, the hack array will be returned in them to be used
  * a second time
  * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged
@@ -59,10 +59,10 @@ extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
  */
 
 extern int protonate(t_atoms **atoms, rvec **x, t_protonate *protdata);
-/* Protonate molecule according to ffgmx2 
+/* Protonate molecule according to gmx2.ff/aminoacids.hdb 
  * when called the first time, new atoms are added to atoms, 
  * second time only coordinates are generated
- * return the New total number of atoms 
+ * return the new total number of atoms 
  */
 
 extern void deprotonate(t_atoms *atoms,rvec *x);

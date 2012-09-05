@@ -197,7 +197,7 @@ static void do_specbonds(FILE *fp,int indent)
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "This program reads an rtp file and dumps an xml file."
+    "This program reads an [TT].rtp[tt] file and dumps an [TT].xml[tt] file."
   };
 
   typedef struct {
