@@ -65,7 +65,6 @@ int tMPI_Scan(void* sendbuf, void* recvbuf, int count,
     struct tmpi_thread *cur=tMPI_Get_current();
     int myrank=tMPI_Comm_seek_rank(comm, cur);
     int N=tMPI_Comm_N(comm);
-    int ret;
     int prev=myrank - 1; /* my previous neighbor */
     int next=myrank + 1; /* my next neighbor */
 
@@ -95,6 +94,8 @@ int tMPI_Scan(void* sendbuf, void* recvbuf, int count,
     if (myrank > 0)
     {
         void *a, *b;
+        int ret;
+
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
         tMPI_Profile_wait_start(cur);
 #endif
@@ -155,7 +156,7 @@ int tMPI_Scan(void* sendbuf, void* recvbuf, int count,
     /*tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);*/
     tMPI_Profile_count_stop(cur, TMPIFN_Scan);
 #endif
-    return ret;
+    return TMPI_SUCCESS;
 }
 
 

@@ -208,8 +208,6 @@ int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
     {
 #ifdef TMPI_SET_AFFINITY
         /* now set the affinity of the new thread */
-        int ret;
-
         pthread_mutex_lock( &(aff_init) );
         ret=tMPI_Set_affinity(aff_thread_number++);
         pthread_mutex_unlock( &(aff_init) );
