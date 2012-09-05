@@ -1580,7 +1580,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         snew(pmedata,1);
     }
 
-#if defined GMX_THREAD_MPI && defined TMPI_THREAD_AFFINITY
+#if defined GMX_THREAD_MPI
     /* With the number of TMPI threads equal to the number of cores
      * we already pinned in thread-MPI, so don't pin again here.
      */
