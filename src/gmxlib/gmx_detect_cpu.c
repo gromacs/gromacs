@@ -32,7 +32,7 @@
 #endif
 
 
-#include "gmx_detectcpu.h"
+#include "gmx_detect_cpu.h"
 
 
 const char *
@@ -178,7 +178,7 @@ execute_cpuid_x86(unsigned int level,
  * version and some features. Vendor has already been detected outside this.
  */
 static int
-detectcpu_common_x86(gmx_detectcpu_t *              data)
+detectcpu_common_x86(gmx_cpu_info_t *              data)
 {
     int                       fn,max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
@@ -260,7 +260,7 @@ detectcpu_common_x86(gmx_detectcpu_t *              data)
 
 /* Detection of AMD-specific CPU features */
 static int
-detectcpu_amd(gmx_detectcpu_t *              data)
+detectcpu_amd(gmx_cpu_info_t *              data)
 {
     int                       max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
@@ -288,7 +288,7 @@ detectcpu_amd(gmx_detectcpu_t *              data)
 
 /* Detection of Intel-specific CPU features */
 static int
-detectcpu_intel(gmx_detectcpu_t *              data)
+detectcpu_intel(gmx_cpu_info_t *              data)
 {
     int                       max_stdfn;
     unsigned int              eax,ebx,ecx,edx;
@@ -346,7 +346,7 @@ detectcpu_vendor(void)
 }
 
 int
-gmx_detectcpu                   (gmx_detectcpu_t *              data)
+gmx_detectcpu                   (gmx_cpu_info_t *              data)
 {
     int i;
 
@@ -387,7 +387,7 @@ gmx_detectcpu                   (gmx_detectcpu_t *              data)
 
 
 int
-gmx_detectcpu_formatstring       (gmx_detectcpu_t              data,
+gmx_detectcpu_formatstring       (gmx_cpu_info_t                data,
                                   char *                        str,
                                   int                           n)
 {
@@ -447,7 +447,7 @@ gmx_detectcpu_formatstring       (gmx_detectcpu_t              data,
 
 
 int
-gmx_detectcpu_suggest_acceleration  (gmx_detectcpu_t                 data,
+gmx_detectcpu_suggest_acceleration  (gmx_cpu_info_t                  data,
                                      gmx_detectcpu_acceleration_t *  acc)
 {
     gmx_detectcpu_acceleration_t tmpacc;
@@ -493,7 +493,7 @@ gmx_detectcpu_suggest_acceleration  (gmx_detectcpu_t                 data,
 
 
 int
-gmx_detectcpu_check_acceleration(gmx_detectcpu_t   data,
+gmx_detectcpu_check_acceleration(gmx_cpu_info_t   data,
                                  FILE *           log)
 {
     int                           rc;
@@ -545,7 +545,7 @@ gmx_detectcpu_check_acceleration(gmx_detectcpu_t   data,
 int
 main(int argc, char **argv)
 {
-    gmx_detectcpu_t               data;
+    gmx_cpu_info_t                data;
     gmx_detectcpu_acceleration_t  acc;
     int                           i,cnt;
 
