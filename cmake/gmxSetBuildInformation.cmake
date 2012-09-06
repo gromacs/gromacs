@@ -52,32 +52,32 @@ macro(gmx_set_build_information)
         # Get CPU acceleration information
         try_run(GMX_DETECTCPU_RUN_VENDOR GMX_DETECTCPU_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detect_cpu.c
             COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_VENDOR ARGS "-vendor")
         try_run(GMX_DETECTCPU_RUN_BRAND GMX_DETECTCPU_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detect_cpu.c
             COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_BRAND ARGS "-brand")
         try_run(GMX_DETECTCPU_RUN_FAMILY GMX_DETECTCPU_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detect_cpu.c
             COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_FAMILY ARGS "-family")
         try_run(GMX_DETECTCPU_RUN_MODEL GMX_DETECTCPU_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detect_cpu.c
             COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_MODEL ARGS "-model")
        try_run(GMX_DETECTCPU_RUN_STEPPING GMX_DETECTCPU_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detect_cpu.c
             COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_STEPPING ARGS "-stepping")
         try_run(GMX_DETECTCPU_RUN_FEATURES GMX_DETECTCPU_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detect_cpu.c
             COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_FEATURES ARGS "-features")
 

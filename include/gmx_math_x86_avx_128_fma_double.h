@@ -64,13 +64,13 @@ gmx_mm_invsqrt_pair_pd(__m128d x1, __m128d x2, __m128d *invsqrt1, __m128d *invsq
     __m128d lu1,lu2;
     
     /* Do first N-R step in float for 2x throughput */
-    xf  = _mm_shuffle_ps(_mm_cvtpd_ps(x1),_mm_cvtpd_ps(x2),MM_SHUFFLE(1,0,1,0));
+    xf  = _mm_shuffle_ps(_mm_cvtpd_ps(x1),_mm_cvtpd_ps(x2),_MM_SHUFFLE(1,0,1,0));
     luf = _mm_rsqrt_ps(xf);
     
     luf = _mm_mul_ps(_mm_mul_ps(halff,luf),_mm_nmacc_ps(_mm_mul_ps(luf,luf),xf,threef));
 
     
-    lu2 = _mm_cvtps_pd(_mm_shuffle_ps(luf,luf,MM_SHUFFLE(3,2,3,2)));
+    lu2 = _mm_cvtps_pd(_mm_shuffle_ps(luf,luf,_MM_SHUFFLE(3,2,3,2)));
     lu1 = _mm_cvtps_pd(luf);
     
     *invsqrt1 = _mm_mul_pd(_mm_mul_pd(half,lu1),_mm_nmacc_pd(_mm_mul_pd(lu1,lu1),x1,three));

@@ -27,7 +27,7 @@ macro(gmx_detect_acceleration GMX_SUGGESTED_ACCELERATION)
     # Get CPU acceleration information
     try_run(GMX_DETECTCPU_RUN_ACC GMX_DETECTCPU_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detect_cpu.c
             COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_TMP
             COMPILE_OUTPUT_VARIABLE GMX_DETECTCPU_COMPILE_OUTPUT 

@@ -119,6 +119,7 @@ IF( WIN32 AND NOT CYGWIN)
   ENDIF()
 ENDIF()
 
+
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -159,7 +160,8 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
 
-option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
+option(GMX_GPU  "Enable GPU acceleration" ON)
+option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -171,6 +173,8 @@ if(UNIX AND NOT APPLE)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
+option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
+mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 ######################################################################
 # compiler tests
@@ -217,6 +221,15 @@ endif()
 
 include(gmxCFlags)
 gmx_c_flags()
+
+include(gmxGetCompilerVersion)
+get_compiler_version()
+
+# gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
+# Detect here whether applying a workaround is needed and will apply it later
+# on the affected files.
+include(gmxGCC44O3BugWorkaround)
+gmx_check_gcc44_bug_workaround_needed(GMX_USE_GCC44_BUG_WORKAROUND)
 
 ########################################################################
 # Set up binary and library suffixing 
@@ -318,8 +331,6 @@ else(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 
-
-
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -362,6 +373,7 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
+
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -486,6 +498,57 @@ if(GMX_OPENMM)
     find_package(OpenMM) 
 endif(GMX_OPENMM)
 
+
+if(GMX_GPU)
+    if(GMX_DOUBLE)
+        message(WARNING "GPU acceleration is not available in double precision, disabled!")
+        set(GMX_GPU OFF CACHE BOOL "Enable GPU acceleration" FORCE)
+    endif()
+
+    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    if(MSVC)
+        find_package(CUDA 4.1)
+    else()
+        find_package(CUDA 3.2)
+    endif()
+
+    if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
+        message(FATAL_ERROR "
+    mdrun supports native GPU acceleration on NVIDIA hardware with compute
+    capability >=2.0. This requires the NVIDIA CUDA library, which was not
+    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
+
+    CPU or GPU acceleration can be selected at runtime, but if you are
+    sure you can not make use of GPU acceleration, disable it by setting
+    the CMake variable GMX_GPU=OFF.")
+    endif()
+
+    if(NOT GMX_OPENMP)
+        message(WARNING "
+    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreding.
+    Without OpenMP only a single CPU core per GPU can be used which is suboptimal.
+    Note that with MPI multiple processes can be forced to use a single GPU, but this
+    typically inefficient.")
+    endif()
+
+    include(gmxManageNvccConfig)
+
+    # Check whether we can use atomic operations needed for polling wait for GPU
+    # (to avoid the cudaStreamSynchronize + ECC bug).
+    # With thread-MPI testing atomics has already been carried out, but without
+    # thread-MPI we need to invoke the atomics test independently.
+    if (NOT GMX_THREAD_MPI)
+        set(TEST_TMPI_ATOMICS_ONLY ON CACHE INTERNAL
+            "Test only the atomic operations of thread-MPI.")
+        include(ThreadMPI)
+    endif()
+
+    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
+    # but it's too cumbersome to check the ld version and the flag should not hurt
+    if(CMAKE_COMPILER_IS_GNUCC)
+        set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
+    endif()
+endif()
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -833,6 +896,11 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+
+# enable threaded fftw3 if we've found it 
+if(FFTW3_THREADS OR FFTW3F_THREADS)
+    add_definitions(-DFFT5D_FFTW_THREADS)
+endif()
 
 set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
 set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
