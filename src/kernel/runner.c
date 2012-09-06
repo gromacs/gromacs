@@ -715,7 +715,8 @@ static void convert_to_verlet_scheme(FILE *fplog,
     }
     else
     {
-        ir->rlist = 1.05*max(ir->rvdw,ir->rcoulomb);
+        ir->verletbuf_drift = -1;
+        ir->rlist           = 1.05*max(ir->rvdw,ir->rcoulomb);
     }
 
     gmx_mtop_remove_chargegroups(mtop);
