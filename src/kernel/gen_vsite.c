@@ -175,9 +175,11 @@ static void read_vsite_database(const char *ddbname,
 	  (*ch) = 0;
 	trim (dirstr);
 
-	if(!gmx_strcasecmp(dirstr,"HID"))
+	if(!gmx_strcasecmp(dirstr,"HID") ||
+	   !gmx_strcasecmp(dirstr,"HISD"))
 	  sprintf(dirstr,"HISA");
-	else if(!gmx_strcasecmp(dirstr,"HIE"))
+	else if(!gmx_strcasecmp(dirstr,"HIE") ||
+		!gmx_strcasecmp(dirstr,"HISE"))
 	  sprintf(dirstr,"HISB");
 	else if(!gmx_strcasecmp(dirstr,"HIP"))
 	  sprintf(dirstr,"HISH");
@@ -1208,6 +1210,8 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
   sinalpha=sqrt(1-cosalpha*cosalpha);
   x[atCG]  = - sinalpha*dCGCE1;
   y[atCG]  = 0;
+  x[atHE1] = x[atHE2] = x[atHD1] = x[atHD2] = 0;
+  y[atHE1] = y[atHE2] = y[atHD1] = y[atHD2] = 0;
   
   /* calculate ND1 and CD2 positions from CE1 and NE2 */
 

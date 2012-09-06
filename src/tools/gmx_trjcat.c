@@ -57,7 +57,6 @@
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "wgms.h"
-#include "magic.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "xdrf.h"
@@ -438,7 +437,7 @@ int gmx_trjcat(int argc, char *argv[])
             { "-dt", FALSE, etTIME,
                 { &dt }, "Only write frame when t MOD dt = first time (%t)" },
             { "-prec", FALSE, etINT,
-                { &prec }, "Precision for .xtc and .gro writing in number of decimal places" },
+                { &prec }, "Precision for [TT].xtc[tt] and [TT].gro[tt] writing in number of decimal places" },
             { "-vel", FALSE, etBOOL,
                 { &bVels }, "Read and write velocities if possible" },
             { "-settime", FALSE, etBOOL,
@@ -446,11 +445,11 @@ int gmx_trjcat(int argc, char *argv[])
             { "-sort", FALSE, etBOOL,
                 { &bSort }, "Sort trajectory files (not frames)" },
             { "-keeplast", FALSE, etBOOL,
-                { &bKeepLast }, "keep overlapping frames at end of trajectory" },
+                { &bKeepLast }, "Keep overlapping frames at end of trajectory" },
             { "-overwrite", FALSE, etBOOL,
-                { &bOverwrite }, "overwrite overlapping frames during appending" },
+                { &bOverwrite }, "Overwrite overlapping frames during appending" },
             { "-cat", FALSE, etBOOL,
-                { &bCat }, "do not discard double time frames" } };
+                { &bCat }, "Do not discard double time frames" } };
 #define npargs asize(pa)
     int ftpin, i, frame, frame_out, step = 0, trjout = 0;
     t_trxstatus *status;
@@ -567,6 +566,7 @@ int gmx_trjcat(int argc, char *argv[])
                 snew(fnms_out[i],strlen(buf)+32);
                 sprintf(fnms_out[i],"%d_%s",i,buf);
             }
+            sfree(buf);
         }
         do_demux(nfile_in,fnms,fnms_out,n,val,t,dt_remd,isize,index,dt,oenv);
     }
@@ -684,7 +684,7 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     searchtime = last_frame_time;
                 }
-                if (xtc_seek_time(stfio,searchtime,fr.natoms))
+                if (xtc_seek_time(stfio,searchtime,fr.natoms,TRUE))
                 {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }

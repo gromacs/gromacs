@@ -5,7 +5,7 @@ add_library(gmxana
             eigio.c         cmat.c          
             eigensolver.c   nsc.c           
             hxprops.c       fitahx.c        
-            geminate.c
+            geminate.c      nsfactor.c
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      
             gmx_bundle.c    gmx_chi.c       gmx_cluster.c   gmx_confrms.c   
             gmx_covar.c     gmx_current.c   
@@ -19,8 +19,8 @@ add_library(gmxana
             gmx_nmens.c     gmx_order.c     gmx_principal.c 
             gmx_polystat.c  gmx_potential.c gmx_rama.c      
             gmx_rdf.c       gmx_rms.c       gmx_rmsf.c      
-            gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c              
-            gmx_select.c	gmx_rmsdist.c	gmx_rotmat.c
+            gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c       gmx_sans.c
+            gmx_select.c    gmx_rmsdist.c   gmx_rotmat.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      
             gmx_traj.c      gmx_velacc.c    gmx_helixorient.c 
             gmx_clustsize.c gmx_mdmat.c     gmx_wham.c      
@@ -29,12 +29,15 @@ add_library(gmxana
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
             gmx_genpr.c     gmx_eneconv.c   gmx_vanhove.c   gmx_wheel.c     
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
-            gmx_membed.c    gmx_pme_error.c gmx_options.c
+            gmx_membed.c    gmx_pme_error.c gmx_options.c   gmx_dos.c
+            gmx_hydorder.c  gmx_densorder.c powerspect.c    dens_filter.c
+            binsearch.c     gmx_dyecoupl.c
             )
 
 
 target_link_libraries(gmxana md gmx ${GSL_LIBRARIES})
-set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
+set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+    COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 # List of programs with single corresponding .c source file,
 # used to create build rules automatically.
@@ -53,6 +56,7 @@ set(GMX_TOOLS_PROGRAMS
     g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
     g_membed g_pme_error g_rmsdist g_rotmat g_options
+    g_dos    g_hydorder  g_densorder g_dyecoupl g_sans
     )
 
 set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
@@ -62,7 +66,10 @@ set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     add_executable(${TOOL} ${TOOL}.c)
-    target_link_libraries(${TOOL} gmxana)
+    if (NOT ${TOOL} STREQUAL "g_options")
+        gmx_add_man_page(${TOOL})
+    endif()
+    target_link_libraries(${TOOL} gmxana ${OpenMP_LINKER_FLAGS})
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
 

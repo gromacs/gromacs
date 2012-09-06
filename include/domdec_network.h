@@ -20,13 +20,7 @@
 #define _domdec_network_h
 
 #include "typedefs.h"
-
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {

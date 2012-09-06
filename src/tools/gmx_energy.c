@@ -1,12 +1,12 @@
 /*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
@@ -58,7 +58,7 @@
 #include "viewit.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"
-
+#include "mdebin.h"
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
@@ -91,7 +91,7 @@ static double mypow(double x,double y)
 {
   if (x > 0)
     return pow(x,y);
-  else 
+  else
     return 0.0;
 }
 
@@ -101,16 +101,16 @@ static int *select_it(int nre,char *nm[],int *nset)
   int  n,k,j,i;
   int  *set;
   gmx_bool bVerbose = TRUE;
-  
+
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
-  
+
   fprintf(stderr,"Select the terms you want from the following list\n");
   fprintf(stderr,"End your selection with 0\n");
 
   if ( bVerbose ) {
     for(k=0; (k<nre); ) {
-      for(j=0; (j<4) && (k<nre); j++,k++) 
+      for(j=0; (j<4) && (k<nre); j++,k++)
 	fprintf(stderr," %3d=%14s",k+1,nm[k]);
       fprintf(stderr,"\n");
     }
@@ -130,24 +130,16 @@ static int *select_it(int nre,char *nm[],int *nset)
   for(i=(*nset)=0; (i<nre); i++)
     if (bE[i])
       set[(*nset)++]=i;
- 
-  sfree(bE);
-  
-  return set;
-}
 
-static int strcount(const char *s1,const char *s2)
-{
-  int n=0;
-  while (s1 && s2 && (toupper(s1[n]) == toupper(s2[n])))
-    n++;
-  return n;
+  sfree(bE);
+
+  return set;
 }
 
 static void chomp(char *buf)
 {
   int len = strlen(buf);
-  
+
   while ((len > 0) && (buf[len-1] == '\n')) {
     buf[len-1] = '\0';
     len--;
@@ -164,16 +156,16 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   const char *fm4="%3d  %-14s";
   const char *fm2="%3d  %-34s";
   char **newnm=NULL;
-  
+
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
- 
+
   fprintf(stderr,"\n");
   fprintf(stderr,"Select the terms you want from the following list by\n");
   fprintf(stderr,"selecting either (part of) the name or the number or a combination.\n");
   fprintf(stderr,"End your selection with an empty line or a zero.\n");
   fprintf(stderr,"-------------------------------------------------------------------\n");
-  
+
   snew(newnm,nre);
   j = 0;
   for(k=0; k<nre; k++) {
@@ -214,17 +206,17 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   if ( bVerbose ) {
     fprintf(stderr,"\n\n");
   }
-  
+
   snew(bE,nre);
-  
+
   bEOF = FALSE;
   while (!bEOF && (fgets2(buf,STRLEN-1,stdin))) {
     /* Remove newlines */
     chomp(buf);
-    
+
     /* Remove spaces */
     trim(buf);
-    
+
     /* Empty line means end of input */
     bEOF = (strlen(buf) == 0);
     if (!bEOF) {
@@ -275,26 +267,37 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
       } while (!bEOF && (ptr && (strlen(ptr) > 0)));
     }
   }
-  
+
   snew(set,nre);
   for(i=(*nset)=0; (i<nre); i++)
     if (bE[i])
       set[(*nset)++]=i;
- 
+
   sfree(bE);
-  
+
   if (*nset == 0)
     gmx_fatal(FARGS,"No energy terms selected");
 
-  for(i=0; (i<nre); i++) 
+  for(i=0; (i<nre); i++)
     sfree(newnm[i]);
   sfree(newnm);
-  
+
   return set;
 }
 
+static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
+{
+    gmx_mtop_t mtop;
+    int        natoms;
+    t_iatom    *iatom;
+    matrix     box;
+
+    /* all we need is the ir to be able to write the label */
+    read_tpx(topnm,ir,box,&natoms,NULL,NULL,NULL,&mtop);
+}
+
 static void get_orires_parms(const char *topnm,
-			     int *nor,int *nex,int **label,real **obs)
+                               int *nor,int *nex,int **label,real **obs)
 {
   gmx_mtop_t mtop;
   gmx_localtop_t *top;
@@ -310,12 +313,12 @@ static void get_orires_parms(const char *topnm,
 
   ip       = top->idef.iparams;
   iatom    = top->idef.il[F_ORIRES].iatoms;
-  
+
   /* Count how many distance restraint there are... */
   nb = top->idef.il[F_ORIRES].nr;
   if (nb == 0)
     gmx_fatal(FARGS,"No orientation restraints in topology!\n");
-  
+
   *nor = nb/3;
   *nex = 0;
   snew(*label,*nor);
@@ -352,17 +355,17 @@ static int get_bounds(const char *topnm,
 
   functype = top->idef.functype;
   ip       = top->idef.iparams;
-  
+
   /* Count how many distance restraint there are... */
   nb=top->idef.il[F_DISRES].nr;
   if (nb == 0)
     gmx_fatal(FARGS,"No distance restraints in topology!\n");
-  
+
   /* Allocate memory */
   snew(b,nb);
   snew(ind,nb);
   snew(pair,nb+1);
-  
+
   /* Fill the bound array */
   nb=0;
   for(i=0; (i<top->idef.ntypes); i++) {
@@ -376,7 +379,7 @@ static int get_bounds(const char *topnm,
     }
   }
   *bounds = b;
-  
+
   /* Fill the index array */
   label1  = -1;
   disres  = &(top->idef.il[F_DISRES]);
@@ -387,7 +390,7 @@ static int get_bounds(const char *topnm,
     natom = interaction_function[ftype].nratoms+1;
     if (label1 != top->idef.iparams[type].disres.label) {
       pair[j] = k;
-      label1  = top->idef.iparams[type].disres.label; 
+      label1  = top->idef.iparams[type].disres.label;
       j ++;
     }
     k++;
@@ -400,7 +403,7 @@ static int get_bounds(const char *topnm,
 
   *index   = ind;
   *dr_pair = pair;
-  
+
   return nb;
 }
 
@@ -410,7 +413,7 @@ static void calc_violations(real rt[],real rav3[],int nb,int index[],
   const   real sixth=1.0/6.0;
   int     i,j;
   double  rsum,rav,sumaver,sumt;
-  
+
   sumaver = 0;
   sumt    = 0;
   for(i=0; (i<nb); i++) {
@@ -424,7 +427,7 @@ static void calc_violations(real rt[],real rav3[],int nb,int index[],
     }
     rsum    = max(0.0,mypow(rsum,-sixth)-bounds[i]);
     rav     = max(0.0,mypow(rav, -sixth)-bounds[i]);
-    
+
     sumt    += rsum;
     sumaver += rav;
   }
@@ -450,7 +453,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
             sumaver);
     fprintf(stdout,"Largest violation averaged over simulation: %g nm\n\n",
             sumt);
-#endif		    
+#endif
     vout=xvgropen(voutfn,"r\\S-3\\N average violations","DR Index","nm",
             oenv);
     sum  = 0.0;
@@ -458,8 +461,8 @@ static void analyse_disre(const char *voutfn,    int nframes,
     for(i=0; (i<nbounds); i++) {
         /* Do ensemble averaging */
         sumaver = 0;
-        for(j=pair[i]; (j<pair[i+1]); j++) 
-            sumaver += sqr(violaver[j]/nframes); 
+        for(j=pair[i]; (j<pair[i+1]); j++)
+            sumaver += sqr(violaver[j]/nframes);
         sumaver = max(0.0,mypow(sumaver,minsixth)-bounds[i]);
 
         sumt   += sumaver;
@@ -563,7 +566,7 @@ static void add_ee_sum(ee_sum_t *ees,double sum,int np)
 static void add_ee_av(ee_sum_t *ees)
 {
     double av;
-    
+
     av = ees->sum/ees->np;
     ees->sav  += av;
     ees->sav2 += av*av;
@@ -634,7 +637,7 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
     for(i=0; i<nset; i++)
     {
         ed = &edat->s[i];
-        
+
         sum  = 0;
         sum2 = 0;
         np   = 0;
@@ -672,7 +675,7 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
                 sump  = ed->ener[f];
                 sum2 += dsqr(sump);
             }
-            
+
             /* sum has to be increased after sum2 */
             np  += p;
             sum += sump;
@@ -779,14 +782,14 @@ static enerdata_t *calc_sum(int nset,enerdata_t *edat,int nbmin,int nbmax)
     enerdat_t *s;
     int f,i;
     double sum;
-    
+
     snew(esum,1);
     *esum = *edat;
     snew(esum->s,1);
     s = &esum->s[0];
     snew(s->ener,esum->nframes);
     snew(s->es  ,esum->nframes);
-    
+
     s->bExactStat = TRUE;
     s->slope      = 0;
     for(i=0; i<nset; i++)
@@ -797,7 +800,7 @@ static enerdata_t *calc_sum(int nset,enerdata_t *edat,int nbmin,int nbmax)
         }
         s->slope += edat->s[i].slope;
     }
-    
+
     for(f=0; f<edat->nframes; f++)
     {
         sum = 0;
@@ -814,7 +817,7 @@ static enerdata_t *calc_sum(int nset,enerdata_t *edat,int nbmin,int nbmax)
         s->es[f].sum  = sum;
         s->es[f].sum2 = 0;
     }
-    
+
     calc_averages(1,esum,nbmin,nbmax);
 
     return esum;
@@ -824,7 +827,7 @@ static char *ee_pr(double ee,char *buf)
 {
     char   tmp[100];
     double rnd;
-    
+
     if (ee < 0)
     {
         sprintf(buf,"%s","--");
@@ -840,8 +843,173 @@ static char *ee_pr(double ee,char *buf)
     return buf;
 }
 
+static void remove_drift(int nset,int nbmin,int nbmax,real dt,enerdata_t *edat)
+{
+/* Remove the drift by performing a fit to y = ax+b.
+   Uses 5 iterations. */
+    int i,j,k;
+    double delta,d,sd,sd2;
+
+    edat->npoints = edat->nframes;
+    edat->nsteps = edat->nframes;
+
+    for(k=0; (k<5); k++)
+    {
+        for(i=0; (i<nset); i++)
+        {
+            delta = edat->s[i].slope*dt;
+
+            if (NULL != debug)
+                fprintf(debug,"slope for set %d is %g\n",i,edat->s[i].slope);
+
+            for(j=0; (j<edat->nframes); j++)
+            {
+                edat->s[i].ener[j]   -= j*delta;
+                edat->s[i].es[j].sum  = 0;
+                edat->s[i].es[j].sum2 = 0;
+            }
+        }
+        calc_averages(nset,edat,nbmin,nbmax);
+    }
+}
+
+static void calc_fluctuation_props(FILE *fp,
+                                   gmx_bool bDriftCorr,real dt,
+                                   int nset,int set[],int nmol,
+                                   char **leg,enerdata_t *edat,
+                                   int nbmin,int nbmax)
+{
+    int i,j;
+    double vvhh,vv,v,h,hh2,vv2,varv,hh,varh,tt,cv,cp,alpha,kappa,dcp,et,varet;
+    double NANO3;
+    enum { eVol, eEnth, eTemp, eEtot, eNR };
+    const char *my_ener[] = { "Volume", "Enthalpy", "Temperature", "Total Energy" };
+    int ii[eNR];
+
+    NANO3 = NANO*NANO*NANO;
+    if (!bDriftCorr)
+    {
+        fprintf(fp,"\nYou may want to use the -driftcorr flag in order to correct\n"
+                "for spurious drift in the graphs. Note that this is not\n"
+                "a substitute for proper equilibration and sampling!\n");
+    }
+    else
+    {
+        remove_drift(nset,nbmin,nbmax,dt,edat);
+    }
+    for(i=0; (i<eNR); i++)
+    {
+        for(ii[i]=0; (ii[i]<nset &&
+                      (gmx_strcasecmp(leg[ii[i]],my_ener[i]) != 0)); ii[i]++)
+            ;
+/*        if (ii[i] < nset)
+            fprintf(fp,"Found %s data.\n",my_ener[i]);
+*/  }
+    /* Compute it all! */
+    vvhh = alpha = kappa = cp = dcp = cv = NOTSET;
+
+    /* Temperature */
+    tt = NOTSET;
+    if (ii[eTemp] < nset)
+    {
+        tt    = edat->s[ii[eTemp]].av;
+    }
+    /* Volume */
+    vv = varv = NOTSET;
+    if ((ii[eVol] < nset) && (ii[eTemp] < nset))
+    {
+        vv    = edat->s[ii[eVol]].av*NANO3;
+        varv  = dsqr(edat->s[ii[eVol]].rmsd*NANO3);
+        kappa = (varv/vv)/(BOLTZMANN*tt);
+    }
+    /* Enthalpy */
+    hh = varh = NOTSET;
+    if ((ii[eEnth] < nset) && (ii[eTemp] < nset))
+    {
+        hh    = KILO*edat->s[ii[eEnth]].av/AVOGADRO;
+        varh  = dsqr(KILO*edat->s[ii[eEnth]].rmsd/AVOGADRO);
+        cp    = AVOGADRO*((varh/nmol)/(BOLTZMANN*tt*tt));
+    }
+    /* Total energy */
+    et = varet = NOTSET;
+    if ((ii[eEtot] < nset) && (hh == NOTSET) && (tt != NOTSET))
+    {
+        /* Only compute cv in constant volume runs, which we can test
+           by checking whether the enthalpy was computed.
+        */
+        et    = edat->s[ii[eEtot]].av;
+        varet = sqr(edat->s[ii[eEtot]].rmsd);
+        cv    = KILO*((varet/nmol)/(BOLTZ*tt*tt));
+    }
+    /* Alpha, dcp */
+    if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
+    {
+        vvhh = 0;
+        for(j=0; (j<edat->nframes); j++)
+        {
+            v = edat->s[ii[eVol]].ener[j]*NANO3;
+            h = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
+            vvhh += (v*h);
+        }
+        vvhh /= edat->nframes;
+        alpha = (vvhh-vv*hh)/(vv*BOLTZMANN*tt*tt);
+        dcp   = (vv*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
+    }
+
+    if (tt != NOTSET)
+    {
+        if (nmol < 2)
+            fprintf(fp,"\nWARNING: nmol = %d, this may not be what you want.\n",
+                    nmol);
+        fprintf(fp,"\nTemperature dependent fluctuation properties at T = %g.\n",tt);
+        fprintf(fp,"\nHeat capacities obtained from fluctuations do *not* include\n");
+        fprintf(fp,"quantum corrections. If you want to get a more accurate estimate\n");
+        fprintf(fp,"please use the g_dos program.\n\n");
+        fprintf(fp,"WARNING: Please verify that your simulations are converged and perform\n"
+                "a block-averaging error analysis (not implemented in g_energy yet)\n");
+
+        if (debug != NULL)
+        {
+            if (varv != NOTSET)
+                fprintf(fp,"varv  =  %10g (m^6)\n",varv*AVOGADRO/nmol);
+            if (vvhh != NOTSET)
+                fprintf(fp,"vvhh  =  %10g (m^3 J)\n",vvhh);
+        }
+        if (vv != NOTSET)
+            fprintf(fp,"Volume                                   = %10g m^3/mol\n",
+                    vv*AVOGADRO/nmol);
+        if (varh != NOTSET)
+            fprintf(fp,"Enthalpy                                 = %10g kJ/mol\n",
+                hh*AVOGADRO/(KILO*nmol));
+        if (alpha != NOTSET)
+            fprintf(fp,"Coefficient of Thermal Expansion Alpha_P = %10g (1/K)\n",
+                    alpha);
+        if (kappa != NOTSET)
+        {
+            fprintf(fp,"Isothermal Compressibility Kappa         = %10g (J/m^3)\n",
+                    kappa);
+            fprintf(fp,"Adiabatic bulk modulus                   = %10g (m^3/J)\n",
+                    1.0/kappa);
+        }
+        if (cp != NOTSET)
+            fprintf(fp,"Heat capacity at constant pressure Cp    = %10g J/mol K\n",
+                    cp);
+        if (cv != NOTSET)
+            fprintf(fp,"Heat capacity at constant volume Cv      = %10g J/mol K\n",
+                    cv);
+        if (dcp != NOTSET)
+            fprintf(fp,"Cp-Cv                                    =  %10g J/mol K\n",
+                    dcp);
+        please_cite(fp,"Allen1987a");
+    }
+    else
+    {
+        fprintf(fp,"You should select the temperature in order to obtain fluctuation properties.\n");
+    }
+}
+
 static void analyse_ener(gmx_bool bCorr,const char *corrfn,
-                         gmx_bool bFee,gmx_bool bSum,gmx_bool bFluct,
+                         gmx_bool bFee,gmx_bool bSum,gmx_bool bFluct,gmx_bool bTempFluct,
                          gmx_bool bVisco,const char *visfn,int nmol,
                          gmx_large_int_t start_step,double start_t,
                          gmx_large_int_t step,double t,
@@ -857,14 +1025,13 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
   /* Check out the printed manual for equations! */
   double Dt,aver,stddev,errest,delta_t,totaldrift;
   enerdata_t *esum=NULL;
-  real xxx,integral,intBulk;
+  real xxx,integral,intBulk,Temp=0,Pres=0;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,pr_errest;
   double beta=0,expE,expEtot,*fee=NULL;
   gmx_large_int_t nsteps;
   int  nexact,nnotexact;
   double x1m,x1mk;
-  real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0;
-  int  i,j,nout;
+  int  i,j,k,nout;
   real chi2;
   char buf[256],eebuf[100];
 
@@ -876,12 +1043,12 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
   else {
     /* Calculate the time difference */
     delta_t = t - start_t;
-    
+
     fprintf(stdout,"\nStatistics over %s steps [ %.4f through %.4f ps ], %d data sets\n",
 	    gmx_step_str(nsteps,buf),start_t,t,nset);
 
     calc_averages(nset,edat,nbmin,nbmax);
-    
+
     if (bSum) {
         esum = calc_sum(nset,edat,nbmin,nbmax);
     }
@@ -900,7 +1067,7 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
 	}
       }
     }
-    
+
     if (nnotexact == 0) {
       fprintf(stdout,"All statistics are over %s points\n",
 	      gmx_step_str(edat->npoints,buf));
@@ -928,7 +1095,7 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
     else
       fprintf(stdout,"\n");
     fprintf(stdout,"-------------------------------------------------------------------------------\n");
-    
+
     /* Initiate locals, only used with -sum */
     expEtot=0;
     if (bFee) {
@@ -945,23 +1112,18 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
 	for(j=0; (j<edat->nframes); j++) {
 	  expE += exp(beta*(edat->s[i].ener[j] - aver)/nmol);
 	}
-	if (bSum) 
+	if (bSum)
 	  expEtot+=expE/edat->nframes;
-	
+
 	fee[i] = log(expE/edat->nframes)/beta + aver/nmol;
       }
       if (strstr(leg[i],"empera") != NULL) {
-	VarT = sqr(stddev);
 	Temp = aver;
       } else if (strstr(leg[i],"olum") != NULL) {
-	VarV = sqr(stddev);
 	Vaver= aver;
       } else if (strstr(leg[i],"essure") != NULL) {
 	Pres = aver;
-      } else if (strstr(leg[i],"otal") != NULL) {
-	VarEtot = sqr(stddev);
-	AvEtot = aver;
-      } 
+      }
       if (bIsEner[i]) {
 	pr_aver   = aver/nmol-ezero;
 	pr_stddev = stddev/nmol;
@@ -982,9 +1144,9 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
 
       fprintf(stdout,"%-24s %10g %10s %10g %10g",
 	      leg[i],pr_aver,ee_pr(pr_errest,eebuf),pr_stddev,totaldrift);
-      if (bFee) 
+      if (bFee)
 	fprintf(stdout,"  %10g",fee[i]);
-      
+
       fprintf(stdout,"  (%s)\n",enm[set[i]].unit);
 
       if (bFluct) {
@@ -998,12 +1160,13 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
 	      "Total",esum->s[0].av/nmol,ee_pr(esum->s[0].ee/nmol,eebuf),
 	      "--",totaldrift/nmol,enm[set[0]].unit);
       /* pr_aver,pr_stddev,a,totaldrift */
-      if (bFee) 
+      if (bFee)
 	fprintf(stdout,"  %10g  %10g\n",
 		log(expEtot)/beta + esum->s[0].av/nmol,log(expEtot)/beta);
       else
 	fprintf(stdout,"\n");
     }
+
     /* Do correlation function */
     if (edat->nframes > 1)
     {
@@ -1018,10 +1181,10 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
       real factor;
       real **eneset;
       real **enesum;
-    
+
       /* Assume pressure tensor is in Pxx Pxy Pxz Pyx Pyy Pyz Pzx Pzy Pzz */
-      
-      /* Symmetrise tensor! (and store in first three elements) 
+
+      /* Symmetrise tensor! (and store in first three elements)
        * And subtract average pressure!
        */
       snew(eneset,12);
@@ -1044,34 +1207,34 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
 	enesum[1][i] = 0.5*(edat->s[2].es[i].sum+edat->s[6].es[i].sum);
 	enesum[2][i] = 0.5*(edat->s[5].es[i].sum+edat->s[7].es[i].sum);
       }
-      
+
       einstein_visco("evisco.xvg","eviscoi.xvg",
 		     3,edat->nframes,enesum,Vaver,Temp,nsteps,time,oenv);
-      
+
       /*do_autocorr(corrfn,buf,nenergy,3,eneset,Dt,eacNormal,TRUE);*/
       /* Do it for shear viscosity */
       strcpy(buf,"Shear Viscosity");
       low_do_autocorr(corrfn,oenv,buf,edat->nframes,3,
 		      (edat->nframes+1)/2,eneset,Dt,
 		      eacNormal,1,TRUE,FALSE,FALSE,0.0,0.0,0,1);
-	
+
       /* Now for bulk viscosity */
       strcpy(buf,"Bulk Viscosity");
       low_do_autocorr(corrfn,oenv,buf,edat->nframes,1,
 		      (edat->nframes+1)/2,&(eneset[11]),Dt,
 		      eacNormal,1,TRUE,FALSE,FALSE,0.0,0.0,0,1);
-      
+
       factor = (Vaver*1e-26/(BOLTZMANN*Temp))*Dt;
       fp=xvgropen(visfn,buf,"Time (ps)","\\8h\\4 (cp)",oenv);
       xvgr_legend(fp,asize(leg),leg,oenv);
-      
+
       /* Use trapezium rule for integration */
       integral = 0;
       intBulk  = 0;
       nout = get_acfnout();
       if ((nout < 2) || (nout >= edat->nframes/2))
           nout = edat->nframes/2;
-      for(i=1; (i<nout); i++) 
+      for(i=1; (i<nout); i++)
       {
           integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
           intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
@@ -1107,12 +1270,12 @@ static void print1(FILE *fp,gmx_bool bDp,real e)
     fprintf(fp,"  %10.6f",e);
 }
 
-static void fec(const char *ene2fn, const char *runavgfn, 
-		real reftemp, int nset, int set[], char *leg[], 
+static void fec(const char *ene2fn, const char *runavgfn,
+		real reftemp, int nset, int set[], char *leg[],
 		enerdata_t *edat, double time[],
                 const output_env_t oenv)
 {
-  const char* ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
+  const char* ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N",
                            "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   ener_file_t enx;
@@ -1125,29 +1288,29 @@ static void fec(const char *ene2fn, const char *runavgfn,
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   char buf[22];
-  
+
   /* read second energy file */
   snew(fr,1);
   enm = NULL;
   enx = open_enx(ene2fn,"r");
   do_enxnms(enx,&(fr->nre),&enm);
-  
+
   snew(eneset2,nset+1);
   nenergy2=0;
   maxenergy=0;
   timecheck=0;
   do {
-    /* This loop searches for the first frame (when -b option is given), 
+    /* This loop searches for the first frame (when -b option is given),
      * or when this has been found it reads just one energy frame
      */
     do {
       bCont = do_enx(enx,fr);
-      
+
       if (bCont)
 	timecheck = check_times(fr->t);
-      
+
     } while (bCont && (timecheck < 0));
-    
+
     /* Store energies for analysis afterwards... */
     if ((timecheck == 0) && bCont) {
       if (fr->nre > 0) {
@@ -1165,14 +1328,14 @@ static void fec(const char *ene2fn, const char *runavgfn,
       }
     }
   } while (bCont && (timecheck == 0));
-  
+
   /* check */
   if (edat->nframes != nenergy2) {
     fprintf(stderr,"\nWARNING file length mismatch %d!=%d\n",
 	    edat->nframes,nenergy2);
   }
   nenergy = min(edat->nframes,nenergy2);
-  
+
   /* calculate fe difference dF = -kT ln < exp(-(E_B-E_A)/kT) >_A */
   fp=NULL;
   if (runavgfn) {
@@ -1192,7 +1355,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
       dE = eneset2[i][j] - edat->s[i].ener[j];
       sum += exp(-dE*beta);
       if (fp)
-	fprintf(fp,"%10g %10g %10g\n", 
+	fprintf(fp,"%10g %10g %10g\n",
 		time[j], dE, -BOLTZ*reftemp*log(sum/(j+1)) );
     }
     aver = -BOLTZ*reftemp*log(sum/nenergy);
@@ -1203,9 +1366,8 @@ static void fec(const char *ene2fn, const char *runavgfn,
 }
 
 
-static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
-                    int *blocks, int *hists, int *samples, int *nlambdas,
-                    const output_env_t oenv)
+static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *filename, gmx_bool bDp,
+                    int *blocks, int *hists, int *samples, int *nlambdas, const output_env_t oenv)
 {
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN], legend[STRLEN];
@@ -1216,7 +1378,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     /* coll data */
     double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
     static int setnr=0;
-    gmx_bool changing_lambda;
+    gmx_bool changing_lambda=FALSE;
 
     /* now count the blocks & handle the global dh data */
     for(i=0;i<fr->nblock;i++)
@@ -1262,36 +1424,23 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     {
         if (nblock_dh>0)
         {
-            sprintf(title,"%s, %s",dhdl,deltag);
-            sprintf(label_x,"%s (%s)","Time",unit_time);
-            sprintf(label_y,"(%s)",unit_energy);
+            /* we have standard, non-histogram data -- call open_dhdl to open the file */
+            *fp_dhdl=open_dhdl(filename,ir,oenv);
         }
         else
         {
             sprintf(title,"N(%s)",deltag);
             sprintf(label_x,"%s (%s)",deltag,unit_energy);
             sprintf(label_y,"Samples");
-        }
-        *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, 
-                               oenv);
-        if (! changing_lambda)
-        {
+            *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY,oenv);
             sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+            xvgr_subtitle(*fp_dhdl,buf,oenv);
         }
-        else
-        {
-            sprintf(buf,"T = %g (K)", temp);
-        }
-        xvgr_subtitle(*fp_dhdl,buf,oenv);
-        first=TRUE;
     }
-
-
 
     (*hists)+=nblock_hist;
     (*blocks)+=nblock_dh;
     (*nlambdas) = nblock_hist+nblock_dh;
-
 
     /* write the data */
     if (nblock_hist > 0)
@@ -1328,27 +1477,27 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                     if (!derivative)
                     {
                         sprintf(legend, "N(%s(%s=%g) | %s=%g)",
-                                deltag, lambda, foreign_lambda, 
+                                deltag, lambda, foreign_lambda,
                                 lambda, start_lambda);
                     }
                     else
                     {
-                        sprintf(legend, "N(%s | %s=%g)", 
+                        sprintf(legend, "N(%s | %s=%g)",
                                 dhdl, lambda, start_lambda);
                     }
-                                       
+
                     lg[0]=legend;
-                    xvgr_new_dataset(*fp_dhdl, setnr, 1, lg, oenv); 
+                    xvgr_new_dataset(*fp_dhdl, setnr, 1, lg, oenv);
                     setnr++;
                     for(k=0;k<blk->sub[j+2].nr;k++)
                     {
                         int hist;
                         double xmin, xmax;
-                    
+
                         hist=blk->sub[j+2].ival[k];
                         xmin=(x0+k)*dx;
                         xmax=(x0+k+1)*dx;
-                        fprintf(*fp_dhdl,"%g %d\n%g %d\n", xmin, hist, 
+                        fprintf(*fp_dhdl,"%g %d\n%g %d\n", xmin, hist,
                                 xmax, hist);
                         sum+=hist;
                     }
@@ -1360,7 +1509,6 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                 }
             }
         }
-
         (*samples) += (int)(sum/nblock_hist);
     }
     else
@@ -1370,52 +1518,13 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         char **setnames=NULL;
         int nnames=nblock_dh;
 
-        if (changing_lambda)
-        {
-            nnames++;
-        }
-        if (first)
-        {
-            snew(setnames, nnames);
-        }
-        j=0;
-
-        if ( changing_lambda && first)
-        {
-            /* lambda is a plotted value */
-            setnames[j]=gmx_strdup(lambda);
-            j++;
-        }
-
-
         for(i=0;i<fr->nblock;i++)
         {
             t_enxblock *blk=&(fr->block[i]);
             if (blk->id == enxDH)
             {
-                if (first)
-                {
-                    /* do the legends */
-                    int derivative;
-                    double foreign_lambda;
-
-                    derivative=blk->sub[0].ival[0];
-                    foreign_lambda=blk->sub[1].dval[0];
-
-                    if (derivative)
-                    {
-                        sprintf(buf, "%s %s %g",dhdl,lambda,start_lambda);
-                    }
-                    else
-                    {
-                        sprintf(buf, "%s %s %g",deltag,lambda, foreign_lambda);
-                    }
-                    setnames[j] = gmx_strdup(buf);
-                    j++;
-                }
-
                 if (len == 0)
-                {   
+                {
                     len=blk->sub[2].nr;
                 }
                 else
@@ -1427,30 +1536,14 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                 }
             }
         }
-
-
-        if (first)
-        {
-            xvgr_legend(*fp_dhdl, nblock_dh, (const char**)setnames, oenv);
-            setnr += nblock_dh;
-            for(i=0;i<nblock_dh;i++)
-            {
-                sfree(setnames[i]);
-            }
-            sfree(setnames);
-        }
-
         (*samples) += len;
+
         for(i=0;i<len;i++)
         {
             double time=start_time + delta_time*i;
 
-            fprintf(*fp_dhdl,"%.4f", time);
-            if (fabs(delta_lambda) > 1e-9)
-            {
-                double lambda_now=i*delta_lambda + start_lambda;
-                fprintf(*fp_dhdl,"  %.4f", lambda_now);
-            }
+            fprintf(*fp_dhdl,"%.4f ", time);
+
             for(j=0;j<fr->nblock;j++)
             {
                 t_enxblock *blk=&(fr->block[j]);
@@ -1465,7 +1558,20 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                     {
                         value=blk->sub[2].dval[i];
                     }
-                    fprintf(*fp_dhdl,"  %g", value);
+                    /* we need to decide which data type it is based on the count*/
+
+                    if (j==1 && ir->bExpanded)
+                    {
+                        fprintf(*fp_dhdl,"%4d", (int)value);   /* if expanded ensembles and zero, this is a state value, it's an integer. We need a cleaner conditional than if j==1! */
+                    } else {
+                        if (bDp) {
+                            fprintf(*fp_dhdl," %#.12g", value);   /* print normal precision */
+                        }
+                        else
+                        {
+                            fprintf(*fp_dhdl," %#.8g", value);   /* print normal precision */
+                        }
+                    }
                 }
             }
             fprintf(*fp_dhdl, "\n");
@@ -1477,28 +1583,43 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
 int gmx_energy(int argc,char *argv[])
 {
   const char *desc[] = {
-    
+
     "[TT]g_energy[tt] extracts energy components or distance restraint",
     "data from an energy file. The user is prompted to interactively",
-    "select the energy terms she wants.[PAR]",
-    
-    "Average, RMSD and drift are calculated with full precision from the",
+    "select the desired energy terms.[PAR]",
+
+    "Average, RMSD, and drift are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
     "a least-squares fit of the data to a straight line. The reported total drift",
     "is the difference of the fit at the first and last point.",
     "An error estimate of the average is given based on a block averages",
-    "over 5 blocks using the full precision averages. The error estimate",
+    "over 5 blocks using the full-precision averages. The error estimate",
     "can be performed over multiple block lengths with the options",
     "[TT]-nbmin[tt] and [TT]-nbmax[tt].",
-    "Note that in most cases the energy files contains averages over all",
+    "[BB]Note[bb] that in most cases the energy files contains averages over all",
     "MD steps, or over many more points than the number of frames in",
     "energy file. This makes the [TT]g_energy[tt] statistics output more accurate",
     "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
-    "file the statistics mentioned above are simply over the single, per-frame",
+    "file, the statistics mentioned above are simply over the single, per-frame",
     "energy values.[PAR]",
 
     "The term fluctuation gives the RMSD around the least-squares fit.[PAR]",
-    
+
+    "Some fluctuation-dependent properties can be calculated provided",
+    "the correct energy terms are selected, and that the command line option",
+    "[TT]-fluct_props[tt] is given. The following properties",
+    "will be computed:[BR]",
+    "Property                        Energy terms needed[BR]",
+    "---------------------------------------------------[BR]",
+    "Heat capacity C[SUB]p[sub] (NPT sims):    Enthalpy, Temp     [BR]",
+    "Heat capacity C[SUB]v[sub] (NVT sims):    Etot, Temp         [BR]",
+    "Thermal expansion coeff. (NPT): Enthalpy, Vol, Temp[BR]",
+    "Isothermal compressibility:     Vol, Temp          [BR]",
+    "Adiabatic bulk modulus:         Vol, Temp          [BR]",
+    "---------------------------------------------------[BR]",
+    "You always need to set the number of molecules [TT]-nmol[tt].",
+    "The C[SUB]p[sub]/C[SUB]v[sub] computations do [BB]not[bb] include any corrections",
+    "for quantum effects. Use the [TT]g_dos[tt] program if you need that (and you do).[PAR]"
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",
     "instantaneous sum of violations are recalculated. Additionally",
@@ -1529,27 +1650,28 @@ int gmx_energy(int argc,char *argv[])
 
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
-    "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
-    "  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
+    "  [GRK]Delta[grk] A = A(N,V,T) - A[SUB]idealgas[sub](N,V,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln][BR]",
+    "  [GRK]Delta[grk] G = G(N,p,T) - G[SUB]idealgas[sub](N,p,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln][BR]",
     "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
     "the average is over the ensemble (or time in a trajectory).",
     "Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",
     "and using the potential energy. This also allows for an entropy",
     "estimate using:[BR]",
-    "  Delta S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (<Upot> - Delta A)/T[BR]",
-    "  Delta S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (<Upot> + pV - Delta G)/T",
+    "  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) - S[SUB]idealgas[sub](N,V,T) = ([CHEVRON]U[SUB]pot[sub][chevron] - [GRK]Delta[grk] A)/T[BR]",
+    "  [GRK]Delta[grk] S(N,p,T) = S(N,p,T) - S[SUB]idealgas[sub](N,p,T) = ([CHEVRON]U[SUB]pot[sub][chevron] + pV - [GRK]Delta[grk] G)/T",
     "[PAR]",
-    
+
     "When a second energy file is specified ([TT]-f2[tt]), a free energy",
-    "difference is calculated dF = -kT ln < e ^ -(EB-EA)/kT >A ,",
-    "where EA and EB are the energies from the first and second energy",
-    "files, and the average is over the ensemble A. [BB]NOTE[bb] that",
-    "the energies must both be calculated from the same trajectory."
-    
+    "difference is calculated [BR] dF = -kT [LN][CHEVRON][EXP]-(E[SUB]B[sub]-E[SUB]A[sub])/kT[exp][chevron][SUB]A[sub][ln] ,",
+    "where E[SUB]A[sub] and E[SUB]B[sub] are the energies from the first and second energy",
+    "files, and the average is over the ensemble A. The running average",
+    "of the free energy difference is printed to a file specified by [TT]-ravg[tt].",
+    "[BB]Note[bb] that the energies must both be calculated from the same trajectory."
+
   };
-  static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
-  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
+  static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE,bDriftCorr=FALSE;
+  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE,bFluctProps=FALSE;
   static int  skip=0,nmol=1,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -1565,7 +1687,7 @@ int gmx_energy(int argc,char *argv[])
       "Print energies in high precision" },
     { "-nbmin", FALSE, etINT, {&nbmin},
       "Minimum number of blocks for error estimate" },
-    { "-nbmax", FALSE, etINT, {&nbmax}, 
+    { "-nbmax", FALSE, etINT, {&nbmax},
       "Maximum number of blocks for error estimate" },
     { "-mutot",FALSE, etBOOL, {&bMutot},
       "Compute the total dipole moment from the components" },
@@ -1575,6 +1697,10 @@ int gmx_energy(int argc,char *argv[])
       "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
+    { "-fluct_props", FALSE, etBOOL, {&bFluctProps},
+      "Compute properties based on energy fluctuations, like heat capacity" },
+    { "-driftcorr", FALSE, etBOOL, {&bDriftCorr},
+      "Useful only for calculations of fluctuation properties. The drift in the observables will be subtracted before computing the fluctuation properties."},
     { "-fluc", FALSE, etBOOL, {&bFluct},
       "Calculate autocorrelation of energy fluctuations rather than energy itself" },
     { "-orinst", FALSE, etBOOL, {&bOrinst},
@@ -1591,7 +1717,7 @@ int gmx_energy(int argc,char *argv[])
     "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ", "Temperature",
     "Volume",  "Pressure"
   };
-  
+
   FILE       *out=NULL,*fp_pairs=NULL,*fort=NULL,*fodt=NULL,*foten=NULL;
   FILE       *fp_dhdl=NULL;
   FILE       **drout;
@@ -1654,14 +1780,14 @@ int gmx_energy(int argc,char *argv[])
 #define NFILE asize(fnm)
   int     npargs;
   t_pargs *ppa;
-  
+
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,
                     PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
-  
+
   bDRAll = opt2bSet("-pairs",NFILE,fnm);
   bDisRe = opt2bSet("-viol",NFILE,fnm) || bDRAll;
   bORA   = opt2bSet("-ora",NFILE,fnm);
@@ -1680,10 +1806,10 @@ int gmx_energy(int argc,char *argv[])
   do_enxnms(fp,&nre,&enm);
 
   Vaver = -1;
-  
+
   bVisco = opt2bSet("-vis",NFILE,fnm);
-  
-  if (!bDisRe && !bDHDL) 
+
+  if ((!bDisRe) && (!bDHDL))
   {
       if (bVisco) {
           nset=asize(setnm);
@@ -1710,7 +1836,7 @@ int gmx_energy(int argc,char *argv[])
               }
           }
       }
-      else 
+      else
       {
           set=select_by_name(nre,enm,&nset);
       }
@@ -1850,288 +1976,286 @@ int gmx_energy(int argc,char *argv[])
       snew(violaver,npairs);
       out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations",
                    "Time (ps)","nm",oenv);
-      xvgr_legend(out,2,drleg,oenv);  
-      if (bDRAll) { 
+      xvgr_legend(out,2,drleg,oenv);
+      if (bDRAll) {
           fp_pairs=xvgropen(opt2fn("-pairs",NFILE,fnm),"Pair Distances",
                             "Time (ps)","Distance (nm)",oenv);
           if (output_env_get_print_xvgr_codes(oenv))
               fprintf(fp_pairs,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
                       ir.dr_tau);
       }
+  } else if (bDHDL) {
+      get_dhdl_parms(ftp2fn(efTPX,NFILE,fnm),&ir);
   }
 
+   /* Initiate energies and set them to zero */
+   edat.nsteps  = 0;
+   edat.npoints = 0;
+   edat.nframes = 0;
+   edat.step    = NULL;
+   edat.steps   = NULL;
+   edat.points  = NULL;
+   snew(edat.s,nset);
 
-  /* Initiate energies and set them to zero */
-  edat.nsteps  = 0;
-  edat.npoints = 0;
-  edat.nframes = 0;
-  edat.step    = NULL;
-  edat.steps   = NULL;
-  edat.points  = NULL;
-  snew(edat.s,nset);
-  
-  /* Initiate counters */
-  teller       = 0;
-  teller_disre = 0;
-  bFoundStart  = FALSE;
-  start_step   = 0;
-  start_t      = 0;
-  do {
-    /* This loop searches for the first frame (when -b option is given), 
-     * or when this has been found it reads just one energy frame
-     */
-    do {
-      bCont = do_enx(fp,&(frame[NEXT]));
-      
-      if (bCont) {
-	timecheck = check_times(frame[NEXT].t);
-      }      
-    } while (bCont && (timecheck < 0));
-    
-    if ((timecheck == 0) && bCont) {
-      /* We read a valid frame, so we can use it */
-      fr = &(frame[NEXT]);
-      
-      if (fr->nre > 0) {
-	/* The frame contains energies, so update cur */
-	cur  = NEXT;
+   /* Initiate counters */
+   teller       = 0;
+   teller_disre = 0;
+   bFoundStart  = FALSE;
+   start_step   = 0;
+   start_t      = 0;
+   do {
+     /* This loop searches for the first frame (when -b option is given),
+      * or when this has been found it reads just one energy frame
+      */
+     do {
+         bCont = do_enx(fp,&(frame[NEXT]));
+         if (bCont) {
+             timecheck = check_times(frame[NEXT].t);
+         }
+     } while (bCont && (timecheck < 0));
 
-	        if (edat.nframes % 1000 == 0)
-            {
-                srenew(edat.step,edat.nframes+1000);
-                srenew(edat.steps,edat.nframes+1000);
-                srenew(edat.points,edat.nframes+1000);
-                for(i=0; i<nset; i++)
-                {
-                    srenew(edat.s[i].ener,edat.nframes+1000);
-                    srenew(edat.s[i].es  ,edat.nframes+1000);
-                }
-            }
+     if ((timecheck == 0) && bCont) {
+       /* We read a valid frame, so we can use it */
+       fr = &(frame[NEXT]);
 
-	        nfr = edat.nframes;
-            edat.step[nfr] = fr->step;
+       if (fr->nre > 0) {
+         /* The frame contains energies, so update cur */
+         cur  = NEXT;
 
-            if (!bFoundStart)
-            {
-                bFoundStart = TRUE;
-                /* Initiate the previous step data */
-                start_step = fr->step;
-                start_t    = fr->t;
-                /* Initiate the energy sums */
-                edat.steps[nfr]  = 1;
-                edat.points[nfr] = 1;
-                for(i=0; i<nset; i++)
-                {
-                    sss = set[i];
-                    edat.s[i].es[nfr].sum  = fr->ener[sss].e;
-                    edat.s[i].es[nfr].sum2 = 0;
-                }
-                edat.nsteps  = 1;
-                edat.npoints = 1;
-            }
-            else
-            {
-                edat.steps[nfr] = fr->nsteps;
-                {
-                    if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
-                    {
-                        if (fr->nsum <= 1)
-                        {
-                            edat.points[nfr] = 1;
-                            for(i=0; i<nset; i++)
-                            {
-                                sss = set[i];
-                                edat.s[i].es[nfr].sum  = fr->ener[sss].e;
-                                edat.s[i].es[nfr].sum2 = 0;
-                            }
-                            edat.npoints += 1;
-                        }
-                        else
-                        {
-                            edat.points[nfr] = fr->nsum;
-                            for(i=0; i<nset; i++)
-                            {
-                                sss = set[i];
-                                edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
-                                edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
-                            }
-                            edat.npoints += fr->nsum;
-                        }
-                    }
-                    else
-                    {
-                        /* The interval does not match fr->nsteps:
-                         * can not do exact averages.
-                         */
-                        edat.npoints = 0;
-                    }
-                    edat.nsteps = fr->step - start_step + 1;
-                }
-            }
-            for(i=0; i<nset; i++)
-            {
-                edat.s[i].ener[nfr] = fr->ener[set[i]].e;
-            }
-      }
-      /*
-       * Define distance restraint legends. Can only be done after
-       * the first frame has been read... (Then we know how many there are)
-       */
-      blk_disre=find_block_id_enxframe(fr, enxDISRE, NULL);
-      if (bDisRe && bDRAll && !leg && blk_disre) 
-      {
-          t_iatom   *fa;
-          t_iparams *ip;
+             if (edat.nframes % 1000 == 0)
+             {
+                 srenew(edat.step,edat.nframes+1000);
+                 memset(&(edat.step[edat.nframes]),0,1000*sizeof(edat.step[0]));
+                 srenew(edat.steps,edat.nframes+1000);
+                 memset(&(edat.steps[edat.nframes]),0,1000*sizeof(edat.steps[0]));
+                 srenew(edat.points,edat.nframes+1000);
+                 memset(&(edat.points[edat.nframes]),0,1000*sizeof(edat.points[0]));
 
-          fa = top->idef.il[F_DISRES].iatoms; 
-          ip = top->idef.iparams;
-          if (blk_disre->nsub != 2 || 
-              (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
-          {
-              gmx_incons("Number of disre sub-blocks not equal to 2");
-          }
+                 for(i=0; i<nset; i++)
+                 {
+                     srenew(edat.s[i].ener,edat.nframes+1000);
+                     memset(&(edat.s[i].ener[edat.nframes]),0,
+                            1000*sizeof(edat.s[i].ener[0]));
+                     srenew(edat.s[i].es  ,edat.nframes+1000);
+                     memset(&(edat.s[i].es[edat.nframes]),0,
+                            1000*sizeof(edat.s[i].es[0]));
+                 }
+             }
 
-          ndisre=blk_disre->sub[0].nr ;
-          if (ndisre != top->idef.il[F_DISRES].nr/3)
-          {
-              gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-                        ndisre,top->idef.il[F_DISRES].nr/3);
-          }
-          snew(pairleg,ndisre);
-          for(i=0; i<ndisre; i++) 
-          {
-              snew(pairleg[i],30);
-              j=fa[3*i+1];
-              k=fa[3*i+2];
-              gmx_mtop_atominfo_global(&mtop,j,&anm_j,&resnr_j,&resnm_j);
-              gmx_mtop_atominfo_global(&mtop,k,&anm_k,&resnr_k,&resnm_k);
-              sprintf(pairleg[i],"%d %s %d %s (%d)",
-                      resnr_j,anm_j,resnr_k,anm_k,
-                      ip[fa[3*i]].disres.label);
-          }
-          set=select_it(ndisre,pairleg,&nset);
-          snew(leg,2*nset);
-          for(i=0; (i<nset); i++) 
-          {
-              snew(leg[2*i],32);
-              sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
-              snew(leg[2*i+1],32);
-              sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
-          }
-          xvgr_legend(fp_pairs,2*nset,(const char**)leg,oenv);    
-      }
+             nfr = edat.nframes;
+             edat.step[nfr] = fr->step;
 
-      /* 
-       * Store energies for analysis afterwards... 
-       */
-      if (!bDisRe && !bDHDL && (fr->nre > 0)) {
-	if (edat.nframes % 1000 == 0) {
-	  srenew(time,edat.nframes+1000);
-	}
-	time[edat.nframes] = fr->t;
-	edat.nframes++;
-      }
-      /* 
-       * Printing time, only when we do not want to skip frames
-       */
-      if (!skip || teller % skip == 0) {
-	if (bDisRe) {
-	  /*******************************************
-	   * D I S T A N C E   R E S T R A I N T S  
-	   *******************************************/
-	  if (ndisre > 0) 
-          {
-#ifndef GMX_DOUBLE
-            float *disre_rt =     blk_disre->sub[0].fval;
-            float *disre_rm3tav = blk_disre->sub[1].fval;
-#else
-            double *disre_rt =     blk_disre->sub[0].dval;
-            double *disre_rm3tav = blk_disre->sub[1].dval;
-#endif
+             if (!bFoundStart)
+             {
+                 bFoundStart = TRUE;
+                 /* Initiate the previous step data */
+                 start_step = fr->step;
+                 start_t    = fr->t;
+                 /* Initiate the energy sums */
+                 edat.steps[nfr]  = 1;
+                 edat.points[nfr] = 1;
+                 for(i=0; i<nset; i++)
+                 {
+                     sss = set[i];
+                     edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                     edat.s[i].es[nfr].sum2 = 0;
+                 }
+                 edat.nsteps  = 1;
+                 edat.npoints = 1;
+             }
+             else
+             {
+                 edat.steps[nfr] = fr->nsteps;
+                 {
+                     if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
+                     {
+                         if (fr->nsum <= 1)
+                         {
+                             edat.points[nfr] = 1;
+                             for(i=0; i<nset; i++)
+                             {
+                                 sss = set[i];
+                                 edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                                 edat.s[i].es[nfr].sum2 = 0;
+                             }
+                             edat.npoints += 1;
+                         }
+                         else
+                         {
+                             edat.points[nfr] = fr->nsum;
+                             for(i=0; i<nset; i++)
+                             {
+                                 sss = set[i];
+                                 edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
+                                 edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
+                             }
+                             edat.npoints += fr->nsum;
+                         }
+                     }
+                     else
+                     {
+                         /* The interval does not match fr->nsteps:
+                          * can not do exact averages.
+                          */
+                         edat.npoints = 0;
+                     }
+                     edat.nsteps = fr->step - start_step + 1;
+                 }
+             }
+             for(i=0; i<nset; i++)
+             {
+                 edat.s[i].ener[nfr] = fr->ener[set[i]].e;
+             }
+       }
+       /*
+        * Define distance restraint legends. Can only be done after
+        * the first frame has been read... (Then we know how many there are)
+        */
+       blk_disre=find_block_id_enxframe(fr, enxDISRE, NULL);
+       if (bDisRe && bDRAll && !leg && blk_disre)
+       {
+           t_iatom   *fa;
+           t_iparams *ip;
 
-	    print_time(out,fr->t);
-	    if (violaver == NULL)
-	      snew(violaver,ndisre);
-	    
-	    /* Subtract bounds from distances, to calculate violations */
-	    calc_violations(disre_rt, disre_rm3tav,
-			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
+           fa = top->idef.il[F_DISRES].iatoms;
+           ip = top->idef.iparams;
+           if (blk_disre->nsub != 2 ||
+               (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
+           {
+               gmx_incons("Number of disre sub-blocks not equal to 2");
+           }
 
-	    fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
-	    if (bDRAll) {
-	      print_time(fp_pairs,fr->t);
-	      for(i=0; (i<nset); i++) {
-		sss=set[i];
-		fprintf(fp_pairs,"  %8.4f", mypow(disre_rm3tav[sss],minthird));
-		fprintf(fp_pairs,"  %8.4f", disre_rt[sss]);
-	      }
-	      fprintf(fp_pairs,"\n");
-	    }
-	    teller_disre++;
-	  }
-	}
-        else if (bDHDL)
-        {
-            do_dhdl(fr, &fp_dhdl, opt2fn("-odh",NFILE,fnm), 
-                    &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas,
-                    oenv);
-        }
-	/*******************************************
-	 * E N E R G I E S
-	 *******************************************/
-	else {
-	  if (fr->nre > 0) {
-            if (bPrAll)
-            {
-                /* We skip frames with single points (usually only the first frame),
-                 * since they would result in an average plot with outliers.
-                 */
-                if (fr->nsum > 1) {
-                    print_time(out,fr->t);
-                     print1(out,bDp,fr->ener[set[0]].e);
-                     print1(out,bDp,fr->ener[set[0]].esum/fr->nsum);
-                     print1(out,bDp,sqrt(fr->ener[set[0]].eav/fr->nsum));
-                     fprintf(out,"\n");
-                }
-            }
-            else
-            {
-                print_time(out,fr->t);
-                if (bSum)
-                {
-                    sum = 0;
-                    for(i=0; i<nset; i++)
-                    {
-                        sum += fr->ener[set[i]].e;
-                    }
-                    print1(out,bDp,sum/nmol-ezero);
-                }
-                else
-                {
-                    for(i=0; (i<nset); i++)
-                    {
-                        if (bIsEner[i])
-                        {
-                            print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
-                        }
-                        else
-                        {
-                            print1(out,bDp,fr->ener[set[i]].e);
-                        }
-                    }
-                }
-                fprintf(out,"\n");
-            }
-	  }
-#if 0
-          /* we first count the blocks that have id 0: the orire blocks */
-          block_orire=0;
-          for(b=0;b<fr->nblock;b++)
-          {
-              if (fr->block[b].id == mde_block_type_orire)
-                  nblock_orire++;
-          }
-#endif
+           ndisre=blk_disre->sub[0].nr ;
+           if (ndisre != top->idef.il[F_DISRES].nr/3)
+           {
+               gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
+                         ndisre,top->idef.il[F_DISRES].nr/3);
+           }
+           snew(pairleg,ndisre);
+           for(i=0; i<ndisre; i++)
+           {
+               snew(pairleg[i],30);
+               j=fa[3*i+1];
+               k=fa[3*i+2];
+               gmx_mtop_atominfo_global(&mtop,j,&anm_j,&resnr_j,&resnm_j);
+               gmx_mtop_atominfo_global(&mtop,k,&anm_k,&resnr_k,&resnm_k);
+               sprintf(pairleg[i],"%d %s %d %s (%d)",
+                       resnr_j,anm_j,resnr_k,anm_k,
+                       ip[fa[3*i]].disres.label);
+           }
+           set=select_it(ndisre,pairleg,&nset);
+           snew(leg,2*nset);
+           for(i=0; (i<nset); i++)
+           {
+               snew(leg[2*i],32);
+               sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
+               snew(leg[2*i+1],32);
+               sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
+           }
+           xvgr_legend(fp_pairs,2*nset,(const char**)leg,oenv);
+       }
+
+       /*
+        * Store energies for analysis afterwards...
+        */
+       if (!bDisRe && !bDHDL && (fr->nre > 0)) {
+           if (edat.nframes % 1000 == 0) {
+               srenew(time,edat.nframes+1000);
+           }
+           time[edat.nframes] = fr->t;
+           edat.nframes++;
+       }
+       /*
+        * Printing time, only when we do not want to skip frames
+        */
+       if (!skip || teller % skip == 0) {
+     if (bDisRe) {
+       /*******************************************
+        * D I S T A N C E   R E S T R A I N T S
+        *******************************************/
+       if (ndisre > 0)
+           {
+ #ifndef GMX_DOUBLE
+             float *disre_rt =     blk_disre->sub[0].fval;
+             float *disre_rm3tav = blk_disre->sub[1].fval;
+ #else
+             double *disre_rt =     blk_disre->sub[0].dval;
+             double *disre_rm3tav = blk_disre->sub[1].dval;
+ #endif
+
+         print_time(out,fr->t);
+         if (violaver == NULL)
+           snew(violaver,ndisre);
+
+         /* Subtract bounds from distances, to calculate violations */
+         calc_violations(disre_rt, disre_rm3tav,
+                 nbounds,pair,bounds,violaver,&sumt,&sumaver);
+
+         fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
+         if (bDRAll) {
+           print_time(fp_pairs,fr->t);
+           for(i=0; (i<nset); i++) {
+         sss=set[i];
+         fprintf(fp_pairs,"  %8.4f", mypow(disre_rm3tav[sss],minthird));
+         fprintf(fp_pairs,"  %8.4f", disre_rt[sss]);
+           }
+           fprintf(fp_pairs,"\n");
+         }
+         teller_disre++;
+       }
+     }
+     else if (bDHDL)
+     {
+         do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh",NFILE,fnm), bDp, &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas, oenv);
+     }
+
+     /*******************************************
+      * E N E R G I E S
+      *******************************************/
+     else {
+         if (fr->nre > 0) {
+             if (bPrAll)
+             {
+                 /* We skip frames with single points (usually only the first frame),
+                  * since they would result in an average plot with outliers.
+                  */
+                 if (fr->nsum > 1) {
+                     print_time(out,fr->t);
+                      print1(out,bDp,fr->ener[set[0]].e);
+                      print1(out,bDp,fr->ener[set[0]].esum/fr->nsum);
+                      print1(out,bDp,sqrt(fr->ener[set[0]].eav/fr->nsum));
+                      fprintf(out,"\n");
+                 }
+             }
+             else
+             {
+                 print_time(out,fr->t);
+                 if (bSum)
+                 {
+                     sum = 0;
+                     for(i=0; i<nset; i++)
+                     {
+                         sum += fr->ener[set[i]].e;
+                     }
+                     print1(out,bDp,sum/nmol-ezero);
+                 }
+                 else
+                 {
+                     for(i=0; (i<nset); i++)
+                     {
+                         if (bIsEner[i])
+                         {
+                             print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+                         }
+                         else
+                         {
+                             print1(out,bDp,fr->ener[set[i]].e);
+                         }
+                     }
+                 }
+                 fprintf(out,"\n");
+             }
+         }
           blk = find_block_id_enxframe(fr, enx_i, NULL);
 	  if (bORIRE && blk)
           {
@@ -2152,7 +2276,7 @@ int gmx_energy(int argc,char *argv[])
               vals=blk->sub[0].dval;
 #endif
 
-              if (blk->sub[0].nr != (size_t)nor) 
+              if (blk->sub[0].nr != (size_t)nor)
                   gmx_fatal(FARGS,"Number of orientation restraints in energy file (%d) does not match with the topology (%d)", blk->sub[0].nr);
               if (bORA || bODA)
               {
@@ -2164,14 +2288,14 @@ int gmx_energy(int argc,char *argv[])
                   for(i=0; i<nor; i++)
                       odrms[i] += sqr(vals[i]-oobs[i]);
               }
-              if (bORT) 
+              if (bORT)
               {
                   fprintf(fort,"  %10f",fr->t);
                   for(i=0; i<norsel; i++)
                       fprintf(fort," %g",vals[orsel[i]]);
                   fprintf(fort,"\n");
               }
-              if (bODT) 
+              if (bODT)
               {
                   fprintf(fodt,"  %10f",fr->t);
                   for(i=0; i<norsel; i++)
@@ -2180,22 +2304,22 @@ int gmx_energy(int argc,char *argv[])
               }
               norfr++;
           }
-          blk = find_block_id_enxframe(fr, enxORT, NULL);
-          if (bOTEN && blk) 
-          {
+         blk = find_block_id_enxframe(fr, enxORT, NULL);
+         if (bOTEN && blk)
+         {
 #ifndef GMX_DOUBLE
-              xdr_datatype dt=xdr_datatype_float;
+             xdr_datatype dt=xdr_datatype_float;
 #else
-              xdr_datatype dt=xdr_datatype_double;
+             xdr_datatype dt=xdr_datatype_double;
 #endif
-              real *vals;
- 
-              if ( (blk->nsub != 1) || (blk->sub[0].type!=dt) )
-                  gmx_fatal(FARGS,"Orientational restraints read in incorrectly");
+             real *vals;
+
+             if ( (blk->nsub != 1) || (blk->sub[0].type!=dt) )
+                 gmx_fatal(FARGS,"Orientational restraints read in incorrectly");
 #ifndef GMX_DOUBLE
-              vals=blk->sub[0].fval;
+             vals=blk->sub[0].fval;
 #else
-              vals=blk->sub[0].dval;
+             vals=blk->sub[0].dval;
 #endif
 
               if (blk->sub[0].nr != (size_t)(nex*12))
@@ -2209,12 +2333,13 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	}
       }
+      teller++;
     }
   } while (bCont && (timecheck == 0));
-  
+
   fprintf(stderr,"\n");
   close_enx(fp);
-  if (out) 
+  if (out)
       ffclose(out);
 
   if (bDRAll)
@@ -2224,7 +2349,7 @@ int gmx_energy(int argc,char *argv[])
       ffclose(fort);
   if (bODT)
       ffclose(fodt);
-  if (bORA) 
+  if (bORA)
   {
       out = xvgropen(opt2fn("-ora",NFILE,fnm),
                      "Average calculated orientations",
@@ -2258,17 +2383,17 @@ int gmx_energy(int argc,char *argv[])
   if (bOTEN)
       ffclose(foten);
 
-  if (bDisRe) 
+  if (bDisRe)
   {
       analyse_disre(opt2fn("-viol",NFILE,fnm),
                     teller_disre,violaver,bounds,index,pair,nbounds,oenv);
-  } 
+  }
   else if (bDHDL)
   {
       if (fp_dhdl)
       {
           ffclose(fp_dhdl);
-          printf("\n\nWrote %d lambda values with %d samples as ", 
+          printf("\n\nWrote %d lambda values with %d samples as ",
                  dh_lambdas, dh_samples);
           if (dh_hists > 0)
           {
@@ -2289,16 +2414,21 @@ int gmx_energy(int argc,char *argv[])
   }
   else
   {
+      double dt = (frame[cur].t-start_t)/(edat.nframes-1);
       analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
-                   bFee,bSum,bFluct,
+                   bFee,bSum,bFluct,opt2parg_bSet("-nmol",npargs,ppa),
                    bVisco,opt2fn("-vis",NFILE,fnm),
-                   nmol,start_step,start_t,frame[cur].step,frame[cur].t,
+                   nmol,
+                   start_step,start_t,frame[cur].step,frame[cur].t,
                    time,reftemp,&edat,
                    nset,set,bIsEner,leg,enm,Vaver,ezero,nbmin,nbmax,
                    oenv);
+      if (bFluctProps)
+          calc_fluctuation_props(stdout,bDriftCorr,dt,nset,set,nmol,leg,&edat,
+                                 nbmin,nbmax);
   }
   if (opt2bSet("-f2",NFILE,fnm)) {
-      fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
+      fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm),
           reftemp, nset, set, leg, &edat, time ,oenv);
   }
 

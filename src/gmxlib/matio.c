@@ -172,22 +172,6 @@ void writecmap(const char *fn,int n,t_mapping map[])
   gmx_fio_fclose(out);
 }
 
-void do_wmap(FILE *out,int i0,int imax,
-	     int nlevels,t_rgb rlo,t_rgb rhi,real lo,real hi)
-{
-  int  i,nlo;
-  real r,g,b;
-  
-  for(i=0; (i<imax); i++) {
-    nlo=nlevels-i;
-    r=(nlo*rlo.r+i*rhi.r)/nlevels;
-    g=(nlo*rlo.g+i*rhi.g)/nlevels;
-    b=(nlo*rlo.b+i*rhi.b)/nlevels;
-    fprintf(out,"%c %10.3g %10g  %10g  %10g\n",
-	    mapper[i+i0],(nlo*lo+i*hi)/nlevels,r,g,b);
-  }
-}
-
 static char *fgetline(char **line,int llmax,int *llalloc,FILE *in)
 {
   char *fg;
@@ -258,7 +242,7 @@ void parsestring(char *line,const char *label, char *string)
 void read_xpm_entry(FILE *in,t_matrix *mm)
 {
   t_mapping *map;
-  char *line_buf=NULL,*line=NULL,*str,buf[256];
+  char *line_buf=NULL,*line=NULL,*str,buf[256]={0};
   int i,m,col_len,nch,n_axis_x,n_axis_y,llmax;
   int llalloc=0;
   unsigned int r,g,b;
@@ -287,6 +271,12 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     parsestring(line,"y-label",(mm->label_y));
     parsestring(line,"type",buf);
   }
+
+  if (!line || strncmp(line,"static",6) != 0)
+  {
+      gmx_input("Invalid XPixMap");
+  }
+
   if (buf[0] && (gmx_strcasecmp(buf,"Discrete")==0))
     mm->bDiscrete=TRUE;
    
@@ -294,8 +284,6 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     fprintf(debug,"%s %s %s %s\n",
 	    mm->title,mm->legend,mm->label_x,mm->label_y);
 
-  if  (strncmp(line,"static",6) != 0)
-    gmx_input("Invalid XPixMap");
   /* Read sizes */
   bGetOnWithIt=FALSE;
   while (!bGetOnWithIt && (NULL != fgetline(&line_buf,llmax,&llalloc,in))) {
@@ -307,7 +295,13 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       line2string(&line);
       sscanf(line,"%d %d %d %d",&(mm->nx),&(mm->ny),&(mm->nmap),&nch);
       if (nch > 2)
-	gmx_fatal(FARGS,"Sorry can only read xpm's with at most 2 caracters per pixel\n");
+      {
+          gmx_fatal(FARGS,"Sorry can only read xpm's with at most 2 caracters per pixel\n");
+      }
+      if (mm->nx <= 0 || mm->ny <= 0 )
+      {
+          gmx_fatal(FARGS,"Dimensions of xpm-file have to be larger than 0\n");
+      }
       llmax = max(STRLEN,mm->nx+10);
       bGetOnWithIt=TRUE;
     }
@@ -445,8 +439,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   if (m>=0)
     gmx_incons("Not enough rows in the matrix");
 
-  /* This code makes me cry. DvdS 2010-07-08 */
-  /*sfree(line);*/
+  sfree(line_buf);
 }
 
 int read_xpm_matrix(const char *fnm,t_matrix **matrix)

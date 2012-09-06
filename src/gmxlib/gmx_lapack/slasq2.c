@@ -4,6 +4,10 @@
 
 #include <types/simple.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4723) /*division by zero - is used on purpose here*/
+#endif
+
 void 
 F77_FUNC(slasq2,SLASQ2)(int *n, 
                         float *z__, 

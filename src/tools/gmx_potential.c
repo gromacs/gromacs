@@ -35,12 +35,13 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include <math.h>
 #include <ctype.h>
 
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -55,6 +56,11 @@
 #include "index.h"
 #include "gmx_ana.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef toupper
+#endif
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19
@@ -409,13 +415,13 @@ int gmx_potential(int argc,char *argv[])
       "Take the normal on the membrane in direction X, Y or Z." },
     { "-sl",  FALSE, etINT, {&nslices},
       "Calculate potential as function of boxlength, dividing the box"
-      " in #nr slices." } ,
+      " in this number of slices." } ,
     { "-cb",  FALSE, etINT, {&cb},
-      "Discard first #nr slices of box for integration" },
+      "Discard this number of  first slices of box for integration" },
     { "-ce",  FALSE, etINT, {&ce},
-      "Discard last #nr slices of box for integration" },
+      "Discard this number of last slices of box for integration" },
     { "-tz",  FALSE, etREAL, {&fudge_z},
-      "Translate all coordinates <distance> in the direction of the box" },
+      "Translate all coordinates by this distance in the direction of the box" },
     { "-spherical", FALSE, etBOOL, {&bSpherical},
       "Calculate spherical thingie" },
     { "-ng",       FALSE, etINT, {&ngrps},

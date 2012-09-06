@@ -193,7 +193,8 @@ void make_shake (t_params plist[],t_atoms *atoms,gpp_atomtype_t at,int nshake)
     for (ftype=0; (ftype < F_NRE); ftype++) {
       if (interaction_function[ftype].flags & IF_BTYPE) {
 	pr = &(plist[ftype]);
-	for (i=0; (i < pr->nr); ) {
+        j = 0;
+	for(i=0; i<pr->nr; i++) {
 	  if ( (nshake != eshHBONDS) || 
 	       (count_hydrogens (info,2,pr->param[i].a) > 0) ) {
 	    /* append this bond to the shake list */
@@ -202,16 +203,11 @@ void make_shake (t_params plist[],t_atoms *atoms,gpp_atomtype_t at,int nshake)
 	    p.C0 = pr->param[i].C0;
 	    p.C1 = pr->param[i].C2;
 	    add_param_to_list (&(plist[F_CONSTR]),&p);
-	    
-	    /* move the last bond to this position */
-	    copy_bond (pr,i,pr->nr-1);
-	    
-	    /* should free memory here!! */
-	    pr->nr--;
+	  } else {
+	      copy_bond(pr,j++,i); 
 	  }
-	  else
-	    i++;
 	}
+	pr->nr = j;
       }
     }
   }

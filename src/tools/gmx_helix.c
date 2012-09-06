@@ -54,41 +54,13 @@
 #include "index.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "string.h"
+#include <string.h>
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
-
-
-void dump_ahx(int nres,
-	      t_bb bb[],rvec x[],matrix box,int teller)
-{
-  FILE *fp;
-  char buf[256];
-  int  i;
-  
-  sprintf(buf,"dump%d.gro",teller);
-  fp=ffopen(buf,"w");
-  fprintf(fp,"Dumping fitted helix frame %d\n",teller);
-  fprintf(fp,"%5d\n",nres*5);
-  for(i=0; (i<nres); i++) {
-#define PR(AA) fprintf(fp,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",i+1,"GLY",#AA,bb[i].AA,x[bb[i].AA][XX],x[bb[i].AA][YY],x[bb[i].AA][ZZ]); fflush(fp)
-    if (bb[i].bHelix) {
-      PR(N);
-      PR(H);
-      PR(CA);
-      PR(C);
-      PR(O);
-    }
-  }
-  for(i=0; (i<DIM); i++)
-    fprintf(fp,"%10.5f",box[i][i]);
-  fprintf(fp,"\n");
-  ffclose(fp);
-}
 
 void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
 	       real fac,rvec xav[])
@@ -122,35 +94,35 @@ void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
 int gmx_helix(int argc,char *argv[])
 {
   const char *desc[] = {
-    "[TT]g_helix[tt] computes all kind of helix properties. First, the peptide",
-    "is checked to find the longest helical part. This is determined by",
-    "Hydrogen bonds and Phi/Psi angles.",
+    "[TT]g_helix[tt] computes all kinds of helix properties. First, the peptide",
+    "is checked to find the longest helical part, as determined by",
+    "hydrogen bonds and [GRK]phi[grk]/[GRK]psi[grk] angles.",
     "That bit is fitted",
-    "to an ideal helix around the Z-axis and centered around the origin.",
+    "to an ideal helix around the [IT]z[it]-axis and centered around the origin.",
     "Then the following properties are computed:[PAR]",
     "[BB]1.[bb] Helix radius (file [TT]radius.xvg[tt]). This is merely the",
-    "RMS deviation in two dimensions for all Calpha atoms.",
-    "it is calced as sqrt((SUM i(x^2(i)+y^2(i)))/N), where N is the number",
+    "RMS deviation in two dimensions for all C[GRK]alpha[grk] atoms.",
+    "it is calculated as [SQRT]([SUM][sum][SUB]i[sub] (x^2(i)+y^2(i)))/N[sqrt] where N is the number",
     "of backbone atoms. For an ideal helix the radius is 0.23 nm[BR]",
     "[BB]2.[bb] Twist (file [TT]twist.xvg[tt]). The average helical angle per",
-    "residue is calculated. For alpha helix it is 100 degrees,",
-    "for 3-10 helices it will be smaller,", 
+    "residue is calculated. For an [GRK]alpha[grk]-helix it is 100 degrees,",
+    "for 3-10 helices it will be smaller, and ", 
     "for 5-helices it will be larger.[BR]",
     "[BB]3.[bb] Rise per residue (file [TT]rise.xvg[tt]). The helical rise per", 
-    "residue is plotted as the difference in Z-coordinate between Ca", 
-    "atoms. For an ideal helix this is 0.15 nm[BR]",
+    "residue is plotted as the difference in [IT]z[it]-coordinate between C[GRK]alpha[grk]", 
+    "atoms. For an ideal helix, this is 0.15 nm[BR]",
     "[BB]4.[bb] Total helix length (file [TT]len-ahx.xvg[tt]). The total length", 
     "of the", 
     "helix in nm. This is simply the average rise (see above) times the",  
     "number of helical residues (see below).[BR]",
     "[BB]5.[bb] Number of helical residues (file [TT]n-ahx.xvg[tt]). The title says",
     "it all.[BR]",
-    "[BB]6.[bb] Helix Dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
-    "[BB]7.[bb] RMS deviation from ideal helix, calculated for the Calpha",
+    "[BB]6.[bb] Helix dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
+    "[BB]7.[bb] RMS deviation from ideal helix, calculated for the C[GRK]alpha[grk]",
     "atoms only (file [TT]rms-ahx.xvg[tt]).[BR]",
-    "[BB]8.[bb] Average Calpha-Calpha dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
-    "[BB]9.[bb] Average Phi and Psi angles (file [TT]phipsi.xvg[tt]).[BR]",
-    "[BB]10.[bb] Ellipticity at 222 nm according to [IT]Hirst and Brooks[it]",
+    "[BB]8.[bb] Average C[GRK]alpha[grk] - C[GRK]alpha[grk] dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
+    "[BB]9.[bb] Average [GRK]phi[grk] and [GRK]psi[grk] angles (file [TT]phipsi.xvg[tt]).[BR]",
+    "[BB]10.[bb] Ellipticity at 222 nm according to Hirst and Brooks.",
     "[PAR]"
   };
   static const char *ppp[efhNR+2] = { 

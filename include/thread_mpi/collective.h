@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _THREAD_MPI_COLLECTIVE_H_
-#define _THREAD_MPI_COLLECTIVE_H_
+#ifndef TMPI_COLLECTIVE_H_
+#define TMPI_COLLECTIVE_H_
 
 /** \file 
  *
@@ -113,9 +113,10 @@ typedef struct
     tMPI_Comm comm;
 } tMPI_Reduce_req;
 
+/** Allocate data structure for asynchronous reduce. */
 tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm);
 #if 0
-/** Execute fast a asynchronious reduce over comm. 
+/** Execute fast a asynchronous reduce over comm.
 
   Reduces array input with supplied funtion. This function may return before 
   the input array is ready to be written to again; to check for its completion,
@@ -146,4 +147,4 @@ void tMPI_Reduce_wait_results(tMPI_Reduce_req *req, void *res);
 } /* closing extern "C" */
 #endif
 
-#endif /* _THREAD_MPI_COLLECTIVE_H_ */
+#endif /* TMPI_COLLECTIVE_H_ */

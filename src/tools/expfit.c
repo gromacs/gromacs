@@ -1,4 +1,5 @@
 /*
+ * $Id: expfit.c,v 1.33 2005/08/29 19:39:11 lindahl Exp $
  * 
  *                This source code is part of
  * 
@@ -49,10 +50,10 @@
 #include "statutil.h"
 #include "index.h"
 
-int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 3 };
+const int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3};
 
 const char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", 
-				"exp5", "exp7", "exp9", NULL, NULL };
+			  "exp5", "exp7", "exp9","erffit", NULL, NULL };
 /* We don't allow errest as a choice on the command line */
 
 const char *longs_ffn[effnNR] = {
@@ -64,14 +65,9 @@ const char *longs_ffn[effnNR] = {
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5",
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7",
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7 exp(-x/a8) + a9",
+  "y = 1/2*(a1+a2) - 1/2*(a1-a2)*erf( (x-a3) /a4^2)",
   "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
 };
-
-extern gmx_bool mrqmin(real x[],real y[],real sig[],int ndata,real a[],
-		   int ma,int lista[],int mfit,real **covar,real **alpha,
-		   real *chisq,
-		   void (*funcs)(real x,real a[],real *y,real dyda[]),
-		   real *alamda);
 
 extern gmx_bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		       int ia[],int ma,real **covar,real **alpha,real *chisq, 
@@ -84,6 +80,30 @@ static real myexp(real x,real A,real tau)
     return 0;
   return A*exp(-x/tau);
 }
+
+void erffit (real x, real a[], real *y, real dyda[])
+{
+/* Fuction 
+ *	y=(a1+a2)/2-(a1-a2)/2*erf((x-a3)/a4^2)
+ */
+
+real erfarg;
+real erfval;
+real erfarg2;
+real derf;
+
+ erfarg=(x-a[3])/(a[4]*a[4]);
+        erfarg2=erfarg*erfarg;
+        erfval=gmx_erf(erfarg)/2;
+        derf=(2.0/sqrt(M_PI))*(a[1]-a[2])/2*exp(-erfarg2)/(a[4]*a[4]);
+        *y=(a[1]+a[2])/2-(a[1]-a[2])*erfval;
+        dyda[1]=1/2-erfval;
+        dyda[2]=1/2+erfval;
+        dyda[3]=derf;
+        dyda[4]=2*derf*erfarg;
+}	
+	
+
 		   
 static void exp_one_parm(real x,real a[],real *y,real dyda[])
 {
@@ -283,7 +303,7 @@ static void errest_3_parm(real x,real a[],real *y,real dyda[])
 typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
 myfitfn mfitfn[effnNR] = { 
   exp_one_parm, exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm,
-  exp_5_parm,   exp_7_parm,   exp_9_parm,   errest_3_parm
+  exp_5_parm,   exp_7_parm,   exp_9_parm, erffit,  errest_3_parm
 };
 
 real fit_function(int eFitFn,real *parm,real x)
@@ -318,7 +338,7 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   snew(dum,ma+1);
   for(i=1; (i<ma+1); i++) {
     lista[i] = i;
-    ia[i] = i;
+    ia[i] = 1; /* fixed bug B.S.S 19/11  */
     snew(covar[i],ma+1);
     snew(alpha[i],ma+1);
   }
@@ -341,8 +361,8 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 
   j = 0;      
   if (bVerbose)
-    fprintf(stderr,"%4s  %10s  %10s  %10s  %10s  %10s\n",
-	    "Step","chi^2","Lambda","A1","A2","A3");
+    fprintf(stderr,"%4s  %10s  %10s  %10s  %10s  %10s %10s\n",
+	    "Step","chi^2","Lambda","A1","A2","A3","A4");
   do {
     ochisq = chisq;
     /* mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
@@ -359,6 +379,8 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 	fprintf(stderr,"  %10.5e",a[2]);
       if (mfit > 2)
 	fprintf(stderr,"  %10.5e",a[3]);
+      if (mfit > 3)
+	 fprintf(stderr," %10.5e",a[4]);
       fprintf(stderr,"\n");
     }
     j++;
@@ -398,7 +420,7 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	      real begintimefit,real endtimefit,const output_env_t oenv,
-              gmx_bool bVerbose, int eFitFn,real fitparms[],int fix)
+	      gmx_bool bVerbose, int eFitFn,real fitparms[],int fix)
 {
   FILE *fp;
   char buf[32];
@@ -484,11 +506,16 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	  fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
 		  ttt,c1[j],fit_function(eFitFn,parm,ttt));
 	}
-	ffclose(fp);
+	xvgrclose(fp);
       }
     }
-    for(i=0;(i<nparm);i++)
-      fitparms[i] = parm[i];
+    if (fitparms)
+    {
+        for(i=0;(i<nparm);i++)
+        {
+            fitparms[i] = parm[i];
+        }
+    }
     sfree(parm);
     sfree(dparm);
   }

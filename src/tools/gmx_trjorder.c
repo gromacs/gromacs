@@ -99,7 +99,7 @@ int gmx_trjorder(int argc,char *argv[])
     "with any Gromacs program to analyze the n closest waters.",
     "[PAR]",
     "If the output file is a [TT].pdb[tt] file, the distance to the reference target",
-    "will be stored in the B-factor field in order to color with e.g. rasmol.",
+    "will be stored in the B-factor field in order to color with e.g. Rasmol.",
     "[PAR]",
     "With option [TT]-nshell[tt] the number of molecules within a shell",
     "of radius [TT]-r[tt] around the reference group are printed."

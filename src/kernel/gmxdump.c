@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include "main.h"
 #include "macros.h"
 #include "futil.h"
@@ -61,36 +62,6 @@
 #include "sparsematrix.h"
 #include "mtxio.h"
 
-static void dump_top(FILE *fp,t_topology *top,char *tpr)
-{
-  int i,j,k,*types;
-  
-  fprintf(fp,"; Topology generated from %s by program %s\n",tpr,Program());
-  fprintf(fp,"[ defaults ]\n 1 1 no 1.0 1.0\n\n");
-  fprintf(fp,"[ atomtypes ]\n");
-  fprintf(fp,";name  at.num    mass      charge ptype        c6        c12\n");
-  snew(types,top->atomtypes.nr);
-  for(i=0; (i<top->atomtypes.nr); i++) {
-    for(j=0; (j<top->atoms.nr) && (top->atoms.atom[j].type != i); j++)
-      ;
-    if (j<top->atoms.nr) {
-      types[i] = j;
-      fprintf(fp,"%5s  %4d   %8.4f   %8.4f  %2s  %8.3f  %8.3f\n",
-	      *(top->atoms.atomtype[j]),top->atomtypes.atomnumber[i],
-	      0.0,0.0,"A",0.0,0.0);
-    }
-  }
-  fprintf(fp,"[ nonbonded_params ]\n");
-  for(i=k=0; (i<top->idef.ntypes); i++) {
-    for(j=0; (j<top->idef.ntypes); j++,k++) {
-      fprintf(fp,"%12s  %12s  1  %12.5e  %12.5e\n",
-	      *(top->atoms.atomtype[types[i]]),
-	      *(top->atoms.atomtype[types[j]]),
-	      top->idef.iparams[k].lj.c12,top->idef.iparams[k].lj.c6);
-    }
-  }
-  sfree(types);
-}
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
                      gmx_bool bSysTop)
@@ -147,7 +118,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
       /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
       pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
       pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
-      if (state,tpx.bF) {
+      if (tpx.bF) {
 	pr_rvecs(stdout,indent,"f",f,state.natoms);
       }
     }
@@ -329,6 +300,7 @@ void list_ene(const char *fn)
     printf("gmxdump: %s\n",fn);
     in = open_enx(fn,"r");
     do_enxnms(in,&nre,&enm);
+    assert(enm);
 
     printf("energy components:\n");
     for(i=0; (i<nre); i++) 
@@ -466,7 +438,7 @@ int main(int argc,char *argv[])
     "This program is essential for checking your run input file in case of",
     "problems.[PAR]",
     "The program can also preprocess a topology to help finding problems.",
-    "Note that currently setting GMXLIB is the only way to customize",
+    "Note that currently setting [TT]GMXLIB[tt] is the only way to customize",
     "directories used for searching include files.",
   };
   t_filenm fnm[] = {

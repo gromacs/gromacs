@@ -685,7 +685,7 @@ int gmx_current(int argc,char *argv[])
     { "-nojump", FALSE, etBOOL, {&bNoJump},
       "Removes jumps of atoms across the box."},
     { "-eps", FALSE, etREAL, {&eps_rf},
-		"Dielectric constant of the surrounding medium. eps=0.0 corresponds to eps=infinity (thinfoil boundary conditions)."},
+		"Dielectric constant of the surrounding medium. The value zero corresponds to infinity (tin-foil boundary conditions)."},
 	{ "-bfit", FALSE, etREAL, {&bfit},
 		"Begin of the fit of the straight line to the MSD of the translational fraction of the dipole moment."},
 	{ "-efit", FALSE, etREAL, {&efit},
@@ -710,7 +710,7 @@ int gmx_current(int argc,char *argv[])
   real       *mass2=NULL;
   rvec       *xtop,*vtop;
   matrix     box;
-  atom_id    *index0=NULL;
+  atom_id    *index0;
   int					*indexm=NULL;
   int        isize;
   t_trxstatus *status;
@@ -751,16 +751,16 @@ int gmx_current(int argc,char *argv[])
 
 
     const char *desc[] = {
-    "This is a tool for calculating the current autocorrelation function, the correlation",
+    "[TT]g_current[tt] is a tool for calculating the current autocorrelation function, the correlation",
     "of the rotational and translational dipole moment of the system, and the resulting static",
-    "dielectric constant. To obtain a reasonable result the index group has to be neutral.",
-    "Furthermore the routine is capable of extracting the static conductivity from the current ",
-    "autocorrelation function, if velocities are given. Additionally an Einstein-Helfand fit also",
-    "allows to get the static conductivity."
+    "dielectric constant. To obtain a reasonable result, the index group has to be neutral.",
+    "Furthermore, the routine is capable of extracting the static conductivity from the current ",
+    "autocorrelation function, if velocities are given. Additionally, an Einstein-Helfand fit ",
+    "can be used to obtain the static conductivity."
     "[PAR]",
     "The flag [TT]-caf[tt] is for the output of the current autocorrelation function and [TT]-mc[tt] writes the",
     "correlation of the rotational and translational part of the dipole moment in the corresponding",
-    "file. However this option is only available for trajectories containing velocities.",
+    "file. However, this option is only available for trajectories containing velocities.",
     "Options [TT]-sh[tt] and [TT]-tr[tt] are responsible for the averaging and integration of the",
     "autocorrelation functions. Since averaging proceeds by shifting the starting point",
     "through the trajectory, the shift can be modified with [TT]-sh[tt] to enable the choice of uncorrelated",
@@ -772,14 +772,14 @@ int gmx_current(int argc,char *argv[])
     "Option [TT]-temp[tt] sets the temperature required for the computation of the static dielectric constant.",
     "[PAR]",
     "Option [TT]-eps[tt] controls the dielectric constant of the surrounding medium for simulations using",
-    "a Reaction Field or dipole corrections of the Ewald summation (eps=0 corresponds to",
+    "a Reaction Field or dipole corrections of the Ewald summation ([TT]-eps[tt]=0 corresponds to",
     "tin-foil boundary conditions).",
     "[PAR]",
     "[TT]-[no]nojump[tt] unfolds the coordinates to allow free diffusion. This is required to get a continuous",
-    "translational dipole moment, required for the Einstein-Helfand fit. The resuls from the fit allow to",
-    "determine the dielectric constant for system of charged molecules. However it is also possible to extract",
+    "translational dipole moment, required for the Einstein-Helfand fit. The results from the fit allow",
+    "the determination of the dielectric constant for system of charged molecules. However, it is also possible to extract",
     "the dielectric constant from the fluctuations of the total dipole moment in folded coordinates. But this",
-    "options has to be used with care, since only very short time spans fulfill the approximation, that the density",
+    "option has to be used with care, since only very short time spans fulfill the approximation that the density",
     "of the molecules is approximately constant and the averages are already converged. To be on the safe side,",
     "the dielectric constant should be calculated with the help of the Einstein-Helfand method for",
     "the translational part of the dielectric constant."

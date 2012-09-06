@@ -61,6 +61,7 @@
 #include "vec.h"
 #include "g_x2top.h"
 #include "atomprop.h"
+#include "hackblock.h"
 
 char atp[7] = "HCNOSX";
 #define NATP (asize(atp)-1)
@@ -75,26 +76,6 @@ real blen[NATP][NATP] = {
 };
 
 #define MARGIN_FAC 1.1
-
-static real set_x_blen(real scale)
-{
-  real maxlen;
-  int  i,j;
-
-  for(i=0; i<NATP-1; i++) {
-    blen[NATP-1][i] *= scale;
-    blen[i][NATP-1] *= scale;
-  }
-  blen[NATP-1][NATP-1] *= scale;
-  
-  maxlen = 0;
-  for(i=0; i<NATP; i++)
-    for(j=0; j<NATP; j++)
-      if (blen[i][j] > maxlen)
-	maxlen = blen[i][j];
-  
-  return maxlen*MARGIN_FAC;
-}
 
 static gmx_bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
 {
@@ -379,17 +360,17 @@ int main(int argc, char *argv[])
     "G53a5  GROMOS96 53a5 Forcefield (official distribution)[PAR]",
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
     "The corresponding data files can be found in the library directory",
-    "with name atomname2type.n2t. Check chapter 5 of the manual for more",
-    "information about file formats. By default the forcefield selection",
+    "with name [TT]atomname2type.n2t[tt]. Check Chapter 5 of the manual for more",
+    "information about file formats. By default, the force field selection",
     "is interactive, but you can use the [TT]-ff[tt] option to specify",
     "one of the short names above on the command line instead. In that",
-    "case [TT]pdb2gmx[tt] just looks for the corresponding file.[PAR]",
+    "case [TT]g_x2top[tt] just looks for the corresponding file.[PAR]",
   };
   const char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
     "Periodic boundary conditions screw up the bonding",
     "No improper dihedrals are generated",
-    "The atoms to atomtype translation table is incomplete (atomname2type.n2t files in the data directory). Please extend it and send the results back to the GROMACS crew."
+    "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in the data directory). Please extend it and send the results back to the GROMACS crew."
   };
   FILE       *fp;
   t_params   plist[F_NRE];
@@ -423,9 +404,12 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
-  static int  nexcl = 3;
-  static gmx_bool bRemoveDih = FALSE;
-  static gmx_bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
+  static t_restp rtp_header_settings;
+  static gmx_bool bRemoveDihedralIfWithImproper = FALSE;
+  static gmx_bool bGenerateHH14Interactions = TRUE;
+  static gmx_bool bKeepAllGeneratedDihedrals = FALSE;
+  static int nrexcl = 3;
+  static gmx_bool bParam = TRUE, bRound = TRUE;
   static gmx_bool bPairs = TRUE, bPBC = TRUE;
   static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE;
   static const char *molnm = "ICE";
@@ -435,13 +419,13 @@ int main(int argc, char *argv[])
       "Force field for your simulation. Type \"select\" for interactive selection." },
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose output in the top file." },
-    { "-nexcl", FALSE, etINT,  {&nexcl},
+    { "-nexcl", FALSE, etINT,  {&nrexcl},
       "Number of exclusions" },
-    { "-H14",    FALSE, etBOOL, {&bH14}, 
+    { "-H14",    FALSE, etBOOL, {&bGenerateHH14Interactions},
       "Use 3rd neighbour interactions for hydrogen atoms" },
-    { "-alldih", FALSE, etBOOL, {&bAllDih}, 
+    { "-alldih", FALSE, etBOOL, {&bKeepAllGeneratedDihedrals},
       "Generate all proper dihedrals" },
-    { "-remdih", FALSE, etBOOL, {&bRemoveDih}, 
+    { "-remdih", FALSE, etBOOL, {&bRemoveDihedralIfWithImproper},
       "Remove dihedrals on the same bond as an improper" },
     { "-pairs",  FALSE, etBOOL, {&bPairs},
       "Output 1-4 interactions (pairs) in topology file" },
@@ -463,12 +447,18 @@ int main(int argc, char *argv[])
       "Dihedral angle force constant (kJ/mol/rad^2)" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs,&oenv);
   bRTP = opt2bSet("-r",NFILE,fnm);
   bTOP = opt2bSet("-o",NFILE,fnm);
+  /* C89 requirements mean that these struct members cannot be used in
+   * the declaration of pa. So some temporary variables are needed. */
+  rtp_header_settings.bRemoveDihedralIfWithImproper = bRemoveDihedralIfWithImproper;
+  rtp_header_settings.bGenerateHH14Interactions = bGenerateHH14Interactions;
+  rtp_header_settings.bKeepAllGeneratedDihedrals = bKeepAllGeneratedDihedrals;
+  rtp_header_settings.nrexcl = nrexcl;
   
   if (!bRTP && !bTOP)
     gmx_fatal(FARGS,"Specify at least one output file");
@@ -522,7 +512,7 @@ int main(int argc, char *argv[])
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,bAllDih,bRemoveDih,TRUE);
+  gen_pad(&nnb,atoms,&rtp_header_settings,plist,excls,NULL,TRUE);
   done_nnb(&nnb);
 
   if (!bPairs)
@@ -552,7 +542,7 @@ int main(int argc, char *argv[])
 		     "Generated by x2top",TRUE,ffdir,1.0);
     
     write_top(fp,NULL,mymol.name,atoms,FALSE,bts,plist,excls,atype,
-	      cgnr,nexcl);
+	      cgnr,rtp_header_settings.nrexcl);
     print_top_mols(fp,mymol.name,ffdir,NULL,0,NULL,1,&mymol);
     
     ffclose(fp);
@@ -565,6 +555,7 @@ int main(int argc, char *argv[])
     dump_hybridization(debug,atoms,nbonds);
   }
   close_symtab(&symtab);
+  free(mymol.name);
 
   printf("\nWARNING: topologies generated by %s can not be trusted at face value.\n",Program());
   printf("         Please verify atomtypes and charges by comparison to other\n");

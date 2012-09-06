@@ -49,7 +49,7 @@
 #include "index.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "string.h"
+#include <string.h>
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
@@ -146,7 +146,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   do_view(oenv,fn_tc,"-nxy");
   
   if (fn_cub) {
-    fp_cub = xvgropen(fn_cub,"TCAF's and fits", "Time (ps)","TCAF",oenv);
+    fp_cub = xvgropen(fn_cub,"TCAFs and fits", "Time (ps)","TCAF",oenv);
     for(kc=0; kc<nkc; kc++) {
       fprintf(fp_cub,"%g %g\n",0.0,1.0);
       for(i=1; i<ncorr; i++) {
@@ -218,34 +218,34 @@ int gmx_tcaf(int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]g_tcaf[tt] computes tranverse current autocorrelations.",
-    "These are used to estimate the shear viscosity eta.",
-    "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",
+    "These are used to estimate the shear viscosity, [GRK]eta[grk].",
+    "For details see: Palmer, Phys. Rev. E 49 (1994) pp 359-366.[PAR]",
     "Transverse currents are calculated using the",
-    "k-vectors (1,0,0) and (2,0,0) each also in the y- and z-direction,",
+    "k-vectors (1,0,0) and (2,0,0) each also in the [IT]y[it]- and [IT]z[it]-direction,",
     "(1,1,0) and (1,-1,0) each also in the 2 other planes (these vectors",
     "are not independent) and (1,1,1) and the 3 other box diagonals (also",
     "not independent). For each k-vector the sine and cosine are used, in",
     "combination with the velocity in 2 perpendicular directions. This gives",
     "a total of 16*2*2=64 transverse currents. One autocorrelation is",
-    "calculated fitted for each k-vector, which gives 16 tcaf's. Each of",
-    "these tcaf's is fitted to f(t) = exp(-v)(cosh(Wv) + 1/W sinh(Wv)),",
-    "v = -t/(2 tau), W = sqrt(1 - 4 tau eta/rho k^2), which gives 16 tau's",
-    "and eta's. The fit weights decay with time as exp(-t/wt), the tcaf and",
-    "fit are calculated up to time 5*wt.",
-    "The eta's should be fitted to 1 - a eta(k) k^2, from which",
+    "calculated fitted for each k-vector, which gives 16 TCAFs. Each of",
+    "these TCAFs is fitted to [MATH]f(t) = [EXP]-v[exp]([COSH]Wv[cosh] + 1/W [SINH]Wv[sinh])[math],",
+    "[MATH]v = -t/(2 [GRK]tau[grk])[math], [MATH]W = [SQRT]1 - 4 [GRK]tau[grk] [GRK]eta[grk]/[GRK]rho[grk] k^2[sqrt][math], which gives 16 values of [GRK]tau[grk]",
+    "and [GRK]eta[grk]. The fit weights decay exponentially with time constant [MATH]w[math] (given with [TT]-wt[tt]) as [MATH][EXP]-t/w[exp][math], and the TCAF and",
+    "fit are calculated up to time [MATH]5*w[math].",
+    "The [GRK]eta[grk] values should be fitted to [MATH]1 - a [GRK]eta[grk](k) k^2[math], from which",
     "one can estimate the shear viscosity at k=0.[PAR]",
     "When the box is cubic, one can use the option [TT]-oc[tt], which",
-    "averages the tcaf's over all k-vectors with the same length.",
-    "This results in more accurate tcaf's.",
-    "Both the cubic tcaf's and fits are written to [TT]-oc[tt]",
-    "The cubic eta estimates are also written to [TT]-ov[tt].[PAR]",
-    "With option [TT]-mol[tt] the transverse current is determined of",
-    "molecules instead of atoms. In this case the index group should",
+    "averages the TCAFs over all k-vectors with the same length.",
+    "This results in more accurate TCAFs.",
+    "Both the cubic TCAFs and fits are written to [TT]-oc[tt]",
+    "The cubic [GRK]eta[grk] estimates are also written to [TT]-ov[tt].[PAR]",
+    "With option [TT]-mol[tt], the transverse current is determined of",
+    "molecules instead of atoms. In this case, the index group should",
     "consist of molecule numbers instead of atom numbers.[PAR]",
     "The k-dependent viscosities in the [TT]-ov[tt] file should be",
-    "fitted to eta(k) = eta0 (1 - a k^2) to obtain the viscosity at",
+    "fitted to [MATH][GRK]eta[grk](k) = [GRK]eta[grk][SUB]0[sub] (1 - a k^2)[math] to obtain the viscosity at",
     "infinite wavelength.[PAR]",
-    "NOTE: make sure you write coordinates and velocities often enough.",
+    "[BB]Note:[bb] make sure you write coordinates and velocities often enough.",
     "The initial, non-exponential, part of the autocorrelation function",
     "is very important for obtaining a good fit."
   };
@@ -254,7 +254,7 @@ int gmx_tcaf(int argc,char *argv[])
   static real wt=5;
   t_pargs pa[] = {
     { "-mol", FALSE, etBOOL, {&bMol},
-      "Calculate tcaf of molecules" },
+      "Calculate TCAF of molecules" },
     { "-k34", FALSE, etBOOL, {&bK34},
       "Also use k=(3,0,0) and k=(4,0,0)" },
     { "-wt", FALSE, etREAL, {&wt},

@@ -36,8 +36,8 @@ files.
 */
 
 
-#ifndef _TMPI_THREAD_H_
-#define _TMPI_THREAD_H_
+#ifndef TMPI_THREADS_H_
+#define TMPI_THREADS_H_
 
 /*! \file threads.h
  *
@@ -102,8 +102,8 @@ typedef struct tMPI_Thread* tMPI_Thread_t;
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Mutex* mutex;
+    tMPI_Atomic_t initialized; /*!< Whether \a mutex has been initialized. */
+    struct tMPI_Mutex* mutex;  /*!< Actual mutex data structure. */
 }  tMPI_Thread_mutex_t;
 /*! \brief Static initializer for tMPI_Thread_mutex_t
  *
@@ -124,8 +124,8 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Thread_key *key;
+    tMPI_Atomic_t initialized; /*!< Whether \a key has been initialized. */
+    struct tMPI_Thread_key *key; /*!< Actual key data structure. */
 } tMPI_Thread_key_t;
 
 
@@ -147,7 +147,7 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t once;
+    tMPI_Atomic_t once; /*!< Whether the operation has been performed. */
 } tMPI_Thread_once_t;
 /*! \brief Static initializer for tMPI_Thread_once_t
  *
@@ -177,8 +177,8 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Thread_cond* condp;
+    tMPI_Atomic_t initialized;      /*!< Whether \a condp has been initialized. */
+    struct tMPI_Thread_cond* condp; /*!< Actual condition variable data structure. */
 } tMPI_Thread_cond_t;
 /*! \brief Static initializer for tMPI_Thread_cond_t
   *
@@ -200,8 +200,8 @@ typedef struct
  */
 typedef struct 
 {
-    tMPI_Atomic_t initialized;
-    struct tMPI_Thread_barrier* barrierp;
+    tMPI_Atomic_t initialized; /*!< Whether \a barrierp has been initialized. */
+    struct tMPI_Thread_barrier* barrierp; /*!< Actual barrier data structure. */
     volatile int threshold; /*!< Total number of members in barrier     */
     volatile int count;     /*!< Remaining count before completion      */
     volatile int cycle;     /*!< Alternating 0/1 to indicate round      */
@@ -238,6 +238,7 @@ enum tMPI_Thread_support
   \param message  format string for error message.
 */
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
+/** Convenience macro for the first two arguments to tMPI_Fatal_error(). */
 #define TMPI_FARGS __FILE__,__LINE__
 
 
@@ -256,10 +257,21 @@ void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
 enum tMPI_Thread_support tMPI_Thread_support(void);
 
 
+/** Get the number of hardware threads that can be run simultaneously.
+
+    Returns the total number of cores and SMT threads that can run.
+
+    \returns The maximum number of threads that can run simulataneously.
+        If this number cannot be determined for the current architecture,
+        0 is returned.
+ */
+int tMPI_Thread_get_hw_number(void);
+
 
 /** Create a new thread
  *
  *  The new thread will call start_routine() with the argument arg.
+ *
  *  Please be careful not to change arg after calling this function.
  * 
  *  \param thread          Pointer to opaque thread datatype
@@ -268,9 +280,34 @@ enum tMPI_Thread_support tMPI_Thread_support(void);
  *  
  *  \return Status - 0 on success, or an error code.
  */
-int tMPI_Thread_create   (tMPI_Thread_t *   thread,
-                          void *            (*start_routine)(void *),
-                          void *            arg);
+int tMPI_Thread_create(tMPI_Thread_t *thread,
+                      void* (*start_routine)(void *),
+                      void* arg);
+
+/** Create a new thread with processor affinity 
+ *
+ *  The new thread will call start_routine() with the argument arg.
+ * 
+ *  The new thread will have processor affinity assigned in a 
+ *  round-robin way, starting at processor 1.  The first thread to call 
+ *  this function will be assigned to processor 0.
+ *
+ *  This means that this funtion should ONLY be called when starting a
+ *  thread on each processor: in any other case, this will lead to 
+ *  imbalances because processors 0 and 1 will be oversubscribed.
+ *
+ *  Please be careful not to change arg after calling this function.
+ * 
+ *  \param thread          Pointer to opaque thread datatype
+ *  \param start_routine   The function to call in the new thread
+ *  \param arg             Argument to call with
+ *  
+ *  \return Status - 0 on success, or an error code.
+ */
+int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
+                           void *(*start_routine)(void *),
+                           void *arg);
+
 
 
 
@@ -285,8 +322,7 @@ int tMPI_Thread_create   (tMPI_Thread_t *   thread,
  *  
  *  \return 0 if the join went ok, or a non-zero error code.
  */
-int tMPI_Thread_join     (tMPI_Thread_t     thread,
-                          void **           value_ptr);
+int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr);
 
 
 
@@ -333,10 +369,10 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
  *
  *  This routine always return directly. If the mutex was available and
  *  we successfully locked it we return 0, otherwise a non-zero
- *  error code (usually meaning the mutex was already locked).
+ *  return code (usually meaning the mutex was already locked).
  *
  *  \param mtx  Pointer to the mutex to try and lock
- *  \return 0 or a non-zero error code.
+ *  \return 0 or a non-zero return error code.
  */
 int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
 
@@ -430,7 +466,7 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_data,
  *  \param cond  Pointer to previously allocated condition variable
  *  \return      0 or a non-zero error message.
  */
-int tMPI_Thread_cond_init(tMPI_Thread_cond_t *     cond);
+int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond);
 
 
 
@@ -443,7 +479,7 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *     cond);
  *  \param cond Pointer to condition variable.
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *    cond);
+int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond);
 
 
 
@@ -462,8 +498,8 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *    cond);
  *
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *    cond,
-                          tMPI_Thread_mutex_t *   mtx);
+int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond,
+                          tMPI_Thread_mutex_t *mtx);
 
 
 
@@ -478,7 +514,7 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *    cond,
  *
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *  cond);
+int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond);
 
 
 /** Unblock all waiting threads
@@ -491,7 +527,7 @@ int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *  cond);
 *
 *  \return 0 or a non-zero error message.
 */
-int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *  cond);
+int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond);
 
 
 
@@ -504,7 +540,7 @@ int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *  cond);
  *                     join them can read this value if they try.
  *  \return 
  */
-void tMPI_Thread_exit(void *      value_ptr);
+void tMPI_Thread_exit(void *value_ptr);
 
 
 
@@ -516,7 +552,7 @@ void tMPI_Thread_exit(void *      value_ptr);
  *  \param thread     Handle to thread we want to see dead.
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cancel(tMPI_Thread_t      thread);
+int tMPI_Thread_cancel(tMPI_Thread_t thread);
 
 
 
@@ -566,5 +602,5 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 }
 #endif
 
-#endif /* _TMPI_THREAD_H_ */
+#endif /* TMPI_THREADS_H_ */
 

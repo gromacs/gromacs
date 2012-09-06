@@ -48,9 +48,9 @@ extern "C" {
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14, 
-		    t_params plist[], t_excls excls[], t_hackblock hb[], 
-		    gmx_bool bAlldih, gmx_bool bRemoveDih, gmx_bool bAllowMissing);
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+             t_params plist[], t_excls excls[], t_hackblock hb[],
+             gmx_bool bAllowMissing);
 
 #ifdef __cplusplus
 }

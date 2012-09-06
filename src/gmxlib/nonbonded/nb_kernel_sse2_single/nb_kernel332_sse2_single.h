@@ -89,4 +89,4 @@ nb_kernel332nf_sse2_single(int *   nri,        int     iinr[],   int     jindex[
 #endif
 
 
-#endif /* _NB_KERNEL332_IA32_SSE_H_ */
+#endif /* _NB_KERNEL332_SSE2_SINGLE_H_ */

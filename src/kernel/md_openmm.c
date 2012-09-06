@@ -40,11 +40,6 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-/* _isnan() */
-#include <float.h>
-#endif
-
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -61,6 +56,7 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "mdrun.h"
+#include "md_support.h"
 #include "confio.h"
 #include "network.h"
 #include "pull.h"
@@ -71,8 +67,6 @@
 #include "ionize.h"
 #include "disre.h"
 #include "orires.h"
-#include "dihre.h"
-#include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
 #include "qmmm.h"
@@ -90,112 +84,14 @@
 #include "genborn.h"
 #include "string2.h"
 #include "copyrite.h"
+#include "membed.h"
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
 /* include even when OpenMM not used to force compilation of do_md_openmm */
 #include "openmm_wrapper.h"
-
-/* simulation conditions to transmit */
-enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
-
-typedef struct
-{
-    int nstms;       /* The frequency for intersimulation communication */
-    int sig[eglsNR]; /* The signal set by one process in do_md */
-    int set[eglsNR]; /* The communicated signal, equal for all processes */
-} globsig_t;
-
-
-static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
-{
-    int  *buf;
-    gmx_bool bPos,bEqual;
-    int  s,d;
-
-    snew(buf,ms->nsim);
-    buf[ms->sim] = n;
-    gmx_sumi_sim(ms->nsim,buf,ms);
-    bPos   = TRUE;
-    bEqual = TRUE;
-    for (s=0; s<ms->nsim; s++)
-    {
-        bPos   = bPos   && (buf[s] > 0);
-        bEqual = bEqual && (buf[s] == buf[0]);
-    }
-    if (bPos)
-    {
-        if (bEqual)
-        {
-            nmin = min(nmin,buf[0]);
-        }
-        else
-        {
-            /* Find the least common multiple */
-            for (d=2; d<nmin; d++)
-            {
-                s = 0;
-                while (s < ms->nsim && d % buf[s] == 0)
-                {
-                    s++;
-                }
-                if (s == ms->nsim)
-                {
-                    /* We found the LCM and it is less than nmin */
-                    nmin = d;
-                    break;
-                }
-            }
-        }
-    }
-    sfree(buf);
-
-    return nmin;
-}
-
-static int multisim_nstsimsync(const t_commrec *cr,
-                               const t_inputrec *ir,int repl_ex_nst)
-{
-    int nmin;
-
-    if (MASTER(cr))
-    {
-        nmin = INT_MAX;
-        nmin = multisim_min(cr->ms,nmin,ir->nstlist);
-        nmin = multisim_min(cr->ms,nmin,ir->nstcalcenergy);
-        nmin = multisim_min(cr->ms,nmin,repl_ex_nst);
-        if (nmin == INT_MAX)
-        {
-            gmx_fatal(FARGS,"Can not find an appropriate interval for inter-simulation communication, since nstlist, nstcalcenergy and -replex are all <= 0");
-        }
-        /* Avoid inter-simulation communication at every (second) step */
-        if (nmin <= 2)
-        {
-            nmin = 10;
-        }
-    }
-
-    gmx_bcast(sizeof(int),&nmin,cr);
-
-    return nmin;
-}
-
-static void init_global_signals(globsig_t *gs,const t_commrec *cr,
-                                const t_inputrec *ir,int repl_ex_nst)
-{
-    int i;
-
-    gs->nstms = 1;
-
-    for (i=0; i<eglsNR; i++)
-    {
-        gs->sig[i] = 0;
-        gs->set[i] = 0;
-    }
-}
-
 
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
@@ -208,7 +104,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     t_mdatoms *mdatoms,
                     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                     gmx_edsam_t ed,t_forcerec *fr,
-                    int repl_ex_nst,int repl_ex_seed,
+                    int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                    gmx_membed_t membed,
                     real cpt_period,real max_hours,
                     const char *deviceOptions,
                     unsigned long Flags,
@@ -230,7 +127,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_vcm      *vcm;
     int        nchkpt=1;
     gmx_localtop_t *top;
-    t_mdebin *mdebin=NULL;
+    t_mdebin *mdebin;
     t_state    *state=NULL;
     rvec       *f_global=NULL;
     int        n_xtc=-1;
@@ -267,7 +164,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,oenv,&t,&t0,state_global->lambda,
+            &(state_global->fep_state),&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
@@ -276,7 +174,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd,1);
-    init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
+    init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,
+                  enerd);
     snew(f,top_global->natoms);
 
     /* Kinetic energy data */
@@ -319,7 +218,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
     }
 
-    update_mdatoms(mdatoms,state->lambda);
+    update_mdatoms(mdatoms,state->lambda[efptMASS]);
 
     if (deviceOptions[0]=='\0')
     {
@@ -399,7 +298,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (MASTER(cr))
     {
         char tbuf[20];
-        fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         fprintf(stderr,"starting mdrun '%s'\n",
                 *(top_global->name));
         if (ir->nsteps >= 0)
@@ -475,7 +373,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (MASTER(cr) && do_log)
         {
-            print_ebin_header(fplog,step,t,state->lambda);
+            print_ebin_header(fplog,step,t,state->lambda[efptFEP]);
         }
 
         clear_mat(force_vir);
@@ -534,7 +432,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, bF, do_ene);
 
             upd_mdebin(mdebin,FALSE,TRUE,
-                       t,mdatoms->tmass,enerd,state,lastbox,
+                       t,mdatoms->tmass,enerd,state,ir->fepvals,ir->expandedvals,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);
             print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,do_log?fplog:NULL,
@@ -577,7 +475,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Check whether everything is still allright */
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             && MASTER(cr)
 #endif
             )
@@ -639,7 +537,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             if (fflush(fplog) != 0)
             {
-                gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+                gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of disk space?");
             }
         }
 

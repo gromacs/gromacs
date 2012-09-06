@@ -1184,7 +1184,7 @@ int main(int argc,char *argv[])
     "All these programs can generate default index groups. You ONLY",
     "have to use [TT]make_ndx[tt] when you need SPECIAL index groups.",
     "There is a default index group for the whole system, 9 default", 
-    "index groups are generated for proteins, a default index group",
+    "index groups for proteins, and a default index group",
     "is generated for every other residue name.[PAR]",
     "When no index file is supplied, also [TT]make_ndx[tt] will generate the",
     "default groups.",

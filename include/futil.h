@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +52,8 @@ extern "C" {
  * When reading the PATH environment variable, Unix separates entries
  * with colon, while windows uses semicolon.
  */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include "gmx_header_config.h"
+#ifdef GMX_NATIVE_WINDOWS
 #define DIR_SEPARATOR '\\'
 #define PATH_SEPARATOR ";"
 #else
@@ -190,6 +192,11 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
 /* do an fsync() on an open file pointer. 
    Only use this during checkpointing! */
 int gmx_fsync(FILE *fp);
+
+#ifdef GMX_NATIVE_WINDOWS
+#define chdir _chdir
+#define getcwd _getcwd
+#endif
 
 #ifdef __cplusplus
 }

@@ -60,7 +60,7 @@
 #include "strdb.h"
 #include "gmx_ana.h"
 
-gmx_bool *bPhobics(int nres,char *resnm[])
+static gmx_bool *bPhobics(int nres,char *resnm[])
 {
   int  i,nb;
   char **cb;
@@ -205,7 +205,7 @@ int gmx_wheel(int argc,char *argv[])
   const char *desc[] = {
     "[TT]g_wheel[tt] plots a helical wheel representation of your sequence.",
     "The input sequence is in the [TT].dat[tt] file where the first line contains",
-    "the number of residues and each consecutive line contains a residue"
+    "the number of residues and each consecutive line contains a residue "
     "name."
   };
   output_env_t oenv;

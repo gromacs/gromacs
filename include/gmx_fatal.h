@@ -40,10 +40,28 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
-#include "typedefs.h"
+#include "types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifndef __has_feature      // Optional.
+#define __has_feature(x) 0 // Compatibility with non-clang compilers.
+#endif
+
+/** \def GMX_ATTRIBUTE_NORETURN \brief Indicate that a function is not
+ * expected to return.
+ * WARNING: In general this flag should not be used for compiler
+ * optimizations, since set_gmx_error_handler can be set to a
+ * handler which does not quit.
+ */
+#ifndef GMX_ATTRIBUTE_NORETURN
+#if __has_feature(attribute_analyzer_noreturn)
+#define GMX_ATTRIBUTE_NORETURN __attribute__((analyzer_noreturn))
+#else
+#define GMX_ATTRIBUTE_NORETURN
+#endif
 #endif
   
 void 
@@ -62,7 +80,7 @@ _unset_fatal_tmp_file(const char *fn, const char *file, int line);
 /* unsets filename to be removed */
 
 void 
-gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
+gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...) GMX_ATTRIBUTE_NORETURN;
 #define FARGS 0,__FILE__,__LINE__
 /*
  * Routine gmx_fatal prints 
@@ -76,22 +94,14 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
  * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
  * are allowed as format specifiers.
  *
+ * In case all MPI processes want to stop with the same fatal error,
+ * use gmx_fatal_collective, declared in gmx_fatal_collective.h,
+ * to avoid having as many error messages as processes.
+ *
  * Tip of the week:
  * call this function using the FARGS macro:
  * gmx_fatal(FARGS,fmt,...)
- */
-
-void
-gmx_fatal_collective(int f_errno,const char *file,int line,
-		     t_commrec *cr,gmx_domdec_t *dd,
-		     const char *fmt,...);
-/* As gmx_fatal, but only the master process prints the error message.
- * This should only be called one of the following two situations:
- * 1) On all nodes in cr->mpi_comm_mysim, with cr!=NULL,dd==NULL.
- * 2) On all nodes in dd->mpi_comm_all,   with cr==NULL,dd!=NULL.
- * This will call MPI_Finalize instead of MPI_Abort when possible,
- * This is useful for handling errors in code that is executed identically
- * for all processes.
+ *
  */
 
 void
@@ -149,7 +159,7 @@ void doexceptions(void);
    * The messages are stored in src/gmxlib/fatal.c
    */
   
-  void _gmx_error(const char *key,const char *msg,const char *file,int line);
+  void _gmx_error(const char *key,const char *msg,const char *file,int line) GMX_ATTRIBUTE_NORETURN;
 #define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
   /* Error msg of type key is generated and the program is 
    * terminated unless and error handle is set (see below)
@@ -184,6 +194,7 @@ void gmx_warning(const char *fmt,...);
  * The message string should NOT start with "WARNING"
  * and should NOT end with a newline.
  */
+
 
 #ifdef __cplusplus
 	   }

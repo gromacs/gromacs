@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _MPI_BINDINGS_H_
-#define _MPI_BINDINGS_H_
+#ifndef TMPI_MPI_BINDINGS_H_
+#define TMPI_MPI_BINDINGS_H_
 
 /** \file
   \brief MPI bindings for thread_mpi/tmpi.h
@@ -72,6 +72,8 @@ typedef struct tmpi_req_ *MPI_Request;
 typedef struct tmpi_status_ MPI_Status;
 /* data types */
 typedef struct tmpi_datatype_ *MPI_Datatype;
+/* reduce operations */
+typedef tMPI_Op MPI_Op;
 
 
 #define MPI_CHAR                TMPI_CHAR
@@ -250,6 +252,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 
 #define MPI_Reduce                  tMPI_Reduce
 #define MPI_Allreduce               tMPI_Allreduce
+#define MPI_Scan                    tMPI_Scan
 
 #ifdef __cplusplus
 } /* closing extern "C" */
@@ -257,5 +260,5 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 
 #endif
 
-#endif /* _MPI_BINDINGS_H_ */
+#endif /* TMPI_MPI_BINDINGS_H_ */
 

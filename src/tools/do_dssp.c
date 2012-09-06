@@ -55,6 +55,7 @@
 #include "tpxio.h"
 #include "viewit.h"
 
+
 static int strip_dssp(char *dsspfile,int nres,
 		       gmx_bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
@@ -168,22 +169,26 @@ static int strip_dssp(char *dsspfile,int nres,
   return nr;
 }
 
-gmx_bool *bPhobics(t_atoms *atoms)
+static gmx_bool *bPhobics(t_atoms *atoms)
 {
-  int  i,nb;
-  char **cb;
-  gmx_bool *bb;
-  
-  nb=get_strings("phbres.dat",&cb);
-  snew(bb,atoms->nres);
-  
-  for(i=0; (i<atoms->nres); i++) {
-    if (search_str(nb,cb,*atoms->resinfo[i].name) != -1)
-      bb[i]=TRUE;
-  }
-  return bb;
+    int       i,nb;
+    char      **cb;
+    gmx_bool  *bb;
+
+
+    nb = get_strings("phbres.dat",&cb);
+    snew(bb,atoms->nres);
+
+    for (i=0; (i<atoms->nres); i++)
+    {
+        if ( -1 != search_str(nb,cb,*atoms->resinfo[i].name) )
+        {
+            bb[i]=TRUE;
+        }
+    }
+    return bb;
 }
- 
+
 static void check_oo(t_atoms *atoms)
 {
   char *OOO;
@@ -300,7 +305,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     snew(total,mat->nmap);
     snew(leg,mat->nmap+1);
     leg[0]="Structure";
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         leg[s+1]=strdup(map[s].desc);
     }
@@ -329,14 +334,14 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     xvgr_legend(fp,mat->nmap+1,leg,oenv);
     
     total_count = 0;
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         total[s]=0;
     }
     for(f=0; f<mat->nx; f++)
     {
         ss_count=0;
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             count[s]=0;
         }
@@ -345,7 +350,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
             count[mat->matrix[f][r]]++;
             total[mat->matrix[f][r]]++;
         }
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             if (strchr(ss_string,map[s].code.c1))
             {
@@ -354,7 +359,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
             }
         }
         fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             fprintf(fp," %5d",count[s]);
         }
@@ -362,7 +367,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     /* now print column totals */
     fprintf(fp, "%-8s %5d", "# Totals", total_count);
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         fprintf(fp," %5d",total[s]);
     }
@@ -370,7 +375,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 
     /* now print percentages */
     fprintf(fp, "%-8s %5.2f", "# SS %", total_count / (real) (mat->nx * mat->ny));
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         fprintf(fp," %5.2f",total[s] / (real) (mat->nx * mat->ny));
     }
@@ -388,11 +393,18 @@ int main(int argc,char *argv[])
     "reads a trajectory file and computes the secondary structure for",
     "each time frame ",
     "calling the dssp program. If you do not have the dssp program,",
-    "get it. [TT]do_dssp[tt] assumes that the dssp executable is",
-    "/usr/local/bin/dssp. If this is not the case, then you should",
-    "set an environment variable [BB]DSSP[bb] pointing to the dssp",
+    "get it from http://swift.cmbi.ru.nl/gv/dssp. [TT]do_dssp[tt] assumes ",
+    "that the dssp executable is located in ",
+    "[TT]/usr/local/bin/dssp[tt]. If this is not the case, then you should",
+    "set an environment variable [TT]DSSP[tt] pointing to the dssp",
     "executable, e.g.: [PAR]",
     "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
+    "Since version 2.0.0, dssp is invoked with a syntax that differs",
+    "from earlier versions. If you have an older version of dssp,",
+    "use the [TT]-ver[tt] option to direct do_dssp to use the older syntax.",
+    "By default, do_dssp uses the syntax introduced with version 2.0.0.",
+    "Even newer versions (which at the time of writing are not yet released)",
+    "are assumed to have the same syntax as 2.0.0.[PAR]",
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
@@ -414,11 +426,14 @@ int main(int argc,char *argv[])
   };
   static gmx_bool bVerbose;
   static const char *ss_string="HEBT"; 
+  static int dsspVersion=2;
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
       "HIDDENGenerate miles of useless information" },
     { "-sss", FALSE, etSTR, {&ss_string},
-      "Secondary structures for structure count"}
+      "Secondary structures for structure count"},
+    { "-ver", FALSE, etINT, {&dsspVersion},
+      "DSSP major version. Syntax changed with version 2"}
   };
   
   t_trxstatus *status;
@@ -474,7 +489,7 @@ int main(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
   check_oo(atoms);
-  bPhbres=bPhobics(atoms);
+  bPhbres = bPhobics(atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpnm);
   nres=0;
@@ -514,10 +529,23 @@ int main(int argc,char *argv[])
   if (!gmx_fexist(dptr))
     gmx_fatal(FARGS,"DSSP executable (%s) does not exist (use setenv DSSP)",
 		dptr);
-  sprintf(dssp,"%s %s %s %s > /dev/null %s",
-	  dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
-  if (bVerbose)
-    fprintf(stderr,"dssp cmd='%s'\n",dssp);
+  if (dsspVersion >= 2)
+  {
+      if (dsspVersion > 2)
+      {
+          printf("\nWARNING: You use DSSP version %d, which is not explicitly\nsupported by do_dssp. Assuming version 2 syntax.\n\n", dsspVersion);
+      }
+      
+      sprintf(dssp,"%s -i %s -o %s > /dev/null %s",
+              dptr,pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+  }
+  else
+  {
+      sprintf(dssp,"%s %s %s %s > /dev/null %s",
+              dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+
+  }
+  fprintf(stderr,"dssp cmd='%s'\n",dssp);
   
   if (fnTArea) {
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
@@ -563,7 +591,8 @@ int main(int argc,char *argv[])
 #else
     if(0 != system(dssp))
     {
-	gmx_fatal(FARGS,"Failed to execute command: %s",dssp);
+        gmx_fatal(FARGS,"Failed to execute command: %s\n",
+                  "Try specifying your dssp version with the -ver option.",dssp);
     }
 #endif
 

@@ -246,18 +246,6 @@ void add_xcm(rvec x[],int gnx,atom_id *index,rvec xcm)
   }
 }
 
-static void dump_shit(FILE *out,matrix trans,rvec prcomp,real totmass)
-{
-  /* print principal component data */
-  pr_rvecs(out,0,"Rot Matrix",trans,DIM);
-  fprintf(out,"Det(trans) = %g\n",det(trans));
-  
-  fprintf(out,"Norm of principal axes: %.3f, %.3f, %.3f\n",
-	  prcomp[XX],prcomp[YY],prcomp[ZZ]);
-  fprintf(out,"Totmass = %g\n",totmass);
-}
-
-
 void orient_princ(t_atoms *atoms,int isize,atom_id *index,
 		  int natoms, rvec x[], rvec *v, rvec d)
 {

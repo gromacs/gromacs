@@ -36,10 +36,8 @@
 #include "vec.h"
 #include "smalloc.h"
 
-#include "nb_kernel_allvsallgb_sse2_single.h"
-#include "gmx_sse2_single.h"
+#include "gmx_x86_sse2.h"
 
-#include <xmmintrin.h>
 #include <emmintrin.h>
 
 #define SIMD_WIDTH 4

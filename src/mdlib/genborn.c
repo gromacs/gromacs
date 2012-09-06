@@ -60,21 +60,19 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
-#ifdef GMX_DOUBLE
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
-#include "genborn_sse2_double.h"
-#include "genborn_allvsall_sse2_double.h"
-#endif
-#else
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
-#include "genborn_sse2_single.h"
-#include "genborn_allvsall_sse2_single.h"
-#endif /* GMX_SSE */
-#endif /* GMX_DOUBLE */
+#ifdef GMX_X86_SSE2
+#  ifdef GMX_DOUBLE
+#    include "genborn_sse2_double.h"
+#    include "genborn_allvsall_sse2_double.h"
+#  else
+#    include "genborn_sse2_single.h"
+#    include "genborn_allvsall_sse2_single.h"
+#  endif /* GMX_DOUBLE */
+#endif /* SSE or AVX present */
 
 #include "genborn_allvsall.h"
 
@@ -131,29 +129,6 @@ int init_gb_nblist(int natoms, t_nblist *nl)
     
     return 0;
 }
-
-int print_nblist(int natoms, t_nblist *nl)
-{
-    int i,k,ai,aj,nj0,nj1;
-    
-    printf("genborn.c: print_nblist, natoms=%d\n",nl->nri); 
-    
-    for(i=0;i<nl->nri;i++)
-    {
-        ai=nl->iinr[i];
-        nj0=nl->jindex[i];
-        nj1=nl->jindex[i+1];
-    
-        for(k=nj0;k<nj1;k++)
-        {    
-            aj=nl->jjnr[k];
-            printf("ai=%d, aj=%d\n",ai,aj);
-        }
-    }
-    
-    return 0;    
-}
-
 
 void gb_pd_send(t_commrec *cr, real *send_data, int nr)
 {
@@ -1129,19 +1104,14 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         
         if(ir->gb_algorithm==egbSTILL)
         {
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            if(fr->UseOptimizedKernels)
+#if 0 && defined (GMX_X86_SSE2)
+            if(fr->use_acceleration)
             {
-                genborn_allvsall_calc_still_radii_sse2_single(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
-            }
-            else
-            {
-                genborn_allvsall_calc_still_radii(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
-            }
-#elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            if(fr->UseOptimizedKernels)
-            {
+#  ifdef GMX_DOUBLE
                 genborn_allvsall_calc_still_radii_sse2_double(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+#  else
+                genborn_allvsall_calc_still_radii_sse2_single(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+#  endif
             }
             else
             {
@@ -1154,19 +1124,14 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         }
         else if(ir->gb_algorithm==egbHCT || ir->gb_algorithm==egbOBC)
         {
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            if(fr->UseOptimizedKernels)
+#if 0 && defined (GMX_X86_SSE2)
+            if(fr->use_acceleration)
             {
-                genborn_allvsall_calc_hct_obc_radii_sse2_single(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
-            }
-            else
-            {
-                genborn_allvsall_calc_hct_obc_radii(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
-            }
-#elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            if(fr->UseOptimizedKernels)
-            {
+#  ifdef GMX_DOUBLE
                 genborn_allvsall_calc_hct_obc_radii_sse2_double(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+#  else
+                genborn_allvsall_calc_hct_obc_radii_sse2_single(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+#  endif
             }
             else
             {
@@ -1189,14 +1154,14 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     /* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
     
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) ) 
+#if 0 && defined (GMX_X86_SSE2)
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {            
-                calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born); 
+                calc_gb_rad_still_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born);
             }
             else
             {
@@ -1204,7 +1169,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             }   
             break;
         case egbHCT:
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
                 calc_gb_rad_hct_obc_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
             }
@@ -1214,7 +1179,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             }
             break;
         case egbOBC:
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
                 calc_gb_rad_hct_obc_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
             }
@@ -1248,12 +1213,12 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
                         
 #else                
             
-#if (!defined DISABLE_SSE && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) ) )
+#if 0 && defined (GMX_X86_SSE2)
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
             calc_gb_rad_still_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born);
             }
@@ -1263,7 +1228,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             }
             break;
         case egbHCT:
-                if(fr->UseOptimizedKernels)
+                if(fr->use_acceleration)
                 {
                     calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
                 }
@@ -1274,7 +1239,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             break;
             
         case egbOBC:
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
                 calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
             }
@@ -1696,19 +1661,14 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 
     if(fr->bAllvsAll)
     {
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-        if(fr->UseOptimizedKernels)
+#if 0 && defined (GMX_X86_SSE2)
+        if(fr->use_acceleration)
         {
-            genborn_allvsall_calc_chainrule_sse2_single(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
-        }
-        else
-        {
-            genborn_allvsall_calc_chainrule(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
-        }
-#elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-        if(fr->UseOptimizedKernels)
-        {
+#  ifdef GMX_DOUBLE
             genborn_allvsall_calc_chainrule_sse2_double(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+#  else
+            genborn_allvsall_calc_chainrule_sse2_single(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+#  endif
         }
         else
         {
@@ -1723,48 +1683,27 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
         return;
     }
     
-#ifdef GMX_DOUBLE    
-    
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-    if(fr->UseOptimizedKernels)
+#if 0 && defined (GMX_X86_SSE2)
+    if(fr->use_acceleration)
     {
-        calc_gb_chainrule_sse2_double(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
-                                      x[0], f[0], fr->fshift[0],  fr->shift_vec[0],
-                                      gb_algorithm, born, md); 
+#  ifdef GMX_DOUBLE
+        calc_gb_chainrule_sse2_double(fr->natoms_force, &(fr->gblist),fr->dadx,fr->dvda,x[0], 
+                                      f[0],fr->fshift[0],fr->shift_vec[0],gb_algorithm,born,md);
+#  else
+        calc_gb_chainrule_sse2_single(fr->natoms_force, &(fr->gblist),fr->dadx,fr->dvda,x[0], 
+                                      f[0],fr->fshift[0],fr->shift_vec[0],gb_algorithm,born,md);
+#  endif
     }
     else
     {
         calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
-                          x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md); 
+                          x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);
     }
 #else
     calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
                       x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);
 #endif
-    
-#else
-    
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-    /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
-    if(fr->UseOptimizedKernels)
-    {
-        calc_gb_chainrule_sse2_single(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
-                                      x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
-                                      gb_algorithm, born, md);
-    }
-    else
-    {
-        calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
-                          x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);    
-    }
-    
-#else
-    /* Calculate the forces due to chain rule terms with non sse code */
-    calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
-                      x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);    
-#endif    
-#endif
-    
+
     if(!fr->bAllvsAll)
     {
         inc_nrnb(nrnb,eNR_BORN_CHAINRULE,fr->gblist.nrj);

@@ -202,7 +202,7 @@ gmx_mtxio_read (const char *            filename,
 
     gmx_fio_do_int(fio, i);
     
-    if(i==GMX_MTXIO_FULL_MATRIX)
+    if(i==GMX_MTXIO_FULL_MATRIX && NULL != full_matrix)
     {
         printf("Full matrix storage format, nrow=%d, ncols=%d\n",*nrow,*ncol);
 
@@ -210,7 +210,7 @@ gmx_mtxio_read (const char *            filename,
         snew((*full_matrix),sz);
         bDum=gmx_fio_ndo_real(fio, (*full_matrix),sz);
     }
-    else
+    else if (NULL != sparse_matrix)
     {
         /* Sparse storage */
         printf("Sparse matrix storage format, nrow=%d, ncols=%d\n",*nrow,*ncol);

@@ -44,66 +44,39 @@
 #include "gmx_fatal.h"
 #include "calcgrid.h"
 
-#define facNR 4
-const int factor[facNR] = {2,3,5,7};
+/* The grid sizes below are based on timing of a 3D cubic grid in fftw
+ * compiled with SSE using 4 threads in fft5d.c.
+ * A grid size is removed when a larger grid is faster.
+ */
 
-static void make_list(int start_fac,int *ng,int ng_max,int *n_list,int **list)
-{
-    int i,fac;
-  
-    if (*ng < ng_max)
-    {
-        if (*n_list % 100 == 0)
-        {
-            srenew(*list,*n_list+100);
-        }
-        (*list)[*n_list] = *ng;
-        (*n_list)++;
-        
-        for(i=start_fac; i<facNR; i++)
-        {
-            fac = factor[i];
-            /* The choice of grid size is based on benchmarks of fftw
-             * and the need for a lot of factors for nice DD decomposition.
-             * The base criterion is that a grid size is not included
-             * when there is a larger grid size that produces a faster 3D FFT.
-             * Allow any power for 2, two for 3 and 5, but only one for 7.
-             * Three for 3 are ok when there is also a factor of 2.
-             * Two factors of 5 are not allowed with a factor of 3 or 7.
-             * A factor of 7 does not go with a factor of 5, 7 or 9.
-             */
-            if ((fac == 2) ||
-                (fac == 3 && (*ng % 9 != 0 ||
-                              (*ng % 2 == 0 && *ng % 27 != 0))) ||
-                (fac == 5 && *ng % 15 != 0 && *ng % 25 != 0) ||
-                (fac == 7 && *ng % 5 != 0 && *ng % 7 != 0 && *ng % 9 != 0))
-            {
-                *ng *= fac;
-                make_list(i,ng,ng_max,n_list,list);
-                *ng /= fac;
-            }
-        }
-    }
-}
+/* Small grid size array */
+#define g_initNR 15
+const int grid_init[g_initNR] = { 6,8,10,12,14,16,20,24,25,28,32,36,40,42,44 };
 
-static int list_comp(const void *a,const void *b)
-{
-  return (*((int *)a) - *((int *)b));
-}
+/* For larger grid sizes, a prefactor with any power of 2 can be added.
+ * Only sizes divisible by 4 should be used, 90 is allowed, 140 not.
+ */
+#define g_baseNR 14
+const int grid_base[g_baseNR] = { 45,48,50,52,54,56,60,64,70,72,75,80,81,84 };
 
 real calc_grid(FILE *fp,matrix box,real gr_sp,
                int *nx,int *ny,int *nz)
 {
     int  d,n[DIM];
-    int  i,j,nmin[DIM];
-    rvec box_size,spacing;
+    int  i;
+    rvec box_size;
+    int  nmin,fac2,try;
+    rvec spacing;
     real max_spacing;
-    int  ng_max,ng;
-    int  n_list,*list;
 
-    if (gr_sp <= 0)
+    if ((*nx <= 0 || *ny <= 0 || *nz <= 0) && gr_sp <= 0)
     {
         gmx_fatal(FARGS,"invalid fourier grid spacing: %g",gr_sp);
+    }
+
+    if (grid_base[g_baseNR-1] % 4 != 0)
+    {
+        gmx_incons("the last entry in grid_base is not a multiple of 4");
     }
 
     /* New grid calculation setup:
@@ -131,21 +104,7 @@ real calc_grid(FILE *fp,matrix box,real gr_sp,
     n[XX] = *nx;
     n[YY] = *ny;
     n[ZZ] = *nz;
-    
-    ng = 1;
-    ng_max = 1;
-    for(d=0; d<DIM; d++)
-    {
-        nmin[d] = (int)(box_size[d]/gr_sp + 0.999);
-        if (2*nmin[d] > ng_max)
-        {
-            ng_max = 2*nmin[d];
-        }
-    }
-    n_list=0;
-    list=NULL;
-    make_list(0,&ng,ng_max,&n_list,&list);
-    
+
     if ((*nx<=0) || (*ny<=0) || (*nz<=0))
     {
         if (NULL != fp)
@@ -155,29 +114,48 @@ real calc_grid(FILE *fp,matrix box,real gr_sp,
         }
     }
     
-    qsort(list,n_list,sizeof(list[0]),list_comp);
-    if (debug)
-    {
-        for(i=0; i<n_list; i++)
-            fprintf(debug,"grid: %d\n",list[i]);
-    }
-        
-    for(d=0; d<DIM; d++)
-    {
-        for(i=0; (i<n_list) && (n[d]<=0); i++)
-        {
-            if (list[i] >= nmin[d])
-            {
-                n[d] = list[i];
-            }
-        }
-    }
-    
-    sfree(list);
-    
     max_spacing = 0;
     for(d=0; d<DIM; d++)
     {
+        if (n[d] <= 0)
+        {
+            nmin = (int)(box_size[d]/gr_sp + 0.999);
+
+            i = g_initNR - 1;
+            if (grid_init[i] >= nmin)
+            {
+                /* Take the smallest possible grid in the list */
+                while (i > 0 && grid_init[i-1] >= nmin)
+                {
+                    i--;
+                }
+                n[d] = grid_init[i];
+            }
+            else
+            {
+                /* Determine how many pre-factors of 2 we need */
+                fac2 = 1;
+                i = g_baseNR - 1;
+                while (fac2*grid_base[i-1] < nmin)
+                {
+                    fac2 *= 2;
+                }
+                /* Find the smallest grid that is >= nmin */
+                do
+                {
+                    try = fac2*grid_base[i];
+                    /* We demand a factor of 4, avoid 140, allow 90 */
+                    if (((try % 4 == 0 && try != 140) || try == 90) &&
+                        try >= nmin)
+                    {
+                        n[d] = try;
+                    }
+                    i--;
+                }
+                while (i > 0);
+            }
+        }
+
         spacing[d] = box_size[d]/n[d];
         if (spacing[d] > max_spacing)
         {

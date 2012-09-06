@@ -18,6 +18,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 
 
@@ -72,14 +73,15 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 /* 
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
  */
 #include "molfile_plugin.h"
 #include "vmddlopen.h"
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-#include "glob.h"
+#ifndef GMX_NATIVE_WINDOWS
+#include <glob.h>
 #else
 #include <windows.h>
 #include <shlobj.h>
@@ -121,7 +123,7 @@ static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdpl
     }
 
     ifunc = vmddlsym(handle, "vmdplugin_init");
-    if (ifunc && ((initfunc)(ifunc))()) {
+    if (!ifunc || ((initfunc)(ifunc))()) {
         printf("\nvmdplugin_init() for %s returned an error; plugin(s) not loaded.\n", fullpath);
         vmddlclose(handle);
         return 0;
@@ -154,7 +156,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     molfile_timestep_t ts;
 
 
-    fr->bV = fr->vmdplugin.bV; 
+    fr->bV = fr->vmdplugin->bV;
         
 #ifdef GMX_DOUBLE
     snew(ts.coords, fr->natoms*3);
@@ -170,14 +172,14 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     }
 #endif
 
-    rc = fr->vmdplugin.api->read_next_timestep(fr->vmdplugin.handle, fr->natoms, &ts);
+    rc = fr->vmdplugin->api->read_next_timestep(fr->vmdplugin->handle, fr->natoms, &ts);
 
     if (rc < -1) {
         fprintf(stderr, "\nError reading input file (error code %d)\n", rc);
     }
     if (rc < 0)
     {
-        fr->vmdplugin.api->close_file_read(fr->vmdplugin.handle);
+        fr->vmdplugin->api->close_file_read(fr->vmdplugin->handle);
         return 0;
     }
 
@@ -215,7 +217,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma; 
     matrix_convert(fr->box,vec,angle);
-    if (fr->vmdplugin.api->abiversion>10)
+    if (fr->vmdplugin->api->abiversion>10)
     {
         fr->bTime = TRUE;
         fr->time = ts.physical_time;
@@ -229,21 +231,24 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     return 1;
 }
 
-int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
+static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 {
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
     const char *pathenv;
     const char *err;
     int i;
     int ret=0;
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    char pathenv_buffer[GMX_PATH_MAX];
+#ifndef GMX_NATIVE_WINDOWS
     glob_t globbuf;
-    const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
+    const char *defpath_suffix = "/plugins/*/molfile";
+    const char *defpathenv = GMX_VMD_PLUGIN_PATH;
 #else
     WIN32_FIND_DATA ffd;
     HANDLE hFind = INVALID_HANDLE_VALUE;
     char progfolder[GMX_PATH_MAX];
     char defpathenv[GMX_PATH_MAX];
+    const char *defpath_suffix = "\\plugins\\WIN32\\molfile";
     SHGetFolderPath(NULL,CSIDL_PROGRAM_FILES,NULL,SHGFP_TYPE_CURRENT,progfolder);
     sprintf(defpathenv,"%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile",progfolder);
 #endif
@@ -256,15 +261,34 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     }
     vmdplugin->filetype++;
 
+    /* First look for an explicit path given at run time for the
+     * plugins, then an implicit run-time path, and finally for one
+     * given at configure time. This last might be hard-coded to the
+     * default for VMD installs. */
     pathenv = getenv("VMD_PLUGIN_PATH");
     if (pathenv==NULL) 
     {
-        printf("\nVMD_PLUGIN_PATH not set. ");
-        printf("Using default location:\n%s\n",defpathenv);
-        pathenv=defpathenv;
+        pathenv = getenv("VMDDIR");
+        if (NULL == pathenv)
+        {
+            printf("\nNeither VMD_PLUGIN_PATH or VMDDIR set. ");
+            printf("Using default location:\n%s\n",defpathenv);
+            pathenv=defpathenv;
+        }
+        else
+        {
+            printf("\nVMD_PLUGIN_PATH no set, but VMDDIR is set. ");
+#ifdef _MSC_VER
+            _snprintf_s(pathenv_buffer, sizeof(pathenv_buffer), _TRUNCATE, "%s%s", pathenv, defpath_suffix);
+#else
+            snprintf(pathenv_buffer, sizeof(pathenv_buffer), "%s%s", pathenv, defpath_suffix);
+#endif
+            printf("Using semi-default location:\n%s\n",pathenv_buffer);
+            pathenv = pathenv_buffer;
+        }
     }
     strncpy(pathname,pathenv,sizeof(pathname));
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     strcat(pathname,"/*.so");
     glob(pathname, 0, NULL, &globbuf);
     if (globbuf.gl_pathc == 0)
@@ -277,6 +301,11 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     }
     for (i=0; i<globbuf.gl_pathc && vmdplugin->api == NULL; i++)
     {
+        /* FIXME: Undefined which plugin is chosen if more than one plugin
+           can read a certain file ending. Requires some additional command
+           line option or enviroment variable to specify which plugin should
+           be picked.
+        */
         ret|=load_sharedlibrary_plugins(globbuf.gl_pathv[i],vmdplugin);
     }
     globfree(&globbuf);
@@ -318,6 +347,12 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
         return 0;
     }
 
+    if (vmdplugin->api->abiversion < 10)
+    {
+        printf("\nPlugin and/or VMD is too old. At least VMD 1.8.6 is required.\n");
+        return 0;
+    }
+
     printf("\nUsing VMD plugin: %s (%s)\n",vmdplugin->api->name,vmdplugin->api->prettyname);
 
     return 1;
@@ -328,14 +363,15 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 {
     molfile_timestep_metadata_t *metadata=NULL;
     
-    if (!load_vmd_library(fn,&(fr->vmdplugin))) 
+    snew(fr->vmdplugin,1);
+    if (!load_vmd_library(fn,fr->vmdplugin))
     {
         return 0;
     }
 
-    fr->vmdplugin.handle = fr->vmdplugin.api->open_file_read(fn, fr->vmdplugin.filetype, &fr->natoms);
+    fr->vmdplugin->handle = fr->vmdplugin->api->open_file_read(fn, fr->vmdplugin->filetype, &fr->natoms);
 
-    if (!fr->vmdplugin.handle) {
+    if (!fr->vmdplugin->handle) {
         fprintf(stderr, "\nError: could not open file '%s' for reading.\n",
                 fn);
         return 0;
@@ -355,15 +391,23 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     
     snew(fr->x,fr->natoms);
 
-    fr->vmdplugin.bV = 0;
-    if (fr->vmdplugin.api->abiversion > 10 && fr->vmdplugin.api->read_timestep_metadata)
+    fr->vmdplugin->bV = 0;
+    if (fr->vmdplugin->api->abiversion > 10 && fr->vmdplugin->api->read_timestep_metadata)
     {
-        fr->vmdplugin.api->read_timestep_metadata(fr->vmdplugin.handle, metadata);
-        fr->vmdplugin.bV = metadata->has_velocities; 
-        if (fr->vmdplugin.bV)
+        fr->vmdplugin->api->read_timestep_metadata(fr->vmdplugin->handle, metadata);
+        assert(metadata);
+        fr->vmdplugin->bV = metadata->has_velocities;
+        if (fr->vmdplugin->bV)
         {
             snew(fr->v,fr->natoms);
         }
+    }
+    else
+    {
+        fprintf(stderr,
+                "\nThis trajectory is being read with a VMD plug-in from before VMD"
+                "\nversion 1.8, or from a trajectory that lacks time step metadata."
+                "\nEither way, GROMACS cannot tell whether the trajectory has velocities.\n");
     }
     return 1;
 

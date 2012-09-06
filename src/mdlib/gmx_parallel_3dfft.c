@@ -26,7 +26,7 @@
 #ifdef GMX_LIB_MPI 
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS 
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -42,31 +42,6 @@ struct gmx_parallel_3dfft  {
     fft5d_plan p1,p2;    
 };
 
-
-static int *copy_int_array(int n,int *src)
-{
-    int *dest,i;
-
-    dest = (int*)malloc(n*sizeof(int));
-    for(i=0; i<n; i++)
-        dest[i] = src[i];
-
-    return dest;
-}
-
-static int *make_slab2grid(int nnodes,int ngrid)
-{
-    int *s2g,i;
-
-    s2g = (int*)malloc((nnodes+1)*sizeof(int));
-    for(i=0; i<nnodes+1; i++) {
-        /* We always round up */
-        s2g[i] = (i*ngrid + nnodes - 1)/nnodes;
-    }
-
-    return s2g;
-}
-
 int
 gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            ivec                      ndata,
@@ -75,12 +50,14 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            MPI_Comm                  comm[2],
                            int *                     slab2index_major,
                            int *                     slab2index_minor,
-                           gmx_bool                      bReproducible)
+                           gmx_bool                      bReproducible,
+                           int nthreads)
 {
     int rN=ndata[2],M=ndata[1],K=ndata[0];
     int flags = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */
     MPI_Comm rcomm[]={comm[1],comm[0]};
     int Nb,Mb,Kb; /* dimension for backtransform (in starting order) */
+    t_complex *buf1, *buf2; /*intermediate buffers - used internally.*/
     
     snew(*pfft_setup,1);
     if (bReproducible) flags |= FFT5D_NOMEASURE; 
@@ -91,10 +68,10 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
         Nb=K;Mb=rN;Kb=M;  /* currently always true because ORDER_YZ always set */
     }
     
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (t_complex**)real_data, complex_data);
+    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (t_complex**)real_data, complex_data, &buf1, &buf2, nthreads);
     
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb,Mb,Kb,rcomm,
-                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data);
+                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
     
     return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 !=0;
 }
@@ -173,14 +150,17 @@ int
 gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
                            enum gmx_fft_direction  dir,
                            void *                  in_data,
-                           void *                  out_data) {
-    if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir==GMX_FFT_FORWARD ||dir==GMX_FFT_BACKWARD)) { 
+                           void *                  out_data,
+                           int                     thread,
+                           gmx_wallcycle_t         wcycle) {
+    if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir==GMX_FFT_FORWARD ||dir==GMX_FFT_BACKWARD))
+    {
         gmx_fatal(FARGS,"Invalid transform. Plan and execution don't match regarding reel/complex");
     }
     if (dir==GMX_FFT_FORWARD || dir==GMX_FFT_REAL_TO_COMPLEX) {
-        fft5d_execute(pfft_setup->p1,0);
+        fft5d_execute(pfft_setup->p1,thread,wcycle);
     } else {
-        fft5d_execute(pfft_setup->p2,0);
+        fft5d_execute(pfft_setup->p2,thread,wcycle);
     }
     return 0;
 }

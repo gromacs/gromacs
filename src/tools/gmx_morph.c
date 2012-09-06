@@ -74,13 +74,13 @@ int gmx_morph(int argc,char *argv[])
     "the [TT]-ninterm[tt] flag. The first and last flag correspond to the way of",
     "interpolating: 0 corresponds to input structure 1 while",
     "1 corresponds to input structure 2.",
-    "If you specify first < 0 or last > 1 extrapolation will be",
-    "on the path from input structure x1 to x2. In general the coordinates",
-    "of the intermediate x(i) out of N total intermidates correspond to:[PAR]",
-    "x(i) = x1 + (first+(i/(N-1))*(last-first))*(x2-x1)[PAR]",
+    "If you specify [TT]-first[tt] < 0 or [TT]-last[tt] > 1 extrapolation will be",
+    "on the path from input structure x[SUB]1[sub] to x[SUB]2[sub]. In general, the coordinates",
+    "of the intermediate x(i) out of N total intermediates correspond to:[PAR]",
+    "x(i) = x[SUB]1[sub] + (first+(i/(N-1))*(last-first))*(x[SUB]2[sub]-x[SUB]1[sub])[PAR]",
     "Finally the RMSD with respect to both input structures can be computed",
-    "if explicitly selected ([TT]-or[tt] option). In that case an index file may be",
-    "read to select what group RMS is computed from."
+    "if explicitly selected ([TT]-or[tt] option). In that case, an index file may be",
+    "read to select the group from which the RMS is computed."
   };
   t_filenm fnm[] = {
     { efSTX, "-f1", "conf1",  ffREAD },
@@ -98,9 +98,9 @@ int gmx_morph(int argc,char *argv[])
     { "-ninterm", FALSE, etINT,  {&ninterm},
       "Number of intermediates" },
     { "-first",   FALSE, etREAL, {&first},
-      "Corresponds to first generated structure (0 is input x0, see above)" },
+      "Corresponds to first generated structure (0 is input x[SUB]1[sub], see above)" },
     { "-last",    FALSE, etREAL, {&last},
-      "Corresponds to last generated structure (1 is input x1, see above)" },
+      "Corresponds to last generated structure (1 is input x[SUB]2[sub], see above)" },
     { "-fit",     FALSE, etBOOL, {&bFit},
       "Do a least squares fit of the second to the first structure before interpolating" }
   };

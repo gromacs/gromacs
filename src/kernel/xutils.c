@@ -36,6 +36,8 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "strdb.h"
@@ -135,7 +137,7 @@ static void init_range(t_range *r,int np,int atype,int ptype,
 static t_range *read_range(const char *db,int *nrange)
 {
   int     nlines,nr,np,i;
-  char    **lines=NULL;
+  char    **lines;
   t_range *range;
   int     atype,ptype;
   double  rmin,rmax;
@@ -219,6 +221,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
   
   if (fr->bBHAM) {
     if (bhama == NULL) {
+      assert(bhamb==NULL && bhamc==NULL);
       snew(bhama,atnr);
       snew(bhamb,atnr);
       snew(bhamc,atnr);
@@ -226,6 +229,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
   }
   else {
     if (sigma == NULL) {
+      assert(eps==NULL && c6==NULL && cn==NULL);
       snew(sigma,atnr);
       snew(eps,atnr);
       snew(c6,atnr);
@@ -242,18 +246,23 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
       fprintf(debug,"val = %g\n",val);
     switch (range[i].ptype) {
     case eseSIGMA:
+      assert(!fr->bBHAM);
       sigma[range[i].atype] = val;
       break;
     case eseEPSILON:
+      assert(!fr->bBHAM);
       eps[range[i].atype] = val;
       break;
     case eseBHAMA:
+      assert(fr->bBHAM);
       bhama[range[i].atype] = val;
       break;
     case eseBHAMB:
+      assert(fr->bBHAM);
       bhamb[range[i].atype] = val;
       break;
     case eseBHAMC:
+      assert(fr->bBHAM);
       bhamc[range[i].atype] = val;
       break;
     case eseCELLX:

@@ -95,9 +95,9 @@ static void average_data(rvec x[],rvec xav[],real *mass,
                          int ngrps,int isize[],atom_id **index)
 {
     int  g,i,ind,d;
-    real m,mtot;
+    real m;
     rvec tmp;
-    double sum[DIM];
+    double sum[DIM],mtot;
 
     for(g=0; g<ngrps; g++)
     {
@@ -542,7 +542,7 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
     int  i,m,in,nnn;
     real vn,vnmax;
   
-    if (histo == NULL)
+    if (*histo == NULL)
     {
         vnmax = 0;
         for(i=0; (i<gnx); i++)

@@ -152,13 +152,13 @@ int gmx_gyrate(int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]g_gyrate[tt] computes the radius of gyration of a group of atoms",
-    "and the radii of gyration about the x, y and z axes,",
+    "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
     "as a function of time. The atoms are explicitly mass weighted.[PAR]",
     "With the [TT]-nmol[tt] option the radius of gyration will be calculated",
     "for multiple molecules by splitting the analysis group in equally",
     "sized parts.[PAR]",
-    "With the option [TT]-nz[tt] 2D radii of gyration in the x-y plane",
-    "of slices along the z-axis are calculated."
+    "With the option [TT]-nz[tt] 2D radii of gyration in the [IT]x-y[it] plane",
+    "of slices along the [IT]z[it]-axis are calculated."
   };
   static int  nmol=1,nz=0;
   static gmx_bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
@@ -172,7 +172,7 @@ int gmx_gyrate(int argc,char *argv[])
     { "-moi", FALSE, etBOOL, {&bMOI},
       "Calculate the moments of inertia (defined by the principal axes)." },
     { "-nz", FALSE, etINT, {&nz},
-      "Calculate the 2D radii of gyration of # slices along the z-axis" },
+      "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
   };
   FILE       *out;
   t_trxstatus *status;

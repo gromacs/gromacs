@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -50,6 +51,7 @@
 #include "physics.h"
 #include "force.h"
 #include "gmxfio.h"
+#include "tables.h"
 
 /* All the possible (implemented) table functions */
 enum { 
@@ -124,6 +126,192 @@ typedef struct {
 #define pow4(x) ((x)*(x)*(x)*(x))
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
 
+
+static double v_ewald_lr(double beta,double r)
+{
+    if (r == 0)
+    {
+        return beta*2/sqrt(M_PI);
+    }
+    else
+    {
+        return gmx_erfd(beta*r)/r;
+    }
+}
+
+void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
+                                 int ntab,int tableformat,
+                                 real dx,real beta)
+{
+    real tab_max;
+    int stride=0;
+    int i,i_inrange;
+    double dc,dc_new;
+    gmx_bool bOutOfRange;
+    double v_r0,v_r1,v_inrange,vi,a0,a1,a2dx;
+    double x_r0;
+
+    if (ntab < 2)
+    {
+        gmx_fatal(FARGS,"Can not make a spline table with less than 2 points");
+    }
+
+    /* We need some margin to be able to divide table values by r
+     * in the kernel and also to do the integration arithmetics
+     * without going out of range. Furthemore, we divide by dx below.
+     */
+    tab_max = GMX_REAL_MAX*0.0001;
+
+    /* This function produces a table with:
+     * maximum energy error: V'''/(6*12*sqrt(3))*dx^3
+     * maximum force error:  V'''/(6*4)*dx^2
+     * The rms force error is the max error times 1/sqrt(5)=0.45.
+     */
+
+    switch (tableformat)
+    {
+    case tableformatF:    stride = 1; break;
+    case tableformatFDV0: stride = 4; break;
+    default: gmx_incons("Unknown table format");
+    }
+
+    bOutOfRange = FALSE;
+    i_inrange = ntab;
+    v_inrange = 0;
+    dc = 0;
+    for(i=ntab-1; i>=0; i--)
+    {
+        x_r0 = i*dx;
+
+        v_r0 = v_ewald_lr(beta,x_r0);
+
+        if (!bOutOfRange)
+        {
+            i_inrange = i;
+            v_inrange = v_r0;
+    
+            vi = v_r0;
+        }
+        else
+        {
+            /* Linear continuation for the last point in range */
+            vi = v_inrange - dc*(i - i_inrange)*dx;
+        }
+
+        switch (tableformat)
+        {
+        case tableformatF:
+            if (tabv != NULL)
+            {
+                tabv[i] = vi;
+            }
+            break;
+        case tableformatFDV0:
+            tabf[i*stride+2] = vi;
+            tabf[i*stride+3] = 0;
+            break;
+        default:
+            gmx_incons("Unknown table format");
+        }
+
+        if (i == 0)
+        {
+            continue;
+        }
+
+        /* Get the potential at table point i-1 */
+        v_r1 = v_ewald_lr(beta,(i-1)*dx);
+
+        if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
+        {
+            bOutOfRange = TRUE;
+        }
+
+        if (!bOutOfRange)
+        {
+            /* Calculate the average second derivative times dx over interval i-1 to i.
+             * Using the function values at the end points and in the middle.
+             */
+            a2dx = (v_r0 + v_r1 - 2*v_ewald_lr(beta,x_r0-0.5*dx))/(0.25*dx);
+            /* Set the derivative of the spline to match the difference in potential
+             * over the interval plus the average effect of the quadratic term.
+             * This is the essential step for minimizing the error in the force.
+             */
+            dc = (v_r0 - v_r1)/dx + 0.5*a2dx;
+        }
+
+        if (i == ntab - 1)
+        {
+            /* Fill the table with the force, minus the derivative of the spline */
+            tabf[i*stride] = -dc;
+        }
+        else
+        {
+            /* tab[i] will contain the average of the splines over the two intervals */
+            tabf[i*stride] += -0.5*dc;
+        }
+
+        if (!bOutOfRange)
+        {
+            /* Make spline s(x) = a0 + a1*(x - xr) + 0.5*a2*(x - xr)^2
+             * matching the potential at the two end points
+             * and the derivative dc at the end point xr.
+             */
+            a0   = v_r0;
+            a1   = dc;
+            a2dx = (a1*dx + v_r1 - a0)*2/dx;
+
+            /* Set dc to the derivative at the next point */
+            dc_new = a1 - a2dx;
+                
+            if (dc_new != dc_new || dc_new < -tab_max || dc_new > tab_max)
+            {
+                bOutOfRange = TRUE;
+            }
+            else
+            {
+                dc = dc_new;
+            }
+        }
+
+        tabf[(i-1)*stride] = -0.5*dc;
+    }
+    /* Currently the last value only contains half the force: double it */
+    tabf[0] *= 2;
+
+    if (tableformat == tableformatFDV0)
+    {
+        /* Store the force difference in the second entry */
+        for(i=0; i<ntab-1; i++)
+        {
+            tabf[i*stride+1] = tabf[(i+1)*stride] - tabf[i*stride];
+        }
+        tabf[(ntab-1)*stride+1] = -tabf[i*stride];
+    }
+}
+
+/* The scale (1/spacing) for third order spline interpolation
+ * of the Ewald mesh contribution which needs to be subtracted
+ * from the non-bonded interactions.
+ */
+real ewald_spline3_table_scale(real ewaldcoeff,real rc)
+{
+    double erf_x_d3=1.0522; /* max of (erf(x)/x)''' */
+    double ftol,etol;
+    double sc_f,sc_e;
+
+    /* Force tolerance: single precision accuracy */
+    ftol = GMX_FLOAT_EPS;
+    sc_f = sqrt(erf_x_d3/(6*4*ftol*ewaldcoeff))*ewaldcoeff;
+
+    /* Energy tolerance: 10x more accurate than the cut-off jump */
+    etol = 0.1*gmx_erfc(ewaldcoeff*rc);
+    etol = max(etol,GMX_REAL_EPS);
+    sc_e = pow(erf_x_d3/(6*12*sqrt(3)*etol),1.0/3.0)*ewaldcoeff;
+
+    return max(sc_f,sc_e);
+}
+
 /* Calculate the potential and force for an r value
  * in exactly the same way it is done in the inner loop.
  * VFtab is a pointer to the table data, offset is
@@ -154,41 +342,6 @@ static void evaluate_table(real VFtab[], int offset, int stride,
   *y       =  Y+eps*Fp;
   *yp      =  (Fp+Geps+2.0*Heps2)*tabscale;
 }
-
-
-static void splint(real xa[],real ya[],real y2a[],
-		   int n,real x,real *y,real *yp)
-{
-  int  klo,khi,k;
-  real h,b,a,eps;
-  real F,G,H;
-  
-  klo=1;
-  khi=n;
-
-  while ((khi-klo) > 1) {
-    k=(khi+klo) >> 1;
-    if (xa[k] > x) 
-      khi=k;
-    else 
-      klo=k;
-  }
-  h = xa[khi]-xa[klo];
-  if (h == 0.0) 
-    gmx_fatal(FARGS,"Bad XA input to function splint");
-  a   = (xa[khi]-x)/h;
-  b   = (x-xa[klo])/h;
-  *y  = a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
-  *yp = (ya[khi]-ya[klo])/h+((3*a*a-1)*y2a[klo]-(3*b*b-1)*y2a[khi])*h/6.0;
-  
-  eps = b;
-  F   = (ya[khi]-ya[klo]-(h*h/6.0)*(2*y2a[klo]+y2a[khi]));
-  G   = (h*h/2.0)*y2a[klo];
-  H   = (h*h/6.0)*(y2a[khi]-y2a[klo]);
-  *y  = ya[klo] + eps*F + eps*eps*G + eps*eps*eps*H;
-  *yp = (F + 2*eps*G + 3*eps*eps*H)/h;
-}
-
 
 static void copy2table(int n,int offset,int stride,
 		       double x[],double Vtab[],double Ftab[],
@@ -772,7 +925,6 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,gmx_bool b14only)
   case eelCUT:
     tabsel[etiCOUL] = etabCOUL;
     break;
-  case eelPPPM:
   case eelPOISSON:
     tabsel[etiCOUL] = etabShift;
     break;
@@ -784,6 +936,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,gmx_bool b14only)
     break;
   case eelEWALD:
   case eelPME:
+  case eelP3M_AD:
     tabsel[etiCOUL] = etabEwald;
     break;
   case eelPMESWITCH:
@@ -980,7 +1133,6 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	gmx_bool        bReadTab,bGenTab;
 	real        x0,y0,yp;
 	int         i,j,k,nx,nx0,tabsel[etiNR];
-	void *      p_tmp;
 	double      r,r2,Vtab,Ftab,expterm;
 	
 	t_forcetable table;
@@ -1025,12 +1177,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra 
-           to align it. */
-	p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
-	
-	/* align it - size_t has the same same as a pointer */
-	table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
+	snew_aligned(table.tab,4*nx,16);
 	
 	init_table(out,nx,nx0,table.scale,&(td[0]),!bReadTab);
 	
@@ -1074,7 +1221,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 			fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 			
 		}
-		ffclose(fp);
+		gmx_fio_fclose(fp);
     }
 	
 	/*
@@ -1121,6 +1268,100 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	return table;
 	
 	
+}
+
+t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
+			    const t_forcerec *fr,
+			    const char *fn,
+                            matrix box)
+{
+	const char *fns[3] = { "tf_tab.xvg", "atfdtab.xvg", "atfrtab.xvg" };
+	FILE        *fp;
+	t_tabledata *td;
+	real        x0,y0,yp,rtab;
+	int         i,nx,nx0;
+        real        rx, ry, rz, box_r;
+	
+	t_forcetable table;
+	
+	
+	/* Set the table dimensions for ATF, not really necessary to
+	 * use etiNR (since we only have one table, but ...) 
+	 */
+	snew(td,1);
+        
+        if (fr->adress_type == eAdressSphere){
+            /* take half box diagonal direction as tab range */
+               rx = 0.5*box[0][0]+0.5*box[1][0]+0.5*box[2][0];
+               ry = 0.5*box[0][1]+0.5*box[1][1]+0.5*box[2][1];
+               rz = 0.5*box[0][2]+0.5*box[1][2]+0.5*box[2][2];
+               box_r = sqrt(rx*rx+ry*ry+rz*rz);
+               
+        }else{
+            /* xsplit: take half box x direction as tab range */
+               box_r        = box[0][0]/2;
+        }
+        table.r         = box_r;
+	table.scale     = 0;
+	table.n         = 0;
+	table.scale_exp = 0;
+	nx0             = 10;
+	nx              = 0;
+	
+        read_tables(out,fn,1,0,td);
+        rtab      = td[0].x[td[0].nx-1];
+
+       if (fr->adress_type == eAdressXSplit && (rtab < box[0][0]/2)){
+           gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                        "\tshould extend to at least half the length of the box in x-direction"
+                        "%f\n",fn,rtab, box[0][0]/2);
+       }
+       if (rtab < box_r){
+               gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                "\tshould extend to at least for spherical adress"
+                "%f (=distance from center to furthermost point in box \n",fn,rtab, box_r);
+       }
+
+
+        table.n   = td[0].nx;
+        nx        = table.n;
+        table.scale = td[0].tabscale;
+        nx0         = td[0].nx0;
+
+	/* Each table type (e.g. coul,lj6,lj12) requires four 
+	 * numbers per datapoint. For performance reasons we want
+	 * the table data to be aligned to 16-byte. This is accomplished
+	 * by allocating 16 bytes extra to a temporary pointer, and then
+	 * calculating an aligned pointer. This new pointer must not be
+	 * used in a free() call, but thankfully we're sloppy enough not
+	 * to do this :-)
+	 */
+	
+    snew_aligned(table.tab,4*nx,16);
+	
+	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+	
+	if(bDebugMode())
+	  {
+	    fp=xvgropen(fns[0],fns[0],"r","V",oenv);
+	    /* plot the output 5 times denser than the table data */
+	    /* for(i=5*nx0;i<5*table.n;i++) */
+	   
+            for(i=5*((nx0+1)/2); i<5*table.n; i++)
+	      {
+		/* x0=i*table.r/(5*table.n); */
+		x0 = i*table.r/(5*(table.n-1));
+		evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
+		fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
+		
+	      }
+	    ffclose(fp);
+	  }
+
+	done_tabledata(&(td[0]));
+	sfree(td);
+	
+	return table;
 }
 
 bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle)

@@ -48,16 +48,6 @@
 #include "smalloc.h"
 #include "bondf.h"
 
-int nhelix(int nres,t_bb bb[])
-{
-  int i,n;
-  
-  for(i=n=0; (i<nres); i++)
-    if (bb[i].bHelix)
-      n++;
-  return n;
-}
-
 real ellipticity(int nres,t_bb bb[])
 {
   typedef struct {
@@ -306,7 +296,7 @@ t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
 	      char ***atomname,t_atom atom[],
 	      t_resinfo *resinfo)
 {
-  static const char * bb_nm[] = { "N", "H", "CA", "C", "O" };
+  static const char * bb_nm[] = { "N", "H", "CA", "C", "O", "HN" };
 #define NBB asize(bb_nm)
   t_bb    *bb;
   char    *grpname;
@@ -344,6 +334,8 @@ t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
       bb[ri].N=ai;
       break;
     case 1:
+    case 5:
+      /* No attempt to address the case where some weird input has both H and HN atoms in the group */
       bb[ri].H=ai;
       break;
     case 2:
@@ -385,7 +377,7 @@ t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
   fprintf(stderr,"There are %d complete backbone residues (from %d to %d)\n",
 	  rnr,bb[i0].resno,bb[i1].resno);
   if (rnr==0)
-    gmx_fatal(FARGS,"rnr==0");
+    gmx_fatal(FARGS,"Zero complete backbone residues were found, cannot proceed");
   for(i=0; (i<rnr); i++,i0++)
     bb[i]=bb[i0];
   

@@ -5,9 +5,7 @@ install(DIRECTORY . DESTINATION ${DATA_INSTALL_DIR}
   PATTERN "CMake*" EXCLUDE
   PATTERN "cmake*" EXCLUDE
   PATTERN "*~" EXCLUDE
+  PATTERN "template" EXCLUDE
 )
 
-install(FILES template/CMakeLists.txt.template
-        DESTINATION ${DATA_INSTALL_DIR}
-        RENAME template/CMakeLists.txt
-        COMPONENT data)
+add_subdirectory(template)

@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -64,7 +64,7 @@
 static char *int_title(const char *title,int nodeid,char buf[], int size)
 {
   sprintf(buf,"%s (%d)",title,nodeid);
-  
+
   return buf;
 }
 
@@ -76,9 +76,16 @@ void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
    * with what is needed, so we correct this here.
    */
   state->flags = 0;
-  if (ir->efep != efepNO)
-    state->flags |= (1<<estLAMBDA);
+  if (ir->efep != efepNO || ir->bExpanded)
+  {
+      state->flags |= (1<<estLAMBDA);
+      state->flags |= (1<<estFEPSTATE);
+  }
   state->flags |= (1<<estX);
+  if (state->lambda==NULL)
+    {
+      snew(state->lambda,efptNR);
+    }
   if (state->x == NULL)
     snew(state->x,state->nalloc);
   if (EI_DYNAMICS(ir->eI)) {
@@ -116,56 +123,69 @@ void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
   } else {
     state->nrng = 0;
   }
+
+  if (ir->bExpanded)
+  {
+      state->nmcrng  = gmx_rng_n();
+      snew(state->mc_rng,state->nmcrng);
+      snew(state->mc_rngi,1);
+  }
+
   state->nnhpres = 0;
   if (ir->ePBC != epbcNONE) {
-    state->flags |= (1<<estBOX);
-    if (PRESERVE_SHAPE(*ir)) {
-      state->flags |= (1<<estBOX_REL);
-    }
-    if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK)) {
-      state->flags |= (1<<estBOXV);
-    }
-    if (ir->epc != epcNO) {
-      if (IR_NPT_TROTTER(ir)) {
-	state->nnhpres = 1;
-	state->flags |= (1<<estNHPRES_XI);
-	state->flags |= (1<<estNHPRES_VXI);
-	state->flags |= (1<<estSVIR_PREV);
-	state->flags |= (1<<estFVIR_PREV);
-	state->flags |= (1<<estVETA);
-	state->flags |= (1<<estVOL0);
-      } else {
-	state->flags |= (1<<estPRES_PREV);
+      state->flags |= (1<<estBOX);
+      if (PRESERVE_SHAPE(*ir)) {
+          state->flags |= (1<<estBOX_REL);
       }
-    }
+      if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK))
+      {
+          state->flags |= (1<<estBOXV);
+      }
+      if (ir->epc != epcNO)
+      {
+          if (IR_NPT_TROTTER(ir) || (IR_NPH_TROTTER(ir)))
+          {
+              state->nnhpres = 1;
+              state->flags |= (1<<estNHPRES_XI);
+              state->flags |= (1<<estNHPRES_VXI);
+              state->flags |= (1<<estSVIR_PREV);
+              state->flags |= (1<<estFVIR_PREV);
+              state->flags |= (1<<estVETA);
+              state->flags |= (1<<estVOL0);
+          }
+          else
+          {
+              state->flags |= (1<<estPRES_PREV);
+          }
+      }
   }
 
   if (ir->etc == etcNOSEHOOVER) {
     state->flags |= (1<<estNH_XI);
     state->flags |= (1<<estNH_VXI);
   }
-  
+
   if (ir->etc == etcVRESCALE) {
     state->flags |= (1<<estTC_INT);
   }
-  
+
   init_gtc_state(state,state->ngtc,state->nnhpres,ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
   init_ekinstate(&state->ekinstate,ir);
 
   init_energyhistory(&state->enerhist);
+  init_df_history(&state->dfhist,ir->fepvals->n_lambda,ir->expandedvals->init_wl_delta);
 }
 
 
 void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop)
 {
-  bcast_ir_mtop(cr,inputrec,mtop);
+    bcast_ir_mtop(cr,inputrec,mtop);
 
-
-  if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
-    /* Make sure the random seeds are different on each node */
-    inputrec->ld_seed += cr->nodeid;
-  }
+    if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
+        /* Make sure the random seeds are different on each node */
+        inputrec->ld_seed += cr->nodeid;
+    }
 }
 
 

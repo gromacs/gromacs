@@ -5,7 +5,7 @@
  *                 G   R   O   M   A   C   S
  *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  *
  * The make_edi program was generously contributed by Oliver Lange, based
@@ -15,7 +15,7 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
@@ -34,6 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -62,18 +63,25 @@
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
-#include "index.h" 
+#include "index.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef isdigit
+#endif
 
 typedef struct
-{ 
+{
     real        deltaF0;
-    gmx_bool        bHarmonic;
+    gmx_bool    bHarmonic;
+    gmx_bool    bConstForce;   /* Do constant force flooding instead of
+                                  evaluating a flooding potential             */
     real        tau;
     real        deltaF;
-    real        kT; 
+    real        kT;
     real        constEfl;
-    real        alpha2; 
+    real        alpha2;
 } t_edflood;
 
 
@@ -91,9 +99,9 @@ typedef struct edix
 typedef struct edipar
 {
     int         nini;           /* total Nr of atoms                    */
-    gmx_bool        fitmas;         /* true if trans fit with cm            */
-    gmx_bool        pcamas;         /* true if mass-weighted PCA            */
-    int         presteps;       /* number of steps to run without any   
+    gmx_bool    fitmas;         /* true if trans fit with cm            */
+    gmx_bool    pcamas;         /* true if mass-weighted PCA            */
+    int         presteps;       /* number of steps to run without any
                                  *    perturbations ... just monitoring */
     int         outfrq;         /* freq (in steps) of writing to edo    */
     int         maxedsteps;     /* max nr of steps per cycle            */
@@ -141,26 +149,26 @@ int sscan_list(int *list[], const char *str, const char *listname) {
 
    /*enums to define the different lexical stati */
    enum { sBefore, sNumber, sMinus, sRange, sZero, sSmaller, sError, sSteppedRange };
-  
+
    int status=sBefore; /*status of the deterministic automat to scan str   */
    int number=0;
    int end_number=0;
-    
+
    char *start=NULL; /*holds the string of the number behind a ','*/
    char *end=NULL; /*holds the string of the number behind a '-' */
-  
+
    int nvecs=0; /* counts the number of vectors in the list*/
 
    step=NULL;
    snew(pos,n+4);
    startpos=pos;
    strcpy(pos,str);
-   pos[n]=',';  
+   pos[n]=',';
    pos[n+1]='1';
    pos[n+2]='\0';
 
    *list = NULL;
-     
+
    while ((c=*pos)!=0) {
      switch(status) {
         /* expect a number */
@@ -184,22 +192,22 @@ int sscan_list(int *list[], const char *str, const char *listname) {
              else status=sError; break;
 
         /* have read a '-' -> expect a number */
-     case sMinus: 
+     case sMinus:
        if (isdigit(c)) {
 	 end=pos;
 	 status=sRange; break;
        } else status=sError; break;
-       
+
      case sSteppedRange:
        if (isdigit(c)) {
 	 if (step) {
-	   status=sError; break; 
+	   status=sError; break;
 	 } else
 	   step=pos;
 	 status=sRange;
 	 break;
        } else status=sError; break;
-       
+
         /* have read the number after a minus, expect ',' or ':' */
         case sRange:
             if (c==',') {
@@ -228,14 +236,15 @@ int sscan_list(int *list[], const char *str, const char *listname) {
 
        /* format error occured */
        case sError:
-       gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d with char %c",listname,pos-startpos,*(pos-1)); 
-
+    	   gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d with char %c",listname,pos-startpos,*(pos-1));
+    	   break;
        /* logical error occured */
        case sZero:
-               gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d: eigenvector 0 is not valid",listname,pos-startpos);
+		   gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d: eigenvector 0 is not valid",listname,pos-startpos);
+		   break;
        case sSmaller:
-               gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d: second index %d is not bigger than %d",listname,pos-startpos,end_number,number);
-
+		   gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d: second index %d is not bigger than %d",listname,pos-startpos,end_number,number);
+		   break;
      }
    ++pos; /* read next character */
    } /*scanner has finished */
@@ -246,7 +255,7 @@ int sscan_list(int *list[], const char *str, const char *listname) {
    sfree(startpos);
    return nvecs;
 } /*sscan_list*/
-  
+
 void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec, const char *grouptitle,real steps[]) {
 /* eig_list is a zero-terminated list of indices into the eigvecs array.
    eigvecs are coordinates of eigenvectors
@@ -257,18 +266,18 @@ void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec,
   int n=0,i; rvec x;
   real sum;
   while (eig_list[n++]);  /*count selected eigenvecs*/
-  
+
   fprintf(fp,"# NUMBER OF EIGENVECTORS + %s\n %d\n",grouptitle,n-1);
-  
+
   /* write list of eigenvector indicess */
   for(n=0;eig_list[n];n++) {
     if (steps)
-      fprintf(fp,"%8d   %g\n",eig_list[n],steps[n]); 
-    else 
+      fprintf(fp,"%8d   %g\n",eig_list[n],steps[n]);
+    else
       fprintf(fp,"%8d   %g\n",eig_list[n],1.0);
   }
   n=0;
-    
+
   /* dump coordinates of the selected eigenvectors */
   while (eig_list[n]) {
     sum=0;
@@ -277,21 +286,21 @@ void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec,
 	gmx_fatal(FARGS,"Selected eigenvector %d is higher than maximum number %d of available eigenvectors",eig_list[n],nvec);
       copy_rvec(eigvecs[eig_list[n]-1][i],x);
       sum+=norm2(x);
-      fprintf(fp,"%8.5f %8.5f %8.5f\n",x[XX],x[YY],x[ZZ]);      
-    }    
+      fprintf(fp,"%8.5f %8.5f %8.5f\n",x[XX],x[YY],x[ZZ]);
+    }
     n++;
   }
 }
 
 
 /*enum referring to the different lists of eigenvectors*/
-enum { evLINFIX, evLINACC, evFLOOD, evRADFIX, evRADACC, evRADCON , evMON,  evEND };
+enum { evLINFIX, evLINACC, evFLOOD, evRADFIX, evRADACC, evRADCON , evMON,  evNr };
 #define oldMAGIC 666
-#define MAGIC 669
+#define MAGIC 670
 
 
-void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs, 
-                           int nvec, int *eig_listen[], real* evStepList[]) 
+void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
+                           int nvec, int *eig_listen[], real* evStepList[])
 {
 /* write edi-file */
 
@@ -300,15 +309,16 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
         MAGIC,edpars->nini,edpars->fitmas,edpars->pcamas);
     fprintf(fp,"#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
         edpars->outfrq,edpars->maxedsteps,edpars->slope);
-    fprintf(fp,"#PRESTEPS\n %d\n#DELTA_F0\n %f\n#INIT_DELTA_F\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n#KT\n %f\n#HARMONIC\n %d\n",
-        edpars->presteps,edpars->flood.deltaF0,edpars->flood.deltaF,edpars->flood.tau,edpars->flood.constEfl,edpars->flood.alpha2,edpars->flood.kT,edpars->flood.bHarmonic);
-    
+    fprintf(fp,"#PRESTEPS\n %d\n#DELTA_F0\n %f\n#INIT_DELTA_F\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n#KT\n %f\n#HARMONIC\n %d\n#CONST_FORCE_FLOODING\n %d\n",
+        edpars->presteps,edpars->flood.deltaF0,edpars->flood.deltaF,edpars->flood.tau,edpars->flood.constEfl,
+        edpars->flood.alpha2,edpars->flood.kT,edpars->flood.bHarmonic,edpars->flood.bConstForce);
+
     /* Average and reference positions */
     write_t_edx(fp,edpars->sref,"NREF, XREF");
     write_t_edx(fp,edpars->sav,"NAV, XAV");
 
     /*Eigenvectors */
- 
+
     write_eigvec(fp, edpars->ned, eig_listen[evMON],eigvecs,nvec,"COMPONENTS GROUP 1",NULL);
     write_eigvec(fp, edpars->ned, eig_listen[evLINFIX],eigvecs,nvec,"COMPONENTS GROUP 2",evStepList[evLINFIX]);
     write_eigvec(fp, edpars->ned, eig_listen[evLINACC],eigvecs,nvec,"COMPONENTS GROUP 3",evStepList[evLINACC]);
@@ -321,9 +331,9 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
     /*Target and Origin positions */
     write_t_edx(fp,edpars->star,"NTARGET, XTARGET");
     write_t_edx(fp,edpars->sori,"NORIGIN, XORIGIN");
-} 
+}
 
-int read_conffile(const char *confin,char *title,rvec *x[]) 
+int read_conffile(const char *confin,char *title,rvec *x[])
 {
 /* read coordinates out of STX file  */
   int natoms;
@@ -339,27 +349,26 @@ int read_conffile(const char *confin,char *title,rvec *x[])
   else {*/
     /* make space for coordinates and velocities */
     init_t_atoms(&confat,natoms,FALSE);
-    printf("init_t\n");
     snew(*x,natoms);
     read_stx_conf(confin,title,&confat,*x,NULL,NULL,box);
     return natoms;
-}  
+}
 
 
-void read_eigenvalues(int vecs[],const char *eigfile, real values[], 
-                      gmx_bool bHesse, real kT) 
+void read_eigenvalues(int vecs[],const char *eigfile, real values[],
+                      gmx_bool bHesse, real kT)
 {
   int  neig,nrow,i;
   double **eigval;
-  
+
   neig = read_xvg(eigfile,&eigval,&nrow);
-  
+
   fprintf(stderr,"Read %d eigenvalues\n",neig);
-  for(i=bHesse ? 6 : 0 ; i<neig; i++) { 
+  for(i=bHesse ? 6 : 0 ; i<neig; i++) {
     if (eigval[1][i] < -0.001 && bHesse)
       fprintf(stderr,
 	      "WARNING: The Hessian Matrix has negative eigenvalue %f, we set it to zero (no flooding in this direction)\n\n",eigval[1][i]);
-      
+
     if (eigval[1][i] < 0)
       eigval[1][i] = 0;
   }
@@ -401,9 +410,9 @@ static real *scan_vecparams(const char *str,const char * par, int nvecs)
       tcap += d;
       strcat(f0,"%*s");
     }
-  }  
+  }
   return vec_params;
-}    
+}
 
 
 void init_edx(struct edix *edx) {
@@ -412,12 +421,12 @@ void init_edx(struct edix *edx) {
   snew(edx->anrs,1);
 }
 
-void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro, 
-                atom_id igro[],rvec *x,const char* structure) 
+void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro,
+                atom_id igro[],rvec *x,const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
 */
-  
+
    int pos,i;
    int ix=edx->nr;
    edx->nr+=nindex;
@@ -434,7 +443,7 @@ void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro,
 
 void get_structure(t_atoms *atoms,const char *IndexFile,
                    const char *StructureFile,struct edix *edx,int nfit,
-                   atom_id ifit[],int natoms, atom_id index[]) 
+                   atom_id ifit[],int nav, atom_id index[])
 {
   atom_id *igro;  /*index corresponding to target or origin structure*/
   int ngro;
@@ -442,7 +451,7 @@ void get_structure(t_atoms *atoms,const char *IndexFile,
   rvec *xtar;
   char  title[STRLEN];
   char* grpname;
-  
+
 
   ntar=read_conffile(StructureFile,title,&xtar);
   printf("Select an index group of %d elements that corresponds to the atoms in the structure file %s\n",
@@ -452,8 +461,10 @@ void get_structure(t_atoms *atoms,const char *IndexFile,
      gmx_fatal(FARGS,"You selected an index group with %d elements instead of %d",ngro,ntar);
   init_edx(edx);
   filter2edx(edx,nfit,ifit,ngro,igro,xtar,StructureFile);
+
+  /* If average and reference/fitting structure differ, append the average structure as well */
   if (ifit!=index) /*if fit structure is different append these coordinates, too -- don't mind duplicates*/
-     filter2edx(edx,natoms,index,ngro,igro,xtar,StructureFile);
+     filter2edx(edx,nav,index,ngro,igro,xtar,StructureFile);
 }
 
 int main(int argc,char *argv[])
@@ -461,7 +472,7 @@ int main(int argc,char *argv[])
 
   static const char *desc[] = {
       "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with [TT]mdrun[tt]",
-      "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a", 
+      "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a",
       "normal modes anaysis ([TT]g_nmeig[tt]).",
       "ED sampling can be used to manipulate the position along collective coordinates",
       "(eigenvectors) of (biological) macromolecules during a simulation. Particularly,",
@@ -482,10 +493,10 @@ int main(int argc,char *argv[])
       "J. Biomol. Struct. Dyn. 13 : 741-751 (1996)[BR]",
       "B.L. de Groot, A.Amadei, R.M. Scheek, N.A.J. van Nuland and H.J.C. Berendsen; ",
       "An extended sampling of the configurational space of HPr from E. coli",
-      "PROTEINS: Struct. Funct. Gen. 26: 314-322 (1996)",
+      "Proteins: Struct. Funct. Gen. 26: 314-322 (1996)",
       "[PAR]You will be prompted for one or more index groups that correspond to the eigenvectors,",
       "reference structure, target positions, etc.[PAR]",
-      
+
       "[TT]-mon[tt]: monitor projections of the coordinates onto selected eigenvectors.[PAR]",
       "[TT]-linfix[tt]: perform fixed-step linear expansion along selected eigenvectors.[PAR]",
       "[TT]-linacc[tt]: perform acceptance linear expansion along selected eigenvectors.",
@@ -493,13 +504,13 @@ int main(int argc,char *argv[])
       "[TT]-radfix[tt]: perform fixed-step radius expansion along selected eigenvectors.[PAR]",
       "[TT]-radacc[tt]: perform acceptance radius expansion along selected eigenvectors.",
       "(steps in the desired direction will be accepted, others will be rejected).",
-      "Note: by default the starting MD structure will be taken as origin of the first",
+      "[BB]Note:[bb] by default the starting MD structure will be taken as origin of the first",
       "expansion cycle for radius expansion. If [TT]-ori[tt] is specified, you will be able",
       "to read in a structure file that defines an external origin.[PAR]",
       "[TT]-radcon[tt]: perform acceptance radius contraction along selected eigenvectors",
       "towards a target structure specified with [TT]-tar[tt].[PAR]",
       "NOTE: each eigenvector can be selected only once. [PAR]",
-      "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc. to .edo file[PAR]",
+      "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc. to [TT].edo[tt] file[PAR]",
       "[TT]-slope[tt]: minimal slope in acceptance radius expansion. A new expansion",
       "cycle will be started if the spontaneous increase of the radius (in nm/step)",
       "is less than the value specified.[PAR]",
@@ -508,53 +519,54 @@ int main(int argc,char *argv[])
       "Note on the parallel implementation: since ED sampling is a 'global' thing",
       "(collective coordinates etc.), at least on the 'protein' side, ED sampling",
       "is not very parallel-friendly from an implentation point of view. Because",
-      "parallel ED requires much extra communication, expect the performance to be",
+      "parallel ED requires some extra communication, expect the performance to be",
       "lower as in a free MD simulation, especially on a large number of nodes. [PAR]",
       "All output of [TT]mdrun[tt] (specify with [TT]-eo[tt]) is written to a .edo file. In the output",
       "file, per OUTFRQ step the following information is present: [PAR]",
-      "* the step number[BR]",
-      "* the number of the ED dataset. (Note that you can impose multiple ED constraints in",
-      "a single simulation - on different molecules e.g. - if several .edi files were concatenated",
-      "first. The constraints are applied in the order they appear in the .edi file.) [BR]",
-      "* RMSD (for atoms involved in fitting prior to calculating the ED constraints)[BR]",
+      "[TT]*[tt] the step number[BR]",
+      "[TT]*[tt] the number of the ED dataset. ([BB]Note[bb] that you can impose multiple ED constraints in",
+      "a single simulation (on different molecules) if several [TT].edi[tt] files were concatenated",
+      "first. The constraints are applied in the order they appear in the [TT].edi[tt] file.) [BR]",
+      "[TT]*[tt] RMSD (for atoms involved in fitting prior to calculating the ED constraints)[BR]",
       "* projections of the positions onto selected eigenvectors[BR]",
       "[PAR][PAR]",
       "FLOODING:[PAR]",
-      "with -flood you can specify which eigenvectors are used to compute a flooding potential,",
+      "with [TT]-flood[tt], you can specify which eigenvectors are used to compute a flooding potential,",
       "which will lead to extra forces expelling the structure out of the region described",
       "by the covariance matrix. If you switch -restrain the potential is inverted and the structure",
       "is kept in that region.",
       "[PAR]",
-      "The origin is normally the average structure stored in the eigvec.trr file.",
-      "It can be changed with -ori to an arbitrary position in configurational space.",
-      "With -tau, -deltaF0 and -Eflnull you control the flooding behaviour.",
+      "The origin is normally the average structure stored in the [TT]eigvec.trr[tt] file.",
+      "It can be changed with [TT]-ori[tt] to an arbitrary position in configurational space.",
+      "With [TT]-tau[tt], [TT]-deltaF0[tt], and [TT]-Eflnull[tt] you control the flooding behaviour.",
       "Efl is the flooding strength, it is updated according to the rule of adaptive flooding.",
-      "Tau is the time constant of adaptive flooding, high tau means slow adaption (i.e. growth). ",
+      "Tau is the time constant of adaptive flooding, high [GRK]tau[grk] means slow adaption (i.e. growth). ",
       "DeltaF0 is the flooding strength you want to reach after tau ps of simulation.",
-      "To use constant Efl set -tau to zero.",
+      "To use constant Efl set [TT]-tau[tt] to zero.",
       "[PAR]",
-      "-alpha is a fudge parameter to control the width of the flooding potential. A value of 2 has been found",
+      "[TT]-alpha[tt] is a fudge parameter to control the width of the flooding potential. A value of 2 has been found",
       "to give good results for most standard cases in flooding of proteins.",
-      "Alpha basically accounts for incomplete sampling, if you sampled further the width of the ensemble would",
-      "increase, this is mimicked by alpha>1.",
-      "For restraining alpha<1 can give you smaller width in the restraining potential.",
+      "[GRK]alpha[grk] basically accounts for incomplete sampling, if you sampled further the width of the ensemble would",
+      "increase, this is mimicked by [GRK]alpha[grk] > 1.",
+      "For restraining, [GRK]alpha[grk] < 1 can give you smaller width in the restraining potential.",
       "[PAR]",
       "RESTART and FLOODING:",
       "If you want to restart a crashed flooding simulation please find the values deltaF and Efl in",
-      "the output file and manually put them into the .edi file under DELTA_F0 and EFL_NULL."
+      "the output file and manually put them into the [TT].edi[tt] file under DELTA_F0 and EFL_NULL."
   };
-    
+
     /* Save all the params in this struct and then save it in an edi file.
     * ignoring fields nmass,massnrs,mass,tmass,nfit,fitnrs,edo
     */
-    static t_edipar edi_params;     
-    
-    enum  { evSTEPEND = evRADFIX + 1}; 
-    static const char* evSelections[evEND]= {NULL,NULL,NULL,NULL,NULL,NULL};
-    static const char* evOptions[evEND] = {"-linfix","-linacc","-flood","-radfix","-radacc","-radcon","-mon"};
-    static const char* evParams[evSTEPEND] ={NULL,NULL};
-    static const char* evStepOptions[evSTEPEND] = {"-linstep","-accdir","-not_used","-radstep"};
-    static real* evStepList[evSTEPEND];
+    static t_edipar edi_params;
+
+    enum  { evStepNr = evRADFIX + 1};
+    static const char* evSelections[evNr]= {NULL,NULL,NULL,NULL,NULL,NULL};
+    static const char* evOptions[evNr] = {"-linfix","-linacc","-flood","-radfix","-radacc","-radcon","-mon"};
+    static const char* evParams[evStepNr] ={NULL,NULL};
+    static const char* evStepOptions[evStepNr] = {"-linstep","-accdir","-not_used","-radstep"};
+    static const char* ConstForceStr;
+    static real* evStepList[evStepNr];
     static real  radfix=0.0;
     static real deltaF0=150;
     static real deltaF=0;
@@ -562,7 +574,7 @@ int main(int argc,char *argv[])
     static real constEfl=0.0;
     static real alpha=1;
     static int eqSteps=0;
-    static int* listen[evEND];
+    static int* listen[evNr];
     static real T=300.0;
     const real kB = 2.5 / 300.0; /* k_boltzmann in MD units */
     static gmx_bool bRestrain = FALSE;
@@ -575,70 +587,74 @@ int main(int argc,char *argv[])
         "Indices of eigenvectors for fixed increment linear sampling" },
     { "-linacc", FALSE, etSTR, {&evSelections[1]},
         "Indices of eigenvectors for acceptance linear sampling" },
-    { "-flood",  FALSE, etSTR, {&evSelections[2]},
-        "Indices of eigenvectors for flooding"},
     { "-radfix", FALSE, etSTR, {&evSelections[3]},
         "Indices of eigenvectors for fixed increment radius expansion" },
     { "-radacc", FALSE, etSTR, {&evSelections[4]},
         "Indices of eigenvectors for acceptance radius expansion" },
     { "-radcon", FALSE, etSTR, {&evSelections[5]},
         "Indices of eigenvectors for acceptance radius contraction" },
+    { "-flood",  FALSE, etSTR, {&evSelections[2]},
+        "Indices of eigenvectors for flooding"},
     { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
         "Freqency (in steps) of writing output in [TT].edo[tt] file" },
     { "-slope", FALSE, etREAL, { &edi_params.slope},
         "Minimal slope in acceptance radius expansion"},
+    { "-linstep", FALSE, etSTR, {&evParams[0]},
+        "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 -3.1\")"},
+    { "-accdir", FALSE, etSTR, {&evParams[1]},
+        "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 -1.1\")"},
+    { "-radstep", FALSE, etREAL, {&radfix},
+        "Stepsize (nm/step) for fixed increment radius expansion"},
     { "-maxedsteps", FALSE, etINT, {&edi_params.maxedsteps},
-        "Max nr of steps per cycle" },
-    { "-deltaF0", FALSE,etREAL, {&deltaF0},
-        "Target destabilization energy  - used for flooding"},
-    { "-deltaF", FALSE, etREAL, {&deltaF},
-        "Start deltaF with this parameter - default 0, i.e. nonzero values only needed for restart"},
-    { "-tau", FALSE, etREAL, {&tau}, 
-        "Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength"},
+        "Maximum number of steps per cycle" },
     { "-eqsteps", FALSE, etINT, {&eqSteps},
         "Number of steps to run without any perturbations "},
+    { "-deltaF0", FALSE,etREAL, {&deltaF0},
+        "Target destabilization energy for flooding"},
+    { "-deltaF", FALSE, etREAL, {&deltaF},
+        "Start deltaF with this parameter - default 0, nonzero values only needed for restart"},
+    { "-tau", FALSE, etREAL, {&tau},
+        "Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength"},
     { "-Eflnull", FALSE, etREAL, {&constEfl},
-        "This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use [TT]-tau[tt] 0. "},
+        "The starting value of the flooding strength. The flooding strength is updated "
+        "according to the adaptive flooding scheme. For a constant flooding strength use [TT]-tau[tt] 0. "},
     { "-T", FALSE, etREAL, {&T},
         "T is temperature, the value is needed if you want to do flooding "},
     { "-alpha",FALSE,etREAL,{&alpha},
         "Scale width of gaussian flooding potential with alpha^2 "},
-    { "-linstep", FALSE, etSTR, {&evParams[0]},
-      "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 -3.1\")"},
-    { "-accdir", FALSE, etSTR, {&evParams[1]},
-      "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 -1.1\")"},
-    { "-radstep", FALSE, etREAL, {&radfix},
-        "Stepsize (nm/step) for fixed increment radius expansion"},
     { "-restrain",FALSE, etBOOL, {&bRestrain},
         "Use the flooding potential with inverted sign -> effects as quasiharmonic restraining potential"},
     { "-hessian",FALSE, etBOOL, {&bHesse},
         "The eigenvectors and eigenvalues are from a Hessian matrix"},
-    { "-harmonic",FALSE, etBOOL, {&bHarmonic}, 
+    { "-harmonic",FALSE, etBOOL, {&bHarmonic},
         "The eigenvalues are interpreted as spring constant"},
+    { "-constF", FALSE, etSTR, {&ConstForceStr},
+        "Constant force flooding: manually set the forces for the eigenvectors selected with -flood "
+        "(put in quotes! \"1.0 2.3 5.1 -3.1\"). No other flooding parameters are needed when specifying the forces directly."}
     };
 #define NPA asize(pa)
-    
+
     rvec       *xref1;
     int        nvec1,*eignr1=NULL;
     rvec       *xav1,**eigvec1=NULL;
     t_atoms    *atoms=NULL;
-    int natoms;
+    int        nav;  /* Number of atoms in the average structure */
     char       *grpname;
     const char *indexfile;
     int        i;
     atom_id    *index,*ifit;
-    int        nfit;
+    int        nfit; /* Number of atoms in the reference/fit structure */
     int ev_class; /* parameter _class i.e. evMON, evRADFIX etc. */
     int nvecs;
     real *eigval1=NULL; /* in V3.3 this is parameter of read_eigenvectors */
-    
+
     const char *EdiFile;
     const char *TargetFile;
     const char *OriginFile;
     const char *EigvecFile;
-   
+
     output_env_t oenv;
-    
+
     /*to read topology file*/
     t_topology top;
     int        ePBC;
@@ -646,10 +662,10 @@ int main(int argc,char *argv[])
     matrix     topbox;
     rvec       *xtop;
     gmx_bool bTop, bFit1;
-    
+
     t_filenm fnm[] = {
     { efTRN, "-f",    "eigenvec",    ffREAD  },
-    { efXVG, "-eig",  "eigenval",    ffOPTRD }, 
+    { efXVG, "-eig",  "eigenval",    ffOPTRD },
     { efTPS, NULL,    NULL,          ffREAD },
     { efNDX, NULL,    NULL,  ffOPTRD },
     { efSTX, "-tar", "target", ffOPTRD},
@@ -661,73 +677,78 @@ int main(int argc,char *argv[])
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv, 0 ,
                       NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
-    
+
     indexfile=ftp2fn_null(efNDX,NFILE,fnm);
     EdiFile=ftp2fn(efEDI,NFILE,fnm);
     TargetFile      = opt2fn_null("-tar",NFILE,fnm);
     OriginFile      = opt2fn_null("-ori",NFILE,fnm);
-    
-    
-    for (ev_class=0; ev_class<evEND; ++ev_class) {
+
+
+    for (ev_class=0; ev_class<evNr; ++ev_class) {
         if (opt2parg_bSet(evOptions[ev_class],NPA,pa)) {
             /*get list of eigenvectors*/
             nvecs=sscan_list(&(listen[ev_class]),opt2parg_str(evOptions[ev_class],NPA,pa),evOptions[ev_class]);
-            if (ev_class<evSTEPEND-2) {
+            if (ev_class<evStepNr-2) {
                 /*if apropriate get list of stepsizes for these eigenvectors*/
-                if (opt2parg_bSet(evStepOptions[ev_class],NPA,pa)) 
+                if (opt2parg_bSet(evStepOptions[ev_class],NPA,pa))
                     evStepList[ev_class]=
                         scan_vecparams(opt2parg_str(evStepOptions[ev_class],NPA,pa),evStepOptions[ev_class],nvecs);
                 else { /*if list is not given fill with zeros */
                     snew(evStepList[ev_class],nvecs);
-                    for (i=0; i<nvecs; i++) 
+                    for (i=0; i<nvecs; i++)
                         evStepList[ev_class][i]=0.0;
                 }
             } else if (ev_class == evRADFIX && opt2parg_bSet(evStepOptions[ev_class],NPA,pa)) {
                 snew(evStepList[ev_class],nvecs);
                 for (i=0; i<nvecs; i++)
                     evStepList[ev_class][i]=radfix;
-                
             } else if (ev_class == evFLOOD) {
                 snew(evStepList[ev_class],nvecs);
+
+                /* Are we doing constant force flooding? In that case, we read in
+                 * the fproj values from the command line */
+                if (opt2parg_bSet("-constF", NPA, pa))
+                {
+                    evStepList[ev_class] = scan_vecparams(opt2parg_str("-constF",NPA,pa),"-constF",nvecs);
+                }
             } else {}; /*to avoid ambiguity   */
         } else { /* if there are no eigenvectors for this option set list to zero */
             listen[ev_class]=NULL;
             snew(listen[ev_class],1);
             listen[ev_class][0]=0;
-        };
-    };
-    
+        }
+    }
+
     /* print the interpreted list of eigenvectors - to give some feedback*/
-    for (ev_class=0; ev_class<evEND; ++ev_class) {
-        printf("list %s consist of the indices:",evOptions[ev_class]);
+    for (ev_class=0; ev_class<evNr; ++ev_class) {
+        printf("Eigenvector list %7s consists of the indices: ",evOptions[ev_class]);
         i=0;
         while(listen[ev_class][i])
             printf("%d ",listen[ev_class][i++]);
         printf("\n");
     }
-    
-    EigvecFile=NULL; 
-    EigvecFile=opt2fn("-f",NFILE,fnm); 
-    
-    
+
+    EigvecFile=NULL;
+    EigvecFile=opt2fn("-f",NFILE,fnm);
+
     /*read eigenvectors from eigvec.trr*/
-    read_eigenvectors(EigvecFile,&natoms,&bFit1,
+    read_eigenvectors(EigvecFile,&nav,&bFit1,
                       &xref1,&edi_params.fitmas,&xav1,&edi_params.pcamas,&nvec1,&eignr1,&eigvec1,&eigval1);
-	   
+
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
                        title,&top,&ePBC,&xtop,NULL,topbox,0);
     atoms=&top.atoms;
-    
-    
-    printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
+
+
+    printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",nav);
     get_index(atoms,indexfile,1,&i,&index,&grpname); /*if indexfile != NULL parameter 'atoms' is ignored */
-    if (i!=natoms) {
+    if (i!=nav) {
         gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
-                  i,natoms);
+                  i,nav);
     }
     printf("\n");
-    
-    
+
+
     if (xref1==NULL)
     {
         if (bFit1)
@@ -749,59 +770,82 @@ int main(int argc,char *argv[])
     }
     else
     {
-        nfit=natoms;
+        nfit=nav;
         ifit=index;
     }
 
-    /* if -flood read eigenvalues and store them in evSteplist[evFLOOD] */
-    if (listen[evFLOOD][0]!=0)
-        read_eigenvalues(listen[evFLOOD],opt2fn("-eig",NFILE,fnm),evStepList[evFLOOD],bHesse,kB*T);
- 
-  /*number of eigenvectors*/
-  edi_params.ned=natoms;
-  edi_params.flood.tau=tau;
-  edi_params.flood.deltaF0=deltaF0;
-  edi_params.flood.deltaF=deltaF;
-  edi_params.presteps=eqSteps;
-  edi_params.flood.kT=kB*T;
-  edi_params.flood.bHarmonic=bHarmonic;
-  if (bRestrain)
-  {
-      /* Trick: invert sign of Efl and alpha2 then this will give the same sign in the exponential and inverted sign outside */
-      edi_params.flood.constEfl=-constEfl;
-      edi_params.flood.alpha2=-sqr(alpha);
-  }
-  else
-  {
-      edi_params.flood.constEfl=constEfl;
-      edi_params.flood.alpha2=sqr(alpha);
-  }
-  
+    if (opt2parg_bSet("-constF", NPA, pa))
+    {
+        /* Constant force flooding is special: Most of the normal flooding
+         * options are not needed. */
+        edi_params.flood.bConstForce = TRUE;
+    }
+    else
+    {
+        /* For normal flooding read eigenvalues and store them in evSteplist[evFLOOD] */
+
+        if ( listen[evFLOOD][0]!=0)
+            read_eigenvalues(listen[evFLOOD],opt2fn("-eig",NFILE,fnm),evStepList[evFLOOD],bHesse,kB*T);
+
+        edi_params.flood.tau=tau;
+        edi_params.flood.deltaF0=deltaF0;
+        edi_params.flood.deltaF=deltaF;
+        edi_params.presteps=eqSteps;
+        edi_params.flood.kT=kB*T;
+        edi_params.flood.bHarmonic=bHarmonic;
+        if (bRestrain)
+        {
+            /* Trick: invert sign of Efl and alpha2 then this will give the same sign in the exponential and inverted sign outside */
+            edi_params.flood.constEfl=-constEfl;
+            edi_params.flood.alpha2=-sqr(alpha);
+        }
+        else
+        {
+            edi_params.flood.constEfl=constEfl;
+            edi_params.flood.alpha2=sqr(alpha);
+        }
+    }
+
+    edi_params.ned=nav;
+
   /*number of system atoms  */
   edi_params.nini=atoms->nr;
 
- 
-  /*store reference and average structure in edi_params*/
-  make_t_edx(&edi_params.sref,nfit,xref1,ifit);
-  make_t_edx(&edi_params.sav,natoms,xav1,index);
 
-                                                         
-  /*store target positions in edi_params*/
-  if (opt2bSet("-tar",NFILE,fnm)) {
-    get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,
-                   ifit,natoms,index);
- } else
+  /*store reference and average structure in edi_params*/
+  make_t_edx(&edi_params.sref,nfit,xref1,ifit );
+  make_t_edx(&edi_params.sav ,nav ,xav1 ,index);
+
+
+  /* Store target positions in edi_params */
+  if (opt2bSet("-tar",NFILE,fnm))
+  {
+      if (0 != listen[evFLOOD][0])
+      {
+          fprintf(stderr, "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
+                          "      You may want to use -ori to define the flooding potential center.\n\n");
+      }
+      get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,ifit,nav,index);
+  }
+  else
+  {
       make_t_edx(&edi_params.star,0,NULL,index);
-     /*store origin positions*/
- if (opt2bSet("-ori",NFILE,fnm)) {
-     get_structure(atoms,indexfile,OriginFile,&edi_params.sori,nfit,
-                   ifit,natoms,index);
- } else
+  }
+
+  /* Store origin positions */
+  if (opt2bSet("-ori",NFILE,fnm))
+  {
+      get_structure(atoms,indexfile,OriginFile,&edi_params.sori,nfit,ifit,nav,index);
+  }
+  else
+  {
       make_t_edx(&edi_params.sori,0,NULL,index);
-  
-  /*write edi-file*/
+  }
+
+  /* Write edi-file */
   write_the_whole_thing(ffopen(EdiFile,"w"), &edi_params, eigvec1,nvec1, listen, evStepList);
   thanx(stderr);
+
   return 0;
 }
 

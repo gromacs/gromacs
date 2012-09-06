@@ -41,7 +41,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "errno.h"
+#include <errno.h>
 #include "macros.h"
 #include "string2.h"
 #include "confio.h"
@@ -68,7 +68,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 {
   t_atoms *atoms;
   gmx_bool   bEnd;
-  int    nwanted,natoms,atnr,resnr,oldres,newres,shift;
+  int    nwanted,natoms,atnr,resnr=0,oldres,newres,shift;
   char   anm[STRLEN],resnm[STRLEN];
   char   c1,c2;
   double db1,db2,db3;
@@ -98,7 +98,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 		      "Found more coordinates (%d) in %s than expected %d\n",
 		      natoms,infile,nwanted);
 	if (atoms) {
-	  if (atoms && fr->bAtoms &&
+	  if (fr->bAtoms &&
 	      (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
 	       != 6)) {
 	    if (oldres>=0)
@@ -877,31 +877,12 @@ static void read_whole_conf(const char *infile,char *title,
   gmx_fio_fclose(in);
 }
 
-static void get_conf(FILE *in,char *title,int *natoms, 
-		     rvec x[],rvec *v,matrix box)
-{
-  t_atoms  atoms;
-  int      ndec;
-
-  atoms.nr=*natoms;
-  snew(atoms.atom,*natoms);
-  atoms.nres=*natoms;
-  snew(atoms.resinfo,*natoms);
-  snew(atoms.atomname,*natoms);
-  
-  get_w_conf(in,title,title,&atoms,&ndec,x,v,box);
-  
-  sfree(atoms.atom);
-  sfree(atoms.resinfo);
-  sfree(atoms.atomname);
-}
-
 gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 {
   t_atoms atoms;
   char    title[STRLEN],*p;
   double  tt;
-  int     ndec,i;
+  int     ndec=0,i;
 
   if (gmx_eof(status))
     return FALSE;
