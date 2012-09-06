@@ -497,12 +497,12 @@ static real estimate_reciprocal(
         x_per_core = xtot;
     }
 /*     
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 */
 
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
         t0 = MPI_Wtime();
@@ -728,13 +728,14 @@ static real estimate_reciprocal(
     if (MASTER(cr))
         fprintf(stderr, "\n");
 
-
+#ifdef GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
     {
         t1= MPI_Wtime() - t0;
         fprintf(fp_out, "Recip. err. est. took   : %lf s\n", t1);
     }
+#endif
 #endif
    
 #ifdef DEBUG
@@ -787,8 +788,9 @@ static void create_info(t_inputinfo *info)
  */
 static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_commrec *cr)
 {
-    int i,anr_global;
+    int i;
     int nq; /* number of charged particles */
+    gmx_mtop_atomloop_all_t aloop;
     t_atom *atom;
     
     
@@ -797,10 +799,11 @@ static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_
         snew(*q, mtop->natoms);
         snew(*x, mtop->natoms);
         nq=0;
-        for (i=0; i<mtop->natoms; i++)
+
+        aloop = gmx_mtop_atomloop_all_init(mtop);
+
+        while (gmx_mtop_atomloop_all_next(aloop,&i,&atom))
         {
-            anr_global = i;
-            gmx_mtop_atomnr_to_atom(mtop,anr_global,&atom);
             if (is_charge(atom->q))
             {
                 (*q)[nq] = atom->q;
@@ -1078,7 +1081,7 @@ int gmx_pme_error(int argc,char *argv[])
     
     cr = init_par(&argc,&argv);
     
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
@@ -1152,10 +1155,7 @@ int gmx_pme_error(int argc,char *argv[])
         fclose(fp);
     }
     
-    if (gmx_parallel_env_initialized())
-    {
-        gmx_finalize();
-    }
+    gmx_finalize_par();
     
     return 0;
 }

@@ -56,7 +56,6 @@ static const char *couple_lam[ecouplamNR+1]    = {
 typedef struct {
   int warnings;
   int nshake;
-  real fourierspacing;
   char *include;
   char *define;
   gmx_bool bGenVel;
@@ -64,7 +63,6 @@ typedef struct {
   real tempi;
   int  seed;
   gmx_bool bOrire;
-  gmx_bool bDihre;
   gmx_bool bMorse;
   char *wall_atomtype[2];
   gmx_bool pull_start;
@@ -135,5 +133,24 @@ extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
 /* Prints the initial pull group distances in x.
  * If bStart adds the distance to the initial reference location.
  */
+
+extern int str_nelem(const char *str,int maxptr,char *ptr[]);
+/* helper function from readir.c to convert strings */
+
+extern void read_adressparams(int *ninp_p,t_inpfile **inp_p,t_adress *adress, warninp_t wi);
+/* Reads in AdResS related parameters */
+
+extern void do_adress_index(t_adress *adress, gmx_groups_t *groups,char **gnames,t_grpopts *opts,warninp_t wi);
+/* Generate adress groups */
+
+extern char **read_rotparams(int *ninp_p,t_inpfile **inp,t_rot *rot,warninp_t wi);
+/* Reads enforced rotation parameters, returns a list of the rot group names */
+
+extern void make_rotation_groups(t_rot *rot,char **rotgnames,
+                 t_blocka *grps,char **gnames);
+/* Process the rotation parameters after reading the index groups */
+
+extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
+        const char *fn, gmx_bool bSet, warninp_t wi);
 
 #endif	/* _readir_h */

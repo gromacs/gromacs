@@ -185,7 +185,7 @@ int gmx_bundle(int argc,char *argv[])
     "With option [TT]-oa[tt] the top, mid (or kink when [TT]-ok[tt] is set)",
     "and bottom points of each axis",
     "are written to a [TT].pdb[tt] file each frame. The residue numbers correspond",
-    "to the axis numbers. When viewing this file with [TT]rasmol[tt], use the",
+    "to the axis numbers. When viewing this file with Rasmol, use the",
     "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
     "display the reference axis."
   };
@@ -195,7 +195,7 @@ int gmx_bundle(int argc,char *argv[])
     { "-na", FALSE, etINT, {&n},
 	"Number of axes" },
     { "-z", FALSE, etBOOL, {&bZ},
-	"Use the Z-axis as reference iso the average axis" }
+	"Use the [IT]z[it]-axis as reference instead of the average axis" }
   };
   FILE       *out,*flen,*fdist,*fz,*ftilt,*ftiltr,*ftiltl;
   FILE       *fkink=NULL,*fkinkr=NULL,*fkinkl=NULL;

@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include "string2.h"
 #include "smalloc.h"
@@ -46,7 +47,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "strdb.h"
-#include "time.h"
+#include <time.h>
 #include "readinp.h"
 
 /* The source code in this file should be thread-safe. 
@@ -60,6 +61,11 @@ typedef struct {
 typedef struct {
   char *search,*replace;
 } t_sandr;
+
+/* The order of these arrays is significant. Text search and replace
+ * for each element occurs in order, so earlier changes can induce
+ * subsequent changes even though the original text might not appear
+ * to invoke the latter changes. */
 
 const t_sandr_const sandrTeX[] = {
   { "[TT]", "{\\tt " },
@@ -90,12 +96,46 @@ const t_sandr_const sandrTeX[] = {
   { "[BR]", "\\\\"   },
   { "%",    "\\%"    },
   { "&",    "\\&"    },
-  /* The next two lines used to substitute "|" and "||" to "or", but only
-   * g_angle used that functionality, so that was changed to a textual
-   * "or" there, so that other places could use those symbols to indicate
-   * magnitudes. */
-  { "||",    "\\textbar{}\\textbar"    },
-  { "|",     "\\textbar{}"    }
+  /* The next couple of lines allow true Greek symbols to be written to the 
+     manual, which makes it look pretty */
+  { "[GRK]", "\\ensuremath{\\" },
+  { "[grk]", "}" },
+  { "[MATH]","\\ensuremath{" },
+  { "[math]","}" },
+  { "[CHEVRON]", "\\ensuremath{<}" },
+  { "[chevron]", "\\ensuremath{>}" },
+  { "[MAG]", "\\ensuremath{|}" },
+  { "[mag]", "\\ensuremath{|}" },
+  { "[INT]","\\ensuremath{\\int" },
+  { "[FROM]","_" },
+  { "[from]","" },
+  { "[TO]", "^" },
+  { "[to]", "" },
+  { "[int]","}" },
+  { "[SUM]","\\ensuremath{\\sum" },
+  { "[sum]","}" },
+  { "[SUB]","\\ensuremath{_{" },
+  { "[sub]","}}" },
+  { "[SQRT]","\\ensuremath{\\sqrt{" },
+  { "[sqrt]","}}" },
+  { "[EXP]","\\ensuremath{\\exp{(" },
+  { "[exp]",")}}" },
+  { "[LN]","\\ensuremath{\\ln{(" },
+  { "[ln]",")}}" },
+  { "[LOG]","\\ensuremath{\\log{(" },
+  { "[log]",")}}" },
+  { "[COS]","\\ensuremath{\\cos{(" },
+  { "[cos]",")}}" },
+  { "[SIN]","\\ensuremath{\\sin{(" },
+  { "[sin]",")}}" },
+  { "[TAN]","\\ensuremath{\\tan{(" },
+  { "[tan]",")}}" },
+  { "[COSH]","\\ensuremath{\\cosh{(" },
+  { "[cosh]",")}}" },
+  { "[SINH]","\\ensuremath{\\sinh{(" },
+  { "[sinh]",")}}" },
+  { "[TANH]","\\ensuremath{\\tanh{(" },
+  { "[tanh]",")}}" }
 };
 #define NSRTEX asize(sandrTeX)
 
@@ -106,8 +146,46 @@ const t_sandr_const sandrTty[] = {
   { "[bb]", "" },
   { "[IT]", "" },
   { "[it]", "" },
+  { "[MATH]","" },
+  { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
+  { "[INT]","integral" },
+  { "[FROM]"," from " },
+  { "[from]","" },
+  { "[TO]", " to " },
+  { "[to]", " of" },
+  { "[int]","" },
+  { "[SUM]","sum" },
+  { "[sum]","" },
+  { "[SUB]","_" },
+  { "[sub]","" },
+  { "[SQRT]","sqrt(" },
+  { "[sqrt]",")" },
+  { "[EXP]","exp(" },
+  { "[exp]",")" },
+  { "[LN]","ln(" },
+  { "[ln]",")" },
+  { "[LOG]","log(" },
+  { "[log]",")" },
+  { "[COS]","cos(" },
+  { "[cos]",")" },
+  { "[SIN]","sin(" },
+  { "[sin]",")" },
+  { "[TAN]","tan(" },
+  { "[tan]",")" },
+  { "[COSH]","cosh(" },
+  { "[cosh]",")" },
+  { "[SINH]","sinh(" },
+  { "[sinh]",")" },
+  { "[TANH]","tanh(" },
+  { "[tanh]",")" },
   { "[PAR]","\n\n" },
-  { "[BR]", "\n"}
+  { "[BR]", "\n"},
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRTTY asize(sandrTty)
 
@@ -121,8 +199,46 @@ const t_sandr_const sandrWiki[] = {
   { "[bb]", "'''" },
   { "[IT]", "''" },
   { "[it]", "''" },
+  { "[MATH]","" },
+  { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
+  { "[INT]","integral" },
+  { "[FROM]"," from " },
+  { "[from]","" },
+  { "[TO]", " to " },
+  { "[to]", " of" },
+  { "[int]","" },
+  { "[SUM]","sum" },
+  { "[sum]","" },
+  { "[SUB]","_" },
+  { "[sub]","" },
+  { "[SQRT]","sqrt(" },
+  { "[sqrt]",")", },
+  { "[EXP]","exp(" },
+  { "[exp]",")" },
+  { "[LN]","ln(" },
+  { "[ln]",")" },
+  { "[LOG]","log(" },
+  { "[log]",")" },
+  { "[COS]","cos(" },
+  { "[cos]",")" },
+  { "[SIN]","sin(" },
+  { "[sin]",")" },
+  { "[TAN]","tan(" },
+  { "[tan]",")" },
+  { "[COSH]","cosh(" },
+  { "[cosh]",")" },
+  { "[SINH]","sinh(" },
+  { "[sinh]",")" },
+  { "[TANH]","tanh(" },
+  { "[tanh]",")" },
   { "[PAR]","\n\n" },
-  { "[BR]", "\n"}
+  { "[BR]", "\n" },
+  { "[GRK]", "&" },
+  { "[grk]", ";" }
 };
 #define NSRWIKI asize(sandrWiki)
 
@@ -133,6 +249,42 @@ const t_sandr_const sandrNROFF[] = {
   { "[bb]", "\\fR" },
   { "[IT]", "\\fI " },
   { "[it]", "\\fR" },
+  { "[MATH]","" },
+  { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
+  { "[INT]","integral" },
+  { "[FROM]"," from " },
+  { "[from]","" },
+  { "[TO]", " to " },
+  { "[to]", " of" },
+  { "[int]","" },
+  { "[SUM]","sum" },
+  { "[sum]","" },
+  { "[SUB]","_" },
+  { "[sub]","" },
+  { "[SQRT]","sqrt(" },
+  { "[sqrt]",")", },
+  { "[EXP]","exp(" },
+  { "[exp]",")" },
+  { "[LN]","ln(" },
+  { "[ln]",")" },
+  { "[LOG]","log(" },
+  { "[log]",")" },
+  { "[COS]","cos(" },
+  { "[cos]",")" },
+  { "[SIN]","sin(" },
+  { "[sin]",")" },
+  { "[TAN]","tan(" },
+  { "[tan]",")" },
+  { "[COSH]","cosh(" },
+  { "[cosh]",")" },
+  { "[SINH]","sinh(" },
+  { "[sinh]",")" },
+  { "[TANH]","tanh(" },
+  { "[tanh]",")" },
   { "[PAR]","\n\n" },
   { "\n ",    "\n" },
   { "<",    "" },
@@ -140,7 +292,9 @@ const t_sandr_const sandrNROFF[] = {
   { "^",    "" },
   { "#",    "" },
   { "[BR]", "\n"},
-  { "-",    "\\-"}
+  { "-",    "\\-"},
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRNROFF asize(sandrNROFF)
 
@@ -153,8 +307,46 @@ const t_sandr_const sandrHTML[] = {
   { "[bb]", "</b>" },
   { "[IT]", "<it>" },
   { "[it]", "</it>" },
+  { "[MATH]","" },
+  { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
+  { "[INT]","integral" },
+  { "[FROM]"," from " },
+  { "[from]","" },
+  { "[TO]", " to " },
+  { "[to]", " of" },
+  { "[int]","" },
+  { "[SUM]","sum" },
+  { "[sum]","" },
+  { "[SUB]","_" },
+  { "[sub]","" },
+  { "[SQRT]","sqrt(" },
+  { "[sqrt]",")", },
+  { "[EXP]","exp(" },
+  { "[exp]",")" },
+  { "[LN]","ln(" },
+  { "[ln]",")" },
+  { "[LOG]","log(" },
+  { "[log]",")" },
+  { "[COS]","cos(" },
+  { "[cos]",")" },
+  { "[SIN]","sin(" },
+  { "[sin]",")" },
+  { "[TAN]","tan(" },
+  { "[tan]",")" },
+  { "[COSH]","cosh(" },
+  { "[cosh]",")" },
+  { "[SINH]","sinh(" },
+  { "[sinh]",")" },
+  { "[TANH]","tanh(" },
+  { "[tanh]",")" },
   { "[PAR]","<p>" },
-  { "[BR]", "<br>" }
+  { "[BR]", "<br>" },
+  { "[GRK]", "&"  },
+  { "[grk]", ";"  }
 };
 #define NSRHTML asize(sandrHTML)
 
@@ -167,8 +359,46 @@ const t_sandr_const sandrXML[] = {
   { "[bb]", "</emp>" },
   { "[IT]", "<it>" },
   { "[it]", "</it>" },
+  { "[MATH]","" },
+  { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
+  { "[INT]","integral" },
+  { "[FROM]"," from " },
+  { "[from]","" },
+  { "[TO]", " to " },
+  { "[to]", " of" },
+  { "[int]","" },
+  { "[SUM]","sum" },
+  { "[sum]","" },
+  { "[SUB]","_" },
+  { "[sub]","" },
+  { "[SQRT]","sqrt(" },
+  { "[sqrt]",")", },
+  { "[EXP]","exp(" },
+  { "[exp]",")" },
+  { "[LN]","ln(" },
+  { "[ln]",")" },
+  { "[LOG]","log(" },
+  { "[log]",")" },
+  { "[COS]","cos(" },
+  { "[cos]",")" },
+  { "[SIN]","sin(" },
+  { "[sin]",")" },
+  { "[TAN]","tan(" },
+  { "[tan]",")" },
+  { "[COSH]","cosh(" },
+  { "[cosh]",")" },
+  { "[SINH]","sinh(" },
+  { "[sinh]",")" },
+  { "[TANH]","tanh(" },
+  { "[tanh]",")" },
   { "[PAR]","</par>\n<par>" },
-  { "[BR]", "<br />" }
+  { "[BR]", "<br />" },
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRXML asize(sandrXML)
 
@@ -190,7 +420,7 @@ static char *mydate(char buf[], int maxsize,gmx_bool bWiki)
   struct tm tm;
   
   time(&now);
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
   /* Native windows */
   localtime_s(&tm,&now);
 #else
@@ -252,7 +482,7 @@ static char *repall(const char *s,int nsr,const t_sandr_const sa[])
   /* Copy input to a non-constant char buffer.
    * buf1 is allocated here 
    */
-  buf1=strdup(s); 
+  buf1=gmx_strdup(s); 
   
   for(i=0; (i<nsr); i++) {
     /* Replace in buffer1, put result in buffer2.
@@ -274,7 +504,7 @@ static char *repallww(const char *s,int nsr,const t_sandr sa[])
   /* Copy input to a non-constant char buffer.
    * buf1 is allocated here 
    */
-  buf1=strdup(s); 
+  buf1=gmx_strdup(s); 
   
   for(i=0; (i<nsr); i++) {
     /* Replace in buffer1, put result in buffer2.
@@ -298,12 +528,12 @@ static char *html_xref(char *s,const char *program, t_linkdata *links,gmx_bool b
     snew(links->sr,n);
     for(i=0,j=0; (i<n); i++) {
       if (!program || (gmx_strcasecmp(program,filestr[i])  != 0)) {
-	links->sr[j].search=strdup(filestr[i]);
+	links->sr[j].search=gmx_strdup(filestr[i]);
 	if (bWiki)
 	  sprintf(buf,"[[%s]]",filestr[i]);
 	else
 	  sprintf(buf,"<a href=\"%s.html\">%s</a>",filestr[i],filestr[i]);
-	links->sr[j].replace=strdup(buf);
+	links->sr[j].replace=gmx_strdup(buf);
 	j++;
       }
     }
@@ -455,7 +685,7 @@ static void write_nroffman(FILE *out,
   
   fprintf(out,".TH %s 1 \"%s\" \"\" \"GROMACS suite, %s\"\n",program,mydate(tmp,255,FALSE),GromacsVersion());
   fprintf(out,".SH NAME\n");
-  fprintf(out,"%s\n",program);
+  fprintf(out,"%s@DESC@\n\n",program);
   fprintf(out,".B %s\n",GromacsVersion());
   
   fprintf(out,".SH SYNOPSIS\n");
@@ -1011,6 +1241,7 @@ static void write_py(FILE *out,const char *program,
       for(j=2; (pa[i].u.c[j] != NULL); j++)
 	fprintf(out,",'%s'",pa[i].u.c[j]);
       fprintf(out,"],%d))\n",is_hidden(&(pa[i])));
+      break;
     default:
       break;
     }

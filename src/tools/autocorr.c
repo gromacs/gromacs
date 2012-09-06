@@ -767,7 +767,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
     { "-fitfn",    FALSE, etENUM, {s_ffn},
       "Fit function" },
     { "-ncskip",   FALSE, etINT,  {&acf.nskip},
-      "Skip N points in the output file of correlation functions" },
+      "Skip this many points in the output file of correlation functions" },
     { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, {&acf.tendfit},

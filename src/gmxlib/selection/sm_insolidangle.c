@@ -208,9 +208,6 @@ init_data_insolidangle(int npar, gmx_ana_selparam_t *param);
 /** Initializes the \p insolidangle selection method. */
 static int
 init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Sets the COM/COG data for the \p insolidangle selection method. */
-static void
-set_comg_insolidangle(gmx_ana_pos_t *pos, void *data);
 /** Frees the data allocated for the \p insolidangle selection method. */
 static void
 free_data_insolidangle(void *data);

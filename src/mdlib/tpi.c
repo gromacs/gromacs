@@ -79,12 +79,8 @@
 #include "pme.h"
 #include "gbutil.h"
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
-#if defined(GMX_DOUBLE)
-#include "gmx_sse2_double.h"
-#else
-#include "gmx_sse2_single.h"
-#endif
+#ifdef GMX_X86_SSE2
+#include "gmx_x86_sse2.h"
 #endif
 
 
@@ -126,7 +122,8 @@ double do_tpi(FILE *fplog,t_commrec *cr,
               t_nrnb *nrnb,gmx_wallcycle_t wcycle,
               gmx_edsam_t ed,
               t_forcerec *fr,
-              int repl_ex_nst,int repl_ex_seed,
+              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+              gmx_membed_t membed,
               real cpt_period,real max_hours,
               const char *deviceOptions,
               unsigned long Flags,
@@ -234,10 +231,10 @@ double do_tpi(FILE *fplog,t_commrec *cr,
     sscanf(dump_pdb,"%lf",&dump_ener);
 
   atoms2md(top_global,inputrec,0,NULL,0,top_global->natoms,mdatoms);
-  update_mdatoms(mdatoms,inputrec->init_lambda);
+  update_mdatoms(mdatoms,inputrec->fepvals->init_lambda);
 
   snew(enerd,1);
-  init_enerdata(groups->grps[egcENER].nr,inputrec->n_flambda,enerd);
+  init_enerdata(groups->grps[egcENER].nr,inputrec->fepvals->n_lambda,enerd);
   snew(f,top_global->natoms);
 
   /* Print to log file  */
@@ -396,7 +393,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
 
   refvolshift = log(det(rerun_fr.box));
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#ifdef GMX_X86_SSE2
     /* Make sure we don't detect SSE overflow generated before this point */
     gmx_mm_check_and_reset_overflow();
 #endif
@@ -417,8 +414,9 @@ double do_tpi(FILE *fplog,t_commrec *cr,
         {
             copy_rvec(rerun_fr.x[i],state->x[i]);
         }
+        copy_mat(rerun_fr.box,state->box);
         
-        V = det(rerun_fr.box);
+        V = det(state->box);
         logV = log(V);
         
         bStateChanged = TRUE;
@@ -565,28 +563,29 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                 cr->nnodes = 1;
                 do_force(fplog,cr,inputrec,
                          step,nrnb,wcycle,top,top_global,&top_global->groups,
-                         rerun_fr.box,state->x,&state->hist,
+                         state->box,state->x,&state->hist,
                          f,force_vir,mdatoms,enerd,fcd,
-                         lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,
-                         GMX_FORCE_NONBONDED |
-                         (bNS ? GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
+                         state->lambda,
+                         NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,
+                         GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
+                         (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
                          (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
                 cr->nnodes = nnodes;
                 bStateChanged = FALSE;
                 bNS = FALSE;
                 
                 /* Calculate long range corrections to pressure and energy */
-                calc_dispcorr(fplog,inputrec,fr,step,top_global->natoms,rerun_fr.box,
+                calc_dispcorr(fplog,inputrec,fr,step,top_global->natoms,state->box,
                               lambda,pres,vir,&prescorr,&enercorr,&dvdlcorr);
                 /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
                 enerd->term[F_DISPCORR] = enercorr;
                 enerd->term[F_EPOT] += enercorr;
                 enerd->term[F_PRES] += prescorr;
-                enerd->term[F_DVDL] += dvdlcorr;
+                enerd->term[F_DVDL_VDW] += dvdlcorr;
 
                 epot = enerd->term[F_EPOT];
                 bEnergyOutOfBounds = FALSE;
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#ifdef GMX_X86_SSE2
                 /* With SSE the energy can overflow, check for this */
                 if (gmx_mm_check_and_reset_overflow())
                 {

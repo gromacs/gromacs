@@ -1,163 +1,168 @@
 HEAD|Generating topologies and coordinates
-pdb2gmx|converts pdb files to topology and coordinate files
-g_x2top|generates a primitive topology from coordinates 
 editconf|edits the box and writes subgroups 
-genbox|solvates a system
-genion|generates mono atomic ions on energetically favorable positions
-genconf|multiplies a conformation in 'random' orientations
-genrestr|generates position restraints or distance restraints for index groups
 g_protonate|protonates structures
+g_x2top|generates a primitive topology from coordinates 
+genbox|solvates a system
+genconf|multiplies a conformation in 'random' orientations
+genion|generates mono atomic ions on energetically favorable positions
+genrestr|generates position restraints or distance restraints for index groups
+pdb2gmx|converts coordinate files to topology and FF-compliant coordinate files
 END
 
 HEAD|Running a simulation
 grompp|makes a run input file
-tpbconv|makes a run input file for restarting a crashed run
 mdrun|performs a simulation, do a normal mode analysis or an energy minimization
+tpbconv|makes a run input file for restarting a crashed run
 END
 
 HEAD|Viewing trajectories
-ngmx|displays a trajectory
 g_nmtraj|generate a virtual trajectory from an eigenvector
+ngmx|displays a trajectory
 END
 
 HEAD|Processing energies
-g_energy|writes energies to xvg files and displays averages
 g_enemat|extracts an energy matrix from an energy file
+g_energy|writes energies to xvg files and displays averages
 mdrun|with -rerun (re)calculates energies for trajectory frames
 END
 
 HEAD|Converting files
 editconf|converts and manipulates structure files
-trjconv|converts and manipulates trajectory files
-trjcat|concatenates trajectory files
 eneconv|converts energy files
-xpm2ps|converts XPM matrices to encapsulated postscript (or XPM)
 g_sigeps|convert c6/12 or c6/cn combinations to and from sigma/epsilon
+trjcat|concatenates trajectory files
+trjconv|converts and manipulates trajectory files
+xpm2ps|converts XPM matrices to encapsulated postscript (or XPM)
 END
 
 HEAD|Tools
-make_ndx|makes index files
-mk_angndx|generates index files for g_angle
-gmxcheck|checks and compares files
-gmxdump|makes binary files human readable
-g_traj|plots x, v and f of selected atoms/groups (and more) from a trajectory
 g_analyze|analyzes data sets
-trjorder|orders molecules according to their distance to a group
+g_dyndom|interpolate and extrapolate structure rotations
 g_filter|frequency filters trajectories, useful for making smooth movies
 g_lie|free energy estimate from linear combinations
-g_dyndom|interpolate and extrapolate structure rotations
 g_morph|linear interpolation of conformations 
-g_wham|weighted histogram analysis after umbrella sampling
-xpm2ps|convert XPM (XPixelMap) file to postscript
+g_pme_error|estimates the error of using PME with a given input file
+g_select|selects groups of atoms based on flexible textual selections
 g_sham|read/write xmgr and xvgr data sets
 g_spatial|calculates the spatial distribution function
-g_select|selects groups of atoms based on flexible textual selections
-g_pme_error|estimates the error of using PME with a given input file
+g_traj|plots x, v and f of selected atoms/groups (and more) from a trajectory
 g_tune_pme|time mdrun as a function of PME nodes to optimize settings
+g_wham|weighted histogram analysis after umbrella sampling
+gmxcheck|checks and compares files
+gmxdump|makes binary files human readable
+make_ndx|makes index files
+mk_angndx|generates index files for g_angle
+trjorder|orders molecules according to their distance to a group
+xpm2ps|convert XPM (XPixelMap) file to postscript
 END
 
 HEAD|Distances between structures
-g_rms|calculates rmsd's with a reference structure and rmsd matrices
-g_confrms|fits two structures and calculates the rmsd 
 g_cluster|clusters structures
+g_confrms|fits two structures and calculates the rmsd 
+g_rms|calculates rmsd's with a reference structure and rmsd matrices
 g_rmsf|calculates atomic fluctuations
 END
 
 HEAD|Distances in structures over time
-g_mindist|calculates the minimum distance between two groups
-g_dist|calculates the distances between the centers of mass of two groups
 g_bond|calculates distances between atoms
+g_dist|calculates the distances between the centers of mass of two groups
+g_mindist|calculates the minimum distance between two groups
 g_mdmat|calculates residue contact maps
 g_polystat|calculates static properties of polymers
 g_rmsdist|calculates atom pair distances averaged with power -2, -3 or -6
 END
 
 HEAD|Mass distribution properties over time
-g_traj|plots x, v, f, box, temperature and rotational energy
 g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
 g_polystat|calculates static properties of polymers
-g_rotacf|calculates the rotational correlation function for molecules
 g_rdf|calculates radial distribution functions
+g_rotacf|calculates the rotational correlation function for molecules
 g_rotmat|plots the rotation matrix for fitting to a reference structure
+g_sans|computes the small angle neutron scattering spectra
+g_traj|plots x, v, f, box, temperature and rotational energy
 g_vanhove|calculates Van Hove displacement functions
 END
 
 HEAD|Analyzing bonded interactions
-g_bond|calculates bond length distributions
-mk_angndx|generates index files for g_angle
 g_angle|calculates distributions and correlations for angles and dihedrals
+g_bond|calculates bond length distributions
 g_dih|analyzes dihedral transitions
+mk_angndx|generates index files for g_angle
 END
 
 HEAD|Structural properties
+g_anadock|cluster structures from Autodock runs
+g_bundle|analyzes bundles of axes, e.g. helices
+g_clustsize|calculate size distributions of atomic clusters
+g_disre|analyzes distance restraints
 g_hbond|computes and analyzes hydrogen bonds
-g_saltbr|computes salt bridges
-g_sas|computes solvent accessible surface area
 g_order|computes the order parameter per atom for carbon tails
 g_principal|calculates axes of inertia for a group of atoms
 g_rdf|calculates radial distribution functions
+g_saltbr|computes salt bridges
+g_sas|computes solvent accessible surface area
 g_sgangle|computes the angle and distance between two groups
 g_sorient|analyzes solvent orientation around solutes
 g_spol|analyzes solvent dipole orientation and polarization around solutes
-g_bundle|analyzes bundles of axes, e.g. helices
-g_disre|analyzes distance restraints
-g_clustsize|calculate size distributions of atomic clusters
-g_anadock|cluster structures from Autodock runs
 END
 
 HEAD|Kinetic properties
-g_traj|plots x, v, f, box, temperature and rotational energy
-g_velacc|calculates velocity autocorrelation functions
-g_tcaf|calculates viscosities of liquids
 g_bar|calculates free energy difference estimates through Bennett's acceptance ratio
 g_current|calculate current autocorrelation function of system
-g_vanhove|compute Van Hove correlation function
+g_dos|analyzes density of states and properties based on that
+g_dyecoupl|extracts dye dynamics from trajectories
+g_kinetics|analyzes kinetic constants from properties based on the Eyring model
 g_principal|calculate principal axes of inertion for a group of atoms
+g_tcaf|calculates viscosities of liquids
+g_traj|plots x, v, f, box, temperature and rotational energy
+g_vanhove|compute Van Hove correlation function
+g_velacc|calculates velocity autocorrelation functions
 END
 
 HEAD|Electrostatic properties
-genion|generates mono atomic ions on energetically favorable positions
-g_potential|calculates the electrostatic potential across the box
-g_dipoles|computes the total dipole plus fluctuations
-g_dielectric|calculates frequency dependent dielectric constants
 g_current|calculates dielectric constants for charged systems
+g_dielectric|calculates frequency dependent dielectric constants
+g_dipoles|computes the total dipole plus fluctuations
+g_potential|calculates the electrostatic potential across the box
 g_spol|analyze dipoles around a solute
+genion|generates mono atomic ions on energetically favorable positions
 END
 
-HEAD|Protein specific analysis
+HEAD|Protein-specific analysis
 do_dssp|assigns secondary structure and calculates solvent accessible surface area
 g_chi|calculates everything you want to know about chi and other dihedrals
 g_helix|calculates basic properties of alpha helices
 g_helixorient|calculates local pitch/bending/rotation/orientation inside helices
 g_rama|computes Ramachandran plots
-g_xrama|shows animated Ramachandran plots
 g_wheel|plots helical wheels
+g_xrama|shows animated Ramachandran plots
 END
 
 HEAD|Interfaces
-g_potential|calculates the electrostatic potential across the box
+g_bundle|analyzes bundles of axes, e.g. transmembrane helices
 g_density|calculates the density of the system
 g_densmap|calculates 2D planar or axial-radial density maps
-g_order|computes the order parameter per atom for carbon tails
+g_densorder|calculate surface fluctuations
 g_h2order|computes the orientation of water molecules
-g_bundle|analyzes bundles of axes, e.g. transmembrane helices
+g_hydorder|computes tetrahedrality parameters around a given atom
+g_order|computes the order parameter per atom for carbon tails
 g_membed|embeds a protein into a lipid bilayer
+g_potential|calculates the electrostatic potential across the box
 END
 
 
 HEAD|Covariance analysis
-g_covar|calculates and diagonalizes the covariance matrix
 g_anaeig|analyzes the eigenvectors
+g_covar|calculates and diagonalizes the covariance matrix
 make_edi|generate input files for essential dynamics sampling
 END
 
 HEAD|Normal modes
-grompp|makes a run input file
-mdrun|finds a potential energy minimum
-mdrun|calculates the Hessian
+g_anaeig|analyzes the normal modes
 g_nmeig|diagonalizes the Hessian 
 g_nmtraj|generate oscillating trajectory of an eigenmode
-g_anaeig|analyzes the normal modes
 g_nmens|generates an ensemble of structures from the normal modes
+grompp|makes a run input file
+mdrun|finds a potential energy minimum and calculates the Hessian
 END

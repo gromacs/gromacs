@@ -60,6 +60,10 @@ extern "C" {
 #ifndef M_SQRT2
 #define M_SQRT2 sqrt(2.0)
 #endif
+
+#ifndef M_1_PI
+#define M_1_PI      0.31830988618379067154
+#endif
     
 /* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
 /* for n=1, w0 = 1 */
@@ -98,8 +102,19 @@ real    sign(real x,real y);
 int		gmx_nint(real a);
 real    sign(real x,real y);
 real    cuberoot (real a);
-real    gmx_erf(real x);
-real    gmx_erfc(real x);
+double  gmx_erfd(double x);
+double  gmx_erfcd(double x);
+float   gmx_erff(float x);
+float   gmx_erfcf(float x);
+#ifdef GMX_DOUBLE
+#define gmx_erf(x)   gmx_erfd(x)
+#define gmx_erfc(x)  gmx_erfcd(x)
+#else
+#define gmx_erf(x)   gmx_erff(x)
+#define gmx_erfc(x)  gmx_erfcf(x)
+#endif
+
+gmx_bool gmx_isfinite(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *
@@ -163,6 +178,14 @@ gmx_log2(real x)
     return log( x ) * iclog2;
 }
 
+/*! /brief Multiply two large ints
+ *
+ *  Returns true when overflow did not occur.
+ */
+gmx_bool
+check_int_multiply_for_overflow(gmx_large_int_t a,
+                                gmx_large_int_t b,
+                                gmx_large_int_t *result);
 
 #ifdef __cplusplus
 }

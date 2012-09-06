@@ -95,7 +95,7 @@
 /*
  * for unit alignment
  */
-const static char xdr_zero[BYTES_PER_XDR_UNIT] = {0, 0, 0, 0};
+static char xdr_zero[BYTES_PER_XDR_UNIT] = {0, 0, 0, 0};
 
 static xdr_uint32_t xdr_swapbytes(xdr_uint32_t x)
 {

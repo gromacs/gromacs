@@ -1,4 +1,11 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
+# Keep CMake suitably quiet on Cygwin
+set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
+
+# override bugs on OS X where Cmake picks gcc (GNU) for C instead of system default cc (Clang).
+if(APPLE)
+    set(CMAKE_C_COMPILER_INIT "cc")
+endif(APPLE)
 
 project(Gromacs)
 include(Dart)
@@ -12,7 +19,7 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.5.3-dev")
+set(PROJECT_VERSION "4.6-dev")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -22,14 +29,14 @@ endif (CUSTOM_VERSION_STRING)
 set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
-SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "3")
+SET(CPACK_PACKAGE_VERSION_MINOR "6")
+#SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
 set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
@@ -39,53 +46,86 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
 
+set(GMX_USE_RELATIVE_INSTALL_PATH OFF CACHE STRING "Use relative paths not absolute paths for cmake install. Has only an effect on cpack.")
+mark_as_advanced(GMX_USE_RELATIVE_INSTALL_PATH)
+
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance molecular simulation")
-set(CPACK_SET_DESTDIR "ON")
-set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
+if (NOT GMX_USE_RELATIVE_INSTALL_PATH)
+    set(CPACK_SET_DESTDIR "ON")
+endif()
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
+set(CPACK_SOURCE_IGNORE_FILES ".isreposource;.git;.gitignore")
+set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
+SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/man;man")
 
 #must come after all cpack settings!
 include(CPack)
 
+########################################################################
+# Check and warn if cache generated on a different host is being reused
+########################################################################
+if(CMAKE_HOST_UNIX)
+    execute_process(COMMAND hostname
+                    OUTPUT_VARIABLE TMP_HOSTNAME
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}")
+        message(WARNING "
+            The CMake cache, probably generated on a different host (${GMX_BUILD_HOSTNAME}),
+            is being reused! This could lead to inconsitencies; therefore, it is
+            recommended to regenerate the cache!")
+    endif()
+    set(GMX_BUILD_HOSTNAME "${TMP_HOSTNAME}" CACHE INTERNAL
+            "Hostname of the machine where the cache was generated.")
+endif()
 
 ########################################################################
-# Fix stupid flags on MSVC
+# Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
-IF(CMAKE_GENERATOR MATCHES "Visual Studio")
+IF( WIN32 AND NOT CYGWIN)
+  option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
+  mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+  SET(SHARED_LIBS_DEFAULT OFF)  #is currently not working on Windows
+
+  IF (GMX_PREFER_STATIC_LIBS)
+    #Only setting Debug and Release flags. Others configurations current not used.
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
-    SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
+  ENDIF()
 
-set(GMX_EXTRA_LIBRARIES)
+  #Workaround for cmake bug 13174. Replace deprecated options.
+  IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
+    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+  ENDIF()
+  IF( CMAKE_CXX_COMPILER_ID MATCHES "Intel" )
+    STRING(REPLACE /GZ /RTC1 CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    STRING(REPLACE /GX /EHsc CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
 
+    STRING(REPLACE /GX /EHsc CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
+  ENDIF()
+ENDIF()
 
-
-######################################################################
-# compiler tests
-# these need ot be done early (before further tests).
-#####################################################################
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-include(gmxCFlags)
-gmx_c_flags()
 
 ########################################################################
 # User input options                                                   #
 ########################################################################
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS (cannot be combined with MPI yet)" ON)
+option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_POWERPC_INVSQRT "Use PowerPC hardware 1/sqrt" OFF)
@@ -93,11 +133,21 @@ mark_as_advanced(GMX_POWERPC_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
-set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
+
+include(gmxDetectAcceleration)
+if(NOT DEFINED GMX_ACCELERATION)
+    if(CMAKE_CROSSCOMPILING)
+        set(GMX_SUGGESTED_ACCELERATION "None")
+    else(CMAKE_CROSSCOMPILING)
+        gmx_detect_acceleration(GMX_SUGGESTED_ACCELERATION)
+    endif(CMAKE_CROSSCOMPILING)
+endif(NOT DEFINED GMX_ACCELERATION)
+
+set(GMX_ACCELERATION "@GMX_SUGGESTED_ACCELERATION@"
+    CACHE STRING "Accelerated kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
-    CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
+    CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
@@ -105,17 +155,13 @@ set(GMX_QMMM_PROGRAM "none"
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
-option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
-mark_as_advanced(GMX_DLOPEN)
+option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
+mark_as_advanced(GMX_LOAD_PLUGINS)
 
-
-option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
-mark_as_advanced(GMX_IA32_ASM)
-option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
-mark_as_advanced(GMX_X86_64_ASM)
+option(GMX_GPU  "Enable GPU acceleration" ON)
+option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -126,6 +172,59 @@ if(UNIX AND NOT APPLE)
     option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
+
+option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
+mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
+
+######################################################################
+# compiler tests
+# these need ot be done early (before further tests).
+#####################################################################
+
+# cmake/Check{C,CXX}CompilerFlag.cmake are lifted from CMake git next
+# branch (proposed for v2.8.9) to be able to detect invalid options
+# with the Intel Compilers.
+# Remove these files from the source tree when a CMake version that
+# includes the features in question becomes required.
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# OpenMP check must come before other CFLAGS!
+if(GMX_OPENMP)
+    find_package(OpenMP)
+    if(OPENMP_FOUND)
+        #- only set linker flag, if user didn't set them manual
+        #- cmake on windows doesn't support linker flags passed to target_link_libraries
+        #  (cmake treats /openmp as \openmp library file) and no openmp linker flags are needed
+        if(NOT (WIN32 AND NOT CYGWIN))
+            if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP)
+                set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
+                set(OpenMP_SHARED_LINKER_FLAGS "")
+            else()
+                if(NOT DEFINED OpenMP_LINKER_FLAGS)
+                    set(OpenMP_LINKER_FLAGS "${OpenMP_C_FLAGS}")
+                endif()
+                if(NOT DEFINED OpenMP_SHARED_LINKER_FLAGS)
+                    set(OpenMP_SHARED_LINKER_FLAGS "${OpenMP_C_FLAGS}")
+                endif()
+            endif()
+        endif()
+    else(OPENMP_FOUND)
+        message(WARNING
+                "Compiler not supporting OpenMP. This might hurt your performance a lot, "
+                "in particular with GPUs. Try using a different compiler (Intel is good on x86) "
+                "if you can - for now we are proceeding by turning off OpenMP.")
+        set(GMX_OPENMP OFF CACHE STRING "Compiler does not support OpenMP." FORCE)
+    endif(OPENMP_FOUND)
+endif()
+
+
+include(gmxCFlags)
+gmx_c_flags()
+
+include(gmxGetCompilerVersion)
+get_compiler_version()
+
 
 ########################################################################
 # Set up binary and library suffixing 
@@ -145,17 +244,22 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
   if (GMX_OPENMM)
-    set (GMX_BINARY_SUFFIX "-gpu")
-    set (GMX_LIBS_SUFFIX "_gpu")
+    set (GMX_BINARY_SUFFIX "-openmm")
+    set (GMX_LIBS_SUFFIX "_openmm")
   endif(GMX_OPENMM)
   mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"") 
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 else(GMX_DEFAULT_SUFFIX)
   mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 endif(GMX_DEFAULT_SUFFIX)
+set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
@@ -171,49 +275,12 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 #Process MPI settings
 ########################################################################
-include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
-if(GMX_MPI)
-	MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     OpenMPI version < 1.4.1
-                     MVAPICH2 version <= 1.4.1                               *")
-    if(GMX_THREADS)
-        #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
-        set(GMX_THREADS OFF CACHE BOOL 
-            "Thread-based parallelization conflicts with MPI." FORCE)
-    endif(GMX_THREADS)
-    find_package(MPI)
-    if(MPI_FOUND)
-        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
-	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
-        
-        include_directories(${MPI_INCLUDE_PATH})
-        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
-        add_definitions( -DMPI ) #for FAHCORE
-        include(gmxTestMPI_IN_PLACE)
-        if (GMX_MPI_IN_PLACE)
-            gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
-        endif (GMX_MPI_IN_PLACE)
-    else(MPI_FOUND)
-        message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
-    endif(MPI_FOUND)
-    include(gmxTestCatamount)
-    gmx_test_catamount(GMX_CRAY_XT3)
-    if(GMX_CRAY_XT3)
-        set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_CRAY_XT3")
-        set(GMX_NO_SYSTEM 1)
-        set(GMX_NO_NICE 1)
-    endif(GMX_CRAY_XT3)
-    set(GMX_LIB_MPI 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
-endif(GMX_MPI)
-
+include(gmxManageMPI)
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
-    cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
     string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
     if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
@@ -224,11 +291,16 @@ if(GMX_OPENMM)
     if(GMX_MPI)
         message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
     endif(GMX_MPI)
-    if(GMX_THREADS)
-        message(STATUS "Threads are  not compatible with OpenMM build, disabled!")
-        set(GMX_THREADS OFF CACHE BOOL 
-		"Threads are not compatible with OpenMM build, disabled!" FORCE)
-    endif(GMX_THREADS)
+    if(GMX_THREAD_MPI)
+        message(STATUS "Thread-MPI not compatible with OpenMM, disabled!")
+        set(GMX_THREAD_MPI OFF CACHE BOOL
+		"Thread-MPI not compatible with OpenMM build, disabled!" FORCE)
+    endif(GMX_THREAD_MPI)
+    if(GMX_OPENMP)
+        message(STATUS "OpenMP multithreading not compatible with OpenMM, disabled")
+        set(GMX_OPENMP OFF CACHE BOOL
+            "OpenMP multithreading not compatible with OpenMM, disabled!" FORCE)
+    endif()
     if(GMX_SOFTWARE_INVSQRT)
         set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
                 "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
@@ -247,10 +319,10 @@ if(GMX_OPENMM)
     endif()
     # mark as advanced the unused variables
     mark_as_advanced(FORCE GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
-        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)
+        GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
 else(GMX_OPENMM)
      mark_as_advanced(CLEAR GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
-        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)   
+        GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
 endif(GMX_OPENMM)
 
 
@@ -263,6 +335,7 @@ check_include_files(math.h       HAVE_MATH_H)
 check_include_files(limits.h     HAVE_LIMITS_H)
 check_include_files(memory.h     HAVE_MEMORY_H)
 check_include_files(unistd.h	 HAVE_UNISTD_H)
+check_include_files(direct.h	 HAVE_DIRECT_H)
 check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(stdint.h	 HAVE_STDINT_H)
 check_include_files(stdlib.h	 HAVE_STDLIB_H)
@@ -275,11 +348,6 @@ check_include_files(sys/stat.h   HAVE_SYS_STAT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(rpc/rpc.h    HAVE_RPC_RPC_H)
 check_include_files("rpc/rpc.h;rpc/xdr.h"    HAVE_RPC_XDR_H)
-# SSE support
-check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
-check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
-check_include_files(pmmintrin.h  HAVE_PMMINTRIN_H)
-check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
 check_include_files(io.h  		 HAVE_IO_H)
 
 
@@ -294,12 +362,13 @@ check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
-check_function_exists(isfinite          HAVE_ISFINITE)
-check_function_exists(_isfinite         HAVE__ISFINITE)
 check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
+check_function_exists(lstat             HAVE_LSTAT)
+check_function_exists(sigaction         HAVE_SIGACTION)
+
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -362,12 +431,17 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 if(UNIX AND NOT APPLE)
     if(GMX_PREFER_STATIC_LIBS)
         SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-        if(BUILD_SHARED_LIBS)
-            message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
-            set(BUILD_SHARED_LIBS OFF CACHE BOOL "Enable shared libraries (can be problematic with MPI, Windows)" FORCE)
+        if(SHARED_LIBS_DEFAULT)
+            if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
+                message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
+            elseif(NOT DEFINED BUILD_SHARED_LIBS) #Change default to OFF. Don't warn if it's already off.
+                message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
+                set(SHARED_LIBS_DEFAULT OFF)
+            endif()
         endif()
     endif()
 endif()
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 
 option(GMX_XML "Use libxml2 to parse xml files" ON)
 if (GMX_XML)
@@ -401,16 +475,13 @@ if (GMX_X11)
 	endif(X11_FOUND)
 endif(GMX_X11)
 
-if(GMX_THREADS)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREADS")
+if(GMX_THREAD_MPI)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     include(ThreadMPI)
     set(THREAD_MPI_LIB thread_mpi)
     set(GMX_MPI 1)
     string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
-    if(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
-        message(FATAL_ERROR "FFTW2 can't be used with threads. Try fftw3 or mkl.")
-    endif()
-endif(GMX_THREADS)
+endif(GMX_THREAD_MPI)
 
 if(GMX_OPENMM)
     set(CUDA_BUILD_EMULATION OFF)
@@ -422,30 +493,95 @@ if(GMX_OPENMM)
     find_package(OpenMM) 
 endif(GMX_OPENMM)
 
+
+if(GMX_GPU)
+    if(GMX_DOUBLE)
+        message(FATAL_ERROR "GPU acceleration is not available in double precision!")
+    endif()
+
+    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    if(MSVC)
+        find_package(CUDA 4.1)
+    else()
+        find_package(CUDA 3.2)
+    endif()
+
+    if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
+        message(FATAL_ERROR "
+    mdrun supports native GPU acceleration on NVIDIA hardware with compute
+    capability >=2.0. This requires the NVIDIA CUDA library, which was not
+    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
+
+    CPU or GPU acceleration can be selected at runtime, but if you are
+    sure you can not make use of GPU acceleration, disable it by setting
+    the CMake variable GMX_GPU=OFF.")
+    endif()
+
+    if(NOT GMX_OPENMP)
+        message(WARNING "
+    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreding.
+    Without OpenMP only a single CPU core per GPU can be used which is suboptimal.
+    Note that with MPI multiple processes can be forced to use a single GPU, but this
+    typically inefficient.")
+    endif()
+
+    include(gmxManageNvccConfig)
+
+    # Check whether we can use atomic operations needed for polling wait for GPU
+    # (to avoid the cudaStreamSynchronize + ECC bug).
+    # With thread-MPI testing atomics has already been carried out, but without
+    # thread-MPI we need to invoke the atomics test independently.
+    if (NOT GMX_THREAD_MPI)
+        set(TEST_TMPI_ATOMICS_ONLY ON CACHE INTERNAL
+            "Test only the atomic operations of thread-MPI.")
+        include(ThreadMPI)
+    endif()
+
+    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
+    # but it's too cumbersome to check the ld version and the flag should not hurt
+    if(CMAKE_COMPILER_IS_GNUCC)
+        set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
+    endif()
+endif()
+
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
    list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
 endif(APPLE)
 
+if(CYGWIN)
+    set(GMX_CYGWIN 1)
+endif(CYGWIN)
+
+if(WIN32 AND NOT CYGWIN)
+    set(GMX_NATIVE_WINDOWS 1)
+endif()
+
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
-        # We need at least git v1.5.1 be able to parse git's date output. If not 
-        # fund or the version is too small, we can't generate version information.
-        find_package(Git 1.5.1)
-        # this should at some point become VERSION_LESS
-        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.1")
-            message("No compatible git version found, won't be able to generate proper development version information.")
-            set(USE_VERSION_H OFF)
+        # We need at least git v1.5.3 be able to parse git's date output. If not
+        # found or the version is too small, we can't generate version information.
+        find_package(Git)
+
+	# Find out the git version
+	if(GIT_FOUND AND NOT GIT_VERSION)
+	  execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
+            OUTPUT_VARIABLE _exec_out
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+	  string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
+	  set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
+	  mark_as_advanced(GIT_VERSION)
+	endif()
+
+        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
+          message("No compatible git version found, won't be able to generate proper development version information.")
+          set(USE_VERSION_H OFF)
         endif()
     endif()
 else()
     set(USE_VERSION_H OFF)
 endif()
-
-if (GMX_DLOPEN)
-    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
-endif (GMX_DLOPEN)
 
 ########################################################################
 # Generate development version info for cache
@@ -459,10 +595,18 @@ endif (GMX_DLOPEN)
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)
+include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-include(gmxCheckBuildUserTime)
-gmx_check_build_user_time(BUILD_TIME BUILD_USER BUILD_MACHINE)
+include(gmxTestInlineASM)
+gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
+
+include(gmxSetBuildInformation)
+gmx_set_build_information()
+if(BUILD_CPU_FEATURES MATCHES "rdtscp")
+    # The timestep counter headers do not include config.h
+    add_definitions(-DHAVE_RDTSCP)
+endif(BUILD_CPU_FEATURES MATCHES "rdtscp")
 
 include(gmxTestFloatFormat)
 gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754 
@@ -474,7 +618,6 @@ gmx_test_large_files(GMX_LARGEFILES)
 check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
-gmx_test_retsigtype(RETSIGTYPE)
 gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
@@ -486,27 +629,10 @@ gmx_test_inline(RESTRICT_KEYWORD)
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
-include(gmxTestInlineASM)
-gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
-gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
-
-# turn on SSE if supported with reasonable defaults.
-if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
-
-    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
-    
-    if (GMX_64_BIT)
-      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
-    else (GMX_64_BIT)
-      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
-    endif (GMX_64_BIT)
-
-    # Determine the assembler/compiler to use
-  else()
-    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
-  endif()
-endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
+include(gmxTestIsfinite)
+gmx_test_isfinite(HAVE_ISFINITE)
+gmx_test__isfinite(HAVE__ISFINITE)
+gmx_test__finite(HAVE__FINITE)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
@@ -518,57 +644,131 @@ endif(NOT GMX_SYSTEM_XDR)
 # Process nonbonded accelerated kernels settings
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
-  # nothing to do
-elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+    # nothing to do
+elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
 
-    if(CMAKE_GENERATOR MATCHES "Visual Studio")
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
+    GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" GROMACS_C_FLAGS)
+    if(NOT GNU_SSE2_CFLAG)
+        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+    endif(NOT GNU_SSE2_CFLAG)
+
+    GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" GROMACS_CXX_FLAGS)
+    if(NOT GNU_SSE2_CXXFLAG)
+        GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+    endif(NOT GNU_SSE2_CXXFLAG)
+
+    # We dont warn for lacking SSE2 flag support, since that is probably standard today.
+
+    # Only test the include after we have tried to add the correct flag for SSE2 support
+    check_include_file(emmintrin.h  HAVE_EMMINTRIN_H ${GROMACS_C_FLAGS})
+
+    if(NOT HAVE_EMMINTRIN_H)
+        message(FATAL_ERROR "Cannot find emmintrin.h, which is required for SSE2 intrinsics support.")
+    endif(NOT HAVE_EMMINTRIN_H)
+
+    # The user should not be able to set this orthogonally to the acceleration
+    set(GMX_X86_SSE2 1)
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
+
+elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
+
+    GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" GROMACS_C_FLAGS)
+    if (NOT GNU_SSE4_CFLAG)
+        GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" GROMACS_C_FLAGS)
+    endif(NOT GNU_SSE4_CFLAG)
+    if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
+        message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
+        # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
+        # intrinsics when SSE2 support is enabled, so we try that instead.
+        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+    endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
+
+    GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" GROMACS_CXX_FLAG)
+    if (NOT GNU_SSE4_CXXFLAG)
+       GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" GROMACS_CXX_FLAGS)
+    endif(NOT GNU_SSE4_CXXFLAG)
+    if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
+        message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
+        # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
+        # intrinsics when SSE2 support is enabled, so we try that instead.
+        GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+    endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
+
+    # This must come after we have added the -msse4.1 flag on some platforms.
+    check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${GROMACS_C_FLAGS})
+
+    if(NOT HAVE_SMMINTRIN_H)
+        message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
+    endif(NOT HAVE_SMMINTRIN_H)
+
+    # The user should not be able to set this orthogonally to the acceleration
+    set(GMX_X86_SSE4_1 1)
+    set(GMX_X86_SSE2   1)
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+    endif()
+
+elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUAL "AVX_256")
+
+    # Set the AVX compiler flag for both these choices!
+
+    GMX_TEST_CFLAG(GNU_AVX_CFLAG "-mavx" GROMACS_C_FLAGS)
+    if (NOT GNU_AVX_CFLAG)
+        GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" GROMACS_C_FLAGS)
+    endif (NOT GNU_AVX_CFLAG)
+    if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
+        message(WARNING "No C AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
+    endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
+
+    GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" GROMACS_CXX_FLAGS)
+    if (NOT GNU_AVX_CXXFLAG)
+       GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" GROMACS_CXX_FLAGS)
+    endif (NOT GNU_AVX_CXXFLAG)
+    if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+       message(WARNING "No C++ AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
+    endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+
+    # Only test the header after we have tried to add the flag for AVX support
+    check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${GROMACS_C_FLAGS})
+
+    if(NOT HAVE_IMMINTRIN_H)
+        message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
+    endif(NOT HAVE_IMMINTRIN_H)
+
+    # AMD says we should include x86intrin.h for FMA support, but MSVC seems to do fine without it, so don't require it.
+    check_include_file(x86intrin.h HAVE_X86INTRIN_H ${GROMACS_C_FLAGS})
+
+    # The user should not be able to set this orthogonally to the acceleration
+    set(GMX_X86_SSE4_1 1)
+    set(GMX_X86_SSE2   1)
+
+    # But just enable one of the choices internally...
+    if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA")
+        set(GMX_X86_AVX_128_FMA 1)
+        if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+        endif()
     else()
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
+        # If we are not doing AVX_128, it must be AVX_256...
+        set(GMX_X86_AVX_256 1)
+        if (NOT ACCELERATION_QUIETLY)
+          message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+        endif()
     endif()
-	mark_as_advanced(GMX_ASM_USEASM-NASM)
-
-    if (NOT GMX_64_BIT)
-        # for 32-bit compiles, we might need to turn on sse 
-        CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
-        if (XFLAGS_SSE)
-            set(GROMACS_C_FLAGS "-msse2 ${GROMACS_C_FLAGS}")
-        endif (XFLAGS_SSE)
-        CHECK_CXX_COMPILER_FLAG("-msse2" XXFLAGS_SSE)
-        if (XXFLAGS_SSE)
-            set(GROMACS_CXX_FLAGS "-msse2 ${GROMACS_CXX_FLAGS}")
-        endif (XXFLAGS_SSE)
-    endif (NOT GMX_64_BIT)
-
-    if(GMX_IA32_ASM)
-      if(GMX_DOUBLE)
-        set(GMX_IA32_SSE2 1)
-      else()
-       set(GMX_IA32_SSE 1)
-      endif()
-    elseif(GMX_X86_64_ASM)
-      if(GMX_DOUBLE)
-       set(GMX_X86_64_SSE2 1)
-      else()
-        set(GMX_X86_64_SSE 1)
-      endif()
-    endif()
-
-#    if(HAVE_PMMINTRIN_H)
-#        set(GMX_SSE3 1)
-#    endif(HAVE_PMMINTRIN_H)
-#    if(HAVE_SMMINTRIN_H)
-#        set(GMX_SSE4_1 1)
-#    endif(HAVE_SMMINTRIN_H)
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
-    set(GMX_FORTRAN 1)
-    #these are switch on by default sometimes
-    set(GMX_IA32_ASM 0)
-    set(GMX_GMX_X86_64_ASM 0)
+
+#    Fortran is temporarily disabled while we push in nbNxN kernels.
+#    We need to fake it a bit here to avoid jenkins build errors!
+#    add_definitions(-DGMX_FORTRAN)
+
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
-    message(STATUS "Configuring for BlueGene")
+    if (NOT ACCELERATION_QUIETLY)
+      message(STATUS "Configuring for BlueGene")
+    endif()
     set(GMX_BLUEGENE 1)
     if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
         set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
@@ -577,32 +777,28 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on BlueGene" FORCE)
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
+    set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
-    set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use MASSV for BLAS on BlueGene" FORCE)
-    set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use MASSV for LAPACK on BlueGene" FORCE)
-    list(APPEND GMX_EXTRA_LIBRARIES massv)
+# Access to /etc/passwd is not available on the back end of BlueGene,
+# despite being detected by CMake. This can cause linker warnings
+# about harmless things in src/gmxlib/string2.h.
+    set(HAVE_PWD_H OFF)
+# The automatic testing for endianness does not work for the BlueGene cross-compiler
+    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
+    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
-elseif(${GMX_ACCELERATION} STREQUAL "IA64")
-    set(GMX_IA64_ASM 1)
-    set(DISABLE_WATERWATER_NLIST 1)
-    set(DISABLE_WATER_NLIST 1)
-elseif(${GMX_ACCELERATION} STREQUAL "ALTIVEC")
-    check_include_files(altivec.h HAVE_ALTIVEC_H)
-    if(HAVE_ALTIVEC_H)
-        set(GMX_PPC_ALTIVEC 1)
-    endif(HAVE_ALTIVEC_H)
 else(${GMX_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of auto, none, SSE, Fortran, BlueGene, Power6, ia64, altivec")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
+set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
 if(GMX_FORTRAN OR GMX_POWER6)
-    if (GMX_THREADS)
-        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
-    endif(GMX_THREADS)
+    if (GMX_THREAD_MPI)
+        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with thread-MPI and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
+    endif(GMX_THREAD_MPI)
     enable_language(Fortran)
     include(FortranCInterface)
     discover_fortran_mangling(prefix isupper suffix extra_under_score found)
@@ -612,13 +808,24 @@ if(GMX_FORTRAN OR GMX_POWER6)
     if(prefix)
       set(prefix "${prefix} ##")
     endif(prefix)
+    if(suffix)
+      set(suffix "## ${suffix}")
+      if(extrasuffix)
+	set(extrasuffix "${suffix}${extrasuffix}")
+      endif(extrasuffix)
+    else(suffix)
+      if(extrasuffix)
+	# Don't know if this is needed, but it can't hurt
+	set(extrasuffix "## ${extrasuffix}")
+      endif(extrasuffix)
+    endif(suffix)
 
     if(isupper)
-        set(F77_FUNCDEF   "${prefix} NAME ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} NAME ## ${suffix}${extrasuffix}")
+        set(F77_FUNCDEF   "${prefix} NAME ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} NAME ${extrasuffix}")
     else(isupper)
-        set(F77_FUNCDEF   "${prefix} name ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} name ## ${suffix}${extrasuffix}")
+        set(F77_FUNCDEF   "${prefix} name ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} name ${extrasuffix}")
     endif(isupper)
 else(GMX_FORTRAN OR GMX_POWER6)
         set(F77_FUNCDEF   "name ## _")
@@ -646,49 +853,24 @@ string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-#    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
-        find_package(FFTW3 REQUIRED)
-		include_directories(${FFTW3_INCLUDE_DIR})
-        set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
-        set(PKG_FFT "fftw3")
+        find_package(FFTW 3 COMPONENTS fftw)
     else(GMX_DOUBLE)
-        find_package(FFTW3F REQUIRED)
-        include_directories(${FFTW3F_INCLUDE_DIR})
-        set(FFT_LIBRARIES ${FFTW3F_LIBRARIES})
-        set(PKG_FFT "fftw3f")
+        find_package(FFTW 3 COMPONENTS fftwf)
     endif(GMX_DOUBLE)
-
-    if(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
-        MESSAGE(FATAL_ERROR "Cannot find fftw3 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
+    if(NOT FFTW_FOUND)
+      MESSAGE(FATAL_ERROR "Cannot find FFTW3 (with correct precision - libfftw3f for single precision GROMACS or libfftw3 for double precision GROMACS). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
+    endif(NOT FFTW_FOUND)
+    include_directories(${FFTW_INCLUDE_DIRS})
+    set(FFT_LIBRARIES ${FFTW_LIBRARIES})
+    set(PKG_FFT "${FFTW_PKG}")
 
     set(GMX_FFT_FFTW3 1)
 
-elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
-#    MESSAGE(STATUS "Using external FFT library - fftw2")
-    if(GMX_DOUBLE)
-        find_package(FFTW2 REQUIRED)
-    else(GMX_DOUBLE)
-        find_package(FFTW2F REQUIRED)
-    endif(GMX_DOUBLE)
+    if (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
+      message(WARNING "The fftw library found is compiled without SSE support, which makes it slow. Consider recompiling it or contact your admin")
+    endif (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
 
-    if(NOT FFTW2_FOUND)
-      	   MESSAGE(FATAL_ERROR "Cannot find fftw2 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW2_FOUND)
-    include_directories(${FFTW2_INCLUDE_DIR})
-    set(FFT_LIBRARIES ${FFTW2_LIBRARIES})
-    set(PKG_FFT_LIBS ${FFTW2_LIBRARIES})
-
-    if("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-        set(FFTW2_NAME_DFFTW 1)
-    elseif("${FFTW2_LIBRARIES}" MATCHES "sfftw")
-        set(FFTW2_NAME_SFFTW 1)
-    else("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-        set(FFTW2_NAME_FFTW 1) 
-    endif("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-
-    set(GMX_FFT_FFTW2 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
     find_package(MKL REQUIRED)
@@ -706,31 +888,94 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftw2, mkl, acml, fftpack")
+    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
+# enable threaded fftw3 if we've found it 
+if(FFTW3_THREADS OR FFTW3F_THREADS)
+    add_definitions(-DFFT5D_FFTW_THREADS)
+endif()
+
+set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
+set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
 # MKL has BLAS/LAPACK routines
-if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
-  set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
-  set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
-else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
-  set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
-  set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
+if(NOT HAVE_MKL AND NOT ACCELERATE_FRAMEWORK)
   if(GMX_EXTERNAL_BLAS)
-    #FindBLAS needs Fortran
-    enable_language(Fortran)
-    find_package(BLAS REQUIRED)
-    list(APPEND	GMX_EXTRA_LIBRARIES ${BLAS_LIBRARIES})
+    if (GMX_BLAS_USER)
+        list(APPEND GMX_EXTRA_LIBRARIES ${GMX_BLAS_USER})
+    else(GMX_BLAS_USER)
+        set(BLAS_FIND_QUIETLY ON)
+        find_package(BLAS)
+        if (BLAS_FOUND)
+          list(APPEND GMX_EXTRA_LIBRARIES ${BLAS_LIBRARIES})
+        else()
+          MESSAGE(STATUS "Using internal BLAS library")
+          set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external BLAS instead of built-in" FORCE)
+        endif()
+    endif(GMX_BLAS_USER)
   endif(GMX_EXTERNAL_BLAS)
   if(GMX_EXTERNAL_LAPACK)
-    #FindLAPACK needs Fortran
-    enable_language(Fortran)
-    find_package(LAPACK REQUIRED)
-    list(APPEND	GMX_EXTRA_LIBRARIES ${LAPACK_LIBRARIES})
+    if (GMX_LAPACK_USER)
+        list(APPEND GMX_EXTRA_LIBRARIES ${GMX_LAPACK_USER})
+    else(GMX_LAPACK_USER)
+        set(LAPACK_FIND_QUIETLY ON)
+        find_package(LAPACK)
+        if (LAPACK_FOUND)
+          list(APPEND GMX_EXTRA_LIBRARIES ${LAPACK_LIBRARIES})
+        else()
+          MESSAGE(STATUS "Using internal LAPACK library")
+          set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in" FORCE)
+        endif()
+    endif(GMX_LAPACK_USER)
   endif(GMX_EXTERNAL_LAPACK)
-endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
+endif()
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
+
+set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
+
+if(GMX_LOAD_PLUGINS)
+  if(CYGWIN OR NOT WIN32)
+    # Native Windows does not have, nor need dlopen
+    # Note that WIN32 is set with Cygwin, but Cygwin needs dlopen to use plug-ins
+    include(gmxTestdlopen)
+    gmx_test_dlopen(HAVE_DLOPEN)
+  endif()
+
+  # so, should we use plug-ins?
+  if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+    if(NOT VMD_QUIETLY)
+      MESSAGE(STATUS
+          "Found the ability to use plug-ins when building shared libaries, "
+          "so will compile to use plug-ins (e.g. to read VMD-supported file "
+          "formats).")
+    endif()
+    if(NOT GMX_VMD_PLUGIN_PATH)
+      find_package(VMD)
+    endif()
+    set(GMX_USE_PLUGINS ON)
+    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
+    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
+  else()
+    set(PKG_DL_LIBS)
+  endif()
+endif(GMX_LOAD_PLUGINS)
+set(VMD_QUIETLY TRUE CACHE INTERNAL "")
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
+    if(NOT CMAKE_CROSSCOMPILING)
+        option(GMX_BUILD_MANPAGES "Build man pages" ON)
+    else()
+        message(STATUS "Building the man pages is not available when "
+            "cross-compiling the developer version from git")
+    endif()
+else()
+    #make sure source package contains all man pages
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/man/man1/ngmx.1")
+        message(FATAL_ERROR "Man pages are missing from source package.")
+    endif()
+endif()
+mark_as_advanced(GMX_BUILD_MANPAGES)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
@@ -754,21 +999,56 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         "Flags used by the compiler during all build types" FORCE)
     set(CMAKE_EXE_LINKER_FLAGS 
         "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
-        CACHE STRING "Linker flags" FORCE) 
+        CACHE STRING "Linker flags for creating executables" FORCE) 
+    set(CMAKE_SHARED_LINKER_FLAGS 
+        "${GROMACS_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}" 
+        CACHE STRING "Linker flags for creating shared libraries" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
+
+######################################
+# Output compiler and CFLAGS used
+######################################
+execute_process(COMMAND ${CMAKE_C_COMPILER} --version RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
+#try executing just the compiler command if that failed...
+if(TMP_RESULT)
+    execute_process(COMMAND ${CMAKE_C_COMPILER} RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
+endif()
+string(LENGTH "${CC_VERSION}" len)
+if(len)
+    string(REGEX MATCH "[^\n]*" CC_VERSION "${CC_VERSION}")
+endif()
+
+set(BUILD_COMPILER "@CMAKE_C_COMPILER@ @CMAKE_C_COMPILER_ID@ @CC_VERSION@")
+set(BUILD_CFLAGS "@CMAKE_C_FLAGS@")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_DEBUG@")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELEASE@")
+elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_MINSIZEREL@")
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELWITHDEBINFO@")
+endif()
+
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if ( DEFINED LIB )
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB}")
+if (GMX_USE_RELATIVE_INSTALL_PATH)
+    set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
+    mark_as_advanced(GMX_INSTALL_PREFIX)
 else()
-    set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+    set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
 endif()
-set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
-set(DATA_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/gromacs)
-set(MAN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/share/man)
-set(INCL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+
+if ( NOT DEFINED GMXLIB )
+    set(GMXLIB lib)
+endif()
+set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
+set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
+set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/gromacs)
+set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
+set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
@@ -778,13 +1058,12 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "${LIB_INSTALL_DIR}")
+    set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
 add_subdirectory(share)
 add_subdirectory(include)
-add_subdirectory(man)
 add_subdirectory(src)
 add_subdirectory(scripts)
 
@@ -810,7 +1089,6 @@ include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
 	enable_testing()
-	add_test(TestBuildAll make)
 	add_subdirectory(tests)
 ENDIF()
 

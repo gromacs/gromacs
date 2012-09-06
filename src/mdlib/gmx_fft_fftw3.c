@@ -35,19 +35,22 @@
 #define FFTWPREFIX(name) fftwf_ ## name
 #endif
 
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi/threads.h"
+#endif
 
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* none of the fftw3 calls, except execute(), are thread-safe, so 
    we need to serialize them with this mutex. */
 static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool gmx_fft_threads_initialized=FALSE;
-#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex);
-#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex);
-#else /* GMX_THREADS */
+#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex)
+#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex)
+#else /* GMX_THREAD_MPI */
 #define FFTW_LOCK 
 #define FFTW_UNLOCK 
-#endif /* GMX_THREADS */
+#endif /* GMX_THREAD_MPI */
 
 /* We assume here that aligned memory starts at multiple of 16 bytes and unaligned memory starts at multiple of 8 bytes. The later is guranteed for all malloc implementation. 
    Consequesences:

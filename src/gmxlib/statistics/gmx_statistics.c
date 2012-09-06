@@ -40,14 +40,10 @@
 #include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
+#include "vec.h"
 #include "gmx_statistics.h"
 
-static double sqr(double x)
-{
-    return x*x;
-}
-
-static int gmx_nint(double x)
+static int gmx_dnint(double x)
 {
     return (int) (x+0.5);
 }
@@ -189,10 +185,10 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
         d2   = 0;
         for(i=0; (i<N); i++) 
         {
-            d2 += sqr(stats->x[i]-stats->y[i]);
+            d2 += dsqr(stats->x[i]-stats->y[i]);
             if ((stats->dy[i]) && (weight == elsqWEIGHT_Y))
             {
-                w = 1/sqr(stats->dy[i]);
+                w = 1/dsqr(stats->dy[i]);
             }
             else
             {
@@ -201,11 +197,11 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             
             wtot  += w;
             
-            xx    += w*sqr(stats->x[i]);
-            xx_nw += sqr(stats->x[i]);
+            xx    += w*dsqr(stats->x[i]);
+            xx_nw += dsqr(stats->x[i]);
             
-            yy    += w*sqr(stats->y[i]);
-            yy_nw += sqr(stats->y[i]);
+            yy    += w*dsqr(stats->y[i]);
+            yy_nw += dsqr(stats->y[i]);
             
             yx    += w*stats->y[i]*stats->x[i];
             yx_nw += stats->y[i]*stats->x[i];
@@ -219,7 +215,7 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
       
         /* Compute average, sigma and error */
         stats->aver       = sy_nw/N;
-        stats->sigma_aver = sqrt(yy_nw/N - sqr(sy_nw/N));
+        stats->sigma_aver = sqrt(yy_nw/N - dsqr(sy_nw/N));
         stats->error      = stats->sigma_aver/sqrt(N);
 
         /* Compute RMSD between x and y */
@@ -231,10 +227,10 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
         yy_nw /= N;
         sx_nw /= N;
         sy_nw /= N;
-        ssxx = N*(xx_nw - sqr(sx_nw));
-        ssyy = N*(yy_nw - sqr(sy_nw));
+        ssxx = N*(xx_nw - dsqr(sx_nw));
+        ssyy = N*(yy_nw - dsqr(sy_nw));
         ssxy = N*(yx_nw - (sx_nw*sy_nw));
-        stats->Rdata = sqrt(sqr(ssxy)/(ssxx*ssyy)); 
+        stats->Rdata = sqrt(dsqr(ssxy)/(ssxx*ssyy));
         
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
@@ -262,8 +258,8 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             {
                 dy = 1;
             }
-            chi2aa += sqr((stats->y[i]-(stats->aa*stats->x[i]))/dy);
-            chi2   += sqr((stats->y[i]-(stats->a*stats->x[i]+stats->b))/dy);
+            chi2aa += dsqr((stats->y[i]-(stats->aa*stats->x[i]))/dy);
+            chi2   += dsqr((stats->y[i]-(stats->a*stats->x[i]+stats->b))/dy);
         }
         if (N > 2) 
         {
@@ -542,7 +538,7 @@ int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int *nb,
     }
     else
     {
-        nbins = gmx_nint((delta)/binwidth + 0.5);
+        nbins = gmx_dnint((delta)/binwidth + 0.5);
     }
     snew(*x,nbins);
     snew(nindex,nbins);
@@ -683,10 +679,10 @@ static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
       chi2 = 0;
       if (xd != NULL) {
       for(i=0; i<n; i++)
-      chi2 += sqr(yr[i] - ((*a)*xd[i] + (*b)));
+      chi2 += dsqr(yr[i] - ((*a)*xd[i] + (*b)));
       } else {
       for(i=0; i<n; i++)
-      chi2 += sqr(yr[i] - ((*a)*xr[i] + (*b)));
+      chi2 += dsqr(yr[i] - ((*a)*xr[i] + (*b)));
       }
   
       if (n > 2)
@@ -744,10 +740,10 @@ int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
       gmx_fatal(FARGS,"Zero or negative weigths in linear regression analysis");
     
       for (i=0; i<n; i++) {
-      s_2  = sqr(1.0/dy[i]);
-      sxx += s_2*sqr(x[i]);
+      s_2  = dsqr(1.0/dy[i]);
+      sxx += s_2*dsqr(x[i]);
       sxy += s_2*y[i]*x[i];
-      syy += s_2*sqr(y[i]);
+      syy += s_2*dsqr(y[i]);
       sx  += s_2*x[i];
       sy  += s_2*y[i];
       w   += s_2;
@@ -764,7 +760,7 @@ int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
   
       *chi2=0;
       for(i=0; i<n; i++)
-      *chi2+=sqr((y[i]-((*a)*x[i]+(*b)))/dy[i]);
+      *chi2+=dsqr((y[i]-((*a)*x[i]+(*b)))/dy[i]);
       *chi2 = *chi2/w;
   
       *da = sqrt(*chi2/((n-2)*dx2));

@@ -1,4 +1,4 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * 
  *                This source code is part of
  * 
@@ -267,25 +267,25 @@ int gmx_nmeig(int argc,char *argv[])
     "output. In this case, they will no longer be exactly orthogonal in the",
     "standard Cartesian norm, but in the mass-weighted norm they would be.[PAR]",
     "This program can be optionally used to compute quantum corrections to heat capacity",
-    "and enthalpy by providing an extra file argument -qcorr. See gromacs",
-    "manual chapter 1 for details. The result includes subtracting a harmonic",
+    "and enthalpy by providing an extra file argument [TT]-qcorr[tt]. See the GROMACS",
+    "manual, Chapter 1, for details. The result includes subtracting a harmonic",
     "degree of freedom at the given temperature.",
     "The total correction is printed on the terminal screen.",
-    "The recommended way of getting the corrections out is:",
-    "g_nmeig -s topol.tpr -f nm.mtx -first 7 -last 10000 -T 300 -qc [-constr]",
-    "The constr should be used when bond constraints were used during the",
-    "simulation [BB]for all the covalent bonds[bb]. If this is not the case",
-    "you need to analyse the quant_corr.xvg file yourself.[PAR]",
-    "To make things more flexible, the program can also take vsites into account",
+    "The recommended way of getting the corrections out is:[PAR]",
+    "[TT]g_nmeig -s topol.tpr -f nm.mtx -first 7 -last 10000 -T 300 -qc [-constr][tt][PAR]",
+    "The [TT]-constr[tt] option should be used when bond constraints were used during the",
+    "simulation [BB]for all the covalent bonds[bb]. If this is not the case, ",
+    "you need to analyze the [TT]quant_corr.xvg[tt] file yourself.[PAR]",
+    "To make things more flexible, the program can also take virtual sites into account",
     "when computing quantum corrections. When selecting [TT]-constr[tt] and",
-    "[TT]-qc[tt] the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as well.",
-    "Again, if you think you know it better, please check the eigenfreq.xvg",
+    "[TT]-qc[tt], the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as well.",
+    "Again, if you think you know it better, please check the [TT]eigenfreq.xvg[tt]",
     "output." 
   };
     
   static gmx_bool bM=TRUE,bCons=FALSE;
-  static int  begin=1,end=50;
-  static real T=298.15;
+  static int  begin=1,end=50,maxspec=4000;
+  static real T=298.15,width=1;
   t_pargs pa[] = 
   {
     { "-m",  FALSE, etBOOL, {&bM},
@@ -296,12 +296,16 @@ int gmx_nmeig(int argc,char *argv[])
       "First eigenvector to write away" },
     { "-last",  FALSE, etINT, {&end}, 
       "Last eigenvector to write away" },
+    { "-maxspec", FALSE, etINT, {&maxspec},
+      "Highest frequency (1/cm) to consider in the spectrum" },
     { "-T",     FALSE, etREAL, {&T},
       "Temperature for computing quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations" },
     { "-constr", FALSE, etBOOL, {&bCons},
       "If constraints were used in the simulation but not in the normal mode analysis (this is the recommended way of doing it) you will need to set this for computing the quantum corrections." },
+    { "-width",  FALSE, etREAL, {&width},
+      "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
   };
-  FILE       *out,*qc;
+  FILE       *out,*qc,*spec;
   int        status,trjout;
   t_topology top;
   gmx_mtop_t mtop;
@@ -321,10 +325,12 @@ int gmx_nmeig(int argc,char *argv[])
   real       value,omega,nu;
   real       factor_gmx_to_omega2;
   real       factor_omega_to_wavenumber;
+  real       *spectrum=NULL;
+  real       wfac;
   t_commrec  *cr;
   output_env_t oenv;
   const char *qcleg[] = { "Heat Capacity cV (J/mol K)", 
-			  "Enthalpy H (kJ/mol)" };
+                          "Enthalpy H (kJ/mol)" };
   real *                 full_hessian   = NULL;
   gmx_sparsematrix_t *   sparse_hessian = NULL;
 
@@ -333,9 +339,10 @@ int gmx_nmeig(int argc,char *argv[])
     { efTPX, NULL, NULL,         ffREAD  },
     { efXVG, "-of", "eigenfreq", ffWRITE },
     { efXVG, "-ol", "eigenval",  ffWRITE },
+    { efXVG, "-os", "spectrum",  ffOPTWR },
     { efXVG, "-qc", "quant_corr",  ffOPTWR },
     { efTRN, "-v", "eigenvec",  ffWRITE }
-  }; 
+  };
 #define NFILE asize(fnm) 
 
   cr = init_par(&argc,&argv);
@@ -449,7 +456,7 @@ int gmx_nmeig(int argc,char *argv[])
                       
   /* now write the output */
   fprintf (stderr,"Writing eigenvalues...\n");
-  out=xvgropen(opt2fn("-ol",NFILE,fnm), 
+  out=xvgropen(opt2fn("-ol",NFILE,fnm),
                "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]",
                oenv);
   if (output_env_get_print_xvgr_codes(oenv)) {
@@ -462,7 +469,7 @@ int gmx_nmeig(int argc,char *argv[])
   for (i=0; i<=(end-begin); i++)
       fprintf (out,"%6d %15g\n",begin+i,eigenvalues[i]);
   ffclose(out);
-  
+
 
   if (opt2bSet("-qc",NFILE,fnm)) {
     qc = xvgropen(opt2fn("-qc",NFILE,fnm),"Quantum Corrections","Eigenvector index","",oenv);
@@ -482,7 +489,22 @@ int gmx_nmeig(int argc,char *argv[])
     else 
       fprintf(out,"@ subtitle \"not mass weighted\"\n");
   }
-  
+  /* Spectrum ? */
+  spec = NULL;
+  if (opt2bSet("-os",NFILE,fnm) && (maxspec > 0))
+  {
+      snew(spectrum,maxspec);
+      spec=xvgropen(opt2fn("-os",NFILE,fnm), 
+                    "Vibrational spectrum based on harmonic approximation",
+                    "\\f{12}w\\f{4} (cm\\S-1\\N)",
+                    "Intensity [Gromacs units]",
+                    oenv);
+      for(i=0; (i<maxspec); i++)
+      {
+          spectrum[i] = 0;
+      }
+  }
+
   /* Gromacs units are kJ/(mol*nm*nm*amu),
    * where amu is the atomic mass unit.
    *
@@ -503,6 +525,14 @@ int gmx_nmeig(int argc,char *argv[])
       nu    = 1e-12*omega/(2*M_PI);
       value = omega*factor_omega_to_wavenumber;
       fprintf (out,"%6d %15g\n",i,value);
+      if (NULL != spec)
+      {
+          wfac = eigenvalues[i-begin]/(width*sqrt(2*M_PI));
+          for(j=0; (j<maxspec); j++)
+          {
+              spectrum[j] += wfac*exp(-sqr(j-value)/(2*sqr(width)));
+          }
+      }
       if (NULL != qc) {
           qcv = cv_corr(nu,T);
           qu  = u_corr(nu,T);
@@ -517,6 +547,14 @@ int gmx_nmeig(int argc,char *argv[])
       }
   }
   ffclose(out);
+  if (NULL != spec)
+  {
+      for(j=0; (j<maxspec); j++)
+      {
+          fprintf(spec,"%10g  %10g\n",1.0*j,spectrum[j]);
+      }
+      ffclose(spec);
+  }
   if (NULL != qc) {
     printf("Quantum corrections for harmonic degrees of freedom\n");
     printf("Use appropriate -first and -last options to get reliable results.\n");

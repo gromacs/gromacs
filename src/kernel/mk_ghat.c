@@ -83,24 +83,6 @@ real  uhat(int porder,real k1,real k2,real k3,real h1,real h2,real h3)
     return fff;
 }
 
-real  uhat1D(int porder,real k1,real h1)
-{
-  real fac1;
-  real fff;
-  int  i;
-  
-  fac1 = sinx_x(k1*h1*0.5);
-
-  fff  = 1;
-  for(i=1; (i<=porder+1); i++)
-    fff *= fac1;
-
-  if (fabs(fff) < tol)
-    return 0.0;
-  else
-    return fff;
-}
-
 real shat(real acut,real kmag,real r1)
 {
   return gk(kmag,acut,r1);
@@ -215,25 +197,6 @@ real usqsq(int porder,real k1,real k2,real k3,real h1,real h2,real h3)
   return tmp*tmp;
 }
 
-real usqsq1D(int porder,real k1,real h1)
-{
-  const real tt=2.0/3.0;
-  const real tx=2.0/15.0;
-  real t1,t12,tmp;
-  
-  t1 = sin(k1*h1*0.5);
-  t12 = t1*t1;
-  
-  if (porder == 1) 
-    tmp = (1.0-tt*t12);
-  else if (porder == 2) 
-    tmp = ( (1.0 - t12 + tx*t12*t12));
-  else 
-    gmx_fatal(FARGS,"porder = %d in usqsq",porder);
-  
-  return tmp*tmp;
-}
-
 real  ursum(int term,int porder,real acut,real r1,
 	    real k1,real k2,real k3,real h1,real h2,real h3,int nalias)
 {
@@ -289,54 +252,6 @@ real  ursum(int term,int porder,real acut,real r1,
 	  }
 	}
       }
-    }
-  }
-  return urs;
-}
- 
-real  ursum1D(int term,int porder,real acut,real r1,real k1,real h1,int nalias)
-{
-  real kt,ksq,kmag;
-/*   real kcutsq; */
-  real kn1,urs,tmp;
-  real h_1;
-  int  n1;
-
-  real twopi=2*M_PI;
-  h_1=twopi/h1;
-  /*
-    c
-    c     for large enough values of k, the terms become negligable
-    c     if shat(k) = exp(-k^2/4*acut) < eps
-    c     kcutsq = 4*alpha* (-ln(eps))
-    c     eps = 10^-6, -ln(eps) = 14
-    c     eps = 10^-10, -ln(eps) = 23
-    c     eps = 10^-20, -ln(eps) = 46
-    c
-    */
-/*   kcutsq = 4.0*acut*115; */
-
-  if (nalias==0) {
-    if (term==1) kt = k1;
-    ksq = k1*k1;
-    kmag = sqrt(ksq);
-    tmp = uhat1D(porder,k1,h1);
-    urs = tmp*tmp*kt*shat(acut,kmag,r1)/(EPSILON0*ksq);
-  }
-  else {
-    urs = 0.0;
-    for(n1 = -nalias; (n1<= nalias); n1++) {
-      kn1 = k1 + n1*h_1;
-      ksq = kn1*kn1;
-      /*c              if (ksq.lt.kcutsq) then*/
-      if (term==XX) kt = kn1;
-      if (kt != 0.0) {
-	kmag = sqrt(ksq);
-	tmp = uhat1D(porder,kn1,h1);
-	if (tmp != 0.0)
-	  urs = urs + tmp*tmp*kt*shat(acut,kmag,r1)/(EPSILON0*ksq);
-      }
-      /*c              endif*/
     }
   }
   return urs;
@@ -465,81 +380,6 @@ void calc(gmx_bool bSym,gmx_bool bVerbose,
   *qqopt = qopt/(EPSILON0*box1*box2*box3);
 }
 
-void calc1D(gmx_bool bSym,gmx_bool bVerbose,
-	    const int n1max,const int n2max,const int n3max,
-	    const real h1,const real h2,const real h3,
-	    int nalias,int porder,real acut,real r1,const real alpha,
-	    const gmx_bool bSearch,
-	    real ***ghat,real *ppval,real *zzval,real *eeref,real *qqopt)
-{     
-  real box1,box2,box3;
-  real k1,k2,k3;
-  real gnumer,dsq,gdenom;
-  real rsqal;
-  real symfac;
-  int  l1;
-  real twopi=2*M_PI;
-  real d1,u1;
-  real pval,zval,eref,qopt;
-  int  N1MAX;
-/*   int  N2MAX,N3MAX; */
-  
-  if (bSym) {
-    N1MAX = n1max/2+1;
-/*     N2MAX = n2max/2+1; */
-/*     N3MAX = n3max/2+1; */
-  }
-  else {
-    N1MAX = n1max;
-/*     N2MAX = n2max; */
-/*     N3MAX = n3max; */
-  }
-    
-  box1 = n1max*h1;
-  box2 = n2max*h2;
-  box3 = n3max*h3;
-
-  pval = 0.0;
-  zval = 0.0;
-  eref = 0.0;
-  qopt = 0.0;
-
-  k2 = k3 = 0;
-  
-  for(l1=0; (l1<N1MAX); l1++) {
-    if (bVerbose)
-      fprintf(stderr,"\rl1=%5d  qopt=%12.6e",l1,qopt);
-      
-    k1   = twopi*l1/box1;
-    d1   = dhat(alpha,k1,h1);
-    
-    if (l1 == 0) 
-      ghat[0][0][0] = 0.0;
-    else {
-      u1   = ursum1D(XX,porder,acut,r1,k1,h1,nalias);
-	  
-      gnumer = d1*u1;
-      dsq    = d1*d1;
-      gdenom = dsq*usqsq(porder,k1,k2,k3,h1,h2,h3);
-      if (bSym)
-	symfac = sym(l1,n1max);
-      else
-	symfac = 1.0;
-      
-      rsqal  = crsqal(acut,r1,k1,k2,k3,h1,h2,h3,nalias);
-      
-      if (gdenom != 0)	  
-	qopt  += symfac*(rsqal - (gnumer*gnumer)/gdenom);
-    }
-  }
-  if (bVerbose)
-    fprintf(stderr,"\n");
-  *ppval = pval/(box1*box2*box3);
-  *zzval = zval/(box1*box2*box3);
-  *eeref = eref/(box1*box2*box3);
-  *qqopt = qopt/(box1*box2*box3);
-}
-
 void read_params(char *fn,t_inputrec *ir,rvec boxs)
 {
   real   t,lambda;
@@ -584,7 +424,7 @@ int main(int argc,char *argv[])
     { "-sym",   FALSE, etBOOL, &bSym,     "HIDDENUse symmetry for the generation of ghat function (turn off for debugging only!)" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
   
   read_params(ftp2fn(efTPX,NFILE,fnm),&ir,box);

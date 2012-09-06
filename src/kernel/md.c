@@ -37,14 +37,6 @@
 #include <config.h>
 #endif
 
-#include <signal.h>
-#include <stdlib.h>
-
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-/* _isnan() */
-#include <float.h>
-#endif
-
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -61,6 +53,7 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "mdrun.h"
+#include "md_support.h"
 #include "confio.h"
 #include "network.h"
 #include "pull.h"
@@ -71,8 +64,6 @@
 #include "ionize.h"
 #include "disre.h"
 #include "orires.h"
-#include "dihre.h"
-#include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"
@@ -89,11 +80,19 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "txtdump.h"
+#include "string2.h"
+#include "pme_switch.h"
+#include "bondf.h"
+#include "membed.h"
+#include "types/nlistheuristics.h"
+#include "types/iteratedconstraints.h"
+#include "nbnxn_cuda_data_mgmt.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -101,657 +100,23 @@
 #include "corewrap.h"
 #endif
 
-
-/* simulation conditions to transmit. Keep in mind that they are 
-   transmitted to other nodes through an MPI_Reduce after
-   casting them to a real (so the signals can be sent together with other 
-   data). This means that the only meaningful values are positive, 
-   negative or zero. */
-enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
-/* Is the signal in one simulation independent of other simulations? */
-gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
-
-typedef struct {
-    int nstms;       /* The frequency for intersimulation communication */
-    int sig[eglsNR]; /* The signal set by one process in do_md */
-    int set[eglsNR]; /* The communicated signal, equal for all processes */
-} globsig_t;
-
-
-static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
-{
-    int  *buf;
-    gmx_bool bPos,bEqual;
-    int  s,d;
-
-    snew(buf,ms->nsim);
-    buf[ms->sim] = n;
-    gmx_sumi_sim(ms->nsim,buf,ms);
-    bPos   = TRUE;
-    bEqual = TRUE;
-    for(s=0; s<ms->nsim; s++)
-    {
-        bPos   = bPos   && (buf[s] > 0);
-        bEqual = bEqual && (buf[s] == buf[0]);
-    }
-    if (bPos)
-    {
-        if (bEqual)
-        {
-            nmin = min(nmin,buf[0]);
-        }
-        else
-        {
-            /* Find the least common multiple */
-            for(d=2; d<nmin; d++)
-            {
-                s = 0;
-                while (s < ms->nsim && d % buf[s] == 0)
-                {
-                    s++;
-                }
-                if (s == ms->nsim)
-                {
-                    /* We found the LCM and it is less than nmin */
-                    nmin = d;
-                    break;
-                }
-            }
-        }
-    }
-    sfree(buf);
-
-    return nmin;
-}
-
-static int multisim_nstsimsync(const t_commrec *cr,
-                               const t_inputrec *ir,int repl_ex_nst)
-{
-    int nmin;
-
-    if (MASTER(cr))
-    {
-        nmin = INT_MAX;
-        nmin = multisim_min(cr->ms,nmin,ir->nstlist);
-        nmin = multisim_min(cr->ms,nmin,ir->nstcalcenergy);
-        nmin = multisim_min(cr->ms,nmin,repl_ex_nst);
-        if (nmin == INT_MAX)
-        {
-            gmx_fatal(FARGS,"Can not find an appropriate interval for inter-simulation communication, since nstlist, nstcalcenergy and -replex are all <= 0");
-        }
-        /* Avoid inter-simulation communication at every (second) step */
-        if (nmin <= 2)
-        {
-            nmin = 10;
-        }
-    }
-
-    gmx_bcast(sizeof(int),&nmin,cr);
-
-    return nmin;
-}
-
-static void init_global_signals(globsig_t *gs,const t_commrec *cr,
-                                const t_inputrec *ir,int repl_ex_nst)
-{
-    int i;
-
-    if (MULTISIM(cr))
-    {
-        gs->nstms = multisim_nstsimsync(cr,ir,repl_ex_nst);
-        if (debug)
-        {
-            fprintf(debug,"Syncing simulations for checkpointing and termination every %d steps\n",gs->nstms);
-        }
-    }
-    else
-    {
-        gs->nstms = 1;
-    }
-
-    for(i=0; i<eglsNR; i++)
-    {
-        gs->sig[i] = 0;
-        gs->set[i] = 0;
-    }
-}
-
-static void copy_coupling_state(t_state *statea,t_state *stateb, 
-                                gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb, t_grpopts* opts) 
-{
-    
-    /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
-    
-    int i,j,nc;
-
-    /* Make sure we have enough space for x and v */
-    if (statea->nalloc > stateb->nalloc)
-    {
-        stateb->nalloc = statea->nalloc;
-        srenew(stateb->x,stateb->nalloc);
-        srenew(stateb->v,stateb->nalloc);
-    }
-
-    stateb->natoms     = statea->natoms;
-    stateb->ngtc       = statea->ngtc;
-    stateb->nnhpres    = statea->nnhpres;
-    stateb->veta       = statea->veta;
-    if (ekinda) 
-    {
-        copy_mat(ekinda->ekin,ekindb->ekin);
-        for (i=0; i<stateb->ngtc; i++) 
-        {
-            ekindb->tcstat[i].T = ekinda->tcstat[i].T;
-            ekindb->tcstat[i].Th = ekinda->tcstat[i].Th;
-            copy_mat(ekinda->tcstat[i].ekinh,ekindb->tcstat[i].ekinh);
-            copy_mat(ekinda->tcstat[i].ekinf,ekindb->tcstat[i].ekinf);
-            ekindb->tcstat[i].ekinscalef_nhc =  ekinda->tcstat[i].ekinscalef_nhc;
-            ekindb->tcstat[i].ekinscaleh_nhc =  ekinda->tcstat[i].ekinscaleh_nhc;
-            ekindb->tcstat[i].vscale_nhc =  ekinda->tcstat[i].vscale_nhc;
-        }
-    }
-    copy_rvecn(statea->x,stateb->x,0,stateb->natoms);
-    copy_rvecn(statea->v,stateb->v,0,stateb->natoms);
-    copy_mat(statea->box,stateb->box);
-    copy_mat(statea->box_rel,stateb->box_rel);
-    copy_mat(statea->boxv,stateb->boxv);
-
-    for (i = 0; i<stateb->ngtc; i++) 
-    { 
-        nc = i*opts->nhchainlength;
-        for (j=0; j<opts->nhchainlength; j++) 
-        {
-            stateb->nosehoover_xi[nc+j]  = statea->nosehoover_xi[nc+j];
-            stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
-        }
-    }
-    if (stateb->nhpres_xi != NULL)
-    {
-        for (i = 0; i<stateb->nnhpres; i++) 
-        {
-            nc = i*opts->nhchainlength;
-            for (j=0; j<opts->nhchainlength; j++) 
-            {
-                stateb->nhpres_xi[nc+j]  = statea->nhpres_xi[nc+j];
-                stateb->nhpres_vxi[nc+j] = statea->nhpres_vxi[nc+j];
-            }
-        }
-    }
-}
-
-static real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass *MassQ)
-{
-    real quantity = 0;
-    switch (ir->etc) 
-    {
-    case etcNO:
-        break;
-    case etcBERENDSEN:
-        break;
-    case etcNOSEHOOVER:
-        quantity = NPT_energy(ir,state,MassQ);                
-        break;
-    case etcVRESCALE:
-        quantity = vrescale_energy(&(ir->opts),state->therm_integral);
-        break;
-    default:
-        break;
-    }
-    return quantity;
-}
-
-static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
-                            t_forcerec *fr, gmx_ekindata_t *ekind, 
-                            t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
-                            t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
-                            gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
-                            tensor pres, rvec mu_tot, gmx_constr_t constr, 
-                            globsig_t *gs,gmx_bool bInterSimGS,
-                            matrix box, gmx_mtop_t *top_global, real *pcurr, 
-                            int natoms, gmx_bool *bSumEkinhOld, int flags)
-{
-    int  i,gsi;
-    real gs_buf[eglsNR];
-    tensor corr_vir,corr_pres,shakeall_vir;
-    gmx_bool bEner,bPres,bTemp, bVV;
-    gmx_bool bRerunMD, bStopCM, bGStat, bIterate, 
-        bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
-    real ekin,temp,prescorr,enercorr,dvdlcorr;
-    
-    /* translate CGLO flags to gmx_booleans */
-    bRerunMD = flags & CGLO_RERUNMD;
-    bStopCM = flags & CGLO_STOPCM;
-    bGStat = flags & CGLO_GSTAT;
-
-    bReadEkin = (flags & CGLO_READEKIN);
-    bScaleEkin = (flags & CGLO_SCALEEKIN);
-    bEner = flags & CGLO_ENERGY;
-    bTemp = flags & CGLO_TEMPERATURE;
-    bPres  = (flags & CGLO_PRESSURE);
-    bConstrain = (flags & CGLO_CONSTRAINT);
-    bIterate = (flags & CGLO_ITERATE);
-    bFirstIterate = (flags & CGLO_FIRSTITERATE);
-
-    /* we calculate a full state kinetic energy either with full-step velocity verlet
-       or half step where we need the pressure */
-    
-    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && bPres) || bReadEkin);
-    
-    /* in initalization, it sums the shake virial in vv, and to 
-       sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
-
-    /* ########## Kinetic energy  ############## */
-    
-    if (bTemp) 
-    {
-        /* Non-equilibrium MD: this is parallellized, but only does communication
-         * when there really is NEMD.
-         */
-        
-        if (PAR(cr) && (ekind->bNEMD)) 
-        {
-            accumulate_u(cr,&(ir->opts),ekind);
-        }
-        debug_gmx();
-        if (bReadEkin)
-        {
-            restore_ekinstate_from_state(cr,ekind,&state_global->ekinstate);
-        }
-        else 
-        {
-
-            calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel,bIterate);
-        }
-        
-        debug_gmx();
-        
-        /* Calculate center of mass velocity if necessary, also parallellized */
-        if (bStopCM && !bRerunMD && bEner) 
-        {
-            calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
-                         state->x,state->v,vcm);
-        }
-    }
-
-    if (bTemp || bPres || bEner || bConstrain) 
-    {
-        if (!bGStat)
-        {
-            /* We will not sum ekinh_old,                                                            
-             * so signal that we still have to do it.                                                
-             */
-            *bSumEkinhOld = TRUE;
-
-        }
-        else
-        {
-            if (gs != NULL)
-            {
-                for(i=0; i<eglsNR; i++)
-                {
-                    gs_buf[i] = gs->sig[i];
-                }
-            }
-            if (PAR(cr)) 
-            {
-                wallcycle_start(wcycle,ewcMoveE);
-                GMX_MPE_LOG(ev_global_stat_start);
-                global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,constr,vcm,
-                            gs != NULL ? eglsNR : 0,gs_buf,
-                            top_global,state,
-                            *bSumEkinhOld,flags);
-                GMX_MPE_LOG(ev_global_stat_finish);
-                wallcycle_stop(wcycle,ewcMoveE);
-            }
-            if (gs != NULL)
-            {
-                if (MULTISIM(cr) && bInterSimGS)
-                {
-                    if (MASTER(cr))
-                    {
-                        /* Communicate the signals between the simulations */
-                        gmx_sum_sim(eglsNR,gs_buf,cr->ms);
-                    }
-                    /* Communicate the signals form the master to the others */
-                    gmx_bcast(eglsNR*sizeof(gs_buf[0]),gs_buf,cr);
-                }
-                for(i=0; i<eglsNR; i++)
-                {
-                    if (bInterSimGS || gs_simlocal[i])
-                    {
-                        /* Set the communicated signal only when it is non-zero,
-                         * since signals might not be processed at each MD step.
-                         */
-                        gsi = (gs_buf[i] >= 0 ?
-                               (int)(gs_buf[i] + 0.5) :
-                               (int)(gs_buf[i] - 0.5));
-                        if (gsi != 0)
-                        {
-                            gs->set[i] = gsi;
-                        }
-                        /* Turn off the local signal */
-                        gs->sig[i] = 0;
-                    }
-                }
-            }
-            *bSumEkinhOld = FALSE;
-        }
-    }
-    
-    if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
-    {
-        correct_ekin(debug,
-                     mdatoms->start,mdatoms->start+mdatoms->homenr,
-                     state->v,vcm->group_p[0],
-                     mdatoms->massT,mdatoms->tmass,ekind->ekin);
-    }
-    
-    if (bEner) {
-        /* Do center of mass motion removal */
-        if (bStopCM && !bRerunMD) /* is this correct?  Does it get called too often with this logic? */
-        {
-            check_cm_grp(fplog,vcm,ir,1);
-            do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
-                          state->x,state->v,vcm);
-            inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
-        }
-
-        /* Calculate the amplitude of the cosine velocity profile */
-        ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
-    }
-
-    if (bTemp) 
-    {
-        /* Sum the kinetic energies of the groups & calc temp */
-        /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with IR_NPT_TROTTER */
-        /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).  
-           Leap with AveVel is not supported; it's not clear that it will actually work.  
-           bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy. 
-           If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
-           bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.  
-           If FALSE, we go ahead and erase over it.
-        */ 
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),
-                                       bEkinAveVel,bIterate,bScaleEkin);
- 
-        enerd->term[F_EKIN] = trace(ekind->ekin);
-    }
-    
-    /* ##########  Long range energy information ###### */
-    
-    if (bEner || bPres || bConstrain) 
-    {
-        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda,
-                      corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
-    }
-    
-    if (bEner && bFirstIterate) 
-    {
-        enerd->term[F_DISPCORR] = enercorr;
-        enerd->term[F_EPOT] += enercorr;
-        enerd->term[F_DVDL] += dvdlcorr;
-        if (fr->efep != efepNO) {
-            enerd->dvdl_lin += dvdlcorr;
-        }
-    }
-    
-    /* ########## Now pressure ############## */
-    if (bPres || bConstrain) 
-    {
-        
-        m_add(force_vir,shake_vir,total_vir);
-        
-        /* Calculate pressure and apply LR correction if PPPM is used.
-         * Use the box from last timestep since we already called update().
-         */
-        
-        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
-                                        (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
-        
-        /* Calculate long range corrections to pressure and energy */
-        /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT], 
-           and computes enerd->term[F_DISPCORR].  Also modifies the 
-           total_vir and pres tesors */
-        
-        m_add(total_vir,corr_vir,total_vir);
-        m_add(pres,corr_pres,pres);
-        enerd->term[F_PDISPCORR] = prescorr;
-        enerd->term[F_PRES] += prescorr;
-        *pcurr = enerd->term[F_PRES];
-        /* calculate temperature using virial */
-        enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
-        
-    }    
-}
-
-
-/* Definitions for convergence of iterated constraints */
-
-/* iterate constraints up to 50 times  */
-#define MAXITERCONST       50
-
-/* data type */
-typedef struct
-{
-    real f,fprev,x,xprev;  
-    int iter_i;
-    gmx_bool bIterate;
-    real allrelerr[MAXITERCONST+2];
-    int num_close; /* number of "close" violations, caused by limited precision. */
-} gmx_iterate_t;
-  
-#ifdef GMX_DOUBLE
-#define CONVERGEITER  0.000000001
-#define CLOSE_ENOUGH  0.000001000
-#else
-#define CONVERGEITER  0.0001
-#define CLOSE_ENOUGH  0.0050
-#endif
-
-/* we want to keep track of the close calls.  If there are too many, there might be some other issues.
-   so we make sure that it's either less than some predetermined number, or if more than that number,
-   only some small fraction of the total. */
-#define MAX_NUMBER_CLOSE        50
-#define FRACTION_CLOSE       0.001
-  
-/* maximum length of cyclic traps to check, emerging from limited numerical precision  */
-#define CYCLEMAX            20
-
-static void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate)
-{
-    int i;
-
-    iterate->iter_i = 0;
-    iterate->bIterate = bIterate;
-    iterate->num_close = 0;
-    for (i=0;i<MAXITERCONST+2;i++) 
-    {
-        iterate->allrelerr[i] = 0;
-    }
-}
-
-static gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf) 
-{    
-    /* monitor convergence, and use a secant search to propose new
-       values.  
-                                                                  x_{i} - x_{i-1}
-       The secant method computes x_{i+1} = x_{i} - f(x_{i}) * ---------------------
-                                                                f(x_{i}) - f(x_{i-1})
-       
-       The function we are trying to zero is fom-x, where fom is the
-       "figure of merit" which is the pressure (or the veta value) we
-       would get by putting in an old value of the pressure or veta into
-       the incrementor function for the step or half step.  I have
-       verified that this gives the same answer as self consistent
-       iteration, usually in many fewer steps, especially for small tau_p.
-       
-       We could possibly eliminate an iteration with proper use
-       of the value from the previous step, but that would take a bit
-       more bookkeeping, especially for veta, since tests indicate the
-       function of veta on the last step is not sufficiently close to
-       guarantee convergence this step. This is
-       good enough for now.  On my tests, I could use tau_p down to
-       0.02, which is smaller that would ever be necessary in
-       practice. Generally, 3-5 iterations will be sufficient */
-
-    real relerr,err,xmin;
-    char buf[256];
-    int i;
-    gmx_bool incycle;
-    
-    if (bFirstIterate) 
-    {
-        iterate->x = fom;
-        iterate->f = fom-iterate->x;
-        iterate->xprev = 0;
-        iterate->fprev = 0;
-        *newf = fom;
-    } 
-    else 
-    {
-        iterate->f = fom-iterate->x; /* we want to zero this difference */
-        if ((iterate->iter_i > 1) && (iterate->iter_i < MAXITERCONST)) 
-        {
-            if (iterate->f==iterate->fprev) 
-            {
-                *newf = iterate->f;
-            } 
-            else 
-            {
-                *newf = iterate->x - (iterate->x-iterate->xprev)*(iterate->f)/(iterate->f-iterate->fprev); 
-            }
-        } 
-        else 
-        {
-            /* just use self-consistent iteration the first step to initialize, or 
-               if it's not converging (which happens occasionally -- need to investigate why) */
-            *newf = fom; 
-        }
-    }
-    /* Consider a slight shortcut allowing us to exit one sooner -- we check the
-       difference between the closest of x and xprev to the new
-       value. To be 100% certain, we should check the difference between
-       the last result, and the previous result, or
-       
-       relerr = (fabs((x-xprev)/fom));
-       
-       but this is pretty much never necessary under typical conditions.
-       Checking numerically, it seems to lead to almost exactly the same
-       trajectories, but there are small differences out a few decimal
-       places in the pressure, and eventually in the v_eta, but it could
-       save an interation.
-       
-       if (fabs(*newf-x) < fabs(*newf - xprev)) { xmin = x;} else { xmin = xprev;}
-       relerr = (fabs((*newf-xmin) / *newf));
-    */
-    
-    err = fabs((iterate->f-iterate->fprev));
-    relerr = fabs(err/fom);
-
-    iterate->allrelerr[iterate->iter_i] = relerr;
-    
-    if (iterate->iter_i > 0) 
-    {
-        if (debug) 
-        {
-            fprintf(debug,"Iterating NPT constraints: %6i %20.12f%14.6g%20.12f\n",
-                    iterate->iter_i,fom,relerr,*newf);
-        }
-        
-        if ((relerr < CONVERGEITER) || (err < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
-        {
-            iterate->bIterate = FALSE;
-            if (debug) 
-            {
-                fprintf(debug,"Iterating NPT constraints: CONVERGED\n");
-            }
-            return TRUE;
-        }
-        if (iterate->iter_i > MAXITERCONST)
-        {
-            if (relerr < CLOSE_ENOUGH)
-            {
-                incycle = FALSE;
-                for (i=1;i<CYCLEMAX;i++) {
-                    if ((iterate->allrelerr[iterate->iter_i-(1+i)] == iterate->allrelerr[iterate->iter_i-1]) &&
-                        (iterate->allrelerr[iterate->iter_i-(1+i)] == iterate->allrelerr[iterate->iter_i-(1+2*i)])) {
-                        incycle = TRUE;
-                        if (debug) 
-                        {
-                            fprintf(debug,"Exiting from an NPT iterating cycle of length %d\n",i);
-                        }
-                        break;
-                    }
-                }
-                
-                if (incycle) {
-                    /* step 1: trapped in a numerical attractor */
-                    /* we are trapped in a numerical attractor, and can't converge any more, and are close to the final result.
-                       Better to give up convergence here than have the simulation die.
-                    */
-                    iterate->num_close++;
-                    return TRUE;
-                } 
-                else 
-                {
-                    /* Step #2: test if we are reasonably close for other reasons, then monitor the number.  If not, die */
-                    
-                    /* how many close calls have we had?  If less than a few, we're OK */
-                    if (iterate->num_close < MAX_NUMBER_CLOSE) 
-                    {
-                        sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
-                        md_print_warning(cr,fplog,buf);
-                        iterate->num_close++;
-                        return TRUE;
-                        /* if more than a few, check the total fraction.  If too high, die. */
-                    } else if (iterate->num_close/(double)nsteps > FRACTION_CLOSE) {
-                        gmx_fatal(FARGS,"Could not converge NPT constraints, too many exceptions (%d%%\n",iterate->num_close/(double)nsteps);
-                    } 
-                }
-            }
-            else 
-            {
-                gmx_fatal(FARGS,"Could not converge NPT constraints\n");
-            }
-        }
-    }
-    
-    iterate->xprev = iterate->x;
-    iterate->x = *newf;
-    iterate->fprev = iterate->f;
-    iterate->iter_i++;
-    
-    return FALSE;
-}
-
-static void check_nst_param(FILE *fplog,t_commrec *cr,
-                            const char *desc_nst,int nst,
-                            const char *desc_p,int *p)
-{
-    char buf[STRLEN];
-
-    if (*p > 0 && *p % nst != 0)
-    {
-        /* Round up to the next multiple of nst */
-        *p = ((*p)/nst + 1)*nst;
-        sprintf(buf,"NOTE: %s changes %s to %d\n",desc_nst,desc_p,*p);
-        md_print_warning(cr,fplog,buf);
-    }
-}
-
 static void reset_all_counters(FILE *fplog,t_commrec *cr,
                                gmx_large_int_t step,
                                gmx_large_int_t *step_rel,t_inputrec *ir,
                                gmx_wallcycle_t wcycle,t_nrnb *nrnb,
-                               gmx_runtime_t *runtime)
+                               gmx_runtime_t *runtime,
+                               nbnxn_cuda_ptr_t cu_nbv)
 {
-    char buf[STRLEN],sbuf[STEPSTRSIZE];
+    char sbuf[STEPSTRSIZE];
 
     /* Reset all the counters related to performance over the run */
-    sprintf(buf,"Step %s: resetting all time and cycle counters\n",
-            gmx_step_str(step,sbuf));
-    md_print_warning(cr,fplog,buf);
+    md_print_warn(cr,fplog,"step %s: resetting all time and cycle counters\n",
+                  gmx_step_str(step,sbuf));
+
+    if (cu_nbv)
+    {
+        nbnxn_cuda_reset_timings(cu_nbv);
+    }
 
     wallcycle_stop(wcycle,ewcRUN);
     wallcycle_reset_all(wcycle);
@@ -768,301 +133,6 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
     print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
 }
 
-static void min_zero(int *n,int i)
-{
-    if (i > 0 && (*n == 0 || i < *n))
-    {
-        *n = i;
-    }
-}
-
-static int lcd4(int i1,int i2,int i3,int i4)
-{
-    int nst;
-
-    nst = 0;
-    min_zero(&nst,i1);
-    min_zero(&nst,i2);
-    min_zero(&nst,i3);
-    min_zero(&nst,i4);
-    if (nst == 0)
-    {
-        gmx_incons("All 4 inputs for determininig nstglobalcomm are <= 0");
-    }
-    
-    while (nst > 1 && ((i1 > 0 && i1 % nst != 0)  ||
-                       (i2 > 0 && i2 % nst != 0)  ||
-                       (i3 > 0 && i3 % nst != 0)  ||
-                       (i4 > 0 && i4 % nst != 0)))
-    {
-        nst--;
-    }
-
-    return nst;
-}
-
-static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
-                               int nstglobalcomm,t_inputrec *ir)
-{
-    char buf[STRLEN];
-
-    if (!EI_DYNAMICS(ir->eI))
-    {
-        nstglobalcomm = 1;
-    }
-
-    if (nstglobalcomm == -1)
-    {
-        if (!(ir->nstcalcenergy > 0 ||
-              ir->nstlist > 0 ||
-              ir->etc != etcNO ||
-              ir->epc != epcNO))
-        {
-            nstglobalcomm = 10;
-            if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
-            {
-                nstglobalcomm = ir->nstenergy;
-            }
-        }
-        else
-        {
-            /* Ensure that we do timely global communication for
-             * (possibly) each of the four following options.
-             */
-            nstglobalcomm = lcd4(ir->nstcalcenergy,
-                                 ir->nstlist,
-                                 ir->etc != etcNO ? ir->nsttcouple : 0,
-                                 ir->epc != epcNO ? ir->nstpcouple : 0);
-        }
-    }
-    else
-    {
-        if (ir->nstlist > 0 &&
-            nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
-        {
-            nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
-            sprintf(buf,"WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n",nstglobalcomm);
-            md_print_warning(cr,fplog,buf);
-        }
-        if (ir->nstcalcenergy > 0)
-        {
-            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                            "nstcalcenergy",&ir->nstcalcenergy);
-        }
-        if (ir->etc != etcNO && ir->nsttcouple > 0)
-        {
-            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                            "nsttcouple",&ir->nsttcouple);
-        }
-        if (ir->epc != epcNO && ir->nstpcouple > 0)
-        {
-            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                            "nstpcouple",&ir->nstpcouple);
-        }
-
-        check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                        "nstenergy",&ir->nstenergy);
-
-        check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                        "nstlog",&ir->nstlog);
-    }
-
-    if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
-    {
-        sprintf(buf,"WARNING: Changing nstcomm from %d to %d\n",
-                ir->nstcomm,nstglobalcomm);
-        md_print_warning(cr,fplog,buf);
-        ir->nstcomm = nstglobalcomm;
-    }
-
-    return nstglobalcomm;
-}
-
-void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
-                               t_inputrec *ir,gmx_mtop_t *mtop)
-{
-    /* Check required for old tpx files */
-    if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
-        ir->nstcalcenergy % ir->nstlist != 0)
-    {
-        md_print_warning(cr,fplog,"Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies");
-
-        if (gmx_mtop_ftype_count(mtop,F_CONSTR) +
-            gmx_mtop_ftype_count(mtop,F_CONSTRNC) > 0 &&
-            ir->eConstrAlg == econtSHAKE)
-        {
-            md_print_warning(cr,fplog,"With twin-range cut-off's and SHAKE the virial and pressure are incorrect");
-            if (ir->epc != epcNO)
-            {
-                gmx_fatal(FARGS,"Can not do pressure coupling with twin-range cut-off's and SHAKE");
-            }
-        }
-        check_nst_param(fplog,cr,"nstlist",ir->nstlist,
-                        "nstcalcenergy",&ir->nstcalcenergy);
-        if (ir->epc != epcNO)
-        {
-            check_nst_param(fplog,cr,"nstlist",ir->nstlist,
-                            "nstpcouple",&ir->nstpcouple);
-        }
-        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                        "nstenergy",&ir->nstenergy);
-        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                        "nstlog",&ir->nstlog);
-        if (ir->efep != efepNO)
-        {
-            check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                            "nstdhdl",&ir->nstdhdl);
-        }
-    }
-}
-
-typedef struct {
-    gmx_bool       bGStatEveryStep;
-    gmx_large_int_t step_ns;
-    gmx_large_int_t step_nscheck;
-    gmx_large_int_t nns;
-    matrix     scale_tot;
-    int        nabnsb;
-    double     s1;
-    double     s2;
-    double     ab;
-    double     lt_runav;
-    double     lt_runav2;
-} gmx_nlheur_t;
-
-static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step)
-{
-    nlh->lt_runav  = 0;
-    nlh->lt_runav2 = 0;
-    nlh->step_nscheck = step;
-}
-
-static void init_nlistheuristics(gmx_nlheur_t *nlh,
-                                 gmx_bool bGStatEveryStep,gmx_large_int_t step)
-{
-    nlh->bGStatEveryStep = bGStatEveryStep;
-    nlh->nns       = 0;
-    nlh->nabnsb    = 0;
-    nlh->s1        = 0;
-    nlh->s2        = 0;
-    nlh->ab        = 0;
-
-    reset_nlistheuristics(nlh,step);
-}
-
-static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
-{
-    gmx_large_int_t nl_lt;
-    char sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-
-    /* Determine the neighbor list life time */
-    nl_lt = step - nlh->step_ns;
-    if (debug)
-    {
-        fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %s steps\n",nlh->nabnsb,gmx_step_str(nl_lt,sbuf));
-    }
-    nlh->nns++;
-    nlh->s1 += nl_lt;
-    nlh->s2 += nl_lt*nl_lt;
-    nlh->ab += nlh->nabnsb;
-    if (nlh->lt_runav == 0)
-    {
-        nlh->lt_runav  = nl_lt;
-        /* Initialize the fluctuation average
-         * such that at startup we check after 0 steps.
-         */
-        nlh->lt_runav2 = sqr(nl_lt/2.0);
-    }
-    /* Running average with 0.9 gives an exp. history of 9.5 */
-    nlh->lt_runav2 = 0.9*nlh->lt_runav2 + 0.1*sqr(nlh->lt_runav - nl_lt);
-    nlh->lt_runav  = 0.9*nlh->lt_runav  + 0.1*nl_lt;
-    if (nlh->bGStatEveryStep)
-    {
-        /* Always check the nlist validity */
-        nlh->step_nscheck = step;
-    }
-    else
-    {
-        /* We check after:  <life time> - 2*sigma
-         * The factor 2 is quite conservative,
-         * but we assume that with nstlist=-1 the user
-         * prefers exact integration over performance.
-         */
-        nlh->step_nscheck = step
-                  + (int)(nlh->lt_runav - 2.0*sqrt(nlh->lt_runav2)) - 1;
-    }
-    if (debug)
-    {
-        fprintf(debug,"nlist life time %s run av. %4.1f sig %3.1f check %s check with -gcom %d\n",
-                gmx_step_str(nl_lt,sbuf),nlh->lt_runav,sqrt(nlh->lt_runav2),
-                gmx_step_str(nlh->step_nscheck-step+1,sbuf2),
-                (int)(nlh->lt_runav - 2.0*sqrt(nlh->lt_runav2)));
-    }
-}
-
-static void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step)
-{
-    int d;
-
-    if (bReset)
-    {
-        reset_nlistheuristics(nlh,step);
-    }
-    else
-    {
-        update_nliststatistics(nlh,step);
-    }
-
-    nlh->step_ns = step;
-    /* Initialize the cumulative coordinate scaling matrix */
-    clear_mat(nlh->scale_tot);
-    for(d=0; d<DIM; d++)
-    {
-        nlh->scale_tot[d][d] = 1.0;
-    }
-}
-
-static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
-                                gmx_bool *bNotLastFrame)
-{
-    gmx_bool bAlloc;
-    rvec *xp,*vp;
-
-    bAlloc = (fr->natoms == 0);
-
-    if (MASTER(cr) && !*bNotLastFrame)
-    {
-        fr->natoms = -1;
-    }
-    xp = fr->x;
-    vp = fr->v;
-    gmx_bcast(sizeof(*fr),fr,cr);
-    fr->x = xp;
-    fr->v = vp;
-
-    *bNotLastFrame = (fr->natoms >= 0);
-
-    if (*bNotLastFrame && PARTDECOMP(cr))
-    {
-        /* x and v are the only variable size quantities stored in trr
-         * that are required for rerun (f is not needed).
-         */
-        if (bAlloc)
-        {
-            snew(fr->x,fr->natoms);
-            snew(fr->v,fr->natoms);
-        }
-        if (fr->bX)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->x[0]),fr->x[0],cr);
-        }
-        if (fr->bV)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->v[0]),fr->v[0],cr);
-        }
-    }
-}
-
 double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
@@ -1074,7 +144,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
+             int repl_ex_nst,int repl_ex_nex,int repl_ex_seed,gmx_membed_t membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -1083,12 +153,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_mdoutf_t *outf;
     gmx_large_int_t step,step_rel;
     double     run_time;
-    double     t,t0,lam0;
-    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
+    double     t,t0,lam0[efptNR];
+    gmx_bool       bGStatEveryStep,bGStat,bCalcVir,bCalcEner;
     gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-               bFirstStep,bStateFromTPX,bInitStep,bLastStep,
+               bFirstStep,bStateFromCP,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
-    gmx_bool       bDoDHDL=FALSE;
+    gmx_bool   bDoDHDL=FALSE,bDoFEP=FALSE,bDoExpanded=FALSE;
     gmx_bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bCPT;
     int        mdof_flags;
@@ -1105,9 +175,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_trxframe rerun_fr;
     gmx_repl_ex_t repl_ex=NULL;
     int        nchkpt=1;
-
     gmx_localtop_t *top;	
     t_mdebin *mdebin=NULL;
+    df_history_t df_history;
     t_state    *state=NULL;
     rvec       *f_global=NULL;
     int        n_xtc=-1;
@@ -1118,7 +188,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_update_t upd=NULL;
     t_graph    *graph=NULL;
     globsig_t   gs;
-
+    gmx_rng_t mcrng=NULL;
     gmx_bool        bFFscan;
     gmx_groups_t *groups;
     gmx_ekindata_t *ekind, *ekind_save;
@@ -1131,7 +201,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_bool        bAppend;
     gmx_bool        bResetCountersHalfMaxH=FALSE;
     gmx_bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
-    real        temp0,mu_aver=0,dvdl;
+    real        mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
     char        *grpname;
@@ -1141,6 +211,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	tensor      tmpvir;
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
+    int         lamnew=0;
+    /* for FEP */
+    int         fep_state=0;
+    int         nstfep;
+    real        rate;
     double      cycles;
 	real        saved_conserved_quantity = 0;
     real        last_ekin = 0;
@@ -1150,11 +225,29 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     int         handled_stop_condition=gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t iterate;
+    gmx_large_int_t multisim_nsteps=-1; /* number of steps to do  before first multisim 
+                                          simulation stops. If equal to zero, don't
+                                          communicate any more between multisims.*/
+    /* PME load balancing data for GPU kernels */
+    pme_switch_t    pme_switch=NULL;
+    double          cycles_pmes;
+    gmx_bool        bDonePMETune=TRUE;
+
+    if(MASTER(cr))
+    {
+        fprintf(stderr,
+                "\n* WARNING * WARNING * WARNING * WARNING * WARNING * WARNING *\n"
+                "We have just committed the new CPU detection code in this branch,\n"
+                "and will commit new SSE/AVX kernels in a few days. However, this\n"
+                "means that currently only the NxN kernels are accelerated!\n"
+                "In the mean time, you might want to avoid production runs in 4.6.\n\n");
+    }
+
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
 #endif
-
+    
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
     bIonize  = (Flags & MD_IONIZE);
@@ -1180,8 +273,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         snew(cbuf,top_global->natoms);
     }
     /* all the iteratative cases - only if there are constraints */ 
-    bIterations = ((IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
-    bTrotter = (bVV && (IR_NPT_TROTTER(ir) || (IR_NVT_TROTTER(ir))));        
+    bIterations = ((IR_NPH_TROTTER(ir) || IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
+    bTrotter = (bVV && (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir)));
     
     if (bRerunMD)
     {
@@ -1218,7 +311,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,oenv,&t,&t0,state_global->lambda,
+            &(state_global->fep_state),lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
@@ -1227,7 +321,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd,1);
-    init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
+    init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,
+                  enerd);
     if (DOMAINDECOMP(cr))
     {
         f = NULL;
@@ -1236,6 +331,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         snew(f,top_global->natoms);
     }
+
+    /* lambda Monte carlo random number generator  */
+    if (ir->bExpanded)
+    {
+        mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
+    }
+    /* copy the state into df_history */
+    copy_df_history(&df_history,&state_global->dfhist);
 
     /* Kinetic energy data */
     snew(ekind,1);
@@ -1258,13 +361,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (DEFORM(*ir))
     {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&deform_init_box_mutex);
 #endif
         set_deform_reference_box(upd,
                                  deform_init_init_step_tpx,
                                  deform_init_box_tpx);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
 #endif
     }
@@ -1300,6 +403,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             a1 = top_global->natoms;
         }
 
+        forcerec_set_excl_load(fr,top,cr);
+
         state = partdec_init_local_state(cr,state_global);
         f_global = f;
 
@@ -1309,13 +414,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             set_vsite_top(vsite,top,mdatoms,cr);
         }
 
-        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
+        if (ir->ePBC != epbcNONE && !fr->bMolPBC) {
             graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
         }
 
         if (shellfc) {
             make_local_shells(cr,mdatoms,shellfc);
         }
+
+        init_bonded_thread_force_reduction(fr,&top->idef);
 
         if (ir->pull && PAR(cr)) {
             dd_make_local_pull_groups(NULL,ir->pull,mdatoms);
@@ -1330,13 +437,23 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             state,&f,mdatoms,top,fr,
                             vsite,shellfc,constr,
                             nrnb,wcycle,FALSE);
+
     }
 
-    update_mdatoms(mdatoms,state->lambda);
+    update_mdatoms(mdatoms,state->lambda[efptMASS]);
+
+    if (opt2bSet("-cpi",nfile,fnm))
+    {
+        bStateFromCP = gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr);
+    }
+    else
+    {
+        bStateFromCP = FALSE;
+    }
 
     if (MASTER(cr))
     {
-        if (opt2bSet("-cpi",nfile,fnm))
+        if (bStateFromCP)
         {
             /* Update mdebin with energy history if appending to output files */
             if ( Flags & MD_APPENDFILES )
@@ -1356,9 +473,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         update_energyhistory(&state_global->enerhist,mdebin);
     }	
 
-    if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG)) {
+    if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG)) 
+    {
         /* Set the random state if we read a checkpoint file */
         set_stochd_state(upd,state);
+    }
+
+    if (state->flags & (1<<estMC_RNG))
+    {
+        set_mc_state(mcrng,state);
     }
 
     /* Initialize constraints */
@@ -1390,8 +513,23 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * signals are initialized, too */
     }
     if (repl_ex_nst > 0 && MASTER(cr))
+    {
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
-                                        repl_ex_nst,repl_ex_seed);
+                                        repl_ex_nst,repl_ex_nex,repl_ex_seed);
+    }
+
+    /* PME tuning is not supported with separate PME nodes or with rerun */
+    if ((Flags & MD_TUNEPME) &&
+        EEL_PME(fr->eeltype) &&
+        fr->cutoff_scheme == ecutsVERLET &&
+        nb_kernel_pmetune_support(fr->nbv) &&
+        (cr->duty & DUTY_PME) &&
+        !bRerunMD)
+    {
+        switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
+        cycles_pmes = 0;
+        bDonePMETune = FALSE;
+    }
 
     if (!ir->bContinuation && !bRerunMD)
     {
@@ -1427,8 +565,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     debug_gmx();
   
+    /* set free energy calculation frequency as the minimum of nstdhdl, nstexpanded, and nstrepl_ex_nst*/
+    nstfep = ir->fepvals->nstdhdl;
+    if (ir->bExpanded && (nstfep > ir->expandedvals->nstexpanded))
+    {
+        nstfep = ir->expandedvals->nstexpanded;
+    }
+    if (repl_ex_nst > 0 && repl_ex_nst > nstfep)
+    {
+        nstfep = repl_ex_nst;
+    }
+
     /* I'm assuming we need global communication the first time! MRS */
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
+                  | ((ir->comm_mode != ecmNO) ? CGLO_STOPCM:0)
                   | (bVV ? CGLO_PRESSURE:0)
                   | (bVV ? CGLO_CONSTRAINT:0)
                   | (bRerunMD ? CGLO_RERUNMD:0)
@@ -1436,7 +586,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                    NULL,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,NULL,FALSE,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
@@ -1447,10 +597,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
            perhaps loses some logic?*/
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                        wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                        NULL,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                         constr,NULL,FALSE,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                        cglo_flags &~ CGLO_PRESSURE);
+                        cglo_flags &~ (CGLO_STOPCM | CGLO_PRESSURE));
     }
     
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -1466,7 +616,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
                                      and there is no previous step */
     }
-    temp0 = enerd->term[F_TEMP];
     
     /* if using an iterative algorithm, we need to create a working directory for the state. */
     if (bIterations) 
@@ -1494,7 +643,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
         }
-        fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
+        if (EI_STATE_VELOCITY(ir->eI))
+        {
+            fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
+        }
         if (bRerunMD)
         {
             fprintf(stderr,"starting md rerun '%s', reading coordinates from"
@@ -1541,7 +693,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
     wallcycle_start(wcycle,ewcRUN);
     if (fplog)
+    {
         fprintf(fplog,"\n");
+    }
 
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
 #ifdef GMX_FAHCORE
@@ -1609,7 +763,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* loop over MD steps or if rerunMD to end of input trajectory */
     bFirstStep = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
-    bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
+    bStateFromTPX = !bStateFromCP;
     bInitStep = bFirstStep && (bStateFromTPX || bVV);
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep    = FALSE;
@@ -1626,7 +780,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         init_nlistheuristics(&nlh,bGStatEveryStep,step);
     }
 
-    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps));
+    if (MULTISIM(cr) && (repl_ex_nst <=0 ))
+    {
+        /* check how many steps are left in other sims */
+        multisim_nsteps=get_multisim_nsteps(cr, ir->nsteps);
+    }
+
+
+    /* and stop now if we should */
+    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
+                 ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
     while (!bLastStep || (bRerunMD && bNotLastFrame)) {
 
         wallcycle_start(wcycle,ewcSTEP);
@@ -1652,18 +815,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             t = t0 + step*ir->delta_t;
         }
 
-        if (ir->efep != efepNO)
-        {
-            if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
+        if (ir->efep != efepNO || ir->bSimTemp)
             {
-                state_global->lambda = rerun_fr.lambda;
-            }
-            else
-            {
-                state_global->lambda = lam0 + step*ir->delta_lambda;
-            }
-            state->lambda = state_global->lambda;
-            bDoDHDL = do_per_step(step,ir->nstdhdl);
+            /* find and set the current lambdas.  If rerunning, we either read in a state, or a lambda value,
+               requiring different logic. */
+            
+            set_current_lambdas(step,ir->fepvals,bRerunMD,&rerun_fr,state_global,state,lam0);
+            bDoDHDL = do_per_step(step,ir->fepvals->nstdhdl);
+            bDoFEP  = (do_per_step(step,nstfep) && (ir->efep != efepNO));
+            bDoExpanded  = (do_per_step(step,ir->expandedvals->nstexpanded) && (ir->bExpanded) && (step > 0));
         }
 
         if (bSimAnn) 
@@ -1754,14 +914,35 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* Determine whether or not to do Neighbour Searching and LR */
             bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
             
-            bNS = (bFirstStep || bExchanged || bNStList ||
+            bNS = (bFirstStep || bExchanged || bNStList || bDoFEP ||
                    (ir->nstlist == -1 && nlh.nabnsb > 0));
 
             if (bNS && ir->nstlist == -1)
             {
-                set_nlistheuristics(&nlh,bFirstStep || bExchanged,step);
+                set_nlistheuristics(&nlh,bFirstStep || bExchanged || bDoFEP, step);
             }
         } 
+
+        /* check whether we should stop because another simulation has 
+           stopped. */
+        if (MULTISIM(cr))
+        {
+            if ( (multisim_nsteps >= 0) &&  (step_rel >= multisim_nsteps)  &&  
+                 (multisim_nsteps != ir->nsteps) )  
+            {
+                if (bNS)
+                {
+                    if (MASTER(cr))
+                    {
+                        fprintf(stderr, 
+                                "Stopping simulation %d because another one has finished\n",
+                                cr->ms->sim);
+                    }
+                    bLastStep=TRUE;
+                    gs.sig[eglsCHKPT] = 1;
+                }
+            }
+        }
 
         /* < 0 means stop at next step, > 0 means stop at next NS step */
         if ( (gs.set[eglsSTOPCOND] < 0 ) ||
@@ -1813,7 +994,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
-                                    nrnb,wcycle,do_verbose);
+                                    nrnb,wcycle,
+                                    do_verbose && bDonePMETune);
                 wallcycle_stop(wcycle,ewcDOMDEC);
                 /* If using an iterative integrator, reallocate space to match the decomposition */
             }
@@ -1821,12 +1003,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (MASTER(cr) && do_log && !bFFscan)
         {
-            print_ebin_header(fplog,step,t,state->lambda);
+            print_ebin_header(fplog,step,t,state->lambda[efptFEP]); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
         {
-            update_mdatoms(mdatoms,state->lambda); 
+            update_mdatoms(mdatoms,state->lambda[efptMASS]);
         }
 
         if (bRerunMD && rerun_fr.bV)
@@ -1855,11 +1037,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             if (update_forcefield(fplog,
                                   nfile,fnm,fr,
-                                  mdatoms->nr,state->x,state->box)) {
-                if (gmx_parallel_env_initialized())
-                {
-                    gmx_finalize();
-                }
+                                  mdatoms->nr,state->x,state->box))
+            {
+                gmx_finalize_par();
+
                 exit(0);
             }
         }
@@ -1882,13 +1063,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        bNstEner = do_per_step(step,ir->nstcalcenergy);
-        bCalcEnerPres =
-            (bNstEner ||
-             (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
+        if (EI_VV(ir->eI) && (!bInitStep))
+        {
+            /* for vv, the first half actually corresponds to the last step */
+            bCalcEner = do_per_step(step-1,ir->nstcalcenergy);
+        }
+        else
+        {
+            bCalcEner = do_per_step(step,ir->nstcalcenergy);
+        }
+        bCalcVir = bCalcEner ||
+            (ir->epc != epcNO && do_per_step(step,ir->nstpcouple));
 
         /* Do we need global communication ? */
-        bGStat = (bCalcEnerPres || bStopCM ||
+        bGStat = (bCalcVir || bCalcEner || bStopCM ||
                   do_per_step(step,nstglobalcomm) ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
@@ -1896,13 +1084,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (do_ene || do_log)
         {
-            bCalcEnerPres = TRUE;
-            bGStat        = TRUE;
+            bCalcVir  = TRUE;
+            bCalcEner = TRUE;
+            bGStat    = TRUE;
         }
         
         /* these CGLO_ options remain the same throughout the iteration */
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
-                      (bStopCM ? CGLO_STOPCM : 0) |
                       (bGStat ? CGLO_GSTAT : 0)
             );
         
@@ -1911,8 +1099,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        GMX_FORCE_ALLFORCES |
                        (bNStList ? GMX_FORCE_DOLR : 0) |
                        GMX_FORCE_SEPLRF |
-                       (bCalcEnerPres ? GMX_FORCE_VIRIAL : 0) |
-                       (bDoDHDL ? GMX_FORCE_DHDL : 0)
+                       (bCalcVir ? GMX_FORCE_VIRIAL : 0) |
+                       (bCalcEner ? GMX_FORCE_ENERGY : 0) |
+                       (bDoFEP ? GMX_FORCE_DHDL : 0)
             );
         
         if (shellfc)
@@ -1941,8 +1130,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              * This is parallellized as well, and does communication too. 
              * Check comments in sim_util.c
              */
-        
-            do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
+             do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
                      state->lambda,graph,
@@ -1982,7 +1170,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ1);            
             }
 
-            update_coords(fplog,step,ir,mdatoms,state,
+            update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                           cr,nrnb,constr,&top->idef);
@@ -2028,10 +1216,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  /* Why is rerun_fr.bV here?  Unclear. */
                     dvdl = 0;
                     
-                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,
+                                       state,fr->bMolPBC,graph,f,
                                        &top->idef,shake_vir,NULL,
                                        cr,nrnb,wcycle,upd,constr,
-                                       bInitStep,TRUE,bCalcEnerPres,vetanew);
+                                       bInitStep,TRUE,bCalcVir,vetanew);
                     
                     if (!bOK && !bFFscan)
                     {
@@ -2057,12 +1246,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
                 bPres = TRUE;
                 bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
+                if (bCalcEner && ir->eI==eiVVAK)  /*MRS:  7/9/2010 -- this still doesn't fix it?*/
+                {
+                    bSumEkinhOld = TRUE;
+                }
                 compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                 wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                 constr,NULL,FALSE,state->box,
                                 top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                 cglo_flags 
                                 | CGLO_ENERGY 
+                                | (bStopCM ? CGLO_STOPCM : 0)
                                 | (bTemp ? CGLO_TEMPERATURE:0) 
                                 | (bPres ? CGLO_PRESSURE : 0) 
                                 | (bPres ? CGLO_CONSTRAINT : 0)
@@ -2101,6 +1295,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
 
             if (bTrotter && !bInitStep) {
+                enerd->term[F_DVDL_BONDED] += dvdl;        /* only add after iterations */
                 copy_mat(shake_vir,state->svir_prev);
                 copy_mat(force_vir,state->fvir_prev);
                 if (IR_NVT_TROTTER(ir) && ir->eI==eiVV) {
@@ -2118,7 +1313,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
             }
-            enerd->term[F_DHDL_CON] += dvdl;
+            enerd->term[F_DVDL_BONDED] += dvdl;
             
             GMX_MPE_LOG(ev_timestep1);
         }
@@ -2128,17 +1323,26 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             saved_conserved_quantity = compute_conserved_from_auxiliary(ir,state,&MassQ);
             if (ir->eI==eiVV) 
             {
-                last_ekin = enerd->term[F_EKIN]; /* does this get preserved through checkpointing? */
+                last_ekin = enerd->term[F_EKIN];
             }
             if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
             {
                 saved_conserved_quantity -= enerd->term[F_DISPCORR];
             }
+            /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
+            sum_dhdl(enerd,state->lambda,ir->fepvals);
         }
         
         /* ########  END FIRST UPDATE STEP  ############## */
         /* ########  If doing VV, we now have v(dt) ###### */
+        if (bDoExpanded) {
+            /* perform extended ensemble sampling in lambda - we don't
+               actually move to the new state before outputting
+               statistics, but if performing simulated tempering, we
+               do update the velocities and the tau_t. */
         
+            lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state,&MassQ,&df_history,step,mcrng,state->v,mdatoms);
+        }
         /* ################## START TRAJECTORY OUTPUT ################# */
         
         /* Now we have the energies and forces corresponding to the 
@@ -2180,6 +1384,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     get_stochd_state(upd,state);
                 }
+                if (state->flags  & (1<<estMC_RNG))
+                {
+                    get_mc_state(mcrng,state);
+                }
                 if (MASTER(cr))
                 {
                     if (bSumEkinhOld)
@@ -2192,6 +1400,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         state_global->ekinstate.bUpToDate = TRUE;
                     }
                     update_energyhistory(&state_global->enerhist,mdebin);
+                    if (ir->efep!=efepNO || ir->bSimTemp) 
+                    {
+                        state_global->fep_state = state->fep_state; /* MRS: seems kludgy. The code should be
+                                                                       structured so this isn't necessary.
+                                                                       Note this reassignment is only necessary
+                                                                       for single threads.*/
+                        copy_df_history(&state_global->dfhist,&df_history);
+                    }
                 }
             }
             write_traj(fplog,cr,outf,mdof_flags,top_global,
@@ -2211,8 +1427,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * at the last step.
                  */
                 fprintf(stderr,"\nWriting final coordinates.\n");
-                if (ir->ePBC != epbcNONE && !ir->bPeriodicMols &&
-                    DOMAINDECOMP(cr))
+                if (fr->bMolPBC)
                 {
                     /* Make molecules whole only for confout writing */
                     do_pbc_mtop(fplog,ir->ePBC,state->box,top_global,state_global->x);
@@ -2235,33 +1450,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         /*  ################## END TRAJECTORY OUTPUT ################ */
         
-        /* Determine the pressure:
-         * always when we want exact averages in the energy file,
-         * at ns steps when we have pressure coupling,
-         * otherwise only at energy output steps (set below).
-         */
-    
-        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEnerPres = bNstEner;
-        
-        /* Do we need global communication ? */
-        bGStat = (bGStatEveryStep || bStopCM || bNS ||
-                  (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
-        
-        do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
-        
-        if (do_ene || do_log)
-        {
-            bCalcEnerPres = TRUE;
-            bGStat        = TRUE;
-        }
-
         /* Determine the wallclock run time up till now */
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */    
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             && MASTER(cr)
 #endif
             )
@@ -2301,7 +1495,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
         }
-        
+
         if (bResetCountersHalfMaxH && MASTER(cr) &&
             run_time > max_hours*60.0*60.0*0.495)
         {
@@ -2346,6 +1540,23 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.sig[eglsCHKPT] = 1;
         }
   
+
+        /* at the start of step, randomize the velocities */
+        if (ETC_ANDERSEN(ir->etc) && EI_VV(ir->eI))
+        {
+            gmx_bool bDoAndersenConstr;
+            bDoAndersenConstr = (constr && update_randomize_velocities(ir,step,mdatoms,state,upd,&top->idef,constr));
+            /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
+            if (bDoAndersenConstr)
+            {
+                update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,
+                                   state,fr->bMolPBC,graph,f,
+                                   &top->idef,tmp_vir,NULL,
+                                   cr,nrnb,wcycle,upd,constr,
+                                   bInitStep,TRUE,bCalcVir,vetanew);
+            }
+        }
+
         if (bIterations)
         {
             gmx_iterate_init(&iterate,bIterations);
@@ -2417,7 +1628,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if (bVV)
                 {
                     /* velocity half-step update */
-                    update_coords(fplog,step,ir,mdatoms,state,f,
+                    update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
                                   fr->bTwinRange && bNStList,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,
                                   cr,nrnb,constr,&top->idef);
@@ -2433,14 +1644,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     copy_rvecn(state->x,cbuf,0,state->natoms);
                 }
                 
-                update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
+                              fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                 wallcycle_stop(wcycle,ewcUPDATE);
 
-                update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,
+                                   fr->bMolPBC,graph,f,
                                    &top->idef,shake_vir,force_vir,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,FALSE,bCalcEnerPres,state->veta);  
+                                   bInitStep,FALSE,bCalcVir,state->veta);  
                 
                 if (ir->eI==eiVVAK) 
                 {
@@ -2457,7 +1670,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
-                    update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                    update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
+                                  fr->bTwinRange && bNStList,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                     wallcycle_stop(wcycle,ewcUPDATE);
 
@@ -2466,10 +1680,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure. 
                      * For now, will call without actually constraining, constr=NULL*/
-                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,
+                                       state,fr->bMolPBC,graph,f,
                                        &top->idef,tmp_vir,force_vir,
                                        cr,nrnb,wcycle,upd,NULL,
-                                       bInitStep,FALSE,bCalcEnerPres,
+                                       bInitStep,FALSE,bCalcVir,
                                        state->veta);  
                 }
                 if (!bOK && !bFFscan) 
@@ -2479,9 +1694,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 if (fr->bSepDVDL && fplog && do_log) 
                 {
-                    fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
+                    fprintf(fplog,sepdvdlformat,"Constraint dV/dl",0.0,dvdl);
                 }
-                enerd->term[F_DHDL_CON] += dvdl;
+                enerd->term[F_DVDL_BONDED] += dvdl;
             } 
             else if (graph) 
             {
@@ -2511,28 +1726,39 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             
             /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
-            if (ir->nstlist == -1 && bFirstIterate)
+            /* With Leap-Frog we can skip compute_globals at
+             * non-communication steps, but we need to calculate
+             * the kinetic energy one step before communication.
+             */
+            if (bGStat || do_per_step(step+1,nstglobalcomm) ||
+                EI_VV(ir->eI))
             {
-                gs.sig[eglsNABNSB] = nlh.nabnsb;
-            }
-            compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                            wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                            constr,
-                            bFirstIterate ? &gs : NULL,(step % gs.nstms == 0),
-                            lastbox,
-                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                            cglo_flags 
-                            | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
-                            | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
-                            | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
-                            | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
-                            | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
-                            | CGLO_CONSTRAINT 
-                );
-            if (ir->nstlist == -1 && bFirstIterate)
-            {
-                nlh.nabnsb = gs.set[eglsNABNSB];
-                gs.set[eglsNABNSB] = 0;
+                if (ir->nstlist == -1 && bFirstIterate)
+                {
+                    gs.sig[eglsNABNSB] = nlh.nabnsb;
+                }
+                compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+                                wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                                constr,
+                                bFirstIterate ? &gs : NULL, 
+                                (step_rel % gs.nstms == 0) && 
+                                (multisim_nsteps<0 || (step_rel<multisim_nsteps)),
+                                lastbox,
+                                top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                                cglo_flags 
+                                | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0)
+                                | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
+                                | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
+                                | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
+                                | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
+                                | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                                | CGLO_CONSTRAINT 
+                    );
+                if (ir->nstlist == -1 && bFirstIterate)
+                {
+                    nlh.nabnsb = gs.set[eglsNABNSB];
+                    gs.set[eglsNABNSB] = 0;
+                }
             }
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
@@ -2551,6 +1777,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bFirstIterate = FALSE;
         }
 
+        /* only add constraint dvdl after constraints */
+        enerd->term[F_DVDL_BONDED] += dvdl;
+        if (!bVV)
+        {
+            /* sum up the foreign energy and dhdl terms for md and sd. currently done every step so that dhdl is correct in the .edr */
+            sum_dhdl(enerd,state->lambda,ir->fepvals);
+        }
         update_box(fplog,step,ir,mdatoms,state,graph,f,
                    ir->nstlist==-1 ? &nlh.scale_tot : NULL,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
         
@@ -2564,10 +1797,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                  f,NULL,xcopy,
                                  &(top_global->mols),mdatoms->massT,pres))
             {
-                if (gmx_parallel_env_initialized())
-                {
-                    gmx_finalize();
-                }
+                gmx_finalize_par();
+
                 fprintf(stderr,"\n");
                 exit(0);
             }
@@ -2602,9 +1833,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
-        /* sum up the foreign energy and dhdl terms */
-        sum_dhdl(enerd,state->lambda,ir);
-
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {
@@ -2647,12 +1875,19 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             gmx_bool do_dr,do_or;
             
+            if (fplog && do_log && bDoExpanded)
+            {
+                /* only needed if doing expanded ensemble */
+                PrintFreeEnergyInfoToFile(fplog,ir->fepvals,ir->expandedvals,ir->bSimTemp?ir->simtempvals:NULL,
+                                          &df_history,state->fep_state,ir->nstlog,step);
+            }
             if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {
-                if (bNstEner)
+                if (bCalcEner)
                 {
                     upd_mdebin(mdebin,bDoDHDL, TRUE,
-                               t,mdatoms->tmass,enerd,state,lastbox,
+                               t,mdatoms->tmass,enerd,state,
+                               ir->fepvals,ir->expandedvals,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);
                 }
@@ -2677,14 +1912,21 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if(fflush(fplog) != 0)
                 {
-                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of disk space?");
                 }
             }
         }
-
-
+        if (bDoExpanded)
+        {
+            /* Have to do this part after outputting the logfile and the edr file */
+            state->fep_state = lamnew;
+            for (i=0;i<efptNR;i++)
+            {
+                state->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
+            }
+        }
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && bDonePMETune)
         {
             if (shellfc) 
             {
@@ -2699,7 +1941,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             do_per_step(step,repl_ex_nst)) 
         {
             bExchanged = replica_exchange(fplog,cr,repl_ex,
-                                          state_global,enerd->term,
+                                          state_global,enerd,
                                           state,step,t);
 
             if (bExchanged && DOMAINDECOMP(cr)) 
@@ -2731,7 +1973,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */
-        
+
+        if ( (membed!=NULL) && (!bLastStep) )
+        {
+            rescale_membed(step_rel,membed,state_global->x);
+        }
+
         if (bRerunMD) 
         {
             if (MASTER(cr))
@@ -2758,18 +2005,47 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             dd_cycles_add(cr->dd,cycles,ddCyclStep);
         }
+
+        if (pme_switch != NULL && !bDonePMETune)
+        {
+            /* PME grid + cut-off optimization with GPUs */
+
+            /* Count the total cycles over the last steps */
+            cycles_pmes += cycles;
+
+            /* We can only switch cut-off at NS steps */
+            if (step % ir->nstlist == 0)
+            {
+                /* init_step might not be a multiple of nstlist,
+                 * but the first cycle is always skipped anyhow.
+                 */
+                bDonePMETune =
+                    switch_pme(pme_switch,cr,
+                               (bVerbose && MASTER(cr)) ? stderr : NULL,
+                               fplog,
+                               ir,state,cycles_pmes,
+                               fr->ic,fr->nbv,&fr->pmedata,
+                               step);
+
+                fr->ewaldcoeff = fr->ic->ewaldcoeff;
+
+                cycles_pmes = 0;
+            }
+        }
         
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
             gs.set[eglsRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
+            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,
+                               fr->nbv != NULL && fr->nbv->bUseGPU ? fr->nbv->cu_nbv : NULL);
             wcycle_set_reset_counters(wcycle,-1);
             /* Correct max_hours for the elapsed time */
             max_hours -= run_time/(60.0*60.0);
             bResetCountersHalfMaxH = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
         }
+
     }
     /* End of main MD loop */
     debug_gmx();
@@ -2821,6 +2097,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     
     runtime->nsteps_done = step_rel;
-    
-    return 0;
+
+   return 0;
 }

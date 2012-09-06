@@ -166,7 +166,7 @@ typedef int             imatrix[DIM][DIM];
  * Instead, start by looking for "long long", and just go down if we
  * have to (rarely on new systems). /EL 20100810
  */
-#if ( (defined LLONG_MAX && LLONG_MAX==9223372036854775807LL) || (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT==8) )
+#if ( (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT==8) || (defined LLONG_MAX && LLONG_MAX==9223372036854775807LL) )
 
 /* Long long int is 64 bit */
 typedef long long int gmx_large_int_t;
@@ -174,8 +174,10 @@ typedef long long int gmx_large_int_t;
 #define gmx_large_int_pfmt "%lld"
 #define SIZEOF_GMX_LARGE_INT  8
 #define GMX_LARGE_INT_MAX     9223372036854775807LL
+#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
+#define GMX_MPI_LARGE_INT MPI_LONG_LONG_INT
 
-#elif ( (defined LONG_MAX && LONG_MAX==9223372036854775807L) || (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT==8) )
+#elif ( (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT==8) || (defined LONG_MAX && LONG_MAX==9223372036854775807L) )
 
 /* Long int is 64 bit */
 typedef long int gmx_large_int_t;
@@ -183,8 +185,10 @@ typedef long int gmx_large_int_t;
 #define gmx_large_int_pfmt "%ld"
 #define SIZEOF_GMX_LARGE_INT  8
 #define GMX_LARGE_INT_MAX     9223372036854775807LL
+#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
+#define GMX_MPI_LARGE_INT MPI_LONG_INT
 
-#elif ( (defined INT_MAX && INT_MAX==9223372036854775807L) || (defined SIZEOF_INT && SIZEOF_INT==8) )
+#elif ( (defined SIZEOF_INT && SIZEOF_INT==8) || (defined INT_MAX && INT_MAX==9223372036854775807L) )
 
 /* int is 64 bit */
 typedef int gmx_large_int_t;
@@ -192,6 +196,8 @@ typedef int gmx_large_int_t;
 #define gmx_large_int_pfmt  "%d"
 #define SIZEOF_GMX_LARGE_INT  8
 #define GMX_LARGE_INT_MAX     9223372036854775807LL
+#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
+#define GMX_MPI_LARGE_INT MPI_INT
 
 #elif ( (defined INT_MAX && INT_MAX==2147483647) || (defined SIZEOF_INT && SIZEOF_INT==4) )
 
@@ -201,6 +207,8 @@ typedef int gmx_large_int_t;
 #define gmx_large_int_pfmt "%d"
 #define SIZEOF_GMX_LARGE_INT  4
 #define GMX_LARGE_INT_MAX     2147483647
+#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1)
+#define GMX_MPI_LARGE_INT MPI_INT
 
 #else
 
@@ -264,6 +272,10 @@ typedef int gmx_large_int_t;
 #  define gmx_restrict
 #endif
 
+
+/* Standard sizes for char* string buffers */
+#define STRLEN 4096
+#define BIG_STRLEN 1048576
 
 
 #ifdef __cplusplus

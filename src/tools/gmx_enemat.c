@@ -79,7 +79,7 @@ int gmx_enemat(int argc,char *argv[])
     "line a group of atoms to be used. For these groups matrix of",
     "interaction energies will be extracted from the energy file",
     "by looking for energy groups with names corresponding to pairs",
-    "of groups of atoms. E.g. if your [TT]-groups[tt] file contains:[BR]",
+    "of groups of atoms, e.g. if your [TT]-groups[tt] file contains:[BR]",
     "[TT]2[tt][BR]",
     "[TT]Protein[tt][BR]",
     "[TT]SOL[tt][BR]",
@@ -95,7 +95,7 @@ int gmx_enemat(int argc,char *argv[])
     "calculated ([TT]-etot[tt]).[PAR]",
     
     "An approximation of the free energy can be calculated using:",
-    "E(free) = E0 + kT log( <exp((E-E0)/kT)> ), where '<>'",
+    "[MATH]E[SUB]free[sub] = E[SUB]0[sub] + kT [LOG][CHEVRON][EXP](E-E[SUB]0[sub])/kT[exp][chevron][log][math], where '[MATH][CHEVRON][chevron][math]'",
     "stands for time-average. A file with reference free energies",
     "can be supplied to calculate the free energy difference",
     "with some reference state. Group names (e.g. residue names)",
@@ -352,8 +352,6 @@ int gmx_enemat(int argc,char *argv[])
     }
    
     emid = 0.0;/*(emin+emax)*0.5;*/
-    for(m=0; (m<egNR); m++)
-      egrp_nm[m]=egrp_nm[m];
     egrp_nm[egTotal]="total";
     for (m=0; (m<egNR+egSP); m++) 
       if (egrp_use[m]) {

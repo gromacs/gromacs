@@ -1,4 +1,24 @@
 [ bondedtypes ]
+; Column 1 : default bondtype
+; Column 2 : default angletype
+; Column 3 : default proper dihedraltype
+; Column 4 : default improper dihedraltype
+; Column 5 : This controls the generation of dihedrals from the bonding.
+;            All possible dihedrals are generated automatically. A value of
+;            1 here means that all these are retained. A value of
+;            0 here requires generated dihedrals be removed if
+;              * there are any dihedrals on the same central atoms
+;                specified in the residue topology, or
+;              * there are other identical generated dihedrals
+;                sharing the same central atoms, or
+;              * there are other generated dihedrals sharing the
+;                same central bond that have fewer hydrogen atoms
+; Column 6 : number of neighbors to exclude from non-bonded interactions
+; Column 7 : 1 = generate 1,4 interactions between pairs of hydrogen atoms
+;            0 = do not generate such
+; Column 8 : 1 = remove proper dihedrals if found centered on the same
+;                bond as an improper dihedral
+;            0 = do not generate such
 ; bonds  angles  dihedrals  impropers
     2       2          1          2
 
@@ -6454,7 +6474,7 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C5    C4    C3    O3     gd_17   
    C5    C4    C3    C2     gd_34   
   -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
+   C3    C4    C5    O5     gd_34   
    C3    C4    C5    O5     gd_17   
    C2    C3    O3   HO3     gd_30   
    C4    C3    C2    O2     gd_17   
@@ -6462,9 +6482,9 @@ FC10A  FC4A   FN5  FC5A     gi_1
    O3    C3    C2    O2     gd_18   
    O3    C3    C2    C1     gd_17   
    C1    C2    O2   HO2     gd_30   
+   C3    C2    C1    O5     gd_34
    C3    C2    C1    O5     gd_17   
    C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
    O2    C2    C1    O1     gd_18   
    C5    C6    O6   HO6     gd_30   
    O6    C6    C5    O5     gd_5    
@@ -6472,7 +6492,7 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C4    C5    O5    C1     gd_29   
    C5    O5    C1    C2     gd_29   
    O5    C1    O1   +C4     gd_6    
-   O5    C1    O1   +C4     gd_28   
+   O5    C1    O1   +C4     gd_28  
 
 [ GLCB ]
  [ atoms ]
@@ -6545,7 +6565,7 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C5    C4    C3    O3     gd_17   
    C5    C4    C3    C2     gd_34   
   -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
+   C3    C4    C5    O5     gd_34
    C3    C4    C5    O5     gd_17   
    C2    C3    O3   HO3     gd_30   
    C4    C3    C2    O2     gd_17   
@@ -6553,9 +6573,9 @@ FC10A  FC4A   FN5  FC5A     gi_1
    O3    C3    C2    O2     gd_18   
    O3    C3    C2    C1     gd_17   
    C1    C2    O2   HO2     gd_30   
+   C3    C2    C1    O5     gd_34
    C3    C2    C1    O5     gd_17   
    C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
    O2    C2    C1    O1     gd_18   
    C5    C6    O6   HO6     gd_30   
    O6    C6    C5    O5     gd_5    
@@ -6636,7 +6656,7 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C5    C4    C3    O3     gd_17   
    C5    C4    C3    C2     gd_34   
   -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
+   C3    C4    C5    O5     gd_34   
    C3    C4    C5    O5     gd_17   
    C2    C3    O3   HO3     gd_30   
    C4    C3    C2    O2     gd_17   
@@ -6644,9 +6664,9 @@ FC10A  FC4A   FN5  FC5A     gi_1
    O3    C3    C2    O2     gd_18   
    O3    C3    C2    C1     gd_17   
    C1    C2    O2   HO2     gd_30   
+   C3    C2    C1    O5     gd_34
    C3    C2    C1    O5     gd_17   
    C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
    O2    C2    C1    O1     gd_18   
    C5    C6    O6   HO6     gd_30   
    O6    C6    C5    C4     gd_1    
@@ -6722,32 +6742,32 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C1    C3    O2    C2     gi_2    
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
-  -C1   -O1    C4    C3     gd_30   
-  -O1    C4    C3    O3     gd_18   
-  -O1    C4    C3    C2     gd_17   
-   C5    C4    C3    O3     gd_17   
-   C5    C4    C3    C2     gd_34   
-  -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
-   C3    C4    C5    O5     gd_17   
-   C2    C3    O3   HO3     gd_30   
-   C4    C3    C2    O2     gd_17   
-   C4    C3    C2    C1     gd_34   
-   O3    C3    C2    O2     gd_18   
-   O3    C3    C2    C1     gd_17   
-   C1    C2    O2   HO2     gd_30   
-   C3    C2    C1    O5     gd_17   
-   C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
-   O2    C2    C1    O1     gd_18   
-   C5    C6    O6   HO6     gd_30   
-   O6    C6    C5    C4     gd_1    
-   O6    C6    C5    O5     gd_3    
-   O6    C6    C5    O5     gd_35   
-   C4    C5    O5    C1     gd_29   
-   C5    O5    C1    C2     gd_29   
-   O5    C1    O1   +C4     gd_2    
-   O5    C1    O1   +C4     gd_32   
+  -C1   -O1    C4    C3     gd_30
+  -O1    C4    C3    O3     gd_18
+  -O1    C4    C3    C2     gd_17
+   C5    C4    C3    O3     gd_17
+   C5    C4    C3    C2     gd_34
+  -O1    C4    C5    C6     gd_17
+   C3    C4    C5    O5     gd_34
+   C3    C4    C5    O5     gd_17
+   C2    C3    O3   HO3     gd_30
+   C4    C3    C2    O2     gd_17
+   C4    C3    C2    C1     gd_34
+   O3    C3    C2    O2     gd_18
+   O3    C3    C2    C1     gd_17
+   C1    C2    O2   HO2     gd_30
+   C3    C2    C1    O5     gd_34
+   C3    C2    C1    O5     gd_17
+   C3    C2    C1    O1     gd_17
+   O2    C2    C1    O1     gd_18
+   C5    C6    O6   HO6     gd_30
+   O6    C6    C5    C4     gd_1
+   O6    C6    C5    O5     gd_3
+   O6    C6    C5    O5     gd_35
+   C4    C5    O5    C1     gd_29
+   C5    O5    C1    C2     gd_29
+   O5    C1    O1   +C4     gd_2
+   O5    C1    O1   +C4     gd_32
  
 [ MANA ]
  [ atoms ]
@@ -7059,26 +7079,23 @@ FC10A  FC4A   FN5  FC5A     gi_1
   HO4    O4    C4    C3     gd_30   
    O4    C4    C3    O3     gd_18   
    O4    C4    C3    C2     gd_17   
+   C4    C3    C2    C1     gd_34
    C5    C4    C3    O3     gd_17   
    C5    C4    C3    C2     gd_34   
    O4    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
    C3    C4    C5    O5     gd_17   
    C2    C3    O3   HO3     gd_30   
    C4    C3    C2    O2     gd_17   
-   C4    C3    C2    C1     gd_34   
    O3    C3    C2    O2     gd_18   
    O3    C3    C2    C1     gd_17   
    C1    C2    O2   HO2     gd_30   
    C3    C2    C1    O5     gd_17   
    C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
    O2    C2    C1    O1     gd_18   
    C5    C6    O6   HO6     gd_30   
-   O6    C6    C5    C5     gd_5    
+   O6    C6    C5    O5     gd_5    
    O6    C6    C5    O5     gd_37   
    C4    C5    O5    C1     gd_29   
-  C2'    C5   O3'   O3'     gd_30   
    C5    O5    C1    C2     gd_29   
    O5    C1    O1   C1'     gd_6    
    O5    C1    O1   C1'     gd_28   
@@ -7086,20 +7103,19 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C1    O1   C1'   O5'     gd_28   
   C2'   C1'   O5'   C5'     gd_29   
    O1   C1'   C2'   C3'     gd_17   
-   O1   C1'   C2'   C3'     gd_34   
    O1   C1'   C2'   O2'     gd_18   
   O5'   C1'   C2'   C3'     gd_17   
   C1'   O5'   C5'   C4'     gd_29   
   O5'   C5'   C4'   C3'     gd_17   
   C6'   C5'   C4'   O4'     gd_17   
-  C6'   C5'   C4'   C3'     gd_34   
   O5'   C5'   C6'   O6'     gd_5    
-  O5'   C5'   C6'   O6'     gd_37   
+  O5'   C5'   C6'   O6'     gd_37
+  C2'   C3'   O3'  HO3'     gd_30   
   C3'   C4'   O4'  HO4'     gd_30   
   C5'   C4'   C3'   O3'     gd_17   
   C5'   C4'   C3'   C2'     gd_34   
   O4'   C4'   C3'   C2'     gd_17   
-  C4'   O4'   C3'   O3'     gd_18   
+  O4'   C4'   C3'   O3'     gd_18   
   C4'   C3'   C2'   C1'     gd_34   
   C4'   C3'   C2'   O2'     gd_17   
   O3'   C3'   C2'   C1'     gd_17   
@@ -7180,7 +7196,7 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C5    C4    C3    O3     gd_17   
    C5    C4    C3    C2     gd_34   
   -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
+   C3    C4    C5    O5     gd_34   
    C3    C4    C5    O5     gd_17   
    C2    C3    O3   HO3     gd_30   
    C4    C3    C2    O2     gd_17   
@@ -7188,9 +7204,9 @@ FC10A  FC4A   FN5  FC5A     gi_1
    O3    C3    C2    O2     gd_18   
    O3    C3    C2    C1     gd_17   
    C1    C2    O2   HO2     gd_30   
+   C3    C2    C1    O5     gd_34
    C3    C2    C1    O5     gd_17   
    C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
    O2    C2    C1    O1     gd_18   
   O61    C6    C5    O5     gd_40   
    C4    C5    O5    C1     gd_29   
@@ -7271,7 +7287,7 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C5    C4    C3    O3     gd_17   
    C5    C4    C3    C2     gd_34   
   -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
+   C3    C4    C5    O5     gd_34   
    C3    C4    C5    O5     gd_17   
    C2    C3    O3   HO3     gd_30   
    C4    C3    C2    O2     gd_17   
@@ -7279,9 +7295,9 @@ FC10A  FC4A   FN5  FC5A     gi_1
    O3    C3    C2    O2     gd_18   
    O3    C3    C2    C1     gd_17   
    C1    C2    O2   HO2     gd_30   
+   C3    C2    C1    O5     gd_34   
    C3    C2    C1    O5     gd_17   
    C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
    O2    C2    C1    O1     gd_18   
   O61    C6    C5    O5     gd_40   
    C4    C5    O5    C1     gd_29   
@@ -7356,29 +7372,29 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C1    O5    O1    C2     gi_2    
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
-  -C1   -O1    C4    C3     gd_30   
-  -O1    C4    C3    O3     gd_18   
-  -O1    C4    C3    C2     gd_17   
-   C5    C4    C3    O3     gd_17   
-   C5    C4    C3    C2     gd_34   
-  -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
-   C3    C4    C5    O5     gd_17   
-   C2    C3    O3   HO3     gd_30   
-   C4    C3    C2    O2     gd_17   
-   C4    C3    C2    C1     gd_34   
-   O3    C3    C2    O2     gd_18   
-   O3    C3    C2    C1     gd_17   
-   C1    C2    O2   HO2     gd_30   
-   C3    C2    C1    O5     gd_17   
-   C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
-   O2    C2    C1    O1     gd_18   
-  O61    C6    C5    O5     gd_40   
-   C4    C5    O5    C1     gd_29   
-   C5    O5    C1    C2     gd_29   
-   O5    C1    O1   +C4     gd_6    
-   O5    C1    O1   +C4     gd_28   
+  -C1   -O1    C4    C3     gd_30
+  -O1    C4    C3    O3     gd_18
+  -O1    C4    C3    C2     gd_17
+   C5    C4    C3    O3     gd_17
+   C5    C4    C3    C2     gd_34
+  -O1    C4    C5    C6     gd_17
+   C3    C4    C5    O5     gd_34
+   C3    C4    C5    O5     gd_17
+   C2    C3    O3   HO3     gd_30
+   C4    C3    C2    O2     gd_17
+   C4    C3    C2    C1     gd_34
+   O3    C3    C2    O2     gd_18
+   O3    C3    C2    C1     gd_17
+   C1    C2    O2   HO2     gd_30
+   C3    C2    C1    O5     gd_34
+   C3    C2    C1    O5     gd_17
+   C3    C2    C1    O1     gd_17
+   O2    C2    C1    O1     gd_18
+  O61    C6    C5    O5     gd_40
+   C4    C5    O5    C1     gd_29
+   C5    O5    C1    C2     gd_29
+   O5    C1    O1   +C4     gd_6
+   O5    C1    O1   +C4     gd_28
 
 [ UGUA ]
  [ atoms ]
@@ -7447,29 +7463,29 @@ FC10A  FC4A   FN5  FC5A     gi_1
    C1    O5    O1    C2     gi_2    
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
-  -C1   -O1    C4    C3     gd_30   
-  -O1    C4    C3    O3     gd_18   
-  -O1    C4    C3    C2     gd_17   
-   C5    C4    C3    O3     gd_17   
-   C5    C4    C3    C2     gd_34   
-  -O1    C4    C5    C6     gd_17   
-   C3    C4    C5    C6     gd_34   
-   C3    C4    C5    O5     gd_17   
-   C2    C3    O3   HO3     gd_30   
-   C4    C3    C2    O2     gd_17   
-   C4    C3    C2    C1     gd_34   
-   O3    C3    C2    O2     gd_18   
-   O3    C3    C2    C1     gd_17   
-   C1    C2    O2   HO2     gd_30   
-   C3    C2    C1    O5     gd_17   
-   C3    C2    C1    O1     gd_17   
-   C3    C2    C1    O1     gd_34   
-   O2    C2    C1    O1     gd_18   
-  O61    C6    C5    O5     gd_40   
-   C4    C5    O5    C1     gd_29   
-   C5    O5    C1    C2     gd_29   
-   O5    C1    O1   +C4     gd_6    
-   O5    C1    O1   +C4     gd_28   
+  -C1   -O1    C4    C3     gd_30
+  -O1    C4    C3    O3     gd_18
+  -O1    C4    C3    C2     gd_17
+   C5    C4    C3    O3     gd_17
+   C5    C4    C3    C2     gd_34
+  -O1    C4    C5    C6     gd_17
+   C3    C4    C5    O5     gd_34
+   C3    C4    C5    O5     gd_17
+   C2    C3    O3   HO3     gd_30
+   C4    C3    C2    O2     gd_17
+   C4    C3    C2    C1     gd_34
+   O3    C3    C2    O2     gd_18
+   O3    C3    C2    C1     gd_17
+   C1    C2    O2   HO2     gd_30
+   C3    C2    C1    O5     gd_34
+   C3    C2    C1    O5     gd_17
+   C3    C2    C1    O1     gd_17
+   O2    C2    C1    O1     gd_18
+  O61    C6    C5    O5     gd_40
+   C4    C5    O5    C1     gd_29
+   C5    O5    C1    C2     gd_29
+   O5    C1    O1   +C4     gd_6
+   O5    C1    O1   +C4     gd_28
 
 [ DPPC ]
  [ atoms ]

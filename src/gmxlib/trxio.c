@@ -38,6 +38,8 @@
 
 #include <ctype.h>
 #include "sysstuff.h"
+#include "typedefs.h"
+#include "vmdio.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
@@ -53,7 +55,6 @@
 #include "confio.h"
 #include "checkpoint.h"
 #include "wgms.h"
-#include "vmdio.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -222,6 +223,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
       for(i=0; i<nind; i++) 
 	copy_rvec(fr->f[ind[i]],fout[i]);
     }
+  /* no break */
   case efXTC:
   case efG87:
     if (fr->bX) {
@@ -277,6 +279,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
   case efTRR:
     if (vout) sfree(vout);
     if (fout) sfree(fout);
+  /* no break */
   case efXTC:
   case efG87:
     sfree(xout);
@@ -406,6 +409,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
     fr->bTime=TRUE;
     fr->time=sh.t;
     fr->bLambda = TRUE;
+    fr->bFepState = TRUE;
     fr->lambda = sh.lambda;
     fr->bBox = sh.box_size>0;
     if (fr->flags & (TRX_READ_X | TRX_NEED_X)) {
@@ -434,7 +438,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
   return bRet;    
 }
 
-static void choose_ff(FILE *fp)
+static void choose_file_format(FILE *fp)
 {
   int i,m,c;
   int rc;
@@ -583,7 +587,7 @@ static int xyz_first_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
   initcount(status);
 
   clear_mat(box);
-  choose_ff(fp);
+  choose_file_format(fp);
 
   for(m=0; (m<DIM); m++)
     box[m][m]=status->BOX[m];
@@ -690,6 +694,9 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       /* Checkpoint files can not contain mulitple frames */
       break;
     case efG96:
+      gmx_fatal(FARGS,
+		"Reading trajectories in .g96 format is broken. Please use\n"
+		"a different file format.");
       read_g96_conf(gmx_fio_getfp(status->fio),NULL,fr);
       bRet = (fr->natoms > 0);
       break;
@@ -709,8 +716,9 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
        * accuracy of the control over -b and -e options.
        */
         if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
-            if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms)) {
-                gmx_fatal(FARGS,"Specified frame doesn't exist or file not seekable");
+          if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms,TRUE)) {
+            gmx_fatal(FARGS,"Specified frame (time %f) doesn't exist or file corrupt/inconsistent.",
+                      rTimeValue(TBEGIN));
             }
             initcount(status);
         }
@@ -734,7 +742,7 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio),fr);
       break;
     default:
-#ifdef GMX_DLOPEN
+#ifdef GMX_USE_PLUGINS
       bRet = read_next_vmd_frame(dummy,fr);
 #else
       gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%s",
@@ -744,13 +752,13 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
     }
     
     if (bRet) {
-      bMissingData = ((fr->flags & TRX_NEED_X && !fr->bX) ||
-		      (fr->flags & TRX_NEED_V && !fr->bV) ||
-		      (fr->flags & TRX_NEED_F && !fr->bF));
+      bMissingData = (((fr->flags & TRX_NEED_X) && !fr->bX) ||
+		      ((fr->flags & TRX_NEED_V) && !fr->bV) ||
+		      ((fr->flags & TRX_NEED_F) && !fr->bF));
       bSkip = FALSE;
       if (!bMissingData) {
 	ct=check_times2(fr->time,fr->t0,fr->tpf,fr->tppf,fr->bDouble);
-	if (ct == 0 || (fr->flags & TRX_DONT_SKIP && ct<0)) {
+	if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct<0)) {
 	  printcount(status, oenv,fr->time,FALSE);
 	} else if (ct > 0)
 	  bRet = FALSE;
@@ -856,7 +864,7 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
     bFirst = FALSE;
     break;
   default:
-#ifdef GMX_DLOPEN
+#ifdef GMX_USE_PLUGINS
       fprintf(stderr,"The file format of %s is not a known trajectory format to GROMACS.\n"
 	      "Please make sure that the file is a trajectory!\n"
 	      "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
@@ -868,8 +876,8 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
       }
 #else
       gmx_fatal(FARGS,"Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
-		"GROMACS is not compiled with DLOPEN. Thus it cannot read non-GROMACS trajectory formats.\n"
-		"Please compile with DLOPEN support if you want to read non-GROMACS trajectory formats.\n",fn);
+		"GROMACS is not compiled with plug-in support. Thus it cannot read non-GROMACS trajectory formats using the VMD plug-ins.\n"
+		"Please compile with plug-in support if you want to read non-GROMACS trajectory formats.\n",fn);
 #endif
       break;
   }
@@ -951,35 +959,3 @@ static void clear_v(t_trxframe *fr)
       clear_rvec(fr->v[i]);
 }
 
-int read_first_v(const output_env_t oenv, t_trxstatus **status,const char *fn,
-                 real *t, rvec **v,matrix box)
-{
-  t_trxframe fr;
-
-  read_first_frame(oenv,status,fn,&fr,TRX_NEED_V);
-  *t = fr.time;
-  clear_v(&fr);
-  *v = fr.v;
-  copy_mat(fr.box,box);
-  
-  return fr.natoms;
-}
-
-gmx_bool read_next_v(const output_env_t oenv,t_trxstatus *status,real *t,
-                 int natoms,rvec v[], matrix box)
-{
-  t_trxframe fr;
-  gmx_bool bRet;
-
-  clear_trxframe(&fr,TRUE);
-  fr.flags = TRX_NEED_V;
-  fr.natoms = natoms;
-  fr.time = *t;
-  fr.v = v;
-  bRet = read_next_frame(oenv,status,&fr);
-  *t = fr.time;
-  clear_v(&fr);
-  copy_mat(fr.box,box);
-
-  return bRet;
-}

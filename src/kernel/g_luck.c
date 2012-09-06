@@ -38,7 +38,7 @@
 
 #include <stdio.h>
 #include "copyrite.h"
-#include "string.h"
+#include <string.h>
 #include "statutil.h"
 
 int main(int argc,char *argv[])

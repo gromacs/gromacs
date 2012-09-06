@@ -205,10 +205,12 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, gmx_bool bFirst)
     memcpy(dest->x, src->x, dest->nr*sizeof(*dest->x));
     if (dest->v)
     {
+        assert(src->v);
         memcpy(dest->v, src->v, dest->nr*sizeof(*dest->v));
     }
     if (dest->f)
     {
+        assert(src->f);
         memcpy(dest->f, src->f, dest->nr*sizeof(*dest->f));
     }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);

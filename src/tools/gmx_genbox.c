@@ -45,7 +45,7 @@
 #include "confio.h"
 #include "copyrite.h"
 #include "txtdump.h"
-#include "math.h"
+#include <math.h>
 #include "macros.h"
 #include "random.h"
 #include "futil.h"
@@ -87,7 +87,8 @@ static gmx_bool in_box(t_pbc *pbc,rvec x)
   rvec box_center,dx;
   int  shift;
   
-  calc_box_center(ecenterTRIC,pbc->box,box_center);
+  /* pbc_dx_aiuc only works correctly with the rectangular box center */
+  calc_box_center(ecenterRECT,pbc->box,box_center);
   
   shift = pbc_dx_aiuc(pbc,x,box_center,dx);
   
@@ -627,8 +628,8 @@ int gmx_genbox(int argc,char *argv[])
     "The program iterates until [TT]nmol[tt] molecules",
     "have been inserted in the box. To test whether an insertion is ",
     "successful the same van der Waals criterium is used as for removal of ",
-    "solvent molecules. When no appropriately ",
-    "sized holes (holes that can hold an extra molecule) are available the ",
+    "solvent molecules. When no appropriately-sized ",
+    "holes (holes that can hold an extra molecule) are available, the ",
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
     "Increase [TT]-try[tt] if you have several small holes to fill.[PAR]",
 
@@ -651,8 +652,9 @@ int gmx_genbox(int argc,char *argv[])
     "equlibrated in periodic boundary conditions to ensure a good",
     "alignment of molecules on the stacking interfaces.",
     "The [TT]-maxsol[tt] option simply adds only the first [TT]-maxsol[tt]",
-    "solvent molecules and leaves out the rest would have fit into the box.",
-    "[PAR]",
+    "solvent molecules and leaves out the rest that would have fitted",
+    "into the box. This can create a void that can cause problems later.",
+    "Choose your volume wisely.[PAR]",
     
     "The program can optionally rotate the solute molecule to align the",
     "longest molecule axis along a box edge. This way the amount of solvent",
@@ -712,21 +714,21 @@ int gmx_genbox(int argc,char *argv[])
   output_env_t oenv;
   t_pargs pa[] = {
     { "-box",    FALSE, etRVEC, {new_box},   
-      "box size" },
+      "Box size" },
     { "-nmol",   FALSE, etINT , {&nmol_ins},  
-      "no of extra molecules to insert" },
+      "Number of extra molecules to insert" },
     { "-try",    FALSE, etINT , {&nmol_try},  
-      "try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
+      "Try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
     { "-seed",   FALSE, etINT , {&seed},      
-      "random generator seed"},
+      "Random generator seed"},
     { "-vdwd",   FALSE, etREAL, {&r_distance},
-      "default vdwaals distance"},
+      "Default van der Waals distance"},
     { "-shell",  FALSE, etREAL, {&r_shell},
-      "thickness of optional water layer around solute" },
+      "Thickness of optional water layer around solute" },
     { "-maxsol", FALSE, etINT,  {&max_sol},
-      "maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
+      "Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
     { "-vel",    FALSE, etBOOL, {&bReadV},
-      "keep velocities from input solute and solvent" }
+      "Keep velocities from input solute and solvent" }
   };
 
   CopyRight(stderr,argv[0]);
@@ -742,6 +744,12 @@ int gmx_genbox(int argc,char *argv[])
   if (bInsert && nmol_ins<=0)
     gmx_fatal(FARGS,"When specifying inserted molecules (-ci), "
 		"-nmol must be larger than 0");
+  if (!bInsert && nmol_ins > 0)
+  {
+    gmx_fatal(FARGS,
+              "You tried to insert molecules with -nmol, but did not supply "
+              "a molecule to insert with -ci.");
+  }
   if (!bProt && !bBox)
     gmx_fatal(FARGS,"When no solute (-cp) is specified, "
 		"a box size (-box) must be specified");

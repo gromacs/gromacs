@@ -71,8 +71,8 @@ files.
 
 /* there are a few global variables that maintain information about the
    running threads. Some are defined by the MPI standard: */
-tMPI_Comm TMPI_COMM_WORLD=NULL;
-tMPI_Group tMPI_GROUP_EMPTY=NULL;
+/* TMPI_COMM_WORLD is in tmpi_malloc.c due to technical reasons */
+tMPI_Group TMPI_GROUP_EMPTY=NULL;
 
 
 /* the threads themselves (tmpi_comm only contains lists of pointers to this
@@ -136,28 +136,6 @@ void tMPI_Trace_print(const char *fmt, ...)
     tMPI_Thread_mutex_unlock(&mtx);
 }
 #endif
-
-
-void *tMPI_Malloc(size_t size)
-{
-    void *ret=(void*)malloc(size);
-
-    if (!ret)
-    {
-        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
-    }
-    return ret;
-}
-
-void *tMPI_Realloc(void *p, size_t size)
-{
-    void *ret=(void*)realloc(p, size);
-    if (!ret)
-    {
-        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
-    }
-    return ret;
-}
 
 
 #if 0
@@ -244,7 +222,10 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
     }
     if (*nthreads<1)
     {
-        *nthreads=tMPI_Get_recommended_nthreads();
+        int nth=tMPI_Thread_get_hw_number();
+
+        if (nth<1) nth=1; /* make sure it's at least 1 */
+        *nthreads=nth;
     }
 
     return ret;
@@ -387,6 +368,7 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
     if (N>0) 
     {
         int i;
+        int set_affinity=FALSE;
 
         tmpi_finalized=FALSE;
         Nthreads=N;
@@ -399,7 +381,7 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
         /* allocate world and thread data */
         threads=(struct tmpi_thread*)tMPI_Malloc(sizeof(struct tmpi_thread)*N);
         TMPI_COMM_WORLD=tMPI_Comm_alloc(NULL, N);
-        tMPI_GROUP_EMPTY=tMPI_Group_alloc();
+        TMPI_GROUP_EMPTY=tMPI_Group_alloc();
 
         if (tMPI_Thread_key_create(&id_key, NULL))
         {
@@ -434,11 +416,36 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
             threads[i].start_fn_main=start_fn_main;
             threads[i].start_arg=start_arg;
         }
+
+        /* now check whether to set affinity */
+#ifdef TMPI_THREAD_AFFINITY
+        {
+            int nhw=tMPI_Thread_get_hw_number();
+            if ((nhw > 1) && (nhw == N))
+            {
+                set_affinity=TRUE;
+            }
+        }
+#endif
+
         for(i=1;i<N;i++) /* zero is the main thread */
         {
-            if (tMPI_Thread_create(&(threads[i].thread_id), 
-                                  tMPI_Thread_starter,
-                                  (void*)&(threads[i]) ) )
+            int ret;
+
+            if (set_affinity)
+            {
+                ret=tMPI_Thread_create_aff(&(threads[i].thread_id), 
+                                           tMPI_Thread_starter,
+                                           (void*)&(threads[i]) ) ;
+            }
+            else
+            {
+                ret=tMPI_Thread_create(&(threads[i].thread_id), 
+                                       tMPI_Thread_starter,
+                                       (void*)&(threads[i]) ) ;
+            }
+
+            if(ret)
             {
                 tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_INIT);
             }
@@ -484,7 +491,8 @@ int tMPI_Init_fn(int main_thread_returns, int N,
 
     if (N<1)
     {
-        N=tMPI_Get_recommended_nthreads();
+        N=tMPI_Thread_get_hw_number();
+        if (N<1) N=1; /*because that's what the fn returns if it doesn't know*/
     }
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
@@ -563,10 +571,10 @@ int tMPI_Finalize(void)
             tMPI_Comm_destroy(TMPI_COMM_WORLD);
         }
 
-        tMPI_Group_free(&tMPI_GROUP_EMPTY);
+        tMPI_Group_free(&TMPI_GROUP_EMPTY);
         threads=0;
         TMPI_COMM_WORLD=NULL;
-        tMPI_GROUP_EMPTY=NULL;
+        TMPI_GROUP_EMPTY=NULL;
         Nthreads=0;
 
         /* deallocate the 'global' structure */

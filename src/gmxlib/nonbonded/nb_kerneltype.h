@@ -337,6 +337,42 @@ nb_kernel_t(int *             nri,
 
 
 
+typedef void
+nb_adress_kernel_t(int *             nri,
+            int *             iinr,
+            int *             jindex,
+            int *             jjnr,
+            int *             shift,
+            real *            shiftvec,
+            real *            fshift,
+            int *             gid,
+            real *            pos,
+            real *            faction,
+            real *            charge,
+            real *            facel,
+            real *            krf,
+            real *            crf,
+            real *            vc,
+            int *             type,
+            int *             ntype,
+            real *            vdwparam,
+            real *            vvdw,
+            real *            tabscale,
+            real *            vftab,
+            real *            invsqrta,
+            real *            dvda,
+            real *            gbtabscale,
+            real *            gbtab,
+            int *             nthreads,
+            int *             count,
+            void *            mtx,
+            int *             outeriter,
+            int *             inneriter,
+            real              force_cap,
+            real *            wf);
+
+
+
 #ifdef __cplusplus
 }
 #endif

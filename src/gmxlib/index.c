@@ -38,6 +38,7 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 #include "sysstuff.h"
 #include "strdb.h"
 #include "futil.h"
@@ -148,7 +149,7 @@ static gmx_bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 }
 
 static void 
-p_status(const char **restype, int nres, const char **typenames, int ntypes, gmx_bool bVerb)
+p_status(const char **restype, int nres, const char **typenames, int ntypes)
 {
     int i,j;
     int found;
@@ -172,16 +173,15 @@ p_status(const char **restype, int nres, const char **typenames, int ntypes, gmx
         }
     }
     
-    if (bVerb)
+    for(i=0; (i<ntypes); i++) 
     {
-        for(i=0; (i<ntypes); i++) 
+        if (counter[i] > 0)
         {
-            if(counter[i]>0)
-            {
-                printf("There are: %5d %10s residues\n",counter[i],typenames[i]);
-            }
+            printf("There are: %5d %10s residues\n",counter[i],typenames[i]);
         }
     }
+
+    sfree(counter);
 }
 
 
@@ -307,11 +307,37 @@ static void analyse_other(const char ** restype,t_atoms *atoms,
   }
 }
 
+/*! /brief Instances of this struct contain the data necessary to
+ *         construct a single (protein) index group in
+ *         analyse_prot(). */
+typedef struct gmx_help_make_index_group
+{
+  /* The set of atom names that will be used to form this index group */
+  const char **defining_atomnames;
+  /* Size of the defining_atomnames array */
+  const int num_defining_atomnames;
+  /* Name of this index group */
+  const char *group_name;
+  /* Whether the above atom names name the atoms in the group, or
+   * those not in the group */
+  gmx_bool bTakeComplement;
+  /* The index in wholename gives the first item in the arrays of
+   * atomnames that should be tested with 'gmx_strncasecmp' in stead of
+   * gmx_strcasecmp, or -1 if all items should be tested with strcasecmp
+   * This is comparable to using a '*' wildcard at the end of specific
+   * atom names, but that is more involved to implement...
+   */
+  int wholename;
+  /* Only create this index group if it differs from the one specified in compareto,
+     where -1 means to always create this group. */
+  int compareto;
+} t_gmx_help_make_index_group;
+
 static void analyse_prot(const char ** restype,t_atoms *atoms,
 			 t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
-  /* atomnames to be used in constructing index groups: */
-  static const char *pnoh[]    = { "H" };
+  /* lists of atomnames to be used in constructing index groups: */
+  static const char *pnoh[]    = { "H", "HN" };
   static const char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
 			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
   static const char *calpha[]  = { "CA" };
@@ -319,36 +345,21 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
   static const char *mc[]      = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT" };
   static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OC1","OC2","OT","OXT" };
   static const char *mch[]     = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT",
-			     "H1","H2","H3","H" };
-  /* array of arrays of atomnames: */
-  static const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
-#define NCH asize(chains)
-  /* array of sizes of arrays of atomnames: */
-  const int       sizes[NCH] = { 
-    0, asize(pnoh), asize(calpha), asize(bb), 
-    asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch), asize(pnodum)
-  };
-  /* descriptive names of index groups */
-  const char   *ch_name[NCH] = { 
-    "Protein", "Protein-H", "C-alpha", "Backbone", 
-    "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H", 
-    "Prot-Masses"
-  };
-  /* construct index group containing (TRUE) or excluding (FALSE)
-     given atom names */
-  const gmx_bool complement[NCH] = { 
-    TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE
-  };
-  const int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1, 11,-1 };
-  /* the index in wholename gives the first item in the arrays of 
-   * atomtypes that should be tested with 'gmx_strncasecmp' in stead of
-   * gmx_strcasecmp, or -1 if all items should be tested with strcasecmp
-   * This is comparable to using a '*' wildcard at the end of specific
-   * atom names, but that is more involved to implement...
-   */
-  /* only add index group if it differs from the specified one, 
-     specify -1 to always add group */
-  const int compareto[NCH] = { -1,-1,-1,-1,-1,-1,-1,-1,-1, 0 };
+				   "H1","H2","H3","H","HN" };
+
+  static const t_gmx_help_make_index_group constructing_data[] =
+    {{ NULL,   0, "Protein",      TRUE,  -1, -1},
+     { pnoh,   asize(pnoh),   "Protein-H",    TRUE,  0,  -1},
+     { calpha, asize(calpha), "C-alpha",      FALSE, -1, -1},
+     { bb,     asize(bb),     "Backbone",     FALSE, -1, -1},
+     { mc,     asize(mc),     "MainChain",    FALSE, -1, -1},
+     { mcb,    asize(mcb),    "MainChain+Cb", FALSE, -1, -1},
+     { mch,    asize(mch),    "MainChain+H",  FALSE, -1, -1},
+     { mch,    asize(mch),    "SideChain",    TRUE,  -1, -1},
+     { mch,    asize(mch),    "SideChain-H",  TRUE,  11, -1},
+     { pnodum, asize(pnodum), "Prot-Masses",  TRUE,  -1, 0},
+    };
+  const int num_index_groups = asize(constructing_data);
 
   int     n,j;
   atom_id *aid;
@@ -365,44 +376,48 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 
   /* calculate the number of protein residues */
   npres=0;
-  for(i=0; (i<atoms->nres); i++)
-  if (!gmx_strcasecmp(restype[i],"Protein"))
-  {
+  for(i=0; (i<atoms->nres); i++) {
+    if (0 == gmx_strcasecmp(restype[i],"Protein")) {
       npres++;
+    }
   }
   /* find matching or complement atoms */
-  for(i=0; (i<(int)NCH); i++) {
+  for(i=0; (i<(int)num_index_groups); i++) {
     nra=0;
     for(n=0; (n<atoms->nr); n++) {
-        if (!gmx_strcasecmp(restype[atoms->atom[n].resind],"Protein")) {
-
+      if (0 == gmx_strcasecmp(restype[atoms->atom[n].resind],"Protein")) {
 	match=FALSE;
-	for(j=0; (j<sizes[i]); j++) {
+	for(j=0; (j<constructing_data[i].num_defining_atomnames); j++) {
 	  /* skip digits at beginning of atomname, e.g. 1H */
 	  atnm=*atoms->atomname[n];
-	  while (isdigit(atnm[0]))
+	  while (isdigit(atnm[0])) {
 	    atnm++;
-	  if ( (wholename[i]==-1) || (j<wholename[i]) ) {
-	    if (gmx_strcasecmp(chains[i][j],atnm) == 0)
+	  }
+	  if ( (constructing_data[i].wholename==-1) || (j<constructing_data[i].wholename) ) {
+	    if (0 == gmx_strcasecmp(constructing_data[i].defining_atomnames[j],atnm)) {
 	      match=TRUE;
+	    }
 	  } else {
-	    if (gmx_strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
+	    if (0 == gmx_strncasecmp(constructing_data[i].defining_atomnames[j],atnm,strlen(constructing_data[i].defining_atomnames[j]))) {
 	      match=TRUE;
+	    }
 	  }
 	}
-	if (match != complement[i])
+	if (constructing_data[i].bTakeComplement != match) {
 	  aid[nra++]=n;
+	}
       }
     }
     /* if we want to add this group always or it differs from previous 
        group, add it: */
-    if ( compareto[i] == -1 || !grp_cmp(gb,nra,aid,compareto[i]-i) )
-      add_grp(gb,gn,nra,aid,ch_name[i]); 
+    if ( -1 == constructing_data[i].compareto || !grp_cmp(gb,nra,aid,constructing_data[i].compareto-i) ) {
+      add_grp(gb,gn,nra,aid,constructing_data[i].group_name);
+    }
   }
   
   if (bASK) {
-    for(i=0; (i<(int)NCH); i++) {
-      printf("Split %12s into %5d residues (y/n) ? ",ch_name[i],npres);
+    for(i=0; (i<(int)num_index_groups); i++) {
+      printf("Split %12s into %5d residues (y/n) ? ",constructing_data[i].group_name,npres);
       if (gmx_ask_yesno(bASK)) {
 	int resind;
 	nra = 0;
@@ -410,18 +425,21 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 	  resind = atoms->atom[n].resind;
 	  for(;((atoms->atom[n].resind==resind) && (n<atoms->nr));n++) {
 	    match=FALSE;
-	    for(j=0;(j<sizes[i]); j++) 
-	      if (gmx_strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
+	    for(j=0;(j<constructing_data[i].num_defining_atomnames); j++) {
+	      if (0 == gmx_strcasecmp(constructing_data[i].defining_atomnames[j],*atoms->atomname[n])) {
 		match=TRUE;
-	    if (match != complement[i])
+	      }
+	    }
+	    if (constructing_data[i].bTakeComplement != match) {
 	      aid[nra++]=n;
+	    }
 	  }
 	  /* copy the residuename to the tail of the groupname */
 	  if (nra > 0) {
 	    t_resinfo *ri;
 	    ri = &atoms->resinfo[resind];
 	    sprintf(ndx_name,"%s_%s%d%c",
-		    ch_name[i],*ri->name,ri->nr,ri->ic==' ' ? '\0' : ri->ic);
+		    constructing_data[i].group_name,*ri->name,ri->nr,ri->ic==' ' ? '\0' : ri->ic);
 	    add_grp(gb,gn,nra,aid,ndx_name);
 	    nra = 0;
 	  }
@@ -442,16 +460,19 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 	    hold=nra;
 	    nra+=2;
 	  } else if (strcmp("C",*atoms->atomname[n]) == 0) {
-	    if (hold == -1)
+	    if (hold == -1) {
 	      gmx_incons("Atom naming problem");
+	    }
 	    aid[hold]=n;
 	  } else if (strcmp("O",*atoms->atomname[n]) == 0) {
-	    if (hold == -1)
+	    if (hold == -1) {
 	      gmx_incons("Atom naming problem");
+	    }
 	    aid[hold+1]=n;
 	  } else if (strcmp("O1",*atoms->atomname[n]) == 0) {
-	    if (hold == -1)
+	    if (hold == -1) {
 	      gmx_incons("Atom naming problem");
+	    }
 	    aid[hold+1]=n;
 	  } else 
 	    aid[nra++]=n;
@@ -703,7 +724,7 @@ gmx_residuetype_get_name(gmx_residuetype_t rt, int index)
 
 void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
-    gmx_residuetype_t rt;
+    gmx_residuetype_t rt=NULL;
     char    *resnm;
     atom_id *aid;
     const char **  restype;
@@ -732,6 +753,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb
 
     /* For every residue, get a pointer to the residue type name */
     gmx_residuetype_init(&rt);
+    assert(rt);
 
     snew(restype,atoms->nres);
     ntypes = 0;
@@ -741,30 +763,25 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb
         resnm = *atoms->resinfo[i].name;
         gmx_residuetype_get_type(rt,resnm,&(restype[i]));
 
-        if(i==0)
+        /* Note that this does not lead to a N*N loop, but N*K, where
+         * K is the number of residue _types_, which is small and independent of N.
+         */
+        found = 0;
+        for(k=0;k<ntypes && !found;k++)
         {
-            snew(p_typename,1);
-            p_typename[ntypes++] = strdup(restype[i]);
+            found = !strcmp(restype[i],p_typename[k]);
         }
-        else
+        if(!found)
         {
-            /* Note that this does not lead to a N*N loop, but N*K, where
-             * K is the number of residue _types_, which is small and independent of N.
-             */
-            found = 0;
-            for(k=0;k<i && !found;k++)
-            {
-                found = !strcmp(restype[i],restype[k]);
-            }
-            if(!found)
-            {
-                srenew(p_typename,ntypes+1);
-                p_typename[ntypes++] = strdup(restype[i]);
-            }
+            srenew(p_typename,ntypes+1);
+            p_typename[ntypes++] = strdup(restype[i]);
         }
     }    
     
-    p_status(restype,atoms->nres,p_typename,ntypes,bVerb);
+    if (bVerb)
+    {
+        p_status(restype,atoms->nres,p_typename,ntypes);
+    }
 
     for(k=0;k<ntypes;k++)
     {              
@@ -904,8 +921,12 @@ t_blocka *init_index(const char *gfile, char ***grpname)
 	b->index[b->nr]=b->index[b->nr-1];
 	(*grpname)[b->nr-1]=strdup(str);
       } else {
+          if (b->nr==0)
+          {
+              gmx_fatal(FARGS,"The first header of your indexfile is invalid");
+          }
 	pt=line;
-	while ((i=sscanf(pt,"%s",str)) == 1) {
+	while (sscanf(pt,"%s",str) == 1) {
 	  i=b->index[b->nr];
 	  if (i>=maxentries) {
 	    maxentries+=1024;

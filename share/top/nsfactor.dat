@@ -1,0 +1,22 @@
+; Neutron scattering factors for elements. Numbers taken from:
+; http://www.ncnr.nist.gov/resources/n-lengths/
+; All data was taken from the
+; Special Feature section of neutron scattering lengths and cross sections of the elements and their isotopes in Neutron News
+; Vol. 3, No. 3, 1992, pp. 29-37.
+; Scattering lenth are in fm (1e-15m)
+; Elem	P	N	Coh_b
+  H     1	0	-3.7406
+  D	1	1	 6.6710
+  C	6	6	 6.6460
+  N	7	7	 9.3600
+  O	8	8	 5.8030
+  Na	11	11	 3.6300
+  Mg	12	12	 5.3750
+  Al	13	14	 3.4490
+  P	15	16	 5.1300
+  S	16	16	 2.8470
+  Cl	17	17	 9.5770
+  K	19	20	 3.6700
+  Ca	20	20	 4.7000
+  Mn	25	30	-3.7300
+  Fe	26	30	 9.4500

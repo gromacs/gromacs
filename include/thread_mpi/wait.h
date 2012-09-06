@@ -36,8 +36,8 @@ files.
 */
 
 
-#ifndef _TMPI_WAIT_H_
-#define _TMPI_WAIT_H_
+#ifndef TMPI_WAIT_H_
+#define TMPI_WAIT_H_
 
 #ifndef TMPI_WAIT_FOR_NO_ONE
 
@@ -97,5 +97,5 @@ files.
 
 #endif /* !TMPI_WAIT_FOR_NO_ONE */
 
-#endif
+#endif /* TMPI_WAIT_H_ */
 

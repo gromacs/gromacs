@@ -37,7 +37,7 @@
 #endif
 
 #include "smalloc.h"
-#include "math.h"
+#include <math.h>
 #include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"
@@ -95,19 +95,19 @@ int gmx_rms(int argc, char *argv[])
         *desc[] =
             {
                 "[TT]g_rms[tt] compares two structures by computing the root mean square",
-                "deviation (RMSD), the size-independent 'rho' similarity parameter",
-                "(rho) or the scaled rho (rhosc), ",
-                "see Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).",
+                "deviation (RMSD), the size-independent [GRK]rho[grk] similarity parameter",
+                "([TT]rho[tt]) or the scaled [GRK]rho[grk] ([TT]rhosc[tt]), ",
+                "see Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).",
                 "This is selected by [TT]-what[tt].[PAR]"
 
-                    "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
+                "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
                 "reference structure. The reference structure",
                 "is taken from the structure file ([TT]-s[tt]).[PAR]",
 
                 "With option [TT]-mir[tt] also a comparison with the mirror image of",
                 "the reference structure is calculated.",
                 "This is useful as a reference for 'significant' values, see",
-                "Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).[PAR]",
+                "Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).[PAR]",
 
                 "Option [TT]-prev[tt] produces the comparison with a previous frame",
                 "the specified number of frames ago.[PAR]",
@@ -124,9 +124,9 @@ int gmx_rms(int argc, char *argv[])
                 "Option [TT]-mw[tt] controls whether mass weighting is done or not.",
                 "If you select the option (default) and ",
                 "supply a valid [TT].tpr[tt] file masses will be taken from there, ",
-                "otherwise the masses will be deduced from the atommass.dat file in",
-                "the GROMACS library directory. This is fine for proteins but not",
-                "necessarily for other molecules. A default mass of 12.011 amu (Carbon)",
+                "otherwise the masses will be deduced from the [TT]atommass.dat[tt] file in",
+                "[TT]GMXLIB[tt]. This is fine for proteins, but not",
+                "necessarily for other molecules. A default mass of 12.011 amu (carbon)",
                 "is assigned to unknown atoms. You can check whether this happend by",
                 "turning on the [TT]-debug[tt] flag and inspecting the log file.[PAR]",
 

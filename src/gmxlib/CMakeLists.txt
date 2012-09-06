@@ -1,13 +1,14 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(nonbonded)
 
 # add target that generates version.c every time a make is run
 # only do this if we generate the version
 if(USE_VERSION_H)
     add_custom_target(gmx_version ALL
             COMMAND ${CMAKE_COMMAND} 
-                -D Git_EXECUTABLE="${Git_EXECUTABLE}"
-                -D Git_VERSION="${Git_VERSION}"
+                -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+                -D GIT_VERSION="${GIT_VERSION}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
                 -D VERSION_C_CMAKEIN="${CMAKE_SOURCE_DIR}/src/gmxlib/version.c.cmakein"
@@ -20,9 +21,12 @@ endif()
 
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
-file(GLOB GMXLIB_SOURCES *.c 
-     selection/*.c trajana/*.c
-     statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
+file(GLOB GMXLIB_SOURCES *.c selection/*.c trajana/*.c statistics/*.c)
+
+
+if(NOT GMX_USE_PLUGINS)
+  list(REMOVE_ITEM GMXLIB_SOURCES vmdio.c vmddlopen.c)
+endif()
 
 # This source file is generated
 file(GLOB VERSION_SOURCE version.c)
@@ -38,50 +42,6 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c
                 PROPERTIES GENERATED true)
 endif()
 
-if(GMX_DOUBLE)
-  set(SSETYPE sse2)
-else()
-  set(SSETYPE sse)
-endif()
-
-if(GMX_IA32_ASM)
-  file(GLOB GMX_SSEKERNEL_C_SRC   nonbonded/nb_kernel_ia32_${SSETYPE}/*.c)
-  if(GMX_ASM_USEASM-NASM)
-    file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_ia32_${SSETYPE}/*intel_syntax*.s)    
-  else()
-    file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_ia32_${SSETYPE}/*${SSETYPE}.s nonbonded/nb_kernel_ia32_${SSETYPE}/*asm.s)
-  endif()
-endif(GMX_IA32_ASM)
-
-if(GMX_X86_64_ASM)
-  file(GLOB GMX_SSEKERNEL_C_SRC   nonbonded/nb_kernel_x86_64_${SSETYPE}/*.c)
-  if(GMX_ASM_USEASM-NASM)
-    file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_x86_64_${SSETYPE}/*intel_syntax*.s)
-  else()
-    file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_x86_64_${SSETYPE}/*${SSETYPE}.s nonbonded/nb_kernel_x86_64_${SSETYPE}/*asm.s)
-  endif()
-endif(GMX_X86_64_ASM)
-
-if(GMX_FORTRAN)
-  if (GMX_DOUBLE)
-    file(GLOB FORTRAN_SOURCES nonbonded/nb_kernel_f77_double/*.[cf])
-  else(GMX_DOUBLE)
-    file(GLOB FORTRAN_SOURCES nonbonded/nb_kernel_f77_single/*.[cf])
-  endif(GMX_DOUBLE)
-endif(GMX_FORTRAN)
-
-if(GMX_POWER6)
-  file(GLOB FORTRAN_SOURCES nonbonded/nb_kernel_power6/*.[cF])
-endif(GMX_POWER6)
-
-if(GMX_BLUEGENE)
-  file(GLOB GMX_BLUEGENE_C_SRC nonbonded/nb_kernel_bluegene/*.c)
-endif(GMX_BLUEGENE)
-
-if(GMX_PPC_ALTIVEC)
-  file(GLOB GMX_PPC_ALTIVEC_SRC nonbonded/nb_kernel_ppc_altivec/*.c)
-endif(GMX_PPC_ALTIVEC)
-
 if(NOT GMX_EXTERNAL_BLAS)
   file(GLOB BLAS_SOURCES gmx_blas/*.c)
 endif(NOT GMX_EXTERNAL_BLAS)
@@ -92,58 +52,50 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 
 # This would be the standard way to include thread_mpi, but we want libgmx
 # to link the functions directly
-#if(GMX_THREADS)
+#if(GMX_THREAD_MPI)
 #    add_subdirectory(thread_mpi)
-#endif(GMX_THREADS)
+#endif(GMX_THREAD_MPI)
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
+
+# due to a compiler bug gcc 4.4.x crashes on bondfree.c with -O3,
+# but strangely not with -O2 + all extra -O3 flags
+if(GMX_OPENMP AND CMAKE_COMPILER_IS_GNUCC AND
+   C_COMPILER_VERSION VERSION_GREATER "4.3.999" AND C_COMPILER_VERSION VERSION_LESS "4.4.999")
+    if(GMX_NO_GCC44_BUG_WORKAROUND)
+        message(WARNING "gcc ${C_COMPILER_VERSION} detected, but workaround for optimization bug is disabled")
+    else()
+        message(STATUS "gcc ${C_COMPILER_VERSION} detected, applying workaround for optimization bug (disable with GMX_NO_GCC44_BUG_WORKAROUND)")
+        # O3 only in release mode
+        if (CMAKE_BUILD_TYPE STREQUAL "Release")
+            set_source_files_properties("bondfree.c" PROPERTIES COMPILE_FLAGS
+                "-O2 -finline-functions -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone")
+        endif()
+    endif()
+endif()
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
-# Selection has test_ instead of _test.  Removing here for special case, perhaps make general?
-if(GMX_FAHCORE)
-    file(GLOB SELECTION_TEST selection/test*)
-    list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
-endif(GMX_FAHCORE)
+# Selection has test_ instead of _test.
+file(GLOB SELECTION_TEST selection/test*)
+list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 
-# only fiddle with assembly kernels if we're not doing OpenMM build
-if(NOT GMX_OPENMM) 
-if(GMX_ASM_USEASM-NASM)
-  enable_language(ASM-NASM)
+# gpu utils + cuda tools module
+if(GMX_GPU)
+    add_subdirectory(cuda_tools)
+    add_subdirectory(gpu_utils)   
+    set(GMX_GPU_LIBRARIES gpu_utils cuda_tools)
+endif()
 
-  # if NASM is used, we need a special build command for windows...
-  FOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
-    GET_FILENAME_COMPONENT(FILE_BASE ${SRC} NAME_WE)
-    SET(OBJ ${CMAKE_CURRENT_BINARY_DIR}/${FILE_BASE}${CMAKE_C_OUTPUT_EXTENSION})
-
-    ADD_CUSTOM_COMMAND(OUTPUT ${OBJ}
-                       MAIN_DEPENDENCY ${SRC}
-                       COMMAND ${CMAKE_ASM-NASM_COMPILER} -f ${CMAKE_ASM-NASM_OBJECT_FORMAT} -o ${OBJ} ${SRC})
-
-    SET(ALL_ASM_OBJS ${ALL_ASM_OBJS} ${OBJ})
-  ENDFOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
-  set(GMX_SSEKERNEL_ASM_SRC ${ALL_ASM_OBJS})
-
-else(GMX_ASM_USEASM-NASM)
-
-  enable_language(ASM-ATT)
-  SET(CMAKE_ASM-ATT_COMPILER ${CMAKE_C_COMPILER})
-  if(GMX_IA32_ASM)
-    set_source_files_properties(${GMX_SSEKERNEL_ASM_SRC} PROPERTIES COMPILE_FLAGS "-c -m32")
-  else()
-    set_source_files_properties(${GMX_SSEKERNEL_ASM_SRC} PROPERTIES COMPILE_FLAGS "-c -m64")
-  endif()
-
-endif(GMX_ASM_USEASM-NASM)
-endif(NOT GMX_OPENMM)
-
-add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${FORTRAN_SOURCES} ${GMX_BLUEGENE_C_SRC} ${GMX_PPC_ALTIVEC_SRC} ${THREAD_MPI_SRC})
-target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
+# NONBONDED_SOURCES is imported from the nonbonded subdirectory.
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${THREAD_MPI_SRC} ${NONBONDED_SOURCES})
+target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
 endif()
-set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
+set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+    COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 

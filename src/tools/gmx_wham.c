@@ -271,28 +271,6 @@ void freeUmbrellaWindows(t_UmbrellaWindow *win, int nwin)
     sfree(win);
 }
 
-/* Return j such that xx[j] <= x < xx[j+1] */
-void searchOrderedTable(double xx[], int n, double x, int *j)
-{
-    int ju,jm,jl;
-    int ascending;
-    
-    jl=-1;
-    ju=n;
-    ascending=(xx[n-1] > xx[0]);
-    while (ju-jl > 1) 
-    {
-        jm=(ju+jl) >> 1;
-        if ((x >= xx[jm]) == ascending)
-            jl=jm;
-        else
-            ju=jm;
-    }
-    if (x==xx[0]) *j=0;
-    else if (x==xx[n-1]) *j=n-2;
-    else *j=jl;
-}
-
 /* Read and setup tabulated umbrella potential */
 void setup_tab(const char *fn,t_UmbrellaOptions *opt)
 {
@@ -1519,32 +1497,6 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt,gmx_bool *bPipeOpen)
     return pipe;
 }
 
-
-FILE *open_pdo_pipe_gmx(const char *fn)
-{
-    char *fnNoGz=0;
-    FILE *pipe;
-
-    /* gzipped pdo file? */
-    if (strcmp(fn+strlen(fn)-3,".gz")==0)
-    {
-        snew(fnNoGz,strlen(fn));
-        strncpy(fnNoGz,fn,strlen(fn)-3);
-        fnNoGz[strlen(fn)-3]='\0';
-        if (gmx_fexist(fnNoGz) && gmx_fexist(fn))
-            gmx_fatal(FARGS,"Found file %s and %s. That confuses me. Please remove one of them\n",
-                      fnNoGz,fn);
-        pipe=ffopen(fnNoGz,"r");  
-        sfree(fnNoGz);
-    }
-    else
-    {
-        pipe=ffopen(fn,"r");
-    }
-  
-    return pipe;
-}
-
 void pdo_close_file(FILE *fp)
 {
 #ifdef HAVE_PIPES
@@ -1553,7 +1505,6 @@ void pdo_close_file(FILE *fp)
 	ffclose(fp);
 #endif
 }
-
 
 /* Reading pdo files */
 void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
@@ -1776,6 +1727,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     	nColRefEachGrp=0;
         nColRefOnce=0;
     }
+    
     nColExpect = 1 + nColRefOnce + header->npullgrps*(nColRefEachGrp+nColPerGrp);
     bHaveForce = opt->bPullf;
     
@@ -1801,7 +1753,8 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     }
     if (ny != nColExpect)
     {
-        gmx_fatal(FARGS,"Found %d pull groups in %s,\n but %d data columns in %s (expected %d)\n",
+        gmx_fatal(FARGS,"Found %d pull groups in %s,\n but %d data columns in %s (expected %d)\n"
+                  "\nMaybe you confused options -ix and -if ?\n",
                   header->npullgrps,fntpr,ny-1,fn,nColExpect-1);
     }
     
@@ -1914,13 +1867,19 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                         pos=dist_ndim(y + 1 + nColRefOnce + g*nColPerGrp,header->pull_ndim,i);
                         break;
                     case epullgPOS:
+                        /* Columns
+                           Time ref[ndim] group1[ndim] group2[ndim] ... */                         
                     case epullgCYL:
-                        /* with geometry==position, we have the reference once (nColRefOnce==ndim), but
+                        /* Columns
+                           Time ref1[ndim] group1[ndim] ref2[ndim] group2[ndim] ... */
+
+                        /* * with geometry==position, we have the reference once (nColRefOnce==ndim), but
                            no extra reference group columns before each group (nColRefEachGrp==0)
-                           with geometry==cylinder, we have no initial ref group column (nColRefOnce==0), 
+
+                           * with geometry==cylinder, we have no initial ref group column (nColRefOnce==0), 
                            but ndim ref group colums before every group (nColRefEachGrp==ndim)
                            Distance to reference: */
-                        pos=y[1 + nColRefOnce + g*(nColRefEachGrp+nColPerGrp)][i];
+                        pos=y[1 + nColRefOnce + nColRefEachGrp + g*(nColRefEachGrp+nColPerGrp)][i];
                         break;
                     default:
                         gmx_fatal(FARGS,"Bad error, this error should have been catched before. Ups.\n");
@@ -2549,13 +2508,13 @@ int gmx_wham(int argc,char *argv[])
         "which may be useful for, e.g. membranes.[PAR]",
         "AUTOCORRELATIONS[BR]----------------[BR]",
         "With [TT]-ac[tt], [TT]g_wham[tt] estimates the integrated autocorrelation ",
-        "time (IACT) tau for each umbrella window and weights the respective ",
-        "window with 1/[1+2*tau/dt]. The IACTs are written ",
+        "time (IACT) [GRK]tau[grk] for each umbrella window and weights the respective ",
+        "window with 1/[1+2*[GRK]tau[grk]/dt]. The IACTs are written ",
         "to the file defined with [TT]-oiact[tt]. In verbose mode, all ",
         "autocorrelation functions (ACFs) are written to [TT]hist_autocorr.xvg[tt]. ",
         "Because the IACTs can be severely underestimated in case of limited ",
-        "sampling, option [TT]-acsig[tt] allows to smooth the IACTs along the ",
-        "reaction coordinate with a Gaussian (sigma provided with [TT]-acsig[tt], ",
+        "sampling, option [TT]-acsig[tt] allows one to smooth the IACTs along the ",
+        "reaction coordinate with a Gaussian ([GRK]sigma[grk] provided with [TT]-acsig[tt], ",
         "see output in [TT]iact.xvg[tt]). Note that the IACTs are estimated by simple ",
         "integration of the ACFs while the ACFs are larger 0.05.",
         "If you prefer to compute the IACTs by a more sophisticated (but possibly ",
@@ -2616,7 +2575,7 @@ int gmx_wham(int argc,char *argv[])
         { "-max", FALSE, etREAL, {&opt.max},
           "Maximum coordinate in profile"},
         { "-auto", FALSE, etBOOL, {&opt.bAuto},
-          "determine min and max automatically"},
+          "Determine min and max automatically"},
         { "-bins",FALSE, etINT, {&opt.bins},
           "Number of bins in profile"},
         { "-temp", FALSE, etREAL, {&opt.Temperature},
@@ -2624,11 +2583,11 @@ int gmx_wham(int argc,char *argv[])
         { "-tol", FALSE, etREAL, {&opt.Tolerance},
           "Tolerance"},
         { "-v", FALSE, etBOOL, {&opt.verbose},
-          "verbose mode"},
+          "Verbose mode"},
         { "-b", FALSE, etREAL, {&opt.tmin}, 
-          "first time to analyse (ps)"},
+          "First time to analyse (ps)"},
         { "-e", FALSE, etREAL, {&opt.tmax}, 
-          "last time to analyse (ps)"},
+          "Last time to analyse (ps)"},
         { "-dt", FALSE, etREAL, {&opt.dt},
           "Analyse only every dt ps"},
         { "-histonly", FALSE, etBOOL, {&opt.bHistOnly},
@@ -2638,19 +2597,19 @@ int gmx_wham(int argc,char *argv[])
         { "-log", FALSE, etBOOL, {&opt.bLog},
           "Calculate the log of the profile before printing"},
         { "-unit", FALSE,  etENUM, {en_unit},
-          "energy unit in case of log output" },
+          "Energy unit in case of log output" },
         { "-zprof0", FALSE, etREAL, {&opt.zProf0},
           "Define profile to 0.0 at this position (with [TT]-log[tt])"},
         { "-cycl", FALSE, etBOOL, {&opt.bCycl},
           "Create cyclic/periodic profile. Assumes min and max are the same point."},
         { "-sym", FALSE, etBOOL, {&opt.bSym},
-          "symmetrize profile around z=0"},   
+          "Symmetrize profile around z=0"},   
         { "-hist-eq", FALSE, etBOOL, {&opt.bHistEq},
           "HIDDENEnforce equal weight for all histograms. (Non-Weighed-HAM)"},
         { "-ac", FALSE, etBOOL, {&opt.bCalcTauInt},
-          "calculate integrated autocorrelation times and use in wham"},
+          "Calculate integrated autocorrelation times and use in wham"},
         { "-acsig", FALSE, etREAL, {&opt.sigSmoothIact},
-          "Smooth autocorrelation times along reaction coordinate with Gaussian of this sigma"},
+          "Smooth autocorrelation times along reaction coordinate with Gaussian of this [GRK]sigma[grk]"},
         { "-ac-trestart", FALSE, etREAL, {&opt.acTrestart},
           "When computing autocorrelation functions, restart computing every .. (ps)"},
         { "-acred", FALSE, etBOOL, {&opt.bAllowReduceIact},
@@ -2659,15 +2618,15 @@ int gmx_wham(int argc,char *argv[])
         { "-nBootstrap", FALSE,  etINT, {&opt.nBootStrap},
           "nr of bootstraps to estimate statistical uncertainty (e.g., 200)" },
         { "-bs-method", FALSE,  etENUM, {en_bsMethod},
-          "bootstrap method" },
+          "Bootstrap method" },
         { "-bs-tau", FALSE, etREAL, {&opt.tauBootStrap},
           "Autocorrelation time (ACT) assumed for all histograms. Use option [TT]-ac[tt] if ACT is unknown."},
         { "-bs-seed", FALSE, etINT, {&opt.bsSeed},
-          "seed for bootstrapping. (-1 = use time)"},
+          "Seed for bootstrapping. (-1 = use time)"},
         { "-histbs-block", FALSE, etINT, {&opt.histBootStrapBlockLength},
-          "when mixing histograms only mix within blocks of [TT]-histbs-block[tt]."},
+          "When mixing histograms only mix within blocks of [TT]-histbs-block[tt]."},
         { "-vbs", FALSE, etBOOL, {&opt.bs_verbose},
-          "verbose bootstrapping. Print the CDFs and a histogram file for each bootstrap."},
+          "Verbose bootstrapping. Print the CDFs and a histogram file for each bootstrap."},
         { "-stepout", FALSE, etINT, {&opt.stepchange},
           "HIDDENWrite maximum change every ... (set to 1 with [TT]-v[tt])"},
         { "-updateContr", FALSE, etINT, {&opt.stepUpdateContrib},

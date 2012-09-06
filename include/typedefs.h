@@ -37,9 +37,8 @@
 #define _typedefs_h
 
 
-#define STRLEN 4096
+/* DEPRECATED! value for signaling unitialized variables */
 #define NOTSET -12345
-#define BIG_STRLEN 1048576
 
 #include <sys/types.h>
 #include "sysstuff.h"
@@ -57,8 +56,8 @@
 #include "types/graph.h"
 #include "types/nrnb.h"
 #include "types/nblist.h"
+#include "types/nbnxn_pairlist.h"
 #include "types/nsgrid.h"
-#include "types/commrec.h"
 #include "types/forcerec.h"
 #include "types/fcdata.h"
 #include "types/mdatom.h"
@@ -134,7 +133,9 @@ void init_inputrec(t_inputrec *ir);
 void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);
 void init_gtc_state(t_state *state,int ngtc, int nnhpres, int nhchainlength);
-void init_state(t_state *state,int natoms,int ngtc, int nnhpres, int nhchainlength);
+void init_state(t_state *state,int natoms,int ngtc, int nnhpres, int nhchainlength, int nlambda);
+void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
+void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
 
 void copy_blocka(const t_blocka *src,t_blocka *dest);
 

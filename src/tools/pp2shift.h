@@ -85,7 +85,7 @@ extern void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 
 extern void get_chi_product_traj (real **dih,int nframes,int nangles, 
 			   int nlist,int maxchi, t_dlist dlist[], real time[], 
-			   int **lookup,int *xity,gmx_bool bRb,gmx_bool bNormalize,
+			   int **lookup,int *multiplicity,gmx_bool bRb,gmx_bool bNormalize,
 			   real core_frac); 
 
 #endif

@@ -356,30 +356,19 @@ static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
         }
         if(!xdr_string(xdr,&(nm->name),STRLEN))
         {
-            gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+            gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
         if (file_version >= 2)
         {
             if(!xdr_string(xdr,&(nm->unit),STRLEN))
             {
-                gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+                gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
             }
         }
         else
         {
             nm->unit = strdup("kJ/mol");
         }
-    }
-}
-
-static void gen_units(int n,char ***units)
-{
-    int i;
-
-    snew(*units,n);
-    for(i=0; i<n; i++)
-    {
-        (*units)[i] = strdup("kJ/mol");
     }
 }
 
@@ -399,7 +388,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
     {
         if(!bRead)
         {
-            gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+            gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
         *nre=0;
         return;
@@ -454,7 +443,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     xdr_datatype dtreal=xdr_datatype_double; 
 #endif
     
-    if (nre_test >= 0)
+    if (bWrongPrecision)
     {
         *bWrongPrecision = FALSE;
     }
@@ -698,7 +687,7 @@ void close_enx(ener_file_t ef)
 {
     if(gmx_fio_close(ef->fio) != 0)
     {
-        gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of quota?");  
+        gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of disk space?");
     }
 }
 
@@ -758,7 +747,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
             do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
             if(!bOK)
             {
-                gmx_file("Cannot write energy file header; maybe you are out of quota?");
+                gmx_file("Cannot write energy file header; maybe you are out of disk space?");
             }
 
             if (((fr->e_size && (fr->nre == nre) && 
@@ -888,7 +877,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
         }
         else
         {
-            gmx_file("Cannot write energy file header; maybe you are out of quota?");
+            gmx_file("Cannot write energy file header; maybe you are out of disk space?");
         }
         return FALSE;
     }
@@ -1017,7 +1006,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
     {
         if( gmx_fio_flush(ef->fio) != 0)
         {
-            gmx_file("Cannot write energy file; maybe you are out of quota?");
+            gmx_file("Cannot write energy file; maybe you are out of disk space?");
         }
     }
     
@@ -1111,21 +1100,29 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
 
   if (ir->etc == etcNOSEHOOVER) 
   {
+      char cns[20];
+
+      cns[0] = '\0';
+
       for(i=0; i<state->ngtc; i++) {
           ni = groups->grps[egcTC].nm_ind[i];
           bufi = *(groups->grpname[ni]);
           for(j=0; (j<state->nhchainlength); j++) 
           {
-              sprintf(buf,"Xi-%d-%s",j,bufi);
+              if (IR_NVT_TROTTER(ir))
+              {
+                  sprintf(cns,"-%d",j);
+              }
+              sprintf(buf,"Xi%s-%s",cns,bufi);
               state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-              sprintf(buf,"vXi-%d-%s",j,bufi);
+              sprintf(buf,"vXi%s-%s",cns,bufi);
               state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
           }
 
       }
       fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n",state->ngtc,fn);
 
-      if (IR_NPT_TROTTER(ir)) 
+      if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
       {
           for(i=0; i<state->nnhpres; i++) {
               bufi = baro_nm[0]; /* All barostat DOF's together for now */

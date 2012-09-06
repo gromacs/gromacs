@@ -99,24 +99,6 @@ static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
   return set;
 }
 
-static gmx_bool same_time(real t1,real t2)
-{
-  const real tol=1e-5;
-
-  return (fabs(t1-t2) < tol);
-}
-
-
-gmx_bool bRgt(double a,double b)
-{
-  double tol = 1e-6;
-  
-  if ( a > (b - tol*(a+b)) )
-    return TRUE;
-  else
-    return FALSE;
-}
-
 static void sort_files(char **fnms,real *settime,int nfile)
 {
     int i,j,minidx;
@@ -314,23 +296,6 @@ static void copy_ee(t_energy *src, t_energy *dst, int nre)
   }
 }
 
-
-static void remove_last_eeframe(t_energy *lastee, gmx_large_int_t laststep,
-				t_energy *ee, int nre)
-{
-    int i;
-    gmx_large_int_t p=laststep+1;
-    double sigmacorr;
-    
-    for(i=0;i<nre;i++) {
-	lastee[i].esum-=ee[i].e;
-	sigmacorr=lastee[i].esum-(p-1)*ee[i].e;
-	lastee[i].eav-=(sigmacorr*sigmacorr)/((p-1)*p);
-    }
-}
-
-
-
 static void update_ee(t_energy *lastee,gmx_large_int_t laststep,
 		      t_energy *startee,gmx_large_int_t startstep,
 		      t_energy *ee, int step,
@@ -380,17 +345,6 @@ static void update_ee(t_energy *lastee,gmx_large_int_t laststep,
     if((outee[i].eav/(laststep+step+1))<(GMX_REAL_EPS))
       outee[i].eav=0;
   }
-}
-
-
-static void update_last_ee(t_energy *lastee, gmx_large_int_t laststep,
-			   t_energy *ee,gmx_large_int_t step,int nre)
-{
-    t_energy *tmp;
-    snew(tmp,nre);
-    update_ee(lastee,laststep,NULL,0,ee,step,tmp,nre);
-    copy_ee(tmp,lastee,nre);
-    sfree(tmp);
 }
 
 static void update_ee_sum(int nre,
@@ -463,11 +417,11 @@ int gmx_eneconv(int argc,char *argv[])
   const char *desc[] = {
     "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[BR]",
     "Concatenates several energy files in sorted order.",
-    "In case of double time frames the one",
+    "In the case of double time frames, the one",
     "in the later file is used. By specifying [TT]-settime[tt] you will be",
     "asked for the start time of each file. The input files are taken",
     "from the command line,",
-    "such that the command [TT]eneconv -o fixed.edr *.edr[tt] should do",
+    "such that the command [TT]eneconv -f *.edr -o fixed.edr[tt] should do",
     "the trick. [PAR]",
     "With [IT]one file[it] specified for [TT]-f[tt]:[BR]",
     "Reads one energy file and writes another, applying the [TT]-dt[tt],",
@@ -770,7 +724,8 @@ int gmx_eneconv(int argc,char *argv[])
 	noutfr++;
       }
     }
-
+    if (f == nfile)
+      f--;
     printf("\nLast step written from %s: t %g, step %s\n",
 	   fnms[f],last_t,gmx_step_str(laststep,buf));
     lastfilestep = laststep;

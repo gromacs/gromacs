@@ -38,7 +38,7 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include <thread_mpi.h>
 #endif
 
@@ -63,19 +63,29 @@
 #include "vec.h"
 #include "mtop_util.h"
 
+#define TPX_TAG_RELEASE  "release"
+
+/* This is the tag string which is stored in the tpx file.
+ * Change this if you want to change the tpx format in a feature branch.
+ * This ensures that there will not be different tpx formats around which
+ * can not be distinguished.
+ */
+static const char *tpx_tag = TPX_TAG_RELEASE;
+
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 73;
+static const int tpx_version = 80;
 
 /* This number should only be increased when you edit the TOPOLOGY section
- * of the tpx format. This way we can maintain forward compatibility too
- * for all analysis tools and/or external programs that only need to
- * know the atom/residue names, charges, and bond connectivity.
+ * or the HEADER of the tpx format.
+ * This way we can maintain forward compatibility too for all analysis tools
+ * and/or external programs that only need to know the atom/residue names,
+ * charges, and bond connectivity.
  *  
  * It first appeared in tpx version 26, when I also moved the inputrecord
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 23;
+static const int tpx_generation = 24;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -110,14 +120,15 @@ typedef struct {
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
-  { 30, F_POLARIZATION      }
+  { 30, F_POLARIZATION      },
+  { 54, F_DHDL_CON          },
   };*/
-  
 /* 
  *The entries should be ordered in:
  * 1. ascending function type number
  * 2. ascending file version number
  */
+/* question; what is the purpose of the commented code above? */
 static const t_ftupd ftupd[] = {
   { 20, F_CUBICBONDS        },
   { 20, F_CONNBONDS         },
@@ -126,6 +137,7 @@ static const t_ftupd ftupd[] = {
   { 43, F_TABBONDS          },
   { 43, F_TABBONDSNC        },
   { 70, F_RESTRBONDS        },
+  { 76, F_LINEAR_ANGLES     },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -161,6 +173,13 @@ static const t_ftupd ftupd[] = {
   { 69, F_VTEMP             },
   { 66, F_PDISPCORR         },
   { 54, F_DHDL_CON          },
+  { 76, F_ANHARM_POL        },
+  { 79, F_DVDL_COUL         },
+  { 79, F_DVDL_VDW,         },
+  { 79, F_DVDL_BONDED,      },
+  { 79, F_DVDL_RESTRAINT    },
+  { 79, F_DVDL_TEMPERATURE  },
+  { 54, F_DHDL_CON          }
 };
 #define NFTUPD asize(ftupd)
 
@@ -231,6 +250,229 @@ static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
   }
 }
 
+static void do_expandedvals(t_fileio *fio,t_expanded *expand,int n_lambda, gmx_bool bRead, int file_version)
+{
+  /* i is used in the ndo_double macro*/
+  int i;
+  real fv;
+  gmx_bool bDum=TRUE;
+  real rdum;
+
+  if (file_version >= 79)
+  {
+      if (n_lambda>0)
+      {
+          if (bRead)
+          {
+              snew(expand->init_lambda_weights,n_lambda);
+          }
+          bDum=gmx_fio_ndo_real(fio,expand->init_lambda_weights,n_lambda);
+          gmx_fio_do_gmx_bool(fio,expand->bInit_weights);
+      }
+
+      gmx_fio_do_int(fio,expand->nstexpanded);
+      gmx_fio_do_int(fio,expand->elmcmove);
+      gmx_fio_do_int(fio,expand->elamstats);
+      gmx_fio_do_int(fio,expand->lmc_repeats);
+      gmx_fio_do_int(fio,expand->gibbsdeltalam);
+      gmx_fio_do_int(fio,expand->lmc_forced_nstart);
+      gmx_fio_do_int(fio,expand->lmc_seed);
+      gmx_fio_do_real(fio,expand->mc_temp);
+      gmx_fio_do_int(fio,expand->bSymmetrizedTMatrix);
+      gmx_fio_do_int(fio,expand->nstTij);
+      gmx_fio_do_int(fio,expand->minvarmin);
+      gmx_fio_do_int(fio,expand->c_range);
+      gmx_fio_do_real(fio,expand->wl_scale);
+      gmx_fio_do_real(fio,expand->wl_ratio);
+      gmx_fio_do_real(fio,expand->init_wl_delta);
+      gmx_fio_do_gmx_bool(fio,expand->bWLoneovert);
+      gmx_fio_do_int(fio,expand->elmceq);
+      gmx_fio_do_int(fio,expand->equil_steps);
+      gmx_fio_do_int(fio,expand->equil_samples);
+      gmx_fio_do_int(fio,expand->equil_n_at_lam);
+      gmx_fio_do_real(fio,expand->equil_wl_delta);
+      gmx_fio_do_real(fio,expand->equil_ratio);
+  }
+}
+
+static void do_simtempvals(t_fileio *fio,t_simtemp *simtemp, int n_lambda, gmx_bool bRead, 
+                           int file_version)
+{
+  gmx_bool bDum=TRUE;
+
+  if (file_version >= 79)
+  {
+      gmx_fio_do_int(fio,simtemp->eSimTempScale);
+      gmx_fio_do_real(fio,simtemp->simtemp_high);
+      gmx_fio_do_real(fio,simtemp->simtemp_low);
+      if (n_lambda>0)
+      {
+          if (bRead)
+          {
+              snew(simtemp->temperatures,n_lambda);
+          }
+          bDum=gmx_fio_ndo_real(fio,simtemp->temperatures,n_lambda);
+      }
+  }
+}
+
+static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_version)
+{
+  /* i is defined in the ndo_double macro; use g to iterate. */
+  int i,g;
+  real fv;
+  gmx_bool bDum=TRUE;
+  real rdum;
+
+  /* free energy values */
+  if (file_version >= 79)
+  {
+      gmx_fio_do_int(fio,fepvals->init_fep_state);
+      gmx_fio_do_double(fio,fepvals->init_lambda);
+      gmx_fio_do_double(fio,fepvals->delta_lambda);
+  }
+  else if (file_version >= 59) {
+      gmx_fio_do_double(fio,fepvals->init_lambda);
+      gmx_fio_do_double(fio,fepvals->delta_lambda);
+  } else {
+      gmx_fio_do_real(fio,rdum);
+      fepvals->init_lambda = rdum;
+      gmx_fio_do_real(fio,rdum);
+      fepvals->delta_lambda = rdum;
+  }
+  if (file_version >= 79)
+  {
+      gmx_fio_do_int(fio,fepvals->n_lambda);
+      if (bRead)
+      {
+          snew(fepvals->all_lambda,efptNR);
+      }
+      for (g=0;g<efptNR;g++)
+      {
+          if (fepvals->n_lambda > 0) {
+              if (bRead)
+              {
+                  snew(fepvals->all_lambda[g],fepvals->n_lambda);
+              }
+              bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[g],fepvals->n_lambda);
+              bDum=gmx_fio_ndo_int(fio,fepvals->separate_dvdl,efptNR);
+          }
+          else if (fepvals->init_lambda >= 0)
+          {
+              fepvals->separate_dvdl[efptFEP] = TRUE;
+          }
+      }
+  }
+  else if (file_version >= 64)
+  {
+      gmx_fio_do_int(fio,fepvals->n_lambda);
+      snew(fepvals->all_lambda,efptNR);
+      if (bRead)
+      {
+          snew(fepvals->all_lambda[efptFEP],fepvals->n_lambda);
+      }
+      bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[efptFEP],fepvals->n_lambda);
+      if (fepvals->init_lambda >= 0)
+      {
+          fepvals->separate_dvdl[efptFEP] = TRUE;
+      }
+  }
+  else
+  {
+      fepvals->n_lambda = 0;
+      fepvals->all_lambda   = NULL;
+      if (fepvals->init_lambda >= 0)
+      {
+          fepvals->separate_dvdl[efptFEP] = TRUE;
+      }
+  }
+  if (file_version >= 13)
+  {
+      gmx_fio_do_real(fio,fepvals->sc_alpha);
+  }
+  else
+  {
+      fepvals->sc_alpha = 0;
+  }
+  if (file_version >= 38)
+  {
+      gmx_fio_do_int(fio,fepvals->sc_power);
+  }
+  else
+  {
+      fepvals->sc_power = 2;
+  }
+  if (file_version >= 79)
+  {
+      gmx_fio_do_real(fio,fepvals->sc_r_power);
+  }
+  else
+  {
+      fepvals->sc_r_power = 6.0;
+  }
+  if (file_version >= 15)
+  {
+      gmx_fio_do_real(fio,fepvals->sc_sigma);
+  }
+  else
+  {
+      fepvals->sc_sigma = 0.3;
+  }
+  if (bRead)
+  {
+      if (file_version >= 71)
+      {
+          fepvals->sc_sigma_min = fepvals->sc_sigma;
+      }
+      else
+      {
+          fepvals->sc_sigma_min = 0;
+      }
+  }
+  if (file_version >= 79)
+  {
+      gmx_fio_do_int(fio,fepvals->bScCoul);
+  }
+  else
+  {
+      fepvals->bScCoul = TRUE;
+  }
+  if (file_version >= 64) {
+      gmx_fio_do_int(fio,fepvals->nstdhdl);
+  } else {
+      fepvals->nstdhdl = 1;
+  }
+
+  if (file_version >= 73)
+  {
+      gmx_fio_do_int(fio, fepvals->separate_dhdl_file);
+      gmx_fio_do_int(fio, fepvals->dhdl_derivatives);
+  }
+  else
+  {
+      fepvals->separate_dhdl_file = esepdhdlfileYES;
+      fepvals->dhdl_derivatives = edhdlderivativesYES;
+  }
+  if (file_version >= 71)
+  {
+      gmx_fio_do_int(fio,fepvals->dh_hist_size);
+      gmx_fio_do_double(fio,fepvals->dh_hist_spacing);
+  }
+  else
+  {
+      fepvals->dh_hist_size    = 0;
+      fepvals->dh_hist_spacing = 0.1;
+  }
+  if (file_version >= 79)
+  {
+      gmx_fio_do_int(fio,fepvals->bPrintEnergy);
+  }
+  else
+  {
+      fepvals->bPrintEnergy = FALSE;
+  }
+}
+
 static void do_pull(t_fileio *fio, t_pull *pull,gmx_bool bRead, int file_version)
 {
   int g;
@@ -249,6 +491,47 @@ static void do_pull(t_fileio *fio, t_pull *pull,gmx_bool bRead, int file_version
     do_pullgrp(fio,&pull->grp[g],bRead,file_version);
 }
 
+
+static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg,gmx_bool bRead, int file_version)
+{
+  gmx_bool bDum=TRUE;
+  int  i;
+
+  gmx_fio_do_int(fio,rotg->eType);
+  gmx_fio_do_int(fio,rotg->bMassW);
+  gmx_fio_do_int(fio,rotg->nat);
+  if (bRead)
+    snew(rotg->ind,rotg->nat);
+  gmx_fio_ndo_int(fio,rotg->ind,rotg->nat);
+  if (bRead)
+      snew(rotg->x_ref,rotg->nat);
+  gmx_fio_ndo_rvec(fio,rotg->x_ref,rotg->nat);
+  gmx_fio_do_rvec(fio,rotg->vec);
+  gmx_fio_do_rvec(fio,rotg->pivot);
+  gmx_fio_do_real(fio,rotg->rate);
+  gmx_fio_do_real(fio,rotg->k);
+  gmx_fio_do_real(fio,rotg->slab_dist);
+  gmx_fio_do_real(fio,rotg->min_gaussian);
+  gmx_fio_do_real(fio,rotg->eps);
+  gmx_fio_do_int(fio,rotg->eFittype);
+  gmx_fio_do_int(fio,rotg->PotAngle_nstep);
+  gmx_fio_do_real(fio,rotg->PotAngle_step);
+}
+
+static void do_rot(t_fileio *fio, t_rot *rot,gmx_bool bRead, int file_version)
+{
+  int g;
+
+  gmx_fio_do_int(fio,rot->ngrp);
+  gmx_fio_do_int(fio,rot->nstrout);
+  gmx_fio_do_int(fio,rot->nstsout);
+  if (bRead)
+    snew(rot->grp,rot->ngrp);
+  for(g=0; g<rot->ngrp; g++)
+    do_rotgrp(fio, &rot->grp[g],bRead,file_version);
+}
+
+
 static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead, 
                         int file_version, real *fudgeQQ)
 {
@@ -262,7 +545,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     if (file_version != tpx_version)
     {
         /* Give a warning about features that are not accessible */
-        fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
+        fprintf(stderr,"Note: file tpx version %d, software tpx version %d\n",
                 file_version,tpx_version);
     }
 
@@ -323,6 +606,14 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
+    if (file_version >= 80)
+    {
+        gmx_fio_do_int(fio,ir->cutoff_scheme);
+    }
+    else
+    {
+        ir->cutoff_scheme = ecutsGROUP;
+    }
     gmx_fio_do_int(fio,ir->ns_type);
     gmx_fio_do_int(fio,ir->nstlist);
     gmx_fio_do_int(fio,ir->ndelta);
@@ -377,6 +668,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     if(file_version < 18)
       gmx_fio_do_int(fio,idum); 
+    if (file_version >= 80) {
+      gmx_fio_do_real(fio,ir->verletbuf_drift);
+    } else {
+      ir->verletbuf_drift = 0;
+    }
     gmx_fio_do_real(fio,ir->rlist); 
     if (file_version >= 67) {
       gmx_fio_do_real(fio,ir->rlistlong);
@@ -464,7 +760,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 		ir->sa_surface_tension = 2.092;
 	}
 
-	  
+	 
+    if (file_version >= 80)
+    {
+        gmx_fio_do_real(fio,ir->fourier_spacing); 
+    }
+    else
+    {
+        ir->fourier_spacing = 0.0;
+    }
     gmx_fio_do_int(fio,ir->nkx); 
     gmx_fio_do_int(fio,ir->nky); 
     gmx_fio_do_int(fio,ir->nkz);
@@ -492,6 +796,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
      */
+    if (file_version >= 79) {
+        gmx_fio_do_gmx_bool(fio,ir->bPrintNHChains);
+    }
     if (file_version >= 71)
     {
         gmx_fio_do_int(fio,ir->nsttcouple);
@@ -571,11 +878,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       clear_rvec(ir->posres_com);
       clear_rvec(ir->posres_comB);
     }
-    if(file_version > 25)
-      gmx_fio_do_int(fio,ir->andersen_seed);
+    if((file_version > 25) && (file_version < 79))
+        gmx_fio_do_int(fio,ir->andersen_seed);
     else
-      ir->andersen_seed=0;
-    
+        ir->andersen_seed=0;
     if(file_version < 26) {
       gmx_fio_do_gmx_bool(fio,bSimAnn); 
       gmx_fio_do_real(fio,zerotemptime);
@@ -587,77 +893,46 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     gmx_fio_do_real(fio,ir->shake_tol);
     if (file_version < 54)
       gmx_fio_do_real(fio,*fudgeQQ);
+
     gmx_fio_do_int(fio,ir->efep);
-    if (file_version <= 14 && ir->efep > efepNO)
-      ir->efep = efepYES;
-    if (file_version >= 59) {
-      gmx_fio_do_double(fio, ir->init_lambda); 
-      gmx_fio_do_double(fio, ir->delta_lambda);
-    } else {
-      gmx_fio_do_real(fio,rdum);
-      ir->init_lambda = rdum;
-      gmx_fio_do_real(fio,rdum);
-      ir->delta_lambda = rdum;
-    }
-    if (file_version >= 64) {
-      gmx_fio_do_int(fio,ir->n_flambda);
-      if (bRead) {
-	snew(ir->flambda,ir->n_flambda);
-      }
-      bDum=gmx_fio_ndo_double(fio,ir->flambda,ir->n_flambda);
-    } else {
-      ir->n_flambda = 0;
-      ir->flambda   = NULL;
-    }
-    if (file_version >= 13)
-      gmx_fio_do_real(fio,ir->sc_alpha);
-    else
-      ir->sc_alpha = 0;
-    if (file_version >= 38)
-      gmx_fio_do_int(fio,ir->sc_power);
-    else
-      ir->sc_power = 2;
-    if (file_version >= 15)
-      gmx_fio_do_real(fio,ir->sc_sigma);
-    else
-      ir->sc_sigma = 0.3;
-    if (bRead)
+    if (file_version <= 14 && ir->efep != efepNO)
     {
-        if (file_version >= 71)
+        ir->efep = efepYES;
+    }
+    do_fepvals(fio,ir->fepvals,bRead,file_version);
+
+    if (file_version >= 79)
+    {
+        gmx_fio_do_gmx_bool(fio,ir->bSimTemp);
+        if (ir->bSimTemp) 
         {
-            ir->sc_sigma_min = ir->sc_sigma;
+            ir->bSimTemp = TRUE;
+        }
+    }
+    else
+    {
+        ir->bSimTemp = FALSE;
+    }
+    if (ir->bSimTemp)
+    {
+        do_simtempvals(fio,ir->simtempvals,ir->fepvals->n_lambda,bRead,file_version);
+    }
+
+    if (file_version >= 79)
+    {
+        gmx_fio_do_gmx_bool(fio,ir->bExpanded);
+        if (ir->bExpanded)
+        {
+            ir->bExpanded = TRUE;
         }
         else
         {
-            ir->sc_sigma_min = 0;
+            ir->bExpanded = FALSE;
         }
     }
-    if (file_version >= 64) {
-      gmx_fio_do_int(fio,ir->nstdhdl);
-    } else {
-      ir->nstdhdl = 1;
-    }
-
-    if (file_version >= 73)
+    if (ir->bExpanded)
     {
-        gmx_fio_do_int(fio, ir->separate_dhdl_file);
-        gmx_fio_do_int(fio, ir->dhdl_derivatives);
-    }
-    else
-    {
-        ir->separate_dhdl_file = sepdhdlfileYES;
-        ir->dhdl_derivatives = dhdlderivativesYES;
-    }
-
-    if (file_version >= 71)
-    {
-        gmx_fio_do_int(fio,ir->dh_hist_size);
-        gmx_fio_do_double(fio,ir->dh_hist_spacing);
-    }
-    else
-    {
-        ir->dh_hist_size    = 0;
-        ir->dh_hist_spacing = 0.1;
+        do_expandedvals(fio,ir->expandedvals,ir->fepvals->n_lambda,bRead,file_version);
     }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
@@ -682,14 +957,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       ir->orires_tau = 0;
       ir->nstorireout = 0;
     }
-    if(file_version >= 26) {
+    if(file_version >= 26 && file_version < 79) {
       gmx_fio_do_real(fio,ir->dihre_fc);
-      if (file_version < 56) {
-	gmx_fio_do_real(fio,rdum);
-	gmx_fio_do_int(fio,idum);
+      if (file_version < 56) 
+      {
+          gmx_fio_do_real(fio,rdum);
+          gmx_fio_do_int(fio,idum);
       }
     } else {
-      ir->dihre_fc=0;
+        ir->dihre_fc=0;
     }
 
     gmx_fio_do_real(fio,ir->em_stepsize); 
@@ -745,6 +1021,36 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     gmx_fio_do_real(fio,ir->userreal3); 
     gmx_fio_do_real(fio,ir->userreal4); 
     
+    /* AdResS stuff */
+    if (file_version >= 77) {
+      gmx_fio_do_gmx_bool(fio,ir->bAdress);
+      if(ir->bAdress){
+          if (bRead) snew(ir->adress, 1);
+          gmx_fio_do_int(fio,ir->adress->type);
+          gmx_fio_do_real(fio,ir->adress->const_wf);
+          gmx_fio_do_real(fio,ir->adress->ex_width);
+          gmx_fio_do_real(fio,ir->adress->hy_width);
+          gmx_fio_do_int(fio,ir->adress->icor);
+          gmx_fio_do_int(fio,ir->adress->site);
+          gmx_fio_do_rvec(fio,ir->adress->refs);
+          gmx_fio_do_int(fio,ir->adress->n_tf_grps);
+          gmx_fio_do_real(fio, ir->adress->ex_forcecap);
+          gmx_fio_do_int(fio, ir->adress->n_energy_grps);
+          gmx_fio_do_int(fio,ir->adress->do_hybridpairs);
+
+          if (bRead)snew(ir->adress->tf_table_index,ir->adress->n_tf_grps);
+          if (ir->adress->n_tf_grps > 0) {
+            bDum=gmx_fio_ndo_int(fio,ir->adress->tf_table_index,ir->adress->n_tf_grps);
+          }
+          if (bRead)snew(ir->adress->group_explicit,ir->adress->n_energy_grps);
+          if (ir->adress->n_energy_grps > 0) {
+            bDum=gmx_fio_ndo_int(fio, ir->adress->group_explicit,ir->adress->n_energy_grps);
+          }
+      }
+    } else {
+      ir->bAdress = FALSE;
+    }
+
     /* pull stuff */
     if (file_version >= 48) {
       gmx_fio_do_int(fio,ir->ePull);
@@ -755,6 +1061,18 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       }
     } else {
       ir->ePull = epullNO;
+    }
+    
+    /* Enforced rotation */
+    if (file_version >= 74) {
+        gmx_fio_do_int(fio,ir->bRot);
+        if (ir->bRot == TRUE) {
+            if (bRead)
+                snew(ir->rot,1);
+            do_rot(fio, ir->rot,bRead,file_version);
+        }
+    } else {
+        ir->bRot = FALSE;
     }
     
     /* grpopts stuff */
@@ -948,6 +1266,12 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
       iparams->pdihs.cpB  = iparams->pdihs.cpA;
     }
     break;
+  case F_LINEAR_ANGLES:
+    gmx_fio_do_real(fio,iparams->linangle.klinA);
+    gmx_fio_do_real(fio,iparams->linangle.aA);
+    gmx_fio_do_real(fio,iparams->linangle.klinB);
+    gmx_fio_do_real(fio,iparams->linangle.aB);
+    break;
   case F_FENEBONDS:
     gmx_fio_do_real(fio,iparams->fene.bm);
     gmx_fio_do_real(fio,iparams->fene.kb);
@@ -982,10 +1306,21 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->cross_ba.krt);
     break;
   case F_UREY_BRADLEY:
-    gmx_fio_do_real(fio,iparams->u_b.theta);
-    gmx_fio_do_real(fio,iparams->u_b.ktheta);
-    gmx_fio_do_real(fio,iparams->u_b.r13);
-    gmx_fio_do_real(fio,iparams->u_b.kUB);
+    gmx_fio_do_real(fio,iparams->u_b.thetaA);
+    gmx_fio_do_real(fio,iparams->u_b.kthetaA);
+    gmx_fio_do_real(fio,iparams->u_b.r13A);
+    gmx_fio_do_real(fio,iparams->u_b.kUBA);
+    if (file_version >= 79) {
+        gmx_fio_do_real(fio,iparams->u_b.thetaB);
+        gmx_fio_do_real(fio,iparams->u_b.kthetaB);
+        gmx_fio_do_real(fio,iparams->u_b.r13B);
+        gmx_fio_do_real(fio,iparams->u_b.kUBB);
+    } else {
+        iparams->u_b.thetaB=iparams->u_b.thetaA;
+        iparams->u_b.kthetaB=iparams->u_b.kthetaA;
+        iparams->u_b.r13B=iparams->u_b.r13A;
+        iparams->u_b.kUBB=iparams->u_b.kUBA;
+    }
     break;
   case F_QUARTIC_ANGLES:
     gmx_fio_do_real(fio,iparams->qangle.theta);
@@ -997,9 +1332,18 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->bham.c);
     break;
   case F_MORSE:
-    gmx_fio_do_real(fio,iparams->morse.b0);
-    gmx_fio_do_real(fio,iparams->morse.cb);
-    gmx_fio_do_real(fio,iparams->morse.beta);
+    gmx_fio_do_real(fio,iparams->morse.b0A);
+    gmx_fio_do_real(fio,iparams->morse.cbA);
+    gmx_fio_do_real(fio,iparams->morse.betaA);
+    if (file_version >= 79) {
+        gmx_fio_do_real(fio,iparams->morse.b0B);
+        gmx_fio_do_real(fio,iparams->morse.cbB);
+        gmx_fio_do_real(fio,iparams->morse.betaB);
+    } else {
+        iparams->morse.b0B = iparams->morse.b0A;
+        iparams->morse.cbB = iparams->morse.cbA;
+        iparams->morse.betaB = iparams->morse.betaA;
+    }
     break;
   case F_CUBICBONDS:
     gmx_fio_do_real(fio,iparams->cubic.b0);
@@ -1010,6 +1354,11 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     break;
   case F_POLARIZATION:
     gmx_fio_do_real(fio,iparams->polarize.alpha);
+    break;
+  case F_ANHARM_POL:
+    gmx_fio_do_real(fio,iparams->anharm_polarize.alpha);
+    gmx_fio_do_real(fio,iparams->anharm_polarize.drcut);
+    gmx_fio_do_real(fio,iparams->anharm_polarize.khyp);
     break;
   case F_WATER_POL:
     if (file_version < 31) 
@@ -1085,11 +1434,18 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->orires.kfac);
     break;
   case F_DIHRES:
-    gmx_fio_do_int(fio,iparams->dihres.power);
-    gmx_fio_do_int(fio,iparams->dihres.label);
-    gmx_fio_do_real(fio,iparams->dihres.phi);
-    gmx_fio_do_real(fio,iparams->dihres.dphi);
-    gmx_fio_do_real(fio,iparams->dihres.kfac);
+    gmx_fio_do_real(fio,iparams->dihres.phiA);
+    gmx_fio_do_real(fio,iparams->dihres.dphiA);
+    gmx_fio_do_real(fio,iparams->dihres.kfacA);
+    if (file_version >= 72) {
+        gmx_fio_do_real(fio,iparams->dihres.phiB);
+        gmx_fio_do_real(fio,iparams->dihres.dphiB);
+        gmx_fio_do_real(fio,iparams->dihres.kfacB);
+    } else {
+        iparams->dihres.phiB=iparams->dihres.phiA;
+        iparams->dihres.dphiB=iparams->dihres.dphiA;
+        iparams->dihres.kfacB=iparams->dihres.kfacA;
+    }
     break;
   case F_POSRES:
     gmx_fio_do_rvec(fio,iparams->posres.pos0A);
@@ -1165,9 +1521,8 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
 	gmx_fio_do_int(fio,iparams->cmap.cmapB);
     break;
   default:
-    gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
-		
-    		ftype,interaction_function[ftype].name,__FILE__,__LINE__);
+      gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
+                ftype,interaction_function[ftype].name,__FILE__,__LINE__);
   }
   if (!bRead)
     gmx_fio_unset_comment(fio);
@@ -1255,6 +1610,22 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
   }
 }
 
+static void add_settle_atoms(t_ilist *ilist)
+{
+    int i;
+
+    /* Settle used to only store the first atom: add the other two */
+    srenew(ilist->iatoms,2*ilist->nr);
+    for(i=ilist->nr/2-1; i>=0; i--)
+    {
+        ilist->iatoms[4*i+0] = ilist->iatoms[2*i+0];
+        ilist->iatoms[4*i+1] = ilist->iatoms[2*i+1];
+        ilist->iatoms[4*i+2] = ilist->iatoms[2*i+1] + 1;
+        ilist->iatoms[4*i+3] = ilist->iatoms[2*i+1] + 2;
+    }
+    ilist->nr = 2*ilist->nr;
+}
+
 static void do_ilists(t_fileio *fio, t_ilist *ilist,gmx_bool bRead, 
                       int file_version)
 {
@@ -1266,13 +1637,17 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist,gmx_bool bRead,
     bClear = FALSE;
     if (bRead)
       for (k=0; k<NFTUPD; k++)
-	if ((file_version < ftupd[k].fvnr) && (j == ftupd[k].ftype))
-	  bClear = TRUE;
+        if ((file_version < ftupd[k].fvnr) && (j == ftupd[k].ftype)) 
+          bClear = TRUE;
     if (bClear) {
       ilist[j].nr = 0;
       ilist[j].iatoms = NULL;
     } else {
       do_ilist(fio, &ilist[j],bRead,file_version,j);
+      if (file_version < 78 && j == F_SETTLE && ilist[j].nr > 0)
+      {
+          add_settle_atoms(&ilist[j]);
+      }
     }
     /*
     if (bRead && gmx_debug_at)
@@ -1898,7 +2273,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop,gmx_bool bRead,
   else
   {
       mtop->ffparams.cmap_grid.ngrid        = 0;
-      mtop->ffparams.cmap_grid.grid_spacing = 0.1;
+      mtop->ffparams.cmap_grid.grid_spacing = 0;
       mtop->ffparams.cmap_grid.cmapdata     = NULL;
   }
 	  
@@ -1952,7 +2327,8 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
                          gmx_bool TopOnlyOK, int *file_version, 
                          int *file_generation)
 {
-  char  buf[STRLEN];
+    char  buf[STRLEN];
+    char  file_tag[STRLEN];
   gmx_bool  bDouble;
   int   precision;
   int   fver,fgen;
@@ -1987,21 +2363,69 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
     gmx_fio_setprecision(fio,bDouble);
     gmx_fio_do_int(fio,precision);
     fver = tpx_version;
+    sprintf(file_tag,"%s",tpx_tag);
     fgen = tpx_generation;
   }
   
-  /* Check versions! */
-  gmx_fio_do_int(fio,fver);
+    /* Check versions! */
+    gmx_fio_do_int(fio,fver);
+
+    /* This is for backward compatibility with development versions 77-79
+     * where the tag was, mistakenly, placed before the generation,
+     * which would cause a segv instead of a proper error message
+     * when reading the topology only from tpx with <77 code.
+     */
+    if (fver >= 77 && fver <= 79)
+    {
+        gmx_fio_do_string(fio,file_tag);
+    }
   
-  if(fver>=26)
-    gmx_fio_do_int(fio,fgen);
-  else
-    fgen=0;
+    if (fver >= 26)
+    {
+        gmx_fio_do_int(fio,fgen);
+    }
+    else
+    {
+        fgen = 0;
+    }
  
-  if(file_version!=NULL)
-    *file_version = fver;
-  if(file_generation!=NULL)
-    *file_generation = fgen;
+    if (fver >= 80)
+    {
+        gmx_fio_do_string(fio,file_tag);
+    }
+    if (bRead)
+    {
+        if (fver < 77)
+        {
+            /* Versions before 77 don't have the tag, set it to release */
+            sprintf(file_tag,"%s",TPX_TAG_RELEASE);
+        }
+
+        if (strcmp(file_tag,tpx_tag) != 0)
+        {
+            fprintf(stderr,"Note: file tpx tag '%s', software tpx tag '%s'\n",
+                    file_tag,tpx_tag);
+
+            /* We only support reading tpx files with the same tag as the code
+             * or tpx files with the release tag and with lower version number.
+             */
+            if (!strcmp(file_tag,TPX_TAG_RELEASE) == 0 && fver < tpx_version) 
+            {
+                gmx_fatal(FARGS,"tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' with program for tpx version %d, tag '%s'",
+                          gmx_fio_getname(fio),fver,file_tag,
+                          tpx_version,tpx_tag);
+            }
+        }
+    }
+
+    if (file_version != NULL)
+    {
+        *file_version = fver;
+    }
+    if (file_generation != NULL)
+    {
+        *file_generation = fgen;
+    }
    
   
   if ((fver <= tpx_incompatible_version) ||
@@ -2017,8 +2441,17 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
   else
     tpx->ngtc = 0;
   if (fver < 62) {
-    gmx_fio_do_int(fio,idum);
-    gmx_fio_do_real(fio,rdum);
+      gmx_fio_do_int(fio,idum);
+      gmx_fio_do_real(fio,rdum);
+  }
+  /*a better decision will eventually (5.0 or later) need to be made
+    on how to treat the alchemical state of the system, which can now
+    vary through a simulation, and cannot be completely described
+    though a single lambda variable, or even a single state
+    index. Eventually, should probably be a vector. MRS*/
+  if (fver >= 79) 
+  {
+      gmx_fio_do_int(fio,tpx->fep_state);
   }
   gmx_fio_do_real(fio,tpx->lambda);
   gmx_fio_do_int(fio,tpx->bIr);
@@ -2050,8 +2483,9 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
   if (!bRead) {
     tpx.natoms = state->natoms;
-    tpx.ngtc   = state->ngtc;
-    tpx.lambda = state->lambda;
+    tpx.ngtc   = state->ngtc;  /* need to add nnhpres here? */
+    tpx.fep_state = state->fep_state;
+    tpx.lambda = state->lambda[efptFEP];
     tpx.bIr  = (ir       != NULL);
     tpx.bTop = (mtop     != NULL);
     tpx.bX   = (state->x != NULL);
@@ -2066,18 +2500,18 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
   if (bRead) {
     state->flags  = 0;
-    state->lambda = tpx.lambda;
+    /* state->lambda = tpx.lambda;*/ /*remove this eventually? */
     /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc,0,0);  /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
-      state->natoms = tpx.natoms; 
-      state->nalloc = tpx.natoms; 
+      init_state(state,0,tpx.ngtc,0,0,0);  /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
+      state->natoms = tpx.natoms;
+      state->nalloc = tpx.natoms;
       state->x = xptr;
       state->v = vptr;
     } else {
-      init_state(state,tpx.natoms,tpx.ngtc,0,0);  /* nose-hoover chains */
+        init_state(state,tpx.natoms,tpx.ngtc,0,0,0);  /* nose-hoover chains */
     }
   }
 
@@ -2371,7 +2805,7 @@ gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
 {
   t_tpxheader  header;
   int          natoms,i,version,generation;
-  gmx_bool         bTop,bXNULL;
+  gmx_bool         bTop,bXNULL=FALSE;
   gmx_mtop_t   *mtop;
   t_topology   *topconv;
   gmx_atomprop_t aps;
@@ -2394,15 +2828,20 @@ gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
   }
   else {
     get_stx_coordnum(infile,&natoms);
-    init_t_atoms(&top->atoms,natoms,FALSE);
-    bXNULL = (x == NULL);
+    init_t_atoms(&top->atoms,natoms,(fn2ftp(infile) == efPDB));
+    if (x == NULL)
+    {
+        snew(x,1);
+        bXNULL = TRUE;
+    }
     snew(*x,natoms);
     if (v)
       snew(*v,natoms);
     read_stx_conf(infile,title,&top->atoms,*x,(v==NULL) ? NULL : *v,ePBC,box);
-    if (bXNULL) {
+    if (bXNULL)
+    {
       sfree(*x);
-      x = NULL;
+      sfree(x);
     }
     if (bMass) {
       aps = gmx_atomprop_init();

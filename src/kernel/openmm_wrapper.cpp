@@ -63,7 +63,7 @@ using namespace std;
 #include "mdrun.h"
 #include "physics.h"
 #include "string2.h"
-#include "gmx_gpu_utils.h"
+#include "gpu_utils.h"
 #include "mtop_util.h"
 
 #include "openmm_wrapper.h"
@@ -602,6 +602,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
         if (!(i == F_CONSTR ||
             i == F_SETTLE   ||
             i == F_BONDS    ||            
+            i == F_HARMONIC ||
             i == F_UREY_BRADLEY ||
             i == F_ANGLES   ||
             i == F_PDIHS    ||
@@ -782,7 +783,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (pluginDir != NULL && *pluginDir != '\0')
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(pluginDir);
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = pluginDir;
@@ -800,7 +801,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(OPENMM_PLUGIN_DIR);
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = OPENMM_PLUGIN_DIR;
@@ -811,7 +812,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(Platform::getDefaultPluginsDirectory());
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = Platform::getDefaultPluginsDirectory();
@@ -851,6 +852,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numConstraints = idef.il[F_CONSTR].nr/3;
         const int numSettle = idef.il[F_SETTLE].nr/2;
         const int numBonds = idef.il[F_BONDS].nr/3;
+        const int numHarmonic = idef.il[F_HARMONIC].nr/3;
         const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
@@ -879,6 +881,17 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int type = bondAtoms[offset++];
             int atom1 = bondAtoms[offset++];
             int atom2 = bondAtoms[offset++];
+            bondForce->addBond(atom1, atom2,
+                               idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
+        }
+
+        const int* harmonicAtoms = (int*) idef.il[F_HARMONIC].iatoms;
+        offset = 0;
+        for (int i = 0; i < numHarmonic; ++i)
+        {
+            int type = harmonicAtoms[offset++];
+            int atom1 = harmonicAtoms[offset++];
+            int atom2 = harmonicAtoms[offset++];
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
         }
@@ -913,10 +926,10 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int atom3 = ubAtoms[offset++];
             /* ubBondForce->addBond(atom1, atom3, */
             bondForce->addBond(atom1, atom3,
-                               idef.iparams[type].u_b.r13, idef.iparams[type].u_b.kUB);
+                               idef.iparams[type].u_b.r13A, idef.iparams[type].u_b.kUBA);
             /* ubAngleForce->addAngle(atom1, atom2, atom3, */ 
             angleForce->addAngle(atom1, atom2, atom3, 
-                    idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
+                    idef.iparams[type].u_b.thetaA*M_PI/180.0, idef.iparams[type].u_b.kthetaA);
         }
 
 		/* Set proper dihedral terms */
@@ -1296,7 +1309,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             /* check GPU compatibility */
             char gpuname[STRLEN];
             devId = atoi(opt->getOptionValue("deviceid").c_str());
-            if (!is_supported_cuda_gpu(-1, gpuname))
+            if (!is_gmx_openmm_supported_gpu(-1, gpuname))
             {
                 if (!gmx_strcasecmp(opt->getOptionValue("force-device").c_str(), "yes"))
                 {

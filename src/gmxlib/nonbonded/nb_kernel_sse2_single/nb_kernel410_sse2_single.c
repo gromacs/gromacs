@@ -18,7 +18,6 @@
 #include<math.h>
 #include<vec.h>
 
-#include <xmmintrin.h>
 #include <emmintrin.h>
 
 #include <gmx_sse2_single.h>

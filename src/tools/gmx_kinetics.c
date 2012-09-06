@@ -55,9 +55,6 @@
 #include "physics.h"
 #include "gmx_ana.h"
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_multimin.h>
-
 enum { epAuf, epEuf, epAfu, epEfu, epNR };
 enum { eqAif, eqEif, eqAfi, eqEfi, eqAui, eqEui, eqAiu, eqEiu, eqNR };
 static char *eep[epNR] = { "Af", "Ef", "Au", "Eu" };
@@ -82,6 +79,9 @@ typedef struct {
   real *params;
   real *d2_replica;
 } t_remd_data;
+
+#ifdef HAVE_LIBGSL
+#include <gsl/gsl_multimin.h>
 
 static char *itoa(int i)
 {
@@ -664,6 +664,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
       fprintf(gp,"Chi2[%3d] = %8.2e\n",i,d->d2_replica[i]);
   }
 }
+#endif /*HAVE_LIBGSL*/
 
 int gmx_kinetics(int argc,char *argv[])
 {
@@ -725,17 +726,17 @@ int gmx_kinetics(int argc,char *argv[])
     { "-T",       FALSE, etREAL, {&tref},
       "Reference temperature for computing rate constants" },
     { "-n",       FALSE, etINT, {&nreplica},
-      "Read data for # replicas. Only necessary when files are written in xmgrace format using @type and & as delimiters." },
+      "Read data for this number of replicas. Only necessary when files are written in xmgrace format using @type and & as delimiters." },
     { "-cut",     FALSE, etREAL, {&cutoff},
       "Cut-off (max) value for regarding a structure as folded" },
     { "-ucut",    FALSE, etREAL, {&ucut},
       "Cut-off (max) value for regarding a structure as intermediate (if not folded)" },
     { "-euf",     FALSE, etREAL, {&Euf},
-      "Initial guess for energy of activation for folding (kJ/mole)" },
+      "Initial guess for energy of activation for folding (kJ/mol)" },
     { "-efu",     FALSE, etREAL, {&Efu},
-      "Initial guess for energy of activation for unfolding (kJ/mole)" },
+      "Initial guess for energy of activation for unfolding (kJ/mol)" },
     { "-ei",      FALSE, etREAL, {&Ei},
-      "Initial guess for energy of activation for intermediates (kJ/mole)" },
+      "Initial guess for energy of activation for intermediates (kJ/mol)" },
     { "-maxiter", FALSE, etINT, {&maxiter},
       "Max number of iterations" },
     { "-back",    FALSE, etBOOL, {&bBack},
@@ -747,9 +748,9 @@ int gmx_kinetics(int argc,char *argv[])
     { "-split",   FALSE, etBOOL,{&bSplit},
       "Estimate error by splitting the number of replicas in two and refitting" },
     { "-sum",     FALSE, etBOOL,{&bSum},
-      "Average folding before computing chi^2" },
+      "Average folding before computing [GRK]chi[grk]^2" },
     { "-discrete", FALSE, etBOOL, {&bDiscrete},
-      "Use a discrete folding criterium (F <-> U) or a continuous one" },
+      "Use a discrete folding criterion (F <-> U) or a continuous one" },
     { "-mult",    FALSE, etINT, {&nmult},
       "Factor to multiply the data with before discretization" }
   };
@@ -779,6 +780,7 @@ int gmx_kinetics(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE | PCA_TIME_UNIT,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv); 
 
+#ifdef HAVE_LIBGSL
   please_cite(stdout,"Spoel2006d");
   if (cutoff < 0)
     gmx_fatal(FARGS,"cutoff should be >= 0 (rather than %f)",cutoff);
@@ -883,15 +885,9 @@ int gmx_kinetics(int argc,char *argv[])
   view_all(oenv, NFILE, fnm);
   
   thanx(stderr);
-  
-  return 0;
-}
-  
 #else
-int gmx_kinetics(int argc,char *argv[])
-{
   fprintf(stderr,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
+#endif /*HAVE_LIBGSL*/
   
   return 0;
 }
-#endif

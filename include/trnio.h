@@ -78,6 +78,7 @@ typedef struct		/* This struct describes the order and the	*/
   int	nre;		/* Backward compatibility		        */
   real	t;		/* Current time					*/
   real	lambda;		/* Current value of lambda			*/
+  int	fep_state;  /* Current value of alchemical state */
 } t_trnheader;
 
 t_fileio *open_trn(const char *fn,const char *mode);

@@ -37,6 +37,7 @@
 #endif
 
 #include <math.h>
+#include "string2.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -55,7 +56,7 @@ int main (int argc,char *argv[])
     "[TT]g_protonate[tt] reads (a) conformation(s) and adds all missing",
     "hydrogens as defined in [TT]gmx2.ff/aminoacids.hdb[tt]. If only [TT]-s[tt] is",
     "specified, this conformation will be protonated, if also [TT]-f[tt]",
-    "is specified, the conformation(s) will be read from this file",
+    "is specified, the conformation(s) will be read from this file, ",
     "which can be either a single conformation or a trajectory.",
     "[PAR]",
     "If a [TT].pdb[tt] file is supplied, residue names might not correspond to",
@@ -65,7 +66,7 @@ int main (int argc,char *argv[])
     "If an index file is specified, please note that the atom numbers",
     "should correspond to the [BB]protonated[bb] state."
   };
-  
+ 
   char        title[STRLEN+1];  
   const char  *infile;
   char        *grpnm;
@@ -84,6 +85,10 @@ int main (int argc,char *argv[])
   gmx_bool        bReadMultiple;
   output_env_t oenv;
   
+  const char *bugs[] = {
+    "For the moment, only .pdb files are accepted to the -s flag"
+  };
+ 
   t_filenm fnm[] = {
     { efTPS, NULL, NULL,         ffREAD  },
     { efTRX, "-f", NULL,         ffOPTRD },
@@ -94,7 +99,7 @@ int main (int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,
-		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL,&oenv);
+		    NFILE,fnm,0,NULL,asize(desc),desc,asize(bugs),bugs,&oenv);
   
   infile=opt2fn("-s",NFILE,fnm);
   read_tps_conf(infile,title,&top,&ePBC,&x,NULL,box,FALSE);
@@ -104,8 +109,9 @@ int main (int argc,char *argv[])
   bReadMultiple = opt2bSet("-f",NFILE,fnm);
   if (bReadMultiple) {
     infile = opt2fn("-f",NFILE,fnm);
-    if ( !read_first_frame(oenv,&status, infile, &fr, TRX_NEED_X ) )
+    if ( !read_first_frame(oenv,&status, infile, &fr, TRX_NEED_X ) ) {
       gmx_fatal(FARGS,"cannot read coordinate file %s",infile);
+    }
     natoms = fr.natoms;
   } else {
     clear_trxframe(&fr,TRUE);
@@ -120,16 +126,22 @@ int main (int argc,char *argv[])
   }
   
   /* check input */
-  if ( natoms == 0 )
+  if ( natoms == 0 ) {
     gmx_fatal(FARGS,"no atoms in coordinate file %s",infile);
-  if ( natoms > atoms->nr )
+  }
+
+  if ( natoms > atoms->nr ) {
     gmx_fatal(FARGS,"topology with %d atoms does not match "
 		"coordinates with %d atoms",atoms->nr,natoms);
-  for(i=0; i<nidx; i++)
-    if (index[i] > natoms)
+  }
+
+  for(i=0; i<nidx; i++) {
+    if (index[i] > natoms) {
       gmx_fatal(FARGS,"An atom number in group %s is larger than the number of "
 		  "atoms (%d) in the coordinate file %s",grpnm,natoms,infile);
-  
+    }
+  }  
+
   /* get indexed copy of atoms */
   snew(iatoms,1);
   init_t_atoms(iatoms,nidx,FALSE);
@@ -138,10 +150,15 @@ int main (int argc,char *argv[])
   for(i=0; i<nidx; i++) {
     iatoms->atom[i] = atoms->atom[index[i]];
     iatoms->atomname[i] = atoms->atomname[index[i]];
-    if ( i>0 && (atoms->atom[index[i]].resind!=atoms->atom[index[i-1]].resind) )
+    if ( i>0 && (atoms->atom[index[i]].resind!=atoms->atom[index[i-1]].resind) ) {
       resind++;
+    }
     iatoms->atom[i].resind = resind;
     iatoms->resinfo[resind] = atoms->resinfo[atoms->atom[index[i]].resind];
+    /* allocate some space for the rtp name and copy from name */
+    snew(iatoms->resinfo[resind].rtp,1);
+    *iatoms->resinfo[resind].rtp = gmx_strdup(*atoms->resinfo[resind].name);
+
     iatoms->nres = max(iatoms->nres, iatoms->atom[i].resind+1);
   }
   
@@ -151,10 +168,13 @@ int main (int argc,char *argv[])
   snew(ix, nidx);
   frame=0;
   do {
-    if (debug) fprintf(debug,"FRAME %d (%d %g)\n",frame,fr.step,fr.time);
+    if (debug) {
+        fprintf(debug,"FRAME %d (%d %g)\n",frame,fr.step,fr.time);
+    }
     /* get indexed copy of x */
-    for(i=0; i<nidx; i++)
+    for(i=0; i<nidx; i++) {
       copy_rvec(fr.x[index[i]], ix[i]);
+    }
     /* protonate */
     natoms_out = protonate(&iatoms, &ix, &protdata);
     
@@ -171,6 +191,9 @@ int main (int argc,char *argv[])
     write_trxframe(out,&frout,NULL);
     frame++;
   } while ( bReadMultiple && read_next_frame(oenv,status, &fr) );
+
+  sfree(ix);
+  sfree(iatoms);
   
   thanx(stderr);
 

@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_ATOMIC_H_
-#define _TMPI_ATOMIC_H_
+#ifndef TMPI_ATOMIC_H_
+#define TMPI_ATOMIC_H_
 
 /*! \file atomic.h
  *
@@ -96,8 +96,11 @@ extern "C"
    too */
 #if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
 
+
+
+
 /* now check specifically for several architectures: */
-#if (defined(i386) || defined(__x86_64__)) 
+#if ((defined(i386) || defined(__x86_64__)) && ! defined(__OPEN64__))
 /* first x86: */
 #include "atomic/gcc_x86.h"
 /*#include "atomic/gcc.h"*/
@@ -134,6 +137,9 @@ extern "C"
 #include "atomic/xlc_ppc.h"
 
 
+#elif defined (__sun) && (defined(__sparcv9) || defined(__sparc))
+/* Solaris on SPARC (Sun C Compiler, Solaris Studio) */
+#include "atomic/suncc-sparc.h"
 
 
 
@@ -145,6 +151,7 @@ extern "C"
 #error No atomic operations implemented for this cpu/compiler combination. 
 #endif
 
+/** Indicates that no support for atomic operations is present. */
 #define TMPI_NO_ATOMICS
 
 
@@ -190,7 +197,7 @@ extern "C"
 
 
 
-/* System mutex used for locking to guarantee atomicity */
+/** System mutex used for locking to guarantee atomicity */
 static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 /** Atomic operations datatype
@@ -250,7 +257,7 @@ static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
  */
 typedef struct tMPI_Atomic
 {
-    int value;  
+    int value;  /**< The atomic value. */
 }
 tMPI_Atomic_t;
 
@@ -266,7 +273,7 @@ tMPI_Atomic_t;
 */
 typedef struct tMPI_Atomic_ptr
 {
-    void* value;  
+    void* value;  /**< The atomic pointer value. */
 }
 tMPI_Atomic_ptr_t;
 
@@ -588,8 +595,6 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
  */
 static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
-    int rc;
-    
     if(tMPI_Spinlock_trylock(x) != 0)
     {
         /* It was locked */
@@ -613,8 +618,6 @@ static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
  */
 static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
-    int rc;
-    
     tMPI_Spinlock_lock(x);
     /* Got the lock now, so the waiting is over */
     tMPI_Spinlock_unlock(x);
@@ -630,6 +633,7 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 /** Atomic swap operation.
 
   Atomically swaps the data in the tMPI_Atomic_t operand with the value of b.
+  NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
 
   \param a  Pointer to atomic type
   \param b  Value to swap 
@@ -648,6 +652,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 
   Atomically swaps the pointer in the tMPI_Atomic_ptr_t operand with the 
   value of b.
+  NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
 
   \param a  Pointer to atomic type
   \param b  Value to swap 
@@ -685,4 +690,4 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 #endif
 
 
-#endif /* _TMPI_ATOMIC_H_ */
+#endif /* TMPI_ATOMIC_H_ */

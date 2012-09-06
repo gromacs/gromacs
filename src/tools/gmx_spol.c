@@ -156,7 +156,7 @@ int gmx_spol(int argc,char *argv[])
     "the inner product of the distance vector",
     "and the dipole of the solvent molecule is determined.",
     "For solvent molecules with net charge (ions), the net charge of the ion",
-    "is subtracted evenly at all atoms in the selection of each ion.",
+    "is subtracted evenly from all atoms in the selection of each ion.",
     "The average of these dipole components is printed.",
     "The same is done for the polarization, where the average dipole is",
     "subtracted from the instantaneous dipole. The magnitude of the average",

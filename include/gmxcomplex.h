@@ -1,4 +1,5 @@
 /*
+ * $Id: gmxcomplex.h,v 1.5 2009/03/07 13:30:36 lindahl Exp $
  * 
  *                This source code is part of
  * 
@@ -32,8 +33,8 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-#ifndef _complex_h
-#define _complex_h
+#ifndef _gmxcomplex_h
+#define _gmxcomplex_h
 
 #include <math.h>
 #include "typedefs.h"
@@ -106,6 +107,16 @@ static t_complex conjugate(t_complex c)
   
   return d;
 }
+
+static real cabs2(t_complex c)
+{
+real abs2;
+abs2=(c.re*c.re)+(c.im*c.im);
+
+return abs2;
+}
+
+
 
 static t_complex cdiv(t_complex teller,t_complex noemer)
 {

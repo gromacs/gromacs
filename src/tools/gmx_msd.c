@@ -160,16 +160,6 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   return curr;
 }
 
-static void done_corr(t_corr *curr)
-{
-  int i;
-  
-  sfree(curr->n_offs);
-  for(i=0; (i<curr->nrestart); i++)
-    sfree(curr->x0[i]);
-  sfree(curr->x0);
-}
-
 static void corr_print(t_corr *curr,gmx_bool bTen,const char *fn,const char *title,
                        const char *yaxis,
 		       real msdtime,real beginfit,real endfit,
@@ -410,6 +400,10 @@ static void prep_data(gmx_bool bMol,int gnx,atom_id index[],
 
         for(m=DIM-1; m>=0; m--) 
         {
+            if (hbox[m] == 0)
+            {
+                continue;
+            }
             while(xcur[ind][m]-xprev[ind][m] <= -hbox[m])
                 rvec_inc(xcur[ind],box[m]);
             while(xcur[ind][m]-xprev[ind][m] >  hbox[m])

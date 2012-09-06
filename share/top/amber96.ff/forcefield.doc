@@ -1,4 +1,4 @@
-AMBER96 force field (Kollman et al., Acc. Chem. Res. 29, 461-469, 1996)
+AMBER96 protein, nucleic AMBER94 (Kollman et al., Acc. Chem. Res. 29, 461-469, 1996)
 
 ********************************************************************
 * The original ffamber ports were written by Eric J. Sorin,        *
