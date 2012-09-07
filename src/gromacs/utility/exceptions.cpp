@@ -37,9 +37,16 @@
  */
 #include "exceptions.h"
 
+#include <cstring>
+
+#include <new>
+#include <stdexcept>
+#include <typeinfo>
+
 #include <boost/exception/get_error_info.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "gromacs/legacyheaders/thread_mpi/system_error.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -232,7 +239,22 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
         }
         else
         {
-            internal::printFatalErrorMessageLine(fp, ex.what(), 0);
+            internal::printFatalErrorMessageLine(fp, ex.what(), indent);
+        }
+
+        const int *errorNumber
+            = boost::get_error_info<boost::errinfo_errno>(*boostEx);
+        if (errorNumber != NULL)
+        {
+            std::fprintf(fp, "%*sReason: %s\n", (indent+1)*2, "",
+                         std::strerror(*errorNumber));
+            const char * const *funcName
+                = boost::get_error_info<boost::errinfo_api_function>(*boostEx);
+            if (funcName != NULL)
+            {
+                std::fprintf(fp, "%*s(call to %s() returned error code %d)\n",
+                             (indent+1)*2, "", *funcName, *errorNumber);
+            }
         }
 
         // TODO: Treat also boost::nested_exception (not currently used, though)
@@ -241,7 +263,6 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
             = boost::get_error_info<errinfo_nested_exceptions>(*boostEx);
         if (nested != NULL)
         {
-            ++indent;
             internal::NestedExceptionList::const_iterator ni;
             for (ni = nested->begin(); ni != nested->end(); ++ni)
             {
@@ -251,16 +272,14 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
                 }
                 catch (const std::exception &nestedEx)
                 {
-                    printExceptionMessage(fp, nestedEx, indent);
+                    printExceptionMessage(fp, nestedEx, indent + 1);
                 }
             }
         }
-
-        // TODO: Treat errno information in boost exceptions
     }
     else
     {
-        internal::printFatalErrorMessageLine(fp, ex.what(), 0);
+        internal::printFatalErrorMessageLine(fp, ex.what(), indent);
     }
 }
 
@@ -269,15 +288,34 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
 void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {
     const char *title = "Unknown exception";
+    bool bPrintType = false;
     const GromacsException *gmxEx = dynamic_cast<const GromacsException *>(&ex);
-    // TODO: Also treat common standard exceptions
+    // TODO: Treat more of the standard exceptions
     if (gmxEx != NULL)
     {
         title = getErrorCodeString(gmxEx->errorCode());
     }
+    else if (dynamic_cast<const tMPI::system_error *>(&ex) != NULL)
+    {
+        title = "System error in thread synchronization";
+    }
     else if (dynamic_cast<const std::bad_alloc *>(&ex) != NULL)
     {
         title = "Memory allocation failed";
+    }
+    else if (dynamic_cast<const std::logic_error *>(&ex) != NULL)
+    {
+        title = "Standard library logic error (bug)";
+        bPrintType = true;
+    }
+    else if (dynamic_cast<const std::runtime_error *>(&ex) != NULL)
+    {
+        title = "Standard library runtime error (possible bug)";
+        bPrintType = true;
+    }
+    else
+    {
+        bPrintType = true;
     }
     // We can't call get_error_info directly on ex since our internal boost
     // needs to be compiled with BOOST_NO_RTTI. So we do the dynamic_cast
@@ -296,6 +334,10 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
                                     funcPtr != NULL ? *funcPtr : NULL,
                                     filePtr != NULL ? *filePtr : NULL,
                                     linePtr != NULL ? *linePtr : 0);
+    if (bPrintType)
+    {
+        std::fprintf(fp, "(exception type: %s)\n", typeid(ex).name());
+    }
     printExceptionMessage(fp, ex, 0);
     internal::printFatalErrorFooter(fp);
 }
