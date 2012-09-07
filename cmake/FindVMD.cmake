@@ -31,8 +31,8 @@ if(NOT "$ENV{VMDDIR}" STREQUAL "")
 endif()
 
 #xyz is just an example. Any other molfile plugin could be used.
-#But some require extra link flags.
-find_library(VMDXYZPLUGIN NAME "xyzplugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
+#But some require extra link flags. VMD uses ".so" even on Windows.
+find_library(VMDXYZPLUGIN NAME "xyzplugin.so"
     PATHS ${VMD_PATHS})
 
 if (VMDXYZPLUGIN)
