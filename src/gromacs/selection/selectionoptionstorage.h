@@ -41,7 +41,7 @@
 #include "../options/optionstoragetemplate.h"
 #include "selection.h"
 #include "selectionenums.h"
-#include "selectionoptioninfo.h"
+#include "selectionoption.h"
 
 namespace gmx
 {

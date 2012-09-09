@@ -46,6 +46,7 @@
 namespace gmx
 {
 
+class Options;
 class SelectionCollection;
 class SelectionOptionStorage;
 
@@ -200,6 +201,20 @@ class SelectionOptionManager
          */
         friend class SelectionOptionStorage;
 };
+
+/*! \brief
+ * Set manager for all selection options.
+ *
+ * Recursively sets the manager to \p manager for all selection options in
+ * \p options.
+ * Must be called before value assignment starts for \p options.
+ *
+ * Does not throw.
+ *
+ * \inpublicapi
+ */
+void setManagerForSelectionOptions(Options *options,
+                                   SelectionOptionManager *manager);
 
 } // namespace gmx
 

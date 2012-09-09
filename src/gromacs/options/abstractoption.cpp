@@ -39,7 +39,6 @@
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
-#include "gromacs/options/optioninfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 

@@ -41,7 +41,6 @@
 #include <string>
 
 #include "filenameoption.h"
-#include "filenameoptioninfo.h"
 #include "optionfiletype.h"
 #include "optionstoragetemplate.h"
 

@@ -47,7 +47,7 @@
 #include "../utility/common.h"
 #include "../utility/gmxassert.h"
 
-#include "optioninfo.h"
+#include "abstractoption.h"
 
 namespace gmx
 {

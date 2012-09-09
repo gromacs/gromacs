@@ -42,7 +42,6 @@
 #include <vector>
 
 #include "basicoptions.h"
-#include "basicoptioninfo.h"
 #include "optionstoragetemplate.h"
 
 namespace gmx

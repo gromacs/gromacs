@@ -35,22 +35,18 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#include "selectionfileoption.h"
-#include "selectionfileoptioninfo.h"
 #include "selectionoption.h"
-#include "selectionoptioninfo.h"
+#include "selectionfileoption.h"
+#include "selectionoptionstorage.h"
+#include "selectionfileoptionstorage.h"
 
 #include <string>
 
-#include "gromacs/options/optionsvisitor.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
-
-#include "selectionfileoptionstorage.h"
-#include "selectionoptionstorage.h"
 
 namespace gmx
 {
@@ -352,63 +348,6 @@ SelectionFileOption::SelectionFileOption(const char *name)
 AbstractOptionStoragePointer SelectionFileOption::createStorage() const
 {
     return AbstractOptionStoragePointer(new SelectionFileOptionStorage(*this));
-}
-
-
-/********************************************************************
- * Global functions
- */
-
-namespace
-{
-
-/*! \internal \brief
- * Visitor that sets the manager for each selection option.
- *
- * \ingroup module_selection
- */
-class SelectionOptionManagerSetter : public OptionsModifyingVisitor
-{
-    public:
-        //! Construct a visitor that sets given manager.
-        explicit SelectionOptionManagerSetter(SelectionOptionManager *manager)
-            : manager_(manager)
-        {
-        }
-
-        void visitSubSection(Options *section)
-        {
-            OptionsModifyingIterator iterator(section);
-            iterator.acceptSubSections(this);
-            iterator.acceptOptions(this);
-        }
-
-        void visitOption(OptionInfo *option)
-        {
-            SelectionOptionInfo *selOption
-                = option->toType<SelectionOptionInfo>();
-            if (selOption != NULL)
-            {
-                selOption->setManager(manager_);
-            }
-            SelectionFileOptionInfo *selFileOption
-                = option->toType<SelectionFileOptionInfo>();
-            if (selFileOption != NULL)
-            {
-                selFileOption->setManager(manager_);
-            }
-        }
-
-    private:
-        SelectionOptionManager *manager_;
-};
-
-} // namespace
-
-void setManagerForSelectionOptions(Options *options,
-                                   SelectionOptionManager *manager)
-{
-    SelectionOptionManagerSetter(manager).visitSubSection(options);
 }
 
 } // namespace gmx

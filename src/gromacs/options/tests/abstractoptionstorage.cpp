@@ -45,7 +45,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/options/abstractoption.h"
-#include "gromacs/options/optioninfo.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/options/optionsassigner.h"

@@ -3,13 +3,10 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${OPTIONS_SOURCES} PARENT_SCOPE)
 
 set(OPTIONS_PUBLIC_HEADERS
     abstractoption.h
-    basicoptioninfo.h
     basicoptions.h
     filenameoption.h
-    filenameoptioninfo.h
     optionfiletype.h
     optionflags.h
-    optioninfo.h
     options.h
     timeunitmanager.h)
 install(FILES ${OPTIONS_PUBLIC_HEADERS}

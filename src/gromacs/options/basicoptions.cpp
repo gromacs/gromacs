@@ -30,13 +30,13 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in basicoptions.h, basicoptioninfo.h and
- * basicoptionstorage.h.
+ * Implements classes in basicoptions.h and basicoptionstorage.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
-#include "gromacs/options/basicoptions.h"
+#include "basicoptions.h"
+#include "basicoptionstorage.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -46,11 +46,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "basicoptionstorage.h"
 
 namespace
 {

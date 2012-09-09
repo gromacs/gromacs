@@ -89,7 +89,6 @@
 #include "selection/selection.h"
 #include "selection/selectioncollection.h"
 #include "selection/selectionoption.h"
-#include "selection/selectionoptioninfo.h"
 #include "selection/selectionoptionmanager.h"
 
 #endif

@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Declares option settings objects for basic option types.
+ * Declares option objects for basic option types.
  *
  * Together with options.h, this header forms the part of the public API
  * that most classes will use to provide options.
@@ -47,13 +47,17 @@
 #include "../utility/gmxassert.h"
 
 #include "abstractoption.h"
-#include "basicoptioninfo.h"
 
 namespace gmx
 {
 
+class BooleanOptionInfo;
+class BooleanOptionStorage;
+class IntegerOptionInfo;
 class IntegerOptionStorage;
+class DoubleOptionInfo;
 class DoubleOptionStorage;
+class StringOptionInfo;
 class StringOptionStorage;
 
 /*! \addtogroup module_options
@@ -274,6 +278,71 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * otherwise unnecessary accessors.
          */
         friend class StringOptionStorage;
+};
+
+/*! \brief
+ * Wrapper class for accessing boolean option information.
+ *
+ * \inpublicapi
+ */
+class BooleanOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit BooleanOptionInfo(BooleanOptionStorage *option);
+};
+
+/*! \brief
+ * Wrapper class for accessing integer option information.
+ *
+ * \inpublicapi
+ */
+class IntegerOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit IntegerOptionInfo(IntegerOptionStorage *option);
+};
+
+/*! \brief
+ * Wrapper class for accessing floating-point option information.
+ *
+ * \inpublicapi
+ */
+class DoubleOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit DoubleOptionInfo(DoubleOptionStorage *option);
+
+        //! Whether the option specifies a time value.
+        bool isTime() const;
+
+        /*! \brief
+         * Sets a scale factor for user-provided values.
+         *
+         * Any user-provided value is scaled by the provided factor.
+         * Programmatically set default values are not scaled.
+         * If called multiple times, later calls override the previously set
+         * value.  In other words, the scaling is not cumulative.
+         */
+        void setScaleFactor(double factor);
+
+    private:
+        DoubleOptionStorage &option();
+        const DoubleOptionStorage &option() const;
+};
+
+/*! \brief
+ * Wrapper class for accessing string option information.
+ *
+ * \inpublicapi
+ */
+class StringOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit StringOptionInfo(StringOptionStorage *option);
 };
 
 /*!\}*/
