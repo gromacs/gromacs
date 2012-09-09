@@ -136,7 +136,7 @@ AnalysisTemplate::initOptions(Options *options,
 
     options->addOption(FileNameOption("o")
         .filetype(eftPlot).outputFile()
-        .store(&fnDist_).defaultValueIfSet("avedist")
+        .store(&fnDist_).defaultBasename("avedist")
         .description("Average distances from reference group"));
 
     options->addOption(SelectionOption("reference")

@@ -316,19 +316,19 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
-                           .store(&fnSize_).defaultValueIfSet("size")
+                           .store(&fnSize_).defaultBasename("size")
                            .description("Number of positions in each selection"));
     options->addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
-                           .store(&fnFrac_).defaultValueIfSet("frac")
+                           .store(&fnFrac_).defaultBasename("frac")
                            .description("Covered fraction for each selection"));
     options->addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
-                           .store(&fnIndex_).defaultValueIfSet("index")
+                           .store(&fnIndex_).defaultBasename("index")
                            .description("Indices selected by each selection"));
     options->addOption(FileNameOption("on").filetype(eftIndex).outputFile()
-                           .store(&fnNdx_).defaultValueIfSet("index")
+                           .store(&fnNdx_).defaultBasename("index")
                            .description("Index file from the selection"));
     options->addOption(FileNameOption("om").filetype(eftPlot).outputFile()
-                           .store(&fnMask_).defaultValueIfSet("mask")
+                           .store(&fnMask_).defaultBasename("mask")
                            .description("Mask for selected positions"));
 
     options->addOption(SelectionOption("select").storeVector(&sel_)

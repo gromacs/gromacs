@@ -253,15 +253,18 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
-    if (settings.defaultValue())
+    if (settings.defaultBasename_ != NULL)
     {
-        setDefaultValue(completeFileName(*settings.defaultValue(),
-                                         filetype_, false));
-    }
-    if (settings.defaultValueIfSet())
-    {
-        setDefaultValueIfSet(completeFileName(*settings.defaultValueIfSet(),
-                                              filetype_, false));
+        if (isRequired())
+        {
+            setDefaultValue(completeFileName(settings.defaultBasename_,
+                                             filetype_, false));
+        }
+        else
+        {
+            setDefaultValueIfSet(completeFileName(settings.defaultBasename_,
+                                                  filetype_, false));
+        }
     }
 }
 

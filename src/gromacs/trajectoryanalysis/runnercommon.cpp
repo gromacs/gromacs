@@ -182,17 +182,17 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
     options->addOption(FileNameOption("f")
                            .filetype(eftTrajectory).inputFile()
                            .store(&impl_->trjfile_)
-                           .defaultValueIfSet("traj")
+                           .defaultBasename("traj")
                            .description("Input trajectory or single configuration"));
     options->addOption(FileNameOption("s")
                            .filetype(eftTopology).inputFile()
                            .store(&impl_->topfile_)
-                           .defaultValueIfSet("topol")
+                           .defaultBasename("topol")
                            .description("Input structure"));
     options->addOption(FileNameOption("n")
                            .filetype(eftIndex).inputFile()
                            .store(&impl_->ndxfile_)
-                           .defaultValueIfSet("index")
+                           .defaultBasename("index")
                            .description("Extra index groups"));
     options->addOption(SelectionFileOption("sf"));
 
