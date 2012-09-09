@@ -30,22 +30,19 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in filenameoption.h, filenameoptioninfo.h and
- * filenameoptionstorage.h.
+ * Implements classes in filenameoption.h and filenameoptionstorage.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
 #include "filenameoption.h"
+#include "filenameoptionstorage.h"
 
 #include <string>
 #include <vector>
 
-#include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "filenameoptionstorage.h"
 
 namespace gmx
 {

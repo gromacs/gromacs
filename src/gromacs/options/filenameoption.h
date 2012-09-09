@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::FileNameOption for setting file name options.
+ * Declares gmx::FileNameOption and gmx::FileNameOptionInfo.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
@@ -42,12 +42,12 @@
 #include <string>
 
 #include "abstractoption.h"
-#include "filenameoptioninfo.h"
 #include "optionfiletype.h"
 
 namespace gmx
 {
 
+class FileNameOptionInfo;
 class FileNameOptionStorage;
 
 /*! \brief
@@ -112,6 +112,35 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * otherwise unnecessary accessors.
          */
         friend class FileNameOptionStorage;
+};
+
+/*! \brief
+ * Wrapper class for accessing file name option information.
+ *
+ * \inpublicapi
+ * \ingroup module_options
+ */
+class FileNameOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit FileNameOptionInfo(FileNameOptionStorage *option);
+
+        //! Whether the option specifies an input file.
+        bool isInputFile() const;
+        //! Whether the option specifies an output file.
+        bool isOutputFile() const;
+        //! Whether the option specifies a file used for both input and output.
+        bool isInputOutputFile() const;
+        /*! \brief
+         * Whether the option specifies a library file.
+         *
+         * \see FileNameOption::libraryFile()
+         */
+        bool isLibraryFile() const;
+
+    private:
+        const FileNameOptionStorage &option() const;
 };
 
 } // namespace gmx

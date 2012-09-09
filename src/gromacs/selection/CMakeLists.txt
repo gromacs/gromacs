@@ -9,7 +9,6 @@ set(SELECTION_PUBLIC_HEADERS
     selectioncollection.h
     selectionenums.h
     selectionoption.h
-    selectionoptioninfo.h
     selectionoptionmanager.h)
 install(FILES ${SELECTION_PUBLIC_HEADERS}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs/selection

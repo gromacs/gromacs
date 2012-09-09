@@ -50,7 +50,6 @@
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
