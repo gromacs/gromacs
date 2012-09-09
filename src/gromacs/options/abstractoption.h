@@ -243,7 +243,13 @@ class OptionTemplate : public AbstractOption
         //! Hides the option from normal help output.
         MyClass &hidden(bool bHidden = true)
         { setFlag(efOption_Hidden, bHidden); return me(); }
-        //! Requires the option to be specified explicitly.
+        /*! \brief
+         * Requires the option to be specified explicitly.
+         *
+         * Note that if you specify defaultValue() together with required(),
+         * the user is not required to explicitly provide the option.
+         * In this case, required() only affects possible help output.
+         */
         MyClass &required(bool bRequired = true)
         { setFlag(efOption_Required, bRequired); return me(); }
         //! Allows the option to be specified multiple times.
@@ -264,8 +270,6 @@ class OptionTemplate : public AbstractOption
          * is no default value, the storage is not altered, which can also be
          * used to provide a default value.  The latter method has to be used
          * if the option can take multiple values.
-         * If required() is specified, only affects the default value shown in
-         * help output.
          *
          * \p defaultValue is copied when the option is created.
          */
