@@ -447,6 +447,7 @@ void OptionStorageTemplate<T>::setDefaultValue(const T &value)
     }
     if (hasFlag(efOption_HasDefaultValue))
     {
+        setFlag(efOption_ExplicitDefaultValue);
         clear();
         clearSet();
         addValue(value);

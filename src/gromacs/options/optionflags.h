@@ -53,6 +53,10 @@ namespace gmx
  *
  * These flags are not part of the public interface, even though they are in an
  * installed header.  They are needed in a few template class implementations.
+ *
+ * \todo
+ * The flags related to default values are confusing, consider reorganizing
+ * them.
  */
 enum OptionFlag
 {
@@ -60,13 +64,15 @@ enum OptionFlag
     efOption_Set                        = 1<<0,
     //! The current value of the option is a programmatic default value.
     efOption_HasDefaultValue            = 1<<1,
+    //! An explicit default value has been provided for the option.
+    efOption_ExplicitDefaultValue      = 1<<2,
     /*! \brief
      * Next assignment to the option clears old values.
      *
      * This flag is set when a new option source starts, such that values
      * from the new source will overwrite old ones.
      */
-    efOption_ClearOnNextSet             = 1<<2,
+    efOption_ClearOnNextSet             = 1<<3,
     //! %Option is required to be set.
     efOption_Required                   = 1<<4,
     //! %Option can be specified multiple times.

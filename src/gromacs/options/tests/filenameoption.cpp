@@ -72,14 +72,14 @@ TEST(FileNameOptionTest, AddsMissingExtension)
     EXPECT_EQ("testfile.xtc", value);
 }
 
-TEST(FileNameOptionTest, HandlesDefaultValueWithoutExtension)
+TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
-                        FileNameOption("f").store(&value)
+                        FileNameOption("f").store(&value).required()
                             .filetype(gmx::eftGenericData).outputFile()
-                            .defaultValue("testfile")));
+                            .defaultBasename("testfile")));
     EXPECT_EQ("testfile.dat", value);
 
     gmx::OptionsAssigner assigner(&options);
@@ -90,14 +90,14 @@ TEST(FileNameOptionTest, HandlesDefaultValueWithoutExtension)
     EXPECT_EQ("testfile.dat", value);
 }
 
-TEST(FileNameOptionTest, HandlesDefaultValueIfSetWithoutExtension)
+TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
                             .filetype(gmx::eftIndex).outputFile()
-                            .defaultValueIfSet("testfile")));
+                            .defaultBasename("testfile")));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);

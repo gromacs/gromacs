@@ -91,7 +91,7 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnDist_).defaultValueIfSet("dist")
+                           .store(&fnDist_).defaultBasename("dist")
                            .description("Computed distances"));
     options->addOption(SelectionOption("select").required().valueCount(2)
                            .store(sel_));
