@@ -141,7 +141,7 @@ void AbstractOptionStorage::finish()
 {
     GMX_RELEASE_ASSERT(!bInSet_, "finishSet() not called");
     processAll();
-    if (isRequired() && !isSet())
+    if (isRequired() && !(isSet() || hasFlag(efOption_ExplicitDefaultValue)))
     {
         GMX_THROW(InvalidInputError("Option is required, but not set"));
     }
