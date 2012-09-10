@@ -196,7 +196,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
      * The flops are equal for plain-C, x86 SIMD and CUDA, except for:
      * - plain-C kernel uses one flop more for Coulomb-only (F) than listed
      * - x86 SIMD LJ geom-comb.rule kernels (fastest) use 2 more flops
-     * - x86 SIMD LB geom-comb.rule kernels (fast) use 3 (8 for F+E) more flops
+     * - x86 SIMD LJ LB-comb.rule kernels (fast) use 3 (8 for F+E) more flops
      * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
      *   is always counted as 5 flops, this roughly compensates.
      */
