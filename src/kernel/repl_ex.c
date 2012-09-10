@@ -180,7 +180,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     switch (re->type)
     {
     case ereTEMP:
-        please_cite(fplog,"Hukushima96a");
+        please_cite(fplog,"Sugita1999a");
         if (ir->epc != epcNO)
         {
             re->bNPT = TRUE;

@@ -528,7 +528,12 @@ void please_cite(FILE *fp,const char *key)
       "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
       "J. Chem. Phys. B",
       133, 2010, "034117"
-    }
+    },
+    { "Sugita1999a",
+      "Y. Sugita, Y. Okamoto",
+      "Replica-exchange molecular dynamics method for protein folding",
+      "Chem. Phys. Lett.",
+      314, 1999, "141-151" },
   };
 #define NSTR (int)asize(citedb)
   
