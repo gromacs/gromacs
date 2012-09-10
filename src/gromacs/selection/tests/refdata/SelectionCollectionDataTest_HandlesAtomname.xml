@@ -9,9 +9,9 @@
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
-      <String Name="Input">name S1 S2</String>
-      <String Name="Name">name S1 S2</String>
-      <String Name="Text">name S1 S2</String>
+      <String Name="Input">atomname S1 S2</String>
+      <String Name="Name">atomname S1 S2</String>
+      <String Name="Text">atomname S1 S2</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
   </ParsedSelections>

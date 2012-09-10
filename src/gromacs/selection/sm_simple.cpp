@@ -70,14 +70,14 @@ check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data
 static void
 evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-/** Evaluates the \p name selection keyword. */
+/** Evaluates the \p atomname selection keyword. */
 static void
 evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Checks whether atom types are present in the topology. */
 static void
 check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Evaluates the \p type selection keyword. */
+/** Evaluates the \p atomtype selection keyword. */
 static void
 evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
@@ -214,9 +214,9 @@ gmx_ana_selmethod_t sm_molindex = {
     NULL,
 };
 
-/** \internal Selection method data for \p name selection keyword. */
+/** \internal Selection method data for \p atomname selection keyword. */
 gmx_ana_selmethod_t sm_atomname = {
-    "name", STR_VALUE, SMETH_REQTOP,
+    "atomname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
     NULL,
@@ -228,9 +228,9 @@ gmx_ana_selmethod_t sm_atomname = {
     NULL,
 };
 
-/** \internal Selection method data for \p type selection keyword. */
+/** \internal Selection method data for \p atomtype selection keyword. */
 gmx_ana_selmethod_t sm_atomtype = {
-    "type", STR_VALUE, SMETH_REQTOP,
+    "atomtype", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
     NULL,
