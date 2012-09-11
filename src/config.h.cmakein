@@ -346,3 +346,7 @@
 #    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
 #  endif
 #endif
+
+/* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
+#define MPICH_SKIP_MPICXX 1
+#define OMPI_SKIP_MPICXX 1
