@@ -225,6 +225,11 @@ gmx_c_flags()
 include(gmxGetCompilerVersion)
 get_compiler_version()
 
+# gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
+# Detect here whether applying a workaround is needed and will apply it later
+# on the affected files.
+include(gmxGCC44O3BugWorkaround)
+gmx_check_gcc44_bug_workaround_needed(GMX_USE_GCC44_BUG_WORKAROUND)
 
 ########################################################################
 # Set up binary and library suffixing 

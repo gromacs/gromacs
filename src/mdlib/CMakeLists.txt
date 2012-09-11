@@ -6,22 +6,11 @@ if(GMX_GPU)
     set(GMX_GPU_LIBRARIES nbnxn_cuda)
 endif()
 
-# due to a compiler bug gcc 4.4.x crashes on force.c and constr.c with -O3,
-# but strangely not with -O2 + all extra -O3 flags
-if(GMX_OPENMP AND CMAKE_COMPILER_IS_GNUCC AND
-   C_COMPILER_VERSION VERSION_GREATER "4.3.999" AND C_COMPILER_VERSION VERSION_LESS "4.4.999")
-    if(GMX_NO_GCC44_BUG_WORKAROUND)
-        message(WARNING "gcc ${C_COMPILER_VERSION} detected, but workaround for optimization bug is disabled")
-    else()
-        message(STATUS "gcc ${C_COMPILER_VERSION} detected, applying workaround for optimization bug (disable with GMX_NO_GCC44_BUG_WORKAROUND)")
-        # O3 only in release mode
-        if (CMAKE_BUILD_TYPE STREQUAL "Release")
-            set_source_files_properties("force.c" PROPERTIES COMPILE_FLAGS
-                "-O2 -finline-functions -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone")
-            set_source_files_properties("constr.c" PROPERTIES COMPILE_FLAGS
-                "-O2 -finline-functions -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone")
-        endif()
-    endif()
+# apply gcc 4.4.x bug workaround
+if(GMX_USE_GCC44_BUG_WORKAROUND)
+   include(gmxGCC44O3BugWorkaround)
+   gmx_apply_gcc44_bug_workaround("force.c")
+   gmx_apply_gcc44_bug_workaround("constr.c")
 endif()
 
 # Files	called xxx_test.c are test drivers with a main() function for 
