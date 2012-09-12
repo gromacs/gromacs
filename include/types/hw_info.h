@@ -33,12 +33,17 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+/* Possible results of the GPU detection/check.
+ *
+ * The egpuInsane value means that during the sanity checks an error
+ * occurred that indicates malfunctioning of the device, driver, or
+ * incompatible driver/runtime. */
 typedef enum
 {
     egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane
 } e_gpu_detect_res_t;
 
-
+/* Textual names of the GPU detection/check results (see e_gpu_detect_res_t). */
 static const char * const gpu_detect_res_str[] =
 {
     "compatible", "inexistent", "incompatible", "insane"
@@ -56,6 +61,8 @@ typedef struct
     cuda_dev_info_ptr_t cuda_dev;       /* devices detected in the system (per node) */
 } gmx_gpu_info_t;
 
+/* Hardware information structure with CPU and GPU information.
+ * It is initialized by gmx_detect_hardware(). */
 typedef struct
 {
     gmx_bool        bCanUseGPU; /* True if compatible GPUs are detected during hardware detection */
