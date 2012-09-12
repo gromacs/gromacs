@@ -288,7 +288,7 @@ int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr, char *line)
 }
 
 void write_g96_conf(FILE *out,t_trxframe *fr,
-		    int nindex,atom_id *index)
+                    int nindex,const atom_id *index)
 {
   t_atoms *atoms;
   int nout,i,a;
@@ -993,7 +993,7 @@ static void write_hconf_box(FILE *out,int pr,matrix box)
 }
 
 void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
-			   int nx,atom_id index[], int pr,
+			   int nx,const atom_id index[], int pr,
 			   rvec *x,rvec *v,matrix box)
 {
   char resnm[6],nm[6],format[100];
