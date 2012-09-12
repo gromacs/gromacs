@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">select -select 'resname RA RD and y &lt; 2.5' -pdbatoms maxsel</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="occupancy">
+      <DataFrame Name="Frame0">
+        <Real Name="X">1.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">2.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame2">
+        <Real Name="X">3.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame3">
+        <Real Name="X">4.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame4">
+        <Real Name="X">5.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame5">
+        <Real Name="X">6.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame6">
+        <Real Name="X">7.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame7">
+        <Real Name="X">8.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame8">
+        <Real Name="X">9.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <String Name="-ofpdb"><![CDATA[
+TITLE     frame t= 0.000
+REMARK    THIS IS A SIMULATION BOX
+CRYST1  100.000  100.000  100.000  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      1  CB   RA A   1      10.000  10.000   0.000  1.00  0.00            
+ATOM      2  S1   RA A   1      10.000  20.000   0.000  0.50  0.00            
+ATOM      3  S2   RA A   1      10.000  30.000   0.000  0.50  0.00            
+ATOM      7  CB   RA B   1      20.000  30.000   0.000  0.50  0.00            
+ATOM      8  S1   RA B   1      20.000  40.000   0.000  0.50  0.30            
+ATOM      9  S2   RA B   1      30.000  10.000   0.000  1.00  0.30            
+ATOM     13  CB   RD B   2      40.000  10.000   0.000  1.00  0.00            
+ATOM     14  S1   RD B   2      40.000  20.000   0.000  0.50  0.00            
+ATOM     15  S2   RD B   2      40.000  30.000   0.000  0.00  0.00            
+TER
+ENDMDL
+]]></String>
+  </OutputFiles>
+</ReferenceData>
