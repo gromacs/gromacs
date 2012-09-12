@@ -184,6 +184,7 @@ FileTypeRegistry::FileTypeRegistry()
     };
     registerType(eftTopology,    topExtensions);
     registerType(eftTrajectory,  trajExtensions);
+    registerType(eftPDB,         ".pdb");
     registerType(eftIndex,       ".ndx");
     registerType(eftPlot,        ".xvg");
     registerType(eftGenericData, ".dat");
