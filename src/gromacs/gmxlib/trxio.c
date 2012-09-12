@@ -187,7 +187,7 @@ void set_trxframe_ePBC(t_trxframe *fr,int ePBC)
 }
 
 int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
-                           atom_id *ind, gmx_conect gc)
+                           const atom_id *ind, gmx_conect gc)
 {
   char title[STRLEN];
   rvec *xout=NULL,*vout=NULL,*fout=NULL;
@@ -352,7 +352,7 @@ int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc)
   return 0;
 }
 
-int write_trx(t_trxstatus *status,int nind,atom_id *ind,t_atoms *atoms,
+int write_trx(t_trxstatus *status,int nind,const atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v,
 	      gmx_conect gc)
 {

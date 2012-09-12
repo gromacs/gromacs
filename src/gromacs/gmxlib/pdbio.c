@@ -219,7 +219,7 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
 void write_pdbfile_indexed(FILE *out,const char *title,
 			   t_atoms *atoms,rvec x[],
 			   int ePBC,matrix box,char chainid,
-			   int model_nr, atom_id nindex, atom_id index[],
+			   int model_nr, atom_id nindex, const atom_id index[],
 			   gmx_conect conect, gmx_bool bTerSepChains)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
