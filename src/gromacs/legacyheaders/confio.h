@@ -59,7 +59,7 @@ int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr);
  * set this to -1 if you want to know the number of atoms in the file   *
  * title, atoms, x, v can all be NULL, in which case they won't be read */
 
-void write_g96_conf(FILE *out,t_trxframe *fr,int nindex,atom_id *index);
+void write_g96_conf(FILE *out,t_trxframe *fr,int nindex,const atom_id *index);
 /* write a Gromos96 coordinate file or trajectory frame *
  * index can be NULL                                    */
 
@@ -68,9 +68,9 @@ int gro_first_x_or_v(FILE *status,t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
 
 void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
-				  int nx,atom_id index[],int ndec,
-				  rvec *x,rvec *v,matrix box);
-		
+                           int nx,const atom_id index[],int ndec,
+                           rvec *x,rvec *v,matrix box);
+
 void write_hconf_p(FILE *out,const char *title,t_atoms *atoms, int ndec,
 			  rvec *x,rvec *v,matrix box); 
 /* Write a Gromos file with precision ndec: number of decimal places in x,
