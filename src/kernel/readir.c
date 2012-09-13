@@ -434,16 +434,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
         CHECK(ir->coulombtype == eelPPPM);
 
-        if (epcPARRINELLORAHMAN == ir->epct && opts->bGenVel)
+        if (epcPARRINELLORAHMAN == ir->epc && opts->bGenVel)
         {
             sprintf(warn_buf,
                     "You are generating velocities so I am assuming you "
                     "are equilibrating a system. You are using "
-                    "Parrinello-Rahman pressure coupling, but this can be "
+                    "%s pressure coupling, but this can be "
                     "unstable for equilibration. If your system crashes, try "
                     "equilibrating first with Berendsen pressure coupling. If "
                     "you are not equilibrating the system, you can probably "
-                    "ignore this warning.");
+                    "ignore this warning.",
+                    epcoupl_names[ir->epc]);
             warning(wi,warn_buf);
         }
     }
@@ -2302,6 +2303,63 @@ static gmx_bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,
     }
 
     return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
+}
+
+
+
+static void check_constr_box_enerdrift_mass(t_inputrec *ir,gmx_mtop_t *mtop,
+                                            warninp_t wi)
+{
+    gmx_bool bTemp;
+    real ref_t,m_max,sigma;
+    int  i;
+    int  mb,ftype,ia;
+    gmx_moltype_t *molt;
+    t_atoms *atoms;
+
+    bTemp = FALSE;
+    ref_t = GMX_REAL_MAX;
+    for(i=0; i<ir->opts.ngtc; i++)
+    {
+        if (ir->opts.ref_t[i] > 0)
+        {
+            bTemp = TRUE;
+            ref_t = min(ref_t,ir->opts.ref_t[i]);
+        }
+    }
+    if (!bTemp)
+    {
+        return;
+    }
+
+    m_max = 0;
+    for(mb=0; mb<mtop->nmolblock; mb++)
+    {
+        molt  = &mtop->moltype[mtop->molblock[mb].type];
+        atoms = &molt->atoms;
+
+        for(ftype=0; ftype<=F_NRE; ftype++)
+        {
+            if (interaction_function[ftype].flags & IF_CONSTRAINT)
+            {
+                int nral;
+
+                nral = NRAL(ftype);
+                for(ia=0; ia<molt->ilist[ftype].nr; ia+=1+nral)
+                {
+                    int ai,a;
+
+                    for(ai=0; ai<nral; ai++)
+                    {
+                        a = molt->ilist[ftype].iatoms[ia+1+ai];
+                        m_max = max(m_max,atoms->atom[a].m);
+                    }
+                }
+            }
+        }
+    }
+
+    sigma = sqrt(BOLTZ*ref_t/m_max)*ir->delta_t;
 }
 
 void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
