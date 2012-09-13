@@ -97,8 +97,6 @@ struct tmpi_global *tmpi_global=NULL;
 
 
 
-
-
 /* start N threads with argc, argv (used by tMPI_Init)*/
 void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv, 
                         void (*start_fn)(void*), void *start_arg,
@@ -313,6 +311,8 @@ static void tMPI_Global_init(struct tmpi_global *g, int Nthreads)
 
     tMPI_Thread_barrier_init( &(g->barrier), Nthreads);
 
+    tMPI_Thread_mutex_init(&(g->comm_link_lock));
+
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     /* the time at initialization. */
     gettimeofday( &(g->timer_init), NULL);
@@ -326,6 +326,7 @@ static void tMPI_Global_init(struct tmpi_global *g, int Nthreads)
 static void tMPI_Global_destroy(struct tmpi_global *g)
 {
     tMPI_Thread_mutex_destroy(&(g->timer_mutex));
+    tMPI_Thread_mutex_destroy(&(g->comm_link_lock));
 }
 
 
@@ -561,14 +562,18 @@ int tMPI_Finalize(void)
         tMPI_Thread_key_delete(id_key);
         /* de-allocate all the comm stuctures. */
         {
-            tMPI_Comm cur=TMPI_COMM_WORLD->next;
+            tMPI_Comm cur;
+
+            tMPI_Thread_mutex_lock(&(tmpi_global->comm_link_lock));
+            cur=TMPI_COMM_WORLD->next;
             while(cur && (cur!=TMPI_COMM_WORLD) )
             {
                 tMPI_Comm next=cur->next;
-                tMPI_Comm_destroy(cur);
+                tMPI_Comm_destroy(cur, FALSE);
                 cur=next;
             }
-            tMPI_Comm_destroy(TMPI_COMM_WORLD);
+            tMPI_Comm_destroy(TMPI_COMM_WORLD, FALSE);
+            tMPI_Thread_mutex_unlock(&(tmpi_global->comm_link_lock));
         }
 
         tMPI_Group_free(&TMPI_GROUP_EMPTY);

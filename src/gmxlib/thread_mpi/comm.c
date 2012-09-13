@@ -168,6 +168,8 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     ret->cart=NULL;
     /*ret->graph=NULL;*/
 
+    /* we start counting at 0 */
+    tMPI_Atomic_set( &(ret->destroy_counter), 0);
 
     /* initialize the main barrier */
     tMPI_Barrier_init(&(ret->barrier), N);
@@ -209,15 +211,10 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     }
 
     /* the reduce buffers */
-#if 0
-    ret->sendbuf=(volatile void**)tMPI_Malloc(sizeof(void*)*Nthreads);
-    ret->recvbuf=(volatile void**)tMPI_Malloc(sizeof(void*)*Nthreads);
-#else
     ret->reduce_sendbuf=(tMPI_Atomic_ptr_t*)
               tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
     ret->reduce_recvbuf=(tMPI_Atomic_ptr_t*)
               tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
-#endif
 
 
     if (parent)
@@ -238,6 +235,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     for(i=0;i<N;i++)
         tMPI_Coll_sync_init( &(ret->csync[i]), N);
 
+    tMPI_Thread_mutex_lock( &(tmpi_global->comm_link_lock) ); 
     /* we insert ourselves in the circular list, after TMPI_COMM_WORLD */
     if (TMPI_COMM_WORLD)
     {
@@ -251,19 +249,15 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     {
         ret->prev=ret->next=ret;
     }
-
+    tMPI_Thread_mutex_unlock( &(tmpi_global->comm_link_lock) ); 
     return ret;
 }
 
-void tMPI_Comm_destroy(tMPI_Comm comm)
+void tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock)
 {
     int i;
 
     free(comm->grp.peers);
-#if 0
-    free(comm->reduce_barrier);
-    free(comm->N_reduce_barrier);
-#endif
     for(i=0;i<comm->N_reduce_iter;i++)
         free(comm->reduce_barrier[i]);
     free(comm->reduce_barrier);
@@ -290,17 +284,25 @@ void tMPI_Comm_destroy(tMPI_Comm comm)
     }
 
     /* remove ourselves from the circular list */
+    if (do_link_lock)
+        tMPI_Thread_mutex_lock( &(tmpi_global->comm_link_lock) ); 
     if (comm->next)
+    {
         comm->next->prev=comm->prev;
+    }
     if (comm->prev)
+    {
         comm->prev->next=comm->next;
-
+    }
     free(comm);
+    if (do_link_lock)
+        tMPI_Thread_mutex_unlock( &(tmpi_global->comm_link_lock) ); 
 }
 
 int tMPI_Comm_free(tMPI_Comm *comm)
 {
-    int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
+    int size;
+    int sum;
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Comm_free(%p)", comm);
 #endif
@@ -319,20 +321,24 @@ int tMPI_Comm_free(tMPI_Comm *comm)
     else
     {
         /* we're the last one so we can safely destroy it */
-        tMPI_Comm_destroy(*comm);
+        tMPI_Comm_destroy(*comm, TRUE);
     }
 #else
-    /* This is correct if programs actually treat Comm_free as a 
-       collective call */
-    /* we need to barrier because the comm is a shared structure and
-       we have to be sure that nobody else is using it 
-       (for example, to get its rank, like above) before destroying it*/
-    tMPI_Barrier(*comm);
+    /* This is correct if programs actually treat Comm_free as a collective 
+       call */
+    if (! *comm)
+        return TMPI_SUCCESS;
+
+    size=(*comm)->grp.N;
+
+    /* we add 1 to the destroy counter and actually deallocate if the counter
+       reaches N. */
+    sum=tMPI_Atomic_add_return( &((*comm)->destroy_counter), 1);
     /* this is a collective call on a shared data structure, so only 
-       one process (rank[0] in this case) should do anything */
-    if (myrank==0)
+       one process (the last one in this case) should do anything */
+    if (sum==size)
     {
-        tMPI_Comm_destroy(*comm);
+        tMPI_Comm_destroy(*comm, TRUE);
     }
 #endif
     return TMPI_SUCCESS;
@@ -430,7 +436,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
 
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Comm_split(%p, %d, %d, %p)", comm, color, key, 
-                       newcomm);
+                     newcomm);
 #endif
     if (!comm)
     {
