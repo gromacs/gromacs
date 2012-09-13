@@ -110,6 +110,7 @@ SelectionCollectionTest::~SelectionCollectionTest()
 {
     if (top_ != NULL)
     {
+        free_t_atoms(&top_->atoms, TRUE);
         done_top(top_);
         sfree(top_);
     }
@@ -142,6 +143,8 @@ SelectionCollectionTest::loadTopology(const char *filename)
     memcpy(frame_->x, xtop, sizeof(*frame_->x) * frame_->natoms);
     frame_->bBox   = TRUE;
     copy_mat(box, frame_->box);
+
+    sfree(xtop);
 
     ASSERT_NO_THROW(sc_.setTopology(top_, -1));
 }
