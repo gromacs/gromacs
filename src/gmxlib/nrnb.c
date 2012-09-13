@@ -37,6 +37,7 @@
 #endif
 
 #include <string.h>
+#include "types/commrec.h"
 #include "sysstuff.h"
 #include "gmx_fatal.h"
 #include "names.h"
@@ -189,6 +190,26 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "All-vs-All, Coul + LJ",          38 },
     { "All-vs-All, GB + LJ",            61 },
     { "Outer nonbonded loop",           10 },
+    { "Pair Search distance check",      9 }, /* nbnxn pair dist. check */
+    /* nbnxn kernel flops are based on inner-loops without exclusion checks.
+     * Plain Coulomb runs through the RF kernels, except with CUDA.
+     * The flops are equal for plain-C, x86 SIMD and CUDA, except for:
+     * - plain-C kernel uses one flop more for Coulomb-only (F) than listed
+     * - x86 SIMD LJ geom-comb.rule kernels (fastest) use 2 more flops
+     * - x86 SIMD LJ LB-comb.rule kernels (fast) use 3 (8 for F+E) more flops
+     * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
+     *   is always counted as 5 flops, this roughly compensates.
+     */
+    { "LJ + Coulomb RF (F)",            37 }, /* nbnxn kernel LJ+RF, no ener */
+    { "LJ + Coulomb RF (F+E)",          53 },
+    { "LJ + Coulomb tabulated (F)",     40 }, /* nbnxn kernel LJ+tab, no en */
+    { "LJ + Coulomb tabulated (F+E)",   58 },
+    { "LJ (F)",                         32 }, /* nbnxn kernel LJ, no ener */
+    { "LJ (F+E)",                       42 },
+    { "Coulomb RF (F)",                 30 }, /* nbnxn kernel RF, no ener */
+    { "Coulomb RF (F+E)",               35 },
+    { "Coulomb tabulated (F)",          33 }, /* nbnxn kernel tab, no ener */
+    { "Coulomb tabulated (F+E)",        40 },
     { "1,4 nonbonded interactions",     90 },
     { "Born radii (Still)",             47 },
     { "Born radii (HCT/OBC)",          183 },
@@ -365,50 +386,64 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 
 void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
 		gmx_large_int_t nsteps,real delta_t,
-		double nbfs,double mflop)
+		double nbfs,double mflop,
+                int omp_nth_pp)
 {
   real runtime;
 
   fprintf(out,"\n");
 
-  if (nodetime == 0.0) {
-    fprintf(out,"nodetime = 0! Infinite Giga flopses!\n");
-  }
-#ifdef GMX_OPENMM
-  nodetime = realtime;
-  fprintf(out,"\tOpenMM run - timing based on wallclock.\n\n");
-#else
-  if (nprocs > 1)
+  if (realtime > 0) 
   {
-      nodetime = realtime;
-      fprintf(out,"\tParallel run - timing based on wallclock.\n\n");
-  }
-#endif
-
-  if ((nodetime > 0) && (realtime > 0)) {
-    fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");
-    fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
+    fprintf(out,"%12s %12s %12s %10s\n","","Core t (s)","Wall t (s)","(%)");
+    fprintf(out,"%12s %12.3f %12.3f %10.1f\n","Time:",
 	    nodetime, realtime, 100.0*nodetime/realtime);
-    if (nodetime > 60) {
-      fprintf(out,"%12s %10s","","");
-      pr_difftime(out,nodetime);
+    /* only print day-hour-sec format if realtime is more than 30 min */
+    if (realtime > 30*60)
+    {
+      fprintf(out,"%12s %12s","","");
+      pr_difftime(out,realtime);
     }
-    if (delta_t > 0) {
-      mflop = mflop/nodetime;
+    if (delta_t > 0) 
+    {
+      mflop = mflop/realtime;
       runtime = nsteps*delta_t;
-      fprintf(out,"%12s %10s %10s %10s %10s\n",
-	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
-	      "(ns/day)","(hour/ns)");
-      fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
-	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
-	      runtime*24*3.6/nodetime,1000*nodetime/(3600*runtime));
-    } else {
-      fprintf(out,"%12s %10s %10s %14s\n",
-	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
-	      "(steps/hour)");
-      fprintf(out,"%12s %10.3f %10.3f %14.1f\n","Performance:",
-	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
-	      nsteps*3600.0/nodetime);
+
+      if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+      {
+          fprintf(out,"%12s %12s %12s\n",
+                  "","(ns/day)","(hour/ns)");
+          fprintf(out,"%12s %12.3f %12.3f\n","Performance:",
+                  runtime*24*3.6/realtime,1000*realtime/(3600*runtime));
+      }
+      else
+      {
+        fprintf(out,"%12s %12s %12s %12s %12s\n",
+	        "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
+	        "(ns/day)","(hour/ns)");
+        fprintf(out,"%12s %12.3f %12.3f %12.3f %12.3f\n","Performance:",
+	        nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
+	        runtime*24*3.6/realtime,1000*realtime/(3600*runtime));
+      }
+    } 
+    else 
+    {
+      if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+      {
+          fprintf(out,"%12s %14s\n",
+                  "","(steps/hour)");
+          fprintf(out,"%12s %14.1f\n","Performance:",
+                  nsteps*3600.0/realtime);
+      }
+      else
+      {
+          fprintf(out,"%12s %12s %12s %14s\n",
+	          "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
+	          "(steps/hour)");
+          fprintf(out,"%12s %12.3f %12.3f %14.1f\n","Performance:",
+	      nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
+	      nsteps*3600.0/realtime);
+      }
     }
   }
 }
