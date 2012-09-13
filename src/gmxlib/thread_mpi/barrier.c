@@ -60,7 +60,7 @@ files.
 void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count)
 {
     barrier->threshold = count;
-    barrier->cycle     = 0;
+    tMPI_Atomic_set(&(barrier->cycle), 0); 
     tMPI_Atomic_set(&(barrier->count),count);
     TMPI_YIELD_WAIT_DATA_INIT(barrier);
 }
@@ -70,7 +70,6 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
 {
     int    cycle;
     int    status;
-    /*int    i;*/
 
     /* We don't need to lock or use atomic ops here, since the cycle index 
      * cannot change until after the last thread has performed the check
@@ -80,16 +79,16 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
      *
      * No synchronization == fast synchronization.
      */
-    cycle = barrier->cycle;
+    cycle = tMPI_Atomic_get( &(barrier->cycle) );
 
     /* Decrement the count atomically and check if it is zero.
      * This will only be true for the last thread calling us.
      */
     if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
     {
-        tMPI_Atomic_memory_barrier_rel();
+        tMPI_Atomic_memory_barrier();
         tMPI_Atomic_set(&(barrier->count), barrier->threshold);
-        barrier->cycle = !barrier->cycle;
+        tMPI_Atomic_add_return(&(barrier->cycle), 1) ;
 
         status = -1;
     }
@@ -105,8 +104,8 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
             /*tMPI_Atomic_memory_barrier();*/
             TMPI_YIELD_WAIT(barrier);
         }
-        while( *(volatile int *)(&(barrier->cycle)) == cycle);
-        tMPI_Atomic_memory_barrier_acq();
+        while( tMPI_Atomic_get( &(barrier->cycle) ) == cycle );
+        tMPI_Atomic_memory_barrier();
 
         status = 0;
     }
