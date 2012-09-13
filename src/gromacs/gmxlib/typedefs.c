@@ -748,7 +748,11 @@ void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames)
     sfree(atoms->pdbinfo);
   atoms->nr=0; 
   atoms->nres=0;
-}     
+  atoms->atomname = NULL;
+  atoms->resinfo = NULL;
+  atoms->atom = NULL;
+  atoms->pdbinfo = NULL;
+}
 
 real max_cutoff(real cutoff1,real cutoff2)
 {
