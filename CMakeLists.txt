@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 # Keep CMake suitably quiet on Cygwin
 set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 
+# Allows CPack to act differently for normal tools and mdrun (e.g. because of MPI)
+set(CPACK_COMPONENT_GROUP_TOOLS_DESCRIPTION "All GROMACS executable tools")
+set(CPACK_COMPONENT_GROUP_MDRUN_DESCRIPTION "GROMACS executable for running simulations")
+
 # override bugs on OS X where Cmake picks gcc (GNU) for C instead of system default cc (Clang).
 if(APPLE)
     set(CMAKE_C_COMPILER_INIT "cc")
