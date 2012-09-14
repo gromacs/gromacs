@@ -83,6 +83,8 @@
  *     \f[\sin^2 \frac{\Delta \phi}{2} = \frac{\sin^2 \frac{\alpha}{2} - \sin^2 \frac{\theta - \theta'}{2}}{\sin \theta \sin \theta'}\f]
  *     (distance in spherical geometry),
  *     where \f$\theta'\f$ is the zenith angle of the bin edge.
+ *     Treat zenith angle bins that are completely covered by the cone (in the
+ *     case that the cone is centered close to the pole) as a special case.
  *  -# Using the values calculated above, loop through the azimuthal bins that
  *     are partially or completely covered by the cone and update them.
  *
@@ -764,22 +766,36 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
                    rvec x)
 {
     real pdelta, phi1, phi2;
-    int  pbin1, pbin2, pbin;
+    int  pbin1, pbin2, pbiniter, pbin;
 
     /* Find the edges of the bins affected */
     pdelta = max(max(pdelta1, pdelta2), pdeltamax);
     phi1 = phi - pdelta;
-    if (phi1 < -M_PI)
+    if (phi1 >= -M_PI)
     {
-        phi1 += M_2PI;
+        pbin = find_partition_bin(&surf->tbin[tbin], phi1);
+        pbin1 = pbin;
+    }
+    else
+    {
+        pbin = find_partition_bin(&surf->tbin[tbin], phi1 + M_2PI);
+        pbin1 = pbin - surf->tbin[tbin].n;
     }
     phi2 = phi + pdelta;
-    if (phi2 > M_PI)
+    if (phi2 <= M_PI)
     {
-        phi2 -= M_2PI;
+        pbin2 = find_partition_bin(&surf->tbin[tbin], phi2);
     }
-    pbin1 = find_partition_bin(&surf->tbin[tbin], phi1);
-    pbin2 = find_partition_bin(&surf->tbin[tbin], phi2);
+    else
+    {
+        pbin2 = find_partition_bin(&surf->tbin[tbin], phi2 - M_2PI);
+        pbin2 += surf->tbin[tbin].n;
+    }
+    ++pbin2;
+    if (pbin2 - pbin1 > surf->tbin[tbin].n)
+    {
+        pbin2 = pbin1 + surf->tbin[tbin].n;
+    }
     /* Find the edges of completely covered region */
     pdelta = min(pdelta1, pdelta2);
     phi1 = phi - pdelta;
@@ -789,8 +805,7 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
     }
     phi2 = phi + pdelta;
     /* Loop over all affected bins */
-    pbin = pbin1;
-    do
+    for (pbiniter = pbin1; pbiniter != pbin2; ++pbiniter, ++pbin)
     {
         /* Wrap bin around if end reached */
         if (pbin == surf->tbin[tbin].n)
@@ -810,7 +825,6 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
             add_surface_point(surf, tbin, pbin, x);
         }
     }
-    while (pbin++ != pbin2); /* Loop including pbin2 */
 }
 
 /*!
@@ -865,14 +879,24 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
         theta2 = (tbin+1) * surf->tbinsize;
         if (theta2 > theta + surf->angcut)
         {
+            /* The circle is completely outside the cone */
             pdelta2 = 0;
         }
-        else if (tbin == surf->ntbins - 1)
+        else if (theta2 <= -(theta - surf->angcut)
+                 || theta2 >= M_2PI - (theta + surf->angcut)
+                 || tbin == surf->ntbins - 1)
         {
+            /* The circle is completely inside the cone, or we are in the
+             * 360 degree bin covering the pole. */
             pdelta2 = M_PI;
         }
         else
         {
+            /* TODO: This formula is numerically unstable if theta is very
+             * close to the pole.  In practice, it probably does not matter
+             * much, but it would be nicer to adjust the theta bin boundaries
+             * such that the case above catches this instead of falling through
+             * here. */
             pdelta2 = 2*asin(sqrt(
                     (sqr(sin(surf->angcut/2)) - sqr(sin((theta2-theta)/2))) /
                     (sin(theta) * sin(theta2))));
