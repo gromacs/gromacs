@@ -159,7 +159,8 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
             efTestEvaluation            = 1<<0,
             efTestPositionAtoms         = 1<<1,
             efTestPositionCoordinates   = 1<<2,
-            efTestPositionMapping       = 1<<3
+            efTestPositionMapping       = 1<<3,
+            efDontTestCompiledAtoms     = 1<<8
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
@@ -292,7 +293,10 @@ SelectionCollectionDataTest::checkCompiled()
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
-        checkSelection(&selcompound, sel_[i], flags_ & mask);
+        if (!flags_.test(efDontTestCompiledAtoms))
+        {
+            checkSelection(&selcompound, sel_[i], flags_ & mask);
+        }
     }
 }
 
@@ -690,7 +694,17 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinKeyword)
 }
 
 
-// TODO: Add test for "insolidangle"
+TEST_F(SelectionCollectionDataTest, HandlesInSolidAngleKeyword)
+{
+    // Both of these should evaluate to empty on a correct implementation.
+    static const char * const selections[] = {
+        "resname TP and not insolidangle center cog of resname C span resname R cutoff 20",
+        "resname TN and insolidangle center cog of resname C span resname R cutoff 20",
+        NULL
+    };
+    setFlags(TestFlags() | efDontTestCompiledAtoms | efTestEvaluation);
+    runTest("sphere.gro", selections);
+}
 
 
 TEST_F(SelectionCollectionDataTest, HandlesPermuteModifier)
