@@ -764,22 +764,36 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
                    rvec x)
 {
     real pdelta, phi1, phi2;
-    int  pbin1, pbin2, pbin;
+    int  pbin1, pbin2, pbiniter, pbin;
 
     /* Find the edges of the bins affected */
     pdelta = max(max(pdelta1, pdelta2), pdeltamax);
     phi1 = phi - pdelta;
-    if (phi1 < -M_PI)
+    if (phi1 >= -M_PI)
     {
-        phi1 += M_2PI;
+        pbin = find_partition_bin(&surf->tbin[tbin], phi1);
+        pbin1 = pbin;
+    }
+    else
+    {
+        pbin = find_partition_bin(&surf->tbin[tbin], phi1 + M_2PI);
+        pbin1 = pbin - surf->tbin[tbin].n;
     }
     phi2 = phi + pdelta;
-    if (phi2 > M_PI)
+    if (phi2 <= M_PI)
     {
-        phi2 -= M_2PI;
+        pbin2 = find_partition_bin(&surf->tbin[tbin], phi2);
     }
-    pbin1 = find_partition_bin(&surf->tbin[tbin], phi1);
-    pbin2 = find_partition_bin(&surf->tbin[tbin], phi2);
+    else
+    {
+        pbin2 = find_partition_bin(&surf->tbin[tbin], phi2 - M_2PI);
+        pbin2 += surf->tbin[tbin].n;
+    }
+    ++pbin2;
+    if (pbin2 - pbin1 > surf->tbin[tbin].n)
+    {
+        pbin2 = pbin1 + surf->tbin[tbin].n;
+    }
     /* Find the edges of completely covered region */
     pdelta = min(pdelta1, pdelta2);
     phi1 = phi - pdelta;
@@ -789,8 +803,7 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
     }
     phi2 = phi + pdelta;
     /* Loop over all affected bins */
-    pbin = pbin1;
-    do
+    for (pbiniter = pbin1; pbiniter != pbin2; ++pbiniter, ++pbin)
     {
         /* Wrap bin around if end reached */
         if (pbin == surf->tbin[tbin].n)
@@ -810,7 +823,6 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
             add_surface_point(surf, tbin, pbin, x);
         }
     }
-    while (pbin++ != pbin2); /* Loop including pbin2 */
 }
 
 /*!
@@ -867,7 +879,9 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
         {
             pdelta2 = 0;
         }
-        else if (tbin == surf->ntbins - 1)
+        else if (theta2 <= -(theta - surf->angcut)
+                 || theta2 >= M_2PI - (theta + surf->angcut)
+                 || tbin == surf->ntbins - 1)
         {
             pdelta2 = M_PI;
         }
