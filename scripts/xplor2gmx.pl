@@ -18,30 +18,31 @@ $debug = 1;
 # Turn atom name translation on and off
 $trans = 1;
 
-$res0  = shift;# || die "I need the residue offset\n";
+#$res0  = shift;# || die "I need the residue offset\n";
 $pdb   = shift || die "I need the name of the pdb file with correct atom numbers\n";
 $core  = shift || "core.ndx";
-$tbl   = "/home/spoel/gmxdev/share/top/atom_nom.tbl";
+$tbl   = "$ENV{GMXDATA}/gromacs/top/atom_nom.tbl";
 
 printf "[ distance_restraints ]\n";
 printf "; Read an xplor distance restraint file, and output GROMACS distance restraints.\n";
 printf "; This also needs a pdb file with correct GROMACS atom numbering.\n";
 printf "; I used $pdb for the atom numbers\n";
 printf "; This also needs the offset in residues.\n";
-printf "; I used $res0 for the residue offset\n";
+#printf "; I used $res0 for the residue offset\n";
 
 # Read the pdb file
 # If things go wrong, check whether your pdb file is read correctly.
 $natom = 0;
 $nres  = 0;
+@resname = ();
 open(PDB,$pdb) || die "Can not open file $pdb\n";
 while ($line = <PDB>) {
     if (index($line,"ATOM") >= 0) {
 	@tmp = split(' ',$line);
 	$aname[$natom] = $tmp[2];
 	$resnr[$natom] = $tmp[4];
-	if ($resnr[$natom] > $nres) {
-	    $rname[$nres] = $tmp[3];
+	if (!defined $resname[$tmp[4]]) {
+	    $resname[$tmp[4]] = $tmp[3];
 	    $nres++;
 	}
 	$natom++;
@@ -53,7 +54,7 @@ printf "; I found $nres residues in the pdb file $pdb\n";
 if ($debug > 1) {
     for ($i = 0; ($i < $natom); $i ++) {
 	printf("; %5d  %5s  %5s  %5d\n",$i+1,$aname[$i],
-	       $rname[$resnr[$i]-1],$resnr[$i]);
+	       $resname[$resnr[$i]],$resnr[$i]);
     }
 }
 
@@ -68,11 +69,11 @@ $ntbl=0;
 while ($line = <TBL>) {
     @ttt = split('#',$line);
     @tmp = split(' ',$ttt[0]);
-    if ($#tmp == 2) {
+    if ($#tmp == 3) {
 	# New table entry
 	$tblres[$ntbl] = $tmp[0];
 	$tblxplor[$ntbl] = $tmp[1];
-	$tblgmx[$ntbl] = $tmp[2];
+	$tblgmx[$ntbl] = $tmp[3];
 	$ntbl++;
     }
 }
@@ -108,12 +109,12 @@ printf "; Read $ntbl entries from $tbl\n";
 $ntranslated = 0;
 $nuntransltd = 0;
 sub transl_aname {
-    my $atom   = shift(@_);
-    my $resnr  = shift(@_);
+    my $resnm  = shift;
+    my $atom   = shift;
 
     if ( $trans == 1 ) {    
 	for(my $i = 0; ($i < $ntbl); $i ++) {
-	    if ($tblres[$i] eq $rname[$resnr]) {
+	    if ($tblres[$i] eq $resnm) {
 		if ($tblxplor[$i] eq $atom) {
 		    $ntranslated++;
 		    return $tblgmx[$i];
@@ -123,33 +124,34 @@ sub transl_aname {
     }
     $nuntransltd++;
     if ($debug > 1) {
-	printf "; No name change for $rname[$resnr] $atom\n";
+	printf "; No name change for $resname[$resnr] $atom\n";
     }
     return $atom;
 }
 
 sub expand_template {
     my $atom  = shift(@_);
-    my $rnum  = shift(@_)-1;
+    my $rnum  = shift(@_);
     my $bdone = 0;
     my @atoms;
     my $jj = 0;
    
+    die("No residue name for residue $rnum") if (!defined ($resname[$rnum]));
     for (my $tt=0; (($tt <= $#templates) && ($bdone == 0)); $tt++) {
 	$templ = $templates[$tt];
 	if ($atom eq $templ->[0]) {
 	    for ($jj = 1; ($jj <= $#{$templ}); $jj++) {
-		push @atoms, transl_aname($templ->[$jj],$rnum);
+		push @atoms, transl_aname($resname[$rnum],$templ->[$jj]);
 	    }
 	    $bdone  = 1;
 	}
     }
     if ($bdone == 0) {
-	push @atoms, transl_aname($atom,$rnum);
+	push @atoms, transl_aname($resname[$rnum],$atom);
     }
     if ($debug > 0) {
 	my $natom = $#atoms+1;
-	printf("; Found $natom elements for atom $rname[$rnum] %d $atom:",
+	printf("; Found $natom elements for atom $resname[$rnum] %d $atom:",
 	       $rnum+1);
 	for $aa ( @atoms ) {
 	    printf " $aa";
@@ -203,12 +205,12 @@ while ($line = <STDIN>) {
 	$bCore = 1;
 	foreach $a1 ( @at1 ) {
 	    @info1  = split(' ',$a1);
-	    $r1     = $info1[1] - $res0;
+	    $r1     = $info1[1];
 	    @atoms1 = expand_template($info1[4],$r1);
 
 	    foreach $a2 ( @at2 ) {
 		@info2  = split(' ',$a2);
-		$r2     = $info2[1] - $res0;
+		$r2     = $info2[1];
 		@atoms2 = expand_template($info2[4],$r2);
 
 		for ($i = 0; ($i < $natom) && ($resnr[$i] < $r1); $i++) { ; }
