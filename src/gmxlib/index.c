@@ -583,10 +583,12 @@ gmx_residuetype_destroy(gmx_residuetype_t rt)
     
     for(i=0;i<rt->n;i++)
     {
-        free(rt->resname[i]);
-        free(rt->restype[i]);
+        sfree(rt->resname[i]);
+        sfree(rt->restype[i]);
     }
-    free(rt);
+    sfree(rt->resname);
+    sfree(rt->restype);
+    sfree(rt);
     
     return 0;
 }

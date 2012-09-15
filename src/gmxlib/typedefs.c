@@ -279,6 +279,8 @@ void done_atom (t_atoms *at)
   sfree(at->atomname);
   sfree(at->atomtype);
   sfree(at->atomtypeB);
+  if (at->pdbinfo)
+    sfree(at->pdbinfo);
 }
 
 void done_atomtypes(t_atomtypes *atype)
