@@ -470,6 +470,9 @@ void SelectionTreeElement::freeCompilerData()
  *
  * If called more than once, memory is (re)allocated to ensure that the
  * maximum of the \p isize values can be stored.
+ *
+ * Allocation of POS_VALUE selection elements is a special case, and is
+ * handled by alloc_selection_pos_data().
  */
 static void
 alloc_selection_data(const SelectionTreeElementPointer &sel,
@@ -477,6 +480,8 @@ alloc_selection_data(const SelectionTreeElementPointer &sel,
 {
     int        nalloc;
 
+    GMX_RELEASE_ASSERT(sel->v.type != POS_VALUE,
+            "Wrong allocation method called");
     if (sel->mempool)
     {
         return;
@@ -492,6 +497,7 @@ alloc_selection_data(const SelectionTreeElementPointer &sel,
     }
     else /* sel->flags should contain SEL_VARNUMVAL */
     {
+        // TODO: Consider whether the bChildEval is any longer necessary.
         if (!bChildEval)
         {
             return;
@@ -505,32 +511,65 @@ alloc_selection_data(const SelectionTreeElementPointer &sel,
             GMX_RELEASE_ASSERT(child,
                 "Subexpression elements should always have a child element");
         }
-        nalloc = (sel->v.type == POS_VALUE) ? child->v.u.p->nr : child->v.nr;
-    }
-    /* For positions, we actually want to allocate just a single structure
-     * for nalloc positions. */
-    if (sel->v.type == POS_VALUE)
-    {
-        isize  = nalloc;
-        nalloc = 1;
+        nalloc = child->v.nr;
     }
     /* Allocate memory for sel->v.u if needed */
     if (sel->flags & SEL_ALLOCVAL)
     {
         _gmx_selvalue_reserve(&sel->v, nalloc);
     }
-    /* Reserve memory inside group and position structures if
-     * SEL_ALLOCDATA is set. */
+    /* Reserve memory inside group structure if SEL_ALLOCDATA is set. */
+    if ((sel->flags & SEL_ALLOCDATA) && sel->v.type == GROUP_VALUE)
+    {
+        gmx_ana_index_reserve(sel->v.u.g, isize);
+    }
+}
+
+/*! \brief
+ * Allocates memory for storing the evaluated value of a selection element.
+ *
+ * \param     sel   Selection element to initialize.
+ *
+ * Allocation of POS_VALUE selection elements is a special case, and is
+ * handled by this function instead of by alloc_selection_data().
+ */
+static void
+alloc_selection_pos_data(const SelectionTreeElementPointer &sel)
+{
+    int nalloc, isize;
+
+    GMX_RELEASE_ASSERT(sel->v.type == POS_VALUE,
+            "Wrong allocation method called");
+    GMX_RELEASE_ASSERT(!(sel->flags & SEL_ATOMVAL),
+            "Per-atom evaluated positions not implemented");
+    if (sel->mempool)
+    {
+        return;
+    }
+
+    SelectionTreeElementPointer child = sel;
+    if (sel->type == SEL_SUBEXPRREF)
+    {
+        GMX_RELEASE_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR,
+            "Subexpression expected for subexpression reference");
+        child = sel->child->child;
+        GMX_RELEASE_ASSERT(child,
+            "Subexpression elements should always have a child element");
+    }
+    nalloc = child->v.u.p->nr;
+    isize = child->v.u.p->m.b.nra;
+
+    /* For positions, we want to allocate just a single structure
+     * for nalloc positions. */
+    if (sel->flags & SEL_ALLOCVAL)
+    {
+        _gmx_selvalue_reserve(&sel->v, 1);
+    }
+    sel->v.nr = 1;
+    /* Reserve memory inside position structure if SEL_ALLOCDATA is set. */
     if (sel->flags & SEL_ALLOCDATA)
     {
-        if (sel->v.type == GROUP_VALUE)
-        {
-            gmx_ana_index_reserve(sel->v.u.g, isize);
-        }
-        else if (sel->v.type == POS_VALUE)
-        {
-            gmx_ana_pos_reserve(sel->v.u.p, isize, 0);
-        }
+        gmx_ana_pos_reserve(sel->v.u.p, nalloc, isize);
     }
 }
 
@@ -1530,8 +1569,9 @@ init_item_minmax_groups(const SelectionTreeElementPointer &sel)
  * \param[in,out] sc   Selection collection data.
  *
  * The evaluation group of each \ref SEL_ROOT element corresponding to a
- * selection in \p sc is set to \p gall.  The same is done for \ref SEL_ROOT
- * elements corresponding to subexpressions that need full evaluation.
+ * selection in \p sc is set to NULL.  The evaluation grop for \ref SEL_ROOT
+ * elements corresponding to subexpressions that need full evaluation is set
+ * to \c sc->gall.
  */
 static void
 initialize_evalgrps(gmx_ana_selcollection_t *sc)
@@ -1542,7 +1582,11 @@ initialize_evalgrps(gmx_ana_selcollection_t *sc)
         GMX_RELEASE_ASSERT(root->child,
                            "Root elements should always have a child");
         if (root->child->type != SEL_SUBEXPR
-            || (root->child->cdata->flags & SEL_CDATA_FULLEVAL))
+            || (root->child->v.type != GROUP_VALUE && !(root->flags & SEL_ATOMVAL)))
+        {
+            gmx_ana_index_set(&root->u.cgrp, -1, 0, root->u.cgrp.name, 0);
+        }
+        else if (root->child->cdata->flags & SEL_CDATA_FULLEVAL)
         {
             gmx_ana_index_set(&root->u.cgrp, sc->gall.isize, sc->gall.index,
                               root->u.cgrp.name, 0);
@@ -1778,13 +1822,20 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
         if (sel->u.expr.method->outinit)
         {
             sel->u.expr.method->outinit(top, &sel->v, sel->u.expr.mdata);
-            if (sel->v.type != POS_VALUE && sel->v.type != GROUP_VALUE)
+            if (sel->v.type != POS_VALUE && sel->v.type != GROUP_VALUE
+                && !(sel->flags & SEL_VARNUMVAL))
             {
                 alloc_selection_data(sel, isize, true);
             }
         }
         else
         {
+            GMX_RELEASE_ASSERT(sel->v.type != POS_VALUE,
+                    "Output initialization must be provided for "
+                    "position-valued selection methods");
+            GMX_RELEASE_ASSERT(!(sel->flags & SEL_VARNUMVAL),
+                    "Output initialization must be provided for "
+                    "SMETH_VARNUMVAL selection methods");
             alloc_selection_data(sel, isize, true);
             if ((sel->flags & SEL_DYNAMIC)
                 && sel->v.type != GROUP_VALUE && sel->v.type != POS_VALUE)
@@ -2066,9 +2117,8 @@ analyze_static(gmx_sel_evaluate_t *data,
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
-            GMX_ASSERT(g, "group cannot be null");
             _gmx_sel_evaluate_method_params(data, sel, g);
-            init_method(sel, data->top, g->isize);
+            init_method(sel, data->top, g ? g->isize : 0);
             if (!(sel->flags & SEL_DYNAMIC))
             {
                 sel->cdata->evaluate(data, sel, g);
@@ -2086,7 +2136,7 @@ analyze_static(gmx_sel_evaluate_t *data,
                 {
                     sel->cdata->evaluate(data, sel, g);
                 }
-                if (bDoMinMax)
+                if (bDoMinMax && g)
                 {
                     gmx_ana_index_copy(sel->cdata->gmax, g, true);
                 }
@@ -2194,7 +2244,14 @@ analyze_static(gmx_sel_evaluate_t *data,
                 /* The subexpression should have been evaluated if g is NULL
                  * (i.e., this is a method parameter or a direct value of a
                  * selection). */
-                alloc_selection_data(sel, sel->child->cdata->gmax->isize, true);
+                if (sel->v.type == POS_VALUE)
+                {
+                    alloc_selection_pos_data(sel);
+                }
+                else
+                {
+                    alloc_selection_data(sel, sel->child->cdata->gmax->isize, true);
+                }
             }
             sel->cdata->evaluate(data, sel, g);
             if ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)

@@ -426,6 +426,14 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     {
         fprintf(fp, "0");
     }
+    if (sel.flags & SEL_ALLOCVAL)
+    {
+        fprintf(fp, "Av");
+    }
+    if (sel.flags & SEL_ALLOCDATA)
+    {
+        fprintf(fp, "Ad");
+    }
     if (sel.mempool)
     {
         fprintf(fp, "P");
@@ -464,7 +472,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     }
     if (!(sel.flags & SEL_ALLOCVAL))
     {
-        fprintf(fp, " (ext. output)");
+        fprintf(fp, " (ext)");
     }
     fprintf(fp, "\n");
 
