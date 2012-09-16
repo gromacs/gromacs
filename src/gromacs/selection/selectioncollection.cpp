@@ -91,8 +91,10 @@ SelectionCollection::Impl::Impl()
 SelectionCollection::Impl::~Impl()
 {
     clearSymbolTable();
-    sc_.sel.clear();
+    // The tree must be freed before the SelectionData objects, since the
+    // tree may hold references to the position data in SelectionData.
     sc_.root.reset();
+    sc_.sel.clear();
     for (int i = 0; i < sc_.nvars; ++i)
     {
         sfree(sc_.varstrs[i]);

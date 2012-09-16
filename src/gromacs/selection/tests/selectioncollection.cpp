@@ -808,6 +808,21 @@ TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
+{
+    static const char * const selections[] = {
+        "x > 2",
+        "2 < x",
+        "y > resnr",
+        "resnr < 2.5",
+        "2.5 > resnr",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesArithmeticExpressions)
 {
     static const char * const selections[] = {
@@ -829,6 +844,67 @@ TEST_F(SelectionCollectionDataTest, HandlesNumericVariables)
         "value <= 4",
         "index = resnr",
         "index < 3",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesComplexNumericVariables)
+{
+    static const char * const selections[] = {
+        "value = x + y",
+        "resname RA and value <= 4",
+        "resname RA RB and x < 3 and value <= 4",
+        "index = atomnr",
+        "resname RA and index < 3",
+        "resname RB and y < 3 and index < 6",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesPositionVariables)
+{
+    static const char * const selections[] = {
+        "foo = res_cog of resname RA",
+        "foo",
+        "within 1 of foo",
+        "bar = cog of resname RA",
+        "bar",
+        "within 1 of bar",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesConstantPositionInVariable)
+{
+    static const char * const selections[] = {
+        "constpos = [1.0, 2.5, 0.5]",
+        "constpos",
+        "within 2 of constpos",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+            | efTestPositionAtoms);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesNumericConstantsInVariables)
+{
+    static const char * const selections[] = {
+        "constint = 4",
+        "constreal1 = 0.5",
+        "constreal2 = 2.7",
+        "resnr < constint",
+        "x + constreal1 < constreal2",
         NULL
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
