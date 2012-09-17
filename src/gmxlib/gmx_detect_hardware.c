@@ -35,9 +35,12 @@
 #include "main.h"
 #include "md_logging.h"
 
-/* We can't have more than 10 GPU id's passed by the user as we assume the id-s
- * to be represented by single digits. */
-static int max_gpu_ids_user = 10;
+/* Although we can't have more than 10 GPU different ID-s passed by the user as
+ * the id-s are assumed to be represented by single digits, as multiple
+ * processes can share a GPU, we can end up with more than 10 IDs.
+ * To account for potential extreme cases we'll set the limit to a pretty
+ * ridiculous number. */
+static unsigned int max_gpu_ids_user = 64;
 
 /* FW decl. */
 void limit_num_gpus_used(gmx_hw_info_t *hwinfo, int count);
@@ -138,7 +141,7 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 
     if (*nid > max_gpu_ids_user)
     {
-        gmx_fatal(FARGS,"%d GPU id's passed in a string, but not more than %d are supported",*nid,max_gpu_ids_user);
+        gmx_fatal(FARGS,"%d GPU IDs provided, but not more than %d are supported",*nid,max_gpu_ids_user);
     }
 
     for (i = 0; i < *nid; i++)
@@ -153,7 +156,7 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 
 static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
 {
-    /* XXX implement cvs format to support more than 10 GPUs */
+    /* XXX implement cvs format to support more than 10 different GPUs in a box. */
     gmx_incons("Not implemented yet");
 }
 
