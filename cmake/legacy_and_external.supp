@@ -91,6 +91,12 @@
 {
    __cxa_get_globals
    Memcheck:Leak
+   fun:malloc
+   fun:__cxa_get_globals
+}
+{
+   __cxa_get_globals
+   Memcheck:Leak
    fun:calloc
    fun:__cxa_get_globals
    fun:__cxa_throw
