@@ -403,7 +403,14 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, g
             return rc;
         }
         sel->v.nr = sel->child->v.nr;
-        gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
+        if (!g)
+        {
+            sel->u.cgrp.isize = -1;
+        }
+        else
+        {
+            gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
+        }
     }
     return 0;
 }
@@ -466,6 +473,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
         {
             _gmx_sel_mempool_free_group(data->mp, &gmiss);
         }
+        gmiss.name = NULL;
     }
     if (gmiss.isize > 0)
     {
@@ -500,11 +508,11 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->v.u.i[k] = sel->v.u.i[j--];
+                            sel->v.u.i[k] = sel->child->v.u.i[j--];
                         }
                         else
                         {
-                            sel->v.u.i[k] = sel->child->v.u.i[i--];
+                            sel->v.u.i[k] = sel->v.u.i[i--];
                         }
                     }
                     break;
@@ -514,11 +522,11 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->v.u.r[k] = sel->v.u.r[j--];
+                            sel->v.u.r[k] = sel->child->v.u.r[j--];
                         }
                         else
                         {
-                            sel->v.u.r[k] = sel->child->v.u.r[i--];
+                            sel->v.u.r[k] = sel->v.u.r[i--];
                         }
                     }
                     break;
@@ -528,11 +536,11 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->v.u.s[k] = sel->v.u.s[j--];
+                            sel->v.u.s[k] = sel->child->v.u.s[j--];
                         }
                         else
                         {
-                            sel->v.u.s[k] = sel->child->v.u.s[i--];
+                            sel->v.u.s[k] = sel->v.u.s[i--];
                         }
                     }
                     break;

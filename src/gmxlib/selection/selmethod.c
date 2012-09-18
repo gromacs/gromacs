@@ -436,6 +436,12 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
         report_error(fp, method->name, "error: outinit should be provided because the method has POS_VALUE");
         bOk = FALSE;
     }
+    /* Check presence of outinit for variable output count methods */
+    if ((method->flags & SMETH_VARNUMVAL) && !method->outinit)
+    {
+        report_error(fp, method->name, "error: outinit should be provided because the method has SMETH_VARNUMVAL");
+        bOk = FALSE;
+    }
     /* Warn of dynamic callbacks in static methods */
     if (!(method->flags & SMETH_MODIFIER))
     {
