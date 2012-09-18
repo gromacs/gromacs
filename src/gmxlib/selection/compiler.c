@@ -442,6 +442,9 @@ _gmx_selelem_free_compiler_data(t_selelem *sel)
  *
  * If called more than once, memory is (re)allocated to ensure that the
  * maximum of the \p isize values can be stored.
+ *
+ * Allocation of POS_VALUE selection elements is a special case, and is
+ * handled by alloc_selection_pos_data().
  */
 static gmx_bool
 alloc_selection_data(t_selelem *sel, int isize, gmx_bool bChildEval)
@@ -474,34 +477,60 @@ alloc_selection_data(t_selelem *sel, int isize, gmx_bool bChildEval)
         {
             child = child->child;
         }
-        nalloc = (sel->v.type == POS_VALUE) ? child->v.u.p->nr : child->v.nr;
-    }
-    /* For positions, we actually want to allocate just a single structure
-     * for nalloc positions. */
-    if (sel->v.type == POS_VALUE)
-    {
-        isize  = nalloc;
-        nalloc = 1;
+        nalloc = child->v.nr;
     }
     /* Allocate memory for sel->v.u if needed */
     if (sel->flags & SEL_ALLOCVAL)
     {
         _gmx_selvalue_reserve(&sel->v, nalloc);
     }
-    /* Reserve memory inside group and position structures if
-     * SEL_ALLOCDATA is set. */
-    if (sel->flags & SEL_ALLOCDATA)
+    /* Reserve memory inside group structure if SEL_ALLOCDATA is set. */
+    if ((sel->flags & SEL_ALLOCDATA) && sel->v.type == GROUP_VALUE)
     {
-        if (sel->v.type == GROUP_VALUE)
-        {
-            gmx_ana_index_reserve(sel->v.u.g, isize);
-        }
-        else if (sel->v.type == POS_VALUE)
-        {
-            gmx_ana_pos_reserve(sel->v.u.p, isize, 0);
-        }
+        gmx_ana_index_reserve(sel->v.u.g, isize);
     }
     return TRUE;
+}
+
+/*! \brief
+ * Allocates memory for storing the evaluated value of a selection element.
+ *
+ * \param     sel   Selection element to initialize.
+ *
+ * Allocation of POS_VALUE selection elements is a special case, and is
+ * handled by this function instead of by alloc_selection_data().
+ */
+static void
+alloc_selection_pos_data(t_selelem *sel)
+{
+    t_selelem *child;
+    int        nalloc, isize;
+
+    if (sel->mempool)
+    {
+        return;
+    }
+
+    child = sel;
+    if (sel->type == SEL_SUBEXPRREF)
+    {
+        child = sel->child->child;
+    }
+    nalloc = child->v.u.p->nr;
+    isize = child->v.u.p->m.b.nra;
+
+    /* For positions, we want to allocate just a single structure
+     * for nalloc positions. */
+    if (sel->flags & SEL_ALLOCVAL)
+    {
+        _gmx_selvalue_reserve(&sel->v, 1);
+    }
+    sel->v.nr = 1;
+    /* Reserve memory inside position structure if SEL_ALLOCDATA is set. */
+    if (sel->flags & SEL_ALLOCDATA)
+    {
+        gmx_ana_pos_reserve(sel->v.u.p, nalloc, isize);
+    }
 }
 
 /*! \brief
@@ -1461,8 +1490,9 @@ init_item_minmax_groups(t_selelem *sel)
  * \param[in,out] sc   Selection collection data.
  *
  * The evaluation group of each \ref SEL_ROOT element corresponding to a
- * selection in \p sc is set to \p gall.  The same is done for \ref SEL_ROOT
- * elements corresponding to subexpressions that need full evaluation.
+ * selection in \p sc is set to NULL.  The evaluation grop for \ref SEL_ROOT
+ * elements corresponding to subexpressions that need full evaluation is set
+ * to \c sc->gall.
  */
 static void
 initialize_evalgrps(gmx_ana_selcollection_t *sc)
@@ -1473,7 +1503,11 @@ initialize_evalgrps(gmx_ana_selcollection_t *sc)
     while (root)
     {
         if (root->child->type != SEL_SUBEXPR
-            || (root->child->cdata->flags & SEL_CDATA_FULLEVAL))
+            || (root->child->v.type != GROUP_VALUE && !(root->flags & SEL_ATOMVAL)))
+        {
+            gmx_ana_index_set(&root->u.cgrp, -1, 0, root->u.cgrp.name, 0);
+        }
+        else if (root->child->cdata->flags & SEL_CDATA_FULLEVAL)
         {
             gmx_ana_index_set(&root->u.cgrp, sc->gall.isize, sc->gall.index,
                               root->u.cgrp.name, 0);
@@ -1736,7 +1770,8 @@ init_method(t_selelem *sel, t_topology *top, int isize)
             {
                 return rc;
             }
-            if (sel->v.type != POS_VALUE && sel->v.type != GROUP_VALUE)
+            if (sel->v.type != POS_VALUE && sel->v.type != GROUP_VALUE
+                && !(sel->flags & SEL_VARNUMVAL))
             {
                 alloc_selection_data(sel, isize, TRUE);
             }
@@ -2039,7 +2074,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             {
                 return rc;
             }
-            rc = init_method(sel, data->top, g->isize);
+            rc = init_method(sel, data->top, g ? g->isize : 0);
             if (rc != 0)
             {
                 return rc;
@@ -2061,7 +2096,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 {
                     rc = sel->cdata->evaluate(data, sel, g);
                 }
-                if (bDoMinMax)
+                if (bDoMinMax && g)
                 {
                     gmx_ana_index_copy(sel->cdata->gmax, g, TRUE);
                 }
@@ -2180,7 +2215,14 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 /* The subexpression should have been evaluated if g is NULL
                  * (i.e., this is a method parameter or a direct value of a
                  * selection). */
-                alloc_selection_data(sel, sel->child->cdata->gmax->isize, TRUE);
+                if (sel->v.type == POS_VALUE)
+                {
+                    alloc_selection_pos_data(sel);
+                }
+                else
+                {
+                    alloc_selection_data(sel, sel->child->cdata->gmax->isize, TRUE);
+                }
             }
             rc = sel->cdata->evaluate(data, sel, g);
             if (rc != 0)
