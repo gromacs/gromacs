@@ -1429,16 +1429,15 @@ static void pick_nbnxn_kernel(FILE *fp,
     *kernel_type = nbkNotSet;
     /* if bUseGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
     bGPU = (bUseGPU != NULL) && hwinfo->bCanUseGPU;
-    bEmulateGPU  = FALSE;
+
+    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined or in case if nobonded
+       calculations are turned off via GMX_NO_NONBONDED -- this is the simple way
+       to turn off GPU/CUDA initializations as well.. */
+    bEmulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
+                   (getenv("GMX_NO_NONBONDED") != NULL));
 
     if (bGPU)
     {
-        /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
-           calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
-           to also turn off GPU/CUDA initializations. */
-        bEmulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
-                      (getenv("GMX_NO_NONBONDED") != NULL));
-
         if (bEmulateGPU)
         {
             bGPU = FALSE;
@@ -1464,7 +1463,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         *kernel_type = nbk8x8x8_PlainC;
 
-        md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)\n");
+        md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
     }
     else if (bGPU)
     {
