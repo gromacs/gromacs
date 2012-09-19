@@ -193,23 +193,24 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Pair Search distance check",      9 }, /* nbnxn pair dist. check */
     /* nbnxn kernel flops are based on inner-loops without exclusion checks.
      * Plain Coulomb runs through the RF kernels, except with CUDA.
+     * invsqrt is counted as 6 flops: 1 for _mm_rsqt_ps + 5 for iteration.
      * The flops are equal for plain-C, x86 SIMD and CUDA, except for:
      * - plain-C kernel uses one flop more for Coulomb-only (F) than listed
      * - x86 SIMD LJ geom-comb.rule kernels (fastest) use 2 more flops
      * - x86 SIMD LJ LB-comb.rule kernels (fast) use 3 (8 for F+E) more flops
      * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
-     *   is always counted as 5 flops, this roughly compensates.
+     *   is always counted as 6 flops, this roughly compensates.
      */
-    { "LJ + Coulomb RF (F)",            37 }, /* nbnxn kernel LJ+RF, no ener */
-    { "LJ + Coulomb RF (F+E)",          53 },
-    { "LJ + Coulomb tabulated (F)",     40 }, /* nbnxn kernel LJ+tab, no en */
-    { "LJ + Coulomb tabulated (F+E)",   58 },
-    { "LJ (F)",                         32 }, /* nbnxn kernel LJ, no ener */
-    { "LJ (F+E)",                       42 },
-    { "Coulomb RF (F)",                 30 }, /* nbnxn kernel RF, no ener */
-    { "Coulomb RF (F+E)",               35 },
-    { "Coulomb tabulated (F)",          33 }, /* nbnxn kernel tab, no ener */
-    { "Coulomb tabulated (F+E)",        40 },
+    { "LJ + Coulomb RF (F)",            38 }, /* nbnxn kernel LJ+RF, no ener */
+    { "LJ + Coulomb RF (F+E)",          54 },
+    { "LJ + Coulomb tabulated (F)",     41 }, /* nbnxn kernel LJ+tab, no en */
+    { "LJ + Coulomb tabulated (F+E)",   59 },
+    { "LJ (F)",                         33 }, /* nbnxn kernel LJ, no ener */
+    { "LJ (F+E)",                       43 },
+    { "Coulomb RF (F)",                 31 }, /* nbnxn kernel RF, no ener */
+    { "Coulomb RF (F+E)",               36 },
+    { "Coulomb tabulated (F)",          34 }, /* nbnxn kernel tab, no ener */
+    { "Coulomb tabulated (F+E)",        41 },
     { "1,4 nonbonded interactions",     90 },
     { "Born radii (Still)",             47 },
     { "Born radii (HCT/OBC)",          183 },
