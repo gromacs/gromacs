@@ -161,7 +161,8 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         {
             efTestEvaluation            = 1<<0,
             efTestPositionAtoms         = 1<<1,
-            efTestPositionCoordinates   = 1<<2
+            efTestPositionCoordinates   = 1<<2,
+            efTestPositionMapping       = 1<<3
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
@@ -205,7 +206,8 @@ SelectionCollectionDataTest::checkSelection(
         checker->checkSequence(atoms.begin(), atoms.end(), "Atoms");
     }
     if (flags.test(efTestPositionAtoms)
-        || flags.test(efTestPositionCoordinates))
+        || flags.test(efTestPositionCoordinates)
+        || flags.test(efTestPositionMapping))
     {
         TestReferenceChecker compound(
                 checker->checkSequenceCompound("Positions", sel.posCount()));
@@ -221,6 +223,11 @@ SelectionCollectionDataTest::checkSelection(
             if (flags.test(efTestPositionCoordinates))
             {
                 poscompound.checkVector(p.x(), "Coordinates");
+            }
+            if (flags.test(efTestPositionMapping))
+            {
+                poscompound.checkInteger(p.refId(), "RefId");
+                poscompound.checkInteger(p.mappedId(), "MappedId");
             }
         }
     }
@@ -676,9 +683,6 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinKeyword)
 // TODO: Add test for "insolidangle"
 
 
-// TODO: Check the handling of mapped and reference IDs in the modifier tests
-// below.
-
 TEST_F(SelectionCollectionDataTest, HandlesPermuteModifier)
 {
     static const char * const selections[] = {
@@ -688,23 +692,21 @@ TEST_F(SelectionCollectionDataTest, HandlesPermuteModifier)
         NULL
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms);
+             | efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
-
-// TODO: Add tests for plus/merge on dynamic selections
-// (can't remember whether it's actually implemented or not).
 
 TEST_F(SelectionCollectionDataTest, HandlesPlusModifier)
 {
     static const char * const selections[] = {
         "name S2 plus name S1",
         "res_cog of resnr 2 plus res_cog of resnr 1 plus res_cog of resnr 3",
+        "name S1 and y < 3 plus res_cog of x < 2.5",
         NULL
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms);
+             | efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -713,10 +715,12 @@ TEST_F(SelectionCollectionDataTest, HandlesMergeModifier)
 {
     static const char * const selections[] = {
         "name S2 merge name S1",
-        "name S2 merge name S1 merge name CB",
+        "resnr 1 2 and name S2 merge resnr 1 2 and name S1 merge res_cog of resnr 1 2",
+        "name S1 and x < 2.5 merge res_cog of x < 2.5",
         NULL
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
