@@ -38,6 +38,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 #define GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 
+#include "typedefs.h" // for t_trxframe
 #include "../utility/common.h"
 
 namespace gmx
@@ -106,6 +107,15 @@ class TrajectoryAnalysisRunnerCommon
          * After this call, frame() returns the first frame.
          */
         void initFirstFrame();
+        /*! \brief
+         *  \returns total number of frames
+         */
+        size_t getTotalNumberOfFrames();
+        /*! \brief
+         *  \returns frame number currently loaded (undefined if no frame
+         *  loaded).
+         */
+        size_t getCurrentFrameNumber();
         /*! \brief
          * Reads the next frame from the trajectory.
          *
