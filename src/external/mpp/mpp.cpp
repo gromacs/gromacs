@@ -28,42 +28,43 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \brief
- * Implements the g_ana tool.
- *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+/*! \internal \file
+ * \brief
+ * An MPI CPP Interface
+ * \authors Ryan Johnson <ryanphjohnson@gmail.com>
  */
-#include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxsingleton.h"
-#include "gromacs/utility/programinfo.h"
+// For GMX_LIB_MPI
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-int
-main(int argc, char *argv[])
-{
-    gmx::init(argc, argv);
-    const gmx::ProgramInfo &info =
-        gmx::ProgramInfo::init("g_ana", argc, argv);
-    // TODO: With the addition of ProgramInfo above, this no longer needs to
-    // be here, so think where it would best go.
-    if (mpi::isMaster())
-    {
-        CopyRight(stderr, argv[0]);
-    }
-    try
-    {
-        gmx::CommandLineModuleManager manager(info);
-        registerTrajectoryAnalysisModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        return manager.run(argc, argv);
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
+#ifdef GMX_LIB_MPI
+#include "mpp.h"
+
+namespace mpi {
+comm comm::world = comm(MPI_COMM_NULL);
+std::vector<MPI_Datatype> cached_types;
+// returns MPI_Datatype containing all datatypes that were added to the
+//     mpi_type_builder. If none were added, it makes an empty MPI_Datatype.
+MPI_Datatype mpi_type_builder::build() {
+       MPI_Datatype dt;
+       if (type.size()==0) { MPI_Type_contiguous (0, MPI_INT, &dt); }
+       else {
+           //TODO this should add a MPI_UB always or if required.
+           // When sizeof(c) where c is the struct passed into the constructor
+           // is not the same as where the last element ends and c is static.
+           MPI_Type_create_struct (type.size(), &size.front(), &addr.front(), &type.front(), &dt);
+       }
+       MPI_Type_commit (&dt);
+       std::vector<MPI_Datatype>::iterator it;
+       std::vector<bool>::iterator itf;
+       for (it = type.begin(), itf = bFree.begin(); it!=type.end(); ++it, ++itf) {
+           if (*itf) {
+               MPI_Type_free(&*it);
+           }
+       }
+       return dt;
 }
+} // mpi
+#endif

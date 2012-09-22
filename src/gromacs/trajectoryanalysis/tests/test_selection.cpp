@@ -33,6 +33,14 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
+// config.h must be included first if at all. For this file,
+// "gromacs/legacyheaders/types/simple.h" is indirectly included, which then
+// includes config.h.
+// TODO: Remove once legacy headers are removed.
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
@@ -183,17 +191,18 @@ SelectionTester::writeOutput()
 int
 main(int argc, char *argv[])
 {
+    int ret = 1;
     gmx::ProgramInfo::init(argc, argv);
     try
     {
         gmx::SelectionTester module;
         gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
         runner.setSelectionDebugLevel(1);
-        return runner.run(argc, argv);
+        ret = runner.run(argc, argv);
     }
     catch (const std::exception &ex)
     {
         gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
     }
+    return ret;
 }

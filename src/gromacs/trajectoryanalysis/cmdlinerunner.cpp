@@ -59,6 +59,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
+#include "external/mpp/gmxmpp.h"
 
 namespace gmx
 {
@@ -105,16 +107,19 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
         const TrajectoryAnalysisSettings &settings,
         const TrajectoryAnalysisRunnerCommon &common)
 {
-    TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
-    if (flags != 0)
+    if (mpi::isMaster())
     {
-        HelpWriterContext context(&File::standardError(),
-                                  eHelpOutputFormat_Console);
-        CommandLineHelpWriter(options)
+        TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
+        if (flags != 0)
+        {
+            HelpWriterContext context(&File::standardError(),
+                    eHelpOutputFormat_Console);
+            CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
             .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
             .writeHelp(context);
+        }
     }
 }
 
@@ -234,7 +239,6 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     // Load first frame.
     common.initFirstFrame();
     module->initAfterFirstFrame(common.frame());
-
     t_pbc  pbc;
     t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
 
@@ -244,6 +248,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
             module->startFrames(dataOptions, selections));
     do
     {
+        size_t globalIndex = common.getCurrentFrameNumber();
         common.initFrame();
         t_trxframe &frame = common.frame();
         if (ppbc != NULL)
@@ -252,7 +257,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
         }
 
         selections.evaluate(&frame, ppbc);
-        module->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        module->analyzeFrame(globalIndex, frame, ppbc, pdata.get());
 
         nframes++;
     }
@@ -263,22 +268,42 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
         pdata->finish();
     }
     pdata.reset();
-
-    if (common.hasTrajectory())
+#ifdef GMX_LIB_MPI
+    //TODO: Replace the streams with MPP send/receive calls
+    //TODO: This statement incorrectly assumes the last core always has the last frame.
+    std::vector<int> allframes(mpi::comm::world.size());
+    if (mpi::comm::world.rank()==mpi::comm::world.size()-1)
     {
-        fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
-                nframes, common.frame().time);
+        mpi::comm::world(0) << common.frame().time;
     }
-    else
+    else if (mpi::comm::world.isMaster())
     {
-        fprintf(stderr, "Analyzed topology coordinates\n");
+        mpi::comm::world(mpi::comm::world.size()-1) >> common.frame().time;
     }
+    mpi::comm::world.gather(nframes, allframes, 0);
+    for (int i=1; i<mpi::comm::world.size(); i++)
+    {
+        nframes += allframes[i];
+    }
+#endif
+    if (mpi::isMaster())
+    {
+        if (common.hasTrajectory())
+        {
+            fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
+                    nframes, common.frame().time);
+        }
+        else
+        {
+            fprintf(stderr, "Analyzed topology coordinates\n");
+        }
 
-    // Restore the maximal groups for dynamic selections.
-    selections.evaluateFinal(nframes);
+        // Restore the maximal groups for dynamic selections.
+        selections.evaluateFinal(nframes);
 
-    module->finishAnalysis(nframes);
-    module->writeOutput();
+        module->finishAnalysis(nframes);
+        module->writeOutput();
+    }
 
     return 0;
 }

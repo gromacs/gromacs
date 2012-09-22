@@ -61,6 +61,7 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace

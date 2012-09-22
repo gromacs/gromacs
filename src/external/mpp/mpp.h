@@ -28,42 +28,15 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \brief
- * Implements the g_ana tool.
- *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+/*! \internal \file
+ * \brief
+ * An MPI CPP Interface
+ * \authors Simone Pellegrini, Ryan Johnson <ryanphjohnson@gmail.com>
  */
-#include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxsingleton.h"
-#include "gromacs/utility/programinfo.h"
+#pragma once
 
-int
-main(int argc, char *argv[])
-{
-    gmx::init(argc, argv);
-    const gmx::ProgramInfo &info =
-        gmx::ProgramInfo::init("g_ana", argc, argv);
-    // TODO: With the addition of ProgramInfo above, this no longer needs to
-    // be here, so think where it would best go.
-    if (mpi::isMaster())
-    {
-        CopyRight(stderr, argv[0]);
-    }
-    try
-    {
-        gmx::CommandLineModuleManager manager(info);
-        registerTrajectoryAnalysisModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        return manager.run(argc, argv);
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
-}
+#include "detail/comm.h"
+#include "detail/endpoint.h"
+#include "detail/message.h"
+#include "detail/status.h"

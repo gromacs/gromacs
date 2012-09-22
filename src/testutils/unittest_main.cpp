@@ -51,5 +51,7 @@ int main(int argc, char *argv[])
 {
     // Calls ::testing::InitGoogleMock()
     ::gmx::test::initTestUtils(TEST_DATA_PATH, &argc, argv);
-    return RUN_ALL_TESTS();
+    int ret = RUN_ALL_TESTS();
+    ::gmx::test::finalizeTestUtils();
+    return ret;
 }

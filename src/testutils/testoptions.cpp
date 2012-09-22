@@ -112,5 +112,9 @@ void parseTestOptions(Options *options)
     }
 }
 
+void finalizeTestUtils()
+{
+}
+
 } // namespace test
 } // namespace gmx
