@@ -234,6 +234,7 @@ AnalysisTemplate::writeOutput()
 int
 main(int argc, char *argv[])
 {
+    gmx::init(argc, argv);
     ProgramInfo::init(argc, argv);
     try
     {

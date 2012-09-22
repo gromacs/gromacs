@@ -39,6 +39,8 @@
 #ifndef GMX_UTILITY_FLAGS_H
 #define GMX_UTILITY_FLAGS_H
 
+#include "external/mpp/gmxmpp.h"
+
 namespace gmx
 {
 
@@ -110,8 +112,28 @@ class FlagsTemplate
         explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
 
         unsigned long           flags_;
+        template <class T2>
+        friend struct mpi::mpi_type_traits;
 };
 
 } // namespace gmx
 
+#ifdef GMX_LIB_MPI
+namespace mpi
+{
+template <class T>
+struct mpi_type_traits<gmx::FlagsTemplate<T> > {
+    static inline MPI_Datatype get_type(const gmx::FlagsTemplate<T>& f) {
+        return MPI_UNSIGNED_LONG;
+    }
+    static inline const unsigned long* get_addr(const gmx::FlagsTemplate<T>& f) {
+        return &f.flags_;
+    }
+    struct is_static : TrueType {};
+    struct is_named : TrueType {};
+};
+
+} // namespace mpi
+
+#endif //GMX_LIB_MPI
 #endif

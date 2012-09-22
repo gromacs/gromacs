@@ -59,7 +59,9 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
+#include "external/mpp/gmxmpp.h"
 
 namespace gmx
 {
@@ -162,7 +164,7 @@ int IndexFileWriterModule::flags() const
 
 void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
-    if (!fnm_.empty())
+    if (!fnm_.empty() && mpi::isMaster())
     {
         fp_ = gmx_fio_fopen(fnm_.c_str(), "w");
     }
