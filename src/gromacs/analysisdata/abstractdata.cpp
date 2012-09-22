@@ -43,6 +43,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/uniqueptr.h"
+#include "gromacs/utility/programinfo.h"
 
 #include "dataframe.h"
 #include "dataproxy.h"
@@ -200,9 +201,18 @@ AbstractAnalysisData::requestStorage(int nframes)
 void
 AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
+    bool bParallelMPI = false;
+#ifdef GMX_LIB_MPI
+    int initialized;
+    MPI_Initialized(&initialized);
+    bParallelMPI = initialized && mpi::comm::world.size() > 1;
+#endif
     if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
         || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
+        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint))
+        //FIXME: Not nice to have method with side-effect in if statement. Maybe add method to inquire whether
+        //storage is possible.
+        || (bParallelMPI && !requestStorage(-1)))
     {
         GMX_THROW(APIError("Data module not compatible with data object properties"));
     }
@@ -285,6 +295,10 @@ AbstractAnalysisData::setMultipoint(bool multipoint)
 void
 AbstractAnalysisData::notifyDataStart()
 {
+    if (!mpi::isMaster())
+    {
+        return;
+    }
     GMX_RELEASE_ASSERT(!impl_->bDataStart_,
                        "notifyDataStart() called more than once");
     GMX_RELEASE_ASSERT(columnCount_ > 0, "Data column count is not set");
@@ -305,11 +319,13 @@ AbstractAnalysisData::notifyDataStart()
 void
 AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) const
 {
+    if (!mpi::isMaster())
+    {
+        return;
+    }
     GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
     GMX_ASSERT(!impl_->bInFrame_,
                "notifyFrameStart() called while inside a frame");
-    GMX_ASSERT(header.index() == impl_->nframes_,
-               "Out of order frames");
     impl_->bInFrame_ = true;
     impl_->currIndex_ = header.index();
 
@@ -324,6 +340,10 @@ AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) co
 void
 AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) const
 {
+    if (!mpi::isMaster())
+    {
+        return;
+    }
     GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
     GMX_ASSERT(impl_->bInFrame_, "notifyFrameStart() not called");
     GMX_ASSERT(points.lastColumn() < columnCount(), "Invalid columns");
@@ -345,6 +365,10 @@ AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) con
 void
 AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header)
 {
+    if (!mpi::isMaster())
+    {
+        return;
+    }
     GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
     GMX_ASSERT(impl_->bInFrame_, "notifyFrameStart() not called");
     GMX_ASSERT(header.index() == impl_->currIndex_,
@@ -367,6 +391,10 @@ AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header)
 void
 AbstractAnalysisData::notifyDataFinish() const
 {
+    if (!mpi::isMaster())
+    {
+        return;
+    }
     GMX_RELEASE_ASSERT(impl_->bInData_, "notifyDataStart() not called");
     GMX_RELEASE_ASSERT(!impl_->bInFrame_,
                        "notifyDataFinish() called while inside a frame");

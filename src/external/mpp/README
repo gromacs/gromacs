@@ -1,0 +1,97 @@
+
+MPP: An MPI CPP Interface
+
+
+Abstract
+========
+
+MPP is an advanced C++ interface for MPI. It is a lightweight interface
+(header-only) which focuses on reducing the interface overhead. It supports
+integration of user datatypes. 
+
+MPP was developed as a proof-of-concept to show that an high level MPI interface
+can be designed without renouncing to performance (which is key in High
+Performance Computing). Experiments have shown that MPP has much lower overhead
+than Boost.MPI (see paper below). 
+
+MPP supports few MPI routines for now (point-to-point), but I am slowly
+extending its functionalities. If you want to help, either with some coding or
+ideas, you are welcome. 
+
+
+Publications
+============
+
+@article{10.1109/PDP.2012.42,
+  author = {Simone Pellegrini and Radu Prodan and Thomas Fahringer},
+  title = {A Lightweight C++ Interface to MPI},
+  journal = {Parallel, Distributed, and Network-Based Processing, 
+             Euromicro Conference on},
+  volume = {0},
+  issn = {1066-6192},
+  year = {2012},
+  pages = {3-10},
+  doi = {http://doi.ieeecomputersociety.org/10.1109/PDP.2012.42},
+  publisher = {IEEE Computer Society},
+  address = {Los Alamitos, CA, USA},
+}
+
+
+License
+=======
+                       MPP: Advanced C++ MPI Bindings 
+
+                 Copyright (C) 2011-2012  Simone Pellegrini
+
+This library is free software; you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation; either version 2.1 of the License, or (at your option) any
+later version.
+
+This library is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this library; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+
+Acknoledgments
+==============
+
+Special thanks to Roland Schulz (https://github.com/rolandschulz) for his
+contributions. 
+
+
+Changes For Gromacs
+===================
+
+The CMakLists.txt is not used for Gromacs. Only to build the internal tests.
+
+In comm class:
+    We added a gather call, and two versions of the gatherv call.
+        There are two gatherv calls because one is used to send an entire
+        vector, and one which only sends part of a vector.
+
+In mpi_type_traits class:
+    We added 'is_static' for all mpi_type_traits.  'is_static'
+        returns weather or not a datatype has any sort of indirection about
+        it.  This is important when it comes to trying to send vectors of
+        vectors or vectors of pointers.
+    We added type cacheing.  This is so if a user defined datatype is
+        static, it is only created once.
+    We added Datatype class.  This is so that as soon as a non-static
+        datatype is used it can then deleted.
+    We added the mpi_type_builder.  The builder makes it very easy for
+        a user to define type traits for their custom classes.
+    We added mpi_type_traits for several smart-pointer types.
+    We added special type_range and type_selection functions for
+        vectors.  These are used for creating mpi_datatypes for only part of a
+        vector.  Range is used for creating a datatype for a contiguous part
+        in a vector.  Selection is used for specifically picking out
+        individual elements in a vector to send.
+
+In msg_imp class:
+    Added functions to call new vector functions type_range and type_selection.
+    Added function for getting type_static.
