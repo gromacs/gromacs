@@ -643,7 +643,7 @@ AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &
 void
 AnalysisDataSimpleHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 
@@ -758,7 +758,7 @@ AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader
 void
 AnalysisDataWeightedHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 

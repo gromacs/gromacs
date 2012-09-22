@@ -51,6 +51,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/init.h"
 #include "gromacs/utility/programinfo.h"
 
 #include "refdata.h"
@@ -74,7 +75,7 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
 {
     try
     {
-        ProgramInfo::init(*argc, argv);
+        gmx::init(*argc, argv);
         ::testing::InitGoogleMock(argc, argv);
         if (dataPath != NULL)
         {
