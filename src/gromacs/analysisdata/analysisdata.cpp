@@ -147,7 +147,14 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
                        "Too many calls to startData() compared to provided options");
     if (impl_->handles_.empty())
     {
-        notifyDataStart();
+        //TODO: 1) should be somehow moved into storage
+        //2) Multipoint is always notified because it doesn't support storage yet
+        //Doesn't work but at least is ignored if anyhow no writer is attached
+        //So select can be tested (without e.g. -on option).
+        if (mpi::isMaster() || isMultipoint())
+        {
+            notifyDataStart();
+        }
         impl_->storage_.setParallelOptions(opt);
         impl_->storage_.startDataStorage(this);
     }
@@ -181,7 +188,7 @@ AnalysisData::finishData(AnalysisDataHandle handle)
 
     if (impl_->handles_.empty())
     {
-        notifyDataFinish();
+        impl_->storage_.finishDataStorage();
     }
 }
 

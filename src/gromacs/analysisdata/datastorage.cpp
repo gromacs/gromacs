@@ -35,6 +35,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "datastorage.h"
 
 #include <limits>
@@ -45,6 +49,7 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/iterator.h"
 #include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
@@ -67,7 +72,15 @@ AnalysisDataParallelOptions::AnalysisDataParallelOptions(int parallelizationFact
                        "Invalid parallelization factor");
 }
 
-
+bool AnalysisDataParallelOptions::useMPI() const {
+#ifdef GMX_LIB_MPI
+    int initialized;
+    MPI_Initialized(&initialized);
+    return initialized && mpi::comm::world.size() > 1;
+#else
+    return false;
+#endif
+}
 /********************************************************************
  * AnalysisDataStorage::Impl
  */
@@ -293,7 +306,7 @@ AnalysisDataStorage::Impl::firstStoredIndex() const
 int
 AnalysisDataStorage::Impl::computeStorageLocation(int index) const
 {
-    if (index < firstStoredIndex() || index >= nextIndex_)
+    if (index < firstStoredIndex() /*|| index >= nextIndex_*/)
     {
         return -1;
     }
@@ -365,6 +378,10 @@ AnalysisDataStorage::Impl::notifyPointSet(const AnalysisDataPointSetRef &points)
 void
 AnalysisDataStorage::Impl::notifyNextFrames(size_t firstLocation)
 {
+    if (!mpi::isMaster())
+    {
+        return;
+    }
     if (firstLocation != firstFrameLocation_)
     {
         // firstLocation can only be zero here if !storeAll() because
@@ -488,6 +505,10 @@ AnalysisDataStorage::setMultipoint(bool bMultipoint)
 void
 AnalysisDataStorage::setParallelOptions(const AnalysisDataParallelOptions &opt)
 {
+    if (opt.useMPI())
+    {
+        requestStorage(-1);
+    }
     impl_->pendingLimit_ = 2 * opt.parallelizationFactor() - 1;
 }
 
@@ -574,10 +595,10 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
         }
         storedFrame = &impl_->frames_[storageIndex];
     }
-    GMX_RELEASE_ASSERT(!storedFrame->isStarted(),
-                       "startFrame() called twice for the same frame");
-    GMX_RELEASE_ASSERT(storedFrame->frame->frameIndex() == header.index(),
-                       "Inconsistent internal frame indexing");
+    //GMX_RELEASE_ASSERT(!storedFrame->isStarted(),
+    //                   "startFrame() called twice for the same frame");
+    //GMX_RELEASE_ASSERT(storedFrame->frame->frameIndex() == header.index(),
+    //                   "Inconsistent internal frame indexing");
     storedFrame->status = Impl::StoredFrame::eStarted;
     storedFrame->frame->header_ = header;
     if (impl_->isMultipoint())
@@ -639,6 +660,71 @@ AnalysisDataStorage::finishFrame(int index)
     }
 }
 
+void
+AnalysisDataStorage::finishDataStorage()
+{
+#ifdef GMX_LIB_MPI //otherwise nothing to do
+    using mpi::comm;
+    Impl timpl;
+    std::vector<int> recv_counts;
+    std::vector<int> recv_sel;
+    if (mpi::isMaster())
+    {
+        timpl.data_ = impl_->data_;
+        recv_counts.resize(comm::world.size());
+    }
+    // Determine information needed by master
+    std::vector<int> selection;
+    int recv_size=0;
+    // It would be nice to have gather work with in-place. Then
+    // this for loop isn't necessary on the master
+    // (master wouldn't need to send to itself). Also we could
+    // get rid of the whole timpl.
+    for (size_t i=0; i<impl_->frames_.size(); i++)
+    {
+        GMX_ASSERT (mpi::isMaster() || !impl_->frames_[i].isNotified(),
+                    "Tried to collect an already notified frame!");
+        if (impl_->frames_[i].isFinished())
+        {
+            recv_size++;
+            selection.push_back(i);
+        }
+    }
+    comm::world.gather(&recv_size, (&recv_size)+1, recv_counts.begin(), recv_counts.end(), 0); //gather number of frames on each node
+
+    if (mpi::isMaster())
+    {
+        size_t totalFrames=0;
+        for (int i=0; i<comm::world.size(); i++)
+        {
+            totalFrames += recv_counts[i];
+        }
+        recv_sel.resize(totalFrames);
+        timpl.extendBuffer(this, std::max(totalFrames, impl_->frames_.size()));
+    }
+    comm::world.gatherv(selection.begin(), selection.end(),
+            recv_sel.begin(), recv_sel.end(),
+            recv_counts.begin(), recv_counts.end(), 0); //gather frame numbers of frames
+    //gather frames
+
+    comm::world.gatherv(
+            make_permutation_iterator(impl_->frames_.begin(),selection.begin()),
+            make_permutation_iterator(impl_->frames_.begin(),selection.end()),
+            make_permutation_iterator(timpl.frames_.begin(),recv_sel.begin()),
+            make_permutation_iterator(timpl.frames_.begin(),recv_sel.end()),
+            recv_counts.begin(), recv_counts.end(), 0);
+
+    if (mpi::isMaster())
+    {
+        impl_->frames_.swap(timpl.frames_);
+    }
+    impl_->notifyNextFrames(0);
+#endif//GMX_LIB_MPI
+    if (mpi::isMaster())
+    {
+        impl_->data_->notifyDataFinish();
+    }
+}
 
 void
 AnalysisDataStorage::finishFrame(const AnalysisDataStorageFrame &frame)
@@ -647,3 +733,27 @@ AnalysisDataStorage::finishFrame(const AnalysisDataStorageFrame &frame)
 }
 
 } // namespace gmx
+
+#ifdef GMX_LIB_MPI
+namespace mpi
+{
+    //! mpi_type_traits for the enum Status
+    template <>
+    inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame::Status>::get_type(const gmx::AnalysisDataStorage::Impl::StoredFrame::Status& status)
+    {
+        return get_type_enum<gmx::AnalysisDataStorage::Impl::StoredFrame::Status>(status);
+    }
+    //! declaring Status is a named data type
+    SET_MPI_STATIC(gmx::AnalysisDataStorage::Impl::StoredFrame::Status);
+
+    template <>
+    inline MPI_Datatype mpi_type_traits<gmx::AnalysisDataStorage::Impl::StoredFrame>::get_type(const gmx::AnalysisDataStorage::Impl::StoredFrame& sf)
+    {
+        mpi_type_builder builder(sf, 2);
+        builder.add(sf.frame);
+        builder.add(sf.status);
+        return builder.build();
+    }
+}//mpi
+
+#endif //GMX_LIB_MPI
