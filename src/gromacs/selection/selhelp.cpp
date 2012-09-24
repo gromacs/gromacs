@@ -430,14 +430,15 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
 {
     public:
         //! Initialize help topic for the given selection method.
-        explicit KeywordDetailsHelpTopic(const gmx_ana_selmethod_t &method)
-            : method_(method)
+        KeywordDetailsHelpTopic(const std::string &name,
+                                const gmx_ana_selmethod_t &method)
+            : name_(name), method_(method)
         {
         }
 
         virtual const char *name() const
         {
-            return method_.name;
+            return name_.c_str();
         }
         virtual const char *title() const
         {
@@ -451,6 +452,7 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
         }
 
     private:
+        std::string                name_;
         const gmx_ana_selmethod_t &method_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(KeywordDetailsHelpTopic);
@@ -514,7 +516,8 @@ KeywordsHelpTopic::KeywordsHelpTopic()
         methods_.push_back(std::make_pair(std::string(symname), method));
         if (method->help.nlhelp > 0 && method->help.help != NULL)
         {
-            addSubTopic(HelpTopicPointer(new KeywordDetailsHelpTopic(*method)));
+            addSubTopic(HelpTopicPointer(
+                        new KeywordDetailsHelpTopic(symname, *method)));
         }
         ++symbol;
     }

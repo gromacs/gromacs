@@ -523,6 +523,18 @@ TEST_F(SelectionCollectionDataTest, HandlesAtomname)
     runTest("simple.gro", selections);
 }
 
+TEST_F(SelectionCollectionDataTest, HandlesPdbAtomname)
+{
+    static const char * const selections[] = {
+        "name HG21",
+        "name 1HG2",
+        "pdbname HG21 CB",
+        "pdbatomname 1HG2",
+        NULL
+    };
+    runTest("simple.pdb", selections);
+}
+
 // TODO: Add test for atomtype
 
 TEST_F(SelectionCollectionDataTest, HandlesChain)

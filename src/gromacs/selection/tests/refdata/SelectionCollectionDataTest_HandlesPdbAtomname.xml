@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">name HG21</String>
+      <String Name="Name">name HG21</String>
+      <String Name="Text">name HG21</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">name 1HG2</String>
+      <String Name="Name">name 1HG2</String>
+      <String Name="Text">name 1HG2</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection3">
+      <String Name="Input">pdbname HG21 CB</String>
+      <String Name="Name">pdbname HG21 CB</String>
+      <String Name="Text">pdbname HG21 CB</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection4">
+      <String Name="Input">pdbatomname 1HG2</String>
+      <String Name="Name">pdbatomname 1HG2</String>
+      <String Name="Text">pdbatomname 1HG2</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">1</Int>
+        <Int>4</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">0</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection3">
+      <Sequence Name="Atoms">
+        <Int Name="Length">6</Int>
+        <Int>0</Int>
+        <Int>3</Int>
+        <Int>6</Int>
+        <Int>9</Int>
+        <Int>12</Int>
+        <Int>15</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection4">
+      <Sequence Name="Atoms">
+        <Int Name="Length">1</Int>
+        <Int>4</Int>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+</ReferenceData>
