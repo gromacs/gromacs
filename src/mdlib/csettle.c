@@ -49,9 +49,7 @@ typedef struct
 {
     real   mO;
     real   mH;
-    double wo;
-    double wh;
-    double wohh;
+    real   wh;
     real   dOH;
     real   dHH;
     real   ra;
@@ -111,28 +109,26 @@ static void settleparam_init(settleparam_t *p,
                              real mO,real mH,real invmO,real invmH,
                              real dOH,real dHH)
 {
+    double wohh;
+
     p->mO     = mO;
     p->mH     = mH;
-    p->wo     = mO;
-    p->wh     = mH;
-    p->wohh   = mO + 2.0*mH;
+    wohh      = mO + 2.0*mH;
+    p->wh     = mH/wohh;
     p->dOH    = dOH;
     p->dHH    = dHH;
     p->rc     = dHH/2.0;
-    p->ra     = 2.0*p->wh*sqrt(dOH*dOH - p->rc*p->rc)/p->wohh;
+    p->ra     = 2.0*mH*sqrt(dOH*dOH - p->rc*p->rc)/wohh;
     p->rb     = sqrt(dOH*dOH - p->rc*p->rc) - p->ra;
     p->irc2   = 1.0/dHH;
-
-    p->wo    /= p->wohh;
-    p->wh    /= p->wohh;
 
     /* For projection: connection matrix inversion */
     init_proj_matrix(p,invmO,invmH,dOH,dHH);
 
     if (debug)
     {
-        fprintf(debug,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
-                p->wo,p->wh,p->wohh,p->rc,p->ra);
+        fprintf(debug,"wh =%g, rc = %g, ra = %g\n",
+                p->wh,p->rc,p->ra);
         fprintf(debug,"rb = %g, irc2 = %g, dHH = %g, dOH = %g\n",
                 p->rb,p->irc2,p->dHH,p->dOH);
     }
@@ -330,11 +326,8 @@ void csettle(gmx_settledata_t settled,
     
     /* Initialized data */
     settleparam_t *p;
-    real   mO,mH,mOs,mHs,invdts;
-    /* These three weights need have double precision. Using single precision
-     * can result in huge velocity and pressure deviations. */
-    double wo,wh,wohh;
-    real   ra,rb,rc,irc2,dOH,dHH;
+    real   wh,ra,rb,rc,irc2;
+    real   mOs,mHs,invdts;
     
     /* Local variables */
     real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
@@ -356,6 +349,7 @@ void csettle(gmx_settledata_t settled,
     int i, ow1, hw2, hw3;
 
     rvec dx,sh_hw2={0,0,0},sh_hw3={0,0,0};
+    rvec doh2,doh3;
     int  is;
     
     *error = -1;
@@ -363,20 +357,14 @@ void csettle(gmx_settledata_t settled,
     CalcVirAtomEnd *= 3;
 
     p = &settled->massw;
-    mO   = p->mO;
-    mH   = p->mH;
-    wo   = p->wo;
     wh   = p->wh;
-    wohh = p->wohh;
     rc   = p->rc;
     ra   = p->ra;
     rb   = p->rb;
     irc2 = p->irc2;
-    dOH  = p->dOH;
-    dHH  = p->dHH;
     
-    mOs  = mO / vetavar->rvscale;
-    mHs  = mH / vetavar->rvscale;
+    mOs    = p->mO / vetavar->rvscale;
+    mHs    = p->mH / vetavar->rvscale;
     invdts = invdt / vetavar->rscale;
     
 #ifdef PRAGMAS
@@ -397,6 +385,10 @@ void csettle(gmx_settledata_t settled,
         yc0 = b4[hw3 + 1] - b4[ow1 + 1];
         zc0 = b4[hw3 + 2] - b4[ow1 + 2];
         /* 6 flops */
+
+        rvec_sub(after+hw2,after+ow1,doh2);
+        rvec_sub(after+hw3,after+ow1,doh3);
+        /* 6 flops */
     }
     else
     {
@@ -410,47 +402,51 @@ void csettle(gmx_settledata_t settled,
         zc0 = dx[ZZ];
 
         /* Tedious way of doing pbc */
-        is = pbc_dx_aiuc(pbc,after+hw2,after+ow1,dx);
+        is = pbc_dx_aiuc(pbc,after+hw2,after+ow1,doh2);
         if (is == CENTRAL)
         {
             clear_rvec(sh_hw2);
         }
         else
         {
-            sh_hw2[XX] = after[hw2    ] - (after[ow1    ] + dx[XX]);
-            sh_hw2[YY] = after[hw2 + 1] - (after[ow1 + 1] + dx[YY]);
-            sh_hw2[ZZ] = after[hw2 + 2] - (after[ow1 + 2] + dx[ZZ]);
+            sh_hw2[XX] = after[hw2    ] - (after[ow1    ] + doh2[XX]);
+            sh_hw2[YY] = after[hw2 + 1] - (after[ow1 + 1] + doh2[YY]);
+            sh_hw2[ZZ] = after[hw2 + 2] - (after[ow1 + 2] + doh2[ZZ]);
             rvec_dec(after+hw2,sh_hw2);
         }
-        is = pbc_dx_aiuc(pbc,after+hw3,after+ow1,dx);
+        is = pbc_dx_aiuc(pbc,after+hw3,after+ow1,doh3);
         if (is == CENTRAL)
         {
             clear_rvec(sh_hw3);
         }
         else
         {
-            sh_hw3[XX] = after[hw3    ] - (after[ow1    ] + dx[XX]);
-            sh_hw3[YY] = after[hw3 + 1] - (after[ow1 + 1] + dx[YY]);
-            sh_hw3[ZZ] = after[hw3 + 2] - (after[ow1 + 2] + dx[ZZ]);
+            sh_hw3[XX] = after[hw3    ] - (after[ow1    ] + doh3[XX]);
+            sh_hw3[YY] = after[hw3 + 1] - (after[ow1 + 1] + doh3[YY]);
+            sh_hw3[ZZ] = after[hw3 + 2] - (after[ow1 + 2] + doh3[ZZ]);
             rvec_dec(after+hw3,sh_hw3);
         }
     }
     
-    xcom = (after[ow1    ] * wo + (after[hw2    ] + after[hw3    ]) * wh);
-    ycom = (after[ow1 + 1] * wo + (after[hw2 + 1] + after[hw3 + 1]) * wh);
-    zcom = (after[ow1 + 2] * wo + (after[hw2 + 2] + after[hw3 + 2]) * wh);
-    /* 12 flops */
+    /* Not calculating the center of mass using the oxygen position
+     * and the O-H distances, as done below, will make SETTLE
+     * the largest source of energy drift for simulations of water.
+     */
+    xa1 = -(doh2[0] + doh3[0]) * wh;
+    ya1 = -(doh2[1] + doh3[1]) * wh;
+    za1 = -(doh2[2] + doh3[2]) * wh;
+
+    xcom = after[ow1    ] - xa1;
+    ycom = after[ow1 + 1] - ya1;
+    zcom = after[ow1 + 2] - za1;
     
-    xa1 = after[ow1    ] - xcom;
-    ya1 = after[ow1 + 1] - ycom;
-    za1 = after[ow1 + 2] - zcom;
     xb1 = after[hw2    ] - xcom;
     yb1 = after[hw2 + 1] - ycom;
     zb1 = after[hw2 + 2] - zcom;
     xc1 = after[hw3    ] - xcom;
     yc1 = after[hw3 + 1] - ycom;
     zc1 = after[hw3 + 2] - zcom;
-    /* 9 flops */
+    /* 15 flops */
     
     xakszd = yb0 * zc0 - zb0 * yc0;
     yakszd = zb0 * xc0 - xb0 * zc0;
