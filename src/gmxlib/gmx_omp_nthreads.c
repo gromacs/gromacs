@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -86,7 +87,7 @@ static const char *mod_name[emntNR] =
  *  File-scope global variable that gets set once in \init_module_nthreads
  *  and queried via gmx_omp_nthreads_get.
  *
- *  All fields are initialized to 0 which should result in erros if
+ *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted
  * */
 static omp_module_nthreads_t modth = { 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
@@ -174,6 +175,36 @@ static int pick_module_nthreads(FILE *fplog, int m,
     }
 
     return modth.nth[m] = nth;
+}
+
+void gmx_omp_nthreads_read_env(int *nthreads_omp)
+{
+    char *env;
+
+    assert(nthreads_omp);
+
+    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
+    {
+        int nt_omp;
+
+        sscanf(env,"%d",&nt_omp);
+        if (nt_omp <= 0)
+        {
+            gmx_fatal(FARGS,"OMP_NUM_THREADS is invalid: '%s'",env);
+        }
+
+        if (*nthreads_omp > 0 && nt_omp != *nthreads_omp)
+        {
+            gmx_fatal(FARGS,"OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values",nt_omp,*nthreads_omp);
+        }
+
+        /* Setting the number of OpenMP threads.
+         * NOTE: with tMPI this function is only called on the master node,
+         * but with MPI on all nodes which means lots of messages on stderr.
+         */
+        fprintf(stderr,"Getting the number of OpenMP threads from OMP_NUM_THREADS: %d\n",nt_omp);
+        *nthreads_omp = nt_omp;
+    }
 }
 
 void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,

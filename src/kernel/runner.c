@@ -836,29 +836,7 @@ static void set_cpu_affinity(FILE *fplog,
 static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
                                     int cutoff_scheme)
 {
-    char *env;
-
-    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
-    {
-        int nt_omp;
-
-        sscanf(env,"%d",&nt_omp);
-        if (nt_omp <= 0)
-        {
-            gmx_fatal(FARGS,"OMP_NUM_THREADS is invalid: '%s'",env);
-        }
-
-        if (hw_opt->nthreads_omp > 0 && nt_omp != hw_opt->nthreads_omp)
-        {
-            gmx_fatal(FARGS,"OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values",nt_omp,hw_opt->nthreads_omp);
-        }
-
-        /* Setting the number of OpenMP threads.
-         * NOTE: this function is only called on the master node.
-         */
-        fprintf(stderr,"Getting the number of OpenMP threads from OMP_NUM_THREADS: %d\n",nt_omp);
-        hw_opt->nthreads_omp = nt_omp;
-    }
+    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp);
 
 #ifndef GMX_THREAD_MPI
     if (hw_opt->nthreads_tot > 0)

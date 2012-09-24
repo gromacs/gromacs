@@ -63,4 +63,7 @@ void gmx_omp_nthreads_detecthw();
 /*! Returns the number of threads to be used in the given module m. */
 int gmx_omp_nthreads_get(int mod);
 
+/*! Read the OMP_NUM_THREADS env. var. and check against the value set on the command line. */
+void gmx_omp_nthreads_read_env(int *nthreads_omp);
+
 #endif /* GMX_OMP_NTHREADS */
