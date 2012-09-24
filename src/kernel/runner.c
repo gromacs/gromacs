@@ -734,11 +734,40 @@ static void convert_to_verlet_scheme(FILE *fplog,
 */
 static void set_cpu_affinity(FILE *fplog,
                              const t_commrec *cr,
-                             const gmx_hw_opt_t *hw_opt,
+                             gmx_hw_opt_t *hw_opt,
                              int nthreads_pme,
                              const gmx_hw_info_t *hwinfo,
                              const t_inputrec *inputrec)
 {
+    /* Check for externally set OpenMP affinity and turn off pinning
+     * if any is found.
+     *
+     * As the pinning flag can change, with thread-MPI we only do
+     * the check on master thread and have the other threads wait. */
+#if defined GMX_THREAD_MPI
+    if (SIMMASTER(cr))
+#endif
+    {
+        gmx_omp_check_thread_affinity(fplog, cr, hw_opt);
+    }
+#ifdef GMX_THREAD_MPI
+    /* Non-master threads have to wait for the check to be done. */
+    if (PAR(cr))
+    {
+        MPI_Barrier(cr->mpi_comm_mysim);
+    }
+#endif
+
+#if defined GMX_THREAD_MPI
+    /* With the number of TMPI threads equal to the number of cores
+     * we already pinned in thread-MPI, so don't pin again here.
+     */
+    if (hw_opt->nthreads_tmpi == tMPI_Thread_get_hw_number())
+    {
+        return;
+    }
+#endif
+
 #ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP?! */
 #ifdef __linux /* TODO: only linux? why not everywhere if sched_setaffinity is available */
     if (hw_opt->bThreadPinning)
@@ -1581,16 +1610,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         snew(pmedata,1);
     }
 
-#if defined GMX_THREAD_MPI
-    /* With the number of TMPI threads equal to the number of cores
-     * we already pinned in thread-MPI, so don't pin again here.
-     */
-    if (hw_opt->nthreads_tmpi != tMPI_Thread_get_hw_number())
-#endif
-    {
-        /* Set the CPU affinity */
-        set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,hwinfo,inputrec);
-    }
+    /* Set the CPU affinity */
+    set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,hwinfo,inputrec);
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
