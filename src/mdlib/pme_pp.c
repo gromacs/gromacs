@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -65,6 +66,7 @@
 #define PP_PME_FEP      (1<<3)
 #define PP_PME_ENER_VIR (1<<4)
 #define PP_PME_FINISH   (1<<5)
+#define PP_PME_SWITCH   (1<<6)
 
 #define PME_PP_SIGSTOP     (1<<0)
 #define PME_PP_SIGSTOPNSS     (1<<1)
@@ -90,13 +92,15 @@ typedef struct gmx_pme_pp {
 } t_gmx_pme_pp;
 
 typedef struct gmx_pme_comm_n_box {
-  int    natoms;
-  matrix box;
-  int    maxshift_x;
-  int    maxshift_y;
-  real   lambda;
-  int    flags;
-  gmx_large_int_t step;
+    int    natoms;
+    matrix box;
+    int    maxshift_x;
+    int    maxshift_y;
+    real   lambda;
+    int    flags;
+    gmx_large_int_t step;
+    ivec   grid_size;     /* For PME grid tuning */
+    real   ewaldcoeff;    /* For PME grid tuning */
 } gmx_pme_comm_n_box_t;
 
 typedef struct {
@@ -256,7 +260,7 @@ void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
   gmx_pme_send_q_x(cr,flags,NULL,NULL,box,x,lambda,0,0,step);
 }
 
-void gmx_pme_finish(t_commrec *cr)
+void gmx_pme_send_finish(t_commrec *cr)
 {
   int flags;
 
@@ -265,13 +269,32 @@ void gmx_pme_finish(t_commrec *cr)
   gmx_pme_send_q_x(cr,flags,NULL,NULL,NULL,NULL,0,0,0,-1);
 }
 
+void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff)
+{
+#ifdef GMX_MPI
+    gmx_pme_comm_n_box_t cnb;
+
+    if (cr->dd->pme_receive_vir_ener)
+    {
+        cnb.flags = PP_PME_SWITCH;
+        copy_ivec(grid_size,cnb.grid_size);
+        cnb.ewaldcoeff = ewaldcoeff;
+
+        MPI_Isend(&cnb,sizeof(cnb),MPI_BYTE,
+                  cr->dd->pme_nodeid,0,cr->mpi_comm_mysim,
+                  &cr->dd->req_pme[cr->dd->nreq_pme++]);
+    }
+#endif
+}
+
 int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                      real **chargeA, real **chargeB,
                      matrix box, rvec **x,rvec **f,
                      int *maxshift_x, int *maxshift_y,
                      gmx_bool *bFreeEnergy,real *lambda,
-		     gmx_bool *bEnerVir,
-                     gmx_large_int_t *step)
+                     gmx_bool *bEnerVir,
+                     gmx_large_int_t *step,
+                     ivec grid_size, real *ewaldcoeff)
 {
     gmx_pme_comm_n_box_t cnb;
     int  nat=0,q,messages,sender;
@@ -289,10 +312,22 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                  pme_pp->mpi_comm_mysim,MPI_STATUS_IGNORE);
 
         if (debug)
-            fprintf(debug,"PME only node receiving:%s%s%s\n",
+        {
+            fprintf(debug,"PME only node receiving:%s%s%s%s\n",
                     (cnb.flags & PP_PME_CHARGE) ? " charges" : "",
-                        (cnb.flags & PP_PME_COORD ) ? " coordinates" : "",
-                            (cnb.flags & PP_PME_FINISH) ? " finish" : "");
+                    (cnb.flags & PP_PME_COORD ) ? " coordinates" : "",
+                    (cnb.flags & PP_PME_FINISH) ? " finish" : "",
+                    (cnb.flags & PP_PME_SWITCH) ? " switch" : "");
+        }
+
+        if (cnb.flags & PP_PME_SWITCH)
+        {
+            /* Special case, receive the new parameters and return */
+            copy_ivec(cnb.grid_size,grid_size);
+            *ewaldcoeff = cnb.ewaldcoeff;
+
+            return -2;
+        }
 
         if (cnb.flags & PP_PME_CHARGE) {
             /* Receive the send counts from the other PP nodes */

@@ -192,12 +192,20 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != NULL);
     bMaxMpiThreadsSet = (getenv("GMX_MAX_MPI_THREADS") != NULL);
 
-    if(SIMMASTER(cr))
+    if (SIMMASTER(cr))
     {
         /* check the acceleration mdrun is compiled with against hardware capabilities */
         /* TODO: Here we assume homogenous hardware which is not necessarily the case!
          *       Might not hurt to add an extra check over MPI. */
         gmx_detectcpu_check_acceleration(hwinfo->cpu_info, fplog);
+    }
+
+    /* Below we only do consistency checks for PP and GPUs,
+     * this is irrelevant for PME only nodes, so in that case we return here.
+     */
+    if (!(cr->duty & DUTY_PP))
+    {
+        return;
     }
 
     /* Need to ensure that we have enough GPUs:
@@ -326,7 +334,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                     else
                     {
                         /* Avoid other ranks to continue after inconsistency */
-                        MPI_Barrier(MPI_COMM_WORLD);
+                        MPI_Barrier(cr->mpi_comm_mygroup);
                     }
 #endif
                 }

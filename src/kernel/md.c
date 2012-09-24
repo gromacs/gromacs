@@ -518,12 +518,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                         repl_ex_nst,repl_ex_nex,repl_ex_seed);
     }
 
-    /* PME tuning is not supported with separate PME nodes or with rerun */
+    /* PME tuning is only supported with GPUs and not with rerun */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         fr->cutoff_scheme == ecutsVERLET &&
         nb_kernel_pmetune_support(fr->nbv) &&
-        (cr->duty & DUTY_PME) &&
         !bRerunMD)
     {
         switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
@@ -2061,7 +2060,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (!(cr->duty & DUTY_PME))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_finish(cr);
+        gmx_pme_send_finish(cr);
     }
     
     if (MASTER(cr))

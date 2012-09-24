@@ -484,13 +484,24 @@ gmx_bool switch_pme(pme_switch_t pmes,
         init_interaction_const_tables(NULL,ic,nbv->grp[1].kernel_type);
     }
 
-    if (pmes->setup[pmes->cur].pmedata == NULL)
+    if (cr->duty & DUTY_PME)
     {
-        gmx_pme_reinit(&set->pmedata,
-                       cr,pmes->setup[0].pmedata,ir,
-                       set->grid);
+        if (pmes->setup[pmes->cur].pmedata == NULL)
+        {
+            /* Generate a new PME data structure,
+             * copying part of the old pointers.
+             */
+            gmx_pme_reinit(&set->pmedata,
+                           cr,pmes->setup[0].pmedata,ir,
+                           set->grid);
+        }
+        *pmedata = set->pmedata;
     }
-    *pmedata = set->pmedata;
+    else
+    {
+        /* Tell our PME-only node to switch grid */
+        gmx_pme_send_switch(cr, set->grid, set->coeff);
+    }
 
     if (debug)
     {

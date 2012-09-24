@@ -127,8 +127,11 @@ void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
-void gmx_pme_finish(t_commrec *cr);
+void gmx_pme_send_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
+
+void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff);
+/* Tell our PME-only node to switch to a new grid size */
 
 void gmx_pme_receive_f(t_commrec *cr,
 			      rvec f[], matrix vir, 
@@ -137,14 +140,18 @@ void gmx_pme_receive_f(t_commrec *cr,
 /* PP nodes receive the long range forces from the PME nodes */
 
 int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
-			    real **chargeA, real **chargeB,
-			    matrix box, rvec **x,rvec **f,
-			    int *maxshift_x,int *maxshift_y,
-			    gmx_bool *bFreeEnergy,real *lambda,
-			    gmx_bool *bEnerVir,
-			    gmx_large_int_t *step);
+		     real **chargeA, real **chargeB,
+		     matrix box, rvec **x,rvec **f,
+		     int *maxshift_x, int *maxshift_y,
+		     gmx_bool *bFreeEnergy, real *lambda,
+		     gmx_bool *bEnerVir,
+		     gmx_large_int_t *step,
+		     ivec grid_size, real *ewaldcoeff);
+;
 /* Receive charges and/or coordinates from the PP-only nodes.
  * Returns the number of atoms, or -1 when the run is finished.
+ * In the special case of a PME grid size switch request, -2 is returned
+ * and grid_size and *ewaldcoeff are set, which are otherwise not set.
  */
 
 void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
