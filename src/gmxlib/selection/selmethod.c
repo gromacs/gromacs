@@ -76,6 +76,7 @@ extern gmx_ana_selmethod_t sm_resnr;
 extern gmx_ana_selmethod_t sm_resindex;
 extern gmx_ana_selmethod_t sm_molindex;
 extern gmx_ana_selmethod_t sm_atomname;
+extern gmx_ana_selmethod_t sm_pdbatomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
 extern gmx_ana_selmethod_t sm_insertcode;
@@ -134,7 +135,11 @@ static const t_register_method smtable_def[] = {
     {"mol",        &sm_molindex},
     {"molecule",   &sm_molindex},
     {NULL,         &sm_atomname},
+    {"name",       &sm_atomname},
+    {NULL,         &sm_pdbatomname},
+    {"pdbname",    &sm_pdbatomname},
     {NULL,         &sm_atomtype},
+    {"type",       &sm_atomtype},
     {NULL,         &sm_resname},
     {NULL,         &sm_insertcode},
     {NULL,         &sm_chain},

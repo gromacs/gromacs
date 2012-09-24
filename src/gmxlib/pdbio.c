@@ -505,6 +505,7 @@ static int read_atom(t_symtab *symtab,
   for(k=0; (k<4); k++,j++) anm[k]=line[j];
   anm[k]=nc;
   strcpy(anm_copy,anm);
+  rtrim(anm_copy);
   atomnumber = NOTSET;
   trim(anm);
   altloc=line[j];
