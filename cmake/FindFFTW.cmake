@@ -76,7 +76,9 @@ elseif (NOT FFTW_INCLUDE_DIR_${FFTW_PKG})
 endif()
 
 set(FFTW_HAVE_SSE FALSE CACHE BOOL "If ${FFTW_PKG} was built with SSE support")
-if (FFTW_FOUND AND HAVE_LIBM AND NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW_LIBRARY}")
+# continue if a *new* fftw was found
+if (FFTW_FOUND AND HAVE_LIBM AND
+    ("${FFTW_LIBRARY_PREVIOUS}" STREQUAL "" OR NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW_LIBRARY}"))
   #The user could specify trash in FFTW_LIBRARY, so test if we can link it
   include(CheckLibraryExists)
   #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
@@ -98,6 +100,7 @@ if (FFTW_FOUND AND HAVE_LIBM AND NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW
   set(FFTW_HAVE_SSE "${FFTW_HAVE_SSE_${FFTW_PKG}}" CACHE BOOL "If ${FFTW_PKG} was built with SSE support" FORCE)
   set(CMAKE_REQUIRED_LIBRARIES)
   set(FFTW_LIBRARY_PREVIOUS "${FFTW_LIBRARY}" CACHE INTERNAL "Value of FFTW_LIBRARY when executing the linking check that last time" FORCE)
-endif (FFTW_FOUND AND HAVE_LIBM AND NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW_LIBRARY}")
+endif (FFTW_FOUND AND HAVE_LIBM AND
+    ("${FFTW_LIBRARY_PREVIOUS}" STREQUAL "" OR NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW_LIBRARY}"))
 
 mark_as_advanced(FFTW_INCLUDE_DIR FFTW_LIBRARY FFTW_HAVE_SSE)
