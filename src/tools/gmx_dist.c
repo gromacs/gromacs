@@ -182,13 +182,13 @@ int gmx_dist(int argc,char *argv[])
   else
     pbc = NULL;
     
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,max,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,max+1,box);
   do {
     /* initialisation for correct distance calculations */
     if (pbc) {
       set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      gmx_rmpbc(gpbc,max,box,x);
+      gmx_rmpbc(gpbc,max+1,box,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
