@@ -368,12 +368,6 @@
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
 
-/* Define if sleep() in unistd.h is present. */
-#cmakedefine HAVE_UNISTD_SLEEP
-
-/* Define if Sleep() in windows.h is present. */
-#cmakedefine HAVE_WIN_SLEEP
-
 /* The size of int, as computed by sizeof. */
 #cmakedefine SIZEOF_INT @SIZEOF_INT@
 
