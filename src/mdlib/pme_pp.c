@@ -280,9 +280,9 @@ void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff)
         copy_ivec(grid_size,cnb.grid_size);
         cnb.ewaldcoeff = ewaldcoeff;
 
-        MPI_Isend(&cnb,sizeof(cnb),MPI_BYTE,
-                  cr->dd->pme_nodeid,0,cr->mpi_comm_mysim,
-                  &cr->dd->req_pme[cr->dd->nreq_pme++]);
+        /* We send this, uncommon, message blocking to simplify the code */
+        MPI_Send(&cnb,sizeof(cnb),MPI_BYTE,
+                 cr->dd->pme_nodeid,0,cr->mpi_comm_mysim);
     }
 #endif
 }
