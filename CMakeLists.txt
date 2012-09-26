@@ -358,7 +358,7 @@ check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(rpc/rpc.h    HAVE_RPC_RPC_H)
 check_include_files("rpc/rpc.h;rpc/xdr.h"    HAVE_RPC_XDR_H)
 check_include_files(io.h  		 HAVE_IO_H)
-
+check_include_files(sched.h      HAVE_SCHED_H)
 
 include(CheckFunctionExists)
 check_function_exists(strcasecmp        HAVE_STRCASECMP)
@@ -377,7 +377,8 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
-
+check_function_exists(sysconf           HAVE_SYSCONF)
+check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)

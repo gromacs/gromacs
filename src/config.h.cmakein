@@ -350,11 +350,17 @@
 /* Define to 1 if you have the <x86intrin.h> header file */
 #cmakedefine HAVE_X86INTRIN_H
 
-/* Define for sched.h (this is for thread_mpi)*/
-#define HAVE_SCHED_H
+/* Define to 1 if you have the <sched.h> header */
+#cmakedefine HAVE_SCHED_H
 
 /* Define to 1 if you have the vprintf() function. */
 #cmakedefine HAVE_VPRINTF
+
+/* Define to 1 if you have the sysconf() function */
+#cmakedefine HAVE_SYSCONF
+
+/* Define to 1 if you have the sched_setaffinity() function */
+#cmakedefine HAVE_SCHED_SETAFFINITY
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */

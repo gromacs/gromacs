@@ -71,7 +71,6 @@
 #include "nbnxn_consts.h"
 #include "statutil.h"
 #include "gmx_omp_nthreads.h"
-#include "gmx_detect_cpu.h"
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
@@ -1373,7 +1372,7 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
-                                  const gmx_cpu_info_t *cpu_info,
+                                  const gmx_cpuid_t cpuid_info,
                                   int *kernel_type)
 {
     *kernel_type = nbk4x4_PlainC;
@@ -1383,8 +1382,8 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
         /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
          * On AMD Bulldozer AVX-256 is much slower than AVX-128.
          */
-        if (cpu_info->feature[GMX_DETECTCPU_FEATURE_X86_AVX] &&
-            cpu_info->vendorid != GMX_DETECTCPU_VENDOR_AMD)
+        if(gmx_cpuid_feature(cpuid_info, GMX_CPUID_FEATURE_X86_AVX) == 1 &&
+           gmx_cpuid_vendor(cpuid_info) != GMX_CPUID_VENDOR_AMD)
         {
 #ifdef GMX_X86_AVX_256
             *kernel_type = nbk4xN_X86_SIMD256;
@@ -1421,7 +1420,6 @@ static void pick_nbnxn_kernel(FILE *fp,
                               int *kernel_type)
 {
     gmx_bool bEmulateGPU, bGPU;
-    gmx_cpu_info_t cpu_information;
     char gpu_err_str[STRLEN];
 
     assert(kernel_type);
@@ -1474,7 +1472,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp,cr,&hwinfo->cpu_info,kernel_type);
+            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,kernel_type);
         }
         else
         {

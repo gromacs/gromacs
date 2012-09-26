@@ -197,7 +197,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
         /* check the acceleration mdrun is compiled with against hardware capabilities */
         /* TODO: Here we assume homogenous hardware which is not necessarily the case!
          *       Might not hurt to add an extra check over MPI. */
-        gmx_detectcpu_check_acceleration(hwinfo->cpu_info, fplog);
+        gmx_cpuid_acceleration_check(hwinfo->cpuid_info, fplog);
     }
 
     /* Below we only do consistency checks for PP and GPUs,
@@ -395,7 +395,10 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
     assert(hwinfo);
 
     /* detect CPU; no fuss, we don't detect system-wide -- sloppy, but that's it for now */
-    gmx_detectcpu(&hwinfo->cpu_info);
+    if (gmx_cpuid_init(&hwinfo->cpuid_info) != 0)
+    {
+        gmx_fatal_collective(FARGS, cr, NULL, "CPUID detection failed!");
+    }
 
     /* detect GPUs */
     hwinfo->gpu_info.ncuda_dev_use  = 0;
@@ -518,6 +521,7 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
 {
     if (hwinfo)
     {
+        gmx_cpuid_done(hwinfo->cpuid_info);
         free_gpu_info(&hwinfo->gpu_info);
         sfree(hwinfo);
     }
