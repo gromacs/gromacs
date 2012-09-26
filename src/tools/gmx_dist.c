@@ -94,7 +94,7 @@ int gmx_dist(int argc,char *argv[])
   atom_id aid;
 
   int     ngrps;     /* the number of index groups */
-  atom_id **index,max;   /* the index for the atom numbers */
+  atom_id **index, natoms_groups;   /* the index for the atom numbers */
   int     *isize;    /* the size of each group */
   char    **grpname; /* the name of each group */
   rvec    *com;
@@ -148,24 +148,26 @@ int gmx_dist(int argc,char *argv[])
   get_index(&top->atoms,ftp2fn(efNDX,NFILE,fnm),ngrps,isize,index,grpname);
   
   /* calculate mass */
-  max=0;
+  natoms_groups=0;
   snew(mass,ngrps);
   for(g=0;(g<ngrps);g++) {
     mass[g]=0;
     for(i=0;(i<isize[g]);i++) {
-      if (index[g][i]>max)
-	max=index[g][i];
+      if (index[g][i]>natoms_groups)
+	natoms_groups=index[g][i];
       if (index[g][i] >= top->atoms.nr)
 	gmx_fatal(FARGS,"Atom number %d, item %d of group %d, is larger than number of atoms in the topolgy (%d)\n",index[g][i]+1,i+1,g+1,top->atoms.nr+1);
       mass[g]+=top->atoms.atom[index[g][i]].m;
     }
   }
+  /* The number is one more than the highest index */
+  natoms_groups++;
 
   natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   t0 = t;
 
-  if (max>=natoms)
-    gmx_fatal(FARGS,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)max+1,natoms);
+  if (natoms_groups>natoms)
+    gmx_fatal(FARGS,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)natoms_groups,natoms);
 
   if (!bCutoff) {
     /* open output file */
@@ -182,13 +184,13 @@ int gmx_dist(int argc,char *argv[])
   else
     pbc = NULL;
     
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,max,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   do {
     /* initialisation for correct distance calculations */
     if (pbc) {
       set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      gmx_rmpbc(gpbc,max,box,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
