@@ -5372,9 +5372,16 @@ static float dd_f_imbal(gmx_domdec_t *dd)
     return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1;
 }
 
-static float dd_pme_f_ratio(gmx_domdec_t *dd)
+float dd_pme_f_ratio(gmx_domdec_t *dd)
 {
-    return dd->comm->load[0].pme/dd->comm->load[0].mdf;
+    if (dd->comm->cycl_n[ddCyclPME] > 0)
+    {
+        return dd->comm->load[0].pme/dd->comm->load[0].mdf;
+    }
+    else
+    {
+        return -1.0;
+    }
 }
 
 static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,gmx_large_int_t step)

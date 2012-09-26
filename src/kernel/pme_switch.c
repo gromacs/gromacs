@@ -292,7 +292,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
 
     if (pmes->stage == pmes->nstage)
     {
-        return TRUE;
+        return FALSE;
     }
 
     if (PAR(cr))
@@ -309,7 +309,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
         /* Skip the first cycle, because the first step after a switch
          * is much slower due to allocation and/or caching effects.
          */
-        return FALSE;
+        return TRUE;
     }
 
     sprintf(buf, "step %4d: ", step);
@@ -513,7 +513,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
         print_grid(fp_err,fp_log,"","optimal",set,-1);
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 void restart_switch_pme(pme_switch_t pmes, int n)
