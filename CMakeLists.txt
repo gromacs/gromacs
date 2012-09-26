@@ -552,6 +552,9 @@ if(GMX_GPU)
     if(CMAKE_COMPILER_IS_GNUCC)
         set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
     endif()
+
+    # annoyingly enough, FindCUDA leaves a few variables behind as non-advanced
+    mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
 endif()
 
 if(APPLE)
