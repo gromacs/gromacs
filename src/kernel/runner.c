@@ -1096,7 +1096,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #ifdef GMX_THREAD_MPI
         if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)
         {
-            gmx_fatal(FARGS,"You need to explicitly specify the number of MPI threads (-nt_mpi) when using separate PME nodes");
+            gmx_fatal(FARGS,"You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME nodes");
         }
 #endif
 
