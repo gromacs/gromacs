@@ -149,9 +149,6 @@ void init_interaction_const(FILE *fp,
  * uses forcerec as input. 
  */
 
-gmx_bool nb_kernel_pmetune_support(const nonbonded_verlet_t *nbv);
-/* Return TRUE if the kernels support PME tuning (rcoulomb > rvdw) */
-
 void init_forcerec(FILE       *fplog,     
                           const output_env_t oenv,
 			  t_forcerec *fr,   

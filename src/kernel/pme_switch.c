@@ -477,7 +477,14 @@ gmx_bool switch_pme(pme_switch_t pmes,
     ic->rlist      = set->rlist;
     ic->ewaldcoeff = set->coeff;
 
-    reset_gpu_rlist_ewaldtab(nbv->cu_nbv,ic);
+    if (nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
+    {
+        reset_gpu_rlist_ewaldtab(nbv->cu_nbv,ic);
+    }
+    else
+    {
+        init_interaction_const_tables(NULL,ic,nbv->grp[0].kernel_type);
+    }
 
     if (nbv->ngrp > 1)
     {

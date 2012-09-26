@@ -68,7 +68,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     gmx_bool      bEner;
     gmx_bool      bEwald;
     const real    *Ftab=NULL;
-    real          rcut2,rlist2;
+    real          rcut2,rvdw2,rlist2;
     int           ntype;
     real          facel;
     int           n;
@@ -123,7 +123,8 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         Ftab = iconst->tabq_coul_F;
     }
 
-    rcut2               = iconst->rvdw*iconst->rvdw;
+    rcut2               = iconst->rcoulomb*iconst->rcoulomb;
+    rvdw2               = iconst->rvdw*iconst->rvdw;
 
     rlist2              = nbl->rlist*nbl->rlist;
 
@@ -288,24 +289,27 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                     }
                                 }
 
-                                tj        = nti + 2*type[ja];
-
-                                /* Vanilla Lennard-Jones cutoff */
-                                c6        = vdwparam[tj];
-                                c12       = vdwparam[tj+1];
-                                
-                                rinvsix   = int_bit*rinvsq*rinvsq*rinvsq;
-                                Vvdw_disp = c6*rinvsix;     
-                                Vvdw_rep  = c12*rinvsix*rinvsix;
-                                fscal    += (Vvdw_rep - Vvdw_disp)*rinvsq;
-
-                                if (bEner)
+                                if (rsq < rvdw2)
                                 {
-                                    vctot   += vcoul;
+                                    tj        = nti + 2*type[ja];
 
-                                    Vvdwtot +=
-                                        (Vvdw_rep - int_bit*c12*iconst->sh_invrc6*iconst->sh_invrc6)/12 -
-                                        (Vvdw_disp - int_bit*c6*iconst->sh_invrc6)/6;
+                                    /* Vanilla Lennard-Jones cutoff */
+                                    c6        = vdwparam[tj];
+                                    c12       = vdwparam[tj+1];
+                                
+                                    rinvsix   = int_bit*rinvsq*rinvsq*rinvsq;
+                                    Vvdw_disp = c6*rinvsix;     
+                                    Vvdw_rep  = c12*rinvsix*rinvsix;
+                                    fscal    += (Vvdw_rep - Vvdw_disp)*rinvsq;
+
+                                    if (bEner)
+                                    {
+                                        vctot   += vcoul;
+
+                                        Vvdwtot +=
+                                            (Vvdw_rep - int_bit*c12*iconst->sh_invrc6*iconst->sh_invrc6)/12 -
+                                            (Vvdw_disp - int_bit*c6*iconst->sh_invrc6)/6;
+                                    }
                                 }
                                 
                                 tx        = fscal*dx;

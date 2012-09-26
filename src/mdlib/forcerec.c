@@ -1664,13 +1664,6 @@ void init_interaction_const(FILE *fp,
     }
 }
 
-gmx_bool nb_kernel_pmetune_support(const nonbonded_verlet_t *nbv)
-{
-    /* PME tuning is currently only supported with only CUDA kernels */
-    return (nbv->bUseGPU &&
-            !(nbv->ngrp == 2 && nbnxn_kernel_pairlist_simple(nbv->grp[1].kernel_type)));
-}
-
 static void init_nb_verlet(FILE *fp,
                            nonbonded_verlet_t **nb_verlet,
                            const t_inputrec *ir,

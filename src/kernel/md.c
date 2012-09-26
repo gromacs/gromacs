@@ -523,7 +523,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         fr->cutoff_scheme == ecutsVERLET &&
-        nb_kernel_pmetune_support(fr->nbv) &&
         (fr->nbv->bUseGPU || !(cr->duty & DUTY_PME)) &&
         !bRerunMD)
     {

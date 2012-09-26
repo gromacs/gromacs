@@ -87,6 +87,9 @@
                      * (if appropriate) the i and j indices are
                      * unsuitable for this kind of inner loop. */
                     real skipmask;
+#ifdef VDW_CUTOFF_CHECK
+                    real skipmask_rvdw;
+#endif
 #ifdef CHECK_EXCLS
                     /* A multiply mask used to zero an interaction
                      * when that interaction should be excluded
@@ -145,6 +148,11 @@
                     {
                         rinvsix = interact*rinvsq*rinvsq*rinvsq;
 
+#ifdef VDW_CUTOFF_CHECK
+                        skipmask_rvdw = (rsq < rvdw2);
+                        rinvsix *= skipmask_rvdw;
+#endif
+
                         c6      = nbfp[type_i_off+type[aj]*2  ];
                         c12     = nbfp[type_i_off+type[aj]*2+1];
                         FrLJ6   = c6*rinvsix;
@@ -157,6 +165,9 @@
                          * or there should be exclusion. */
                         VLJ     = VLJ * skipmask * interact;
                         /* 9 flops for LJ energy */
+#ifdef VDW_CUTOFF_CHECK
+                        VLJ    *= skipmask_rvdw;
+#endif
 #ifdef ENERGY_GROUPS
                         Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += VLJ;
 #else
