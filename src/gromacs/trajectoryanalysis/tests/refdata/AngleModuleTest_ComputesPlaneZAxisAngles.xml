@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">angle -g1 plane -group1 'resname RP1 RP2 and name A1 A2 A3' -g2 z</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="angle">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">180.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">45.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="average">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <DataValue>
+            <Real Name="Value">112.500000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>

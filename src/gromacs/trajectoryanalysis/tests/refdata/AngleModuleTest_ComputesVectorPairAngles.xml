@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">angle -g1 vector -group1 'resname RV1 RV2 and name A1 A2' -g2 vector -group2 'resname RV3 RV4 and name A1 A2'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="angle">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">45.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">90.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="average">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <DataValue>
+            <Real Name="Value">67.500000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>
