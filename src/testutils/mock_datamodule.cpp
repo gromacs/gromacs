@@ -474,7 +474,7 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
             const AnalysisDataTestInputPointSet &points = frame.points(ps);
             EXPECT_CALL(*this, pointsAdded(_))
                 .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
-                                                         data.columnCount())));
+                                                         points.size())));
         }
         EXPECT_CALL(*this, frameFinished(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
