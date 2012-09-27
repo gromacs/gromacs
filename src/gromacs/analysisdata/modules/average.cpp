@@ -35,32 +35,34 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
-#include "gromacs/analysisdata/modules/average.h"
+#include "average.h"
 
 #include <cmath>
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datastorage.h"
 
 namespace gmx
 {
+
+/********************************************************************
+ * AnalysisDataAverageModule
+ */
 
 AnalysisDataAverageModule::AnalysisDataAverageModule()
 {
     setColumnCount(2);
 }
 
-
 AnalysisDataAverageModule::~AnalysisDataAverageModule()
 {
 }
-
 
 int
 AnalysisDataAverageModule::flags() const
 {
     return efAllowMultipoint | efAllowMulticolumn | efAllowMissing;
 }
-
 
 void
 AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
@@ -71,12 +73,10 @@ AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
     nsamples_.resize(nrows);
 }
 
-
 void
 AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
 }
-
 
 void
 AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
@@ -94,12 +94,10 @@ AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
     }
 }
 
-
 void
 AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
 }
-
 
 void
 AnalysisDataAverageModule::dataFinished()
@@ -114,18 +112,108 @@ AnalysisDataAverageModule::dataFinished()
     valuesReady();
 }
 
-
 real
 AnalysisDataAverageModule::average(int index) const
 {
     return value(index, 0);
 }
 
-
 real
 AnalysisDataAverageModule::stddev(int index) const
 {
     return value(index, 1);
+}
+
+
+/********************************************************************
+ * AnalysisDataFrameAverageModule
+ */
+
+class AnalysisDataFrameAverageModule::Impl
+{
+    public:
+        //! Storage implementation object.
+        AnalysisDataStorage     storage_;
+        //! Number of samples in a frame.
+        int                     sampleCount_;
+};
+
+AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule()
+    : impl_(new Impl())
+{
+    setColumnCount(1);
+}
+
+AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule()
+{
+}
+
+int
+AnalysisDataFrameAverageModule::flags() const
+{
+    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing;
+}
+
+void
+AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
+{
+    notifyDataStart();
+    impl_->storage_.startDataStorage(this);
+}
+
+void
+AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &header)
+{
+    impl_->sampleCount_ = 0;
+    AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
+    frame.setValue(0, 0.0);
+}
+
+void
+AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
+{
+    AnalysisDataStorageFrame &frame =
+        impl_->storage_.currentFrame(points.frameIndex());
+    for (int i = 0; i < points.columnCount(); ++i)
+    {
+        if (points.present(i))
+        {
+            const real y = points.y(i);
+            frame.value(0) += y;
+            impl_->sampleCount_ += 1;
+        }
+    }
+}
+
+void
+AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &header)
+{
+    AnalysisDataStorageFrame &frame =
+        impl_->storage_.currentFrame(header.index());
+    const int samples = impl_->sampleCount_;
+    if (samples > 0)
+    {
+        frame.value(0) /= samples;
+    }
+    impl_->storage_.finishFrame(header.index());
+}
+
+void
+AnalysisDataFrameAverageModule::dataFinished()
+{
+    notifyDataFinish();
+}
+
+AnalysisDataFrameRef
+AnalysisDataFrameAverageModule::tryGetDataFrameInternal(int index) const
+{
+    return impl_->storage_.tryGetDataFrame(index);
+}
+
+bool
+AnalysisDataFrameAverageModule::requestStorageInternal(int nframes)
+{
+    return impl_->storage_.requestStorage(nframes);
 }
 
 } // namespace gmx
