@@ -41,8 +41,10 @@
 
 #include <vector>
 
+#include "../abstractdata.h"
 #include "../arraydata.h"
 #include "../datamodule.h"
+#include "../../utility/common.h"
 
 namespace gmx
 {
@@ -93,6 +95,48 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
 //! Smart pointer to manage an AnalysisDataAverageModule object.
 typedef boost::shared_ptr<AnalysisDataAverageModule>
         AnalysisDataAverageModulePointer;
+
+/*! \brief
+ * Data module for averaging of columns for each frame.
+ *
+ * Output data has the same number of frames as the input data, but only one
+ * column.
+ * Each frame in the output contains the average of the column values in the
+ * corresponding frame of the input data.
+ *
+ * Multipoint data and missing data points are both supported. The average
+ * is always calculated over all data points present in a column.
+ *
+ * \inpublicapi
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
+                                       public AnalysisDataModuleInterface
+{
+    public:
+        AnalysisDataFrameAverageModule();
+        virtual ~AnalysisDataFrameAverageModule();
+
+        virtual int flags() const;
+
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
+        virtual void dataFinished();
+
+    private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
+
+//! Smart pointer to manage an AnalysisDataFrameAverageModule object.
+typedef boost::shared_ptr<AnalysisDataFrameAverageModule>
+        AnalysisDataFrameAverageModulePointer;
 
 } // namespace gmx
 
