@@ -67,12 +67,6 @@ void setTimeValue(int tcontrol,real value);
 
 /* a dedicated status type contains fp, etc. */
 typedef struct t_trxstatus t_trxstatus;
-  
-typedef int t_first_x(t_trxstatus **status,const char *fn,real *t,rvec **x,
-                      matrix box);
-
-typedef gmx_bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
-                      matrix box);
 
 /* I/O function types */
 

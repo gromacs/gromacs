@@ -947,15 +947,3 @@ void rewind_trj(t_trxstatus *status)
   
   gmx_fio_rewind(status->fio);
 }
-
-/***** V E L O C I T Y   S T U F F *****/
-
-static void clear_v(t_trxframe *fr)
-{
-  int i;
-
-  if (!fr->bV)
-    for(i=0; i<fr->natoms; i++)
-      clear_rvec(fr->v[i]);
-}
-
