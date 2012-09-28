@@ -36,20 +36,12 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <ctype.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>  /*old Mac needs types before regex.h*/
-#endif
-#ifdef HAVE_REGEX_H
-#include <regex.h>
-#define USE_REGEX
-#endif
+#include <cctype>
+#include <cstring>
 
 #include <string>
+
+#include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/smalloc.h"
@@ -57,6 +49,7 @@
 
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -137,35 +130,96 @@ typedef struct t_methoddata_kwreal
     real              *r;
 } t_methoddata_kwreal;
 
+namespace
+{
+
+/*! \internal \brief
+ * Single item in the list of strings/regular expressions to match.
+ *
+ * \ingroup module_selection
+ */
+class StringKeywordMatchItem
+{
+    public:
+        /*! \brief
+         * Constructs a matcher from a string.
+         *
+         * \param[in] matchType String matching type.
+         * \param[in] str       String to use for matching.
+         */
+        StringKeywordMatchItem(gmx::SelectionStringMatchType matchType,
+                               const char *str)
+            : str_(str)
+        {
+            bool bRegExp = (matchType == gmx::eStringMatchType_RegularExpression);
+            if (matchType == gmx::eStringMatchType_Auto)
+            {
+                for (size_t j = 0; j < std::strlen(str); ++j)
+                {
+                    if (std::ispunct(str[j]) && str[j] != '?' && str[j] != '*')
+                    {
+                        bRegExp = true;
+                        break;
+                    }
+                }
+            }
+            if (bRegExp)
+            {
+                if (!gmx::Regex::isSupported())
+                {
+                    GMX_THROW(gmx::InvalidInputError(gmx::formatString(
+                                    "No regular expression support, "
+                                    "cannot match \"%s\"", str)));
+                }
+                regex_.reset(new gmx::Regex(str));
+            }
+        }
+
+        /*! \brief
+         * Checks whether this item matches a string.
+         *
+         * \param[in] matchType String matching type.
+         * \param[in] value     String to match.
+         * \returns   true if this item matches \p value.
+         */
+        bool match(gmx::SelectionStringMatchType matchType,
+                   const char *value) const
+        {
+            if (matchType == gmx::eStringMatchType_Exact)
+            {
+                return str_ == value;
+            }
+            else if (regex_)
+            {
+                return gmx::regexMatch(value, *regex_);
+            }
+            else
+            {
+                return gmx_wcmatch(str_.c_str(), value) == 0;
+            }
+        }
+
+    private:
+        //! The raw string passed for the matcher.
+        std::string                     str_;
+        //! Regular expression compiled from \p str_, if applicable.
+        boost::shared_ptr<gmx::Regex>   regex_;
+};
+
 /*! \internal \brief
  * Data structure for string keyword expression evaluation.
  */
-typedef struct t_methoddata_kwstr
+struct t_methoddata_kwstr
 {
     /** Matching type for the strings. */
     gmx::SelectionStringMatchType       matchType;
     /** Array of values for the keyword. */
     char             **v;
-    /** Number of elements in the \p val array. */
-    int                n;
-    /*! \internal \brief
-     * Array of strings/regular expressions to match against.
-     */
-    struct t_methoddata_kwstr_match {
-        /** true if the expression is a regular expression, false otherwise. */
-        bool           bRegExp;
-        /** The value to match against. */
-        union {
-#ifdef USE_REGEX
-            /** Compiled regular expression if \p bRegExp is true. */
-            regex_t    r;
-#endif
-            /** The string if \p bRegExp is false; */
-            const char *s;
-        }              u;
-    }                 *m;
-    /**< Array of strings/regular expressions to match against.*/
-} t_methoddata_kwstr;
+    /** Array of strings/regular expressions to match against.*/
+    std::vector<StringKeywordMatchItem> matches;
+};
+
+} // namespace
 
 /** Parameters for integer keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_int[] = {
@@ -450,16 +504,14 @@ evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 /*!
  * \param[in] npar  Not used.
  * \param     param Not used.
- * \returns Pointer to the allocated data (\ref t_methoddata_kwstr).
+ * \returns Pointer to the allocated data (t_methoddata_kwstr).
  *
- * Allocates memory for a \ref t_methoddata_kwstr structure.
+ * Allocates memory for a t_methoddata_kwstr structure.
  */
 static void *
 init_data_kwstr(int npar, gmx_ana_selparam_t *param)
 {
-    t_methoddata_kwstr *data;
-
-    snew(data, 1);
+    t_methoddata_kwstr *data = new t_methoddata_kwstr();
     data->matchType = gmx::eStringMatchType_Auto;
     return data;
 }
@@ -488,83 +540,36 @@ _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
  * \param[in] top   Not used.
  * \param[in] npar  Not used (should be 2).
  * \param[in] param Method parameters (should point to \ref smparams_keyword_str).
- * \param[in] data  Should point to \ref t_methoddata_kwstr.
+ * \param[in] data  Should point to t_methoddata_kwstr.
  */
 static void
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    int                 i;
 
     d->v   = param[0].val.u.s;
-    d->n   = param[1].val.nr;
     /* Return if this is not the first time */
-    if (d->m)
+    if (!d->matches.empty())
     {
         return;
     }
-    snew(d->m, d->n);
-    for (i = 0; i < d->n; ++i)
+    int n = param[1].val.nr;
+    d->matches.reserve(n);
+    for (int i = 0; i < n; ++i)
     {
         const char *s = param[1].val.u.s[i];
-        bool bRegExp = (d->matchType == gmx::eStringMatchType_RegularExpression);
-        if (d->matchType == gmx::eStringMatchType_Auto)
-        {
-            for (size_t j = 0; j < strlen(s); ++j)
-            {
-                if (ispunct(s[j]) && s[j] != '?' && s[j] != '*')
-                {
-                    bRegExp = true;
-                    break;
-                }
-            }
-        }
-        if (bRegExp)
-        {
-#ifdef USE_REGEX
-            std::string buf(gmx::formatString("^%s$", s));
-            if (regcomp(&d->m[i].u.r, buf.c_str(), REG_EXTENDED | REG_NOSUB) != 0)
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                                "Error in regular expression \"%s\"", s)));
-            }
-#else
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                            "No regular expression support, cannot match \"%s\"", s)));
-#endif
-        }
-        else
-        {
-            d->m[i].u.s = s;
-        }
-        d->m[i].bRegExp = bRegExp;
+        d->matches.push_back(StringKeywordMatchItem(d->matchType, s));
     }
 }
 
 /*!
- * \param data Data to free (should point to a \ref t_methoddata_kwstr).
- *
- * Frees the memory allocated for t_methoddata_kwstr::val.
+ * \param data Data to free (should point to a t_methoddata_kwstr).
  */
 static void
 free_data_kwstr(void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    int                 i;
-
-    for (i = 0; i < d->n; ++i)
-    {
-        if (d->m[i].bRegExp)
-        {
-#ifdef USE_REGEX
-            /* This branch should only be taken if regular expressions
-             * are available, but the ifdef is still needed. */
-            regfree(&d->m[i].u.r);
-#endif
-        }
-    }
-    sfree(d->m);
-    sfree(d);
+    delete d;
 }
 
 /*!
@@ -581,35 +586,17 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    int                 i, j;
-    bool                bFound;
 
     out->u.g->isize = 0;
-    for (i = 0; i < g->isize; ++i)
+    for (int i = 0; i < g->isize; ++i)
     {
-        bFound = false;
-        for (j = 0; j < d->n && !bFound; ++j)
+        for (size_t j = 0; j < d->matches.size(); ++j)
         {
-            if (d->m[j].bRegExp)
+            if (d->matches[j].match(d->matchType, d->v[i]))
             {
-#ifdef USE_REGEX
-                /* This branch should only be taken if regular expressions
-                 * are available, but the ifdef is still needed. */
-                bFound = (regexec(&d->m[j].u.r, d->v[i], 0, NULL, 0) == 0);
-#endif
+                out->u.g->index[out->u.g->isize++] = g->index[i];
+                break;
             }
-            else if (d->matchType == gmx::eStringMatchType_Exact)
-            {
-                bFound = (strcmp(d->m[j].u.s, d->v[i]) == 0);
-            }
-            else
-            {
-                bFound = (gmx_wcmatch(d->m[j].u.s, d->v[i]) == 0);
-            }
-        }
-        if (bFound)
-        {
-            out->u.g->index[out->u.g->isize++] = g->index[i];
         }
     }
 }
