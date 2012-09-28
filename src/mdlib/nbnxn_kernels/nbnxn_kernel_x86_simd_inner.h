@@ -45,10 +45,11 @@
 #define EXCL_FORCES
 #endif
 
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !defined __GNUC__
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !(defined __GNUC__ && (defined CALC_COUL_TAB || (defined CALC_COUL_RF && defined GMX_MM128_HERE)))
 /* Without exclusions and energies we only need to mask the cut-off,
  * this is faster with blendv (only available with SSE4.1 and later).
- * With gcc blendv is much slower; tested with gcc 4.6.2 and 4.6.3.
+ * With gcc and PME or RF in 128-bit, blendv is slower;
+ * tested with gcc 4.6.2, 4.6.3 and 4.7.1.
  */
 #define CUTOFF_BLENDV
 #endif
