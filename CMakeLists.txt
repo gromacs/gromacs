@@ -330,7 +330,6 @@ check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(pthread.h    HAVE_PTHREAD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
 check_include_files(regex.h      HAVE_REGEX_H)
-check_include_files(sys/types.h  HAVE_SYS_TYPES_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h  		 HAVE_IO_H)
 
