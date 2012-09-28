@@ -18,6 +18,9 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <assert.h>
@@ -380,6 +383,51 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     }
 }
 
+/* Return the number of hwardware threads supported by the current CPU.
+ * We assume that this is equal with the number of CPUs reported to be
+ * online by the OS at the time of the call.
+ */
+static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
+{
+     int ret = 0;
+
+#if !(defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) || defined (__CYGWIN__) || defined (__CYGWIN32__)
+#ifdef HAVE_SYSCONF
+#if defined(_SC_NPROCESSORS_ONLN)
+    ret = sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROC_ONLN)
+    ret = sysconf(_SC_NPROC_ONLN);
+#elif defined(_SC_NPROCESSORS_CONF)
+    ret = sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(_SC_NPROC_CONF)
+    ret = sysconf(_SC_NPROC_CONF);
+#endif
+#endif /* HAVE_SYSCONF */
+#else
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo( &sysinfo );
+    ret = sysinfo.dwNumberOfProcessors;
+#endif /* WIN */
+
+    if (debug)
+    {
+        fprintf(debug, "Detected %d processors, will use this as the number "
+                "of supported hardware threads.\n", ret);
+    }
+
+#ifdef GMX_OMPENMP
+    if (ret != gmx_omp_get_num_procs())
+    {
+        md_print_warn(cr, fplog,
+                      "Number of CPUs detected (%d) does not match the number reported by OpenMP (%d).\n"
+                      "Consider setting the launch configuration manually!",
+                      ret, gmx_omp_get_num_procs());
+    }
+#endif
+
+    return ret;
+}
+
 void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
                          const t_commrec *cr,
                          gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
@@ -394,11 +442,15 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
 
     assert(hwinfo);
 
-    /* detect CPU; no fuss, we don't detect system-wide -- sloppy, but that's it for now */
+    /* detect CPUID info; no fuss, we don't detect system-wide
+     * -- sloppy, but that's it for now */
     if (gmx_cpuid_init(&hwinfo->cpuid_info) != 0)
     {
         gmx_fatal_collective(FARGS, cr, NULL, "CPUID detection failed!");
     }
+
+    /* detect number of hardware threads */
+    hwinfo->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
 
     /* detect GPUs */
     hwinfo->gpu_info.ncuda_dev_use  = 0;

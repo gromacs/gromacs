@@ -49,12 +49,12 @@
 #include "statutil.h"
 #include "gmx_omp.h"
 #include "gmx_omp_nthreads.h"
+#include "md_logging.h"
 
 /*! Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */
 typedef struct
 {
-    int max_cores;          /*! Maximum number of cores per node detected in the system. */
     int gnth;               /*! Global num. of threads per PP or PP+PME process/tMPI thread. */
     int gnth_pme;           /*! Global num. of threads per PME only process/tMPI thread. */
 
@@ -90,7 +90,7 @@ static const char *mod_name[emntNR] =
  *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted
  * */
-static omp_module_nthreads_t modth = { 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
+static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
 
 /*! Determine the number of threads for module \mod.
@@ -113,6 +113,13 @@ static int pick_module_nthreads(FILE *fplog, int m,
     char *env;
     int  nth;
     char sbuf[STRLEN];
+    gmx_bool bOMP;
+
+#ifdef GMX_OPENMP
+    bOMP = TRUE;
+#else
+    bOMP = FALSE;
+#endif /* GMX_OPENMP */
 
     /* The default should never be set through a GMX_*_NUM_THREADS env var
      * as it's always equal with gnth. */
@@ -126,10 +133,11 @@ static int pick_module_nthreads(FILE *fplog, int m,
     {
         sscanf(env, "%d", &nth);
 
-#ifndef GMX_OPENMP
-        gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
-                    modth_env_var[m], nth, ShortProgram());
-#endif
+        if (!bOMP)
+        {
+            gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
+                        modth_env_var[m], nth, ShortProgram());
+        }
 
         /* with the verlet codepath, when any GMX_*_NUM_THREADS env var is set,
          * OMP_NUM_THREADS also has to be set */
@@ -208,13 +216,14 @@ void gmx_omp_nthreads_read_env(int *nthreads_omp)
 }
 
 void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
+                           int nthreads_hw_avail,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
     int  nth, nth_pmeonly, gmx_maxth, nppn;
-    char sbuf[STRLEN], sbuf1[STRLEN];
+    char *env;
     gmx_bool bSepPME, bOMP;
 
 #ifdef GMX_OPENMP
@@ -222,6 +231,9 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 #else
     bOMP = FALSE;
 #endif /* GMX_OPENMP */
+
+    /* number of processes per node */
+    nppn = cr->nnodes_intra;
 
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
               (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
@@ -239,19 +251,15 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             return;
         }
 
-        /* gmx_omp_nthreads_detecthw should have been called before */
-        if (modth.max_cores == 0)
-        {
-            gmx_incons("gmx_omp_nthreads_detecthw has not been called before gmx_omp_nthreads_init!");
-        }
-
         /* With full OpenMP support (verlet scheme) set the number of threads
          * per process / default:
          * - 1 if not compiled with OpenMP or
-         * - OMP_NUM_THREADS if the env. var is set, otherwise
+         * - OMP_NUM_THREADS if the env. var is set, or
+         * - omp_nthreads_req = #of threads requested by the user on the mdrun
+         *   command line, otherwise
          * - take the max number of available threads and distribute them
          *   on the processes/tMPI threads.
-         * - the GMX_*_NUM_THREADS env var overrides the number of threads of
+         * ~ The GMX_*_NUM_THREADS env var overrides the number of threads of
          *   the respective module and it has to be used in conjunction with
          *   OMP_NUM_THREADS.
          *
@@ -264,16 +272,16 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
          * - 1
          */
         nth = 1;
-        if (getenv("OMP_NUM_THREADS") != NULL)
+        if ((env = getenv("OMP_NUM_THREADS")) != NULL)
         {
-            if (!bOMP)
+            if (!bOMP && (strncmp(env, "1", 1) != 0))
             {
-                gmx_warning("OMP_NUM_THREADS is set, but %s is compiled without OpenMP!",
+                gmx_warning("OMP_NUM_THREADS is set, but %s was compiled without OpenMP support!",
                             ShortProgram());
             }
             else
             {
-                nth = modth.max_cores;
+                nth = gmx_omp_get_max_threads();
             }
         }
         else if (omp_nthreads_req > 0)
@@ -283,42 +291,15 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         else if (bFullOmpSupport && bOMP)
         {
             /* max available threads per node */
-            nth = modth.max_cores;
+            nth = nthreads_hw_avail;
 
-            /* get the number of processes per node */
-#ifdef GMX_MPI
-            if (PAR(cr))
-            {
-                /* MPI or tMPI */
-                nppn = cr->nnodes_intra;
-            }
-            else
-#endif
-            {
-                /* neither MPI nor tMPI */
-                nppn = 1;
-            }
-
-            /* divide the threads within the MPI processes/tMPI threads */
+            /* divide the threads among the MPI processes/tMPI threads */
             if (nth >= nppn)
             {
                 nth /= nppn;
             }
             else
             {
-#ifdef GMX_MPI
-#ifdef GMX_THREAD_MPI
-                sprintf(sbuf, "thread-MPI threads");
-                sbuf1[0] = '\0';
-#else
-                sprintf(sbuf, "MPI processes");
-                sprintf(sbuf1, " per node");
-#endif
-#endif
-                /* warn about oversubscription */
-                gmx_warning("Oversubscribing the available %d logical CPU cores%s with %d %s.\n"
-                            "         This will cause considerable performance loss!",
-                            modth.max_cores, sbuf1, nppn, sbuf);
                 nth = 1;
             }
         }
@@ -363,26 +344,27 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
 
-#ifdef GMX_OPENMP
         /* set the number of threads globally */
+        if (bOMP)
+        {
 #ifndef GMX_THREAD_MPI
-        if (bThisNodePMEOnly)
-        {
-            gmx_omp_set_num_threads(modth.gnth_pme);
-        }
-        else
-#endif /* GMX_THREAD_MPI */
-        {
-            if (bFullOmpSupport)
+            if (bThisNodePMEOnly)
             {
-                gmx_omp_set_num_threads(nth);
+                gmx_omp_set_num_threads(modth.gnth_pme);
             }
             else
+#endif /* GMX_THREAD_MPI */
             {
-                gmx_omp_set_num_threads(1);
+                if (bFullOmpSupport)
+                {
+                    gmx_omp_set_num_threads(nth);
+                }
+                else
+                {
+                    gmx_omp_set_num_threads(1);
+                }
             }
         }
-#endif /* GMX_OPENMP */
 
         modth.initialized = TRUE;
     }
@@ -395,19 +377,13 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 #endif
 
     /* inform the user about the settings */
-    if (SIMMASTER(cr))
+    if (SIMMASTER(cr) && bOMP)
     {
 #ifdef GMX_THREAD_MPI
         const char *mpi_str="per tMPI thread";
 #else
         const char *mpi_str="per MPI process";
 #endif
-
-        if (!bOMP && bFullOmpSupport)
-        {
-            fprintf(stderr, "Not compiled with OpenMP multithreading\n");
-            return;
-        }
 
         /* for group scheme we print PME threads info only */
         if (bFullOmpSupport)
@@ -421,18 +397,38 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             fprintf(stderr, "Using %d OpenMP thread%s %s for PME\n",
                     modth.gnth_pme,modth.gnth_pme > 1 ? "s" : "",
                     cr->nnodes > 1 ? mpi_str : "");
-            
         }
     }
-}
 
-void gmx_omp_nthreads_detecthw()
-{
-#ifdef GMX_OPENMP
-    modth.max_cores = gmx_omp_get_max_threads();
+    /* detect and warn about oversubscription
+     * TODO: enable this for separate PME nodes as well! */
+    if (!bSepPME && cr->nodeid_intra == 0)
+    {
+        char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
+
+        if (modth.gnth*nppn > nthreads_hw_avail)
+        {
+            sprintf(sbuf, "threads");
+            sbuf1[0] = '\0';
+            sprintf(sbuf2, "O");
+#ifdef GMX_MPI
+            if (modth.gnth == 1)
+            {
+#ifdef GMX_THREAD_MPI
+                sprintf(sbuf, "thread-MPI threads");
 #else
-    modth.max_cores = 1;
+                sprintf(sbuf, "MPI processes");
+                sprintf(sbuf1, " per node");
+                sprintf(sbuf2, "On node %d: o", cr->sim_nodeid);
 #endif
+            }
+#endif
+            md_print_warn(cr, fplog,
+                          "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
+                          "         This will cause considerable performance loss!",
+                          sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
+        }
+    }
 }
 
 int gmx_omp_nthreads_get(int mod)

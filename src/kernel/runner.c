@@ -797,18 +797,29 @@ static void set_cpu_affinity(FILE *fplog,
          * threads to physical cores when using more threads than physical
          * cores or when the user requests so.
          */
-        /* TODO: implement more robust hardware threads count detection */
-        nthread_hw_max = gmx_omp_get_num_procs();
+        nthread_hw_max = hwinfo->nthreads_hw_avail;
         nphyscore = -1;
         if (hw_opt->bPinHyperthreading ||
-            (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED && nthread_node > nthread_hw_max/2 && getenv("GMX_DISABLE_PINHT") == NULL))
+            (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED &&
+             nthread_node > nthread_hw_max/2 && getenv("GMX_DISABLE_PINHT") == NULL))
         {
             if (gmx_cpuid_x86_smt(hwinfo->cpuid_info) != GMX_CPUID_X86_SMT_ENABLED)
             {
                 /* We print to stderr on all processes, as we might have
                  * different settings on different physical nodes.
                  */
-                md_print_warn(NULL, fplog, "You requested thread pinning for Intel Hyper-Threading layout, but we could not detect that this CPU supports Intel Hyper-Threading\n");
+                if (gmx_cpuid_vendor(hwinfo->cpuid_info) != GMX_CPUID_VENDOR_INTEL)
+                {
+                    md_print_warn(NULL, fplog, "Pinning for Hyper-Threading layout requested, "
+                                  "but non-Intel CPU detected (vendor: %s)\n",
+                                  gmx_cpuid_vendor_string[gmx_cpuid_vendor(hwinfo->cpuid_info)]);
+                }
+                else
+                {
+                    md_print_warn(NULL, fplog, "Pinning for Hyper-Threading layout requested, "
+                                  "but the CPU detected does not have Intel Hyper-Threading support "
+                                  "(or it is turned off)\n");
+                }
             }
             nphyscore = nthread_hw_max/2;
 
@@ -1213,10 +1224,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    /* TODO this should use the hwinfo->cpu_info as soon as this will include
-     * information on the number of cores and threads/package */
-    gmx_omp_nthreads_detecthw();
-
     /* now make sure the state is initialized and propagated */
     set_state_entries(state,inputrec,cr->nnodes);
 
@@ -1451,6 +1458,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 
     gmx_omp_nthreads_init(fplog, cr,
+                          hwinfo->nthreads_hw_avail,
                           hw_opt->nthreads_omp,
                           hw_opt->nthreads_omp_pme,
                           (cr->duty & DUTY_PP) == 0,
