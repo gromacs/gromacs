@@ -72,6 +72,9 @@ class AnalysisDataParallelOptions
         //! Returns the number of frames that may be constructed concurrently.
         int parallelizationFactor() const { return parallelizationFactor_; }
 
+        //! Returns whether MPI is used for parallelization
+        bool useMPI() const;
+
     private:
         int                     parallelizationFactor_;
 };
