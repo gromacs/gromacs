@@ -308,8 +308,8 @@ AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) co
     GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
     GMX_ASSERT(!impl_->bInFrame_,
                "notifyFrameStart() called while inside a frame");
-    GMX_ASSERT(header.index() == impl_->nframes_,
-               "Out of order frames");
+//    GMX_ASSERT(header.index() == impl_->nframes_,
+//               "Out of order frames");
     impl_->bInFrame_ = true;
     impl_->currIndex_ = header.index();
 

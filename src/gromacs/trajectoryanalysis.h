@@ -83,7 +83,7 @@
 #include "trajectoryanalysis/analysissettings.h"
 #include "trajectoryanalysis/cmdlinerunner.h"
 #include "utility/exceptions.h"
-#include "utility/programinfo.h"
+#include "utility/init.h"
 #include "utility/stringutil.h"
 
 #endif
