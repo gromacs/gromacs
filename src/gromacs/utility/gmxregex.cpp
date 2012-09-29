@@ -41,11 +41,14 @@
 #include "config.h"
 #endif
 
-#if defined(HAVE_REGEX_H)
+#if defined(HAVE_POSIX_REGEX)
 // old Mac needs sys/types.h before regex.h
 #include <sys/types.h>
 #include <regex.h>
 #define USE_POSIX_REGEX
+#elif defined(HAVE_CXX11_REGEX)
+#include <regex>
+#define USE_CXX11_REGEX
 #endif
 
 #include "exceptions.h"
@@ -57,7 +60,7 @@ namespace gmx
 // static
 bool Regex::isSupported()
 {
-#if defined(USE_POSIX_REGEX)
+#if defined(USE_POSIX_REGEX) || defined(USE_CXX11_REGEX)
     return true;
 #else
     return false;
@@ -105,6 +108,47 @@ class Regex::Impl
         }
 
         regex_t                 regex_;
+};
+#elif defined(USE_CXX11_REGEX)
+class Regex::Impl
+{
+    public:
+        explicit Impl(const char *value)
+        try : regex_(value, std::regex::nosubs | std::regex::extended)
+        {
+        }
+        catch (const std::regex_error &)
+        {
+            // TODO: Better error messages.
+            GMX_THROW(InvalidInputError(formatString(
+                            "Error in regular expression \"%s\"", value)));
+        }
+        explicit Impl(const std::string &value)
+        try : regex_(value, std::regex::nosubs | std::regex::extended)
+        {
+        }
+        catch (const std::regex_error &)
+        {
+            // TODO: Better error messages.
+            GMX_THROW(InvalidInputError(formatString(
+                            "Error in regular expression \"%s\"", value)));
+        }
+
+        bool match(const char *value) const
+        {
+            try
+            {
+                return std::regex_match(value, regex_);
+            }
+            catch (const std::regex_error &)
+            {
+                // TODO: Handle errors.
+                return false;
+            }
+        }
+
+    private:
+        std::regex              regex_;
 };
 #else
 class Regex::Impl
