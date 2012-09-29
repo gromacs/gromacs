@@ -325,14 +325,16 @@ endif(GMX_OPENMM)
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
 include(CheckIncludeFiles)
+include(CheckIncludeFileCXX)
 check_include_files(unistd.h	 HAVE_UNISTD_H)
 check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(pthread.h    HAVE_PTHREAD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
-check_include_files(regex.h      HAVE_REGEX_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h  		 HAVE_IO_H)
 
+check_include_files(regex.h      HAVE_POSIX_REGEX)
+check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(CheckFunctionExists)
 check_function_exists(strdup            HAVE_STRDUP)
