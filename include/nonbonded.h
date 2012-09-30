@@ -45,9 +45,27 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+} /* fixes auto-indentation problems */
+#endif
 
-void gmx_setup_kernels(FILE *fplog,t_forcerec *fr,gmx_bool bGenericKernelOnly);
-void gmx_setup_adress_kernels(FILE *fplog,gmx_bool bGenericKernelOnly);
+
+
+void
+gmx_nonbonded_setup(FILE *         fplog,
+                    t_forcerec *   fr,
+                    gmx_bool       bGenericKernelOnly);
+
+
+
+
+
+void
+gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
+                                  t_nblist *   nl);
+
+
+
 
 #define GMX_DONB_LR             (1<<0)
 #define GMX_DONB_FORCES         (1<<1)
