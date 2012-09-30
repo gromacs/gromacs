@@ -5009,7 +5009,7 @@ static double force_flop_count(t_nrnb *nrnb)
     const char *name;
 
     sum = 0;
-    for(i=eNR_NBKERNEL010; i<eNR_NBKERNEL_FREE_ENERGY; i++)
+    for(i=0; i<eNR_NBKERNEL_FREE_ENERGY; i++)
     {
         /* To get closer to the real timings, we half the count
          * for the normal loops and again half it for water loops.

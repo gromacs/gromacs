@@ -1205,7 +1205,7 @@ static void deform(gmx_update_t upd,
     }
 }
 
-static void combine_forces(int nstlist,
+static void combine_forces(int nstcalclr,
                            gmx_constr_t constr,
                            t_inputrec *ir,t_mdatoms *md,t_idef *idef,
                            t_commrec *cr,
@@ -1235,10 +1235,10 @@ static void combine_forces(int nstlist,
                   NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
     }
 
-    /* Add nstlist-1 times the LR force to the sum of both forces
+    /* Add nstcalclr-1 times the LR force to the sum of both forces
      * and store the result in forces_lr.
      */
-    nm1 = nstlist - 1;
+    nm1 = nstcalclr - 1;
     for(i=start; i<nrend; i++)
     {
         for(d=0; d<DIM; d++)
@@ -1740,14 +1740,14 @@ void update_coords(FILE         *fplog,
     bNH = inputrec->etc == etcNOSEHOOVER;
     bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK));
 
-    if (bDoLR && inputrec->nstlist > 1 && !EI_VV(inputrec->eI))  /* get this working with VV? */
+    if (bDoLR && inputrec->nstcalclr > 1 && !EI_VV(inputrec->eI))  /* get this working with VV? */
     {
-        /* Store the total force + nstlist-1 times the LR force
+        /* Store the total force + nstcalclr-1 times the LR force
          * in forces_lr, so it can be used in a normal update algorithm
          * to produce twin time stepping.
          */
         /* is this correct in the new construction? MRS */
-        combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,
+        combine_forces(inputrec->nstcalclr,constr,inputrec,md,idef,cr,
                        step,state,bMolPBC,
                        start,nrend,f,f_lr,nrnb);
         force = f_lr;
