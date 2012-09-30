@@ -39,6 +39,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+} /* fixes auto-indentation problems */
+#endif
 
 /* note: these enums should correspond to the names in gmxlib/names.c */
 
@@ -337,6 +340,80 @@ enum {
 enum {
   eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
 };
+
+
+/* The interactions contained in a (possibly merged) table */
+enum gmx_table_interaction
+{
+    GMX_TABLE_INTERACTION_ELEC,
+    GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWDISP,
+    GMX_TABLE_INTERACTION_NR
+};
+
+/* Different formats for table data. Cubic spline tables are typically stored
+ * with the four Y,F,G,H intermediate values (check tables.c for format), which
+ * makes it easy to load with a single 4-way SIMD instruction too.
+ * Linear tables only need one value per table point, or two if both V and F
+ * are calculated. However, with SIMD instructions this makes the loads unaligned,
+ * and in that case we store the data as F, D=F(i+1)-F(i), V, and then a blank value,
+ * which again makes it possible to load as a single instruction.
+ */
+enum gmx_table_format
+{
+    GMX_TABLE_FORMAT_CUBICSPLINE_YFGH,
+    GMX_TABLE_FORMAT_LINEAR_VF,
+    GMX_TABLE_FORMAT_LINEAR_V,
+    GMX_TABLE_FORMAT_LINEAR_F,
+    GMX_TABLE_FORMAT_LINEAR_FDV0,
+    GMX_TABLE_FORMAT_NR
+};
+
+/* Neighborlist geometry type */
+enum gmx_nblist_kernel_geometry
+{
+    GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE,
+    GMX_NBLIST_GEOMETRY_WATER3_PARTICLE,
+    GMX_NBLIST_GEOMETRY_WATER3_WATER3,
+    GMX_NBLIST_GEOMETRY_WATER4_PARTICLE,
+    GMX_NBLIST_GEOMETRY_WATER4_WATER4,
+    GMX_NBLIST_GEOMETRY_CG_CG,
+    GMX_NBLIST_GEOMETRY_NR
+};
+
+/* Types of electrostatics calculations available inside nonbonded kernels.
+ * Note that these do NOT necessarily correspond to the user selections in the MDP file;
+ * many interactions for instance map to tabulated kernels.
+ */
+enum gmx_nb_kernel_elec
+{
+    GMX_NBKERNEL_ELEC_NONE,
+    GMX_NBKERNEL_ELEC_COULOMB,
+    GMX_NBKERNEL_ELEC_REACTIONFIELD,
+    GMX_NBKERNEL_ELEC_CUBICSPLINETABLE,
+    GMX_NBKERNEL_ELEC_GENERALIZEDBORN,
+    GMX_NBKERNEL_ELEC_EWALD,
+    GMX_NBKERNEL_ELEC_NR
+};
+
+/* Types of vdw calculations available inside nonbonded kernels.
+ * Note that these do NOT necessarily correspond to the user selections in the MDP file;
+ * many interactions for instance map to tabulated kernels.
+ */
+enum gmx_nb_kernel_vdw
+{
+    GMX_NBKERNEL_VDW_NONE,
+    GMX_NBKERNEL_VDW_LENNARDJONES,
+    GMX_NBKERNEL_VDW_BUCKINGHAM,
+    GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
+    GMX_NBKERNEL_VDW_NR
+};
+
+
 
 #ifdef __cplusplus
 }

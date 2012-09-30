@@ -77,7 +77,6 @@ extern const char *elmceq_names[elmceqNR+1];
 extern const char *separate_dhdl_file_names[esepdhdlfileNR+1];
 extern const char *dhdl_derivatives_names[edhdlderivativesNR+1];
 extern const char *esol_names[esolNR+1];
-extern const char *enlist_names[enlistNR+1];
 extern const char *edispc_names[edispcNR+1];
 extern const char *ecm_names[ecmNR+1];
 extern const char *eann_names[eannNR+1];
@@ -97,6 +96,9 @@ extern const char *eMultentOpt_names[eMultentOptNR+1];
 extern const char *eAdresstype_names[eAdressNR+1];
 extern const char *eAdressICtype_names[eAdressICNR+1];
 extern const char *eAdressSITEtype_names[eAdressSITENR+1];
+extern const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1];
+extern const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1];
+extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])

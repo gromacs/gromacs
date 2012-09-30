@@ -1146,8 +1146,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         {
             gmx_fatal(FARGS,"Bad gb algorithm for all-vs-all interactions");
         }
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,md->homenr);
-
+        /* FIXME: Add flop contribution from outer loops too */
         return 0;
     }
     
@@ -1289,7 +1288,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
             default:
                 break;
         }
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,nl->nri);
+        /* FIXME: Add flop contribution from outer loop too */
     }
     
     return 0;        
@@ -1643,7 +1642,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
   
   /* Calculate the bonded GB-interactions using either table or analytical formula */
     enerd->term[F_GBPOL]       += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                                     fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+                                     fr->invsqrta,fr->dvda,fr->gbtab.data,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
     
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
     enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac);         
@@ -1679,7 +1678,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 #endif
         cnt = md->homenr*(md->nr/2+1);
         inc_nrnb(nrnb,eNR_BORN_AVA_CHAINRULE,cnt);
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,md->homenr);
+        /* FIXME: Add flop contributions from outer loop too */
         return;
     }
     
@@ -1707,8 +1706,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     if(!fr->bAllvsAll)
     {
         inc_nrnb(nrnb,eNR_BORN_CHAINRULE,fr->gblist.nrj);
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,fr->gblist.nri);
-
+        /* FIXME: Add flop contributions from outer loop too */
     }
 }
 

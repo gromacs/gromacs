@@ -27,7 +27,7 @@
  * 
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
@@ -1120,42 +1120,138 @@ static void set_bham_b_max(FILE *fplog,t_forcerec *fr,
 
 static void make_nbf_tables(FILE *fp,const output_env_t oenv,
                             t_forcerec *fr,real rtab,
-			    const t_commrec *cr,
-			    const char *tabfn,char *eg1,char *eg2,
-			    t_nblists *nbl)
+                            const t_commrec *cr,
+                            const char *tabfn,char *eg1,char *eg2,
+                            t_nblists *nbl)
 {
-  char buf[STRLEN];
-  int i,j;
+    char buf[STRLEN];
+    int i,j;
 
-  if (tabfn == NULL) {
-    if (debug)
-      fprintf(debug,"No table file name passed, can not read table, can not do non-bonded interactions\n");
-    return;
-  }
-    
-  sprintf(buf,"%s",tabfn);
-  if (eg1 && eg2)
+    if (tabfn == NULL) {
+        if (debug)
+            fprintf(debug,"No table file name passed, can not read table, can not do non-bonded interactions\n");
+        return;
+    }
+
+    sprintf(buf,"%s",tabfn);
+    if (eg1 && eg2)
     /* Append the two energy group names */
-    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
-	    eg1,eg2,ftp2ext(efXVG));
-  nbl->tab = make_tables(fp,oenv,fr,MASTER(cr),buf,rtab,0);
-  /* Copy the contents of the table to separate coulomb and LJ tables too,
-   * to improve cache performance.
-   */
+        sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
+                eg1,eg2,ftp2ext(efXVG));
+    nbl->table_elec_vdw = make_tables(fp,oenv,fr,MASTER(cr),buf,rtab,0);
+    /* Copy the contents of the table to separate coulomb and LJ tables too,
+     * to improve cache performance.
+     */
+    /* For performance reasons we want
+     * the table data to be aligned to 16-byte. The pointers could be freed
+     * but currently aren't.
+     */
+    nbl->table_elec.interaction = GMX_TABLE_INTERACTION_ELEC;
+    nbl->table_elec.format = nbl->table_elec_vdw.format;
+    nbl->table_elec.r = nbl->table_elec_vdw.r;
+    nbl->table_elec.n = nbl->table_elec_vdw.n;
+    nbl->table_elec.scale = nbl->table_elec_vdw.scale;
+    nbl->table_elec.scale_exp = nbl->table_elec_vdw.scale_exp;
+    nbl->table_elec.formatsize = nbl->table_elec_vdw.formatsize;
+    nbl->table_elec.ninteractions = 1;
+    nbl->table_elec.stride = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
+    snew_aligned(nbl->table_elec.data,nbl->table_elec.stride*(nbl->table_elec.n+1),16);
 
-  /* For performance reasons we want
-   * the table data to be aligned to 16-byte. The pointer could be freed
-   * but currently isn't.
-   */
-  snew_aligned(nbl->vdwtab,8*(nbl->tab.n+1),16);
-  snew_aligned(nbl->coultab,4*(nbl->tab.n+1),16);
-  
-  for(i=0; i<=nbl->tab.n; i++) {
-    for(j=0; j<4; j++)
-      nbl->coultab[4*i+j] = nbl->tab.tab[12*i+j];
-    for(j=0; j<8; j++)
-      nbl->vdwtab [8*i+j] = nbl->tab.tab[12*i+4+j];
-  }
+    nbl->table_vdw.interaction = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
+    nbl->table_vdw.format = nbl->table_elec_vdw.format;
+    nbl->table_vdw.r = nbl->table_elec_vdw.r;
+    nbl->table_vdw.n = nbl->table_elec_vdw.n;
+    nbl->table_vdw.scale = nbl->table_elec_vdw.scale;
+    nbl->table_vdw.scale_exp = nbl->table_elec_vdw.scale_exp;
+    nbl->table_vdw.formatsize = nbl->table_elec_vdw.formatsize;
+    nbl->table_vdw.ninteractions = 2;
+    nbl->table_vdw.stride = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
+    snew_aligned(nbl->table_vdw.data,nbl->table_vdw.stride*(nbl->table_vdw.n+1),16);
+
+    for(i=0; i<=nbl->table_elec_vdw.n; i++)
+    {
+        for(j=0; j<4; j++)
+            nbl->table_elec.data[4*i+j] = nbl->table_elec_vdw.data[12*i+j];
+        for(j=0; j<8; j++)
+            nbl->table_vdw.data[8*i+j] = nbl->table_elec_vdw.data[12*i+4+j];
+    }
+
+    /* Do we need Ewald tables? */
+    if(EEL_PME(fr->eeltype) || fr->eeltype == eelEWALD)
+    {
+        /* Create a FDV0 table */
+        nbl->table_ewald_linear_fdv0.interaction   = GMX_TABLE_INTERACTION_ELEC;
+        nbl->table_ewald_linear_fdv0.format        = GMX_TABLE_FORMAT_LINEAR_FDV0;
+        nbl->table_ewald_linear_fdv0.r             = rtab;
+        nbl->table_ewald_linear_fdv0.scale         = ewald_spline3_table_scale(fr->ewaldcoeff,fr->rcoulomb);
+        nbl->table_ewald_linear_fdv0.scale_exp     = 0;
+        nbl->table_ewald_linear_fdv0.n             = rtab*nbl->table_ewald_linear_fdv0.scale + 1;
+        nbl->table_ewald_linear_fdv0.formatsize    = 4;
+        nbl->table_ewald_linear_fdv0.ninteractions = 1;
+        nbl->table_ewald_linear_fdv0.stride =
+        nbl->table_ewald_linear_fdv0.formatsize * nbl->table_ewald_linear_fdv0.ninteractions;
+        snew_aligned(nbl->table_ewald_linear_fdv0.data,
+                     nbl->table_ewald_linear_fdv0.n*nbl->table_ewald_linear_fdv0.stride,16);
+
+        table_spline3_fill_ewald_lr(nbl->table_ewald_linear_fdv0.data,NULL,
+                                    nbl->table_ewald_linear_fdv0.n,tableformatFDV0,
+                                    1/nbl->table_ewald_linear_fdv0.scale,fr->ewaldcoeff);
+
+        /* Copy to VF table */
+        nbl->table_ewald_linear_vf.interaction   = GMX_TABLE_INTERACTION_ELEC;
+        nbl->table_ewald_linear_vf.format        = GMX_TABLE_FORMAT_LINEAR_VF;
+        nbl->table_ewald_linear_vf.r             = rtab;
+        nbl->table_ewald_linear_vf.scale         = nbl->table_ewald_linear_fdv0.scale;
+        nbl->table_ewald_linear_vf.scale_exp     = 0;
+        nbl->table_ewald_linear_vf.n             = nbl->table_ewald_linear_fdv0.n;
+        nbl->table_ewald_linear_vf.formatsize    = 2;
+        nbl->table_ewald_linear_vf.ninteractions = 1;
+        nbl->table_ewald_linear_vf.stride =
+        nbl->table_ewald_linear_vf.formatsize * nbl->table_ewald_linear_vf.ninteractions;
+        snew_aligned(nbl->table_ewald_linear_vf.data,
+                     nbl->table_ewald_linear_vf.n*nbl->table_ewald_linear_vf.stride,16);
+        for(i=0;i<nbl->table_ewald_linear_vf.n;i++)
+        {
+            nbl->table_ewald_linear_vf.data[2*i]   = nbl->table_ewald_linear_fdv0.data[4*i+2];
+            nbl->table_ewald_linear_vf.data[2*i+1] = nbl->table_ewald_linear_fdv0.data[4*i];
+        }
+
+        /* Copy to V table */
+        nbl->table_ewald_linear_v.interaction   = GMX_TABLE_INTERACTION_ELEC;
+        nbl->table_ewald_linear_v.format        = GMX_TABLE_FORMAT_LINEAR_V;
+        nbl->table_ewald_linear_v.r             = rtab;
+        nbl->table_ewald_linear_v.scale         = nbl->table_ewald_linear_fdv0.scale;
+        nbl->table_ewald_linear_v.scale_exp     = 0;
+        nbl->table_ewald_linear_v.n             = nbl->table_ewald_linear_fdv0.n;
+        nbl->table_ewald_linear_v.formatsize    = 1;
+        nbl->table_ewald_linear_v.ninteractions = 1;
+        nbl->table_ewald_linear_v.stride =
+        nbl->table_ewald_linear_v.formatsize * nbl->table_ewald_linear_v.ninteractions;
+        snew(nbl->table_ewald_linear_v.data,
+             nbl->table_ewald_linear_v.n*nbl->table_ewald_linear_v.stride);
+        for(i=0;i<nbl->table_ewald_linear_v.n;i++)
+        {
+            nbl->table_ewald_linear_v.data[i]   = nbl->table_ewald_linear_fdv0.data[4*i+2];
+        }
+
+        /* Copy to F table */
+        nbl->table_ewald_linear_f.interaction   = GMX_TABLE_INTERACTION_ELEC;
+        nbl->table_ewald_linear_f.format        = GMX_TABLE_FORMAT_LINEAR_F;
+        nbl->table_ewald_linear_f.r             = rtab;
+        nbl->table_ewald_linear_f.scale         = nbl->table_ewald_linear_fdv0.scale;
+        nbl->table_ewald_linear_f.scale_exp     = 0;
+        nbl->table_ewald_linear_f.n             = nbl->table_ewald_linear_fdv0.n;
+        nbl->table_ewald_linear_f.formatsize    = 1;
+        nbl->table_ewald_linear_f.ninteractions = 1;
+        nbl->table_ewald_linear_f.stride =
+        nbl->table_ewald_linear_f.formatsize * nbl->table_ewald_linear_f.ninteractions;
+        snew(nbl->table_ewald_linear_f.data,
+             nbl->table_ewald_linear_f.n*nbl->table_ewald_linear_f.stride);
+        for(i=0;i<nbl->table_ewald_linear_f.n;i++)
+        {
+            nbl->table_ewald_linear_f.data[i]   = nbl->table_ewald_linear_fdv0.data[4*i];
+        }
+    }
 }
 
 static void count_tables(int ftype1,int ftype2,const gmx_mtop_t *mtop,
@@ -2021,7 +2117,7 @@ void init_forcerec(FILE *fp,
     {
         fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
                           !gmx_within_tol(fr->reppow,12.0,10*GMX_DOUBLE_EPS));
-        fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
+        fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype) || fr->bEwald) ||
                           fr->eeltype == eelRF_ZERO);
 
         if (getenv("GMX_REQUIRE_TABLES"))
@@ -2236,10 +2332,10 @@ void init_forcerec(FILE *fp,
      * A little unnecessary to make both vdw and coul tables sometimes,
      * but what the heck... */
     
-    bTab = fr->bcoultab || fr->bvdwtab;
+    bTab = fr->bcoultab || fr->bvdwtab || fr->bEwald;
 
     bSep14tab = ((!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT ||
-                  fr->bBHAM) &&
+                  fr->bBHAM || fr->bEwald) &&
                  (gmx_mtop_ftype_count(mtop,F_LJ14) > 0 ||
                   gmx_mtop_ftype_count(mtop,F_LJC14_Q) > 0 ||
                   gmx_mtop_ftype_count(mtop,F_LJC_PAIRS_NB) > 0));
@@ -2284,7 +2380,7 @@ void init_forcerec(FILE *fp,
         if (bNormalnblists) {
             make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
             if (!bSep14tab)
-                fr->tab14 = fr->nblists[0].tab;
+                fr->tab14 = fr->nblists[0].table_elec_vdw;
             m = 1;
         } else {
             m = 0;
@@ -2395,14 +2491,16 @@ void init_forcerec(FILE *fp,
     
     /* Initialize neighbor search */
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
-    
+
     if (cr->duty & DUTY_PP)
     {
-        gmx_setup_kernels(fp,fr,bGenericKernelOnly);
-        if (ir->bAdress)
+        gmx_nonbonded_setup(fp,fr,bGenericKernelOnly);
+    /*
+     if (ir->bAdress)
         {
             gmx_setup_adress_kernels(fp,bGenericKernelOnly);
         }
+     */
     }
 
     /* Initialize the thread working data for bonded interactions */
@@ -2447,7 +2545,7 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
   /*pr_int(fp,fr->cg0);
     pr_int(fp,fr->hcg);*/
   for(i=0; i<fr->nnblists; i++)
-    pr_int(fp,fr->nblists[i].tab.n);
+    pr_int(fp,fr->nblists[i].table_elec_vdw.n);
   pr_real(fp,fr->rcoulomb_switch);
   pr_real(fp,fr->rcoulomb);
   

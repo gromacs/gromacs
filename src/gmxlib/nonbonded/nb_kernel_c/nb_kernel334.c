@@ -38,6 +38,7 @@
 #include "thread_mpi.h"
 #endif
 
+#include "nrnb.h"
 #include "nb_kernel334.h"
 
 /*
@@ -47,38 +48,13 @@
  * water optimization:      pairs of TIP4P interactions
  * Calculate forces:        yes
  */
-void nb_kernel334(
-                    int *           p_nri,
-                    int *           iinr,
-                    int *           jindex,
-                    int *           jjnr,
-                    int *           shift,
-                    real *          shiftvec,
-                    real *          fshift,
-                    int *           gid,
-                    real *          pos,
-                    real *          faction,
-                    real *          charge,
-                    real *          p_facel,
-                    real *          p_krf,
-                    real *          p_crf,
-                    real *          Vc,
-                    int *           type,
-                    int *           p_ntype,
-                    real *          vdwparam,
-                    real *          Vvdw,
-                    real *          p_tabscale,
-                    real *          VFtab,
-                    real *          invsqrta,
-                    real *          dvda,
-                    real *          p_gbtabscale,
-                    real *          GBtab,
-                    int *           p_nthreads,
-                    int *           count,
-                    void *          mtx,
-                    int *           outeriter,
-                    int *           inneriter,
-                    real *          work)
+void nb_kernel334(t_nblist *                nlist,
+                  rvec *                    x,
+                  rvec *                    f,
+                  t_forcerec *              fr,
+                  t_mdatoms *               mdatoms,
+                  nb_kernel_data_t *        kernel_data,
+                  t_nrnb *                  nrnb)
 {
     int           nri,ntype,nthreads;
     real          facel,krf,crf,tabscale,gbtabscale;
@@ -117,13 +93,62 @@ void nb_kernel334(
     real          qH,qM,qqMM,qqMH,qqHH;
     real          c6,c12;
 
-    nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
+    real *        pos;
+    real *        faction;
+    real *        fshift;
+    int  *        iinr;
+    int  *        jindex;
+    int *         jjnr;
+    int           icoul,ivdw;
+    int *         shift;
+    int *         gid;
+    real *        shiftvec;
+    real *        charge;
+    real *        Vc;
+    int *         type;
+    real *        vdwparam;
+    real *        Vvdw;
+    real *        VFtab;
+    real *        invsqrta;
+    real *        dvda;
+    real *        GBTab;
+
+    pos              = x[0];
+    faction          = f[0];
+    fshift           = fr->fshift[0];
+
+    nri              = nlist->nri;
+    iinr             = nlist->iinr;
+    jindex           = nlist->jindex;
+    jjnr             = nlist->jjnr;
+    icoul            = nlist->ielec;
+    ivdw             = nlist->ivdw;
+    shift            = nlist->shift;
+    gid              = nlist->gid;
+    shiftvec         = fr->shift_vec[0];
+
+    /* elec params */
+    charge           = mdatoms->chargeA;
+    Vc               = kernel_data->energygrp_elec;
+    facel            = fr->epsfac;
+    krf              = fr->k_rf;
+    crf              = fr->c_rf;
+
+    /* vdw params */
+    type             = mdatoms->typeA;
+    ntype            = fr->ntype;
+    vdwparam         = fr->nbfp;
+    Vvdw             = kernel_data->energygrp_vdw;
+
+    /* table params */
+    VFtab            = kernel_data->table_elec_vdw->data;
+    tabscale         = kernel_data->table_elec_vdw->scale;
+
+    /* GB parans */
+    invsqrta         = fr->invsqrta;
+    dvda             = fr->dvda;
+    GBTab            = fr->gbtab.data;
+    gbtabscale       = fr->gbtabscale;
 
     /* Initialize water data */
     ii               = iinr[0];        
@@ -743,512 +768,11 @@ void nb_kernel334(
         nouter           = nouter + nn1 - nn0;
     }
     while (nn1<nri);
-    
-
-    /* Write outer/inner iteration count to pointers */
-    *outeriter       = nouter;         
-    *inneriter       = ninner;         
-}
-
-
-
-
-
-/*
- * Gromacs nonbonded kernel nb_kernel334nf
- * Coulomb interaction:     Tabulated
- * VdW interaction:         Tabulated
- * water optimization:      pairs of TIP4P interactions
- * Calculate forces:        no
- */
-void nb_kernel334nf(
-                    int *           p_nri,
-                    int *           iinr,
-                    int *           jindex,
-                    int *           jjnr,
-                    int *           shift,
-                    real *          shiftvec,
-                    real *          fshift,
-                    int *           gid,
-                    real *          pos,
-                    real *          faction,
-                    real *          charge,
-                    real *          p_facel,
-                    real *          p_krf,
-                    real *          p_crf,
-                    real *          Vc,
-                    int *           type,
-                    int *           p_ntype,
-                    real *          vdwparam,
-                    real *          Vvdw,
-                    real *          p_tabscale,
-                    real *          VFtab,
-                    real *          invsqrta,
-                    real *          dvda,
-                    real *          p_gbtabscale,
-                    real *          GBtab,
-                    int *           p_nthreads,
-                    int *           count,
-                    void *          mtx,
-                    int *           outeriter,
-                    int *           inneriter,
-                    real *          work)
-{
-    int           nri,ntype,nthreads;
-    real          facel,krf,crf,tabscale,gbtabscale;
-    int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid;
-    int           nn0,nn1,nouter,ninner;
-    real          shX,shY,shZ;
-    real          qq,vcoul,vctot;
-    int           tj;
-    real          Vvdw6,Vvdwtot;
-    real          Vvdw12;
-    real          r,rt,eps,eps2;
-    int           n0,nnn;
-    real          Y,F,Geps,Heps2,Fp,VV;
-    real          ix1,iy1,iz1;
-    real          ix2,iy2,iz2;
-    real          ix3,iy3,iz3;
-    real          ix4,iy4,iz4;
-    real          jx1,jy1,jz1;
-    real          jx2,jy2,jz2;
-    real          jx3,jy3,jz3;
-    real          jx4,jy4,jz4;
-    real          dx11,dy11,dz11,rsq11,rinv11;
-    real          dx22,dy22,dz22,rsq22,rinv22;
-    real          dx23,dy23,dz23,rsq23,rinv23;
-    real          dx24,dy24,dz24,rsq24,rinv24;
-    real          dx32,dy32,dz32,rsq32,rinv32;
-    real          dx33,dy33,dz33,rsq33,rinv33;
-    real          dx34,dy34,dz34,rsq34,rinv34;
-    real          dx42,dy42,dz42,rsq42,rinv42;
-    real          dx43,dy43,dz43,rsq43,rinv43;
-    real          dx44,dy44,dz44,rsq44,rinv44;
-    real          qH,qM,qqMM,qqMH,qqHH;
-    real          c6,c12;
-
-    nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-
-    /* Initialize water data */
-    ii               = iinr[0];        
-    qH               = charge[ii+1];   
-    qM               = charge[ii+3];   
-    qqMM             = facel*qM*qM;    
-    qqMH             = facel*qM*qH;    
-    qqHH             = facel*qH*qH;    
-    tj               = 2*(ntype+1)*type[ii];
-    c6               = vdwparam[tj];   
-    c12              = vdwparam[tj+1]; 
-
-
-    /* Reset outer and inner iteration counters */
-    nouter           = 0;              
-    ninner           = 0;              
-
-    /* Loop over thread workunits */
-    
-    do
-    {
-#ifdef GMX_THREAD_SHM_FDECOMP
-        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
-        nn0              = *count;         
-		
-        /* Take successively smaller chunks (at least 10 lists) */
-        nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
-        *count           = nn1;            
-        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
-        if(nn1>nri) nn1=nri;
-#else
-	    nn0 = 0;
-		nn1 = nri;
-#endif
-        /* Start outer loop over neighborlists */
-        
-        for(n=nn0; (n<nn1); n++)
-        {
-
-            /* Load shift vector for this list */
-            is3              = 3*shift[n];     
-            shX              = shiftvec[is3];  
-            shY              = shiftvec[is3+1];
-            shZ              = shiftvec[is3+2];
-
-            /* Load limits for loop over neighbors */
-            nj0              = jindex[n];      
-            nj1              = jindex[n+1];    
-
-            /* Get outer coordinate index */
-            ii               = iinr[n];        
-            ii3              = 3*ii;           
-
-            /* Load i atom data, add shift vector */
-            ix1              = shX + pos[ii3+0];
-            iy1              = shY + pos[ii3+1];
-            iz1              = shZ + pos[ii3+2];
-            ix2              = shX + pos[ii3+3];
-            iy2              = shY + pos[ii3+4];
-            iz2              = shZ + pos[ii3+5];
-            ix3              = shX + pos[ii3+6];
-            iy3              = shY + pos[ii3+7];
-            iz3              = shZ + pos[ii3+8];
-            ix4              = shX + pos[ii3+9];
-            iy4              = shY + pos[ii3+10];
-            iz4              = shZ + pos[ii3+11];
-
-            /* Zero the potential energy for this list */
-            vctot            = 0;              
-            Vvdwtot          = 0;              
-
-            /* Clear i atom forces */
-            
-            for(k=nj0; (k<nj1); k++)
-            {
-
-                /* Get j neighbor index, and coordinate index */
-                jnr              = jjnr[k];        
-                j3               = 3*jnr;          
-
-                /* load j atom coordinates */
-                jx1              = pos[j3+0];      
-                jy1              = pos[j3+1];      
-                jz1              = pos[j3+2];      
-                jx2              = pos[j3+3];      
-                jy2              = pos[j3+4];      
-                jz2              = pos[j3+5];      
-                jx3              = pos[j3+6];      
-                jy3              = pos[j3+7];      
-                jz3              = pos[j3+8];      
-                jx4              = pos[j3+9];      
-                jy4              = pos[j3+10];     
-                jz4              = pos[j3+11];     
-
-                /* Calculate distance */
-                dx11             = ix1 - jx1;      
-                dy11             = iy1 - jy1;      
-                dz11             = iz1 - jz1;      
-                rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-                dx22             = ix2 - jx2;      
-                dy22             = iy2 - jy2;      
-                dz22             = iz2 - jz2;      
-                rsq22            = dx22*dx22+dy22*dy22+dz22*dz22;
-                dx23             = ix2 - jx3;      
-                dy23             = iy2 - jy3;      
-                dz23             = iz2 - jz3;      
-                rsq23            = dx23*dx23+dy23*dy23+dz23*dz23;
-                dx24             = ix2 - jx4;      
-                dy24             = iy2 - jy4;      
-                dz24             = iz2 - jz4;      
-                rsq24            = dx24*dx24+dy24*dy24+dz24*dz24;
-                dx32             = ix3 - jx2;      
-                dy32             = iy3 - jy2;      
-                dz32             = iz3 - jz2;      
-                rsq32            = dx32*dx32+dy32*dy32+dz32*dz32;
-                dx33             = ix3 - jx3;      
-                dy33             = iy3 - jy3;      
-                dz33             = iz3 - jz3;      
-                rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
-                dx34             = ix3 - jx4;      
-                dy34             = iy3 - jy4;      
-                dz34             = iz3 - jz4;      
-                rsq34            = dx34*dx34+dy34*dy34+dz34*dz34;
-                dx42             = ix4 - jx2;      
-                dy42             = iy4 - jy2;      
-                dz42             = iz4 - jz2;      
-                rsq42            = dx42*dx42+dy42*dy42+dz42*dz42;
-                dx43             = ix4 - jx3;      
-                dy43             = iy4 - jy3;      
-                dz43             = iz4 - jz3;      
-                rsq43            = dx43*dx43+dy43*dy43+dz43*dz43;
-                dx44             = ix4 - jx4;      
-                dy44             = iy4 - jy4;      
-                dz44             = iz4 - jz4;      
-                rsq44            = dx44*dx44+dy44*dy44+dz44*dz44;
-
-                /* Calculate 1/r and 1/r2 */
-                rinv11           = gmx_invsqrt(rsq11);
-                rinv22           = gmx_invsqrt(rsq22);
-                rinv23           = gmx_invsqrt(rsq23);
-                rinv24           = gmx_invsqrt(rsq24);
-                rinv32           = gmx_invsqrt(rsq32);
-                rinv33           = gmx_invsqrt(rsq33);
-                rinv34           = gmx_invsqrt(rsq34);
-                rinv42           = gmx_invsqrt(rsq42);
-                rinv43           = gmx_invsqrt(rsq43);
-                rinv44           = gmx_invsqrt(rsq44);
-
-                /* Load parameters for j atom */
-
-                /* Calculate table index */
-                r                = rsq11*rinv11;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated VdW interaction - dispersion */
-                nnn              = nnn+4;          
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                Vvdw6            = c6*VV;          
-
-                /* Tabulated VdW interaction - repulsion */
-                nnn              = nnn+4;          
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                Vvdw12           = c12*VV;         
-                Vvdwtot          = Vvdwtot+ Vvdw6 + Vvdw12;
-
-                /* Load parameters for j atom */
-                qq               = qqHH;           
-
-                /* Calculate table index */
-                r                = rsq22*rinv22;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqHH;           
-
-                /* Calculate table index */
-                r                = rsq23*rinv23;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqMH;           
-
-                /* Calculate table index */
-                r                = rsq24*rinv24;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqHH;           
-
-                /* Calculate table index */
-                r                = rsq32*rinv32;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqHH;           
-
-                /* Calculate table index */
-                r                = rsq33*rinv33;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqMH;           
-
-                /* Calculate table index */
-                r                = rsq34*rinv34;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqMH;           
-
-                /* Calculate table index */
-                r                = rsq42*rinv42;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqMH;           
-
-                /* Calculate table index */
-                r                = rsq43*rinv43;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Load parameters for j atom */
-                qq               = qqMM;           
-
-                /* Calculate table index */
-                r                = rsq44*rinv44;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 12*n0;          
-
-                /* Tabulated coulomb interaction */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                vcoul            = qq*VV;          
-                vctot            = vctot + vcoul;  
-
-                /* Inner loop uses 258 flops/iteration */
-            }
-            
-
-            /* Add i forces to mem and shifted force list */
-
-            /* Add potential energies to the group for this list */
-            ggid             = gid[n];         
-            Vc[ggid]         = Vc[ggid] + vctot;
-            Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
-
-            /* Increment number of inner iterations */
-            ninner           = ninner + nj1 - nj0;
-
-            /* Outer loop uses 14 flops/iteration */
-        }
-        
-
-        /* Increment number of outer iterations */
-        nouter           = nouter + nn1 - nn0;
-    }
-    while (nn1<nri);
-    
-
-    /* Write outer/inner iteration count to pointers */
-    *outeriter       = nouter;         
-    *inneriter       = ninner;         
+       
+    /* 12 flops per outer iteration
+     * 19 flops per inner iteration
+     */
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_VF,nlist->nri*12 + nlist->jindex[n]*19);
 }
 
 
