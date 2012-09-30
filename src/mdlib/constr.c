@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <assert.h>
 
 #include "confio.h"
 #include "constr.h"
@@ -158,14 +159,6 @@ static int pcomp(const void *p1, const void *p2)
     return max1-max2;
   else
     return min1-min2;
-}
-
-static int icomp(const void *p1, const void *p2)
-{
-  atom_id *a1=(atom_id *)p1;
-  atom_id *a2=(atom_id *)p2;
-
-  return (*a1)-(*a2);
 }
 
 int n_flexible_constraints(struct gmx_constr *constr)
@@ -411,14 +404,12 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         switch (econq)
         {
         case econqCoord:
+            assert(v);
             csettle(constr->settled,
                     nsettle,settle->iatoms,x[0],xprime[0],
                     invdt,v[0],vir!=NULL,rmdr,&error,&vetavar);
             inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-            if (v != NULL)
-            {
-                inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
-            }
+            inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
             if (vir != NULL)
             {
                 inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
