@@ -3023,7 +3023,7 @@ static real bonded_tab(const char *type,int table_nr,
   k = (1.0 - lambda)*kA + lambda*kB;
 
   tabscale = table->scale;
-  VFtab    = table->tab;
+  VFtab    = table->data;
   
   rt    = r*tabscale;
   n0    = rt;
@@ -3581,11 +3581,9 @@ static real calc_one_bond(FILE *fplog,int thread,
         }
         else
         {
-            v = do_listed_vdw_q(ftype,nbn,iatoms+nb0,
-                                idef->iparams,
-                                (const rvec*)x,f,fshift,
-                                pbc,g,lambda,dvdl,
-                                md,fr,grpp,global_atom_index);
+            v = do_nonbonded_listed(ftype,nbn,iatoms+nb0,idef->iparams,(const rvec*)x,f,fshift,
+                                    pbc,g,lambda,dvdl,md,fr,grpp,global_atom_index);
+
             enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
             enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
             
@@ -3670,11 +3668,11 @@ static real calc_one_bond_foreign(FILE *fplog,int ftype, const t_idef *idef,
                 }
                 else
                 {
-                    v = do_listed_vdw_q(ftype,nbonds,iatoms,
-                                        idef->iparams,
-                                        (const rvec*)x,f,fr->fshift,
-                                        pbc,g,lambda,dvdl,
-                                        md,fr,&enerd->grpp,global_atom_index);
+                    v = do_nonbonded_listed(ftype,nbonds,iatoms,
+                                            idef->iparams,
+                                            (const rvec*)x,f,fr->fshift,
+                                            pbc,g,lambda,dvdl,
+                                            md,fr,&enerd->grpp,global_atom_index);
                 }
                 if (ind != -1)
                 {

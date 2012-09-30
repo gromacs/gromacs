@@ -5427,13 +5427,13 @@ void nbnxn_atomdata_init(FILE *fp,
         {
             if (i < ntype && j < ntype)
             {
-                /* We store the prefactor in the derivative of the potential
-                 * in the parameter to avoid multiplications in the inner loop.
+                /* The prefactor (6.0/12.0) in the derivative of the L-J potential
+                 * is now stored in the main nbfp array from forcerec.
                  */
                 c6  = nbfp[(i*ntype+j)*2  ];
                 c12 = nbfp[(i*ntype+j)*2+1];
-                nbat->nbfp[(i*nbat->ntype+j)*2  ] =  6.0*c6;
-                nbat->nbfp[(i*nbat->ntype+j)*2+1] = 12.0*c12;
+                nbat->nbfp[(i*nbat->ntype+j)*2  ] = c6;
+                nbat->nbfp[(i*nbat->ntype+j)*2+1] = c12;
 
                 bCombGeom = bCombGeom &&
                     gmx_within_tol(c6*c6  ,nbfp[(i*ntype+i)*2  ]*nbfp[(j*ntype+j)*2  ],tol) &&

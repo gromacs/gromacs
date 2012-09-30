@@ -27,7 +27,7 @@
  * 
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
@@ -101,10 +101,10 @@ static void pr_nbfp(FILE *fp,real *nbfp,gmx_bool bBHAM,int atnr)
       fprintf(fp,"%2d - %2d",i,j);
       if (bBHAM)
 	fprintf(fp,"  a=%10g, b=%10g, c=%10g\n",BHAMA(nbfp,atnr,i,j),
-		BHAMB(nbfp,atnr,i,j),BHAMC(nbfp,atnr,i,j));
+		BHAMB(nbfp,atnr,i,j),BHAMC(nbfp,atnr,i,j)/6.0);
       else
-	fprintf(fp,"  c6=%10g, c12=%10g\n",C6(nbfp,atnr,i,j),
-		C12(nbfp,atnr,i,j));
+	fprintf(fp,"  c6=%10g, c12=%10g\n",C6(nbfp,atnr,i,j)/6.0,
+            C12(nbfp,atnr,i,j)/12.0); 
     }
   }
 }
@@ -120,9 +120,10 @@ static real *mk_nbfp(const gmx_ffparams_t *idef,gmx_bool bBHAM)
     snew(nbfp,3*atnr*atnr);
     for(i=k=0; (i<atnr); i++) {
       for(j=0; (j<atnr); j++,k++) {
-	BHAMA(nbfp,atnr,i,j) = idef->iparams[k].bham.a;
-	BHAMB(nbfp,atnr,i,j) = idef->iparams[k].bham.b;
-	BHAMC(nbfp,atnr,i,j) = idef->iparams[k].bham.c;
+          BHAMA(nbfp,atnr,i,j) = idef->iparams[k].bham.a;
+          BHAMB(nbfp,atnr,i,j) = idef->iparams[k].bham.b;
+          /* nbfp now includes the 6.0 derivative prefactor */
+          BHAMC(nbfp,atnr,i,j) = idef->iparams[k].bham.c*6.0;
       }
     }
   }
@@ -130,11 +131,13 @@ static real *mk_nbfp(const gmx_ffparams_t *idef,gmx_bool bBHAM)
     snew(nbfp,2*atnr*atnr);
     for(i=k=0; (i<atnr); i++) {
       for(j=0; (j<atnr); j++,k++) {
-	C6(nbfp,atnr,i,j)   = idef->iparams[k].lj.c6;
-	C12(nbfp,atnr,i,j)  = idef->iparams[k].lj.c12;
+          /* nbfp now includes the 6.0/12.0 derivative prefactors */
+          C6(nbfp,atnr,i,j)   = idef->iparams[k].lj.c6*6.0;
+          C12(nbfp,atnr,i,j)  = idef->iparams[k].lj.c12*12.0;
       }
     }
   }
+
   return nbfp;
 }
 
@@ -356,10 +359,9 @@ check_solvent_cg(const gmx_moltype_t   *molt,
         /* So, is it an SPC?
          * For this we require thatn all atoms have charge, 
          * the charges on atom 2 & 3 should be the same, and only
-         * atom 1 should have VdW.
+         * atom 1 might have VdW.
          */
-        if (has_vdw[0] == TRUE && 
-            has_vdw[1] == FALSE &&
+        if (has_vdw[1] == FALSE &&
             has_vdw[2] == FALSE &&
             tmp_charge[0]  != 0 &&
             tmp_charge[1]  != 0 &&
@@ -382,10 +384,9 @@ check_solvent_cg(const gmx_moltype_t   *molt,
     {
         /* Or could it be a TIP4P?
          * For this we require thatn atoms 2,3,4 have charge, but not atom 1. 
-         * Only atom 1 should have VdW.
+         * Only atom 1 mght have VdW.
          */
-        if(has_vdw[0] == TRUE && 
-           has_vdw[1] == FALSE &&
+        if(has_vdw[1] == FALSE &&
            has_vdw[2] == FALSE &&
            has_vdw[3] == FALSE &&
            tmp_charge[0]  == 0 &&
@@ -921,10 +922,12 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                         npair_ij = tmpi*(tmpi - 1)/2;
                     }
                     if (bBHAM) {
-                        csix    += npair_ij*BHAMC(nbfp,ntp,tpi,tpj);
+                        /* nbfp now includes the 6.0 derivative prefactor */
+                        csix    += npair_ij*BHAMC(nbfp,ntp,tpi,tpj)/6.0;
                     } else {
-                        csix    += npair_ij*   C6(nbfp,ntp,tpi,tpj);
-                        ctwelve += npair_ij*  C12(nbfp,ntp,tpi,tpj);
+                        /* nbfp now includes the 6.0/12.0 derivative prefactors */
+                        csix    += npair_ij*   C6(nbfp,ntp,tpi,tpj)/6.0;
+                        ctwelve += npair_ij*  C12(nbfp,ntp,tpi,tpj)/12.0;
                     }
                     npair += npair_ij;
                 }
@@ -964,10 +967,12 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                                 tpj = atoms->atom[k].typeB;
                             }
                             if (bBHAM) {
-                               csix -= nmol*BHAMC(nbfp,ntp,tpi,tpj);
+                                /* nbfp now includes the 6.0 derivative prefactor */
+                               csix -= nmol*BHAMC(nbfp,ntp,tpi,tpj)/6.0;
                             } else {
-                                csix    -= nmol*C6 (nbfp,ntp,tpi,tpj);
-                                ctwelve -= nmol*C12(nbfp,ntp,tpi,tpj);
+                                /* nbfp now includes the 6.0/12.0 derivative prefactors */
+                                csix    -= nmol*C6 (nbfp,ntp,tpi,tpj)/6.0;
+                                ctwelve -= nmol*C12(nbfp,ntp,tpi,tpj)/12.0;
                             }
                             nexcl += nmol;
                         }
@@ -1019,12 +1024,14 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                         }
                         if (bBHAM)
                         {
-                            csix    += nmolc*BHAMC(nbfp,ntp,tpi,tpj);
+                            /* nbfp now includes the 6.0 derivative prefactor */
+                            csix    += nmolc*BHAMC(nbfp,ntp,tpi,tpj)/6.0;
                         }
                         else
                         {
-                            csix    += nmolc*C6 (nbfp,ntp,tpi,tpj);
-                            ctwelve += nmolc*C12(nbfp,ntp,tpi,tpj);
+                            /* nbfp now includes the 6.0/12.0 derivative prefactors */
+                            csix    += nmolc*C6 (nbfp,ntp,tpi,tpj)/6.0;
+                            ctwelve += nmolc*C12(nbfp,ntp,tpi,tpj)/12.0;
                         }
                         npair += nmolc;
                     }
@@ -1120,42 +1127,61 @@ static void set_bham_b_max(FILE *fplog,t_forcerec *fr,
 
 static void make_nbf_tables(FILE *fp,const output_env_t oenv,
                             t_forcerec *fr,real rtab,
-			    const t_commrec *cr,
-			    const char *tabfn,char *eg1,char *eg2,
-			    t_nblists *nbl)
+                            const t_commrec *cr,
+                            const char *tabfn,char *eg1,char *eg2,
+                            t_nblists *nbl)
 {
-  char buf[STRLEN];
-  int i,j;
+    char buf[STRLEN];
+    int i,j;
 
-  if (tabfn == NULL) {
-    if (debug)
-      fprintf(debug,"No table file name passed, can not read table, can not do non-bonded interactions\n");
-    return;
-  }
-    
-  sprintf(buf,"%s",tabfn);
-  if (eg1 && eg2)
+    if (tabfn == NULL) {
+        if (debug)
+            fprintf(debug,"No table file name passed, can not read table, can not do non-bonded interactions\n");
+        return;
+    }
+
+    sprintf(buf,"%s",tabfn);
+    if (eg1 && eg2)
     /* Append the two energy group names */
-    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
-	    eg1,eg2,ftp2ext(efXVG));
-  nbl->tab = make_tables(fp,oenv,fr,MASTER(cr),buf,rtab,0);
-  /* Copy the contents of the table to separate coulomb and LJ tables too,
-   * to improve cache performance.
-   */
+        sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
+                eg1,eg2,ftp2ext(efXVG));
+    nbl->table_elec_vdw = make_tables(fp,oenv,fr,MASTER(cr),buf,rtab,0);
+    /* Copy the contents of the table to separate coulomb and LJ tables too,
+     * to improve cache performance.
+     */
+    /* For performance reasons we want
+     * the table data to be aligned to 16-byte. The pointers could be freed
+     * but currently aren't.
+     */
+    nbl->table_elec.interaction = GMX_TABLE_INTERACTION_ELEC;
+    nbl->table_elec.format = nbl->table_elec_vdw.format;
+    nbl->table_elec.r = nbl->table_elec_vdw.r;
+    nbl->table_elec.n = nbl->table_elec_vdw.n;
+    nbl->table_elec.scale = nbl->table_elec_vdw.scale;
+    nbl->table_elec.scale_exp = nbl->table_elec_vdw.scale_exp;
+    nbl->table_elec.formatsize = nbl->table_elec_vdw.formatsize;
+    nbl->table_elec.ninteractions = 1;
+    nbl->table_elec.stride = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
+    snew_aligned(nbl->table_elec.data,nbl->table_elec.stride*(nbl->table_elec.n+1),16);
 
-  /* For performance reasons we want
-   * the table data to be aligned to 16-byte. The pointer could be freed
-   * but currently isn't.
-   */
-  snew_aligned(nbl->vdwtab,8*(nbl->tab.n+1),16);
-  snew_aligned(nbl->coultab,4*(nbl->tab.n+1),16);
-  
-  for(i=0; i<=nbl->tab.n; i++) {
-    for(j=0; j<4; j++)
-      nbl->coultab[4*i+j] = nbl->tab.tab[12*i+j];
-    for(j=0; j<8; j++)
-      nbl->vdwtab [8*i+j] = nbl->tab.tab[12*i+4+j];
-  }
+    nbl->table_vdw.interaction = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
+    nbl->table_vdw.format = nbl->table_elec_vdw.format;
+    nbl->table_vdw.r = nbl->table_elec_vdw.r;
+    nbl->table_vdw.n = nbl->table_elec_vdw.n;
+    nbl->table_vdw.scale = nbl->table_elec_vdw.scale;
+    nbl->table_vdw.scale_exp = nbl->table_elec_vdw.scale_exp;
+    nbl->table_vdw.formatsize = nbl->table_elec_vdw.formatsize;
+    nbl->table_vdw.ninteractions = 2;
+    nbl->table_vdw.stride = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
+    snew_aligned(nbl->table_vdw.data,nbl->table_vdw.stride*(nbl->table_vdw.n+1),16);
+
+    for(i=0; i<=nbl->table_elec_vdw.n; i++)
+    {
+        for(j=0; j<4; j++)
+            nbl->table_elec.data[4*i+j] = nbl->table_elec_vdw.data[12*i+j];
+        for(j=0; j<8; j++)
+            nbl->table_vdw.data[8*i+j] = nbl->table_elec_vdw.data[12*i+4+j];
+    }
 }
 
 static void count_tables(int ftype1,int ftype2,const gmx_mtop_t *mtop,
@@ -1493,73 +1519,48 @@ static void pick_nbnxn_kernel(FILE *fp,
 }
 
 
-static void init_verlet_ewald_f_table(interaction_const_t *ic,
-                                      int verlet_kernel_type)
+static void init_ewald_f_table(interaction_const_t *ic,
+                               int  verlet_kernel_type,
+                               real rtab)
 {
-    if (nbnxn_kernel_pairlist_simple(verlet_kernel_type))
+    real maxr;
+    
+    if (verlet_kernel_type==-1 || nbnxn_kernel_pairlist_simple(verlet_kernel_type))
     {
         /* With a spacing of 0.0005 we are at the force summation accuracy
          * for the SSE kernels for "normal" atomistic simulations.
          */
         ic->tabq_scale = ewald_spline3_table_scale(ic->ewaldcoeff,
                                                    ic->rcoulomb);
-        ic->tabq_size  = (int)(ic->rcoulomb*ic->tabq_scale) + 2;
-#ifndef GMX_DOUBLE
-        ic->tabq_format = tableformatFDV0;
-#else
-        ic->tabq_format = tableformatF;
-#endif
+        
+        maxr = (rtab>ic->rcoulomb) ? rtab : ic->rcoulomb;
+        ic->tabq_size  = (int)(maxr*ic->tabq_scale) + 2;
     }
     else
     {
         ic->tabq_size = GPU_EWALD_COULOMB_FORCE_TABLE_SIZE;
         /* Subtract 2 iso 1 to avoid access out of range due to rounding */
         ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
-        if (verlet_kernel_type == nbk8x8x8_CUDA)
-        {
-            /* This case is handled in the nbnxn CUDA module */
-            ic->tabq_format = tableformatNONE;
-        }
-        else
-        {
-            ic->tabq_format = tableformatF;
-        }
     }
 
-    switch (ic->tabq_format)
-    {
-    case tableformatNONE:
-        break;
-    case tableformatF:
-        sfree_aligned(ic->tabq_coul_F);
-        sfree_aligned(ic->tabq_coul_V);
-        snew_aligned(ic->tabq_coul_F,ic->tabq_size,16);
-        snew_aligned(ic->tabq_coul_V,ic->tabq_size,16);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_F,ic->tabq_coul_V,
-                                    ic->tabq_size,ic->tabq_format,
-                                    1/ic->tabq_scale,ic->ewaldcoeff);
-        break;
-    case tableformatFDV0:
-        sfree_aligned(ic->tabq_coul_F);
-        snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_FDV0,NULL,
-                                    ic->tabq_size,ic->tabq_format,
-                                    1/ic->tabq_scale,ic->ewaldcoeff);
-        break;
-    default:
-        gmx_incons("Unknown table format");
-    }
+    /* Create the original table data in FDV0 */
+    snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
+    snew_aligned(ic->tabq_coul_F,ic->tabq_size,16);
+    snew_aligned(ic->tabq_coul_V,ic->tabq_size,16);
+    table_spline3_fill_ewald_lr(ic->tabq_coul_F,ic->tabq_coul_V,ic->tabq_coul_FDV0,
+                                ic->tabq_size,1/ic->tabq_scale,ic->ewaldcoeff);
 }
 
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
-                                   int verlet_kernel_type)
+                                   int verlet_kernel_type,
+                                   real rtab)
 {
     real spacing;
 
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
-        init_verlet_ewald_f_table(ic,verlet_kernel_type);
+        init_ewald_f_table(ic,verlet_kernel_type,rtab);
 
         if (fp != NULL)
         {
@@ -1571,7 +1572,8 @@ void init_interaction_const_tables(FILE *fp,
 
 void init_interaction_const(FILE *fp, 
                             interaction_const_t **interaction_const,
-                            const t_forcerec *fr)
+                            const t_forcerec *fr,
+                            real  rtab)
 {
     interaction_const_t *ic;
 
@@ -1581,7 +1583,7 @@ void init_interaction_const(FILE *fp,
 
     /* Lennard-Jones */
     ic->rvdw        = fr->rvdw;
-    if (fr->vdw_pot_shift)
+    if (fr->vdw_modifier==eintmodPOTSHIFT)
     {
         ic->sh_invrc6 = pow(ic->rvdw,-6.0);
     }
@@ -1598,7 +1600,7 @@ void init_interaction_const(FILE *fp,
 
     /* Ewald */
     ic->ewaldcoeff  = fr->ewaldcoeff;
-    if (fr->coul_pot_shift)
+    if (fr->coulomb_modifier==eintmodPOTSHIFT)
     {
         ic->sh_ewald = gmx_erfc(ic->ewaldcoeff*ic->rcoulomb);
     }
@@ -1619,7 +1621,7 @@ void init_interaction_const(FILE *fp,
         /* For plain cut-off we might use the reaction-field kernels */
         ic->epsilon_rf = ic->epsilon_r;
         ic->k_rf       = 0;
-        if (fr->coul_pot_shift)
+        if (fr->coulomb_modifier==eintmodPOTSHIFT)
         {
             ic->c_rf   = 1/ic->rcoulomb;
         }
@@ -1651,10 +1653,14 @@ void init_interaction_const(FILE *fp,
         nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
     }
 
-    if (fr->cutoff_scheme == ecutsVERLET)
+    if(fr->cutoff_scheme == ecutsGROUP)
+    {
+        init_interaction_const_tables(fp,ic,-1,rtab);
+    }
+    else
     {
         assert(fr->nbv != NULL && fr->nbv->grp != NULL);
-        init_interaction_const_tables(fp,ic,fr->nbv->grp[fr->nbv->ngrp-1].kernel_type);
+        init_interaction_const_tables(fp,ic,fr->nbv->grp[fr->nbv->ngrp-1].kernel_type,rtab);
     }
 }
 
@@ -1929,6 +1935,11 @@ void init_forcerec(FILE *fp,
     }
 
     bGenericKernelOnly = FALSE;
+
+    /* Add tests here that set bGenericKernelOnly=TRUE if we want to use 
+     * esoteric combinations in the nonbonded kernels. 
+     */
+    
     if (getenv("GMX_NB_GENERIC") != NULL)
     {
         if (fp != NULL)
@@ -1938,6 +1949,11 @@ void init_forcerec(FILE *fp,
                     "Disabling interaction-specific nonbonded kernels.\n\n");
         }
         bGenericKernelOnly = TRUE;
+    }
+    
+    
+    if (bGenericKernelOnly==TRUE)
+    {
         bNoSolvOpt         = TRUE;
     }
 
@@ -1951,6 +1967,8 @@ void init_forcerec(FILE *fp,
                     "Disabling all CPU architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
         }
     }
+
+    fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
 
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir,mtop,FALSE,NULL,NULL);
@@ -2000,6 +2018,7 @@ void init_forcerec(FILE *fp,
             fr->bMolPBC = dd_bonded_molpbc(cr->dd,fr->ePBC);
         }
     }
+    
     fr->rc_scaling = ir->refcoord_scaling;
     copy_rvec(ir->posres_com,fr->posres_com);
     copy_rvec(ir->posres_comB,fr->posres_comB);
@@ -2008,9 +2027,77 @@ void init_forcerec(FILE *fp,
     fr->eeltype    = ir->coulombtype;
     fr->vdwtype    = ir->vdwtype;
 
-    fr->coul_pot_shift = (ir->coulomb_modifier == eintmodPOTSHIFT);
-    fr->vdw_pot_shift  = (ir->vdw_modifier     == eintmodPOTSHIFT);
+    fr->coulomb_modifier = ir->coulomb_modifier;
+    fr->vdw_modifier     = ir->vdw_modifier;
     
+    /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */
+    switch(fr->eeltype)
+    {
+        case eelCUT:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_COULOMB;
+            break;
+            
+        case eelRF:
+        case eelGRF:
+        case eelRF_NEC:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD;
+            break;
+            
+        case eelRF_ZERO:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD;
+            fr->coulomb_modifier          = eintmodEXACTCUTOFF;
+            break;
+            
+        case eelSWITCH:
+        case eelSHIFT:
+        case eelUSER:
+        case eelENCADSHIFT:
+        case eelPMESWITCH:
+        case eelPMEUSER:
+        case eelPMEUSERSWITCH:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+            break;
+            
+        case eelPME:
+        case eelEWALD:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
+            break;
+            
+        default:
+            gmx_fatal(FARGS,"Unsupported electrostatic interaction: %s",eel_names[fr->eeltype]);
+            break;
+    }
+    
+    /* Vdw: Translate from mdp settings to kernel format */
+    switch(fr->vdwtype)
+    {
+        case evdwCUT:
+            if(fr->bBHAM)
+            {
+                fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
+            }
+            else
+            {
+                fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LENNARDJONES;
+            }
+            break;
+            
+        case evdwSWITCH:
+        case evdwSHIFT:
+        case evdwUSER:
+        case evdwENCADSHIFT:
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
+            break;
+            
+        default:
+            gmx_fatal(FARGS,"Unsupported vdw interaction: %s",evdw_names[fr->vdwtype]);
+            break;            
+    }
+    
+    /* These start out identical to ir, but might be altered if we e.g. tabulate the interaction in the kernel */
+    fr->nbkernel_elec_modifier    = fr->coulomb_modifier;
+    fr->nbkernel_vdw_modifier     = fr->vdw_modifier;
+
     fr->bTwinRange = fr->rlistlong > fr->rlist;
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
     
@@ -2020,9 +2107,34 @@ void init_forcerec(FILE *fp,
     {
         fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
                           !gmx_within_tol(fr->reppow,12.0,10*GMX_DOUBLE_EPS));
-        fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
-                          fr->eeltype == eelRF_ZERO);
+        /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
+        fr->bcoultab   = !(fr->eeltype == eelCUT ||
+                           fr->eeltype == eelEWALD ||
+                           fr->eeltype == eelPME ||
+                           fr->eeltype == eelRF ||
+                           fr->eeltype == eelRF_ZERO);
 
+        /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
+         * going to be faster to tabulate the interaction than calling the generic kernel.
+         */
+        if(fr->nbkernel_elec_modifier==eintmodPOTSWITCH && fr->nbkernel_vdw_modifier==eintmodPOTSWITCH)
+        {
+            if((fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw))
+            {
+                fr->bcoultab = TRUE;
+            }
+        }
+        else if((fr->nbkernel_elec_modifier==eintmodPOTSHIFT && fr->nbkernel_vdw_modifier==eintmodPOTSHIFT) ||
+                ((fr->nbkernel_elec_interaction == GMX_NBKERNEL_ELEC_REACTIONFIELD &&
+                  fr->nbkernel_elec_modifier==eintmodEXACTCUTOFF &&
+                  (fr->nbkernel_vdw_modifier==eintmodPOTSWITCH || fr->nbkernel_vdw_modifier==eintmodPOTSHIFT))))
+        {
+            if(fr->rcoulomb != fr->rvdw)
+            {
+                fr->bcoultab = TRUE;
+            }
+        }
+           
         if (getenv("GMX_REQUIRE_TABLES"))
         {
             fr->bvdwtab  = TRUE;
@@ -2033,6 +2145,17 @@ void init_forcerec(FILE *fp,
         {
             fprintf(fp,"Table routines are used for coulomb: %s\n",bool_names[fr->bcoultab]);
             fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
+        }
+        
+        if(fr->bvdwtab==TRUE)
+        {
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
+            fr->nbkernel_vdw_modifier    = eintmodNONE;
+        }
+        if(fr->bcoultab==TRUE)
+        {
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+            fr->nbkernel_elec_modifier    = eintmodNONE;
         }
     }
 
@@ -2125,7 +2248,6 @@ void init_forcerec(FILE *fp,
     
     if (fr->nbfp == NULL) {
         fr->ntype = mtop->ffparams.atnr;
-        fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
         fr->nbfp  = mk_nbfp(&mtop->ffparams,fr->bBHAM);
     }
     
@@ -2235,10 +2357,10 @@ void init_forcerec(FILE *fp,
      * A little unnecessary to make both vdw and coul tables sometimes,
      * but what the heck... */
     
-    bTab = fr->bcoultab || fr->bvdwtab;
+    bTab = fr->bcoultab || fr->bvdwtab || fr->bEwald;
 
     bSep14tab = ((!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT ||
-                  fr->bBHAM) &&
+                  fr->bBHAM || fr->bEwald) &&
                  (gmx_mtop_ftype_count(mtop,F_LJ14) > 0 ||
                   gmx_mtop_ftype_count(mtop,F_LJC14_Q) > 0 ||
                   gmx_mtop_ftype_count(mtop,F_LJC_PAIRS_NB) > 0));
@@ -2283,7 +2405,7 @@ void init_forcerec(FILE *fp,
         if (bNormalnblists) {
             make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
             if (!bSep14tab)
-                fr->tab14 = fr->nblists[0].tab;
+                fr->tab14 = fr->nblists[0].table_elec_vdw;
             m = 1;
         } else {
             m = 0;
@@ -2394,14 +2516,16 @@ void init_forcerec(FILE *fp,
     
     /* Initialize neighbor search */
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
-    
+
     if (cr->duty & DUTY_PP)
     {
-        gmx_setup_kernels(fp,fr,bGenericKernelOnly);
-        if (ir->bAdress)
+        gmx_nonbonded_setup(fp,fr,bGenericKernelOnly);
+    /*
+     if (ir->bAdress)
         {
             gmx_setup_adress_kernels(fp,bGenericKernelOnly);
         }
+     */
     }
 
     /* Initialize the thread working data for bonded interactions */
@@ -2417,13 +2541,10 @@ void init_forcerec(FILE *fp,
         }
 
         init_nb_verlet(fp, &fr->nbv, ir, fr, cr, nbpu_opt);
-
-        /* initialize interaction constants
-         * TODO should be moved out during modularization.
-         */
-        init_interaction_const(fp, &fr->ic, fr);
     }
 
+    /* fr->ic is used both by verlet and group kernels (to some extent) now */
+    init_interaction_const(fp, &fr->ic, fr, rtab);
     if (ir->eDispCorr != edispcNO)
     {
         calc_enervirdiff(fp,ir->eDispCorr,fr);
@@ -2446,7 +2567,7 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
   /*pr_int(fp,fr->cg0);
     pr_int(fp,fr->hcg);*/
   for(i=0; i<fr->nnblists; i++)
-    pr_int(fp,fr->nblists[i].tab.n);
+    pr_int(fp,fr->nblists[i].table_elec_vdw.n);
   pr_real(fp,fr->rcoulomb_switch);
   pr_real(fp,fr->rcoulomb);
   
