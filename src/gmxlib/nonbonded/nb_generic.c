@@ -57,7 +57,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 					  int *                outeriter,
 					  int *                inneriter)
 {
-    int           nri,ntype,table_nelements,icoul,ivdw;
+    int           nri,ntype,table_nelements,ielec,ivdw;
     real          facel,gbtabscale;
     int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid,nnn,n0;
     real          shX,shY,shZ;
@@ -81,7 +81,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 	int *         shift;
 	int *         type;
 	
-	icoul               = nlist->icoul;
+	ielec               = nlist->ielec;
 	ivdw                = nlist->ivdw;
 
 	/* avoid compiler warnings for cases that cannot happen */
@@ -92,7 +92,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 	
 	/* 3 VdW parameters for buckingham, otherwise 2 */
 	nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
-	table_nelements     = (icoul==3) ? 4 : 0;
+	table_nelements     = (ielec==3) ? 4 : 0;
 	table_nelements    += (ivdw==3) ? 8 : 0;
 	  
     charge              = mdatoms->chargeA;
@@ -138,7 +138,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
             rinvsq           = rinv*rinv;  
 			fscal            = 0;
 			
-			if(icoul==3 || ivdw==3)
+			if(ielec==3 || ivdw==3)
 			{
 				r                = rsq*rinv;
 				rt               = r*tabscale;     
@@ -148,12 +148,12 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 				nnn              = table_nelements*n0;           				
 			}
 			
-			/* Coulomb interaction. icoul==0 means no interaction */
-			if(icoul>0)
+			/* Coulomb interaction. ielec==0 means no interaction */
+			if(ielec>0)
 			{
 				qq               = iq*charge[jnr]; 
 
-				switch(icoul)
+				switch(ielec)
 				{
 					case 1:
 						/* Vanilla cutoff coulomb */
@@ -188,7 +188,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 						break;
 					
 					default:
-						gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for icoul=%d.\n",icoul);
+						gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for ielec=%d.\n",ielec);
 						break;
 				}
 				vctot            = vctot+vcoul;    

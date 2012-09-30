@@ -318,7 +318,7 @@ typedef struct
 typedef struct {
   int  n;         /* n+1 is the number of points */
   real scale;     /* distance between two points */
-  real *tab;      /* the actual tables, per point there are  4 numbers */
+  real *data;     /* the actual table data, per point there are 4 numbers */
 } bondedtable_t;
 
 #ifdef __cplusplus

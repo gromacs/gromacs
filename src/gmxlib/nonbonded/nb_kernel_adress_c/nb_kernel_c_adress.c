@@ -36,7 +36,7 @@
 
 #include "types/nrnb.h"
 #include "nb_kernel_c_adress.h"
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 
 /* Include standard kernel headers in local directory */

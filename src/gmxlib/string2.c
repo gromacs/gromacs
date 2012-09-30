@@ -231,42 +231,59 @@ void nice_header (FILE *out,const char *fn)
   fprintf (out,"%c\n",COMMENTSIGN);
 }
 
+int strcmp(const char *s1, const char *s2)
+{
+    while((*s1 && *s2) && (*s1++ == *s2++));
+    return *(--s1) - *(--s2);
+}
+
+
 int gmx_strcasecmp_min(const char *str1, const char *str2)
 {
-  char ch1,ch2;
-  
-  do
+    char ch1,ch2;
+    
+    do
     {
-      do
-	ch1=toupper(*(str1++));
-      while ((ch1=='-') || (ch1=='_'));
-      do 
-	ch2=toupper(*(str2++));
-      while ((ch2=='-') || (ch2=='_'));
-      if (ch1!=ch2) return (ch1-ch2);
+        do
+        {
+            ch1=toupper(*(str1++));
+        }
+        while ((ch1=='-') || (ch1=='_'));
+        do
+        {
+            ch2=toupper(*(str2++));
+        }
+        while ((ch2=='-') || (ch2=='_'));
+        
+        if (ch1!=ch2) return (ch1-ch2);
     }
-  while (ch1);
-  return 0; 
+    while (ch1);
+    return 0;
 }
 
 int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
 {
-  char ch1,ch2;
-  char *stri1, *stri2;
-
-  stri1=(char *)str1;
-  stri2=(char *)str2;  
-  do
+    char ch1,ch2;
+    char *stri1, *stri2;
+    
+    stri1=(char *)str1;
+    stri2=(char *)str2;
+    do
     {
-      do
-	ch1=toupper(*(str1++));
-      while ((ch1=='-') || (ch1=='_'));
-      do 
-	ch2=toupper(*(str2++));
-      while ((ch2=='-') || (ch2=='_'));
-      if (ch1!=ch2) return (ch1-ch2);
+        do
+        {
+            ch1=toupper(*(str1++));
+        }
+        while ((ch1=='-') || (ch1=='_'));
+        do
+        {
+            ch2=toupper(*(str2++));
+        }
+        while ((ch2=='-') || (ch2=='_'));
+
+        if (ch1!=ch2) return (ch1-ch2);
     }
-  while (ch1 && (str1-stri1<n) && (str2-stri2<n));
+    while (ch1 && (str1-stri1<n) && (str2-stri2<n));
   return 0; 
 }
 

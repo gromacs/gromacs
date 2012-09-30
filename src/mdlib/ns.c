@@ -94,11 +94,11 @@ static void reallocate_nblist(t_nblist *nl)
 {
     if (gmx_debug_at)
     {
-        fprintf(debug,"reallocating neigborlist il_code=%d, maxnri=%d\n",
-                nl->il_code,nl->maxnri); 
+        fprintf(debug,"reallocating neigborlist (ielec=%d, ivdw=%d, igeometry=%d, free_energy=%d), maxnri=%d\n",
+                nl->ielec,nl->ivdw,nl->igeometry,nl->free_energy,nl->maxnri);
     }
     srenew(nl->iinr,   nl->maxnri);
-    if (nl->enlist == enlistCG_CG)
+    if (nl->igeometry == GMX_NBLIST_GEOMETRY_CG_CG)
     {
         srenew(nl->iinr_end,nl->maxnri);
     }
@@ -107,7 +107,7 @@ static void reallocate_nblist(t_nblist *nl)
     srenew(nl->jindex, nl->maxnri+1);
 }
 
-/* ivdw/icoul are used to determine the type of interaction, so we
+/* ivdw/ielec are used to determine the type of interaction, so we
  * can set an innerloop index here. The obvious choice for this would have
  * been the vdwtype/coultype values in the forcerecord, but unfortunately 
  * those types are braindead - for instance both Buckingham and normal 
@@ -116,10 +116,10 @@ static void reallocate_nblist(t_nblist *nl)
  * for 'no interaction'. For backward compatibility with old TPR files we won't
  * change this in the 3.x series, so when calling this routine you should use:
  *
- * icoul=0 no coulomb interaction
- * icoul=1 cutoff standard coulomb
- * icoul=2 reaction-field coulomb
- * icoul=3 tabulated coulomb
+ * ielec=0 no coulomb interaction
+ * ielec=1 cutoff standard coulomb
+ * ielec=2 reaction-field coulomb
+ * ielec=3 tabulated coulomb
  *
  * ivdw=0 no vdw interaction
  * ivdw=1 standard L-J interaction
@@ -128,39 +128,15 @@ static void reallocate_nblist(t_nblist *nl)
  *
  * Kind of ugly, but it works.
  */
-static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
+static void init_nblist(FILE *log, t_nblist *nl_sr,t_nblist *nl_lr,
                         int maxsr,int maxlr,
-                        int ivdw, int icoul, 
-                        gmx_bool bfree, int enlist)
+                        int ivdw, int ielec, 
+                        gmx_bool bfree, int igeometry)
 {
     t_nblist *nl;
     int      homenr;
     int      i,nn;
     
-    int inloop[20] =
-    { 
-        eNR_NBKERNEL_NONE,
-        eNR_NBKERNEL010,
-        eNR_NBKERNEL020,
-        eNR_NBKERNEL030,
-        eNR_NBKERNEL100,
-        eNR_NBKERNEL110,
-        eNR_NBKERNEL120,
-        eNR_NBKERNEL130,
-        eNR_NBKERNEL200,
-        eNR_NBKERNEL210,
-        eNR_NBKERNEL220,
-        eNR_NBKERNEL230,
-        eNR_NBKERNEL300,
-        eNR_NBKERNEL310,
-        eNR_NBKERNEL320,
-        eNR_NBKERNEL330,
-        eNR_NBKERNEL400,
-        eNR_NBKERNEL410,
-        eNR_NBKERNEL_NONE,
-        eNR_NBKERNEL430
-    };
-  
     for(i=0; (i<2); i++)
     {
         nl     = (i == 0) ? nl_sr : nl_lr;
@@ -171,46 +147,21 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
             continue;
         }
         
+        
         /* Set coul/vdw in neighborlist, and for the normal loops we determine
          * an index of which one to call.
          */
         nl->ivdw  = ivdw;
-        nl->icoul = icoul;
+        nl->ielec = ielec;
         nl->free_energy = bfree;
-    
+        nl->igeometry = igeometry;
+        
         if (bfree)
         {
-            nl->enlist  = enlistATOM_ATOM;
-            nl->il_code = eNR_NBKERNEL_FREE_ENERGY;
+            nl->igeometry  = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
         }
-        else
-        {
-            nl->enlist = enlist;
-
-            nn = inloop[4*icoul + ivdw];
-            
-            /* solvent loops follow directly after the corresponding
-            * ordinary loops, in the order:
-            *
-            * SPC, SPC-SPC, TIP4p, TIP4p-TIP4p
-            *   
-            */
-            switch (enlist) {
-            case enlistATOM_ATOM:
-            case enlistCG_CG:
-                break;
-            case enlistSPC_ATOM:     nn += 1; break;
-            case enlistSPC_SPC:      nn += 2; break;
-            case enlistTIP4P_ATOM:   nn += 3; break;
-            case enlistTIP4P_TIP4P:  nn += 4; break;
-            }
-            
-            nl->il_code = nn;
-        }
-
-        if (debug)
-            fprintf(debug,"Initiating neighbourlist type %d for %s interactions,\nwith %d SR, %d LR atoms.\n",
-                    nl->il_code,ENLISTTYPE(enlist),maxsr,maxlr);
+        
+        gmx_nonbonded_set_kernel_pointers( (i==0) ? log : NULL,nl);
         
         /* maxnri is influenced by the number of shifts (maximum is 8)
          * and the number of energy groups.
@@ -229,6 +180,13 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         nl->jindex      = NULL;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
+    
+        if(debug)
+        {
+            fprintf(debug,"Initiating neighbourlist (ielec=%d, ivdw=%d, free=%d) for %s interactions,\nwith %d SR, %d LR atoms.\n",
+                    nl->ielec,nl->ivdw,nl->free_energy,gmx_nblist_geometry_names[nl->igeometry],maxsr,maxlr);
+        }
+        
 #ifdef GMX_THREAD_SHM_FDECOMP
         nl->counter = 0;
         snew(nl->mtx,1);
@@ -245,9 +203,9 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
     * cache trashing.
     */
    int maxsr,maxsr_wat,maxlr,maxlr_wat;
-   int icoul,icoulf,ivdw;
+   int ielec,ielecf,ivdw;
    int solvent;
-   int enlist_def,enlist_w,enlist_ww;
+   int igeometry_def,igeometry_w,igeometry_ww;
    int i;
    t_nblists *nbl;
 
@@ -274,46 +232,50 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
      maxlr = maxlr_wat = 0;
    }  
 
-   /* Determine the values for icoul/ivdw. */
+   /* Determine the values for ielec/ivdw. */
    /* Start with GB */
    if(fr->bGB)
    {
-       icoul=enbcoulGB;
+       ielec = GMX_NBKERNEL_ELEC_GENERALIZEDBORN;
    }
    else if (fr->bcoultab)
    {
-       icoul = enbcoulTAB;
+       ielec = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
    }
    else if (EEL_RF(fr->eeltype))
    {
-       icoul = enbcoulRF;
+       ielec = GMX_NBKERNEL_ELEC_REACTIONFIELD;
    }
-   else 
+   else if(EEL_PME(fr->eeltype) || fr->eeltype == eelEWALD)
    {
-       icoul = enbcoulOOR;
+       ielec = GMX_NBKERNEL_ELEC_EWALD;
+   }
+   else
+   {
+       ielec = GMX_NBKERNEL_ELEC_COULOMB;
    }
    
    if (fr->bvdwtab)
    {
-       ivdw = enbvdwTAB;
+       ivdw = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
    }
    else if (fr->bBHAM)
    {
-       ivdw = enbvdwBHAM;
+       ivdw = GMX_NBKERNEL_VDW_BUCKINGHAM;
    }
    else 
    {
-       ivdw = enbvdwLJ;
+       ivdw = GMX_NBKERNEL_VDW_LENNARDJONES;
    }
 
    fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
    if (!fr->ns.bCGlist)
    {
-       enlist_def = enlistATOM_ATOM;
+       igeometry_def = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
    }
    else
    {
-       enlist_def = enlistCG_CG;
+       igeometry_def = GMX_NBLIST_GEOMETRY_CG_CG;
        if (log != NULL)
        {
            fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
@@ -321,57 +283,62 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    }
    
    if (fr->solvent_opt == esolTIP4P) {
-       enlist_w  = enlistTIP4P_ATOM;
-       enlist_ww = enlistTIP4P_TIP4P;
+       igeometry_w  = GMX_NBLIST_GEOMETRY_WATER4_PARTICLE;
+       igeometry_ww = GMX_NBLIST_GEOMETRY_WATER4_WATER4;
    } else {
-       enlist_w  = enlistSPC_ATOM;
-       enlist_ww = enlistSPC_SPC;
+       igeometry_w  = GMX_NBLIST_GEOMETRY_WATER3_PARTICLE;
+       igeometry_ww = GMX_NBLIST_GEOMETRY_WATER3_WATER3;
    }
 
    for(i=0; i<fr->nnblists; i++) 
    {
        nbl = &(fr->nblists[i]);
-       init_nblist(&nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
-                   maxsr,maxlr,ivdw,icoul,FALSE,enlist_def);
-       init_nblist(&nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
-                   maxsr,maxlr,ivdw,0,FALSE,enlist_def);
-       init_nblist(&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
-                   maxsr,maxlr,0,icoul,FALSE,enlist_def);
-       init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
-                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_w);
-       init_nblist(&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
-                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_w);
-       init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_ww);
-       init_nblist(&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_ww);
+       init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
+                   maxsr,maxlr,ivdw,ielec,FALSE,igeometry_def);
+       init_nblist(log,&nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
+                   maxsr,maxlr,ivdw,0,FALSE,igeometry_def);
+       init_nblist(log,&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
+                   maxsr,maxlr,0,ielec,FALSE,igeometry_def);
+       init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
+                   maxsr_wat,maxlr_wat,ivdw,ielec, FALSE,igeometry_w);
+       init_nblist(log,&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
+                   maxsr_wat,maxlr_wat,0,ielec, FALSE,igeometry_w);
+       init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
+                   maxsr_wat,maxlr_wat,ivdw,ielec, FALSE,igeometry_ww);
+       init_nblist(log,&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
+                   maxsr_wat,maxlr_wat,0,ielec, FALSE,igeometry_ww);
        
        if (fr->efep != efepNO) 
        {
            if ((fr->bEwald) && (fr->sc_alphacoul > 0)) /* need to handle long range differently if using softcore */
            {
-               icoulf = enbcoulFEWALD;
+               ielecf = enbcoulFEWALD;
            }
            else
            {
-               icoulf = icoul;
+               ielecf = ielec;
            }
 
-           init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
-                       maxsr,maxlr,ivdw,icoulf,TRUE,enlistATOM_ATOM);
-           init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
-                       maxsr,maxlr,ivdw,0,TRUE,enlistATOM_ATOM);
-           init_nblist(&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
-                       maxsr,maxlr,0,icoulf,TRUE,enlistATOM_ATOM);
+           init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
+                       maxsr,maxlr,ivdw,ielecf,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
+           init_nblist(log,&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
+                       maxsr,maxlr,ivdw,0,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
+           init_nblist(log,&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
+                       maxsr,maxlr,0,ielecf,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
        }  
    }
    /* QMMM MM list */
    if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
    {
-       init_nblist(&fr->QMMMlist,NULL,
-                   maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
+       init_nblist(log,&fr->QMMMlist,NULL,
+                   maxsr,maxlr,0,ielec,FALSE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
    }
 
+   if(log!=NULL)
+   {
+       fprintf(log,"\n");
+   }
+    
    fr->ns.nblist_initialized=TRUE;
 }
 
@@ -532,8 +499,8 @@ static inline void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,gmx_bool bLR)
     {
         nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
         if (gmx_debug_at)
-            fprintf(debug,"Increasing %s nblist %s j size to %d\n",
-                    bLR ? "LR" : "SR",nrnb_str(nlist->il_code),nlist->maxnrj);
+            fprintf(debug,"Increasing %s nblist (ielec=%d,ivdw=%d,free=%d,igeometry=%d) j size to %d\n",
+                    bLR ? "LR" : "SR",nlist->ielec,nlist->ivdw,nlist->free_energy,nlist->igeometry,nlist->maxnrj);
         
         srenew(nlist->jjnr,nlist->maxnrj);
     }
@@ -554,8 +521,8 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
     {
         nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
         if (gmx_debug_at)
-            fprintf(debug,"Increasing %s nblist %s j size to %d\n",
-                    bLR ? "LR" : "SR",nrnb_str(nlist->il_code),nlist->maxnrj);
+            fprintf(debug,"Increasing %s nblist (ielec=%d,ivdw=%d,free=%d,igeometry=%d) j size to %d\n",
+                    bLR ? "LR" : "SR",nlist->ielec,nlist->ivdw,nlist->free_energy,nlist->igeometry,nlist->maxnrj);
         
         srenew(nlist->jjnr    ,nlist->maxnrj);
         srenew(nlist->jjnr_end,nlist->maxnrj);
