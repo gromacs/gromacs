@@ -37,6 +37,7 @@
  */
 
 #include "types/simple.h"
+#include "../nb_kernel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,23 +58,14 @@ extern "C" {
  *        call sequence. Parameters are documented in nb_kernel.h
  */
 void
-nb_kernel313
-                (int *         nri,        int           iinr[],     
-                 int           jindex[],   int           jjnr[],   
-                 int           shift[],    real          shiftvec[],
-                 real          fshift[],   int           gid[], 
-                 real          pos[],      real          faction[],
-                 real          charge[],   real *        facel,
-                 real *        krf,        real *        crf,  
-                 real          Vc[],       int           type[],   
-                 int *         ntype,      real          vdwparam[],
-                 real          Vvdw[],     real *        tabscale,
-                 real          VFtab[],    real          invsqrta[], 
-                 real          dvda[],     real *        gbtabscale,
-                 real          GBtab[],    int *         nthreads, 
-                 int *         count,      void *        mtx,
-                 int *         outeriter,  int *         inneriter,
-                 real          work[]);
+nb_kernel313(t_nblist *                nlist,
+             rvec *                    x,
+             rvec *                    f,
+             t_forcerec *              fr,
+             t_mdatoms *               mdatoms,
+             nb_kernel_data_t *        kernel_data,
+             t_nrnb *                  nrnb);
+
 
 
 /*! \brief Nonbonded kernel 313 without forces.
@@ -87,23 +79,14 @@ nb_kernel313
  *        call sequence. Parameters are documented in nb_kernel.h
  */
 void
-nb_kernel313nf
-                (int *         nri,        int           iinr[],     
-                 int           jindex[],   int           jjnr[],   
-                 int           shift[],    real          shiftvec[],
-                 real          fshift[],   int           gid[], 
-                 real          pos[],      real          faction[],
-                 real          charge[],   real *        facel,
-                 real *        krf,        real *        crf,  
-                 real          Vc[],       int           type[],   
-                 int *         ntype,      real          vdwparam[],
-                 real          Vvdw[],     real *        tabscale,
-                 real          VFtab[],    real          invsqrta[], 
-                 real          dvda[],     real *        gbtabscale,
-                 real          GBtab[],    int *         nthreads, 
-                 int *         count,      void *        mtx,
-                 int *         outeriter,  int *         inneriter,
-                 real          work[]);
+nb_kernel313nf(t_nblist *                nlist,
+               rvec *                    x,
+               rvec *                    f,
+               t_forcerec *              fr,
+               t_mdatoms *               mdatoms,
+               nb_kernel_data_t *        kernel_data,
+               t_nrnb *                  nrnb);
+
 
 
 #ifdef __cplusplus

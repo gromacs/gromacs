@@ -38,6 +38,7 @@
 #include "thread_mpi.h"
 #endif
 
+#include "nrnb.h"
 #include "nb_kernel133.h"
 
 /*
@@ -47,38 +48,13 @@
  * water optimization:      TIP4P - other atoms
  * Calculate forces:        yes
  */
-void nb_kernel133(
-                    int *           p_nri,
-                    int *           iinr,
-                    int *           jindex,
-                    int *           jjnr,
-                    int *           shift,
-                    real *          shiftvec,
-                    real *          fshift,
-                    int *           gid,
-                    real *          pos,
-                    real *          faction,
-                    real *          charge,
-                    real *          p_facel,
-                    real *          p_krf,
-                    real *          p_crf,
-                    real *          Vc,
-                    int *           type,
-                    int *           p_ntype,
-                    real *          vdwparam,
-                    real *          Vvdw,
-                    real *          p_tabscale,
-                    real *          VFtab,
-                    real *          invsqrta,
-                    real *          dvda,
-                    real *          p_gbtabscale,
-                    real *          GBtab,
-                    int *           p_nthreads,
-                    int *           count,
-                    void *          mtx,
-                    int *           outeriter,
-                    int *           inneriter,
-                    real *          work)
+void nb_kernel133(t_nblist *                nlist,
+                  rvec *                    x,
+                  rvec *                    f,
+                  t_forcerec *              fr,
+                  t_mdatoms *               mdatoms,
+                  nb_kernel_data_t *        kernel_data,
+                  t_nrnb *                  nrnb)
 {
     int           nri,ntype,nthreads;
     real          facel,krf,crf,tabscale,gbtabscale;
@@ -110,13 +86,62 @@ void nb_kernel133(
     real          qH,qM;
     real          c6,c12;
 
-    nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
+    real *        pos;
+    real *        faction;
+    real *        fshift;
+    int  *        iinr;
+    int  *        jindex;
+    int *         jjnr;
+    int           icoul,ivdw;
+    int *         shift;
+    int *         gid;
+    real *        shiftvec;
+    real *        charge;
+    real *        Vc;
+    int *         type;
+    real *        vdwparam;
+    real *        Vvdw;
+    real *        VFtab;
+    real *        invsqrta;
+    real *        dvda;
+    real *        GBTab;
+    
+    pos              = x[0];
+    faction          = f[0];
+    fshift           = fr->fshift[0];
+    
+    nri              = nlist->nri;
+    iinr             = nlist->iinr;
+    jindex           = nlist->jindex;
+    jjnr             = nlist->jjnr;
+    icoul            = nlist->ielec;
+    ivdw             = nlist->ivdw;
+    shift            = nlist->shift;
+    gid              = nlist->gid;
+    shiftvec         = fr->shift_vec[0];
+    
+    /* elec params */
+    charge           = mdatoms->chargeA;
+    Vc               = kernel_data->energygrp_elec;
+    facel            = fr->epsfac;
+    krf              = fr->k_rf;
+    crf              = fr->c_rf;
+    
+    /* vdw params */
+    type             = mdatoms->typeA;
+    ntype            = fr->ntype;
+    vdwparam         = fr->nbfp;
+    Vvdw             = kernel_data->energygrp_vdw;
+    
+    /* table params */
+    VFtab            = kernel_data->table_vdw->data;
+    tabscale         = kernel_data->table_vdw->scale;
+    
+    /* GB parans */
+    invsqrta         = fr->invsqrta;
+    dvda             = fr->dvda;
+    GBTab            = fr->gbtab.data;
+    gbtabscale       = fr->gbtabscale;
 
     /* Initialize water data */
     ii               = iinr[0];        
@@ -398,276 +423,11 @@ void nb_kernel133(
     }
     while (nn1<nri);
     
-
-    /* Write outer/inner iteration count to pointers */
-    *outeriter       = nouter;         
-    *inneriter       = ninner;         
+    /* 12 flops per outer iteration
+     * 19 flops per inner iteration
+     */
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4_VF,nlist->nri*12 + nlist->jindex[n]*19);
 }
 
-
-
-
-
-/*
- * Gromacs nonbonded kernel nb_kernel133nf
- * Coulomb interaction:     Normal Coulomb
- * VdW interaction:         Tabulated
- * water optimization:      TIP4P - other atoms
- * Calculate forces:        no
- */
-void nb_kernel133nf(
-                    int *           p_nri,
-                    int *           iinr,
-                    int *           jindex,
-                    int *           jjnr,
-                    int *           shift,
-                    real *          shiftvec,
-                    real *          fshift,
-                    int *           gid,
-                    real *          pos,
-                    real *          faction,
-                    real *          charge,
-                    real *          p_facel,
-                    real *          p_krf,
-                    real *          p_crf,
-                    real *          Vc,
-                    int *           type,
-                    int *           p_ntype,
-                    real *          vdwparam,
-                    real *          Vvdw,
-                    real *          p_tabscale,
-                    real *          VFtab,
-                    real *          invsqrta,
-                    real *          dvda,
-                    real *          p_gbtabscale,
-                    real *          GBtab,
-                    int *           p_nthreads,
-                    int *           count,
-                    void *          mtx,
-                    int *           outeriter,
-                    int *           inneriter,
-                    real *          work)
-{
-    int           nri,ntype,nthreads;
-    real          facel,krf,crf,tabscale,gbtabscale;
-    int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid;
-    int           nn0,nn1,nouter,ninner;
-    real          shX,shY,shZ;
-    real          jq;
-    real          qq,vcoul,vctot;
-    int           nti;
-    int           tj;
-    real          Vvdw6,Vvdwtot;
-    real          Vvdw12;
-    real          r,rt,eps,eps2;
-    int           n0,nnn;
-    real          Y,F,Geps,Heps2,Fp,VV;
-    real          ix1,iy1,iz1;
-    real          ix2,iy2,iz2;
-    real          ix3,iy3,iz3;
-    real          ix4,iy4,iz4;
-    real          jx1,jy1,jz1;
-    real          dx11,dy11,dz11,rsq11,rinv11;
-    real          dx21,dy21,dz21,rsq21,rinv21;
-    real          dx31,dy31,dz31,rsq31,rinv31;
-    real          dx41,dy41,dz41,rsq41,rinv41;
-    real          qH,qM;
-    real          c6,c12;
-
-    nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-
-    /* Initialize water data */
-    ii               = iinr[0];        
-    qH               = facel*charge[ii+1];
-    qM               = facel*charge[ii+3];
-    nti              = 2*ntype*type[ii];
-
-
-    /* Reset outer and inner iteration counters */
-    nouter           = 0;              
-    ninner           = 0;              
-
-    /* Loop over thread workunits */
-    
-    do
-    {
-#ifdef GMX_THREAD_SHM_FDECOMP
-        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
-        nn0              = *count;         
-		
-        /* Take successively smaller chunks (at least 10 lists) */
-        nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
-        *count           = nn1;            
-        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
-        if(nn1>nri) nn1=nri;
-#else
-	    nn0 = 0;
-		nn1 = nri;
-#endif
-        /* Start outer loop over neighborlists */
-        
-        for(n=nn0; (n<nn1); n++)
-        {
-
-            /* Load shift vector for this list */
-            is3              = 3*shift[n];     
-            shX              = shiftvec[is3];  
-            shY              = shiftvec[is3+1];
-            shZ              = shiftvec[is3+2];
-
-            /* Load limits for loop over neighbors */
-            nj0              = jindex[n];      
-            nj1              = jindex[n+1];    
-
-            /* Get outer coordinate index */
-            ii               = iinr[n];        
-            ii3              = 3*ii;           
-
-            /* Load i atom data, add shift vector */
-            ix1              = shX + pos[ii3+0];
-            iy1              = shY + pos[ii3+1];
-            iz1              = shZ + pos[ii3+2];
-            ix2              = shX + pos[ii3+3];
-            iy2              = shY + pos[ii3+4];
-            iz2              = shZ + pos[ii3+5];
-            ix3              = shX + pos[ii3+6];
-            iy3              = shY + pos[ii3+7];
-            iz3              = shZ + pos[ii3+8];
-            ix4              = shX + pos[ii3+9];
-            iy4              = shY + pos[ii3+10];
-            iz4              = shZ + pos[ii3+11];
-
-            /* Zero the potential energy for this list */
-            vctot            = 0;              
-            Vvdwtot          = 0;              
-
-            /* Clear i atom forces */
-            
-            for(k=nj0; (k<nj1); k++)
-            {
-
-                /* Get j neighbor index, and coordinate index */
-                jnr              = jjnr[k];        
-                j3               = 3*jnr;          
-
-                /* load j atom coordinates */
-                jx1              = pos[j3+0];      
-                jy1              = pos[j3+1];      
-                jz1              = pos[j3+2];      
-
-                /* Calculate distance */
-                dx11             = ix1 - jx1;      
-                dy11             = iy1 - jy1;      
-                dz11             = iz1 - jz1;      
-                rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-                dx21             = ix2 - jx1;      
-                dy21             = iy2 - jy1;      
-                dz21             = iz2 - jz1;      
-                rsq21            = dx21*dx21+dy21*dy21+dz21*dz21;
-                dx31             = ix3 - jx1;      
-                dy31             = iy3 - jy1;      
-                dz31             = iz3 - jz1;      
-                rsq31            = dx31*dx31+dy31*dy31+dz31*dz31;
-                dx41             = ix4 - jx1;      
-                dy41             = iy4 - jy1;      
-                dz41             = iz4 - jz1;      
-                rsq41            = dx41*dx41+dy41*dy41+dz41*dz41;
-
-                /* Calculate 1/r and 1/r2 */
-                rinv11           = gmx_invsqrt(rsq11);
-                rinv21           = gmx_invsqrt(rsq21);
-                rinv31           = gmx_invsqrt(rsq31);
-                rinv41           = gmx_invsqrt(rsq41);
-
-                /* Load parameters for j atom */
-                tj               = nti+2*type[jnr];
-                c6               = vdwparam[tj];   
-                c12              = vdwparam[tj+1]; 
-
-                /* Calculate table index */
-                r                = rsq11*rinv11;   
-
-                /* Calculate table index */
-                rt               = r*tabscale;     
-                n0               = rt;             
-                eps              = rt-n0;          
-                eps2             = eps*eps;        
-                nnn              = 8*n0;           
-
-                /* Tabulated VdW interaction - dispersion */
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                Vvdw6            = c6*VV;          
-
-                /* Tabulated VdW interaction - repulsion */
-                nnn              = nnn+4;          
-                Y                = VFtab[nnn];     
-                F                = VFtab[nnn+1];   
-                Geps             = eps*VFtab[nnn+2];
-                Heps2            = eps2*VFtab[nnn+3];
-                Fp               = F+Geps+Heps2;   
-                VV               = Y+eps*Fp;       
-                Vvdw12           = c12*VV;         
-                Vvdwtot          = Vvdwtot+ Vvdw6 + Vvdw12;
-
-                /* Load parameters for j atom */
-                jq               = charge[jnr+0];  
-                qq               = qH*jq;          
-
-                /* Coulomb interaction */
-                vcoul            = qq*rinv21;      
-                vctot            = vctot+vcoul;    
-
-                /* Load parameters for j atom */
-
-                /* Coulomb interaction */
-                vcoul            = qq*rinv31;      
-                vctot            = vctot+vcoul;    
-
-                /* Load parameters for j atom */
-                qq               = qM*jq;          
-
-                /* Coulomb interaction */
-                vcoul            = qq*rinv41;      
-                vctot            = vctot+vcoul;    
-
-                /* Inner loop uses 80 flops/iteration */
-            }
-            
-
-            /* Add i forces to mem and shifted force list */
-
-            /* Add potential energies to the group for this list */
-            ggid             = gid[n];         
-            Vc[ggid]         = Vc[ggid] + vctot;
-            Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
-
-            /* Increment number of inner iterations */
-            ninner           = ninner + nj1 - nj0;
-
-            /* Outer loop uses 14 flops/iteration */
-        }
-        
-
-        /* Increment number of outer iterations */
-        nouter           = nouter + nn1 - nn0;
-    }
-    while (nn1<nri);
-    
-
-    /* Write outer/inner iteration count to pointers */
-    *outeriter       = nouter;         
-    *inneriter       = ninner;         
-}
 
 

@@ -44,30 +44,53 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+} /* fixes auto-indentation problems */
+#endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
 
-typedef struct {
-  real r;         /* range of the table */
-  int  n;         /* n+1 is the number of points */
-  real scale;     /* distance between two points */
-  real scale_exp; /* distance for exponential Buckingham table */
-  real *tab;      /* the actual tables, per point there are  4 numbers for
-		   * Coulomb, dispersion and repulsion (in total 12 numbers)
-		   */
+
+
+/* Structure describing the data in a single table */
+typedef struct
+{
+    enum gmx_table_interaction  interaction; /* Interactions stored in this table */
+    enum gmx_table_format       format;      /* Interpolation type and data format */
+    
+    real                        r;         /* range of the table */
+    int                         n;         /* n+1 is the number of table points */
+    real                        scale;     /* distance (nm) between two table points */
+    real                        scale_exp; /* distance for exponential part of VdW table, not always used */
+    real *                      data;      /* the actual table data */
+    
+    /* Some information about the table layout. This can also be derived from the interpolation
+     * type and the table interactions, but it is convenient to have here for sanity checks, and it makes it
+     * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
+     * It is always true that stride = formatsize*ninteractions
+     */
+    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
+    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
+    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
 } t_forcetable;
 
-typedef struct {
-  t_forcetable tab;
-  /* We duplicate tables for cache optimization purposes */
-  real *coultab;      /* Coul only */
-  real *vdwtab;       /* Vdw only   */
-  /* The actual neighbor lists, short and long range, see enum above
-   * for definition of neighborlist indices.
-   */
-  t_nblist nlist_sr[eNL_NR];
-  t_nblist nlist_lr[eNL_NR];
+typedef struct
+{
+    t_forcetable   table_elec;
+    t_forcetable   table_vdw;
+    t_forcetable   table_elec_vdw;
+    /* Slight overkill to store all 3, but it makes life much simpler when we dont have to check for each architecture! */
+    t_forcetable   table_ewald_linear_fdv0;
+    t_forcetable   table_ewald_linear_vf;
+    t_forcetable   table_ewald_linear_v;
+    t_forcetable   table_ewald_linear_f;
+
+    /* The actual neighbor lists, short and long range, see enum above
+     * for definition of neighborlist indices.
+     */
+    t_nblist nlist_sr[eNL_NR];
+    t_nblist nlist_lr[eNL_NR];
 } t_nblists;
 
 /* macros for the cginfo data in forcerec */

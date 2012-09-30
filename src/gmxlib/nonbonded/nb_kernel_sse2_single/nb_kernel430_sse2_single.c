@@ -24,7 +24,7 @@
 #include <gmx_sse2_single.h>
 
 /* get gmx_gbdata_t */
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 
 void nb_kernel430_sse2_single(int *           p_nri,

@@ -35,7 +35,7 @@
 
 #include "types/nrnb.h"
 #include "nb_kernel_f77_double.h"
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 
 /* Include standard kernel headers in local directory */
