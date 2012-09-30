@@ -3023,7 +3023,7 @@ static real bonded_tab(const char *type,int table_nr,
   k = (1.0 - lambda)*kA + lambda*kB;
 
   tabscale = table->scale;
-  VFtab    = table->tab;
+  VFtab    = table->data;
   
   rt    = r*tabscale;
   n0    = rt;
