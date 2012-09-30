@@ -38,6 +38,10 @@
 #include "main.h"
 #include "md_logging.h"
 
+#if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
+#include "windows.h"
+#endif
+
 /* Although we can't have more than 10 GPU different ID-s passed by the user as
  * the id-s are assumed to be represented by single digits, as multiple
  * processes can share a GPU, we can end up with more than 10 IDs.
@@ -139,13 +143,17 @@ static void print_gpu_use_stats(FILE *fplog,
 static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 {
     int  i;
+    size_t len_idstr;
 
-    *nid = strlen(idstr);
+    len_idstr = strlen(idstr);
 
-    if (*nid > max_gpu_ids_user)
+    if (len_idstr > max_gpu_ids_user)
     {
-        gmx_fatal(FARGS,"%d GPU IDs provided, but not more than %d are supported",*nid,max_gpu_ids_user);
+        gmx_fatal(FARGS,"%d GPU IDs provided, but only at most %d are supported",
+                  len_idstr, max_gpu_ids_user);
     }
+
+    *nid = len_idstr;
 
     for (i = 0; i < *nid; i++)
     {
@@ -391,8 +399,15 @@ static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
 {
      int ret = 0;
 
-#if !(defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) || defined (__CYGWIN__) || defined (__CYGWIN32__)
-#ifdef HAVE_SYSCONF
+#if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
+    /* Windows */
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo( &sysinfo );
+    ret = sysinfo.dwNumberOfProcessors;
+#elif defined HAVE_SYSCONF
+    /* We are probably on Unix.
+     * Now check if we have the argument to use before executing the call
+     */
 #if defined(_SC_NPROCESSORS_ONLN)
     ret = sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(_SC_NPROC_ONLN)
@@ -401,13 +416,12 @@ static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
     ret = sysconf(_SC_NPROCESSORS_CONF);
 #elif defined(_SC_NPROC_CONF)
     ret = sysconf(_SC_NPROC_CONF);
-#endif
-#endif /* HAVE_SYSCONF */
+#endif /* End of check for sysconf argument values */
+
 #else
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo( &sysinfo );
-    ret = sysinfo.dwNumberOfProcessors;
-#endif /* WIN */
+    /* Neither windows nor Unix. No fscking idea how many CPUs we have! */
+    ret = -1;
+#endif
 
     if (debug)
     {

@@ -215,16 +215,20 @@ execute_x86cpuid(unsigned int   level,
                  unsigned int * ecx,
                  unsigned int * edx)
 {
-    int rc;
-
-    rc = 0;
+    int rc = 0;
 
 #if (defined _MSC_VER)
     int CPUInfo[4];
 
-    /* MSVC */
+#if (_MSC_VER > 1500) || (_MSC_VER==1500 & _MSC_FULL_VER >= 150030729)
+    /* MSVC 9.0 SP1 or later */
     __cpuidex(CPUInfo,level,ecxval);
-
+    rc = 0;
+#else
+    __cpuid(CPUInfo,level);
+    /* Set an error code if the user wanted a non-zero ecxval, since we did not have cpuidex */
+    rc = (ecxval>0) ? -1 : 0;
+#endif
     *eax=CPUInfo[0];
     *ebx=CPUInfo[1];
     *ecx=CPUInfo[2];
@@ -249,7 +253,7 @@ execute_x86cpuid(unsigned int   level,
     __asm__ __volatile__ ("cpuid            \n\t"
                           : "+a"(*eax), "+b"(*ebx), "+c"(*ecx), "+d"(*edx));
 #endif
-
+    rc = 0;
 #else
     /* Death and horror!
      * Apparently this is an x86 platform where we don't know how to call cpuid.
@@ -543,6 +547,7 @@ gmx_cpuid_formatstring       (gmx_cpuid_t              cpuid,
 {
     int c;
     int i;
+    enum gmx_cpuid_feature  feature;
 
 #ifdef _MSC_VER
     _snprintf(str,n,
@@ -569,14 +574,14 @@ gmx_cpuid_formatstring       (gmx_cpuid_t              cpuid,
     n   -= c;
     str += c;
 
-    for(i=0;i<GMX_CPUID_NFEATURES;i++)
+    for(feature=GMX_CPUID_FEATURE_CANNOTDETECT;feature<GMX_CPUID_NFEATURES;feature++)
     {
-        if(gmx_cpuid_feature(cpuid,i)==1)
+        if(gmx_cpuid_feature(cpuid,feature)==1)
         {
 #ifdef _MSC_VER
-            _snprintf(str,n," %s",gmx_cpuid_feature_string[i]);
+            _snprintf(str,n," %s",gmx_cpuid_feature_string[feature]);
 #else
-            snprintf(str,n," %s",gmx_cpuid_feature_string[i]);
+            snprintf(str,n," %s",gmx_cpuid_feature_string[feature]);
 #endif
             str[n-1] = '\0';
             c = strlen(str);
