@@ -313,8 +313,9 @@ typedef struct {
   rvec posres_comB;     /* The B-state COM of the posres atoms          */
   int  andersen_seed;   /* Random seed for Andersen thermostat (obsolete) */
   real verletbuf_drift; /* Max. drift (kJ/mol/ps/atom) for list buffer  */
-  real rlist;		/* short range pairlist cut-off (nm)		*/
-  real rlistlong;	/* long range pairlist cut-off (nm)		*/
+  real rlist;		    /* short range pairlist cut-off (nm)		*/
+  real rlistlong;  	    /* long range pairlist cut-off (nm)		*/
+  int  nstcalclr;       /* Frequency of evaluating direct space long-range interactions */
   real rtpi;            /* Radius for test particle insertion           */
   int  coulombtype;	/* Type of electrostatics treatment             */
   int  coulomb_modifier; /* Modify the Coulomb interaction              */

@@ -306,9 +306,17 @@ int gmx_h2order(int argc,char *argv[])
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&ngx,&index,&grpname); 
   
   if (bMicel)
+  {
     rd_index(opt2fn("-nm",NFILE,fnm), 1, &nmic, &micelle, &micname);
-
-  calc_h2order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder, 
+  }
+  else
+  {
+      nmic    = 0;
+      micelle = NULL;
+      micname = NULL;
+  }
+    
+  calc_h2order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder,
 	       &slWidth, &nslices, top, ePBC, axis, bMicel, micelle, nmic,
                oenv); 
 

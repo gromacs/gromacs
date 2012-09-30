@@ -216,62 +216,6 @@ typedef int gmx_large_int_t;
 
 #endif
     
-    
-/* Try to define suitable inline keyword for gmx_inline.
- * Set it to empty if we cannot find one (and dont complain to the user)
- */
-#ifndef __cplusplus
-
-#ifdef __GNUC__
-   /* GCC */
-#  define gmx_inline   __inline__
-#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
-   /* ICC */
-#  define gmx_inline __inline__
-#elif defined(__PATHSCALE__)
-   /* Pathscale */
-#  define gmx_inline __inline__
-#elif defined(__PGIC__)
-   /* Portland */
-#  define gmx_inline __inline
-#elif defined _MSC_VER
-   /* MSVC */
-#  define gmx_inline __inline
-#elif defined(__xlC__)
-   /* IBM */
-#  define gmx_inline __inline
-#else
-#  define gmx_inline
-#endif
-
-#else
-#  define gmx_inline inline
-#endif
-
-
-/* Restrict keywords. Note that this has to be done for C++ too. */
-#ifdef __GNUC__
-/* GCC */
-#  define gmx_restrict   __restrict__
-#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
-/* ICC */
-#  define gmx_restrict __restrict__
-#elif defined(__PATHSCALE__)
-/* Pathscale */
-#  define gmx_restrict __restrict
-#elif defined(__PGIC__)
-/* Portland */
-#  define gmx_restrict __restrict
-#elif defined _MSC_VER
-/* MSVC */
-#  define gmx_restrict __restrict
-#elif defined(__xlC__)
-/* IBM */
-#  define gmx_restrict __restrict
-#else
-#  define gmx_restrict
-#endif
-
 
 /* Standard sizes for char* string buffers */
 #define STRLEN 4096

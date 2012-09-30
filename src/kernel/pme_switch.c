@@ -289,6 +289,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
     pme_setup_t *set;
     double cycles_fast;
     char buf[STRLEN];
+    real rtab;
 
     if (pmes->stage == pmes->nstage)
     {
@@ -302,6 +303,8 @@ gmx_bool switch_pme(pme_switch_t pmes,
     }
 
     set = &pmes->setup[pmes->cur];
+
+    rtab = ir->rlistlong + ir->tabext;
 
     set->count++;
     if (set->count % 2 == 1)
@@ -483,12 +486,16 @@ gmx_bool switch_pme(pme_switch_t pmes,
     }
     else
     {
-        init_interaction_const_tables(NULL,ic,nbv->grp[0].kernel_type);
+        init_interaction_const_tables(NULL,ic,
+                                      (ir->cutoff_scheme == ecutsGROUP) ? -1 : nbv->grp[0].kernel_type,
+                                      rtab);
     }
 
     if (nbv->ngrp > 1)
     {
-        init_interaction_const_tables(NULL,ic,nbv->grp[1].kernel_type);
+        init_interaction_const_tables(NULL,ic,
+                                      (ir->cutoff_scheme == ecutsGROUP) ? -1 : nbv->grp[1].kernel_type,
+                                      rtab);
     }
 
     if (cr->duty & DUTY_PME)

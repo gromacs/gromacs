@@ -212,6 +212,11 @@ int gmx_sorient(int argc,char *argv[])
   /* initialize reading trajectory:                         */
   natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
+  if(!bTPS)
+  {
+      ePBC = guess_ePBC(box);
+  }
+    
   rmin2 = sqr(rmin);
   rmax2 = sqr(rmax);
   rcut  = 0.99*sqrt(max_cutoff2(guess_ePBC(box),box));

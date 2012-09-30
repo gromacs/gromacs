@@ -241,12 +241,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        if (ir->coulomb_modifier != eintmodNONE ||
-            ir->vdw_modifier != eintmodNONE)
-        {
-            warning_error(wi,"potential modifiers are not supported (yet) with the group cut-off scheme");
-        }
-
         /* BASIC CUT-OFF STUFF */
         if (ir->rlist == 0 ||
             !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
@@ -368,6 +362,12 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
         /* No twin-range calculations with Verlet lists */
         ir->rlistlong = ir->rlist;
+    }
+
+    if(ir->nstcalclr!=1 && ir->nstcalclr!=-1)
+    {
+        warning_note(wi,"nstcalclr can only be 1 (every step), or -1 to calculate during neighborsearching; changing to -1.");
+        ir->nstcalclr = -1;
     }
 
     /* GENERAL INTEGRATOR STUFF */
@@ -928,8 +928,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     }
   } else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype)) {
-      if (ir->cutoff_scheme == ecutsGROUP) {
-          sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
+      if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE) {
+          sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist unless you use a potential modifier",
                   eel_names[ir->coulombtype]);
           CHECK(ir->rlist > ir->rcoulomb);
       }
@@ -941,7 +941,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
-    } else if (ir->cutoff_scheme == ecutsGROUP) {
+    } else if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE) {
       if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD) {
 	sprintf(err_buf,
 		"With coulombtype = %s, rcoulomb must be equal to rlist\n"
@@ -952,7 +952,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 		"With coulombtype = %s, rcoulomb must be equal to rlist",
 		eel_names[ir->coulombtype]);
       }
-      CHECK(ir->rcoulomb != ir->rlist);
+    //  CHECK(ir->rcoulomb != ir->rlist);
     }
   }
 
@@ -978,8 +978,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
   } else if (ir->vdwtype == evdwCUT) {
-      if (ir->cutoff_scheme == ecutsGROUP) {
-          sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
+      if (ir->cutoff_scheme == ecutsGROUP && ir->vdw_modifier == eintmodNONE) {
+          sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist unless you use a potential modifier",evdw_names[ir->vdwtype]);
           CHECK(ir->rlist > ir->rvdw);
       }
   }
@@ -1005,13 +1005,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (ir->nstlist == -1) {
-    sprintf(err_buf,
-	    "nstlist=-1 only works with switched or shifted potentials,\n"
-	    "suggestion: use vdw-type=%s and coulomb-type=%s",
-	    evdw_names[evdwSHIFT],eel_names[eelPMESWITCH]);
-    CHECK(!(EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) &&
-            EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)));
-
     sprintf(err_buf,"With nstlist=-1 rvdw and rcoulomb should be smaller than rlist to account for diffusion and possibly charge-group radii");
     CHECK(ir->rvdw >= ir->rlist || ir->rcoulomb >= ir->rlist);
   }
@@ -1030,13 +1023,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     /* ENERGY CONSERVATION */
     if (ir_NVE(ir) && ir->cutoff_scheme == ecutsGROUP)
     {
-        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
+        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0 && ir->vdw_modifier == eintmodNONE)
         {
             sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
                     evdw_names[evdwSHIFT]);
             warning_note(wi,warn_buf);
         }
-        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)
+        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0 && ir->coulomb_modifier == eintmodNONE)
         {
             sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
                     eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
@@ -1581,6 +1574,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("rlist",	ir->rlist,	-1);
   CTYPE ("long-range cut-off for switched potentials");
   RTYPE ("rlistlong",	ir->rlistlong,	-1);
+  ITYPE ("nstcalclr",	ir->nstcalclr,	-1);
 
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");

@@ -35,7 +35,7 @@
 
 #include "types/nrnb.h"
 #include "nb_kernel_power6.h"
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 
 /* Include standard kernel headers in local directory */
