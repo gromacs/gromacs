@@ -39,7 +39,7 @@
 #endif
 
 /* get gmx_gbdata_t */
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 #include "nb_kernel410.h"
 

@@ -853,7 +853,7 @@ const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[])
 {
     int i;
 
-    for (i = 0; (i < nfile); i++)
+    for (i = 0; (i < nfile); i++)    
         if (strcmp(opt, fnm[i].opt) == 0)
         {
             if (IS_OPT(fnm[i]) && !IS_SET(fnm[i]))

@@ -58,7 +58,7 @@
                           int *                outeriter,
                           int *                inneriter)
 {
-     int           nri,ntype,table_nelements,icoul,ivdw;
+     int           nri,ntype,table_nelements,ielec,ivdw;
      real          facel,gbtabscale;
      int           n,is3,i3,k,nj0,nj1,j3,ggid,nnn,n0;
      int           ai0,ai1,ai,aj0,aj1,aj;
@@ -84,7 +84,7 @@
      int *         type;
      t_excl *      excl;
        
-     icoul               = nlist->icoul;
+     ielec               = nlist->ielec;
      ivdw                = nlist->ivdw;
      
      /* avoid compiler warnings for cases that cannot happen */
@@ -95,7 +95,7 @@
      
      /* 3 VdW parameters for buckingham, otherwise 2 */
      nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
-     table_nelements     = (icoul==3) ? 4 : 0;
+     table_nelements     = (ielec==3) ? 4 : 0;
      table_nelements    += (ivdw==3) ? 8 : 0;
      
      charge              = mdatoms->chargeA;
@@ -162,7 +162,7 @@
                      rinvsq           = rinv*rinv;  
                      fscal            = 0;
 
-                     if (icoul==3 || ivdw==3)
+                     if (ielec==3 || ivdw==3)
                      {
                          r                = rsq*rinv;
                          rt               = r*tabscale;     
@@ -172,12 +172,12 @@
                          nnn              = table_nelements*n0;           				
                      }
                      
-                     /* Coulomb interaction. icoul==0 means no interaction */
-                     if (icoul > 0)
+                     /* Coulomb interaction. ielec==0 means no interaction */
+                     if (ielec > 0)
                      {
                          qq               = iq*charge[aj]; 
                          
-                         switch(icoul)
+                         switch(ielec)
                          {
                          case 1:
                              /* Vanilla cutoff coulomb */
@@ -212,7 +212,7 @@
                            break;
                            
                          default:
-                             gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for icoul=%d.\n",icoul);
+                             gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for ielec=%d.\n",ielec);
                              break;
                          }
                          vctot            = vctot+vcoul;    
