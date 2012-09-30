@@ -1039,6 +1039,12 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   nx0             = 10;
   nx              = 0;
   
+  table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
+  table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+  table.formatsize    = 4;
+  table.ninteractions = 3;
+  table.stride        = table.formatsize*table.ninteractions;
+
   /* Check whether we have to read or generate */
   bReadTab = FALSE;
   bGenTab  = FALSE;
@@ -1084,7 +1090,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
    * numbers per nx+1 data points. For performance reasons we want
    * the table data to be aligned to 16-byte.
    */
-  snew_aligned(table.tab, 12*(nx+1)*sizeof(real),16);
+  snew_aligned(table.data, 12*(nx+1)*sizeof(real),16);
 
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
@@ -1099,7 +1105,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
 		td[k].nx,b14only?"1-4 ":"",tprops[tabsel[k]].name,
 		td[k].tabscale);
     }
-    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,table.tab);
+    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,table.data);
     
     if (bDebugMode() && bVerbose) {
       if (b14only)
@@ -1109,7 +1115,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
       /* plot the output 5 times denser than the table data */
       for(i=5*((nx0+1)/2); i<5*table.n; i++) {
 	x0 = i*table.r/(5*(table.n-1));
-	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
+	evaluate_table(table.data,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
       }
       gmx_fio_fclose(fp);
@@ -1154,12 +1160,17 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 * use etiNR (since we only have one table, but ...) 
 	 */
 	snew(td,1);
-	table.r         = fr->gbtabr;
-	table.scale     = fr->gbtabscale;
-	table.scale_exp = 0;
-	table.n         = table.scale*table.r;
-	nx0             = 0;
-	nx              = table.scale*table.r;
+    table.interaction   = GMX_TABLE_INTERACTION_ELEC;
+    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+	table.r             = fr->gbtabr;
+	table.scale         = fr->gbtabscale;
+	table.scale_exp     = 0;
+	table.n             = table.scale*table.r;
+    table.formatsize    = 4;
+    table.ninteractions = 1;
+    table.stride        = table.formatsize*table.ninteractions;
+	nx0                 = 0;
+	nx                  = table.scale*table.r;
 	
 	/* Check whether we have to read or generate 
 	 * We will always generate a table, so remove the read code
@@ -1177,7 +1188,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-	snew_aligned(table.tab,4*nx,16);
+	snew_aligned(table.data,4*nx,16);
 	
 	init_table(out,nx,nx0,table.scale,&(td[0]),!bReadTab);
 	
@@ -1206,7 +1217,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 		
     }
 	
-	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.data);
 	
 	if(bDebugMode())
     {
@@ -1217,7 +1228,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 		{
 			/* x0=i*table.r/(5*table.n); */
 			x0=i*table.r/table.n;
-			evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
+			evaluate_table(table.data,0,4,table.scale,x0,&y0,&yp);
 			fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 			
 		}
@@ -1235,7 +1246,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 Ftab = (r-0.25*r*expterm)/((r2+expterm)*sqrt(r2+expterm));
 	 
 	 
-	 evaluate_table(table.tab,0,4,table.scale,r,&y0,&yp);
+	 evaluate_table(table.data,0,4,table.scale,r,&y0,&yp);
 	 printf("gb: i=%d, x0=%g, y0=%15.15f, Vtab=%15.15f, yp=%15.15f, Ftab=%15.15f\n",i,r, y0, Vtab, yp, Ftab);
 	 
 	 abs_error_r=fabs(y0-Vtab);
@@ -1337,9 +1348,9 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-    snew_aligned(table.tab,4*nx,16);
+    snew_aligned(table.data,4*nx,16);
 	
-	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.data);
 	
 	if(bDebugMode())
 	  {
@@ -1351,7 +1362,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	      {
 		/* x0=i*table.r/(5*table.n); */
 		x0 = i*table.r/(5*(table.n-1));
-		evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
+		evaluate_table(table.data,0,4,table.scale,x0,&y0,&yp);
 		fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 		
 	      }
@@ -1386,8 +1397,8 @@ bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle)
   }
   tab.n = td.nx;
   tab.scale = td.tabscale;
-  snew(tab.tab,tab.n*4);
-  copy2table(tab.n,0,4,td.x,td.v,td.f,tab.tab);
+  snew(tab.data,tab.n*4);
+  copy2table(tab.n,0,4,td.x,td.v,td.f,tab.data);
   done_tabledata(&td);
 
   return tab;
