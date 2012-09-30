@@ -2058,8 +2058,8 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 		  "With dispersion correction rvdw-switch can not be zero "
 		  "for vdw-type = %s",evdw_names[fr->vdwtype]);
 
-      scale  = fr->nblists[0].tab.scale;
-      vdwtab = fr->nblists[0].vdwtab;
+      scale  = fr->nblists[0].table_elec_vdw.scale;
+      vdwtab = fr->nblists[0].table_vdw.data;
 
       /* Round the cut-offs to exact table values for precision */
       ri0 = floor(fr->rvdw_switch*scale);

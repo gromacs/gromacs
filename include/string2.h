@@ -103,7 +103,7 @@ void nice_header (FILE *out,const char *fn);
 int gmx_strcasecmp_min(const char *str1, const char *str2);
 int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
 /* This funny version of strcasecmp, is not only case-insensitive,
- * but also ignores '-' and '_'.
+ * but also ignores "-" and "_" characters.
  */
 
 int gmx_strcasecmp(const char *str1, const char *str2);

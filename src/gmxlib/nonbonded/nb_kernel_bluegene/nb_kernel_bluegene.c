@@ -108,7 +108,7 @@
 
 
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 #include "nb_kernel_bluegene.h"
 
 

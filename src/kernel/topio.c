@@ -545,7 +545,7 @@ static char **read_topol(const char *infile,const char *outfile,
   } else {
     out = NULL;
   }
-
+    
   /* open input file */
   status = cpp_open_file(infile,&handle,cpp_opts(define,include,infile,wi));
   if (status != 0) 
@@ -575,7 +575,7 @@ static char **read_topol(const char *infile,const char *outfile,
   bGenPairs     = FALSE;
   bReadMolType  = FALSE;
   nmol_couple = 0;
-  
+
   do {
     status = cpp_read_line(&handle,STRLEN,line);
     done = (status == eCPP_EOF);
@@ -985,14 +985,15 @@ char **do_top(gmx_bool         bVerbose,
     if (bVerbose)
     {
         printf("processing topology...\n");
-    }
+    }    
     title = read_topol(topfile,tmpfile,opts->define,opts->include,
                        symtab,atype,nrmols,molinfo,
                        plist,combination_rule,repulsion_power,
                        opts,fudgeQQ,nmolblock,molblock,
                        ir->efep!=efepNO,bGenborn,bZero,bVerbose,
                        wi);
-    if ((*combination_rule != eCOMB_GEOMETRIC) && 
+
+    if ((*combination_rule != eCOMB_GEOMETRIC) &&
         (ir->vdwtype == evdwUSER))
     {
         warning(wi,"Using sigma/epsilon based combination rules with"

@@ -27,8 +27,8 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifndef _NBKERNEL_H_
-#define _NBKERNEL_H_
+#ifndef _nb_kernel_c_h_
+#define _nb_kernel_c_h_
 
 /** \file
  * \brief The vanilla nonbonded Gromacs kernels (portable, written in C).
@@ -38,12 +38,15 @@
 
 #include <stdio.h>
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 #include "nb_kernel_allvsall.h"
 #include "nb_kernel_allvsallgb.h"
 
-void
-nb_kernel_setup(FILE *fplog,nb_kernel_t **list);
+extern nb_kernel_info_t
+kernellist_c[];
 
-#endif /* _NBKERNEL_H_ */
+extern int
+kernellist_c_size;
+
+#endif /* _nb_kernel_c_h_ */
 
