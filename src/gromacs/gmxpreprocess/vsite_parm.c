@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
 #include <string.h>
 #include "vsite_parm.h"
 #include "smalloc.h"
@@ -1021,13 +1022,11 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     if ( bKeep ) {
       if(debug)fprintf(debug," keeping");
       /* now copy the bond to the new array */
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      ps->param[kept_i] = ps->param[i];
       kept_i++;
     } else if (IS_CHEMBOND(cftype)) {
       srenew(plist[F_CONNBONDS].param,plist[F_CONNBONDS].nr+1);
-      memcpy(&(plist[F_CONNBONDS].param[plist[F_CONNBONDS].nr]),
-	     &(ps->param[i]),(size_t)sizeof(plist[F_CONNBONDS].param[0]));
+      plist[F_CONNBONDS].param[plist[F_CONNBONDS].nr] = ps->param[i];
       plist[F_CONNBONDS].nr++;
       nconverted++;
     } else
@@ -1135,10 +1134,9 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
       }
     
     if ( bKeep ) {
-      /* now copy the angle to the new array */
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
-      kept_i++;
+        /* now copy the angle to the new array */
+        ps->param[kept_i] = ps->param[i];
+        kept_i++;
     }
   }
   
@@ -1153,7 +1151,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
 {
   int      ftype,i,parnr,k,l,m,n,nvsite,kept_i,vsnral;
   atom_id  atom,constr;
-  atom_id  vsiteatoms[3];
+  atom_id  vsiteatoms[4];
   gmx_bool     bKeep,bUsed,bPresent;
   t_params *ps;
   
@@ -1172,6 +1170,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
 	if (nvsite==1) {
 	  /* store construction atoms of first vsite */
 	  vsnral=NRAL(pindex[atom].ftype)-1;
+	  assert(vsnral<=4);
 	  for(m=0; (m<vsnral); m++)
 	    vsiteatoms[m]=
 	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
@@ -1219,9 +1218,8 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     }
       
     if ( bKeep ) {
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
-      kept_i++;
+        ps->param[kept_i] = ps->param[i];
+        kept_i++;
     }
   }
 

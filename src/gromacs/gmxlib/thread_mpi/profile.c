@@ -98,7 +98,8 @@ const char *tmpi_function_names[] =
     "Alltoall",
     "Alltoallv",
     "Reduce",
-    "Allreduce"
+    "Allreduce",
+    "Scan"
 };
 
 
