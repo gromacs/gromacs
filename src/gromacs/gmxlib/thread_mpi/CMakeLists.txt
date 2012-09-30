@@ -2,7 +2,7 @@
 # Note that not all .c files are compiled directly: some of them 
 # are #included (some multiple times) from other source files.
 set(THREAD_MPI_LIB_SOURCE 
-    alltoall.c      reduce.c
+    alltoall.c      reduce.c        scan.c
     barrier.c       list.c          reduce_fast.c
     bcast.c         lock.c          scatter.c
     collective.c    once.c          tmpi_init.c

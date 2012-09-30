@@ -216,6 +216,7 @@ static void quit_gmx(const char *msg)
     }
 
 #ifdef GMX_LIB_MPI
+    if (gmx_mpi_initialized())
     {
         int  nnodes;
         int  noderank;

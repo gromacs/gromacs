@@ -58,8 +58,9 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
              thread_mpi/group.c         thread_mpi/tmpi_init.c
              thread_mpi/topology.c      thread_mpi/list.c
              thread_mpi/type.c          thread_mpi/lock.c
-             thread_mpi/numa_malloc.c   thread_mpi/once.c )
-    endif ()
+             thread_mpi/numa_malloc.c   thread_mpi/once.c
+             thread_mpi/scan.c)
+    endif()
 ENDMACRO(TMPI_GET_SOURCE_LIST)
 
 include(FindThreads)
@@ -107,18 +108,6 @@ else (THREAD_MPI_PROFILING)
 endif (THREAD_MPI_PROFILING)
 
 include(CheckCSourceCompiles)
-
-## Windows NUMA allocator
-#if (THREAD_WINDOWS)
-#	check_c_source_compiles(
-#	"#include <windows.h>
-#	int main(void) { PROCESSOR_NUMBER a; return 0; }"
-#	HAVE_PROCESSOR_NUMBER)
-#	if(HAVE_PROCESSOR_NUMBER)
-#            #add_definitions(-DTMPI_WINDOWS_NUMA_API)
-#            set(TMPI_WINDOWS_NUMA_API 1)
-#	endif(HAVE_PROCESSOR_NUMBER)
-#endif(THREAD_WINDOWS)
 
 # option to set affinity 
 option(THREAD_MPI_SET_AFFINITY "Set thread affinity to a core if number of threads equal to number of hardware threads." ON)
