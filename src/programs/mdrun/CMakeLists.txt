@@ -23,8 +23,10 @@ if(GMX_FAHCORE)
 else(GMX_FAHCORE)
     add_executable(mdrun ${MDRUN_SOURCES})
     gmx_add_man_page(mdrun)
-    target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_OPENMM_LIBRARIES})
-    set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}")
+    target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_OPENMM_LIBRARIES}
+        ${OpenMP_LINKER_FLAGS})
+    set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}"
+        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
 
     if(GMX_OPENMM AND MSVC)

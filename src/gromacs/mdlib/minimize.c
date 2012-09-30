@@ -129,26 +129,37 @@ static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 
 static void warn_step(FILE *fp,real ftol,gmx_bool bLastStep,gmx_bool bConstrain)
 {
+    char buffer[2048];
     if (bLastStep)
     {
-        fprintf(fp,"\nReached the maximum number of steps before reaching Fmax < %g\n",ftol);
+        sprintf(buffer,
+                "\nEnergy minimization reached the maximum number"
+                "of steps before the forces reached the requested"
+                "precision Fmax < %g.\n",ftol);
     }
     else
     {
-        fprintf(fp,"\nStepsize too small, or no change in energy.\n"
-                "Converged to machine precision,\n"
-                "but not to the requested precision Fmax < %g\n",
-                ftol);
-        if (sizeof(real)<sizeof(double))
-        {
-            fprintf(fp,"\nDouble precision normally gives you higher accuracy.\n");
-        }
-        if (bConstrain)
-        {
-            fprintf(fp,"You might need to increase your constraint accuracy, or turn\n"
-                    "off constraints alltogether (set constraints = none in mdp file)\n");
-        }
+        sprintf(buffer,
+                "\nEnergy minimization has stopped, but the forces have"
+                "not converged to the requested precision Fmax < %g (which"
+                "may not be possible for your system). It stopped"
+                "because the algorithm tried to make a new step whose size"
+                "was too small, or there was no change in the energy since"
+                "last step. Either way, we regard the minimization as"
+                "converged to within the available machine precision,"
+                "given your starting configuration and EM parameters.\n%s%s",
+                ftol,
+                sizeof(real)<sizeof(double) ?
+                "\nDouble precision normally gives you higher accuracy, but"
+                "this is often not needed for preparing to run molecular"
+                "dynamics.\n" :
+                "",
+                bConstrain ?
+                "You might need to increase your constraint accuracy, or turn\n"
+                "off constraints altogether (set constraints = none in mdp file)\n" :
+                "");
     }
+    fputs(wrap_lines(buffer, 78, 0, FALSE), fp);
 }
 
 

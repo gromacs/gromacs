@@ -856,7 +856,8 @@ static void do_single_flood(
         t_edpar *edi,
         gmx_large_int_t step,
         matrix box,
-        t_commrec *cr)
+        t_commrec *cr,
+        gmx_bool bNS)       /* Are we in a neighbor searching step? */
 {
     int i;
     matrix  rotmat;         /* rotation matrix */
@@ -867,15 +868,16 @@ static void do_single_flood(
 
     buf=edi->buf->do_edsam;
 
+
     /* Broadcast the positions of the AVERAGE structure such that they are known on
      * every processor. Each node contributes its local positions x and stores them in
      * the collective ED array buf->xcoll */
-    communicate_group_positions(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, buf->bUpdateShifts, x,
+    communicate_group_positions(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, bNS, x,
                     edi->sav.nr, edi->sav.nr_loc, edi->sav.anrs_loc, edi->sav.c_ind, edi->sav.x_old, box);
 
     /* Only assembly REFERENCE positions if their indices differ from the average ones */
     if (!edi->bRefEqAv)
-        communicate_group_positions(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, buf->bUpdateShifts, x,
+        communicate_group_positions(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, bNS, x,
                 edi->sref.nr, edi->sref.nr_loc, edi->sref.anrs_loc, edi->sref.c_ind, edi->sref.x_old, box);
 
     /* If bUpdateShifts was TRUE, the shifts have just been updated in get_positions.
@@ -934,7 +936,8 @@ extern void do_flood(
         rvec            force[], /* forcefield forces, to these the flooding forces are added */
         gmx_edsam_t     ed,      /* ed data structure contains all ED and flooding datasets */
         matrix          box,     /* the box */
-        gmx_large_int_t step)    /* The relative time step since ir->init_step is already subtracted */
+        gmx_large_int_t step,    /* The relative time step since ir->init_step is already subtracted */
+        gmx_bool        bNS)     /* Are we in a neighbor searching step? */
 {
     t_edpar *edi;
 
@@ -947,7 +950,7 @@ extern void do_flood(
     {
         /* Call flooding for one matrix */
         if (edi->flood.vecs.neig)
-            do_single_flood(ed->edo,x,force,edi,step,box,cr);
+            do_single_flood(ed->edo,x,force,edi,step,box,cr,bNS);
         edi = edi->next_edi;
     }
 }
@@ -1531,8 +1534,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     /* allocate space for reference positions and read them */
     snew(edi->sref.anrs,edi->sref.nr);
     snew(edi->sref.x   ,edi->sref.nr);
-    if (PAR(cr))
-        snew(edi->sref.x_old,edi->sref.nr);
+    snew(edi->sref.x_old,edi->sref.nr);
     edi->sref.sqrtm    =NULL;
     read_edx(in,edi->sref.nr,edi->sref.anrs,edi->sref.x);
 
@@ -1540,8 +1542,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     edi->sav.nr=read_checked_edint(in,"NAV");
     snew(edi->sav.anrs,edi->sav.nr);
     snew(edi->sav.x   ,edi->sav.nr);
-    if (PAR(cr))
-        snew(edi->sav.x_old,edi->sav.nr);
+    snew(edi->sav.x_old,edi->sav.nr);
     read_edx(in,edi->sav.nr,edi->sav.anrs,edi->sav.x);
 
     /* Check if the same atom indices are used for reference and average positions */
@@ -2105,13 +2106,16 @@ static int ed_constraints(gmx_bool edtype, t_edpar *edi)
  * umbrella sampling simulations. */
 static void copyEvecReference(t_eigvec* floodvecs)
 {
-	int i;
+    int i;
 
 
-	for (i=0; i<floodvecs->neig; i++)
-	{
-		floodvecs->refproj0[i] = floodvecs->refproj[i];
-	}
+    if (NULL==floodvecs->refproj0)
+        snew(floodvecs->refproj0, floodvecs->neig);
+
+    for (i=0; i<floodvecs->neig; i++)
+    {
+        floodvecs->refproj0[i] = floodvecs->refproj[i];
+    }
 }
 
 
@@ -2124,7 +2128,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
 {
     t_edpar *edi = NULL;    /* points to a single edi data set */
     int     numedis=0;      /* keep track of the number of ED data sets in edi file */
-    int     i,nr_edi;
+    int     i,nr_edi,avindex;
     rvec    *x_pbc  = NULL; /* positions of the whole MD system with pbc removed  */
     rvec    *xfit   = NULL; /* the positions which will be fitted to the reference structure  */
     rvec    *xstart = NULL; /* the positions which are subject to ED sampling */
@@ -2194,10 +2198,9 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             {
                 copy_rvec(x_pbc[edi->sref.anrs[i]], xfit[i]);
 
-                /* Save the sref positions such that in the next time step the molecule can
-                 * be made whole again (in the parallel case) */
-                if (PAR(cr))
-                    copy_rvec(xfit[i], edi->sref.x_old[i]);
+                /* Save the sref positions such that in the next time step we can make the ED group whole
+                 * in case any of the atoms do not have the correct PBC representation */
+                copy_rvec(xfit[i], edi->sref.x_old[i]);
             }
 
             /* Extract the positions of the atoms subject to ED sampling */
@@ -2205,10 +2208,9 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             {
                 copy_rvec(x_pbc[edi->sav.anrs[i]], xstart[i]);
 
-                /* Save the sav positions such that in the next time step the molecule can
-                 * be made whole again (in the parallel case) */
-                if (PAR(cr))
-                    copy_rvec(xstart[i], edi->sav.x_old[i]);
+                /* Save the sav positions such that in the next time step we can make the ED group whole
+                 * in case any of the atoms do not have the correct PBC representation */
+                copy_rvec(xstart[i], edi->sav.x_old[i]);
             }
 
             /* Make the fit to the REFERENCE structure, get translation and rotation */
@@ -2225,35 +2227,66 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             /* calculate initial projections */
             project(xstart, edi);
 
+            /* For the target and origin structure both a reference (fit) and an
+             * average structure can be provided in make_edi. If both structures
+             * are the same, make_edi only stores one of them in the .edi file.
+             * If they differ, first the fit and then the average structure is stored
+             * in star (or sor), thus the number of entries in star/sor is
+             * (n_fit + n_av) with n_fit the size of the fitting group and n_av
+             * the size of the average group. */
+
             /* process target structure, if required */
             if (edi->star.nr > 0)
             {
                 fprintf(stderr, "ED: Fitting target structure to reference structure\n");
+
                 /* get translation & rotation for fit of target structure to reference structure */
                 fit_to_reference(edi->star.x, fit_transvec, fit_rotmat, edi);
                 /* do the fit */
-                translate_and_rotate(edi->star.x, edi->sav.nr, fit_transvec, fit_rotmat);
-                rad_project(edi, edi->star.x, &edi->vecs.radcon, cr);
+                translate_and_rotate(edi->star.x, edi->star.nr, fit_transvec, fit_rotmat);
+                if (edi->star.nr == edi->sav.nr)
+                {
+                    avindex = 0;
+                }
+                else /* edi->star.nr = edi->sref.nr + edi->sav.nr */
+                {
+                    /* The last sav.nr indices of the target structure correspond to
+                     * the average structure, which must be projected */
+                    avindex = edi->star.nr - edi->sav.nr;
+                }
+                rad_project(edi, &edi->star.x[avindex], &edi->vecs.radcon, cr);
             } else
                 rad_project(edi, xstart, &edi->vecs.radcon, cr);
 
             /* process structure that will serve as origin of expansion circle */
             if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 fprintf(stderr, "ED: Setting center of flooding potential (0 = average structure)\n");
+
             if (edi->sori.nr > 0)
             {
                 fprintf(stderr, "ED: Fitting origin structure to reference structure\n");
+
                 /* fit this structure to reference structure */
                 fit_to_reference(edi->sori.x, fit_transvec, fit_rotmat, edi);
                 /* do the fit */
-                translate_and_rotate(edi->sori.x, edi->sav.nr, fit_transvec, fit_rotmat);
-                rad_project(edi, edi->sori.x, &edi->vecs.radacc, cr);
-                rad_project(edi, edi->sori.x, &edi->vecs.radfix, cr);
+                translate_and_rotate(edi->sori.x, edi->sori.nr, fit_transvec, fit_rotmat);
+                if (edi->sori.nr == edi->sav.nr)
+                {
+                    avindex = 0;
+                }
+                else /* edi->sori.nr = edi->sref.nr + edi->sav.nr */
+                {
+                    /* For the projection, we need the last sav.nr indices of sori */
+                    avindex = edi->sori.nr - edi->sav.nr;
+                }
+
+                rad_project(edi, &edi->sori.x[avindex], &edi->vecs.radacc, cr);
+                rad_project(edi, &edi->sori.x[avindex], &edi->vecs.radfix, cr);
                 if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 {
                     fprintf(stderr, "ED: The ORIGIN structure will define the flooding potential center.\n");
                     /* Set center of flooding potential to the ORIGIN structure */
-                    rad_project(edi, edi->sori.x, &edi->flood.vecs, cr);
+                    rad_project(edi, &edi->sori.x[avindex], &edi->flood.vecs, cr);
                     /* We already know that no (moving) reference position was provided,
                      * therefore we can overwrite refproj[0]*/
                     copyEvecReference(&edi->flood.vecs);
@@ -2453,7 +2486,7 @@ void do_edsam(t_inputrec  *ir,
              * the collective buf->xcoll array. Note that for edinr > 1
              * xs could already have been modified by an earlier ED */
 
-            communicate_group_positions(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, buf->bUpdateShifts, xs,
+            communicate_group_positions(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, PAR(cr) ? buf->bUpdateShifts : TRUE, xs,
                     edi->sav.nr, edi->sav.nr_loc, edi->sav.anrs_loc, edi->sav.c_ind, edi->sav.x_old,  box);
 
 #ifdef DEBUG_ED
@@ -2461,11 +2494,12 @@ void do_edsam(t_inputrec  *ir,
 #endif
             /* Only assembly reference positions if their indices differ from the average ones */
             if (!edi->bRefEqAv)
-                communicate_group_positions(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, buf->bUpdateShifts, xs,
+                communicate_group_positions(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, PAR(cr) ? buf->bUpdateShifts : TRUE, xs,
                         edi->sref.nr, edi->sref.nr_loc, edi->sref.anrs_loc, edi->sref.c_ind, edi->sref.x_old, box);
 
-            /* If bUpdateShifts was TRUE then the shifts have just been updated in get_positions.
-             * We do not need to uptdate the shifts until the next NS step */
+            /* If bUpdateShifts was TRUE then the shifts have just been updated in communicate_group_positions.
+             * We do not need to update the shifts until the next NS step. Note that dd_make_local_ed_indices
+             * set bUpdateShifts=TRUE in the parallel case. */
             buf->bUpdateShifts = FALSE;
 
             /* Now all nodes have all of the ED positions in edi->sav->xcoll,

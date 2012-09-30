@@ -1,9 +1,0 @@
-#include "ffgmx.itp"
-#include "spc.itp"
-
-[ system ]
-Pure Water
-
-[ molecules ]
-SOL	216
-
