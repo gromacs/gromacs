@@ -60,9 +60,9 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
   gmx_domdec_zones_t *dd_zones;
 
   if (nblist->nri > 0) {  
-    fprintf(out,"il_name: %s  Solvent opt: %s\n",
-            nrnb_str(nblist->il_code),
-            enlist_names[nblist->enlist]);
+    fprintf(out,"ielec: %d, ivdw: %d, free_energy: %d, Solvent opt: %s\n",
+            nblist->ielec,nblist->ivdw,nblist->free_energy,
+            gmx_nblist_geometry_names[nblist->igeometry]);
     fprintf(out,"nri: %d  npair: %d\n",nblist->nri,nblist->nrj);
     if (dd) {
       dd_zones = domdec_zones(dd);
@@ -94,7 +94,7 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
     if (nDNL >= 2) {
       for(i=0; i<nblist->nri; i++) {
 	nii = 1;
-	if (nDNL >= 3 && nblist->enlist != enlistATOM_ATOM)
+	if (nDNL >= 3 && nblist->igeometry != GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE)
 	  nii = 3;
 	nj = nblist->jindex[i+1] - nblist->jindex[i];
 	fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
@@ -130,86 +130,7 @@ static void set_mat(FILE *fp,int **mat,int i0,int ni,int j0,int nj,
   }
 }
 
-int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,gmx_bool bSymm)
-{
-    gmx_bool bNL;
-    char buf[256],b1[32],b2[32],solv[256],il_code[256];
-    int  i,ii,j,nnbl,full,icmp,nri,isolv;
-    int  iatom,nrj,nj,shift,gid,nargs,njtot=0;
-    
-    do {
-        if (fgets2(buf,255,in) == NULL)
-            gmx_fatal(FARGS,"EOF when looking for '%s' in logfile",header);
-    } while (strstr(buf,header) == NULL);
-    
-    do {
-      do {
-        if (fgets2(buf,255,in) == NULL)
-	  return njtot;
-      } while (strstr(buf,"nri:") == NULL);
-      
-      if (0) {
-	if ((nargs = sscanf(buf,"%*s%s%*s%s",il_code,solv)) != 2) {
-	  fprintf(stderr,"Can not find the right il_code\n");
-	  return njtot;
-	}
-        for(isolv=0; (isolv<esolNR); isolv++)
-	  if (strstr(esol_names[isolv],solv) != NULL)
-	    break;
-	
-        if (isolv == esolNR) {
-	  fprintf(stderr,"Can not read il_code or solv (nargs=%d)\n",nargs);
-	  return njtot;
-        }
-      }
-      else
-	isolv = enlistATOM_ATOM;
-      
-      /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
-      if ((nargs = sscanf(buf,"%*s%d%*s%d",&nri,&nrj)) != 2)
-	gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
-      for(ii=0; (ii<nri); ii++) {
-	if ((nargs = fscanf(in,"%*s%d%*s%d%*s%d%*s%d",
-			    &iatom,&shift,&gid,&nj)) != 4)
-	  gmx_fatal(FARGS,"Can not read iatom, shift gid or nj (nargs=%d)",nargs);
-	/* Number shifts from 1 to 27 iso 0 to 26 to distinguish uninitialized 
-	 * matrix elements.
-	 */
-	range_check(iatom,0,natoms);
-	for(i=0; (i<nj); i++) {
-	  if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
-	    gmx_fatal(FARGS,"Can not read j");
-	  range_check(j,0,natoms);
-	  switch (isolv) {
-	  case enlistATOM_ATOM:
-	    set_mat(fp,mat,iatom,1,j,1,bSymm,shift);
-	    njtot++;
-	    break;
-	  case enlistSPC_ATOM:
-	    set_mat(fp,mat,iatom,3,j,1,bSymm,shift);
-	    njtot+=3;
-	    break;
-	  case enlistSPC_SPC:
-	    set_mat(fp,mat,iatom,3,j,3,bSymm,shift);
-	    njtot+=9;
-	    break;
-	  case enlistTIP4P_ATOM:
-	    set_mat(fp,mat,iatom,4,j,1,bSymm,shift);
-	    njtot+=4;
-	    break;
-	  case enlistTIP4P_TIP4P:
-	    set_mat(fp,mat,iatom,4,j,4,bSymm,shift);
-	    njtot+=16;
-	    break;
-	  default:
-	    gmx_incons("non-existing solvent type");
-	  }
-	}
-      }
-      fprintf(fp,"nri = %d  nrj = %d\n",nri,nrj);
-    } while (TRUE);
-    return -1;
-}
+
 
 void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL)
 {

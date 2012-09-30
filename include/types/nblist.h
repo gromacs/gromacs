@@ -39,14 +39,6 @@
 extern "C" {
 #endif
 
-/* Neighborlist type */
-enum {
-  enlistATOM_ATOM,
-  enlistSPC_ATOM,   enlistSPC_SPC,
-  enlistTIP4P_ATOM, enlistTIP4P_TIP4P,
-  enlistCG_CG,
-  enlistNR
-};
 
 typedef unsigned long t_excl;
 
@@ -62,26 +54,26 @@ typedef unsigned long t_excl;
 
 typedef struct 
 {
-  int             enlist;      /* The type of nblist, enum, see above    */
-  int             il_code;      /* Innerloop index from nrnb.h, used     */
-                                /* for flop accounting.                  */
-  int             icoul;        /* Coulomb loop type index for kernels   */
-  int             ivdw;         /* VdW loop type index for kernels       */
-  int             free_energy;  /* Free energy setting for this list     */
+    int             igeometry;    /* The type of list (atom, water, etc.) */
+    int             ielec;        /* Coulomb loop type index for kernels   */
+    int             ivdw;         /* VdW loop type index for kernels       */
+    int             free_energy;  /* Free energy setting for this list     */
+ 
+    int             nri,maxnri;   /* Current/max number of i particles	 */
+    int             nrj,maxnrj;   /* Current/max number of j particles	 */
+    int             maxlen;       /* maxnr of j atoms for a single i atom  */
+    int *           iinr;	        /* The i-elements	   	         */
+    int *           iinr_end;     /* The end atom, only with enlistCG      */
+    int *           gid;          /* Index in energy arrays                */
+    int *           shift;        /* Shift vector index                    */
+    int *           jindex;       /* Index in jjnr                         */
+    int *           jjnr;	        /* The j-atom list                       */
+    int *           jjnr_end;     /* The end atom, only with enltypeCG     */
+    t_excl *        excl;         /* Exclusions, only with enltypeCG       */
 
-  int             nri,maxnri;   /* Current/max number of i particles	 */
-  int             nrj,maxnrj;   /* Current/max number of j particles	 */
-  int             maxlen;       /* maxnr of j atoms for a single i atom  */
-  int *           iinr;	        /* The i-elements	   	         */
-  int *           iinr_end;     /* The end atom, only with enlistCG      */
-  int *           gid;          /* Index in energy arrays                */
-  int *           shift;        /* Shift vector index                    */
-  int *           jindex;       /* Index in jjnr                         */
-  int *           jjnr;	        /* The j-atom list                       */
-  int *           jjnr_end;     /* The end atom, only with enltypeCG     */
-  t_excl *        excl;         /* Exclusions, only with enltypeCG       */
-  int             count;        /* counter to multithread the innerloops */
-  void *          mtx;          /* mutex to lock the counter             */
+    void *          kernelptr_vf;
+    void *          kernelptr_v;
+    void *          kernelptr_f;    
 } t_nblist;
 
 

@@ -39,6 +39,7 @@
 #include "smalloc.h"
 
 #include "nb_kernel_allvsallgb.h"
+#include "nrnb.h"
 
 typedef struct 
 {
@@ -232,17 +233,13 @@ setup_aadata(gmx_allvsall_data_t **  p_aadata,
 
 
 void
-nb_kernel_allvsallgb(t_forcerec *           fr,
-                     t_mdatoms *            mdatoms,
-                     t_blocka *             excl,    
-                     real *                 x,
-                     real *                 f,
-                     real *                 Vc,
-                     real *                 Vvdw,
-                     real *                 vpol,
-                     int *                  outeriter,
-                     int *                  inneriter,
-                     void *                 work)
+nb_kernel_allvsallgb(t_nblist *                nlist,
+                     rvec *                    xx,
+                     rvec *                    ff,
+                     t_forcerec *              fr,
+                     t_mdatoms *               mdatoms,
+                     nb_kernel_data_t *        kernel_data,
+                     t_nrnb *                  nrnb)
 {
 	gmx_allvsall_data_t *aadata;
 	int        natoms;
@@ -273,26 +270,39 @@ nb_kernel_allvsallgb(t_forcerec *           fr,
     real       fscal,dvdatmp,fijC,vgb;
     real       Y,F,Fp,Geps,Heps2,VV,FF,eps,eps2,r,rt;
     real       dvdaj,gbscale,isaprod,isai,isaj,gbtabscale;
+    real *     f;
+    real *     x;
+    t_blocka * excl;
+    real *     Vvdw;
+    real *     Vc;
+    real *     vpol;
     
+    x                   = xx[0];
+    f                   = ff[0];
 	charge              = mdatoms->chargeA;
 	type                = mdatoms->typeA;
     gbfactor            = ((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 	facel               = fr->epsfac;
-    GBtab               = fr->gbtab.tab;
+    GBtab               = fr->gbtab.data;
     gbtabscale          = fr->gbtab.scale;
     invsqrta            = fr->invsqrta;
     dvda                = fr->dvda;
-    
+    vpol                = kernel_data->energygrp_polarization;
+
     natoms              = mdatoms->nr;
 	ni0                 = mdatoms->start;
 	ni1                 = mdatoms->start+mdatoms->homenr;
     
-    aadata = *((gmx_allvsall_data_t **)work);
+    aadata              = fr->AllvsAll_work;
+    excl                = kernel_data->exclusions;
+
+    Vc                  = kernel_data->energygrp_elec;
+    Vvdw                = kernel_data->energygrp_vdw;
 
 	if(aadata==NULL)
 	{
 		setup_aadata(&aadata,excl,natoms,type,fr->ntype,fr->nbfp);
-        *((gmx_allvsall_data_t **)work) = aadata;
+        fr->AllvsAll_work  = aadata;
 	}
 
 	for(i=ni0; i<ni1; i++)
@@ -506,9 +516,10 @@ nb_kernel_allvsallgb(t_forcerec *           fr,
 		/* Outer loop uses 6 flops/iteration */
 	}    
 
-    /* Write outer/inner iteration count to pointers */
-    *outeriter       = ni1-ni0;         
-    *inneriter       = (ni1-ni0)*natoms/2;         
+    /* 12 flops per outer iteration
+     * 19 flops per inner iteration
+     */
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_VF,(ni1-ni0)*12 + ((ni1-ni0)*natoms/2)*19);
 }
 
 
