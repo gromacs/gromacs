@@ -1,9 +1,0 @@
-#!/bin/csh
-
-foreach testje ( water nmr1 nmr2 gmxdemo speptide )
-cd $testje
-\rm -f \#*\# *~ *.ps *.gz *.dat *.g87 *.hat *.tr? *.xtc *.edr *.ene *.xvg core *.log mdout.mdp *.tp? mon.out confout.gro deshuf.ndx output.*
-cd ..
-
-end
-
