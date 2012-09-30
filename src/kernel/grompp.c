@@ -447,14 +447,14 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   /* Set gmx_boolean for GB */
   if(ir->implicit_solvent)
     bGB=TRUE;
-  
+        
   /* TOPOLOGY processing */
   sys->name = do_top(bVerbose,topfile,topppfile,opts,bZero,&(sys->symtab),
                      plist,comb,reppow,fudgeQQ,
                      atype,&nrmols,&molinfo,ir,
                      &nmolblock,&molblock,bGB,
                      wi);
-  
+
   sys->nmolblock = 0;
   snew(sys->molblock,nmolblock);
   
@@ -1406,6 +1406,7 @@ int main (int argc, char *argv[])
   strcpy(fn,ftp2fn(efTOP,NFILE,fnm));
   if (!gmx_fexist(fn)) 
     gmx_fatal(FARGS,"%s does not exist",fn);
+    
   new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 	     opts,ir,bZero,bGenVel,bVerbose,&state,
 	     atype,sys,&nmi,&mi,plist,&comb,&reppow,&fudgeQQ,
