@@ -160,14 +160,6 @@ static int pcomp(const void *p1, const void *p2)
     return min1-min2;
 }
 
-static int icomp(const void *p1, const void *p2)
-{
-  atom_id *a1=(atom_id *)p1;
-  atom_id *a2=(atom_id *)p2;
-
-  return (*a1)-(*a2);
-}
-
 int n_flexible_constraints(struct gmx_constr *constr)
 {
   int nflexcon;
@@ -413,7 +405,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         case econqCoord:
             csettle(constr->settled,
                     nsettle,settle->iatoms,x[0],xprime[0],
-                    invdt,v[0],vir!=NULL,rmdr,&error,&vetavar);
+                    invdt,v?v[0]:NULL,vir!=NULL,rmdr,&error,&vetavar);
             inc_nrnb(nrnb,eNR_SETTLE,nsettle);
             if (v != NULL)
             {
