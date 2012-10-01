@@ -193,7 +193,14 @@ static const char *help_limits[] = {
     "[TT]charge -1 to -0.7[tt][BR]",
     "result in a syntax error. A workaround is to write[BR]",
     "[TT]charge {-1 to -0.7}[tt][BR]",
-    "instead.",
+    "instead.[PAR]",
+
+    "When [TT]name[tt] selection keyword is used together with PDB input",
+    "files, the behavior may be unintuitive. When Gromacs reads in a PDB",
+    "file, 4 character atom names that start with a digit are transformed",
+    "such that, e.g., 1HG2 becomes HG21, and the latter is what is matched",
+    "by the [TT]name[tt] keyword. Use [TT]pdbname[tt] to match the atom name",
+    "as it appears in the input PDB file.",
 };
 
 static const char *help_positions[] = {

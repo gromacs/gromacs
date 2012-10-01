@@ -1804,6 +1804,7 @@ int main(int argc, char *argv[])
     }
 
     /* Generate Hydrogen atoms (and termini) in the sequence */
+    printf("Generating any missing hydrogen atoms and/or adding termini.\n");
     natom=add_h(&pdba,&x,nah,ah,
 		cc->nterpairs,cc->ntdb,cc->ctdb,cc->r_start,cc->r_end,bAllowMissing,
 		NULL,NULL,TRUE,FALSE);
