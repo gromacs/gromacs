@@ -629,6 +629,7 @@ init_output_kweval(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     t_methoddata_kweval *d = (t_methoddata_kweval *)data;
 
     out->nr = d->g.isize;
+    _gmx_selvalue_reserve(out, out->nr);
     return 0;
 }
 

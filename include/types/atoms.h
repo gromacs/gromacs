@@ -71,7 +71,7 @@ typedef struct {
   int  type;                    /* PDB record name                      */
   int  atomnr;                  /* PDB atom number                      */
   char altloc;                  /* Alternate location indicator         */
-  char atomnm[6];               /* True atom name including spaces      */
+  char atomnm[6];               /* True atom name including leading spaces */
   real occup;                   /* Occupancy                            */
   real bfac;                    /* B-factor                             */
   gmx_bool bAnisotropic;        /* (an)isotropic switch                 */

@@ -113,11 +113,13 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
   
   /* Add extension again */
   strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
-  if (cr->nodeid == 0) {
-    printf("node %d par_fn '%s'\n",cr->nodeid,buf);
-    if (fn2ftp(buf) == efLOG) {
-      printf("log\n");
-    }
+  if (debug)
+  {
+      fprintf(debug, "node %d par_fn '%s'\n",cr->nodeid,buf);
+      if (fn2ftp(buf) == efLOG)
+      {
+          fprintf(debug,"log\n");
+      }
   }
 }
 
