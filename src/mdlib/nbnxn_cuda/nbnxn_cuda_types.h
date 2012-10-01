@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 /*! Types of electrostatics available in the CUDA nonbonded force kernels. */
-enum { eelCuEWALD, eelCuRF, eelCuCUT, eelCuNR };
+enum { eelCuEWALD, eelCuEWALD_TWIN, eelCuRF, eelCuCUT, eelCuNR };
 
 enum { eNbnxnCuKDefault, eNbnxnCuKLegacy, eNbnxnCuKOld, eNbnxnCuKNR };
 

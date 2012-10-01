@@ -479,7 +479,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
 
     if (nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
     {
-        reset_gpu_rlist_ewaldtab(nbv->cu_nbv,ic);
+        nbnxn_cuda_pmetune_update_param(nbv->cu_nbv,ic);
     }
     else
     {

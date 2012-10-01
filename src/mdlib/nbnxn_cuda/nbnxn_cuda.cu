@@ -144,6 +144,8 @@ nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
     { { k_nbnxn_ewald,              k_nbnxn_ewald_prune },
       { k_nbnxn_ewald_ener,         k_nbnxn_ewald_ener_prune } },
+    { { k_nbnxn_ewald_twin,         k_nbnxn_ewald_twin_prune },
+      { k_nbnxn_ewald_twin_ener,    k_nbnxn_ewald_twin_ener_prune } },
     { { k_nbnxn_rf,                 k_nbnxn_rf_prune },
       { k_nbnxn_rf_ener,            k_nbnxn_rf_ener_prune } },
     { { k_nbnxn_ewald,              k_nbnxn_ewald_prune },
@@ -154,12 +156,14 @@ nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 static const nbnxn_cu_kfunc_ptr_t
 nb_legacy_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
-    { { k_nbnxn_ewald_legacy,       k_nbnxn_ewald_prune_legacy },
-      { k_nbnxn_ewald_ener_legacy,  k_nbnxn_ewald_ener_prune_legacy } },
-    { { k_nbnxn_rf_legacy,          k_nbnxn_rf_prune_legacy },
-      { k_nbnxn_rf_ener_legacy,     k_nbnxn_rf_ener_prune_legacy } },
-    { { k_nbnxn_ewald_legacy,       k_nbnxn_ewald_prune_legacy },
-      { k_nbnxn_cutoff_ener_legacy, k_nbnxn_cutoff_ener_prune_legacy } },
+    { { k_nbnxn_ewald_legacy,           k_nbnxn_ewald_prune_legacy },
+      { k_nbnxn_ewald_ener_legacy,      k_nbnxn_ewald_ener_prune_legacy } },
+    { { k_nbnxn_ewald_twin_legacy,      k_nbnxn_ewald_twin_prune_legacy },
+      { k_nbnxn_ewald_twin_ener_legacy, k_nbnxn_ewald_twin_ener_prune_legacy } },
+    { { k_nbnxn_rf_legacy,              k_nbnxn_rf_prune_legacy },
+      { k_nbnxn_rf_ener_legacy,         k_nbnxn_rf_ener_prune_legacy } },
+    { { k_nbnxn_ewald_legacy,           k_nbnxn_ewald_prune_legacy },
+      { k_nbnxn_cutoff_ener_legacy,     k_nbnxn_cutoff_ener_prune_legacy } },
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
