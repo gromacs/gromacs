@@ -18,6 +18,9 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <assert.h>
@@ -35,9 +38,16 @@
 #include "main.h"
 #include "md_logging.h"
 
-/* We can't have more than 10 GPU id's passed by the user as we assume the id-s
- * to be represented by single digits. */
-static int max_gpu_ids_user = 10;
+#if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
+#include "windows.h"
+#endif
+
+/* Although we can't have more than 10 GPU different ID-s passed by the user as
+ * the id-s are assumed to be represented by single digits, as multiple
+ * processes can share a GPU, we can end up with more than 10 IDs.
+ * To account for potential extreme cases we'll set the limit to a pretty
+ * ridiculous number. */
+static unsigned int max_gpu_ids_user = 64;
 
 /* FW decl. */
 void limit_num_gpus_used(gmx_hw_info_t *hwinfo, int count);
@@ -133,13 +143,17 @@ static void print_gpu_use_stats(FILE *fplog,
 static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 {
     int  i;
+    size_t len_idstr;
 
-    *nid = strlen(idstr);
+    len_idstr = strlen(idstr);
 
-    if (*nid > max_gpu_ids_user)
+    if (len_idstr > max_gpu_ids_user)
     {
-        gmx_fatal(FARGS,"%d GPU id's passed in a string, but not more than %d are supported",*nid,max_gpu_ids_user);
+        gmx_fatal(FARGS,"%d GPU IDs provided, but only at most %d are supported",
+                  len_idstr, max_gpu_ids_user);
     }
+
+    *nid = len_idstr;
 
     for (i = 0; i < *nid; i++)
     {
@@ -153,7 +167,7 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 
 static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
 {
-    /* XXX implement cvs format to support more than 10 GPUs */
+    /* XXX implement cvs format to support more than 10 different GPUs in a box. */
     gmx_incons("Not implemented yet");
 }
 
@@ -189,12 +203,20 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != NULL);
     bMaxMpiThreadsSet = (getenv("GMX_MAX_MPI_THREADS") != NULL);
 
-    if(SIMMASTER(cr))
+    if (SIMMASTER(cr))
     {
         /* check the acceleration mdrun is compiled with against hardware capabilities */
         /* TODO: Here we assume homogenous hardware which is not necessarily the case!
          *       Might not hurt to add an extra check over MPI. */
-        gmx_detectcpu_check_acceleration(hwinfo->cpu_info, fplog);
+        gmx_cpuid_acceleration_check(hwinfo->cpuid_info, fplog);
+    }
+
+    /* Below we only do consistency checks for PP and GPUs,
+     * this is irrelevant for PME only nodes, so in that case we return here.
+     */
+    if (!(cr->duty & DUTY_PP))
+    {
+        return;
     }
 
     /* Need to ensure that we have enough GPUs:
@@ -323,7 +345,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                     else
                     {
                         /* Avoid other ranks to continue after inconsistency */
-                        MPI_Barrier(MPI_COMM_WORLD);
+                        MPI_Barrier(cr->mpi_comm_mygroup);
                     }
 #endif
                 }
@@ -369,6 +391,57 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     }
 }
 
+/* Return the number of hwardware threads supported by the current CPU.
+ * We assume that this is equal with the number of CPUs reported to be
+ * online by the OS at the time of the call.
+ */
+static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
+{
+     int ret = 0;
+
+#if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
+    /* Windows */
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo( &sysinfo );
+    ret = sysinfo.dwNumberOfProcessors;
+#elif defined HAVE_SYSCONF
+    /* We are probably on Unix.
+     * Now check if we have the argument to use before executing the call
+     */
+#if defined(_SC_NPROCESSORS_ONLN)
+    ret = sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROC_ONLN)
+    ret = sysconf(_SC_NPROC_ONLN);
+#elif defined(_SC_NPROCESSORS_CONF)
+    ret = sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(_SC_NPROC_CONF)
+    ret = sysconf(_SC_NPROC_CONF);
+#endif /* End of check for sysconf argument values */
+
+#else
+    /* Neither windows nor Unix. No fscking idea how many CPUs we have! */
+    ret = -1;
+#endif
+
+    if (debug)
+    {
+        fprintf(debug, "Detected %d processors, will use this as the number "
+                "of supported hardware threads.\n", ret);
+    }
+
+#ifdef GMX_OMPENMP
+    if (ret != gmx_omp_get_num_procs())
+    {
+        md_print_warn(cr, fplog,
+                      "Number of CPUs detected (%d) does not match the number reported by OpenMP (%d).\n"
+                      "Consider setting the launch configuration manually!",
+                      ret, gmx_omp_get_num_procs());
+    }
+#endif
+
+    return ret;
+}
+
 void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
                          const t_commrec *cr,
                          gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
@@ -383,8 +456,15 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
 
     assert(hwinfo);
 
-    /* detect CPU; no fuss, we don't detect system-wide -- sloppy, but that's it for now */
-    gmx_detectcpu(&hwinfo->cpu_info);
+    /* detect CPUID info; no fuss, we don't detect system-wide
+     * -- sloppy, but that's it for now */
+    if (gmx_cpuid_init(&hwinfo->cpuid_info) != 0)
+    {
+        gmx_fatal_collective(FARGS, cr, NULL, "CPUID detection failed!");
+    }
+
+    /* detect number of hardware threads */
+    hwinfo->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
 
     /* detect GPUs */
     hwinfo->gpu_info.ncuda_dev_use  = 0;
@@ -507,6 +587,7 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
 {
     if (hwinfo)
     {
+        gmx_cpuid_done(hwinfo->cpuid_info);
         free_gpu_info(&hwinfo->gpu_info);
         sfree(hwinfo);
     }

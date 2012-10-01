@@ -437,7 +437,7 @@ static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf,
 {
   if (!(cr->duty & DUTY_PME)) {
     /* Tell the PME only node to finish */
-    gmx_pme_finish(cr);
+    gmx_pme_send_finish(cr);
   }
 
   done_mdoutf(outf);

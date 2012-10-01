@@ -147,8 +147,8 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 
 /*! Initilizes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t *nbp,
-                           const interaction_const_t *ic,
-                           const nonbonded_verlet_t *nbv)
+                         const interaction_const_t *ic,
+                         const nonbonded_verlet_t *nbv)
 {
     cudaError_t stat;
     int         ntypes, nnbfp;
@@ -175,7 +175,16 @@ static void init_nbparam(cu_nbparam_t *nbp,
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype==eelEWALD))
     {
-        nbp->eeltype = eelCuEWALD;
+        /* Initially rcoulomb == rvdw, so it's surely not twin cut-off, unless
+           forced by the env. var. (used only for benchmarking). */
+        if (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == NULL)
+        {
+            nbp->eeltype = eelCuEWALD;
+        }
+        else
+        {
+            nbp->eeltype = eelCuEWALD_TWIN;
+        }
     }
     else
     {
@@ -201,14 +210,28 @@ static void init_nbparam(cu_nbparam_t *nbp,
     CU_RET_ERR(stat, "cudaBindTexture on nbfp failed");
 }
 
-void reset_gpu_rlist_ewaldtab(nbnxn_cuda_ptr_t cu_nb,
-                              const interaction_const_t *ic)
+/*! Re-generate the GPU Ewald force table, resets rlist, and update the
+ *  electrostatic type switching to twin cut-off (or back) if needed. */
+void nbnxn_cuda_pmetune_update_param(nbnxn_cuda_ptr_t cu_nb,
+                                     const interaction_const_t *ic)
 {
     cu_nbparam_t *nbp = cu_nb->nbparam;
 
     nbp->rlist_sq       = ic->rlist * ic->rlist;
     nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
     nbp->ewald_beta     = ic->ewaldcoeff;
+
+    /* When switching to/from twin cut-off, the electrostatics type needs updating.
+       (The env. var. that forces twin cut-off is for benchmarking only!) */
+    if (ic->rcoulomb == ic->rvdw &&
+        getenv("GMX_CUDA_NB_EWALD_TWINCUT") == NULL)
+    {
+        nbp->eeltype = eelCuEWALD;
+    }
+    else
+    {
+        nbp->eeltype = eelCuEWALD_TWIN;
+    }
 
     init_ewald_coulomb_force_table(cu_nb->nbparam);
 }
@@ -748,7 +771,7 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
     plist_nl    = cu_nb->plist[eintNonlocal];
     timers      = cu_nb->timers;
 
-    if (nbparam->eeltype == eelCuEWALD)
+    if (nbparam->eeltype == eelCuEWALD || nbparam->eeltype == eelCuEWALD_TWIN)
     {
       stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
       CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");

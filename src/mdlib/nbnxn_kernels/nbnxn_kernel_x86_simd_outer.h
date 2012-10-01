@@ -102,7 +102,11 @@
 #define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,rf,e)
 #endif
 #ifdef CALC_COUL_TAB
+#ifndef VDW_CUTOFF_CHECK
 #define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab,e)
+#else
+#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab_twin,e)
+#endif
 #endif
 
 #ifdef GMX_MM128_HERE
@@ -317,6 +321,9 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 
     gmx_mm_pr  avoid_sing_SSE;
     gmx_mm_pr  rc2_SSE;
+#ifdef VDW_CUTOFF_CHECK
+    gmx_mm_pr  rcvdw2_SSE;
+#endif
 
 #ifdef CALC_ENERGIES
     gmx_mm_pr  sh_invrc6_SSE,sh_invrc12_SSE;
@@ -381,8 +388,11 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 
     avoid_sing_SSE = gmx_set1_pr(NBNXN_AVOID_SING_R2_INC);
 
-    /* These kernels only support rvdw = rcoulomb */
-    rc2_SSE   = gmx_set1_pr(ic->rvdw*ic->rvdw);
+    /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
+    rc2_SSE    = gmx_set1_pr(ic->rcoulomb*ic->rcoulomb);
+#ifdef VDW_CUTOFF_CHECK
+    rcvdw2_SSE = gmx_set1_pr(ic->rvdw*ic->rvdw);
+#endif
 
 #ifdef CALC_ENERGIES
     sixthSSE    = gmx_set1_pr(1.0/6.0);

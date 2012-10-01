@@ -39,11 +39,15 @@
 
 typedef struct pme_switch *pme_switch_t;
 
+/* Initialze the PME grid tuning data and infrastructure */
 void switch_pme_init(pme_switch_t *pmes_p,
                      const t_inputrec *ir,matrix box,
-		     const interaction_const_t *ic,
+                     const interaction_const_t *ic,
                      gmx_pme_t pmedata);
 
+/* Adjust the PME grid and Coulomb cut-off.
+ * Returns TRUE the tuning continues, FALSE is the tuning is done.
+ */
 gmx_bool switch_pme(pme_switch_t pmes,
                     t_commrec *cr,
                     FILE *fp_err,
@@ -56,6 +60,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
                     gmx_pme_t *pmedata,
                     int step);
 
+/* Restart the PME tuning, discarding all timings gathered up till now */
 void restart_switch_pme(pme_switch_t pmes, int n);
 
 #endif /* _pme_switch_h */

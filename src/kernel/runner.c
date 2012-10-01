@@ -736,27 +736,30 @@ static void set_cpu_affinity(FILE *fplog,
                              const t_commrec *cr,
                              const gmx_hw_opt_t *hw_opt,
                              int nthreads_pme,
+                             const gmx_hw_info_t *hwinfo,
                              const t_inputrec *inputrec)
 {
 #ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP?! */
 #ifdef __linux /* TODO: only linux? why not everywhere if sched_setaffinity is available */
     if (hw_opt->bThreadPinning)
     {
-        int thread, local_nthreads, offset, n_ht_physcore;
+        int thread, nthread_local, nthread_node, nthread_hw_max, nphyscore;
+        int offset;
         char *env;
 
         /* threads on this MPI process or TMPI thread */
         if (cr->duty & DUTY_PP)
         {
-            local_nthreads = gmx_omp_nthreads_get(emntNonbonded);
+            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
         }
         else
         {
-            local_nthreads = gmx_omp_nthreads_get(emntPME);
+            nthread_local = gmx_omp_nthreads_get(emntPME);
         }
 
         /* map the current process to cores */
         thread = 0;
+        nthread_node = nthread_local;
 #ifdef GMX_MPI
         if (PAR(cr) || MULTISIM(cr))
         {
@@ -767,9 +770,11 @@ static void set_cpu_affinity(FILE *fplog,
 
             MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->nodeid_intra,
                            &comm_intra);
-            MPI_Scan(&local_nthreads,&thread,1,MPI_INT,MPI_SUM,comm_intra);
+            MPI_Scan(&nthread_local,&thread,1,MPI_INT,MPI_SUM,comm_intra);
             /* MPI_Scan is inclusive, but here we need exclusive */
-            thread -= local_nthreads;
+            thread -= nthread_local;
+            /* Get the total number of threads on this physical node */
+            MPI_Allreduce(&nthread_local,&nthread_node,1,MPI_INT,MPI_SUM,comm_intra);
             MPI_Comm_free(&comm_intra);
         }
 #endif
@@ -788,41 +793,64 @@ static void set_cpu_affinity(FILE *fplog,
             }
         }
 
-        n_ht_physcore = -1;
-        if (hw_opt->bPinHyperthreading)
+        /* With Intel Hyper-Threading enabled, we want to pin consecutive
+         * threads to physical cores when using more threads than physical
+         * cores or when the user requests so.
+         */
+        nthread_hw_max = hwinfo->nthreads_hw_avail;
+        nphyscore = -1;
+        if (hw_opt->bPinHyperthreading ||
+            (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED &&
+             nthread_node > nthread_hw_max/2 && getenv("GMX_DISABLE_PINHT") == NULL))
         {
-            /* This should ONLY be used with hyperthreading turned on */
-            /* FIXME remove this when the hardware detection will have the #threads/package info */
-            n_ht_physcore = gmx_omp_get_num_procs()/2;
+            if (gmx_cpuid_x86_smt(hwinfo->cpuid_info) != GMX_CPUID_X86_SMT_ENABLED)
+            {
+                /* We print to stderr on all processes, as we might have
+                 * different settings on different physical nodes.
+                 */
+                if (gmx_cpuid_vendor(hwinfo->cpuid_info) != GMX_CPUID_VENDOR_INTEL)
+                {
+                    md_print_warn(NULL, fplog, "Pinning for Hyper-Threading layout requested, "
+                                  "but non-Intel CPU detected (vendor: %s)\n",
+                                  gmx_cpuid_vendor_string[gmx_cpuid_vendor(hwinfo->cpuid_info)]);
+                }
+                else
+                {
+                    md_print_warn(NULL, fplog, "Pinning for Hyper-Threading layout requested, "
+                                  "but the CPU detected does not have Intel Hyper-Threading support "
+                                  "(or it is turned off)\n");
+                }
+            }
+            nphyscore = nthread_hw_max/2;
 
             if (SIMMASTER(cr))
             {
-                fprintf(stderr, "Assuming Hyper-Threading with %d physical cores in a compute node\n",
-                        n_ht_physcore);
+                fprintf(stderr, "Pinning to Hyper-Threading cores with %d physical cores in a compute node\n",
+                        nphyscore);
             }
             if (fplog)
             {
-                fprintf(fplog, "Assuming Hyper-Threading with %d physical cores in a compute node\n",
-                        n_ht_physcore);
+                fprintf(fplog, "Pinning to Hyper-Threading cores with %d physical cores in a compute node\n",
+                        nphyscore);
             }
         }
 
         /* set the per-thread affinity */
-#pragma omp parallel firstprivate(thread) num_threads(local_nthreads)
+#pragma omp parallel firstprivate(thread) num_threads(nthread_local)
         {
             cpu_set_t mask;
             int core;
 
             CPU_ZERO(&mask);
             thread += gmx_omp_get_thread_num();
-            if (n_ht_physcore <= 0)
+            if (nphyscore <= 0)
             {
                 core = offset + thread;
             }
             else
             {
                 /* Lock pairs of threads to the same hyperthreaded core */
-                core = offset + thread/2 + (thread % 2)*n_ht_physcore;
+                core = offset + thread/2 + (thread % 2)*nphyscore;
             }
             CPU_SET(core, &mask);
             sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
@@ -836,29 +864,7 @@ static void set_cpu_affinity(FILE *fplog,
 static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
                                     int cutoff_scheme)
 {
-    char *env;
-
-    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
-    {
-        int nt_omp;
-
-        sscanf(env,"%d",&nt_omp);
-        if (nt_omp <= 0)
-        {
-            gmx_fatal(FARGS,"OMP_NUM_THREADS is invalid: '%s'",env);
-        }
-
-        if (hw_opt->nthreads_omp > 0 && nt_omp != hw_opt->nthreads_omp)
-        {
-            gmx_fatal(FARGS,"OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values",nt_omp,hw_opt->nthreads_omp);
-        }
-
-        /* Setting the number of OpenMP threads.
-         * NOTE: this function is only called on the master node.
-         */
-        fprintf(stderr,"Getting the number of OpenMP threads from OMP_NUM_THREADS: %d\n",nt_omp);
-        hw_opt->nthreads_omp = nt_omp;
-    }
+    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp);
 
 #ifndef GMX_THREAD_MPI
     if (hw_opt->nthreads_tot > 0)
@@ -1118,7 +1124,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #ifdef GMX_THREAD_MPI
         if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)
         {
-            gmx_fatal(FARGS,"You need to explicitly specify the number of MPI threads (-nt_mpi) when using separate PME nodes");
+            gmx_fatal(FARGS,"You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME nodes");
         }
 #endif
 
@@ -1217,10 +1223,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                  bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
     }
 #endif
-
-    /* TODO this should use the hwinfo->cpu_info as soon as this will include
-     * information on the number of cores and threads/package */
-    gmx_omp_nthreads_detecthw();
 
     /* now make sure the state is initialized and propagated */
     set_state_entries(state,inputrec,cr->nnodes);
@@ -1456,6 +1458,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 
     gmx_omp_nthreads_init(fplog, cr,
+                          hwinfo->nthreads_hw_avail,
                           hw_opt->nthreads_omp,
                           hw_opt->nthreads_omp_pme,
                           (cr->duty & DUTY_PP) == 0,
@@ -1586,7 +1589,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
     {
         /* Set the CPU affinity */
-        set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,inputrec);
+        set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,hwinfo,inputrec);
     }
 
     /* Initiate PME if necessary,
