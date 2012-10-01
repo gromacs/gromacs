@@ -40,7 +40,6 @@
 #include <limits>
 #endif
 
-#include "smalloc.h"
 #include "types/simple.h" 
 #include "types/nbnxn_pairlist.h"
 #include "types/nb_verlet.h"
@@ -56,7 +55,6 @@
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
-#include "pmalloc_cuda.h"
 
 
 /*! Texture reference for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
@@ -107,7 +105,7 @@ static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
 /* Bit-pattern used for polling-based GPU synchronization. It is used as a float
  * and corresponds to having the exponent set to the maximum (127 -- single
- * precision) and the matissa to 0.
+ * precision) and the mantissa to 0.
  */
 static unsigned int poll_wait_pattern = (0x7FU << 23);
 
@@ -135,7 +133,7 @@ static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
 /* Constant arrays listing all kernel function pointers and enabling selection
    of a kernel in an elegant manner. */
 
-static const int nEnergyKernelTypes = 2; /* 0 - no nergy, 1 - energy */
+static const int nEnergyKernelTypes = 2; /* 0 - no energy, 1 - energy */
 static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
 
 /* Default kernels */
@@ -216,16 +214,20 @@ static inline int calc_shmem_required(int kver)
 
 /*! As we execute nonbonded workload in separate streams, before launching 
    the kernel we need to make sure that he following operations have completed:
-   - atomata allocation and related H2D transfers (every nstlist step);
+   - atomdata allocation and related H2D transfers (every nstlist step);
    - pair list H2D transfer (every nstlist step);
    - shift vector H2D transfer (every nstlist step);
-   - force (+shift force and energy) output clearing (every step);
+   - force (+shift force and energy) output clearing (every step).
 
-   In CUDA all operations issued in stream 0 precede everything launched in 
-   other streams. As all the above operations are launched in sream 0 (default), 
-   while all nonbonded calculations are done in the respective local/non-local 
-   stream, no explicit synchronization is required.
- */
+   These operations are issued in the local stream at the beginning of the step
+   and therefore always complete before the local kernel launch. The non-local
+   kernel is launched after the local on the same device/context, so this is
+   inherently scheduled after the operations in the local stream (including the
+   above "misc_ops").
+   However, for the sake of having a future-proof implementation, we use the
+   misc_ops_done event to record the point in time when the above  operations
+   are finished and synchronize with this event in the non-local stream.
+*/
 void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
                               const nbnxn_atomdata_t *nbatom,
                               int flags,
@@ -322,7 +324,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     if (debug)
     {
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "Grid: %dx%d\n\t#Cells/Subcells: %d/%d (%d)\n",
+                "Grid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, plist->nsci*NCL_PER_SUPERCL,
                 NCL_PER_SUPERCL, plist->na_c);
@@ -557,7 +559,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     }
     else 
     {
-        /* Busy-wait until we get the signalling pattern set in last byte
+        /* Busy-wait until we get the signal pattern set in last byte
          * of the l/nl float vector. This pattern corresponds to a floating
          * point number which can't be the result of the force calculation
          * (maximum, 127 exponent and 0 mantissa).
@@ -603,7 +605,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         }
     }
 
-    /* add up enegies and shift forces (only once at local F wait) */
+    /* add up energies and shift forces (only once at local F wait) */
     if (LOCAL_I(iloc))
     {
         if (bCalcEner)

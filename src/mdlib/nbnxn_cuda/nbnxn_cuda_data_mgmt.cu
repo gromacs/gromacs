@@ -118,7 +118,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
 }
 
 
-/*! Initilizes the atomdata structure first time, it only gets filled at
+/*! Initializes the atomdata structure first time, it only gets filled at
     pair-search. */
 static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 {
@@ -137,17 +137,17 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     stat = cudaMalloc((void**)&ad->e_el, sizeof(*ad->e_el));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_el");
 
-    /* initilize to NULL poiters to data that is not allocated here and will
+    /* initialize to NULL poiters to data that is not allocated here and will
        need reallocation in nbnxn_cuda_init_atomdata */
     ad->xq = NULL;
     ad->f  = NULL;
 
-    /* size -1 indicates that the repective array hasn't been initialized yet */
+    /* size -1 indicates that the respective array hasn't been initialized yet */
     ad->natoms = -1;
     ad->nalloc = -1;
 }
 
-/*! Initilizes the nonbonded parameter data structure. */
+/*! Initializes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t *nbp,
                          const interaction_const_t *ic,
                          const nonbonded_verlet_t *nbv)
@@ -238,16 +238,16 @@ void nbnxn_cuda_pmetune_update_param(nbnxn_cuda_ptr_t cu_nb,
     init_ewald_coulomb_force_table(cu_nb->nbparam);
 }
 
-/*! Initilizes the pair list data structure. */
+/*! Initializes the pair list data structure. */
 static void init_plist(cu_plist_t *pl)
 {
-    /* initilize to NULL poiters to data that is not allocated here and will
+    /* initialize to NULL pointers to data that is not allocated here and will
        need reallocation in nbnxn_cuda_init_pairlist */
     pl->sci     = NULL;
     pl->cj4     = NULL;
     pl->excl    = NULL;
 
-    /* size -1 indicates that the repective array hasn't been initialized yet */
+    /* size -1 indicates that the respective array hasn't been initialized yet */
     pl->na_c        = -1;
     pl->nsci        = -1;
     pl->sci_nalloc  = -1;
@@ -258,7 +258,7 @@ static void init_plist(cu_plist_t *pl)
     pl->bDoPrune    = false;
 }
 
-/*! Initilizes the timer data structure. */
+/*! Initializes the timer data structure. */
 static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
 {
     cudaError_t stat;
@@ -295,7 +295,7 @@ static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
     }
 }
 
-/*! Initilizes the timings data structure. */
+/*! Initializes the timings data structure. */
 static void init_timings(wallclock_gpu_t *t)
 {
     int i, j;
@@ -326,7 +326,7 @@ static int pick_nbnxn_kernel_version()
     char sbuf[STRLEN];
     int  kver;
 
-    /* legacy kernel (former k2), kept for now for backward compatiblity,
+    /* legacy kernel (former k2), kept for now for backward compatibility,
        faster than the default with  CUDA 3.2/4.0 (TODO: on Kepler?). */
     bLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
     /* default kernel (former k3). */
@@ -360,7 +360,7 @@ static int pick_nbnxn_kernel_version()
                     "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
                     "      non-bonded kenels perform best. However, the default kernels were\n"
                     "      selected by the GMX_CUDA_NB_DEFAULT environment variable.\n"
-                    "      For best performance upgrade your CUDA tookit.",
+                    "      For best performance upgrade your CUDA toolkit.",
                     sbuf);
         }
         else
@@ -713,7 +713,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* need to reallocate if we have to copy more atoms than the amount of space
-       available and only allocate if we haven't initilzed yet, i.e d_atdat->natoms == -1 */
+       available and only allocate if we haven't initialized yet, i.e d_atdat->natoms == -1 */
     if (natoms > d_atdat->nalloc)
     {
         nalloc = over_alloc_small(natoms);

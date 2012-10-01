@@ -61,19 +61,19 @@ void nbnxn_cuda_init(FILE *fplog,
                      /* true of both local and non-local are don on GPU */
                      gmx_bool bLocalAndNonlocal) FUNC_TERM
 
-/*! Initilizes simulation constant data. */
+/*! Initializes simulation constant data. */
 FUNC_QUALIFIER
 void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t p_cu_nb,
                            const interaction_const_t *ic,
                            const nonbonded_verlet_t *nbv) FUNC_TERM
 
-/*! Initilizes pair-list data for GPU, called at every pair search step. */
+/*! Initializes pair-list data for GPU, called at every pair search step. */
 FUNC_QUALIFIER
 void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
                               const nbnxn_pairlist_t *h_nblist,
                               int iloc) FUNC_TERM
 
-/*! Initilizes atom-data on the GPU, called at every pair search step. */
+/*! Initializes atom-data on the GPU, called at every pair search step. */
 FUNC_QUALIFIER
 void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
                               const nbnxn_atomdata_t *atomdata) FUNC_TERM

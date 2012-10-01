@@ -206,7 +206,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     if (SIMMASTER(cr))
     {
         /* check the acceleration mdrun is compiled with against hardware capabilities */
-        /* TODO: Here we assume homogenous hardware which is not necessarily the case!
+        /* TODO: Here we assume homogeneous hardware which is not necessarily the case!
          *       Might not hurt to add an extra check over MPI. */
         gmx_cpuid_acceleration_check(hwinfo->cpuid_info, fplog);
     }
@@ -391,7 +391,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     }
 }
 
-/* Return the number of hwardware threads supported by the current CPU.
+/* Return the number of hardware threads supported by the current CPU.
  * We assume that this is equal with the number of CPUs reported to be
  * online by the OS at the time of the call.
  */

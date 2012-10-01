@@ -88,7 +88,7 @@ static const char *mod_name[emntNR] =
  *  and queried via gmx_omp_nthreads_get.
  *
  *  All fields are initialized to 0 which should result in errors if
- *  the init call is omitted
+ *  the init call is omitted.
  * */
 static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
