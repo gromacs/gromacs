@@ -40,8 +40,6 @@
 
 #include "gmx_fatal.h"
 
-#include "cuda.h"
-
 /* CUDA library and hardware related defines */
 /* TODO list some constants instead that can be used for consistency checks to
    detect future devices with features that make the currect code incompatible

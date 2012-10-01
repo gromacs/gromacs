@@ -38,7 +38,6 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "cuda.h"
 #include "cudautils.cuh"
 
 /*** Generic CUDA data operation wrappers ***/

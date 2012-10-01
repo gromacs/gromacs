@@ -37,18 +37,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "cuda.h"
-#include "cuda_runtime_api.h"
-
-#include "memtestG80_core.h"
-
-
 #include "smalloc.h"
 #include "string2.h"
 #include "types/hw_info.h"
 
 #include "gpu_utils.h"
 #include "../cuda_tools/cudautils.cuh"
+#include "memtestG80_core.h"
+
 
 #define QUICK_MEM       250 /*!< Amount of memory to be used in quick memtest. */
 #define QUICK_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bit flag with type of tests
