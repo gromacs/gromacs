@@ -1256,7 +1256,7 @@ static void do_harm(t_fileio *fio, t_iparams *iparams,gmx_bool bRead)
 void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
                 gmx_bool bRead, int file_version)
 {
-  int i;
+  int idum;
   gmx_bool bDum;
   real rdum;
   
@@ -1444,6 +1444,10 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->orires.kfac);
     break;
   case F_DIHRES:
+    if ( file_version < 72) {
+        gmx_fio_do_int(fio,idum);
+        gmx_fio_do_int(fio,idum);
+    }
     gmx_fio_do_real(fio,iparams->dihres.phiA);
     gmx_fio_do_real(fio,iparams->dihres.dphiA);
     gmx_fio_do_real(fio,iparams->dihres.kfacA);
