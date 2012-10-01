@@ -41,6 +41,14 @@ int gmx_omp_get_max_threads(void)
 #endif
 }
 
+int gmx_omp_get_num_procs(void)
+{
+#ifdef GMX_OPENMP
+    return omp_get_num_procs();
+#else
+    return 1;
+#endif
+}
 
 int gmx_omp_get_thread_num(void)
 {

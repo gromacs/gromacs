@@ -33,6 +33,9 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
+#ifndef ENUMS_H_
+#define ENUMS_H_
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -73,6 +76,10 @@ enum {
   erscNO, erscALL, erscCOM, erscNR
 };
 
+enum { 
+  ecutsGROUP, ecutsVERLET, ecutsNR
+};
+
 /*
  * eelNOTUSED1 used to be GB, but to enable generalized born with different
  * forms of electrostatics (RF, switch, etc.) in the future it is now selected
@@ -95,6 +102,8 @@ enum {
 #define EEL_FULL(e) (EEL_PME(e) || (e) == eelPOISSON || (e) == eelEWALD)
 
 #define EEL_SWITCHED(e) ((e) == eelSWITCH || (e) == eelSHIFT || (e) == eelENCADSHIFT || (e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
+
+#define EEL_USER(e) ((e) == eelUSER || (e) == eelPMEUSER || (e) == (eelPMESWITCH))
 
 #define EEL_IS_ZERO_AT_CUTOFF(e) (EEL_SWITCHED(e) || (e) == eelRF_ZERO)
 
@@ -121,14 +130,15 @@ enum {
   eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
 };
 #define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
+#define EI_MD(e) ((e) == eiMD || EI_VV(e))
 #define EI_SD(e) ((e) == eiSD1 || (e) == eiSD2)
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/
-#define EI_DYNAMICS(e) ((e) == eiMD || EI_SD(e) || (e) == eiBD || EI_VV(e))
+#define EI_DYNAMICS(e) (EI_MD(e) || EI_SD(e) || (e) == eiBD)
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 #define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 
-#define EI_STATE_VELOCITY(e) ((e) == eiMD || EI_VV(e) || EI_SD(e))
+#define EI_STATE_VELOCITY(e) (EI_MD(e) || EI_SD(e))
 
 enum {
   econtLINCS, econtSHAKE, econtNR
@@ -332,3 +342,4 @@ enum {
 }
 #endif
 
+#endif /* ENUMS_H_ */

@@ -35,48 +35,41 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "cuda.h"
 #include "cuda_runtime_api.h"
 
 #include "memtestG80_core.h"
 
-/*! \cond  TEST */
-#ifdef _DEBUG_
-#undef _DEBUG_
-#endif
-#define _DEBUG_           0
 
-#if _DEBUG_ >= 1
-#define debug stderr 
-#define DUPME(msg) printf("---> %s\n", msg);
-#else
-#define DUPME(msg) ;
-#endif
-/*! \endcond TEST*/
-
-#if _DEBUG_ == 0/* no gromacs utils in debug mode */
-#include "gmx_fatal.h"
+#include "smalloc.h"
 #include "string2.h"
-#endif
+#include "types/hw_info.h"
+
+#include "gpu_utils.h"
+#include "../cuda_tools/cudautils.cuh"
 
 #define QUICK_MEM       250 /*!< Amount of memory to be used in quick memtest. */
-#define QUICK_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bitflag with type of tests 
+#define QUICK_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bit flag with type of tests
                                                                             to run in quick memtest. */
 #define QUICK_ITER      3 /*!< Number of iterations in quick memtest. */
 
 #define FULL_TESTS      0x3FFF /*!<  Bitflag with all test set on for full memetest. */
 #define FULL_ITER       25 /*!< Number of iterations in full memtest. */
 
-#define TIMED_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bitflag with type of tests to 
+#define TIMED_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bit flag with type of tests to
                                                                             run in time constrained memtest. */
 
 /*! Number of supported GPUs */
 #define NB_GPUS (sizeof(SupportedGPUs)/sizeof(SupportedGPUs[0]))
 
-/*
-TODO add proper gromacs logging?
-*/
+static int cuda_max_device_count = 32; /*! Max number of devices supported by CUDA (for consistency checking).
+                                           In reality it 16 with CUDA <=v5.0, but let's stay on the safe side. */
+
+/*! Dummy kernel used for sanity checking. */
+__global__ void k_dummy_test(){}
+
 
 /*! Bit-flags which refer to memtestG80 test types and are used in do_memtest to specify which tests to run. */
 enum memtest_G80_test_types {
@@ -144,24 +137,18 @@ static const char * const SupportedGPUs[] = {
     "Quadro Plex 2100 D4"
 };
 
-/*! \cond  TEST */
-#ifndef _string2_h
-/* debug functions, see @the end */
-void ltrim (char *);
-void rtrim (char *);
-void trim  (char *);
-int gmx_strncasecmp(const char*, const char*, int);
-#endif
-/*! \endcond  TEST */
-
 
 /*! 
   * \brief Runs GPU sanity checks.
-  * Returnes properties of a device with given id or the one that has
-  * already been initialized earlier in the case if of dev_id == -1.
   *
-  * \param[in] dev_id       the device id of the GPU or -1 if the device has laredy been selected
+  * Runs a series of checks to determine that the given GPU and underlying CUDA
+  * driver/runtime functions properly.
+  * Returns properties of a device with given ID or the one that has
+  * already been initialized earlier in the case if of \dev_id == -1.
+  *
+  * \param[in]  dev_id      the device ID of the GPU or -1 if the device has already been initialized
   * \param[out] dev_prop    pointer to the structure in which the device properties will be returned
+  * \returns                0 if the device looks OK
   */
 static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 {
@@ -181,10 +168,10 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
         return -1;
 
     /* things might go horribly wrong if cudart is not compatible with the driver */
-    if (dev_count < 0 || dev_count > 20)
+    if (dev_count < 0 || dev_count > cuda_max_device_count)
         return -1;
 
-    if (dev_id == -1) /* device already selected let's do not destroy the context */
+    if (dev_id == -1) /* device already selected let's not destroy the context */
     {
         cu_err = cudaGetDevice(&id);
         if (cu_err != cudaSuccess)
@@ -221,23 +208,44 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     if (dev_prop->major == 0)
         return -1;
 
-    if ((dev_id != -1) && (cu_err = cudaSetDevice(dev_id)) != cudaSuccess)
+    if (id != -1)
     {
-        fprintf(stderr, "Error %d while switching to device #%d: %s\n", cu_err, dev_id,
-                cudaGetErrorString(cu_err));
-        return -1;
+        cu_err = cudaSetDevice(id);
+        if (cu_err != cudaSuccess)
+        {
+            fprintf(stderr, "Error %d while switching to device #%d: %s\n",
+                    cu_err, id, cudaGetErrorString(cu_err));
+            return -1;
+        }
+    }
+
+    /* try to execute a dummy kernel */
+    k_dummy_test<<<1, 512>>>();
+    CU_LAUNCH_ERR_SYNC("dummy test kernel");
+
+    /* destroy context if we created one */
+    if (id != -1)
+    {
+#if CUDA_VERSION < 4000
+        cu_err = cudaThreadExit();
+        CU_RET_ERR(cu_err, "cudaThreadExit failed");
+#else
+        cu_err = cudaDeviceReset();
+        CU_RET_ERR(cu_err, "cudaDeviceReset failed");
+#endif
     }
 
     return 0;
 }
 
+
 /*! 
- * \brief Checks whether the GPU with the given name is supported.
+ * \brief Checks whether the GPU with the given name is supported in Gromacs-OpenMM.
  * 
  * \param[in] gpu_name  the name of the CUDA device
- * \returns             1 if the device is supported, otherwise 0
+ * \returns             TRUE if the device is supported, otherwise FALSE
  */
-static int is_supported_gpu_n(char *gpuName)
+static bool is_gmx_openmm_supported_gpu_name(char *gpuName)
 {
     size_t i;
     for (i = 0; i < NB_GPUS; i++)
@@ -249,13 +257,14 @@ static int is_supported_gpu_n(char *gpuName)
     return 0;
 }
 
-/*! \brief Checks whether the GPU with the given device id is supported. 
+/*! \brief Checks whether the GPU with the given device id is supported in Gromacs-OpenMM.
  *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has laredy been selected
+ * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
  * \param[out] gpu_name Set to contain the name of the CUDA device, if NULL passed, no device name is set. 
- * \returns             1 if the device is supported, otherwise 0
+ * \returns             TRUE if the device is supported, otherwise FALSE
+ * 
  */
-int is_supported_cuda_gpu(int dev_id, char *gpu_name)
+gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name)
 {
     cudaDeviceProp dev_prop;
 
@@ -268,17 +277,17 @@ int is_supported_cuda_gpu(int dev_id, char *gpu_name)
     { 
         strcpy(gpu_name, dev_prop.name);
     }
-    return is_supported_gpu_n(dev_prop.name);
+    return is_gmx_openmm_supported_gpu_name(dev_prop.name);
 }
 
 
 /*!
  * \brief Runs a set of memory tests specified by the given bit-flags.
- * Tries to allocate and do the test on \p megs Mb memory or 
+ * Tries to allocate and do the test on \p megs Mb memory or
  * the greatest amount that can be allocated (>10Mb).
- * In case if an error is detected it stops without finishing the remainings 
- * steps/iterations and returns greater then zero value.  
- * In case of other errors (e.g. kernel launch errors, device querying erros) 
+ * In case if an error is detected it stops without finishing the remaining
+ * steps/iterations and returns greater then zero value.
+ * In case of other errors (e.g. kernel launch errors, device querying errors)
  * -1 is returned.
  *
  * \param[in] which_tests   variable with bit-flags of the requested tests
@@ -426,12 +435,12 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
     return err_count;
 }
 
-/*! \brief Runs a quick memory test and returns 0 in case if no error is detected. 
- * If an error is detected it stops before completing the test and returns a 
- * value greater then 0. In case of other errors (e.g. kernel launch errors, 
- * device querying erros) -1 is returned.
+/*! \brief Runs a quick memory test and returns 0 in case if no error is detected.
+ * If an error is detected it stops before completing the test and returns a
+ * value greater then 0. In case of other errors (e.g. kernel launch errors,
+ * device querying errors) -1 is returned.
  *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has laredy been selected
+ * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
  * \returns             0 if no error was detected, otherwise >0
  */
 int do_quick_memtest(int dev_id)
@@ -467,12 +476,12 @@ int do_quick_memtest(int dev_id)
     return res;
 }
 
-/*! \brief Runs a full memory test and returns 0 in case if no error is detected. 
- * If an error is detected  it stops before completing the test and returns a 
- * value greater then 0. In case of other errors (e.g. kernel launch errors, 
- * device querying erros) -1 is returned.
+/*! \brief Runs a full memory test and returns 0 in case if no error is detected.
+ * If an error is detected  it stops before completing the test and returns a
+ * value greater then 0. In case of other errors (e.g. kernel launch errors,
+ * device querying errors) -1 is returned.
  *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has laredy been selected
+ * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
  * \returns             0 if no error was detected, otherwise >0
  */
 
@@ -512,9 +521,9 @@ int do_full_memtest(int dev_id)
 }
 
 /*! \brief Runs a time constrained memory test and returns 0 in case if no error is detected.
- * If an error is detected it stops before completing the test and returns a value greater 
- * than zero. In case of other errors (e.g. kernel launch errors, device querying erros) -1 
- * is returned. Note, that test iterations are not interrupted therefor the total runtime of 
+ * If an error is detected it stops before completing the test and returns a value greater
+ * than zero. In case of other errors (e.g. kernel launch errors, device querying errors) -1
+ * is returned. Note, that test iterations are not interrupted therefor the total runtime of
  * the test will always be multipple of one iteration's runtime.
  *
  * \param[in] dev_id        the device id of the GPU or -1 if the device has laredy been selected
@@ -564,126 +573,357 @@ int do_timed_memtest(int dev_id, int time_constr)
     return res;
 }
 
-/*! \cond TEST */
-
-/*******************************************************
- * The code below is for testing purposes. */
-int do_custom_memtest(int dev_id)
-{
-    cudaDeviceProp  dev_prop;
-    int             mem2test, /*devmem,*/ res;
-//    memtestState    tester;
-//    double          bandwidth;
-
-#if _DEBUG_ >= 1
-    int time = getTimeMilliseconds();
-#endif
-
-   if (do_sanity_checks(dev_id, &dev_prop) != 0)
-        return -1;
-
-//    if ((res=tester.allocate(100))==0)
-//        printf("alloc failed\n");
-//    printf("alloc res = %d\n", res);
-//    res = tester.gpuMemoryBandwidth(bandwidth, tester.size(), 10);
-//    printf("Bandwidth on %d (res %d)= %5.2f\n", tester.size(), res, bandwidth);
-//    tester.deallocate();
-
-//    devmem   = dev_prop.totalGlobalMem/(1024*1024); // in MiB
-    mem2test = 80;
-
-#if _DEBUG_ >= 1
-    printf(">> Running CUSTOM memtests [%x] on %d MiB, %d iterations\n",
-        QUICK_TESTS, mem2test, 1);
-#endif
-
-    res = do_memtest(QUICK_TESTS, mem2test, 1);
-    cudaThreadExit();
-
-#if _DEBUG_ >= 1
-    printf("C-RES = %d\n", res);
-    printf("C-runtime: %d ms\n", getTimeMilliseconds() - time);
-#endif
-    return res;
-}
-
-#if _DEBUG_ > 1
-/*!
- * Only for debugging purposes, compile with:
- * nvcc -DLINUX -D_DEBUG_=2  -L -O  -Xcompiler -Wall memtestG80_core.o gmx_gpu_utils.cu  -o gmx_gpu_utils_test
+/*! \brief Initializes the GPU with the given index.
+ *
+ * The varible \mygpu is the index of the GPU to initialize in the
+ * gpu_info.cuda_dev array.
+ *
+ * \param[in]  mygpu        index of the GPU to initialize
+ * \param[out] result_str   the message related to the error that occurred
+ *                          during the initialization (if there was any).
+ * \param[in] gpu_info      GPU info of all detected devices in the system.
+ * \returns                 true if no error occurs during initialization.
  */
-int main( int argc, char** argv)
+gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info)
 {
-    int dev_id = 0;
-    char msg[100];
-    sprintf(msg, "Device #%d supported: ", dev_id);
-    switch (is_supported_cuda_gpu(dev_id, NULL))
+    cudaError_t stat;
+    char sbuf[STRLEN];
+    int gpuid;
+
+    assert(gpu_info);
+    assert(result_str);
+
+    if (mygpu < 0 || mygpu >= gpu_info->ncuda_dev_use)
     {
-        case -1: strcat(msg, "error occured"); break;
-        case  0: strcat(msg, "no"); break;
-        case  1: strcat(msg, "yes"); break;
-        default: strcat(msg, "\nhmmm, you should not see this!");
+        sprintf(sbuf, "Trying to initialize an inexistent GPU: "
+                "there are %d %s-selected GPU(s), but #%d was requested.",
+                 gpu_info->ncuda_dev_use, gpu_info->bUserSet ? "user" : "auto", mygpu);
+        gmx_incons(sbuf);
     }
-    printf("%s\n", msg);
 
-    printf("Doing memtest.\n");
-    printf("quick memtest result: %d\n", do_quick_memtest(dev_id));
-    printf("timed memtest result: %d\n", do_timed_memtest(dev_id, 15));
-    printf("full memtest result: %d\n", do_full_memtest(dev_id));
-    return 0;
+    gpuid = gpu_info->cuda_dev[gpu_info->cuda_dev_use[mygpu]].id;
+
+    stat = cudaSetDevice(gpuid);
+    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+
+    if (debug)
+    {
+        fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuid, gpu_info->cuda_dev[gpuid].prop.name);
+    }
+
+    return (stat == cudaSuccess);
 }
-#endif
 
-
-#ifndef _string2_h
-#include <string.h>
-/* 
-    Functions only used if this file is compiled in debug mode (_DEBUG_ > 0)
-    when the gromacs version are not available.
-    - string trimming function - duplicated from ~/src/gmxlib/string2.c 
-    - case agnostic straing compare
+/*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
+ *
+ * The context is explicitly destroyed and therefore all data uploaded to the GPU
+ * is lost. This should only be called when none of this data is required anymore.
+ *
+ * \param[out] result_str   the message related to the error that occurred
+ *                          during the initialization (if there was any).
+ * \returns                 true if no error occurs during the freeing.
  */
-static void ltrim (char *str)
+gmx_bool free_gpu(char *result_str)
 {
-  char *tr;
-  int c;
+    cudaError_t stat;
 
-  if (!str)
-    return;
+    assert(result_str);
 
-  tr = strdup (str);
-  c  = 0;
-  while ((tr[c] == ' ') || (tr[c] == '\t'))
-    c++;
+    if (debug)
+    {
+        int gpuid;
+        stat = cudaGetDevice(&gpuid);
+        CU_RET_ERR(stat, "cudaGetDevice failed");
+        fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuid);
+    }
 
-  strcpy (str,tr+c);
-  free (tr);
-}
-
-static void rtrim (char *str)
-{
-  int nul;
-
-  if (!str)
-    return;
-
-  nul = strlen(str)-1;
-  while ((nul > 0) && ((str[nul] == ' ') || (str[nul] == '\t')) ) {
-    str[nul] = '\0';
-    nul--;
-  }
-}
-
-static void trim (char *str)
-{
-  ltrim (str);
-  rtrim (str);
-}
-
-static int gmx_strncasecmp(const char* s1, const char* s2, int len)
-{
-  return strncasecmp(s1, s2, len);
-}
+#if CUDA_VERSION < 4000
+    stat = cudaThreadExit();
+#else
+    stat = cudaDeviceReset();
 #endif
+    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
 
-/*! \endcond TEST */
+    return (stat == cudaSuccess);
+}
+
+/*! \brief Returns true if the gpu characterized by the device properties is
+ *  supported by the native gpu acceleration.
+ *
+ * \param[in] dev_prop  the CUDA device properties of the gpus to test.
+ * \returns             true if the GPU properties passed indicate a compatible
+ *                      GPU, otherwise false.
+ */
+static bool is_gmx_supported_gpu(const cudaDeviceProp *dev_prop)
+{
+    return (dev_prop->major >= 2);
+}
+
+/*! \brief Helper function that checks whether a given GPU status indicates compatible GPU.
+ *
+ * \param[in] stat  GPU status.
+ * \returns         true if the provided status is egpuCompatible, otherwise false.
+ */
+static bool is_compatible_gpu(int stat)
+{
+    return (stat == egpuCompatible);
+}
+
+/*! \brief Checks if a GPU with a given ID is supported by the native GROMACS acceleration.
+ *
+ *  Returns a status value which indicates compatibility or one of the following
+ *  errors: incompatibility, insistence, or insanity (=unexpected behavior).
+ *  It also returns the respective device's properties in \dev_prop (if applicable).
+ *
+ *  \param[in]  dev_id   the ID of the GPU to check.
+ *  \param[out] dev_prop the CUDA device properties of the device checked.
+ *  \returns             the status of the requested device
+ */
+static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
+{
+    cudaError_t stat;
+    int         ndev;
+
+    stat = cudaGetDeviceCount(&ndev);
+    CU_RET_ERR(stat, "cudaGetDeviceCount failed");
+
+    if (dev_id > ndev - 1)
+    {
+        return egpuNonexistent;
+    }
+
+    if (do_sanity_checks(dev_id, dev_prop) == 0)
+    {
+        if (is_gmx_supported_gpu(dev_prop))
+        {
+            return egpuCompatible;
+        }
+        else
+        {
+            return egpuIncompatible;
+        }
+    }
+    else
+    {
+        return egpuInsane;
+    }
+}
+
+
+/*! \brief Detect all NVIDIA GPUs in the system.
+ *
+ *  Will detect every NVIDIA GPU supported by the device driver in use. Also
+ *  check for the compatibility of each and fill the gpu_info->cuda_dev array
+ *  with the required information on each the device: ID, device properties,
+ *  status.
+ *
+ *  \param[in] gpu_info    pointer to structure holding GPU information.
+ */
+void detect_cuda_gpus(gmx_gpu_info_t *gpu_info)
+{
+    int             i, ndev, checkres;
+    cudaError_t     stat;
+    cudaDeviceProp  prop;
+    cuda_dev_info_t *devs;
+
+    assert(gpu_info);
+
+    stat = cudaGetDeviceCount(&ndev);
+    CU_RET_ERR(stat, "cudaGetDeviceCount failed");
+
+    snew(devs, ndev);
+    for (i = 0; i < ndev; i++)
+    {
+        checkres = is_gmx_supported_gpu_id(i, &prop);
+
+        devs[i].id   = i;
+        devs[i].prop = prop;
+        devs[i].stat = checkres;
+    }
+
+    gpu_info->ncuda_dev = ndev;
+    gpu_info->cuda_dev  = devs;
+}
+
+/*! \brief Select the GPUs compatible with the native GROMACS acceleration.
+ *
+ * This function selects the compatible gpus and initializes
+ * gpu_info->cuda_dev_use and gpu_info->ncuda_dev_use.
+ *
+ * Given the list of GPUs available in the system the it checks each gpu in
+ * gpu_info->cuda_dev and puts the the indices (into gpu_info->cuda_dev) of
+ * the compatible ones into cuda_dev_use with this marking the respective
+ * GPUs as "available for use."
+ * Note that \detect_cuda_gpus must have been called before.
+ *
+ * \param[in]    gpu_info    pointer to structure holding GPU information
+ */
+void pick_compatible_gpus(gmx_gpu_info_t *gpu_info)
+{
+    int i, ncompat;
+    int *compat;
+
+    assert(gpu_info);
+    /* cuda_dev/ncuda_dev have to be either NULL/0 or not (NULL/0) */
+    assert((gpu_info->ncuda_dev != 0 ? 0 : 1) ^ (gpu_info->cuda_dev == NULL ? 0 : 1));
+
+    snew(compat, gpu_info->ncuda_dev);
+    ncompat = 0;
+    for (i = 0; i < gpu_info->ncuda_dev; i++)
+    {
+        if (is_compatible_gpu(gpu_info->cuda_dev[i].stat))
+        {
+            ncompat++;
+            compat[ncompat - 1] = i;
+        }
+    }
+
+    gpu_info->ncuda_dev_use = ncompat;
+    snew(gpu_info->cuda_dev_use, ncompat);
+    memcpy(gpu_info->cuda_dev_use, compat, ncompat*sizeof(*compat));
+    sfree(compat);
+}
+
+/*! \brief Check the existence/compatibility of a set of GPUs specified by their device IDs.
+ *
+ * Given the a list of GPU devide IDs in \requested_devs, check for the
+ * existence and compatibility of the respective GPUs and fill in \gpu_info
+ * with the collected information. Also provide the caller with an array with
+ * the result of checks in \checkres.
+ *
+ * \param[out]  checkres    check result for each ID passed in \requested_devs
+ * \param[in]   gpu_info    pointer to structure holding GPU information
+ * \param[in]   requested_devs array of requested device IDs
+ * \param[in]   count       number of IDs in \requested_devs
+ * \returns                 TRUE if every requested GPU is compatible
+ */
+gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
+                                const int *requested_devs, int count)
+{
+    int i, id;
+    bool bAllOk;
+
+    assert(checkres);
+    assert(gpu_info);
+    assert(requested_devs);
+    assert(count >= 0);
+
+    if (count == 0)
+    {
+        return TRUE;
+    }
+
+    /* we will assume that all GPUs requested are valid IDs,
+       otherwise we'll bail anyways */
+    gpu_info->ncuda_dev_use = count;
+    snew(gpu_info->cuda_dev_use, count);
+
+    bAllOk = true;
+    for (i = 0; i < count; i++)
+    {
+        id = requested_devs[i];
+
+        /* devices are stored in increasing order of IDs in cuda_dev */
+        gpu_info->cuda_dev_use[i] = id;
+
+        checkres[i] = (id >= gpu_info->ncuda_dev) ?
+            egpuNonexistent : gpu_info->cuda_dev[id].stat;
+
+        bAllOk = bAllOk && is_compatible_gpu(checkres[i]);
+    }
+
+    return bAllOk;
+}
+
+/*! \brief Frees the cuda_dev and cuda_dev_use array fields of \gpu_info.
+ *
+ * \param[in]    gpu_info    pointer to structure holding GPU information
+ */
+void free_gpu_info(const gmx_gpu_info_t *gpu_info)
+{
+    if (gpu_info == NULL)
+    {
+        return;
+    }
+
+    sfree(gpu_info->cuda_dev_use);
+    sfree(gpu_info->cuda_dev);
+}
+
+/*! \brief Formats and returns a device information string for a given GPU.
+ *
+ * Given an index *directly* into the array of available GPUs (cuda_dev)
+ * returns a formatted info string for the respective GPU which includes
+ * ID, name, compute capability, and detection status.
+ *
+ * \param[out]  s           pointer to output string (has to be allocated externally)
+ * \param[in]   gpu_info    pointer to structure holding GPU information
+ * \param[in]   index       an index *directly* into the array of available GPUs
+ */
+void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index)
+{
+    assert(s);
+    assert(gpu_info);
+
+    if (index < 0 && index >= gpu_info->ncuda_dev)
+    {
+        return;
+    }
+
+    cuda_dev_info_t *dinfo = &gpu_info->cuda_dev[index];
+
+    bool bGpuExists =
+        dinfo->stat == egpuCompatible ||
+        dinfo->stat == egpuIncompatible;
+
+    if (!bGpuExists)
+    {
+        sprintf(s, "#%d: %s, stat: %s",
+                dinfo->id, "N/A",
+                gpu_detect_res_str[dinfo->stat]);
+    }
+    else
+    {
+        sprintf(s, "#%d: NVIDIA %s, compute cap.: %d.%d, ECC: %3s, stat: %s",
+                dinfo->id, dinfo->prop.name,
+                dinfo->prop.major, dinfo->prop.minor,
+                dinfo->prop.ECCEnabled ? "yes" : " no",
+                gpu_detect_res_str[dinfo->stat]);
+    }
+}
+
+/*! \brief Returns the device ID of the GPU with a given index into the array of used GPUs.
+ *
+ * Getter function which, given an index into the array of GPUs in use
+ * (cuda_dev_use) -- typically a tMPI/MPI rank --, returns the device ID of the
+ * respective CUDA GPU.
+ *
+ * \param[in]    gpu_info   pointer to structure holding GPU information
+ * \param[in]    idx        index into the array of used GPUs
+ * \returns                 device ID of the requested GPU
+ */
+int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int idx)
+{
+    assert(gpu_info);
+    if (idx < 0 && idx >= gpu_info->ncuda_dev_use)
+    {
+        return -1;
+    }
+
+    return gpu_info->cuda_dev[gpu_info->cuda_dev_use[idx]].id;
+}
+
+/*! \brief Returns the device ID of the GPU currently in use.
+ *
+ * The GPU used is the one that is active at the time of the call in the active context.
+ *
+ * \param[in]    gpu_info   pointer to structure holding GPU information
+ * \returns                 device ID of the GPU in use at the time of the call
+ */
+int get_current_gpu_device_id(void)
+{
+    int gpuid;
+    CU_RET_ERR(cudaGetDevice(&gpuid), "cudaGetDevice failed");
+
+    return gpuid;
+}

@@ -38,6 +38,7 @@
 #endif
 
 #include "typedefs.h"
+#include "types/nlistheuristics.h"
 #include "gmx_fatal.h"
 #include "vec.h"
 
