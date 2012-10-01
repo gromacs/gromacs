@@ -130,6 +130,11 @@ void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb);
 void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb);
 /* Stop the force flop count */
 
+float dd_pme_f_ratio(gmx_domdec_t *dd);
+/* Return the PME/PP force load ratio, or -1 if nothing was measured.
+ * Should only be called on the DD master node.
+ */
+
 void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[]);
 /* Communicate the coordinates to the neighboring cells and do pbc. */
 

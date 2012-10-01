@@ -57,77 +57,20 @@
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
 
-/* Include the force+energy kernels */
-#define CALC_ENERGIES
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef CALC_ENERGIES
-
-/* Include the force+energygroups kernels */
-#define CALC_ENERGIES
-#define ENERGY_GROUPS
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef ENERGY_GROUPS
-#undef CALC_ENERGIES
-
-/* Include the force only kernels */
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_x86_simd_includes.h"
 
 #undef CALC_COUL_RF
-
 
 /* Tabulated exclusion interaction electrostatics kernels */
 #define CALC_COUL_TAB
 
-/* Include the force+energy kernels */
-#define CALC_ENERGIES
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef CALC_ENERGIES
+/* Single cut-off: rcoulomb = rvdw */
+#include "nbnxn_kernel_x86_simd_includes.h"
 
-/* Include the force+energygroups kernels */
-#define CALC_ENERGIES
-#define ENERGY_GROUPS
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef ENERGY_GROUPS
-#undef CALC_ENERGIES
-
-/* Include the force only kernels */
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+/* Twin cut-off: rcoulomb >= rvdw */
+#define VDW_CUTOFF_CHECK
+#include "nbnxn_kernel_x86_simd_includes.h"
+#undef VDW_CUTOFF_CHECK
 
 #undef CALC_COUL_TAB
 
@@ -148,7 +91,7 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
                                   real                       *f,
                                   real                       *fshift);
 
-enum { coultRF, coultTAB, coultNR };
+enum { coultRF, coultTAB, coultTAB_TWIN, coultNR };
 
 
 static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
@@ -157,7 +100,10 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
     nbnxn_kernel_x86_simd128_rf_comb_none_ener },
   { nbnxn_kernel_x86_simd128_tab_comb_geom_ener,
     nbnxn_kernel_x86_simd128_tab_comb_lb_ener,
-    nbnxn_kernel_x86_simd128_tab_comb_none_ener } };
+    nbnxn_kernel_x86_simd128_tab_twin_comb_none_ener },
+  { nbnxn_kernel_x86_simd128_tab_twin_comb_geom_ener,
+    nbnxn_kernel_x86_simd128_tab_twin_comb_lb_ener,
+    nbnxn_kernel_x86_simd128_tab_twin_comb_none_ener }  };
 
 static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
 { { nbnxn_kernel_x86_simd128_rf_comb_geom_energrp,
@@ -165,7 +111,10 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
     nbnxn_kernel_x86_simd128_rf_comb_none_energrp },
   { nbnxn_kernel_x86_simd128_tab_comb_geom_energrp,
     nbnxn_kernel_x86_simd128_tab_comb_lb_energrp,
-    nbnxn_kernel_x86_simd128_tab_comb_none_energrp } };
+    nbnxn_kernel_x86_simd128_tab_comb_none_energrp },
+  { nbnxn_kernel_x86_simd128_tab_twin_comb_geom_energrp,
+    nbnxn_kernel_x86_simd128_tab_twin_comb_lb_energrp,
+    nbnxn_kernel_x86_simd128_tab_twin_comb_none_energrp } };
 
 static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
 { { nbnxn_kernel_x86_simd128_rf_comb_geom_noener,
@@ -173,7 +122,10 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
     nbnxn_kernel_x86_simd128_rf_comb_none_noener },
   { nbnxn_kernel_x86_simd128_tab_comb_geom_noener,
     nbnxn_kernel_x86_simd128_tab_comb_lb_noener,
-    nbnxn_kernel_x86_simd128_tab_comb_none_noener } };
+    nbnxn_kernel_x86_simd128_tab_comb_none_noener },
+  { nbnxn_kernel_x86_simd128_tab_twin_comb_geom_noener,
+    nbnxn_kernel_x86_simd128_tab_twin_comb_lb_noener,
+    nbnxn_kernel_x86_simd128_tab_twin_comb_none_noener } };
 
 #endif /* SSE */
 
@@ -249,7 +201,14 @@ nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
     }
     else
     {
-        coult = coultTAB;
+        if (ic->rcoulomb == ic->rvdw)
+        {
+            coult = coultTAB;
+        }
+        else
+        {
+            coult = coultTAB_TWIN;
+        }
     }
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))

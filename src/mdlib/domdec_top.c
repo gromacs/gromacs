@@ -97,6 +97,7 @@ static int nral_rt(int ftype)
     return nral;
 }
 
+/* This function tells which interactions need to be assigned exactly once */
 static gmx_bool dd_check_ftype(int ftype,gmx_bool bBCheck,
                                gmx_bool bConstr,gmx_bool bSettle)
 {
@@ -692,6 +693,12 @@ void dd_make_reverse_top(FILE *fplog,
     {
         fprintf(fplog,"\nLinking all bonded interactions to atoms\n");
     }
+
+    /* If normal and/or settle constraints act only within charge groups,
+     * we can store them in the reverse top and simply assign them to domains.
+     * Otherwise we need to assign them to multiple domains and set up
+     * the parallel version constraint algoirthm(s).
+     */
     
     dd->reverse_top = make_reverse_top(mtop,ir->efep!=efepNO,
                                        vsite ? vsite->vsite_pbc_molt : NULL,
@@ -973,6 +980,7 @@ static real dd_dist2(t_pbc *pbc_null,rvec *cg_cm,const int *la2lc,int i,int j)
     return norm2(dx);
 }
 
+/* Append the nsrc t_blocka block structures in src to *dest */
 static void combine_blocka(t_blocka *dest,const t_blocka *src,int nsrc)
 {
     int ni,na,s,i;
@@ -1008,6 +1016,9 @@ static void combine_blocka(t_blocka *dest,const t_blocka *src,int nsrc)
     }
 }
 
+/* Append the nsrc t_idef structures in src to *dest,
+ * virtual sites need special attention, as pbc info differs per vsite.
+ */
 static void combine_idef(t_idef *dest,const t_idef *src,int nsrc,
                          gmx_vsite_t *vsite,int ***vsite_pbc_t)
 {
@@ -1098,6 +1109,10 @@ static void combine_idef(t_idef *dest,const t_idef *src,int nsrc,
     }
 }
 
+/* This function looks up and assigns bonded interactions for zone iz.
+ * With thread parallelizing each thread acts on a different atom range:
+ * at_start to at_end.
+ */
 static int make_bondeds_zone(gmx_domdec_t *dd,
                              const gmx_domdec_zones_t *zones,
                              const gmx_molblock_t *molb,
@@ -1688,7 +1703,9 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
         }
     }
 
-    /* For some zones the "no"-exclusions might not have been set: do it now */
+    /* Some zones might not have exclusions, but some code still needs to
+     * loop over the index, so we set the indices here.
+     */
     for(iz=nzone_excl; iz<zones->nizone; iz++)
     {
         set_no_exclusions_zone(dd,zones,iz,lexcls);

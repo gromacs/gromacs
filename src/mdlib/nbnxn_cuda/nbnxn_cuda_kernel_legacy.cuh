@@ -72,8 +72,9 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
     float3 *f                   = atdat.f;
     const float3 *shift_vec     = atdat.shift_vec;
     float rcoulomb_sq           = nbparam.rcoulomb_sq;
-#ifdef EL_EWALD
+#ifdef VDW_CUTOFF_CHECK
     float rvdw_sq               = nbparam.rvdw_sq;
+    float vdw_in_range;
 #endif
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
@@ -278,15 +279,20 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                              * masking both inv_r6 and F_invr is faster */
                             inv_r6  *= int_bit;
 #endif
-#ifdef EL_EWALD
-                            /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
-                            inv_r6  *= r2 < rvdw_sq;
-#endif
 
                             F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 
 #ifdef CALC_ENERGIES
                             E_lj    += int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
+#endif
+
+#ifdef VDW_CUTOFF_CHECK
+                                /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
+                                vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
+                                F_invr  *= vdw_in_range;
+#ifdef CALC_ENERGIES
+                                E_lj    *= vdw_in_range;
+#endif
 #endif
 
 #ifdef EL_CUTOFF

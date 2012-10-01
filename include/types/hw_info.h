@@ -24,7 +24,7 @@
 
 #include "types/simple.h"
 #include "types/nbnxn_cuda_types_ext.h"
-#include "gmx_detect_cpu.h"
+#include "gmx_cpuid.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,9 +67,13 @@ typedef struct
 {
     gmx_bool        bCanUseGPU; /* True if compatible GPUs are detected during hardware detection */
     gmx_gpu_info_t  gpu_info;   /* Information about GPUs detected in the system */
-    gmx_cpu_info_t  cpu_info;   /* information about CPU detected;
+
+    gmx_cpuid_t     cpuid_info; /* CPUID information about CPU detected;
                                    NOTE: this will only detect the CPU thread 0 of the
                                    current process runs on. */
+    int             nthreads_hw_avail; /* Number of hardware threads available; this number
+                                         is based on the number of CPUs reported as available
+                                         by the OS at the time of detection. */
 } gmx_hw_info_t;
 
 #ifdef __cplusplus

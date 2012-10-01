@@ -53,7 +53,11 @@
 #define NBK_FUNC_NAME(x,y) x##_rf_##y
 #endif
 #ifdef CALC_COUL_TAB
+#ifndef VDW_CUTOFF_CHECK
 #define NBK_FUNC_NAME(x,y) x##_tab_##y
+#else
+#define NBK_FUNC_NAME(x,y) x##_tab_twin_##y
+#endif
 #endif
 
 static void
@@ -91,6 +95,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     const real         *x;
     const real         *nbfp;
     real       rcut2;
+#ifdef VDW_CUTOFF_CHECK
+    real       rvdw2;
+#endif
     int        ntype2;
     real       facel;
     real       *nbfp_i;
@@ -170,7 +177,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
 
 
-    rcut2               = ic->rvdw*ic->rvdw;
+    rcut2               = ic->rcoulomb*ic->rcoulomb;
+#ifdef VDW_CUTOFF_CHECK
+    rvdw2               = ic->rvdw*ic->rvdw;
+#endif
 
     ntype2              = nbat->ntype*2;
     nbfp                = nbat->nbfp;

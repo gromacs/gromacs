@@ -71,7 +71,6 @@
 #include "nbnxn_consts.h"
 #include "statutil.h"
 #include "gmx_omp_nthreads.h"
-#include "gmx_detect_cpu.h"
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
@@ -1373,7 +1372,7 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
-                                  const gmx_cpu_info_t *cpu_info,
+                                  const gmx_cpuid_t cpuid_info,
                                   int *kernel_type)
 {
     *kernel_type = nbk4x4_PlainC;
@@ -1383,8 +1382,8 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
         /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
          * On AMD Bulldozer AVX-256 is much slower than AVX-128.
          */
-        if (cpu_info->feature[GMX_DETECTCPU_FEATURE_X86_AVX] &&
-            cpu_info->vendorid != GMX_DETECTCPU_VENDOR_AMD)
+        if(gmx_cpuid_feature(cpuid_info, GMX_CPUID_FEATURE_X86_AVX) == 1 &&
+           gmx_cpuid_vendor(cpuid_info) != GMX_CPUID_VENDOR_AMD)
         {
 #ifdef GMX_X86_AVX_256
             *kernel_type = nbk4xN_X86_SIMD256;
@@ -1421,7 +1420,6 @@ static void pick_nbnxn_kernel(FILE *fp,
                               int *kernel_type)
 {
     gmx_bool bEmulateGPU, bGPU;
-    gmx_cpu_info_t cpu_information;
     char gpu_err_str[STRLEN];
 
     assert(kernel_type);
@@ -1429,16 +1427,15 @@ static void pick_nbnxn_kernel(FILE *fp,
     *kernel_type = nbkNotSet;
     /* if bUseGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
     bGPU = (bUseGPU != NULL) && hwinfo->bCanUseGPU;
-    bEmulateGPU  = FALSE;
+
+    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined or in case if nobonded
+       calculations are turned off via GMX_NO_NONBONDED -- this is the simple way
+       to turn off GPU/CUDA initializations as well.. */
+    bEmulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
+                   (getenv("GMX_NO_NONBONDED") != NULL));
 
     if (bGPU)
     {
-        /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
-           calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
-           to also turn off GPU/CUDA initializations. */
-        bEmulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
-                      (getenv("GMX_NO_NONBONDED") != NULL));
-
         if (bEmulateGPU)
         {
             bGPU = FALSE;
@@ -1464,7 +1461,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         *kernel_type = nbk8x8x8_PlainC;
 
-        md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)\n");
+        md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
     }
     else if (bGPU)
     {
@@ -1475,7 +1472,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp,cr,&hwinfo->cpu_info,kernel_type);
+            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,kernel_type);
         }
         else
         {
@@ -1663,13 +1660,6 @@ void init_interaction_const(FILE *fp,
         assert(fr->nbv != NULL && fr->nbv->grp != NULL);
         init_interaction_const_tables(fp,ic,fr->nbv->grp[fr->nbv->ngrp-1].kernel_type);
     }
-}
-
-gmx_bool nb_kernel_pmetune_support(const nonbonded_verlet_t *nbv)
-{
-    /* PME tuning is currently only supported with only CUDA kernels */
-    return (nbv->bUseGPU &&
-            !(nbv->ngrp == 2 && nbnxn_kernel_pairlist_simple(nbv->grp[1].kernel_type)));
 }
 
 static void init_nb_verlet(FILE *fp,
