@@ -45,10 +45,11 @@
 #define EXCL_FORCES
 #endif
 
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !defined __GNUC__
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !(defined __GNUC__ && (defined CALC_COUL_TAB || (defined CALC_COUL_RF && defined GMX_MM128_HERE)))
 /* Without exclusions and energies we only need to mask the cut-off,
  * this is faster with blendv (only available with SSE4.1 and later).
- * With gcc blendv is much slower; tested with gcc 4.6.2 and 4.6.3.
+ * With gcc and PME or RF in 128-bit, blendv is slower;
+ * tested with gcc 4.6.2, 4.6.3 and 4.7.1.
  */
 #define CUTOFF_BLENDV
 #endif
@@ -89,6 +90,14 @@
             gmx_mm_pr  wco_SSE1;
             gmx_mm_pr  wco_SSE2;
             gmx_mm_pr  wco_SSE3;
+#endif
+#ifdef VDW_CUTOFF_CHECK
+            gmx_mm_pr  wco_vdw_SSE0;
+            gmx_mm_pr  wco_vdw_SSE1;
+#ifndef HALF_LJ
+            gmx_mm_pr  wco_vdw_SSE2;
+            gmx_mm_pr  wco_vdw_SSE3;
+#endif
 #endif
 #ifdef CALC_COULOMB
 #ifdef CHECK_EXCLS
@@ -635,6 +644,22 @@
 
 #ifdef CALC_LJ
             /* Lennard-Jones interaction */
+
+#ifdef VDW_CUTOFF_CHECK
+            wco_vdw_SSE0  = gmx_cmplt_pr(rsq_SSE0,rcvdw2_SSE);
+            wco_vdw_SSE1  = gmx_cmplt_pr(rsq_SSE1,rcvdw2_SSE);
+#ifndef HALF_LJ
+            wco_vdw_SSE2  = gmx_cmplt_pr(rsq_SSE2,rcvdw2_SSE);
+            wco_vdw_SSE3  = gmx_cmplt_pr(rsq_SSE3,rcvdw2_SSE);
+#endif
+#else
+            /* Same cut-off for Coulomb and VdW, reuse the registers */
+#define     wco_vdw_SSE0    wco_SSE0
+#define     wco_vdw_SSE1    wco_SSE1
+#define     wco_vdw_SSE2    wco_SSE2
+#define     wco_vdw_SSE3    wco_SSE3
+#endif
+
 #ifndef LJ_COMB_LB
             rinvsix_SSE0  = gmx_mul_pr(rinvsq_SSE0,gmx_mul_pr(rinvsq_SSE0,rinvsq_SSE0));
             rinvsix_SSE1  = gmx_mul_pr(rinvsq_SSE1,gmx_mul_pr(rinvsq_SSE1,rinvsq_SSE1));
@@ -648,6 +673,14 @@
 #ifdef EXCL_FORCES
             rinvsix_SSE2  = gmx_and_pr(rinvsix_SSE2,int_SSE2);
             rinvsix_SSE3  = gmx_and_pr(rinvsix_SSE3,int_SSE3);
+#endif
+#endif
+#ifdef VDW_CUTOFF_CHECK
+            rinvsix_SSE0  = gmx_and_pr(rinvsix_SSE0,wco_vdw_SSE0);
+            rinvsix_SSE1  = gmx_and_pr(rinvsix_SSE1,wco_vdw_SSE1);
+#ifndef HALF_LJ
+            rinvsix_SSE2  = gmx_and_pr(rinvsix_SSE2,wco_vdw_SSE2);
+            rinvsix_SSE3  = gmx_and_pr(rinvsix_SSE3,wco_vdw_SSE3);
 #endif
 #endif
             FrLJ6_SSE0    = gmx_mul_pr(c6_SSE0,rinvsix_SSE0);
@@ -691,6 +724,14 @@
             sir6_SSE3     = gmx_and_pr(sir6_SSE3,int_SSE3);
 #endif
 #endif
+#ifdef VDW_CUTOFF_CHECK
+            sir6_SSE0     = gmx_and_pr(sir6_SSE0,wco_vdw_SSE0);
+            sir6_SSE1     = gmx_and_pr(sir6_SSE1,wco_vdw_SSE1);
+#ifndef HALF_LJ
+            sir6_SSE2     = gmx_and_pr(sir6_SSE2,wco_vdw_SSE2);
+            sir6_SSE3     = gmx_and_pr(sir6_SSE3,wco_vdw_SSE3);
+#endif
+#endif
             FrLJ6_SSE0    = gmx_mul_pr(eps_SSE0,sir6_SSE0);
             FrLJ6_SSE1    = gmx_mul_pr(eps_SSE1,sir6_SSE1);
 #ifndef HALF_LJ
@@ -703,7 +744,7 @@
             FrLJ12_SSE2   = gmx_mul_pr(FrLJ6_SSE2,sir6_SSE2);
             FrLJ12_SSE3   = gmx_mul_pr(FrLJ6_SSE3,sir6_SSE3);
 #endif
-#if defined CALC_ENERGIES && !defined NO_LJ_SHIFT
+#if defined CALC_ENERGIES
             /* We need C6 and C12 to calculate the LJ potential shift */
             sig2_SSE0     = gmx_mul_pr(sig_SSE0,sig_SSE0);
             sig2_SSE1     = gmx_mul_pr(sig_SSE1,sig_SSE1);
@@ -762,20 +803,6 @@
 
 #ifdef CALC_LJ
             /* Calculate the LJ energies */
-#ifdef NO_LJ_SHIFT
-            VLJ6_SSE0     = gmx_mul_pr(sixthSSE,FrLJ6_SSE0);
-            VLJ6_SSE1     = gmx_mul_pr(sixthSSE,FrLJ6_SSE1);
-#ifndef HALF_LJ
-            VLJ6_SSE2     = gmx_mul_pr(sixthSSE,FrLJ6_SSE2);
-            VLJ6_SSE3     = gmx_mul_pr(sixthSSE,FrLJ6_SSE3);
-#endif
-            VLJ12_SSE0    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE0);
-            VLJ12_SSE1    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE1);
-#ifndef HALF_LJ
-            VLJ12_SSE2    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE2);
-            VLJ12_SSE3    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE3);
-#endif
-#else /* ifdef NO_LJ_SHIFT */
             VLJ6_SSE0     = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE0,gmx_mul_pr(c6_SSE0,sh_invrc6_SSE)));
             VLJ6_SSE1     = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE1,gmx_mul_pr(c6_SSE1,sh_invrc6_SSE)));
 #ifndef HALF_LJ
@@ -788,7 +815,6 @@
             VLJ12_SSE2    = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE2,gmx_mul_pr(c12_SSE2,sh_invrc12_SSE)));
             VLJ12_SSE3    = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE3,gmx_mul_pr(c12_SSE3,sh_invrc12_SSE)));
 #endif
-#endif /* ifdef NO_LJ_SHIFT */
 
             VLJ_SSE0      = gmx_sub_pr(VLJ12_SSE0,VLJ6_SSE0);
             VLJ_SSE1      = gmx_sub_pr(VLJ12_SSE1,VLJ6_SSE1);
@@ -796,13 +822,12 @@
             VLJ_SSE2      = gmx_sub_pr(VLJ12_SSE2,VLJ6_SSE2);
             VLJ_SSE3      = gmx_sub_pr(VLJ12_SSE3,VLJ6_SSE3);
 #endif
-#ifndef NO_LJ_SHIFT
             /* The potential shift should be removed for pairs beyond cut-off */
-            VLJ_SSE0      = gmx_and_pr(VLJ_SSE0,wco_SSE0);
-            VLJ_SSE1      = gmx_and_pr(VLJ_SSE1,wco_SSE1);
+            VLJ_SSE0      = gmx_and_pr(VLJ_SSE0,wco_vdw_SSE0);
+            VLJ_SSE1      = gmx_and_pr(VLJ_SSE1,wco_vdw_SSE1);
 #ifndef HALF_LJ
-            VLJ_SSE2      = gmx_and_pr(VLJ_SSE2,wco_SSE2);
-            VLJ_SSE3      = gmx_and_pr(VLJ_SSE3,wco_SSE3);
+            VLJ_SSE2      = gmx_and_pr(VLJ_SSE2,wco_vdw_SSE2);
+            VLJ_SSE3      = gmx_and_pr(VLJ_SSE3,wco_vdw_SSE3);
 #endif
 #ifdef CHECK_EXCLS
             /* The potential shift should be removed for excluded pairs */
@@ -813,7 +838,6 @@
             VLJ_SSE3      = gmx_and_pr(VLJ_SSE3,int_SSE3);
 #endif
 #endif
-#endif /* NO_LJ_SHIFT */
 #ifndef ENERGY_GROUPS
             VvdwtotSSE    = gmx_add_pr(VvdwtotSSE,
 #ifndef HALF_LJ
@@ -914,6 +938,11 @@
 #undef  rinv_ex_SSE1
 #undef  rinv_ex_SSE2
 #undef  rinv_ex_SSE3
+
+#undef  wco_vdw_SSE0
+#undef  wco_vdw_SSE1
+#undef  wco_vdw_SSE2
+#undef  wco_vdw_SSE3
 
 #undef  CUTOFF_BLENDV
 

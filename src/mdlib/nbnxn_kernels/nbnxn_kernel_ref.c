@@ -83,6 +83,26 @@
 /* Include the force only kernels */
 #include "nbnxn_kernel_ref_outer.h"
 
+/* Twin-range cut-off kernels */
+#define VDW_CUTOFF_CHECK
+
+/* Include the force+energy kernels */
+#define CALC_ENERGIES
+#include "nbnxn_kernel_ref_outer.h"
+#undef CALC_ENERGIES
+
+/* Include the force+energygroups kernels */
+#define CALC_ENERGIES
+#define ENERGY_GROUPS
+#include "nbnxn_kernel_ref_outer.h"
+#undef ENERGY_GROUPS
+#undef CALC_ENERGIES
+
+/* Include the force only kernels */
+#include "nbnxn_kernel_ref_outer.h"
+
+#undef VDW_CUTOFF_CHECK
+
 #undef CALC_COUL_TAB
 
 
@@ -102,16 +122,22 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
                                   real                       *f,
                                   real                       *fshift);
 
-enum { coultRF, coultTAB, coultNR };
+enum { coultRF, coultTAB, coultTAB_TWIN, coultNR };
 
 p_nbk_func_ener p_nbk_c_ener[coultNR] =
-{ nbnxn_kernel_ref_rf_ener, nbnxn_kernel_ref_tab_ener };
+{ nbnxn_kernel_ref_rf_ener,
+  nbnxn_kernel_ref_tab_ener,
+  nbnxn_kernel_ref_tab_twin_ener };
 
 p_nbk_func_ener p_nbk_c_energrp[coultNR] =
-{ nbnxn_kernel_ref_rf_energrp, nbnxn_kernel_ref_tab_energrp };
+{ nbnxn_kernel_ref_rf_energrp,
+  nbnxn_kernel_ref_tab_energrp,
+  nbnxn_kernel_ref_tab_twin_energrp};
 
 p_nbk_func_noener p_nbk_c_noener[coultNR] =
-{ nbnxn_kernel_ref_rf_noener, nbnxn_kernel_ref_tab_noener };
+{ nbnxn_kernel_ref_rf_noener,
+  nbnxn_kernel_ref_tab_noener,
+  nbnxn_kernel_ref_tab_twin_noener };
 
 void
 nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
@@ -138,7 +164,14 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
     }
     else
     {
-        coult = coultTAB;
+        if (ic->rcoulomb == ic->rvdw)
+        {
+            coult = coultTAB;
+        }
+        else
+        {
+            coult = coultTAB_TWIN;
+        }
     }
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))

@@ -39,7 +39,6 @@
 #include "idef.h"
 #include "nb_verlet.h"
 #include "interaction_const.h"
-#include "../gmx_detect_cpu.h"
 #include "hw_info.h"
 
 #ifdef __cplusplus

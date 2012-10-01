@@ -57,8 +57,10 @@
 
 /* Ewald */
 #define EL_EWALD
+#define VDW_CUTOFF_CHECK
 #define NB_KERNEL_FUNC_NAME(x,...) x##_ewald##__VA_ARGS__
 #include "nbnxn_cuda_kernel_legacy.cuh"
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_EWALD
+#undef VDW_CUTOFF_CHECK
 #undef NB_KERNEL_FUNC_NAME

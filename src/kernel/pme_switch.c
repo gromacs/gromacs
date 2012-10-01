@@ -292,7 +292,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
 
     if (pmes->stage == pmes->nstage)
     {
-        return TRUE;
+        return FALSE;
     }
 
     if (PAR(cr))
@@ -309,7 +309,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
         /* Skip the first cycle, because the first step after a switch
          * is much slower due to allocation and/or caching effects.
          */
-        return FALSE;
+        return TRUE;
     }
 
     sprintf(buf, "step %4d: ", step);
@@ -477,20 +477,38 @@ gmx_bool switch_pme(pme_switch_t pmes,
     ic->rlist      = set->rlist;
     ic->ewaldcoeff = set->coeff;
 
-    reset_gpu_rlist_ewaldtab(nbv->cu_nbv,ic);
+    if (nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
+    {
+        reset_gpu_rlist_ewaldtab(nbv->cu_nbv,ic);
+    }
+    else
+    {
+        init_interaction_const_tables(NULL,ic,nbv->grp[0].kernel_type);
+    }
 
     if (nbv->ngrp > 1)
     {
         init_interaction_const_tables(NULL,ic,nbv->grp[1].kernel_type);
     }
 
-    if (pmes->setup[pmes->cur].pmedata == NULL)
+    if (cr->duty & DUTY_PME)
     {
-        gmx_pme_reinit(&set->pmedata,
-                       cr,pmes->setup[0].pmedata,ir,
-                       set->grid);
+        if (pmes->setup[pmes->cur].pmedata == NULL)
+        {
+            /* Generate a new PME data structure,
+             * copying part of the old pointers.
+             */
+            gmx_pme_reinit(&set->pmedata,
+                           cr,pmes->setup[0].pmedata,ir,
+                           set->grid);
+        }
+        *pmedata = set->pmedata;
     }
-    *pmedata = set->pmedata;
+    else
+    {
+        /* Tell our PME-only node to switch grid */
+        gmx_pme_send_switch(cr, set->grid, set->coeff);
+    }
 
     if (debug)
     {
@@ -502,7 +520,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
         print_grid(fp_err,fp_log,"","optimal",set,-1);
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 void restart_switch_pme(pme_switch_t pmes, int n)

@@ -2677,7 +2677,8 @@ static void clear_dd_indices(gmx_domdec_t *dd,int cg_start,int a_start)
     }
 }
 
-static real grid_jump_limit(gmx_domdec_comm_t *comm,int dim_ind)
+static real grid_jump_limit(gmx_domdec_comm_t *comm,real cutoff,
+                            int dim_ind)
 {
     real grid_jump_limit;
 
@@ -2691,24 +2692,31 @@ static real grid_jump_limit(gmx_domdec_comm_t *comm,int dim_ind)
     if (!comm->bVacDLBNoLimit)
     {
         grid_jump_limit = max(grid_jump_limit,
-                              comm->cutoff/comm->cd[dim_ind].np);
+                              cutoff/comm->cd[dim_ind].np);
     }
 
     return grid_jump_limit;
 }
 
-static void check_grid_jump(gmx_large_int_t step,gmx_domdec_t *dd,gmx_ddbox_t *ddbox)
+static gmx_bool check_grid_jump(gmx_large_int_t step,
+                                gmx_domdec_t *dd,
+                                real cutoff,
+                                gmx_ddbox_t *ddbox,
+                                gmx_bool bFatal)
 {
     gmx_domdec_comm_t *comm;
     int  d,dim;
     real limit,bfac;
-    
+    gmx_bool bInvalid;
+
+    bInvalid = FALSE;
+
     comm = dd->comm;
     
     for(d=1; d<dd->ndim; d++)
     {
         dim = dd->dim[d];
-        limit = grid_jump_limit(comm,d);
+        limit = grid_jump_limit(comm,cutoff,d);
         bfac = ddbox->box_size[dim];
         if (ddbox->tric_dir[dim])
         {
@@ -2717,12 +2725,23 @@ static void check_grid_jump(gmx_large_int_t step,gmx_domdec_t *dd,gmx_ddbox_t *d
         if ((comm->cell_f1[d] - comm->cell_f_max0[d])*bfac <  limit ||
             (comm->cell_f0[d] - comm->cell_f_min1[d])*bfac > -limit)
         {
-            char buf[22];
-            gmx_fatal(FARGS,"Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d\n",
-                      gmx_step_str(step,buf),
-                      dim2char(dim),dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
+            bInvalid = TRUE;
+
+            if (bFatal)
+            {
+                char buf[22];
+
+                /* This error should never be triggered under normal
+                 * circumstances, but you never know ...
+                 */
+                gmx_fatal(FARGS,"Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d. This should not have happened. Running with less nodes might avoid this issue.",
+                          gmx_step_str(step,buf),
+                          dim2char(dim),dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
+            }
         }
     }
+
+    return bInvalid;
 }
 
 static int dd_load_count(gmx_domdec_comm_t *comm)
@@ -3334,8 +3353,8 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     
     cellsize_limit_f  = comm->cellsize_min[dim]/ddbox->box_size[dim];
     cellsize_limit_f *= DD_CELL_MARGIN;
-    dist_min_f_hard        = grid_jump_limit(comm,d)/ddbox->box_size[dim];
-    dist_min_f       = dist_min_f_hard * DD_CELL_MARGIN;
+    dist_min_f_hard   = grid_jump_limit(comm,comm->cutoff,d)/ddbox->box_size[dim];
+    dist_min_f        = dist_min_f_hard * DD_CELL_MARGIN;
     if (ddbox->tric_dir[dim])
     {
         cellsize_limit_f /= ddbox->skew_fac[dim];
@@ -3688,7 +3707,7 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
         dd_move_cellx(dd,ddbox,cell_ns_x0,cell_ns_x1);
         if (dd->bGridJump && dd->ndim > 1)
         {
-            check_grid_jump(step,dd,ddbox);
+            check_grid_jump(step,dd,dd->comm->cutoff,ddbox,TRUE);
         }
     }
 }
@@ -5353,9 +5372,16 @@ static float dd_f_imbal(gmx_domdec_t *dd)
     return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1;
 }
 
-static float dd_pme_f_ratio(gmx_domdec_t *dd)
+float dd_pme_f_ratio(gmx_domdec_t *dd)
 {
-    return dd->comm->load[0].pme/dd->comm->load[0].mdf;
+    if (dd->comm->cycl_n[ddCyclPME] > 0)
+    {
+        return dd->comm->load[0].pme/dd->comm->load[0].mdf;
+    }
+    else
+    {
+        return -1.0;
+    }
 }
 
 static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,gmx_large_int_t step)
@@ -7274,6 +7300,11 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
 
     if (dd->comm->eDLB != edlbNO)
     {
+        if (check_grid_jump(0,dd,cutoff_req,&ddbox,FALSE))
+        {
+            LocallyLimited = 1; 
+        }
+
         gmx_sumi(1,&LocallyLimited,cr);
 
         if (LocallyLimited > 0)

@@ -70,6 +70,7 @@
 #include "qmmm.h"
 #include "mpelogging.h"
 #include "domdec.h"
+#include "domdec_network.h"
 #include "partdec.h"
 #include "topsort.h"
 #include "coulomb.h"
@@ -231,7 +232,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* PME load balancing data for GPU kernels */
     pme_switch_t    pme_switch=NULL;
     double          cycles_pmes;
-    gmx_bool        bDonePMETune=TRUE;
+    gmx_bool        bPMETuneTry=FALSE,bPMETuneRunning=FALSE;
 
     if(MASTER(cr))
     {
@@ -518,17 +519,25 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                         repl_ex_nst,repl_ex_nex,repl_ex_seed);
     }
 
-    /* PME tuning is not supported with separate PME nodes or with rerun */
+    /* PME tuning is only supported with GPUs or PME nodes and not with rerun */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         fr->cutoff_scheme == ecutsVERLET &&
-        nb_kernel_pmetune_support(fr->nbv) &&
-        (cr->duty & DUTY_PME) &&
+        (fr->nbv->bUseGPU || !(cr->duty & DUTY_PME)) &&
         !bRerunMD)
     {
         switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
         cycles_pmes = 0;
-        bDonePMETune = FALSE;
+        if (cr->duty & DUTY_PME)
+        {
+            /* Start tuning right away, as we can't measure the load */
+            bPMETuneRunning = TRUE;
+        }
+        else
+        {
+            /* Separate PME nodes, we can measure the PP/PME load balance */
+            bPMETuneTry = TRUE;
+        }
     }
 
     if (!ir->bContinuation && !bRerunMD)
@@ -995,7 +1004,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,
-                                    do_verbose && bDonePMETune);
+                                    do_verbose && !bPMETuneRunning);
                 wallcycle_stop(wcycle,ewcDOMDEC);
                 /* If using an iterative integrator, reallocate space to match the decomposition */
             }
@@ -1011,7 +1020,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             update_mdatoms(mdatoms,state->lambda[efptMASS]);
         }
 
-        if (bRerunMD && rerun_fr.bV)
+        if ((bRerunMD && rerun_fr.bV) || bExchanged)
         {
             
             /* We need the kinetic energy at minus the half step for determining
@@ -1281,6 +1290,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     } 
                     else 
                     {
+                        if (bExchanged)
+                        {
+            
+                            /* We need the kinetic energy at minus the half step for determining
+                             * the full step kinetic energy and possibly for T-coupling.*/
+                            /* This may not be quite working correctly yet . . . . */
+                            compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+                                            wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
+                                            constr,NULL,FALSE,state->box,
+                                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                                            CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                        }
+
+
                         update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
                     }
                 }
@@ -1926,7 +1949,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && bDonePMETune)
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && !bPMETuneRunning)
         {
             if (shellfc) 
             {
@@ -2006,9 +2029,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             dd_cycles_add(cr->dd,cycles,ddCyclStep);
         }
 
-        if (pme_switch != NULL && !bDonePMETune)
+        if (bPMETuneRunning || bPMETuneTry)
         {
-            /* PME grid + cut-off optimization with GPUs */
+            /* PME grid + cut-off optimization with GPUs or PME nodes */
 
             /* Count the total cycles over the last steps */
             cycles_pmes += cycles;
@@ -2016,18 +2039,36 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* We can only switch cut-off at NS steps */
             if (step % ir->nstlist == 0)
             {
-                /* init_step might not be a multiple of nstlist,
-                 * but the first cycle is always skipped anyhow.
-                 */
-                bDonePMETune =
-                    switch_pme(pme_switch,cr,
-                               (bVerbose && MASTER(cr)) ? stderr : NULL,
-                               fplog,
-                               ir,state,cycles_pmes,
-                               fr->ic,fr->nbv,&fr->pmedata,
-                               step);
+                /* PME grid + cut-off optimization with GPUs or PME nodes */
+                if (bPMETuneTry)
+                {
+                    if (DDMASTER(cr->dd))
+                    {
+                        /* PME node load is too high, start tuning */
+                        bPMETuneRunning = (dd_pme_f_ratio(cr->dd) >= 1.05);
+                    }
+                    dd_bcast(cr->dd,sizeof(gmx_bool),&bPMETuneRunning);
 
-                fr->ewaldcoeff = fr->ic->ewaldcoeff;
+                    if (bPMETuneRunning || step_rel > ir->nstlist*50)
+                    {
+                        bPMETuneTry     = FALSE;
+                    }
+                }
+                if (bPMETuneRunning)
+                {
+                    /* init_step might not be a multiple of nstlist,
+                     * but the first cycle is always skipped anyhow.
+                     */
+                    bPMETuneRunning =
+                        switch_pme(pme_switch,cr,
+                                   (bVerbose && MASTER(cr)) ? stderr : NULL,
+                                   fplog,
+                                   ir,state,cycles_pmes,
+                                   fr->ic,fr->nbv,&fr->pmedata,
+                                   step);
+
+                    fr->ewaldcoeff = fr->ic->ewaldcoeff;
+                }
 
                 cycles_pmes = 0;
             }
@@ -2061,7 +2102,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (!(cr->duty & DUTY_PME))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_finish(cr);
+        gmx_pme_send_finish(cr);
     }
     
     if (MASTER(cr))
