@@ -32,12 +32,14 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include "config.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "tables.h"
