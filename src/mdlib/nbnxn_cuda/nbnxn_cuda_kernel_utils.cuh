@@ -42,25 +42,25 @@
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE                 (CL_SIZE_SQ)
 
-/*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture. 
- *  Original idea: OpenMM 
+/*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
+ *  Original idea: OpenMM
  */
 static inline __device__
 float interpolate_coulomb_force_r(float r, float scale)
-{  
+{
     float   normalized = scale * r;
     int     index = (int) normalized;
     float   fract2 = normalized - index;
     float   fract1 = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch(tex_coulomb_tab, index) 
+    return  fract1 * tex1Dfetch(tex_coulomb_tab, index)
             + fract2 * tex1Dfetch(tex_coulomb_tab, index + 1);
 }
 
-/*! Final j-force reduction; this generic implementation works with 
- *  arbitrary array sizes. 
+/*! Final j-force reduction; this generic implementation works with
+ *  arbitrary array sizes.
  */
-static inline __device__ 
+static inline __device__
 void reduce_force_j_generic(float *f_buf, float3 *fout,
                             int tidxi, int tidxj, int aidx)
 {
@@ -82,7 +82,7 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
  *  array sizes and with sm >= 3.0
  */
 #if __CUDA_ARCH__ >= 300
-static inline __device__ 
+static inline __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx)
 {
@@ -104,10 +104,10 @@ void reduce_force_j_warp_shfl(float3 f, float3 *fout,
 }
 #endif
 
-/*! Final i-force reduction; this generic implementation works with 
- *  arbitrary array sizes. 
+/*! Final i-force reduction; this generic implementation works with
+ *  arbitrary array sizes.
  */
-static inline __device__ 
+static inline __device__
 void reduce_force_i_generic(float *f_buf, float3 *fout,
                             float3 *fshift_buf, bool bCalcFshift,
                             int tidxi, int tidxj, int aidx)
@@ -132,14 +132,14 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
 }
 
 /*! Final i-force reduction; this implementation works only with power of two
- *  array sizes. 
+ *  array sizes.
  */
-static inline __device__ 
+static inline __device__
 void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
                          float3 *fshift_buf, bool bCalcFshift,
                          int tidxi, int tidxj, int aidx)
 {
-    int     i, j; 
+    int     i, j;
     float3  f = make_float3(0.0f);
 
     /* Reduce the initial CL_SIZE values for each i atom to half
@@ -179,7 +179,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
 /*! Final i-force reduction wrapper; calls the generic or pow2 reduction depending
  *  on whether the size of the array to be reduced is power of two or not.
  */
-static inline __device__ 
+static inline __device__
 void reduce_force_i(float *f_buf, float3 *f,
                     float3 *fshift_buf, bool bCalcFshift,
                     int tidxi, int tidxj, int ai)
@@ -198,7 +198,7 @@ void reduce_force_i(float *f_buf, float3 *f,
  *  array sizes and with sm >= 3.0
  */
 #if __CUDA_ARCH__ >= 300
-static inline __device__ 
+static inline __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float3 *fshift_buf, bool bCalcFshift,
                               int tidxj, int aidx)
@@ -229,14 +229,14 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
 #endif
 
 /*! Energy reduction; this implementation works only with power of two
- *  array sizes. 
+ *  array sizes.
  */
-static inline __device__ 
+static inline __device__
 void reduce_energy_pow2(volatile float *buf,
                         float *e_lj, float *e_el,
                         unsigned int tidx)
 {
-    int     i, j; 
+    int     i, j;
     float   e1, e2;
 
     i = WARP_SIZE/2;
@@ -260,7 +260,7 @@ void reduce_energy_pow2(volatile float *buf,
         e2 = buf[FBUF_STRIDE + tidx] + buf[FBUF_STRIDE + tidx + i];
 
         atomicAdd(e_lj, e1);
-        atomicAdd(e_el, e2); 
+        atomicAdd(e_el, e2);
     }
 }
 
@@ -268,13 +268,13 @@ void reduce_energy_pow2(volatile float *buf,
  *  array sizes and with sm >= 3.0
  */
 #if __CUDA_ARCH__ >= 300
-static inline __device__ 
+static inline __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
                              int tidx)
 {
     int i, sh;
-    
+
     sh = 1;
 #pragma unroll 5
     for (i = 0; i < 5; i++)
@@ -291,30 +291,6 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
         atomicAdd(e_el,E_el);
     }
 }
-#endif
-
-/*********************************************************************************/
-/* Old stuff  */
-#if 0
-/* This function was used to calculate the Ewald coulomb force, but it's not 
- * used as it's much slower than tabulated f interpolation with texture mem.
- */
-inline __device__ float 
-coulomb(float q1,
-        float q2,
-        float r2,
-        float inv_r,
-        float inv_r2,
-        float beta,
-        float erfc_tab_scale)
-{
-    float x      = r2 * inv_r * beta;
-    float x2     = x * x; 
-    // float inv_x2 = inv_r2 / (beta * beta); 
-    float res    =
-        q1 * q2 * (erfc(x) * inv_r + beta * exp(-x2)) * inv_r2;
-    return res;
-}
-#endif 
+#endif /* __CUDA_ARCH__ */
 
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */

@@ -64,43 +64,43 @@ typedef struct cu_timers    cu_timers_t;
 typedef struct nb_staging   nb_staging_t;
 
 
-/*! Staging area for temporary data. The energies get downloaded here first, 
+/*! Staging area for temporary data. The energies get downloaded here first,
  *  before getting added to the CPU-side aggregate values.
  */
 struct nb_staging
 {
-    float   *e_lj;      /* LJ energy */
+    float   *e_lj;      /* LJ energy            */
     float   *e_el;      /* electrostatic energy */
-    float3  *fshift;    /* shift forces */
+    float3  *fshift;    /* shift forces         */
 };
 
 /*! Nonbonded atom data -- both inputs and outputs. */
 struct cu_atomdata
 {
-    int     natoms;             /* number of atoms                      */
-    int     natoms_local;       /* number of local atoms                */
-    int     nalloc;             /* allocation size for the atom data (xq, f) */
-    
-    float4  *xq;                /* atom coordinates + charges, size natoms  */
-    float3  *f;                 /* force output array, size natoms          */
+    int     natoms;             /* number of atoms                              */
+    int     natoms_local;       /* number of local atoms                        */
+    int     nalloc;             /* allocation size for the atom data (xq, f)    */
+
+    float4  *xq;                /* atom coordinates + charges, size natoms      */
+    float3  *f;                 /* force output array, size natoms              */
     /* TODO: try float2 for the energies */
-    float   *e_lj,              /* LJ energy output, size 1                 */
-            *e_el;              /* Electrostatics energy intput, size 1     */
+    float   *e_lj,              /* LJ energy output, size 1                     */
+            *e_el;              /* Electrostatics energy input, size 1          */
 
-    float3  *fshift;            /* shift forces */
+    float3  *fshift;            /* shift forces                                 */
 
-    int     ntypes;             /* number of atom types             */
-    int     *atom_types;        /* atom type indices, size natoms   */
- 
-    float3  *shift_vec;         /* shifts */
-    bool    bShiftVecUploaded;  /* has the shift vector already been transfered? */
+    int     ntypes;             /* number of atom types                         */
+    int     *atom_types;        /* atom type indices, size natoms               */
+
+    float3  *shift_vec;         /* shifts                                       */
+    bool    bShiftVecUploaded;  /* true if the shift vector has been uploaded   */
 };
 
-/*! Paramters required for the CUDA nonbonded calculations. */
+/*! Parameters required for the CUDA nonbonded calculations. */
 struct cu_nbparam
 {
     int     eeltype;        /* type of electrostatics                       */
-    
+
     float   epsfac;         /* charge multiplication factor                 */
     float   c_rf, two_k_rf; /* Reaction-Field constants                     */
     float   ewald_beta;     /* Ewald/PME parameter                          */
@@ -122,10 +122,10 @@ struct cu_nbparam
 struct cu_plist
 {
     int             na_c;       /* number of atoms per cluster                  */
-    
+
     int             nsci;       /* size of sci, # of i clusters in the list     */
     int             sci_nalloc; /* allocation size of sci                       */
-    nbnxn_sci_t     *sci;       /* list of i-cluster ("superclusters")          */
+    nbnxn_sci_t     *sci;       /* list of i-cluster ("super-clusters")         */
 
     int             ncj4;       /* total # of 4*j clusters                      */
     int             cj4_nalloc; /* allocation size of cj4                       */
@@ -156,23 +156,23 @@ struct cu_timers
 struct nbnxn_cuda
 {
     cuda_dev_info_t *dev_info;      /* CUDA device information                              */
-    int             kernel_ver;     /* The version of the kernel to be executed on the device
-                                       in use, possible values: eNbnxnCuK* */
-    bool            bUseTwoStreams; /* true if doing both local/non-local NB work on GPU */
-    bool            bUseStreamSync; /* if true use memory polling-based waiting instead 
-                                        of cudaStreamSynchronize                            */
-    cu_atomdata_t   *atdat;         /* atom data */
+    int             kernel_ver;     /* The version of the kernel to be executed on the
+                                       device in use, possible values: eNbnxnCuK*           */
+    bool            bUseTwoStreams; /* true if doing both local/non-local NB work on GPU    */
+    bool            bUseStreamSync; /* true if the standard cudaStreamSynchronize is used
+                                       and not memory polling-based waiting                 */
+    cu_atomdata_t   *atdat;         /* atom data                                            */
     cu_nbparam_t    *nbparam;       /* parameters required for the non-bonded calc.         */
     cu_plist_t      *plist[2];      /* pair-list data structures (local and non-local)      */
     nb_staging_t    nbst;           /* staging area where fshift/energies get downloaded    */
-    
+
     cudaStream_t    stream[2];      /* local and non-local GPU streams                      */
 
     /* events used for synchronization */
     cudaEvent_t    nonlocal_done, misc_ops_done;
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
-     * concurrrent streams, so we won't time if both l/nl work is done on GPUs.
+     * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
     bool            bDoTime;        /* True if event-based timing is enabled.               */

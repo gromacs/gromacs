@@ -45,7 +45,7 @@
 
 /*! Launches synchronous or asynchronous host to device memory copy.
  *
- *  The copy is launched in stream s or if not spefied, in stream 0.
+ *  The copy is launched in stream s or if not specified, in stream 0.
  */
 static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes, 
                                bool bAsync = false, cudaStream_t s = 0)
@@ -76,7 +76,7 @@ int cu_copy_D2H(void * h_dest, void * d_src, size_t bytes)
 }
 
 /*!
- *  The copy is launched in stream s or if not spefied, in stream 0.
+ *  The copy is launched in stream s or if not specified, in stream 0.
  */
 int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s = 0)
 {
@@ -95,7 +95,7 @@ int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
 
 /*! Launches synchronous or asynchronous device to host memory copy.
  *
- *  The copy is launched in stream s or if not spefied, in stream 0.
+ *  The copy is launched in stream s or if not specified, in stream 0.
  */
 static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes, 
                                bool bAsync = false, cudaStream_t s = 0)
@@ -125,7 +125,7 @@ int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
 }
 
 /*!
- *  The copy is launched in stream s or if not spefied, in stream 0.
+ *  The copy is launched in stream s or if not specified, in stream 0.
  */
 int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s = 0)
 {   
@@ -167,7 +167,7 @@ int cu_wait_event(cudaEvent_t e)
 }
 
 /*! 
- *  If time != NULL it also calculates the time ellapsed between start and end and 
+ *  If time != NULL it also calculates the time elapsed between start and end and
  *  return this is milliseconds.
  */ 
 int cu_wait_event_time(cudaEvent_t end, cudaEvent_t start, float *time)
@@ -217,7 +217,7 @@ void cu_free_buffered(void *d_ptr, int *n, int *nalloc)
  *  buffered and therefore freeing is only needed if the previously allocated 
  *  space is not enough.
  *  The H2D copy is launched in stream s and can be done synchronously or 
- *  assynchronously (the default is the latter).
+ *  asynchronously (the default is the latter).
  */
 void cu_realloc_buffered(void **d_dest, void *h_src,
                          size_t type_size,

@@ -965,7 +965,7 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
 }
 
 
-/* Override the value in inputrec with value passed on the commnad line (if any) */
+/* Override the value in inputrec with value passed on the command line (if any) */
 static void override_nsteps_cmdline(FILE *fplog,
                                     int nsteps_cmdline,
                                     t_inputrec *ir,
@@ -1726,7 +1726,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         char gpu_err_str[STRLEN];
 
-        /* free GPU memory and uninitialize GPU */
+        /* free GPU memory and uninitialize GPU (by destroying the context) */
         nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
 
         if (!free_gpu(gpu_err_str))

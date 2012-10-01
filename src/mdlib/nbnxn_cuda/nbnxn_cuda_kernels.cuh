@@ -34,8 +34,11 @@
  */
 
 /*! \file
- *  This header has the sole purporse of generating kernels for the different
- *  type of electrostatics supported: Cut-off, Reaction-Field, and Ewald/PME.
+ *  This header has the sole purpose of generating kernels for the different
+ *  type of electrostatics supported: Cut-off, Reaction-Field, and Ewald/PME;
+ *  the latter has a twin-range cut-off version (rcoul!=rvdw) which enables
+ *  PME tuning (otherwise in the Verlet scheme rcoul==rvdw).
+ *
  *  (No include fence as it is meant to be included multiple times.)
  */
 

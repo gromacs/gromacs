@@ -154,7 +154,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 
     /* Store the i-atom x and q in shared memory */
     /* Note: the thread indexing here is inverted with respect to the
-       inner-loop as this results in slighlty higher performance */
+       inner-loop as this results in slightly higher performance */
     ci = sci * NCL_PER_SUPERCL + tidxi;
     ai = ci * CL_SIZE + tidxj;
     xqib[tidxi * CL_SIZE + tidxj] = xq[ai] + shift_vec[nb_sci.shift];

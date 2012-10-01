@@ -358,7 +358,7 @@ static int pick_nbnxn_kernel_version()
         {
             fprintf(stderr,
                     "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
-                    "      non-bonded kenels perform best. However, the default kernels were\n"
+                    "      non-bonded kernels perform best. However, the default kernels were\n"
                     "      selected by the GMX_CUDA_NB_DEFAULT environment variable.\n"
                     "      For best performance upgrade your CUDA toolkit.",
                     sbuf);
@@ -375,7 +375,7 @@ static int pick_nbnxn_kernel_version()
         {
             fprintf(stderr,
                     "\nNOTE: Legacy non-bonded CUDA kernels were selected by the GMX_CUDA_NB_LEGACY\n"
-                    "      env var. Consider using using the default kernels which should be faster!\n");
+                    "      env. var. Consider using using the default kernels which should be faster!\n");
 
             kver = eNbnxnCuKLegacy;
         }

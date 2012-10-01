@@ -84,6 +84,7 @@ gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info) F
 FUNC_QUALIFIER
 gmx_bool free_gpu(char *result_str) FUNC_TERM_INT
 
+/*! \brief Returns the device ID of the GPU currently in use.*/
 FUNC_QUALIFIER
 int get_current_gpu_device_id(void) FUNC_TERM_INT
 

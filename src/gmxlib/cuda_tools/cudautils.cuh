@@ -77,7 +77,7 @@
     do { \
         cudaError_t _CU_CHECK_PREV_ERR_status = cudaGetLastError(); \
         if (_CU_CHECK_PREV_ERR_status != cudaSuccess) { \
-            gmx_warning("Just caught a previously occured CUDA error (%s), will try to continue.", cudaGetErrorString(_CU_CHECK_PREV_ERR_status)); \
+            gmx_warning("Just caught a previously occurred CUDA error (%s), will try to continue.", cudaGetErrorString(_CU_CHECK_PREV_ERR_status)); \
         } \
     } while (0)
 
@@ -124,7 +124,7 @@ struct cuda_dev_info
 };
 
 
-/*! Launches asynchronous host to device memory copy in tstream 0. */
+/*! Launches asynchronous host to device memory copy in stream 0. */
 int cu_copy_D2H(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
 
 /*! Launches asynchronous host to device memory copy in stream s. */
@@ -157,7 +157,7 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
 /*! Waits for event e to complete, */
 int cu_wait_event(cudaEvent_t /*e*/);
 
-/*! Caculates and returns the time ellapsed between event start and end. */
+/*! Calculates and returns the time elapsed between event start and end. */
 float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*end*/);
 
 /*! Waits for event end to complete and calculates the time between start and end. */

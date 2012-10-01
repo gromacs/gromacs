@@ -240,7 +240,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 
 
 /*! 
- * \brief Checks whether the GPU with the given name is supportedin Gromacs-OpenMM.
+ * \brief Checks whether the GPU with the given name is supported in Gromacs-OpenMM.
  * 
  * \param[in] gpu_name  the name of the CUDA device
  * \returns             TRUE if the device is supported, otherwise FALSE
@@ -913,7 +913,9 @@ int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int idx)
     return gpu_info->cuda_dev[gpu_info->cuda_dev_use[idx]].id;
 }
 
-/*! \brief Returns the device ID of the GPU used at the time of the call in the active context.
+/*! \brief Returns the device ID of the GPU currently in use.
+ *
+ * The GPU used is the one that is active at the time of the call in the active context.
  *
  * \param[in]    gpu_info   pointer to structure holding GPU information
  * \returns                 device ID of the GPU in use at the time of the call
