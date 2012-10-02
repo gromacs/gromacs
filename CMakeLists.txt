@@ -36,6 +36,21 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "6")
 #SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
+# The numerical gromacs version. It is 40600 for 4.6.0.
+# The #define GMX_VERSION in gmx_header_config_h is set to this value.
+math(EXPR NUM_VERSION 
+    "${CPACK_PACKAGE_VERSION_MAJOR}*10000 + ${CPACK_PACKAGE_VERSION_MINOR}*100")
+if(CPACK_PACKAGE_VERSION_PATCH)
+    math(EXPR NUM_VERSION 
+         "${NUM_VERSION} + ${CPACK_PACKAGE_VERSION_PATCH}")
+endif()
+
+# The API version tracks the numerical Gromacs version (for now).
+# It is potentially different from the Gromacs version in the future, if
+# the programs/libraries diverge from the presumably more stable API.
+# The #define GMX_API_VERSION in version.h is set to this value to
+# provide backward compatibility of software written against the Gromacs API.
+set(API_VERSION ${NUM_VERSION})
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

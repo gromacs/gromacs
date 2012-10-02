@@ -48,6 +48,7 @@ extern "C" {
 #include <errno.h>
 #include <signal.h>
 #include "gmx_header_config.h" /* for GMX_NATIVE_WINDOWS */
+#include "version.h"
 #ifndef GMX_NATIVE_WINDOWS
 #  include <unistd.h>
 #endif
