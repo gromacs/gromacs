@@ -98,16 +98,31 @@ set(CPACK_COMPONENT_MDRUN_GROUP mdrun)
 # Create custom install-xxxx targets, component dependences,
 # and trigger the installation
 foreach(PROGRAM ${GMX_KERNEL_PROGRAMS} mdrun)
-    set(CPACK_COMPONENT_${PROGRAM}_DEPENDS libraries)
+    if (NOT ${PROGRAM} STREQUAL "mdrun")
+	    set(CPACK_COMPONENT_${PROGRAM}_DEPENDS libraries)
+    else()
+	    set(CPACK_COMPONENT_MDRUN_DEPENDS md gmxpreprocess)
+    endif()
     if (BUILD_SHARED_LIBS)
     # If shared libraries are used, we need to install the libraries in
     # addition to the mdrun binary.
-       add_custom_target(install-${PROGRAM}
-           COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries
-                   -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
-           COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROGRAM}
-                   -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
-           COMMENT "Installing ${PROGRAM}")
+       if (NOT ${PROGRAM} STREQUAL "mdrun")
+	       add_custom_target(install-${PROGRAM}
+		   COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries
+		        -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+	           COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROGRAM}
+			-P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+		   COMMENT "Installing ${PROGRAM}")
+	else()
+		add_custom_target(install-mdrun
+			COMMAND ${CMAKE_COMMAND} -DCOMPONENT=md
+				-P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+			COMMAND ${CMAKE_COMMAND} -DCOMPONENT=gmxpreprocess
+				-P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+			COMMAND ${CMAKE_COMMAND} -DCOMPONENT=mdrun
+				-P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+			COMMENT "Installing mdrun")
+	endif()
     else()
        add_custom_target(install-${PROGRAM}
            COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROGRAM}
