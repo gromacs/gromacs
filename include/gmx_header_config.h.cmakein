@@ -9,3 +9,25 @@
 
 /* Detect native (i.e. non-Cygwin) Windows */
 #cmakedefine GMX_NATIVE_WINDOWS
+
+
+/* GMX_LIB_VERSION contains the API version the include files and installed
+   libraries are for, in numerical form (i.e. 4.6.1 would be 40601).
+   The values come from the main CMakeLists.txt.
+
+   programs written against the gromacs library can use, for example
+
+#if !defined(GMX_LIB_VERSION) || (GMX_LIB_VERSION < 40600)
+    ....  <do 4.5 specific stuff>
+#elif (GMX_LIB_VERSION < 40700)
+    ....  <do 4.6 specific stuff>
+#endif
+
+   so that they can provide some backward compatibility even though parts
+   of the API have changed.  */
+#define GMX_LIB_VERSION @API_VERSION@
+
+/* GMX_VERSION contains the version number of the underlying Gromacs programs,
+   in numerical format (see GMX_LIB_VERSION). */
+#define GMX_VERSION @NUM_VERSION@
+
