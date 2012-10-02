@@ -188,16 +188,20 @@ int gmx_rmsf(int argc,char *argv[])
     "temperature factors are present in the [TT].pdb[tt] file.[PAR]",
     "With option [TT]-dir[tt] the average MSF (3x3) matrix is diagonalized.",
     "This shows the directions in which the atoms fluctuate the most and",
-    "the least."
+    "the least.[PAR]",
+    "With option [TT]-prev[tt] the previous frame of a trajectory will be used",
+    "as reference frame."
   };
-  static gmx_bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
+  static gmx_bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE,bPrev=FALSE;
   t_pargs pargs[] = { 
     { "-res", FALSE, etBOOL, {&bRes},
       "Calculate averages for each residue" },
     { "-aniso",FALSE, etBOOL, {&bAniso},
       "Compute anisotropic termperature factors" },
     { "-fit", FALSE, etBOOL, {&bFit},
-      "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
+      "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." },
+    { "-prev",FALSE, etBOOL, {&bPrev},
+      "Use previous frame as reference" }
   };
   int          natom;
   int          step,nre,natoms,i,g,m,teller=0;
@@ -348,7 +352,17 @@ int gmx_rmsf(int argc,char *argv[])
           rmsd_x[i][d] += sqr(dx[d]);
         }
       }
-    } 
+    }
+
+    /* Copy coordinates to xref for next iteration */
+    if (bPrev){
+      for(i=0;i<natom;i++){
+        for(d=0;(d<DIM);d++) {
+          xref[i][d] = x[i][d];
+        }
+      }
+    }
+
     count += 1.0;
     teller++;
   } while(read_next_x(oenv,status,&t,natom,x,box));
