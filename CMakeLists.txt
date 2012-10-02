@@ -36,6 +36,13 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "6")
 #SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
+# the API version is just 4_6 for 4.6, for example. This sets
+# gmx_header_config_h for backward compatibility of software written
+# against the Gromacs API. Because there should be compatibility between
+# patch versions, only the major and minor versions are included in the API
+# version
+set(API_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
+
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
