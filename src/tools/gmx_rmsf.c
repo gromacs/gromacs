@@ -423,7 +423,7 @@ int gmx_rmsf(int argc,char *argv[])
 				 *(top.atoms.atomname[index[i]]));
 	
 	fprintf(fp,"%5d  %10.5f  %10.5f\n",
-		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,rmsf[i]*bfac,
+		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1,rmsf[i]*bfac,
 		pdb_bfac);
       }
     }
@@ -434,7 +434,7 @@ int gmx_rmsf(int argc,char *argv[])
       if (!bRes || i+1==isize ||
 	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
 	fprintf(fp,"%5d %8.4f\n",
-		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,sqrt(rmsf[i]));
+		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1,sqrt(rmsf[i]));
     ffclose(fp);
   }
   
@@ -452,7 +452,7 @@ int gmx_rmsf(int argc,char *argv[])
       if (!bRes || i+1==isize ||
 	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
 	fprintf(fp,"%5d %8.4f\n",
-		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,sqrt(rmsf[i]));
+		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1,sqrt(rmsf[i]));
     ffclose(fp);
   }
 
