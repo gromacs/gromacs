@@ -80,6 +80,7 @@
 #include "gpp_tomorse.h"
 #include "mtop_util.h"
 #include "genborn.h"
+#include "calc_verletbuf.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
@@ -1128,19 +1129,72 @@ static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
   
 }
 
-static void check_settle(gmx_mtop_t   *sys)
+static void set_verlet_buffer(const gmx_mtop_t *mtop,
+                              t_inputrec *ir,
+                              matrix box,
+                              real verletbuf_drift,
+                              warninp_t wi)
 {
-    int i,j,cgj1,nra;
-    
-    nra = interaction_function[F_SETTLE].nratoms;
-    for(i=0; (i<sys->nmoltype); i++) 
+    real ref_T;
+    int i;
+    verletbuf_list_setup_t ls;
+    real rlist_1x1;
+    int n_nonlin_vsite;
+    char warn_buf[STRLEN];
+
+    ref_T = 0;
+    for(i=0; i<ir->opts.ngtc; i++)
     {
-        for(j=0; (j<sys->moltype[i].ilist[F_SETTLE].nr); j+=nra+1)
+        if (ir->opts.ref_t[i] < 0)
         {
-            cgj1 = sys->moltype[i].cgs.index[j+1];
-            if (j+2 >= cgj1)
-                gmx_fatal(FARGS,"For SETTLE you need to have all atoms involved in one charge group. Please fix your topology.");
+            warning(wi,"Some atom groups do not use temperature coupling. This cannot be accounted for in the energy drift estimation for the Verlet buffer size. The energy drift and the Verlet buffer might be underestimated.");
         }
+        else
+        {
+            ref_T = max(ref_T,ir->opts.ref_t[i]);
+        }
+    }
+
+    printf("Determining Verlet buffer for an energy drift of %g kJ/mol/ps at %g K\n",verletbuf_drift,ref_T);
+
+    for(i=0; i<ir->opts.ngtc; i++)
+    {
+        if (ir->opts.ref_t[i] >= 0 && ir->opts.ref_t[i] != ref_T)
+        {
+            sprintf(warn_buf,"ref_T for group of %.1f DOFs is %g K, which is smaller than the maximum of %g K used for the buffer size calculation. The buffer size might be on the conservative (large) side.",
+                    ir->opts.nrdf[i],ir->opts.ref_t[i],ref_T);
+            warning_note(wi,warn_buf);
+        }
+    }
+
+    /* Calculate the buffer size for simple atom vs atoms list */
+    ls.cluster_size_i = 1;
+    ls.cluster_size_j = 1;
+    calc_verlet_buffer_size(mtop,det(box),ir,verletbuf_drift,
+                            &ls,&n_nonlin_vsite,&rlist_1x1);
+
+    /* Set the pair-list buffer size in ir */
+    verletbuf_get_list_setup(FALSE,&ls);
+    calc_verlet_buffer_size(mtop,det(box),ir,verletbuf_drift,
+                            &ls,&n_nonlin_vsite,&ir->rlist);
+
+    if (n_nonlin_vsite > 0)
+    {
+        sprintf(warn_buf,"There are %d non-linear virtual site constructions. Their contribution to the energy drift is approximated. In most cases this does not affect the energy drift significantly.",n_nonlin_vsite);
+        warning_note(wi,warn_buf);
+    }
+
+    printf("Calculated rlist for %dx%d atom pair-list as %.3f nm, buffer size %.3f nm\n",
+           1,1,rlist_1x1,rlist_1x1-max(ir->rvdw,ir->rcoulomb));
+
+    ir->rlistlong = ir->rlist;
+    printf("Set rlist, assuming %dx%d atom pair-list, to %.3f nm, buffer size %.3f nm\n",
+           ls.cluster_size_i,ls.cluster_size_j,
+           ir->rlist,ir->rlist-max(ir->rvdw,ir->rcoulomb));
+            
+    if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC,box))
+    {
+        gmx_fatal(FARGS,"The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-drift.",ir->rlistlong,sqrt(max_cutoff2(ir->ePBC,box)));
     }
 }
 
@@ -1360,6 +1414,15 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
+
+    if (ir->cutoff_scheme == ecutsVERLET)
+    {
+        fprintf(stderr,"Removing all charge groups because cutoff-scheme=%s\n",
+                ecutscheme_names[ir->cutoff_scheme]);
+
+        /* Remove all charge groups */
+        gmx_mtop_remove_chargegroups(sys);
+    }
   
   if (count_constraints(sys,mi,wi) && (ir->eConstrAlg == econtSHAKE)) {
     if (ir->eI == eiCG || ir->eI == eiLBFGS) {
@@ -1501,9 +1564,6 @@ int main (int argc, char *argv[])
     check_vel(sys,state.v);
   }
     
-  /* check for charge groups in settles */
-  check_settle(sys);
-  
   /* check masses */
   check_mol(sys,wi);
   
@@ -1530,6 +1590,17 @@ int main (int argc, char *argv[])
            bGenVel ? state.v : NULL,
            wi);
   
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0 &&
+        ir->nstlist > 1)
+    {
+        if (EI_DYNAMICS(ir->eI) &&
+            !(EI_MD(ir->eI) && ir->etc==etcNO) &&
+            inputrec2nboundeddim(ir) == 3)
+        {
+            set_verlet_buffer(sys,ir,state.box,ir->verletbuf_drift,wi);
+        }
+    }
+
   /* Init the temperature coupling state */
   init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength); /* need to add nnhpres here? */
 
@@ -1566,7 +1637,7 @@ int main (int argc, char *argv[])
         clear_rvec(state.box[ZZ]);
     }
   
-    if (ir->rlist > 0)
+    if (ir->cutoff_scheme != ecutsVERLET && ir->rlist > 0)
     {
         set_warning_line(wi,mdparin,-1);
         check_chargegroup_radii(sys,ir,state.x,wi);
@@ -1577,7 +1648,17 @@ int main (int argc, char *argv[])
     copy_mat(state.box,box);
     if (ir->ePBC==epbcXY && ir->nwall==2)
       svmul(ir->wall_ewald_zfac,box[ZZ],box[ZZ]);
-    max_spacing = calc_grid(stdout,box,opts->fourierspacing,
+    if (ir->nkx > 0 && ir->nky > 0 && ir->nkz > 0)
+    {
+        /* Mark fourier_spacing as not used */
+        ir->fourier_spacing = 0;
+    }
+    else if (ir->nkx != 0 && ir->nky != 0 && ir->nkz != 0)
+    {
+        set_warning_line(wi,mdparin,-1);
+        warning_error(wi,"Some of the Fourier grid sizes are set, but all of them need to be set.");
+    }
+    max_spacing = calc_grid(stdout,box,ir->fourier_spacing,
                             &(ir->nkx),&(ir->nky),&(ir->nkz));
   }
 

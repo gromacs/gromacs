@@ -57,6 +57,12 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 #endif(GMX_THREAD_MPI)
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
+# apply gcc 4.4.x bug workaround
+if(GMX_USE_GCC44_BUG_WORKAROUND)
+   include(gmxGCC44O3BugWorkaround)
+   gmx_apply_gcc44_bug_workaround("bondfree.c")
+endif()
+
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
@@ -65,14 +71,21 @@ list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})
 file(GLOB SELECTION_TEST selection/test*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 
+# gpu utils + cuda tools module
+if(GMX_GPU)
+    add_subdirectory(cuda_tools)
+    add_subdirectory(gpu_utils)   
+    set(GMX_GPU_LIBRARIES gpu_utils cuda_tools)
+endif()
+
 # NONBONDED_SOURCES is imported from the nonbonded subdirectory.
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${THREAD_MPI_SRC} ${NONBONDED_SOURCES})
-
-target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
+target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
 endif()
-set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
+set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+    COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 

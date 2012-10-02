@@ -25,29 +25,29 @@ macro(gmx_detect_acceleration GMX_SUGGESTED_ACCELERATION)
     message(STATUS "Detecting best acceleration for this CPU")
 
     # Get CPU acceleration information
-    try_run(GMX_DETECTCPU_RUN_ACC GMX_DETECTCPU_COMPILED
+    try_run(GMX_CPUID_RUN_ACC GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_detectcpu.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_DETECTCPU_STANDALONE"
+            ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
+            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
             RUN_OUTPUT_VARIABLE OUTPUT_TMP
-            COMPILE_OUTPUT_VARIABLE GMX_DETECTCPU_COMPILE_OUTPUT 
+            COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
             ARGS "-acceleration")
 
-    if(NOT GMX_DETECTCPU_COMPILED)
-        message(WARNING "Cannot compile CPU detection code, which means no optimization.")
-        message(STATUS "Compile output: ${GMX_DETECTCPU_COMPILE_OUTPUT}")
+    if(NOT GMX_CPUID_COMPILED)
+        message(WARNING "Cannot compile CPUID code, which means no CPU-specific acceleration.")
+        message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
         set(OUTPUT_TMP "None")
-    elseif(NOT GMX_DETECTCPU_RUN_ACC EQUAL 0)
-        message(WARNING "Cannot run CPU detection code, which means no optimization.")
+    elseif(NOT GMX_CPUID_RUN_ACC EQUAL 0)
+        message(WARNING "Cannot run CPUID code, which means no CPU-specific optimization.")
         message(STATUS "Run output: ${OUTPUT_TMP}")
         set(OUTPUT_TMP "None")
-    endif(NOT GMX_DETECTCPU_COMPILED)
+    endif(NOT GMX_CPUID_COMPILED)
 
     string(STRIP "@OUTPUT_TMP@" OUTPUT_ACC)
 
     message(STATUS "Detecting best acceleration for this CPU - @OUTPUT_ACC@")
 
-    set(${GMX_SUGGESTED_ACCELERATION}    "@OUTPUT_ACC@" CACHE INTERNAL "Gromacs CPU Acceleration")
+    set(${GMX_SUGGESTED_ACCELERATION}    "@OUTPUT_ACC@" CACHE INTERNAL "GROMACS CPU-specific acceleration")
 
     ENDIF(NOT DEFINED ${GMX_SUGGESTED_ACCELERATION})
 endmacro(gmx_detect_acceleration GMX_SUGGESTED_ACCELERATION)

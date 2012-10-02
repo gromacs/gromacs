@@ -44,8 +44,14 @@
 extern "C" {
 #endif
 
+char *gmx_gethostname(char *name, size_t len);
+/* Sets the hostname to the value given by gethostname, if available,
+ * and to "unknown" otherwise. name should have at least size len.
+ * Returns name.
+ */
+
 void gmx_log_open(const char *fn,const t_commrec *cr,
-                          gmx_bool bMasterOnly, unsigned long Flags, FILE**);
+                          gmx_bool bMasterOnly, gmx_bool bAppendFiles, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
