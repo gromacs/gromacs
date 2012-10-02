@@ -1201,7 +1201,7 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
     \param[in]  sendbuf     The operand parameters. Any process may specify 
                             TMPI_IN_PLACE, in which case recvbuf will hold
                             the operand parameters for that process.
-    \param[out] recvbuf     The result buffer.
+    \param[in,out] recvbuf  The result buffer.
     \param[in]  count       The number of items to do operation on.
     \param[in]  datatype    The data type of the items.
     \param[in]  op          The operation to perform.
@@ -1236,6 +1236,27 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count, 
                      tMPI_Datatype datatype, tMPI_Op op, int root, 
                      tMPI_Comm comm);
+
+/** Do a partial reduce operation, based on rank: the results of the 
+    reduction operation of ranks 0 - i will be put in the recvbuf of
+    rank i.
+  
+    Collective function.
+
+    \param[in]     sendbuf     The operand parameters. All ranks may specify 
+                               TMPI_IN_PLACE, in which case recvbuf will hold
+                               the operand parameters.
+    \param[in,out] recvbuf     The result buffer.
+    \param[in]     count       The number of items to do operation on.
+    \param[in]     datatype    The data type of the items.
+    \param[in]     op          The operation to perform.
+    \param[in]     comm        The communicator.
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Scan(void* sendbuf, void* recvbuf, int count, 
+              tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
+
+
 /*! \} */
 
 
