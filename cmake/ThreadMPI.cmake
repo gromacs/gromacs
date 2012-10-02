@@ -13,10 +13,15 @@ MACRO(TEST_TMPI_ATOMICS VARIABLE)
 
         if (TEST_ATOMICS)
             message(STATUS "Atomics found")
-            set(${VARIABLE} CACHE INTERNAL 1)
+            set(${VARIABLE} TRUE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         else (TEST_ATOMICS)
-            message(WARNING "Atomics not found for this compiler+cpu combination. Thread support will be unbearably slow: disable threads. Atomics should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-            set(${VARIABLE} CACHE INTERNAL 0)
+            if (TEST_TMPI_ATOMICS_ONLY)
+                message(WARNING "Atomic operations not found for this CPU+compiler combination. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+            else (TEST_TMPI_ATOMICS_ONLY)
+                message(WARNING "Atomic operations not found for this
+            CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+            endif (TEST_TMPI_ATOMICS_ONLY)
+            set(${VARIABLE} FALSE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         endif(TEST_ATOMICS)
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TEST_TMPI_ATOMICS VARIABLE)
@@ -28,6 +33,10 @@ MACRO(TMPI_MAKE_CXX_LIB)
         thread_mpi/system_error.cpp )
 ENDMACRO(TMPI_MAKE_CXX_LIB)
 
+test_tmpi_atomics(TMPI_ATOMICS)
+
+# do we want to only the atomics of tMPI (with GPU + MPI)
+if(NOT TEST_TMPI_ATOMICS_ONLY)
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
@@ -144,5 +153,4 @@ check_function_exists(sysconf       HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
 
-
-test_tmpi_atomics(TMPI_ATOMICS)
+endif(NOT TEST_TMPI_ATOMICS_ONLY)

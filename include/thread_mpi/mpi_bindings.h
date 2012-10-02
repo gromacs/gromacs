@@ -76,7 +76,6 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 typedef tMPI_Op MPI_Op;
 
 
-
 #define MPI_CHAR                TMPI_CHAR
 #define MPI_SHORT               TMPI_SHORT
 #define MPI_INT                 TMPI_INT
