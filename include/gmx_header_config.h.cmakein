@@ -9,3 +9,19 @@
 
 /* Detect native (i.e. non-Cygwin) Windows */
 #cmakedefine GMX_NATIVE_WINDOWS
+
+
+/* #defines that state the API version the include files are for. 
+   The values come from the main CMakeLists.txt.
+
+   programs written against the gromacs library can then use, for example
+
+#ifdef GMX_LIB_4_6
+    ....  <do some 4.6 specific stuff>
+#endif
+
+   so that they can provide some backward compatibility even though parts
+   of the API have changed.  */
+#define GMX_LIB_VERSION @API_VERSION@
+#define GMX_LIB_@API_VERSION@
+
