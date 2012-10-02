@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
-#include "typedefs.h"
+#include "types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,22 +94,14 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...) GMX_ATT
  * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
  * are allowed as format specifiers.
  *
+ * In case all MPI processes want to stop with the same fatal error,
+ * use gmx_fatal_collective, declared in gmx_fatal_collective.h,
+ * to avoid having as many error messages as processes.
+ *
  * Tip of the week:
  * call this function using the FARGS macro:
  * gmx_fatal(FARGS,fmt,...)
- */
-
-void
-gmx_fatal_collective(int f_errno,const char *file,int line,
-		     t_commrec *cr,gmx_domdec_t *dd,
-		     const char *fmt,...) GMX_ATTRIBUTE_NORETURN;
-/* As gmx_fatal, but only the master process prints the error message.
- * This should only be called one of the following two situations:
- * 1) On all nodes in cr->mpi_comm_mysim, with cr!=NULL,dd==NULL.
- * 2) On all nodes in dd->mpi_comm_all,   with cr==NULL,dd!=NULL.
- * This will call MPI_Finalize instead of MPI_Abort when possible,
- * This is useful for handling errors in code that is executed identically
- * for all processes.
+ *
  */
 
 void
@@ -202,6 +194,7 @@ void gmx_warning(const char *fmt,...);
  * The message string should NOT start with "WARNING"
  * and should NOT end with a newline.
  */
+
 
 #ifdef __cplusplus
 	   }

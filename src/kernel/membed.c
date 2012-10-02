@@ -108,13 +108,17 @@ static int get_mol_id(int at, gmx_mtop_t  *mtop, int *type, int *block)
     int mol_id=0;
     int i;
     int atnr_mol;
+    gmx_mtop_atomlookup_t alook;
 
-    gmx_mtop_atomnr_to_molblock_ind(mtop,at,block,&mol_id,&atnr_mol);
+    alook = gmx_mtop_atomlookup_settle_init(mtop);
+    gmx_mtop_atomnr_to_molblock_ind(alook,at,block,&mol_id,&atnr_mol);
     for(i=0;i<*block;i++)
     {
         mol_id += mtop->molblock[i].nmol;
     }
     *type = mtop->molblock[*block].type;
+
+    gmx_mtop_atomlookup_destroy(alook);
 
     return mol_id;
 }
