@@ -217,6 +217,8 @@ int gmx_rmsf(int argc,char *argv[])
   char         buf[256];
   const char   *label;
   char         title[STRLEN];
+  t_pbc        pbc;
+  rvec         dx;
   
   FILE         *fp;               /* the graphics file */
   const char   *devfn,*dirfn;
@@ -338,11 +340,13 @@ int gmx_rmsf(int argc,char *argv[])
     
     if (devfn) {
       /* Calculate RMS Deviation */
+      set_pbc(&pbc,ePBC,box);
       for(i=0;(i<isize);i++) {
-	aid = index[i];
-	for(d=0;(d<DIM);d++) {
-	  rmsd_x[i][d] += sqr(x[aid][d]-xref[aid][d]);
-	}
+        aid = index[i];
+        pbc_dx( &pbc, x[aid], xref[aid], dx);
+        for(d=0;(d<DIM);d++) {
+          rmsd_x[i][d] += sqr(dx[d]);
+        }
       }
     } 
     count += 1.0;
