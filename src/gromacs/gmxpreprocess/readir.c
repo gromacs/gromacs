@@ -710,16 +710,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
                ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
         
-        if (epcPARRINELLORAHMAN == ir->epct && opts->bGenVel)
+        if (epcPARRINELLORAHMAN == ir->epc && opts->bGenVel)
         {
             sprintf(warn_buf,
                     "You are generating velocities so I am assuming you "
                     "are equilibrating a system. You are using "
-                    "Parrinello-Rahman pressure coupling, but this can be "
+                    "%s pressure coupling, but this can be "
                     "unstable for equilibration. If your system crashes, try "
                     "equilibrating first with Berendsen pressure coupling. If "
                     "you are not equilibrating the system, you can probably "
-                    "ignore this warning.");
+                    "ignore this warning.",
+                    epcoupl_names[ir->epc]);
             warning(wi,warn_buf);
         }
     }

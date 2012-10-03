@@ -142,7 +142,7 @@ static void splitOptionValue(const string &s, string &opt, string &val)
                  integer less than, equal to, or greater than 0 if \p s1 less than, 
                  identical to, or greater than \p s2.
  */
-static gmx_bool isStringEqNCase(const string s1, const string s2)
+static gmx_bool isStringEqNCase(const string& s1, const string& s2)
 {
     return (gmx_strncasecmp(s1.c_str(), s2.c_str(), max(s1.length(), s2.length())) == 0);
 }
