@@ -1562,7 +1562,7 @@ int gmx_trjconv(int argc,char *argv[])
             ffclose(out);
         if (bSubTraj) {
             for(i=0; (i<clust->clust->nr); i++)
-                if (clust_status[i] )
+                if (clust_status_id[i] >= 0 )
                     close_trx(clust_status[i]);
         }
     }
