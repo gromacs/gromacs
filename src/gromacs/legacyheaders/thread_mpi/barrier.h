@@ -62,7 +62,7 @@ struct tMPI_Barrier_t
 {
     tMPI_Atomic_t     count;     /*!< Number of threads remaining     */
     int               threshold; /*!< Total number of threads         */
-    volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
+    tMPI_Atomic_t     cycle;     /*!< Current cycle (alternating 0/1) */
     TMPI_YIELD_WAIT_DATA
 };
 

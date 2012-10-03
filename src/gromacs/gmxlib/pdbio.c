@@ -361,6 +361,8 @@ void write_pdbfile_indexed(FILE *out,const char *title,
       fprintf(out,"CONECT%5d%5d\n",gc->conect[i].ai+1,gc->conect[i].aj+1);
     }
   }
+
+  gmx_residuetype_destroy(rt);
 }
 
 void write_pdbfile(FILE *out,const char *title, t_atoms *atoms,rvec x[],

@@ -439,7 +439,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             if (pme_subdivision(i))
             {
                 print_cycles(fplog,c2t,wcn[i],
-                             (i>=ewcPMEMESH || i<=ewcPME_SOLVE) ? npme : npp,
+                             (i>=ewcPMEMESH && i<=ewcPME_SOLVE) ? npme : npp,
                              wc->wcc[i].n,cycles[i],tot);
             }
         }

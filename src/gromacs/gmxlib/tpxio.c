@@ -376,6 +376,16 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
       {
           fepvals->separate_dvdl[efptFEP] = TRUE;
       }
+      /* still allocate the all_lambda array's contents. */
+      for (g=0;g<efptNR;g++)
+      {
+          if (fepvals->n_lambda > 0) {
+              if (bRead)
+              {
+                  snew(fepvals->all_lambda[g],fepvals->n_lambda);
+              }
+          }
+      }
   }
   else
   {

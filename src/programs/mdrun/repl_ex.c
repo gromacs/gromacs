@@ -177,7 +177,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     if (bTemp)
     {
-        please_cite(fplog,"Hukushima96a");
+        please_cite(fplog,"Sugita1999a");
         if (ir->epc != epcNO)
         {
             re->bNPT = TRUE;
@@ -800,7 +800,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, rea
 
 static void get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
                                  struct gmx_repl_ex *re,gmx_enerdata_t *enerd,real vol,
-                                 int step,real time,int *pind)
+                                 gmx_large_int_t step,real time,int *pind)
 {
     int  m,i,a,b,ap,bp,i0,i1,tmp;
     real *Epot=NULL,*Vol=NULL,**flambda=NULL,*beta=NULL,*prob;
@@ -811,7 +811,7 @@ static void get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     gmx_bool bVol=FALSE;
 
     bMultiEx = (re->nex > 1);  /* multiple exchanges at each state */
-    fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
+    fprintf(fplog,"Replica exchange at step " gmx_large_int_pfmt " time %g\n",step,time);
 
     snew(beta,re->nrepl);
     if (re->bNPT)
@@ -1149,7 +1149,7 @@ static void compute_exchange_order(FILE *fplog, int **cyclic,int **order, int n,
 
 gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
                           t_state *state,gmx_enerdata_t *enerd,
-                          t_state *state_local,int step,real time)
+                          t_state *state_local,gmx_large_int_t step,real time)
 {
     gmx_multisim_t *ms;
     int exchange=-1,shift;
