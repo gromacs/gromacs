@@ -43,10 +43,13 @@
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
 {
+
+class SelectionOptionInfo;
 
 namespace analysismodules
 {
@@ -62,6 +65,8 @@ class Select : public TrajectoryAnalysisModule
 
         virtual void initOptions(Options *options,
                                  TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options *options,
+                                     TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -73,24 +78,29 @@ class Select : public TrajectoryAnalysisModule
 
     private:
         SelectionList            sel_;
+        SelectionOptionInfo     *selOpt_;
 
         std::string              fnSize_;
         std::string              fnFrac_;
         std::string              fnIndex_;
         std::string              fnNdx_;
         std::string              fnMask_;
+        std::string              fnOccupancy_;
+        std::string              fnPDB_;
         bool                     bDump_;
         bool                     bTotNorm_;
         bool                     bFracNorm_;
         bool                     bResInd_;
         std::string              resNumberType_;
+        std::string              pdbAtoms_;
 
-        t_topology              *top_;
+        const TopologyInformation *top_;
         std::vector<int>         totsize_;
         AnalysisData             sdata_;
         AnalysisData             cdata_;
         AnalysisData             idata_;
         AnalysisData             mdata_;
+        AnalysisDataAverageModulePointer occupancyModule_;
 };
 
 } // namespace analysismodules
