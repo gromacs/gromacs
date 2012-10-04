@@ -266,9 +266,6 @@
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H
 
-/* Define to 1 if yo have the <regex.h> header file. */
-#cmakedefine HAVE_REGEX_H
-
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
 
@@ -277,6 +274,12 @@
 
 /* Define for sched.h (this is for thread_mpi)*/
 #define HAVE_SCHED_H
+
+/* Define to 1 if you have the POSIX <regex.h> header file. */
+#cmakedefine HAVE_POSIX_REGEX
+
+/* Define to 1 if you have the C++11 <regex> header file. */
+#cmakedefine HAVE_CXX11_REGEX
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
