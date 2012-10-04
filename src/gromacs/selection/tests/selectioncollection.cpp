@@ -35,10 +35,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/smalloc.h"
@@ -52,6 +48,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
+#include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
@@ -376,7 +373,6 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
     EXPECT_STREQ("resname RB RC", sel_[1].selectionText());
 }
 
-#ifdef HAVE_REGEX_H
 TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
 {
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
@@ -385,16 +381,18 @@ TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
             sc_.compile();
         }, gmx::InvalidInputError);
 }
-#else
+
 TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
 {
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW({
-            sc_.parseFromString("resname \"R[AD]\"");
-            sc_.compile();
-        }, gmx::InvalidInputError);
+    if (!gmx::Regex::isSupported())
+    {
+        ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+        EXPECT_THROW({
+                sc_.parseFromString("resname \"R[AD]\"");
+                sc_.compile();
+            }, gmx::InvalidInputError);
+    }
 }
-#endif
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
@@ -785,7 +783,6 @@ TEST_F(SelectionCollectionDataTest, HandlesWildcardMatching)
 }
 
 
-#ifdef HAVE_REGEX_H
 TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
 {
     static const char * const selections[] = {
@@ -793,9 +790,11 @@ TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
         "resname ~ \"R[BD]\"",
         NULL
     };
-    runTest("simple.gro", selections);
+    if (gmx::Regex::isSupported())
+    {
+        runTest("simple.gro", selections);
+    }
 }
-#endif
 
 
 TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
