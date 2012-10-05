@@ -43,20 +43,19 @@
 #include "constr.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
+#include "pbc.h"
 
 typedef struct
 {
     real   mO;
     real   mH;
-    double wo;
-    double wh;
-    double wohh;
+    real   wh;
     real   dOH;
     real   dHH;
     real   ra;
     real   rb;
     real   rc;
-    real   rc2;
+    real   irc2;
     /* For projection */
     real   imO;
     real   imH;
@@ -110,30 +109,28 @@ static void settleparam_init(settleparam_t *p,
                              real mO,real mH,real invmO,real invmH,
                              real dOH,real dHH)
 {
+    double wohh;
+
     p->mO     = mO;
     p->mH     = mH;
-    p->wo     = mO;
-    p->wh     = mH;
-    p->wohh   = mO + 2.0*mH;
+    wohh      = mO + 2.0*mH;
+    p->wh     = mH/wohh;
     p->dOH    = dOH;
     p->dHH    = dHH;
     p->rc     = dHH/2.0;
-    p->ra     = 2.0*p->wh*sqrt(dOH*dOH - p->rc*p->rc)/p->wohh;
+    p->ra     = 2.0*mH*sqrt(dOH*dOH - p->rc*p->rc)/wohh;
     p->rb     = sqrt(dOH*dOH - p->rc*p->rc) - p->ra;
-    p->rc2    = dHH;
-
-    p->wo    /= p->wohh;
-    p->wh    /= p->wohh;
+    p->irc2   = 1.0/dHH;
 
     /* For projection: connection matrix inversion */
     init_proj_matrix(p,invmO,invmH,dOH,dHH);
 
     if (debug)
     {
-        fprintf(debug,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
-                p->wo,p->wh,p->wohh,p->rc,p->ra);
-        fprintf(debug,"rb = %g, rc2 = %g, dHH = %g, dOH = %g\n",
-                p->rb,p->rc2,p->dHH,p->dOH);
+        fprintf(debug,"wh =%g, rc = %g, ra = %g\n",
+                p->wh,p->rc,p->ra);
+        fprintf(debug,"rb = %g, irc2 = %g, dHH = %g, dOH = %g\n",
+                p->rb,p->irc2,p->dHH,p->dOH);
     }
 }
 
@@ -170,9 +167,11 @@ static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 
 void settle_proj(FILE *fp,
                  gmx_settledata_t settled,int econq,
-                 int nsettle, t_iatom iatoms[],rvec x[],
+                 int nsettle, t_iatom iatoms[],
+                 const t_pbc *pbc,
+                 rvec x[],
                  rvec *der,rvec *derp,
-                 gmx_bool bCalcVir,tensor rmdder,t_vetavars *vetavar)
+                 int calcvir_atom_end,tensor rmdder,t_vetavars *vetavar)
 {
     /* Settle for projection out constraint components
      * of derivatives of the coordinates.
@@ -187,6 +186,8 @@ void settle_proj(FILE *fp,
     rvec   derm[3],derpm[3];
     real   invvscale,vscale_nhc,veta;
     real   kfacOH,kfacHH;
+
+    calcvir_atom_end *= DIM;
 
     if (econq == econqForce)
     {
@@ -230,12 +231,21 @@ void settle_proj(FILE *fp,
         }
         /* 27 flops */
         
-        for(m=0; m<DIM; m++)
+        if (pbc == NULL)
         {
-            roh2[m] = (x[ow1][m] - x[hw2][m])*invdOH;
-            roh3[m] = (x[ow1][m] - x[hw3][m])*invdOH;
-            rhh [m] = (x[hw2][m] - x[hw3][m])*invdHH;
+            rvec_sub(x[ow1],x[hw2],roh2);
+            rvec_sub(x[ow1],x[hw3],roh3);
+            rvec_sub(x[hw2],x[hw3],rhh);
         }
+        else
+        {
+            pbc_dx_aiuc(pbc,x[ow1],x[hw2],roh2);
+            pbc_dx_aiuc(pbc,x[ow1],x[hw3],roh3);
+            pbc_dx_aiuc(pbc,x[hw2],x[hw3],rhh);
+        }
+        svmul(invdOH,roh2,roh2);
+        svmul(invdOH,roh3,roh3);
+        svmul(invdHH,rhh,rhh);
         /* 18 flops */
         
         /* Determine the projections of der(modified) on the bonds */
@@ -267,7 +277,7 @@ void settle_proj(FILE *fp,
         
         /* 45 flops */
 
-        if (bCalcVir)
+        if (ow1 < calcvir_atom_end)
         {
             /* Determining r \dot m der is easy,
              * since fc contains the mass weighted corrections for der.
@@ -285,98 +295,23 @@ void settle_proj(FILE *fp,
             }
         }
     }
-    /* conrect rmdder, which will be used to calcualate the virial; we need to use 
-       the unscaled multipliers in the virial */
-    msmul(rmdder,1.0/vetavar->vscale,rmdder);
-}
 
-
-/* Our local shake routine to be used when settle breaks down due to a zero determinant */
-static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH) 
-{  
-  real bondsq[3];
-  real bond[9];
-  real invmass[3];
-  real M2[3];
-  int iconv;
-  int iatom[3]={0,0,1};
-  int jatom[3]={1,2,2};
-  real rijx,rijy,rijz,tx,ty,tz,im,jm,acor,rp,diff;
-  int i,ll,ii,jj,l3,ix,iy,iz,jx,jy,jz,conv;
-
-  invmass[0]=1.0/mO;
-  invmass[1]=1.0/mH;
-  invmass[2]=1.0/mH;
-
-  bondsq[0]=dOH*dOH;
-  bondsq[1]=bondsq[0];
-  bondsq[2]=dHH*dHH;
-  
-  M2[0]=1.0/(2.0*(invmass[0]+invmass[1]));
-  M2[1]=M2[0];
-  M2[2]=1.0/(2.0*(invmass[1]+invmass[2]));
-
-  for(ll=0;ll<3;ll++) {
-    l3=3*ll;
-    ix=3*iatom[ll];
-    jx=3*jatom[ll];
-    for(i=0;i<3;i++) 
-      bond[l3+i]= b4[ix+i] - b4[jx+i];
-  }
-
-  for(i=0,iconv=0;i<1000 && iconv<3; i++) {
-    for(ll=0;ll<3;ll++) {
-      ii = iatom[ll];
-      jj = jatom[ll];
-      l3 = 3*ll;
-      ix = 3*ii;
-      jx = 3*jj;
-      iy = ix+1;
-      jy = jx+1;
-      iz = ix+2;
-      jz = jx+2;
-
-      rijx = bond[l3];
-      rijy = bond[l3+1];
-      rijz = bond[l3+2];  
-
-      
-      tx   = after[ix]-after[jx];
-      ty   = after[iy]-after[jy];
-      tz   = after[iz]-after[jz];
-      
-      rp   = tx*tx+ty*ty+tz*tz;
-      diff = bondsq[ll] - rp;
-
-      if(fabs(diff)<1e-8) {
-	iconv++;
-      } else {
-	rp = rijx*tx+rijy*ty+rijz*tz;
-	if(rp<1e-8) {
-	  return -1;
-	}
-	acor = diff*M2[ll]/rp;
-	im           = invmass[ii];
-	jm           = invmass[jj];
-	tx           = rijx*acor;
-	ty           = rijy*acor;
-	tz           = rijz*acor;
-	after[ix] += tx*im;
-	after[iy] += ty*im;
-	after[iz] += tz*im;
-	after[jx] -= tx*jm;
-	after[jy] -= ty*jm;
-	after[jz] -= tz*jm;
-      }
+    if (calcvir_atom_end > 0)
+    {
+        /* Correct rmdder, which will be used to calcualate the virial;
+         * we need to use the unscaled multipliers in the virial.
+         */
+        msmul(rmdder,1.0/vetavar->vscale,rmdder);
     }
-  }
-  return 0;
 }
 
 
 void csettle(gmx_settledata_t settled,
-             int nsettle, t_iatom iatoms[],real b4[], real after[],
-             real invdt,real *v,gmx_bool bCalcVir,tensor rmdr,int *error,t_vetavars *vetavar)
+             int nsettle, t_iatom iatoms[],
+             const t_pbc *pbc,
+             real b4[], real after[],
+             real invdt,real *v,int CalcVirAtomEnd,
+             tensor rmdr,int *error,t_vetavars *vetavar)
 {
     /* ***************************************************************** */
     /*                                                               ** */
@@ -391,11 +326,8 @@ void csettle(gmx_settledata_t settled,
     
     /* Initialized data */
     settleparam_t *p;
-    real   mO,mH,mOs,mHs,invdts;
-    /* These three weights need have double precision. Using single precision
-     * can result in huge velocity and pressure deviations. */
-    double wo,wh,wohh;
-    real   ra,rb,rc,rc2,dOH,dHH;
+    real   wh,ra,rb,rc,irc2;
+    real   mOs,mHs,invdts;
     
     /* Local variables */
     real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
@@ -412,61 +344,111 @@ void csettle(gmx_settledata_t settled,
     real dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
     real mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
     
-    int doshake;
+    gmx_bool bOK;
     
-    int i, shakeret, ow1, hw2, hw3;
+    int i, ow1, hw2, hw3;
+
+    rvec dx,sh_hw2={0,0,0},sh_hw3={0,0,0};
+    rvec doh2,doh3;
+    int  is;
     
     *error = -1;
 
+    CalcVirAtomEnd *= 3;
+
     p = &settled->massw;
-    mO   = p->mO;
-    mH   = p->mH;
-    wo   = p->wo;
     wh   = p->wh;
-    wohh = p->wohh;
     rc   = p->rc;
     ra   = p->ra;
     rb   = p->rb;
-    rc2  = p->rc2;
-    dOH  = p->dOH;
-    dHH  = p->dHH;
+    irc2 = p->irc2;
     
-    mOs  = mO / vetavar->rvscale;
-    mHs  = mH / vetavar->rvscale;
-    invdts = invdt/(vetavar->rscale);
+    mOs    = p->mO / vetavar->rvscale;
+    mHs    = p->mH / vetavar->rvscale;
+    invdts = invdt / vetavar->rscale;
     
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
   for (i = 0; i < nsettle; ++i) {
-    doshake = 0;
+    bOK = TRUE;
     /*    --- Step1  A1' ---      */
     ow1 = iatoms[i*4+1] * 3;
     hw2 = iatoms[i*4+2] * 3;
     hw3 = iatoms[i*4+3] * 3;
-    xb0 = b4[hw2    ] - b4[ow1];
-    yb0 = b4[hw2 + 1] - b4[ow1 + 1];
-    zb0 = b4[hw2 + 2] - b4[ow1 + 2];
-    xc0 = b4[hw3    ] - b4[ow1];
-    yc0 = b4[hw3 + 1] - b4[ow1 + 1];
-    zc0 = b4[hw3 + 2] - b4[ow1 + 2];
-    /* 6 flops */
+    if (pbc == NULL)
+    {
+        xb0 = b4[hw2 + XX] - b4[ow1 + XX];
+        yb0 = b4[hw2 + YY] - b4[ow1 + YY];
+        zb0 = b4[hw2 + ZZ] - b4[ow1 + ZZ];
+        xc0 = b4[hw3 + XX] - b4[ow1 + XX];
+        yc0 = b4[hw3 + YY] - b4[ow1 + YY];
+        zc0 = b4[hw3 + ZZ] - b4[ow1 + ZZ];
+        /* 6 flops */
+
+        rvec_sub(after+hw2,after+ow1,doh2);
+        rvec_sub(after+hw3,after+ow1,doh3);
+        /* 6 flops */
+    }
+    else
+    {
+        pbc_dx_aiuc(pbc,b4+hw2,b4+ow1,dx);
+        xb0 = dx[XX];
+        yb0 = dx[YY];
+        zb0 = dx[ZZ];
+        pbc_dx_aiuc(pbc,b4+hw3,b4+ow1,dx);
+        xc0 = dx[XX];
+        yc0 = dx[YY];
+        zc0 = dx[ZZ];
+
+        /* Tedious way of doing pbc */
+        is = pbc_dx_aiuc(pbc,after+hw2,after+ow1,doh2);
+        if (is == CENTRAL)
+        {
+            clear_rvec(sh_hw2);
+        }
+        else
+        {
+            sh_hw2[XX] = after[hw2 + XX] - (after[ow1 + XX] + doh2[XX]);
+            sh_hw2[YY] = after[hw2 + YY] - (after[ow1 + YY] + doh2[YY]);
+            sh_hw2[ZZ] = after[hw2 + ZZ] - (after[ow1 + ZZ] + doh2[ZZ]);
+            rvec_dec(after+hw2,sh_hw2);
+        }
+        is = pbc_dx_aiuc(pbc,after+hw3,after+ow1,doh3);
+        if (is == CENTRAL)
+        {
+            clear_rvec(sh_hw3);
+        }
+        else
+        {
+            sh_hw3[XX] = after[hw3 + XX] - (after[ow1 + XX] + doh3[XX]);
+            sh_hw3[YY] = after[hw3 + YY] - (after[ow1 + YY] + doh3[YY]);
+            sh_hw3[ZZ] = after[hw3 + ZZ] - (after[ow1 + ZZ] + doh3[ZZ]);
+            rvec_dec(after+hw3,sh_hw3);
+        }
+    }
     
-    xcom = (after[ow1    ] * wo + (after[hw2    ] + after[hw3    ]) * wh);
-    ycom = (after[ow1 + 1] * wo + (after[hw2 + 1] + after[hw3 + 1]) * wh);
-    zcom = (after[ow1 + 2] * wo + (after[hw2 + 2] + after[hw3 + 2]) * wh);
-    /* 12 flops */
+    /* Not calculating the center of mass using the oxygen position
+     * and the O-H distances, as done below, will make SETTLE
+     * the largest source of energy drift for simulations of water,
+     * as then the oxygen coordinate is multiplied by 0.89 at every step,
+     * which can then transfer a systematic rounding to the oxygen velocity.
+     */
+    xa1 = -(doh2[XX] + doh3[XX]) * wh;
+    ya1 = -(doh2[YY] + doh3[YY]) * wh;
+    za1 = -(doh2[ZZ] + doh3[ZZ]) * wh;
+
+    xcom = after[ow1 + XX] - xa1;
+    ycom = after[ow1 + YY] - ya1;
+    zcom = after[ow1 + ZZ] - za1;
     
-    xa1 = after[ow1    ] - xcom;
-    ya1 = after[ow1 + 1] - ycom;
-    za1 = after[ow1 + 2] - zcom;
-    xb1 = after[hw2    ] - xcom;
-    yb1 = after[hw2 + 1] - ycom;
-    zb1 = after[hw2 + 2] - zcom;
-    xc1 = after[hw3    ] - xcom;
-    yc1 = after[hw3 + 1] - ycom;
-    zc1 = after[hw3 + 2] - zcom;
-    /* 9 flops */
+    xb1 = after[hw2 + XX] - xcom;
+    yb1 = after[hw2 + YY] - ycom;
+    zb1 = after[hw2 + ZZ] - zcom;
+    xc1 = after[hw3 + XX] - xcom;
+    yc1 = after[hw3 + YY] - ycom;
+    zc1 = after[hw3 + ZZ] - zcom;
+    /* 15 flops */
     
     xakszd = yb0 * zc0 - zb0 * yc0;
     yakszd = zb0 * xc0 - xb0 * zc0;
@@ -511,27 +493,24 @@ void csettle(gmx_settledata_t settled,
     zc1d = trns13 * xc1 + trns23 * yc1 + trns33 * zc1;
     /* 65 flops */
         
-    sinphi = za1d / ra;
+    sinphi = za1d * gmx_invsqrt(ra*ra);
     tmp    = 1.0 - sinphi * sinphi;
     if (tmp <= 0) {
-      *error = i;
-      doshake = 1;
-      cosphi = 0;
+      bOK = FALSE;
+    } else {
+      tmp2   = gmx_invsqrt(tmp);
+      cosphi = tmp*tmp2;
+      sinpsi = (zb1d - zc1d) * irc2 * tmp2;
+      tmp2   = 1.0 - sinpsi * sinpsi;
+      if (tmp2 <= 0) {
+        bOK = FALSE;
+      } else {
+        cospsi = tmp2*gmx_invsqrt(tmp2);
+      }
     }
-    else
-      cosphi = tmp*gmx_invsqrt(tmp);
-    sinpsi = (zb1d - zc1d) / (rc2 * cosphi);
-    tmp2   = 1.0 - sinpsi * sinpsi;
-    if (tmp2 <= 0) {
-      *error = i;
-      doshake = 1;
-      cospsi = 0;
-    }
-    else
-      cospsi = tmp2*gmx_invsqrt(tmp2);
     /* 46 flops */
     
-    if(!doshake) {
+    if (bOK) {
       ya2d =  ra * cosphi;
       xb2d = -rc * cospsi;
       t1   = -rb * cosphi;
@@ -546,11 +525,11 @@ void csettle(gmx_settledata_t settled,
       gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
       al2be2 = alpa * alpa + beta * beta;
       tmp2   = (al2be2 - gama * gama);
-      sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) / al2be2;
+      sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) * gmx_invsqrt(al2be2*al2be2);
       /* 47 flops */
       
       /*  --- Step4  A3' --- */
-      tmp2  = 1.0 - sinthe *sinthe;
+      tmp2  = 1.0 - sinthe * sinthe;
       costhe = tmp2*gmx_invsqrt(tmp2);
       xa3d = -ya2d * sinthe;
       ya3d = ya2d * costhe;
@@ -585,6 +564,12 @@ void csettle(gmx_settledata_t settled,
       after[hw3 + 2] = zcom + zc3;
       /* 9 flops */
 
+      if (pbc != NULL)
+      {
+          rvec_inc(after+hw2,sh_hw2);
+          rvec_inc(after+hw3,sh_hw3);
+      }
+
       dax = xa3 - xa1;
       day = ya3 - ya1;
       daz = za3 - za1;
@@ -596,7 +581,7 @@ void csettle(gmx_settledata_t settled,
       dcz = zc3 - zc1;
       /* 9 flops, counted with the virial */
 
-      if (v) {
+      if (v != NULL) {
           v[ow1]     += dax*invdts;
           v[ow1 + 1] += day*invdts;
           v[ow1 + 2] += daz*invdts;
@@ -609,7 +594,7 @@ void csettle(gmx_settledata_t settled,
           /* 3*6 flops */
       }
 
-      if (bCalcVir) {
+      if (ow1 < CalcVirAtomEnd) {
           mdax = mOs*dax;
           mday = mOs*day;
           mdaz = mOs*daz;
@@ -619,22 +604,19 @@ void csettle(gmx_settledata_t settled,
           mdcx = mHs*dcx;
           mdcy = mHs*dcy;
           mdcz = mHs*dcz;
-          rmdr[XX][XX] -= b4[ow1]*mdax + b4[hw2]*mdbx + b4[hw3]*mdcx;
-          rmdr[XX][YY] -= b4[ow1]*mday + b4[hw2]*mdby + b4[hw3]*mdcy;
-          rmdr[XX][ZZ] -= b4[ow1]*mdaz + b4[hw2]*mdbz + b4[hw3]*mdcz;
-          rmdr[YY][XX] -= b4[ow1+1]*mdax + b4[hw2+1]*mdbx + b4[hw3+1]*mdcx;
-          rmdr[YY][YY] -= b4[ow1+1]*mday + b4[hw2+1]*mdby + b4[hw3+1]*mdcy;
-          rmdr[YY][ZZ] -= b4[ow1+1]*mdaz + b4[hw2+1]*mdbz + b4[hw3+1]*mdcz;
-          rmdr[ZZ][XX] -= b4[ow1+2]*mdax + b4[hw2+2]*mdbx + b4[hw3+2]*mdcx;
-          rmdr[ZZ][YY] -= b4[ow1+2]*mday + b4[hw2+2]*mdby + b4[hw3+2]*mdcy;
-          rmdr[ZZ][ZZ] -= b4[ow1+2]*mdaz + b4[hw2+2]*mdbz + b4[hw3+2]*mdcz;
+          rmdr[XX][XX] -= b4[ow1  ]*mdax + (b4[ow1  ]+xb0)*mdbx + (b4[ow1  ]+xc0)*mdcx;
+          rmdr[XX][YY] -= b4[ow1  ]*mday + (b4[ow1  ]+xb0)*mdby + (b4[ow1  ]+xc0)*mdcy;
+          rmdr[XX][ZZ] -= b4[ow1  ]*mdaz + (b4[ow1  ]+xb0)*mdbz + (b4[ow1  ]+xc0)*mdcz;
+          rmdr[YY][XX] -= b4[ow1+1]*mdax + (b4[ow1+1]+yb0)*mdbx + (b4[ow1+1]+yc0)*mdcx;
+          rmdr[YY][YY] -= b4[ow1+1]*mday + (b4[ow1+1]+yb0)*mdby + (b4[ow1+1]+yc0)*mdcy;
+          rmdr[YY][ZZ] -= b4[ow1+1]*mdaz + (b4[ow1+1]+yb0)*mdbz + (b4[ow1+1]+yc0)*mdcz;
+          rmdr[ZZ][XX] -= b4[ow1+2]*mdax + (b4[ow1+2]+zb0)*mdbx + (b4[ow1+2]+zc0)*mdcx;
+          rmdr[ZZ][YY] -= b4[ow1+2]*mday + (b4[ow1+2]+zb0)*mdby + (b4[ow1+2]+zc0)*mdcy;
+          rmdr[ZZ][ZZ] -= b4[ow1+2]*mdaz + (b4[ow1+2]+zb0)*mdbz + (b4[ow1+2]+zc0)*mdcz;
 	/* 3*24 - 9 flops */
       }
     } else {
-      /* If we couldn't settle this water, try a simplified iterative shake instead */
-        /* no pressure control in here yet */
-     if(xshake(b4+ow1,after+ow1,dOH,dHH,mO,mH)!=0)
-	*error=i;
+      *error = i;
     }
 #ifdef DEBUG
     if (debug)

@@ -51,6 +51,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "types/commrec.h"
 
 
 /*! \brief Select local atoms of a group.

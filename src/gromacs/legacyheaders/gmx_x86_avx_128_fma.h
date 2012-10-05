@@ -84,7 +84,7 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
 /* The warning directive is not supported by MSVC, and that compiler
  * does not support overriding built-in functions anyway...
  */
-#if !defined(HAVE_x86INTRIN_H) || !defined(__FMA4__)
+#if !defined(HAVE_X86INTRIN_H) || !defined(__FMA4__)
 #warning Emulating FMA instructions - this is probably not what you want!
 /* Wrapper routines so we can do test builds on non-FMA hardware */
 static __m128

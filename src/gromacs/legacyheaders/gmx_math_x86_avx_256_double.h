@@ -102,11 +102,11 @@ gmx_mm_invsqrt_pair_pd(__m128d x1, __m128d x2, __m128d *invsqrt1, __m128d *invsq
     __m128d lu1,lu2;
     
     /* Do first N-R step in float for 2x throughput */
-    xf  = _mm_shuffle_ps(_mm_cvtpd_ps(x1),_mm_cvtpd_ps(x2),MM_SHUFFLE(1,0,1,0));
+    xf  = _mm_shuffle_ps(_mm_cvtpd_ps(x1),_mm_cvtpd_ps(x2),_MM_SHUFFLE(1,0,1,0));
     luf = _mm_rsqrt_ps(xf);
     luf = _mm_mul_ps(halff,_mm_mul_ps(_mm_sub_ps(threef,_mm_mul_ps(_mm_mul_ps(luf,luf),xf)),luf));
     
-    lu2 = _mm_cvtps_pd(_mm_shuffle_ps(luf,luf,MM_SHUFFLE(3,2,3,2)));
+    lu2 = _mm_cvtps_pd(_mm_shuffle_ps(luf,luf,_MM_SHUFFLE(3,2,3,2)));
     lu1 = _mm_cvtps_pd(luf);
     
     *invsqrt1 = _mm_mul_pd(half,_mm_mul_pd(_mm_sub_pd(three,_mm_mul_pd(_mm_mul_pd(lu1,lu1),x1)),lu1));
@@ -1583,7 +1583,7 @@ gmx_mm_erfc_pd(__m128d x)
  *    vectorial force to add to the particles.
  *
  */
-__m256d
+static __m256d
 gmx_mm256_pmecorrF_pd(__m256d z2)
 {
     const __m256d  FN10     = _mm256_set1_pd(-8.0072854618360083154e-14);
@@ -1648,8 +1648,7 @@ gmx_mm256_pmecorrF_pd(__m256d z2)
 }
 
 
-
-__m128d
+static __m128d
 gmx_mm_pmecorrF_pd(__m128d z2)
 {
     const __m128d  FN10     = _mm_set1_pd(-8.0072854618360083154e-14);
@@ -1745,7 +1744,7 @@ gmx_mm_pmecorrF_pd(__m128d z2)
  *    and you have your potential.
  *
  */
-__m256d
+static __m256d
 gmx_mm256_pmecorrV_pd(__m256d z2)
 {
     const __m256d  VN9      = _mm256_set1_pd(-9.3723776169321855475e-13);
@@ -1807,8 +1806,8 @@ gmx_mm256_pmecorrV_pd(__m256d z2)
 }
 
 
-__m128d
-gmx_mm_pmecorrV_pd(__m256d z2)
+static __m128d
+gmx_mm_pmecorrV_pd(__m128d z2)
 {
     const __m128d  VN9      = _mm_set1_pd(-9.3723776169321855475e-13);
     const __m128d  VN8      = _mm_set1_pd(1.2280156762674215741e-10);
