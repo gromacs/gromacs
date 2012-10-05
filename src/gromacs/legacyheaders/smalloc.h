@@ -141,8 +141,10 @@ size_t memavail(void);
 
 /* Aligned-memory counterparts */
 
+void *save_malloc_aligned(const char *name,const char *file,int line,
+                          unsigned nelem,size_t elsize,size_t alignment);
 void *save_calloc_aligned(const char *name,const char *file,int line,
-			  unsigned nelem,size_t elsize,size_t alignment); 
+                          unsigned nelem,size_t elsize,size_t alignment);
 void save_free_aligned(const char *name,const char *file,int line, void *ptr);
 
 #ifdef __cplusplus
