@@ -37,6 +37,7 @@
 #define _genborn_h
 
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "grompp.h"
 
 #ifdef __cplusplus

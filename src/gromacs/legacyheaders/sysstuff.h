@@ -42,6 +42,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
+/* FIXME: the version.h file generated in the build tree is not found here */
+/* #include "version.h" */
 #include <limits.h>
 #include <time.h>
 
