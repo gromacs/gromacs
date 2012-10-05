@@ -38,6 +38,7 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" { 
@@ -188,9 +189,15 @@ extern "C" {
    * The index consists of NCUCEDGE pairs of vertex indices.
    * The index does not change, so it needs to be retrieved only once.
    */
-  void put_atom_in_box(matrix box,rvec x);
 
-  void put_atoms_in_box(matrix box,int natoms,rvec x[]);
+  void put_atoms_in_box_omp(int ePBC,matrix box,int natoms,rvec x[]);
+  /* This wrapper function around put_atoms_in_box() with the ugly manual
+   * workload splitting is needed toavoid silently introducing multithreading
+   * in tools.
+   * */
+
+
+  void put_atoms_in_box(int ePBC, matrix box,int natoms,rvec x[]);
   /* These routines puts ONE or ALL atoms in the box, not caring 
    * about charge groups!
    * Also works for triclinic cells.
