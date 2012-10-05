@@ -2585,7 +2585,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         {
             dd_zones = NULL;
 
-            get_nsgrid_boundaries(grid,NULL,box,NULL,NULL,NULL,
+            get_nsgrid_boundaries(grid->nboundeddim,box,NULL,NULL,NULL,NULL,
                                   cgs->nr,fr->cg_cm,grid_x0,grid_x1,&grid_dens);
 
             grid_first(log,grid,NULL,NULL,fr->ePBC,box,grid_x0,grid_x1,

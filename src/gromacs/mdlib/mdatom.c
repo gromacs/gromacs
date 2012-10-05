@@ -43,6 +43,7 @@
 #include "main.h"
 #include "qmmm.h"
 #include "mtop_util.h"
+#include "gmx_omp_nthreads.h"
 
 #define ALMOST_ZERO 1e-30
 
@@ -97,10 +98,8 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	      int start,int homenr,
 	      t_mdatoms *md)
 {
-  t_atoms   *atoms_mol;
-  int       i,g,ag,as,ae,molb;
-  real      mA,mB,fac;
-  t_atom    *atom;
+  gmx_mtop_atomlookup_t alook;
+  int       i;
   t_grpopts *opts;
   gmx_groups_t *groups;
   gmx_molblock_t *molblock;
@@ -177,22 +176,20 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
       md->pureex = FALSE;
   }
 
-  for(i=0; (i<md->nr); i++) {
+  alook = gmx_mtop_atomlookup_init(mtop);
+
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) schedule(static)
+  for(i=0; i<md->nr; i++) {
+    int     g,ag,molb;
+    real    mA,mB,fac;
+    t_atom  *atom;
+
     if (index == NULL) {
       ag = i;
-      gmx_mtop_atomnr_to_atom(mtop,ag,&atom);
     } else {
       ag   = index[i];
-      molb = -1;
-      ae   = 0;
-      do {
-	molb++;
-	as = ae;
-	ae = as + molblock[molb].nmol*molblock[molb].natoms_mol;
-      } while (ag >= ae);
-      atoms_mol = &mtop->moltype[molblock[molb].type].atoms;
-      atom = &atoms_mol->atom[(ag - as) % atoms_mol->nr];
     }
+    gmx_mtop_atomnr_to_atom(alook,ag,&atom);
 
     if (md->cFREEZE) {
       md->cFREEZE[i] = ggrpnr(groups,egcFREEZE,ag);
@@ -302,6 +299,8 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
         }
     }
   }
+
+  gmx_mtop_atomlookup_destroy(alook);
 
   md->start  = start;
   md->homenr = homenr;

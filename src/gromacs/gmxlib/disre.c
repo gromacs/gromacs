@@ -192,15 +192,15 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         }
         check_multi_int(fplog,cr->ms,dd->nsystems,
                         "the number of systems per ensemble");
-        if (dd->nsystems <= 0 ||  cr->ms->nsim % dd->nsystems != 0)
+        /* We use to allow any value of nsystems which was a divisor
+         * of ms->nsim. But this required an extra communicator which
+         * was stored in t_fcdata. This pulled in mpi.h in nearly all C files.
+         */
+        if (!(cr->ms->nsim == 1 || cr->ms->nsim == dd->nsystems))
         {
-            gmx_fatal(FARGS,"The number of systems %d is not divisible by the number of systems per ensemble %d\n",cr->ms->nsim,dd->nsystems);
+            gmx_fatal(FARGS,"GMX_DISRE_ENSEMBLE_SIZE (%d) is not equal to 1 or the number of systems (option -multi) %d",dd->nsystems,cr->ms->nsim);
         }
-        /* Split the inter-master communicator into different ensembles */
-        MPI_Comm_split(cr->ms->mpi_comm_masters,
-                       cr->ms->sim/dd->nsystems,
-                       cr->ms->sim,
-                       &dd->mpi_comm_ensemble);
+
         if (fplog)
         {
             fprintf(fplog,"Our ensemble consists of systems:");
@@ -343,7 +343,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 #ifdef GMX_MPI
     if (dd->nsystems > 1)
     {
-        gmx_sum_comm(2*dd->nres,Rt_6,dd->mpi_comm_ensemble);
+        gmx_sum_sim(2*dd->nres,Rt_6,ms);
     }
 #endif
 }
