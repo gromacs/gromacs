@@ -741,7 +741,7 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
 /*    int direction = plan->direction;
     int fftorder = plan->fftorder;*/
     
-    int o;
+    int o=0;
     int pos[3],i;
     int *pM=plan->pM, *pK=plan->pK, *oM=plan->oM, *oK=plan->oK,
         *C=plan->C, *rC=plan->rC;
