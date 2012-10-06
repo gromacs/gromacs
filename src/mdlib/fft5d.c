@@ -1108,13 +1108,6 @@ llToAll
 void fft5d_destroy(fft5d_plan plan) {
     int s,t;
 
-    /* Note that we expect plan->lin and plan->lout to be freed elsewhere */
-    if (plan->nthreads > 1)
-    {
-        free(plan->lout2);
-        free(plan->lout3);
-    }
-
     for (s=0;s<3;s++)
     {
         if (plan->p1d[s])
@@ -1164,8 +1157,11 @@ void fft5d_destroy(fft5d_plan plan) {
     {
         sfree_aligned(plan->lin);
         sfree_aligned(plan->lout);
-        sfree_aligned(plan->lout2);
-        sfree_aligned(plan->lout3);
+        if (plan->nthreads > 1)
+        {
+            sfree_aligned(plan->lout2);
+            sfree_aligned(plan->lout3);
+        }
     }
     
 #ifdef FFT5D_THREADS
