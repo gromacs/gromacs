@@ -63,7 +63,7 @@ using namespace std;
 #include "mdrun.h"
 #include "physics.h"
 #include "string2.h"
-#include "gmx_gpu_utils.h"
+#include "gpu_utils.h"
 #include "mtop_util.h"
 
 #include "openmm_wrapper.h"
@@ -1308,7 +1308,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             /* check GPU compatibility */
             char gpuname[STRLEN];
             devId = atoi(opt->getOptionValue("deviceid").c_str());
-            if (!is_supported_cuda_gpu(-1, gpuname))
+            if (!is_gmx_openmm_supported_gpu(-1, gpuname))
             {
                 if (!gmx_strcasecmp(opt->getOptionValue("force-device").c_str(), "yes"))
                 {

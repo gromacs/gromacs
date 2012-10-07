@@ -32,8 +32,8 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-
-#include "commrec.h"
+#ifndef _fcdata_h
+#define _fcdata_h
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,7 +62,6 @@ typedef struct {
   real *Rt_6;         /* The calculated inst. ens. averaged r^-6 (nr)     */
   real *Rtav_6;       /* The calculated time and ens. averaged r^-6 (nr)  */
   int  nsystems;      /* The number of systems for ensemble averaging     */
-  MPI_Comm mpi_comm_ensemble; /* For ensemble averaging                   */
 } t_disresdata;
 
 
@@ -117,3 +116,4 @@ typedef struct {
 }
 #endif
 
+#endif /* _fcdata_h */
