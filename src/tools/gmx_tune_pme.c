@@ -721,6 +721,7 @@ static void make_benchmark_tprs(
         gmx_large_int_t statesteps, /* Step counter in checkpoint file               */
         real rmin,                  /* Minimal Coulomb radius                        */
         real rmax,                  /* Maximal Coulomb radius                        */
+	real bScaleRvdw,            /* Scale rvdw along with rcoulomb */
         int *ntprs,                 /* No. of TPRs to write, each with a different
                                        rcoulomb and fourierspacing                   */
         t_inputinfo *info,          /* Contains information about mdp file options   */
@@ -760,7 +761,8 @@ static void make_benchmark_tprs(
                 EELTYPE(eelPME));
 
     /* Check if rcoulomb == rlist, which is necessary for plain PME. */
-    if (  (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist) )
+    if (  (ir->cutoff_scheme != ecutsVERLET) && 
+          (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist))
     {
         gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to rlist (%f).",
                 EELTYPE(eelPME), ir->rcoulomb, ir->rlist);
@@ -770,6 +772,12 @@ static void make_benchmark_tprs(
     {
         gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to or smaller than rlist (%f)",
                 EELTYPE(ir->coulombtype), ir->rcoulomb, ir->rlist);
+    }
+
+    if (bScaleRvdw && ir->rvdw != ir->rcoulomb)
+    {
+        fprintf(stdout,"NOTE: input rvdw != rcoulomb, will not scale rvdw\n");
+        bScaleRvdw = FALSE;
     }
 
     /* Reduce the number of steps for the benchmarks */
@@ -788,13 +796,32 @@ static void make_benchmark_tprs(
         box_size[d] = sqrt(box_size[d]);
     }
 
-    /* Reconstruct fourierspacing per dimension from the number of grid points and box size */
-    info->fsx[0] = box_size[XX]/ir->nkx;
-    info->fsy[0] = box_size[YY]/ir->nky;
-    info->fsz[0] = box_size[ZZ]/ir->nkz;
+    if (ir->fourier_spacing > 0)
+    {
+        info->fsx[0] = ir->fourier_spacing;
+        info->fsy[0] = ir->fourier_spacing;
+        info->fsz[0] = ir->fourier_spacing;
+    }
+    else
+    {
+        /* Reconstruct fourierspacing per dimension from the number of grid points and box size */
+        info->fsx[0] = box_size[XX]/ir->nkx;
+        info->fsy[0] = box_size[YY]/ir->nky;
+        info->fsz[0] = box_size[ZZ]/ir->nkz;
+    }
 
-    /* Reconstruct the fourierspacing from the number of PME grid points found in the tpr */
-    fourierspacing = max(box_size[ZZ]/ir->nkz, max(box_size[XX]/ir->nkx, box_size[YY]/ir->nky));
+    /* If no value for the fourierspacing was provided on the command line, we
+     * use the reconstruction from the tpr file */
+    if (ir->fourier_spacing > 0)
+    {
+        /* Use the spacing from the tpr */
+        fourierspacing = ir->fourier_spacing;
+    }
+    else
+    {
+	/* Use the maximum observed spacing */
+        fourierspacing = max(max(info->fsx[0],info->fsy[0]),info->fsz[0]);
+    }
 
     fprintf(stdout, "Calculating PME grid points on the basis of a fourierspacing of %f nm\n", fourierspacing);
 
@@ -869,7 +896,7 @@ static void make_benchmark_tprs(
                 ir->rlist = ir->rcoulomb + nlist_buffer;
             }
 
-            if (evdwCUT == ir->vdwtype)
+            if (bScaleRvdw && evdwCUT == ir->vdwtype)
             {
                 /* For vdw cutoff, rvdw >= rlist */
                 ir->rvdw = max(info->rvdw[0], ir->rlist);
@@ -1842,6 +1869,7 @@ int gmx_tune_pme(int argc,char *argv[])
     int        ntprs=0;
     real       rmin=0.0,rmax=0.0;  /* min and max value for rcoulomb if scaling is requested */
     real       rcoulomb=-1.0;             /* Coulomb radius as set in .tpr file */
+    gmx_bool   bScaleRvdw=TRUE;
     gmx_large_int_t bench_nsteps=BENCHSTEPS;
     gmx_large_int_t new_sim_nsteps=-1;   /* -1 indicates: not set by the user */
     gmx_large_int_t cpt_steps=0;         /* Step counter in .cpt input file   */
@@ -1974,6 +2002,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "If >0, maximal rcoulomb for -ntpr>1 (rcoulomb upscaling results in fourier grid downscaling)" },
       { "-rmin",     FALSE, etREAL, {&rmin},
         "If >0, minimal rcoulomb for -ntpr>1" },
+      { "-scalevdw",  FALSE, etBOOL, {&bScaleRvdw},
+        "Scale rvdw along with rcoulomb"},
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of [TT].tpr[tt] files to benchmark. Create this many files with different rcoulomb scaling factors depending on -rmin and -rmax. "
         "If < 1, automatically choose the number of [TT].tpr[tt] files to test" },
@@ -2195,7 +2225,7 @@ int gmx_tune_pme(int argc,char *argv[])
     /* It can be that ntprs is reduced by make_benchmark_tprs if not enough
      * different grids could be found. */
     make_benchmark_tprs(opt2fn("-s",NFILE,fnm), tpr_names, bench_nsteps+presteps,
-            cpt_steps, rmin, rmax, &ntprs, info, fp);
+			cpt_steps, rmin, rmax, bScaleRvdw, &ntprs, info, fp);
 
     /********************************************************************************/
     /* Main loop over all scenarios we need to test: tpr files, PME nodes, repeats  */
