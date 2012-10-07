@@ -49,6 +49,7 @@
 #include "gmx_fatal.h"
 #include "names.h"
 #include "macros.h"
+#include "gmx_omp_nthreads.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC,
@@ -1191,26 +1192,78 @@ int *compact_unitcell_edges()
     return edge;
 }
 
-void put_atom_in_box(matrix box,rvec x)
+void put_atoms_in_box_omp(int ePBC,matrix box,int natoms,rvec x[])
 {
-    int i,m,d;
+    int t, nth;
+    nth = gmx_omp_nthreads_get(emntDefault);
 
-    for(m=DIM-1; m>=0; m--) {
-        while (x[m] < 0) 
-            for(d=0; d<=m; d++)
-                x[d] += box[m][d];
-        while (x[m] >= box[m][m])
-            for(d=0; d<=m; d++)
-                x[d] -= box[m][d];
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for(t=0; t<nth; t++)
+    {
+        int offset, len;
+
+        offset = (natoms*t    )/nth;
+        len    = (natoms*(t + 1))/nth - offset;        
+        put_atoms_in_box(ePBC, box, len, x + offset);
     }
 }
 
-void put_atoms_in_box(matrix box,int natoms,rvec x[])
+void put_atoms_in_box(int ePBC,matrix box,int natoms,rvec x[])
 {
-    int i,m,d;
+    int npbcdim,i,m,d;
 
-    for(i=0; (i<natoms); i++)
-        put_atom_in_box(box,x[i]);
+    if (ePBC == epbcSCREW)
+    {
+        gmx_fatal(FARGS,"Sorry, %s pbc is not yet supported",epbc_names[ePBC]);
+    }
+
+    if (ePBC == epbcXY)
+    {
+        npbcdim = 2;
+    }
+    else
+    {
+        npbcdim = 3;
+    }
+
+    if (TRICLINIC(box))
+    {
+        for(i=0; (i<natoms); i++)
+        {
+            for(m=npbcdim-1; m>=0; m--) {
+                while (x[i][m] < 0)
+                {
+                    for(d=0; d<=m; d++)
+                    {
+                        x[i][d] += box[m][d];
+                    }
+                }
+                while (x[i][m] >= box[m][m])
+                {
+                    for(d=0; d<=m; d++)
+                    {
+                        x[i][d] -= box[m][d];
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        for(i=0; i<natoms; i++)
+        {
+            for(d=0; d<npbcdim; d++) {
+                while (x[i][d] < 0)
+                {
+                    x[i][d] += box[d][d];
+                }
+                while (x[i][d] >= box[d][d])
+                {
+                    x[i][d] -= box[d][d];
+                }
+            }
+        }
+    }
 }
 
 void put_atoms_in_triclinic_unitcell(int ecenter,matrix box,
