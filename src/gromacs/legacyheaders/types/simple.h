@@ -273,6 +273,10 @@ typedef int gmx_large_int_t;
 #endif
 
 
+/* Standard sizes for char* string buffers */
+#define STRLEN 4096
+#define BIG_STRLEN 1048576
+
 
 #ifdef __cplusplus
 }
