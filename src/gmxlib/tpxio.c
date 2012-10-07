@@ -73,7 +73,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 80;
+static const int tpx_version = 81;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -616,7 +616,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
-    if (file_version >= 80)
+    if (file_version >= 81)
     {
         gmx_fio_do_int(fio,ir->cutoff_scheme);
     }
@@ -678,7 +678,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     if(file_version < 18)
       gmx_fio_do_int(fio,idum); 
-    if (file_version >= 80) {
+    if (file_version >= 81) {
       gmx_fio_do_real(fio,ir->verletbuf_drift);
     } else {
       ir->verletbuf_drift = 0;
@@ -771,7 +771,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
 
 	 
-    if (file_version >= 80)
+    if (file_version >= 81)
     {
         gmx_fio_do_real(fio,ir->fourier_spacing); 
     }
@@ -2403,7 +2403,7 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
         fgen = 0;
     }
  
-    if (fver >= 80)
+    if (fver >= 81)
     {
         gmx_fio_do_string(fio,file_tag);
     }
@@ -2444,7 +2444,7 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
   
   if ((fver <= tpx_incompatible_version) ||
       ((fver > tpx_version) && !TopOnlyOK) ||
-      (fgen > tpx_generation))
+      (fgen > tpx_generation) || fver == 80)
     gmx_fatal(FARGS,"reading tpx file (%s) version %d with version %d program",
 		gmx_fio_getname(fio),fver,tpx_version);
   
