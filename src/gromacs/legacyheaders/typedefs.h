@@ -37,9 +37,8 @@
 #define _typedefs_h
 
 
-#define STRLEN 4096
+/* DEPRECATED! value for signaling unitialized variables */
 #define NOTSET -12345
-#define BIG_STRLEN 1048576
 
 #include <sys/types.h>
 #include "sysstuff.h"
@@ -57,8 +56,8 @@
 #include "types/graph.h"
 #include "types/nrnb.h"
 #include "types/nblist.h"
+#include "types/nbnxn_pairlist.h"
 #include "types/nsgrid.h"
-#include "types/commrec.h"
 #include "types/forcerec.h"
 #include "types/fcdata.h"
 #include "types/mdatom.h"
@@ -71,10 +70,6 @@
 #include "types/constr.h"
 #include "types/matrix.h"
 #include "types/oenv.h"
-#include "types/globsig.h"
-#include "types/nlistheuristics.h"
-#include "types/iteratedconstraints.h"
-#include "types/membedt.h"
 
 #ifdef __cplusplus
 extern "C" {

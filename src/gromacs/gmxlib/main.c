@@ -55,7 +55,6 @@
 #include "macros.h"
 #include "futil.h"
 #include "filenm.h"
-#include "mdrun.h"
 #include "gmxfio.h"
 #include "string2.h"
 
@@ -206,8 +205,27 @@ void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
 }
 
 
+char *gmx_gethostname(char *name, size_t len)
+{
+    if (len < 8)
+    {
+        gmx_incons("gmx_gethostname called with len<8");
+    }
+#ifdef HAVE_UNISTD_H
+    if (gethostname(name, len-1) != 0)
+    {
+        strncpy(name, "unknown",8);
+    }
+#else
+    strncpy(name, "unknown",8);
+#endif
+
+    return name;
+}
+
+
 void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly, 
-                   unsigned long Flags, FILE** fplog)
+                  gmx_bool bAppendFiles, FILE** fplog)
 {
     int  len,testlen,pid;
     char buf[256],host[256];
@@ -215,8 +233,6 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
     char timebuf[STRLEN];
     FILE *fp=*fplog;
     char *tmpnm;
-
-    gmx_bool bAppend = Flags & MD_APPENDFILES;	
   
     debug_gmx();
   
@@ -256,11 +272,11 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
     {
         /* Since log always ends with '.log' let's use this info */
         par_fn(tmpnm,efLOG,cr,FALSE,!bMasterOnly,buf,255);
-        fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
+        fp = gmx_fio_fopen(buf, bAppendFiles ? "a+" : "w+" );
     }
-    else if (!bAppend)
+    else if (!bAppendFiles)
     {
-        fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
+        fp = gmx_fio_fopen(tmpnm, bAppendFiles ? "a+" : "w+" );
     }
 
     sfree(tmpnm);
@@ -268,14 +284,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
     gmx_fatal_set_log_file(fp);
   
     /* Get some machine parameters */
-#ifdef HAVE_UNISTD_H
-    if (gethostname(host,255) != 0)
-    {
-        sprintf(host,"unknown");
-    }
-#else
-    sprintf(host,"unknown");
-#endif  
+    gmx_gethostname(host,256);
 
     time(&t);
 
@@ -289,7 +298,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
 	pid = 0;
 #endif
 
-    if (bAppend)
+    if (bAppendFiles)
     {
         fprintf(fp,
                 "\n"

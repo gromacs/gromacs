@@ -1188,6 +1188,7 @@ static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
     int  i;
     real totalmass = 0.0;
     rvec com;
+    gmx_mtop_atomlookup_t alook=NULL;
     t_atom *atom;
 
     /* NOTE Init_edi is executed on the master process only
@@ -1201,13 +1202,15 @@ static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
                      || edi->vecs.radacc.neig
                      || edi->vecs.radcon.neig;
 
+    alook = gmx_mtop_atomlookup_init(mtop);
+
     /* evaluate masses (reference structure) */
     snew(edi->sref.m, edi->sref.nr);
     for (i = 0; i < edi->sref.nr; i++)
     {
         if (edi->fitmas)
         {
-            gmx_mtop_atomnr_to_atom(mtop,edi->sref.anrs[i],&atom);
+            gmx_mtop_atomnr_to_atom(alook,edi->sref.anrs[i],&atom);
             edi->sref.m[i] = atom->m;
         }
         else
@@ -1235,7 +1238,7 @@ static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
     snew(edi->sav.m    , edi->sav.nr );
     for (i = 0; i < edi->sav.nr; i++)
     {
-        gmx_mtop_atomnr_to_atom(mtop,edi->sav.anrs[i],&atom);
+        gmx_mtop_atomnr_to_atom(alook,edi->sav.anrs[i],&atom);
         edi->sav.m[i] = atom->m;
         if (edi->pcamas)
         {
@@ -1256,6 +1259,8 @@ static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
                       i, edi->sav.anrs[i]+1, atom->m);
         }
     }
+
+    gmx_mtop_atomlookup_destroy(alook);
 
     /* put reference structure in origin */
     get_center(edi->sref.x, edi->sref.m, edi->sref.nr, com);
