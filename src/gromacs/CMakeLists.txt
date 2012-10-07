@@ -39,11 +39,20 @@ if (USE_VERSION_H)
                                 PROPERTIES GENERATED true)
 endif (USE_VERSION_H)
 
+# apply gcc 4.4.x bug workaround
+if(GMX_USE_GCC44_BUG_WORKAROUND)
+   include(gmxGCC44O3BugWorkaround)
+   gmx_apply_gcc44_bug_workaround("gmxlib/bondfree.c")
+   gmx_apply_gcc44_bug_workaround("mdlib/force.c")
+   gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
+endif()
+
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (USE_VERSION_H)
     add_dependencies(libgromacs gmx_version)
 endif (USE_VERSION_H)
-target_link_libraries(libgromacs
+
+target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES}
                       ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES

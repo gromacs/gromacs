@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "gmx_x86_sse4.h"
+#include "gmx_x86_sse4_1.h"
 
 
 
