@@ -1055,6 +1055,14 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         CACHE STRING "Linker flags for creating shared libraries" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 
+if(NOT GMX_OPENMP)
+    #Unset all OpenMP flags in case OpenMP was disabled either by the user
+    #or because it was only partially detected (e.g. only for C but not C++ compiler)
+    unset(OpenMP_C_FLAGS CACHE) 
+    unset(OpenMP_CXX_FLAGS CACHE)
+    unset(OpenMP_LINKER_FLAGS CACHE)
+    unset(OpenMP_SHARED_LINKER_FLAGS)
+endif()
 ######################################
 # Output compiler and CFLAGS used
 ######################################
