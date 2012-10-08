@@ -984,7 +984,7 @@ llToAll
 
         /* ---------- END SPLIT , START TRANSPOSE------------ */
 
-            if (thread == 0)
+#pragma omp master //TODO: has this an implicit barrier?
             {
 #ifdef NOGMX
                 if (times!=0)
