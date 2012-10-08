@@ -73,7 +73,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 80;
+static const int tpx_version = 81;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -690,9 +690,25 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     gmx_fio_do_int(fio,ir->coulombtype); 
     if (file_version < 32 && ir->coulombtype == eelRF)
       ir->coulombtype = eelRF_NEC;      
+    if (file_version >= 81)
+    {
+        gmx_fio_do_int(fio,ir->coulomb_modifier); 
+    }
+    else
+    {
+        ir->coulomb_modifier = (ir->cutoff_scheme == ecutsVERLET ? eintmodPOTSHIFT : eintmodNONE);
+    }
     gmx_fio_do_real(fio,ir->rcoulomb_switch); 
     gmx_fio_do_real(fio,ir->rcoulomb); 
     gmx_fio_do_int(fio,ir->vdwtype);
+    if (file_version >= 81)
+    {
+        gmx_fio_do_int(fio,ir->vdw_modifier); 
+    }
+    else
+    {
+        ir->vdw_modifier = (ir->cutoff_scheme == ecutsVERLET ? eintmodPOTSHIFT : eintmodNONE);
+    }
     gmx_fio_do_real(fio,ir->rvdw_switch); 
     gmx_fio_do_real(fio,ir->rvdw); 
     if (file_version < 67) {

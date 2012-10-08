@@ -1574,10 +1574,6 @@ void init_interaction_const(FILE *fp,
                             const t_forcerec *fr)
 {
     interaction_const_t *ic;
-    gmx_bool shLJ,shCoul;
-
-    shLJ   = (getenv("GMX_NO_SHIFT_LJ") == NULL);
-    shCoul = (getenv("GMX_NO_SHIFT_COUL") == NULL);
 
     snew(ic, 1);
 
@@ -1585,7 +1581,7 @@ void init_interaction_const(FILE *fp,
 
     /* Lennard-Jones */
     ic->rvdw        = fr->rvdw;
-    if (shLJ)
+    if (fr->vdw_pot_shift)
     {
         ic->sh_invrc6 = pow(ic->rvdw,-6.0);
     }
@@ -1602,7 +1598,7 @@ void init_interaction_const(FILE *fp,
 
     /* Ewald */
     ic->ewaldcoeff  = fr->ewaldcoeff;
-    if (shCoul)
+    if (fr->coul_pot_shift)
     {
         ic->sh_ewald = gmx_erfc(ic->ewaldcoeff*ic->rcoulomb);
     }
@@ -1623,7 +1619,7 @@ void init_interaction_const(FILE *fp,
         /* For plain cut-off we might use the reaction-field kernels */
         ic->epsilon_rf = ic->epsilon_r;
         ic->k_rf       = 0;
-        if (shCoul)
+        if (fr->coul_pot_shift)
         {
             ic->c_rf   = 1/ic->rcoulomb;
         }
@@ -2011,6 +2007,9 @@ void init_forcerec(FILE *fp,
     fr->rlistlong  = cutoff_inf(ir->rlistlong);
     fr->eeltype    = ir->coulombtype;
     fr->vdwtype    = ir->vdwtype;
+
+    fr->coul_pot_shift = (ir->coulomb_modifier == eintmodPOTSHIFT);
+    fr->vdw_pot_shift  = (ir->vdw_modifier     == eintmodPOTSHIFT);
     
     fr->bTwinRange = fr->rlistlong > fr->rlist;
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);

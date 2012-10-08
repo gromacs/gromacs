@@ -57,6 +57,7 @@ extern const char *ens_names[ensNR+1];
 extern const char *ei_names[eiNR+1];
 extern const char *yesno_names[BOOL_NR+1];
 extern const char *bool_names[BOOL_NR+1];
+extern const char *eintmod_names[eintmodNR+1];
 extern const char *eel_names[eelNR+1];
 extern const char *eewg_names[eewgNR+1];
 extern const char *evdw_names[evdwNR+1];
@@ -112,6 +113,7 @@ extern const char *eAdressSITEtype_names[eAdressSITENR+1];
 #define EREFSCALINGTYPE(e) ENUM_NAME(e,erscNR,erefscaling_names)
 #define EBLOCKS(e)     ENUM_NAME(e,ebNR,eblock_names)
 #define EPARAM(e)      ENUM_NAME(e,epNR,eparam_names)
+#define INTMODIFIER(e) ENUM_NAME(e,eintmodNR,eintmod_names)
 #define EELTYPE(e)     ENUM_NAME(e,eelNR,eel_names)
 #define EVDWTYPE(e)    ENUM_NAME(e,evdwNR,evdw_names)
 #define ECONSTRTYPE(e) ENUM_NAME(e,econtNR,econstr_names)

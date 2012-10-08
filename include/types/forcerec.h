@@ -224,10 +224,12 @@ typedef struct {
   t_forcetable tab14; /* for 1-4 interactions only */
 
   /* PPPM & Shifting stuff */
+  gmx_bool coul_pot_shift;
   real rcoulomb_switch,rcoulomb;
   real *phi;
 
   /* VdW stuff */
+  gmx_bool vdw_pot_shift;
   double reppow;
   real rvdw_switch,rvdw;
   real bham_b_max;

@@ -186,6 +186,21 @@ static int lcd(int n1,int n2)
   return d;
 }
 
+static void process_interaction_modifier(const t_inputrec *ir,int *eintmod)
+{
+    if (*eintmod == eintmodPOTSHIFT_VERLET)
+    {
+        if (ir->cutoff_scheme == ecutsVERLET)
+        {
+            *eintmod = eintmodPOTSHIFT;
+        }
+        else
+        {
+            *eintmod = eintmodNONE;
+        }
+    }
+}
+
 void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
 /* Check internal consistency */
@@ -221,8 +236,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         warning_error(wi,"rlist should be >= 0");
     }
 
+    process_interaction_modifier(ir,&ir->coulomb_modifier);
+    process_interaction_modifier(ir,&ir->vdw_modifier);
+
     if (ir->cutoff_scheme == ecutsGROUP)
     {
+        if (ir->coulomb_modifier != eintmodNONE ||
+            ir->vdw_modifier != eintmodNONE)
+        {
+            warning_error(wi,"potential modifiers are not supported (yet) with the group cut-off scheme");
+        }
+
         /* BASIC CUT-OFF STUFF */
         if (ir->rlist == 0 ||
             !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
@@ -1562,6 +1586,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
   CTYPE ("Method for doing electrostatics");
   EETYPE("coulombtype",	ir->coulombtype,    eel_names);
+  EETYPE("coulomb-modifier",	ir->coulomb_modifier,    eintmod_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rcoulomb-switch",	ir->rcoulomb_switch,	0.0);
   RTYPE ("rcoulomb",	ir->rcoulomb,	-1);
@@ -1570,6 +1595,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("epsilon-rf",  ir->epsilon_rf, 0.0);
   CTYPE ("Method for doing Van der Waals");
   EETYPE("vdw-type",	ir->vdwtype,    evdw_names);
+  EETYPE("vdw-modifier",	ir->vdw_modifier,    eintmod_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rvdw-switch",	ir->rvdw_switch,	0.0);
   RTYPE ("rvdw",	ir->rvdw,	-1);

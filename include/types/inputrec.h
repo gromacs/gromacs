@@ -317,6 +317,7 @@ typedef struct {
   real rlistlong;	/* long range pairlist cut-off (nm)		*/
   real rtpi;            /* Radius for test particle insertion           */
   int  coulombtype;	/* Type of electrostatics treatment             */
+  int  coulomb_modifier; /* Modify the Coulomb interaction              */
   real rcoulomb_switch; /* Coulomb switch range start (nm)		*/
   real rcoulomb;        /* Coulomb cutoff (nm)		                */
   real epsilon_r;       /* relative dielectric constant                 */ 
@@ -334,6 +335,7 @@ typedef struct {
   int  sa_algorithm;    /* Algorithm for SA part of GBSA                */
   real sa_surface_tension; /* Energy factor for SA part of GBSA */
   int  vdwtype;         /* Type of Van der Waals treatment              */
+  int  vdw_modifier;    /* Modify the VdW interaction                   */
   real rvdw_switch;     /* Van der Waals switch range start (nm)        */
   real rvdw;		    /* Van der Waals cutoff (nm)	        */
   int  eDispCorr;       /* Perform Long range dispersion corrections    */

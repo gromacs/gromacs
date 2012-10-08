@@ -94,6 +94,10 @@ const char *econstr_names[econtNR+1] = {
   "Lincs", "Shake", NULL
 };
 
+const char *eintmod_names[eintmodNR+1] = { 
+  "Potential-shift-Verlet","Potential-shift","None", NULL
+};
+
 const char *egrp_nm[egNR+1] = { 
   "Coul-SR","LJ-SR","Buck-SR", "Coul-LR", "LJ-LR", "Buck-LR",
   "Coul-14", "LJ-14", NULL

@@ -634,10 +634,11 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_real(fp,"inputrec->rlistlong",-1,ir1->rlistlong,ir2->rlistlong,ftol,abstol);
   cmp_real(fp,"inputrec->rtpi",-1,ir1->rtpi,ir2->rtpi,ftol,abstol);
   cmp_int(fp,"inputrec->coulombtype",-1,ir1->coulombtype,ir2->coulombtype);
+  cmp_int(fp,"inputrec->coulomb_modifier",-1,ir1->coulomb_modifier,ir2->coulomb_modifier);
   cmp_real(fp,"inputrec->rcoulomb_switch",-1,ir1->rcoulomb_switch,ir2->rcoulomb_switch,ftol,abstol);
   cmp_real(fp,"inputrec->rcoulomb",-1,ir1->rcoulomb,ir2->rcoulomb,ftol,abstol);
   cmp_int(fp,"inputrec->vdwtype",-1,ir1->vdwtype,ir2->vdwtype);
-  cmp_real(fp,"inputrec->rvdw_switch",-1,ir1->rvdw_switch,ir2->rvdw_switch,ftol,abstol);
+  cmp_int(fp,"inputrec->vdw_modifier",-1,ir1->vdw_modifier,ir2->vdw_modifier);  cmp_real(fp,"inputrec->rvdw_switch",-1,ir1->rvdw_switch,ir2->rvdw_switch,ftol,abstol);
   cmp_real(fp,"inputrec->rvdw",-1,ir1->rvdw,ir2->rvdw,ftol,abstol);
   cmp_real(fp,"inputrec->epsilon_r",-1,ir1->epsilon_r,ir2->epsilon_r,ftol,abstol);
   cmp_real(fp,"inputrec->epsilon_rf",-1,ir1->epsilon_rf,ir2->epsilon_rf,ftol,abstol);

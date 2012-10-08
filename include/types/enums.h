@@ -80,6 +80,13 @@ enum {
   ecutsGROUP, ecutsVERLET, ecutsNR
 };
 
+/* Coulomb / VdW interaction modifiers.
+ * grompp replaces eintmodPOTSHIFT_VERLET by eintmodPOTSHIFT or eintmodNONE.
+ */
+enum {
+    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodNR
+};
+
 /*
  * eelNOTUSED1 used to be GB, but to enable generalized born with different
  * forms of electrostatics (RF, switch, etc.) in the future it is now selected

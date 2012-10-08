@@ -700,9 +700,11 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("rlistlong",ir->rlistlong);
     PR("rtpi",ir->rtpi);
     PS("coulombtype",EELTYPE(ir->coulombtype));
+    PS("coulomb-modifier",INTMODIFIER(ir->coulomb_modifier));
     PR("rcoulomb-switch",ir->rcoulomb_switch);
     PR("rcoulomb",ir->rcoulomb);
     PS("vdwtype",EVDWTYPE(ir->vdwtype));
+    PS("vdw-modifier",INTMODIFIER(ir->vdw_modifier));
     PR("rvdw-switch",ir->rvdw_switch);
     PR("rvdw",ir->rvdw);
     if (ir->epsilon_r != 0)

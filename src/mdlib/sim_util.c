@@ -2148,7 +2148,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
       /* Contribution beyond the cut-off */
       eners[0] += -4.0*M_PI/(3.0*rc3);
       eners[1] +=  4.0*M_PI/(9.0*rc9);
-      if (fr->cutoff_scheme == ecutsVERLET && fr->ic->sh_invrc6 != 0) {
+      if (fr->vdw_pot_shift) {
           /* Contribution within the cut-off */
           eners[0] += -4.0*M_PI/(3.0*rc3);
           eners[1] +=  4.0*M_PI/(3.0*rc9);

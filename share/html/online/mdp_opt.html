@@ -36,8 +36,8 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc-precision, xtc-grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, ns-type, pbc, periodic-molecules, verlet-buffer-drift, rlist, rlistlong)
-<li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb-switch, rcoulomb, epsilon-r, epsilon-rf)
-<li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw-switch, rvdw, DispCorr)
+<li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, coulomb-modifier, rcoulomb-switch, rcoulomb, epsilon-r, epsilon-rf)
+<li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, vdw-modifier, rvdw-switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp-table)
 <li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier-nx, fourier-ny, fourier-nz, pme-order, ewald-rtol, ewald-geometry, epsilon-surface, optimize-fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, nsttcouple, tc-grps, tau-t, ref-t)
@@ -405,7 +405,7 @@ Native GPU acceleration is only supported with <b>Verlet</b>. With GPU-accelerat
 scaling <b>rcoulomb</b> and the grid spacing. This can be turned off with 
 <tt>-notunepme</tt>.
 
-<b>Verlet<\b> is somewhat faster than <b>group</b> when there is no water, or if <b>group</b> would use a pair-list buffer to conserve energy.
+<b>Verlet</b> is somewhat faster than <b>group</b> when there is no water, or if <b>group</b> would use a pair-list buffer to conserve energy.
 </dd>
 </dl></dd>
 
@@ -660,6 +660,20 @@ i.e. both to the user supplied function and the PME Mesh correction part.</dd>
 
 </dl></dd>
 
+<dt><b>coulomb-modifier:</b></dt>
+<dd><dl compact>
+<dt><b>Potential-shift-Verlet</b></dt>
+<dd>Selects <b>Potential-shift</b> with the Verlet cutoff-scheme,
+as it is (nearly) free; selects <b>None</b> with the group cutoff-scheme.</dd>
+<dt><b>Potential-shift</b></dt>
+<dd>Shift the Coulomb potential by a constant such that it is zero at the cut-off.
+This makes the potential the integral of the force. Note that this does not
+affect the forces or the sampling.</dd>
+<dt><b>None</b></dt>
+<dd>Use an unmodified Coulomb potential.</dd>
+</dl></dd>
+
+
 <A NAME="el2">
 <dt><b>rcoulomb-switch: (0) [nm]</b></dt>
 <dd>where to start switching the Coulomb potential</dd>
@@ -717,6 +731,19 @@ use LJ correction, make sure that <b>rvdw</b> corresponds to the
 cut-off in the user-defined function.
 When <b>coulombtype</b> is not set to <b>User</b> the values
 for <tt>f</tt> and <tt>-f'</tt> are ignored.</dd>
+</dl></dd>
+
+<dt><b>vdw-modifier:</b></dt>
+<dd><dl compact>
+<dt><b>Potential-shift-Verlet</b></dt>
+<dd>Selects <b>Potential-shift</b> with the Verlet cutoff-scheme,
+as it is (nearly) free; selects <b>None</b> with the group cutoff-scheme.</dd>
+<dt><b>Potential-shift</b></dt>
+<dd>Shift the Van der Waals potential by a constant such that it is zero at the cut-off.
+This makes the potential the integral of the force. Note that this does not
+affect the forces or the sampling.</dd>
+<dt><b>None</b></dt>
+<dd>Use an unmodified Van der Waals potential.</dd>
 </dl></dd>
 
 <dt><b>rvdw-switch: (0) [nm]</b></dt>
@@ -1906,6 +1933,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond">constraints</A><br>
 <A HREF="#neq">cos-acceleration</A><br>
 <A HREF="#el">coulombtype</A><br>
+<A HREF="#el">coulomb-modifier</A><br>
 <A HREF="#free">couple-intramol</A><br>
 <A HREF="#free">couple-lambda0</A><br>
 <A HREF="#free">couple-lambda1</A><br>
@@ -2018,7 +2046,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#user">userreal2</A><br>
 <A HREF="#user">userreal3</A><br>
 <A HREF="#user">userreal4</A><br>
-<A HREF="#el">vdwtype</A><br>
+<A HREF="#vdw">vdwtype</A><br>
+<A HREF="#vdw">vdw-modifier</A><br>
 <A HREF="#nl">verlet-buffer-drift</A><br>
 <A HREF="#out">xtc-grps</A><br>
 <A HREF="#out">xtc-precision</A><br>
