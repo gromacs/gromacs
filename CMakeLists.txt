@@ -563,12 +563,6 @@ if(GMX_GPU)
         include(ThreadMPI)
     endif()
 
-    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
-    # but it's too cumbersome to check the ld version and the flag should not hurt
-    if(CMAKE_COMPILER_IS_GNUCC)
-        set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
-    endif()
-
     # annoyingly enough, FindCUDA leaves a few variables behind as non-advanced
     mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
 endif()
