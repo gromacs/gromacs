@@ -236,7 +236,13 @@ if(GMX_OPENMP)
         set(GMX_OPENMP OFF CACHE STRING "Compiler does not support OpenMP." FORCE)
     endif(OPENMP_FOUND)
 endif()
-
+if(NOT GMX_OPENMP)
+    #Unset all OpenMP flags in case OpenMP was disabled either by the user
+    #or because it was only partially detected (e.g. only for C but not C++ compiler)
+    unset(OpenMP_C_FLAGS CACHE) 
+    unset(OpenMP_CXX_FLAGS CACHE)
+    unset(OpenMP_LINKER_FLAGS CACHE)
+endif()
 
 include(gmxCFlags)
 gmx_c_flags()
