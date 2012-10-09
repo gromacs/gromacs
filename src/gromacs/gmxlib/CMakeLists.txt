@@ -18,6 +18,13 @@ file(GLOB GMXLIB_SOURCES *.c *.cpp statistics/*.c)
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
 
+# gpu utils + cuda tools module
+if(GMX_GPU)
+    add_subdirectory(cuda_tools)
+    add_subdirectory(gpu_utils)   
+    set(GMX_GPU_LIBRARIES ${GMX_GPU_LIBRARIES} gpu_utils cuda_tools PARENT_SCOPE)
+endif()
+
 if(GMX_USE_PLUGINS)
   set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
 else()
