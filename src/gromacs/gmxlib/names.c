@@ -70,6 +70,10 @@ const char *ptype_str[eptNR+1] = {
   "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
 };
 
+const char *ecutscheme_names[ecutsNR+1] = {
+  "Group", "Verlet", NULL
+};
+
 const char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
   "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User", 
@@ -88,6 +92,10 @@ const char *evdw_names[evdwNR+1] = {
 
 const char *econstr_names[econtNR+1] = {
   "Lincs", "Shake", NULL
+};
+
+const char *eintmod_names[eintmodNR+1] = { 
+  "Potential-shift-Verlet","Potential-shift","None", NULL
 };
 
 const char *egrp_nm[egNR+1] = { 
