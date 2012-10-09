@@ -33,6 +33,9 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
+#ifndef _types_graph_h
+#define _types_graph_h
+
 #include "idef.h"
 
 #ifdef __cplusplus
@@ -63,3 +66,4 @@ typedef struct {
 }
 #endif
 
+#endif /* _types_graph_h */

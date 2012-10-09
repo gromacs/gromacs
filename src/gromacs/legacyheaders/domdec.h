@@ -20,6 +20,7 @@
 #define _domdec_h
 
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vsite.h"
 #include "genborn.h"
 
@@ -93,11 +94,21 @@ void dd_init_bondeds(FILE *fplog,
                             t_inputrec *ir,gmx_bool bBCheck,cginfo_mb_t *cginfo_mb);
 /* Initialize data structures for bonded interactions */
 
+gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd,int ePBC);
+/* Returns if we need to do pbc for calculating bonded interactions */
+
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
                               t_inputrec *ir,t_forcerec *fr,
                               gmx_ddbox_t *ddbox);
 /* Set DD grid dimensions and limits,
  * should be called after calling dd_init_bondeds.
+ */
+
+gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
+                          real cutoff_req );
+/* Change the DD non-bonded communication cut-off.
+ * This could fail when trying to increase the cut-off,
+ * then FALSE will be returned and the cut-off is not modified.
  */
 
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
@@ -118,6 +129,11 @@ void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb);
 
 void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb);
 /* Stop the force flop count */
+
+float dd_pme_f_ratio(gmx_domdec_t *dd);
+/* Return the PME/PP force load ratio, or -1 if nothing was measured.
+ * Should only be called on the DD master node.
+ */
 
 void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[]);
 /* Communicate the coordinates to the neighboring cells and do pbc. */
@@ -186,15 +202,16 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil);
 
 int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
-                                     gmx_mtop_t *mtop,
-                                     gmx_constr_t constr,int nrec,
-                                     t_ilist *il_local);
+                              const gmx_mtop_t *mtop,
+                              const int *cginfo,
+                              gmx_constr_t constr,int nrec,
+                              t_ilist *il_local);
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-                                    int natoms,gmx_mtop_t *mtop,
-                                    gmx_constr_t constr);
+                             gmx_mtop_t *mtop,
+                             gmx_constr_t constr);
 
-void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
+void init_domdec_vsites(gmx_domdec_t *dd,int n_intercg_vsite);
 
 
 /* In domdec_top.c */
@@ -210,11 +227,13 @@ void dd_make_reverse_top(FILE *fplog,
 void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 void dd_make_local_top(FILE *fplog,
-                              gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
-                              int npbcdim,matrix box,
-                              rvec cellsize_min,ivec npulse,
-                              t_forcerec *fr,gmx_vsite_t *vsite,
-                              gmx_mtop_t *top,gmx_localtop_t *ltop);
+                       gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
+                       int npbcdim,matrix box,
+                       rvec cellsize_min,ivec npulse,
+                       t_forcerec *fr,
+                       rvec *cgcm_or_x,
+                       gmx_vsite_t *vsite,
+                       gmx_mtop_t *top,gmx_localtop_t *ltop);
 
 void dd_sort_local_top(gmx_domdec_t *dd,t_mdatoms *mdatoms,
                               gmx_localtop_t *ltop);
