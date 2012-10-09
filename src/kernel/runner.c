@@ -275,9 +275,10 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 }
 
 
-static int get_tmpi_omp_thread_distribution(const gmx_hw_opt_t *hw_opt,
-                                            int nthreads_tot,
-                                            int ngpu)
+static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
+                                        const gmx_hw_opt_t *hw_opt,
+                                        int nthreads_tot,
+                                        int ngpu)
 {
     int nthreads_tmpi;
 
@@ -296,18 +297,47 @@ static int get_tmpi_omp_thread_distribution(const gmx_hw_opt_t *hw_opt,
     }
     else if (hw_opt->nthreads_omp > 0)
     {
-        if (hw_opt->nthreads_omp > nthreads_tot)
-        {
-            gmx_fatal(FARGS,"More OpenMP threads requested (%d) than the total number of threads requested (%d)",hw_opt->nthreads_omp,nthreads_tot);
-        }
-        nthreads_tmpi = nthreads_tot/hw_opt->nthreads_omp;
+        /* Here we could oversubscribe, when we do, we issue a warning later */
+        nthreads_tmpi = max(1,nthreads_tot/hw_opt->nthreads_omp);
     }
     else
     {
         /* TODO choose nthreads_omp based on hardware topology
            when we have a hardware topology detection library */
-        /* Don't use OpenMP parallelization */
-        nthreads_tmpi = nthreads_tot;
+        /* In general, when running up to 4 threads, OpenMP should be faster.
+         * Note: on AMD Bulldozer we should avoid running OpenMP over two dies.
+         * On Intel>=Nehalem running OpenMP on a single CPU is always faster,
+         * even on two CPUs it's usually faster (but with many OpenMP threads
+         * it could be faster not to use HT, currently we always use HT).
+         * On Nehalem/Westmere we want to avoid running 16 threads over
+         * two CPUs with HT, so we need a limit<16; thus we use 12.
+         * A reasonable limit for Intel Sandy and Ivy bridge,
+         * not knowing the topology, is 16 threads.
+         */
+        const int nthreads_omp_always_faster             =  4;
+        const int nthreads_omp_always_faster_Nehalem     = 12;
+        const int nthreads_omp_always_faster_SandyBridge = 16;
+        const int first_model_Nehalem     = 0x1A;
+        const int first_model_SandyBridge = 0x2A;
+        gmx_bool bIntel_Family6;
+
+        bIntel_Family6 =
+            (gmx_cpuid_vendor(hwinfo->cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
+             gmx_cpuid_family(hwinfo->cpuid_info) == 6);
+
+        if (nthreads_tot <= nthreads_omp_always_faster ||
+            (bIntel_Family6 &&
+             ((gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_Nehalem && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
+              (gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_SandyBridge && nthreads_tot <= nthreads_omp_always_faster_SandyBridge))))
+        {
+            /* Use pure OpenMP parallelization */
+            nthreads_tmpi = 1;
+        }
+        else
+        {
+            /* Don't use OpenMP parallelization */
+            nthreads_tmpi = nthreads_tot;
+        }
     }
 
     return nthreads_tmpi;
@@ -327,7 +357,7 @@ static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
                             const t_commrec *cr,
                             FILE *fplog)
 {
-    int nthreads_tot_max,nthreads_tmpi,nthreads_new,ngpu;
+    int nthreads_hw,nthreads_tot_max,nthreads_tmpi,nthreads_new,ngpu;
     int min_atoms_per_mpi_thread;
     char *env;
     char sbuf[STRLEN];
@@ -339,6 +369,8 @@ static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
         return hw_opt->nthreads_tmpi;
     }
 
+    nthreads_hw = tMPI_Thread_get_hw_number();
+
     /* How many total (#tMPI*#OpenMP) threads can we start? */ 
     if (hw_opt->nthreads_tot > 0)
     {
@@ -346,7 +378,7 @@ static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
     }
     else
     {
-        nthreads_tot_max = tMPI_Thread_get_hw_number();
+        nthreads_tot_max = nthreads_hw;
     }
 
     bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
@@ -360,7 +392,7 @@ static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
     }
 
     nthreads_tmpi =
-        get_tmpi_omp_thread_distribution(hw_opt,nthreads_tot_max,ngpu);
+        get_tmpi_omp_thread_division(hwinfo,hw_opt,nthreads_tot_max,ngpu);
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
@@ -398,19 +430,34 @@ static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
            threads (too few atoms per thread) */
         nthreads_new = max(1,mtop->natoms/min_atoms_per_mpi_thread);
 
-        if (nthreads_new > 8 || (nthreads_tmpi == 8 && nthreads_new > 4))
+        /* Avoid partial use of Hyper-Threading */
+        if (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED &&
+            nthreads_new > nthreads_hw/2 && nthreads_new < nthreads_hw)
         {
-            /* TODO replace this once we have proper HT detection
-             * Use only multiples of 4 above 8 threads
-             * or with an 8-core processor
-             * (to avoid 6 threads on 8 core processors with 4 real cores).
-             */
-            nthreads_new = (nthreads_new/4)*4;
+            nthreads_new = nthreads_hw/2;
         }
-        else if (nthreads_new > 4)
+
+        /* Avoid large prime numbers in the thread count */
+        if (nthreads_new >= 6)
         {
-            /* Avoid 5 or 7 threads */
-            nthreads_new = (nthreads_new/2)*2;
+            /* Use only 6,8,10 with additional factors of 2 */
+            int fac;
+
+            fac = 2;
+            while (3*fac*2 <= nthreads_new)
+            {
+                fac *= 2;
+            }
+
+            nthreads_new = (nthreads_new/fac)*fac;
+        }
+        else
+        {
+            /* Avoid 5 */
+            if (nthreads_new == 5)
+            {
+                nthreads_new = 4;
+            }
         }
 
         nthreads_tmpi = nthreads_new;
