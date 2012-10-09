@@ -44,6 +44,7 @@
 #include "modules/angle.h"
 #include "modules/distance.h"
 #include "modules/select.h"
+#include "modules/pfg.h"
 
 namespace gmx
 {
@@ -125,6 +126,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     manager->registerModule<TrajAnalysisCmdLineWrapper<Angle> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Distance> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Select> >();
+    manager->registerModule<TrajAnalysisCmdLineWrapper<ProteinFilamentGeometry> >();
 }
 
 } // namespace gmx
