@@ -223,6 +223,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             "Calculate basic properties of alpha helices");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_helixorient, "helixorient",
             "Calculate local pitch/bending/rotation/orientation inside helices");
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_hpgc, "hpgc",
+            "Helical polymer geometry calculation");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_hydorder, "hydorder",
             "Compute tetrahedrality parameters around a given atom");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_kinetics, "kinetics",

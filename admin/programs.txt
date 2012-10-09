@@ -98,6 +98,7 @@ g_bundle|analyzes bundles of axes, e.g. helices
 g_clustsize|calculate size distributions of atomic clusters
 g_disre|analyzes distance restraints
 g_hbond|computes and analyzes hydrogen bonds
+g_hpgc|Helical polymer geometric properties
 g_order|computes the order parameter per atom for carbon tails
 g_principal|calculates axes of inertia for a group of atoms
 g_rdf|calculates radial distribution functions

@@ -31,7 +31,7 @@ add_library(gmxana
             gmx_hydorder.c  gmx_densorder.c powerspect.c    dens_filter.c
             binsearch.c     gmx_dyecoupl.c  gmx_make_edi.c  gmx_sigeps.c
             gmx_do_dssp.c   gmx_anadock.c   gmx_make_ndx.c  gmx_mk_angndx.c
-	    gmx_saxs.c
+	    gmx_saxs.c	    gmx_hpgc.c
             )
 
 

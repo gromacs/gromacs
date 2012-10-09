@@ -46,6 +46,7 @@ set(SYMLINK_NAMES
     g_gyrate
     g_h2order
     g_hbond
+    g_hpgc
     g_helix
     g_helixorient
     g_hydorder
