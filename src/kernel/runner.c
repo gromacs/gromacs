@@ -77,7 +77,7 @@
 #include "gmx_omp_nthreads.h"
 #include "pull_rotation.h"
 #include "calc_verletbuf.h"
-#include "nbnxn_search.h"
+#include "../mdlib/nbnxn_search.h"
 #include "../mdlib/nbnxn_consts.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
