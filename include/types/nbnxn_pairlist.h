@@ -56,12 +56,12 @@ typedef struct nbnxn_search * nbnxn_search_t;
  * of size nbytes.
  * Error handling should be done within this function.
  */
-typedef void gmx_nbat_alloc_t(void **ptr,size_t nbytes);
+typedef void nbnxn_alloc_t(void **ptr,size_t nbytes);
 
 /* Function that should free the memory pointed to by *ptr.
  * NULL should not be passed to this function.
  */
-typedef void gmx_nbat_free_t(void *ptr);
+typedef void nbnxn_free_t(void *ptr);
 
 typedef struct {
     int      cj;    /* The j-cluster                    */
@@ -107,8 +107,8 @@ typedef struct {
 typedef struct {
     gmx_cache_protect_t cp0;
 
-    gmx_nbat_alloc_t *alloc;
-    gmx_nbat_free_t  *free;
+    nbnxn_alloc_t *alloc;
+    nbnxn_free_t  *free;
 
     gmx_bool bSimple;      /* Simple list has na_sc=na_s and uses cj   *
                             * Complex list uses cj4                    */
@@ -169,8 +169,8 @@ typedef struct {
 enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
 
 typedef struct {
-    gmx_nbat_alloc_t *alloc;
-    gmx_nbat_free_t  *free;
+    nbnxn_alloc_t *alloc;
+    nbnxn_free_t  *free;
     int  ntype;      /* The number of different atom types                 */
     real *nbfp;      /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
     int  comb_rule;  /* Combination rule, see enum above                   */

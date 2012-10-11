@@ -36,6 +36,9 @@
 #ifndef GMX_OMP_NTHREADS
 #define GMX_OMP_NTHREADS
 
+#include "types/commrec.h"
+
+
 /*! Enum values corresponding to multithreaded algorithmic modules. */
 typedef enum module_nth
 {
