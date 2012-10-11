@@ -79,6 +79,22 @@ extern "C" {
    parameters in the texture cache. */
 #define GPU_EWALD_COULOMB_FORCE_TABLE_SIZE 1536
 
+
+/* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
+#define STRIDE_XYZ   3
+#define STRIDE_XYZQ  4
+/* Size of packs of x, y or z with SSE/AVX packed coords/forces */
+#define PACK_X4      4
+#define PACK_X8      8
+/* Strides for a pack of 4 and 8 coordinates/forces */
+#define STRIDE_P4    (DIM*PACK_X4)
+#define STRIDE_P8    (DIM*PACK_X8)
+
+/* Index of atom a into the SSE/AVX coordinate/force array */
+#define X4_IND_A(a)  (STRIDE_P4*((a) >> 2) + ((a) & (PACK_X4 - 1)))
+#define X8_IND_A(a)  (STRIDE_P8*((a) >> 3) + ((a) & (PACK_X8 - 1)))
+
+
 #ifdef __cplusplus
 }
 #endif
