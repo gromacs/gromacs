@@ -87,6 +87,7 @@
 #include "partdec.h"
 #include "gmx_wallcycle.h"
 #include "genborn.h"
+#include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "nbnxn_kernels/nbnxn_kernel_x86_simd128.h"
