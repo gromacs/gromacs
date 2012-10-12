@@ -69,6 +69,7 @@
 #include "molprop_xml.h"
 #include "poldata.h"
 #include "poldata_xml.h"
+#include "gmx_babelio.h"
 
 typedef struct gap {
     char *element, *method,*desc;
@@ -835,6 +836,8 @@ int main(int argc, char *argv[])
   FILE *fp;
   gau_atomprop_t gaps;
 
+  printf("Babel returns %d\n",read_babel(argc,argv));
+  
   CopyRight(stdout,argv[0]);
 
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
