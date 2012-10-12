@@ -1218,7 +1218,8 @@ int main(int argc, char *argv[])
     }
     
 #ifdef GMX_MPI
-    gmx_finalize();
+    if (gmx_mpi_initialized())
+        gmx_finalize_par();
 #endif
 
     return 0;

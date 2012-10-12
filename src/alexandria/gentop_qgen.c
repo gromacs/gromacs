@@ -60,7 +60,7 @@
 #include <grompp.h>
 #include "gentop_nm2type.h"
 #include "gentop_qgen.h"
-#include "gmx_matrix.h"
+#include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "gaussian_integrals.h"
 #include "slater_integrals.h"

@@ -54,7 +54,7 @@
 #include "gmx_fatal.h"
 #include "molprop.h"
 #include "molprop_util.h"
-#include "gmx_matrix.h"
+#include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molprop_xml.h"
@@ -67,7 +67,8 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
     int    j,k,Nelec,natom,natom_tot,charge,hybridization,nhydrogen,atomnumber,calcref;
     double ahc,ahp,bos,spoel,sig_alexandria,bos0,polar,sig_pol,blength;
     double tau_ahc,alpha_ahp;
-    char   *comp,*atomname,*gt_type,*elem,*miller_equiv,*ref,*iupac,*neighbor1,*neighbor2;
+    char   *atomname,*gt_type,*elem,*miller_equiv,*ref,*neighbor1,*neighbor2;
+    const char *comp,*iupac;
     int    alexandria_support,miller_support,bosque_support,ims;
     char *null = (char *)"0",*empirical = (char *)"empirical",*minimum = (char *)"minimum",*minus = (char *)"-";
     const char *program;
@@ -272,16 +273,18 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
                                 gmx_molselect_t gms,
                                 const char *selout)
 {
-    FILE *fp;
+    FILE *fp,*gp;
     int  i,ntot,cur=0;
     t_qmcount *qmc;
     t_refcount *rc;
     char *reference,*conformation,*mylot; 
-    char *molname[2];
+    const char *molname[2];
     double value,error,vec[3];
     tensor quadrupole;
 #define prev (1-cur)
     int  expref;
+    const char   *iupac;
+    char *ref;
   
     if (NULL != atype)
     {
@@ -340,11 +343,7 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
         gmx_molprop_prop_table(fp,prop,toler,np,mp,0,qmc,bPrintAll,gms,imsTest);
         if (NULL != selout) 
         {
-            char   *iupac,*ref;
-            double value,error,vec[3];
-            tensor quadrupole;
-            
-            FILE *gp = fopen(selout,"w");
+            gp = fopen(selout,"w");
             for(i=0; (i<np); i++) 
             {
                 iupac = gmx_molprop_get_iupac(mp[i]);

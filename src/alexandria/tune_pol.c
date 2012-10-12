@@ -53,7 +53,7 @@
 #include "names.h"
 #include "molprop.h"
 #include "molprop_util.h"
-#include "gmx_matrix.h"
+#include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molprop_xml.h"
@@ -69,7 +69,8 @@ static int decompose_frag(FILE *fp,int bTrain,
     double *x,*atx;
     double **a,**at,**ata,*fpp;
     double pol,poltot,a0,da0,ax,sig_pol,blength,pval,chi2;
-    char   *elem,*miller_equiv,*name,*iupac,**atype=NULL,*spref,*gt_type,*atomname;
+    char   *elem,*miller_equiv,**atype=NULL,*spref,*gt_type,*atomname;
+    const char *iupac,*molname;
     char   *neighbors,*geometry,*desc,*charge;
     int    i,j,niter=0,nusemol=0,nn,nnn,nexp,numbonds,ntp,natom,natom_tot,ca;
     double valence;
@@ -82,7 +83,7 @@ static int decompose_frag(FILE *fp,int bTrain,
     for(j=0; (j<np); j++) 
     {
         iupac = gmx_molprop_get_iupac(mp[j]);
-        name  = gmx_molprop_get_molname(mp[j]);
+        molname  = gmx_molprop_get_molname(mp[j]);
         pol  = 0;
         ims  = gmx_molselect_status(gms,iupac);
         bPol = (mp_get_prop(mp[j],empPOLARIZABILITY,iQM,lot,NULL,NULL,&pol) > 0);
@@ -108,7 +109,7 @@ static int decompose_frag(FILE *fp,int bTrain,
         if (NULL != debug)
         {
             fprintf(debug,"Mol: %s, IUPAC: %s, ims: %s, bPol: %s, pol: %g - %s\n",
-                    name,iupac,ims_names[ims],bool_names[bPol],pol,
+                    molname,iupac,ims_names[ims],bool_names[bPol],pol,
                     bUseMol[j] ? "Used" : "Not used");
         }
         

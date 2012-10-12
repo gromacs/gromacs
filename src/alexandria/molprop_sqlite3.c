@@ -51,7 +51,7 @@
 #include "molprop_sqlite3.h"
 
 typedef struct {
-    char *molname,*iupac;
+    const char *molname,*iupac;
 } t_synonym;
 
 int syn_comp(const void *a,const void *b)

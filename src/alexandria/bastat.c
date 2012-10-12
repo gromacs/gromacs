@@ -567,8 +567,8 @@ int main(int argc,char *argv[])
     thanx(stdout);
     
 #ifdef GMX_MPI
-    if (gmx_parallel_env_initialized())
-        gmx_finalize();
+    if (gmx_mpi_initialized())
+        gmx_finalize_par();
 #endif
 
     return 0;

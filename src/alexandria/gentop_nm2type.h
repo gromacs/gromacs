@@ -45,7 +45,7 @@
 #include "poldata.h"
 #include "gentop_vsite.h"
 
-extern int nm2type(FILE *fp,char *molname,
+extern int nm2type(FILE *fp,const char *molname,
 		   gmx_poldata_t pd,gmx_atomprop_t aps,
 		   t_symtab *tab,t_atoms *atoms,gmx_bool bRing[],
                    double bondorder[],

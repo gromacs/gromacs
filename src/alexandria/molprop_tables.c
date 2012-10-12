@@ -54,7 +54,7 @@
 #include "gmx_fatal.h"
 #include "molprop.h"
 #include "molprop_util.h"
-#include "gmx_matrix.h"
+#include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molprop_tables.h"
@@ -70,7 +70,7 @@ typedef struct
     real *rms;
 } t_cats;
 
-static void add_cat(t_cats *cats,char *catname)
+static void add_cat(t_cats *cats,const char *catname)
 {
     int i;
   
@@ -169,8 +169,8 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
     int    i,line,j,k,m,ns,N,nprint;
     double exp_val,qm_val;
     real   rms,R,error,a,da,b,db,chi2;
-    char   *qm_err;
-    char   *cname,*qm_ref,lbuf[256];
+    char   *qm_err,*qm_ref,lbuf[256];
+    const char   *cname;
     t_cats *cats;
     gmx_stats_t lsq,*lsqtot;
     gmx_bool   bSideways = (qmc->n > 3);
@@ -357,8 +357,8 @@ void gmx_molprop_composition_table(FILE *fp,int np,gmx_molprop_t pd[],
 {
     int i,j,k,q,m,iline,natom,nprint;
     char buf[32],buf2[32],qbuf[32];
-    char *atomname,*comp;
-    const char *comps[2] = { "spoel", "miller" };
+    char *atomname;
+    const char *comp,*comps[2] = { "spoel", "miller" };
     int  kmax = 1;
     
     nprint = 0;
@@ -749,10 +749,11 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
                             gmx_molselect_t gms,int ims)
 {
     int    i,j,iprint=0,ne,header,iline,caption=1,maxline,result,nexp,ncalc,expref,calcref;
-    char   *exp_ref,*prop_name,*exp_conf,*molname;
+    char   *exp_ref,*prop_name,*exp_conf;
+    const char *molname,*iupac,*form;
     char   *program,*method,*basis,*reference;
     char   *exp_val,*exp_error,**type_exp,**ref_exp,**conf_exp;
-    char   *calc_error,*unit,*type,*iupac,*form;
+    char   *calc_error,*unit,*type;
 #define BLEN 1024
     char   lbuf[BLEN],myline[BLEN],mylbuf[BLEN],vbuf[BLEN];
     double x,y,z,xx,yy,zz,xy,xz,yz,aver,error,calc_val,calc_err,vc;

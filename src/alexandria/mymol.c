@@ -630,7 +630,7 @@ static int init_mymol(FILE *fp,t_mymol *mymol,gmx_molprop_t mp,
         mymol->fr = mk_forcerec();
         init_forcerec(NULL,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
                       mymol->box,FALSE,NULL,NULL,NULL,NULL,NULL, TRUE,-1);
-        init_state(&mymol->state,mymol->atoms->nr,1,1,1);
+        init_state(&mymol->state,mymol->atoms->nr,1,1,1,0);
         mymol->ltop = gmx_mtop_generate_local_top(&(mymol->mtop),&(mymol->ir));
         mymol->md = init_mdatoms(NULL,&mymol->mtop,FALSE);
     }

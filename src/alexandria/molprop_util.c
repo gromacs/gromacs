@@ -412,7 +412,8 @@ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
                           double th_toler,double phi_toler)
 {
     int    i,j,cnumber,elgc,atomnumber,nok=0,ntest=0,natom;
-    char   *compname,*catom,*miller_equiv=NULL,*elem,*alexandria_equiv,*atomname,*molname;
+    char   *compname,*catom,*miller_equiv=NULL,*elem,*alexandria_equiv,*atomname;
+    const  char *molname;
     gmx_bool   bSpoel,bMiller,bBosque;
     double mass;
     real   mm,mh;
@@ -537,7 +538,8 @@ void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap)
 {
     int  i,j,jj,cnumber,an;
     char formula[1280],number[32];
-    char *mform,*compname,*catom;
+    const char *mform;
+    char *compname,*catom;
     int  *ncomp;
     real value;
 
@@ -632,7 +634,8 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
                     rvec **x)
 {
     char   *program,*method,*basisset,*name,*type,*value;
-    char   *atomname,*unit,*coords,**aa=NULL,*molnm;
+    char   *atomname,*unit,*coords,**aa=NULL;
+    const char *molnm;
     char   **ptr,**ptr1,buf[1024],format[1024];
     double *q=NULL,qq,xx,yy,zz;
     int    i,nn,done,natom,calcref,atomref,atomid;
@@ -716,7 +719,7 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
 
 static void gmx_molprop_dump(gmx_molprop_t mp,int i,FILE *fp)
 {
-    char *cat;
+    const char *cat;
   
     if (fp) {
         fprintf(fp,"\nmolprop %d\n",i);
@@ -732,7 +735,7 @@ static void gmx_molprop_dump(gmx_molprop_t mp,int i,FILE *fp)
     }
 }
 
-int my_strcmp(char *a,char *b)
+int my_strcmp(const char *a,const char *b)
 {
     if ((NULL != a) && (NULL != b))
         return strcasecmp(a,b);
@@ -746,8 +749,8 @@ static void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles,
     FILE *fp;
     int  i,j,nporig=*np,ndouble=0;
     gmx_bool bForm,bName,bDouble;
-    char *molname[2];
-    char *form[2];
+    const char *molname[2];
+    const char *form[2];
     gmx_molprop_t **mymp;
     int  cur = 0;
 #define prev (1-cur)
@@ -884,8 +887,8 @@ static int comp_mp_molname(const void *a,const void *b)
 {
     gmx_molprop_t *ma = (gmx_molprop_t *) a;
     gmx_molprop_t *mb = (gmx_molprop_t *) b;
-    char *mma = gmx_molprop_get_molname(*ma);
-    char *mmb = gmx_molprop_get_molname(*mb);
+    const char *mma = gmx_molprop_get_molname(*ma);
+    const char *mmb = gmx_molprop_get_molname(*mb);
   
     if (mma && mmb)
         return strcasecmp(mma,mmb);
@@ -898,8 +901,8 @@ static int comp_mp_formula(const void *a,const void *b)
     int r;
     gmx_molprop_t *ma = (gmx_molprop_t *)a;
     gmx_molprop_t *mb = (gmx_molprop_t *)b;
-    char *fma = gmx_molprop_get_formula(*ma);
-    char *fmb = gmx_molprop_get_formula(*mb);
+    const char *fma = gmx_molprop_get_formula(*ma);
+    const char *fmb = gmx_molprop_get_formula(*mb);
   
     r = strcasecmp(fma,fmb);
   
@@ -1519,13 +1522,13 @@ gmx_molprop_t gmx_molprop_receive(t_commrec *cr,int src)
 gmx_bool gmx_molprop_support_composition(gmx_molprop_t mp,char *composition)
 {
     gmx_bool bComp  = FALSE;
-    char *ptr;
+    const char *comp;
     
     if (NULL == composition)
         return TRUE;
         
-    while ((ptr = gmx_molprop_get_composition(mp)) != NULL) {
-        if (strcmp(composition,ptr) == 0)
+    while ((comp = gmx_molprop_get_composition(mp)) != NULL) {
+        if (strcmp(composition,comp) == 0)
             bComp = TRUE;
     }
     if (debug && !bComp)

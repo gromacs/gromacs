@@ -77,7 +77,7 @@
 #include "gmx_random.h"
 #include "gmx_wallcycle.h"
 #include "gmx_statistics.h"
-#include "gmx_matrix.h"
+#include "gromacs/linearalgebra/matrix.h"
 #include "convparm.h"
 #include "gpp_atomtype.h"
 #include "grompp.h"
@@ -676,15 +676,15 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aaj = *mymol->atoms->atomtype[aj];
             /* Here unfortunately we need a case statement for the types */
             if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) {
-                mymol->mtop.ffparams.iparams[tp].morse.b0 = convert2gmx(value,lu);
+                mymol->mtop.ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
                   
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol->mtop.ffparams.iparams[tp].morse.cb = atof(ptr[0]);
+                    mymol->mtop.ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
-                    mymol->mtop.ffparams.iparams[tp].morse.beta = atof(ptr[1]);
+                    mymol->mtop.ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
@@ -800,7 +800,7 @@ static double calc_opt_deviation(opt_param_t *opt)
     int    i,j,count,atomnr;
     int    flags;
     double qq,qtot,rr2,ener;
-    real   t = 0;
+    real   lambda,t = 0;
     rvec   mu_tot = {0,0,0};
     tensor force_vir={{0,0,0},{0,0,0},{0,0,0}};
     t_nrnb   my_nrnb;
@@ -863,13 +863,14 @@ static double calc_opt_deviation(opt_param_t *opt)
                                         mymol->mtop.natoms,&bConverged,NULL,NULL);
             }
             else {
+                lambda = 0;
                 do_force(debug,opt->md->cr,&(mymol->ir),0,
                          &my_nrnb,wcycle,mymol->ltop,
                          &mymol->mtop,&(mymol->mtop.groups),
                          mymol->box,mymol->x,NULL,
                          mymol->f,force_vir,mymol->md,
                          &mymol->enerd,NULL,
-                         0.0,NULL,
+                         &lambda,NULL,
                          mymol->fr,
                          NULL,mu_tot,t,NULL,NULL,FALSE,
                          flags);
@@ -1435,8 +1436,8 @@ int main(int argc, char *argv[])
     }
     
 #ifdef GMX_MPI
-    if (gmx_parallel_env_initialized())
-        gmx_finalize();
+    if (gmx_mpi_initialized())
+        gmx_finalize_par();
 #endif
 
     return 0;

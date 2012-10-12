@@ -85,7 +85,7 @@ void gmx_recv(const t_commrec *cr,int src,void *buf,int bufsize)
 #endif
 }
 
-void gmx_send_str(t_commrec *cr,int dest,char *ptr)
+void gmx_send_str(t_commrec *cr,int dest,const char *ptr)
 {
     int len;
     

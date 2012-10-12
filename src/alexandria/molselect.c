@@ -42,7 +42,7 @@
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
 
 typedef struct {
-    char *iupac;
+    const char *iupac;
     int  status,index;
 } t_ims;
 

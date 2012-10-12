@@ -353,7 +353,7 @@ int mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     return nbonds;
 }
 
-gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
+gpp_atomtype_t set_atom_type(FILE *fp,const char *molname,
                              t_symtab *tab,t_atoms *atoms,t_params *bonds,
                              int nbonds[],gmx_bool bRing[],double bondorder[],
                              char **smnames,gmx_poldata_t pd,
