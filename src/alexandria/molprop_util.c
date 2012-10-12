@@ -1137,7 +1137,7 @@ t_qmcount *find_calculations(int np,gmx_molprop_t mp[],int emp,char *fc_str)
     return qmc;
 }
 
-static void gmx_send_polar(t_commrec *cr,int dest,char *type,char *unit,
+static void gmx_send_polar(t_commrec *cr,int dest,const char *type,const char *unit,
                            double x,double y,double z,double aver,double error)
 {
     gmx_send_int(cr,dest,1);
@@ -1167,7 +1167,7 @@ static int gmx_recv_polar(t_commrec *cr,int src,char **type,char **unit,
     return kk;
 }
 
-static void gmx_send_quad(t_commrec *cr,int dest,char *type,char *unit,
+static void gmx_send_quad(t_commrec *cr,int dest,const char *type,const char *unit,
                           double xx,double yy,double zz,
                           double xy,double xz,double yz)
 {
@@ -1201,7 +1201,7 @@ static int gmx_recv_quad(t_commrec *cr,int src,char **type,char **unit,
     return kk;
 }
 
-static void gmx_send_energy(t_commrec *cr,int dest,char *type,char *unit,
+static void gmx_send_energy(t_commrec *cr,int dest,const char *type,const char *unit,
                             double aver,double error)
 {
     gmx_send_int(cr,dest,1);

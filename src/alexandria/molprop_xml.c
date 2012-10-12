@@ -569,9 +569,9 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
 {
     xmlNodePtr ptr,child,grandchild,comp,atomptr,baby;
     int    i,eMP,atomid,cnumber,expref,calcref,atomref;
-    char   *tmp,*program,*basisset,*method,*name,*type,*unit,*reference;
-    char   *catom,*atomname,*coords,*conformation;
-    char   *iupac,*cas,*cid,*inchi,*p;
+    char   *program,*basisset,*method,*name,*type,*unit,*reference;
+    char   *catom,*atomname,*coords,*conformation,*p;
+    const  char   *iupac,*cas,*cid,*inchi,*category,*composition;
     double q,x,y,z,xx,yy,zz,xy,xz,yz,aver,error;
   
     gmx_molprop_reset_experiment(mpt);
@@ -656,17 +656,17 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
         sfree(reference);
     }
     gmx_molprop_reset_calculation(mpt);
-    while ((tmp = gmx_molprop_get_category(mpt)) != NULL) 
+    while ((category = gmx_molprop_get_category(mpt)) != NULL) 
     {
         child = add_xml_child(ptr,exml_names[exmlCATEGORY]);
-        add_xml_char(child,exml_names[exmlCATNAME],tmp);
+        add_xml_char(child,exml_names[exmlCATNAME],category);
     }
 	
-    while ((tmp = gmx_molprop_get_composition(mpt)) != NULL) 
+    while ((composition = gmx_molprop_get_composition(mpt)) != NULL) 
     {
         child = add_xml_child(ptr,exml_names[exmlCOMPOSITION]);
-        add_xml_char(child,exml_names[exmlCOMPNAME],tmp);
-        while ((gmx_molprop_get_composition_atom(mpt,tmp,&catom,&cnumber)) == 1) 
+        add_xml_char(child,exml_names[exmlCOMPNAME],composition);
+        while ((gmx_molprop_get_composition_atom(mpt,composition,&catom,&cnumber)) == 1) 
         {
             grandchild = add_xml_child(child,exml_names[exmlCATOM]);
             add_xml_char(grandchild,exml_names[exmlC_NAME],catom);

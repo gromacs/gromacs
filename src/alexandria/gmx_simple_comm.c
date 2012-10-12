@@ -97,7 +97,7 @@ void gmx_send_str(t_commrec *cr,int dest,const char *ptr)
         fprintf(debug,"Sending string '%s' to %d\n",ptr,dest);
     gmx_send(cr,dest,&len,sizeof(len));
     if (NULL != ptr)
-        gmx_send(cr,dest,ptr,len); 
+        gmx_send(cr,dest,(void *)ptr,len); 
 }
 
 char *gmx_recv_str(t_commrec *cr,int src)
