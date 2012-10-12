@@ -53,6 +53,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "gmx_omp_nthreads.h"
+#include "gmx_omp.h"
 
 typedef struct {
     int b0;           /* first constraint for this thread */
@@ -1522,18 +1523,14 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         }
 
         /* The (only) OpenMP parallel region of constrain_lincs */
+#pragma omp parallel num_threads(lincsd->nth)
         {
-            int th;
-
-#pragma omp parallel for num_threads(lincsd->nth) schedule(static)
-            for(th=0; th<lincsd->nth; th++)
-            {
-                do_lincs(x,xprime,box,pbc,lincsd,th,
-                         md->invmass,cr,
-                         bCalcVir || (ir->efep != efepNO),
-                         ir->LincsWarnAngle,&warn,
-                         invdt,v,bCalcVir,rmdr);
-            }
+            int th=gmx_omp_get_thread_num();
+            do_lincs(x,xprime,box,pbc,lincsd,th,
+                     md->invmass,cr,
+                     bCalcVir || (ir->efep != efepNO),
+                     ir->LincsWarnAngle,&warn,
+                     invdt,v,bCalcVir,rmdr);
         }
         
         if (ir->efep != efepNO)

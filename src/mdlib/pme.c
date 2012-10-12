@@ -88,6 +88,7 @@
 #include "gmx_parallel_3dfft.h"
 #include "pdbio.h"
 #include "gmx_cyclecounter.h"
+#include "gmx_omp.h"
 
 /* Single precision, with SSE2 or higher available */
 #if defined(GMX_X86_SSE2) && !defined(GMX_DOUBLE)
@@ -4324,9 +4325,9 @@ int gmx_pme_do(gmx_pme_t pme,
         }
 
         /* Here we start a large thread parallel region */
-#pragma omp parallel for num_threads(pme->nthread) schedule(static)
-        for(thread=0; thread<pme->nthread; thread++)
+#pragma omp parallel num_threads(pme->nthread) private(thread)
         {
+            thread=gmx_omp_get_thread_num();
             if (flags & GMX_PME_SOLVE)
             {
                 int loop_count;
