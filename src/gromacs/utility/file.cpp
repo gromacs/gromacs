@@ -39,32 +39,56 @@
 
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
+#include "gromacs/legacyheaders/futil.h"
+
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
 
-File::File(const char *filename, const char *mode)
-    : fp_(NULL)
+/*! \internal \brief
+ * Private implementation class for File.
+ *
+ * \ingroup module_utility
+ */
+class File::Impl
 {
-    open(filename, mode);
+    public:
+        /*! \brief
+         * Initialize a file object with the given handle.
+         *
+         * \param[in]  fp     File handle to use (may be NULL).
+         * \param[in]  bClose Whether this object should close its file handle.
+         */
+        Impl(FILE *fp, bool bClose);
+        ~Impl();
+
+        //! File handle for this object (may be NULL).
+        FILE                   *fp_;
+        /*! \brief
+         * Whether \p fp_ should be closed by this object.
+         *
+         * Can be true if \p fp_ is NULL.
+         */
+        bool                    bClose_;
+};
+
+File::Impl::Impl(FILE *fp, bool bClose)
+    : fp_(fp), bClose_(bClose)
+{
 }
 
-File::File(const std::string &filename, const char *mode)
-    : fp_(NULL)
+File::Impl::~Impl()
 {
-    open(filename, mode);
-}
-
-File::~File()
-{
-    if (fp_ != NULL)
+    if (fp_ != NULL && bClose_)
     {
         if (fclose(fp_) != 0)
         {
@@ -73,13 +97,34 @@ File::~File()
     }
 }
 
+File::File(const char *filename, const char *mode)
+    : impl_(new Impl(NULL, true))
+{
+    open(filename, mode);
+}
+
+File::File(const std::string &filename, const char *mode)
+    : impl_(new Impl(NULL, true))
+{
+    open(filename, mode);
+}
+
+File::File(FILE *fp, bool bClose)
+    : impl_(new Impl(fp, bClose))
+{
+}
+
+File::~File()
+{
+}
+
 void File::open(const char *filename, const char *mode)
 {
-    GMX_RELEASE_ASSERT(fp_ == NULL,
+    GMX_RELEASE_ASSERT(impl_->fp_ == NULL,
                        "Attempted to open the same file object twice");
     // TODO: Port all necessary functionality from ffopen() here.
-    fp_ = fopen(filename, mode);
-    if (fp_ == NULL)
+    impl_->fp_ = fopen(filename, mode);
+    if (impl_->fp_ == NULL)
     {
         GMX_THROW_WITH_ERRNO(
                 FileIOError(formatString("Could not open file '%s'", filename)),
@@ -94,10 +139,12 @@ void File::open(const std::string &filename, const char *mode)
 
 void File::close()
 {
-    GMX_RELEASE_ASSERT(fp_ != NULL,
+    GMX_RELEASE_ASSERT(impl_->fp_ != NULL,
                        "Attempted to close a file object that is not open");
-    bool bOk = (fclose(fp_) == 0);
-    fp_ = NULL;
+    GMX_RELEASE_ASSERT(impl_->bClose_,
+                       "Attempted to close a file object that should not be");
+    bool bOk = (fclose(impl_->fp_) == 0);
+    impl_->fp_ = NULL;
     if (!bOk)
     {
         GMX_THROW_WITH_ERRNO(
@@ -107,23 +154,27 @@ void File::close()
 
 FILE *File::handle()
 {
-    GMX_RELEASE_ASSERT(fp_ != NULL,
+    GMX_RELEASE_ASSERT(impl_->fp_ != NULL,
                        "Attempted to access a file object that is not open");
-    return fp_;
+    return impl_->fp_;
 }
 
 void File::readBytes(void *buffer, size_t bytes)
 {
-    GMX_RELEASE_ASSERT(fp_ != NULL,
-                       "Attempted to access a file object that is not open");
     errno = 0;
+    FILE *fp = handle();
     // TODO: Retry based on errno or something else?
-    size_t bytesRead = std::fread(buffer, 1, bytes, fp_);
+    size_t bytesRead = std::fread(buffer, 1, bytes, fp);
     if (bytesRead != bytes)
     {
-        if (feof(fp_))
+        if (feof(fp))
         {
-            GMX_THROW(FileIOError("Premature end of file"));
+            GMX_THROW(FileIOError(
+                        formatString("Premature end of file\n"
+                                     "Attempted to read: %d bytes\n"
+                                     "Successfully read: %d bytes",
+                                     static_cast<int>(bytes),
+                                     static_cast<int>(bytesRead))));
         }
         else
         {
@@ -133,22 +184,124 @@ void File::readBytes(void *buffer, size_t bytes)
     }
 }
 
+bool File::readLine(std::string *line)
+{
+    line->clear();
+    const size_t bufsize = 256;
+    std::string result;
+    char buf[bufsize];
+    buf[0] = '\0';
+    FILE *fp = handle();
+    while (fgets(buf, bufsize, fp) != NULL)
+    {
+        size_t length = std::strlen(buf);
+        result.append(buf, length);
+        if (length < bufsize - 1 || buf[length - 1] == '\n')
+        {
+            break;
+        }
+    }
+    if (ferror(fp))
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Error while reading file"),
+                             "fgets", errno);
+    }
+    *line = result;
+    return !result.empty() || !feof(fp);
+}
+
+void File::writeString(const char *str)
+{
+    if (fprintf(handle(), "%s", str) < 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"),
+                             "fprintf", errno);
+    }
+}
+
+void File::writeLine(const char *line)
+{
+    size_t length = std::strlen(line);
+
+    writeString(line);
+    if (length == 0 || line[length-1] != '\n')
+    {
+        writeString("\n");
+    }
+}
+
+void File::writeLine()
+{
+    writeString("\n");
+}
+
+// static
+bool File::exists(const char *filename)
+{
+    return gmx_fexist(filename);
+}
+
+// static
+bool File::exists(const std::string &filename)
+{
+    return exists(filename.c_str());
+}
+
+// static
+File &File::standardInput()
+{
+    static File stdinObject(stdin, false);
+    return stdinObject;
+}
+
+// static
+File &File::standardOutput()
+{
+    static File stdoutObject(stdout, false);
+    return stdoutObject;
+}
+
+// static
+File &File::standardError()
+{
+    static File stderrObject(stderr, false);
+    return stderrObject;
+}
+
 // static
 std::string File::readToString(const char *filename)
 {
-    File file(filename, "r");
+    // Binary mode is required on Windows to be able to determine a size
+    // that can be passed to fread().
+    File file(filename, "rb");
     FILE *fp = file.handle();
 
-    // TODO: Full error checking.
-    std::fseek(fp, 0L, SEEK_END);
+    if (std::fseek(fp, 0L, SEEK_END) != 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Seeking to end of file failed"),
+                             "fseek", errno);
+    }
     long len = std::ftell(fp);
-    std::fseek(fp, 0L, SEEK_SET);
+    if (len == -1)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Reading file length failed"),
+                             "ftell", errno);
+    }
+    if (std::fseek(fp, 0L, SEEK_SET) != 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Seeking to start of file failed"),
+                             "fseek", errno);
+    }
 
     std::vector<char> data(len);
     file.readBytes(&data[0], len);
-    std::string result(&data[0], len);
-
     file.close();
+
+    std::string result(&data[0], len);
+    // The below is necessary on Windows to make newlines stay as '\n' on a
+    // roundtrip.
+    result = replaceAll(result, "\r\n", "\n");
+
     return result;
 }
 
@@ -156,6 +309,14 @@ std::string File::readToString(const char *filename)
 std::string File::readToString(const std::string &filename)
 {
     return readToString(filename.c_str());
+}
+
+// static
+void File::writeFileFromString(const std::string &filename,
+                               const std::string &text)
+{
+    File file(filename, "w");
+    file.writeString(text);
 }
 
 } // namespace gmx

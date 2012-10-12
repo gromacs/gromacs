@@ -68,6 +68,54 @@ TEST(ReferenceDataTest, HandlesSimpleData)
     }
 }
 
+TEST(ReferenceDataTest, HandlesPresenceChecks)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+
+    {
+        TestReferenceData data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_TRUE(checker.checkPresent(true, "present"));
+        checker.checkInteger(1, "present");
+        EXPECT_FALSE(checker.checkPresent(false, "absent"));
+    }
+    {
+        TestReferenceData data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        // Assigned to avoid warnings about potentially uninitialized value.
+        bool bRet = true;
+        EXPECT_TRUE(checker.checkPresent(true, "present"));
+        checker.checkInteger(1, "present");
+        EXPECT_NONFATAL_FAILURE(bRet = checker.checkPresent(false, "present"), "");
+        EXPECT_FALSE(bRet);
+        EXPECT_NONFATAL_FAILURE(bRet = checker.checkPresent(true, "absent"), "");
+        EXPECT_FALSE(bRet);
+        EXPECT_FALSE(checker.checkPresent(false, "absent"));
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesStringBlockData)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+
+    {
+        TestReferenceData data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkStringBlock("Line1\nLine2\n", "block");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkStringBlock("Line1\nLine2\n", "block");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Line1\nLine2\n", "block"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkStringBlock("Test", "string"), "");
+    }
+}
+
 
 TEST(ReferenceDataTest, HandlesVectorData)
 {
@@ -187,11 +235,38 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
         TestReferenceData data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
+        // \r is not handled correctly
+        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
+        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
+    }
+}
+
+TEST(ReferenceDataTest, HandlesSequenceItemIndices)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+    int seq[5] = { -1, 3, 5, 2, 4 };
+
+    {
+        TestReferenceData data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequenceArray(5, seq, "seq");
+        checker.checkSequenceArray(5, seq, "seq2");
+    }
+    {
+        TestReferenceData data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        seq[0] = 2;
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq"), "seq/[0]");
+        seq[0] = -1;
+        seq[3] = 0;
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq"), "seq/[3]");
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq2"), "seq2/[3]");
     }
 }
 

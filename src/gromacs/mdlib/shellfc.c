@@ -78,8 +78,8 @@ typedef struct gmx_shellfc {
   int     nshell;          /* The number of local shells               */
   t_shell *shell;          /* The local shells                         */
   int     shell_nalloc;    /* The allocation size of shell             */
-  gmx_bool    bPredict;        /* Predict shell positions                  */
-  gmx_bool    bForceInit;      /* Force initialization of shell positions  */
+  gmx_bool bPredict;       /* Predict shell positions                  */
+  gmx_bool bRequireInit;   /* Require initialization of shell positions  */
   int     nflexcon;        /* The number of flexible constraints       */
   rvec    *x[2];           /* Array for iterative minimization         */
   rvec    *f[2];           /* Array for iterative minimization         */
@@ -364,14 +364,14 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 	      break;
 	    case F_POLARIZATION:
 	    case F_ANHARM_POL:
-	      if (qS != atom[aS].qB)
-		gmx_fatal(FARGS,"polarize can not be used with qA != qB");
+	      if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
+		gmx_fatal(FARGS,"polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
 	      shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
 		ffparams->iparams[type].polarize.alpha;
 	      break;
 	    case F_WATER_POL:
-	      if (qS != atom[aS].qB)
-		gmx_fatal(FARGS,"water_pol can not be used with qA != qB");
+	      if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
+		gmx_fatal(FARGS,"water_pol can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
 	      alpha          = (ffparams->iparams[type].wpol.al_x+
 				ffparams->iparams[type].wpol.al_y+
 				ffparams->iparams[type].wpol.al_z)/3.0;
@@ -408,13 +408,13 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   shfc->shell_index_gl = shell_index;
 
   shfc->bPredict   = (getenv("GMX_NOPREDICT") == NULL);
-  shfc->bForceInit = FALSE;
+  shfc->bRequireInit = FALSE;
   if (!shfc->bPredict) {
     if (fplog)
       fprintf(fplog,"\nWill never predict shell positions\n");
   } else {
-    shfc->bForceInit = (getenv("GMX_FORCEINIT") != NULL);
-    if (shfc->bForceInit && fplog)
+    shfc->bRequireInit = (getenv("GMX_REQUIRE_SHELL_INIT") != NULL);
+    if (shfc->bRequireInit && fplog)
       fprintf(fplog,"\nWill always initiate shell positions\n");
   }
 
@@ -539,6 +539,10 @@ static void directional_sd(FILE *log,rvec xold[],rvec xnew[],rvec acc_dir[],
 static void shell_pos_sd(FILE *log,rvec xcur[],rvec xnew[],rvec f[],
 			 int ns,t_shell s[],int count)
 {
+    const real step_scale_min = 0.8,
+        step_scale_increment = 0.2,
+        step_scale_max = 1.2,
+        step_scale_multiple = (step_scale_max - step_scale_min) / step_scale_increment;
   int  i,shell,d;
   real dx,df,k_est;
 #ifdef PRINT_STEP  
@@ -561,18 +565,33 @@ static void shell_pos_sd(FILE *log,rvec xcur[],rvec xnew[],rvec f[],
       for(d=0; d<DIM; d++) {
 	dx = xcur[shell][d] - s[i].xold[d];
 	df =    f[shell][d] - s[i].fold[d];
-	if (dx != 0 && df != 0) {
-	  k_est = -dx/df;
-	  if (k_est >= 2*s[i].step[d]) {
-	    s[i].step[d] *= 1.2;
-	  } else if (k_est <= 0) {
-	    s[i].step[d] *= 0.8;
-	  } else {
-	    s[i].step[d] = 0.8*s[i].step[d] + 0.2*k_est;
-	  }
-	} else if (dx != 0) {
-	  s[i].step[d] *= 1.2;
-	}
+    /* -dx/df gets used to generate an interpolated value, but would
+     * cause a NaN if df were binary-equal to zero. Values close to
+     * zero won't cause problems (because of the min() and max()), so
+     * just testing for binary inequality is OK. */
+    if (0.0 != df)
+    {
+        k_est = -dx/df;
+        /* Scale the step size by a factor interpolated from
+         * step_scale_min to step_scale_max, as k_est goes from 0 to
+         * step_scale_multiple * s[i].step[d] */
+        s[i].step[d] =
+            step_scale_min * s[i].step[d] +
+            step_scale_increment * min(step_scale_multiple * s[i].step[d], max(k_est, 0));
+    }
+    else
+    {
+        /* Here 0 == df */
+        if (gmx_numzero(dx)) /* 0 == dx */
+        {
+            /* Likely this will never happen, but if it does just
+             * don't scale the step. */
+        }
+        else /* 0 != dx */
+        {
+            s[i].step[d] *= step_scale_max;
+        }
+    }
 #ifdef PRINT_STEP
 	step_min = min(step_min,s[i].step[d]);
 	step_max = max(step_max,s[i].step[d]);
@@ -681,7 +700,7 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
 		      gmx_large_int_t step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
 		      rvec *f,rvec *acc_dir,matrix box,
-		      real lambda,real *dvdlambda,t_nrnb *nrnb)
+		      real *lambda,real *dvdlambda,t_nrnb *nrnb)
 {
   rvec   *xnold,*xnew;
   double w_dt;
@@ -723,10 +742,10 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
   }
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnold-start,NULL,box,
-	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+	    lambda[efptBONDED],&(dvdlambda[efptBONDED]),NULL,NULL,nrnb,econqCoord,FALSE,0,0);
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnew-start,NULL,box,
-	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+	    lambda[efptBONDED],&(dvdlambda[efptBONDED]),NULL,NULL,nrnb,econqCoord,FALSE,0,0);
 
   /* Set xnew to minus the acceleration */
   for (n=start; n<end; n++) {
@@ -740,7 +759,7 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
   /* Project the acceleration on the old bond directions */
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x_old,xnew-start,acc_dir,box,
-	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
+	    lambda[efptBONDED],&(dvdlambda[efptBONDED]),NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0);
 }
 
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
@@ -781,7 +800,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
 #define  Try (1-Min)             /* At start Try = 1 */
 
   bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
-  bInit        = (mdstep == inputrec->init_step) || shfc->bForceInit;
+  bInit        = (mdstep == inputrec->init_step) || shfc->bRequireInit;
   ftol         = inputrec->em_tol;
   number_steps = inputrec->niter;
   nshell       = shfc->nshell;

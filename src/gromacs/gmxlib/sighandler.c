@@ -97,6 +97,18 @@ static void signal_handler(int n)
     }
 }
 
+static void gmx_signal(int signum) 
+{
+#ifdef HAVE_SIGACTION
+    struct sigaction act;
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_RESTART;
+    sigaction(signum,&act,NULL);
+#else
+    signal(signum,signal_handler);
+#endif
+}
 
 void signal_handler_install(void)
 {
@@ -106,7 +118,7 @@ void signal_handler_install(void)
         {
             fprintf(debug,"Installing signal handler for SIGTERM\n");
         }
-        signal(SIGTERM,signal_handler);
+        gmx_signal(SIGTERM);
     }
     if (getenv("GMX_NO_INT") == NULL)
     {
@@ -114,7 +126,7 @@ void signal_handler_install(void)
         {
             fprintf(debug,"Installing signal handler for SIGINT\n");
         }
-        signal(SIGINT,signal_handler);
+        gmx_signal(SIGINT);
     }
 #ifdef HAVE_SIGUSR1
     if (getenv("GMX_NO_USR1") == NULL)
@@ -123,7 +135,7 @@ void signal_handler_install(void)
         {
             fprintf(debug,"Installing signal handler for SIGUSR1\n");
         }
-        signal(SIGUSR1,signal_handler);
+        gmx_signal(SIGUSR1);
     }
 #endif
 }

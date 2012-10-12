@@ -54,8 +54,8 @@
 #include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -63,23 +63,28 @@ namespace gmx
 namespace analysismodules
 {
 
+const char Angle::name[] = "angle";
+const char Angle::shortDescription[] =
+    "Calculate angles";
+
 Angle::Angle()
-    : _options("angle", "Angle calculation"),
-      _sel1info(NULL), _sel2info(NULL),
-      _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
-      _bDumpDist(false), _natoms1(0), _natoms2(0), _vt0(NULL)
+    : TrajectoryAnalysisModule(name, shortDescription),
+      sel1info_(NULL), sel2info_(NULL),
+      bSplit1_(false), bSplit2_(false), bMulti_(false), bAll_(false),
+      bDumpDist_(false), natoms1_(0), natoms2_(0), vt0_(NULL)
 {
+    registerAnalysisDataset(&data_, "angle");
 }
 
 
 Angle::~Angle()
 {
-    delete[] _vt0;
+    delete[] vt0_;
 }
 
 
-Options &
-Angle::initOptions(TrajectoryAnalysisSettings *settings)
+void
+Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
         "g_angle computes different types of angles between vectors.",
@@ -117,126 +122,125 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
         "supported for static selections).",
         "[TT]-od[tt] can be used to dump all the individual angles,",
         "each on a separate line. This format is better suited for",
-        "further processing, e.g., if angles from multiple runs are needed.",
-        NULL
+        "further processing, e.g., if angles from multiple runs are needed."
     };
     static const char *const cGroup1TypeEnum[] =
         { "angle", "dihedral", "vector", "plane", NULL };
     static const char *const cGroup2TypeEnum[] =
         { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
 
-    _options.setDescription(desc);
+    options->setDescription(concatenateStrings(desc));
 
-    _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&_fnAngle).defaultValueIfSet("angle"));
-    _options.addOption(FileNameOption("od").filetype(eftPlot).outputFile()
-                           .store(&_fnDump).defaultValueIfSet("angdump"));
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
+                           .store(&fnAngle_).defaultValueIfSet("angle")
+                           .description("Computed angles"));
+    options->addOption(FileNameOption("od").filetype(eftPlot).outputFile()
+                           .store(&fnDump_).defaultValueIfSet("angdump")
+                           .description("Individual angles on separate lines"));
 
-    _options.addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
-        .defaultEnumIndex(0).store(&_g1type)
+    options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
+        .defaultEnumIndex(0).store(&g1type_)
         .description("Type of analysis/first vector group"));
-    _options.addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
-        .defaultEnumIndex(0).store(&_g2type)
+    options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
+        .defaultEnumIndex(0).store(&g2type_)
         .description("Type of second vector group"));
-    _options.addOption(BooleanOption("split1").store(&_bSplit1)
+    options->addOption(BooleanOption("split1").store(&bSplit1_)
         .description("Each position of first group in separate selection"));
-    _options.addOption(BooleanOption("split2").store(&_bSplit2)
+    options->addOption(BooleanOption("split2").store(&bSplit2_)
         .description("Each position of second group in separate selection"));
-    _options.addOption(BooleanOption("multi").store(&_bMulti)
+    options->addOption(BooleanOption("multi").store(&bMulti_)
         .description("Analyze multiple sets of angles/dihedrals"));
-    _options.addOption(BooleanOption("all").store(&_bAll)
+    options->addOption(BooleanOption("all").store(&bAll_)
         .description("Print individual angles together with the average"));
-    _options.addOption(BooleanOption("dumpd").store(&_bDumpDist)
+    options->addOption(BooleanOption("dumpd").store(&bDumpDist_)
         .description("Write also distances with -od"));
 
-    _options.addOption(SelectionOption("group1").multiValue().required()
-        .dynamicOnlyWhole().storeVector(&_sel1).getAdjuster(&_sel1info)
+    options->addOption(SelectionOption("group1").multiValue().required()
+        .dynamicOnlyWhole().storeVector(&sel1_).getAdjuster(&sel1info_)
         .description("First analysis/vector selection"));
-    _options.addOption(SelectionOption("group2").multiValue()
-        .dynamicOnlyWhole().storeVector(&_sel2).getAdjuster(&_sel2info)
+    options->addOption(SelectionOption("group2").multiValue()
+        .dynamicOnlyWhole().storeVector(&sel2_).getAdjuster(&sel2info_)
         .description("Second analysis/vector selection"));
-
-    return _options;
 }
 
 
 void
-Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
+Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
 {
     // Validity checks.
-    bool bSingle = (_g1type[0] == 'a' || _g1type[0] == 'd');
+    bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
 
-    if (bSingle && _g2type[0] != 'n')
+    if (bSingle && g2type_[0] != 'n')
     {
         GMX_THROW(InconsistentInputError("Cannot use a second group (-g2) with "
                                          "-g1 angle or dihedral"));
     }
-    if (bSingle && _options.isSet("group2"))
+    if (bSingle && options->isSet("group2"))
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection "
                                          "(-group2) with -g1 angle or dihedral"));
     }
-    if (!bSingle && _g2type[0] == 'n')
+    if (!bSingle && g2type_[0] == 'n')
     {
         GMX_THROW(InconsistentInputError("Should specify a second group (-g2) "
                                          "if the first group is not an angle or a dihedral"));
     }
-    if (bSingle && _bDumpDist)
+    if (bSingle && bDumpDist_)
     {
         GMX_THROW(InconsistentInputError("Cannot calculate distances with -g1 angle or dihedral"));
-        // _bDumpDist = false;
+        // bDumpDist_ = false;
     }
-    if (_bMulti && !bSingle)
+    if (bMulti_ && !bSingle)
     {
         GMX_THROW(InconsistentInputError("-mult can only be combined with -g1 angle or dihedral"));
     }
-    if (_bMulti && _bSplit1)
+    if (bMulti_ && bSplit1_)
     {
         GMX_THROW(InconsistentInputError("-mult can not be combined with -split1"));
     }
-    if (_bMulti && _bAll)
+    if (bMulti_ && bAll_)
     {
         GMX_THROW(InconsistentInputError("-mult and -all are mutually exclusive options"));
     }
 
-    if (_bAll)
+    if (bAll_)
     {
-        _sel1info->setOnlyStatic(true);
+        sel1info_->setOnlyStatic(true);
     }
 
     // Set up the number of positions per angle.
-    switch (_g1type[0])
+    switch (g1type_[0])
     {
-        case 'a': _natoms1 = 3; break;
-        case 'd': _natoms1 = 4; break;
-        case 'v': _natoms1 = 2; break;
-        case 'p': _natoms1 = 3; break;
+        case 'a': natoms1_ = 3; break;
+        case 'd': natoms1_ = 4; break;
+        case 'v': natoms1_ = 2; break;
+        case 'p': natoms1_ = 3; break;
         default:
             GMX_THROW(InternalError("invalid -g1 value"));
     }
-    switch (_g2type[0])
+    switch (g2type_[0])
     {
-        case 'n': _natoms2 = 0; break;
-        case 'v': _natoms2 = 2; break;
-        case 'p': _natoms2 = 3; break;
-        case 't': _natoms2 = 0; break;
-        case 'z': _natoms2 = 0; break;
-        case 's': _natoms2 = 1; break;
+        case 'n': natoms2_ = 0; break;
+        case 'v': natoms2_ = 2; break;
+        case 'p': natoms2_ = 3; break;
+        case 't': natoms2_ = 0; break;
+        case 'z': natoms2_ = 0; break;
+        case 's': natoms2_ = 1; break;
         default:
             GMX_THROW(InternalError("invalid -g2 value"));
     }
-    if (_natoms2 == 0 && _options.isSet("group2"))
+    if (natoms2_ == 0 && options->isSet("group2"))
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }
 
-    if (!_bMulti)
+    if (!bMulti_)
     {
-        _sel1info->setValueCount(_bSplit1 ? _natoms1 : 1);
+        sel1info_->setValueCount(bSplit1_ ? natoms1_ : 1);
     }
-    if (_natoms2 > 0)
+    if (natoms2_ > 0)
     {
-        _sel2info->setValueCount(_bSplit2 ? _natoms2 : 1);
+        sel2info_->setValueCount(bSplit2_ ? natoms2_ : 1);
     }
 }
 
@@ -245,39 +249,39 @@ void
 Angle::checkSelections(const SelectionList &sel1,
                        const SelectionList &sel2) const
 {
-    if (_bMulti)
+    if (bMulti_)
     {
         for (size_t g = 0; g < sel1.size(); ++g)
         {
-            if (sel1[g].posCount() % _natoms1 != 0)
+            if (sel1[g].posCount() % natoms1_ != 0)
             {
                 GMX_THROW(InconsistentInputError(formatString(
                     "Number of positions in selection %d not divisible by %d",
-                    static_cast<int>(g + 1), _natoms1)));
+                    static_cast<int>(g + 1), natoms1_)));
             }
         }
         return;
     }
 
     int na1 = sel1[0].posCount();
-    int na2 = (_natoms2 > 0) ? sel2[0].posCount() : 0;
+    int na2 = (natoms2_ > 0) ? sel2[0].posCount() : 0;
 
-    if (!_bSplit1 && _natoms1 > 1 && na1 % _natoms1 != 0)
+    if (!bSplit1_ && natoms1_ > 1 && na1 % natoms1_ != 0)
     {
         GMX_THROW(InconsistentInputError(formatString(
             "Number of positions in the first group not divisible by %d",
-            _natoms1)));
+            natoms1_)));
     }
-    if (!_bSplit2 && _natoms2 > 1 && na2 % _natoms2 != 0)
+    if (!bSplit2_ && natoms2_ > 1 && na2 % natoms2_ != 0)
     {
         GMX_THROW(InconsistentInputError(formatString(
             "Number of positions in the second group not divisible by %d",
-            _natoms2)));
+            natoms2_)));
     }
 
-    if (_bSplit1)
+    if (bSplit1_)
     {
-        for (int g = 1; g < _natoms1; ++g)
+        for (int g = 1; g < natoms1_; ++g)
         {
             if (sel1[g].posCount() != na1)
             {
@@ -289,13 +293,13 @@ Angle::checkSelections(const SelectionList &sel1,
     }
     else
     {
-        na1 /= _natoms1;
+        na1 /= natoms1_;
     }
-    if (_natoms2 > 1)
+    if (natoms2_ > 1)
     {
-        if (_bSplit2)
+        if (bSplit2_)
         {
-            for (int g = 1; g < _natoms2; ++g)
+            for (int g = 1; g < natoms2_; ++g)
             {
                 if (sel2[g].posCount() != na2)
                 {
@@ -307,15 +311,15 @@ Angle::checkSelections(const SelectionList &sel1,
         }
         else
         {
-            na2 /= _natoms2;
+            na2 /= natoms2_;
         }
     }
-    if (_natoms1 > 0 && _natoms2 > 1 && na1 != na2)
+    if (natoms1_ > 0 && natoms2_ > 1 && na1 != na2)
     {
         GMX_THROW(InconsistentInputError(
                   "Number of vectors defined by the two groups are not the same"));
     }
-    if (_g2type[0] == 's' && sel2[0].posCount() != 1)
+    if (g2type_[0] == 's' && sel2[0].posCount() != 1)
     {
         GMX_THROW(InconsistentInputError(
                   "The second group should contain a single position with -g2 sphnorm"));
@@ -327,48 +331,47 @@ void
 Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
                     const TopologyInformation &top)
 {
-    checkSelections(_sel1, _sel2);
+    checkSelections(sel1_, sel2_);
 
-    if (_bMulti)
+    if (bMulti_)
     {
-        _data.setColumnCount(_sel1.size());
+        data_.setColumnCount(sel1_.size());
     }
-    else if (_bAll)
+    else if (bAll_)
     {
-        int na = _sel1[0].posCount();
-        if (!_bSplit1)
+        int na = sel1_[0].posCount();
+        if (!bSplit1_)
         {
-            na /= _natoms1;
+            na /= natoms1_;
         }
-        _data.setColumnCount(na + 1);
+        data_.setColumnCount(na + 1);
     }
     else
     {
-        _data.setColumnCount(1);
+        data_.setColumnCount(1);
     }
 
-    if (_g2type == "t0")
+    if (g2type_ == "t0")
     {
-        int na = _sel1[0].posCount();
-        if (!_bSplit1)
+        int na = sel1_[0].posCount();
+        if (!bSplit1_)
         {
-            na /= _natoms1;
+            na /= natoms1_;
         }
-        _vt0 = new rvec[na];
+        vt0_ = new rvec[na];
     }
-
-    registerAnalysisDataset(&_data, "angle");
 
     AnalysisDataPlotModulePointer plotm(
         new AnalysisDataPlotModule(settings.plotSettings()));
-    plotm->setFileName(_fnAngle);
+    plotm->setFileName(fnAngle_);
     plotm->setTitle("Angle");
     plotm->setXAxisIsTime();
     plotm->setYLabel("Angle (degrees)");
-    _data.addModule(plotm);
+    data_.addModule(plotm);
 }
 
 
+//! Helper method to process selections into an array of coordinates.
 static void
 copy_pos(const SelectionList &sel, bool bSplit, int natoms,
          int firstg, int first, rvec x[])
@@ -390,6 +393,7 @@ copy_pos(const SelectionList &sel, bool bSplit, int natoms,
 }
 
 
+//! Helper method to calculate a vector from two or three positions..
 static void
 calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 {
@@ -435,15 +439,15 @@ void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh = pdata->dataHandle(_data);
-    const SelectionList     &sel1 = pdata->parallelSelections(_sel1);
-    const SelectionList     &sel2 = pdata->parallelSelections(_sel2);
+    AnalysisDataHandle       dh = pdata->dataHandle(data_);
+    const SelectionList     &sel1 = pdata->parallelSelections(sel1_);
+    const SelectionList     &sel2 = pdata->parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 
     rvec  v1, v2;
     rvec  c1, c2;
-    switch (_g2type[0])
+    switch (g2type_[0])
     {
         case 'z':
             clear_rvec(v2);
@@ -451,15 +455,15 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             clear_rvec(c2);
             break;
         case 's':
-            copy_rvec(_sel2[0].position(0).x(), c2);
+            copy_rvec(sel2_[0].position(0).x(), c2);
             break;
     }
 
     dh.startFrame(frnr, fr.time);
 
-    int incr1 = _bSplit1 ? 1 : _natoms1;
-    int incr2 = _bSplit2 ? 1 : _natoms2;
-    int ngrps = _bMulti ? _sel1.size() : 1;
+    int incr1 = bSplit1_ ? 1 : natoms1_;
+    int incr2 = bSplit2_ ? 1 : natoms2_;
+    int ngrps = bMulti_ ? sel1_.size() : 1;
 
     for (int g = 0; g < ngrps; ++g)
     {
@@ -470,8 +474,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             rvec x[4];
             real angle;
-            copy_pos(sel1, _bSplit1, _natoms1, g, i, x);
-            switch (_g1type[0])
+            copy_pos(sel1, bSplit1_, natoms1_, g, i, x);
+            switch (g1type_[0])
             {
                 case 'a':
                     if (pbc)
@@ -512,22 +516,22 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 }
                 case 'v':
                 case 'p':
-                    calc_vec(_natoms1, x, pbc, v1, c1);
-                    switch (_g2type[0])
+                    calc_vec(natoms1_, x, pbc, v1, c1);
+                    switch (g2type_[0])
                     {
                         case 'v':
                         case 'p':
-                            copy_pos(sel2, _bSplit2, _natoms2, 0, j, x);
-                            calc_vec(_natoms2, x, pbc, v2, c2);
+                            copy_pos(sel2, bSplit2_, natoms2_, 0, j, x);
+                            calc_vec(natoms2_, x, pbc, v2, c2);
                             j += incr2;
                             break;
                         case 't':
                             // FIXME: This is not parallelizable.
                             if (frnr == 0)
                             {
-                                copy_rvec(v1, _vt0[n]);
+                                copy_rvec(v1, vt0_[n]);
                             }
-                            copy_rvec(_vt0[n], v2);
+                            copy_rvec(vt0_[n], v2);
                             break;
                         case 'z':
                             c1[XX] = c1[YY] = 0.0;
@@ -553,7 +557,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             angle *= RAD2DEG;
             /* TODO: add support for -od and -dumpd 
             real dist = 0.0;
-            if (_bDumpDist)
+            if (bDumpDist_)
             {
                 if (pbc)
                 {
@@ -567,7 +571,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 }
             }
             */
-            if (_bAll)
+            if (bAll_)
             {
                 dh.setPoint(n + 1, angle);
             }
@@ -593,13 +597,6 @@ Angle::finishAnalysis(int /*nframes*/)
 void
 Angle::writeOutput()
 {
-}
-
-
-TrajectoryAnalysisModulePointer
-Angle::create()
-{
-    return TrajectoryAnalysisModulePointer(new Angle());
 }
 
 } // namespace modules

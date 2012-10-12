@@ -215,7 +215,7 @@ static void chk_bonds(t_idef *idef,int ePBC,rvec *x,matrix box,real tol)
 	  b0 = idef->iparams[type].harmonic.rA;
 	  break;
 	case F_MORSE:
-	  b0 = idef->iparams[type].morse.b0;
+	  b0 = idef->iparams[type].morse.b0A;
 	  break;
 	case F_CUBICBONDS:
 	  b0 = idef->iparams[type].cubic.b0;
@@ -663,7 +663,7 @@ int main(int argc,char *argv[])
       "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
   };
 
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL,&oenv);
 

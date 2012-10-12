@@ -47,7 +47,7 @@ namespace gmx
 {
 
 AbstractAnalysisArrayData::AbstractAnalysisArrayData()
-    : _nrows(0), _xstart(0.0), _xstep(1.0), _bReady(false)
+    : rowCount_(0), xstart_(0.0), xstep_(1.0), bReady_(false)
 {
 }
 
@@ -64,7 +64,7 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
         return AnalysisDataFrameRef();
     }
     std::vector<AnalysisDataValue>::const_iterator begin
-        = _value.begin() + index * columnCount();
+        = value_.begin() + index * columnCount();
     return AnalysisDataFrameRef(
                 AnalysisDataFrameHeader(index, xvalue(index), 0.0),
                 AnalysisDataValuesRef(begin, begin + columnCount()));
@@ -88,12 +88,12 @@ AbstractAnalysisArrayData::setColumnCount(int ncols)
 
 
 void
-AbstractAnalysisArrayData::setRowCount(int nrows)
+AbstractAnalysisArrayData::setRowCount(int rowCount)
 {
-    GMX_RELEASE_ASSERT(nrows > 0, "Invalid number of rows");
+    GMX_RELEASE_ASSERT(rowCount > 0, "Invalid number of rows");
     GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change row count after data has been allocated");
-    _nrows = nrows;
+    rowCount_ = rowCount;
 }
 
 
@@ -103,9 +103,9 @@ AbstractAnalysisArrayData::allocateValues()
     GMX_RELEASE_ASSERT(!isAllocated(), "Can only allocate values once");
     GMX_RELEASE_ASSERT(rowCount() > 0 && columnCount() > 0,
                        "Row and column counts must be set before allocating values");
-    _value.resize(rowCount() * columnCount());
+    value_.resize(rowCount() * columnCount());
     std::vector<AnalysisDataValue>::iterator i;
-    for (i = _value.begin(); i != _value.end(); ++i)
+    for (i = value_.begin(); i != value_.end(); ++i)
     {
         i->setValue(0.0);
     }
@@ -115,9 +115,9 @@ AbstractAnalysisArrayData::allocateValues()
 void
 AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
-    GMX_RELEASE_ASSERT(!_bReady, "X axis cannot be set after data is finished");
-    _xstart = start;
-    _xstep = step;
+    GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
+    xstart_ = start;
+    xstep_ = step;
 }
 
 
@@ -125,13 +125,13 @@ void
 AbstractAnalysisArrayData::valuesReady()
 {
     GMX_RELEASE_ASSERT(isAllocated(), "There must be some data");
-    if (_bReady)
+    if (bReady_)
     {
         return;
     }
-    _bReady = true;
+    bReady_ = true;
 
-    std::vector<AnalysisDataValue>::const_iterator valueIter = _value.begin();
+    std::vector<AnalysisDataValue>::const_iterator valueIter = value_.begin();
     notifyDataStart();
     for (int i = 0; i < rowCount(); ++i, valueIter += columnCount())
     {
@@ -157,7 +157,7 @@ AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData *src,
     dest->setRowCount(src->rowCount());
     dest->allocateValues();
     dest->setXAxis(src->xstart(), src->xstep());
-    std::copy(src->_value.begin(), src->_value.end(), dest->_value.begin());
+    std::copy(src->value_.begin(), src->value_.end(), dest->value_.begin());
 }
 
 } // namespace gmx

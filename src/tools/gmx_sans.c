@@ -54,7 +54,7 @@
 #include "matio.h"
 #include "gmx_ana.h"
 #include "nsfactor.h"
-
+#include "gmx_omp.h"
 
 int gmx_sans(int argc,char *argv[])
 {
@@ -62,15 +62,15 @@ int gmx_sans(int argc,char *argv[])
         "This is simple tool to compute SANS spectra using Debye formula",
         "It currently uses topology file (since it need to assigne element for each atom)",
         "[PAR]",
-        "[TT]-pr[TT] Computes normalized g(r) function",
+        "[TT]-pr[tt] Computes normalized g(r) function",
         "[PAR]",
-        "[TT]-sq[TT] Computes SANS intensity curve for needed q diapason",
+        "[TT]-sq[tt] Computes SANS intensity curve for needed q diapason",
         "[PAR]",
-        "[TT]-startq[TT] Starting q value in nm",
+        "[TT]-startq[tt] Starting q value in nm",
         "[PAR]",
-        "[TT]-endq[TT] Ending q value in nm",
+        "[TT]-endq[tt] Ending q value in nm",
         "[PAR]",
-        "[TT]-qstep[TT] Stepping in q space",
+        "[TT]-qstep[tt] Stepping in q space",
         "[PAR]",
         "Note: When using Debye direct method computational cost increases as",
         "1/2 * N * (N - 1) where N is atom number in group of interest"
@@ -78,8 +78,9 @@ int gmx_sans(int argc,char *argv[])
     static gmx_bool bPBC=TRUE;
     static real binwidth=0.2,grid=0.05; /* bins shouldnt be smaller then bond (~0.1nm) length */
     static real start_q=0.0, end_q=2.0, q_step=0.01;
-    static gmx_large_int_t  nmc=1048576;
+    static real mcover=-1;
     static unsigned int  seed=0;
+    static int           nthreads=-1;
 
     static const char *emode[]= { NULL, "direct", "mc", NULL };
     static const char *emethod[]={ NULL, "debye", "fft", NULL };
@@ -94,8 +95,8 @@ int gmx_sans(int argc,char *argv[])
           "[HIDDEN]Binwidth (nm)" },
         { "-mode", FALSE, etENUM, {emode},
           "Mode for sans spectra calculation" },
-        { "-nmc", FALSE, etINT, {&nmc},
-          "Number of iterations for Monte-Carlo run"},
+        { "-mcover", FALSE, etREAL, {&mcover},
+          "Monte-Carlo coverage should be -1(default) or (0,1]"},
         { "-method", FALSE, etENUM, {emethod},
           "[HIDDEN]Method for sans spectra calculation" },
         { "-pbc", FALSE, etBOOL, {&bPBC},
@@ -110,6 +111,10 @@ int gmx_sans(int argc,char *argv[])
           "Stepping in q (1/nm)"},
         { "-seed",     FALSE, etINT,  {&seed},
           "Random seed for Monte-Carlo"},
+#ifdef GMX_OPENMP
+        { "-nt",  FALSE, etINT, {&nthreads},
+          "Number of threads to start"},
+#endif
     };
   FILE      *fp;
   const char *fnTPX,*fnNDX,*fnDAT=NULL;
@@ -119,7 +124,7 @@ int gmx_sans(int argc,char *argv[])
   gmx_rmpbc_t  gpbc=NULL;
   gmx_bool  bTPX;
   gmx_bool  bFFT=FALSE, bDEBYE=FALSE;
-  gmx_bool  bMC=FALSE, bDIRECT=FALSE;
+  gmx_bool  bMC=FALSE;
   int        ePBC=-1;
   matrix     box;
   char       title[STRLEN];
@@ -144,9 +149,18 @@ int gmx_sans(int argc,char *argv[])
       { efXVG, "-pr",         "pr",   ffWRITE }
   };
 
+  nthreads = gmx_omp_get_max_threads();
+
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
+
+  /* check that binwidth not smaller than smallers distance */
+  check_binwidth(binwidth);
+  check_mcover(mcover);
+
+  /* setting number of omp threads globaly */
+  gmx_omp_set_num_threads(nthreads);
 
   /* Now try to parse opts for modes */
   switch(emethod[0][0]) {
@@ -154,12 +168,10 @@ int gmx_sans(int argc,char *argv[])
       bDEBYE=TRUE;
       switch(emode[0][0]) {
       case 'd':
-          bDIRECT=TRUE;
-          fprintf(stderr,"Using direct Debye method to calculate spectrum\n");
+          bMC=FALSE;
           break;
       case 'm':
           bMC=TRUE;
-          fprintf(stderr,"Using Monte Carlo Debye method to calculate spectrum\n");
           break;
       default:
           break;
@@ -167,7 +179,6 @@ int gmx_sans(int argc,char *argv[])
       break;
   case 'f':
       bFFT=TRUE;
-      fprintf(stderr,"Using FFT method\n");
       break;
   default:
       break;
@@ -175,8 +186,6 @@ int gmx_sans(int argc,char *argv[])
 
   if (!bDEBYE && !bFFT)
       gmx_fatal(FARGS,"Unknown method. Set pr or fft!\n");
-  if (!bDIRECT && !bMC)
-      gmx_fatal(FARGS,"Unknown mode for g(r) method set to direct or mc!");
   /* Try to read files */
   fnDAT = ftp2fn(efDAT,NFILE,fnm);
   fnTPX = ftp2fn(efTPX,NFILE,fnm);
@@ -202,27 +211,21 @@ int gmx_sans(int argc,char *argv[])
   }
 
   natoms=top->atoms.nr;
+
   if (bDEBYE) {
-      if (bDIRECT) {
-          /* calc pr */
-          pr = calc_radial_distribution_histogram(gsans,x,index,isize,binwidth,bMC,nmc,seed);
-      } else if (bMC) {
-          if (nmc>(gmx_large_int_t)floor(0.5*isize*(isize-1))) {
-              fprintf(stderr,"Number of mc iteration larger then number of pairs in index group. Switching to direct method!\n");
-              bMC=FALSE;
-              bDIRECT=TRUE;
-              pr = calc_radial_distribution_histogram(gsans,x,index,isize,binwidth,bMC,nmc,seed);
-          } else {
-              pr = calc_radial_distribution_histogram(gsans,x,index,isize,binwidth,bMC,nmc,seed);
-          }
+      if (bMC) {
+          fprintf(stderr,"Using Monte Carlo Debye method to calculate spectrum\n");
       } else {
-          gmx_fatal(FARGS,"Unknown method!\n");
+          fprintf(stderr,"Using direct Debye method to calculate spectrum\n");
       }
   } else if (bFFT) {
-      gmx_fatal(FARGS,"Not implented!\n");
+      gmx_fatal(FARGS,"Not implented!");
   } else {
-      gmx_fatal(FARGS,"Whats this!?\n");
+      gmx_fatal(FARGS,"Whats this!");
   }
+
+  /*  realy calc p(r) */
+  pr = calc_radial_distribution_histogram(gsans,x,box,index,isize,binwidth,bMC,mcover,seed);
 
   /* prepare pr.xvg */
   fp = xvgropen(opt2fn_null("-pr",NFILE,fnm),"G(r)","Distance (nm)","Probability",oenv);
@@ -240,7 +243,8 @@ int gmx_sans(int argc,char *argv[])
 
   sfree(pr);
 
+  please_cite(stdout,"Garmay2012");
   thanx(stderr);
-  
+
   return 0;
 }

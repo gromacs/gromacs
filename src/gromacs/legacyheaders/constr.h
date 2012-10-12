@@ -34,6 +34,8 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
+#ifndef _constr_h
+#define _constr_h
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -250,6 +252,16 @@ gmx_bool constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
 			    int maxwarn,int *warncount);
 /* Returns if the constraining succeeded */
 
+
+/* helper functions for andersen temperature control, because the
+ * gmx_constr construct is only defined in constr.c. Return the list
+ * of blocks (get_sblock) and the number of blocks (get_nblocks).  */
+
+int *get_sblock(struct gmx_constr *constr);
+
+int get_nblocks(struct gmx_constr *constr);
+
 #ifdef __cplusplus
 }
+#endif
 #endif

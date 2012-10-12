@@ -43,33 +43,33 @@
 namespace gmx
 {
 
-AnalysisDataProxy::AnalysisDataProxy(int col, int span,
+AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
                                      AbstractAnalysisData *data)
-    : _source(*data), _col(col), _span(span)
+    : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan)
 {
     GMX_RELEASE_ASSERT(data, "Source data must not be NULL");
-    GMX_RELEASE_ASSERT(col >= 0 && span > 0, "Invalid proxy column");
-    setColumnCount(span);
-    setMultipoint(_source.isMultipoint());
+    GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
+    setColumnCount(columnSpan);
+    setMultipoint(source_.isMultipoint());
 }
 
 
 AnalysisDataFrameRef
 AnalysisDataProxy::tryGetDataFrameInternal(int index) const
 {
-    AnalysisDataFrameRef frame = _source.tryGetDataFrame(index);
+    AnalysisDataFrameRef frame = source_.tryGetDataFrame(index);
     if (!frame.isValid())
     {
         return AnalysisDataFrameRef();
     }
-    return AnalysisDataFrameRef(frame, _col, _span);
+    return AnalysisDataFrameRef(frame, firstColumn_, columnSpan_);
 }
 
 
 bool
 AnalysisDataProxy::requestStorageInternal(int nframes)
 {
-    return _source.requestStorage(nframes);
+    return source_.requestStorage(nframes);
 }
 
 
@@ -83,8 +83,8 @@ AnalysisDataProxy::flags() const
 void
 AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 {
-    GMX_RELEASE_ASSERT(data == &_source, "Source data mismatch");
-    GMX_RELEASE_ASSERT(_col + _span <= _source.columnCount(),
+    GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
+    GMX_RELEASE_ASSERT(firstColumn_ + columnSpan_ <= source_.columnCount(),
                        "Invalid column(s) specified");
     notifyDataStart();
 }
@@ -100,7 +100,7 @@ AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 void
 AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    AnalysisDataPointSetRef columns(points, _col, _span);
+    AnalysisDataPointSetRef columns(points, firstColumn_, columnSpan_);
     if (columns.columnCount() > 0)
     {
         notifyPointsAdd(columns);

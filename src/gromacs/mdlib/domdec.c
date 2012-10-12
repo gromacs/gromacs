@@ -1455,7 +1455,10 @@ void dd_collect_state(gmx_domdec_t *dd,
 
     if (DDMASTER(dd))
     {
-        state->lambda = state_local->lambda;
+        for (i=0;i<efptNR;i++) {
+            state->lambda[i] = state_local->lambda[i];
+        }
+        state->fep_state = state_local->fep_state;
         state->veta = state_local->veta;
         state->vol0 = state_local->vol0;
         copy_mat(state_local->box,state->box);
@@ -1708,13 +1711,17 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
                                 t_state *state,t_state *state_local,
                                 rvec **f)
 {
-    int  i,j,ngtch,ngtcp,nh;
+    int  i,j,nh;
 
     nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {
-        state_local->lambda = state->lambda;
+        for(i=0;i<efptNR;i++)
+        {
+            state_local->lambda[i] = state->lambda[i];
+        }
+        state_local->fep_state = state->fep_state;
         state_local->veta   = state->veta;
         state_local->vol0   = state->vol0;
         copy_mat(state->box,state_local->box);
@@ -1738,7 +1745,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
             }
         }
     }
-    dd_bcast(dd,sizeof(real),&state_local->lambda);
+    dd_bcast(dd,((efptNR)*sizeof(real)),state_local->lambda);
+    dd_bcast(dd,sizeof(int),&state_local->fep_state);
     dd_bcast(dd,sizeof(real),&state_local->veta);
     dd_bcast(dd,sizeof(real),&state_local->vol0);
     dd_bcast(dd,sizeof(state_local->box),state_local->box);
@@ -3815,8 +3823,8 @@ static void get_cg_distribution(FILE *fplog,gmx_large_int_t step,gmx_domdec_t *d
     ivec npulse;
     int  i,cg_gl;
     int  *ibuf,buf2[2] = { 0, 0 };
-    
-    if (DDMASTER(dd))
+    gmx_bool bMaster = DDMASTER(dd);
+    if (bMaster)
     {
         ma = dd->ma;
         
@@ -3851,7 +3859,7 @@ static void get_cg_distribution(FILE *fplog,gmx_large_int_t step,gmx_domdec_t *d
         srenew(dd->index_gl,dd->cg_nalloc);
         srenew(dd->cgindex,dd->cg_nalloc+1);
     }
-    if (DDMASTER(dd))
+    if (bMaster)
     {
         for(i=0; i<dd->nnodes; i++)
         {
@@ -5200,34 +5208,28 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
 }
 
 #ifdef GMX_MPI
-static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
-                                   int dim_ind,ivec loc)
+static void make_load_communicator(gmx_domdec_t *dd, int dim_ind,ivec loc)
 {
-    MPI_Group g_row = MPI_GROUP_EMPTY;
     MPI_Comm  c_row;
-    int  dim,i,*rank;
+    int  dim, i, rank;
     ivec loc_c;
     gmx_domdec_root_t *root;
     gmx_bool bPartOfGroup = FALSE;
     
     dim = dd->dim[dim_ind];
     copy_ivec(loc,loc_c);
-    snew(rank,dd->nc[dim]);
     for(i=0; i<dd->nc[dim]; i++)
     {
         loc_c[dim] = i;
-        rank[i] = dd_index(dd->nc,loc_c);
-        if (rank[i] == dd->rank)
+        rank = dd_index(dd->nc,loc_c);
+        if (rank == dd->rank)
         {
             /* This process is part of the group */
             bPartOfGroup = TRUE;
         }
     }
-    if (bPartOfGroup)
-    {
-        MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
-    }
-    MPI_Comm_create(dd->mpi_comm_all,g_row,&c_row);
+    MPI_Comm_split(dd->mpi_comm_all, bPartOfGroup?0:MPI_UNDEFINED, dd->rank,
+                   &c_row);
     if (bPartOfGroup)
     {
         dd->comm->mpi_comm_load[dim_ind] = c_row;
@@ -5261,32 +5263,28 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
             snew(dd->comm->load[dim_ind].load,dd->nc[dim]*DD_NLOAD_MAX);
         }
     }
-    sfree(rank);
 }
 #endif
 
 static void make_load_communicators(gmx_domdec_t *dd)
 {
 #ifdef GMX_MPI
-  MPI_Group g_all;
   int  dim0,dim1,i,j;
   ivec loc;
 
   if (debug)
     fprintf(debug,"Making load communicators\n");
 
-  MPI_Comm_group(dd->mpi_comm_all,&g_all);
-  
   snew(dd->comm->load,dd->ndim);
   snew(dd->comm->mpi_comm_load,dd->ndim);
   
   clear_ivec(loc);
-  make_load_communicator(dd,g_all,0,loc);
+  make_load_communicator(dd,0,loc);
   if (dd->ndim > 1) {
     dim0 = dd->dim[0];
     for(i=0; i<dd->nc[dim0]; i++) {
       loc[dim0] = i;
-      make_load_communicator(dd,g_all,1,loc);
+      make_load_communicator(dd,1,loc);
     }
   }
   if (dd->ndim > 2) {
@@ -5296,12 +5294,10 @@ static void make_load_communicators(gmx_domdec_t *dd)
       dim1 = dd->dim[1];
       for(j=0; j<dd->nc[dim1]; j++) {
 	  loc[dim1] = j;
-	  make_load_communicator(dd,g_all,2,loc);
+	  make_load_communicator(dd,2,loc);
       }
     }
   }
-
-  MPI_Group_free(&g_all);
 
   if (debug)
     fprintf(debug,"Finished making load communicators\n");

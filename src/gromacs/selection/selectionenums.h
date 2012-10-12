@@ -63,15 +63,15 @@ namespace gmx
  */
 enum SelectionFlag
 {
-    efOnlyStatic        = 1<<0,
-    efOnlyAtoms         = 1<<1,
+    efSelection_OnlyStatic              = 1<<0,
+    efSelection_OnlyAtoms               = 1<<1,
     //! Whether ::POS_MASKONLY should be used for output position evaluation.
-    efDynamicMask       = 1<<2,
-    efDynamicOnlyWhole  = 1<<3,
+    efSelection_DynamicMask             = 1<<2,
+    efSelection_DynamicOnlyWhole        = 1<<3,
     //! Whether velocities of output positions should be evaluated.
-    efEvaluateVelocities        = 1<<5,
+    efSelection_EvaluateVelocities      = 1<<5,
     //! Whether forces on output positions should be evaluated.
-    efEvaluateForces            = 1<<6,
+    efSelection_EvaluateForces          = 1<<6,
 };
 
 //! \internal Holds a collection of ::SelectionFlag values.

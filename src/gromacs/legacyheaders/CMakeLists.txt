@@ -4,4 +4,5 @@ install(DIRECTORY . DESTINATION ${INCL_INSTALL_DIR}/gromacs/legacyheaders
   PATTERN "Makefile*" EXCLUDE
   PATTERN "CMake*" EXCLUDE
   PATTERN "cmake*" EXCLUDE
+  PATTERN "*.cmakein" EXCLUDE
 )

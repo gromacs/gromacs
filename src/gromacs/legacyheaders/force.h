@@ -87,9 +87,7 @@ void make_wall_tables(FILE *fplog,const output_env_t oenv,
 			     t_forcerec *fr);
 
 real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
-		     rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb);
-
-
+	      rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb);
 
 t_forcerec *mk_forcerec(void);
 
@@ -159,7 +157,7 @@ void init_forcerec(FILE       *fplog,
  * print_force >= 0: print forces for atoms with force >= print_force
  */
 
-void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd);
+void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
 
 void destroy_enerdata(gmx_enerdata_t *enerd);
@@ -174,7 +172,7 @@ void reset_enerdata(t_grpopts *opts,
 void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
 /* Locally sum the non-bonded potential energy terms */
 
-void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir);
+void sum_dhdl(gmx_enerdata_t *enerd,real *lambda,t_lambda *fepvals);
 /* Sum the free energy contributions */
 
 void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
@@ -218,7 +216,7 @@ void do_force(FILE *log,t_commrec *cr,
 		     tensor vir_force,
 		     t_mdatoms *mdatoms,
 		     gmx_enerdata_t *enerd,t_fcdata *fcd,
-		     real lambda,t_graph *graph,
+		     real *lambda,t_graph *graph,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
 		     gmx_bool bBornRadii,
@@ -242,7 +240,7 @@ void ns(FILE       *fplog,
 	       t_mdatoms  *md,
 	       t_commrec  *cr,
 	       t_nrnb     *nrnb,
-	       real       lambda,
+	       real       *lambda,
 	       real       *dvdlambda,
 	       gmx_grppairener_t *grppener,
 	       gmx_bool       bFillGrid,
@@ -272,7 +270,8 @@ void do_force_lowlevel(FILE         *fplog,
 			      t_atomtypes  *atype,
 			      gmx_bool         bBornRadii,
 			      matrix       box,
-			      real         lambda,
+			      t_lambda     *fepvals,
+			      real         *lambda,
 			      t_graph      *graph,
 			      t_blocka     *excl,
 			      rvec         mu_tot[2],

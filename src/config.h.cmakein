@@ -1,4 +1,4 @@
-/* Manually created from config.h.in to work with cmake */
+#include "gromacs/utility/gmx_header_config.h"
 
 /* Disable warnings about double-to-float conversion accuracy loss on MSVC */
 #ifdef _MSC_VER
@@ -20,21 +20,48 @@
 #cmakedefine USE_VERSION_H
 
 /* Default location of data files */
-#cmakedefine GMXLIBDIR "@GMXLIBDIR@"
+#define GMXLIBDIR "@GMXLIBDIR@"
 
 /* Hardware and OS version for build host */
-#cmakedefine BUILD_MACHINE "@BUILD_MACHINE@"
+#define BUILD_HOST "@BUILD_HOST@"
+
+/* CPU information for build host */
+#define BUILD_CPU_VENDOR "@BUILD_CPU_VENDOR@"
+
+#define BUILD_CPU_BRAND "@BUILD_CPU_BRAND@"
+
+#define BUILD_CPU_FAMILY @BUILD_CPU_FAMILY@
+
+#define BUILD_CPU_MODEL @BUILD_CPU_MODEL@
+
+#define BUILD_CPU_STEPPING @BUILD_CPU_STEPPING@
+
+#define BUILD_CPU_FEATURES "@BUILD_CPU_FEATURES@"
+
+/* Compiler and CFLAGS from build */
+#define BUILD_COMPILER "@BUILD_COMPILER@"
+
+#define BUILD_CFLAGS   "@BUILD_CFLAGS@"
 
 /* Date and time for build */
-#cmakedefine BUILD_TIME "@BUILD_TIME@"
+#define BUILD_TIME "@BUILD_TIME@"
 
 /* User doing build */
-#cmakedefine BUILD_USER "@BUILD_USER@"
+#define BUILD_USER "@BUILD_USER@"
 
-/* Turn off water-water neighborlist optimization only */
+/* Binary suffix for the created binaries */
+#define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
+
+/* Source directory for the build */
+#cmakedefine CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@"
+
+/* Binary directory for the build */
+#cmakedefine CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@"
+
+/* Turn off water-water neighborlist optimization only - not used right now */
 #cmakedefine DISABLE_WATERWATER_NLIST
 
-/* Turn off all water neighborlist optimization */
+/* Turn off all water neighborlist optimization - not used right now */
 #cmakedefine DISABLE_WATER_NLIST
 
 /* Fortran support */
@@ -44,16 +71,10 @@
    case), which must not contain underscores, for linking with Fortran. */
 #define F77_FUNC(name,NAME)     @F77_FUNCDEF@
 
-/* As F77_FUNC, but for C identifiers containing underscores. */
-#define F77_FUNC_(name,NAME)    @F77_FUNCDEF_@
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
-
-/* Detect Cygwin */
-#cmakedefine GMX_CYGWIN
 
 /* Use assembly intrinsics kernels for BlueGene */
 #cmakedefine GMX_BLUEGENE
@@ -85,14 +106,20 @@
 /* Use AMD core math library */
 #cmakedefine GMX_FFT_ACML
 
-/* Single-precision SSE instructions on ia32 */
-#cmakedefine GMX_IA32_SSE
+/* What type of acceleration is used? (string, for dumping to files) */
+#define GMX_ACCELERATION "@GMX_ACCELERATION@"
 
-/* Double-precision SSE2 instructions on ia32 */
-#cmakedefine GMX_IA32_SSE2
+/* SSE2 acceleration */
+#cmakedefine GMX_X86_SSE2
 
-/* Use ia64 assembly tuned for Itanium2 */
-#cmakedefine GMX_IA64_ASM
+/* SSE4.1 acceleration */
+#cmakedefine GMX_X86_SSE4_1
+
+/* AVX 128-bit acceleration with FMA, useful on modern AMD hardware */
+#cmakedefine GMX_X86_AVX_128_FMA
+
+/* AVX 256-bit acceleration, usually for intel hardware */
+#cmakedefine GMX_X86_AVX_256
 
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN 
@@ -110,8 +137,11 @@
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
 
-/* Use threads for parallelization */
+/* Use threads_mpi for parallelization */
 #cmakedefine GMX_THREAD_MPI
+
+/* Use OpenMP multithreading */
+#cmakedefine GMX_OPENMP
 
 /* Use old threading (domain decomp force calc) code */
 #cmakedefine GMX_THREAD_SHM_FDECOMP 
@@ -121,9 +151,6 @@
 
 /* Ignore calls to system(3) */
 #cmakedefine GMX_NO_SYSTEM
-
-/* Use PowerPC Altivec inner loops */
-#cmakedefine GMX_PPC_ALTIVEC
 
 /* Use (modified) Gamess-UK for QM-MM calculations */
 #cmakedefine GMX_QMMM_GAMESS
@@ -164,56 +191,17 @@
 /* Define for Linux pthread_setaffinity */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
-/* Define for Windows NUMA-aware allocator functions*/
-#cmakedefine TMPI_WINDOWS_NUMA_API
-
 /* Define for sysconf() */
 #cmakedefine HAVE_SYSCONF
 
-/* Define for GetSystemInfo() */
-#cmakedefine HAVE_SYSTEM_INFO
-
-/* Single-precision SSE instructions on X86_64 */
-#cmakedefine GMX_X86_64_SSE
-
-/* Double-precision SSE2 instructions on X86_64 */
-#cmakedefine GMX_X86_64_SSE2
-
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
-
-/* Enable x86 MSVC inline assembly */
-#cmakedefine GMX_X86_MSVC_INLINE_ASM
-
-/* Support for SSE intrinsics */
-#cmakedefine GMX_SSE
-
-/* Support for SSE2 intrinsics */
-#cmakedefine GMX_SSE2
-
-/* Support for SSE3 intrinsics */
-#cmakedefine GMX_SSE3
-
-/* Support for SSE4.1 intrinsics */
-#cmakedefine GMX_SSE4_1
-
-/* Define to 1 if you have the <altivec.h> header file. */
-#cmakedefine HAVE_ALTIVEC_H
-
-/* Define to 1 if the system has the type gmx_bool. */
-#cmakedefine HAVE_BOOL
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
 
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
 #cmakedefine HAVE__FSEEKI64
-
-/* Define to 1 if you have the m library (-lm). */
-#cmakedefine HAVE_LIBM
-
-/* Define to 1 if you have the mkl library (-lmkl). */
-#cmakedefine HAVE_LIBMKL
 
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
@@ -224,23 +212,17 @@
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2
 
+/* Define to 1 if you have the openbabel2 library (-lopenbabel2). */
+#cmakedefine HAVE_LIBOPENBABEL2
+
 /* Define to 1 if you have the dl library (-ldl). */
 #cmakedefine HAVE_LIBDL
 
 /* Have io.h (windows)*/
 #cmakedefine HAVE_IO_H
 
-/* Define to 1 if you have the strcasecmp() function. */
-#cmakedefine HAVE_STRCASECMP
-
 /* Define to 1 if you have the strdup() function. */
 #cmakedefine HAVE_STRDUP
-
-/* Define to 1 if you have the vfprintf() function. */
-#cmakedefine HAVE_VFPRINTF
-
-/* Define to 1 if you have the memcmp() function. */
-#cmakedefine HAVE_MEMCMP
 
 /* Define to 1 if you have the posix_memalign() function. */
 #cmakedefine HAVE_POSIX_MEMALIGN
@@ -256,12 +238,6 @@
 
 /* Define to 1 if you have the cbrt() function. */
 #cmakedefine HAVE_CBRT
-
-/* Define to 1 if you have the isnan() function. */
-#cmakedefine HAVE_ISNAN
-
-/* Define to 1 if you have the _isnan() function. */
-#cmakedefine HAVE__ISNAN
 
 /* Define to 1 if you have the isfinite() function. */
 #cmakedefine HAVE_ISFINITE
@@ -284,32 +260,17 @@
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
 
-/* Define to 1 if you have the <string.h> header file. */
-#cmakedefine HAVE_STRING_H
+/* Define to 1 if you have the lstat() function. */
+#cmakedefine HAVE_LSTAT
 
-/* Define to 1 if yo have the <math.h> header file. */
-#cmakedefine HAVE_MATH_H
-
-/* Define to 1 if yo have the <limits.h> header file. */
-#cmakedefine HAVE_LIMITS_H
-
-/* Define to 1 if yo have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H
+/* Define to 1 if you have the sigaction() function. */
+#cmakedefine HAVE_SIGACTION
 
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
-/* Define to 1 if yo have the <direct.h> header file. */
-#cmakedefine HAVE_DIRECT_H
-
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H
-
-/* Define to 1 if yo have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H
-
-/* Define to 1 if yo have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H
 
 /* Define to 1 if yo have the <pthread.h> header file. */
 #cmakedefine HAVE_PTHREAD_H
@@ -317,44 +278,20 @@
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H
 
-/* Define to 1 if yo have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H
-
 /* Define to 1 if yo have the <regex.h> header file. */
 #cmakedefine HAVE_REGEX_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
 
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine HAVE_SYS_STAT_H
-
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
 
-/* Define to 1 if you have the <rpc/rpc.h> header file. */
-#cmakedefine HAVE_RPC_RPC_H
-
-/* Define to 1 if you have the <rpc/xdr.h> header file. */
-#cmakedefine HAVE_RPC_XDR_H
-
-/* Define to 1 if yo have the <xmmintrin.h> header file. */
-#cmakedefine HAVE_XMMINTRIN_H
-
-/* Define to 1 if yo have the <emmintrin.h> header file. */
-#cmakedefine HAVE_EMMINTRIN_H
-
-/* Define to 1 if yo have the <pmmintrin.h> header file. */
-#cmakedefine HAVE_PMMINTRIN_H
-
-/* Define to 1 if yo have the <smmintrin.h> header file. */
-#cmakedefine HAVE_SMMINTRIN_H
+/* Define to 1 if you have the <x86intrin.h> header file */
+#cmakedefine HAVE_X86INTRIN_H
 
 /* Define for sched.h (this is for thread_mpi)*/
 #define HAVE_SCHED_H
-
-/* Define to 1 if you have the vprintf() function. */
-#cmakedefine HAVE_VPRINTF
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
@@ -392,37 +329,12 @@
 /* Some systems requires this to be set to 64 for large file support */
 #cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
-/* Gromacs shortcut define for fseeko & ftello being present with 64-bit support */
-#cmakedefine GMX_LARGEFILES
-
-/* Define to int if <sys/types.h> does not define. */
-#cmakedefine gid_t int
-
 /* Define to __inline__ or __inline if that is what the C compiler
    calls it, or to nothing if inline is not supported under any name.  */
 #ifndef __cplusplus
 #define inline ${INLINE_KEYWORD}
 #endif
 
-/* Define to __restrict__ or __restrict if that is what the C compiler
-   calls it, or to nothing if restrict is not supported under any name.  */
-#define restrict ${RESTRICT_KEYWORD}
-
-#ifndef CPLUSPLUS
-#ifdef __cplusplus
-#define CPLUSPLUS
-#endif
-#endif  
-
-/* Define to long int if <sys/types.h> does not define. */                    
-#cmakedefine off_t int                                                                
-                                                                                
-/* Define to unsigned int if <sys/types.h> does not define. */
-#cmakedefine size_t int                                                                
-
-/* Define to int if <sys/types.h> does not define. */
-#cmakedefine uid_t int
-                                                                
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 
@@ -434,9 +346,6 @@
 
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
-
-/* Define if we have sufficient C++11 support */
-#cmakedefine HAVE_CXX11
 
 /* Catch stupid CMake problems on OS X */
 #ifdef __APPLE__

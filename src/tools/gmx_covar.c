@@ -35,18 +35,13 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
 #include <string.h>
 #include <time.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif
-
-
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-#include <direct.h>
-#include <io.h>
 #endif
 
 #include "statutil.h"
@@ -69,10 +64,11 @@
 #include "txtdump.h"
 #include "matio.h"
 #include "eigio.h"
-#include "eigensolver.h"
 #include "physics.h"
 #include "gmx_ana.h"
 #include "string2.h"
+
+#include "gromacs/linearalgebra/eigensolver.h"
 
 /* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
 char *
@@ -487,15 +483,7 @@ int gmx_covar(int argc,char *argv[])
   fprintf(out,"Covariance analysis log, written %s\n",timebuf);
     
   fprintf(out,"Program: %s\n",argv[0]);
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-  pcwd=_getcwd(str,STRLEN);
-#else
-  pcwd=getcwd(str,STRLEN);
-#endif
-  if(NULL==pcwd)
-  {
-      gmx_fatal(FARGS,"Current working directory is undefined");
-  }
+  gmx_getcwd(str, STRLEN);
 
   fprintf(out,"Working directory: %s\n\n",str);
 

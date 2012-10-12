@@ -36,10 +36,10 @@ files.
 */
 
 
-#ifndef _TMPI_NUMA_MALLOC_H_
-#define _TMPI_NUMA_MALLOC_H_
+#ifndef TMPI_NUMA_MALLOC_H_
+#define TMPI_NUMA_MALLOC_H_
 
-/*! \file numa_alloc.h
+/*! \file
   
     \brief NUMA aware memory allocators.
   
@@ -51,9 +51,11 @@ files.
    
     Currently this is only implemented on Windows. Check for the presence
     of these functions with
+    \code
     #ifdef TMPI_NUMA_MALLOC
     ....
     #endif
+    \endcode
  */
 
 
@@ -67,7 +69,7 @@ extern "C"
 #endif
 
 
-#if (defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 ) || defined (__CYGWIN__))
+#if (defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !defined (__CYGWIN__) && !defined (__CYGWIN32__)
 
 #define TMPI_NUMA_MALLOC
 
@@ -126,5 +128,5 @@ int tMPI_Free_numa(void *ptr);
 }
 #endif
 
-#endif /* _TMPI_NUMA_MALLOC_H_ */
+#endif /* TMPI_NUMA_MALLOC_H_ */
 

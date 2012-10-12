@@ -194,7 +194,10 @@ void init_top (t_topology *top)
 
 void init_inputrec(t_inputrec *ir)
 {
-  memset(ir,0,(size_t)sizeof(*ir));
+    memset(ir,0,(size_t)sizeof(*ir));
+    snew(ir->fepvals,1);
+    snew(ir->expandedvals,1);
+    snew(ir->simtempvals,1);
 }
 
 void stupid_fill_block(t_block *grp,int natom,gmx_bool bOneIndexGroup)
@@ -422,7 +425,7 @@ void done_inputrec(t_inputrec *ir)
   }
 }
 
-static void init_ekinstate(ekinstate_t *eks)
+static void zero_ekinstate(ekinstate_t *eks)
 {
   eks->ekin_n         = 0;
   eks->ekinh          = NULL;
@@ -492,7 +495,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
         for(i=0; i<state->ngtc; i++)
         {
             for (j=0;j<state->nhchainlength;j++)
- {
+            {
                 state->nosehoover_xi[i*state->nhchainlength + j]  = 0.0;
                 state->nosehoover_vxi[i*state->nhchainlength + j]  = 0.0;
             }
@@ -529,7 +532,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 }
 
 
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength)
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda)
 {
   int i;
 
@@ -537,6 +540,11 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
   state->nrng   = 0;
   state->flags  = 0;
   state->lambda = 0;
+  snew(state->lambda,efptNR);
+  for (i=0;i<efptNR;i++)
+  {
+      state->lambda[i] = 0;
+  }
   state->veta   = 0;
   clear_mat(state->box);
   clear_mat(state->box_rel);
@@ -556,9 +564,11 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
   state->sd_X = NULL;
   state->cg_p = NULL;
 
-  init_ekinstate(&state->ekinstate);
+  zero_ekinstate(&state->ekinstate);
 
   init_energyhistory(&state->enerhist);
+
+  init_df_history(&state->dfhist,nlambda,0);
 
   state->ddp_count = 0;
   state->ddp_count_cg_gl = 0;
@@ -749,5 +759,72 @@ real max_cutoff(real cutoff1,real cutoff2)
     else
     {
         return max(cutoff1,cutoff2);
+    }
+}
+
+extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)
+{
+    int i;
+
+    dfhist->bEquil = 0;
+    dfhist->nlambda = nlambda;
+    dfhist->wl_delta = wl_delta;
+    snew(dfhist->sum_weights,dfhist->nlambda);
+    snew(dfhist->sum_dg,dfhist->nlambda);
+    snew(dfhist->sum_minvar,dfhist->nlambda);
+    snew(dfhist->sum_variance,dfhist->nlambda);
+    snew(dfhist->n_at_lam,dfhist->nlambda);
+    snew(dfhist->wl_histo,dfhist->nlambda);
+
+    /* allocate transition matrices here */
+    snew(dfhist->Tij,dfhist->nlambda);
+    snew(dfhist->Tij_empirical,dfhist->nlambda);
+
+    for (i=0;i<dfhist->nlambda;i++) {
+        snew(dfhist->Tij[i],dfhist->nlambda);
+        snew(dfhist->Tij_empirical[i],dfhist->nlambda);
+    }
+
+    snew(dfhist->accum_p,dfhist->nlambda);
+    snew(dfhist->accum_m,dfhist->nlambda);
+    snew(dfhist->accum_p2,dfhist->nlambda);
+    snew(dfhist->accum_m2,dfhist->nlambda);
+
+    for (i=0;i<dfhist->nlambda;i++) {
+        snew((dfhist->accum_p)[i],dfhist->nlambda);
+        snew((dfhist->accum_m)[i],dfhist->nlambda);
+        snew((dfhist->accum_p2)[i],dfhist->nlambda);
+        snew((dfhist->accum_m2)[i],dfhist->nlambda);
+    }
+}
+
+extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
+{
+    int i,j;
+
+    init_df_history(df_dest,df_source->nlambda,df_source->wl_delta);
+    df_dest->nlambda = df_source->nlambda;
+    df_dest->bEquil = df_source->bEquil;
+    for (i=0;i<df_dest->nlambda;i++)
+    {
+        df_dest->sum_weights[i]  = df_source->sum_weights[i];
+        df_dest->sum_dg[i]       = df_source->sum_dg[i];
+        df_dest->sum_minvar[i]   = df_source->sum_minvar[i];
+        df_dest->sum_variance[i] = df_source->sum_variance[i];
+        df_dest->n_at_lam[i]     = df_source->n_at_lam[i];
+        df_dest->wl_histo[i]     = df_source->wl_histo[i];
+        df_dest->accum_p[i]      = df_source->accum_p[i];
+        df_dest->accum_m[i]      = df_source->accum_m[i];
+        df_dest->accum_p2[i]     = df_source->accum_p2[i];
+        df_dest->accum_m2[i]     = df_source->accum_m2[i];
+    }
+
+    for (i=0;i<df_dest->nlambda;i++)
+    {
+        for (j=0;j<df_dest->nlambda;j++)
+        {
+            df_dest->Tij[i][j]  = df_source->Tij[i][j];
+            df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
+        }
     }
 }

@@ -42,7 +42,6 @@
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -56,13 +55,16 @@ namespace analysismodules
 class Angle : public TrajectoryAnalysisModule
 {
     public:
+        static const char name[];
+        static const char shortDescription[];
+
         Angle();
         virtual ~Angle();
 
-        static TrajectoryAnalysisModulePointer create();
-
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
-        virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options *options,
+                                     TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -76,27 +78,25 @@ class Angle : public TrajectoryAnalysisModule
         void checkSelections(const SelectionList &sel1,
                              const SelectionList &sel2) const;
 
-        Options                 _options;
+        SelectionList           sel1_;
+        SelectionList           sel2_;
+        SelectionOptionInfo    *sel1info_;
+        SelectionOptionInfo    *sel2info_;
+        std::string             fnAngle_;
+        std::string             fnDump_;
 
-        SelectionList           _sel1;
-        SelectionList           _sel2;
-        SelectionOptionInfo    *_sel1info;
-        SelectionOptionInfo    *_sel2info;
-        std::string             _fnAngle;
-        std::string             _fnDump;
+        std::string             g1type_;
+        std::string             g2type_;
+        bool                    bSplit1_;
+        bool                    bSplit2_;
+        bool                    bMulti_;
+        bool                    bAll_;
+        bool                    bDumpDist_;
 
-        std::string             _g1type;
-        std::string             _g2type;
-        bool                    _bSplit1;
-        bool                    _bSplit2;
-        bool                    _bMulti;
-        bool                    _bAll;
-        bool                    _bDumpDist;
-
-        AnalysisData            _data;
-        int                     _natoms1;
-        int                     _natoms2;
-        rvec                   *_vt0;
+        AnalysisData            data_;
+        int                     natoms1_;
+        int                     natoms2_;
+        rvec                   *vt0_;
 
         // Copy and assign disallowed by base.
 };

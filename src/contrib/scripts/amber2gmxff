@@ -427,7 +427,6 @@ END {
   printf("; # impropers:       %s\n", ni)  > ffbon;  
   
   print_warn();
-  system("luck");
 }
 
 #last line

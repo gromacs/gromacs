@@ -93,8 +93,8 @@ class AbstractOption
         /*! \cond libapi */
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
-            : _minValueCount(1), _maxValueCount(1),
-              _name(name), _descr(NULL)
+            : minValueCount_(1), maxValueCount_(1),
+              name_(name), descr_(NULL)
         { }
 
         /*! \brief
@@ -126,52 +126,65 @@ class AbstractOption
          * description.
          */
         virtual std::string createDescription() const
-        { return _descr ? _descr : ""; }
+        { return descr_ ? descr_ : ""; }
 
         //! Sets the description for the option.
-        void setDescription(const char *descr) { _descr = descr; }
+        void setDescription(const char *descr) { descr_ = descr; }
         //! Sets a flag for the option.
-        void setFlag(OptionFlag flag) { _flags.set(flag); }
+        void setFlag(OptionFlag flag) { flags_.set(flag); }
         //! Clears a flag for the option.
-        void clearFlag(OptionFlag flag) { _flags.clear(flag); }
+        void clearFlag(OptionFlag flag) { flags_.clear(flag); }
         //! Sets or clears a flag for the option.
-        void setFlag(OptionFlag flag, bool bSet) { _flags.set(flag, bSet); }
+        void setFlag(OptionFlag flag, bool bSet) { flags_.set(flag, bSet); }
         //! Returns true if the option is vector-valued.
-        bool isVector() const { return hasFlag(efVector); }
-        //! Sets the option to be vector-valued.
+        bool isVector() const { return hasFlag(efOption_Vector); }
+        /*! \brief
+         * Sets the option to be vector-valued.
+         *
+         * This method is provided for convenience to make management of value
+         * counts easier.  In order to implement a vector-valued option, the
+         * class derived from AbstractOption should expose a method that calls
+         * this method, and the storage object derived from
+         * AbstractOptionStorage should check isVector().
+         * If only a single value is provided, the storage object should fill
+         * the whole vector with that value.
+         *
+         * The length of the vector (the value of maxValueCount_) must be
+         * fixed.  The default length is 3 elements.
+         */
         void setVector()
         {
-            setFlag(efVector);
-            _minValueCount = 1;
-            if (_maxValueCount == 1)
+            setFlag(efOption_Vector);
+            minValueCount_ = 1;
+            if (maxValueCount_ == 1)
             {
-                _maxValueCount = 3;
+                maxValueCount_ = 3;
             }
         }
         //! Sets the required number of values for the option.
         void setValueCount(int count)
         {
-            if (!hasFlag(efVector))
+            if (!hasFlag(efOption_Vector))
             {
-                _minValueCount = count;
+                minValueCount_ = count;
             }
-            _maxValueCount = count;
+            maxValueCount_ = count;
         }
 
         //! Minimum number of values required for the option.
-        int                     _minValueCount;
+        int                     minValueCount_;
         //! Maximum number of values allowed for the option.
-        int                     _maxValueCount;
+        int                     maxValueCount_;
         //! \endcond
 
     private:
         //! Returns true if a flag has been set.
-        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
+        bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
 
-        const char             *_name;
+        const char             *name_;
         //! Pointer to description of the option.
-        const char             *_descr;
-        OptionFlags             _flags;
+        const char             *descr_;
+        OptionFlags             flags_;
 
         /*! \brief
          * Needed to initialize an AbstractOptionStorage object from this class
@@ -225,17 +238,17 @@ class OptionTemplate : public AbstractOption
         { setDescription(descr); return me(); }
         //! Hides the option from normal help output.
         MyClass &hidden(bool bHidden = true)
-        { setFlag(efHidden, bHidden); return me(); }
+        { setFlag(efOption_Hidden, bHidden); return me(); }
         //! Requires the option to be specified explicitly.
         MyClass &required(bool bRequired = true)
-        { setFlag(efRequired, bRequired); return me(); }
+        { setFlag(efOption_Required, bRequired); return me(); }
         //! Allows the option to be specified multiple times.
         MyClass &allowMultiple(bool bMulti = true)
-        { setFlag(efMulti, bMulti); return me(); }
+        { setFlag(efOption_MultipleTimes, bMulti); return me(); }
         //! Requires exactly \p count values for the option.
         MyClass &valueCount(int count) { setValueCount(count); return me(); }
         //! Allows any number of values for the option.
-        MyClass &multiValue() { _maxValueCount = -1; return me(); }
+        MyClass &multiValue() { maxValueCount_ = -1; return me(); }
 
         /*! \brief
          * Sets a default value for the option.
@@ -253,7 +266,7 @@ class OptionTemplate : public AbstractOption
          * \p defaultValue is copied when the option is created.
          */
         MyClass &defaultValue(const T &defaultValue)
-        { _defaultValue = &defaultValue; return me(); }
+        { defaultValue_ = &defaultValue; return me(); }
         /*! \brief
          * Sets a default value for the option when it is set.
          *
@@ -266,7 +279,7 @@ class OptionTemplate : public AbstractOption
          * \p defaultValue is copied when the option is created.
          */
         MyClass &defaultValueIfSet(const T &defaultValue)
-        { _defaultValueIfSet = &defaultValue; return me(); }
+        { defaultValueIfSet_ = &defaultValue; return me(); }
         /*! \brief
          * Stores value(s) in memory pointed by \p store.
          *
@@ -284,7 +297,7 @@ class OptionTemplate : public AbstractOption
          * Options object exists.
          */
         MyClass &store(T *store)
-        { setFlag(efExternalStore); _store = store; return me(); }
+        { store_ = store; return me(); }
         /*! \brief
          * Stores number of values in the value pointed by \p countptr.
          *
@@ -297,7 +310,7 @@ class OptionTemplate : public AbstractOption
          * Options object exists.
          */
         MyClass &storeCount(int *countptr)
-        { _countptr = countptr; return me(); }
+        { countptr_ = countptr; return me(); }
         /*! \brief
          * Stores option values in the provided vector.
          *
@@ -312,7 +325,7 @@ class OptionTemplate : public AbstractOption
          * Options object exists.
          */
         MyClass &storeVector(std::vector<T> *store)
-        { setFlag(efExternalValueVector); _storeVector = store; return me(); }
+        { storeVector_ = store; return me(); }
 
     protected:
         /*! \cond libapi */
@@ -322,30 +335,30 @@ class OptionTemplate : public AbstractOption
         //! Initializes the name and default values for an option.
         explicit OptionTemplate(const char *name)
             : AbstractOption(name),
-              _defaultValue(NULL), _defaultValueIfSet(NULL), _store(NULL),
-              _countptr(NULL), _storeVector(NULL)
+              defaultValue_(NULL), defaultValueIfSet_(NULL), store_(NULL),
+              countptr_(NULL), storeVector_(NULL)
         { }
 
         /*! \brief
          * Returns a pointer to user-specified default value, or NULL if there
          * is none.
          */
-        const T *defaultValue() const { return _defaultValue; }
+        const T *defaultValue() const { return defaultValue_; }
         /*! \brief
          * Returns a pointer to user-specified default value, or NULL if there
          * is none.
          */
-        const T *defaultValueIfSet() const { return _defaultValueIfSet; }
+        const T *defaultValueIfSet() const { return defaultValueIfSet_; }
         //! Returns \p *this casted into MyClass to reduce typing.
         MyClass &me() { return static_cast<MyClass &>(*this); }
         //! \endcond
 
     private:
-        const T                *_defaultValue;
-        const T                *_defaultValueIfSet;
-        T                      *_store;
-        int                    *_countptr;
-        std::vector<T>         *_storeVector;
+        const T                *defaultValue_;
+        const T                *defaultValueIfSet_;
+        T                      *store_;
+        int                    *countptr_;
+        std::vector<T>         *storeVector_;
 
         /*! \brief
          * Needed to initialize storage from this class without otherwise

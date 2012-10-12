@@ -59,7 +59,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 rvec x[],history_t *hist,
                 rvec f[],t_forcerec *fr,
                 const t_pbc *pbc,const t_graph *g,
-                gmx_enerdata_t *enerd,t_nrnb *nrnb,real lambda,
+                gmx_enerdata_t *enerd,t_nrnb *nrnb,real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd,int *ddgatindex,
                 t_atomtypes *atype, gmx_genborn_t *born,
@@ -96,7 +96,7 @@ void calc_bonds_lambda(FILE *fplog,
 			      t_forcerec *fr,
 			      const t_pbc *pbc,const t_graph *g,
 			      gmx_enerdata_t *enerd,t_nrnb *nrnb,
-			      real lambda,
+			      real *lambda,
 			      const t_mdatoms *md,
 			      t_fcdata *fcd,int *global_atom_index);
 /* As calc_bonds, but only determines the potential energy
@@ -111,6 +111,12 @@ real posres(int nbonds,
 		   real lambda,real *dvdlambda,
 		   int refcoord_scaling,int ePBC,rvec comA,rvec comB);
 /* Position restraints require a different pbc treatment from other bondeds */
+
+real fbposres(int nbonds,
+               const t_iatom forceatoms[],const t_iparams forceparams[],
+               const rvec x[],rvec f[],rvec vir_diag,
+               t_pbc *pbc, int refcoord_scaling,int ePBC,rvec com);
+/* Flat-bottom posres. Same PBC treatment as in normal position restraints */
 
 real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 		       const t_pbc *pbc,
@@ -132,6 +138,9 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       const rvec *x,int t1,int t2,int t3);
 /* Do an update of the forces for dihedral potentials */
 
+void make_dp_periodic(real *dp);
+/* make a dihedral fall in the range (-pi,pi) */
+
 /*************************************************************************
  *
  *  Bonded force functions
@@ -141,7 +150,8 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles,linear_angles;
   t_ifunc pdihs,idihs,rbdihs;
   t_ifunc tab_bonds,tab_angles,tab_dihs;
-  t_ifunc polarize,anharm_polarize,water_pol,thole_pol,angres,angresz,unimplemented;
+  t_ifunc polarize,anharm_polarize,water_pol,thole_pol,angres,angresz,dihres,unimplemented;
+
 
 #ifdef __cplusplus
 }

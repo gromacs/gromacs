@@ -107,6 +107,7 @@ COMMENT    (#.*)
     else if (state->bCmdStart)
     {
         BEGIN(cmdstart);
+        state->bCmdStart = false;
     }
     else if (YYSTATE != help)
     {
@@ -124,6 +125,7 @@ COMMENT    (#.*)
                     if (yytext[0] == ';' || state->bInteractive)
                     {
                         rtrim(state->pselstr);
+                        state->bCmdStart = true;
                         return CMD_SEP;
                     }
                     else
@@ -132,11 +134,14 @@ COMMENT    (#.*)
                     }
                 }
 
+<cmdstart><<EOF>> { state->bCmdStart = true; yyterminate(); }
+<<EOF>>         { state->bCmdStart = true; return CMD_SEP; }
+
 <cmdstart>help  { BEGIN(help); return HELP; }
 <help>{
 [[:blank:]]+
 {IDENTIFIER}    { yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }
-";"|\n          { return CMD_SEP; }
+";"|\n          { state->bCmdStart = true; return CMD_SEP; }
 .               { return INVALID; }
 }
 

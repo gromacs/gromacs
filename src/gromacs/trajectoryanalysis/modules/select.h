@@ -43,7 +43,6 @@
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -55,12 +54,14 @@ namespace analysismodules
 class Select : public TrajectoryAnalysisModule
 {
     public:
+        static const char name[];
+        static const char shortDescription[];
+
         Select();
         virtual ~Select();
 
-        static TrajectoryAnalysisModulePointer create();
-
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -71,26 +72,25 @@ class Select : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        Options                  _options;
-        SelectionList            _sel;
+        SelectionList            sel_;
 
-        std::string              _fnSize;
-        std::string              _fnFrac;
-        std::string              _fnIndex;
-        std::string              _fnNdx;
-        std::string              _fnMask;
-        bool                     _bDump;
-        bool                     _bTotNorm;
-        bool                     _bFracNorm;
-        bool                     _bResInd;
-        std::string              _resNumberType;
+        std::string              fnSize_;
+        std::string              fnFrac_;
+        std::string              fnIndex_;
+        std::string              fnNdx_;
+        std::string              fnMask_;
+        bool                     bDump_;
+        bool                     bTotNorm_;
+        bool                     bFracNorm_;
+        bool                     bResInd_;
+        std::string              resNumberType_;
 
-        t_topology              *_top;
-        std::vector<int>         _totsize;
-        AnalysisData             _sdata;
-        AnalysisData             _cdata;
-        AnalysisData             _idata;
-        AnalysisData             _mdata;
+        t_topology              *top_;
+        std::vector<int>         totsize_;
+        AnalysisData             sdata_;
+        AnalysisData             cdata_;
+        AnalysisData             idata_;
+        AnalysisData             mdata_;
 };
 
 } // namespace analysismodules

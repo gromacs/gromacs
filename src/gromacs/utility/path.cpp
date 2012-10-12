@@ -37,14 +37,24 @@
  */
 #include "path.h"
 
+#include "gmx_header_config.h"
+
 #include <errno.h>
 #include <sys/stat.h>
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #endif
 
-static const char cDirSeparator = '/';
+namespace
+{
+
+//! Directory separator to use when joining paths.
+const char cDirSeparator = '/';
+//! Directory separators to use when parsing paths.
+const char cDirSeparators[] = "/\\";
+
+} // namespace
 
 namespace gmx
 {
@@ -65,6 +75,17 @@ std::string Path::join(const std::string &path1,
     return path1 + cDirSeparator + path2 + cDirSeparator + path3;
 }
 
+std::pair<std::string, std::string>
+Path::splitToPathAndFilename(const std::string &path)
+{
+    size_t pos = path.find_last_of(cDirSeparators);
+    if (pos == std::string::npos)
+    {
+        return std::make_pair(std::string(), path);
+    }
+    return std::make_pair(path.substr(0, pos), path.substr(pos+1));
+}
+
 
 int Directory::create(const char *path)
 {
@@ -72,7 +93,7 @@ int Directory::create(const char *path)
     {
         return 0;
     }
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     if (_mkdir(path))
 #else
     if (mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) != 0)
@@ -102,7 +123,7 @@ bool Directory::exists(const char *path)
         }
         return false;
     }
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     return ((_S_IFDIR & info.st_mode) != 0);
 #else
     return S_ISDIR(info.st_mode);

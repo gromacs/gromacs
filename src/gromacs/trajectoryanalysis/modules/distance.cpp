@@ -53,6 +53,7 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -60,9 +61,16 @@ namespace gmx
 namespace analysismodules
 {
 
+const char Distance::name[] = "distance";
+const char Distance::shortDescription[] =
+    "Calculate distances";
+
 Distance::Distance()
-    : _options("distance", "Distance calculation"), _avem(new AnalysisDataAverageModule())
+    : TrajectoryAnalysisModule(name, shortDescription),
+      avem_(new AnalysisDataAverageModule())
 {
+    data_.setColumnCount(4);
+    registerAnalysisDataset(&data_, "distance");
 }
 
 
@@ -71,23 +79,22 @@ Distance::~Distance()
 }
 
 
-Options &
-Distance::initOptions(TrajectoryAnalysisSettings *settings)
+void
+Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
         "g_dist can calculate the distance between two positions as",
         "a function of time. The total distance and its",
-        "x, y and z components are plotted.",
-        NULL
+        "x, y and z components are plotted."
     };
 
-    _options.setDescription(desc);
+    options->setDescription(concatenateStrings(desc));
 
-    _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&_fnDist).defaultValue("dist"));
-    _options.addOption(SelectionOption("select").required().valueCount(2)
-                           .store(_sel));
-    return _options;
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
+                           .store(&fnDist_).defaultValueIfSet("dist")
+                           .description("Computed distances"));
+    options->addOption(SelectionOption("select").required().valueCount(2)
+                           .store(sel_));
 }
 
 
@@ -95,25 +102,23 @@ void
 Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation & /*top*/)
 {
-    if (_sel[0].posCount() != 1)
+    if (sel_[0].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The first selection does not define a single position"));
     }
-    if (_sel[1].posCount() != 1)
+    if (sel_[1].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The second selection does not define a single position"));
     }
-    _data.setColumnCount(4);
-    registerAnalysisDataset(&_data, "distance");
 
-    _data.addModule(_avem);
-    AnalysisDataPlotModulePointer _plotm(new AnalysisDataPlotModule());
-    _plotm->setSettings(settings.plotSettings());
-    _plotm->setFileName(_fnDist);
-    _plotm->setTitle("Distance");
-    _plotm->setXAxisIsTime();
-    _plotm->setYLabel("Distance (nm)");
-    _data.addModule(_plotm);
+    data_.addModule(avem_);
+    AnalysisDataPlotModulePointer plotm_(new AnalysisDataPlotModule());
+    plotm_->setSettings(settings.plotSettings());
+    plotm_->setFileName(fnDist_);
+    plotm_->setTitle("Distance");
+    plotm_->setXAxisIsTime();
+    plotm_->setYLabel("Distance (nm)");
+    data_.addModule(plotm_);
 }
 
 
@@ -121,9 +126,9 @@ void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle  dh = pdata->dataHandle(_data);
-    const Selection    &sel1 = pdata->parallelSelection(_sel[0]);
-    const Selection    &sel2 = pdata->parallelSelection(_sel[1]);
+    AnalysisDataHandle  dh = pdata->dataHandle(data_);
+    const Selection    &sel1 = pdata->parallelSelection(sel_[0]);
+    const Selection    &sel2 = pdata->parallelSelection(sel_[1]);
     rvec                dx;
     real                r;
     const SelectionPosition &p1 = sel1.position(0);
@@ -154,15 +159,8 @@ Distance::finishAnalysis(int /*nframes*/)
 void
 Distance::writeOutput()
 {
-    fprintf(stderr, "Average distance: %f\n", _avem->average(0));
-    fprintf(stderr, "Std. deviation:   %f\n", _avem->stddev(0));
-}
-
-
-TrajectoryAnalysisModulePointer
-Distance::create()
-{
-    return TrajectoryAnalysisModulePointer(new Distance());
+    fprintf(stderr, "Average distance: %f\n", avem_->average(0));
+    fprintf(stderr, "Std. deviation:   %f\n", avem_->stddev(0));
 }
 
 } // namespace analysismodules

@@ -95,8 +95,7 @@ real derf;
  erfarg=(x-a[3])/(a[4]*a[4]);
         erfarg2=erfarg*erfarg;
         erfval=gmx_erf(erfarg)/2;
-        derf=(2./sqrt(M_PI))*(a[1]-a[2])/2*exp(-erfarg2)/(a[4]*a[4]);
-
+        derf=(2.0/sqrt(M_PI))*(a[1]-a[2])/2*exp(-erfarg2)/(a[4]*a[4]);
         *y=(a[1]+a[2])/2-(a[1]-a[2])*erfval;
         dyda[1]=1/2-erfval;
         dyda[2]=1/2+erfval;
@@ -510,8 +509,13 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	xvgrclose(fp);
       }
     }
-    for(i=0;(i<nparm);i++)
-      fitparms[i] = parm[i];
+    if (fitparms)
+    {
+        for(i=0;(i<nparm);i++)
+        {
+            fitparms[i] = parm[i];
+        }
+    }
     sfree(parm);
     sfree(dparm);
   }

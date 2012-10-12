@@ -125,7 +125,7 @@ static void stats_header(FILE *fp,int emp,int caption,gmx_bool bSideways,
             sprintf(unit,"B");
             break;
         case empENERGY:
-            sprintf(unit,"Hartree");
+            sprintf(unit,"kJ/mol");
             break;
         default:
             gmx_fatal(FARGS,"Unknown property %s",emp_name[emp]);

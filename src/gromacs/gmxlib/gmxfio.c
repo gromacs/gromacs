@@ -43,6 +43,9 @@
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gmx_fatal.h"
 #include "macros.h"
@@ -611,6 +614,7 @@ int gmx_fio_close(t_fileio *fio)
     rc=gmx_fio_close_locked(fio);
     gmx_fio_unlock(fio);
 
+    sfree(fio->fn);
     sfree(fio);
 
 #ifdef GMX_THREAD_MPI
@@ -662,6 +666,8 @@ int gmx_fio_fclose(FILE *fp)
             rc=gmx_fio_close_locked(cur);
             gmx_fio_remove(cur);
             gmx_fio_stop_getting_next(cur);
+            sfree(cur->fn);
+            sfree(cur);
             break;
         }
         cur=gmx_fio_get_next(cur);
@@ -1145,12 +1151,12 @@ int xtc_seek_frame(t_fileio *fio, int frame, int natoms)
     return ret;
 }
 
-int xtc_seek_time(t_fileio *fio, real time, int natoms)
+int xtc_seek_time(t_fileio *fio, real time, int natoms,gmx_bool bSeekForwardOnly)
 {
     int ret;
 
     gmx_fio_lock(fio);
-    ret=xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms);
+    ret=xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms, bSeekForwardOnly);
     gmx_fio_unlock(fio);
 
     return ret;

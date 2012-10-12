@@ -44,31 +44,87 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "analysismodule-impl.h"
-
 namespace gmx
 {
+
+/********************************************************************
+ * TrajectoryAnalysisModule::Impl
+ */
+
+/*! \internal \brief
+ * Private implementation class for TrajectoryAnalysisModule.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class TrajectoryAnalysisModule::Impl
+{
+    public:
+        //! Container that associates a data set with its name.
+        typedef std::map<std::string, AbstractAnalysisData *> DatasetContainer;
+        //! Container that associates a AnalysisData object with its name.
+        typedef std::map<std::string, AnalysisData *> AnalysisDatasetContainer;
+
+        //! Initializes analysis module data with given name and description.
+        Impl(const char *name, const char *description)
+            : name_(name), description_(description)
+        {
+        }
+
+        //! Name of the module.
+        std::string                     name_;
+        //! Description of the module.
+        std::string                     description_;
+        //! List of registered data set names.
+        std::vector<std::string>        datasetNames_;
+        /*! \brief
+         * Keeps all registered data sets.
+         *
+         * This container also includes datasets from \a analysisDatasets_.
+         */
+        DatasetContainer                datasets_;
+        //! Keeps registered AnalysisData objects.
+        AnalysisDatasetContainer        analysisDatasets_;
+};
 
 /********************************************************************
  * TrajectoryAnalysisModuleData::Impl
  */
 
+/*! \internal \brief
+ * Private implementation class for TrajectoryAnalysisModuleData.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class TrajectoryAnalysisModuleData::Impl
+{
+    public:
+        //! Container that associates a data handle to its AnalysisData object.
+        typedef std::map<const AnalysisData *, AnalysisDataHandle>
+                HandleContainer;
+
+        //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
+        Impl(TrajectoryAnalysisModule *module,
+             const AnalysisDataParallelOptions &opt,
+             const SelectionCollection &selections);
+
+        //! Keeps a data handle for each AnalysisData object.
+        HandleContainer         handles_;
+        //! Stores thread-local selections.
+        const SelectionCollection &selections_;
+};
+
 TrajectoryAnalysisModuleData::Impl::Impl(
         TrajectoryAnalysisModule *module,
         const AnalysisDataParallelOptions &opt,
         const SelectionCollection &selections)
-    : _selections(selections)
+    : selections_(selections)
 {
     TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
-    for (i = module->_impl->_analysisDatasets.begin();
-         i != module->_impl->_analysisDatasets.end(); ++i)
+    for (i = module->impl_->analysisDatasets_.begin();
+         i != module->impl_->analysisDatasets_.end(); ++i)
     {
-        _handles.insert(std::make_pair(i->second, i->second->startData(opt)));
+        handles_.insert(std::make_pair(i->second, i->second->startData(opt)));
     }
-}
-
-TrajectoryAnalysisModuleData::Impl::~Impl()
-{
 }
 
 
@@ -80,7 +136,7 @@ TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
         TrajectoryAnalysisModule *module,
         const AnalysisDataParallelOptions &opt,
         const SelectionCollection &selections)
-    : _impl(new Impl(module, opt, selections))
+    : impl_(new Impl(module, opt, selections))
 {
 }
 
@@ -94,19 +150,19 @@ void TrajectoryAnalysisModuleData::finishDataHandles()
 {
     // FIXME: Call finishData() for all handles even if one throws
     Impl::HandleContainer::iterator i;
-    for (i = _impl->_handles.begin(); i != _impl->_handles.end(); ++i)
+    for (i = impl_->handles_.begin(); i != impl_->handles_.end(); ++i)
     {
         i->second.finishData();
     }
-    _impl->_handles.clear();
+    impl_->handles_.clear();
 }
 
 
 AnalysisDataHandle
 TrajectoryAnalysisModuleData::dataHandle(const AnalysisData &data)
 {
-    Impl::HandleContainer::const_iterator i = _impl->_handles.find(&data);
-    GMX_RELEASE_ASSERT(i != _impl->_handles.end(),
+    Impl::HandleContainer::const_iterator i = impl_->handles_.find(&data);
+    GMX_RELEASE_ASSERT(i != impl_->handles_.end(),
                        "Data handle requested on unknown dataset");
     return i->second;
 }
@@ -137,6 +193,35 @@ TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections
 /********************************************************************
  * TrajectoryAnalysisModuleDataBasic
  */
+
+namespace
+{
+
+/*! \internal \brief
+ * Basic thread-local trajectory analysis data storage class.
+ *
+ * Most simple tools should only require data handles and selections to be
+ * thread-local, so this class implements just that.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
+{
+    public:
+        /*! \brief
+         * Initializes thread-local storage for data handles and selections.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         */
+        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *module,
+                                          const AnalysisDataParallelOptions &opt,
+                                          const SelectionCollection &selections);
+
+        virtual void finish();
+};
+
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
         TrajectoryAnalysisModule *module,
         const AnalysisDataParallelOptions &opt,
@@ -152,13 +237,16 @@ TrajectoryAnalysisModuleDataBasic::finish()
     finishDataHandles();
 }
 
+} // namespace
+
 
 /********************************************************************
  * TrajectoryAnalysisModule
  */
 
-TrajectoryAnalysisModule::TrajectoryAnalysisModule()
-    : _impl(new Impl)
+TrajectoryAnalysisModule::TrajectoryAnalysisModule(const char *name,
+                                                   const char *description)
+    : impl_(new Impl(name, description))
 {
 }
 
@@ -168,7 +256,9 @@ TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 }
 
 
-void TrajectoryAnalysisModule::initOptionsDone(TrajectoryAnalysisSettings * /*settings*/)
+void TrajectoryAnalysisModule::optionsFinished(
+        Options * /*options*/,
+        TrajectoryAnalysisSettings * /*settings*/)
 {
 }
 
@@ -192,15 +282,27 @@ void TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pda
 }
 
 
+const char *TrajectoryAnalysisModule::name() const
+{
+    return impl_->name_.c_str();
+}
+
+
+const char *TrajectoryAnalysisModule::description() const
+{
+    return impl_->description_.c_str();
+}
+
+
 int TrajectoryAnalysisModule::datasetCount() const
 {
-    return _impl->_datasetNames.size();
+    return impl_->datasetNames_.size();
 }
 
 
 const std::vector<std::string> &TrajectoryAnalysisModule::datasetNames() const
 {
-    return _impl->_datasetNames;
+    return impl_->datasetNames_;
 }
 
 
@@ -211,8 +313,8 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromIndex(int index) cons
         GMX_THROW(APIError("Out of range data set index"));
     }
     Impl::DatasetContainer::const_iterator item
-        = _impl->_datasets.find(_impl->_datasetNames[index]);
-    GMX_RELEASE_ASSERT(item != _impl->_datasets.end(),
+        = impl_->datasets_.find(impl_->datasetNames_[index]);
+    GMX_RELEASE_ASSERT(item != impl_->datasets_.end(),
                        "Inconsistent data set names");
     return *item->second;
 }
@@ -220,8 +322,8 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromIndex(int index) cons
 
 AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromName(const char *name) const
 {
-    Impl::DatasetContainer::const_iterator item = _impl->_datasets.find(name);
-    if (item == _impl->_datasets.end())
+    Impl::DatasetContainer::const_iterator item = impl_->datasets_.find(name);
+    if (item == impl_->datasets_.end())
     {
         GMX_THROW(APIError("Unknown data set name"));
     }
@@ -233,10 +335,10 @@ void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
                                                     const char *name)
 {
     // TODO: Strong exception safety should be possible to implement.
-    GMX_RELEASE_ASSERT(_impl->_datasets.find(name) == _impl->_datasets.end(),
+    GMX_RELEASE_ASSERT(impl_->datasets_.find(name) == impl_->datasets_.end(),
                        "Duplicate data set name registered");
-    _impl->_datasets[name] = data;
-    _impl->_datasetNames.push_back(name);
+    impl_->datasets_[name] = data;
+    impl_->datasetNames_.push_back(name);
 }
 
 
@@ -245,7 +347,7 @@ void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
 {
     // TODO: Strong exception safety should be possible to implement.
     registerBasicDataset(data, name);
-    _impl->_analysisDatasets[name] = data;
+    impl_->analysisDatasets_[name] = data;
 }
 
 } // namespace gmx

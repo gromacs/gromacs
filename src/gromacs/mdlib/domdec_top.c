@@ -37,6 +37,9 @@
 #include "vsite.h"
 #include "gmx_ga2la.h"
 
+/* for dd_init_local_state */
+#define NITEM_DD_INIT_LOCAL_STATE 5
+
 typedef struct {
     int  *index;  /* Index for each atom into il                  */ 
     int  *il;     /* ftype|type|a0|...|an|ftype|...               */
@@ -762,6 +765,42 @@ static void add_posres(int mol,int a_mol,gmx_molblock_t *molb,
     iatoms[0] = n;
 }
 
+static void add_fbposres(int mol,int a_mol,gmx_molblock_t *molb,
+                       t_iatom *iatoms,t_idef *idef)
+{
+    int n,a_molb;
+    t_iparams *ip;
+
+    /* This flat-bottom position restraint has not been added yet,
+     * so it's index is the current number of position restraints.
+     */
+    n = idef->il[F_FBPOSRES].nr/2;
+    if (n+1 > idef->iparams_fbposres_nalloc)
+    {
+        idef->iparams_fbposres_nalloc = over_alloc_dd(n+1);
+        srenew(idef->iparams_fbposres,idef->iparams_fbposres_nalloc);
+    }
+    ip = &idef->iparams_fbposres[n];
+    /* Copy the force constants */
+    *ip = idef->iparams[iatoms[0]];
+
+    /* Get the position restriant coordinats from the molblock */
+    a_molb = mol*molb->natoms_mol + a_mol;
+    if (a_molb >= molb->nposres_xA)
+    {
+        gmx_incons("Not enough position restraint coordinates");
+    }
+    /* Take reference positions from A position of normal posres */
+    ip->fbposres.pos0[XX] = molb->posres_xA[a_molb][XX];
+    ip->fbposres.pos0[YY] = molb->posres_xA[a_molb][YY];
+    ip->fbposres.pos0[ZZ] = molb->posres_xA[a_molb][ZZ];
+
+    /* Note: no B-type for flat-bottom posres */
+
+    /* Set the parameter index for idef->iparams_posre */
+    iatoms[0] = n;
+}
+
 static void add_vsite(gmx_ga2la_t ga2la,int *index,int *rtil,
                       int ftype,int nral,
                       gmx_bool bHomeA,int a,int a_gl,int a_mol,
@@ -1013,6 +1052,10 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                             {
                                 add_posres(mol,i_mol,&molb[mb],tiatoms,idef);
                             }
+                            else if (ftype == F_FBPOSRES)
+                            {
+                                add_fbposres(mol,i_mol,&molb[mb],tiatoms,idef);
+                            }
                         }
                         else
                         {
@@ -1207,6 +1250,10 @@ static int make_local_bondeds_intracg(gmx_domdec_t *dd,gmx_molblock_t *molb,
                 if (ftype == F_POSRES)
                 {
                     add_posres(mol,i_mol,&molb[mb],tiatoms,idef);
+                }
+                else if (ftype == F_FBPOSRES)
+                {
+                    add_fbposres(mol,i_mol,&molb[mb],tiatoms,idef);
                 }
                 /* Add this interaction to the local topology */
                 add_ifunc(nral,tiatoms,&idef->il[ftype]);
@@ -1573,7 +1620,7 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global,t_state *state_local)
 {
-    int i,j, buf[4];
+    int buf[NITEM_DD_INIT_LOCAL_STATE];
     
     if (DDMASTER(dd))
     {
@@ -1581,10 +1628,11 @@ void dd_init_local_state(gmx_domdec_t *dd,
         buf[1] = state_global->ngtc;
         buf[2] = state_global->nnhpres;
         buf[3] = state_global->nhchainlength;
+        buf[4] = state_global->dfhist.nlambda;
     }
-    dd_bcast(dd,4*sizeof(int),buf);
-    
-    init_state(state_local,0,buf[1],buf[2],buf[3]);
+    dd_bcast(dd,NITEM_DD_INIT_LOCAL_STATE*sizeof(int),buf);
+
+    init_state(state_local,0,buf[1],buf[2],buf[3],buf[4]);
     state_local->flags = buf[0];
     
     /* With Langevin Dynamics we need to make proper storage space

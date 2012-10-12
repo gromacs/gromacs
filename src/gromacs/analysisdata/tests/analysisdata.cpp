@@ -48,11 +48,11 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 
-#include "datatest.h"
-#include "mock_module.h"
+#include "testutils/datatest.h"
+#include "testutils/mock_datamodule.h"
 
-using gmx::test::MockAnalysisModule;
-using gmx::test::MockAnalysisModulePointer;
+using gmx::test::MockAnalysisDataModule;
+using gmx::test::MockAnalysisDataModulePointer;
 
 namespace
 {
@@ -94,11 +94,11 @@ TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
     gmx::AnalysisData data;
     data.setColumnCount(2);
 
-    MockAnalysisModulePointer mod1(new MockAnalysisModule(0));
+    MockAnalysisDataModulePointer mod1(new MockAnalysisDataModule(0));
     EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
-    MockAnalysisModulePointer mod2(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+    MockAnalysisDataModulePointer mod2(
+            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
     EXPECT_NO_THROW(data.addModule(mod2));
 }
 
@@ -112,11 +112,11 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
     data.setColumnCount(1);
     data.setMultipoint(true);
 
-    MockAnalysisModulePointer mod1(new MockAnalysisModule(0));
+    MockAnalysisDataModulePointer mod1(new MockAnalysisDataModule(0));
     EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
-    MockAnalysisModulePointer mod2(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+    MockAnalysisDataModulePointer mod2(
+            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
     EXPECT_NO_THROW(data.addModule(mod2));
 }
 

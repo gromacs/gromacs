@@ -57,22 +57,23 @@ files.
 
 /* we put all of these on their own cache line by padding the data structure
    to the size of a cache line on x86 (64 bytes): */
+#define TMPI_SIZEOF_X86_CACHE_LINE 64
 typedef struct tMPI_Atomic
 {
     int value; 
-    char padding[64-sizeof(int)];
+    char padding[TMPI_SIZEOF_X86_CACHE_LINE-sizeof(int)];
 } tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
     void* value; 
-    char padding[64-sizeof(void*)];
+    char padding[TMPI_SIZEOF_X86_CACHE_LINE-sizeof(void*)];
 } tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
     unsigned int lock; 
-    char padding[64-sizeof(unsigned int)];
+    char padding[TMPI_SIZEOF_X86_CACHE_LINE-sizeof(unsigned int)];
 } tMPI_Spinlock_t;
 
 

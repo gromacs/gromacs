@@ -38,20 +38,38 @@
  */
 #include "gromacs/options/basicoptions.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 
+#include <limits>
 #include <string>
 #include <vector>
 
 #include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "basicoptionstorage.h"
 
-template <typename T> static
-void expandVector(size_t length, std::vector<T> *values)
+namespace
+{
+
+/*! \brief
+ * Expands a single value to a vector by copying the value.
+ *
+ * \tparam        ValueType  Type of values to process.
+ * \param[in]     length     Length of the resulting vector.
+ * \param[in,out] values     Values to process.
+ * \throws   std::bad_alloc    if out of memory.
+ * \throws   InvalidInputError if \p values has an invalid number of values.
+ *
+ * \p values should have 0, 1, or \p length values.
+ * If \p values has 1 value, it is expanded such that it has \p length
+ * identical values.  In other valid cases, nothing is done.
+ */
+template <typename ValueType>
+void expandVector(size_t length, std::vector<ValueType> *values)
 {
     if (length > 0 && values->size() > 0 && values->size() != length)
     {
@@ -60,10 +78,12 @@ void expandVector(size_t length, std::vector<T> *values)
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
                       "Expected 1 or %d values, got %d", length, values->size())));
         }
-        const T &value = (*values)[0];
+        const ValueType &value = (*values)[0];
         values->resize(length, value);
     }
 }
+
+} // namespace
 
 namespace gmx
 {
@@ -72,9 +92,8 @@ namespace gmx
  * BooleanOptionStorage
  */
 
-std::string BooleanOptionStorage::formatValue(int i) const
+std::string BooleanOptionStorage::formatSingleValue(const bool &value) const
 {
-    bool value = values()[i];
     return value ? "yes" : "no";
 }
 
@@ -117,9 +136,8 @@ AbstractOptionStoragePointer BooleanOption::createStorage() const
  * IntegerOptionStorage
  */
 
-std::string IntegerOptionStorage::formatValue(int i) const
+std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 {
-    int value = values()[i];
     return formatString("%d", value);
 }
 
@@ -127,17 +145,26 @@ void IntegerOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
     char *endptr;
+    errno = 0;
     long int ival = std::strtol(ptr, &endptr, 10);
-    if (*endptr != '\0')
+    if (errno == ERANGE
+        || ival < std::numeric_limits<int>::min()
+        || ival > std::numeric_limits<int>::max())
     {
-        GMX_THROW(InvalidInputError("Invalid value: " + value));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; it causes an integer overflow"));
+    }
+    if (*ptr == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; expected an integer"));
     }
     addValue(ival);
 }
 
 void IntegerOptionStorage::processSetValues(ValueList *values)
 {
-    if (hasFlag(efVector))
+    if (isVector())
     {
         expandVector(maxValueCount(), values);
     }
@@ -167,35 +194,42 @@ AbstractOptionStoragePointer IntegerOption::createStorage() const
  */
 
 DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
-    : MyBase(settings), info_(this), bTime_(settings._bTime), factor_(1.0)
+    : MyBase(settings), info_(this), bTime_(settings.bTime_), factor_(1.0)
 {
 }
 
 const char *DoubleOptionStorage::typeString() const
 {
-    return hasFlag(efVector) ? "vector" : (isTime() ? "time" : "double");
+    return isVector() ? "vector" : (isTime() ? "time" : "double");
 }
 
-std::string DoubleOptionStorage::formatValue(int i) const
+std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 {
-    return formatString("%g", values()[i] / factor_);
+    return formatString("%g", value / factor_);
 }
 
 void DoubleOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
     char *endptr;
+    errno = 0;
     double dval = std::strtod(ptr, &endptr);
-    if (*endptr != '\0')
+    if (errno == ERANGE)
     {
-        GMX_THROW(InvalidInputError("Invalid value: " + value));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; it causes an overflow/underflow"));
+    }
+    if (*ptr == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; expected a number"));
     }
     addValue(dval * factor_);
 }
 
 void DoubleOptionStorage::processSetValues(ValueList *values)
 {
-    if (hasFlag(efVector))
+    if (isVector())
     {
         expandVector(maxValueCount(), values);
     }
@@ -208,7 +242,7 @@ void DoubleOptionStorage::processAll()
 void DoubleOptionStorage::setScaleFactor(double factor)
 {
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
-    if (!hasFlag(efHasDefaultValue))
+    if (!hasFlag(efOption_HasDefaultValue))
     {
         double scale = factor / factor_;
         ValueList::iterator i;
@@ -265,32 +299,32 @@ AbstractOptionStoragePointer DoubleOption::createStorage() const
  */
 
 StringOptionStorage::StringOptionStorage(const StringOption &settings)
-    : MyBase(settings), _info(this), _enumIndexStore(NULL)
+    : MyBase(settings), info_(this), enumIndexStore_(NULL)
 {
-    if (settings._defaultEnumIndex >= 0 && settings._enumValues == NULL)
+    if (settings.defaultEnumIndex_ >= 0 && settings.enumValues_ == NULL)
     {
         GMX_THROW(APIError("Cannot set default enum index without enum values"));
     }
-    if (settings._enumIndexStore != NULL && settings._enumValues == NULL)
+    if (settings.enumIndexStore_ != NULL && settings.enumValues_ == NULL)
     {
         GMX_THROW(APIError("Cannot set enum index store without enum values"));
     }
-    if (settings._enumIndexStore != NULL && settings._maxValueCount < 0)
+    if (settings.enumIndexStore_ != NULL && settings.maxValueCount_ < 0)
     {
         GMX_THROW(APIError("Cannot set enum index store with arbitrary number of values"));
     }
-    if (settings._enumValues != NULL)
+    if (settings.enumValues_ != NULL)
     {
-        _enumIndexStore = settings._enumIndexStore;
+        enumIndexStore_ = settings.enumIndexStore_;
         const std::string *defaultValue = settings.defaultValue();
         int match = -1;
-        for (int i = 0; settings._enumValues[i] != NULL; ++i)
+        for (int i = 0; settings.enumValues_[i] != NULL; ++i)
         {
-            if (defaultValue != NULL && settings._enumValues[i] == *defaultValue)
+            if (defaultValue != NULL && settings.enumValues_[i] == *defaultValue)
             {
                 match = i;
             }
-            _allowed.push_back(settings._enumValues[i]);
+            allowed_.push_back(settings.enumValues_[i]);
         }
         if (defaultValue != NULL)
         {
@@ -299,58 +333,58 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
                 GMX_THROW(APIError("Default value is not one of allowed values"));
             }
         }
-        if (settings._defaultEnumIndex >= 0)
+        if (settings.defaultEnumIndex_ >= 0)
         {
-            if (settings._defaultEnumIndex >= static_cast<int>(_allowed.size()))
+            if (settings.defaultEnumIndex_ >= static_cast<int>(allowed_.size()))
             {
                 GMX_THROW(APIError("Default enumeration index is out of range"));
             }
-            if (defaultValue != NULL && *defaultValue != _allowed[settings._defaultEnumIndex])
+            if (defaultValue != NULL && *defaultValue != allowed_[settings.defaultEnumIndex_])
             {
                 GMX_THROW(APIError("Conflicting default values"));
             }
         }
         // If there is no default value, match is still -1.
-        if (_enumIndexStore != NULL)
+        if (enumIndexStore_ != NULL)
         {
-            *_enumIndexStore = match;
+            *enumIndexStore_ = match;
         }
     }
-    if (settings._defaultEnumIndex >= 0)
+    if (settings.defaultEnumIndex_ >= 0)
     {
         clear();
-        addValue(_allowed[settings._defaultEnumIndex]);
+        addValue(allowed_[settings.defaultEnumIndex_]);
         commitValues();
     }
 }
 
-std::string StringOptionStorage::formatValue(int i) const
+std::string StringOptionStorage::formatSingleValue(const std::string &value) const
 {
-    return values()[i];
+    return value;
 }
 
 void StringOptionStorage::convertValue(const std::string &value)
 {
-    if (_allowed.size() == 0)
+    if (allowed_.size() == 0)
     {
         addValue(value);
     }
     else
     {
         ValueList::const_iterator  i;
-        ValueList::const_iterator  match = _allowed.end();
-        for (i = _allowed.begin(); i != _allowed.end(); ++i)
+        ValueList::const_iterator  match = allowed_.end();
+        for (i = allowed_.begin(); i != allowed_.end(); ++i)
         {
             // TODO: Case independence.
             if (i->find(value) == 0)
             {
-                if (match == _allowed.end() || i->size() < match->size())
+                if (match == allowed_.end() || i->size() < match->size())
                 {
                     match = i;
                 }
             }
         }
-        if (match == _allowed.end())
+        if (match == allowed_.end())
         {
             GMX_THROW(InvalidInputError("Invalid value: " + value));
         }
@@ -361,15 +395,15 @@ void StringOptionStorage::convertValue(const std::string &value)
 void StringOptionStorage::refreshValues()
 {
     MyBase::refreshValues();
-    if (_enumIndexStore != NULL)
+    if (enumIndexStore_ != NULL)
     {
         for (size_t i = 0; i < values().size(); ++i)
         {
             ValueList::const_iterator match =
-                std::find(_allowed.begin(), _allowed.end(), values()[i]);
-            GMX_ASSERT(match != _allowed.end(),
+                std::find(allowed_.begin(), allowed_.end(), values()[i]);
+            GMX_ASSERT(match != allowed_.end(),
                        "Enum value not found (internal error)");
-            _enumIndexStore[i] = static_cast<int>(match - _allowed.begin());
+            enumIndexStore_[i] = static_cast<int>(match - allowed_.begin());
         }
     }
 }
@@ -396,15 +430,15 @@ std::string StringOption::createDescription() const
 {
     std::string value(MyBase::createDescription());
 
-    if (_enumValues != NULL)
+    if (enumValues_ != NULL)
     {
         value.append(": ");
-        for (int i = 0; _enumValues[i] != NULL; ++i)
+        for (int i = 0; enumValues_[i] != NULL; ++i)
         {
-            value.append(_enumValues[i]);
-            if (_enumValues[i + 1] != NULL)
+            value.append(enumValues_[i]);
+            if (enumValues_[i + 1] != NULL)
             {
-                value.append(_enumValues[i + 2] != NULL ? ", " : ", or ");
+                value.append(enumValues_[i + 2] != NULL ? ", " : ", or ");
             }
         }
     }

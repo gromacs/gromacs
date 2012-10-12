@@ -149,10 +149,14 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->cross_ba.krt=old[3];
     break;
   case F_UREY_BRADLEY:
-    newparam->u_b.theta=old[0];
-    newparam->u_b.ktheta=old[1];
-    newparam->u_b.r13=old[2];
-    newparam->u_b.kUB=old[3];
+    newparam->u_b.thetaA=old[0];
+    newparam->u_b.kthetaA=old[1];
+    newparam->u_b.r13A=old[2];
+    newparam->u_b.kUBA=old[3];
+    newparam->u_b.thetaB=old[4];
+    newparam->u_b.kthetaB=old[5];
+    newparam->u_b.r13B=old[6];
+    newparam->u_b.kUBB=old[7];
     break;
   case F_QUARTIC_ANGLES:
     newparam->qangle.theta=old[0];
@@ -165,8 +169,8 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->linangle.aB    = old[2];
     newparam->linangle.klinB = old[3];
     break;
-  case F_ANGLES:
   case F_BONDS:
+  case F_ANGLES:
   case F_HARMONIC:
   case F_IDIHS:
     newparam->harmonic.rA =old[0];
@@ -175,9 +179,12 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->harmonic.krB=old[3];
     break;
   case F_MORSE:
-    newparam->morse.b0    =old[0];
-    newparam->morse.cb    =old[1];
-    newparam->morse.beta  =old[2];
+    newparam->morse.b0A    =old[0];
+    newparam->morse.cbA    =old[1];
+    newparam->morse.betaA  =old[2];
+    newparam->morse.b0B    =old[3];
+    newparam->morse.cbB    =old[4];
+    newparam->morse.betaB  =old[5];
     break;
   case F_CUBICBONDS:
     newparam->cubic.b0    =old[0];
@@ -277,6 +284,20 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->posres.pos0B[YY] = old[10];
     newparam->posres.pos0B[ZZ] = old[11];
     break;
+  case F_FBPOSRES:
+    newparam->fbposres.geom     = round_check(old[0],0,ftype,"geometry");
+    if ( ! (newparam->fbposres.geom > efbposresZERO && newparam->fbposres.geom < efbposresNR))
+    {
+      gmx_fatal(FARGS,"Invalid geometry for flat-bottomed position restraint.\n"
+		"Expected number between 1 and %d. Found %d\n", efbposresNR-1,
+		newparam->fbposres.geom);
+    }
+    newparam->fbposres.r        = old[1];
+    newparam->fbposres.k        = old[2];
+    newparam->fbposres.pos0[XX] = old[3];
+    newparam->fbposres.pos0[YY] = old[4];
+    newparam->fbposres.pos0[ZZ] = old[5];
+    break;
   case F_DISRES:
     newparam->disres.label = round_check(old[0],0,ftype,"label");
     newparam->disres.type  = round_check(old[1],1,ftype,"type'");
@@ -294,11 +315,12 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->orires.kfac  = old[5];
     break;
   case F_DIHRES:
-    newparam->dihres.label = round_check(old[0],0,ftype,"label");
-    newparam->dihres.phi   = old[1];
-    newparam->dihres.dphi  = old[2];
-    newparam->dihres.kfac  = old[3];
-    newparam->dihres.power = round_check(old[4],0,ftype,"power");
+    newparam->dihres.phiA  = old[0];
+    newparam->dihres.dphiA = old[1];
+    newparam->dihres.kfacA = old[2];
+    newparam->dihres.phiB   = old[3];
+    newparam->dihres.dphiB  = old[4];
+    newparam->dihres.kfacB  = old[5];
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {
@@ -503,7 +525,7 @@ void convert_params(int atnr,t_params nbtypes[],
 					   (flags & IF_CONSTRAINT))) {
 	enter_function(&(plist[i]),(t_functype)i,comb,reppow,
 		       ffp,&molt->ilist[i],
-		       &maxtypes,FALSE,(i == F_POSRES));
+		       &maxtypes,FALSE,(i == F_POSRES  || i == F_FBPOSRES));
       }
     }
   }

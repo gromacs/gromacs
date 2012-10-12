@@ -36,8 +36,8 @@ files.
 */
 
 
-#ifndef _TMPI_WAIT_H_
-#define _TMPI_WAIT_H_
+#ifndef TMPI_WAIT_H_
+#define TMPI_WAIT_H_
 
 #ifndef TMPI_WAIT_FOR_NO_ONE
 
@@ -65,7 +65,7 @@ files.
    lead to starvation. This mixed approach actually gives better real-world 
    performance in the test program.*/
 /* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA  int yield_wait_counter
+#define TMPI_YIELD_WAIT_DATA  int yield_wait_counter;
 /* the initialization  associated with waiting. */
 #define TMPI_YIELD_WAIT_DATA_INIT(data) { (data)->yield_wait_counter=0; }
 
@@ -97,5 +97,5 @@ files.
 
 #endif /* !TMPI_WAIT_FOR_NO_ONE */
 
-#endif
+#endif /* TMPI_WAIT_H_ */
 

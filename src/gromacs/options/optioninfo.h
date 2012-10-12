@@ -116,8 +116,12 @@ class OptionInfo
         int valueCount() const;
         //! Returns the i'th value of the option as a string.
         std::string formatValue(int i) const;
-        //! Returns all the values of the option as a single string.
-        std::string formatValues() const;
+        /*! \brief
+         * Returns the default value if set for the option as a string.
+         *
+         * \see OptionTemplate::defaultValueIfSet()
+         */
+        std::string formatDefaultValueIfSet() const;
 
     protected:
         /*! \cond libapi */
@@ -129,14 +133,14 @@ class OptionInfo
         explicit OptionInfo(AbstractOptionStorage *option);
 
         //! Returns the wrapped option storage object.
-        AbstractOptionStorage &option() { return _option; }
+        AbstractOptionStorage &option() { return option_; }
         //! Returns the wrapped option storage object.
-        const AbstractOptionStorage &option() const { return _option; }
+        const AbstractOptionStorage &option() const { return option_; }
         //! \endcond
 
     private:
         //! The wrapped option.
-        AbstractOptionStorage  &_option;
+        AbstractOptionStorage  &option_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionInfo);
 };

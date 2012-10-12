@@ -47,14 +47,17 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -71,21 +74,22 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         ~Impl();
 
         void printHelp(const Options &options,
+                       const TrajectoryAnalysisSettings &settings,
                        const TrajectoryAnalysisRunnerCommon &common);
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
-                          Options *options,
                           int *argc, char *argv[]);
 
-        TrajectoryAnalysisModule *_module;
-        int                     _debugLevel;
+        TrajectoryAnalysisModule *module_;
+        int                     debugLevel_;
+        bool                    bPrintCopyright_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
         TrajectoryAnalysisModule *module)
-    : _module(module), _debugLevel(0)
+    : module_(module), debugLevel_(0), bPrintCopyright_(true)
 {
 }
 
@@ -98,15 +102,19 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 void
 TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
         const Options &options,
+        const TrajectoryAnalysisSettings &settings,
         const TrajectoryAnalysisRunnerCommon &common)
 {
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
     {
+        HelpWriterContext context(&File::standardError(),
+                                  eHelpOutputFormat_Console);
         CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
-            .writeHelp(stderr);
+            .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
+            .writeHelp(context);
     }
 }
 
@@ -116,46 +124,50 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         TrajectoryAnalysisSettings *settings,
         TrajectoryAnalysisRunnerCommon *common,
         SelectionCollection *selections,
-        Options *options,
         int *argc, char *argv[])
 {
-    Options &moduleOptions = _module->initOptions(settings);
-    Options &commonOptions = common->initOptions();
-    Options &selectionOptions = selections->initOptions();
+    Options options(NULL, NULL);
+    Options moduleOptions(module_->name(), module_->description());
+    Options commonOptions("common", "Common analysis control");
+    Options selectionOptions("selection", "Common selection control");
+    module_->initOptions(&moduleOptions, settings);
+    common->initOptions(&commonOptions);
+    selections->initOptions(&selectionOptions);
 
-    options->addSubSection(&commonOptions);
-    options->addSubSection(&selectionOptions);
-    options->addSubSection(&moduleOptions);
+    options.addSubSection(&commonOptions);
+    options.addSubSection(&selectionOptions);
+    options.addSubSection(&moduleOptions);
 
-    setSelectionCollectionForOptions(options, selections);
+    SelectionOptionManager seloptManager(selections);
+    setManagerForSelectionOptions(&options, &seloptManager);
 
     {
-        CommandLineParser  parser(options);
+        CommandLineParser  parser(&options);
         try
         {
             parser.parse(argc, argv);
         }
         catch (const UserInputError &ex)
         {
-            printHelp(*options, *common);
+            printHelp(options, *settings, *common);
             throw;
         }
-        printHelp(*options, *common);
-        common->scaleTimeOptions(options);
-        options->finish();
+        printHelp(options, *settings, *common);
+        common->scaleTimeOptions(&options);
+        options.finish();
     }
 
-    if (!common->initOptionsDone())
+    if (!common->optionsFinished(&commonOptions))
     {
         return false;
     }
-    _module->initOptionsDone(settings);
+    module_->optionsFinished(&moduleOptions, settings);
 
     common->initIndexGroups(selections);
 
     // TODO: Check whether the input is a pipe.
     bool bInteractive = true;
-    selections->parseRequestedFromStdin(bInteractive);
+    seloptManager.parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
 
     return true;
@@ -168,7 +180,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
 TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
         TrajectoryAnalysisModule *module)
-    : _impl(new Impl(module))
+    : impl_(new Impl(module))
 {
 }
 
@@ -179,28 +191,36 @@ TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 
 
 void
+TrajectoryAnalysisCommandLineRunner::setPrintCopyright(bool bPrint)
+{
+    impl_->bPrintCopyright_ = bPrint;
+}
+
+
+void
 TrajectoryAnalysisCommandLineRunner::setSelectionDebugLevel(int debuglevel)
 {
-    _impl->_debugLevel = 1;
+    impl_->debugLevel_ = 1;
 }
 
 
 int
 TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
-    TrajectoryAnalysisModule *module = _impl->_module;
+    TrajectoryAnalysisModule *module = impl_->module_;
 
-    CopyRight(stderr, argv[0]);
+    if (impl_->bPrintCopyright_)
+    {
+        CopyRight(stderr, argv[0]);
+    }
 
     SelectionCollection  selections;
-    selections.setDebugLevel(_impl->_debugLevel);
+    selections.setDebugLevel(impl_->debugLevel_);
 
     TrajectoryAnalysisSettings  settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
-    Options  options(NULL, NULL);
-    if (!_impl->parseOptions(&settings, &common, &selections, &options,
-                             &argc, argv))
+    if (!impl_->parseOptions(&settings, &common, &selections, &argc, argv))
     {
         return 0;
     }
@@ -261,6 +281,38 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     module->writeOutput();
 
     return 0;
+}
+
+
+void
+TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
+{
+    // TODO: This method duplicates some code from run() and Impl::printHelp().
+    // See how to best refactor it to share the common code.
+    SelectionCollection             selections;
+    TrajectoryAnalysisSettings      settings;
+    TrajectoryAnalysisRunnerCommon  common(&settings);
+
+    Options options(NULL, NULL);
+    Options moduleOptions(impl_->module_->name(), impl_->module_->description());
+    Options commonOptions("common", "Common analysis control");
+    Options selectionOptions("selection", "Common selection control");
+
+    impl_->module_->initOptions(&moduleOptions, &settings);
+    common.initOptions(&commonOptions);
+    selections.initOptions(&selectionOptions);
+
+    options.addSubSection(&commonOptions);
+    options.addSubSection(&selectionOptions);
+    options.addSubSection(&moduleOptions);
+
+    SelectionOptionManager seloptManager(&selections);
+    setManagerForSelectionOptions(&options, &seloptManager);
+
+    CommandLineHelpWriter(options)
+        .setShowDescriptions(true)
+        .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
+        .writeHelp(context);
 }
 
 } // namespace gmx

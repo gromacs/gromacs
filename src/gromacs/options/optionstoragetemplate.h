@@ -93,8 +93,15 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // No implementation in this class for the pure virtual methods, but
         // the declarations are still included for clarity.
         virtual const char *typeString() const = 0;
-        virtual int valueCount() const { return static_cast<int>(_values->size()); }
-        virtual std::string formatValue(int i) const = 0;
+        virtual int valueCount() const { return static_cast<int>(values_->size()); }
+        /*! \copydoc gmx::AbstractOptionStorage::formatValue()
+         *
+         * OptionStorageTemplate implements handling of DefaultValueIfSetIndex
+         * in this method, as well as checking that \p i is a valid index.
+         * Derived classes must implement formatSingleValue() to provide the
+         * actual formatting for a value of type \p T.
+         */
+        virtual std::string formatValue(int i) const;
 
     protected:
         /*! \brief
@@ -106,8 +113,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * \throws  APIError if invalid settings have been provided.
          */
         template <class U>
-        OptionStorageTemplate(const OptionTemplate<T, U> &settings,
-                              OptionFlags staticFlags = OptionFlags());
+        explicit OptionStorageTemplate(const OptionTemplate<T, U> &settings,
+                                       OptionFlags staticFlags = OptionFlags());
 
 
         virtual void clearSet();
@@ -138,7 +145,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         }
         /*! \copydoc AbstractOptionStorage::processSet()
          *
-         * OptionStorage template implements transaction support for a set of
+         * OptionStorageTemplate implements transaction support for a set of
          * values in this method (see the class description), and provides a
          * more detailed processSetValues() method that can be overridden in
          * subclasses to process the actual values.  Derived classes should
@@ -153,13 +160,23 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual void processAll()
         {
         }
+        /*! \brief
+         * Formats a single value as a string.
+         *
+         * \param[in] value  Value to format.
+         * \returns   \p value formatted as a string.
+         *
+         * The derived class must provide this method to format values a
+         * strings.  Called by formatValue() to do the actual formatting.
+         */
+        virtual std::string formatSingleValue(const T &value) const = 0;
 
         /*! \brief
          * Removes all values from the storage.
          *
          * Does not throw.
          */
-        void clear() { _values->clear(); }
+        void clear() { values_->clear(); }
         /*! \brief
          * Adds a value to a temporary storage.
          *
@@ -211,21 +228,42 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual void refreshValues();
 
         /*! \brief
+         * Sets the default value for the option.
+         *
+         * \param[in] value  Default value to set.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This method can be used from the derived class constructor to
+         * programmatically set a default value.
+         */
+        void setDefaultValue(const T &value);
+        /*! \brief
+         * Sets the default value if set for the option.
+         *
+         * \param[in] value  Default value to set.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This method can be used from the derived class constructor to
+         * programmatically set a default value.
+         */
+        void setDefaultValueIfSet(const T &value);
+
+        /*! \brief
          * Provides derived classes access to the current list of values.
          *
          * The non-const variant should only be used from processAll() in
          * derived classes if necessary, and refreshValues() should be called
          * if any changes are made.
          */
-        ValueList &values() { return *_values; }
+        ValueList &values() { return *values_; }
         //! Provides derived classes access to the current list of values.
-        const ValueList &values() const { return *_values; }
+        const ValueList &values() const { return *values_; }
 
     private:
         /*! \brief
          * Vector for temporary storage of values before commitSet() is called.
          */
-        ValueList               _setValues;
+        ValueList               setValues_;
         /*! \brief
          * Vector for primary storage of option values.
          *
@@ -237,11 +275,11 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * and other storage locations are updated only when refreshValues() is
          * called.
          */
-        ValueList              *_values;
-        T                      *_store;
-        int                    *_countptr;
-        boost::scoped_ptr<ValueList> _ownedValues;
-        boost::scoped_ptr<T>    _defaultValueIfSet;
+        ValueList              *values_;
+        T                      *store_;
+        int                    *countptr_;
+        boost::scoped_ptr<ValueList> ownedValues_;
+        boost::scoped_ptr<T>    defaultValueIfSet_;
 
         // Copy and assign disallowed by base.
 };
@@ -252,59 +290,54 @@ template <class U>
 OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &settings,
                                                 OptionFlags staticFlags)
     : AbstractOptionStorage(settings, staticFlags),
-      _values(settings._storeVector),
-      _store(settings._store),
-      _countptr(settings._countptr)
+      values_(settings.storeVector_),
+      store_(settings.store_),
+      countptr_(settings.countptr_)
 {
-    if (_values == NULL)
+    // If the maximum number of values is not known, storage to
+    // caller-allocated memory is unsafe.
+    if (store_ != NULL && (maxValueCount() < 0 || hasFlag(efOption_MultipleTimes)))
     {
-        // The flag should be set for proper error checking.
-        GMX_RELEASE_ASSERT(!hasFlag(efExternalValueVector),
-                           "Internal inconsistency");
-        _ownedValues.reset(new std::vector<T>);
-        _values = _ownedValues.get();
+        GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
     }
-    if (hasFlag(efNoDefaultValue)
-        && (settings._defaultValue != NULL
-            || settings._defaultValueIfSet != NULL))
+    if (values_ == NULL)
+    {
+        ownedValues_.reset(new std::vector<T>);
+        values_ = ownedValues_.get();
+    }
+    if (hasFlag(efOption_NoDefaultValue)
+        && (settings.defaultValue_ != NULL
+            || settings.defaultValueIfSet_ != NULL))
     {
         GMX_THROW(APIError("Option does not support default value, but one is set"));
     }
-    if (_store != NULL && _countptr == NULL && !hasFlag(efVector)
+    if (store_ != NULL && countptr_ == NULL && !isVector()
         && minValueCount() != maxValueCount())
     {
         GMX_THROW(APIError("Count storage is not set, although the number of produced values is not known"));
     }
-    if (!hasFlag(efNoDefaultValue))
+    if (!hasFlag(efOption_NoDefaultValue))
     {
-        setFlag(efHasDefaultValue);
-        if (settings._defaultValue != NULL)
+        setFlag(efOption_HasDefaultValue);
+        if (settings.defaultValue_ != NULL)
         {
-            _values->clear();
-            addValue(*settings._defaultValue);
-            // TODO: This is a bit hairy, as it indirectly calls a virtual function.
-            commitValues();
+            setDefaultValue(*settings.defaultValue_);
         }
-        else if (_ownedValues.get() != NULL && _store != NULL)
+        else if (ownedValues_.get() != NULL && store_ != NULL)
         {
-            _values->clear();
+            values_->clear();
             int count = (settings.isVector() ?
-                            settings._maxValueCount : settings._minValueCount);
+                            settings.maxValueCount_ : settings.minValueCount_);
             for (int i = 0; i < count; ++i)
             {
-                _values->push_back(_store[i]);
+                values_->push_back(store_[i]);
             }
         }
-        if (settings._defaultValueIfSet != NULL)
+        if (settings.defaultValueIfSet_ != NULL)
         {
-            if (hasFlag(efMulti))
-            {
-                GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
-            }
-            _defaultValueIfSet.reset(new T(*settings._defaultValueIfSet));
+            setDefaultValueIfSet(*settings.defaultValueIfSet_);
         }
     }
-    setFlag(efClearOnNextSet);
 }
 
 
@@ -315,29 +348,45 @@ OptionStorageTemplate<T>::~OptionStorageTemplate()
 
 
 template <typename T>
+std::string OptionStorageTemplate<T>::formatValue(int i) const
+{
+    GMX_RELEASE_ASSERT(i == DefaultValueIfSetIndex || (i >= 0 && i < valueCount()),
+                       "Invalid value index");
+    if (i == DefaultValueIfSetIndex)
+    {
+        if (defaultValueIfSet_.get() != NULL)
+        {
+            return formatSingleValue(*defaultValueIfSet_);
+        }
+        return std::string();
+    }
+    return formatSingleValue(values()[i]);
+}
+
+
+template <typename T>
 void OptionStorageTemplate<T>::clearSet()
 {
-    _setValues.clear();
+    setValues_.clear();
 }
 
 
 template <typename T>
 void OptionStorageTemplate<T>::processSet()
 {
-    processSetValues(&_setValues);
-    if (_setValues.empty() && _defaultValueIfSet.get() != NULL)
+    processSetValues(&setValues_);
+    if (setValues_.empty() && defaultValueIfSet_.get() != NULL)
     {
-        addValue(*_defaultValueIfSet);
-        setFlag(efHasDefaultValue);
+        addValue(*defaultValueIfSet_);
+        setFlag(efOption_HasDefaultValue);
     }
     else
     {
-        clearFlag(efHasDefaultValue);
+        clearFlag(efOption_HasDefaultValue);
     }
-    if (!hasFlag(efDontCheckMinimumCount)
-        && _setValues.size() < static_cast<size_t>(minValueCount()))
+    if (!hasFlag(efOption_DontCheckMinimumCount)
+        && setValues_.size() < static_cast<size_t>(minValueCount()))
     {
-        clearSet();
         GMX_THROW(InvalidInputError("Too few (valid) values"));
     }
     commitValues();
@@ -348,25 +397,24 @@ template <typename T>
 void OptionStorageTemplate<T>::addValue(const T &value)
 {
     if (maxValueCount() >= 0
-        && _setValues.size() >= static_cast<size_t>(maxValueCount()))
+        && setValues_.size() >= static_cast<size_t>(maxValueCount()))
     {
         GMX_THROW(InvalidInputError("Too many values"));
     }
-    _setValues.push_back(value);
+    setValues_.push_back(value);
 }
 
 
 template <typename T>
 void OptionStorageTemplate<T>::commitValues()
 {
-    if (hasFlag(efClearOnNextSet))
+    if (hasFlag(efOption_ClearOnNextSet))
     {
-        _values->swap(_setValues);
-        clearFlag(efClearOnNextSet);
+        values_->swap(setValues_);
     }
     else
     {
-        _values->insert(_values->end(), _setValues.begin(), _setValues.end());
+        values_->insert(values_->end(), setValues_.begin(), setValues_.end());
     }
     clearSet();
     refreshValues();
@@ -376,17 +424,51 @@ void OptionStorageTemplate<T>::commitValues()
 template <typename T>
 void OptionStorageTemplate<T>::refreshValues()
 {
-    if (_countptr != NULL)
+    if (countptr_ != NULL)
     {
-        *_countptr = static_cast<int>(_values->size());
+        *countptr_ = static_cast<int>(values_->size());
     }
-    if (_store != NULL)
+    if (store_ != NULL)
     {
-        for (size_t i = 0; i < _values->size(); ++i)
+        for (size_t i = 0; i < values_->size(); ++i)
         {
-            _store[i] = (*_values)[i];
+            store_[i] = (*values_)[i];
         }
     }
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::setDefaultValue(const T &value)
+{
+    if (hasFlag(efOption_NoDefaultValue))
+    {
+        GMX_THROW(APIError("Option does not support default value, but one is set"));
+    }
+    if (hasFlag(efOption_HasDefaultValue))
+    {
+        clear();
+        clearSet();
+        addValue(value);
+        // TODO: As this is called from the constructor, it should not call
+        // virtual functions.
+        commitValues();
+    }
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::setDefaultValueIfSet(const T &value)
+{
+    if (hasFlag(efOption_NoDefaultValue))
+    {
+        GMX_THROW(APIError("Option does not support default value, but one is set"));
+    }
+    if (hasFlag(efOption_MultipleTimes))
+    {
+        GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
+    }
+    defaultValueIfSet_.reset(new T(value));
 }
 
 } // namespace gmx

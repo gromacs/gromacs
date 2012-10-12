@@ -72,18 +72,24 @@ typedef struct gmx_static_structurefator_t {
     double  qstep; /* q increment */
 } gmx_static_structurefator_t;
 
+void check_binwidth(real binwidth);
+
+void check_mcover(real mcover);
+
 void normalize_probability(int n, double *a);
 
 gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
 
 gmx_sans_t *gmx_sans_init(t_topology *top, gmx_nentron_atomic_structurefactors_t *gnsf);
 
-gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  ( gmx_sans_t *gsans,
-                            rvec *x, atom_id *index,
+gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t *gsans,
+                            rvec *x,
+                            matrix box,
+                            atom_id *index,
                             int isize,
                             double binwidth,
                             gmx_bool bMC,
-                            gmx_large_int_t nmc,
+                            real mcover,
                             unsigned int seed);
 
 gmx_static_structurefator_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step);

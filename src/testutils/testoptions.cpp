@@ -45,17 +45,25 @@
 #include <vector>
 
 #include <boost/scoped_ptr.hpp>
+#include <gmock/gmock.h>
 
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
 
-#include "datapath.h"
 #include "refdata.h"
 #include "testexceptions.h"
+#include "testfilemanager.h"
 
-static boost::scoped_ptr<std::vector<std::string> > s_commandLine;
+namespace
+{
+
+//! Stored command line for gmx::test::parseTestOptions().
+boost::scoped_ptr<std::vector<std::string> > s_commandLine;
+
+} // namespace
 
 namespace gmx
 {
@@ -64,13 +72,15 @@ namespace test
 
 void initTestUtils(const char *dataPath, int *argc, char *argv[])
 {
-    if (dataPath != NULL)
-    {
-        setTestDataPath(dataPath);
-    }
-    initReferenceData(argc, argv);
     try
     {
+        ProgramInfo::init(*argc, argv);
+        ::testing::InitGoogleMock(argc, argv);
+        if (dataPath != NULL)
+        {
+            TestFileManager::setInputDataDirectory(dataPath);
+        }
+        initReferenceData(argc, argv);
         boost::scoped_ptr<std::vector<std::string> > commandLine(
                 new std::vector<std::string>());
         for (int i = 0; i < *argc; ++i)
@@ -79,9 +89,9 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         }
         swap(commandLine, s_commandLine);
     }
-    catch (const std::bad_alloc &)
+    catch (const std::exception &ex)
     {
-        std::fprintf(stderr, "Out of memory\n");
+        printFatalErrorMessage(stderr, ex);
         std::exit(1);
     }
     ::gmx::setFatalErrorHandler(NULL);

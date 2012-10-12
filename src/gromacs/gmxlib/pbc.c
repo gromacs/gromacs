@@ -100,7 +100,7 @@ void dump_pbc(FILE *fp,t_pbc *pbc)
     rvec_add(pbc->hbox_diag,pbc->mhbox_diag,sum_box);
     pr_rvecs(fp,0,"sum of the above two",&sum_box,1);
     fprintf(fp,"max_cutoff2 = %g\n",pbc->max_cutoff2);
-    fprintf(fp,"bLimitDistance = %s\n",BOOL(pbc->bLimitDistance));
+    fprintf(fp,"bLimitDistance = %s\n",EBOOL(pbc->bLimitDistance));
     fprintf(fp,"limit_distance2 = %g\n",pbc->limit_distance2);
     fprintf(fp,"ntric_vec = %d\n",pbc->ntric_vec);
     if (pbc->ntric_vec > 0) {
@@ -244,7 +244,7 @@ gmx_bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph)
 
     if (bCorrected && graph) {
         /* correct the graph */
-        for(i=0; i<graph->nnodes; i++) {
+        for(i=graph->at_start; i<graph->at_end; i++) {
             graph->ishift[i][YY] -= graph->ishift[i][ZZ]*zy;
             graph->ishift[i][XX] -= graph->ishift[i][ZZ]*zx;
             graph->ishift[i][XX] -= graph->ishift[i][YY]*yx;

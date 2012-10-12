@@ -166,7 +166,7 @@ class TrajectoryAnalysisModuleData
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
@@ -178,7 +178,7 @@ typedef gmx_unique_ptr<TrajectoryAnalysisModuleData>::type
  *
  * Trajectory analysis methods should derive from this class and override the
  * necessary virtual methods to implement initialization (initOptions(),
- * initOptionsDone(), initAnalysis(), initAfterFirstFrame()), per-frame analysis
+ * optionsFinished(), initAnalysis(), initAfterFirstFrame()), per-frame analysis
  * (analyzeFrame()), and final processing (finishFrames(), finishAnalysis(),
  * writeOutput()).
  *
@@ -226,11 +226,11 @@ class TrajectoryAnalysisModule
         /*! \brief
          * Initializes options understood by the module.
          *
+         * \param[in,out] options  Options object to add the options to.
          * \param[in,out] settings Settings to pass to and from the module.
-         * \returns  Reference to options that are accepted by the module.
          *
-         * Typical implementation returns a reference to a member variable
-         * after first adding necessary options to that object.  Output values
+         * This method is called first after the constructor, and it should
+         * add options understood by the module to \p options.  Output values
          * from options (including selections) should be stored in member
          * variables.
          *
@@ -239,12 +239,14 @@ class TrajectoryAnalysisModule
          * \p settings object; see TrajectoryAnalysisSettings for more details.
          *
          * If settings depend on the option values provided by the user, see
-         * initOptionsDone().
+         * optionsFinished().
          */
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings) = 0;
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.
          *
+         * \param[in,out] options  Options object in which options are stored.
          * \param[in,out] settings Settings to pass to and from the module.
          *
          * This method is called after option values have been assigned (but
@@ -257,7 +259,8 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options *options,
+                                     TrajectoryAnalysisSettings *settings);
         /*! \brief
          * Initializes the analysis.
          *
@@ -378,6 +381,18 @@ class TrajectoryAnalysisModule
         virtual void writeOutput() = 0;
 
         /*! \brief
+         * Returns the name of the analysis module.
+         *
+         * Does not throw.
+         */
+        const char *name() const;
+        /*! \brief
+         * Returns short description for the analysis module.
+         *
+         * Does not throw.
+         */
+        const char *description() const;
+        /*! \brief
          * Returns the number of datasets provided by the module.
          *
          * Does not throw.
@@ -424,9 +439,11 @@ class TrajectoryAnalysisModule
         /*! \brief
          * Initializes the dataset registration mechanism.
          *
-         * \throws std::bad_alloc if out of memory.
+         * \param[in] name         Name for the module.
+         * \param[in] description  One-line description for the module.
+         * \throws    std::bad_alloc if out of memory.
          */
-        TrajectoryAnalysisModule();
+        TrajectoryAnalysisModule(const char *name, const char *description);
 
         /*! \brief
          * Registers a dataset that exports data.
@@ -463,7 +480,7 @@ class TrajectoryAnalysisModule
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 
         /*! \brief
          * Needed to access the registered analysis data sets.

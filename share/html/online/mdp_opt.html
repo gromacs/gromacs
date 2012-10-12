@@ -51,7 +51,8 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 wall-density, wall-ewald-zfac)
 <li><A HREF="#pull"><b>COM pulling</b></A> (pull, ...)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre-weighting, disre-mixed, disre-fc, disre-tau, nstdisreout, orire, orire-fc, orire-tau, orire-fitgrp, nstorireout)
-<li><A HREF="#free"><b>Free Energy calculations</b></A> (free-energy, init-lambda, delta-lambda, sc-alpha, sc-power, sc-sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
+<li><A HREF="#free"><b>Free energy calculations</b></A> (free-energy, nstfep, nstdgdl, dhdl-print-energy, init-lambda, delta-lambda, fep-lambdas, coul-lambdas, vdw-lambdas, bonded-lambdas, restraint-lambdas, mass-lambdas, sc-alpha, sc-coul, sc-power, sc-r-power, sc-sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
+<li><A HREF="#expanded"><b>Expanded ensemble simulation</b></A> (lmc-stats, lmc-mc-move, lmc-seed, lmc-gibbsdelta, mc-temperature, nst-transition-matrix,init-lambda-weights,initial-wl-delta,wl-scale,wl-ratio,symmetrized-transition-matrix,lmc-forced-nstart,weight-c-range,mininum-var-min,lmc-weights-equil,weight-equil-wl-delta,weight-equil-number-all-lambda,weight-equil-number-steps,weight-equil-number-samples,weight-equil-count-ratio,simulated-tempering,simulated-tempering-scaling,sim-temp-low,sim-temp-high)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc-grps, accelerate, freezegrps, freezedim, cos-acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E-x, E-xt, E-y, E-yt, E-z, E-zt )
 <li><A HREF="#qmmm"><b>Mixed quantum/classical dynamics</b></A> (QMMM, QMMM-grps, QMMMscheme, QMmethod, QMbasis, QMcharge, Qmmult, CASorbitals, CASelectrons, SH)
@@ -96,7 +97,7 @@ that are already available by default are:
 topology, this can be useful for normal mode analysis.</dd>
 <dt>-DPOSRES</dt>
 <dd>Will tell <tt>grompp</tt> to include posre.itp into your topology, used for
-<!--Idx-->position restraints<!--EIdx-->.</dd>
+<!--Idx-->position restraint<!--EIdx-->s.</dd>
 </dl>
 </dl>
 
@@ -108,8 +109,8 @@ topology, this can be useful for normal mode analysis.</dd>
 <dt><b>integrator:</b> (Despite the name, this list includes algorithms that are not actually integrators. <tt>steep</tt> and all entries following it are in this category)</dt>
 <dd><dl compact>
 <dt><b>md</b></dt>
-<dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newton's
-equations of motion.</dd>
+<dd>A leap-frog algorithm<!--QuietIdx-->leap-frog integrator<!--EQuietIdx-->
+for integrating Newton's equations of motion.</dd>
 <dt><b>md-vv</b></dt>
 <dd>A velocity Verlet algorithm for integrating Newton's equations of motion.
 For constant NVE simulations started from corresponding points in the same trajectory, the trajectories 
@@ -186,7 +187,7 @@ In practice this seems to converge faster than Conjugate Gradients, but due
 to the correction steps necessary it is not (yet) parallelized.
 </dd>
 <dt><b>nm</b></dt>
-<dd><!--Idx-->Normal mode analysis<!--EIdx--> is performed
+<dd>Normal mode analysis<!--QuietIdx-->normal-mode analysis<!--EQuietIdx--> is performed
 on the structure in the <tt>tpr</tt> file. GROMACS should be
 compiled in double precision.</dd>
 <dt><b>tpi</b></dt>
@@ -283,7 +284,7 @@ to <b>ld-seed</b> plus the processor number.</dd>
 
 <A NAME="em"><br>
 <hr>
-<h3><!--Idx-->Energy minimization<!--EIdx--></h3>
+<h3>Energy minimization<!--QuietIdx-->energy minimization<!--EQuietIdx--></h3>
 <dl>
 <dt><b>emtol: (10.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
 <dd>the minimization is converged when the maximum force is smaller than 
@@ -300,7 +301,8 @@ number is (at least theoretically) more accurate, but slower.</dd>
 
 <A NAME="xmdrun"><br>
 <hr>
-<h3><!--Idx-->Shell Molecular Dynamics<!--EIdx--></h3> When shells or
+<h3>Shell Molecular Dynamics<!--QuietIdx-->shell molecular dynamics<!--EQuietIdx--></h3>
+When shells or
 flexible constraints are present in the system the positions of the shells
 and the lengths of the flexible constraints are optimized at
 every time step until either the RMS force on the shells and constraints
@@ -337,15 +339,15 @@ Try several values!</dd>
 <hr>
 <h3>Output control</h3>
 <dl>
-<dt><b>nstxout: (100) [steps]</b></dt>
+<dt><b>nstxout: (0) [steps]</b></dt>
 <dd>frequency to write coordinates to output 
 <!--Idx-->trajectory file<!--EIdx-->, the last coordinates are always written</dd>
-<dt><b>nstvout: (100) [steps]</b></dt>
+<dt><b>nstvout: (0) [steps]</b></dt>
 <dd>frequency  to write velocities to output trajectory,
 the last velocities are always written</dd>
 <dt><b>nstfout: (0) [steps]</b></dt>
 <dd>frequency to write forces to output trajectory.</dd>
-<dt><b>nstlog: (100) [steps]</b></dt>
+<dt><b>nstlog: (1000) [steps]</b></dt>
 <dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
 the last energies are always written</dd>
 <dt><b>nstcalcenergy: (-1)</b></dt>
@@ -382,7 +384,7 @@ energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
 
 <A NAME="nl"><br>
 <hr>
-<h3><!--Idx-->Neighbor searching<!--EIdx--></h3>
+<h3>Neighbor searching<!--QuietIdx-->neighbor searching<!--EQuietIdx--></h3>
 <dl>
 <dt><b>nstlist: (10) [steps]</b></dt>
 <dd><dl compact>
@@ -456,8 +458,8 @@ the periodic boundary conditions, this requires a slower PBC algorithm
 and molecules are not made whole in the output</dd>
 </dl></dd>
 
-<dt><b>rlist: (1) [nm]</b></dt>
-<dd>cut-off distance for the short-range neighbor list</dd>
+<dt><b>rlist: (-1) [nm]</b></dt>
+<dd>cut-off distance for the short-range neighbor list, should be &ge; 0</dd>
 
 <dt><b>rlistlong: (-1) [nm]</b></dt>
 <dd>Cut-off distance for the long-range neighbor list.
@@ -470,7 +472,7 @@ is automatically set to the longest cut-off distance.</dd>
 
 <A NAME="el"><br>
 <hr>
-<h3><!--Idx-->Electrostatics<!--EIdx--></h3>
+<h3>Electrostatics<!--QuietIdx-->electrostatics<!--EQuietIdx--></h3>
 <dl>
 <dt><b>coulombtype:</b></dt>
 <dd><dl compact>
@@ -493,7 +495,7 @@ and is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.</dd>
 
 <dt><b><!--Idx-->PME<!--EIdx--></b></dt>
-<dd>Fast Particle-Mesh Ewald electrostatics. Direct space is similar
+<dd>Fast smooth Particle-Mesh Ewald (SPME) electrostatics. Direct space is similar
 to the Ewald sum, while the reciprocal part is performed with
 FFTs. Grid dimensions are controlled with <b>fourierspacing</b> and the
 interpolation order with <b>pme-order</b>. With a grid spacing of 0.1
@@ -503,18 +505,13 @@ might try 0.15 nm. When running in parallel the interpolation
 parallelizes better than the FFT, so try decreasing grid dimensions
 while increasing interpolation.</dd>
 
-<dt><b><!--Idx-->PPPM<!--EIdx--></b></dt>
-<dd>Particle-Particle Particle-Mesh algorithm for long range
-electrostatic interactions.
-Use for example <b>rlist</b><tt>=0.9</tt>, <b>rcoulomb</b><tt>=0.9</TT>.
-The grid dimensions are controlled by <b>fourierspacing</b>.
-Reasonable grid spacing for PPPM is 0.05-0.1 nm.
-See <tt>Shift</tt> for the details of the particle-particle potential.
-<br>
-NOTE: PPPM is not functional in the current version, but we plan to implement
-PPPM through a small modification of the PME code.</dd>
+<dt><b><!--Idx-->P3M-AD<!--EIdx--></b></dt>
+<dd>Particle-Particle Particle-Mesh algorithm with analytical derivative
+for for long range electrostatic interactions. The method and code
+is identical to SPME, except that the influence function is optimized
+for the grid. This gives a slight increase in accuracy.</dd>
 
-<dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
+<dt><b>Reaction-Field electrostatics<!--QuietIdx-->reaction-field electrostatics<!--EQuietIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
 where <b>rcoulomb</b> &ge; <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon-rf</b>.
@@ -620,8 +617,8 @@ i.e. both to the user supplied function and the PME Mesh correction part.</dd>
 <dt><b>rcoulomb-switch: (0) [nm]</b></dt>
 <dd>where to start switching the Coulomb potential</dd>
 
-<dt><b>rcoulomb: (1) [nm]</b></dt>
-<dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx--></dd>
+<dt><b>rcoulomb: (-1) [nm]</b></dt>
+<dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx-->, should be &ge; 0</dd>
 
 <dt><b>epsilon-r: (1)</b></dt>
 <dd>The relative <!--Idx-->dielectric constant<!--EIdx-->.
@@ -678,8 +675,8 @@ for <tt>f</tt> and <tt>-f'</tt> are ignored.</dd>
 <dt><b>rvdw-switch: (0) [nm]</b></dt>
 <dd>where to start switching the LJ potential</dd>
 
-<dt><b>rvdw: (1) [nm]</b></dt>
-<dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx--></dd>
+<dt><b>rvdw: (-1) [nm]</b></dt>
+<dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx-->, should be &ge; 0</dd>
 
 <dt><b>DispCorr:</b></dt>
 <dd><dl compact></dd>
@@ -726,20 +723,21 @@ energy group pairs.
 <h3>Ewald</h3>
 <dl>
 <dt><b>fourierspacing: (0.12) [nm]</b></dt>
-<dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
-For ordinary Ewald the spacing times the box dimensions determines the
-highest magnitude to use in each direction. In all cases
-each direction can be overridden by entering a non-zero value for
-<b>fourier-n[xyz]</b>.
+<dd>For ordinary Ewald, the ratio of the box dimensions and the spacing
+determines a lower bound for the number of wave vectors to use in each
+(signed) direction. For PME and P3M, that ratio determines a lower bound
+for the number of Fourier-space grid points that will be used along that
+axis. In all cases, the number for each direction can be overridden by
+entering a non-zero value for <b>fourier_n[xyz]</b>.
 For optimizing the relative load of the particle-particle interactions
-and the mesh part of PME it is useful to know that
+and the mesh part of PME, it is useful to know that
 the accuracy of the electrostatics remains nearly constant
 when the Coulomb cut-off and the PME grid spacing are scaled
 by the same factor.</dd>
 
 <dt><b>fourier-nx (0) ; fourier-ny (0) ; fourier-nz: (0)</b></dt>
 <dd>Highest magnitude of wave vectors in reciprocal space when using Ewald.</dd>
-<dd>Grid size when using PPPM or PME. These values override
+<dd>Grid size when using PME or P3M. These values override
 <b>fourierspacing</b> per direction. The best choice is powers of
 2, 3, 5 and 7. Avoid large primes.</dd>
 
@@ -789,7 +787,7 @@ at start.</dd>
 
 <A NAME="tc"><br>
 <hr>
-<h3><!--Idx-->Temperature coupling<!--EIdx--></h3>
+<h3>Temperature coupling<!--QuietIdx-->temperature coupling<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>tcoupl:</b></dt>
@@ -839,7 +837,7 @@ For velocity Verlet integrators <b>nsttcouple</b> is set to 1.</dd>
 
 <A NAME="pc"><br>
 <hr>
-<h3><!--Idx-->Pressure coupling<!--EIdx--></h3>
+<h3>Pressure coupling<!--QuietIdx-->pressure coupling<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>pcoupl:</b></dt>
@@ -940,7 +938,7 @@ positions of the reference coordinates.</dd>
 
 <A NAME="sa"><br>
 <hr>
-<h3><!--Idx-->Simulated annealing<!--EIdx--></h3>
+<h3>Simulated annealing<!--QuietIdx-->simulated annealing<!--EQuietIdx--></h3>
 
 Simulated annealing is controlled separately for each temperature group in GROMACS. The reference temperature is a piecewise linear function, but you can use an arbitrary number of points for each group, and choose either a single sequence or a periodic behaviour for each group. The actual annealing is performed by dynamically changing the reference temperature used in the thermostat algorithm selected, so remember that the system will usually not instantaneously reach the reference temperature!
 <dl>
@@ -998,7 +996,7 @@ the process ID number.
 <h3>Bonds</h3>
 
 <dl>
-<dt><b><!--Idx-->constraints<!--EIdx-->:</b></dt>
+<dt><b>constraints<!--QuietIdx-->constraint algorithms<!--QuietEIdx-->:</b></dt>
 <dd><dl compact>
 <dt><b>none</b></dt>
 <dd>No constraints except for those defined explicitly in the topology,
@@ -1104,7 +1102,7 @@ solvent. This is especially useful for speeding up energy calculations with
 
 <A NAME="walls"><br>
 <hr>
-<h3><!--Idx-->Walls<!--EIdx--></h3>
+<h3>Walls<!--QuietIdx-->walls<!--EQuietIdx--></h3>
 <dl>
 <dt><b>nwall: 0</b></dt>
 <dd>When set to <b>1</b> there is a wall at <tt>z=0</tt>, when set to <b>2</b>
@@ -1292,76 +1290,81 @@ The force constant is then (1 - lambda)*<b>pull-k1</b> + lambda*<b>pull-kB1</b>.
 <dt><b>disre:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>no <!--Idx-->distance restraints<!--EIdx--> (ignore distance
-restraint information in topology file)</dd>
+<dd>ignore <!--Idx-->distance restraint<!--EIdx--> information in topology file</dd>
 <dt><b>simple</b></dt>
-<dd>simple (per-molecule) distance restraints,
-ensemble averaging can be performed with <tt>mdrun -multi</tt>
-where the environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
-of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> value)</dd>
+<dd>simple (per-molecule) distance restraints.
 <dt><b>ensemble</b></dt>
-<dd>distance restraints over an ensemble of molecules in one simulation box,
-should only be used for special cases, such as dimers
-(this option is not fuctional in the current version of GROMACS)</dd>
+<dd>distance restraints over an ensemble of molecules in one
+simulation box. Normally, one would perform ensemble averaging over
+multiple subsystems, each in a separate box, using <tt>mdrun -multi</tt>;s
+upply <tt>topol0.tpr</tt>, <tt>topol1.tpr</tt>, ... with different
+coordinates and/or velocities.
+The environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
+of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> value).</dd>
+</dd>
 </dl></dd>
 <dt><b>disre-weighting:</b></dt>
 <dd><dl compact>
+<dt><b>equal</b> (default)</dt>
+<dd>divide the restraint force equally over all atom pairs in the restraint</dd>
 <dt><b>conservative</b></dt>
 <dd>the forces are the derivative of the restraint potential,
-this results in an r<sup>-7</sup> weighting of the atom pairs</dd>
-<dt><b>equal</b></dt>
-<dd>divide the restraint force equally over all atom pairs in the restraint</dd>
+this results in an r<sup>-7</sup> weighting of the atom pairs.
+The forces are conservative when <tt>disre-tau</tt> is zero.</dd>
 </dl></dd>
 <dt><b>disre-mixed:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>the violation used in the calculation of the restraint force is the
-time averaged violation </dd>
+time-averaged violation </dd>
 <dt><b>yes</b></dt>
 <dd>the violation used in the calculation of the restraint force is the
-square root of the time averaged violation times the instantaneous violation </dd>
+square root of the product of the time-averaged violation and the instantaneous violation</dd>
 </dl></dd>
 
 <dt><b>disre-fc: (1000) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
 <dd>force constant for distance restraints, which is multiplied by a
-(possibly) different factor for each restraint</dd>
+(possibly) different factor for each restraint given in the <tt>fac</tt>
+column of the interaction in the topology file.</dd>
 
 <dt><b>disre-tau: (0) [ps]</b></dt>
-<dd>time constant for distance restraints running average</dd>
+<dd>time constant for distance restraints running average. A value of zero turns off time averaging.</dd>
 
 <dt><b>nstdisreout: (100) [steps]</b></dt>
-<dd>frequency to write the running time averaged and instantaneous distances
-of all atom pairs involved in restraints to the energy file
+<dd>period between steps when the running time-averaged and instantaneous distances
+of all atom pairs involved in restraints are written to the energy file
 (can make the energy file very large)</dd>
 
 <A NAME="nmr2">
 <dt><b>orire:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>no <!--Idx-->orientation restraints<!--EIdx--> (ignore orientation
-restraint information in topology file)</dd>
+<dd>ignore <!--Idx-->orientation restraint<!--EIdx--> information in topology file</dd>
 <dt><b>yes</b></dt>
 <dd>use orientation restraints, ensemble averaging can be performed
 with <tt>mdrun -multi</tt></dd>
 </dl>
 <dt><b>orire-fc: (0) [kJ mol]</b></dt>
 <dd>force constant for orientation restraints, which is multiplied by a
-(possibly) different factor for each restraint, can be set to zero to
+(possibly) different weight factor for each restraint, can be set to zero to
 obtain the orientations from a free simulation</dd>
 <dt><b>orire-tau: (0) [ps]</b></dt>
-<dd>time constant for orientation restraints running average</dd>
+<dd>time constant for orientation restraints running average. A value of zero turns off time averaging.</dd>
 <dt><b>orire-fitgrp: </b></dt>
-<dd>fit group for orientation restraining, for a protein backbone is a good
+<dd>fit group for orientation restraining. This group of atoms is used
+to determine the rotation <b>R</b> of the system with respect to the
+reference orientation. The reference orientation is the starting
+conformation of the first subsystem. For a protein, backbone is a reasonable
 choice</dd>
 <dt><b>nstorireout: (100) [steps]</b></dt>
-<dd>frequency to write the running time averaged and instantaneous orientations
-for all restraints and the molecular order tensor to the energy file
+<dd>period between steps when the running time-averaged and instantaneous orientations
+for all restraints, and the molecular order tensor are written to the energy file
 (can make the energy file very large)</dd>
 </dl>
 
 <A NAME="free"><br>
 <hr>
-<h3><!--Idx-->Free energy calculations<!--EIdx--></h3>
+<h3>Free energy calculations<!--QuietIdx-->free energy calculations<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>free-energy:</b></dt>
@@ -1377,19 +1380,52 @@ described in the manual. When <b>sc-alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
 </dl></dd>
 <dt><b>init-lambda: (0)</b></dt>
-<dd>starting value for lambda</dd>
+<dd>starting value for lambda (float).  Generally, this should only be used with slow growth.  In other cases, <b>init-lambda-state</b> should be specified instead.</dd>
+<dt><b>init-lambda-state: (0)</b></dt>
+<dd>starting value for the lambda state (integer).  Specified which columm of the lambda vector should be used.</dd>
 <dt><b>delta-lambda: (0)</b></dt>
 <dd>increment per time step for lambda</dd>
-<dt><b>foreign-lambda: ()</b></dt>
+<dt><b>coul-lambdas: ()</b></dt>
+<dd>Zero, one or more lambda values for which Delta H values will
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+Only the electrostatic interactions are controlled with this component of the lambda vector.</dd>
+<dt><b>vdw-lambdas: ()</b></dt>
+<dd>Zero, one or more lambda values for which Delta H values will
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+Only the van der Waals interactions are controlled with this component of the lambda vector.</dd>
+<dt><b>bonded-lambdas: ()</b></dt>
+<dd>Zero, one or more lambda values for which Delta H values will
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+Only the bonded interactions are controlled with this component of the lambda vector.</dd>
+<dt><b>restraint-lambdas: ()</b></dt>
+<dd>Zero, one or more lambda values for which Delta H values will
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+Only the restraint interactions are controlled with this component of the lambda vector.</dd>
+<dt><b>mass-lambdas: ()</b></dt>
+<dd>Zero, one or more lambda values for which Delta H values will
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+Only the particle masses are controlled with this component of the lambda vector.</dd>
+<dt><b>temperature-lambdas: ()</b></dt>
+<dd>Zero, one or more lambda values for which Delta H values will
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+Only the temperatures controlled with this component of the lambda vector.
+Note that these lambdas should not be used for replica exchange, only for simulated tempering.</dd>
+<dt><b>fep-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
 be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
 Free energy differences between different lambda values can then
-be determined with <tt>g_bar</tt>.</dd>
+be determined with <tt>g_bar</tt>. <b>fep-lambdas</b> is different from the other -lambdas keywords because
+all components of the lambda vector that are not specified will use <b>fep-lambdas</b>.</dd>
 <dt><b>dhdl-derivatives: (yes)</b></dt>
 <dd>If yes (the default), the derivatives of the Hamiltonian with respect to lambda at each <b>nstdhdl</b> step are written out. These values are needed for interpolation of linear energy differences with <tt>g_bar</tt> (although the same can also be achieved with the right <b>foreign lambda</b> setting, that may not be as flexible), or with thermodynamic integration</dd>
 <dt><b>sc-alpha: (0)</b></dt>
 <dd>the soft-core parameter, a value of 0 results in linear interpolation of
 the LJ and Coulomb interactions</dd>
+<dt><b>sc-r-power: (6)</b></dt>
+<dd>the power of the radial term in the soft-core equation.  Possible values are 6 and 48. 6 is more standard, and is the default.  When 48 is used, then sc-alpha should generally be much lower (between 0.001 and 0.003).</dd>
+<dt><b>sc-coul: (no)</b></dt>
+<dd>Whether to apply the soft core free energy interations to the Columbic interaction. Default is no, as it is generally
+more efficient to turn of the Coulomic interactions linearly before turning off electrostatic interactions.</dd>
 <dt><b>sc-power: (0)</b></dt>
 <dd>the power for lambda in the soft-core function,
 only the values 1 and 2 are supported</dd>
@@ -1430,7 +1466,9 @@ the molecule definition in the topology.</dd>
 </dl>
 <dt><b>nstdhdl: (10)</b></dt>
 <dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
-0 means no ouput, should be a multiple of <b>nstcalcenergy</b></dd>
+0 means no ouput, should be a multiple of <b>nstcalcenergy</b>and <b>nstfep</b></dd>
+<dt><b>nstfep: (10)</b></dt>
+<dd>the frequency at which energies at other values of lambda are calculated.  If not specified, set to be the same as <b>nstdhdl</b>. Should be a multiple of <b>nstcalcenergy</b>.  If replica exchange is chosen, then -replex must also be a multiple of <b>nstfep</b></dd>
 <dt><b>separate-dhdl-file: (yes)</b></dt>
 <dd><dl compact>
 <dt><b>yes</b></dt>
@@ -1443,11 +1481,78 @@ the molecule definition in the topology.</dd>
 <dt><b>dh-hist-spacing (0.1)</b></dt>
 <dd>Specifies the bin width of the histograms, in energy units. Used in conjunction with <b>dh-hist-size</b>. This size limits the accuracy with which free energies can be calculated.  Do not use histograms unless you're certain you need it.</dd>
 </dl>
+<A NAME="expanded"><br>
+<hr>
+<h3><!--Idx-->Expanded Ensemble calculations<!--EIdx--></h3>
 
+<dl>
+<dt><b>nstexpanded</b></dt> <dd>The frequency to peform expanded ensemble
+simulations.  Must be a multiple of <b>nstfep</b>.</dd>
+<dt><b>lmc-stats:</b></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>No Monte Carlo in state space</dd>
+<dt><b>metropolis-transition</b></dt>
+<dd> Uses the Metropolis weights to update the expanded ensemble weight of the state.
+Min{1,exp(-(beta_new u_new - beta_old u_old)}</dd>
+<dt><b>barker-transition</b></dt>
+<dd> Uses the Barker transition critera to update the expanded ensemble weight of the state.</dd>
+<dt><b>wang-landau</b></dt>
+<dd>Uses the Wang-Landau algorithm (in state space) to update the expanded ensemble weights.</dd>
+<dt><b>min-variance</b></dt>
+<dd>Uses the minimum variance updating method of Escobedo et al to update the expanded ensemble weights. Weights
+will not be the free energies, but will rather emphasize states that need more sampling to give even uncertainty.
+</dl>
+<dt><b>lmc-mc-move:</b></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>No Monte Carlo in state space is performed.</dd>
+<dt><b>metropolis-transition</b></dt>
+<dd> Randomly chooses a new state up or down, then uses the Metropolis critera to decide whether to accept or reject:
+Min{1,exp(-(beta_new u_new - beta_old u_old)}</dd>
+<dt><b>barker-transition</b></dt>
+<dd> Randomly chooses a new state up or down, then uses the Barker transition critera to decide whether to accept or reject: exp(-beta_new u_new)/[exp(-beta_new u_new)+exp(-beta_old u_old)] </dd>
+<dt><b>gibbs</b></dt>
+<dd> Uses the conditional weights of the state given the coordinate (exp(-beta_i u_i) / sum_k exp(beta_i u_i) to
+decide which state to move to.</dd>
+<dt><b>metropolized-gibbs</b></dt>
+<dd>
+<dd> Uses the conditional weights of the state given the coordinate (exp(-beta_i u_i) / sum_k exp(beta_i u_i) to
+decide which state to move to, EXCLUDING the current state, then uses a rejection step to ensure detailed
+balance. Always more efficient that Gibbs, though marginally so in many situations.</dd>
+</dl>
+
+<dt><b>lmc-seed:</b></dt>
+<dd> random seed to use for Monte Carlo moves in state space.  If not specified, <b>ld-seed</b> is used instead. </dd>
+<dt><b>mc-temperature:</b></dt>
+<dd> Temperature used for acceptance/rejection for Monte Carlo moves. If not specified, the temperature of the
+simulation specified in the first group of <b>ref_t</b> is used.</dd>
+
+<dt><b>wl-scale: (0.8)</b></dt>
+<dt><b>wl-ratio: (0.8)</b></dt>
+<dt><b>init-wl-delta: (1.0) </b></dt>
+<dt><b>wl-oneovert: (no) </b></dt>
+<dt><b>lmc-repeats: (1)</b></dt>
+<dt><b>lmc-gibbsdelta: (-1) </b></dt>
+<dt><b>lmc-forced-nstart: (0) </b></dt>
+<dt><b>nst-transition-matrix: (-1)</b></dt>
+<dd>Frequency of outputting the expanded ensemble transition matrix.  A negative number means it will only be printed at the end of the simulation.<dd>
+<dt><b>symmetrized-transition-matrix: (no) </b></dt>
+<dd>Whether to symmetrize the empirical transition matrix</dd>
+<dt><b>mininum-var-min</b></dt>
+<dt><b>weight-c-range</b></dt>
+
+<dt><b>simulated-tempering: (no)</b></dt>
+<dt><b>simulated-tempering-scaling: ()</b></dt>
+<dt><b>sim-temp-low: (300):</b></dt>
+<dd>Low temperature for simulated tempering</dd>
+<dt><b>sim-temp-high: (300):</b></dt>
+<dd>High temperature for simulated tempering</dd>
+</dl>
 
 <A NAME="neq"><br>
 <hr>
-<h3><!--Idx-->Non-equilibrium MD<!--EIdx--></h3>
+<h3>Non-equilibrium MD<!--QuietIdx-->non-equilibrium MD<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>acc-grps: </b></dt>
@@ -1499,7 +1604,7 @@ or a liquid.</dd>
 
 <A NAME="ef"><br>
 <hr>
-<h3><!--Idx-->Electric field<!--EIdx-->s</h3>
+<h3>Electric fields<!--QuietIdx-->electric field<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>E-x ; E-y ; E-z:</b></dt>
@@ -1517,7 +1622,7 @@ since a cosine of frequency zero has no phase.</dd>
 
 <hr>
 <A NAME="qmmm"><br>
-<h3><!--Idx-->Mixed quantum/classical molecular dynamics<!--EIdx--></h3>
+<h3>Mixed quantum/classical molecular dynamics<!--QuietIdx>QM/MM<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>QMMM:</b></dt>

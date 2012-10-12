@@ -44,6 +44,7 @@
 
 #include "../legacyheaders/typedefs.h"
 
+#include "../onlinehelp/helptopicinterface.h"
 #include "../utility/common.h"
 #include "selection.h" // For gmx::SelectionList
 
@@ -55,7 +56,6 @@ namespace gmx
 class Options;
 class SelectionCompiler;
 class SelectionEvaluator;
-class SelectionOptionStorage;
 
 /*! \brief
  * Collection of selections.
@@ -73,10 +73,9 @@ class SelectionOptionStorage;
  *
  * After setting the default values, one or more selections can be parsed with
  * one or more calls to parseFromStdin(), parseFromFile(), and/or
- * parseFromString().  parseRequestedFromStdin() and parseRequestedFromString()
- * are provided for integration with SelectionOption.  After all selections are
- * parsed, the topology must be set with setTopology() unless
- * requiresTopology() returns false (the topology can also be set earlier).
+ * parseFromString().  After all selections are parsed, the topology must be
+ * set with setTopology() unless requiresTopology() returns false (the topology
+ * can also be set earlier).
  * setIndexGroups() must also be called if external index group references are
  * used in the selections; it can be called at any point before compile().
  * Once all selections are parsed, they must be compiled all at once using
@@ -105,6 +104,14 @@ class SelectionCollection
 {
     public:
         /*! \brief
+         * Creates a help tree for selections.
+         *
+         * \throws   std::bad_alloc if out of memory.
+         * \returns  Root topic of the created selection tree.
+         */
+        static HelpTopicPointer createDefaultHelpTopic();
+
+        /*! \brief
          * Creates an empty selection collection.
          *
          * \throws  std::bad_alloc if out of memory.
@@ -115,14 +122,14 @@ class SelectionCollection
         /*! \brief
          * Initializes options for setting global properties on the collection.
          *
-         * \returns Initialized options object.
-         * \throws  std::bad_alloc if out of memory.
+         * \param[in,out] options Options object to initialize.
+         * \throws        std::bad_alloc if out of memory.
          *
-         * The returned options can be used to set the default position types
-         * (see setReferencePosType() and setOutputPosType()) and debugging
-         * options.
+         * Adds options to \p options that can be used to set the default
+         * position types (see setReferencePosType() and setOutputPosType())
+         * and debugging flags.
          */
-        Options &initOptions();
+        void initOptions(Options *options);
 
         /*! \brief
          * Sets the default reference position handling for a selection
@@ -228,107 +235,52 @@ class SelectionCollection
          */
         void setIndexGroups(gmx_ana_indexgrps_t *grps);
         /*! \brief
-         * Parses selection(s) from standard input for options not yet
-         * provided.
-         *
-         * \param[in]  bInteractive Whether the parser should behave
-         *      interactively.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      parseFromStdin().
-         * \throws     std::bad_alloc if out of memory.
-         *
-         * This method cooperates with SelectionOption to allow interactive
-         * input of missing selections after all options have been processed.
-         * It should be called after the Options::finish() method has been
-         * called on all options that add selections to this collection.
-         * For each required selection option that has not been given, as well
-         * as for optional selection options that have been specified without
-         * values, it will prompt the user to input the necessary selections.
-         */
-        void parseRequestedFromStdin(bool bInteractive);
-        /*! \brief
-         * Parses selection(s) from a string for options not yet provided.
-         *
-         * \param[in]  str     String to parse.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      parseFromString().
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     InvalidInputError if
-         *      - the number of selections in \p str doesn't match the number
-         *        requested.
-         *      - any selection uses a feature that is not allowed for the
-         *        corresponding option.
-         * \throws     APIError if there is a request for any number of
-         *      selections that is not the last (in which case it is not
-         *      possible to determine which selections belong to which
-         *      request).
-         *
-         * This method behaves as parseRequestedFromStdin(), but reads the
-         * selections from a string instead of standard input.
-         * This method is mainly used for testing.
-         *
-         * \see parseRequestedFromStdin()
-         */
-        void parseRequestedFromString(const std::string &str);
-        /*! \brief
          * Parses selection(s) from standard input.
          *
          * \param[in]  count    Number of selections to parse
          *      (if -1, parse as many as provided by the user).
          * \param[in]  bInteractive Whether the parser should behave
          *      interactively.
-         * \param[out] output   Vector to which parsed selections are appended.
+         * \returns    Vector of parsed selections.
          * \throws     std::bad_alloc if out of memory.
          * \throws     InvalidInputError if there is a parsing error
          *      (an interactive parser only throws this if too few selections
          *      are provided and the user forced the end of input).
          *
-         * Parsed selections are appended to \p output without clearing it
-         * first.  If parsing fails, \p output is not modified.
-         *
-         * The objects returned in \p output remain valid for the lifetime of
+         * The returned objects remain valid for the lifetime of
          * the selection collection.
          * Some information about the selections only becomes available once
          * compile() has been called; see \ref Selection.
          */
-        void parseFromStdin(int count, bool bInteractive,
-                            SelectionList *output);
+        SelectionList parseFromStdin(int count, bool bInteractive);
         /*! \brief
          * Parses selection(s) from a file.
          *
          * \param[in]  filename Name of the file to parse selections from.
-         * \param[out] output   Vector to which parsed selections are appended.
+         * \returns    Vector of parsed selections.
          * \throws     std::bad_alloc if out of memory.
          * \throws     InvalidInputError if there is a parsing error.
          *
-         * Parsed selections are appended to \p output without clearing it
-         * first.  If parsing fails, \p output is not modified.
-         *
-         * The objects returned in \p output remain valid for the lifetime of
+         * The returned objects remain valid for the lifetime of
          * the selection collection.
          * Some information about the selections only becomes available once
          * compile() has been called; see \ref Selection.
          */
-        void parseFromFile(const std::string &filename,
-                           SelectionList *output);
+        SelectionList parseFromFile(const std::string &filename);
         /*! \brief
          * Parses selection(s) from a string.
          *
          * \param[in]  str      String to parse selections from.
-         * \param[out] output   Vector to which parsed selections are appended.
+         * \returns    Vector of parsed selections.
          * \throws     std::bad_alloc if out of memory.
          * \throws     InvalidInputError if there is a parsing error.
          *
-         * Parsed selections are appended to \p output without clearing it
-         * first.  If parsing fails, \p output is not modified.
-         *
-         * The objects returned in \p output remain valid for the lifetime of
+         * The returned objects remain valid for the lifetime of
          * the selection collection.
          * Some information about the selections only becomes available once
          * compile() has been called; see \ref Selection.
          */
-        void parseFromString(const std::string &str,
-                             SelectionList *output);
+        SelectionList parseFromString(const std::string &str);
         /*! \brief
          * Prepares the selections for evaluation and performs optimizations.
          *
@@ -401,7 +353,7 @@ class SelectionCollection
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 
         /*! \brief
          * Needed for the compiler to freely modify the collection.
@@ -411,10 +363,6 @@ class SelectionCollection
          * Needed for the evaluator to freely modify the collection.
          */
         friend class SelectionEvaluator;
-        /*! \brief
-         * Needed for handling delayed selection parsing requests.
-         */
-        friend class SelectionOptionStorage;
 };
 
 } // namespace gmx

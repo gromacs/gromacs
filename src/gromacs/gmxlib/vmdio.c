@@ -19,8 +19,6 @@
 #include <config.h>
 #endif
 
-
-
 /* Derived from PluginMgr.C and catdcd.c */
 
 /* PluginMgr.C: Copyright: */
@@ -72,13 +70,14 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 /* 
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
  */
-#include "molfile_plugin.h"
-#include "vmddlopen.h"
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include "external/vmd_molfile/molfile_plugin.h"
+#include "external/vmd_molfile/vmddlopen.h"
+#ifndef GMX_NATIVE_WINDOWS
 #include <glob.h>
 #else
 #include <windows.h>
@@ -121,7 +120,7 @@ static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdpl
     }
 
     ifunc = vmddlsym(handle, "vmdplugin_init");
-    if (ifunc && ((initfunc)(ifunc))()) {
+    if (!ifunc || ((initfunc)(ifunc))()) {
         printf("\nvmdplugin_init() for %s returned an error; plugin(s) not loaded.\n", fullpath);
         vmddlclose(handle);
         return 0;
@@ -154,7 +153,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     molfile_timestep_t ts;
 
 
-    fr->bV = fr->vmdplugin.bV; 
+    fr->bV = fr->vmdplugin->bV;
         
 #ifdef GMX_DOUBLE
     snew(ts.coords, fr->natoms*3);
@@ -170,14 +169,14 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     }
 #endif
 
-    rc = fr->vmdplugin.api->read_next_timestep(fr->vmdplugin.handle, fr->natoms, &ts);
+    rc = fr->vmdplugin->api->read_next_timestep(fr->vmdplugin->handle, fr->natoms, &ts);
 
     if (rc < -1) {
         fprintf(stderr, "\nError reading input file (error code %d)\n", rc);
     }
     if (rc < 0)
     {
-        fr->vmdplugin.api->close_file_read(fr->vmdplugin.handle);
+        fr->vmdplugin->api->close_file_read(fr->vmdplugin->handle);
         return 0;
     }
 
@@ -215,7 +214,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma; 
     matrix_convert(fr->box,vec,angle);
-    if (fr->vmdplugin.api->abiversion>10)
+    if (fr->vmdplugin->api->abiversion>10)
     {
         fr->bTime = TRUE;
         fr->time = ts.physical_time;
@@ -229,7 +228,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     return 1;
 }
 
-int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
+static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 {
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
     const char *pathenv;
@@ -237,7 +236,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     int i;
     int ret=0;
     char pathenv_buffer[GMX_PATH_MAX];
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     glob_t globbuf;
     const char *defpath_suffix = "/plugins/*/molfile";
     const char *defpathenv = GMX_VMD_PLUGIN_PATH;
@@ -286,7 +285,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
         }
     }
     strncpy(pathname,pathenv,sizeof(pathname));
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     strcat(pathname,"/*.so");
     glob(pathname, 0, NULL, &globbuf);
     if (globbuf.gl_pathc == 0)
@@ -361,14 +360,15 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 {
     molfile_timestep_metadata_t *metadata=NULL;
     
-    if (!load_vmd_library(fn,&(fr->vmdplugin))) 
+    snew(fr->vmdplugin,1);
+    if (!load_vmd_library(fn,fr->vmdplugin))
     {
         return 0;
     }
 
-    fr->vmdplugin.handle = fr->vmdplugin.api->open_file_read(fn, fr->vmdplugin.filetype, &fr->natoms);
+    fr->vmdplugin->handle = fr->vmdplugin->api->open_file_read(fn, fr->vmdplugin->filetype, &fr->natoms);
 
-    if (!fr->vmdplugin.handle) {
+    if (!fr->vmdplugin->handle) {
         fprintf(stderr, "\nError: could not open file '%s' for reading.\n",
                 fn);
         return 0;
@@ -388,12 +388,13 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     
     snew(fr->x,fr->natoms);
 
-    fr->vmdplugin.bV = 0;
-    if (fr->vmdplugin.api->abiversion > 10 && fr->vmdplugin.api->read_timestep_metadata)
+    fr->vmdplugin->bV = 0;
+    if (fr->vmdplugin->api->abiversion > 10 && fr->vmdplugin->api->read_timestep_metadata)
     {
-        fr->vmdplugin.api->read_timestep_metadata(fr->vmdplugin.handle, metadata);
-        fr->vmdplugin.bV = metadata->has_velocities; 
-        if (fr->vmdplugin.bV)
+        fr->vmdplugin->api->read_timestep_metadata(fr->vmdplugin->handle, metadata);
+        assert(metadata);
+        fr->vmdplugin->bV = metadata->has_velocities;
+        if (fr->vmdplugin->bV)
         {
             snew(fr->v,fr->natoms);
         }
@@ -408,6 +409,3 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     return 1;
 
 }
-
-
-

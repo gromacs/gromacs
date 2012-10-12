@@ -37,8 +37,11 @@
 #endif
 
 #include <time.h>
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <process.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -46,7 +49,7 @@
 
 int make_seed(void)
 {
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
   return (int)_getpid();
 #else
   return (int)getpid();

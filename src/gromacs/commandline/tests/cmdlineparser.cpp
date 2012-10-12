@@ -38,8 +38,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_commandline
  */
-#include <cstdlib>
-#include <cstring>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -48,91 +46,67 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 
+#include "testutils/cmdlinetest.h"
+
 namespace
 {
+
+using gmx::test::CommandLine;
 
 class CommandLineParserTest : public ::testing::Test
 {
     public:
         CommandLineParserTest();
-        ~CommandLineParserTest();
 
-        void createArguments(const char *cmdline[]);
-
-        gmx::Options            _options;
-        gmx::CommandLineParser  _parser;
-        bool                    _flag;
-        std::vector<int>        _ivalues;
-        std::vector<double>     _dvalues;
-        int                     _argc;
-        char                  **_argv;
+        gmx::Options            options_;
+        gmx::CommandLineParser  parser_;
+        bool                    flag_;
+        std::vector<int>        ivalues_;
+        std::vector<double>     dvalues_;
 };
 
 CommandLineParserTest::CommandLineParserTest()
-    : _options(NULL, NULL), _parser(&_options),
-      _flag(false),
-      _argc(0), _argv(NULL)
+    : options_(NULL, NULL), parser_(&options_),
+      flag_(false)
 {
     using gmx::BooleanOption;
     using gmx::IntegerOption;
     using gmx::DoubleOption;
-    _options.addOption(BooleanOption("flag").store(&_flag));
-    _options.addOption(IntegerOption("mvi").storeVector(&_ivalues).multiValue());
-    _options.addOption(DoubleOption("mvd").storeVector(&_dvalues).allowMultiple());
-}
-
-CommandLineParserTest::~CommandLineParserTest()
-{
-    if (_argv != NULL)
-    {
-        for (int i = 0; i < _argc; ++i)
-        {
-            free(_argv[i]);
-        }
-    }
-    delete [] _argv;
-}
-
-void CommandLineParserTest::createArguments(const char *cmdline[])
-{
-    _argc = 0;
-    while (cmdline[_argc] != NULL) ++_argc;
-    ++_argc;
-
-    _argv = new char *[_argc];
-    _argv[0] = strdup("test");
-    for (int i = 1; i < _argc; ++i)
-    {
-        _argv[i] = strdup(cmdline[i - 1]);
-    }
+    options_.addOption(BooleanOption("flag").store(&flag_));
+    options_.addOption(IntegerOption("mvi").storeVector(&ivalues_).multiValue());
+    options_.addOption(DoubleOption("mvd").storeVector(&dvalues_).allowMultiple());
 }
 
 TEST_F(CommandLineParserTest, HandlesSingleValues)
 {
-    const char *cmdline[] = {"-flag", "yes", "-mvi", "2", "-mvd", "2.7", NULL};
-    createArguments(cmdline);
-    ASSERT_NO_THROW(_parser.parse(&_argc, _argv));
-    ASSERT_NO_THROW(_options.finish());
+    const char *const cmdline[] = {
+        "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
+    };
+    CommandLine args(CommandLine::create(cmdline));
+    ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW(options_.finish());
 
-    EXPECT_TRUE(_flag);
-    ASSERT_EQ(1U, _ivalues.size());
-    EXPECT_EQ(2, _ivalues[0]);
-    ASSERT_EQ(1U, _dvalues.size());
-    EXPECT_DOUBLE_EQ(2.7, _dvalues[0]);
+    EXPECT_TRUE(flag_);
+    ASSERT_EQ(1U, ivalues_.size());
+    EXPECT_EQ(2, ivalues_[0]);
+    ASSERT_EQ(1U, dvalues_.size());
+    EXPECT_DOUBLE_EQ(2.7, dvalues_[0]);
 }
 
 TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
 {
-    const char *cmdline[] = {"-mvi", "1", "-2", "-mvd", "-2.7", NULL};
-    createArguments(cmdline);
-    ASSERT_NO_THROW(_parser.parse(&_argc, _argv));
-    ASSERT_NO_THROW(_options.finish());
+    const char *const cmdline[] = {
+        "test", "-mvi", "1", "-2", "-mvd", "-2.7"
+    };
+    CommandLine args(CommandLine::create(cmdline));
+    ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW(options_.finish());
 
-    ASSERT_EQ(2U, _ivalues.size());
-    EXPECT_EQ(1, _ivalues[0]);
-    EXPECT_EQ(-2, _ivalues[1]);
-    ASSERT_EQ(1U, _dvalues.size());
-    EXPECT_DOUBLE_EQ(-2.7, _dvalues[0]);
+    ASSERT_EQ(2U, ivalues_.size());
+    EXPECT_EQ(1, ivalues_[0]);
+    EXPECT_EQ(-2, ivalues_[1]);
+    ASSERT_EQ(1U, dvalues_.size());
+    EXPECT_DOUBLE_EQ(-2.7, dvalues_[0]);
 }
 
 } // namespace

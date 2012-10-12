@@ -37,48 +37,25 @@
  */
 #include "gromacs/options/options.h"
 
-#include <cctype>
-#include <cstring>
-
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "options-impl.h"
 
 namespace gmx
 {
 
-// TODO: Move this into the utility module
-static std::string composeString(const char *const *sarray)
-{
-    std::string result;
-
-    for (int i = 0; sarray[i] != NULL; ++i)
-    {
-        if (sarray[i][0] != '\0')
-        {
-            result.append(sarray[i]);
-            char lastchar = sarray[i][std::strlen(sarray[i])-1];
-            if (!std::isspace(lastchar))
-            {
-                result.append(" ");
-            }
-        }
-    }
-    result.resize(result.find_last_not_of(" \n\r\t") + 1);
-    return result;
-}
-
 /********************************************************************
  * Options::Impl
  */
 
 Options::Impl::Impl(const char *name, const char *title)
-    : _name(name != NULL ? name : ""), _title(title != NULL ? title : ""),
-      _parent(NULL)
+    : name_(name != NULL ? name : ""), title_(title != NULL ? title : ""),
+      parent_(NULL)
 {
 }
 
@@ -89,7 +66,7 @@ Options::Impl::~Impl()
 Options *Options::Impl::findSubSection(const char *name) const
 {
     SubSectionList::const_iterator i;
-    for (i = _subSections.begin(); i != _subSections.end(); ++i)
+    for (i = subSections_.begin(); i != subSections_.end(); ++i)
     {
         if ((*i)->name() == name)
         {
@@ -102,7 +79,7 @@ Options *Options::Impl::findSubSection(const char *name) const
 AbstractOptionStorage *Options::Impl::findOption(const char *name) const
 {
     OptionList::const_iterator i;
-    for (i = _options.begin(); i != _options.end(); ++i)
+    for (i = options_.begin(); i != options_.end(); ++i)
     {
         if ((*i)->name() == name)
         {
@@ -115,16 +92,16 @@ AbstractOptionStorage *Options::Impl::findOption(const char *name) const
 void Options::Impl::startSource()
 {
     OptionList::const_iterator i;
-    for (i = _options.begin(); i != _options.end(); ++i)
+    for (i = options_.begin(); i != options_.end(); ++i)
     {
         AbstractOptionStorage &option = **i;
         option.startSource();
     }
     SubSectionList::const_iterator j;
-    for (j = _subSections.begin(); j != _subSections.end(); ++j)
+    for (j = subSections_.begin(); j != subSections_.end(); ++j)
     {
         Options &section = **j;
-        section._impl->startSource();
+        section.impl_->startSource();
     }
 }
 
@@ -133,7 +110,7 @@ void Options::Impl::startSource()
  */
 
 Options::Options(const char *name, const char *title)
-    : _impl(new Impl(name, title))
+    : impl_(new Impl(name, title))
 {
 }
 
@@ -143,49 +120,49 @@ Options::~Options()
 
 const std::string &Options::name() const
 {
-    return _impl->_name;
+    return impl_->name_;
 }
 
 const std::string &Options::title() const
 {
-    return _impl->_title;
+    return impl_->title_;
 }
 
 const std::string &Options::description() const
 {
-    return _impl->_description;
+    return impl_->description_;
 }
 
-void Options::setDescription(const char *const *desc)
+void Options::setDescription(const std::string &desc)
 {
-    _impl->_description = composeString(desc);
+    impl_->description_ = desc;
 }
 
 void Options::addSubSection(Options *section)
 {
     // Make sure that section is not already inserted somewhere.
-    GMX_RELEASE_ASSERT(section->_impl->_parent == NULL,
+    GMX_RELEASE_ASSERT(section->impl_->parent_ == NULL,
                        "Cannot add as subsection twice");
     // Make sure that there are no duplicate sections.
-    GMX_RELEASE_ASSERT(_impl->findSubSection(section->name().c_str()) == NULL,
+    GMX_RELEASE_ASSERT(impl_->findSubSection(section->name().c_str()) == NULL,
                        "Duplicate subsection name");
-    _impl->_subSections.push_back(section);
-    section->_impl->_parent = this;
+    impl_->subSections_.push_back(section);
+    section->impl_->parent_ = this;
 }
 
 void Options::addOption(const AbstractOption &settings)
 {
     AbstractOptionStoragePointer option(settings.createStorage());
-    if (_impl->findOption(option->name().c_str()) != NULL)
+    if (impl_->findOption(option->name().c_str()) != NULL)
     {
         GMX_THROW(APIError("Duplicate option: " + option->name()));
     }
-    _impl->_options.push_back(move(option));
+    impl_->options_.push_back(move(option));
 }
 
 bool Options::isSet(const char *name) const
 {
-    AbstractOptionStorage *option = _impl->findOption(name);
+    AbstractOptionStorage *option = impl_->findOption(name);
     return (option != NULL ? option->isSet() : false);
 }
 
@@ -193,7 +170,7 @@ void Options::finish()
 {
     MessageStringCollector errors;
     Impl::OptionList::const_iterator i;
-    for (i = _impl->_options.begin(); i != _impl->_options.end(); ++i)
+    for (i = impl_->options_.begin(); i != impl_->options_.end(); ++i)
     {
         AbstractOptionStorage &option = **i;
         try
@@ -207,7 +184,7 @@ void Options::finish()
         }
     }
     Impl::SubSectionList::const_iterator j;
-    for (j = _impl->_subSections.begin(); j != _impl->_subSections.end(); ++j)
+    for (j = impl_->subSections_.begin(); j != impl_->subSections_.end(); ++j)
     {
         Options &section = **j;
         try

@@ -105,7 +105,8 @@ enum
     eNR_TABANGLES,            eNR_PROPER,               eNR_IMPROPER,
     eNR_RB,                   eNR_FOURDIH,              eNR_TABDIHS,
     eNR_DISRES,               eNR_ORIRES,               eNR_DIHRES,
-    eNR_POSRES,               eNR_ANGRES,               eNR_ANGRESZ,
+    eNR_POSRES,               eNR_FBPOSRES,
+    eNR_ANGRES,               eNR_ANGRESZ,
     eNR_MORSE,                eNR_CUBICBONDS,           eNR_WALLS,
     eNR_POLARIZE,             eNR_ANHARM_POL,
     eNR_WPOL,                 eNR_THOLE,                eNR_VIRIAL,
@@ -116,7 +117,7 @@ enum
     eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
     eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD,
     eNR_VSITE4FDN,            eNR_VSITEN,               eNR_GB,
-	eNR_CMAP,
+    eNR_CMAP,
     eNRNB
 };
 

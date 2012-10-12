@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gromacs/utility/gmx_header_config.h"
 
 #ifdef GMX_CRAY_XT3
 #undef HAVE_PWD_H
@@ -52,11 +53,15 @@
 #include <sys/time.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
 #include <time.h>
+#include <assert.h>
 
 #include "typedefs.h"
 #include "smalloc.h"
@@ -66,11 +71,9 @@
 #include "futil.h"
 
 int continuing(char *s)
-/* strip trailing spaces and if s ends with a CONTINUE remove that too.
- * returns TRUE if s ends with a CONTINUE, FALSE otherwise.
- */
 {
   int sl;
+  assert(s);
 
   rtrim(s);
   sl = strlen(s);
@@ -85,10 +88,6 @@ int continuing(char *s)
 
 
 char *fgets2(char *line, int n, FILE *stream)
-/* This routine reads a string from stream of max length n
- * and zero terminated, without newlines
- * line should be long enough (>= n)
- */
 {
   char *c;
   if (fgets(line,n,stream) == NULL) {
@@ -176,7 +175,7 @@ gmx_ctime_r(const time_t *clock,char *buf, int n)
 {
     char tmpbuf[STRLEN];
   
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     /* Windows */
     ctime_s( tmpbuf, STRLEN, clock );
 #elif (defined(__sun))
@@ -197,7 +196,11 @@ void nice_header (FILE *out,const char *fn)
   time_t clock;
   const char *user=unk;
   int    gh;
+#ifdef HAVE_PWD_H
   uid_t  uid;
+#else
+  int    uid;
+#endif
   char   buf[256]="";
   char   timebuf[STRLEN];
 #ifdef HAVE_PWD_H
@@ -326,15 +329,6 @@ gmx_strndup(const char *src, int n)
     return dest;
 }
 
-/*!
- * \param[in] pattern  Pattern to match against.
- * \param[in] str      String to match.
- * \returns   0 on match, GMX_NO_WCMATCH if there is no match.
- *
- * Matches \p str against \p pattern, which may contain * and ? wildcards.
- * All other characters are matched literally.
- * Currently, it is not possible to match literal * or ?.
- */
 int
 gmx_wcmatch(const char *pattern, const char *str)
 {

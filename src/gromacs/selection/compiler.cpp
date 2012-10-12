@@ -282,7 +282,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "evaluate.h"
 #include "keywords.h"
@@ -346,6 +346,9 @@ typedef struct t_compiler_data
  * COMPILER UTILITY FUNCTIONS
  ********************************************************************/
 
+/*! \brief
+ * Helper method for printing out debug information about a min/max group.
+ */
 static void
 print_group_info(FILE *fp, const char *name, t_selelem *sel, gmx_ana_index_t *g)
 {
@@ -568,15 +571,15 @@ init_pos_keyword_defaults(t_selelem *root, const char *spost, const char *rpost,
         int flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
         if (bSelection)
         {
-            if (sel->hasFlag(gmx::efDynamicMask))
+            if (sel->hasFlag(gmx::efSelection_DynamicMask))
             {
                 flags |= POS_MASKONLY;
             }
-            if (sel->hasFlag(gmx::efEvaluateVelocities))
+            if (sel->hasFlag(gmx::efSelection_EvaluateVelocities))
             {
                 flags |= POS_VELOCITIES;
             }
-            if (sel->hasFlag(gmx::efEvaluateForces))
+            if (sel->hasFlag(gmx::efSelection_EvaluateForces))
             {
                 flags |= POS_FORCES;
             }
@@ -737,7 +740,8 @@ extract_item_subselections(t_selelem *sel, int *subexprn)
          * encountered.
          * TODO: There should be a more robust mechanism (probably a dedicated
          * flag) for detecting parser-generated subexpressions than relying on
-         * a NULL name field. */
+         * a NULL name field. Additional TODO: This mechanism doesn't seem to
+         * be currently used. */
         if (child->type == SEL_SUBEXPRREF && (child->child->type != SEL_SUBEXPR
                                               || child->child->name == NULL))
         {
@@ -1532,6 +1536,8 @@ initialize_evalgrps(gmx_ana_selcollection_t *sc)
     root = sc->root;
     while (root)
     {
+        GMX_RELEASE_ASSERT(root->child != NULL,
+                           "Root elements should always have a child");
         if (root->child->type != SEL_SUBEXPR
             || (root->child->cdata->flags & SEL_CDATA_FULLEVAL))
         {
@@ -1988,12 +1994,24 @@ evaluate_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
             if ((sel->child->cdata->flags & SEL_CDATA_STATIC)
                 && sel->child->v.u.g->isize < gmin->isize)
             {
+                GMX_RELEASE_ASSERT(sel->child->type == SEL_CONST,
+                        "The first child should have already been evaluated "
+                        "to a constant expression");
                 gmx_ana_index_reserve(sel->child->v.u.g, gmin->isize);
                 gmx_ana_index_copy(sel->child->v.u.g, gmin, false);
-                if (sel->child->u.cgrp.isize > 0)
+                if (sel->child->u.cgrp.nalloc_index > 0)
                 {
+                    /* Keep the name as in evaluate_boolean_static_part(). */
+                    char *name = sel->child->u.cgrp.name;
                     gmx_ana_index_reserve(&sel->child->u.cgrp, gmin->isize);
                     gmx_ana_index_copy(&sel->child->u.cgrp, gmin, false);
+                    sel->child->u.cgrp.name = name;
+                }
+                else
+                {
+                    GMX_RELEASE_ASSERT(sel->child->u.cgrp.index == sel->child->v.u.g->index,
+                            "If not allocated, the static group should equal the value");
+                    sel->child->u.cgrp.isize = sel->child->v.u.g->isize;
                 }
             }
             break;
@@ -2215,7 +2233,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             break;
 
-        case SEL_GROUPREF:
+        case SEL_GROUPREF: /* Should not be reached */
             GMX_THROW(gmx::APIError("Unresolved group reference in compilation"));
     }
 
@@ -2555,14 +2573,14 @@ SelectionCompiler::SelectionCompiler()
 void
 SelectionCompiler::compile(SelectionCollection *coll)
 {
-    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
+    gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
     gmx_sel_evaluate_t  evaldata;
     t_selelem   *item;
     e_poscalc_t  post;
     size_t       i;
     int          flags;
-    bool         bDebug = (coll->_impl->_debugLevel >= 2
-                           && coll->_impl->_debugLevel != 3);
+    bool         bDebug = (coll->impl_->debugLevel_ >= 2
+                           && coll->impl_->debugLevel_ != 3);
 
     /* FIXME: Clean up the collection on exceptions */
 
@@ -2574,7 +2592,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
      * after compilation, and variable references in the symbol table can
      * also mess up the compilation and/or become invalid.
      */
-    coll->_impl->clearSymbolTable();
+    coll->impl_->clearSymbolTable();
 
     /* Loop through selections and initialize position keyword defaults if no
      * other value has been provided.
@@ -2583,8 +2601,8 @@ SelectionCompiler::compile(SelectionCollection *coll)
     {
         gmx::internal::SelectionData &sel = *sc->sel[i];
         init_pos_keyword_defaults(sel.rootElement(),
-                                  coll->_impl->_spost.c_str(),
-                                  coll->_impl->_rpost.c_str(),
+                                  coll->impl_->spost_.c_str(),
+                                  coll->impl_->rpost_.c_str(),
                                   &sel);
     }
 
@@ -2706,7 +2724,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    PositionCalculationCollection::typeFromEnum(coll->_impl->_rpost.c_str(),
+    PositionCalculationCollection::typeFromEnum(coll->impl_->rpost_.c_str(),
                                                 &post, &flags);
     item = sc->root;
     while (item)

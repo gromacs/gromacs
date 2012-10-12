@@ -125,7 +125,7 @@ class ConstArrayRef
         ConstArrayRef(typename std::vector<T>::const_iterator begin,
                       typename std::vector<T>::const_iterator end)
             : begin_((begin != end) ? &*begin : NULL),
-              end_((begin != end) ? &*end : NULL)
+              end_(begin_+(end-begin))
         {
             GMX_ASSERT(end >= begin, "Invalid range");
         }

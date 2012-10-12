@@ -361,7 +361,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         ftb = gmx_poldata_get_bond_ftype(pd);
         /* Setting the atom types: this depends on the bonding */
         gvt = gentop_vsite_init(egvtLINEAR);
-        if ((atype = set_atom_type(NULL,molname,&symtab,atoms,
+        if ((atype = set_atom_type(debug,molname,&symtab,atoms,
                                    &(plist[ftb]),nbonds,bRing,bondorder,smnames,
                                    pd,aps,x,&pbc,th_toler,phi_toler,gvt)) != NULL) 
             bOK = TRUE;

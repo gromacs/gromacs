@@ -44,6 +44,7 @@
 namespace gmx
 {
 
+class HelpWriterContext;
 class TrajectoryAnalysisModule;
 
 /*! \brief
@@ -74,6 +75,18 @@ class TrajectoryAnalysisCommandLineRunner
         ~TrajectoryAnalysisCommandLineRunner();
 
         /*! \brief
+         * Sets whether the runner will print the copyright header.
+         *
+         * \param[in] bPrint  Whether to print the copyright header.
+         *
+         * By default, the copyright header is printed.
+         * This is used internally when executing the runner in a context where
+         * the copyright has already been printed at a higher level.
+         *
+         * Does not throw.
+         */
+        void setPrintCopyright(bool bPrint);
+        /*! \brief
          * Sets the default debugging level for selections.
          *
          * This is intended only for use by internal debugging tools.
@@ -90,11 +103,19 @@ class TrajectoryAnalysisCommandLineRunner
          * \returns Zero on success.
          */
         int run(int argc, char *argv[]);
+        /*! \brief
+         * Prints help for the module, including common options from the runner.
+         *
+         * \param[in] context  Context object for writing the help.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         */
+        void writeHelp(const HelpWriterContext &context);
 
     private:
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

@@ -44,10 +44,6 @@
 #ifndef _pull_rotation_h
 #define _pull_rotation_h
 
-#ifdef HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include "vec.h"
 #include "typedefs.h"
 
@@ -70,8 +66,10 @@ extern "C" {
  *                          of the rotation output files.
  * \param cr                Pointer to MPI communication data.
  * \param x                 The positions of all MD particles.
+ * \param box               Simulation box, needed to make group whole.
  * \param mtop              Molecular topology.
  * \param oenv              Needed to open the rotation output xvgr file.
+ * \param bVerbose          Whether to print extra status information.
  * \param Flags             Flags passed over from main, used to determine
  *                          whether or not we are doing a rerun.
  */

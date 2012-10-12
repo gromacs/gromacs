@@ -46,11 +46,13 @@
 namespace gmx
 {
 
-class SelectionCollection;
 class SelectionOption;
+class SelectionOptionManager;
 
 /*! \internal \brief
  * Converts, validates, and stores selection values.
+ *
+ * \see SelectionOptionManager
  *
  * \ingroup module_selection
  */
@@ -64,15 +66,12 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          */
         SelectionOptionStorage(const SelectionOption &settings);
 
-        virtual OptionInfo &optionInfo() { return _info; }
+        virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const { return "sel"; }
-        virtual std::string formatValue(int i) const;
+        virtual std::string formatSingleValue(const Selection &value) const;
 
-        //! \copydoc SelectionOptionInfo::setSelectionCollection()
-        void setSelectionCollection(SelectionCollection *selections)
-        {
-            _sc = selections;
-        }
+        //! \copydoc SelectionOptionInfo::setManager()
+        void setManager(SelectionOptionManager *manager);
 
         /*! \brief
          * Adds selections to the storage.
@@ -86,11 +85,10 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          *      - Any selection in \p selections is not allowed for this
          *        option.
          *
-         * This function is used to implement the methods
-         * SelectionCollection::parseRequestedFromStdin() and
-         * SelectionCollection::parseRequestedFromString() (called with
-         * \p bFullValue set to true), as well as internally by the storage
-         * class (called with \p bFullValue set to false).
+         * This function is used to add selections from SelectionOptionManager.
+         * It is called with \p bFullValue set to false from
+         * SelectionOptionManager::convertOptionValue(), and \p bFullValue set
+         * to true when parsing requested selections.
          */
         void addSelections(const SelectionList &selections,
                            bool bFullValue);
@@ -122,9 +120,9 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
-        SelectionOptionInfo     _info;
-        SelectionCollection    *_sc;
-        SelectionFlags          _selectionFlags;
+        SelectionOptionInfo     info_;
+        SelectionOptionManager *manager_;
+        SelectionFlags          selectionFlags_;
 };
 
 } // namespace gmx

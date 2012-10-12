@@ -8,9 +8,9 @@ set(THREAD_MPI_LIB_SOURCE
     collective.c    once.c          tmpi_init.c
     comm.c          p2p_protocol.c  topology.c
     errhandler.c    p2p_send_recv.c type.c
-    event.c         p2p_wait.c      
+    event.c         p2p_wait.c      tmpi_malloc.c
     gather.c        profile.c
-    group.c         numa_malloc.c)
+    group.c         numa_malloc.c   )
 
 
 if (THREAD_PTHREADS)
@@ -27,6 +27,12 @@ add_library(thread_mpi STATIC ${THREAD_MPI_LIB_SOURCE})
 # make it link to the threads library (-lpthreads, for example)
 target_link_libraries(thread_mpi ${THREAD_LIB})
 
+if (TMPI_CXX_LIB)
+    set(THREAD_MPI_CXX_LIB_SOURCE 
+        system_error.cpp )
+    add_library(thread_mpi_cxx STATIC ${THREAD_MPI_CXX_LIB_SOURCE})
+    target_link_libraries(thread_mpi_cxx thread_mpi)
+endif (TMPI_CXX_LIB)
 
 #configure_file(tmpi_config.h.cmakein  tmpi_config.h)
 #add_definitions(-DHAVE_TMPI_CONFIG_H)
@@ -39,3 +45,4 @@ configure_file(tmpi_config.h.cmakein  ${CMAKE_CURRENT_BINARY_DIR}/tmpi_config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_TMPI_CONFIG_H)
 
+install(TARGETS thread_mpi DESTINATION lib)

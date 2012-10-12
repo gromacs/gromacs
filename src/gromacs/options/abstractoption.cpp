@@ -39,6 +39,7 @@
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
+#include "gromacs/options/optioninfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -53,28 +54,23 @@ namespace gmx
 
 AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
                                              OptionFlags staticFlags)
-    : _flags(settings._flags | staticFlags),
-      _minValueCount(settings._minValueCount),
-      _maxValueCount(settings._maxValueCount),
-      _inSet(false)
+    : flags_(settings.flags_ | staticFlags),
+      minValueCount_(settings.minValueCount_),
+      maxValueCount_(settings.maxValueCount_),
+      bInSet_(false), bSetValuesHadErrors_(false)
 {
-    // If the maximum number of values is not known, storage to
-    // caller-allocated memory is unsafe.
-    if ((_maxValueCount < 0 || hasFlag(efMulti)) && hasFlag(efExternalStore))
-    {
-        GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
-    }
     // Check that user has not provided incorrect values for vectors.
-    if (hasFlag(efVector) && (_minValueCount > 1 || _maxValueCount < 1))
+    if (hasFlag(efOption_Vector) && (minValueCount_ > 1 || maxValueCount_ < 1))
     {
         GMX_THROW(APIError("Inconsistent value counts for vector values"));
     }
 
-    if (settings._name != NULL)
+    if (settings.name_ != NULL)
     {
-        _name  = settings._name;
+        name_  = settings.name_;
     }
-    _descr = settings.createDescription();
+    descr_ = settings.createDescription();
+    setFlag(efOption_ClearOnNextSet);
 }
 
 AbstractOptionStorage::~AbstractOptionStorage()
@@ -88,43 +84,65 @@ bool AbstractOptionStorage::isBoolean() const
 
 void AbstractOptionStorage::startSource()
 {
-    setFlag(efClearOnNextSet);
+    setFlag(efOption_ClearOnNextSet);
 }
 
 void AbstractOptionStorage::startSet()
 {
-    GMX_RELEASE_ASSERT(!_inSet, "finishSet() not called");
+    GMX_RELEASE_ASSERT(!bInSet_, "finishSet() not called");
     // The last condition takes care of the situation where multiple
     // sources are used, and a later source should be able to reassign
     // the value even though the option is already set.
-    if (isSet() && !hasFlag(efMulti) && !hasFlag(efClearOnNextSet))
+    if (isSet() && !hasFlag(efOption_MultipleTimes)
+        && !hasFlag(efOption_ClearOnNextSet))
     {
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
     clearSet();
-    _inSet = true;
+    bInSet_ = true;
+    bSetValuesHadErrors_ = false;
 }
 
 void AbstractOptionStorage::appendValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(_inSet, "startSet() not called");
-    convertValue(value);
+    GMX_RELEASE_ASSERT(bInSet_, "startSet() not called");
+    try
+    {
+        convertValue(value);
+    }
+    catch (...)
+    {
+        bSetValuesHadErrors_ = true;
+        throw;
+    }
 }
 
 void AbstractOptionStorage::finishSet()
 {
-    GMX_RELEASE_ASSERT(_inSet, "startSet() not called");
-    _inSet = false;
-    // TODO: Should this be done only when processSet() does not throw?
-    setFlag(efSet);
-    processSet();
+    GMX_RELEASE_ASSERT(bInSet_, "startSet() not called");
+    bInSet_ = false;
+    // We mark the option as set even when there are errors to avoid additional
+    // errors from required options not set.
+    // TODO: There could be a separate flag for this purpose.
+    setFlag(efOption_Set);
+    if (!bSetValuesHadErrors_)
+    {
+        // TODO: Correct handling of the efOption_ClearOnNextSet requires
+        // processSet() and/or convertValue() to check it internally.
+        // OptionStorageTemplate takes care of it, but it's error-prone if
+        // a custom option is implemented that doesn't use it.
+        processSet();
+    }
+    bSetValuesHadErrors_ = false;
+    clearFlag(efOption_ClearOnNextSet);
+    clearSet();
 }
 
 void AbstractOptionStorage::finish()
 {
-    GMX_RELEASE_ASSERT(!_inSet, "finishSet() not called");
+    GMX_RELEASE_ASSERT(!bInSet_, "finishSet() not called");
     processAll();
-    if (hasFlag(efRequired) && !isSet())
+    if (isRequired() && !isSet())
     {
         GMX_THROW(InvalidInputError("Option is required, but not set"));
     }
@@ -132,12 +150,12 @@ void AbstractOptionStorage::finish()
 
 void AbstractOptionStorage::setMinValueCount(int count)
 {
-    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
-                       "setMinValueCount() not supported with efMulti");
+    GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
+                       "setMinValueCount() not supported with efOption_MultipleTimes");
     GMX_RELEASE_ASSERT(count >= 0, "Invalid value count");
-    _minValueCount = count;
-    if (isSet()
-        && !hasFlag(efDontCheckMinimumCount) && valueCount() < _minValueCount)
+    minValueCount_ = count;
+    if (isSet() && !hasFlag(efOption_DontCheckMinimumCount)
+        && valueCount() < minValueCount_)
     {
         GMX_THROW(InvalidInputError("Too few values"));
     }
@@ -145,14 +163,74 @@ void AbstractOptionStorage::setMinValueCount(int count)
 
 void AbstractOptionStorage::setMaxValueCount(int count)
 {
-    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
-                       "setMaxValueCount() not supported with efMulti");
+    GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
+                       "setMaxValueCount() not supported with efOption_MultipleTimes");
     GMX_RELEASE_ASSERT(count >= -1, "Invalid value count");
-    _maxValueCount = count;
-    if (isSet() && _maxValueCount >= 0 && valueCount() > _maxValueCount)
+    maxValueCount_ = count;
+    if (isSet() && maxValueCount_ >= 0 && valueCount() > maxValueCount_)
     {
         GMX_THROW(InvalidInputError("Too many values"));
     }
+}
+
+/********************************************************************
+ * OptionInfo
+ */
+
+/*! \cond libapi */
+OptionInfo::OptionInfo(AbstractOptionStorage *option)
+    : option_(*option)
+{
+}
+//! \endcond
+
+OptionInfo::~OptionInfo()
+{
+}
+
+bool OptionInfo::isSet() const
+{
+    return option().isSet();
+}
+
+bool OptionInfo::isHidden() const
+{
+    return option().isHidden();
+}
+
+bool OptionInfo::isRequired() const
+{
+    return option().isRequired();
+}
+
+const std::string &OptionInfo::name() const
+{
+    return option().name();
+}
+
+const std::string &OptionInfo::description() const
+{
+    return option().description();
+}
+
+const char *OptionInfo::type() const
+{
+    return option().typeString();
+}
+
+int OptionInfo::valueCount() const
+{
+    return option().valueCount();
+}
+
+std::string OptionInfo::formatValue(int i) const
+{
+    return option().formatValue(i);
+}
+
+std::string OptionInfo::formatDefaultValueIfSet() const
+{
+    return option().formatDefaultValueIfSet();
 }
 
 } // namespace gmx

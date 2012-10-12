@@ -746,7 +746,7 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
     int bytes[32];
     int i, j, num_of_bytes, p, num;
     
-    bytes[1] = bytes[2] = bytes[3] = 0;
+    bytes[0] = bytes[1] = bytes[2] = bytes[3] = 0;
     num_of_bytes = 0;
     while (num_of_bits > 8) {
 	bytes[num_of_bytes++] = receivebits(buf, 8);
@@ -1683,7 +1683,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
 
      
 
-int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
+int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms,gmx_bool bSeekForwardOnly)
 {
     float t;
     float dt;
@@ -1693,6 +1693,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     int res;
     int dt_sign = 0;
 
+    if (bSeekForwardOnly)
+    {
+        low = gmx_ftell(fp);
+    }
     if (gmx_fseek(fp,0,SEEK_END))
     {
         return -1;
@@ -1705,7 +1709,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     /* round to int  */
     high /= XDR_INT_SIZE;
     high *= XDR_INT_SIZE;
-    offset = ((high / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
+    offset = (((high-low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp,offset,SEEK_SET))
     {

@@ -37,13 +37,15 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-/*! \internal \file scanner_flex.h
+/*! \cond
+ * \internal \file scanner_flex.h
  * \brief Generated (from scanner.l) header file by Flex.
  *
  * This file contains definitions of functions that are needed in
  * scanner_internal.cpp.
  *
  * \ingroup module_selection
+ * \endcond
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -81,98 +83,9 @@
 #undef yytext
 #undef yyleng
 
-static bool
-read_stdin_line(gmx_sel_lexer_t *state)
-{
-    char *ptr     = state->inputstr;
-    int   max_len = state->nalloc_input;
-    int   totlen = 0;
-
-    if (feof(stdin))
-    {
-        return false;
-    }
-    if (state->bInteractive)
-    {
-        if (!state->errors->isEmpty())
-        {
-            fprintf(stderr, "%s", state->errors->toString().c_str());
-            state->errors->clear();
-        }
-        fprintf(stderr, "> ");
-    }
-    /* For some reason (at least on my Linux), fgets() doesn't return until
-     * the user presses Ctrl-D _twice_ at the end of a non-empty line.
-     * This can be a bit confusing for users, but there's not much we can
-     * do, and the chances of a normal user noticing this are not very big. */
-    while (fgets(ptr, max_len, stdin) != NULL)
-    {
-        int len = strlen(ptr);
-
-        totlen += len;
-        if (len >= 2 && ptr[len - 1] == '\n' && ptr[len - 2] == '\\')
-        {
-            if (state->bInteractive)
-            {
-                fprintf(stderr, "... ");
-            }
-        }
-        else if ((len >= 1 && ptr[len - 1] == '\n') || len < max_len - 1)
-        {
-            break;
-        }
-        ptr     += len;
-        max_len -= len;
-        if (max_len <= 2)
-        {
-            max_len += state->nalloc_input;
-            state->nalloc_input *= 2;
-            len = ptr - state->inputstr;
-            srenew(state->inputstr, state->nalloc_input);
-            ptr = state->inputstr + len;
-        }
-    }
-    if (state->bInteractive && (totlen == 0 || ptr[totlen - 1] != '\n'))
-    {
-        fprintf(stderr, "\n");
-    }
-    if (ferror(stdin))
-    {
-        GMX_ERROR_NORET(gmx::eeInvalidInput, "Selection reading failed");
-    }
-    return totlen > 0;
-}
-
-int
-_gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
-{
-    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
-    bool bCmdStart;
-    int token;
-
-    if (!state->bBuffer && !state->inputstr)
-    {
-        state->nalloc_input = 1024;
-        snew(state->inputstr, state->nalloc_input);
-        read_stdin_line(state);
-        _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
-    }
-    bCmdStart = state->bCmdStart;
-    token = _gmx_sel_yylex(yylval, yyscanner);
-    while (state->inputstr && token == 0 && read_stdin_line(state))
-    {
-        _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
-        token = _gmx_sel_yylex(yylval, yyscanner);
-    }
-    if (token == 0 && !bCmdStart)
-    {
-        token = CMD_SEP;
-        rtrim(state->pselstr);
-    }
-    state->bCmdStart = (token == CMD_SEP);
-    return token;
-}
-
+/*! \brief
+ * Handles initialization of method parameter token.
+ */
 static int
 init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
@@ -192,6 +105,9 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     return PARAM;
 }
 
+/*! \brief
+ * Processes a selection method token.
+ */
 static int
 init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
                   gmx_sel_lexer_t *state)
@@ -217,7 +133,9 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
                 GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported keyword type");
                 return INVALID;
         }
-    } else {
+    }
+    else
+    {
         /* Method with parameters or a modifier */
         if (method->flags & SMETH_MODIFIER)
         {
@@ -466,8 +384,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
                     bool bInteractive, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps)
 {
-    gmx_sel_lexer_t *state;
-
     int rc = _gmx_sel_yylex_init(scannerp);
     if (rc != 0)
     {
@@ -475,7 +391,8 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
         GMX_THROW(gmx::InternalError("Lexer initialization failed"));
     }
 
-    snew(state, 1);
+    gmx_sel_lexer_t *state = new gmx_sel_lexer_t;
+
     state->sc        = sc;
     state->errors    = NULL;
     state->bGroups   = bGroups;
@@ -483,8 +400,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
     state->bInteractive = bInteractive;
-    state->nalloc_input = 0;
-    state->inputstr     = NULL;
 
     snew(state->pselstr, STRSTORE_ALLOCSTEP);
     state->pselstr[0]   = 0;
@@ -512,14 +427,13 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
-    sfree(state->inputstr);
     sfree(state->pselstr);
     sfree(state->mstack);
     if (state->bBuffer)
     {
         _gmx_sel_yy_delete_buffer(state->buffer, scanner);
     }
-    sfree(state);
+    delete state;
     _gmx_sel_yylex_destroy(scanner);
 }
 
@@ -529,6 +443,26 @@ _gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->errors = errors;
+}
+
+void
+_gmx_sel_lexer_set_exception(yyscan_t scanner,
+                             const boost::exception_ptr &ex)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    state->exception = ex;
+}
+
+void
+_gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    if (state->exception)
+    {
+        boost::exception_ptr ex = state->exception;
+        state->exception = boost::exception_ptr();
+        rethrow_exception(ex);
+    }
 }
 
 bool

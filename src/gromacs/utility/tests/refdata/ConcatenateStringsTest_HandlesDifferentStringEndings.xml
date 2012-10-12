@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CombinedStrings"><![CDATA[
+First string Second string Third string
+Fourth string]]></String>
+</ReferenceData>

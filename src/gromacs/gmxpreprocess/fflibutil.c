@@ -51,11 +51,6 @@
 #include "smalloc.h"
 #include "statutil.h"
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-#include <direct.h>
-#include <io.h>
-#endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

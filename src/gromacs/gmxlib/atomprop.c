@@ -230,11 +230,13 @@ static void set_prop(gmx_atomprop_t aps,int eprop)
       fprintf(debug,"Entries in %s: %d\n",ap->db,ap->nprop);
 
     if ( ( (!aps->bWarned) && (eprop == epropMass) ) || (eprop == epropVDW)) {
-      printf("\n");
-      printf("WARNING: masses and atomic (Van der Waals) radii will be determined\n");
-      printf("         based on residue and atom names. These numbers can deviate\n");
-      printf("         from the correct mass and radius of the atom type.\n");
-      printf("\n");
+      printf("\n"
+             "WARNING: Masses and atomic (Van der Waals) radii will be guessed\n"
+             "         based on residue and atom names, since they could not be\n"
+             "         definitively assigned from the information in your input\n"
+             "         files. These guessed numbers might deviate from the mass\n"
+             "         and radius of the atom type. Please check the output\n"
+             "         files if necessary.\n\n");
       aps->bWarned = TRUE;
     }
   }

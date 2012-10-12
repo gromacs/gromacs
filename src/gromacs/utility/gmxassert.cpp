@@ -42,7 +42,7 @@
 
 #include <string>
 
-#include "gromacs/utility/format.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "errorformat.h"
 
@@ -56,11 +56,18 @@ namespace internal
 void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line)
 {
-    std::string text =
-        formatFatalError("Assertion failed",
-                         formatString("Condition: %s\n%s", condition, msg).c_str(),
-                         func, file, line);
-    std::fprintf(stderr, "%s", text.c_str());
+    try
+    {
+        std::string title = formatString("Condition: %s\n%s", condition, msg);
+        printFatalError(stderr, "Assertion failed", title.c_str(),
+                        func, file, line);
+    }
+    catch (const std::bad_alloc &)
+    {
+        printFatalError(stderr, "Assertion failed",
+                "(memory allocation failed while formatting the error message)",
+                func, file, line);
+    }
     std::abort();
 }
 

@@ -133,85 +133,109 @@ static void detect_rings(t_params *bonds,int natom,gmx_bool bRing[])
     for(j=0; (j<natom); j++) 
         bRing[j] = FALSE;
         
-    for(a1=0; (a1<natom); a1++) {
-        for(j=0; (j<bonds->nr); j++) {
+    for(a1=0; (a1<natom); a1++) 
+    {
+        for(j=0; (j<bonds->nr); j++) 
+        {
             a2 = NOTSET;
             if (bonds->param[j].a[0] == a1)
                 a2 = bonds->param[j].a[1];
             else if (bonds->param[j].a[1] == a1)
                 a2 = bonds->param[j].a[0];
             if (a2 != NOTSET) {
-                for(k=0; (k<bonds->nr); k++) {
+                for(k=0; (k<bonds->nr); k++) 
+                {
                     a3 = NOTSET;
                     if (bonds->param[k].a[0] == a2)
                         a3 = bonds->param[k].a[1];
                     else if (bonds->param[k].a[1] == a2)
                         a3 = bonds->param[k].a[0];
-                    if ((a3 != NOTSET) && (a3 != a1)) {
-                        for(l=0; (l<bonds->nr); l++) {
+                    if ((a3 != NOTSET) && (a3 != a1)) 
+                    {
+                        for(l=0; (l<bonds->nr); l++) 
+                        {
                             a4 = NOTSET;
                             if (bonds->param[l].a[0] == a3)
                                 a4 = bonds->param[l].a[1];
                             else if (bonds->param[l].a[1] == a3)
                                 a4 = bonds->param[l].a[0];
-                            if ((a4 != NOTSET) && (a4 != a2)) {
-                                for(m=0; (m<bonds->nr); m++) {
+                            if ((a4 != NOTSET) && (a4 != a2)) 
+                            {
+                                for(m=0; (m<bonds->nr); m++) 
+                                {
                                     a5 = NOTSET;
                                     if (bonds->param[m].a[0] == a4)
                                         a5 = bonds->param[m].a[1];
                                     else if (bonds->param[m].a[1] == a4)
                                         a5 = bonds->param[m].a[0];
-                                    if ((a5 != NOTSET) && (a5 != a3)) {
-                                        if (a5 == a1) {
+                                    if ((a5 != NOTSET) && (a5 != a3)) 
+                                    {
+                                        if (a5 == a1) 
+                                        {
                                             /* 4-ring */
                                             bRing[a1] = bRing[a2] = bRing[a3] = bRing[a4] = TRUE;
                                         }
-                                        else if (a3 != a1) {
-                                            for(n=0; (n<bonds->nr); n++) {
+                                        else if (a3 != a1) 
+                                        {
+                                            for(n=0; (n<bonds->nr); n++) 
+                                            {
                                                 a6 = NOTSET;
                                                 if (bonds->param[n].a[0] == a5)
                                                     a6 = bonds->param[n].a[1];
                                                 else if (bonds->param[n].a[1] == a5)
                                                     a6 = bonds->param[n].a[0];
-                                                if ((a6 != NOTSET) && (a6 != a4)) {
-                                                    if (a6 == a1) {
+                                                if ((a6 != NOTSET) && (a6 != a4)) 
+                                                {
+                                                    if (a6 == a1) 
+                                                    {
                                                         /* 5-ring */
                                                         bRing[a1] = bRing[a2] = bRing[a3] = bRing[a4] = bRing[a5] = TRUE;
                                                     }
-                                                    else {
-                                                        for(o=0; (o<bonds->nr); o++) {
+                                                    else 
+                                                    {
+                                                        for(o=0; (o<bonds->nr); o++) 
+                                                        {
                                                             a7 = NOTSET;
                                                             if (bonds->param[o].a[0] == a6)
                                                                 a7 = bonds->param[o].a[1];
                                                             else if (bonds->param[o].a[1] == a6)
                                                                 a7 = bonds->param[o].a[0];
-                                                            if ((a7 != NOTSET) && (a7 != a5)) {
-                                                                if (a7 == a1) {
+                                                            if ((a7 != NOTSET) && (a7 != a5)) 
+                                                            {
+                                                                if (a7 == a1) 
+                                                                {
                                                                     /* 6-ring */
                                                                     bRing[a1] = bRing[a2] = bRing[a3] = 
                                                                         bRing[a4] = bRing[a5] = bRing[a6] = TRUE;
                                                                 }
-                                                                else  {
-                                                                    for(p=0; (p<bonds->nr); p++) {
+                                                                else  
+                                                                {
+                                                                    for(p=0; (p<bonds->nr); p++) 
+                                                                    {
                                                                         a8 = NOTSET;
                                                                         if (bonds->param[p].a[0] == a7)
                                                                             a8 = bonds->param[p].a[1];
                                                                         else if (bonds->param[p].a[1] == a7)
                                                                             a8 = bonds->param[p].a[0];
-                                                                        if ((a8 != NOTSET) && (a8 != a6)) {
-                                                                            if (a8 == a1) {
+                                                                        if ((a8 != NOTSET) && (a8 != a6)) 
+                                                                        {
+                                                                            if (a8 == a1) 
+                                                                            {
                                                                                 /* 7-ring */
                                                                                 bRing[a1] = bRing[a2] = bRing[a3] = 
                                                                                     bRing[a4] = bRing[a5] = bRing[a6] = bRing[a7] = TRUE;
                                                                             }
-                                                                            else  {
-                                                                                for(q=0; (q<bonds->nr); q++) {
+                                                                            else  
+                                                                            {
+                                                                                for(q=0; (q<bonds->nr); q++) 
+                                                                                {
                                                                                     a9 = NOTSET;
                                                                                     if (bonds->param[q].a[0] == a8)
                                                                                         a9 = bonds->param[q].a[1];
                                                                                     else if (bonds->param[q].a[1] == a8)
                                                                                         a9 = bonds->param[q].a[0];
-                                                                                    if (a9 == a1) {
+                                                                                    if (a9 == a1) 
+                                                                                    {
                                                                                         /* 8-ring */
                                                                                         bRing[a1] = bRing[a2] = bRing[a3] = 
                                                                                             bRing[a4] = bRing[a5] = bRing[a6] = bRing[a7] = bRing[a8] = TRUE;

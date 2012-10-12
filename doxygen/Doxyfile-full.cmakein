@@ -1,0 +1,22 @@
+@INCLUDE               = Doxyfile-common
+
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED            += F77_FUNC(name,NAME)=name
+
+ENABLED_SECTIONS       = libapi internal
+INTERNAL_DOCS          = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_CLASSES     = YES
+WARN_LOGFILE           = doxygen-full.log
+HTML_OUTPUT            = html-full
+
+INLINE_INHERITED_MEMB  = NO  # Makes it easier to go through all documentation
+
+ALIASES               += inpublicapi="\ingroup group_publicapi"
+ALIASES               += inlibraryapi="\ingroup group_libraryapi"
+ALIASES               += addtopublicapi="\addtogroup group_publicapi"
+ALIASES               += addtolibraryapi="\addtogroup group_libraryapi"
+ALIASES               += libinternal=
+ALIASES               += endlibinternal=

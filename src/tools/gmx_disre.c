@@ -708,7 +708,7 @@ int gmx_disre(int argc,char *argv[])
 
   mdatoms = init_mdatoms(fplog,&mtop,ir.efep!=efepNO);
   atoms2md(&mtop,&ir,0,NULL,0,mtop.natoms,mdatoms);
-  update_mdatoms(mdatoms,ir.init_lambda);
+  update_mdatoms(mdatoms,ir.fepvals->init_lambda);
   fr      = mk_forcerec();
   fprintf(fplog,"Made forcerec\n");
   init_forcerec(fplog,oenv,fr,NULL,&ir,&mtop,cr,box,FALSE,NULL,NULL,NULL,NULL,NULL,
@@ -799,8 +799,7 @@ int gmx_disre(int argc,char *argv[])
   }
   thanx(stderr);
 
-  if (gmx_parallel_env_initialized())
-    gmx_finalize();
+  gmx_finalize_par();
 
   gmx_log_close(fplog);
   

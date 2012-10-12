@@ -75,27 +75,9 @@
 #include "nb_kernel_c/nb_kernel330.h" 
 #include "nb_kernel_adress_c/nb_kernel330_adress.h"
 
-#ifdef GMX_PPC_ALTIVEC   
-#include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
-#endif
 
-#if defined(GMX_IA32_SSE) 
-#include "nb_kernel_ia32_sse/nb_kernel_ia32_sse.h"
-#endif
 
-#if defined(GMX_IA32_SSE2) 
-#include "nb_kernel_ia32_sse2/nb_kernel_ia32_sse2.h"
-#endif
- 
-#if defined(GMX_X86_64_SSE)
-#include "nb_kernel_x86_64_sse/nb_kernel_x86_64_sse.h"
-#endif
-
-#if defined(GMX_X86_64_SSE2)
-#include "nb_kernel_x86_64_sse2/nb_kernel_x86_64_sse2.h"
-#endif
-
-#if defined(GMX_SSE2)
+#if 0 && defined (GMX_X86_SSE2)
 #  ifdef GMX_DOUBLE
 #    include "nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #  else
@@ -111,13 +93,6 @@
 #  endif
 #endif
 
-#if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
-#include "nb_kernel_ia64_double/nb_kernel_ia64_double.h"
-#endif
-
-#if (defined GMX_IA64_ASM && !defined GMX_DOUBLE)
-#include "nb_kernel_ia64_single/nb_kernel_ia64_single.h"
-#endif
 
 #ifdef GMX_POWER6
 #include "nb_kernel_power6/nb_kernel_power6.h"
@@ -214,7 +189,7 @@ static nb_adress_kernel_t **
 nb_kernel_list_adress = NULL;
 
 void
-gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
+gmx_setup_kernels(FILE *fplog,t_forcerec *fr,gmx_bool bGenericKernelOnly)
 {
     int i;
         
@@ -241,7 +216,7 @@ gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
 	
     nb_kernel_setup(fplog,nb_kernel_list);
     
-    if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
+    if(fr->use_acceleration==FALSE)
     {
         return;
     }
@@ -265,34 +240,6 @@ gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
 	
 #ifdef GMX_POWER6
     nb_kernel_setup_power6(fplog,nb_kernel_list);
-#endif
-    
-#ifdef GMX_PPC_ALTIVEC   
-    nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_IA32_SSE)
-    nb_kernel_setup_ia32_sse(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_IA32_SSE2)
-    nb_kernel_setup_ia32_sse2(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_X86_64_SSE)
-    nb_kernel_setup_x86_64_sse(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_X86_64_SSE2)
-    nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
-#endif
-
-#if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
-    nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
-#endif
-	
-#if (defined GMX_IA64_ASM && !defined GMX_DOUBLE)
-    nb_kernel_setup_ia64_single(fplog,nb_kernel_list);
 #endif
 	
 	if(fplog)
@@ -322,7 +269,7 @@ gmx_setup_adress_kernels(FILE *fplog,gmx_bool bGenericKernelOnly) {
 void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,t_blocka *excl,
                   real egnb[],real egcoul[],real egpol[],rvec box_size,
-                  t_nrnb *nrnb,real lambda,real *dvdlambda,
+                  t_nrnb *nrnb,real *lambda, real *dvdl,
                   int nls,int eNL,int flags)
 {
     gmx_bool            bLR,bDoForces,bForeignLambda;
@@ -363,9 +310,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
     {
         if(fr->bGB)
         {
-#if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
+#if 0 && defined (GMX_X86_SSE2)
 # ifdef GMX_DOUBLE
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
                 nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                                  &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -376,7 +323,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                      &outeriter,&inneriter,&fr->AllvsAll_work);        
             }
 #  else /* not double */
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
                 nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                                  &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -395,9 +342,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         }
         else
         { 
-#if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
+#if 0 && defined (GMX_X86_SSE2)
 # ifdef GMX_DOUBLE
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
                 nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                                &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -409,7 +356,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
             }
             
 #  else /* not double */
-            if(fr->UseOptimizedKernels)
+            if(fr->use_acceleration)
             {
                 nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                                &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -524,7 +471,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 				
 				if(nlist->free_energy)
 				{
-					if(nlist->ivdw==2)
+					if(nlist->ivdw==enbvdwBHAM)
 					{
 						gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
 					}
@@ -555,10 +502,13 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  egnb,
 											  nblists->tab.scale,
 											  tabledata,
-											  lambda,
-											  dvdlambda,
-											  fr->sc_alpha,
+											  lambda[efptCOUL],
+                                              lambda[efptVDW],
+                                              dvdl,
+                                              fr->sc_alphacoul,
+											  fr->sc_alphavdw,
 											  fr->sc_power,
+											  fr->sc_r_power,
 											  fr->sc_sigma6_def,
                                               fr->sc_sigma6_min,
                                               bDoForces,
@@ -777,7 +727,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                 const t_iatom iatoms[],const t_iparams iparams[],
                 const rvec x[],rvec f[],rvec fshift[],
                 const t_pbc *pbc,const t_graph *g,
-                real lambda,real *dvdlambda,
+                real *lambda, real *dvdl,
                 const t_mdatoms *md,
                 const t_forcerec *fr,gmx_grppairener_t *grppener,
                 int *global_atom_index)
@@ -846,32 +796,28 @@ do_listed_vdw_q(int ftype,int nbonds,
 
     /* Determine the values for icoul/ivdw. */
     if (fr->bEwald) {
-        icoul = 1;
+        icoul = enbcoulOOR;
     } 
     else if(fr->bcoultab)
     {
-        icoul = 3;
+        icoul = enbcoulTAB;
     }
     else if(fr->eeltype == eelRF_NEC)
     {
-        icoul = 2;
+        icoul = enbcoulRF;
     }
     else 
     {
-        icoul = 1;
+        icoul = enbcoulOOR;
     }
     
     if(fr->bvdwtab)
     {
-        ivdw = 3;
+        ivdw = enbvdwTAB;
     }
-    else if(fr->bBHAM)
+    else
     {
-        ivdw = 2;
-    }
-    else 
-    {
-        ivdw = 1;
+        ivdw = enbvdwLJ;
     }
     
     
@@ -980,7 +926,12 @@ do_listed_vdw_q(int ftype,int nbonds,
              * in the innerloops if we assign type combinations 0-0 and 0-1
              * to atom pair ai-aj in topologies A and B respectively.
              */
-            if(ivdw==2)
+
+            /* need to do a bit of a kludge here -- the way it is set up,
+               if the charges change, but the vdw do not, then even though bFreeEnergy is on,
+               it won't work, because all the bonds are perturbed.
+            */
+            if(ivdw==enbvdwBHAM)
             {
                 gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
             }
@@ -1011,10 +962,13 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       egnb,
                                       tabscale,
                                       tab,
-                                      lambda,
-                                      dvdlambda,
-                                      fr->sc_alpha,
+                                      lambda[efptCOUL],
+                                      lambda[efptVDW],
+                                      dvdl,
+                                      fr->sc_alphacoul,
+                                      fr->sc_alphavdw,
                                       fr->sc_power,
+                                      6.0, /* for 1-4's use the 6 power always - 48 power too high because of where they are forced to be */
                                       fr->sc_sigma6_def,
                                       fr->sc_sigma6_min,
                                       TRUE,

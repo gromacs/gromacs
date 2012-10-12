@@ -1,2 +1,4 @@
-add_gtest_test(CommandLineUnitTests commandline-test
-               cmdlineparser.cpp)
+gmx_add_unit_test(CommandLineUnitTests commandline-test
+                  cmdlinehelpwriter.cpp
+                  cmdlinemodulemanager.cpp
+                  cmdlineparser.cpp)

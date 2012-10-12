@@ -81,16 +81,14 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         {
             addValue("dummy");
         }
-        /*! \brief
-         * Calls setFlag(efSet).
-         */
-        void setOption()
-        {
-            setFlag(gmx::efSet);
-        }
+        // using MyBase::markAsSet;
         // using MyBase::addValue;
         // using MyBase::commitValues;
         // "using" is correct but MSVC gives error C2248. Workaround:
+        void markAsSet()
+        {
+            MyBase::markAsSet();
+        }
         void addValue(const std::string &value)
         {
             MyBase::addValue(value);
@@ -106,7 +104,10 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
             GMX_THROW(gmx::test::TestException("Not implemented"));
         }
         virtual const char *typeString() const { return "mock"; }
-        virtual std::string formatValue(int /*i*/) const { return ""; }
+        virtual std::string formatSingleValue(const std::string &/*value*/) const
+        {
+            return "";
+        }
 
         MOCK_METHOD1(convertValue, void(const std::string &value));
         MOCK_METHOD1(processSetValues, void(ValueList *values));
@@ -123,26 +124,26 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
     public:
         //! Initializes an option with the given name.
         explicit MockOption(const char *name)
-            : MyBase(name), _storagePtr(NULL)
+            : MyBase(name), storagePtr_(NULL)
         {
         }
 
         //! Sets an output pointer to give access to the created storage object.
         MyClass &storageObject(MockOptionStorage **storagePtr)
-        { _storagePtr = storagePtr; return me(); }
+        { storagePtr_ = storagePtr; return me(); }
 
     private:
         virtual gmx::AbstractOptionStoragePointer createStorage() const
         {
             MockOptionStorage *storage = new MockOptionStorage(*this);
-            if (_storagePtr != NULL)
+            if (storagePtr_ != NULL)
             {
-                *_storagePtr = storage;
+                *storagePtr_ = storage;
             }
             return gmx::AbstractOptionStoragePointer(storage);
         }
 
-        MockOptionStorage     **_storagePtr;
+        MockOptionStorage     **storagePtr_;
 };
 
 MockOptionStorage::MockOptionStorage(const MockOption &settings)
@@ -173,7 +174,7 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
         using ::testing::DoAll;
         using ::testing::InvokeWithoutArgs;
         EXPECT_CALL(*mock, processAll())
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::setOption),
+            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::markAsSet),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
     }
@@ -195,11 +196,11 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock = NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).multiValue()));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::ElementsAre;
@@ -236,7 +237,7 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock=NULL;
+    MockOptionStorage          *mock = NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).multiValue()));
@@ -278,7 +279,7 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock=NULL;
+    MockOptionStorage          *mock = NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).valueCount(2)));
@@ -293,7 +294,6 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
         EXPECT_CALL(*mock, convertValue("b"))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
-        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy"))));
         EXPECT_CALL(*mock, processAll());
     }
 
@@ -306,9 +306,7 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    ASSERT_EQ(2U, values.size());
-    EXPECT_EQ("a", values[0]);
-    EXPECT_EQ("dummy", values[1]);
+    ASSERT_TRUE(values.empty());
 }
 
 /*
@@ -319,11 +317,11 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock = NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).valueCount(0)));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;

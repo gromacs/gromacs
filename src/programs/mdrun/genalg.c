@@ -126,7 +126,7 @@ t_genalg *init_ga(FILE *fplog,const char *infile,int D,t_range range[])
 {
   FILE     *fpin_ptr;
   t_genalg *ga;
-  double   ff,cr;
+  double   ff = 0.0, cr = 0.0;
   int      i,j;
   
   /*------Initializations----------------------------*/

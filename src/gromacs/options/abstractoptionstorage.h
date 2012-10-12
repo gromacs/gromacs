@@ -85,7 +85,7 @@ class AbstractOptionStorage
         virtual ~AbstractOptionStorage();
 
         //! Returns true if the option has been set.
-        bool isSet() const { return hasFlag(efSet); }
+        bool isSet() const { return hasFlag(efOption_Set); }
         /*! \brief
          * Returns true if the option is a boolean option.
          *
@@ -95,13 +95,15 @@ class AbstractOptionStorage
          */
         bool isBoolean() const;
         //! Returns true if the option is a hidden option.
-        bool isHidden() const { return hasFlag(efHidden); }
+        bool isHidden() const { return hasFlag(efOption_Hidden); }
         //! Returns true if the option is required.
-        bool isRequired() const { return hasFlag(efRequired); }
+        bool isRequired() const { return hasFlag(efOption_Required); }
+        //! Returns true if the option is vector-valued.
+        bool isVector() const { return hasFlag(efOption_Vector); }
         //! Returns the name of the option.
-        const std::string &name() const { return _name; }
+        const std::string &name() const { return name_; }
         //! Returns the description of the option.
-        const std::string &description() const { return _descr; }
+        const std::string &description() const { return descr_; }
 
         /*! \brief
          * Returns an option info object corresponding to this option.
@@ -119,8 +121,14 @@ class AbstractOptionStorage
         virtual int valueCount() const = 0;
         /*! \brief
          * Returns the i'th value formatted as a string.
+         *
+         * If \p i is DefaultValueIfSetIndex, should format the default value
+         * if set (see OptionTemplate::defaultValueIfSet()).
          */
         virtual std::string formatValue(int i) const = 0;
+        //! \copydoc OptionInfo::formatDefaultValueIfSet()
+        std::string formatDefaultValueIfSet() const
+        { return formatValue(DefaultValueIfSetIndex); }
 
         /*! \brief
          * Starts adding values from a new source for the option.
@@ -179,6 +187,9 @@ class AbstractOptionStorage
         void finish();
 
     protected:
+        //! Index used with formatValue() for formatting default value if set.
+        static const int DefaultValueIfSetIndex = -1;
+
         /*! \brief
          * Initializes the storage object from the settings object.
          *
@@ -190,17 +201,19 @@ class AbstractOptionStorage
         AbstractOptionStorage(const AbstractOption &settings,
                               OptionFlags staticFlags);
 
+        //! Marks the option as set.
+        void markAsSet() { flags_.set(efOption_Set); }
         //! Returns true if the given flag is set.
-        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
+        bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
         //! Sets the given flag.
-        void setFlag(OptionFlag flag) { return _flags.set(flag); }
+        void setFlag(OptionFlag flag) { return flags_.set(flag); }
         //! Clears the given flag.
-        void clearFlag(OptionFlag flag) { return _flags.clear(flag); }
+        void clearFlag(OptionFlag flag) { return flags_.clear(flag); }
 
         //! Returns the minimum number of values required in one set.
-        int minValueCount() const { return _minValueCount; }
+        int minValueCount() const { return minValueCount_; }
         //! Returns the maximum allowed number of values in one set (-1 = no limit).
-        int maxValueCount() const { return _maxValueCount; }
+        int maxValueCount() const { return maxValueCount_; }
         /*! \brief
          * Sets a new minimum number of values required in one set.
          *
@@ -210,8 +223,9 @@ class AbstractOptionStorage
          * If values have already been provided, it is checked that there are
          * enough.
          *
-         * Cannot be called for options with ::efMulti set, because it is
-         * impossible to check the requirement after the values have been set.
+         * Cannot be called for options with ::efOption_MultipleTimes set,
+         * because it is impossible to check the requirement after the values
+         * have been set.
          * If attempted, will assert.
          */
         void setMinValueCount(int count);
@@ -225,8 +239,9 @@ class AbstractOptionStorage
          * If values have already been provided, it is checked that there are
          * not too many.
          *
-         * Cannot be called for options with ::efMulti set, because it is
-         * impossible to check the requirement after the values have been set.
+         * Cannot be called for options with ::efOption_MultipleTimes set,
+         * because it is impossible to check the requirement after the values
+         * have been set.
          * If attempted, will assert.
          */
         void setMaxValueCount(int count);
@@ -262,6 +277,11 @@ class AbstractOptionStorage
          *
          * This method may be called multiple times if the underlying option
          * can be specified multiple times.
+         * This method is not currently called if one of the convertValue()
+         * calls throwed.
+         *
+         * \todo
+         * Improve the call semantics.
          *
          * \see OptionStorageTemplate::processSetValues()
          */
@@ -282,16 +302,18 @@ class AbstractOptionStorage
         virtual void processAll() = 0;
 
     private:
-        std::string             _name;
-        std::string             _descr;
+        std::string             name_;
+        std::string             descr_;
         //! Flags for the option.
-        OptionFlags             _flags;
+        OptionFlags             flags_;
         //! Minimum number of values required (in one set).
-        int                     _minValueCount;
+        int                     minValueCount_;
         //! Maximum allowed number of values (in one set), or -1 if no limit.
-        int                     _maxValueCount;
+        int                     maxValueCount_;
         //! Whether we are currently assigning values to a set.
-        bool                    _inSet;
+        bool                    bInSet_;
+        //! Whether there were errors in set values.
+        bool                    bSetValuesHadErrors_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };

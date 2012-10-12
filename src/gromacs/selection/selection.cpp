@@ -148,7 +148,7 @@ SelectionData::initializeMassesAndCharges(const t_topology *top)
         }
         posInfo_.push_back(PositionInfo(mass, charge));
     }
-    if (isDynamic() && !hasFlag(efDynamicMask))
+    if (isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
         originalPosInfo_ = posInfo_;
     }
@@ -200,7 +200,7 @@ SelectionData::restoreOriginalPositions()
         gmx_ana_pos_t &p = rawPositions_;
         gmx_ana_index_copy(p.g, rootElement_->v.u.g, false);
         p.g->name = NULL;
-        gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efDynamicMask));
+        gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efSelection_DynamicMask));
         p.nr = p.m.nr;
         refreshMassesAndCharges();
     }

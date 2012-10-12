@@ -1,8 +1,7 @@
 add_library(gmxana 
             autocorr.c      expfit.c        polynomials.c   levenmar.c      
             anadih.c        pp2shift.c      dlist.c         
-            eigio.c         cmat.c          
-            eigensolver.c   nsc.c           
+            eigio.c         cmat.c          nsc.c
             hxprops.c       fitahx.c        
             geminate.c      nsfactor.c
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      
@@ -22,7 +21,7 @@ add_library(gmxana
             gmx_rmsdist.c   gmx_rotmat.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      
             gmx_traj.c      gmx_velacc.c    gmx_helixorient.c 
-            gmx_clustsize.c gmx_mdmat.c     gmx_wham.c      
+            gmx_clustsize.c gmx_mdmat.c     gmx_wham.cpp
             correl.c        gmx_sham.c      gmx_nmtraj.c    
             gmx_trjconv.c   gmx_trjcat.c    gmx_trjorder.c  gmx_xpm2ps.c    
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
@@ -64,6 +63,9 @@ set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     add_executable(${TOOL} ${TOOL}.c)
+    if (NOT ${TOOL} STREQUAL "g_options")
+        gmx_add_man_page(${TOOL})
+    endif()
     target_link_libraries(${TOOL} gmxana)
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 

@@ -45,12 +45,6 @@
 #include <limits.h>
 #include <ctype.h>
 
-/* Necessary for getcwd */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-#include <direct.h>
-#include <io.h>
-#endif
-
 #include "string2.h"
 #include "smalloc.h"
 #include "futil.h"
@@ -272,21 +266,13 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     *ptr      = '\0';
     cpp->fn   = strdup(ptr+1);
     snew(cpp->cwd,STRLEN);
-      
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-      pdum=_getcwd(cpp->cwd,STRLEN);
-      _chdir(cpp->path);
-#else
-      pdum=getcwd(cpp->cwd,STRLEN);
-      if (NULL != debug) {
-	fprintf(debug,"GMXCPP: cwd %s\n",cpp->cwd);
-      }
-      if (-1 == chdir(cpp->path))
-	gmx_fatal(FARGS,"Can not chdir to %s when processing topology. Reason: %s",
-		  cpp->path,strerror(errno));
 
-#endif
-      
+    gmx_getcwd(cpp->cwd, STRLEN);
+    if (NULL != debug) {
+      fprintf(debug,"GMXCPP: cwd %s\n",cpp->cwd);
+    }
+    gmx_chdir(cpp->path);
+
     if (NULL != debug)
       fprintf(debug,"GMXCPP: chdir to %s\n",cpp->path);
   }
@@ -587,15 +573,9 @@ int cpp_close_file(gmx_cpp_t *handlep)
   if (NULL != handle->cwd) {
     if (NULL != debug)
       fprintf(debug,"GMXCPP: chdir to %s\n",handle->cwd);
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-      _chdir(handle->cwd);
-#else
-      if (-1 == chdir(handle->cwd))
-	gmx_fatal(FARGS,"Can not chdir to %s when processing topology: %s",
-		  handle->cwd,strerror(errno));
-#endif
+    gmx_chdir(handle->cwd);
   }
-  
+
   if (0)
     switch(errno) {
   case 0:

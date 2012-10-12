@@ -58,18 +58,18 @@ class FlagsTemplate
 {
     public:
         //! Creates a flags object with no flags set.
-        FlagsTemplate() : _flags(0) {}
+        FlagsTemplate() : flags_(0) {}
         //! Creates a flags object from a single flag.
-        FlagsTemplate(T flag) : _flags(flag) {}
+        FlagsTemplate(T flag) : flags_(flag) {}
 
         //! Returns true if the given flag is set.
-        bool test(T flag) const { return _flags & flag; }
+        bool test(T flag) const { return flags_ & flag; }
         //! Clears all flags.
-        void clearAll() { _flags = 0; }
+        void clearAll() { flags_ = 0; }
         //! Sets the given flag.
-        void set(T flag) { _flags |= flag; }
+        void set(T flag) { flags_ |= flag; }
         //! Clears the given flag.
-        void clear(T flag) { _flags &= ~flag; }
+        void clear(T flag) { flags_ &= ~flag; }
         //! Sets or clears the given flag.
         void set(T flag, bool bSet)
         {
@@ -86,30 +86,30 @@ class FlagsTemplate
         //! Combines flags from two flags objects.
         FlagsTemplate<T> operator |(const FlagsTemplate<T> &other) const
         {
-            return FlagsTemplate<T>(_flags | other._flags);
+            return FlagsTemplate<T>(flags_ | other.flags_);
         }
         //! Combines flags from another flag object.
         FlagsTemplate<T> &operator |=(const FlagsTemplate<T> &other)
         {
-            _flags |= other._flags;
+            flags_ |= other.flags_;
             return *this;
         }
         //! Combined flags from two flags objects.
         FlagsTemplate<T> operator &(const FlagsTemplate<T> &other) const
         {
-            return FlagsTemplate<T>(_flags & other._flags);
+            return FlagsTemplate<T>(flags_ & other.flags_);
         }
         //! Returns an object with all flags flipped.
         FlagsTemplate<T> operator ~() const
         {
-            return FlagsTemplate<T>(~_flags);
+            return FlagsTemplate<T>(~flags_);
         }
 
     private:
         //! Creates a flags object with the given flags.
-        explicit FlagsTemplate(unsigned long flags) : _flags(flags) {}
+        explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
 
-        unsigned long           _flags;
+        unsigned long           flags_;
 };
 
 } // namespace gmx

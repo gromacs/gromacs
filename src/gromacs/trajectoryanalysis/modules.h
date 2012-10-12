@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Generic interface for creation of trajectory analysis modules.
+ * Generic interface for accessing trajectory analysis modules.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
@@ -39,39 +39,23 @@
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_H
 
-#include "analysismodule.h"
-
 namespace gmx
 {
 
+class CommandLineModuleManager;
+
 /*! \brief
- * Creates a TrajectoryAnalysisModule object corresponding to a name.
+ * Registers all trajectory analysis command-line modules.
  *
- * \param[in]  name  Name of the module to create (recognized names are
- *      defined in modules.h).
- * \returns  An allocated TrajectoryAnalysisModule object.
- * \throws   InvalidInputError if \p name is not recognized.
+ * \param[in] manager  Command-line module manager to receive the modules.
+ * \throws    std::bad_alloc if out of memory.
  *
- * This function should be used to instantiate analysis methods defined in the
- * library.
- *
- * In addition to recognizing exact matches on \p name, the function also
- * identifies cases where \p name is a prefix of exactly one recognized name
- * (exact matches always take precedence).
+ * Registers all trajectory analysis modules declared in the library such that
+ * they can be run through \p manager.
  *
  * \inpublicapi
  */
-TrajectoryAnalysisModulePointer
-createTrajectoryAnalysisModule(const char *name);
-
-namespace analysismodules
-{
-
-static const char * const angle    = "angle";
-static const char * const distance = "distance";
-static const char * const select   = "select";
-
-} // namespace modules
+void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager);
 
 } // namespace gmx
 

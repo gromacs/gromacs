@@ -19,6 +19,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <assert.h>
 
 #include "smalloc.h"
 #include "vec.h"
@@ -764,6 +765,7 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
     /* Check to not ask for the same atom more than once */
     if (dc->ga2la[offset+a] == -1)
     {
+        assert(dcc);
         /* Add this non-home atom to the list */
         if (dcc->nind_req+1 > dcc->ind_req_nalloc)
         {

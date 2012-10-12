@@ -62,7 +62,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
     public:
         //! Initializes an option with the given name.
         explicit SelectionOption(const char *name)
-            : MyBase(name), _infoPtr(NULL)
+            : MyBase(name), infoPtr_(NULL)
         { }
 
         /*! \brief
@@ -72,7 +72,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          * in which case SelectionPosition::hasVelocity() returns false.
          */
         MyClass &evaluateVelocities()
-        { _selectionFlags.set(efEvaluateVelocities); return me(); }
+        { selectionFlags_.set(efSelection_EvaluateVelocities); return me(); }
         /*! \brief
          * Request force evaluation for output positions.
          *
@@ -80,19 +80,19 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          * in which case SelectionPosition::hasForce() returns false.
          */
         MyClass &evaluateForces()
-        { _selectionFlags.set(efEvaluateForces); return me(); }
+        { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
         /*! \brief
          * Only accept selections that evaluate to atom positions.
          *
          * TODO: This option is not yet implemented.
          */
         MyClass &onlyAtoms()
-        { _selectionFlags.set(efOnlyAtoms); return me(); }
+        { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
         /*! \brief
          * Only accept static selections for this option.
          */
         MyClass &onlyStatic()
-        { _selectionFlags.set(efOnlyStatic); return me(); }
+        { selectionFlags_.set(efSelection_OnlyStatic); return me(); }
         /*! \brief
          * Handle dynamic selections for this option with position masks.
          *
@@ -100,14 +100,14 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          * \see SelectionPosition::selected()
          */
         MyClass &dynamicMask()
-        { _selectionFlags.set(efDynamicMask); return me(); }
+        { selectionFlags_.set(efSelection_DynamicMask); return me(); }
         /*! \brief
          * Disallow using atom coordinates as the reference positions.
          *
          * TODO: This option is not yet implemented.
          */
         MyClass &dynamicOnlyWhole()
-        { _selectionFlags.set(efDynamicOnlyWhole); return me(); }
+        { selectionFlags_.set(efSelection_DynamicOnlyWhole); return me(); }
 
         /*! \brief
          * Get an info object that can be used to alter the option after
@@ -116,9 +116,12 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          * \see SelectionOptionInfo
          */
         MyClass &getAdjuster(SelectionOptionInfo **infoPtr)
-        { _infoPtr = infoPtr; return me(); }
+        { infoPtr_ = infoPtr; return me(); }
 
     private:
+        // Disable possibility to allow multiple occurrences, since it isn't
+        // implemented.
+        using MyBase::allowMultiple;
         // Disable default value because it is impossible to provide a
         // Selection object.
         using MyBase::defaultValue;
@@ -126,8 +129,8 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 
         virtual AbstractOptionStoragePointer createStorage() const;
 
-        SelectionFlags          _selectionFlags;
-        SelectionOptionInfo   **_infoPtr;
+        SelectionFlags          selectionFlags_;
+        SelectionOptionInfo   **infoPtr_;
 
         /*! \brief
          * Needed to initialize SelectionOptionStorage from this class without

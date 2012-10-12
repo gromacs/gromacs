@@ -43,7 +43,8 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
+        virtual void initOptions(Options *options,
+                                 TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -58,8 +59,6 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
 
     private:
         class ModuleData;
-
-        Options                          options_;
 
         std::string                      fnDist_;
         double                           cutoff_;
@@ -106,13 +105,16 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 
 
 AnalysisTemplate::AnalysisTemplate()
-    : options_("template", "Template options"), cutoff_(0.0)
+    : TrajectoryAnalysisModule("template", "Template analysis tool"),
+      cutoff_(0.0)
 {
+    registerAnalysisDataset(&data_, "avedist");
 }
 
 
-Options &
-AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
+void
+AnalysisTemplate::initOptions(Options *options,
+                              TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "This is a template for writing your own analysis tools for",
@@ -127,30 +129,27 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
         "follow the instructions in the README file provided.",
         "This template implements a simple analysis programs that calculates",
         "average distances from a reference group to one or more",
-        "analysis groups.",
-        NULL
+        "analysis groups."
     };
 
-    options_.setDescription(desc);
+    options->setDescription(concatenateStrings(desc));
 
-    options_.addOption(FileNameOption("o")
+    options->addOption(FileNameOption("o")
         .filetype(eftPlot).outputFile()
         .store(&fnDist_).defaultValueIfSet("avedist")
         .description("Average distances from reference group"));
 
-    options_.addOption(SelectionOption("reference")
+    options->addOption(SelectionOption("reference")
         .store(&refsel_).required()
         .description("Reference group to calculate distances from"));
-    options_.addOption(SelectionOption("select")
+    options->addOption(SelectionOption("select")
         .storeVector(&sel_).required().multiValue()
         .description("Groups to calculate distances to"));
 
-    options_.addOption(DoubleOption("cutoff").store(&cutoff_)
+    options->addOption(DoubleOption("cutoff").store(&cutoff_)
         .description("Cutoff for distance calculation (0 = no cutoff)"));
 
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
-
-    return options_;
 }
 
 
@@ -159,7 +158,6 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
                                const TopologyInformation & /*top*/)
 {
     data_.setColumnCount(sel_.size());
-    registerAnalysisDataset(&data_, "avedist");
 
     avem_.reset(new AnalysisDataAverageModule());
     data_.addModule(avem_);
@@ -236,6 +234,7 @@ AnalysisTemplate::writeOutput()
 int
 main(int argc, char *argv[])
 {
+    ProgramInfo::init(argc, argv);
     try
     {
         AnalysisTemplate module;
@@ -244,7 +243,7 @@ main(int argc, char *argv[])
     }
     catch (const std::exception &ex)
     {
-        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        gmx::printFatalErrorMessage(stderr, ex);
         return 1;
     }
 }

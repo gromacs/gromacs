@@ -39,13 +39,12 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPWRITER_H
 #define GMX_COMMANDLINE_CMDLINEHELPWRITER_H
 
-#include <cstdio>
-
 #include "../utility/common.h"
 
 namespace gmx
 {
 
+class HelpWriterContext;
 class Options;
 
 /*! \brief
@@ -73,13 +72,26 @@ class CommandLineHelpWriter
          * Sets whether long descriptions for sections are shown in the help.
          */
         CommandLineHelpWriter &setShowDescriptions(bool bShow);
+        /*! \brief
+         * Sets time unit to show in descriptions.
+         *
+         * \param[in] timeUnit  Time unit to show in descriptions.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * For each time parameter, any "%t" in the description is replaced
+         * with \p timeunit.
+         * If not called, uses a default "ps".
+         */
+        CommandLineHelpWriter &setTimeUnitString(const char *timeUnit);
 
         /*! \brief
          * Writes the help.
          *
-         * \param[in] fp  File to write the help to.
+         * \param[in] context  Context object for writing the help.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
          */
-        void writeHelp(FILE *fp);
+        void writeHelp(const HelpWriterContext &context);
 
     private:
         class Impl;

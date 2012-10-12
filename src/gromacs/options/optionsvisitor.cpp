@@ -38,7 +38,6 @@
 #include "gromacs/options/optionsvisitor.h"
 
 #include "gromacs/options/abstractoptionstorage.h"
-#include "gromacs/options/optioninfo.h"
 #include "gromacs/options/options.h"
 
 #include "options-impl.h"
@@ -47,88 +46,18 @@ namespace gmx
 {
 
 /********************************************************************
- * OptionInfo
- */
-
-/*! \cond libapi */
-OptionInfo::OptionInfo(AbstractOptionStorage *option)
-    : _option(*option)
-{
-}
-//! \endcond
-
-OptionInfo::~OptionInfo()
-{
-}
-
-bool OptionInfo::isSet() const
-{
-    return _option.isSet();
-}
-
-bool OptionInfo::isHidden() const
-{
-    return _option.isHidden();
-}
-
-bool OptionInfo::isRequired() const
-{
-    return _option.isRequired();
-}
-
-const std::string &OptionInfo::name() const
-{
-    return _option.name();
-}
-
-const std::string &OptionInfo::description() const
-{
-    return _option.description();
-}
-
-const char *OptionInfo::type() const
-{
-    return _option.typeString();
-}
-
-int OptionInfo::valueCount() const
-{
-    return _option.valueCount();
-}
-
-std::string OptionInfo::formatValue(int i) const
-{
-    return _option.formatValue(i);
-}
-
-std::string OptionInfo::formatValues() const
-{
-    std::string result;
-    int count = valueCount();
-    for (int i = 0; i < count; ++i)
-    {
-        if (i != 0)
-        {
-            result.append(" ");
-        }
-        result.append(formatValue(i));
-    }
-    return result;
-}
-
-/********************************************************************
  * OptionsIterator
  */
 
 OptionsIterator::OptionsIterator(const Options &options)
-    : _options(options)
+    : options_(options)
 {
 }
 
 void OptionsIterator::acceptSubSections(OptionsVisitor *visitor) const
 {
     const Options::Impl::SubSectionList &subSectionList =
-        _options._impl->_subSections;
+        options_.impl_->subSections_;
     Options::Impl::SubSectionList::const_iterator i;
     for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
     {
@@ -139,7 +68,7 @@ void OptionsIterator::acceptSubSections(OptionsVisitor *visitor) const
 void OptionsIterator::acceptOptions(OptionsVisitor *visitor) const
 {
     const Options::Impl::OptionList &optionList =
-        _options._impl->_options;
+        options_.impl_->options_;
     Options::Impl::OptionList::const_iterator i;
     for (i = optionList.begin(); i != optionList.end(); ++i)
     {
@@ -155,14 +84,14 @@ void OptionsIterator::acceptOptions(OptionsVisitor *visitor) const
  */
 
 OptionsModifyingIterator::OptionsModifyingIterator(Options *options)
-    : _options(*options)
+    : options_(*options)
 {
 }
 
 void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visitor) const
 {
     const Options::Impl::SubSectionList &subSectionList =
-        _options._impl->_subSections;
+        options_.impl_->subSections_;
     Options::Impl::SubSectionList::const_iterator i;
     for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
     {
@@ -173,7 +102,7 @@ void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visito
 void OptionsModifyingIterator::acceptOptions(OptionsModifyingVisitor *visitor) const
 {
     const Options::Impl::OptionList &optionList =
-        _options._impl->_options;
+        options_.impl_->options_;
     Options::Impl::OptionList::const_iterator i;
     for (i = optionList.begin(); i != optionList.end(); ++i)
     {

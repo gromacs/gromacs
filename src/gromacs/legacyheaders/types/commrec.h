@@ -39,11 +39,13 @@
 #include <mpi.h>
 #else
 #ifdef GMX_THREAD_MPI
-#include "../tmpi.h"
+#include "../thread_mpi/tmpi.h"
+#include "../thread_mpi/mpi_bindings.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
 typedef void* MPI_Group;
+#define MPI_COMM_NULL NULL
 #endif
 #endif
 
@@ -282,11 +284,11 @@ typedef struct {
   mpi_in_place_buf_t *mpb;
 } t_commrec;
 
-#define MASTERNODE(cr)     ((cr)->nodeid == 0)
+#define MASTERNODE(cr)     (((cr)->nodeid == 0) || !PAR(cr))
   /* #define MASTERTHREAD(cr)   ((cr)->threadid == 0) */
   /* #define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr)) */
 #define MASTER(cr)         MASTERNODE(cr)
-#define SIMMASTER(cr)      (MASTER(cr) && ((cr)->duty & DUTY_PP))
+#define SIMMASTER(cr)      ((MASTER(cr) && ((cr)->duty & DUTY_PP)) || !PAR(cr))
 #define NODEPAR(cr)        ((cr)->nnodes > 1)
   /* #define THREADPAR(cr)      ((cr)->nthreads > 1) */
   /* #define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr)) */
@@ -294,7 +296,7 @@ typedef struct {
 #define RANK(cr,nodeid)    (nodeid)
 #define MASTERRANK(cr)     (0)
 
-#define DOMAINDECOMP(cr)   ((cr)->dd != NULL)
+#define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)

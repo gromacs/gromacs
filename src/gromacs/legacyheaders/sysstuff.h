@@ -36,25 +36,13 @@
 #ifndef _sysstuff_h
 #define _sysstuff_h
 
-
-#ifdef __cplusplus
-extern "C" { 
-#endif
-
 #ifndef _386_
 #include <stdlib.h>
 #endif
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
-#if ((!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64) || defined __CYGWIN__ || defined __CYGWIN32__)
-#  include <unistd.h>
-#endif
 #include <limits.h>
 #include <time.h>
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif	/* _sysstuff_h */

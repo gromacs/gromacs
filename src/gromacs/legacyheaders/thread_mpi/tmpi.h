@@ -35,8 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_H_
-#define _TMPI_H_
+#ifndef TMPI_TMPI_H_
+#define TMPI_TMPI_H_
 
 /** \file 
  *
@@ -936,7 +936,7 @@ int tMPI_Testany(int count, tMPI_Request *array_of_requests,
 /** Wait until some of several messages are transferred. Waits until at least
     one message is transferred.
    
-    \param[in]      count               The number of requests
+    \param[in]      incount             The number of requests
     \param[in,out]  array_of_requests   List of count requests obtained with
                                         tMPI_Isend()/tMPI_Irecv().
     \param[out]     outcount            Number of completed requests
@@ -952,7 +952,7 @@ int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
 
 /** Test whether some of several messages are transferred. 
 
-    \param[in]      count               The number of requests
+    \param[in]      incount             The number of requests
     \param[in,out]  array_of_requests   List of count requests obtained with
                                         tMPI_Isend()/tMPI_Irecv().
     \param[out]     outcount            Number of completed requests
@@ -1244,4 +1244,4 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 } /* closing extern "C" */
 #endif
 
-#endif /* _TMPI_H_ */
+#endif /* TMPI_TMPI_H_ */

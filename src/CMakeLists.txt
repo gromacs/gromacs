@@ -1,12 +1,18 @@
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmakein ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+include(../cmake/BuildManPages.cmake)
 if (BUILD_TESTING)
+    add_custom_target(tests)
+    if (GMX_BUILD_UNITTESTS)
+        add_subdirectory(external/gmock-1.6.0)
+    endif (GMX_BUILD_UNITTESTS)
     include(testutils/TestMacros.cmake)
-    add_subdirectory(testutils)
+    if (GMX_BUILD_UNITTESTS)
+        add_subdirectory(testutils)
+    endif (GMX_BUILD_UNITTESTS)
 endif (BUILD_TESTING)
 
 add_subdirectory(gromacs)
-add_subdirectory(kernel)
 add_subdirectory(programs)
 add_subdirectory(alexandria)
 

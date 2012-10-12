@@ -29,23 +29,32 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Functions for printing help for selections.
- *
- * This is an implementation header: there should be no need to use it outside
- * this directory.
+ * \brief
+ * Functions for initializing online help for selections.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifndef GMX_SELECTION_HELP_H
-#define GMX_SELECTION_HELP_H
+#ifndef GMX_SELECTION_SELHELP_H
+#define GMX_SELECTION_SELHELP_H
 
-#include <stdio.h>
+#include "../onlinehelp/helptopicinterface.h"
 
-struct gmx_sel_symtab_t;
+namespace gmx
+{
 
-/** Prints help for writing selections. */
-void
-_gmx_sel_print_help(FILE *fp, struct gmx_sel_symtab_t *symtab, const char *topic);
+/*! \cond internal */
+/*! \internal \brief
+ * Creates a help tree for selections.
+ *
+ * \throws   std::bad_alloc if out of memory.
+ * \returns  Root topic of the created selection tree.
+ *
+ * \ingroup module_selection
+ */
+HelpTopicPointer createSelectionHelpTopic();
+//! \endcond
+
+} // namespace gmx
 
 #endif

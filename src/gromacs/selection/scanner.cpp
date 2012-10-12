@@ -54,6 +54,7 @@ typedef int flex_int32_t;
 typedef unsigned char flex_uint8_t; 
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
+#endif /* ! C99 */
 
 /* Limits of integral types. */
 #ifndef INT8_MIN
@@ -83,8 +84,6 @@ typedef unsigned int flex_uint32_t;
 #ifndef UINT32_MAX
 #define UINT32_MAX             (4294967295U)
 #endif
-
-#endif /* ! C99 */
 
 #endif /* ! FLEXINT_H */
 
@@ -159,15 +158,7 @@ typedef void* yyscan_t;
 
 /* Size of default input buffer. */
 #ifndef YY_BUF_SIZE
-#ifdef __ia64__
-/* On IA-64, the buffer size is 16k, not 8k.
- * Moreover, YY_BUF_SIZE is 2*YY_READ_BUF_SIZE in the general case.
- * Ditto for the __ia64__ case accordingly.
- */
-#define YY_BUF_SIZE 32768
-#else
 #define YY_BUF_SIZE 16384
-#endif /* __ia64__ */
 #endif
 
 /* The state buf must be large enough to hold one state per character in the main buffer.
@@ -572,7 +563,7 @@ static yyconst flex_int16_t yy_chk[193] =
 
 
 
-#line 576 "scanner.cpp"
+#line 567 "scanner.cpp"
 
 #define INITIAL 0
 #define matchof 1
@@ -695,12 +686,7 @@ static int input (yyscan_t yyscanner );
 
 /* Amount of stuff to slurp up with each read. */
 #ifndef YY_READ_BUF_SIZE
-#ifdef __ia64__
-/* On IA-64, the buffer size is 16k, not 8k */
-#define YY_READ_BUF_SIZE 16384
-#else
 #define YY_READ_BUF_SIZE 8192
-#endif /* __ia64__ */
 #endif
 
 /* Copy whatever the last rule matched to the standard output. */
@@ -708,7 +694,7 @@ static int input (yyscan_t yyscanner );
 /* This used to be an fputs(), but since the string might contain NUL's,
  * we now use fwrite().
  */
-#define ECHO do { if (fwrite( yytext, yyleng, 1, yyout )) {} } while (0)
+#define ECHO fwrite( yytext, yyleng, 1, yyout )
 #endif
 
 /* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
@@ -828,6 +814,7 @@ YY_DECL
     else if (state->bCmdStart)
     {
         BEGIN(cmdstart);
+        state->bCmdStart = false;
     }
     else if (YYSTATE != help)
     {
@@ -835,7 +822,7 @@ YY_DECL
     }
 
 
-#line 839 "scanner.cpp"
+#line 826 "scanner.cpp"
 
 	if ( !yyg->yy_init )
 		{
@@ -916,38 +903,39 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 117 "scanner.l"
+#line 118 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 118 "scanner.l"
+#line 119 "scanner.l"
 { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 119 "scanner.l"
+#line 120 "scanner.l"
 { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 120 "scanner.l"
+#line 121 "scanner.l"
 { yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 122 "scanner.l"
+#line 123 "scanner.l"
 { _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 123 "scanner.l"
+#line 124 "scanner.l"
 {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
                         rtrim(state->pselstr);
+                        state->bCmdStart = true;
                         return CMD_SEP;
                     }
                     else
@@ -956,118 +944,123 @@ YY_RULE_SETUP
                     }
                 }
 	YY_BREAK
+case YY_STATE_EOF(cmdstart):
+#line 137 "scanner.l"
+{ state->bCmdStart = true; yyterminate(); }
+	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+case YY_STATE_EOF(matchof):
+case YY_STATE_EOF(matchbool):
+case YY_STATE_EOF(help):
+#line 138 "scanner.l"
+{ state->bCmdStart = true; return CMD_SEP; }
+	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 135 "scanner.l"
+#line 140 "scanner.l"
 { BEGIN(help); return HELP; }
 	YY_BREAK
 
 case 8:
 YY_RULE_SETUP
-#line 137 "scanner.l"
+#line 142 "scanner.l"
 
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 138 "scanner.l"
+#line 143 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 139 "scanner.l"
-{ return CMD_SEP; }
+#line 144 "scanner.l"
+{ state->bCmdStart = true; return CMD_SEP; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 140 "scanner.l"
+#line 145 "scanner.l"
 { return INVALID; }
 	YY_BREAK
 
 
 case 12:
 YY_RULE_SETUP
-#line 144 "scanner.l"
+#line 149 "scanner.l"
 { ADD_TOKEN; yylval->i = 1; return TOK_INT; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 145 "scanner.l"
+#line 150 "scanner.l"
 { ADD_TOKEN; yylval->i = 0; return TOK_INT; }
 	YY_BREAK
 
 case 14:
 YY_RULE_SETUP
-#line 147 "scanner.l"
+#line 152 "scanner.l"
 { ADD_TOKEN; return GROUP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 148 "scanner.l"
+#line 153 "scanner.l"
 { ADD_TOKEN; return TO; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 149 "scanner.l"
+#line 154 "scanner.l"
 { ADD_TOKEN; BEGIN(0); return OF; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 150 "scanner.l"
+#line 155 "scanner.l"
 { ADD_TOKEN; return AND; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 151 "scanner.l"
+#line 156 "scanner.l"
 { ADD_TOKEN; return OR; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 152 "scanner.l"
+#line 157 "scanner.l"
 { ADD_TOKEN; return XOR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 153 "scanner.l"
+#line 158 "scanner.l"
 { ADD_TOKEN; return NOT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 154 "scanner.l"
+#line 159 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 156 "scanner.l"
+#line 161 "scanner.l"
 { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 158 "scanner.l"
+#line 163 "scanner.l"
 { _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 159 "scanner.l"
+#line 164 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 160 "scanner.l"
+#line 165 "scanner.l"
 { ADD_TOKEN; return yytext[0]; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 161 "scanner.l"
+#line 166 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1065 "scanner.cpp"
-case YY_STATE_EOF(INITIAL):
-case YY_STATE_EOF(matchof):
-case YY_STATE_EOF(matchbool):
-case YY_STATE_EOF(cmdstart):
-case YY_STATE_EOF(help):
-	yyterminate();
+#line 1064 "scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1834,8 +1827,8 @@ YY_BUFFER_STATE _gmx_sel_yy_scan_string (yyconst char * yystr , yyscan_t yyscann
 
 /** Setup the input buffer state to scan the given bytes. The next call to _gmx_sel_yylex() will
  * scan from a @e copy of @a bytes.
- * @param yybytes the byte buffer to scan
- * @param _yybytes_len the number of bytes in the buffer pointed to by @a bytes.
+ * @param bytes the byte buffer to scan
+ * @param len the number of bytes in the buffer pointed to by @a bytes.
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
@@ -2217,4 +2210,4 @@ void _gmx_sel_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 161 "scanner.l"
+#line 166 "scanner.l"

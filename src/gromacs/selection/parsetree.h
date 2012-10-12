@@ -47,6 +47,8 @@
 #ifndef SELECTION_PARSETREE_H
 #define SELECTION_PARSETREE_H
 
+#include <exception>
+
 #include <types/simple.h>
 
 #include "gromacs/selection/selvalue.h"
@@ -110,6 +112,9 @@ typedef struct t_selexpr_param
 /** Error reporting function for the selection parser. */
 void
 _gmx_selparser_error(void *scanner, const char *fmt, ...);
+/** Handle exceptions caught within the Bison code. */
+bool
+_gmx_selparser_handle_exception(void *scanner, const std::exception &ex);
 
 /** Allocates and initializes a constant \c t_selexpr_value. */
 t_selexpr_value *
@@ -198,7 +203,7 @@ void
 _gmx_sel_handle_empty_cmd(void *scanner);
 /** Process help commands. */
 void
-_gmx_sel_handle_help_cmd(char *topic, void *scanner);
+_gmx_sel_handle_help_cmd(t_selexpr_value *topic, void *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */

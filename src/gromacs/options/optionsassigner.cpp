@@ -44,7 +44,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "optionsassigner-impl.h"
 #include "options-impl.h"
 
 namespace gmx
@@ -54,29 +53,70 @@ namespace gmx
  * OptionsAssigner::Impl
  */
 
-OptionsAssigner::Impl::Impl(Options *options)
-    : _options(*options), _flags(0), _currentOption(NULL),
-      _currentValueCount(0), _reverseBoolean(false)
+/*! \internal \brief
+ * Private implementation class for OptionsAssigner.
+ *
+ * \ingroup module_options
+ */
+class OptionsAssigner::Impl
 {
-    _sectionStack.push_back(&_options);
-}
+    public:
+        //! Sets the option object to assign to.
+        explicit Impl(Options *options);
 
-void OptionsAssigner::Impl::setFlag(OptionsAssigner::Impl::Flag flag, bool bSet)
+        //! Returns true if a subsection has been set.
+        bool inSubSection() const { return sectionStack_.size() > 1; }
+        //! Returns the Options object for the current section.
+        Options &currentSection() const { return *sectionStack_.back(); }
+        /*! \brief
+         * Finds an option by the given name.
+         *
+         * \param[in] name  Name of the option to look for.
+         * \returns Pointer to the found option, or NULL if none found.
+         *
+         * This function takes into account the flags specified, and may change
+         * the internal state of the assigner to match the option found.
+         * If no option is found, the internal state is not modified.
+         */
+        AbstractOptionStorage *findOption(const char *name);
+
+        //! Options object to assign to.
+        Options                &options_;
+        //! Recognize boolean option "name" also as "noname".
+        bool                    bAcceptBooleanNoPrefix_;
+        //! Look for options in all sections, not just the current one.
+        bool                    bNoStrictSectioning_;
+        /*! \brief
+         * List of (sub)sections being assigned to.
+         *
+         * The first element always points to \a options_.
+         */
+        std::vector<Options *>  sectionStack_;
+        //! Current option being assigned to, or NULL if none.
+        AbstractOptionStorage  *currentOption_;
+        /*! \brief
+         * Number of values assigned so far to the current option.
+         *
+         * Counts the number of attempted assignments, whether they have been
+         * successful or not.
+         */
+        int                     currentValueCount_;
+        //! If true, a "no" prefix was given for the current boolean option.
+        bool                    reverseBoolean_;
+};
+
+OptionsAssigner::Impl::Impl(Options *options)
+    : options_(*options), bAcceptBooleanNoPrefix_(false),
+      bNoStrictSectioning_(false), currentOption_(NULL),
+      currentValueCount_(0), reverseBoolean_(false)
 {
-    if (bSet)
-    {
-        _flags |= flag;
-    }
-    else
-    {
-        _flags &= ~flag;
-    }
+    sectionStack_.push_back(&options_);
 }
 
 AbstractOptionStorage *
 OptionsAssigner::Impl::findOption(const char *name)
 {
-    GMX_RELEASE_ASSERT(_currentOption == NULL,
+    GMX_RELEASE_ASSERT(currentOption_ == NULL,
                        "Cannot search for another option while processing one");
     AbstractOptionStorage *option = NULL;
     Options *section = NULL;
@@ -88,15 +128,15 @@ OptionsAssigner::Impl::findOption(const char *name)
     while (option == NULL && !searchList.empty())
     {
         section = searchList.front();
-        option = section->_impl->findOption(name);
-        if (option == NULL && hasFlag(efAcceptBooleanNoPrefix))
+        option = section->impl_->findOption(name);
+        if (option == NULL && bAcceptBooleanNoPrefix_)
         {
             if (name[0] == 'n' && name[1] == 'o')
             {
-                option = section->_impl->findOption(name + 2);
+                option = section->impl_->findOption(name + 2);
                 if (option != NULL && option->isBoolean())
                 {
-                    _reverseBoolean = true;
+                    reverseBoolean_ = true;
                 }
                 else
                 {
@@ -105,41 +145,41 @@ OptionsAssigner::Impl::findOption(const char *name)
             }
         }
         searchList.pop_front();
-        if (hasFlag(efNoStrictSectioning))
+        if (bNoStrictSectioning_)
         {
             Options::Impl::SubSectionList::const_iterator i;
-            for (i = section->_impl->_subSections.begin();
-                 i != section->_impl->_subSections.end(); ++i)
+            for (i = section->impl_->subSections_.begin();
+                 i != section->impl_->subSections_.end(); ++i)
             {
                 if (*i != oldRoot)
                 {
                     searchList.push_back(*i);
                 }
             }
-            if (searchList.empty() && root != &_options)
+            if (searchList.empty() && root != &options_)
             {
-                root = root->_impl->_parent;
+                root = root->impl_->parent_;
                 ++upcount;
                 searchList.push_back(root);
             }
         }
     }
-    if (hasFlag(efNoStrictSectioning) && option != NULL)
+    if (bNoStrictSectioning_ && option != NULL)
     {
         while (upcount > 0)
         {
-            _sectionStack.pop_back();
+            sectionStack_.pop_back();
             --upcount;
         }
         std::vector<Options *> sections;
         while (section != &currentSection())
         {
             sections.push_back(section);
-            section = section->_impl->_parent;
+            section = section->impl_->parent_;
         }
         while (!sections.empty())
         {
-            _sectionStack.push_back(sections.back());
+            sectionStack_.push_back(sections.back());
             sections.pop_back();
         }
     }
@@ -151,7 +191,7 @@ OptionsAssigner::Impl::findOption(const char *name)
  */
 
 OptionsAssigner::OptionsAssigner(Options *options)
-    : _impl(new Impl(options))
+    : impl_(new Impl(options))
 {
 }
 
@@ -159,74 +199,72 @@ OptionsAssigner::~OptionsAssigner()
 {
 }
 
-void OptionsAssigner::setAcceptBooleanNoPrefix(bool enabled)
+void OptionsAssigner::setAcceptBooleanNoPrefix(bool bEnabled)
 {
-    _impl->setFlag(Impl::efAcceptBooleanNoPrefix, enabled);
+    impl_->bAcceptBooleanNoPrefix_ = bEnabled;
 }
 
-void OptionsAssigner::setNoStrictSectioning(bool enabled)
+void OptionsAssigner::setNoStrictSectioning(bool bEnabled)
 {
-    _impl->setFlag(Impl::efNoStrictSectioning, enabled);
+    impl_->bNoStrictSectioning_ = bEnabled;
 }
 
 void OptionsAssigner::start()
 {
-    _impl->_options._impl->startSource();
+    impl_->options_.impl_->startSource();
 }
 
 void OptionsAssigner::startSubSection(const char *name)
 {
-    Options *section = _impl->currentSection()._impl->findSubSection(name);
+    Options *section = impl_->currentSection().impl_->findSubSection(name);
     if (section == NULL)
     {
         GMX_THROW(InvalidInputError("Unknown subsection"));
     }
-    _impl->_sectionStack.push_back(section);
+    impl_->sectionStack_.push_back(section);
 }
 
 void OptionsAssigner::startOption(const char *name)
 {
-    GMX_RELEASE_ASSERT(_impl->_currentOption == NULL, "finishOption() not called");
-    AbstractOptionStorage *option = _impl->findOption(name);
+    GMX_RELEASE_ASSERT(impl_->currentOption_ == NULL, "finishOption() not called");
+    AbstractOptionStorage *option = impl_->findOption(name);
     if (option == NULL)
     {
         GMX_THROW(InvalidInputError("Unknown option"));
     }
     option->startSet();
-    _impl->_currentOption = option;
-    _impl->_currentValueCount = 0;
+    impl_->currentOption_ = option;
+    impl_->currentValueCount_ = 0;
 }
 
 void OptionsAssigner::appendValue(const std::string &value)
 {
-    AbstractOptionStorage *option = _impl->_currentOption;
+    AbstractOptionStorage *option = impl_->currentOption_;
     GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
-    // Does not count correctly, but the actual count is not really used.
-    // TODO: Rename the variable to better reflect the usage.
-    ++_impl->_currentValueCount;
+    ++impl_->currentValueCount_;
     option->appendValue(value);
 }
 
 void OptionsAssigner::finishOption()
 {
-    AbstractOptionStorage *option = _impl->_currentOption;
+    AbstractOptionStorage *option = impl_->currentOption_;
     GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
     bool bBoolReverseValue = false;
     if (option->isBoolean())
     {
-        if (_impl->_currentValueCount == 0)
+        if (impl_->currentValueCount_ == 0)
         {
             // Should not throw, otherwise something is wrong.
             // TODO: Get rid of the hard-coded values.
-            option->appendValue(_impl->_reverseBoolean ? "0" : "1");
+            option->appendValue(impl_->reverseBoolean_ ? "0" : "1");
         }
-        else if (_impl->_reverseBoolean)
+        else if (impl_->reverseBoolean_)
         {
             bBoolReverseValue = true;
         }
     }
-    _impl->_currentOption = NULL;
-    _impl->_reverseBoolean = false;
+    impl_->currentOption_ = NULL;
+    impl_->reverseBoolean_ = false;
     option->finishSet();
     if (bBoolReverseValue)
     {
@@ -237,21 +275,21 @@ void OptionsAssigner::finishOption()
 void OptionsAssigner::finishSubSection()
 {
     // Should only be called if we are in a subsection.
-    GMX_RELEASE_ASSERT(_impl->inSubSection(), "startSubSection() not called");
-    _impl->_sectionStack.pop_back();
+    GMX_RELEASE_ASSERT(impl_->inSubSection(), "startSubSection() not called");
+    impl_->sectionStack_.pop_back();
 }
 
 void OptionsAssigner::finish()
 {
-    GMX_RELEASE_ASSERT(_impl->_currentOption == NULL, "finishOption() not called");
-    if (_impl->hasFlag(Impl::efNoStrictSectioning))
+    GMX_RELEASE_ASSERT(impl_->currentOption_ == NULL, "finishOption() not called");
+    if (impl_->bNoStrictSectioning_)
     {
-        while (_impl->inSubSection())
+        while (impl_->inSubSection())
         {
             finishSubSection();
         }
     }
-    GMX_RELEASE_ASSERT(!_impl->inSubSection(), "finishSubSection() not called");
+    GMX_RELEASE_ASSERT(!impl_->inSubSection(), "finishSubSection() not called");
 }
 
 } // namespace gmx

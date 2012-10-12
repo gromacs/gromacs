@@ -51,11 +51,12 @@
 #include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
-#include "gmx_matrix.h"
 #include "gmx_statistics.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
 #include "geminate.h"
+
+#include "gromacs/linearalgebra/matrix.h"
 
 /* must correspond to char *avbar_opt[] declared in main() */
 enum { avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR };

@@ -120,8 +120,10 @@ gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
     {
         fprintf(stderr,
                 "\n"
-                "WARNING: if there are broken molecules in the trajectory file,\n"
-                "         they can not be made whole without a run input file\n\n");
+                "WARNING: If there are molecules in the input trajectory file\n"
+                "         that are broken across periodic boundaries, they\n"
+                "         cannot be made whole (or treated as whole) without\n"
+                "         you providing a run input file.\n\n");
     }
 
     return gpbc;
@@ -141,6 +143,7 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
         {
             sfree(gpbc->graph);
         }
+        sfree(gpbc);
     }
 }
 
@@ -166,7 +169,7 @@ void gmx_rmpbc(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[])
     if (gr != NULL)
     {
         mk_mshift(stdout,gr,ePBC,box,x);
-        shift_x(gr,box,x,x);
+        shift_self(gr,box,x);
     }
 }
 
@@ -204,7 +207,7 @@ void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc,t_trxframe *fr)
         if (gr != NULL)
         {
             mk_mshift(stdout,gr,ePBC,fr->box,fr->x);
-            shift_x(gr,fr->box,fr->x,fr->x);
+            shift_self(gr,fr->box,fr->x);
         }
     }
 }

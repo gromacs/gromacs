@@ -75,7 +75,7 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const { return "bool"; }
-        virtual std::string formatValue(int i) const;
+        virtual std::string formatSingleValue(const bool &value) const;
 
     private:
         virtual void convertValue(const std::string &value);
@@ -97,8 +97,8 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const
-        { return hasFlag(efVector) ? "vector" : "int"; }
-        virtual std::string formatValue(int i) const;
+        { return isVector() ? "vector" : "int"; }
+        virtual std::string formatSingleValue(const int &value) const;
 
     private:
         virtual void convertValue(const std::string &value);
@@ -118,7 +118,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const;
-        virtual std::string formatValue(int i) const;
+        virtual std::string formatSingleValue(const double &value) const;
 
         //! \copydoc DoubleOptionInfo::isTime()
         bool isTime() const { return bTime_; }
@@ -144,17 +144,17 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
         explicit StringOptionStorage(const StringOption &settings);
 
-        virtual OptionInfo &optionInfo() { return _info; }
-        virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
-        virtual std::string formatValue(int i) const;
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual const char *typeString() const { return allowed_.empty() ? "string" : "enum"; }
+        virtual std::string formatSingleValue(const std::string &value) const;
 
     private:
         virtual void convertValue(const std::string &value);
         virtual void refreshValues();
 
-        StringOptionInfo        _info;
-        ValueList               _allowed;
-        int                    *_enumIndexStore;
+        StringOptionInfo        info_;
+        ValueList               allowed_;
+        int                    *enumIndexStore_;
 };
 
 /*!\}*/

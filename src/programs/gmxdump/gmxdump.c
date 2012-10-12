@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include "main.h"
 #include "macros.h"
 #include "futil.h"
@@ -58,8 +59,9 @@
 #include "gmxcpp.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
-#include "sparsematrix.h"
-#include "mtxio.h"
+
+#include "gromacs/linearalgebra/mtxio.h"
+#include "gromacs/linearalgebra/sparsematrix.h"
 
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
@@ -290,7 +292,7 @@ void list_ene(const char *fn)
     int        ndr;
     ener_file_t in;
     gmx_bool       bCont;
-    gmx_enxnm_t *enm;
+    gmx_enxnm_t *enm=NULL;
     t_enxframe *fr;
     int        i,j,nre,b;
     real       rav,minthird;
@@ -299,6 +301,7 @@ void list_ene(const char *fn)
     printf("gmxdump: %s\n",fn);
     in = open_enx(fn,"r");
     do_enxnms(in,&nre,&enm);
+    assert(enm);
 
     printf("energy components:\n");
     for(i=0; (i<nre); i++) 

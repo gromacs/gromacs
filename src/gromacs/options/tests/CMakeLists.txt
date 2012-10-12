@@ -1,4 +1,6 @@
-add_gtest_or_gmock_test(OptionsUnitTests options-test
-                        option.cpp optionsassigner.cpp
-                        timeunitmanager.cpp
-                        GMOCK_ONLY abstractoptionstorage.cpp)
+gmx_add_unit_test(OptionsUnitTests options-test
+                  abstractoptionstorage.cpp
+                  filenameoption.cpp
+                  option.cpp
+                  optionsassigner.cpp
+                  timeunitmanager.cpp)

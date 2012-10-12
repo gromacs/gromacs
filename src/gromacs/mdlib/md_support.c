@@ -37,11 +37,6 @@
 #include <config.h>
 #endif
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-/* _isnan() */
-#include <float.h>
-#endif
-
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -343,16 +338,16 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         
         debug_gmx();
-        
-        /* Calculate center of mass velocity if necessary, also parallellized */
-        if (bStopCM && !bRerunMD && bEner) 
-        {
-            calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
-                         state->x,state->v,vcm);
-        }
     }
 
-    if (bTemp || bPres || bEner || bConstrain) 
+    /* Calculate center of mass velocity if necessary, also parallellized */
+    if (bStopCM)
+    {
+        calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
+                     state->x,state->v,vcm);
+    }
+
+    if (bTemp || bStopCM || bPres || bEner || bConstrain)
     {
         if (!bGStat)
         {
@@ -375,7 +370,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             {
                 wallcycle_start(wcycle,ewcMoveE);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,constr,vcm,
+                            ir,ekind,constr,bStopCM ? vcm : NULL,
                             gs != NULL ? eglsNR : 0,gs_buf,
                             top_global,state,
                             *bSumEkinhOld,flags);
@@ -424,16 +419,17 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      mdatoms->massT,mdatoms->tmass,ekind->ekin);
     }
     
-    if (bEner) {
-        /* Do center of mass motion removal */
-        if (bStopCM && !bRerunMD) /* is this correct?  Does it get called too often with this logic? */
-        {
-            check_cm_grp(fplog,vcm,ir,1);
-            do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
-                          state->x,state->v,vcm);
-            inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
-        }
+    /* Do center of mass motion removal */
+    if (bStopCM)
+    {
+        check_cm_grp(fplog,vcm,ir,1);
+        do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
+                      state->x,state->v,vcm);
+        inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
+    }
 
+    if (bEner)
+    {
         /* Calculate the amplitude of the cosine velocity profile */
         ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
     }
@@ -459,7 +455,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     
     if (bEner || bPres || bConstrain) 
     {
-        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda,
+        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda[efptVDW],
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
     
@@ -467,10 +463,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     {
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
-        enerd->term[F_DVDL] += dvdlcorr;
-        if (fr->efep != efepNO) {
-            enerd->dvdl_lin += dvdlcorr;
-        }
+        enerd->term[F_DVDL_VDW] += dvdlcorr;
     }
     
     /* ########## Now pressure ############## */
@@ -483,8 +476,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
          * Use the box from last timestep since we already called update().
          */
         
-        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
-                                        (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres);
         
         /* Calculate long range corrections to pressure and energy */
         /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT], 
@@ -498,7 +490,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         *pcurr = enerd->term[F_PRES];
         /* calculate temperature using virial */
         enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
-        
+
     }    
 }
 
@@ -514,6 +506,85 @@ void check_nst_param(FILE *fplog,t_commrec *cr,
         *p = ((*p)/nst + 1)*nst;
         sprintf(buf,"NOTE: %s changes %s to %d\n",desc_nst,desc_p,*p);
         md_print_warning(cr,fplog,buf);
+    }
+}
+
+void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bRerunMD,
+                         t_trxframe *rerun_fr,t_state *state_global, t_state *state, double lam0[])
+/* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
+   requiring different logic. */
+{
+    real frac;
+    int i,fep_state=0;
+    if (bRerunMD)
+    {
+        if (rerun_fr->bLambda)
+        {
+            if (fepvals->delta_lambda!=0)
+            {
+                state_global->lambda[efptFEP] = rerun_fr->lambda;
+                for (i=0;i<efptNR;i++)
+                {
+                    if (i!= efptFEP)
+                    {
+                        state->lambda[i] = state_global->lambda[i];
+                    }
+                }
+            }
+            else
+            {
+                /* find out between which two value of lambda we should be */
+                frac = (step*fepvals->delta_lambda);
+                fep_state = floor(frac*fepvals->n_lambda);
+                /* interpolate between this state and the next */
+                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+                frac = (frac*fepvals->n_lambda)-fep_state;
+                for (i=0;i<efptNR;i++)
+                {
+                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                }
+            }
+        }
+        else if (rerun_fr->bFepState)
+        {
+            state_global->fep_state = rerun_fr->fep_state;
+            for (i=0;i<efptNR;i++)
+            {
+                state_global->lambda[i] = fepvals->all_lambda[i][fep_state];
+            }
+        }
+    }
+    else
+    {
+        if (fepvals->delta_lambda!=0)
+        {
+            /* find out between which two value of lambda we should be */
+            frac = (step*fepvals->delta_lambda);
+            if (fepvals->n_lambda > 0)
+            {
+                fep_state = floor(frac*fepvals->n_lambda);
+                /* interpolate between this state and the next */
+                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+                frac = (frac*fepvals->n_lambda)-fep_state;
+                for (i=0;i<efptNR;i++)
+                {
+                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                }
+            }
+            else
+            {
+                for (i=0;i<efptNR;i++)
+                {
+                    state_global->lambda[i] = lam0[i] + frac;
+                }
+            }
+        }
+    }
+    for (i=0;i<efptNR;i++)
+    {
+        state->lambda[i] = state_global->lambda[i];
     }
 }
 
@@ -688,7 +759,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
         if (ir->efep != efepNO)
         {
             check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                            "nstdhdl",&ir->nstdhdl);
+                            "nstdhdl",&ir->fepvals->nstdhdl);
         }
     }
 }

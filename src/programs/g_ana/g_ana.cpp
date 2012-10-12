@@ -35,41 +35,30 @@
  */
 #include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/trajectoryanalysis/analysismodule.h"
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 
 int
 main(int argc, char *argv[])
 {
-    bool bPrintCopyrightOnError = true;
-
+    const gmx::ProgramInfo &info =
+        gmx::ProgramInfo::init("g_ana", argc, argv);
+    // TODO: With the addition of ProgramInfo above, this no longer needs to
+    // be here, so think where it would best go.
+    CopyRight(stderr, argv[0]);
     try
     {
-        if (argc < 2)
-        {
-            GMX_THROW(gmx::InvalidInputError("Not enough command-line arguments"));
-        }
-
-        gmx::TrajectoryAnalysisModulePointer
-            mod(gmx::createTrajectoryAnalysisModule(argv[1]));
-        --argc;
-        ++argv;
-
-        gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
-#ifndef __clang_analyzer__  //Clang BUG: 11722
-        bPrintCopyrightOnError = false;
-#endif
-        return runner.run(argc, argv);
+        gmx::CommandLineModuleManager manager(info);
+        registerTrajectoryAnalysisModules(&manager);
+        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
+        return manager.run(argc, argv);
     }
     catch (const std::exception &ex)
     {
-        if (bPrintCopyrightOnError)
-        {
-            CopyRight(stderr, argv[0]);
-        }
-        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        gmx::printFatalErrorMessage(stderr, ex);
         return 1;
     }
 }

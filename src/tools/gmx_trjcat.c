@@ -57,7 +57,6 @@
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "wgms.h"
-#include "magic.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "xdrf.h"
@@ -685,7 +684,7 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     searchtime = last_frame_time;
                 }
-                if (xtc_seek_time(stfio,searchtime,fr.natoms))
+                if (xtc_seek_time(stfio,searchtime,fr.natoms,TRUE))
                 {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }
