@@ -3561,7 +3561,6 @@ static real calc_one_bond(FILE *fplog,int thread,
                      pbc,g,lambda[efptFTYPE],md,fcd,
                      global_atom_index);
                 v = 0;
-                dvdl[efptFTYPE] = 0;
             }
             else
             {
@@ -3571,7 +3570,6 @@ static real calc_one_bond(FILE *fplog,int thread,
                                                       pbc,g,lambda[efptFTYPE],&(dvdl[efptFTYPE]),
                                                       md,fcd,global_atom_index);
             }
-            enerd->dvdl_nonlin[efptFTYPE] += dvdl[efptFTYPE];
             if (bPrintSepPot)
             {
                 fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
@@ -3586,8 +3584,6 @@ static real calc_one_bond(FILE *fplog,int thread,
                                 (const rvec*)x,f,fshift,
                                 pbc,g,lambda,dvdl,
                                 md,fr,grpp,global_atom_index);
-            enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
-            enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
             
             if (bPrintSepPot)
             {
@@ -3806,6 +3802,13 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                              fr->red_nblock,1<<fr->red_ashift,
                              bCalcEnerVir,
                              force_flags & GMX_FORCE_DHDL);
+    }
+    if (force_flags & GMX_FORCE_DHDL)
+    {
+        for(i=0; i<efptNR; i++)
+        {
+            enerd->dvdl_nonlin[i] += dvdl[i];
+        }
     }
 
     /* Copy the sum of violations for the distance restraints from fcd */
