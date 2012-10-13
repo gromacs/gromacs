@@ -34,7 +34,7 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_onlinehelp
  */
 #ifndef GMX_ONLINEHELP_HELPFORMAT_H
 #define GMX_ONLINEHELP_HELPFORMAT_H

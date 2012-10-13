@@ -1,4 +1,16 @@
+/*! \libinternal \file
+ * \brief
+ * Include file for configuration macros from the build system.
+ *
+ * This header is not installed, so headers must not reference macros defined
+ * here.
+ *
+ * \inlibraryapi
+ */
 #include "gromacs/utility/gmx_header_config.h"
+
+/* TODO: For now, disable Doxygen warnings from here */
+/*! \cond */
 
 /* Disable warnings about double-to-float conversion accuracy loss on MSVC */
 #ifdef _MSC_VER
@@ -346,3 +358,5 @@
 #    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
 #  endif
 #endif
+
+/*! \endcond */
