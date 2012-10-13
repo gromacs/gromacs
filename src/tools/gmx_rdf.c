@@ -60,8 +60,6 @@
 #include "matio.h"
 #include "gmx_ana.h"
 #include "names.h"
-#include "sfactor.h"
-
 
 static void check_box_c(matrix box)
 {
@@ -654,15 +652,11 @@ int gmx_rdf(int argc,char *argv[])
     "Note that all atoms in the selected groups are used, also the ones",
     "that don't have Lennard-Jones interactions.[PAR]",
     "Option [TT]-cn[tt] produces the cumulative number RDF,",
-    "i.e. the average number of particles within a distance r.[PAR]",
-    "To bridge the gap between theory and experiment structure factors can",
-    "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid",
-    "spacing of which is determined by option [TT]-grid[tt]."
+    "i.e. the average number of particles within a distance r.[PAR]"
   };
   static gmx_bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20,ngroups=1;
-  static real start_q=0.0, end_q=60.0, energy=12.0;
 
   static const char *closet[]= { NULL, "no", "mol", "res", NULL };
   static const char *rdft[]={ NULL, "atom", "mol_com", "mol_cog", "res_com", "res_cog", NULL };
@@ -695,20 +689,11 @@ int gmx_rdf(int argc,char *argv[])
     { "-nlevel",   FALSE, etINT,  {&nlevel},
       "Number of different colors in the diffraction image" },
     { "-distance", FALSE, etREAL, {&distance},
-      "[HIDDEN]Distance (in cm) from the sample to the detector" },
-    { "-wave",     FALSE, etREAL, {&lambda},
-      "[HIDDEN]Wavelength for X-rays/Neutrons for scattering. 0.1 nm corresponds to roughly 12 keV" },
-    
-    {"-startq", FALSE, etREAL, {&start_q},
-     "Starting q (1/nm) "},
-    {"-endq", FALSE, etREAL, {&end_q},
-     "Ending q (1/nm)"},
-    {"-energy", FALSE, etREAL, {&energy},
-     "Energy of the incoming X-ray (keV) "}
+      "[HIDDEN]Distance (in cm) from the sample to the detector" }
   };
 #define NPA asize(pa)
   const char *fnTPS,*fnNDX,*fnDAT=NULL;
-  gmx_bool       bSQ,bRDF;
+  gmx_bool       bRDF;
   output_env_t oenv;
   
   t_filenm   fnm[] = {
@@ -717,23 +702,18 @@ int gmx_rdf(int argc,char *argv[])
     { efNDX, NULL,  NULL,     ffOPTRD },
     { efDAT, "-d",  "sfactor",     ffOPTRD },
     { efXVG, "-o",  "rdf",    ffOPTWR },
-    { efXVG, "-sq", "sq",     ffOPTWR },
     { efXVG, "-cn", "rdf_cn", ffOPTWR },
     { efXVG, "-hq", "hq",     ffOPTWR },
-/*    { efXPM, "-image", "sq",  ffOPTWR }*/
   };
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
+                    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
-  bSQ   = opt2bSet("-sq",NFILE,fnm);
-  if (bSQ)
-    please_cite(stdout,"Cromer1968a");
 
-  bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
-  if (bSQ || bCM || closet[0][0]!='n' || rdft[0][0]=='m' || rdft[0][6]=='m') {
+  bRDF  = opt2bSet("-o",NFILE,fnm);
+  if (bCM || closet[0][0]!='n' || rdft[0][0]=='m' || rdft[0][6]=='m') {
     fnTPS = ftp2fn(efTPS,NFILE,fnm);
     fnDAT = ftp2fn(efDAT,NFILE,fnm);
   } else {
@@ -751,23 +731,18 @@ int gmx_rdf(int argc,char *argv[])
     }
   }
 
-  if (!bSQ && (!fnTPS && !fnNDX))
-    gmx_fatal(FARGS,"Neither index file nor topology file specified\n"
-	      "Nothing to do!");
- 
-  if  (bSQ) 
-   do_scattering_intensity(fnTPS,fnNDX,opt2fn("-sq",NFILE,fnm),
-                           ftp2fn(efTRX,NFILE,fnm),fnDAT,
-		           start_q, end_q, energy, ngroups,oenv);
+  if (!fnTPS && !fnNDX)
+      gmx_fatal(FARGS,"Neither index file nor topology file specified\n"
+                "Nothing to do!");
 
-  if (bRDF) 
-    do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
-	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
-	   opt2fn_null("-hq",NFILE,fnm),
-	   bCM,closet[0],rdft,bXY,bPBC,bNormalize,cutoff,binwidth,fade,ngroups,
-           oenv);
+  if (bRDF)
+      do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
+             opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
+             opt2fn_null("-hq",NFILE,fnm),
+             bCM,closet[0],rdft,bXY,bPBC,bNormalize,cutoff,binwidth,fade,ngroups,
+             oenv);
 
   thanx(stderr);
-  
+
   return 0;
 }
