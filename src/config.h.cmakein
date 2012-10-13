@@ -1,3 +1,12 @@
+/*! \libinternal \file
+ * \brief
+ * Include file for configuration macros from the build system.
+ *
+ * This header is not installed, so headers must not reference macros defined
+ * here.
+ *
+ * \inlibraryapi
+ */
 #include "gromacs/utility/gmx_header_config.h"
 
 /* Disable warnings about double-to-float conversion accuracy loss on MSVC */

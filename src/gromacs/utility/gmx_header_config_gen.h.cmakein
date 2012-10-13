@@ -1,4 +1,5 @@
-/*! \brief
+/*! \file
+ * \brief
  * Generated include file for configuration macros that affect installed
  * headers.
  *
@@ -8,6 +9,9 @@
  *
  * gmx_header_config.h should be included instead of this file to allow usage
  * of relative install paths.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
  */
 
 /* Detect Cygwin */

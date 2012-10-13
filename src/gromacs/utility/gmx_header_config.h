@@ -1,4 +1,5 @@
-/*! \brief
+/*! \file
+ * \brief
  * Include file for configuration macros that affect installed headers.
  *
  * This include file (or rather, one that it includes) will configured by CMake
@@ -14,5 +15,8 @@
  * from CMake, but instead detected using #ifdefs (possible for some of the
  * macros currently used).
  * Even better would be to not have these defines at all.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
  */
 #include "gmx_header_config_gen.h"
