@@ -75,15 +75,19 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS})
         gmx_add_man_page(${TOOL})
     endif()
 
-    # Create custom install-xxxx targets, manage components and
-    # component groups, and trigger the installation
-    set(CPACK_COMPONENT_${TOOL}_DEPENDS libraries)
+    # Manage CPack component dependencies, and group membership; note that
+    # a component may belong to only one group
+    set(CPACK_COMPONENT_${TOOL}_DEPENDS libraries libraries-gmxana)
     set(CPACK_COMPONENT_${TOOL}_GROUP tools)
+
+    # Create custom install-xxxx target
     if (BUILD_SHARED_LIBS)
     # If shared libraries are used, we need to install the libraries in
     # addition to the tool binary.
        add_custom_target(install-${TOOL}
            COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries
+                   -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+           COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries-gmxana
                    -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
            COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${TOOL}
                    -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
@@ -95,6 +99,8 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS})
            COMMENT "Installing ${TOOL}")
     endif()
     add_dependencies(install-${TOOL} ${TOOL})
+
+    # Finally, trigger installation
     install(
       TARGETS ${TOOL}
       COMPONENT ${TOOL}
@@ -102,7 +108,7 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS})
       )
 endforeach()
 
-install(TARGETS gmxana DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+install(TARGETS gmxana DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries-gmxana)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmxana.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc
