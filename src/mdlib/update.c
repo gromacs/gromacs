@@ -1774,7 +1774,7 @@ void update_coords(FILE         *fplog,
         nth = gmx_omp_nthreads_get(emntUpdate);
     }
 
-# pragma omp parallel for num_threads(nth) schedule(static)
+# pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
     for(th=0; th<nth; th++)
     {
         int start_th,end_th;
