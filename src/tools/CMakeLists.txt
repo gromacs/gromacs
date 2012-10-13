@@ -29,7 +29,7 @@ add_library(gmxana
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
             gmx_pme_error.c gmx_options.c   gmx_dos.c
             gmx_hydorder.c  gmx_densorder.c powerspect.c    dens_filter.c
-            binsearch.c     gmx_dyecoupl.c
+            binsearch.c     gmx_dyecoupl.c  gmx_saxs.c
             )
 
 
@@ -54,7 +54,7 @@ set(GMX_TOOLS_PROGRAMS
     g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
     g_pme_error g_rmsdist g_rotmat g_options
-    g_dos    g_hydorder  g_densorder g_dyecoupl g_sans
+    g_dos    g_hydorder  g_densorder g_dyecoupl g_sans g_saxs
     )
 
 set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
