@@ -80,6 +80,7 @@ g_rdf|calculates radial distribution functions
 g_rotacf|calculates the rotational correlation function for molecules
 g_rotmat|plots the rotation matrix for fitting to a reference structure
 g_sans|computes the small angle neutron scattering spectra
+g_saxs|computes the small angle X-Ray scattering spectra
 g_traj|plots x, v, f, box, temperature and rotational energy
 g_vanhove|calculates Van Hove displacement functions
 END
