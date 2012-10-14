@@ -143,7 +143,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual void processSetValues(ValueList *values)
         {
         }
-        /*! \copydoc AbstractOptionStorage::processSet()
+        /*! \copydoc gmx::AbstractOptionStorage::processSet()
          *
          * OptionStorageTemplate implements transaction support for a set of
          * values in this method (see the class description), and provides a
@@ -153,7 +153,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * necessary.
          */
         virtual void processSet();
-        /*! \copydoc AbstractOptionStorage::processAll()
+        /*! \copydoc gmx::AbstractOptionStorage::processAll()
          *
          * The implementation in OptionStorageTemplate does nothing.
          */

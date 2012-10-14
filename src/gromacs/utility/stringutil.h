@@ -395,7 +395,7 @@ class TextLineWrapper
          * space.
          *
          * To iterate over lines in a string, use the following code:
-         * \code
+\code
 gmx::TextLineWrapper wrapper;
 // <set desired wrapping settings>
 size_t lineStart = 0;
@@ -408,7 +408,7 @@ while (lineStart < length)
     lineStart = nextLineStart;
 }
 return result;
-         * \endcode
+\endcode
          *
          * Does not throw.
          */
