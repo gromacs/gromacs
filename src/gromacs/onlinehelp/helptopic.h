@@ -164,7 +164,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
         }
 
     protected:
-        //! \copydoc AbstractSimpleHelpTopic::helpText()
+        //! \copydoc gmx::AbstractSimpleHelpTopic::helpText()
         virtual std::string helpText() const = 0;
 
         /*! \brief

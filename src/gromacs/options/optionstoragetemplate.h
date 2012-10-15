@@ -118,7 +118,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
 
 
         virtual void clearSet();
-        /*! \copydoc AbstractOptionStorage::convertValue()
+        /*! \copydoc gmx::AbstractOptionStorage::convertValue()
          *
          * Derived classes should call addValue() after they have converted
          * \p value to the storage type.  It is allowed to call addValue()

@@ -60,6 +60,7 @@ using gmx::test::CommandLine;
  * Tests for gmx::analysismodules::Select.
  */
 
+//! Test fixture for the select analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Select>
         SelectModuleTest;
 

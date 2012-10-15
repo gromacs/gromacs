@@ -55,11 +55,12 @@ namespace
  * Tests for gmx::AnalysisDataAverageModule.
  */
 
+//! Test fixture for gmx::AnalysisDataAverageModule.
 typedef gmx::test::AnalysisDataTestFixture AverageModuleTest;
 
-// Input data for the tests below.
 using gmx::test::END_OF_FRAME;
-static const real inputdata[] = {
+//! Input data for gmx::AnalysisDataAverageModule tests.
+const real inputdata[] = {
     1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
     3.0,  2.0, 0.0, 0.0, END_OF_FRAME

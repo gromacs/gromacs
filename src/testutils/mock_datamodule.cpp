@@ -215,6 +215,12 @@ MockAnalysisDataModule::Impl::finishReferenceFrame(
 namespace
 {
 
+/*! \brief
+ * Helper function for checking the data frame header against static data.
+ *
+ * \param[in] header    Frame header to check.
+ * \param[in] refFrame  Data to check against.
+ */
 void checkHeader(const AnalysisDataFrameHeader &header,
                  const AnalysisDataTestInputFrame &refFrame)
 {
@@ -223,6 +229,13 @@ void checkHeader(const AnalysisDataFrameHeader &header,
     EXPECT_FLOAT_EQ(refFrame.dx(), header.dx());
 }
 
+/*! \brief
+ * Helper function for checking a point set against static data.
+ *
+ * \param[in] points       Point set to check.
+ * \param[in] refPoints    Data to check against.
+ * \param[in] columnOffset Offset of first column of \p points in \p refPoints.
+ */
 void checkPoints(const AnalysisDataPointSetRef &points,
                  const AnalysisDataTestInputPointSet &refPoints,
                  int columnOffset)
@@ -236,6 +249,12 @@ void checkPoints(const AnalysisDataPointSetRef &points,
     }
 }
 
+/*! \brief
+ * Helper function for checking a full frame against static data.
+ *
+ * \param[in] frame     Frame to check.
+ * \param[in] refFrame  Data to check against.
+ */
 void checkFrame(const AnalysisDataFrameRef &frame,
                 const AnalysisDataTestInputFrame &refFrame)
 {

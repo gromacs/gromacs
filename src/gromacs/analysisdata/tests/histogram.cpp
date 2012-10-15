@@ -141,12 +141,13 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithRoundedRange)
  * Tests for gmx::AnalysisDataSimpleHistogramModule.
  */
 
+//! Test fixture for gmx::AnalysisDataSimpleHistogramModule.
 typedef gmx::test::AnalysisDataTestFixture SimpleHistogramModuleTest;
 
-// Input data for the tests below.
 using gmx::test::END_OF_FRAME;
 using gmx::test::MPSTOP;
-static const real simpleinputdata[] = {
+//! Input data for gmx::AnalysisDataSimpleHistogramModule tests.
+const real simpleinputdata[] = {
     1.0,  0.7, MPSTOP, 1.1, MPSTOP, 2.3, MPSTOP, 2.9, END_OF_FRAME,
     2.0,  1.3, MPSTOP, 2.2, END_OF_FRAME,
     3.0,  3.3, MPSTOP, 1.2, MPSTOP, 1.3, END_OF_FRAME
@@ -198,10 +199,11 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectlyWithAll)
  * Tests for gmx::AnalysisDataWeightedHistogramModule.
  */
 
+//! Test fixture for gmx::AnalysisDataWeightedHistogramModule.
 typedef gmx::test::AnalysisDataTestFixture WeightedHistogramModuleTest;
 
-// Input data for the tests below (both weighted and bin average modules).
-static const real weightedinputdata[] = {
+//! Input data for both weighted histogram and bin average module tests.
+const real weightedinputdata[] = {
     1.0,  0.7, 0.5, MPSTOP, 1.1, 1.0, MPSTOP, 2.3, 1.0, MPSTOP, 2.9, 2.0, END_OF_FRAME,
     2.0,  1.3, 1.0, MPSTOP, 2.2, 3.0, END_OF_FRAME,
     3.0,  3.3, 0.5, MPSTOP, 1.2, 2.0, MPSTOP, 1.3, 1.0, END_OF_FRAME
@@ -253,6 +255,7 @@ TEST_F(WeightedHistogramModuleTest, ComputesCorrectlyWithAll)
  * Tests for gmx::AnalysisDataBinAverageModule.
  */
 
+//! Test fixture for gmx::AnalysisDataBinAverageModule.
 typedef gmx::test::AnalysisDataTestFixture BinAverageModuleTest;
 
 TEST_F(BinAverageModuleTest, ComputesCorrectly)
@@ -298,10 +301,11 @@ TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
  * corresponding facilities in gmx::test::AnalysisDataTestFixture.
  */
 
+//! Test fixture for gmx::AbstractAverageHistogram.
 typedef gmx::test::AnalysisDataTestFixture AbstractAverageHistogramTest;
 
-// Input data for average histogram tests.
-static const real averageinputdata[] = {
+//! Input data for gmx::AbstractAverageHistogram tests.
+const real averageinputdata[] = {
     1.0, 2.0, 1.0, END_OF_FRAME,
     1.5, 1.0, 1.0, END_OF_FRAME,
     2.0, 3.0, 2.0, END_OF_FRAME,
@@ -321,6 +325,7 @@ class MockAverageHistogram : public gmx::AbstractAverageHistogram
 {
     public:
         MockAverageHistogram() {}
+        //! Creates a histogram module with defined bin parameters.
         explicit MockAverageHistogram(const gmx::AnalysisHistogramSettings &settings)
             : AbstractAverageHistogram(settings)
         {

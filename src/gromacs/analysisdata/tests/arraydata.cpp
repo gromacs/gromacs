@@ -53,10 +53,12 @@ namespace
  * Tests for gmx::AnalysisArrayData.
  */
 
+//! Test fixture for gmx::AnalysisArrayData.
 typedef gmx::test::AnalysisDataTestFixture AnalysisArrayDataTest;
 
 using gmx::test::END_OF_FRAME;
-static const real inputdata[] = {
+//! Input data for gmx::AnalysisArrayData tests.
+const real inputdata[] = {
     1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
     3.0,  2.0, 0.0, 0.0, END_OF_FRAME,
