@@ -85,6 +85,11 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
 
         //! Sets the file name to write the index file to.
         void setFileName(const std::string &fnm);
+        /*! \brief
+         * Adds information about a group to be printed.
+         *
+         * Must be called for each group present in the input data.
+         */
         void addGroup(const std::string &name, bool bDynamic);
 
         virtual int flags() const;
@@ -189,6 +194,8 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
     if (points.firstColumn() == 0)
     {
         ++currentGroup_;
+        GMX_RELEASE_ASSERT(currentGroup_ < static_cast<int>(groups_.size()),
+                           "Too few groups initialized");
         if (bFirstFrame || groups_[currentGroup_].bDynamic)
         {
             if (!bFirstFrame || currentGroup_ > 0)

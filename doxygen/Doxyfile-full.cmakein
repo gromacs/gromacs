@@ -8,6 +8,7 @@ ENABLED_SECTIONS       = libapi internal
 INTERNAL_DOCS          = YES
 EXTRACT_STATIC         = YES
 EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = YES
 HIDE_UNDOC_CLASSES     = YES
 WARN_LOGFILE           = doxygen-full.log
 HTML_OUTPUT            = html-full

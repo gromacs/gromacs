@@ -131,6 +131,16 @@ std::string concatenateStrings(const char *const *sarray, size_t count)
 namespace
 {
 
+/*! \brief
+ * Common implementation for string replacement functions.
+ *
+ * \param[in] input  Input string.
+ * \param[in] from   String to find.
+ * \param[in] to     String to use to replace \p from.
+ * \param[in] bWholeWords  Whether to only consider matches to whole words.
+ * \returns   \p input with all occurrences of \p from replaced with \p to.
+ * \throws    std::bad_alloc if out of memory.
+ */
 std::string
 replaceInternal(const std::string &input, const char *from, const char *to,
                 bool bWholeWords)

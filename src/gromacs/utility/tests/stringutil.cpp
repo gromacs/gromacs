@@ -114,6 +114,7 @@ TEST(FormatStringTest, HandlesLongStrings)
  * Tests for concatenateStrings()
  */
 
+//! Test fixture for gmx::concatenateStrings().
 typedef gmx::test::StringTestBase ConcatenateStringsTest;
 
 TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
@@ -190,6 +191,7 @@ const char g_wrapTextLongWord[]
 //! Test string for wrapping with extra whitespace.
 const char g_wrapTextWhitespace[] = " A quick brown   fox jumps  \n over the lazy dog";
 
+//! Test fixture for gmx::TextLineWrapper.
 typedef gmx::test::StringTestBase TextLineWrapperTest;
 
 TEST_F(TextLineWrapperTest, HandlesEmptyStrings)

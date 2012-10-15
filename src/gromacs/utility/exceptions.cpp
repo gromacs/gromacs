@@ -217,6 +217,16 @@ int NotImplementedError::errorCode() const
 namespace
 {
 
+/*! \brief
+ * Prints error information for an exception object.
+ *
+ * \param[in] fp      File to write the information out to (typically stderr).
+ * \param[in] ex      Exception object to print.
+ * \param[in] indent  Indentation for the information.
+ *
+ * If the exception contains nested exceptions, information from them is
+ * recursively printed.
+ */
 void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
 {
     const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);

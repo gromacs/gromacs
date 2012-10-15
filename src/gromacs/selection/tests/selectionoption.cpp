@@ -86,6 +86,7 @@ void SelectionOptionTestBase::setManager()
  * Tests for SelectionOption
  */
 
+//! Test fixture for gmx::SelectionOption.
 typedef SelectionOptionTestBase SelectionOptionTest;
 
 TEST_F(SelectionOptionTest, ParsesSimpleSelection)
