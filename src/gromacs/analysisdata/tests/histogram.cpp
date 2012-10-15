@@ -144,14 +144,12 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithRoundedRange)
 typedef gmx::test::AnalysisDataTestFixture SimpleHistogramModuleTest;
 
 // Input data for the tests below.
-using gmx::test::END_OF_DATA;
 using gmx::test::END_OF_FRAME;
 using gmx::test::MPSTOP;
 static const real simpleinputdata[] = {
     1.0,  0.7, MPSTOP, 1.1, MPSTOP, 2.3, MPSTOP, 2.9, END_OF_FRAME,
     2.0,  1.3, MPSTOP, 2.2, END_OF_FRAME,
-    3.0,  3.3, MPSTOP, 1.2, MPSTOP, 1.3, END_OF_FRAME,
-    END_OF_DATA
+    3.0,  3.3, MPSTOP, 1.2, MPSTOP, 1.3, END_OF_FRAME
 };
 
 TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
@@ -206,8 +204,7 @@ typedef gmx::test::AnalysisDataTestFixture WeightedHistogramModuleTest;
 static const real weightedinputdata[] = {
     1.0,  0.7, 0.5, MPSTOP, 1.1, 1.0, MPSTOP, 2.3, 1.0, MPSTOP, 2.9, 2.0, END_OF_FRAME,
     2.0,  1.3, 1.0, MPSTOP, 2.2, 3.0, END_OF_FRAME,
-    3.0,  3.3, 0.5, MPSTOP, 1.2, 2.0, MPSTOP, 1.3, 1.0, END_OF_FRAME,
-    END_OF_DATA
+    3.0,  3.3, 0.5, MPSTOP, 1.2, 2.0, MPSTOP, 1.3, 1.0, END_OF_FRAME
 };
 
 TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
@@ -311,8 +308,7 @@ static const real averageinputdata[] = {
     2.5, 4.0, 2.0, END_OF_FRAME,
     3.0, 2.0, 1.0, END_OF_FRAME,
     3.5, 0.0, 3.0, END_OF_FRAME,
-    4.0, 1.0, 3.0, END_OF_FRAME,
-    END_OF_DATA
+    4.0, 1.0, 3.0, END_OF_FRAME
 };
 
 /*! \internal \brief

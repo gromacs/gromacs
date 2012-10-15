@@ -77,36 +77,38 @@ AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(int index, real x)
  * AnalysisDataTestInput
  */
 
-AnalysisDataTestInput::AnalysisDataTestInput(const real *data)
-    : columnCount_(0), bMultipoint_(false)
+void AnalysisDataTestInput::initFromArray(const real *data, size_t count)
 {
     size_t columns = 0;
-    const real *dataptr = data;
 
-    while (*dataptr != END_OF_DATA)
+    for (size_t i = 0; i < count; ++i)
     {
-        frames_.push_back(AnalysisDataTestInputFrame(frames_.size(), *dataptr));
-        AnalysisDataTestInputFrame &frame = frames_.back();
-        GMX_RELEASE_ASSERT(*dataptr != END_OF_FRAME && *dataptr != MPSTOP,
-                           "Empty data frame");
-        while (*dataptr != END_OF_FRAME)
+        if (data[i] == MPSTOP)
         {
-            ++dataptr;
+            bMultipoint_ = true;
+            break;
+        }
+    }
+    for (size_t i = 0; i < count; )
+    {
+        frames_.push_back(AnalysisDataTestInputFrame(frames_.size(), data[i]));
+        AnalysisDataTestInputFrame &frame = frames_.back();
+        GMX_RELEASE_ASSERT(data[i] != END_OF_FRAME && data[i] != MPSTOP,
+                           "Empty data frame");
+        while (data[i] != END_OF_FRAME)
+        {
+            ++i;
             frame.points_.push_back(AnalysisDataTestInputPointSet());
             AnalysisDataTestInputPointSet &points = frame.points_.back();
-            while (*dataptr != MPSTOP && *dataptr != END_OF_FRAME)
+            while (data[i] != MPSTOP && data[i] != END_OF_FRAME)
             {
-                GMX_RELEASE_ASSERT(*dataptr != END_OF_DATA,
-                                   "Premature end of data marker");
-                points.y_.push_back(*dataptr);
-                ++dataptr;
+                GMX_RELEASE_ASSERT(i < count,
+                                   "Premature end of data");
+                points.y_.push_back(data[i]);
+                ++i;
             }
             size_t frameColumns = points.y_.size();
             GMX_RELEASE_ASSERT(frameColumns > 0U, "Empty data point set");
-            if (*dataptr == MPSTOP)
-            {
-                bMultipoint_ = true;
-            }
             GMX_RELEASE_ASSERT(!(!bMultipoint_ && columns > 0U && columns != frameColumns),
                                "Different frames have different number of columns");
             if (columns < frameColumns)
@@ -114,7 +116,7 @@ AnalysisDataTestInput::AnalysisDataTestInput(const real *data)
                 columns = frameColumns;
             }
         }
-        ++dataptr;
+        ++i;
     }
     GMX_RELEASE_ASSERT(frames_.size() > 0U, "Empty data");
     columnCount_ = columns;

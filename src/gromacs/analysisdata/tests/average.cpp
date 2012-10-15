@@ -58,13 +58,11 @@ namespace
 typedef gmx::test::AnalysisDataTestFixture AverageModuleTest;
 
 // Input data for the tests below.
-using gmx::test::END_OF_DATA;
 using gmx::test::END_OF_FRAME;
 static const real inputdata[] = {
     1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, END_OF_FRAME,
-    END_OF_DATA
+    3.0,  2.0, 0.0, 0.0, END_OF_FRAME
 };
 
 TEST_F(AverageModuleTest, BasicTest)

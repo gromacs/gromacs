@@ -124,14 +124,12 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
 typedef gmx::test::AnalysisDataTestFixture AnalysisDataTest;
 
 // Input data for the tests below.
-using gmx::test::END_OF_DATA;
 using gmx::test::END_OF_FRAME;
 using gmx::test::MPSTOP;
 static const real inputdata[] = {
     1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, END_OF_FRAME,
-    END_OF_DATA
+    3.0,  2.0, 0.0, 0.0, END_OF_FRAME
 };
 
 /*
@@ -236,8 +234,7 @@ TEST_F(AnalysisDataTest, LimitedStorageWorks)
 static const real multipointinputdata[] = {
     1.0,  0.0, 1.0, 2.0, MPSTOP, 1.1, 2.1, 1.1, MPSTOP, 2.2, 1.2, 0.2, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, MPSTOP, 2.1, 1.1, 0.1, MPSTOP, 1.2, 0.2, 1.2, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, MPSTOP, 3.1, 2.1, 1.1, MPSTOP, 0.2, 2.2, 1.2, END_OF_FRAME,
-    END_OF_DATA
+    3.0,  2.0, 0.0, 0.0, MPSTOP, 3.1, 2.1, 1.1, MPSTOP, 0.2, 2.2, 1.2, END_OF_FRAME
 };
 
 /*
