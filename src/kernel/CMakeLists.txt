@@ -37,7 +37,7 @@ set(GMXPREPROCESS_SOURCES
 
 set(MDRUN_SOURCES 
     gctio.c    ionize.c runner.c
-    do_gct.c     repl_ex.c  xutils.c pme_switch.c
+    do_gct.c     repl_ex.c  xutils.c pme_loadbal.c
     md.c         mdrun.c    genalg.c membed.c
     md_openmm.c)
 

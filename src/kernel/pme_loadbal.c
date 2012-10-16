@@ -45,7 +45,7 @@
 #include "domdec.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "force.h"
-#include "pme_switch.h"
+#include "pme_loadbal.h"
 
 typedef struct {
     real rcut;
@@ -73,7 +73,7 @@ typedef struct {
  */
 #define PMES_ACCEL_TOL 1.02
 
-typedef struct pme_switch {
+typedef struct pme_loadbal {
     int  nstage;        /* the current maximum number of stages */
 
     real cut_spacing;   /* the minimum cutoff / PME grid spacing ratio */
@@ -87,14 +87,14 @@ typedef struct pme_switch {
     int end;            /* end   of setup range to consider in stage>0 */
 
     int stage;          /* the current stage */
-} t_pme_switch;
+} t_pme_loadbal;
 
-void switch_pme_init(pme_switch_t *pmes_p,
-                     const t_inputrec *ir,matrix box,
-                     const interaction_const_t *ic,
-                     gmx_pme_t pmedata)
+void pme_loadbal_init(pme_loadbal_t *pmes_p,
+                      const t_inputrec *ir,matrix box,
+                      const interaction_const_t *ic,
+                      gmx_pme_t pmedata)
 {
-    pme_switch_t pmes;
+    pme_loadbal_t pmes;
     real spm,sp;
     int  d;
 
@@ -152,7 +152,7 @@ void switch_pme_init(pme_switch_t *pmes_p,
     *pmes_p = pmes;
 }
 
-static gmx_bool switch_pme_increase_cutoff(pme_switch_t pmes,int pme_order)
+static gmx_bool pme_loadbal_increase_cutoff(pme_loadbal_t pmes,int pme_order)
 {
     pme_setup_t *set;
     real fac,sp;
@@ -207,7 +207,7 @@ static gmx_bool switch_pme_increase_cutoff(pme_switch_t pmes,int pme_order)
 
     if (debug)
     {
-        fprintf(debug,"PME switch grid %d %d %d, cutoff %f\n",
+        fprintf(debug,"PME loadbal: grid %d %d %d, cutoff %f\n",
                 set->grid[XX],set->grid[YY],set->grid[ZZ],set->rcut);
     }
 
@@ -244,7 +244,7 @@ static void print_grid(FILE *fp_err,FILE *fp_log,
     }
 }
 
-static void switch_to_stage1(pme_switch_t pmes)
+static void switch_to_stage1(pme_loadbal_t pmes)
 {
     pmes->start = 0;
     while (pmes->start+1 < pmes->n &&
@@ -273,17 +273,17 @@ static void switch_to_stage1(pme_switch_t pmes)
     pmes->cur = pmes->start - 1;
 }
 
-gmx_bool switch_pme(pme_switch_t pmes,
-                    t_commrec *cr,
-                    FILE *fp_err,
-                    FILE *fp_log,
-                    t_inputrec *ir,
-                    t_state *state,
-                    double cycles,
-                    interaction_const_t *ic,
-                    nonbonded_verlet_t *nbv,
-                    gmx_pme_t *pmedata,
-                    int step)
+gmx_bool pme_loadbalance(pme_loadbal_t pmes,
+                         t_commrec *cr,
+                         FILE *fp_err,
+                         FILE *fp_log,
+                         t_inputrec *ir,
+                         t_state *state,
+                         double cycles,
+                         interaction_const_t *ic,
+                         nonbonded_verlet_t *nbv,
+                         gmx_pme_t *pmedata,
+                         int step)
 {
     gmx_bool OK;
     pme_setup_t *set;
@@ -375,7 +375,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
             else
             {
                 /* Find the next setup */
-                OK = switch_pme_increase_cutoff(pmes,ir->pme_order);
+                OK = pme_loadbal_increase_cutoff(pmes,ir->pme_order);
             }
                 
             if (OK && ir->ePBC != epbcNONE)
@@ -523,7 +523,59 @@ gmx_bool switch_pme(pme_switch_t pmes,
     return TRUE;
 }
 
-void restart_switch_pme(pme_switch_t pmes, int n)
+void restart_pme_loadbal(pme_loadbal_t pmes, int n)
 {
     pmes->nstage += n;
+}
+
+static int pme_grid_points(const pme_setup_t *setup)
+{
+    return setup->grid[XX]*setup->grid[YY]*setup->grid[ZZ];
+}
+
+static void print_pme_loadbal_setting(FILE *fplog,
+                                     char *name,
+                                     const pme_setup_t *setup)
+{
+    fprintf(fplog,
+            "   %7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
+            name,
+            setup->rcut,setup->rlist,
+            setup->grid[XX],setup->grid[YY],setup->grid[ZZ],
+            setup->spacing,1/setup->coeff);
+}
+
+static void print_pme_loadbal_settings(pme_loadbal_t pmes, FILE *fplog)
+{
+    double pp_ratio,grid_ratio;
+
+    pp_ratio   = pow(pmes->setup[pmes->cur].rlist/pmes->setup[0].rlist,3.0);
+    grid_ratio = pme_grid_points(&pmes->setup[pmes->cur])/
+        (double)pme_grid_points(&pmes->setup[0]);
+
+    fprintf(fplog,"\n");
+    fprintf(fplog,"       P P   -   P M E   L O A D   B A L A N C I N G\n");
+    fprintf(fplog,"\n");
+    fprintf(fplog," PP/PME load balancing changed the cut-off and PME settings:\n");
+    fprintf(fplog,"           particle-particle                    PME\n");
+    fprintf(fplog,"            rcoulomb  rlist            grid      spacing   1/beta\n");
+    print_pme_loadbal_setting(fplog,"initial",&pmes->setup[0]);
+    print_pme_loadbal_setting(fplog,"optimal",&pmes->setup[pmes->cur]);
+    fprintf(fplog," cost-ratio           %4.2f             %4.2f\n",
+            pp_ratio,grid_ratio);
+    fprintf(fplog," (note that these numbers concern only part of the total PP and PME load)\n");
+    fprintf(fplog,"\n");
+}
+
+void pme_loadbal_done(pme_loadbal_t pmes, FILE *fplog)
+{
+    if (fplog != NULL && pmes->cur > 0)
+    {
+        print_pme_loadbal_settings(pmes,fplog);
+    }
+
+    /* TODO: Here we should free all pointers in pmes,
+     * but as it contains pme data structures,
+     * we need to first make pme.c free all data.
+     */
 }

@@ -34,13 +34,13 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _pme_switch_h
-#define _pme_switch_h
+#ifndef _pme_loadbal_h
+#define _pme_loadbal_h
 
-typedef struct pme_switch *pme_switch_t;
+typedef struct pme_loadbal *pme_loadbal_t;
 
 /* Initialze the PME grid tuning data and infrastructure */
-void switch_pme_init(pme_switch_t *pmes_p,
+void pme_loadbal_init(pme_loadbal_t *pmes_p,
                      const t_inputrec *ir,matrix box,
                      const interaction_const_t *ic,
                      gmx_pme_t pmedata);
@@ -48,19 +48,22 @@ void switch_pme_init(pme_switch_t *pmes_p,
 /* Adjust the PME grid and Coulomb cut-off.
  * Returns TRUE the tuning continues, FALSE is the tuning is done.
  */
-gmx_bool switch_pme(pme_switch_t pmes,
-                    t_commrec *cr,
-                    FILE *fp_err,
-                    FILE *fp_log,
-                    t_inputrec *ir,
-                    t_state *state,
-                    double cycles,
-                    interaction_const_t *ic,
-                    nonbonded_verlet_t *nbv,
-                    gmx_pme_t *pmedata,
-                    int step);
+gmx_bool pme_loadbalance(pme_loadbal_t pmes,
+                         t_commrec *cr,
+                         FILE *fp_err,
+                         FILE *fp_log,
+                         t_inputrec *ir,
+                         t_state *state,
+                         double cycles,
+                         interaction_const_t *ic,
+                         nonbonded_verlet_t *nbv,
+                         gmx_pme_t *pmedata,
+                         int step);
 
 /* Restart the PME tuning, discarding all timings gathered up till now */
-void restart_switch_pme(pme_switch_t pmes, int n);
+void restart_pme_loadbal(pme_loadbal_t pmes, int n);
 
-#endif /* _pme_switch_h */
+/* Finish the PME tuning and print the settings when fplog!=NULL */
+void pme_loadbal_done(pme_loadbal_t pmes, FILE *fplog);
+
+#endif /* _pme_loadbal_h */
