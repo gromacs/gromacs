@@ -1530,12 +1530,7 @@ static void do_the_tests(
     if (bResetProblem)
     {
         sep_line(fp);
-        fprintf(fp, "WARNING: The cycle and time step counters could not be reset\n"
-                    "properly. The reason could be that mpirun did not manage to\n"
-                    "export the environment variable GMX_RESET_COUNTER. You might\n"
-                    "have to give a special switch to mpirun for that.\n"
-                    "Alternatively, you can manually set GMX_RESET_COUNTER to the\n"
-                    "value normally provided by -presteps.");
+        fprintf(fp, "WARNING: The cycle and time step counters could not be reset properly. ");
         sep_line(fp);
     }
     sfree(command);
