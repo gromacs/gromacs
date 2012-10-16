@@ -32,3 +32,37 @@ if (DOXYGEN_FOUND)
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
 endif (DOXYGEN_FOUND)
+
+find_package(PythonInterp)
+
+if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
+    add_custom_target(depgraphs
+        ${CMAKE_COMMAND}
+        -DSRCDIR=${CMAKE_SOURCE_DIR}
+        -DBUILDDIR=${CMAKE_BINARY_DIR}
+        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
+        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+        -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
+        -DMODE=GRAPHS
+        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
+        COMMENT "Generating include dependency graphs" VERBATIM)
+    # TODO: This should be moved away from here and preferably made into
+    # a CTest test.
+    # TODO: To do the above, issues found by the script should be fixed.
+    # A suppression system would also be good to have, since it would be
+    # nice to include also legacyheaders in the checks, but those generate
+    # a lot of errors about missing documentation.  The script is also
+    # currently quite strict, so I don't know whether we really want to
+    # enforce all the rules.
+    # TODO: Would be nice to not generate the file lists for each of these,
+    # but what would be a good shared location for the intermediate files?
+    add_custom_target(depcheck
+        ${CMAKE_COMMAND}
+        -DSRCDIR=${CMAKE_SOURCE_DIR}
+        -DBUILDDIR=${CMAKE_BINARY_DIR}
+        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
+        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+        -DMODE=CHECK
+        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
+        COMMENT "Checking include dependencies and documentation" VERBATIM)
+endif ()
