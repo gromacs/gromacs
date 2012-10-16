@@ -43,6 +43,7 @@
 #include "gmx_cyclecounter.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
+#include "md_logging.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -733,21 +734,35 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
              * CPU-GPU load balancing is possible */
             if (gpu_cpu_ratio < 0.75 || gpu_cpu_ratio > 1.2)
             {
+                /* Only the sim master calls this function, so always print to stderr */
                 if (gpu_cpu_ratio < 0.75)
                 {
-                    sprintf(buf, "NOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
-                            "      performance loss, consider turning on PME tuning (-tunepme).");
+                    if (npp > 1)
+                    {
+                        /* The user could have used -notunepme,
+                         * but we currently can't check that here.
+                         */
+                        md_print_warn(NULL,fplog,
+                                      "NOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
+                                      "      performance loss. Maybe the domain decomposition limits the PME tuning.\n"
+                                      "      In that case, try setting the DD grid manually (-dd) or lowering -dds.\n");
+                    }
+                    else
+                    {
+                        /* We should not end up here, unless the box is
+                         * too small for increasing the cut-off for PME tuning.
+                         */
+                        md_print_warn(NULL,fplog,
+                                      "NOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
+                                      "      performance loss.\n");
+                    }
                 }
                 if (gpu_cpu_ratio > 1.2)
                 {
-                    sprintf(buf, "NOTE: The GPU has >20%% more load than the CPU. This imbalance causes\n"
-                            "      performance loss, consider using a shorter cut-off.");
+                    md_print_warn(NULL,fplog,
+                                  "NOTE: The GPU has >20%% more load than the CPU. This imbalance causes\n"
+                                  "      performance loss, consider using a shorter cut-off and a finer PME grid.\n");
                 }
-                if (fplog)
-                {
-                    fprintf(fplog,"\n%s\n",buf);
-                }
-                fprintf(stderr,"\n\n%s\n",buf);
             }
         }
     }
@@ -756,42 +771,32 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         (cycles[ewcDOMDEC] > tot*0.1 ||
          cycles[ewcNS] > tot*0.1))
     {
+        /* Only the sim master calls this function, so always print to stderr */
         if (wc->wcc[ewcDOMDEC].n == 0)
         {
-            sprintf(buf,
-                    "NOTE: %d %% of the run time was spent in pair search,\n"
-                    "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cycles[ewcNS]/tot+0.5));
+            md_print_warn(NULL,fplog,
+                          "NOTE: %d %% of the run time was spent in pair search,\n"
+                          "      you might want to increase nstlist (this has no effect on accuracy)\n",
+                          (int)(100*cycles[ewcNS]/tot+0.5));
         }
         else
         {
-            sprintf(buf,
-                    "NOTE: %d %% of the run time was spent in domain decomposition,\n"
-                    "      %d %% of the run time was spent in pair search,\n"
-                    "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cycles[ewcDOMDEC]/tot+0.5),
-                    (int)(100*cycles[ewcNS]/tot+0.5));
+            md_print_warn(NULL,fplog,
+                          "NOTE: %d %% of the run time was spent in domain decomposition,\n"
+                          "      %d %% of the run time was spent in pair search,\n"
+                          "      you might want to increase nstlist (this has no effect on accuracy)\n",
+                          (int)(100*cycles[ewcDOMDEC]/tot+0.5),
+                          (int)(100*cycles[ewcNS]/tot+0.5));
         }
-        if (fplog)
-        {
-            fprintf(fplog,"\n%s\n",buf);
-        }
-        /* Only the sim master calls this function, so always print to stderr */
-        fprintf(stderr,"\n%s\n",buf);
     }
 
     if (cycles[ewcMoveE] > tot*0.05)
     {
-        sprintf(buf,
-                "NOTE: %d %% of the run time was spent communicating energies,\n"
-                "      you might want to use the -gcom option of mdrun\n",
-                (int)(100*cycles[ewcMoveE]/tot+0.5));
-        if (fplog)
-        {
-            fprintf(fplog,"\n%s\n",buf);
-        }
         /* Only the sim master calls this function, so always print to stderr */
-        fprintf(stderr,"\n%s\n",buf);
+        md_print_warn(NULL,fplog,
+                      "NOTE: %d %% of the run time was spent communicating energies,\n"
+                      "      you might want to use the -gcom option of mdrun\n",
+                      (int)(100*cycles[ewcMoveE]/tot+0.5));
     }
 }
 

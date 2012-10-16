@@ -83,7 +83,7 @@
 #include "sighandler.h"
 #include "txtdump.h"
 #include "string2.h"
-#include "pme_switch.h"
+#include "pme_loadbal.h"
 #include "bondf.h"
 #include "membed.h"
 #include "types/nlistheuristics.h"
@@ -230,7 +230,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                           simulation stops. If equal to zero, don't
                                           communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
-    pme_switch_t    pme_switch=NULL;
+    pme_loadbal_t    pme_loadbal=NULL;
     double          cycles_pmes;
     gmx_bool        bPMETuneTry=FALSE,bPMETuneRunning=FALSE;
 
@@ -526,7 +526,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         (fr->nbv->bUseGPU || !(cr->duty & DUTY_PME)) &&
         !bRerunMD)
     {
-        switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
+        pme_loadbal_init(&pme_loadbal,ir,state->box,fr->ic,fr->pmedata);
         cycles_pmes = 0;
         if (cr->duty & DUTY_PME)
         {
@@ -2060,12 +2060,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      * but the first cycle is always skipped anyhow.
                      */
                     bPMETuneRunning =
-                        switch_pme(pme_switch,cr,
-                                   (bVerbose && MASTER(cr)) ? stderr : NULL,
-                                   fplog,
-                                   ir,state,cycles_pmes,
-                                   fr->ic,fr->nbv,&fr->pmedata,
-                                   step);
+                        pme_loadbalance(pme_loadbal,cr,
+                                        (bVerbose && MASTER(cr)) ? stderr : NULL,
+                                        fplog,
+                                        ir,state,cycles_pmes,
+                                        fr->ic,fr->nbv,&fr->pmedata,
+                                        step);
 
                     fr->ewaldcoeff = fr->ic->ewaldcoeff;
                 }
@@ -2123,7 +2123,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fprintf(fplog,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n",nlh.s1/nlh.nns,sqrt(nlh.s2/nlh.nns - sqr(nlh.s1/nlh.nns)));
         fprintf(fplog,"Average number of atoms that crossed the half buffer length: %.1f\n\n",nlh.ab/nlh.nns);
     }
-    
+
+    if (pme_loadbal != NULL)
+    {
+        pme_loadbal_done(pme_loadbal,fplog);
+    }
+
     if (shellfc && fplog)
     {
         fprintf(fplog,"Fraction of iterations that converged:           %.2f %%\n",
