@@ -63,4 +63,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
 /* Restart the PME tuning, discarding all timings gathered up till now */
 void restart_switch_pme(pme_switch_t pmes, int n);
 
+/* Finish the PME tuning and print the settings when fplog!=NULL */
+void switch_pme_done(pme_switch_t pmes, FILE *fplog);
+
 #endif /* _pme_switch_h */

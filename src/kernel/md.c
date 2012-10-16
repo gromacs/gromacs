@@ -2123,7 +2123,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fprintf(fplog,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n",nlh.s1/nlh.nns,sqrt(nlh.s2/nlh.nns - sqr(nlh.s1/nlh.nns)));
         fprintf(fplog,"Average number of atoms that crossed the half buffer length: %.1f\n\n",nlh.ab/nlh.nns);
     }
-    
+
+    if (pme_switch != NULL)
+    {
+        switch_pme_done(pme_switch,fplog);
+    }
+
     if (shellfc && fplog)
     {
         fprintf(fplog,"Fraction of iterations that converged:           %.2f %%\n",

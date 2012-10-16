@@ -527,3 +527,55 @@ void restart_switch_pme(pme_switch_t pmes, int n)
 {
     pmes->nstage += n;
 }
+
+static int pme_grid_points(const pme_setup_t *setup)
+{
+    return setup->grid[XX]*setup->grid[YY]*setup->grid[ZZ];
+}
+
+static void print_switch_pme_setting(FILE *fplog,
+                                     char *name,
+                                     const pme_setup_t *setup)
+{
+    fprintf(fplog,
+            "   %7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
+            name,
+            setup->rcut,setup->rlist,
+            setup->grid[XX],setup->grid[YY],setup->grid[ZZ],
+            setup->spacing,1/setup->coeff);
+}
+
+static void print_switch_pme_settings(pme_switch_t pmes, FILE *fplog)
+{
+    double pp_ratio,grid_ratio;
+
+    pp_ratio   = pow(pmes->setup[pmes->cur].rlist/pmes->setup[0].rlist,3.0);
+    grid_ratio = pme_grid_points(&pmes->setup[pmes->cur])/
+        (double)pme_grid_points(&pmes->setup[0]);
+
+    fprintf(fplog,"\n");
+    fprintf(fplog,"       P P   -   P M E   L O A D   B A L A N C I N G\n");
+    fprintf(fplog,"\n");
+    fprintf(fplog," PP/PME load balancing changed the cut-off and PME settings:\n");
+    fprintf(fplog,"           particle-particle                    PME\n");
+    fprintf(fplog,"            rcoulomb  rlist            grid      spacing   1/beta\n");
+    print_switch_pme_setting(fplog,"initial",&pmes->setup[0]);
+    print_switch_pme_setting(fplog,"optimal",&pmes->setup[pmes->cur]);
+    fprintf(fplog," cost-ratio           %4.2f             %4.2f\n",
+            pp_ratio,grid_ratio);
+    fprintf(fplog," (note that these numbers concern only part of the total PP and PME load)\n");
+    fprintf(fplog,"\n");
+}
+
+void switch_pme_done(pme_switch_t pmes, FILE *fplog)
+{
+    if (fplog != NULL && pmes->cur > 0)
+    {
+        print_switch_pme_settings(pmes,fplog);
+    }
+
+    /* TODO: Here we should free all pointers in pmes,
+     * but as it contains pme data structures,
+     * we need to first make pme.c free all data.
+     */
+}
