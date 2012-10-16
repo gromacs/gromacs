@@ -214,8 +214,8 @@ static void init_nbparam(cu_nbparam_t *nbp,
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
-void nbnxn_cuda_pmetune_update_param(nbnxn_cuda_ptr_t cu_nb,
-                                     const interaction_const_t *ic)
+void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
+                                         const interaction_const_t *ic)
 {
     cu_nbparam_t *nbp = cu_nb->nbparam;
 
