@@ -67,7 +67,7 @@
  * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <math.h>

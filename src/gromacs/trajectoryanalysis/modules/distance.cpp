@@ -37,10 +37,6 @@
  */
 #include "distance.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "pbc.h"
 #include "vec.h"
 

@@ -35,10 +35,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <cctype>
 
 #include "gromacs/legacyheaders/macros.h"

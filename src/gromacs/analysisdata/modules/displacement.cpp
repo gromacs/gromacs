@@ -37,10 +37,6 @@
  */
 #include "gromacs/analysisdata/modules/displacement.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/maths.h"
 

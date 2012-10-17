@@ -35,10 +35,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_trajectoryanalysis
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "smalloc.h"
 #include "statutil.h"
 #include "vec.h"
