@@ -22,9 +22,9 @@
 #ifndef HWINFO_H
 #define HWINFO_H
 
-#include "types/simple.h"
-#include "types/nbnxn_cuda_types_ext.h"
-#include "gmx_cpuid.h"
+#include "simple.h"
+#include "nbnxn_cuda_types_ext.h"
+#include "../gmx_cpuid.h"
 
 #ifdef __cplusplus
 extern "C" {

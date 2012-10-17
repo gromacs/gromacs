@@ -63,9 +63,11 @@
 #define NBNXN_8BB_SSE
 #endif
 
-/* The width of SSE with single precision, used for bounding boxes */
-#define SSE_F_WIDTH        4
-#define SSE_F_WIDTH_2LOG   2
+/* The width of SSE/AVX128 with single precision for bounding boxes with GPU.
+ * Here AVX-256 turns out to be slightly slower than AVX-128.
+ */
+#define STRIDE_8BB        4
+#define STRIDE_8BB_2LOG   2
 
 #endif /* NBNXN_SEARCH_SSE */
 
@@ -168,7 +170,7 @@
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #define NBNXN_BBXXXX
 /* Size of bounding box corners quadruplet */
-#define NNBSBB_XXXX      (NNBSBB_D*DIM*SSE_F_WIDTH)
+#define NNBSBB_XXXX      (NNBSBB_D*DIM*STRIDE_8BB)
 #endif
 
 /* We shift the i-particles backward for PBC.
@@ -253,16 +255,6 @@ static gmx_icell_set_x_t icell_set_x_supersub;
 #ifdef NBNXN_SEARCH_SSE
 static gmx_icell_set_x_t icell_set_x_supersub_sse8;
 #endif
-
-/* Function type for checking if sub-cells are within range */
-typedef gmx_bool
-gmx_subcell_in_range_t(int na_c,
-                       int si,const real *x_or_bb_i,
-                       int csj,int stride,const real *x_or_bb_j,
-                       real rl2);
-
-static gmx_subcell_in_range_t subc_in_range_x;
-static gmx_subcell_in_range_t subc_in_range_sse8;
 
 /* Local cycle count struct for profiling */
 typedef struct {
@@ -358,8 +350,6 @@ typedef struct nbnxn_search {
     nbnxn_cycle_t cc[enbsCCnr];
 
     gmx_icell_set_x_t *icell_set_x; /* Function for setting i-coords    */
-
-    gmx_subcell_in_range_t *subc_dc; /* Function for sub-cell range check */
 
     int  nthread_max;     /* Maximum number of threads for pair-search  */
     nbnxn_search_work_t *work; /* Work array, size nthread_max          */
@@ -569,23 +559,6 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     nbs->a           = NULL;
     nbs->a_nalloc    = 0;
 
-    /* nbs->subc_dc is only used with super/sub setup */
-#ifdef NBNXN_8BB_SSE
-    nbs->subc_dc = subc_in_range_sse8;
-#else
-    if (getenv("GMX_NBNXN_BB") != NULL)
-    {
-        /* Use only bounding box sub cell pair distances,
-         * fast, but produces slightly more sub cell pairs.
-         */
-        nbs->subc_dc = NULL;
-    }
-    else
-    {
-        nbs->subc_dc = subc_in_range_x;
-    }
-#endif
-
     nbs->nthread_max = nthread_max;
 
     /* Initialize the work data structures for each thread */
@@ -699,7 +672,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         srenew(grid->nsubc,grid->nc_nalloc);
         srenew(grid->bbcz,grid->nc_nalloc*NNBSBB_D);
 #ifdef NBNXN_8BB_SSE
-        bb_nalloc = grid->nc_nalloc*GPU_NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX;
+        bb_nalloc = grid->nc_nalloc*GPU_NSUBCELL/STRIDE_8BB*NNBSBB_XXXX;
 #else
         bb_nalloc = grid->nc_nalloc*GPU_NSUBCELL*NNBSBB_B;
 #endif
@@ -997,12 +970,12 @@ static void calc_bounding_box_xxxx(int na,int stride,const real *x,float *bb)
         i += stride;
     }
     /* Note: possible double to float conversion here */
-    bb[ 0] = R2F_D(xl);
-    bb[ 4] = R2F_D(yl);
-    bb[ 8] = R2F_D(zl);
-    bb[12] = R2F_U(xh);
-    bb[16] = R2F_U(yh);
-    bb[20] = R2F_U(zh);
+    bb[0*STRIDE_8BB] = R2F_D(xl);
+    bb[1*STRIDE_8BB] = R2F_D(yl);
+    bb[2*STRIDE_8BB] = R2F_D(zl);
+    bb[3*STRIDE_8BB] = R2F_U(xh);
+    bb[4*STRIDE_8BB] = R2F_U(yh);
+    bb[5*STRIDE_8BB] = R2F_U(zh);
 }
 
 #endif /* NBNXN_SEARCH_SSE */
@@ -1038,12 +1011,12 @@ static void calc_bounding_box_xxxx_sse(int na,const float *x,
 {
     calc_bounding_box_sse(na,x,bb_work);
 
-    bb[ 0] = bb_work[BBL_X];
-    bb[ 4] = bb_work[BBL_Y];
-    bb[ 8] = bb_work[BBL_Z];
-    bb[12] = bb_work[BBU_X];
-    bb[16] = bb_work[BBU_Y];
-    bb[20] = bb_work[BBU_Z];
+    bb[0*STRIDE_8BB] = bb_work[BBL_X];
+    bb[1*STRIDE_8BB] = bb_work[BBL_Y];
+    bb[2*STRIDE_8BB] = bb_work[BBL_Z];
+    bb[3*STRIDE_8BB] = bb_work[BBU_X];
+    bb[4*STRIDE_8BB] = bb_work[BBU_Y];
+    bb[5*STRIDE_8BB] = bb_work[BBU_Z];
 }
 
 #endif /* NBNXN_SEARCH_SSE_SINGLE */
@@ -1127,18 +1100,18 @@ static void print_bbsizes_supersub(FILE *fp,
     for(c=0; c<grid->nc; c++)
     {
 #ifdef NBNXN_BBXXXX
-        for(s=0; s<grid->nsubc[c]; s+=SSE_F_WIDTH)
+        for(s=0; s<grid->nsubc[c]; s+=STRIDE_8BB)
         {
             int cs_w,i,d;
 
-            cs_w = (c*GPU_NSUBCELL + s)/SSE_F_WIDTH;
-            for(i=0; i<SSE_F_WIDTH; i++)
+            cs_w = (c*GPU_NSUBCELL + s)/STRIDE_8BB;
+            for(i=0; i<STRIDE_8BB; i++)
             {
                 for(d=0; d<DIM; d++)
                 {
                     ba[d] +=
-                        grid->bb[cs_w*NNBSBB_XXXX+(DIM+d)*SSE_F_WIDTH+i] -
-                        grid->bb[cs_w*NNBSBB_XXXX+     d *SSE_F_WIDTH+i];
+                        grid->bb[cs_w*NNBSBB_XXXX+(DIM+d)*STRIDE_8BB+i] -
+                        grid->bb[cs_w*NNBSBB_XXXX+     d *STRIDE_8BB+i];
                 }
             }
         }
@@ -1508,8 +1481,8 @@ void fill_cell(const nbnxn_search_t nbs,
                              */
         bb_ptr =
             grid->bb +
-            ((a0-grid->cell0*grid->na_sc)>>(grid->na_c_2log+SSE_F_WIDTH_2LOG))*NNBSBB_XXXX +
-            (((a0-grid->cell0*grid->na_sc)>>grid->na_c_2log) & (SSE_F_WIDTH-1));
+            ((a0-grid->cell0*grid->na_sc)>>(grid->na_c_2log+STRIDE_8BB_2LOG))*NNBSBB_XXXX +
+            (((a0-grid->cell0*grid->na_sc)>>grid->na_c_2log) & (STRIDE_8BB-1));
 
 #ifdef NBNXN_SEARCH_SSE_SINGLE
         if (nbat->XFormat == nbatXYZQ)
@@ -1527,9 +1500,9 @@ void fill_cell(const nbnxn_search_t nbs,
         {
             fprintf(debug,"%2d %2d %2d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
                     sx,sy,sz,
-                    bb_ptr[0],bb_ptr[12],
-                    bb_ptr[4],bb_ptr[16],
-                    bb_ptr[8],bb_ptr[20]);
+                    bb_ptr[0*STRIDE_8BB],bb_ptr[3*STRIDE_8BB],
+                    bb_ptr[1*STRIDE_8BB],bb_ptr[4*STRIDE_8BB],
+                    bb_ptr[2*STRIDE_8BB],bb_ptr[5*STRIDE_8BB]);
         }
     }
 #endif
@@ -2483,74 +2456,83 @@ static float subc_bb_dist2_sse(int na_c,
 #endif
 }
 
+/* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
+#define SUBC_BB_DIST2_SSE_XXXX_INNER(si,bb_i,d2) \
+{                                                \
+    int    shi;                                  \
+                                                 \
+    __m128 dx_0,dy_0,dz_0;                       \
+    __m128 dx_1,dy_1,dz_1;                       \
+                                                 \
+    __m128 mx,my,mz;                             \
+    __m128 m0x,m0y,m0z;                          \
+                                                 \
+    __m128 d2x,d2y,d2z;                          \
+    __m128 d2s,d2t;                              \
+                                                 \
+    shi = si*NNBSBB_D*DIM;                       \
+                                                 \
+    xi_l = _mm_load_ps(bb_i+shi+0*STRIDE_8BB);   \
+    yi_l = _mm_load_ps(bb_i+shi+1*STRIDE_8BB);   \
+    zi_l = _mm_load_ps(bb_i+shi+2*STRIDE_8BB);   \
+    xi_h = _mm_load_ps(bb_i+shi+3*STRIDE_8BB);   \
+    yi_h = _mm_load_ps(bb_i+shi+4*STRIDE_8BB);   \
+    zi_h = _mm_load_ps(bb_i+shi+5*STRIDE_8BB);   \
+                                                 \
+    dx_0 = _mm_sub_ps(xi_l,xj_h);                \
+    dy_0 = _mm_sub_ps(yi_l,yj_h);                \
+    dz_0 = _mm_sub_ps(zi_l,zj_h);                \
+                                                 \
+    dx_1 = _mm_sub_ps(xj_l,xi_h);                \
+    dy_1 = _mm_sub_ps(yj_l,yi_h);                \
+    dz_1 = _mm_sub_ps(zj_l,zi_h);                \
+                                                 \
+    mx   = _mm_max_ps(dx_0,dx_1);                \
+    my   = _mm_max_ps(dy_0,dy_1);                \
+    mz   = _mm_max_ps(dz_0,dz_1);                \
+                                                 \
+    m0x  = _mm_max_ps(mx,zero);                  \
+    m0y  = _mm_max_ps(my,zero);                  \
+    m0z  = _mm_max_ps(mz,zero);                  \
+                                                 \
+    d2x  = _mm_mul_ps(m0x,m0x);                  \
+    d2y  = _mm_mul_ps(m0y,m0y);                  \
+    d2z  = _mm_mul_ps(m0z,m0z);                  \
+                                                 \
+    d2s  = _mm_add_ps(d2x,d2y);                  \
+    d2t  = _mm_add_ps(d2s,d2z);                  \
+                                                 \
+    _mm_store_ps(d2+si,d2t);                     \
+}
+
 /* SSE code for nsi bb distances for bb format xxxxyyyyzzzz */
 static void subc_bb_dist2_sse_xxxx(const float *bb_j,
                                    int nsi,const float *bb_i,
                                    float *d2)
 {
-    int si;
-    int shi;
-
     __m128 xj_l,yj_l,zj_l;
     __m128 xj_h,yj_h,zj_h;
     __m128 xi_l,yi_l,zi_l;
     __m128 xi_h,yi_h,zi_h;
 
-    __m128 dx_0,dy_0,dz_0;
-    __m128 dx_1,dy_1,dz_1;
-
-    __m128 mx,my,mz;
-    __m128 m0x,m0y,m0z;
-
-    __m128 d2x,d2y,d2z;
-    __m128 d2s,d2t;
-
     __m128 zero;
 
     zero = _mm_setzero_ps();
 
-    xj_l = _mm_load1_ps(bb_j+0*SSE_F_WIDTH);
-    yj_l = _mm_load1_ps(bb_j+1*SSE_F_WIDTH);
-    zj_l = _mm_load1_ps(bb_j+2*SSE_F_WIDTH);
-    xj_h = _mm_load1_ps(bb_j+3*SSE_F_WIDTH);
-    yj_h = _mm_load1_ps(bb_j+4*SSE_F_WIDTH);
-    zj_h = _mm_load1_ps(bb_j+5*SSE_F_WIDTH);
+    xj_l = _mm_set1_ps(bb_j[0*STRIDE_8BB]);
+    yj_l = _mm_set1_ps(bb_j[1*STRIDE_8BB]);
+    zj_l = _mm_set1_ps(bb_j[2*STRIDE_8BB]);
+    xj_h = _mm_set1_ps(bb_j[3*STRIDE_8BB]);
+    yj_h = _mm_set1_ps(bb_j[4*STRIDE_8BB]);
+    zj_h = _mm_set1_ps(bb_j[5*STRIDE_8BB]);
 
-    for(si=0; si<nsi; si+=SSE_F_WIDTH)
+    /* Here we "loop" over si (0,STRIDE_8BB) from 0 to nsi with step STRIDE_8BB.
+     * But as we know the number of iterations is 1 or 2, we unroll manually.
+     */
+    SUBC_BB_DIST2_SSE_XXXX_INNER(0,bb_i,d2);
+    if (STRIDE_8BB < nsi)
     {
-        shi = si*NNBSBB_D*DIM;
-
-        xi_l = _mm_load_ps(bb_i+shi+0*SSE_F_WIDTH);
-        yi_l = _mm_load_ps(bb_i+shi+1*SSE_F_WIDTH);
-        zi_l = _mm_load_ps(bb_i+shi+2*SSE_F_WIDTH);
-        xi_h = _mm_load_ps(bb_i+shi+3*SSE_F_WIDTH);
-        yi_h = _mm_load_ps(bb_i+shi+4*SSE_F_WIDTH);
-        zi_h = _mm_load_ps(bb_i+shi+5*SSE_F_WIDTH);
-
-        dx_0 = _mm_sub_ps(xi_l,xj_h);
-        dy_0 = _mm_sub_ps(yi_l,yj_h);
-        dz_0 = _mm_sub_ps(zi_l,zj_h);
-
-        dx_1 = _mm_sub_ps(xj_l,xi_h);
-        dy_1 = _mm_sub_ps(yj_l,yi_h);
-        dz_1 = _mm_sub_ps(zj_l,zi_h);
-
-        mx   = _mm_max_ps(dx_0,dx_1);
-        my   = _mm_max_ps(dy_0,dy_1);
-        mz   = _mm_max_ps(dz_0,dz_1);
-
-        m0x  = _mm_max_ps(mx,zero);
-        m0y  = _mm_max_ps(my,zero);
-        m0z  = _mm_max_ps(mz,zero);
-
-        d2x  = _mm_mul_ps(m0x,m0x);
-        d2y  = _mm_mul_ps(m0y,m0y);
-        d2z  = _mm_mul_ps(m0z,m0z);
-
-        d2s  = _mm_add_ps(d2x,d2y);
-        d2t  = _mm_add_ps(d2s,d2z);
-
-        _mm_store_ps(d2+si,d2t);
+        SUBC_BB_DIST2_SSE_XXXX_INNER(STRIDE_8BB,bb_i,d2);
     }
 }
 
@@ -2599,24 +2581,6 @@ static gmx_bool subc_in_range_sse8(int na_c,
 #ifdef NBNXN_SEARCH_SSE_SINGLE
     __m128 ix_SSE0,iy_SSE0,iz_SSE0;
     __m128 ix_SSE1,iy_SSE1,iz_SSE1;
-    __m128 jx0_SSE,jy0_SSE,jz0_SSE;
-    __m128 jx1_SSE,jy1_SSE,jz1_SSE;
-
-    __m128     dx_SSE0,dy_SSE0,dz_SSE0;
-    __m128     dx_SSE1,dy_SSE1,dz_SSE1;
-    __m128     dx_SSE2,dy_SSE2,dz_SSE2;
-    __m128     dx_SSE3,dy_SSE3,dz_SSE3;
-
-    __m128     rsq_SSE0;
-    __m128     rsq_SSE1;
-    __m128     rsq_SSE2;
-    __m128     rsq_SSE3;
-
-    __m128     wco_SSE0;
-    __m128     wco_SSE1;
-    __m128     wco_SSE2;
-    __m128     wco_SSE3;
-    __m128     wco_any_SSE01,wco_any_SSE23,wco_any_SSE;
 
     __m128 rc2_SSE;
 
@@ -2625,13 +2589,13 @@ static gmx_bool subc_in_range_sse8(int na_c,
 
     rc2_SSE   = _mm_set1_ps(rl2);
 
-    na_c_sse = 8/4;
-    ix_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+0)*SSE_F_WIDTH);
-    iy_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+1)*SSE_F_WIDTH);
-    iz_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+2)*SSE_F_WIDTH);
-    ix_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+3)*SSE_F_WIDTH);
-    iy_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+4)*SSE_F_WIDTH);
-    iz_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+5)*SSE_F_WIDTH);
+    na_c_sse = NBNXN_GPU_CLUSTER_SIZE/STRIDE_8BB;
+    ix_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+0)*STRIDE_8BB);
+    iy_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+1)*STRIDE_8BB);
+    iz_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+2)*STRIDE_8BB);
+    ix_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+3)*STRIDE_8BB);
+    iy_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+4)*STRIDE_8BB);
+    iz_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+5)*STRIDE_8BB);
 
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
@@ -2640,6 +2604,25 @@ static gmx_bool subc_in_range_sse8(int na_c,
     j1 = j0 + na_c - 1;
     while (j0 < j1)
     {
+        __m128 jx0_SSE,jy0_SSE,jz0_SSE;
+        __m128 jx1_SSE,jy1_SSE,jz1_SSE;
+
+        __m128 dx_SSE0,dy_SSE0,dz_SSE0;
+        __m128 dx_SSE1,dy_SSE1,dz_SSE1;
+        __m128 dx_SSE2,dy_SSE2,dz_SSE2;
+        __m128 dx_SSE3,dy_SSE3,dz_SSE3;
+
+        __m128 rsq_SSE0;
+        __m128 rsq_SSE1;
+        __m128 rsq_SSE2;
+        __m128 rsq_SSE3;
+
+        __m128 wco_SSE0;
+        __m128 wco_SSE1;
+        __m128 wco_SSE2;
+        __m128 wco_SSE3;
+        __m128 wco_any_SSE01,wco_any_SSE23,wco_any_SSE;
+
         jx0_SSE = _mm_load1_ps(x_j+j0*stride+0);
         jy0_SSE = _mm_load1_ps(x_j+j0*stride+1);
         jz0_SSE = _mm_load1_ps(x_j+j0*stride+2);
@@ -2855,7 +2838,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 
     snew(nbl->work,1);
 #ifdef NBNXN_BBXXXX
-    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL/SSE_F_WIDTH*NNBSBB_XXXX,16);
+    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL/STRIDE_8BB*NNBSBB_XXXX,16);
 #else
     snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL*NNBSBB_B,16);
 #endif
@@ -3283,15 +3266,15 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 /* Plain C or SSE code for making a pair list of super-cell sci vs scj.
  * Checks bounding box distances and possibly atom pair distances.
  */
-static void make_cluster_list(const nbnxn_search_t nbs,
-                              const nbnxn_grid_t *gridi,
-                              const nbnxn_grid_t *gridj,
-                              nbnxn_pairlist_t *nbl,
-                              int sci,int scj,
-                              gmx_bool sci_equals_scj,
-                              int stride,const real *x,
-                              real rl2,float rbb2,
-                              int *ndistc)
+static void make_cluster_list_supersub(const nbnxn_search_t nbs,
+                                       const nbnxn_grid_t *gridi,
+                                       const nbnxn_grid_t *gridj,
+                                       nbnxn_pairlist_t *nbl,
+                                       int sci,int scj,
+                                       gmx_bool sci_equals_scj,
+                                       int stride,const real *x,
+                                       real rl2,float rbb2,
+                                       int *ndistc)
 {
     int  na_c;
     int  npair;
@@ -3340,14 +3323,20 @@ static void make_cluster_list(const nbnxn_search_t nbs,
 
 #ifdef NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SSE */
-        subc_bb_dist2_sse_xxxx(gridj->bb+(cj>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX+(cj & (SSE_F_WIDTH-1)),
+        subc_bb_dist2_sse_xxxx(gridj->bb+(cj>>STRIDE_8BB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_8BB-1)),
                                ci1,bb_ci,d2l);
         *ndistc += na_c*2;
 #endif
 
         npair = 0;
-        for(ci=0; ci<ci1; ci++)
+        /* We use a fixed upper-bound instead of ci1 to help optimization */
+        for(ci=0; ci<GPU_NSUBCELL; ci++)
         {
+            if (ci == ci1)
+            {
+                break;
+            }
+
 #ifndef NBNXN_BBXXXX
             /* Determine the bb distance between ci and cj */
             d2l[ci] = subc_bb_dist2(ci,bb_ci,cj,gridj->bb);
@@ -3363,7 +3352,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
              */
             *ndistc += na_c*na_c;
             if (d2 < rbb2 ||
-                (d2 < rl2 && nbs->subc_dc(na_c,ci,x_ci,cj_gl,stride,x,rl2)))
+                (d2 < rl2 && subc_in_range_x(na_c,ci,x_ci,cj_gl,stride,x,rl2)))
 #else
             /* Check if the distance between the two bounding boxes
              * in within the pair-list cut-off.
@@ -3388,7 +3377,14 @@ static void make_cluster_list(const nbnxn_search_t nbs,
          */
         if (npair == 1 && d2l[ci_last] >= rbb2)
         {
-            if (!nbs->subc_dc(na_c,ci_last,x_ci,cj_gl,stride,x,rl2))
+            /* Avoid using function pointers here, as it's slower */
+            if (
+#ifdef NBNXN_8BB_SSE
+                !subc_in_range_sse8
+#else
+                !subc_in_range_x
+#endif
+                                (na_c,ci_last,x_ci,cj_gl,stride,x,rl2))
             {
                 imask &= ~(1U << (cj_offset*GPU_NSUBCELL+ci_last));
                 npair--;
@@ -4007,17 +4003,17 @@ static void set_icell_bb_supersub(const float *bb,int ci,
     int ia,m,i;
 
 #ifdef NBNXN_BBXXXX
-    ia = ci*(GPU_NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX;
-    for(m=0; m<(GPU_NSUBCELL>>SSE_F_WIDTH_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
+    ia = ci*(GPU_NSUBCELL>>STRIDE_8BB_2LOG)*NNBSBB_XXXX;
+    for(m=0; m<(GPU_NSUBCELL>>STRIDE_8BB_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
     {
-        for(i=0; i<SSE_F_WIDTH; i++)
+        for(i=0; i<STRIDE_8BB; i++)
         {
-            bb_ci[m+ 0+i] = bb[ia+m+ 0+i] + shx;
-            bb_ci[m+ 4+i] = bb[ia+m+ 4+i] + shy;
-            bb_ci[m+ 8+i] = bb[ia+m+ 8+i] + shz;
-            bb_ci[m+12+i] = bb[ia+m+12+i] + shx;
-            bb_ci[m+16+i] = bb[ia+m+16+i] + shy;
-            bb_ci[m+20+i] = bb[ia+m+20+i] + shz;
+            bb_ci[m+0*STRIDE_8BB+i] = bb[ia+m+0*STRIDE_8BB+i] + shx;
+            bb_ci[m+1*STRIDE_8BB+i] = bb[ia+m+1*STRIDE_8BB+i] + shy;
+            bb_ci[m+2*STRIDE_8BB+i] = bb[ia+m+2*STRIDE_8BB+i] + shz;
+            bb_ci[m+3*STRIDE_8BB+i] = bb[ia+m+3*STRIDE_8BB+i] + shx;
+            bb_ci[m+4*STRIDE_8BB+i] = bb[ia+m+4*STRIDE_8BB+i] + shy;
+            bb_ci[m+5*STRIDE_8BB+i] = bb[ia+m+5*STRIDE_8BB+i] + shz;
         }
     }
 #else
@@ -4089,15 +4085,15 @@ static void icell_set_x_supersub_sse8(int ci,
 
     for(si=0; si<GPU_NSUBCELL; si++)
     {
-        for(i=0; i<na_c; i+=SSE_F_WIDTH)
+        for(i=0; i<na_c; i+=STRIDE_8BB)
         {
             io = si*na_c + i;
             ia = ci*GPU_NSUBCELL*na_c + io;
-            for(j=0; j<SSE_F_WIDTH; j++)
+            for(j=0; j<STRIDE_8BB; j++)
             {
-                x_ci[io*DIM + j + XX*SSE_F_WIDTH] = x[(ia+j)*stride+XX] + shx;
-                x_ci[io*DIM + j + YY*SSE_F_WIDTH] = x[(ia+j)*stride+YY] + shy;
-                x_ci[io*DIM + j + ZZ*SSE_F_WIDTH] = x[(ia+j)*stride+ZZ] + shz;
+                x_ci[io*DIM + j + XX*STRIDE_8BB] = x[(ia+j)*stride+XX] + shx;
+                x_ci[io*DIM + j + YY*STRIDE_8BB] = x[(ia+j)*stride+YY] + shy;
+                x_ci[io*DIM + j + ZZ*STRIDE_8BB] = x[(ia+j)*stride+ZZ] + shz;
             }
         }
     }
@@ -4891,7 +4887,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
 #ifdef NBNXN_REFCODE
                                 {
-                                    /* Simple reference code */
+                                    /* Simple reference code, for debugging,
+                                     * overrides the more complex code above.
+                                     */
                                     int k;
                                     cf = c1;
                                     cl = -1;
@@ -4969,12 +4967,12 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                         check_subcell_list_space_supersub(nbl,cl-cf+1);
                                         for(cj=cf; cj<=cl; cj++)
                                         {
-                                            make_cluster_list(nbs,gridi,gridj,
-                                                              nbl,ci,cj,
-                                                              (gridi == gridj && shift == CENTRAL && ci == cj),
-                                                              nbat->xstride,nbat->x,
-                                                              rl2,rbb2,
-                                                              &ndistc);
+                                            make_cluster_list_supersub(nbs,gridi,gridj,
+                                                                       nbl,ci,cj,
+                                                                       (gridi == gridj && shift == CENTRAL && ci == cj),
+                                                                       nbat->xstride,nbat->x,
+                                                                       rl2,rbb2,
+                                                                       &ndistc);
                                         }
                                         break;
                                     }

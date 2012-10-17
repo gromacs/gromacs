@@ -189,7 +189,8 @@ static int parse_logfile(const char *logfile, const char *errfile,
     const char errSIG[]="signal, stopping at the next";
     int   iFound;
     int   procs;
-    float  dum1,dum2,dum3;
+    float  dum1,dum2,dum3,dum4;
+    int    ndum;
     int   npme;
     gmx_large_int_t resetsteps=-1;
     gmx_bool  bFoundResetStr = FALSE;
@@ -229,7 +230,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
         {
             if (strstr(line, matchstrcr) != NULL)
             {
-                sprintf(dumstring, "Step %s", gmx_large_int_pfmt);
+                sprintf(dumstring, "step %s", gmx_large_int_pfmt);
                 sscanf(line, dumstring, &resetsteps);
                 bFoundResetStr = TRUE;
                 if (resetsteps == presteps+cpt_steps)
@@ -299,7 +300,9 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Already found cycle data - look for remaining performance info and return */
                 if (str_starts(line, "Performance:"))
                 {
-                    sscanf(line,"%s %f %f %f %f", dumstring, &dum1, &dum2, &(perfdata->ns_per_day[test_nr]), &dum3);
+                    ndum = sscanf(line,"%s %f %f %f %f", dumstring, &dum1, &dum2, &dum3, &dum4);
+                    /* (ns/day) is the second last entry, depending on whether GMX_DETAILED_PERF_STATS was set in print_perf(), nrnb.c */
+                    perfdata->ns_per_day[test_nr] = (ndum==5)? dum3 : dum1;
                     fclose(fp);
                     if (bResetChecked || presteps == 0)
                         return eParselogOK;
