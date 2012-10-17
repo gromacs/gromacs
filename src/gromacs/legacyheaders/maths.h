@@ -71,8 +71,17 @@ real    sign(real x,real y);
 int		gmx_nint(real a);
 real    sign(real x,real y);
 real    cuberoot (real a);
-real    gmx_erf(real x);
-real    gmx_erfc(real x);
+double  gmx_erfd(double x);
+double  gmx_erfcd(double x);
+float   gmx_erff(float x);
+float   gmx_erfcf(float x);
+#ifdef GMX_DOUBLE
+#define gmx_erf(x)   gmx_erfd(x)
+#define gmx_erfc(x)  gmx_erfcd(x)
+#else
+#define gmx_erf(x)   gmx_erff(x)
+#define gmx_erfc(x)  gmx_erfcf(x)
+#endif
 
 gmx_bool gmx_isfinite(real x);
 
