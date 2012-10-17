@@ -11,7 +11,7 @@ if(APPLE)
     set(CMAKE_C_COMPILER_INIT "cc")
 endif(APPLE)
 
-project(Gromacs)
+project(Gromacs C)
 include(Dart)
 mark_as_advanced(DART_ROOT)
 
@@ -103,6 +103,17 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
+# User input options - enable C++ - before any CXX flags are changed   #
+########################################################################
+option(GMX_GPU  "Enable GPU acceleration" ON)
+option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
+option(GMX_FORCE_CXX "Enable C++ compilation even if not necessary" OFF)
+mark_as_advanced(GMX_FORCE_CXX)
+if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
+    enable_language(CXX)
+endif()
+
+########################################################################
 # Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
@@ -117,10 +128,12 @@ IF( WIN32 AND NOT CYGWIN)
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
-    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-    SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
-    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-    SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
+    if(CMAKE_CXX_COMPILER_LOADED)
+        STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+        SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
+        STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+        SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
+    endif()
   ENDIF()
 
   #Workaround for cmake bug 13174. Replace deprecated options.
@@ -128,7 +141,7 @@ IF( WIN32 AND NOT CYGWIN)
     STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
   ENDIF()
-  IF( CMAKE_CXX_COMPILER_ID MATCHES "Intel" )
+  IF( CMAKE_CXX_COMPILER_ID MATCHES "Intel" AND CMAKE_CXX_COMPILER_LOADED)
     STRING(REPLACE /GZ /RTC1 CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
     STRING(REPLACE /GX /EHsc CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
     SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
@@ -151,7 +164,6 @@ option(GMX_POWERPC_INVSQRT "Use PowerPC hardware 1/sqrt" OFF)
 mark_as_advanced(GMX_POWERPC_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
-option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 
 include(gmxDetectAcceleration)
 if(NOT DEFINED GMX_ACCELERATION)
@@ -179,7 +191,6 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
 
-option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
@@ -206,7 +217,9 @@ mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 # Remove these files from the source tree when a CMake version that
 # includes the features in question becomes required.
 include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
+if(CMAKE_CXX_COMPILER_LOADED)
+    include(CheckCXXCompilerFlag)
+endif()
 
 # OpenMP check must come before other CFLAGS!
 if(GMX_OPENMP)
@@ -681,10 +694,12 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
         GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
     endif(NOT GNU_SSE2_CFLAG)
 
-    GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" GROMACS_CXX_FLAGS)
-    if(NOT GNU_SSE2_CXXFLAG)
-        GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
-    endif(NOT GNU_SSE2_CXXFLAG)
+    if (CMAKE_CXX_COMPILER_LOADED)
+        GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" GROMACS_CXX_FLAGS)
+        if(NOT GNU_SSE2_CXXFLAG)
+            GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+        endif(NOT GNU_SSE2_CXXFLAG)
+    endif()
 
     # We dont warn for lacking SSE2 flag support, since that is probably standard today.
 
@@ -714,16 +729,18 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
         GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
     endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
 
-    GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" GROMACS_CXX_FLAG)
-    if (NOT GNU_SSE4_CXXFLAG)
-       GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" GROMACS_CXX_FLAGS)
-    endif(NOT GNU_SSE4_CXXFLAG)
-    if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
-        message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
-        # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
-        # intrinsics when SSE2 support is enabled, so we try that instead.
-        GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
-    endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
+    if (CMAKE_CXX_COMPILER_LOADED)
+        GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" GROMACS_CXX_FLAG)
+        if (NOT GNU_SSE4_CXXFLAG)
+            GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" GROMACS_CXX_FLAGS)
+        endif(NOT GNU_SSE4_CXXFLAG)
+        if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG) 
+            message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
+            # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
+            # intrinsics when SSE2 support is enabled, so we try that instead.
+            GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+        endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
+    endif()
 
     # This must come after we have added the -msse4.1 flag on some platforms.
     check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${GROMACS_C_FLAGS})
@@ -751,13 +768,15 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
         message(WARNING "No C AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
     endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
 
-    GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" GROMACS_CXX_FLAGS)
-    if (NOT GNU_AVX_CXXFLAG)
-       GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" GROMACS_CXX_FLAGS)
-    endif (NOT GNU_AVX_CXXFLAG)
-    if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
-       message(WARNING "No C++ AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
-    endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+    if (CMAKE_CXX_COMPILER_LOADED)
+        GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" GROMACS_CXX_FLAGS)
+        if (NOT GNU_AVX_CXXFLAG)
+            GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" GROMACS_CXX_FLAGS)
+        endif (NOT GNU_AVX_CXXFLAG)
+        if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+            message(WARNING "No C++ AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
+        endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+    endif()
 
     # Only test the header after we have tried to add the flag for AVX support
     check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${GROMACS_C_FLAGS})
@@ -1024,8 +1043,10 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         FORCE)
     set(CMAKE_C_FLAGS "${GROMACS_C_FLAGS} ${CMAKE_C_FLAGS}" CACHE STRING 
         "Flags used by the compiler during all build types" FORCE)
-    set(CMAKE_CXX_FLAGS "${GROMACS_CXX_FLAGS} ${CMAKE_CXX_FLAGS}" CACHE STRING 
-        "Flags used by the compiler during all build types" FORCE)
+    if (CMAKE_CXX_COMPILER_LOADED)
+        set(CMAKE_CXX_FLAGS "${GROMACS_CXX_FLAGS} ${CMAKE_CXX_FLAGS}" CACHE STRING 
+            "Flags used by the compiler during all build types" FORCE)
+    endif()
     set(CMAKE_EXE_LINKER_FLAGS 
         "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
         CACHE STRING "Linker flags for creating executables" FORCE) 
