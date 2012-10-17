@@ -1,11 +1,12 @@
-# - Find FFTW 2/3 single double
+# - Find FFTW 3
 # Find the native FFTW headers and libraries.
 #
-#  FFTW_INCLUDE_DIRS - where to find FFTW headers
-#  FFTW_LIBRARIES    - List of libraries when using FFTW.
-#  FFTW_PKG          - The name of the pkg-config package needed
-#  FFTW_HAVE_SSE     - True if FFTW was build with SSE support
-#  FFTW_FOUND        - True if FFTW was found
+#  ${FFTW}_INCLUDE_DIRS - where to find FFTW headers
+#  ${FFTW}_LIBRARIES    - List of libraries when using FFTW.
+#  ${FFTW}_PKG          - The name of the pkg-config package needed
+#  ${FFTW}_HAVE_SSE     - True if FFTW was build with SSE support
+#  ${FFTW}_FOUND        - True if FFTW was found
+#  where ${FFTW} is FFTW or FFTWF
 #
 #  This file is part of Gromacs        Copyright (c) 2012
 
@@ -17,20 +18,16 @@
 #  To help us fund GROMACS development, we humbly ask that you cite
 #  the research papers on the package. Check out http://www.gromacs.org
 
-find_package(PkgConfig)
 list(LENGTH FFTW_FIND_COMPONENTS FFTW_NUM_COMPONENTS_WANTED)
 if(${FFTW_NUM_COMPONENTS_WANTED} LESS 1)
   message(FATAL_ERROR "No FFTW component to search given")
 elseif(${FFTW_NUM_COMPONENTS_WANTED} GREATER 1)
   message(FATAL_ERROR "We only support finding one FFTW component at the time, go and implement it ;-)")
 elseif(${FFTW_FIND_COMPONENTS} MATCHES "^fftw(f)?$")
-  if (${FFTW_FIND_VERSION} EQUAL 3 OR NOT FFTW_FIND_VERSION) #find FFTW3 by default
-    string(REGEX REPLACE "fftw" "fftw3" FFTW_PKG "${FFTW_FIND_COMPONENTS}")
-    set(FFTW_HEADER "fftw3.h")
-    set(FFTW_FUNCTION "${FFTW_FIND_COMPONENTS}_plan_r2r_1d")
-  #elseif(${FFTW_FIND_VERSION} EQUAL 2)
-  #  set(FFTW_PKG "${FFTW_FIND_COMPONENTS}")
-  #  set(FFTW_HEADER "${FFTW_FIND_COMPONENTS}.h")
+  if (NOT FFTW_FIND_VERSION OR FFTW_FIND_VERSION EQUAL 3) #find FFTW3 by default
+    string(TOUPPER "${FFTW_FIND_COMPONENTS}" FFTW)
+    string(REGEX REPLACE "fftw" "fftw3" ${FFTW}_PKG "${FFTW_FIND_COMPONENTS}")
+    set(${FFTW}_FUNCTION_PREFIX "${FFTW_FIND_COMPONENTS}")
   else()
     message(FATAL_ERROR "We only support finding FFTW version 3, go and implement it ;-)")
   endif()
@@ -38,66 +35,45 @@ else()
   message(FATAL_ERROR "We do not support finding ${FFTW_FIND_COMPONENTS}, go and implement it ;-)")
 endif()
 
-if(NOT __pkg_config_checked_PC_FFTW_${FFTW_PKG})
-  pkg_check_modules(PC_FFTW_${FFTW_PKG} "${FFTW_PKG}")
-endif(NOT __pkg_config_checked_PC_FFTW_${FFTW_PKG})
+find_package(PkgConfig)
+if(NOT __pkg_config_checked_PC_${FFTW})
+  pkg_check_modules(PC_${FFTW} "${${FFTW}_PKG}")
+endif(NOT __pkg_config_checked_PC_${FFTW})
 
-if(FFTW_LIBRARY)
-  set(FFTW_LIBRARY_${FFTW_PKG} "${FFTW_LIBRARY}" CACHE INTERNAL "Path to ${FFTW_PKG} library" FORCE)
-else(FFTW_LIBRARY)
-  set(FFTW_LIBRARY "" CACHE FILEPATH "Path to ${FFTW_PKG} library")
-endif(FFTW_LIBRARY)
+find_path(${FFTW}_INCLUDE_DIR "fftw3.h" HINTS ${PC_${FFTW}_INCLUDE_DIRS})
+find_library(${FFTW}_LIBRARY NAMES "${${FFTW}_PKG}" HINTS ${PC_${FFTW}_LIBRARY_DIRS})
 
-if(FFTW_INCLUDE_DIR)
-  set(FFTW_INCLUDE_DIR_${FFTW_PKG} "${FFTW_INCLUDE_DIR}" CACHE INTERNAL "Path to ${FFTW_HEADER}" FORCE)
-else(FFTW_INCLUDE_DIR)
-  set(FFTW_INCLUDE_DIR "" CACHE DIRECTORY "Path to ${FFTW_HEADER}")
-endif(FFTW_INCLUDE_DIR)
+set(${FFTW}_LIBRARIES "${${FFTW}_LIBRARY}")
+set(${FFTW}_INCLUDE_DIRS "${${FFTW}_INCLUDE_DIR}")
 
-#we use _${FFTW_PKG} variables to have different cache entries for fftw3 and ffw3f
-find_path(FFTW_INCLUDE_DIR_${FFTW_PKG} "${FFTW_HEADER}" HINTS ${PC_FFTW_${FFTW_PKG}_INCLUDE_DIRS})
-find_library(FFTW_LIBRARY_${FFTW_PKG} NAMES "${FFTW_PKG}" HINTS ${PC_FFTW_${FFTW_PKG}_LIBRARY_DIRS})
-
-#make _${FFTW_PKG} variables INTERNAL to avoid confusion in cmake-gui
-set(FFTW_LIBRARY_${FFTW_PKG} ${FFTW_LIBRARY_${FFTW_PKG}} CACHE INTERNAL "Path to ${FFTW_PKG} library" FORCE)
-set(FFTW_INCLUDE_DIR_${FFTW_PKG} ${FFTW_INCLUDE_DIR_${FFTW_PKG}} CACHE INTERNAL "Path to ${FFTW_HEADER}" FORCE)
-
-# set default find_package outcome variables
-set(FFTW_LIBRARIES "${FFTW_LIBRARY_${FFTW_PKG}}")
-set(FFTW_INCLUDE_DIRS "${FFTW_INCLUDE_DIR_${FFTW_PKG}}")
-
-set(FFTW_FOUND FALSE)
-if (FFTW_LIBRARY_${FFTW_PKG} AND FFTW_INCLUDE_DIR_${FFTW_PKG})
-  set(FFTW_FOUND TRUE)
-elseif (NOT FFTW_LIBRARY_${FFTW_PKG})
-  message("Could not find ${FFTW_PKG} library named lib${FFTW_PKG}, please specify its location in FFTW_LIBRARY by hand (e.g. -DFFTW_LIBRARY='/path/to/lib${FFTW_PKG}.so')")
-elseif (NOT FFTW_INCLUDE_DIR_${FFTW_PKG})
-  message("Could not the ${FFTW_PKG} header ${FFTW_HEADER}, please specify its path in FFTW_INCLUDE_DIR by hand (e.g. -DFFTW_INCLUDE_DIR='/path/to/include')")
+#better error message than find_package_handle_standard_args
+if (${FFTW}_LIBRARY AND ${FFTW}_INCLUDE_DIR)
+  set(${FFTW}_FOUND TRUE)
+elseif (NOT ${FFTW}_LIBRARY)
+  message("Could not find ${${FFTW}_PKG} library named lib${${FFTW}_PKG}, please specify its location in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so')")
+elseif (NOT ${FFTW}_INCLUDE_DIR)
+  message("Could not the ${${FFTW}_PKG} header fftw3.h, please specify its path in ${FFTW}_INCLUDE_DIR by hand (e.g. -D${FFTW}_INCLUDE_DIR='/path/to/include')")
 endif()
 
-set(FFTW_HAVE_SSE FALSE CACHE BOOL "If ${FFTW_PKG} was built with SSE support")
-if (FFTW_FOUND AND HAVE_LIBM AND NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW_LIBRARY}")
-  #The user could specify trash in FFTW_LIBRARY, so test if we can link it
+if (${FFTW}_FOUND AND HAVE_LIBM)
+  #The user could specify trash in ${FFTW}_LIBRARY, so test if we can link it
   include(CheckLibraryExists)
   #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
   set(CMAKE_REQUIRED_LIBRARIES m)
-  unset(FOUND_FFTW_PLAN_${FFTW_PKG} CACHE)
-  check_library_exists("${FFTW_LIBRARIES}" "${FFTW_FUNCTION}" "" FOUND_FFTW_PLAN_${FFTW_PKG})
-  if(NOT FOUND_FFTW_PLAN_${FFTW_PKG})
-    message(FATAL_ERROR "Could not find ${FFTW_FUNCTION} in ${FFTW_LIBRARY_${FFTW_PKG}}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${FFTW_PKG} in FFTW_LIBRARY by hand (e.g. -DFFTW_LIBRARY='/path/to/lib${FFTW_PKG}.so;/path/to/libm.so') !")
-  endif(NOT FOUND_FFTW_PLAN_${FFTW_PKG})
+  check_library_exists("${${FFTW}_LIBRARIES}" "${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d" "" FOUND_${FFTW}_PLAN)
+  if(NOT FOUND_${FFTW}_PLAN)
+    message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
+  endif(NOT FOUND_${FFTW}_PLAN)
   #in 3.3 sse function name has changed
-  foreach(SSE_FCT fftwf_have_simd_sse2;fftw_have_simd_sse2;fftwf_have_sse;fftw_have_sse2)
-    unset(FFTW_HAVE_${SSE_FCT}_${FFTW_PKG} CACHE)
-    check_library_exists("${FFTW_LIBRARIES}" "${SSE_FCT}" "" FFTW_HAVE_${SSE_FCT}_${FFTW_PKG})
-    if(FFTW_HAVE_${SSE_FCT}_${FFTW_PKG})
-      set(FFTW_HAVE_SSE_${FFTW_PKG} "${FFTW_HAVE_${SSE_FCT}_${FFTW_PKG}}")
+  foreach(SSE_FCT ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2;${${FFTW}_FUNCTION_PREFIX}_have_sse2)
+    check_library_exists("${${FFTW}_LIBRARIES}" "${SSE_FCT}" "" ${FFTW}_HAVE_${SSE_FCT})
+    if(${FFTW}_HAVE_${SSE_FCT})
+      set(${FFTW}_HAVE_SSE TRUE CACHE  BOOL "If ${${FFTW}_PKG} was built with SSE support")
       break()
-    endif(FFTW_HAVE_${SSE_FCT}_${FFTW_PKG})
+    endif(${FFTW}_HAVE_${SSE_FCT})
   endforeach()
-  set(FFTW_HAVE_SSE "${FFTW_HAVE_SSE_${FFTW_PKG}}" CACHE BOOL "If ${FFTW_PKG} was built with SSE support" FORCE)
   set(CMAKE_REQUIRED_LIBRARIES)
-  set(FFTW_LIBRARY_PREVIOUS "${FFTW_LIBRARY}" CACHE INTERNAL "Value of FFTW_LIBRARY when executing the linking check that last time" FORCE)
-endif (FFTW_FOUND AND HAVE_LIBM AND NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW_LIBRARY}")
+endif (${FFTW}_FOUND AND HAVE_LIBM)
+set(${FFTW}_HAVE_SSE FALSE CACHE BOOL "If ${${FFTW}_PKG} was built with SSE support")
 
-mark_as_advanced(FFTW_INCLUDE_DIR FFTW_LIBRARY FFTW_HAVE_SSE)
+mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY ${FFTW}_HAVE_SSE)
