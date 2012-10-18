@@ -170,6 +170,14 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     common->initIndexGroups(selections);
 
+    // NOTE: Interactive input is broken with more than one process.
+    #ifdef GMX_LIB_MPI
+        if (seloptManager.requestsCount() > 0)
+        {
+            return false;
+        }
+    #endif
+
     // TODO: Check whether the input is a pipe.
     bool bInteractive = true;
     seloptManager.parseRequestedFromStdin(bInteractive);

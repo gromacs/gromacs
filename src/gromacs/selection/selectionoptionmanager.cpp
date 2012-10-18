@@ -342,6 +342,13 @@ SelectionOptionManager::parseRequestedFromString(const std::string &str)
     impl_->placeSelectionsInRequests(selections);
 }
 
+
+int
+SelectionOptionManager::requestsCount()
+{
+    return impl_->requests_.size();
+}
+
 /********************************************************************
  * Global functions
  */

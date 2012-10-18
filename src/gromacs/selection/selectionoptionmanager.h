@@ -190,7 +190,7 @@ class SelectionOptionManager
          * \see parseRequestedFromFile()
          */
         void parseRequestedFromString(const std::string &str);
-
+        int requestsCount();
     private:
         class Impl;
 
