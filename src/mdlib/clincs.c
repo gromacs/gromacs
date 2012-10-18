@@ -63,7 +63,7 @@ typedef struct {
     int nind_r;       /* number of indices */
     int *ind_r;       /* constraint index for updating atom data */
     int ind_nalloc;   /* allocation size of ind and ind_r */
-    tensor rmdr;      /* temporary variable for virial calculation */
+    tensor vir_r_m_dr;/* temporary variable for virial calculation */
 } lincs_thread_t;
 
 typedef struct gmx_lincsdata {
@@ -466,7 +466,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
                      gmx_bool bCalcLambda,
                      real wangle,int *warn,
                      real invdt,rvec *v,
-                     gmx_bool bCalcVir,tensor rmdr)
+                     gmx_bool bCalcVir,tensor vir_r_m_dr)
 {
     int     b0,b1,b,i,j,k,n,iter;
     real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,len2,dlen2,wfac;
@@ -680,7 +680,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
                 tmp1 = tmp0*r[b][i];
                 for(j=0; j<DIM; j++)
                 {
-                    rmdr[i][j] -= tmp1*r[b][j];
+                    vir_r_m_dr[i][j] -= tmp1*r[b][j];
                 }
             }
         } /* 22 ncons flops */
@@ -1432,7 +1432,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                          matrix box,t_pbc *pbc,
                          real lambda,real *dvdlambda,
                          real invdt,rvec *v,
-                         gmx_bool bCalcVir,tensor rmdr,
+                         gmx_bool bCalcVir,tensor vir_r_m_dr,
                          int econq,
                          t_nrnb *nrnb,
                          int maxwarn,int *warncount)
@@ -1523,14 +1523,14 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         {
             int th=gmx_omp_get_thread_num();
 
-            clear_mat(lincsd->th[th].rmdr);
+            clear_mat(lincsd->th[th].vir_r_m_dr);
 
             do_lincs(x,xprime,box,pbc,lincsd,th,
                      md->invmass,cr,
                      bCalcVir || (ir->efep != efepNO),
                      ir->LincsWarnAngle,&warn,
                      invdt,v,bCalcVir,
-                     th==0 ? rmdr : lincsd->th[th].rmdr);
+                     th==0 ? vir_r_m_dr : lincsd->th[th].vir_r_m_dr);
         }
 
         if (ir->efep != efepNO)
@@ -1633,7 +1633,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
 
             do_lincsp(x,xprime,min_proj,pbc,lincsd,th,
                       md->invmass,econq,ir->efep != efepNO ? dvdlambda : NULL,
-                      bCalcVir,th==0 ? rmdr : lincsd->th[th].rmdr);
+                      bCalcVir,th==0 ? vir_r_m_dr : lincsd->th[th].vir_r_m_dr);
         }
     }
 
@@ -1641,7 +1641,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     {
         for(i=1; i<lincsd->nth; i++)
         {
-            m_add(rmdr,lincsd->th[i].rmdr,rmdr);
+            m_add(vir_r_m_dr,lincsd->th[i].vir_r_m_dr,vir_r_m_dr);
         }
     }
  

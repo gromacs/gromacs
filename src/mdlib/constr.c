@@ -78,7 +78,7 @@ typedef struct gmx_constr {
   int              warncount_settle;
   gmx_edsam_t      ed;           /* The essential dynamics data        */
 
-    tensor           *rmdr_th;   /* Thread local working data          */
+    tensor           *vir_r_m_dr_th;/* Thread local working data          */
     int              *settle_error; /* Thread local working data          */
 
   gmx_mtop_t       *warn_mtop;   /* Only used for printing warnings    */
@@ -303,7 +303,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     int     start,homenr,nrend;
     int     i,j,d;
     int     ncons,settle_error;
-    tensor  rmdr;
+    tensor  vir_r_m_dr;
     rvec    *vstor;
     real    invdt,vir_fac,t;
     t_ilist *settle;
@@ -348,7 +348,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     
     if (vir != NULL)
     {
-        clear_mat(rmdr);
+        clear_mat(vir_r_m_dr);
     }
     
     where();
@@ -365,9 +365,9 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         nth = 1;
     }
 
-    if (nth > 1 && constr->rmdr_th == NULL)
+    if (nth > 1 && constr->vir_r_m_dr_th == NULL)
     {
-        snew(constr->rmdr_th,nth);
+        snew(constr->vir_r_m_dr_th,nth);
         snew(constr->settle_error,nth);
     }
     
@@ -409,7 +409,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
                               x,xprime,min_proj,
                               box,pbc_null,lambda,dvdlambda,
-                              invdt,v,vir!=NULL,rmdr,
+                              invdt,v,vir!=NULL,vir_r_m_dr,
                               econq,nrnb,
                               constr->maxwarn,&constr->warncount_lincs);
         if (!bOK && constr->maxwarn >= 0)
@@ -431,14 +431,16 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,x,xprime,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,&vetavar);
+                          invdt,v,vir!=NULL,vir_r_m_dr,
+                          constr->maxwarn>=0,econq,&vetavar);
             break;
         case (econqVeloc):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,x,min_proj,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,&vetavar);
+                          invdt,NULL,vir!=NULL,vir_r_m_dr,
+                          constr->maxwarn>=0,econq,&vetavar);
             break;
         default:
             gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
@@ -479,7 +481,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
 
                 if (th > 0)
                 {
-                    clear_mat(constr->rmdr_th[th]);
+                    clear_mat(constr->vir_r_m_dr_th[th]);
                 }
 
                 start_th = (nsettle* th   )/nth;
@@ -492,7 +494,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                             pbc_null,
                             x[0],xprime[0],
                             invdt,v?v[0]:NULL,calcvir_atom_end,
-                            th == 0 ? rmdr : constr->rmdr_th[th],
+                            th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
                             th == 0 ? &settle_error : &constr->settle_error[th],
                             &vetavar);
                 }
@@ -518,7 +520,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
 
                 if (th > 0)
                 {
-                    clear_mat(constr->rmdr_th[th]);
+                    clear_mat(constr->vir_r_m_dr_th[th]);
                 }
                 
                 start_th = (nsettle* th   )/nth;
@@ -532,7 +534,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                                 pbc_null,
                                 x,
                                 xprime,min_proj,calcvir_atom_end,
-                                th == 0 ? rmdr : constr->rmdr_th[th],
+                                th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
                                 &vetavar);
                 }
             }
@@ -552,7 +554,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         /* Combine virial and error info of the other threads */
         for(i=1; i<nth; i++)
         {
-            m_add(rmdr,constr->rmdr_th[i],rmdr);
+            m_add(vir_r_m_dr,constr->vir_r_m_dr_th[i],vir_r_m_dr);
             settle_error = constr->settle_error[i];
         } 
 
@@ -610,7 +612,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         {
             for(j=0; j<DIM; j++)
             {
-                (*vir)[i][j] = vir_fac*rmdr[i][j];
+                (*vir)[i][j] = vir_fac*vir_r_m_dr[i][j];
             }
         }
     }

@@ -171,7 +171,8 @@ void settle_proj(FILE *fp,
                  const t_pbc *pbc,
                  rvec x[],
                  rvec *der,rvec *derp,
-                 int calcvir_atom_end,tensor rmdder,t_vetavars *vetavar)
+                 int calcvir_atom_end,tensor vir_r_m_dder,
+                 t_vetavars *vetavar)
 {
     /* Settle for projection out constraint components
      * of derivatives of the coordinates.
@@ -287,7 +288,7 @@ void settle_proj(FILE *fp,
             {
                 for(m2=0; m2<DIM; m2++)
                 {
-                    rmdder[m][m2] +=
+                    vir_r_m_dder[m][m2] +=
                         dOH*roh2[m]*roh2[m2]*fcv[0] +
                         dOH*roh3[m]*roh3[m2]*fcv[1] +
                         dHH*rhh [m]*rhh [m2]*fcv[2]; 
@@ -298,10 +299,10 @@ void settle_proj(FILE *fp,
 
     if (calcvir_atom_end > 0)
     {
-        /* Correct rmdder, which will be used to calcualate the virial;
+        /* Correct r_m_dder, which will be used to calcualate the virial;
          * we need to use the unscaled multipliers in the virial.
          */
-        msmul(rmdder,1.0/vetavar->vscale,rmdder);
+        msmul(vir_r_m_dder,1.0/vetavar->vscale,vir_r_m_dder);
     }
 }
 
@@ -311,7 +312,9 @@ void csettle(gmx_settledata_t settled,
              const t_pbc *pbc,
              real b4[], real after[],
              real invdt,real *v,int CalcVirAtomEnd,
-             tensor rmdr,int *error,t_vetavars *vetavar)
+             tensor vir_r_m_dr,
+             int *error,
+             t_vetavars *vetavar)
 {
     /* ***************************************************************** */
     /*                                                               ** */
@@ -604,15 +607,15 @@ void csettle(gmx_settledata_t settled,
           mdcx = mHs*dcx;
           mdcy = mHs*dcy;
           mdcz = mHs*dcz;
-          rmdr[XX][XX] -= b4[ow1  ]*mdax + (b4[ow1  ]+xb0)*mdbx + (b4[ow1  ]+xc0)*mdcx;
-          rmdr[XX][YY] -= b4[ow1  ]*mday + (b4[ow1  ]+xb0)*mdby + (b4[ow1  ]+xc0)*mdcy;
-          rmdr[XX][ZZ] -= b4[ow1  ]*mdaz + (b4[ow1  ]+xb0)*mdbz + (b4[ow1  ]+xc0)*mdcz;
-          rmdr[YY][XX] -= b4[ow1+1]*mdax + (b4[ow1+1]+yb0)*mdbx + (b4[ow1+1]+yc0)*mdcx;
-          rmdr[YY][YY] -= b4[ow1+1]*mday + (b4[ow1+1]+yb0)*mdby + (b4[ow1+1]+yc0)*mdcy;
-          rmdr[YY][ZZ] -= b4[ow1+1]*mdaz + (b4[ow1+1]+yb0)*mdbz + (b4[ow1+1]+yc0)*mdcz;
-          rmdr[ZZ][XX] -= b4[ow1+2]*mdax + (b4[ow1+2]+zb0)*mdbx + (b4[ow1+2]+zc0)*mdcx;
-          rmdr[ZZ][YY] -= b4[ow1+2]*mday + (b4[ow1+2]+zb0)*mdby + (b4[ow1+2]+zc0)*mdcy;
-          rmdr[ZZ][ZZ] -= b4[ow1+2]*mdaz + (b4[ow1+2]+zb0)*mdbz + (b4[ow1+2]+zc0)*mdcz;
+          vir_r_m_dr[XX][XX] -= b4[ow1  ]*mdax + (b4[ow1  ]+xb0)*mdbx + (b4[ow1  ]+xc0)*mdcx;
+          vir_r_m_dr[XX][YY] -= b4[ow1  ]*mday + (b4[ow1  ]+xb0)*mdby + (b4[ow1  ]+xc0)*mdcy;
+          vir_r_m_dr[XX][ZZ] -= b4[ow1  ]*mdaz + (b4[ow1  ]+xb0)*mdbz + (b4[ow1  ]+xc0)*mdcz;
+          vir_r_m_dr[YY][XX] -= b4[ow1+1]*mdax + (b4[ow1+1]+yb0)*mdbx + (b4[ow1+1]+yc0)*mdcx;
+          vir_r_m_dr[YY][YY] -= b4[ow1+1]*mday + (b4[ow1+1]+yb0)*mdby + (b4[ow1+1]+yc0)*mdcy;
+          vir_r_m_dr[YY][ZZ] -= b4[ow1+1]*mdaz + (b4[ow1+1]+yb0)*mdbz + (b4[ow1+1]+yc0)*mdcz;
+          vir_r_m_dr[ZZ][XX] -= b4[ow1+2]*mdax + (b4[ow1+2]+zb0)*mdbx + (b4[ow1+2]+zc0)*mdcx;
+          vir_r_m_dr[ZZ][YY] -= b4[ow1+2]*mday + (b4[ow1+2]+zb0)*mdby + (b4[ow1+2]+zc0)*mdcy;
+          vir_r_m_dr[ZZ][ZZ] -= b4[ow1+2]*mdaz + (b4[ow1+2]+zb0)*mdbz + (b4[ow1+2]+zc0)*mdcz;
 	/* 3*24 - 9 flops */
       }
     } else {
