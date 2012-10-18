@@ -72,6 +72,7 @@ static const char *modth_env_var[emntNR] =
     "GMX_DOMDEC_NUM_THREADS", "GMX_PAIRSEARCH_NUM_THREADS",
     "GMX_NONBONDED_NUM_THREADS", "GMX_BONDED_NUM_THREADS",
     "GMX_PME_NUM_THREADS", "GMX_UPDATE_NUM_THREADS",
+    "GMX_VSITE_NUM_THREADS",
     "GMX_LINCS_NUM_THREADS", "GMX_SETTLE_NUM_THREADS"
 };
 
@@ -90,7 +91,7 @@ static const char *mod_name[emntNR] =
  *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted.
  * */
-static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
+static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
 
 /*! Determine the number of threads for module \mod.
@@ -341,6 +342,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         pick_module_nthreads(fplog, emntBonded, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntPME, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntUpdate, SIMMASTER(cr), bFullOmpSupport, bSepPME);
+        pick_module_nthreads(fplog, emntVSITE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
 
