@@ -84,7 +84,7 @@ extern "C"
 
 
 
-/*! \brief Pthread implementation of the abstract tMPI_Thread type
+/*! \brief Thread ID: abstract tMPI_Thread type
  *
  *  The contents of this structure depends on the actual threads 
  *  implementation used.
@@ -243,6 +243,8 @@ void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
 
 
 
+/*! \name Thread creation, destruction, and inspection
+    \{ */
 /** Check if threads are supported
  *
  *  This routine provides a cleaner way to check if threads are supported
@@ -274,9 +276,9 @@ int tMPI_Thread_get_hw_number(void);
  *
  *  Please be careful not to change arg after calling this function.
  * 
- *  \param thread          Pointer to opaque thread datatype
- *  \param start_routine   The function to call in the new thread
- *  \param arg             Argument to call with
+ *  \param[out] thread          Pointer to thread ID
+ *  \param[in] start_routine    The function to call in the new thread
+ *  \param[in] arg              Argument to call with
  *  
  *  \return Status - 0 on success, or an error code.
  */
@@ -298,9 +300,9 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
  *
  *  Please be careful not to change arg after calling this function.
  * 
- *  \param thread          Pointer to opaque thread datatype
- *  \param start_routine   The function to call in the new thread
- *  \param arg             Argument to call with
+ *  \param[out] thread         Pointer to thread ID
+ *  \param[in] start_routine   The function to call in the new thread
+ *  \param[in] arg             Argument to call with
  *  
  *  \return Status - 0 on success, or an error code.
  */
@@ -316,14 +318,76 @@ int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
  *
  *  If the thread has already finished the routine returns immediately.
  *
- *  \param thread      Opaque thread datatype to wait for.
- *  \param value_ptr   Pointer to location where to store pointer to exit value
- *                     from threads that called tMPI_Thread_exit().
+ *  \param[in] thread       Pointer to thread ID
+ *  \param[out] value_ptr   Pointer to location where to store pointer to
+ *                          exit value from threads that called
+ *                          tMPI_Thread_exit().
  *  
  *  \return 0 if the join went ok, or a non-zero error code.
  */
 int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr);
 
+
+/** Terminate calling thread
+ *
+ *  Die voluntarily.
+ *
+ *  \param value_ptr   Pointer to a return value. Threads waiting for us to
+ *                     join them can read this value if they try.
+ *  \return 
+ */
+void tMPI_Thread_exit(void *value_ptr);
+
+
+
+/** Ask a thread to exit
+ *
+ *  This routine tries to end the execution of another thread, but there are
+ *  no guarantees it will succeed.
+ *
+ *  \param thread     Handle to thread we want to see dead.
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_cancel(tMPI_Thread_t thread);
+
+
+
+
+/** Get a thread ID of the calling thread. 
+  *
+  * This function also works on threads not started with tMPI_Thread_create,
+  * or any other function in thread_mpi. This makes it possible to, for 
+  * example assign thread affinities to any thread. 
+  *
+  * \return A thread ID of the calling thread */
+tMPI_Thread_t tMPI_Thread_self(void);
+
+
+
+/** Check whether two thread pointers point to the same thread 
+  *
+  * \param[in]  t1  Thread ID 1
+  * \param[in]  t2  Thread ID 2
+  * \return non-zero if the thread structs refer to the same thread, 
+            0 if the threads are different*/
+int tMPI_Thread_equal(tMPI_Thread_t t1, tMPI_Thread_t t2);
+
+
+/** Set thread affinity to a single core
+  *
+  * This function sets the thread affinity of a thread to a a specific 
+  * numbered processor. This only works if the underlying operating system
+  * supports it. The processor number must be between 0 and the number returned
+  * by tMPI_Thread_get_hw_number().
+  *
+  * \param[in] thread   Thread ID of the thread to set affinity for
+  * \param[in] nr       Processor number to set affinity to */
+int tMPI_Thread_setaffinity_single(tMPI_Thread_t thread, unsigned int nr);
+
+
+/*! \} */
+/*! \name Mutexes 
+    \{ */
 
 
 /** Initialize a new mutex
@@ -388,6 +452,10 @@ int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx);
 
 
 
+/*! \} */
+/*! \name Thread-specific storage 
+    \{ */
+
 
 /** Initialize thread-specific-storage handle
  *
@@ -440,6 +508,10 @@ void * tMPI_Thread_getspecific(tMPI_Thread_key_t key);
 int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value);
 
 
+/*! \} */
+/*! \name Run-once
+    \{ */
+
 
 /** Run the provided routine exactly once
  *
@@ -457,6 +529,9 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_data,
                      void (*init_routine)(void));    
 
 
+/*! \} */
+/*! \name Condition variables
+    \{ */
 
 /** Initialize condition variable
  *
@@ -531,32 +606,9 @@ int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond);
 
 
 
-
-/** Terminate calling thread
- *
- *  Die voluntarily.
- *
- *  \param value_ptr   Pointer to a return value. Threads waiting for us to
- *                     join them can read this value if they try.
- *  \return 
- */
-void tMPI_Thread_exit(void *value_ptr);
-
-
-
-/** Ask a thread to exit
- *
- *  This routine tries to end the execution of another thread, but there are
- *  no guarantees it will succeed.
- *
- *  \param thread     Handle to thread we want to see dead.
- *  \return 0 or a non-zero error message.
- */
-int tMPI_Thread_cancel(tMPI_Thread_t thread);
-
-
-
-
+/*! \} */
+/*! \name Barriers
+    \{ */
 
 
 /** Initialize a synchronization barrier type
@@ -595,7 +647,7 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier);
  */
 int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 
-
+/*! \} */
 
 
 #ifdef __cplusplus

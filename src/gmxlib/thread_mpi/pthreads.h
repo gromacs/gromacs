@@ -39,7 +39,8 @@ files.
 
 struct tMPI_Thread
 {
-    pthread_t th;
+    pthread_t th;        /*!< The POSIX thread ID */
+    int started_by_tmpi; /*!< whether the thread is started by tMPI */
 };
 
 struct tMPI_Thread_key
