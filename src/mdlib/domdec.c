@@ -9460,6 +9460,12 @@ void dd_partition_system(FILE            *fplog,
     /* Now we have the charges we can sort the FE interactions */
     dd_sort_local_top(dd,mdatoms,top_local);
 
+    if (vsite != NULL)
+    {
+        /* Now we have updated mdatoms, we can do the last vsite bookkeeping */
+        split_vsites_over_threads(top_local->idef.il,mdatoms,FALSE,vsite);
+    }
+
     if (shellfc)
     {
         /* Make the local shell stuff, currently no communication is done */
