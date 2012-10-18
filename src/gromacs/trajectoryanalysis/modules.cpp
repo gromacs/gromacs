@@ -43,6 +43,7 @@
 
 #include "modules/angle.h"
 #include "modules/distance.h"
+#include "modules/rdf.h"
 #include "modules/select.h"
 #include "modules/zleep.h"
 
@@ -125,6 +126,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     using namespace gmx::analysismodules;
     manager->registerModule<TrajAnalysisCmdLineWrapper<Angle> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Distance> >();
+    manager->registerModule<TrajAnalysisCmdLineWrapper<Rdf> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Select> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Zleep> >();
 }
