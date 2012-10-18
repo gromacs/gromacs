@@ -65,6 +65,8 @@ typedef struct {
   int  *vsite_pbc_loc_nalloc;
   gmx_bool bPDvsitecomm;          /* Do we need vsite communication with PD? */
   t_comm_vsites *vsitecomm;   /* The PD vsite communication struct       */
+  gmx_bool barrier[F_NRE];    /* Do we need a thread barrier for ftype?  */
+  matrix *dxdf_thread;        /* Virial dx*df thread accumulation buffers */
 } gmx_vsite_t;
 
 void construct_vsites(FILE *log,gmx_vsite_t *vsite,
