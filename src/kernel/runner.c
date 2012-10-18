@@ -1535,7 +1535,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         mdatoms = init_mdatoms(fplog,mtop,inputrec->efep!=efepNO);
 
         /* Initialize the virtual site communication */
-        vsite = init_vsite(mtop,cr);
+        vsite = init_vsite(mtop,cr,FALSE);
 
         calc_shifts(box,fr->shift_vec);
 
