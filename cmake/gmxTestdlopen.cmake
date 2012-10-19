@@ -24,5 +24,7 @@ int main(void) {
       MESSAGE(STATUS "Checking for dlopen - not found")
       set(${VARIABLE} 0 CACHE INTERNAL "Result of test for dlopen" FORCE)
     ENDIF()
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LIBRARIES)
   ENDIF()
 ENDMACRO()

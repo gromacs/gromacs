@@ -649,12 +649,12 @@ gmx_bool gmx_isfinite(real x)
     /* If no suitable function was found, assume the value is
      * finite. */
 
-#ifdef HAVE_ISFINITE
+#ifdef HAVE__FINITE
+    returnval = _finite(x);
+#elif defined HAVE_ISFINITE
     returnval = isfinite(x);
 #elif defined HAVE__ISFINITE
     returnval = _isfinite(x);
-#elif defined HAVE__FINITE
-    returnval = _finite(x);
 #endif
     return returnval;
 }
