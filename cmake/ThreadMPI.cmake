@@ -142,6 +142,7 @@ int main(void) { cpu_set_t set;
     if (PTHREAD_SETAFFINITY)
         set(HAVE_PTHREAD_SETAFFINITY 1)
     endif (PTHREAD_SETAFFINITY)
+    set(CMAKE_REQUIRED_LIBRARIES)
 endif (THREAD_PTHREADS)
 
 
