@@ -80,7 +80,9 @@ if (FFTW_FOUND AND HAVE_LIBM AND NOT "${FFTW_LIBRARY_PREVIOUS}" STREQUAL "${FFTW
   #The user could specify trash in FFTW_LIBRARY, so test if we can link it
   include(CheckLibraryExists)
   #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
-  set(CMAKE_REQUIRED_LIBRARIES m)
+  if (HAVE_LIBM)
+    set(CMAKE_REQUIRED_LIBRARIES m)
+  endif()
   unset(FOUND_FFTW_PLAN_${FFTW_PKG} CACHE)
   check_library_exists("${FFTW_LIBRARIES}" "${FFTW_FUNCTION}" "" FOUND_FFTW_PLAN_${FFTW_PKG})
   if(NOT FOUND_FFTW_PLAN_${FFTW_PKG})
