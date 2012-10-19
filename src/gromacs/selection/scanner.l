@@ -43,7 +43,7 @@
  * \ingroup module_selection
  */
 %{
-#include <string2.h>
+#include "gromacs/legacyheaders/string2.h"
 
 #include "parser.h"
 #include "scanner.h"

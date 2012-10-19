@@ -113,12 +113,12 @@
 
 #include <math.h>
 
-#include "macros.h"
-#include "maths.h"
-#include "pbc.h"
-#include "physics.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/physics.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"

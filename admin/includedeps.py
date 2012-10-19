@@ -256,6 +256,15 @@ class Graph(object):
         outfile.write('}\n')
 
 
+def find_include_file(filename, includedirs):
+    """Find full path to filename, looking in a set of directories."""
+    for includedir in includedirs:
+        fullpath = os.path.abspath(os.path.join(includedir, filename))
+        if os.path.exists(fullpath):
+            return fullpath
+    return None
+
+
 class File(object):
     def __init__(self, path, module):
         self.path = path
@@ -312,50 +321,67 @@ class File(object):
             properties.append('style="{0}"'.format(','.join(style)))
         return ', '.join(properties)
 
-    def add_included_file(self, includefile, allfiles, includedirs, ignorelist,
-            reporter):
-        fullpath = os.path.join(includedirs[0], includefile)
-        if os.path.abspath(fullpath) in ignorelist:
-            return
-        for includedir in includedirs:
-            fullpath = os.path.abspath(os.path.join(includedir, includefile))
-            if os.path.exists(fullpath):
-                if self.installed and includedir != includedirs[0]:
-                    reporter.error(self.path,
-                            'installed header includes "{0}", '
-                            'which is not found using relative path'
-                                .format(includefile))
-                includefile = fullpath
-                break
-        else:
-            reporter.input_warning(self.path,
-                    'included file "{0}" not found'
-                        .format(includefile))
-            return
-        if includefile in allfiles:
-            other = allfiles[includefile]
-            if self.installed and not other.installed:
+    def scan_include_file(self, line, allfiles, selfdir, includedirs,
+            ignorelist, reporter):
+        """Process #include directive during scan().
+
+        Searches for the included file in given directories, does some checks,
+        and adds the dependency link to the other file if applicable.
+        """
+        fullpath = None
+        match = re.match(r'#include <([^>]*)>', line)
+        if match:
+            includedfile = match.group(1)
+            fullpath = find_include_file(includedfile, includedirs)
+            if fullpath:
                 reporter.error(self.path,
-                        'installed header includes non-installed header "{0}"'
-                            .format(other.path))
-            self.add_dependency(other)
-        #elif not dep in ignorelist:
-        #    depfile = File(dep, None)
-        #    files[dep] = depfile
-        #    file.add_dependency(depfile)
-        #    extrafiles.append(dep)
+                        'local file included as <{0}>'
+                            .format(includedfile))
+        else:
+            match = re.match(r'#include "([^"]*)"', line)
+            if match:
+                includedfile = match.group(1)
+                fullpath = os.path.join(selfdir, includedfile)
+                #if os.path.abspath(fullpath) in ignorelist:
+                #    return
+                if not os.path.exists(fullpath):
+                    fullpath = find_include_file(includedfile, includedirs)
+                    if fullpath:
+                        if self.installed:
+                            reporter.error(self.path,
+                                    'installed header includes "{0}", '
+                                    'which is not found using relative path'
+                                        .format(includedfile))
+                    else:
+                        reporter.input_warning(self.path,
+                                'included file "{0}" not found'
+                                    .format(includedfile))
+        if fullpath:
+            if fullpath in allfiles:
+                other = allfiles[fullpath]
+                if self.installed and not other.installed:
+                    reporter.error(self.path,
+                            'installed header includes '
+                            'non-installed header "{0}"'
+                                .format(other.path))
+                self.add_dependency(other)
+            #elif not dep in ignorelist:
+            #    depfile = File(dep, None)
+            #    files[dep] = depfile
+            #    file.add_dependency(depfile)
+            #    extrafiles.append(dep)
 
     def scan(self, filename, allfiles, includedirs, ignorelist, reporter):
-        includedirs = [os.path.dirname(filename)] + includedirs
+        selfdir = os.path.dirname(filename)
         infileblock = False
         foundfileblock = False
         docmodule = None
         with open(filename, 'r') as scanfile:
             for line in scanfile:
-                match = re.match(r'#include "([^>"]*)"', line)
-                if match:
-                    self.add_included_file(match.group(1), allfiles,
+                if line.startswith('#include'):
+                    self.scan_include_file(line, allfiles, selfdir,
                             includedirs, ignorelist, reporter)
+                    continue
                 if not foundfileblock:
                     if infileblock:
                         if line.startswith(r' */'):

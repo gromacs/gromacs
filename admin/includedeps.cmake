@@ -56,7 +56,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SRCDIR}/admin/includedeps.py
                         -f ${OUTDIR}/module-files.txt
                         --installed ${OUTDIR}/installed-headers.txt
                         -R ${SRCDIR}/src -R ${BUILDDIR}/src
-                        -I ${SRCDIR}/src/gromacs/legacyheaders
+                        #-I ${SRCDIR}/src/gromacs/legacyheaders
                         -I ${BUILDDIR}/src/gromacs/utility
                         ${GRAPHOPTIONS})
 

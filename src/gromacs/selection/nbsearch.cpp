@@ -72,10 +72,10 @@
 
 #include <math.h>
 
-#include <smalloc.h>
-#include <typedefs.h>
-#include <pbc.h>
-#include <vec.h>
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"

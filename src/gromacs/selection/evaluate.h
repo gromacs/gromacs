@@ -45,7 +45,7 @@
 #ifndef GMX_SELECTION_EVALUATE_H
 #define GMX_SELECTION_EVALUATE_H
 
-#include <typedefs.h>
+#include "gromacs/legacyheaders/typedefs.h"
 
 #include "gromacs/selection/indexutil.h"
 

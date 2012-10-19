@@ -35,7 +35,7 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#include <smalloc.h>
+#include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"

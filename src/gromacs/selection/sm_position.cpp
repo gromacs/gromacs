@@ -35,9 +35,9 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"

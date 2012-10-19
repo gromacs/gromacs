@@ -35,9 +35,9 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#include <typedefs.h>
-#include <pbc.h>
-#include <vec.h>
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/centerofmass.h"
 

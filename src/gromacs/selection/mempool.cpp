@@ -39,7 +39,7 @@
 
 #include <new>
 
-#include "smalloc.h"
+#include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/exceptions.h"

@@ -541,7 +541,7 @@ static yyconst flex_int16_t yy_chk[191] =
  * \ingroup module_selection
  */
 #line 46 "scanner.l"
-#include <string2.h>
+#include "gromacs/legacyheaders/string2.h"
 
 #include "parser.h"
 #include "scanner.h"
