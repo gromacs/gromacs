@@ -78,8 +78,12 @@ if(GMX_GPU)
     set(GMX_GPU_LIBRARIES gpu_utils cuda_tools)
 endif()
 
+if (NOT GMX_THREAD_MPI)
+    set(THREAD_MPI_SRC_MPIBUILD thread_mpi/pthreads.c thread_mpi/winthreads.c)
+endif()
+
 # NONBONDED_SOURCES is imported from the nonbonded subdirectory.
-add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${THREAD_MPI_SRC} ${NONBONDED_SOURCES})
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${THREAD_MPI_SRC} ${THREAD_MPI_SRC_MPIBUILD} ${NONBONDED_SOURCES})
 target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
