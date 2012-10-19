@@ -341,7 +341,7 @@ static void usage(const char *type,const char *arg)
 
 int iscan(int argc,char *argv[],int *i)
 {
-    int var;
+    int var=0;
     
     if (argc > (*i)+1) {
         if (!sscanf(argv[++(*i)],"%d",&var))
@@ -354,7 +354,7 @@ int iscan(int argc,char *argv[],int *i)
 
 gmx_large_int_t istepscan(int argc,char *argv[],int *i)
 {
-    gmx_large_int_t var;
+    gmx_large_int_t var=0;
     
     if (argc > (*i)+1) {
         if (!sscanf(argv[++(*i)],gmx_large_int_pfmt,&var))
@@ -367,7 +367,7 @@ gmx_large_int_t istepscan(int argc,char *argv[],int *i)
 
 double dscan(int argc,char *argv[],int *i)
 {
-    double var;
+    double var=0;
     
     if (argc > (*i)+1) {
         if (!sscanf(argv[++(*i)],"%lf",&var))
