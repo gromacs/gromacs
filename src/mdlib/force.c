@@ -168,7 +168,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     int     pme_flags;
     matrix  boxs;
     rvec    box_size;
-    real    Vsr,Vlr,Vcorr=0;
+    real    Vsr,Vlr=0,Vcorr=0;
     t_pbc   pbc;
     real    dvdgb;
     char    buf[22];
@@ -609,7 +609,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             {
                 /* Energies and virial are obtained later from the PME nodes */
                 /* but values have to be zeroed out here */
-                Vlr=0.0;
             }
             break;
         case eelEWALD:
@@ -621,7 +620,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             PRINT_SEPDVDL("Ewald long-range",Vlr,dvdl);
             break;
         default:
-            Vlr = 0;
             gmx_fatal(FARGS,"No such electrostatics method implemented %s",
                       eel_names[fr->eeltype]);
         }
