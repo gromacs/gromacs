@@ -80,8 +80,8 @@ gmx_bool bshakef(FILE *log,		/* Log file			*/
                     real *dvdlambda,    /* FEP force                    */
                     real invdt,         /* 1/delta_t                    */
                     rvec *v,            /* Also constrain v if v!=NULL  */
-                    gmx_bool bCalcVir,      /* Calculate r x m delta_r      */
-                    tensor rmdr,        /* sum r x m delta_r            */
+                    gmx_bool bCalcVir,  /* Calculate r x m delta_r      */
+                    tensor vir_r_m_dr,  /* sum r x m delta_r            */
                     gmx_bool bDumpOnError,  /* Dump debugging stuff on error*/
                     int econq,         /* which type of constrainint is occurring */
                     t_vetavars *vetavar);           /* veta for pressure control */
@@ -107,7 +107,7 @@ void csettle(gmx_settledata_t settled,
              real invdt,         /* 1/delta_t                    */
              real *v,            /* Also constrain v if v!=NULL  */
              int calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
-             tensor rmdr,        /* sum r x m delta_r            */
+             tensor vir_r_m_dr,  /* sum r x m delta_r            */
              int *xerror,
              t_vetavars *vetavar     /* variables for pressure control */   
     );
@@ -118,7 +118,8 @@ void settle_proj(FILE *fp,
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],
                  rvec *der,rvec *derp,
-                 int CalcVirAtomEnd,tensor rmdder, t_vetavars *vetavar);
+                 int CalcVirAtomEnd,tensor vir_r_m_dder,
+                 t_vetavars *vetavar);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
@@ -260,7 +261,7 @@ constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
                 matrix box,t_pbc *pbc,
 			    real lambda,real *dvdlambda,
 			    real invdt,rvec *v,
-			    gmx_bool bCalcVir,tensor rmdr,
+			    gmx_bool bCalcVir,tensor vir_r_m_dr,
 			    int econ,
 			    t_nrnb *nrnb,
 			    int maxwarn,int *warncount);
