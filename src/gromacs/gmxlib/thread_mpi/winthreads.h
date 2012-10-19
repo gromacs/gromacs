@@ -40,7 +40,8 @@ files.
 
 struct tMPI_Thread
 {
-    HANDLE th;
+    HANDLE th;            /* the thread handle */
+    int started_by_tmpi;  /* whether this thread was started by tmpi */
 };
 
 struct tMPI_Thread_key

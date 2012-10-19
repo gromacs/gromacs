@@ -78,10 +78,10 @@ FUNC_QUALIFIER
 void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
                               const nbnxn_atomdata_t *atomdata) FUNC_TERM
 
-/*! \brief Update parameters during PME auto-tuning. */
+/*! \brief Update parameters during PP-PME load balancing. */
 FUNC_QUALIFIER
-void nbnxn_cuda_pmetune_update_param(nbnxn_cuda_ptr_t cu_nb,
-                                     const interaction_const_t *ic) FUNC_TERM
+void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
+                                         const interaction_const_t *ic) FUNC_TERM
 
 /*! Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
 FUNC_QUALIFIER

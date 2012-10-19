@@ -266,7 +266,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     fflush(stderr);
     /* now spawn new threads that start mdrunner_start_fn(), while 
        the main thread returns */
-    ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi,
+    ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi, TMPI_AFFINITY_ALL_CORES,
                      mdrunner_start_fn, (void*)(mda) );
     if (ret!=TMPI_SUCCESS)
         return NULL;
