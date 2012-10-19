@@ -97,7 +97,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
 int gmx_sorient(int argc,char *argv[])
 {
   t_topology top;
-  int      ePBC;
+  int      ePBC=-1;
   char     title[STRLEN];
   t_trxstatus *status;
   int      natoms;
