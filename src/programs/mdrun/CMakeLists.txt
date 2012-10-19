@@ -1,9 +1,9 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
 set(MDRUN_SOURCES
-    do_gct.c    gctio.c         genalg.c    ionize.c
-    md.c        md_openmm.c     mdrun.c     membed.c
-    pme_switch.c  repl_ex.c   runner.c        xutils.c)
+    do_gct.c      gctio.c       genalg.c    ionize.c
+    md.c          md_openmm.c   mdrun.c     membed.c
+    pme_loadbal.c repl_ex.c     runner.c    xutils.c)
 
 if(GMX_OPENMM) 
     include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
