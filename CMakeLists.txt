@@ -81,6 +81,7 @@ set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 set(CPACK_SOURCE_IGNORE_FILES ".isreposource;.git;.gitignore")
 set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
 SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/man;man")
+set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 
 #must come after all cpack settings!
 include(CPack)
