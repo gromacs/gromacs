@@ -128,10 +128,15 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
         }
 
         close_trj(status);
+        if (fr.bX)
+          sfree(fr.x);
+        if (fr.bV)
+          sfree(fr.v);
+        if (fr.bF)
+          sfree(fr.f);
     }
     fprintf(stderr,"\n");
 
-    sfree(fr.x);
 }
 
 static void sort_files(char **fnms, real *settime, int nfile)
