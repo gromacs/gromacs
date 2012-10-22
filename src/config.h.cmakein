@@ -28,8 +28,8 @@
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 
-/* Use the version string from generated version.h */
-#cmakedefine USE_VERSION_H
+/* Use extra version information generated with git */
+#cmakedefine GMX_GIT_VERSION_INFO
 
 /* Default location of data files */
 #define GMXLIBDIR "@GMXLIBDIR@"

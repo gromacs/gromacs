@@ -9,16 +9,14 @@
 # The following variables have to be previously defined:
 # GIT_EXECUTABLE        - path to git binary
 # GIT_VERSION           - git version (if not defined it's assumed that >=1.5.3)
-# PROJECT_VERSION       - hard-coded version string, should have the following structure:
-#                       VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-#                       is optional but should start with -dev
+# PROJECT_VERSION       - hard-coded version string (generated info is appended)
 # PROJECT_SOURCE_DIR    - top level source directory (which has to be in git)
-# VERSION_C_CMAKEIN     - path to the version.c.cmakein file
-# VERSION_C_OUT         - path to the version.c output file
+# VERSION_C_CMAKEIN     - path to the gitversion.c.cmakein file
+# VERSION_C_OUT         - path to the gitversion.c output file
 #
 # Output:
-# i)  Script mode: version.c configured from the input version.c.cmakein using
-# the variables listed below.
+# i)  Script mode: gitversion.c configured from the input gitversion.c.cmakein
+# using the variables listed below.
 # ii) Cache variable mode: the varables below are set in cache.
 #
 # GMX_PROJECT_VERSION_STR   - version string
@@ -31,7 +29,6 @@
 if("${PROJECT_VERSION}" STREQUAL "")
     message(FATAL_ERROR "PROJECT_VERSION undefined!")
 endif()
-set(VER ${PROJECT_VERSION})
 
 # if we're generating variables for cache unset the variables
 if(GEN_VERSION_INFO_INTERNAL)
@@ -163,13 +160,11 @@ if(EXISTS "${GIT_EXECUTABLE}" AND NOT GIT_VERSION VERSION_LESS "1.5.3")
         endif()
     endif()
 
-    # compile final version string, if there is already a -dev suffix in VER
-    # remove everything after this and replace it with the generated suffix
-    string(REGEX REPLACE "(.*)-dev.*" "\\1" VER "${VER}")
-    set(GMX_PROJECT_VERSION_STR "${VER}-dev-${VERSION_STR_SUFFIX}")
+    # compile final version string
+    set(GMX_PROJECT_VERSION_STR "${PROJECT_VERSION}-${VERSION_STR_SUFFIX}")
 else()
-    # the version has to be defined - if not we're not using version.h/.c and set
-    # the GIT related information to "unknown"
+    # the version has to be defined - if not we're not using gitversion.h/.c;
+    # set the GIT related information to "unknown"
     message(WARNING "Source tree seems to be a repository, but no compatible git is available, using hard-coded version string")
     set(GMX_PROJECT_VERSION_STR "${PROJECT_VERSION}")
     set(GMX_GIT_HEAD_HASH "unknown")
@@ -177,7 +172,7 @@ else()
 endif()
 
 # if we're generating cache variables set these
-# otherwise it's assumed that it's called in script mode to generate version.c
+# otherwise it's assumed that it's called in script mode to generate gitversion.c
 if(GEN_VERSION_INFO_INTERNAL)
     set(GMX_PROJECT_VERSION_STR ${GMX_PROJECT_VERSION_STR}
         CACHE STRING "Gromacs version string" FORCE)
@@ -193,6 +188,6 @@ else()
     if("${VERSION_C_OUT}" STREQUAL "")
         message(FATAL_ERROR "Missing input parameter VERSION_C_OUT!")
     endif()
-    # generate version.c
+    # generate gitversion.c
     configure_file(${VERSION_C_CMAKEIN} ${VERSION_C_OUT})
 endif()
