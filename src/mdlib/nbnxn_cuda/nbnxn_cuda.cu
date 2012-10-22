@@ -146,7 +146,7 @@ nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
       { k_nbnxn_ewald_twin_ener,    k_nbnxn_ewald_twin_ener_prune } },
     { { k_nbnxn_rf,                 k_nbnxn_rf_prune },
       { k_nbnxn_rf_ener,            k_nbnxn_rf_ener_prune } },
-    { { k_nbnxn_ewald,              k_nbnxn_ewald_prune },
+    { { k_nbnxn_cutoff,             k_nbnxn_cutoff_prune },
       { k_nbnxn_cutoff_ener,        k_nbnxn_cutoff_ener_prune } },
 };
 
@@ -160,7 +160,7 @@ nb_legacy_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
       { k_nbnxn_ewald_twin_ener_legacy, k_nbnxn_ewald_twin_ener_prune_legacy } },
     { { k_nbnxn_rf_legacy,              k_nbnxn_rf_prune_legacy },
       { k_nbnxn_rf_ener_legacy,         k_nbnxn_rf_ener_prune_legacy } },
-    { { k_nbnxn_ewald_legacy,           k_nbnxn_ewald_prune_legacy },
+    { { k_nbnxn_cutoff_legacy,          k_nbnxn_cutoff_prune_legacy },
       { k_nbnxn_cutoff_ener_legacy,     k_nbnxn_cutoff_ener_prune_legacy } },
 };
 
