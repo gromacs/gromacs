@@ -28,11 +28,11 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#ifndef GMX_GMXLIB_VERSION_H
-#define GMX_GMXLIB_VERSION_H
+#ifndef GMX_UTILITY_GITVERSION_H
+#define GMX_UTILITY_GITVERSION_H
 
 extern const char _gmx_ver_string[];
 extern const char _gmx_full_git_hash[];
 extern const char _gmx_central_base_hash[];
 
-#endif /* GMX_GMXLIB_VERSION_H */
+#endif

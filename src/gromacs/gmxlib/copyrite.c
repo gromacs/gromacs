@@ -621,9 +621,9 @@ void please_cite(FILE *fp,const char *key)
   fflush(fp);
 }
 
-#ifdef USE_VERSION_H
+#ifdef GMX_GIT_VERSION_INFO
 /* Version information generated at compile time. */
-#include "version.h"
+#include "gromacs/utility/gitversion.h"
 #else
 /* Fall back to statically defined version. */
 static const char _gmx_ver_string[]="VERSION " VERSION;
@@ -643,7 +643,7 @@ const char *GromacsVersion()
 void gmx_print_version_info(FILE *fp)
 {
     fprintf(fp, "Version:          %s\n", _gmx_ver_string);
-#ifdef USE_VERSION_H
+#ifdef GMX_GIT_VERSION_INFO
     fprintf(fp, "GIT SHA1 hash:    %s\n", _gmx_full_git_hash);
     /* Only print out the branch information if present.
      * The generating script checks whether the branch point actually

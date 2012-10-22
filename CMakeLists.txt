@@ -93,6 +93,11 @@ SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR
 #must come after all cpack settings!
 include(CPack)
 
+set(SOURCE_IS_GIT_REPOSITORY OFF)
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    set(SOURCE_IS_GIT_REPOSITORY ON)
+endif()
+
 ########################################################################
 # Check and warn if cache generated on a different host is being reused
 ########################################################################
@@ -193,8 +198,8 @@ mark_as_advanced(GMX_LOAD_PLUGINS)
 option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
-option(USE_VERSION_H "Generate development version string/information" ON)
-mark_as_advanced(USE_VERSION_H)
+option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_REPOSITORY})
+mark_as_advanced(GMX_GIT_VERSION_INFO)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 
@@ -557,29 +562,32 @@ if(WIN32 AND NOT CYGWIN)
 endif()
 
 # only bother with finding git and using version.h if the source is a git repo
-if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-    if(USE_VERSION_H)
-        # We need at least git v1.5.3 be able to parse git's date output. If not
-        # found or the version is too small, we can't generate version information.
-        find_package(Git)
+if(GMX_GIT_VERSION_INFO)
+    if (NOT SOURCE_IS_GIT_REPOSITORY)
+        message(FATAL_ERROR
+            "Cannot generate git version information from source tree not under git. "
+            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
+    endif ()
+    # We need at least git v1.5.3 be able to parse git's date output. If not
+    # found or the version is too small, we can't generate version information.
+    find_package(Git)
 
-	# Find out the git version
-	if(GIT_FOUND AND NOT GIT_VERSION)
-	  execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
-            OUTPUT_VARIABLE _exec_out
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
-	  string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
-	  set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
-	  mark_as_advanced(GIT_VERSION)
-	endif()
-
-        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
-          message("No compatible git version found, won't be able to generate proper development version information.")
-          set(USE_VERSION_H OFF)
-        endif()
+    # Find out the git version
+    if(GIT_FOUND AND NOT GIT_VERSION)
+      execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
+        OUTPUT_VARIABLE _exec_out
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+      string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
+      set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
+      mark_as_advanced(GIT_VERSION)
     endif()
-else()
-    set(USE_VERSION_H OFF)
+
+    if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
+        message(FATAL_ERROR
+            "No compatible git version found (>= 1.5.3 required). "
+            "Won't be able to generate development version information. "
+            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
+    endif()
 endif()
 
 option(GMX_INTERNAL_BOOST "Use minimal internal version of boost" OFF)
