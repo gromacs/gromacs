@@ -517,11 +517,11 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
     {
         if (n > 0)
         {
-            sprintf(num,"%10d",n);
+            snprintf(num,sizeof(num),"%10d",n);
             if (nthreads < 0)
-                sprintf(thstr, "N/A");
+                snprintf(thstr, sizeof(thstr), "N/A");
             else
-                sprintf(thstr, "%4d", nthreads);
+                snprintf(thstr, sizeof(thstr), "%4d", nthreads);
         }
         else
         {
@@ -542,8 +542,8 @@ static void print_gputimes(FILE *fplog, const char *name,
 
     if (n > 0)
     {
-        sprintf(num, "%10d", n);
-        sprintf(avg_perf, "%10.3f", t/n);
+        snprintf(num, sizeof(num), "%10d", n);
+        snprintf(avg_perf, sizeof(avg_perf), "%10.3f", t/n);
     }
     else
     {
@@ -624,9 +624,9 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             for(j=0; j<ewcNR; j++)
             {
-                sprintf(buf,"%-9s",wcn[i]);
+                snprintf(buf,9,"%-9s",wcn[i]);
                 buf[9] = ' ';
-                sprintf(buf+10,"%-9s",wcn[j]);
+                snprintf(buf+10,9,"%-9s",wcn[j]);
                 buf[19] = '\0';
                 print_cycles(fplog,c2t,buf,nnodes,
                              is_pme_counter(i) ? npme : npp,
