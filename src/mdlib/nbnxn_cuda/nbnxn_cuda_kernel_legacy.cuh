@@ -114,7 +114,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
           r2, inv_r, inv_r2, inv_r6,
           c6, c12,
 #ifdef CALC_ENERGIES
-          E_lj, E_el,
+          E_lj, E_el, E_lj_p,
 #endif
           F_invr;
     unsigned int wexcl, int_bit, imask, imask_j;
@@ -283,7 +283,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                             F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 
 #ifdef CALC_ENERGIES
-                            E_lj    += int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
+                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
 #endif
 
 #ifdef VDW_CUTOFF_CHECK
@@ -291,9 +291,13 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                                 vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
                                 F_invr  *= vdw_in_range;
 #ifdef CALC_ENERGIES
-                                E_lj    *= vdw_in_range;
+                                E_lj_p  *= vdw_in_range;
 #endif
 #endif
+#ifdef CALC_ENERGIES
+                                E_lj    += E_lj_p;
+#endif
+
 
 #ifdef EL_CUTOFF
                             F_invr  += qi * qj_f * inv_r2 * inv_r;
