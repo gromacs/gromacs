@@ -1687,7 +1687,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms,gmx_bool bSeekF
 {
     float t;
     float dt;
-    gmx_bool bOK;
+    gmx_bool bOK = FALSE;
     gmx_off_t low = 0;
     gmx_off_t high, offset, pos;
     int res;
