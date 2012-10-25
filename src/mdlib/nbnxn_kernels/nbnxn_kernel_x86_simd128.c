@@ -127,8 +127,6 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
     nbnxn_kernel_x86_simd128_tab_twin_comb_lb_noener,
     nbnxn_kernel_x86_simd128_tab_twin_comb_none_noener } };
 
-#endif /* SSE */
-
 
 static void reduce_group_energies(int ng,int ng_2log,
                                   const real *VSvdw,const real *VSc,
@@ -136,18 +134,13 @@ static void reduce_group_energies(int ng,int ng_2log,
 {
     int ng_p2,i,j,j0,j1,c,s;
 
-#ifndef GMX_DOUBLE
-#define SIMD_WIDTH   4
-#define SIMD_WIDTH_2 2
-#else
-#define SIMD_WIDTH   2
-#define SIMD_WIDTH_2 1
-#endif
+#define SIMD_WIDTH       (GMX_X86_SIMD_WIDTH_HERE)
+#define SIMD_WIDTH_HALF  (GMX_X86_SIMD_WIDTH_HERE/2)
 
     ng_p2 = (1<<ng_2log);
 
-    /* The size of the SSE energy group buffer array is:
-     * stride^3*SIMD_WIDTH_2*SIMD_WIDTH
+    /* The size of the x86 SIMD energy group buffer array is:
+     * ng*ng*ng_p2*SIMD_WIDTH_HALF*SIMD_WIDTH
      */
     for(i=0; i<ng; i++)
     {
@@ -161,8 +154,8 @@ static void reduce_group_energies(int ng,int ng_2log,
         {
             for(j0=0; j0<ng; j0++)
             {
-                c = ((i*ng + j1)*ng_p2 + j0)*SIMD_WIDTH_2*SIMD_WIDTH;
-                for(s=0; s<SIMD_WIDTH_2; s++)
+                c = ((i*ng + j1)*ng_p2 + j0)*SIMD_WIDTH_HALF*SIMD_WIDTH;
+                for(s=0; s<SIMD_WIDTH_HALF; s++)
                 {
                     Vvdw[i*ng+j0] += VSvdw[c+0];
                     Vvdw[i*ng+j1] += VSvdw[c+1];
@@ -174,6 +167,8 @@ static void reduce_group_energies(int ng,int ng_2log,
         }
     }
 }
+
+#endif /* GMX_X86_SSE2 */
 
 void
 nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
@@ -296,17 +291,7 @@ nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
 
     if (force_flags & GMX_FORCE_ENERGY)
     {
-        /* Reduce the energies */
-        for(nb=0; nb<nnbl; nb++)
-        {
-            int i;
-
-            for(i=0; i<nbat->out[nb].nV; i++)
-            {
-                Vvdw[i] += nbat->out[nb].Vvdw[i];
-                Vc[i]   += nbat->out[nb].Vc[i];
-            }
-        }
+        reduce_energies_over_lists(nbat,nnbl,Vvdw,Vc);
     }
 }
 #else
