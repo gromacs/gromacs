@@ -492,7 +492,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
         {
             int ia,egp_ia;
 
-            for(ia=0; ia<4; ia++)
+            for(ia=0; ia<UNROLLI; ia++)
             {
                 egp_ia = (egps_i >> (ia*egps_ishift)) & egps_imask;
                 vvdwtp[ia] = Vvdw + egp_ia*Vstride_i;

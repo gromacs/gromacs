@@ -477,7 +477,7 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,int *offset_jj)
      * the rapidly increases number of combinations of energy groups.
      * We add to a temporary buffer for 1 i-group vs 2 j-groups.
      */
-    for(jj=0; jj<(UNROLLJ>>1); jj++)
+    for(jj=0; jj<(UNROLLJ/2); jj++)
     {
         gmx_mm_pr v_SSE;
 
