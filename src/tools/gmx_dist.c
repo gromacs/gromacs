@@ -152,7 +152,7 @@ int gmx_dist(int argc,char *argv[])
   snew(grpname,ngrps);
   snew(index,ngrps);
   snew(isize,ngrps);
-  get_index(&top->atoms,ftp2fn(efNDX,NFILE,fnm),ngrps,isize,index,grpname);
+  get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),ngrps,isize,index,grpname);
   
   /* calculate mass */
   natoms_groups=0;

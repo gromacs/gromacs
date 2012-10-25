@@ -538,6 +538,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         }
 
         status = 0;
+        Vlr  = 0;
         dvdl = 0;
         switch (fr->eeltype)
         {
@@ -599,12 +600,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 }
                 PRINT_SEPDVDL("PME mesh",Vlr,dvdl);
             }
-            else
-            {
-                /* Energies and virial are obtained later from the PME nodes */
-                /* but values have to be zeroed out here */
-                Vlr=0.0;
-            }
             break;
         case eelEWALD:
             Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_novirsum,
@@ -615,7 +610,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             PRINT_SEPDVDL("Ewald long-range",Vlr,dvdl);
             break;
         default:
-            Vlr = 0;
             gmx_fatal(FARGS,"No such electrostatics method implemented %s",
                       eel_names[fr->eeltype]);
         }
@@ -624,6 +618,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             gmx_fatal(FARGS,"Error %d in long range electrostatics routine %s",
                       status,EELTYPE(fr->eeltype));
 		}
+        /* Note that with separate PME nodes we get the real energies later */
         enerd->dvdl_lin[efptCOUL] += dvdl;
         enerd->term[F_COUL_RECIP] = Vlr + Vcorr;
         if (debug)

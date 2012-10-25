@@ -42,6 +42,10 @@
 extern "C" {
 #endif
 
+
+/* Returns the j-cluster size for kernel of type nb_kernel_type */
+int nbnxn_kernel_to_cj_size(int nb_kernel_type);
+
 /* Tells if the pair-list corresponding to nb_kernel_type is simple.
  * Returns FALSE for super-sub type pair-list.
  */
@@ -106,8 +110,8 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs);
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              gmx_bool simple, gmx_bool combined,
-                             gmx_nbat_alloc_t *alloc,
-                             gmx_nbat_free_t  *free);
+                             nbnxn_alloc_t *alloc,
+                             nbnxn_free_t  *free);
 
 /* Make a apir-list with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required
@@ -124,51 +128,6 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 			 int iloc,
 			 int nb_kernel_type,
 			 t_nrnb *nrnb);
-
-/* Initialize the non-bonded atom data structure.
- * The enum for nbatXFormat is in the file defining nbnxn_atomdata_t.
- * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
- * to the atom data structure.
- */
-void nbnxn_atomdata_init(FILE *fp,
-			 nbnxn_atomdata_t *nbat,
-			 int nb_kernel_type,
-			 int ntype,const real *nbfp,
-			 int n_energygroups,
-			 int nout,
-			 gmx_nbat_alloc_t *alloc,
-			 gmx_nbat_free_t  *free);
-
-/* Copy the atom data to the non-bonded atom data structure */
-void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
-                         int locality,
-                         const nbnxn_search_t nbs,
-                         const t_mdatoms *mdatoms,
-                         const int *atinfo);
-
-/* Copy the shift vectors to nbat */
-void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box,
-                                   rvec *shift_vec,
-                                   nbnxn_atomdata_t *nbat);
-
-/* Copy x to nbat->x.
- * FillLocal tells if the local filler particle coordinates should be zeroed.
- */
-void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
-                                      int locality,
-                                      gmx_bool FillLocal,
-                                      rvec *x,
-                                      nbnxn_atomdata_t *nbat);
-
-/* Add the forces stored in nbat to f, zeros the forces in nbat */
-void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
-                                     int locality,
-                                     const nbnxn_atomdata_t *nbat,
-                                     rvec *f);
-
-/* Add the fshift force stored in nbat to fshift */
-void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
-                                               rvec *fshift);
 
 #ifdef __cplusplus
 }

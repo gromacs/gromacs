@@ -68,6 +68,7 @@
 #include "copyrite.h"
 #include "mtop_util.h"
 #include "nbnxn_search.h"
+#include "nbnxn_atomdata.h"
 #include "nbnxn_consts.h"
 #include "statutil.h"
 #include "gmx_omp_nthreads.h"
@@ -1706,8 +1707,8 @@ static void init_nb_verlet(FILE *fp,
     char *env;
     gmx_bool bHybridGPURun = FALSE;
 
-    gmx_nbat_alloc_t *nb_alloc;
-    gmx_nbat_free_t  *nb_free;
+    nbnxn_alloc_t *nb_alloc;
+    nbnxn_free_t  *nb_free;
 
     snew(nbv, 1);
 

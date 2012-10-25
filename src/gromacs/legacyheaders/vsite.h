@@ -58,13 +58,24 @@ typedef struct {
 } t_comm_vsites;
 
 typedef struct {
+    t_ilist ilist[F_NRE];     /* vsite ilists for this thread            */
+    rvec fshift[SHIFTS];      /* fshift accumulation buffer              */
+    matrix dxdf;              /* virial dx*df accumulation buffer        */
+} gmx_vsite_thread_t;
+
+typedef struct {
+  gmx_bool bHaveChargeGroups; /* Do we have charge groups?               */
   int  n_intercg_vsite;       /* The number of inter charge group vsites */
   int  nvsite_pbc_molt;       /* The array size of vsite_pbc_molt        */
   int  ***vsite_pbc_molt;     /* The pbc atoms for intercg vsites        */
   int  **vsite_pbc_loc;       /* The local pbc atoms                     */
-  int  *vsite_pbc_loc_nalloc;
-  gmx_bool bPDvsitecomm;          /* Do we need vsite communication with PD? */
+  int  *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
+  gmx_bool bPDvsitecomm;      /* Do we need vsite communication with PD? */
   t_comm_vsites *vsitecomm;   /* The PD vsite communication struct       */
+  int  nthreads;              /* Number of threads used for vsites       */
+  gmx_vsite_thread_t *tdata;  /* Thread local vsites and work structs    */
+  int  *th_ind;               /* Work array                              */
+  int  th_ind_nalloc;         /* Size of th_ind                          */
 } gmx_vsite_t;
 
 void construct_vsites(FILE *log,gmx_vsite_t *vsite,
@@ -104,9 +115,21 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
  * as for instance for the PME mesh contribution.
  */
 
-gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
+gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr,
+			gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
+ * bSerial_NoPBC is to generate a simple vsite setup to be
+ * used only serial (no MPI or thread parallelization) and without pbc;
+ * this is useful for correction vsites of the initial configuration.
+ */
+
+void split_vsites_over_threads(const t_ilist *ilist,
+                               const t_mdatoms *mdatoms,
+                               gmx_bool bLimitRange,
+                               gmx_vsite_t *vsite);
+/* Divide the vsite work-load over the threads.
+ * Should be called at the end of the domain decomposition.
  */
 
 void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,

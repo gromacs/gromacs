@@ -80,7 +80,7 @@
 #include "gmx_omp_nthreads.h"
 #include "pull_rotation.h"
 #include "calc_verletbuf.h"
-#include "nbnxn_search.h"
+#include "../mdlib/nbnxn_search.h"
 #include "../mdlib/nbnxn_consts.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
@@ -1538,7 +1538,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         mdatoms = init_mdatoms(fplog,mtop,inputrec->efep!=efepNO);
 
         /* Initialize the virtual site communication */
-        vsite = init_vsite(mtop,cr);
+        vsite = init_vsite(mtop,cr,FALSE);
 
         calc_shifts(box,fr->shift_vec);
 

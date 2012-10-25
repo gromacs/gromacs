@@ -1668,7 +1668,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 clear_idef(idef_t);
             }
 
-            if (vsite && vsite->n_intercg_vsite > 0)
+            if (vsite && vsite->bHaveChargeGroups && vsite->n_intercg_vsite > 0)
             {
                 if (thread == 0)
                 {
@@ -2297,8 +2297,7 @@ void dd_bonded_cg_distance(FILE *fplog,
     
     bExclRequired = IR_EXCL_FORCES(*ir);
     
-    /* For gmx_vsite_t everything 0 should work (without pbc) */
-    snew(vsite,1);
+    vsite = init_vsite(mtop,NULL,TRUE);
     
     *r_2b = 0;
     *r_mb = 0;
@@ -2360,7 +2359,8 @@ void dd_bonded_cg_distance(FILE *fplog,
             }
         }
     }
-    
+
+    /* We should have a vsite free routine, but here we can simply free */
     sfree(vsite);
 
     if (fplog && (ft2b >= 0 || ftmb >= 0))
