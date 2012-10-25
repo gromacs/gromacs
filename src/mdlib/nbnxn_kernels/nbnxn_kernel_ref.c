@@ -250,16 +250,6 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
 
     if (force_flags & GMX_FORCE_ENERGY)
     {
-        /* Reduce the energies */
-        for(nb=0; nb<nnbl; nb++)
-        {
-            int i;
-
-            for(i=0; i<nbat->out[nb].nV; i++)
-            {
-                Vvdw[i] += nbat->out[nb].Vvdw[i];
-                Vc[i]   += nbat->out[nb].Vc[i];
-            }
-        }
+        reduce_energies_over_lists(nbat,nnbl,Vvdw,Vc);
     }
 }
