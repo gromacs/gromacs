@@ -136,18 +136,13 @@ static void reduce_group_energies(int ng,int ng_2log,
 {
     int ng_p2,i,j,j0,j1,c,s;
 
-#ifndef GMX_DOUBLE
-#define SIMD_WIDTH   4
-#define SIMD_WIDTH_2 2
-#else
-#define SIMD_WIDTH   2
-#define SIMD_WIDTH_2 1
-#endif
+#define SIMD_WIDTH    (GMX_X86_SIMD_WIDTH_HERE)
+#define SIMD_WIDTH_2  (GMX_X86_SIMD_WIDTH_HERE/2)
 
     ng_p2 = (1<<ng_2log);
 
-    /* The size of the SSE energy group buffer array is:
-     * stride^3*SIMD_WIDTH_2*SIMD_WIDTH
+    /* The size of the x86 SIMD energy group buffer array is:
+     * ng*ng*ng_p2*SIMD_WIDTH_2*SIMD_WIDTH
      */
     for(i=0; i<ng; i++)
     {
