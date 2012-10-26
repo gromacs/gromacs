@@ -7300,7 +7300,11 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
 
     if (dd->comm->eDLB != edlbNO)
     {
-        if (check_grid_jump(0,dd,cutoff_req,&ddbox,FALSE))
+        /* If DLB is not active yet, we don't need to check the grid jumps.
+         * Actually we shouldn't, because then the grid jump data is not set.
+         */
+        if (dd->comm->bDynLoadBal &&
+            check_grid_jump(0,dd,cutoff_req,&ddbox,FALSE))
         {
             LocallyLimited = 1; 
         }
