@@ -440,6 +440,9 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                 /* nstdhdl should be a multiple of nstcalcenergy */
                 check_nst("nstcalcenergy",ir->nstcalcenergy,
                           "nstdhdl",&ir->fepvals->nstdhdl,wi);
+                /* nstexpanded should be a multiple of nstcalcenergy */
+                check_nst("nstcalcenergy",ir->nstcalcenergy,
+                          "nstdhdl",&ir->expandedvals->nstexpanded,wi);
             }
         }
     }
@@ -1342,8 +1345,9 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
         /* if you don't specify nstexpanded when doing expanded ensemble free energy calcs, it is set to nstdhdl */
     }
     if ((expand->nstexpanded < 0) && ir->bSimTemp) {
-        expand->nstexpanded = ir->nstlist;
-        /* if you don't specify nstexpanded when doing expanded ensemble simulated tempering, it is set to nstlist*/
+        expand->nstexpanded = 2*ir->opts.tau_t[0];
+        /* if you don't specify nstexpanded when doing expanded ensemble simulated tempering, it is set to
+           2*tau_t just to be careful so it's not to frequent  */
     }
 }
 
