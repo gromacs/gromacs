@@ -143,6 +143,9 @@ endif()
 # User input options - enable C++ - before any CXX flags are changed   #
 ########################################################################
 
+include(gmxConfigurationSummary)
+gmx_summary_initialize()
+
 # decide on GPU settings based on user-settings and GPU/CUDA detection
 include(gmxManageGPU)
 
@@ -215,13 +218,13 @@ option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
 include(gmxDetectAcceleration)
-if(NOT DEFINED GMX_CPU_ACCELERATION)
+if(NOT DEFINED GMX_SUGGESTED_CPU_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
         set(GMX_SUGGESTED_CPU_ACCELERATION "None")
     else(CMAKE_CROSSCOMPILING)
         gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
     endif(CMAKE_CROSSCOMPILING)
-endif(NOT DEFINED GMX_CPU_ACCELERATION)
+endif(NOT DEFINED GMX_SUGGESTED_CPU_ACCELERATION)
 
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
     CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
@@ -293,8 +296,10 @@ if(GMX_OPENMP)
             endif()
         endif()
     else(OPENMP_FOUND)
-        message(WARNING
-                "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
+        gmx_summary_add_message(GMX_OPENMP WARNING
+                "The compiler you are using does not support OpenMP parallelism."
+                "Try using a more recent version, or a different compiler."
+                "For now, we are proceeding by turning off OpenMP.")
         set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif(OPENMP_FOUND)
 endif()
@@ -1131,6 +1136,8 @@ if (CMAKE_CXX_COMPILER_LOADED)
     get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
 endif ()
 
+gmx_summary_process()
+
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
@@ -1171,13 +1178,6 @@ add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(scripts)
 
-# Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
-# Don't bother the user after the first configure pass.
-if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
-    message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
-    unset(CUDA_NOTFOUND_AUTO)
-    unset(CUDA_NOTFOUND_MESSAGE)
-endif()
 set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
 
 #######################

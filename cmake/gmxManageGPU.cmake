@@ -125,7 +125,8 @@ if(GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
             # Disable GPU acceleration in auto mode
             message(STATUS "Disabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
-            set(CUDA_NOTFOUND_AUTO ON)
+            # FIXME: The formatting gets messed up
+            gmx_summary_add_message(GMX_GPU WARNING ${_msg})
         else ()
             # the user requested CUDA, but it wasn't found
             message(FATAL_ERROR "${CUDA_NOTFOUND_MESSAGE}")
@@ -153,14 +154,4 @@ macro(gmx_gpu_setup)
     # Atomic operations used for polling wait for GPU
     # (to avoid the cudaStreamSynchronize + ECC bug).
     # ThreadMPI is now always included. Thus, we don't check for Atomics anymore here.
-
-    # no OpenMP is no good!
-    if(NOT GMX_OPENMP)
-        message(WARNING "
-    To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading.
-    With no OpenMP a single CPU core can be used with a GPU which is not optimal.
-    Note that with MPI multiple processes can be forced to use a single GPU, but this
-    typically inefficient. Note that you need to set both C and C++ compilers that
-    support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
-    endif()
 endmacro()

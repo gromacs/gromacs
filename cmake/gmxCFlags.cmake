@@ -66,10 +66,13 @@ MACRO(gmx_c_flags)
     if(CMAKE_COMPILER_IS_GNUCC)
 
         #Fix for LLVM OpenMP bug (redmine 900). Needs to run before OpenMP flags are set below.
+        #TODO: This should not be here, but instead where all other GMX_OPENMP logic is.
         if(GMX_OPENMP)
             exec_program(${CMAKE_C_COMPILER} ARGS --version OUTPUT_VARIABLE _compiler_output)
             if(_compiler_output MATCHES "llvm.*4\\.2")
-                message(STATUS "OpenMP multithreading not supported with llvm-gcc 4.2, disabled")
+                gmx_summary_add_message(GMX_OPENMP WARNING
+                    "OpenMP multithreading not supported with llvm-gcc 4.2."
+                    "For now, we are proceeding by turning off OpenMP.")
                 set(GMX_OPENMP OFF CACHE BOOL
                     "OpenMP multithreading not not supported with llvm-gcc 4.2, disabled!" FORCE)
             endif()
