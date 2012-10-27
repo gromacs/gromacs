@@ -166,13 +166,13 @@ option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
 include(gmxDetectAcceleration)
-if(NOT DEFINED GMX_ACCELERATION)
+if(NOT DEFINED GMX_SUGGESTED_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
         set(GMX_SUGGESTED_ACCELERATION "None")
     else(CMAKE_CROSSCOMPILING)
         gmx_detect_acceleration(GMX_SUGGESTED_ACCELERATION)
     endif(CMAKE_CROSSCOMPILING)
-endif(NOT DEFINED GMX_ACCELERATION)
+endif(NOT DEFINED GMX_SUGGESTED_ACCELERATION)
 
 set(GMX_ACCELERATION "@GMX_SUGGESTED_ACCELERATION@"
     CACHE STRING "Accelerated kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
@@ -1080,6 +1080,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELWITHDEBINFO@")
 endif()
 
+include(gmxConfigurationSummary)
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
