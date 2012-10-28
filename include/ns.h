@@ -89,8 +89,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 			     real *lambda,real *dvdlambda,
 			     gmx_grppairener_t *grppener,
 			     gmx_bool bFillGrid,
-			     gmx_bool bDoLongRange,
-			     gmx_bool bDoForces,rvec *f);
+			     gmx_bool bDoLongRangeNS,
+                 gmx_bool bDoLongRangeNB,
+			     gmx_bool bDoForces,
+                 gmx_bool bDoPotential,
+                 rvec *f);
  
 
 /* Debugging routines from wnblist.c */
