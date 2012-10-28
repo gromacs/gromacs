@@ -210,13 +210,25 @@ static real gmx_invsqrt(real x)
 #define INVSQRT_DONE
 #endif /* powerpc_invsqrt */
 
-
 #ifndef INVSQRT_DONE
-#define gmx_invsqrt(x) (1.0f/sqrt(x))
+#    ifdef GMX_DOUBLE
+#        ifdef HAVE_RSQRT
+#            define gmx_invsqrt(x)     rsqrt(x)
+#        else
+#            define gmx_invsqrt(x)     (1.0/sqrt(x))
+#        endif
+#    else /* single */
+#        ifdef HAVE_RSQRTF
+#            define gmx_invsqrt(x)     rsqrtf(x)
+#        elif defined HAVE_RSQRT
+#            define gmx_invsqrt(x)     rsqrt(x)
+#        elif defined HAVE_SQRTF
+#            define gmx_invsqrt(x)     (1.0/sqrtf(x))
+#        else
+#            define gmx_invsqrt(x)     (1.0/sqrt(x))
+#        endif
+#    endif
 #endif
-
-
-
 
 
 static real sqr(real x)

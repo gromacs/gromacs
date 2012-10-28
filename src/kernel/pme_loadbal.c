@@ -49,8 +49,9 @@
 
 /* Parameters and setting for one PP-PME setup */
 typedef struct {
-    real rcut;            /* Coulomb cut-off                              */
+    real rcut_coulomb;    /* Coulomb cut-off                              */
     real rlist;           /* pair-list cut-off                            */
+    real rlistlong;       /* LR pair-list cut-off                         */
     real spacing;         /* (largest) PME grid spacing                   */
     ivec grid;            /* the PME grid dimensions                      */
     real grid_efficiency; /* ineffiency factor for non-uniform grids <= 1 */
@@ -83,7 +84,9 @@ struct pme_load_balancing {
     int  nstage;        /* the current maximum number of stages */
 
     real cut_spacing;   /* the minimum cutoff / PME grid spacing ratio */
-    real rbuf;          /* the pairlist buffer size */
+    real rcut_vdw;      /* Vdw cutoff (does not change) */
+    real rbuf_coulomb;  /* the pairlist buffer size */
+    real rbuf_vdw;      /* the pairlist buffer size */
     matrix box_start;   /* the initial simulation box */
     int n;              /* the count of setup as well as the allocation size */
     pme_setup_t *setup; /* the PME+cutoff setups */
@@ -92,6 +95,7 @@ struct pme_load_balancing {
     int start;          /* start of setup range to consider in stage>0 */
     int end;            /* end   of setup range to consider in stage>0 */
     int elimited;       /* was the balancing limited, uses enum above */
+    int cutoff_scheme;  /* Verlet or group cut-offs                     */
 
     int stage;          /* the current stage */
 };
@@ -110,7 +114,32 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
     /* Any number of stages >= 2 is supported */
     pme_lb->nstage   = 2;
 
-    pme_lb->rbuf = ic->rlist - ic->rcoulomb;
+    pme_lb->cutoff_scheme = ir->cutoff_scheme;
+
+    if(pme_lb->cutoff_scheme == ecutsVERLET)
+    {
+        pme_lb->rbuf_coulomb = ic->rlist - ic->rcoulomb;
+        pme_lb->rbuf_vdw     = pme_lb->rbuf_coulomb;
+    }
+    else
+    {
+        if(ic->rcoulomb > ic->rlist)
+        {
+            pme_lb->rbuf_coulomb = ic->rlistlong - ic->rcoulomb;
+        }
+        else
+        {
+            pme_lb->rbuf_coulomb = ic->rlist - ic->rcoulomb;
+        }
+        if(ic->rvdw > ic->rlist)
+        {
+            pme_lb->rbuf_vdw = ic->rlistlong - ic->rvdw;
+        }
+        else
+        {
+            pme_lb->rbuf_vdw = ic->rlist - ic->rvdw;
+        }
+    }
 
     copy_mat(box,pme_lb->box_start);
     if (ir->ePBC==epbcXY && ir->nwall==2)
@@ -121,13 +150,16 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
     pme_lb->n = 1;
     snew(pme_lb->setup,pme_lb->n);
 
+    pme_lb->rcut_vdw              = ic->rvdw;
+
     pme_lb->cur = 0;
-    pme_lb->setup[0].rcut       = ic->rcoulomb;
-    pme_lb->setup[0].rlist      = ic->rlist;
-    pme_lb->setup[0].grid[XX]   = ir->nkx;
-    pme_lb->setup[0].grid[YY]   = ir->nky;
-    pme_lb->setup[0].grid[ZZ]   = ir->nkz;
-    pme_lb->setup[0].ewaldcoeff = ic->ewaldcoeff;
+    pme_lb->setup[0].rcut_coulomb = ic->rcoulomb;
+    pme_lb->setup[0].rlist        = ic->rlist;
+    pme_lb->setup[0].rlistlong    = ic->rlistlong;
+    pme_lb->setup[0].grid[XX]     = ir->nkx;
+    pme_lb->setup[0].grid[YY]     = ir->nky;
+    pme_lb->setup[0].grid[ZZ]     = ir->nkz;
+    pme_lb->setup[0].ewaldcoeff   = ic->ewaldcoeff;
 
     pme_lb->setup[0].pmedata  = pmedata;
     
@@ -166,6 +198,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t pme_lb,
 {
     pme_setup_t *set;
     real fac,sp;
+    real tmpr_coulomb,tmpr_vdw;
     int d;
 
     /* Try to add a new setup with next larger cut-off to the list */
@@ -200,9 +233,23 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t pme_lb,
     }
     while (sp <= 1.001*pme_lb->setup[pme_lb->cur].spacing);
 
-    set->rcut    = pme_lb->cut_spacing*sp;
-    set->rlist   = set->rcut + pme_lb->rbuf;
-    set->spacing = sp;
+    set->rcut_coulomb = pme_lb->cut_spacing*sp;
+
+    if(pme_lb->cutoff_scheme == ecutsVERLET)
+    {
+        set->rlist        = set->rcut_coulomb + pme_lb->rbuf_coulomb;
+        /* We dont use LR lists with Verlet, but this avoids if-statements in further checks */
+        set->rlistlong    = set->rlist;
+    }
+    else
+    {
+        tmpr_coulomb          = set->rcut_coulomb + pme_lb->rbuf_coulomb;
+        tmpr_vdw              = pme_lb->rcut_vdw + pme_lb->rbuf_vdw;
+        set->rlist            = min(tmpr_coulomb,tmpr_vdw);
+        set->rlistlong        = max(tmpr_coulomb,tmpr_vdw);
+    }
+    
+    set->spacing      = sp;
     /* The grid efficiency is the size wrt a grid with uniform x/y/z spacing */
     set->grid_efficiency = 1;
     for(d=0; d<DIM; d++)
@@ -211,17 +258,16 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t pme_lb,
     }
     /* The Ewald coefficient is inversly proportional to the cut-off */
     set->ewaldcoeff =
-        pme_lb->setup[0].ewaldcoeff*pme_lb->setup[0].rcut/set->rcut;
+        pme_lb->setup[0].ewaldcoeff*pme_lb->setup[0].rcut_coulomb/set->rcut_coulomb;
 
     set->count   = 0;
     set->cycles  = 0;
 
     if (debug)
     {
-        fprintf(debug,"PME loadbal: grid %d %d %d, cutoff %f\n",
-                set->grid[XX],set->grid[YY],set->grid[ZZ],set->rcut);
+        fprintf(debug,"PME loadbal: grid %d %d %d, coulomb cutoff %f\n",
+                set->grid[XX],set->grid[YY],set->grid[ZZ],set->rcut_coulomb);
     }
-
     return TRUE;
 }
 
@@ -232,7 +278,7 @@ static void print_grid(FILE *fp_err,FILE *fp_log,
                        double cycles)
 {
     char buf[STRLEN],buft[STRLEN];
-    
+
     if (cycles >= 0)
     {
         sprintf(buft,": %.1f M-cycles",cycles*1e-6);
@@ -241,9 +287,9 @@ static void print_grid(FILE *fp_err,FILE *fp_log,
     {
         buft[0] = '\0';
     }
-    sprintf(buf,"%-11s%10s pme grid %d %d %d, cutoff %.3f%s",
+    sprintf(buf,"%-11s%10s pme grid %d %d %d, coulomb cutoff %.3f%s",
             pre,
-            desc,set->grid[XX],set->grid[YY],set->grid[ZZ],set->rcut,
+            desc,set->grid[XX],set->grid[YY],set->grid[ZZ],set->rcut_coulomb,
             buft);
     if (fp_err != NULL)
     {
@@ -274,10 +320,10 @@ static void print_loadbal_limited(FILE *fp_err,FILE *fp_log,
 {
     char buf[STRLEN],sbuf[22];
 
-    sprintf(buf,"step %4s: the %s limited the PME load balancing to a cut-off of %.3f",
+    sprintf(buf,"step %4s: the %s limited the PME load balancing to a coulomb cut-off of %.3f",
             gmx_step_str(step,sbuf),
             pmelblim_str[pme_lb->elimited],
-            pme_lb->setup[pme_loadbal_end(pme_lb)-1].rcut);
+            pme_lb->setup[pme_loadbal_end(pme_lb)-1].rcut_coulomb);
     if (fp_err != NULL)
     {
         fprintf(fp_err,"\r%s\n",buf);
@@ -335,6 +381,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     pme_setup_t *set;
     double cycles_fast;
     char buf[STRLEN],sbuf[22];
+    real rtab;
 
     if (pme_lb->stage == pme_lb->nstage)
     {
@@ -348,8 +395,10 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     }
 
     set = &pme_lb->setup[pme_lb->cur];
-
     set->count++;
+
+    rtab = ir->rlistlong + ir->tabext;
+
     if (set->count % 2 == 1)
     {
         /* Skip the first cycle, because the first step after a switch
@@ -423,10 +472,10 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
                 /* Find the next setup */
                 OK = pme_loadbal_increase_cutoff(pme_lb,ir->pme_order);
             }
-                
+
             if (OK && ir->ePBC != epbcNONE)
             {
-                OK = (sqr(pme_lb->setup[pme_lb->cur+1].rlist)
+                OK = (sqr(pme_lb->setup[pme_lb->cur+1].rlistlong)
                       <= max_cutoff2(ir->ePBC,state->box));
                 if (!OK)
                 {
@@ -441,7 +490,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
                 if (DOMAINDECOMP(cr))
                 {
                     OK = change_dd_cutoff(cr,state,ir,
-                                          pme_lb->setup[pme_lb->cur].rlist);
+                                          pme_lb->setup[pme_lb->cur].rlistlong);
                     if (!OK)
                     {
                         /* Failed: do not use this setup */
@@ -506,7 +555,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
 
     if (DOMAINDECOMP(cr) && pme_lb->stage > 0)
     {
-        OK = change_dd_cutoff(cr,state,ir,pme_lb->setup[pme_lb->cur].rlist);
+        OK = change_dd_cutoff(cr,state,ir,pme_lb->setup[pme_lb->cur].rlistlong);
         if (!OK)
         {
             /* Failsafe solution */
@@ -527,22 +576,27 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
 
     set = &pme_lb->setup[pme_lb->cur];
 
-    ic->rcoulomb   = set->rcut;
+    ic->rcoulomb   = set->rcut_coulomb;
     ic->rlist      = set->rlist;
+    ic->rlistlong  = set->rlistlong;
     ic->ewaldcoeff = set->ewaldcoeff;
 
-    if (nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
+    if (pme_lb->cutoff_scheme == ecutsVERLET && nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
     {
         nbnxn_cuda_pme_loadbal_update_param(nbv->cu_nbv,ic);
     }
     else
     {
-        init_interaction_const_tables(NULL,ic,nbv->grp[0].kernel_type);
+        init_interaction_const_tables(NULL,ic,
+                                      (ir->cutoff_scheme == ecutsGROUP) ? -1 : nbv->grp[0].kernel_type,
+                                      rtab);
     }
 
-    if (nbv->ngrp > 1)
+    if (pme_lb->cutoff_scheme == ecutsVERLET && nbv->ngrp > 1)
     {
-        init_interaction_const_tables(NULL,ic,nbv->grp[1].kernel_type);
+        init_interaction_const_tables(NULL,ic,
+                                      (ir->cutoff_scheme == ecutsGROUP) ? -1 : nbv->grp[1].kernel_type,
+                                      rtab);
     }
 
     if (cr->duty & DUTY_PME)
@@ -594,7 +648,7 @@ static void print_pme_loadbal_setting(FILE *fplog,
     fprintf(fplog,
             "   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
             name,
-            setup->rcut,setup->rlist,
+            setup->rcut_coulomb,setup->rlist,
             setup->grid[XX],setup->grid[YY],setup->grid[ZZ],
             setup->spacing,1/setup->ewaldcoeff);
 }
@@ -604,7 +658,7 @@ static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
 {
     double pp_ratio,grid_ratio;
 
-    pp_ratio   = pow(pme_lb->setup[pme_lb->cur].rlist/pme_lb->setup[0].rlist,3.0);
+    pp_ratio   = pow(pme_lb->setup[pme_lb->cur].rlist/pme_lb->setup[0].rlistlong,3.0);
     grid_ratio = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
         (double)pme_grid_points(&pme_lb->setup[0]);
 

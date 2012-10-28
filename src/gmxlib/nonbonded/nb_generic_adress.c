@@ -47,20 +47,20 @@
 #define ALMOST_ONE 1-(1e-30)
 void
 gmx_nb_generic_adress_kernel(t_nblist *           nlist,
-					  t_forcerec *         fr,
-					  t_mdatoms *          mdatoms,
-					  real *               x,
-					  real *               f,
-					  real *               fshift,
-					  real *               Vc,
-					  real *               Vvdw,
-					  real                 tabscale,
-					  real *               VFtab,
-					  int *                outeriter,
-					  int *                inneriter,
-                                          gmx_bool                bCG)
+                             t_forcerec *         fr,
+                             t_mdatoms *          mdatoms,
+                             real *               x,
+                             real *               f,
+                             real *               fshift,
+                             real *               Vc,
+                             real *               Vvdw,
+                             real                 tabscale,
+                             real *               VFtab,
+                             int *                outeriter,
+                             int *                inneriter,
+                             gmx_bool                bCG)
 {
-    int           nri,ntype,table_nelements,icoul,ivdw;
+    int           nri,ntype,table_nelements,ielec,ivdw;
     real          facel,gbtabscale;
     int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid,nnn,n0;
     real          shX,shY,shZ;
@@ -96,7 +96,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 
     force_cap = fr->adress_ex_forcecap;
 
-    icoul               = nlist->icoul;
+    ielec               = nlist->ielec;
     ivdw                = nlist->ivdw;
 
     /* avoid compiler warnings for cases that cannot happen */
@@ -107,7 +107,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 
     /* 3 VdW parameters for buckingham, otherwise 2 */
     nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
-    table_nelements     = (icoul==3) ? 4 : 0;
+    table_nelements     = (ielec==3) ? 4 : 0;
     table_nelements    += (ivdw==3) ? 8 : 0;
 
     charge              = mdatoms->chargeA;
@@ -205,72 +205,71 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
             rinvsq           = rinv*rinv;
 
 
-			fscal            = 0;
+            fscal            = 0;
 
-			if(icoul==3 || ivdw==3)
-			{
-				r                = rsq*rinv;
-				rt               = r*tabscale;
-				n0               = rt;
-				eps              = rt-n0;
-				eps2             = eps*eps;
-				nnn              = table_nelements*n0;
-			}
+            if(ielec==3 || ivdw==3)
+            {
+                r                = rsq*rinv;
+                rt               = r*tabscale;
+                n0               = rt;
+                eps              = rt-n0;
+                eps2             = eps*eps;
+                nnn              = table_nelements*n0;
+            }
 
-			/* Coulomb interaction. icoul==0 means no interaction */
-			if(icoul>0)
-			{
-				qq               = iq*charge[jnr];
+            /* Coulomb interaction. ielec==0 means no interaction */
+            if(ielec>0)
+            {
+                qq               = iq*charge[jnr];
 
-				switch(icoul)
-				{
-					case 1:
-						/* Vanilla cutoff coulomb */
-						vcoul            = qq*rinv;
-						fscal            = vcoul*rinvsq;
-						break;
+                switch(ielec)
+                {
+                    case 1:
+                        /* Vanilla cutoff coulomb */
+                        vcoul            = qq*rinv;
+                        fscal            = vcoul*rinvsq;
+                        break;
 
-					case 2:
-						/* Reaction-field */
-						krsq             = fr->k_rf*rsq;
-						vcoul            = qq*(rinv+krsq-fr->c_rf);
-						fscal            = qq*(rinv-2.0*krsq)*rinvsq;
-						break;
+                    case 2:
+                        /* Reaction-field */
+                        krsq             = fr->k_rf*rsq;
+                        vcoul            = qq*(rinv+krsq-fr->c_rf);
+                        fscal            = qq*(rinv-2.0*krsq)*rinvsq;
+                        break;
 
-					case 3:
-						/* Tabulated coulomb */
-						Y                = VFtab[nnn];
-						F                = VFtab[nnn+1];
-						Geps             = eps*VFtab[nnn+2];
-						Heps2            = eps2*VFtab[nnn+3];
-						nnn             += 4;
-						Fp               = F+Geps+Heps2;
-						VV               = Y+eps*Fp;
-						FF               = Fp+Geps+2.0*Heps2;
-						vcoul            = qq*VV;
-						fscal            = -qq*FF*tabscale*rinv;
-						break;
+                    case 3:
+                        /* Tabulated coulomb */
+                        Y                = VFtab[nnn];
+                        F                = VFtab[nnn+1];
+                        Geps             = eps*VFtab[nnn+2];
+                        Heps2            = eps2*VFtab[nnn+3];
+                        nnn             += 4;
+                        Fp               = F+Geps+Heps2;
+                        VV               = Y+eps*Fp;
+                        FF               = Fp+Geps+2.0*Heps2;
+                        vcoul            = qq*VV;
+                        fscal            = -qq*FF*tabscale*rinv;
+                        break;
 
-					case 4:
-						/* GB */
-						gmx_fatal(FARGS,"Death & horror! GB generic interaction not implemented.\n");
-						break;
+                    case 4:
+                        /* GB */
+                        gmx_fatal(FARGS,"Death & horror! GB generic interaction not implemented.\n");
+                        break;
 
-					default:
-						gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for icoul=%d.\n",icoul);
-						break;
-				}
-				vctot            = vctot+vcoul;
-			} /* End of coulomb interactions */
+                    default:
+                        gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for ielec=%d.\n",ielec);
+                        break;
+                }
+                vctot            = vctot+vcoul;
+            } /* End of coulomb interactions */
 
+            /* VdW interaction. ivdw==0 means no interaction */
+            if(ivdw>0)
+            {
+                tj               = nti+nvdwparam*type[jnr];
 
-			/* VdW interaction. ivdw==0 means no interaction */
-			if(ivdw>0)
-			{
-				tj               = nti+nvdwparam*type[jnr];
-
-				switch(ivdw)
-				{
+                switch(ivdw)
+                {
 					case 1:
 						/* Vanilla Lennard-Jones cutoff */
 						c6               = vdwparam[tj];
