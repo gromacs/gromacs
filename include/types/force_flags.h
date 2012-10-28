@@ -50,8 +50,8 @@ extern "C" {
 #define GMX_FORCE_DYNAMICBOX   (1<<1)
 /* Do neighbor searching */
 #define GMX_FORCE_NS           (1<<2)
-/* Calculate long-range energies/forces */
-#define GMX_FORCE_DOLR         (1<<3)
+/* Update long-range neighborlists */
+#define GMX_FORCE_LRNS         (1<<3)
 /* Calculate bonded energies/forces */
 #define GMX_FORCE_BONDED       (1<<4)
 /* Store long-range forces in a separate array */
@@ -66,6 +66,11 @@ extern "C" {
 #define GMX_FORCE_ENERGY       (1<<9)
 /* Calculate dHdl */
 #define GMX_FORCE_DHDL         (1<<10)
+/* Calculate long-range energies/forces */
+#define GMX_FORCE_DOLR         (1<<11)
+/* Calculate long-range energies/forces at NS steps, inside NS code */
+#define GMX_FORCE_NS_DOLR      (1<<12)
+
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 
