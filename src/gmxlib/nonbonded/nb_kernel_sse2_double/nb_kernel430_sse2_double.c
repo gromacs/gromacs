@@ -23,7 +23,7 @@
 #include <gmx_sse2_double.h>
 
 /* get gmx_gbdata_t */
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 
 void nb_kernel430_sse2_double(int *           p_nri,

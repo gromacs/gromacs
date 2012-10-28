@@ -79,8 +79,10 @@ void ns(FILE *fp,
         real       *dvdlambda,
         gmx_grppairener_t *grppener,
         gmx_bool       bFillGrid,
-        gmx_bool       bDoLongRange,
+        gmx_bool       bDoLongRangeNS,
+        gmx_bool       bDoLongRangeNB,
         gmx_bool       bDoForces,
+        gmx_bool   bDoPotential,
         rvec       *f)
 {
   char   *ptr;
@@ -97,8 +99,8 @@ void ns(FILE *fp,
 
     nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
                                 lambda,dvdlambda,grppener,
-                                bFillGrid,bDoLongRange,
-                                bDoForces,f);
+                                bFillGrid,bDoLongRangeNS,bDoLongRangeNB,
+                                bDoForces,bDoPotential,f);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
 
@@ -258,18 +260,25 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (flags & GMX_FORCE_NONBONDED)
     {
         donb_flags = 0;
+        /* Add short-range interactions */
+        donb_flags |= GMX_DONB_SR;
+
         if (flags & GMX_FORCE_FORCES)
         {
-            donb_flags |= GMX_DONB_FORCES;
+            donb_flags |= GMX_DONB_FORCE;
+        }
+        if (flags & GMX_FORCE_ENERGY)
+        {
+            donb_flags |= GMX_DONB_POTENTIAL;
+        }
+        if (flags & GMX_FORCE_DOLR)
+        {
+            donb_flags |= GMX_DONB_LR;
         }
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
         do_nonbonded(cr,fr,x,f,md,excl,
-                    fr->bBHAM ?
-                    enerd->grpp.ener[egBHAMSR] :
-                    enerd->grpp.ener[egLJSR],
-                    enerd->grpp.ener[egCOULSR],
-                    enerd->grpp.ener[egGB],box_size,nrnb,
+                    &enerd->grpp,box_size,nrnb,
                     lambda,dvdl_nb,-1,-1,donb_flags);
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -290,13 +299,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             }
             reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
             do_nonbonded(cr,fr,x,f,md,excl,
-                         fr->bBHAM ?
-                         ed_lam.grpp.ener[egBHAMSR] :
-                         ed_lam.grpp.ener[egLJSR],
-                         ed_lam.grpp.ener[egCOULSR],
-                         enerd->grpp.ener[egGB], box_size,nrnb,
+                         &(ed_lam.grpp), box_size,nrnb,
                          lam_i,dvdl_dum,-1,-1,
-                         GMX_DONB_FOREIGNLAMBDA);
+                         GMX_DONB_FOREIGNLAMBDA | GMX_DONB_SR);
             sum_epot(&ir->opts,&ed_lam);
             enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
         }
