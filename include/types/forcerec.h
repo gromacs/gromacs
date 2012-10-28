@@ -44,30 +44,48 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+} /* fixes auto-indentation problems */
+#endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
 
-typedef struct {
-  real r;         /* range of the table */
-  int  n;         /* n+1 is the number of points */
-  real scale;     /* distance between two points */
-  real scale_exp; /* distance for exponential Buckingham table */
-  real *tab;      /* the actual tables, per point there are  4 numbers for
-		   * Coulomb, dispersion and repulsion (in total 12 numbers)
-		   */
+
+
+/* Structure describing the data in a single table */
+typedef struct
+{
+    enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
+    enum gmx_table_format       format;      /* Interpolation type and data format */
+
+    real                        r;         /* range of the table */
+    int                         n;         /* n+1 is the number of table points */
+    real                        scale;     /* distance (nm) between two table points */
+    real                        scale_exp; /* distance for exponential part of VdW table, not always used */
+    real *                      data;      /* the actual table data */
+
+    /* Some information about the table layout. This can also be derived from the interpolation
+     * type and the table interactions, but it is convenient to have here for sanity checks, and it makes it
+     * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
+     * It is always true that stride = formatsize*ninteractions
+     */
+    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
+    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
+    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
 } t_forcetable;
 
-typedef struct {
-  t_forcetable tab;
-  /* We duplicate tables for cache optimization purposes */
-  real *coultab;      /* Coul only */
-  real *vdwtab;       /* Vdw only   */
-  /* The actual neighbor lists, short and long range, see enum above
-   * for definition of neighborlist indices.
-   */
-  t_nblist nlist_sr[eNL_NR];
-  t_nblist nlist_lr[eNL_NR];
+typedef struct
+{
+    t_forcetable   table_elec;
+    t_forcetable   table_vdw;
+    t_forcetable   table_elec_vdw;
+
+    /* The actual neighbor lists, short and long range, see enum above
+     * for definition of neighborlist indices.
+     */
+    t_nblist nlist_sr[eNL_NR];
+    t_nblist nlist_lr[eNL_NR];
 } t_nblists;
 
 /* macros for the cginfo data in forcerec */
@@ -173,6 +191,20 @@ typedef struct {
   gmx_hw_info_t *hwinfo;
   gmx_bool      use_cpu_acceleration;
 
+  /* Interaction for calculated in kernels. In many cases this is similar to
+   * the electrostatics settings in the inputrecord, but the difference is that
+   * these variables always specify the actual interaction in the kernel - if
+   * we are tabulating reaction-field the inputrec will say reaction-field, but
+   * the kernel interaction will say cubic-spline-table. To be safe we also
+   * have a kernel-specific setting for the modifiers - if the interaction is
+   * tabulated we already included the inputrec modification there, so the kernel
+   * modification setting will say 'none' in that case.
+   */
+  int nbkernel_elec_interaction;
+  int nbkernel_vdw_interaction;
+  int nbkernel_elec_modifier;
+  int nbkernel_vdw_modifier;
+
   /* Use special N*N kernels? */
   gmx_bool bAllvsAll;
   /* Private work data */
@@ -183,7 +215,7 @@ typedef struct {
    * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
    */
   real rlist,rlistlong;
-  
+
   /* Dielectric constant resp. multiplication factor for charges */
   real zsquare,temp;
   real epsilon_r,epsilon_rf,epsfac;  
@@ -198,6 +230,7 @@ typedef struct {
 
   /* Dispersion correction stuff */
   int  eDispCorr;
+
   /* The shift of the shift or user potentials */
   real enershiftsix;
   real enershifttwelve;
@@ -224,12 +257,12 @@ typedef struct {
   t_forcetable tab14; /* for 1-4 interactions only */
 
   /* PPPM & Shifting stuff */
-  gmx_bool coul_pot_shift;
+  int coulomb_modifier;
   real rcoulomb_switch,rcoulomb;
   real *phi;
 
   /* VdW stuff */
-  gmx_bool vdw_pot_shift;
+  int vdw_modifier;
   double reppow;
   real rvdw_switch,rvdw;
   real bham_b_max;
@@ -427,6 +460,10 @@ typedef struct {
   int  *excl_load;
 } t_forcerec;
 
+/* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have
+ * been scaled by 6.0 or 12.0 to save flops in the kernels. We have corrected this everywhere
+ * in the code, but beware if you are using these macros externally.
+ */
 #define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]
 #define C12(nbfp,ntp,ai,aj)    (nbfp)[2*((ntp)*(ai)+(aj))+1]
 #define BHAMC(nbfp,ntp,ai,aj)  (nbfp)[3*((ntp)*(ai)+(aj))]

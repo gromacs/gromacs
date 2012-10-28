@@ -76,6 +76,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+}
+#endif
 
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
@@ -111,6 +114,22 @@ int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
 char *gmx_strdup(const char *src);
 char *gmx_strndup(const char *src, int n);
+
+/* Magic hash init number from Dan J. Bernstein. */ 
+extern const unsigned int
+gmx_string_hash_init;
+
+/* Return a hash of the string according to Dan J. Bernsteins algorithm.
+ * This routine only uses about characters for which isalnum(c) is true,
+ * and all characters are converted to upper case.
+ * On the first invocation for a new string, use the constant 
+ * gmx_string_hash_init for the second argument. If you want to create a hash
+ * corresponding to several concatenated strings, provide the returned hash
+ * value as hash_init for the second string, etc.
+ */
+unsigned int
+gmx_string_hash_func(const char *s, unsigned int hash_init);
+    
     
 /** Pattern matcing with wildcards. */
 int gmx_wcmatch(const char *pattern, const char *src);
@@ -138,7 +157,7 @@ char **split(char sep,char *str);
 /* Implementation of the well-known Perl function split */
 
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
-
+    
 #ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
