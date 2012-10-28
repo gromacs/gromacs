@@ -241,12 +241,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        if (ir->coulomb_modifier != eintmodNONE ||
-            ir->vdw_modifier != eintmodNONE)
-        {
-            warning_error(wi,"potential modifiers are not supported (yet) with the group cut-off scheme");
-        }
-
         /* BASIC CUT-OFF STUFF */
         if (ir->rlist == 0 ||
             !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
@@ -276,7 +270,16 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
         }
     }
-
+    
+    if(ir->rlistlong == ir->rlist)
+    {
+        ir->nstcalclr = 0;
+    }
+    else if(ir->rlistlong>ir->rlist && ir->nstcalclr==0)
+    {
+        warning_error(wi,"With different cutoffs for electrostatics and VdW, nstcalclr must be -1 or a positive number");
+    }
+    
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         real rc_max;
@@ -370,6 +373,28 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         ir->rlistlong = ir->rlist;
     }
 
+    if(ir->nstcalclr==-1)
+    {
+        /* if rlist=rlistlong, this will later be changed to nstcalclr=0 */
+        ir->nstcalclr = ir->nstlist;
+    }
+    else if(ir->nstcalclr>0)
+    {
+        if(ir->nstlist>0 && (ir->nstlist % ir->nstcalclr != 0))
+        {
+            warning_error(wi,"nstlist must be evenly divisible by nstcalclr. Use nstcalclr = -1 to automatically follow nstlist");
+        }
+    }
+    else if(ir->nstcalclr<-1)
+    {
+        warning_error(wi,"nstcalclr must be a positive number (divisor of nstcalclr), or -1 to follow nstlist.");
+    }
+    
+    if(EEL_PME(ir->coulombtype) && ir->rcoulomb > ir->rvdw && ir->nstcalclr>1)
+    {
+        warning_error(wi,"When used with PME, the long-range component of twin-range interactions must be updated every step (nstcalclr)");
+    }
+       
     /* GENERAL INTEGRATOR STUFF */
     if (!(ir->eI == eiMD || EI_VV(ir->eI)))
     {
@@ -875,7 +900,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   /* More checks are in triple check (grompp.c) */
 
   if (ir->coulombtype == eelSWITCH) {
-    sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious artifacts, advice: use coulombtype = %s",
+    sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious "
+            "artifacts, advice: use coulombtype = %s",
 	    eel_names[ir->coulombtype],
 	    eel_names[eelRF_ZERO]);
     warning(wi,warn_buf);
@@ -887,7 +913,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EEL_RF(ir->coulombtype) && ir->epsilon_rf==1 && ir->epsilon_r!=1) {
-    sprintf(warn_buf,"epsilon-r = %g and epsilon-rf = 1 with reaction field, assuming old format and exchanging epsilon-r and epsilon-rf",ir->epsilon_r);
+    sprintf(warn_buf,"epsilon-r = %g and epsilon-rf = 1 with reaction field, proceeding assuming old format and exchanging epsilon-r and epsilon-rf",ir->epsilon_r);
     warning(wi,warn_buf);
     ir->epsilon_rf = ir->epsilon_r;
     ir->epsilon_r  = 1.0;
@@ -902,9 +928,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     /* reaction field (at the cut-off) */
     
     if (ir->coulombtype == eelRF_ZERO) {
-       sprintf(err_buf,"With coulombtype = %s, epsilon-rf must be 0",
+       sprintf(warn_buf,"With coulombtype = %s, epsilon-rf must be 0, assuming you meant epsilon_rf=0",
 	       eel_names[ir->coulombtype]);
-      CHECK(ir->epsilon_rf != 0);
+        CHECK(ir->epsilon_rf != 0);
+        ir->epsilon_rf = 0.0;
     }
 
     sprintf(err_buf,"epsilon-rf must be >= epsilon-r");
@@ -923,37 +950,47 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype)) {
     if (EEL_SWITCHED(ir->coulombtype)) {
       sprintf(err_buf,
-	      "With coulombtype = %s rcoulomb_switch must be < rcoulomb",
+	      "With coulombtype = %s rcoulomb_switch must be < rcoulomb. Or, better: Use the potential modifier options!",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     }
   } else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype)) {
-      if (ir->cutoff_scheme == ecutsGROUP) {
-          sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
+      if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE) {
+          sprintf(err_buf,"With coulombtype = %s, rcoulomb should be >= rlist unless you use a potential modifier",
                   eel_names[ir->coulombtype]);
           CHECK(ir->rlist > ir->rcoulomb);
       }
   }
 
-  if (EEL_FULL(ir->coulombtype)) {
-    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER ||
-        ir->coulombtype==eelPMEUSERSWITCH) {
-      sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
-	      eel_names[ir->coulombtype]);
-      CHECK(ir->rcoulomb > ir->rlist);
-    } else if (ir->cutoff_scheme == ecutsGROUP) {
-      if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD) {
-	sprintf(err_buf,
-		"With coulombtype = %s, rcoulomb must be equal to rlist\n"
-		"If you want optimal energy conservation or exact integration use %s",
-		eel_names[ir->coulombtype],eel_names[eelPMESWITCH]);
-      } else { 
-	sprintf(err_buf,
-		"With coulombtype = %s, rcoulomb must be equal to rlist",
-		eel_names[ir->coulombtype]);
+  if(ir->coulombtype==eelSWITCH || ir->coulombtype==eelSHIFT ||
+     ir->vdwtype==evdwSWITCH || ir->vdwtype==evdwSHIFT)
+  {
+      sprintf(warn_buf,
+              "The switch/shift interaction settings are just for compatibility; you will get better"
+              "performance from applying potential modifiers to your interactions!\n");
+      warning_note(wi,warn_buf);
+  }
+
+  if (EEL_FULL(ir->coulombtype))
+  {
+      if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER ||
+          ir->coulombtype==eelPMEUSERSWITCH)
+      {
+          sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
+                  eel_names[ir->coulombtype]);
+          CHECK(ir->rcoulomb > ir->rlist);
       }
-      CHECK(ir->rcoulomb != ir->rlist);
-    }
+      else if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE)
+      {
+          if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD)
+          {
+              sprintf(err_buf,
+                      "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
+                      "If you want optimal energy conservation, consider using a potential modifier.",
+                      eel_names[ir->coulombtype]);
+              CHECK(ir->rcoulomb != ir->rlist);
+          }
+      }
   }
 
   if (EEL_PME(ir->coulombtype)) {
@@ -974,12 +1011,12 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EVDW_SWITCHED(ir->vdwtype)) {
-    sprintf(err_buf,"With vdwtype = %s rvdw-switch must be < rvdw",
+    sprintf(err_buf,"With vdwtype = %s rvdw-switch must be < rvdw. Or, better - use a potential modifier.",
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
   } else if (ir->vdwtype == evdwCUT) {
-      if (ir->cutoff_scheme == ecutsGROUP) {
-          sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
+      if (ir->cutoff_scheme == ecutsGROUP && ir->vdw_modifier == eintmodNONE) {
+          sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist unless you use a potential modifier",evdw_names[ir->vdwtype]);
           CHECK(ir->rlist > ir->rvdw);
       }
   }
@@ -1005,13 +1042,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (ir->nstlist == -1) {
-    sprintf(err_buf,
-	    "nstlist=-1 only works with switched or shifted potentials,\n"
-	    "suggestion: use vdw-type=%s and coulomb-type=%s",
-	    evdw_names[evdwSHIFT],eel_names[eelPMESWITCH]);
-    CHECK(!(EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) &&
-            EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)));
-
     sprintf(err_buf,"With nstlist=-1 rvdw and rcoulomb should be smaller than rlist to account for diffusion and possibly charge-group radii");
     CHECK(ir->rvdw >= ir->rlist || ir->rcoulomb >= ir->rlist);
   }
@@ -1030,13 +1060,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     /* ENERGY CONSERVATION */
     if (ir_NVE(ir) && ir->cutoff_scheme == ecutsGROUP)
     {
-        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
+        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0 && ir->vdw_modifier == eintmodNONE)
         {
             sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
                     evdw_names[evdwSHIFT]);
             warning_note(wi,warn_buf);
         }
-        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)
+        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0 && ir->coulomb_modifier == eintmodNONE)
         {
             sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
                     eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
@@ -1581,6 +1611,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("rlist",	ir->rlist,	-1);
   CTYPE ("long-range cut-off for switched potentials");
   RTYPE ("rlistlong",	ir->rlistlong,	-1);
+  ITYPE ("nstcalclr",	ir->nstcalclr,	-1);
 
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
@@ -2619,7 +2650,7 @@ void do_index(const char* mdparin, const char *ndx,
 
           if (ir->etc != etcVRESCALE && ir->opts.tau_t[i] == 0)
           {
-              warning_note(wi,"tau-t = -1 is the new value to signal that a group should not have temperature coupling. Treating your use of tau-t = 0 as if you used -1.");
+              warning_note(wi,"tau-t = -1 is the value to signal that a group should not have temperature coupling. Treating your use of tau-t = 0 as if you used -1.");
           }
 
           if (ir->opts.tau_t[i] >= 0)

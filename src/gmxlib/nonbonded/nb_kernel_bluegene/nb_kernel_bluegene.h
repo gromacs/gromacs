@@ -28,7 +28,7 @@
 
 #include <types/simple.h>
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 void
 nb_kernel_setup_bluegene(FILE *log,nb_kernel_t **list);

@@ -698,6 +698,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("verlet-buffer-drift",ir->verletbuf_drift);
     PR("rlist",ir->rlist);
     PR("rlistlong",ir->rlistlong);
+    PR("nstcalclr",ir->nstcalclr);
     PR("rtpi",ir->rtpi);
     PS("coulombtype",EELTYPE(ir->coulombtype));
     PS("coulomb-modifier",INTMODIFIER(ir->coulomb_modifier));
