@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 #include "nb_kernel_sse2_double.h"
 
 static nb_kernel_t *
