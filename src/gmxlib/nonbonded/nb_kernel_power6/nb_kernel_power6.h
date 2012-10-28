@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 void
 nb_kernel_setup_power6(FILE *fplog,nb_kernel_t **list);

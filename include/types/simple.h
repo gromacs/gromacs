@@ -222,6 +222,12 @@ typedef int gmx_large_int_t;
  */
 #ifndef __cplusplus
 
+#ifndef gmx_inline
+/* config.h tests for inline definitions and should work on a much wider range
+ * of compilers, but does not work with installed headers. These compiler checks
+ * still enable a real inline keyword for the most common compilers.
+ */
+
 #ifdef __GNUC__
    /* GCC */
 #  define gmx_inline   __inline__
@@ -245,11 +251,18 @@ typedef int gmx_large_int_t;
 #endif
 
 #else
+/* C++ */
 #  define gmx_inline inline
 #endif
 
+#endif /* ifndef gmx_inline */
 
-/* Restrict keywords. Note that this has to be done for C++ too. */
+
+/* Restrict keywords. Note that this has to be done for C++ too, unless
+ * it was set from the more general checks if we had config.h (gmx internal)
+ */
+#ifndef gmx_restrict
+
 #ifdef __GNUC__
 /* GCC */
 #  define gmx_restrict   __restrict__
@@ -272,6 +285,7 @@ typedef int gmx_large_int_t;
 #  define gmx_restrict
 #endif
 
+#endif
 
 /* Standard sizes for char* string buffers */
 #define STRLEN 4096
