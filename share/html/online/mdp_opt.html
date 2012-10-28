@@ -35,7 +35,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc-precision, xtc-grps, energygrps)
-<li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, ns-type, pbc, periodic-molecules, verlet-buffer-drift, rlist, rlistlong)
+<li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-drift, rlist, rlistlong)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, coulomb-modifier, rcoulomb-switch, rcoulomb, epsilon-r, epsilon-rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, vdw-modifier, rvdw-switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp-table)
@@ -441,6 +441,37 @@ by just one or two particles moving slightly beyond the half buffer length
 while 99.99% of the particles are fine.
 </dd>
 </dl></dd>
+
+<dt><b>nstcalclr: (-1) [steps]</b></dt>
+<dd><dl compact>
+<dt><b>1</b></dt>
+<dd>Calculate the long-range forces every single step. This is useful
+to have separate neighborlists with buffers for electrostatics and Van der Waals interactions,
+and in particular it makes it possible to have the Van der Waals cutoff longer than 
+electrostatics (useful e.g. with PME). However, there is no point in having identical long-range
+cutoffs for both interaction forms and update them every step - then it will be slightly faster
+to put everything in the short-range list.</dd>
+<dt><b>&gt;1</b></dt>
+<dd>Calculate the long-range forces every nstcalclr steps and use a multiple-time-step integrator
+to combine forces. This can now be done more frequently than <b>nstlist</b> since the lists are
+stored, and it might be a good idea e.g. for Van der Waals interactions that vary slower than 
+electrostatics.</dd>
+<dt><b>-1</b></dt>
+<dd>Calculate long-range forces on steps where neighborsearching is performed. While this is
+the default value, you might want to consider updating the long-range forces more frequently.</dd>
+</dl>
+The nstcalclr option can only be used with the group cutoff scheme. Note that long-range force 
+evaluation might be enabled automatically when you use PP-PME load balancing. This is done in
+order to maintain the chosen Van der Waals interaction radius even if we are changing the 
+electrostatics cutoff due to the load balancing. If you are already using twin-range 
+interactions to e.g. evaluate Lennard-Jones interactions with a longer cutoff than the PME
+electrostatics every 2-3 steps, there will be a small effect on Lennard-Jones too from this 
+load balancing since the short-range cutoff (inside which forces are evaluated every step)
+is changed.
+<br><br>
+</dd>
+
+
 
 <dt><b>ns-type:</b></dt>
 <dd><dl compact>
