@@ -405,14 +405,23 @@
 #cmakedefine gid_t int
 
 /* Define to __inline__ or __inline if that is what the C compiler
-   calls it, or to nothing if inline is not supported under any name.  */
+   calls it, or to nothing if inline is not supported under any name.
+   Please do NOT remove the gmx_inline keyword from here. The classical
+   C++ inline keyword is merely a recommendation to the compiler, and
+   many compilers support stronger alternatives (e.g. __forceinline)
+   that we might want to use. */
+#define gmx_inline ${INLINE_KEYWORD}
 #ifndef __cplusplus
 #define inline ${INLINE_KEYWORD}
 #endif
 
 /* Define to __restrict__ or __restrict if that is what the C compiler
-   calls it, or to nothing if restrict is not supported under any name.  */
-#define restrict ${RESTRICT_KEYWORD}
+   calls it, unless we are on C99 when it is simply called restrict.
+   Since restrict is a reserved key word in C99 we are not allowed to
+   redefine the word itself, so call this gmx_restrict to avoid having
+   to identify the language standard level. If it is not supported, it
+   is still defined to an empty string here. */
+#define gmx_restrict ${RESTRICT_KEYWORD}
 
 #ifndef CPLUSPLUS
 #ifdef __cplusplus

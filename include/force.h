@@ -138,13 +138,17 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
 
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
-                                   int verlet_kernel_type);
+                                   int verlet_kernel_type,
+                                   real rtab);
 /* Initializes the tables in the interaction constant data structure.
+ * Setting verlet_kernel_type to -1 always initializes tables for
+ * use with group kernels.
  */
 
 void init_interaction_const(FILE *fp, 
                             interaction_const_t **interaction_const,
-                            const t_forcerec *fr);
+                            const t_forcerec *fr,
+                            real  rtab);
 /* Initializes the interaction constant data structure. Currently it 
  * uses forcerec as input. 
  */
@@ -242,8 +246,10 @@ void ns(FILE       *fplog,
 	       real       *dvdlambda,
 	       gmx_grppairener_t *grppener,
 	       gmx_bool       bFillGrid,
-	       gmx_bool       bDoLongRange,
+           gmx_bool       bDoLongRangeNS,
+	       gmx_bool       bDoLongRangeNB,
 	       gmx_bool       bDoForces,
+           gmx_bool       bDoPotential,
 	       rvec       *f);
 /* Call the neighborsearcher */
 
