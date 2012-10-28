@@ -307,8 +307,8 @@ int gmx_h2order(int argc,char *argv[])
   
   if (bMicel)
     rd_index(opt2fn("-nm",NFILE,fnm), 1, &nmic, &micelle, &micname);
-
-  calc_h2order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder, 
+    
+  calc_h2order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder,
 	       &slWidth, &nslices, top, ePBC, axis, bMicel, micelle, nmic,
                oenv); 
 

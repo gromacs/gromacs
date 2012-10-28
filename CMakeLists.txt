@@ -409,6 +409,9 @@ check_function_exists(sigaction         HAVE_SIGACTION)
 check_function_exists(sysconf           HAVE_SYSCONF)
 check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
 check_function_exists(sched_getaffinity HAVE_SCHED_GETAFFINITY)
+check_function_exists(rsqrt             HAVE_RSQRT)
+check_function_exists(rsqrtf            HAVE_RSQRTF)
+check_function_exists(sqrtf             HAVE_SQRTF)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -670,7 +673,7 @@ include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
 
 include(gmxTestRestrict)
-gmx_test_inline(RESTRICT_KEYWORD)
+gmx_test_restrict(RESTRICT_KEYWORD)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)

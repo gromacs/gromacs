@@ -17,15 +17,15 @@ MACRO(GMX_TEST_RESTRICT VARIABLE)
                 TRY_COMPILE(TEST_${VARIABLE} "${CMAKE_BINARY_DIR}"    
                             "${CMAKE_SOURCE_DIR}/cmake/TestRestrict.c"
                             COMPILE_DEFINITIONS "-DTESTRESTRICTDEF=${KEYWORD}" )
-                SET(CHK_RESTRICT_KEYWORD ${KEYWORD})
+                SET(LAST_RESTRICT_KEYWORD ${KEYWORD})
             ENDIF(NOT TEST_${VARIABLE})
         ENDFOREACH(KEYWORD)
-             
+
         IF(TEST_${VARIABLE})
-            SET(${VARIABLE} ${KEYWORD})
-            MESSAGE(STATUS "Checking for restrict keyword - ${CHK_RESTRICT_KEYWORD}")
+            SET(${VARIABLE} ${LAST_RESTRICT_KEYWORD} CACHE INTERNAL "Restrict keyword" FORCE)
+            MESSAGE(STATUS "Checking for restrict keyword - ${LAST_RESTRICT_KEYWORD}")
         ELSE(TEST_${VARIABLE})
-	    SET(${VARIABLE} " ")
+	    SET(${VARIABLE} " " CACHE INTERNAL "Restrict keyword" FORCE)
             MESSAGE(STATUS "Checking for restrict keyword - not found")
         ENDIF(TEST_${VARIABLE})
 
