@@ -1140,7 +1140,7 @@ static void override_nsteps_cmdline(FILE *fplog,
  * before the other nodes have read the tpx file and called gmx_detect_hardware.
  */
 typedef struct {
-    int      cutoff_scheme; /* The cutoff-scheme from inputrec_t */
+    int cutoff_scheme; /* The cutoff scheme from inputrec_t */
     gmx_bool bUseGPU;       /* Use GPU or GPU emulation          */
 } master_inf_t;
 
