@@ -171,8 +171,9 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     // NOTE: Interactive input is broken with more than one process.
     #ifdef GMX_LIB_MPI
-        if (seloptManager.requestsCount() > 0)
+        if (seloptManager.hasPendingRequests())
         {
+            GMX_THROW(InvalidInputError("Interactive selection not supported"));
             return false;
         }
     #endif
