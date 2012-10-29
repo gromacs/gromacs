@@ -343,10 +343,10 @@ SelectionOptionManager::parseRequestedFromString(const std::string &str)
 }
 
 
-int
-SelectionOptionManager::requestsCount()
+bool
+SelectionOptionManager::hasPendingRequests()
 {
-    return impl_->requests_.size();
+    return (impl_->requests_.size() > 0);
 }
 
 /********************************************************************
