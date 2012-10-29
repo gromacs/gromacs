@@ -1,0 +1,8 @@
+Code-Review+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: Christoph Junghans <junghans@votca.org>
+Verified+1: Jenkins Buildbot
+Submitted-by: Christoph Junghans <junghans@votca.org>
+Submitted-at: Mon, 29 Oct 2012 04:56:35 +0100
+Reviewed-on: https://gerrit.gromacs.org/1550
+Project: gromacs
+Branch: refs/heads/master
