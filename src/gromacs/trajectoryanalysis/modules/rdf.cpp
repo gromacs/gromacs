@@ -83,19 +83,29 @@ void
 Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "RDF is the radial distribution function defined such that the",
-        "quantity (N/V)*RDF(r)*4pi*r^2*dr is the average number of",
-        "particles found in a spherical shell of width dr at a",
-        "distance r from any particle in the system.",
-        "Here, N/V is the average particle density in the system and",
-        "particles refer to the set of positions given by the",
-        "selection."
+        "This tool calculates the radial distribution function (RDF)",
+        "for a set of output positions relative a set of reference",
+        "positions.\n"
+        "The RDF is defined such that the quantity\n",
+        "\t(N/V)*RDF(r)*4pi*r^2*dr\n",
+        "is the average number of output positions found in a",
+        "spherical shell of width dr at a distance r from a reference",
+        "position in the system, where N/V is the average output",
+        "position density in the system.\n",
+        "When the output and reference position sets are equal, it is",
+        "sufficient to specify only the former."
+        #ifdef GMX_LIB_MPI
+        ,"\n Interactive selection is disabled for MPI builds."
+        #endif
     };
 
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(SelectionOption("select").required().valueCount(1)
                            .store(sel_));
+    options->addOption(SelectionOption("reference").valueCount(1)
+                       .description("Reference to calculate distances from")
+                           .store(refsel_));
 }
 
 

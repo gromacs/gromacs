@@ -74,6 +74,7 @@ class Rdf : public TrajectoryAnalysisModule
     private:
         std::string                      fnDist_;
         Selection                        sel_[1];
+        Selection                        refsel_[1];
         AnalysisData                     data_;
         AnalysisDataAverageModulePointer avem_; // replace with hist eventually
 
