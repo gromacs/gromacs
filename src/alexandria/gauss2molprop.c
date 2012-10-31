@@ -71,20 +71,6 @@
 #include "poldata_xml.h"
 #include "gmx_babelio.h"
 
-typedef struct gap {
-    char *element, *method,*desc;
-    real temp;
-    real value;
-} gap_t;
-
-typedef struct gau_atomprop
-{
-    int   ngap;
-    gap_t *gap;
-} gau_atomprop;
-
-typedef struct gau_atomprop *gau_atomprop_t;
-
 static int get_lib_file(const char *db,char ***strings)
 {
   FILE *in;
@@ -151,8 +137,8 @@ gau_atomprop_t read_gauss_data(const char *fn)
     return gaps;
 }
 
-static int gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,char *desc,double temp,
-                                  double *value)
+int gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,
+                           char *desc,double temp,double *value)
 {
     int i,found;
     double ttol = 0.01; /* K */
@@ -244,7 +230,7 @@ int gau_comp_meth_read_line(char *line,real *temp,real *pres)
     return TRUE;
 }
 
-static gmx_bool read_polar(char *str,tensor T)
+gmx_bool read_polar(char *str,tensor T)
 {
     char **ptr;
     int  k;
@@ -287,7 +273,7 @@ static gmx_bool read_polar(char *str,tensor T)
     return bRes;
 }
 
-static gmx_bool read_dipole(char *str,rvec mu)
+gmx_bool read_dipole(char *str,rvec mu)
 {
     char **ptr;
     int  k;
@@ -318,7 +304,7 @@ static gmx_bool read_dipole(char *str,rvec mu)
     return bRes;
 }
 
-static gmx_bool read_quad(char *str1,char *str2,tensor Q)
+gmx_bool read_quad(char *str1,char *str2,tensor Q)
 {
     gmx_bool bRes;
     rvec q1,q2;
@@ -353,8 +339,9 @@ static int espv_comp(const void *a,const void *b)
     return 0;
 }
 
-gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
-                                   const char *fn,char *molnm,char *iupac,char *conformation,
+gmx_molprop_t gmx_molprop_read_log(const char *fn,
+                                   gmx_atomprop_t aps,gmx_poldata_t pd,
+                                   char *molnm,char *iupac,char *conformation,
                                    gau_atomprop_t gaps,
                                    real th_toler,real ph_toler,
                                    int maxpot,gmx_bool bVerbose)
@@ -832,11 +819,11 @@ int main(int argc, char *argv[])
   gmx_molprop_t mp,*mps=NULL;
   gau_atomprop_t gp;
   char **fns=NULL;
+  const char *g98;
   int i,nmp,nfn;
   FILE *fp;
   gau_atomprop_t gaps;
 
-  printf("Babel returns %d\n",read_babel(argc,argv));
   
   CopyRight(stdout,argv[0]);
 
@@ -849,15 +836,20 @@ int main(int argc, char *argv[])
   /* Read polarization stuff */
   if ((pd = gmx_poldata_read(NULL,aps)) == NULL)
     gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
-    
+
   gaps = read_gauss_data(opt2fn_null("-f",NFILE,fnm));
 
   nfn = ftp2fns(&fns,efLOG,NFILE,fnm);
   nmp = 0;
   for(i=0; (i<nfn); i++) 
   {
-      mp = gmx_molprop_read_log(aps,pd,fns[i],molnm,iupac,conf,gaps,
+#ifdef HAVE_LIBOPENBABEL2
+      mp = gmx_molprop_read_gauss(fns[i],aps,pd,molnm,iupac,conf,gaps,
+                                  th_toler,ph_toler,maxpot,bVerbose);
+#else
+      mp = gmx_molprop_read_log(fns[i],aps,pd,molnm,iupac,conf,gaps,
                                 th_toler,ph_toler,maxpot,bVerbose);
+#endif
       if (NULL != mp) 
       {
           srenew(mps,++nmp);

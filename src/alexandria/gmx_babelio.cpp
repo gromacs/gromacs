@@ -1,46 +1,95 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "typedefs.h"
+#include "gmx_fatal.h"
+#include "smalloc.h"
+#include "futil.h"
+#include "poldata.h"
+#include "atomprop.h"
+#include "molprop.h"
+#include "string2.h"
 #include "gmx_babelio.h"
+#include "vec.h"
 
 // Include Open Babel classes for OBMol and OBConversion
 #ifdef HAVE_LIBOPENBABEL2
 #include <iostream>
+#include <fstream>
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
 
 using namespace std;
 
-int read_babel(int argc,char **argv)
+int read_babel(const char *g98,OpenBabel::OBMol *mol)
 {
-  // Read from STDIN (cin) and Write to STDOUT (cout)
-  OpenBabel::OBConversion conv(&cin,&cout);
+  ifstream         g98f;
+  char             *g98z;
   
-  // Try to set input format to MDL SD file
-  // and output to SMILES
-  if (conv.SetInAndOutFormats("SDF","SMI"))
+  if (FALSE == gmx_fexist(g98)) 
     {
-      OpenBabel::OBMol mol;
-      if (conv.Read(&mol))
+      snew(g98z,strlen(g98)+4);
+      strcpy(g98z,g98);
+      strcat(g98z,".gz");
+      g98f.open(g98z,ios::in);
+      sfree(g98z);
+    }
+  else 
+    {
+      g98f.open(g98,ios::in);
+    }
+  if (!g98f.is_open()) 
+    {
+      gmx_fatal(FARGS,"Can not open file %s for reading",g98);
+    }
+  
+  // Read from g98f
+  OpenBabel::OBConversion conv(&g98f,&cout);
+  
+  // Try to set input format to G98 file
+  if (conv.SetInFormat("G98"))
+    {
+      if (conv.Read(mol))
         {
           //  ...manipulate molecule
-          cerr << " Molecule has: " << mol.NumAtoms()
+          cout << " Molecule has: " << mol->NumAtoms()
                << " atoms." << endl;
+          g98f.close();
+          return 0; // exit with success
         }
-      
-      // Write SMILES to the standard output
-      conv.Write(&mol);
+      else 
+        {
+          cerr << "Could not read input file " << g98 << " with OpenBabel2." << endl;
+        }
     }
-  return 0; // exit with success
-}
-
-#else
-
-#include "gmx_fatal.h"
-
-int read_babel(int argc,char **argv)
-{
-  gmx_fatal(FARGS,"No support for OpenBabel");
+  else 
+    {
+      cerr << "Input file " << g98 << " has incorrect Gaussian98 format." << endl;
+    }
+  g98f.close();
   return -1;
 }
+
+gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
+                                     gmx_atomprop_t aps,gmx_poldata_t pd,
+                                     char *molnm,char *iupac,char *conformation,
+                                     gau_atomprop_t gaps,
+                                     real th_toler,real ph_toler,
+                                     int maxpot,gmx_bool bVerbose)
+{
+  /* Read a gaussian log file */
+  OpenBabel::OBMol mol;
+  gmx_molprop_t mpt;  
+  
+  if (0 != read_babel(g98,&mol))
+    gmx_fatal(FARGS,"Failed reading %s",g98);
+
+  mol.PerceiveBondOrders();
+      
+  /* Create new calculation */ 
+  mpt = gmx_molprop_init();
+
+  return mpt;
+}
+
 #endif
