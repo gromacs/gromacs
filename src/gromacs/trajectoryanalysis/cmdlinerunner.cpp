@@ -169,7 +169,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     common->initIndexGroups(selections);
 
-    // NOTE: Interactive input is broken with more than one process.
+    // NOTE: Interactive input is disabled for MPI.
     #ifdef GMX_LIB_MPI
         if (seloptManager.hasPendingRequests())
         {
