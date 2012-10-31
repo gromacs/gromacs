@@ -408,6 +408,7 @@ check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 check_function_exists(sysconf           HAVE_SYSCONF)
 check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
+check_function_exists(sched_getaffinity HAVE_SCHED_GETAFFINITY)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
