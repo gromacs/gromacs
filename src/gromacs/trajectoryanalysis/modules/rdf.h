@@ -62,6 +62,8 @@ class Rdf : public TrajectoryAnalysisModule
 
         virtual void initOptions(Options *options,
                                  TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options * options,
+                                     TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -75,6 +77,7 @@ class Rdf : public TrajectoryAnalysisModule
         std::string                      fnDist_;
         Selection                        sel_[1];
         Selection                        refsel_[1];
+        bool                             bRefSelectionSet;
         AnalysisData                     data_;
         AnalysisDataAverageModulePointer avem_; // replace with hist eventually
 

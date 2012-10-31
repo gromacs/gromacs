@@ -102,60 +102,114 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(SelectionOption("select").required().valueCount(1)
-                           .store(sel_));
-    options->addOption(SelectionOption("reference").valueCount(1)
-                       .description("Reference to calculate distances from")
+                       .store(sel_));
+    options->addOption(SelectionOption("refsel").valueCount(1)
+                       .description("Selection for reference")
                            .store(refsel_));
 }
 
+void
+Rdf::optionsFinished(Options * options, TrajectoryAnalysisSettings * /*settings*/)
+{
+    bRefSelectionSet = options->isSet("refsel");
+}
 
 void
 Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation & /*top*/)
 {
+    if (sel_[0].posCount() == 0)
+    {
+        GMX_THROW(InvalidInputError("Selection does not define any positions"));
+    }
+
+    if (bRefSelectionSet && refsel_[0].posCount() == 0)
+    {
+        GMX_THROW(InvalidInputError("Reference selection does not define any positions"));
+    }
+
     data_.addModule(avem_);
 }
 
 
 void
 Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                       TrajectoryAnalysisModuleData *pdata)
+                    TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle  dh = pdata->dataHandle(data_);
     const Selection    &sel = pdata->parallelSelection(sel_[0]);
     const int           pos = sel.posCount();
+
     rvec                dx;
     real                r;
-    std::vector<real>   dij((pos-1)*pos/2);
     double              sum = 0.0;
-    int                 index = 0;
+    int                 dsamples;
 
-
-    for (int i = 0; i < pos-1; i++)
+    if (bRefSelectionSet)
     {
-        const SelectionPosition &pi = sel.position(i);
-        for (int j = i+1; j < pos; j++)
+        const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
+        const int           rpos = refsel.posCount();
+        real s;
+
+        dsamples = pos*rpos;
+
+        for (int i = 0; i < rpos; i++)
         {
-                const SelectionPosition &pj = sel.position(j);
-                if (pbc != NULL)
-                {
-                    pbc_dx(pbc, pi.x(), pj.x(), dx);
-                }
-                else
-                {
-                    rvec_sub(pi.x(), pj.x(), dx);
-                }
-                dij[index] = norm(dx);
-                sum += (double) dij[index];
-                index++;
+            const SelectionPosition &pi = refsel.position(i);
+            for (int j = 0; j < pos; j++)
+            {
+                    const SelectionPosition &pj = sel.position(j);
+                    if (pbc != NULL)
+                    {
+                        pbc_dx(pbc, pi.x(), pj.x(), dx);
+                    }
+                    else
+                    {
+                        rvec_sub(pi.x(), pj.x(), dx);
+                    }
+
+                    s = norm(dx);
+                    if (s > 0.0)
+                    {
+                        sum += (double) s;
+                    }
+                    else
+                    {
+                        dsamples -= 1;
+                    }
+            }
+        }
+    }
+    else
+    {
+        dsamples = (pos-1)*pos/2;
+
+        for (int i = 0; i < pos-1; i++)
+        {
+            const SelectionPosition &pi = sel.position(i);
+            for (int j = i+1; j < pos; j++)
+            {
+                    const SelectionPosition &pj = sel.position(j);
+                    if (pbc != NULL)
+                    {
+                        pbc_dx(pbc, pi.x(), pj.x(), dx);
+                    }
+                    else
+                    {
+                        rvec_sub(pi.x(), pj.x(), dx);
+                    }
+                    sum += (double) norm(dx);
+            }
         }
     }
 
-    r = (real) sum/dij.size();
+    if (dsamples > 0)
+        r = (real) (sum/dsamples);
+    else
+        r = 0.0;
 
     dh.startFrame(frnr, fr.time);
-    dh.setPoint(0, r);
-
+        dh.setPoint(0, r);
     dh.finishFrame();
 }
 
