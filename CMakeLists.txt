@@ -537,6 +537,9 @@ if(GMX_GPU)
         message(WARNING "GPU acceleration is not available in double precision, disabled!")
         set(GMX_GPU OFF CACHE BOOL "Enable GPU acceleration" FORCE)
     endif()
+endif(GMX_GPU)
+
+if(GMX_GPU)
 
     # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
     if(MSVC)
