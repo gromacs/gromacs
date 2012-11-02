@@ -25,8 +25,10 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
             To set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure with
             CUDA_NVCC_HOST_COMPILER variable.")
         else()
-            # the MPI wrappers might not work for compilation
-            if (GMX_MPI AND NOT GMX_THREAD_MPI)
+            # do not use MPI compiler wrappers, as there are prone to not work
+            if (GMX_MPI AND
+                NOT ${${MPI_PREFIX}_FOUND} AND # FindMPI-detection
+                NOT GMX_THREAD_MPI)
                 message(WARNING "
             Will not set the nvcc host compiler because the current C compiler is an MPI 
             compiler wrapper: ${CMAKE_C_COMPILER}
