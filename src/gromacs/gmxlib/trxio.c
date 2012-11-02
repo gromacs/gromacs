@@ -715,7 +715,7 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       /* DvdS 2005-05-31: this has been fixed along with the increased
        * accuracy of the control over -b and -e options.
        */
-        if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
+        if ( !(fr->flags & TRX_DONT_SKIP) && bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
           if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms,TRUE)) {
             gmx_fatal(FARGS,"Specified frame (time %f) doesn't exist or file corrupt/inconsistent.",
                       rTimeValue(TBEGIN));
