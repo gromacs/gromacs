@@ -17,6 +17,9 @@
 #include <iostream>
 #include <fstream>
 #include <openbabel/mol.h>
+#include <openbabel/atom.h>
+#include <openbabel/residue.h>
+#include <openbabel/obiter.h>
 #include <openbabel/obconversion.h>
 
 using namespace std;
@@ -51,9 +54,6 @@ int read_babel(const char *g98,OpenBabel::OBMol *mol)
     {
       if (conv.Read(mol))
         {
-          //  ...manipulate molecule
-          cout << " Molecule has: " << mol->NumAtoms()
-               << " atoms." << endl;
           g98f.close();
           return 0; // exit with success
         }
@@ -79,15 +79,33 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
 {
   /* Read a gaussian log file */
   OpenBabel::OBMol mol;
+  OpenBabel::OBAtomIterator OBai;
+  OpenBabel::OBAtom *OBa;
+  const char *program="Gaussian",*method="GX",*basisset="GX",*reference="Spoel2013a",*atomname;
+  int calcref,atomref,atomid;
   gmx_molprop_t mpt;  
+  int i;
   
   if (0 != read_babel(g98,&mol))
     gmx_fatal(FARGS,"Failed reading %s",g98);
 
+  //  ...manipulate molecule
+  cout << " Molecule has: " << mol.NumAtoms()
+       << " atoms." << endl;
   mol.PerceiveBondOrders();
-      
   /* Create new calculation */ 
   mpt = gmx_molprop_init();
+
+  gmx_molprop_add_calculation(mpt,program,method,basisset,reference,
+                              conformation,&calcref);
+  
+  /* Now add properties by extracting them from the OpenBabel structure */
+  OBai = mol.BeginAtoms();
+  atomid = 1;
+  for (OBa = mol.BeginAtom(OBai); (NULL != OBa); OBa = mol.NextAtom(OBai)) {
+    gmx_molprop_calc_add_atom(mpt,calcref,OBa->GetType(),atomid,&atomref);
+    atomid++;
+  }
 
   return mpt;
 }
