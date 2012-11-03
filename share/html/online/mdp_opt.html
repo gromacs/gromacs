@@ -51,7 +51,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 wall-density, wall-ewald-zfac)
 <li><A HREF="#pull"><b>COM pulling</b></A> (pull, ...)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre-weighting, disre-mixed, disre-fc, disre-tau, nstdisreout, orire, orire-fc, orire-tau, orire-fitgrp, nstorireout)
-<li><A HREF="#free"><b>Free energy calculations</b></A> (free-energy, nstfep, nstdgdl, dhdl-print-energy, init-lambda, delta-lambda, fep-lambdas, coul-lambdas, vdw-lambdas, bonded-lambdas, restraint-lambdas, mass-lambdas, sc-alpha, sc-coul, sc-power, sc-r-power, sc-sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
+<li><A HREF="#free"><b>Free energy calculations</b></A> (free-energy, nstdhdl, dhdl-print-energy, init-lambda, delta-lambda, fep-lambdas, coul-lambdas, vdw-lambdas, bonded-lambdas, restraint-lambdas, mass-lambdas, sc-alpha, sc-coul, sc-power, sc-r-power, sc-sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
 <li><A HREF="#expanded"><b>Expanded ensemble simulation</b></A> (lmc-stats, lmc-mc-move, lmc-seed, lmc-gibbsdelta, mc-temperature, nst-transition-matrix,init-lambda-weights,initial-wl-delta,wl-scale,wl-ratio,symmetrized-transition-matrix,lmc-forced-nstart,weight-c-range,mininum-var-min,lmc-weights-equil,weight-equil-wl-delta,weight-equil-number-all-lambda,weight-equil-number-steps,weight-equil-number-samples,weight-equil-count-ratio,simulated-tempering,simulated-tempering-scaling,sim-temp-low,sim-temp-high)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc-grps, accelerate, freezegrps, freezedim, cos-acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E-x, E-xt, E-y, E-yt, E-z, E-zt )
@@ -1538,11 +1538,9 @@ the molecule definition in the topology.</dd>
 <dt><b>yes</b></dt>
 <dd>The intra-molecular Van der Waals and Coulomb interactions are also turned on/off. This can be useful for partitioning free-energies of relatively large molecules, where the intra-molecular non-bonded interactions might lead to kinetically trapped vacuum conformations. The 1-4 pair interactions are not turned off.
 </dl>
-<dt><b>nstdhdl: (10)</b></dt>
+<dt><b>nstdhdl: (100)</b></dt>
 <dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
-0 means no ouput, should be a multiple of <b>nstcalcenergy</b>and <b>nstfep</b></dd>
-<dt><b>nstfep: (10)</b></dt>
-<dd>the frequency at which energies at other values of lambda are calculated.  If not specified, set to be the same as <b>nstdhdl</b>. Should be a multiple of <b>nstcalcenergy</b>.  If replica exchange is chosen, then -replex must also be a multiple of <b>nstfep</b></dd>
+0 means no ouput, should be a multiple of <b>nstcalcenergy</b>. If replica exchange is chosen, then -replex must also be a multiple of <b>nstdhdl</b></dd>.</dd>
 <dt><b>separate-dhdl-file: (yes)</b></dt>
 <dd><dl compact>
 <dt><b>yes</b></dt>
@@ -1561,7 +1559,7 @@ the molecule definition in the topology.</dd>
 
 <dl>
 <dt><b>nstexpanded</b></dt> <dd>The frequency to peform expanded ensemble
-simulations.  Must be a multiple of <b>nstfep</b>.</dd>
+simulations.  Must be a multiple of <b>nstdhdl</b>.</dd>
 <dt><b>lmc-stats:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
