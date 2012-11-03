@@ -1078,7 +1078,7 @@ if(TMP_RESULT)
 endif()
 string(LENGTH "${CC_VERSION}" len)
 if(len)
-    string(REGEX MATCH "[^\n]*" CC_VERSION "${CC_VERSION}")
+    string(REGEX MATCH "[^\n]+" CC_VERSION "${CC_VERSION}")
 endif()
 
 set(BUILD_COMPILER "@CMAKE_C_COMPILER@ @CMAKE_C_COMPILER_ID@ @CC_VERSION@")
