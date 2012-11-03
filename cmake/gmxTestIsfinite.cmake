@@ -18,7 +18,9 @@ MACRO(gmx_test_isfinite VARIABLE)
     MESSAGE(STATUS "Checking for isfinite")
 
     set(CMAKE_REQUIRED_INCLUDES "math.h")
-    set(CMAKE_REQUIRED_LIBRARIES "m")
+    if (HAVE_LIBM)
+        set(CMAKE_REQUIRED_LIBRARIES "m")
+    endif()
     check_c_source_compiles(
       "#include <math.h>
 int main(void) {
@@ -32,6 +34,8 @@ int main(void) {
         MESSAGE(STATUS "Checking for isfinite - no")
     endif(isfinite_compile_ok)
     set(isfinite_compile_ok "${isfinite_compile_ok}" CACHE INTERNAL "Result of isfinite check")
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LIBRARIES)
   endif(NOT DEFINED isfinite_compile_ok)
   if(isfinite_compile_ok)
     set(${VARIABLE} ${isfinite_compile_ok}
@@ -44,7 +48,9 @@ MACRO(gmx_test__isfinite VARIABLE)
     MESSAGE(STATUS "Checking for _isfinite")
 
     set(CMAKE_REQUIRED_INCLUDES "math.h")
-    set(CMAKE_REQUIRED_LIBRARIES "m")
+    if (HAVE_LIBM)
+        set(CMAKE_REQUIRED_LIBRARIES "m")
+    endif()
     check_c_source_compiles(
       "#include <math.h>
 int main(void) {
@@ -58,6 +64,8 @@ int main(void) {
         MESSAGE(STATUS "Checking for _isfinite - no")
     endif(_isfinite_compile_ok)
     set(_isfinite_compile_ok "${_isfinite_compile_ok}" CACHE INTERNAL "Result of _isfinite check")
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LIBRARIES)
   endif(NOT DEFINED _isfinite_compile_ok)
   if(_isfinite_compile_ok)
     set(${VARIABLE} ${_isfinite_compile_ok}
@@ -84,6 +92,7 @@ int main(void) {
         MESSAGE(STATUS "Checking for _finite - no")
     endif(_finite_compile_ok)
     set(_finite_compile_ok "${_finite_compile_ok}" CACHE INTERNAL "Result of _finite check")
+    set(CMAKE_REQUIRED_INCLUDES)
   endif(NOT DEFINED _finite_compile_ok)
   if(_finite_compile_ok)
     set(${VARIABLE} ${_finite_compile_ok}

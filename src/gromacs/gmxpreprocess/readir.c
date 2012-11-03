@@ -1802,7 +1802,7 @@ void get_ir(const char *mdparin,const char *mdparout,
                                                  it was not entered */
   ITYPE ("init-lambda-state", fep->init_fep_state,0);
   RTYPE ("delta-lambda",fep->delta_lambda,0.0);
-  ITYPE ("nstdhdl",fep->nstdhdl, 10);
+  ITYPE ("nstdhdl",fep->nstdhdl, 100);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);

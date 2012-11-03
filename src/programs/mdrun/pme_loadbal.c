@@ -278,7 +278,7 @@ static void print_loadbal_limited(FILE *fp_err,FILE *fp_log,
     sprintf(buf,"step %4s: the %s limited the PME load balancing to a cut-off of %.3f",
             gmx_step_str(step,sbuf),
             pmelblim_str[pme_lb->elimited],
-            pme_lb->setup[pme_loadbal_end(pme_lb)].rcut);
+            pme_lb->setup[pme_loadbal_end(pme_lb)-1].rcut);
     if (fp_err != NULL)
     {
         fprintf(fp_err,"\r%s\n",buf);

@@ -617,9 +617,13 @@ void nbnxn_atomdata_init(FILE *fp,
     if (!simple)
     {
         /* Energy groups not supported yet for super-sub lists */
+        if (n_energygroups > 1 && fp != NULL)
+        {
+            fprintf(fp,"\nNOTE: With GPUs, reporting energy group contributions is not supported\n\n");
+        }
         nbat->nenergrp = 1;
     }
-    /* Temporary storage goes is #grp^3*8 real, so limit to 64 */
+    /* Temporary storage goes as #grp^3*simd_width^2/2, so limit to 64 */
     if (nbat->nenergrp > 64)
     {
         gmx_fatal(FARGS,"With NxN kernels not more than 64 energy groups are supported\n");
@@ -793,7 +797,7 @@ static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
     j = 0;
     for(i=0; i<na; i+=na_c)
     {
-        /* Store na_c energy groups number into one int */
+        /* Store na_c energy group numbers into one int */
         comb = 0;
         for(sa=0; sa<na_c; sa++)
         {

@@ -84,11 +84,12 @@ if (NOT GMX_USE_RELATIVE_INSTALL_PATH)
 endif()
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 set(CPACK_SOURCE_IGNORE_FILES ".isreposource;.git;.gitignore")
 set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
 SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/man;man")
+set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 
 #must come after all cpack settings!
 include(CPack)
@@ -203,8 +204,8 @@ mark_as_advanced(GMX_GIT_VERSION_INFO)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 
-if(UNIX AND NOT APPLE)
-    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
+if(UNIX)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX platforms but it might not always work!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
@@ -427,7 +428,7 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
-if(UNIX AND NOT APPLE)
+if(UNIX)
     if(GMX_PREFER_STATIC_LIBS)
         SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
         if(SHARED_LIBS_DEFAULT)
@@ -499,6 +500,9 @@ if(GMX_GPU)
         message(WARNING "GPU acceleration is not available in double precision, disabled!")
         set(GMX_GPU OFF CACHE BOOL "Enable GPU acceleration" FORCE)
     endif()
+endif(GMX_GPU)
+
+if(GMX_GPU)
 
     # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
     if(MSVC)
@@ -659,7 +663,6 @@ gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
 
 include(gmxTestLargeFiles)
 gmx_test_large_files(GMX_LARGEFILES)
-check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
 gmx_test_sigusr1(HAVE_SIGUSR1)
@@ -905,22 +908,24 @@ set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     if(GMX_DOUBLE)
-        find_package(FFTW 3 COMPONENTS fftw)
+        set(FFTW fftw)
     else(GMX_DOUBLE)
-        find_package(FFTW 3 COMPONENTS fftwf)
+        set(FFTW fftwf)
     endif(GMX_DOUBLE)
-    if(NOT FFTW_FOUND)
+    find_package(FFTW COMPONENTS ${FFTW})
+    string(TOUPPER "${FFTW}" FFTW)
+    set(PKG_FFT "${${FFTW}_PKG}")
+    include_directories(${${FFTW}_INCLUDE_DIRS})
+    set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
+    if(NOT ${FFTW}_FOUND)
       MESSAGE(FATAL_ERROR "Cannot find FFTW3 (with correct precision - libfftw3f for single precision GROMACS or libfftw3 for double precision GROMACS). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW_FOUND)
-    include_directories(${FFTW_INCLUDE_DIRS})
-    set(FFT_LIBRARIES ${FFTW_LIBRARIES})
-    set(PKG_FFT "${FFTW_PKG}")
+    endif(NOT ${FFTW}_FOUND)
 
     set(GMX_FFT_FFTW3 1)
 
-    if (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
-      message(WARNING "The fftw library found is compiled without SSE support, which makes it slow. Consider recompiling it or contact your admin")
-    endif (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
+    if (NOT ${GMX_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
+      message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
+    endif (NOT ${GMX_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
@@ -1056,6 +1061,14 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         CACHE STRING "Linker flags for creating shared libraries" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 
+if(NOT GMX_OPENMP)
+    #Unset all OpenMP flags in case OpenMP was disabled either by the user
+    #or because it was only partially detected (e.g. only for C but not C++ compiler)
+    unset(OpenMP_C_FLAGS CACHE) 
+    unset(OpenMP_CXX_FLAGS CACHE)
+    unset(OpenMP_LINKER_FLAGS CACHE)
+    unset(OpenMP_SHARED_LINKER_FLAGS)
+endif()
 ######################################
 # Output compiler and CFLAGS used
 ######################################
@@ -1105,6 +1118,10 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
+
+#COPYING file: Only necessary for binary distributions.
+#Simpler to always install.
+install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
 add_subdirectory(doxygen)
 add_subdirectory(share)

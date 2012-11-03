@@ -266,7 +266,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     fflush(stderr);
     /* now spawn new threads that start mdrunner_start_fn(), while 
        the main thread returns */
-    ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi, TMPI_AFFINITY_ALL_CORES,
+    ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi,
+                     (hw_opt->bThreadPinning ? TMPI_AFFINITY_ALL_CORES : TMPI_AFFINITY_NONE),
                      mdrunner_start_fn, (void*)(mda) );
     if (ret!=TMPI_SUCCESS)
         return NULL;
@@ -737,11 +738,21 @@ static void convert_to_verlet_scheme(FILE *fplog,
 */
 static void set_cpu_affinity(FILE *fplog,
                              const t_commrec *cr,
-                             const gmx_hw_opt_t *hw_opt,
+                             gmx_hw_opt_t *hw_opt,
                              int nthreads_pme,
                              const gmx_hw_info_t *hwinfo,
                              const t_inputrec *inputrec)
 {
+#if defined GMX_THREAD_MPI
+    /* With the number of TMPI threads equal to the number of cores
+     * we already pinned in thread-MPI, so don't pin again here.
+     */
+    if (hw_opt->nthreads_tmpi == tMPI_Thread_get_hw_number())
+    {
+        return;
+    }
+#endif
+
 #ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP?! */
 #ifdef __linux /* TODO: only linux? why not everywhere if sched_setaffinity is available */
     if (hw_opt->bThreadPinning)
@@ -1137,6 +1148,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             gmx_fatal(FARGS,"You need to explicitly specify the number of PME nodes (-npme) when using different number of OpenMP threads for PP and PME nodes");
         }
     }
+
+    /* Check for externally set OpenMP affinity and turn off internal
+     * pinning if any is found. We need to do this check early to tell
+     * thread-MPI whether it should do pinning when spawning threads.
+     */
+    gmx_omp_check_thread_affinity(fplog, cr, hw_opt);
 
 #ifdef GMX_THREAD_MPI
     if (SIMMASTER(cr))
@@ -1584,16 +1601,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         snew(pmedata,1);
     }
 
-#if defined GMX_THREAD_MPI
-    /* With the number of TMPI threads equal to the number of cores
-     * we already pinned in thread-MPI, so don't pin again here.
-     */
-    if (hw_opt->nthreads_tmpi != tMPI_Thread_get_hw_number())
-#endif
-    {
-        /* Set the CPU affinity */
-        set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,hwinfo,inputrec);
-    }
+    /* Set the CPU affinity */
+    set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,hwinfo,inputrec);
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */

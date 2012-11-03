@@ -58,9 +58,8 @@
             int        cj,aj,ajx,ajy,ajz;
 
 #ifdef ENERGY_GROUPS
-            int        egps_j;
-            int        egp_jj[UNROLLJ>>1];
-            int        jj;
+            /* Energy group indices for two atoms packed into one int */
+            int        egp_jj[UNROLLJ/2];
 #endif
 
 #ifdef CHECK_EXCLS
@@ -777,17 +776,29 @@
             
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-            /* Extract the group pair index per j pair */
-#if UNROLLJ == 2
-            egps_j        = nbat->energrp[cj>>1];
-            egp_jj[0]     = ((egps_j >> ((cj & 1)*egps_jshift)) & egps_jmask)*egps_jstride;
-#else
-            egps_j        = nbat->energrp[cj];
-            for(jj=0; jj<(UNROLLJ>>1); jj++)
+            /* Extract the group pair index per j pair.
+             * Energy groups are stored per i-cluster, so things get
+             * complicated when the i- and j-cluster size don't match.
+             */
             {
-                egp_jj[jj]  = ((egps_j >> (jj*egps_jshift)) & egps_jmask)*egps_jstride;
-            }
+                int egps_j;
+#if UNROLLJ == 2
+                egps_j    = nbat->energrp[cj>>1];
+                egp_jj[0] = ((egps_j >> ((cj & 1)*egps_jshift)) & egps_jmask)*egps_jstride;
+#else
+                /* We assume UNROLLI <= UNROLLJ */
+                int jdi;
+                for(jdi=0; jdi<UNROLLJ/UNROLLI; jdi++)
+                {
+                    int jj;
+                    egps_j = nbat->energrp[cj*(UNROLLJ/UNROLLI)+jdi];
+                    for(jj=0; jj<(UNROLLI/2); jj++)
+                    {
+                        egp_jj[jdi*(UNROLLI/2)+jj] = ((egps_j >> (jj*egps_jshift)) & egps_jmask)*egps_jstride;
+                    }
+                }
 #endif
+            }
 #endif
 
 #ifdef CALC_COULOMB
