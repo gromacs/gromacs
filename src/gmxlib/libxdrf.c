@@ -1567,7 +1567,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 }
 
 
-
+static
 float 
 xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
@@ -1575,13 +1575,12 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
   float  tinit;
   gmx_off_t off;
   
+  *bOK = 0;
   if((off   = gmx_ftell(fp)) < 0){
     return -1;
   }
   
     tinit = xtc_get_current_frame_time(fp,xdrs,natoms,bOK);
-    
-    *bOK = 1;
     
     if(!(*bOK))
     {
@@ -1596,7 +1595,7 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     }
     
     res -= tinit;
-    if(gmx_fseek(fp,off,SEEK_SET)){
+    if (0 != gmx_fseek(fp,off,SEEK_SET)) {
       *bOK = 0;
       return -1;
     }
