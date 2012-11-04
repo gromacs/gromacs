@@ -214,7 +214,7 @@ extern void gmx_molprop_calc_add_atom(gmx_molprop_t mpt,int calcref,
 
 extern int gmx_molprop_calc_get_atom(gmx_molprop_t mpt,int calcref,
 				     char **atomname,int *atomid,int *atomref);
-				     
+
 extern void gmx_molprop_calc_set_atomcoords(gmx_molprop_t mpt,int calcref,int atomref,
 					    const char *unit,double x,double y,double z);
 					   

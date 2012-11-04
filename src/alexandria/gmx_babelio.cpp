@@ -81,7 +81,11 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   OpenBabel::OBMol mol;
   OpenBabel::OBAtomIterator OBai;
   OpenBabel::OBAtom *OBa;
-  const char *program="Gaussian",*method="GX",*basisset="GX",*reference="Spoel2013a",*atomname;
+  OpenBabel::OBGenericData *OBdata;
+  std::string formula;
+  
+  const char *program="Gaussian",*method="GX",*basisset="GX",
+    *reference="Spoel2013a",*atomname;
   int calcref,atomref,atomid;
   gmx_molprop_t mpt;  
   int i;
@@ -98,12 +102,30 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
 
   gmx_molprop_add_calculation(mpt,program,method,basisset,reference,
                               conformation,&calcref);
-  
+  gmx_molprop_set_charge(mpt,mol.GetTotalCharge());
+  gmx_molprop_set_mass(mpt,mol.GetMolWt());
+  gmx_molprop_set_multiplicity(mpt,mol.GetTotalSpinMultiplicity());
+  formula = mol.GetFormula();
+  gmx_molprop_set_formula(mpt,formula.c_str());
+  gmx_molprop_add_energy(mpt,calcref,
+                         "Heat of Formation","kcal/mol",
+                         mol.GetEnergy(),0);
+  OBdata = mol.GetData("G4 Enthalpy");
+  if (NULL != OBdata) 
+    {
+      gmx_molprop_add_energy(mpt,calcref,
+                             "G4 Enthalpy","Hartree",
+                             atof(OBdata->GetValue().c_str()),0);
+      
+    }
   /* Now add properties by extracting them from the OpenBabel structure */
   OBai = mol.BeginAtoms();
   atomid = 1;
   for (OBa = mol.BeginAtom(OBai); (NULL != OBa); OBa = mol.NextAtom(OBai)) {
     gmx_molprop_calc_add_atom(mpt,calcref,OBa->GetType(),atomid,&atomref);
+    gmx_molprop_calc_set_atomcoords(mpt,calcref,atomref,"Angstrom",
+                                    OBa->x(),OBa->y(),OBa->z());
+    
     atomid++;
   }
 
