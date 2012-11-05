@@ -96,7 +96,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
         gmx_ana_indexgrps_t    *grps_;
         bool                    bTrajOpen_;
         //! The current frame, or \p NULL if no frame loaded yet.
-        t_trxframe          *fr;
+        t_trxframe             *fr;
         gmx_rmpbc_t             gpbc_;
         //! Used to store the status variable from read_first_frame().
         t_trxstatus            *status_;

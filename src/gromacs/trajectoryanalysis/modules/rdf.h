@@ -43,6 +43,7 @@
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -74,12 +75,15 @@ class Rdf : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        std::string                      fnDist_;
-        Selection                        sel_[1];
-        Selection                        refsel_[1];
-        bool                             bRefSelectionSet;
-        AnalysisData                     data_;
-        AnalysisDataAverageModulePointer avem_; // replace with hist eventually
+        std::string                              fnDist_;
+        Selection                                sel_[1];
+        Selection                                refsel_[1];
+        bool                                     bRefSelectionSet_;
+        bool                                     aasels_;
+        bool                                     surfref_;
+        AnalysisData                             data_;
+        // AnalysisDataAverageModulePointer         avem_;
+        AnalysisDataSimpleHistogramModulePointer histm_;
 
         // Copy and assign disallowed by base.
 };
