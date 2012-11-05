@@ -67,9 +67,10 @@ const char Rdf::shortDescription[] =
 
 Rdf::Rdf()
     : TrajectoryAnalysisModule(name, shortDescription),
-      avem_(new AnalysisDataAverageModule())
+        // avem_(new AnalysisDataAverageModule()),
+        histm_(new AnalysisDataSimpleHistogramModule(histogramFromRange(0.0, 5.0).binCount(10)))
 {
-    data_.setColumnCount(1);
+    data_.setColumnCount(10);
     registerAnalysisDataset(&data_, "rdf");
 }
 
@@ -101,17 +102,31 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 
     options->setDescription(concatenateStrings(desc));
 
-    options->addOption(SelectionOption("select").required().valueCount(1)
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
+                           .store(&fnDist_).defaultBasename("hist")
+                           .description("Computed histogram"));
+
+    options->addOption(SelectionOption("select").required()
+                       .valueCount(1)
+                       .description("Selection for output.")
                        .store(sel_));
-    options->addOption(SelectionOption("refsel").valueCount(1)
-                       .description("Selection for reference")
-                           .store(refsel_));
+    options->addOption(SelectionOption("refsel")
+                       .valueCount(1)
+                       .description("Selection for reference.")
+                       .store(refsel_));
+    options->addOption(BooleanOption("aa")
+                       .description("Remove output and reference selection aliasing.")
+                       .store(&aasels_));
+    options->addOption(BooleanOption("surf")
+                       .description("RDF relative surface of reference position set.")
+                       .store(&surfref_));
 }
 
 void
 Rdf::optionsFinished(Options * options, TrajectoryAnalysisSettings * /*settings*/)
 {
-    bRefSelectionSet = options->isSet("refsel");
+    // check if a reference selection has been given.
+    bRefSelectionSet_ = options->isSet("refsel");
 }
 
 void
@@ -120,15 +135,26 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
 {
     if (sel_[0].posCount() == 0)
     {
-        GMX_THROW(InvalidInputError("Selection does not define any positions"));
+        GMX_THROW(InvalidInputError("Selection does not define any positions."));
     }
 
-    if (bRefSelectionSet && refsel_[0].posCount() == 0)
+    if (surfref_ && !bRefSelectionSet_)
     {
-        GMX_THROW(InvalidInputError("Reference selection does not define any positions"));
+        GMX_THROW(InvalidInputError("No reference selection given."));
     }
 
-    data_.addModule(avem_);
+    if (bRefSelectionSet_ && refsel_[0].posCount() == 0)
+    {
+        GMX_THROW(InvalidInputError("Reference selection does not define any positions."));
+    }
+
+
+    // data_.addModule(avem_);
+    data_.addModule(histm_);
+    AnalysisDataPlotModulePointer plotm_(new AnalysisDataPlotModule());
+    plotm_->setSettings(settings.plotSettings());
+    plotm_->setFileName(fnDist_);
+    data_.addModule(plotm_);
 }
 
 
@@ -142,14 +168,55 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     rvec                dx;
     real                r;
-    double              sum = 0.0;
+    // double              sum = 0.0;
     int                 dsamples;
 
-    if (bRefSelectionSet)
+    if (surfref_)   /* calculate distances relative reference set surface */
     {
         const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
         const int           rpos = refsel.posCount();
-        real s;
+        real                s, min_s;
+
+        dsamples = pos;
+        min_s = GMX_REAL_MAX;
+
+        for (int j = 0; j < pos; j++)
+        {
+            const SelectionPosition &pj = sel.position(j);
+            for (int i = 0; i < rpos; i++)
+            {
+                    const SelectionPosition &pi = refsel.position(i);
+                    if (pbc != NULL)
+                    {
+                        pbc_dx(pbc, pi.x(), pj.x(), dx);
+                    }
+                    else
+                    {
+                        rvec_sub(pi.x(), pj.x(), dx);
+                    }
+
+                    s = norm(dx);
+                    if (s < min_s && !(aasels_ && s < GMX_REAL_EPS))
+                    {
+                        min_s = s;
+                    }
+            }
+            if (min_s < GMX_REAL_MAX)
+            {
+                // sum += (double) min_s;
+                histm_->settings().finBin(s);
+            }
+            else
+            {
+                dsamples--;
+            }
+        }
+    }
+    else if (bRefSelectionSet_)   /* calculate distances relative reference set*/
+    {
+        const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
+        const int           rpos = refsel.posCount();
+        real                s;
 
         dsamples = pos*rpos;
 
@@ -169,18 +236,18 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
 
                     s = norm(dx);
-                    if (s > 0.0)
+                    if (aasels_ && s < GMX_REAL_EPS)
                     {
-                        sum += (double) s;
+                        dsamples--;     // remove selection aliasing
                     }
                     else
                     {
-                        dsamples -= 1;
+                        sum += (double) s;
                     }
             }
         }
     }
-    else
+    else    /* else calculate selection intra distances */
     {
         dsamples = (pos-1)*pos/2;
 
@@ -223,8 +290,9 @@ Rdf::finishAnalysis(int /*nframes*/)
 void
 Rdf::writeOutput()
 {
-    fprintf(stderr, "Average distance: %f\n", avem_->average(0));
-    fprintf(stderr, "Std. deviation:   %f\n", avem_->stddev(0));
+    fprintf(stderr, "Writing some output!");
+    // fprintf(stderr, "Average distance: %f\n", avem_->average(0));
+    // fprintf(stderr, "Std. deviation:   %f\n", avem_->stddev(0));
 }
 
 } // namespace analysismodules
