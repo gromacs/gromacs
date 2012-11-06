@@ -245,6 +245,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                                          "Generate an ensemble of structures from the normal modes");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_nmtraj, "nmtraj",
                                          "Generate a virtual oscillating trajectory from an eigenvector");
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_nse, "nse",
+                                         "Calculate neutron spin echo sygnal");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_options, "options",
                                          NULL);
     LegacyCmdLineWrapper::registerModule(manager, &gmx_order, "order",

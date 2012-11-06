@@ -76,7 +76,7 @@ int gmx_sans(int argc, char *argv[])
         "WARNING: If sq or pr specified this tool can produce large number of files! Up to two times larger than number of frames!"
     };
     static gmx_bool      bPBC     = TRUE;
-    static gmx_bool      bNORM    = FALSE;
+    static gmx_bool      bNSE     = FALSE;
     static real          binwidth = 0.2, grid = 0.05; /* bins shouldnt be smaller then smallest bond (~0.1nm) length */
     static real          start_q  = 0.0, end_q = 2.0, q_step = 0.01;
     static real          mcover   = -1;
@@ -257,7 +257,7 @@ int gmx_sans(int argc, char *argv[])
             snew(pr, 1);
         }
         /*  realy calc p(r) */
-        prframecurrent = calc_radial_distribution_histogram(gsans, x, box, index, isize, binwidth, bMC, bNORM, mcover, seed);
+        prframecurrent = calc_radial_distribution_histogram(gsans, x, NULL, box, NULL, index, isize, binwidth, bMC, bNSE, mcover, seed);
         /* copy prframecurrent -> pr and summ up pr->gr[i] */
         /* allocate and/or resize memory for pr->gr[i] and pr->r[i] */
         if (pr->gr == NULL)
