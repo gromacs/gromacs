@@ -303,6 +303,9 @@ gmx_sans(int argc,char *argv[]);
 int
 gmx_saxs(int argc,char *argv[]);
 
+int
+gmx_nse(int argc,char *argv[]);
+
 #ifdef __cplusplus
 }
 #endif
