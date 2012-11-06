@@ -948,6 +948,9 @@ Therefore, numerical correspondence between some properties of the system's stat
 should not be expected. Moreover, the values will likely vary when simulations are
 done on different hardware. However, sufficiently long trajectories
 should produce comparable statistical averages.
+\item Only a small subset of the overall energy terms will be
+  available, because of intrinsic limitations in the hardware+software
+  stack.
 \item Frequent retrieval of system state information such as
 trajectory coordinates and energies can greatly influence the performance
 of the program due the overhead of CPU$\leftrightarrow$GPU communication.
