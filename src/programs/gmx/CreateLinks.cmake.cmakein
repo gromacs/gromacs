@@ -57,6 +57,7 @@ set(SYMLINK_NAMES
     g_nmeig
     g_nmens
     g_nmtraj
+    g_nse
     g_options
     g_order
     g_polystat
