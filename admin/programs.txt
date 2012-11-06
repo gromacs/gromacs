@@ -75,6 +75,7 @@ END
 HEAD|Mass distribution properties over time
 g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
+g_nse|computes neutron spin echo signal
 g_polystat|calculates static properties of polymers
 g_rdf|calculates radial distribution functions
 g_rotacf|calculates the rotational correlation function for molecules
