@@ -18,7 +18,7 @@ add_library(gmxana
             gmx_polystat.c  gmx_potential.c gmx_rama.c      
             gmx_rdf.c       gmx_rms.c       gmx_rmsf.c      
             gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c       gmx_sans.c
-            gmx_rmsdist.c   gmx_rotmat.c
+            gmx_rmsdist.c   gmx_rotmat.c    gmx_nse.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      
             gmx_traj.c      gmx_velacc.c    gmx_helixorient.c 
             gmx_clustsize.c gmx_mdmat.c     gmx_wham.cpp
@@ -54,7 +54,7 @@ set(GMX_TOOLS_PROGRAMS
     g_rmsf g_rotacf g_saltbr g_sas g_sgangle g_sham g_sorient
     g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
-    g_pme_error g_rmsdist g_rotmat g_options
+    g_pme_error g_rmsdist g_rotmat g_options g_nse
     g_dos    g_hydorder  g_densorder g_dyecoupl g_sans
     )
 
