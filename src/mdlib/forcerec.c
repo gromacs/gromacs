@@ -1519,15 +1519,36 @@ static void pick_nbnxn_kernel(FILE *fp,
     }
 }
 
+gmx_bool uses_simple_tables(int cutoff_scheme,
+                            nonbonded_verlet_t *nbv,
+                            int group)
+{
+    gmx_bool bUsesSimpleTables = TRUE;
+    int grp_index;
+
+    switch(cutoff_scheme)
+    {
+    case ecutsGROUP:
+        bUsesSimpleTables = TRUE;
+        break;
+    case ecutsVERLET:
+        assert(NULL != nbv && NULL != nbv->grp);
+        grp_index = (group < 0) ? 0 : (nbv->ngrp - 1);
+        bUsesSimpleTables = nbnxn_kernel_pairlist_simple(nbv->grp[grp_index].kernel_type);
+        break;
+    default:
+        gmx_incons("unimplemented");
+    }
+    return bUsesSimpleTables;
+}
 
 static void init_ewald_f_table(interaction_const_t *ic,
-                               int cutoff_scheme,
-                               int  verlet_kernel_type,
+                               gmx_bool bUsesSimpleTables,
                                real rtab)
 {
     real maxr;
 
-    if (cutoff_scheme==ecutsGROUP || nbnxn_kernel_pairlist_simple(verlet_kernel_type))
+    if (bUsesSimpleTables)
     {
         /* With a spacing of 0.0005 we are at the force summation accuracy
          * for the SSE kernels for "normal" atomistic simulations.
@@ -1559,15 +1580,14 @@ static void init_ewald_f_table(interaction_const_t *ic,
 
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
-                                   int cutoff_scheme,
-                                   int verlet_kernel_type,
+                                   gmx_bool bUsesSimpleTables,
                                    real rtab)
 {
     real spacing;
 
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
-        init_ewald_f_table(ic,cutoff_scheme,verlet_kernel_type,rtab);
+        init_ewald_f_table(ic,bUsesSimpleTables,rtab);
 
         if (fp != NULL)
         {
@@ -1583,6 +1603,7 @@ void init_interaction_const(FILE *fp,
                             real  rtab)
 {
     interaction_const_t *ic;
+    gmx_bool bUsesSimpleTables = TRUE;
 
     snew(ic, 1);
 
@@ -1666,15 +1687,8 @@ void init_interaction_const(FILE *fp,
         nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
     }
 
-    if(fr->cutoff_scheme == ecutsGROUP)
-    {
-        init_interaction_const_tables(fp,ic,ecutsGROUP,-1,rtab);
-    }
-    else
-    {
-        assert(fr->nbv != NULL && fr->nbv->grp != NULL);
-        init_interaction_const_tables(fp,ic,ecutsVERLET,fr->nbv->grp[fr->nbv->ngrp-1].kernel_type,rtab);
-    }
+    bUsesSimpleTables = uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1);
+    init_interaction_const_tables(fp,ic,bUsesSimpleTables,rtab);
 }
 
 static void init_nb_verlet(FILE *fp,

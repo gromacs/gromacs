@@ -420,6 +420,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     double cycles_fast;
     char buf[STRLEN],sbuf[22];
     real rtab;
+    gmx_bool bUsesSimpleTables = TRUE;
 
     if (pme_lb->stage == pme_lb->nstage)
     {
@@ -620,21 +621,20 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     ir->nstcalclr  = set->nstcalclr;
     ic->ewaldcoeff = set->ewaldcoeff;
 
+    bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
     if (pme_lb->cutoff_scheme == ecutsVERLET && nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
     {
         nbnxn_cuda_pme_loadbal_update_param(nbv->cu_nbv,ic);
     }
     else
     {
-        init_interaction_const_tables(NULL,ic,ir->cutoff_scheme,
-                                      (ir->cutoff_scheme == ecutsGROUP) ? -1 : nbv->grp[0].kernel_type,
+        init_interaction_const_tables(NULL,ic,bUsesSimpleTables,
                                       rtab);
     }
 
     if (pme_lb->cutoff_scheme == ecutsVERLET && nbv->ngrp > 1)
     {
-        init_interaction_const_tables(NULL,ic,ir->cutoff_scheme,
-                                      (ir->cutoff_scheme == ecutsGROUP) ? -1 : nbv->grp[1].kernel_type,
+        init_interaction_const_tables(NULL,ic,bUsesSimpleTables,
                                       rtab);
     }
 

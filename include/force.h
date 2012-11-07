@@ -136,10 +136,16 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
+gmx_bool uses_simple_tables(int cutoff_scheme,
+                            nonbonded_verlet_t *nbv,
+                            int group);
+/* Returns whether simple tables (i.e. not for use with GPUs) are used
+ * with the type of kernel indicated.
+ */
+
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
-                                   int cutoff_scheme,
-                                   int verlet_kernel_type,
+                                   gmx_bool bSimpleTable,
                                    real rtab);
 /* Initializes the tables in the interaction constant data structure.
  * Setting verlet_kernel_type to -1 always initializes tables for
