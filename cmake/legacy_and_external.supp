@@ -182,3 +182,59 @@
    ...
    fun:__kmpc_global_thread_num
 }
+#Openmpi
+{
+   PMPI_Init1
+   Memcheck:Param
+   sched_setaffinity(mask)
+   ...
+   fun:PMPI_Init
+}
+{
+   PMPI_Init2
+   Memcheck:Addr4
+   ...
+   fun:PMPI_Init
+}
+{
+   PMPI_Init3
+   Memcheck:Leak
+   ...
+   fun:PMPI_Init
+}
+{
+   PMPI_Init4
+   Memcheck:Addr8
+   ...
+   fun:orte_init
+}
+{
+   writev
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+}
+{
+   ompi_proc_all
+   Memcheck:Leak
+   ...
+   fun:ompi_proc_all
+}
+{
+   ompi_mpi_init_leak	
+   Memcheck:Leak
+   ...
+   fun:ompi_mpi_init
+}
+{
+   opal_event_base_loop_leak
+   Memcheck:Leak
+   ...
+   fun:opal_event_base_loop
+}
+{
+   mca_pml_base_open_leak
+   Memcheck:Leak
+   ...
+   fun:mca_pml_base_open
+}

@@ -157,7 +157,6 @@ AnalysisDataFrameAverageModule::flags() const
 void
 AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
 {
-    notifyDataStart();
     impl_->storage_.startDataStorage(this);
 }
 

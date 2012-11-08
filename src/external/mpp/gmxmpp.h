@@ -28,39 +28,20 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \brief
- * Implements the g_ana tool.
- *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- */
-#include "gromacs/legacyheaders/copyrite.h"
+#pragma once
 
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/init.h"
-
-int
-main(int argc, char *argv[])
-{
-    const gmx::ProgramInfo &info = gmx::init("g_ana", argc, argv);
-    // TODO: With the addition of ProgramInfo above, this no longer needs to
-    // be here, so think where it would best go.
-    if (mpi::isMaster())
-    {
-        CopyRight(stderr, argv[0]);
-    }
-    try
-    {
-        gmx::CommandLineModuleManager manager(info);
-        registerTrajectoryAnalysisModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        return manager.run(argc, argv);
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
+#include "gromacs/utility/gmx_header_config.h"
+// For GMX_LIB_MPI
+#ifdef GMX_CXX11
+#define MPP_CXX11_RVALREF
+#endif
+#ifdef GMX_LIB_MPI
+#include "mpp.h"
+namespace mpi { inline bool isMaster() { return comm::world.isMaster(); } }
+#else
+namespace mpi {
+inline bool isMaster() { return true; }
+template <class T, class enable=void>
+struct mpi_type_traits;
 }
+#endif //GMX_LIB_MPI
