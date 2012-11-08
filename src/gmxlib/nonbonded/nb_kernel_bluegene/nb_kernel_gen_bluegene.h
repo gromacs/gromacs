@@ -69,10 +69,23 @@ void NB_KERNEL (
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
     _facel           = *p_facel;       
-    _tabscale        = *p_tabscale;    
-    _gbtabscale      = *p_gbtabscale;    
-    _krf             = *p_krf;    
-    _crf             = *p_crf;    
+#if (COULOMB == COULOMB_TAB || VDW == VDW_TAB)
+    _tabscale        = *p_tabscale;
+#else
+    _tabscale        = 0.0;
+#endif
+#if COULOMB == REACTION_FIELD
+    _krf             = *p_krf;
+    _crf             = *p_crf;
+#else
+    _krf             = 0.0;
+    _crf             = 0.0;
+#endif
+#if COULOMB == GENERALIZED_BORN
+    _gbtabscale      = *p_gbtabscale;
+#else
+    _gbtabscale      = 0.0;
+#endif
     nj1              = 0;              
 
     for(n=0; (n<nri); n++)
@@ -108,7 +121,11 @@ void NB_KERNEL (
 	int k,ggid;
 
 	real _iq   = _facel * charge[ii];
+#if COULOMB == GENERALIZED_BORN
 	real _isai = invsqrta[ii];
+#else
+	real _isai = 0.0;
+#endif
 
 	// add the shift vector to all water atoms
 

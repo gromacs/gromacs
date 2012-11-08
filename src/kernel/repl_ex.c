@@ -180,7 +180,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     switch (re->type)
     {
     case ereTEMP:
-        please_cite(fplog,"Hukushima96a");
+        please_cite(fplog,"Sugita1999a");
         if (ir->epc != epcNO)
         {
             re->bNPT = TRUE;
@@ -573,7 +573,7 @@ static void print_count(FILE *fplog,const char *leg,int n,int *count)
 
 static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
                                 struct gmx_repl_ex *re,real *ener,real vol,
-                                int step,real time)
+                                gmx_large_int_t step,real time)
 {
     int  m,i,a,b;
     real *Epot=NULL,*Vol=NULL,*dvdl=NULL,*prob;
@@ -581,7 +581,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     gmx_bool *bEx,bPrint;
     int  exchange;
 
-    fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
+    fprintf(fplog,"Replica exchange at step " gmx_large_int_pfmt " time %g\n",step,time);
   
     switch (re->type)
     {
@@ -719,7 +719,7 @@ static void write_debug_x(t_state *state)
 gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
                           t_state *state,real *ener,
                           t_state *state_local,
-                          int step,real time)
+                          gmx_large_int_t step,real time)
 {
     gmx_multisim_t *ms;
     int  exchange=-1,shift;

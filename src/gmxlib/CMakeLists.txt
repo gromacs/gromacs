@@ -46,7 +46,7 @@ endif()
 
 if(GMX_IA32_ASM)
   file(GLOB GMX_SSEKERNEL_C_SRC   nonbonded/nb_kernel_ia32_${SSETYPE}/*.c)
-  if(GMX_ASM_USEASM-NASM)
+  if(GMX_ASM_USEASM_NASM)
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_ia32_${SSETYPE}/*intel_syntax*.s)    
   else()
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_ia32_${SSETYPE}/*${SSETYPE}.s nonbonded/nb_kernel_ia32_${SSETYPE}/*asm.s)
@@ -55,7 +55,7 @@ endif(GMX_IA32_ASM)
 
 if(GMX_X86_64_ASM)
   file(GLOB GMX_SSEKERNEL_C_SRC   nonbonded/nb_kernel_x86_64_${SSETYPE}/*.c)
-  if(GMX_ASM_USEASM-NASM)
+  if(GMX_ASM_USEASM_NASM)
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_x86_64_${SSETYPE}/*intel_syntax*.s)
   else()
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_x86_64_${SSETYPE}/*${SSETYPE}.s nonbonded/nb_kernel_x86_64_${SSETYPE}/*asm.s)
@@ -106,9 +106,9 @@ file(GLOB SELECTION_TEST selection/test*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
-if(NOT GMX_OPENMM) 
-if(GMX_ASM_USEASM-NASM)
-  enable_language(ASM-NASM)
+if(GMX_SSEKERNEL_ASM_SRC AND NOT GMX_OPENMM)
+if(GMX_ASM_USEASM_NASM)
+  enable_language(ASM_NASM)
 
   # if NASM is used, we need a special build command for windows...
   FOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
@@ -117,13 +117,13 @@ if(GMX_ASM_USEASM-NASM)
 
     ADD_CUSTOM_COMMAND(OUTPUT ${OBJ}
                        MAIN_DEPENDENCY ${SRC}
-                       COMMAND ${CMAKE_ASM-NASM_COMPILER} -f ${CMAKE_ASM-NASM_OBJECT_FORMAT} -o ${OBJ} ${SRC})
+                       COMMAND ${CMAKE_ASM_NASM_COMPILER} -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -o ${OBJ} ${SRC})
 
     SET(ALL_ASM_OBJS ${ALL_ASM_OBJS} ${OBJ})
   ENDFOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
   set(GMX_SSEKERNEL_ASM_SRC ${ALL_ASM_OBJS})
 
-else(GMX_ASM_USEASM-NASM)
+else(GMX_ASM_USEASM_NASM)
 
   enable_language(ASM-ATT)
   SET(CMAKE_ASM-ATT_COMPILER ${CMAKE_C_COMPILER})
@@ -133,8 +133,8 @@ else(GMX_ASM_USEASM-NASM)
     set_source_files_properties(${GMX_SSEKERNEL_ASM_SRC} PROPERTIES COMPILE_FLAGS "-c -m64")
   endif()
 
-endif(GMX_ASM_USEASM-NASM)
-endif(NOT GMX_OPENMM)
+endif(GMX_ASM_USEASM_NASM)
+endif(GMX_SSEKERNEL_ASM_SRC AND NOT GMX_OPENMM)
 
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${FORTRAN_SOURCES} ${GMX_BLUEGENE_C_SRC} ${GMX_PPC_ALTIVEC_SRC} ${THREAD_MPI_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})

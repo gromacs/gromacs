@@ -141,7 +141,7 @@ void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
 }
 
 void calc_electron_density(const char *fn, atom_id **index, int gnx[], 
-			   real ***slDensity, int *nslices, t_topology *top,
+			   double ***slDensity, int *nslices, t_topology *top,
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
 			   t_electron eltab[], int nr,gmx_bool bCenter,
@@ -239,7 +239,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 }
 
 void calc_density(const char *fn, atom_id **index, int gnx[], 
-		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
+		  double ***slDensity, int *nslices, t_topology *top, int ePBC,
 		  int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                   const output_env_t oenv)
 {
@@ -323,7 +323,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   sfree(x0);  /* free memory used by coordinate array */
 }
 
-void plot_density(real *slDensity[], const char *afile, int nslices,
+void plot_density(double *slDensity[], const char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
 		  gmx_bool bSymmetrize, const output_env_t oenv)
@@ -394,11 +394,11 @@ int gmx_density(int argc,char *argv[])
     { "-d", FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
     { "-sl",  FALSE, etINT, {&nslices},
-      "Divide the box in #nr slices." },
+      "Divide the box in this number of slices." },
     { "-dens",    FALSE, etENUM, {dens_opt},
       "Density"},
     { "-ng",       FALSE, etINT, {&ngrps},
-      "Number of groups to compute densities of" },
+      "Number of groups of which to compute densities." },
     { "-symm",    FALSE, etBOOL, {&bSymmetrize},
       "Symmetrize the density along the axis, with respect to the center. Useful for bilayers." },
     { "-center",  FALSE, etBOOL, {&bCenter},
@@ -409,7 +409,7 @@ int gmx_density(int argc,char *argv[])
     "When calculating electron densities, atomnames are used instead of types. This is bad.",
   };
   
-  real **density;      /* density per slice          */
+  double **density;      /* density per slice          */
   real slWidth;          /* width of one slice         */
   char **grpname;        /* groupnames                 */
   int  nr_electrons;     /* nr. electrons              */

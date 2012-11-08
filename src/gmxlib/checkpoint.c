@@ -164,7 +164,7 @@ static void cp_warning(FILE *fp)
 
 static void cp_error()
 {
-    gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or maybe you are out of quota?");
+    gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or maybe you are out of disk space?");
 }
 
 static void do_cpt_string_err(XDR *xd,gmx_bool bRead,const char *desc,char **s,FILE *list)
@@ -712,7 +712,7 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
     res = xdr_int(xd,&magic);
     if (res == 0)
     {
-        gmx_fatal(FARGS,"The checkpoint file is empty/corrupted, or maybe you are out of quota?");
+        gmx_fatal(FARGS,"The checkpoint file is empty/corrupted, or maybe you are out of disk space?");
     }
     if (magic != CPT_MAGIC1)
     {
@@ -1350,14 +1350,15 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     sfree(bmach);
     sfree(fprog);
 
-    if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
-		(do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||
-		(do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)    ||
-		(do_cpt_swapstate(gmx_fio_getxdr(fp),FALSE,0,&state->swapstate,NULL) < 0)          ||
-	    (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,file_version) < 0))
-	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
-	}
+    if((do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)        ||
+       (do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)||
+       (do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)  ||
+       (do_cpt_swapstate(gmx_fio_getxdr(fp),FALSE,0,&state->swapstate,NULL) < 0)        ||
+       (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,
+                     file_version) < 0))
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+    }
 
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
 
@@ -1371,7 +1372,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     {
         char buf[STRLEN];
         sprintf(buf,
-                "Cannot fsync '%s'; maybe you are out of disk space or quota?",
+                "Cannot fsync '%s'; maybe you are out of disk space?",
                 gmx_fio_getname(ret));
 
         if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV)==NULL)
@@ -1386,7 +1387,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
 
     if( gmx_fio_close(fp) != 0)
     {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 
     /* we don't move the checkpoint if the user specified they didn't want it,
@@ -1416,7 +1417,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
         }
         if (gmx_file_rename(fntemp, fn) != 0)
         {
-            gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+            gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
         }
     }
 
@@ -1542,7 +1543,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                             t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_large_int_t *step,double *t,
                             t_state *state,gmx_bool *bReadRNG,gmx_bool *bReadEkin,
-                            int *simulation_part,gmx_bool bAppendOutputFiles)
+                            int *simulation_part,
+                            gmx_bool bAppendOutputFiles,gmx_bool bForceAppend)
 {
     t_fileio *fp;
     int  i,j,rc;
@@ -1801,7 +1803,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     }
     if( gmx_fio_close(fp) != 0)
 	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
 	}
     
     sfree(fprog);
@@ -1825,7 +1827,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
              * locking
              */
             gmx_fatal(FARGS,"The first output file should always be the log "
-                      "file but instead is: %s", outputfiles[0].filename);
+                      "file but instead is: %s. Cannot do appending because of this condition.", outputfiles[0].filename);
         }
         for(i=0;i<nfiles;i++)
         {
@@ -1845,6 +1847,10 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             /* lock log file */                
             if (i==0)
             {
+                /* Note that there are systems where the lock operation
+                 * will succeed, but a second process can also lock the file.
+                 * We should probably try to detect this.
+                 */
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
                 if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
                     ==-1)
@@ -1852,15 +1858,30 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
 #endif
                 {
-                    if (errno!=EACCES && errno!=EAGAIN)
+                    if (errno == ENOSYS)
                     {
-                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
-                                  outputfiles[i].filename, strerror(errno));
+                        if (!bForceAppend)
+                        {
+                            gmx_fatal(FARGS,"File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
+                        }
+                        else
+                        {
+                            fprintf(stderr,"\nNOTE: File locking is not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            if (fplog)
+                            {
+                                fprintf(fplog,"\nNOTE: File locking not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            }
+                        }
                     }
-                    else 
+                    else if (errno == EACCES || errno == EAGAIN)
                     {
                         gmx_fatal(FARGS,"Failed to lock: %s. Already running "
                                   "simulation?", outputfiles[i].filename);
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
+                                  outputfiles[i].filename, strerror(errno));
                     }
                 }
             }
@@ -1871,7 +1892,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
                                      digest) != outputfiles[i].chksum_size)  /*at the end of the call the file position is at the end of the file*/
                 {
-                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                               outputfiles[i].chksum_size, 
                               outputfiles[i].filename);
                 }
@@ -1908,7 +1929,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     }
                     fprintf(debug,"\n");
                 }
-                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents has been modified.",
+                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                           outputfiles[i].filename);
             }
 #endif        
@@ -1923,7 +1944,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 #endif
                 if(rc!=0)
                 {
-                    gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+                    gmx_fatal(FARGS,"Truncation of file %s failed. Cannot do appending because of this failure.",outputfiles[i].filename);
                 }
             }
         }
@@ -1936,7 +1957,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 void load_checkpoint(const char *fn,FILE **fplog,
                      t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
-                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,gmx_bool bAppend)
+                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,
+                     gmx_bool bAppend,gmx_bool bForceAppend)
 {
     gmx_large_int_t step;
     double t;
@@ -1946,7 +1968,7 @@ void load_checkpoint(const char *fn,FILE **fplog,
       read_checkpoint(fn,fplog,
                       cr,bPartDecomp,dd_nc,
                       ir->eI,&step,&t,state,bReadRNG,bReadEkin,
-                      &ir->simulation_part,bAppend);
+                      &ir->simulation_part,bAppend,bForceAppend);
     }
     if (PAR(cr)) {
       gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
@@ -2046,7 +2068,7 @@ read_checkpoint_state(const char *fn,int *simulation_part,
     read_checkpoint_data(fp,simulation_part,step,t,state,FALSE,NULL,NULL);
     if( gmx_fio_close(fp) != 0)
 	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
 	}
 }
 
@@ -2155,7 +2177,7 @@ void list_checkpoint(const char *fn,FILE *out)
     }
     if( gmx_fio_close(fp) != 0)
 	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
 	}
     
     done_state(&state);
@@ -2211,7 +2233,7 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
                                  &nfiles,&outputfiles);
             if( gmx_fio_close(fp) != 0)
             {
-                gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+                gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
             }
             done_state(&state);
 

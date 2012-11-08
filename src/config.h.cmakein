@@ -275,6 +275,9 @@
 /* Define to 1 if you have the _isfinite() function. */
 #cmakedefine HAVE__ISFINITE
 
+/* Define to 1 if you have the _finite() function. */
+#cmakedefine HAVE__FINITE
+
 /* Define to 1 if you have the fsync() function. */
 #cmakedefine HAVE_FSYNC
 
@@ -286,6 +289,9 @@
 
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
+
+/* Define to 1 if you have the lstat() function. */
+#cmakedefine HAVE_LSTAT
 
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H

@@ -438,14 +438,14 @@ static void swap_em_state(em_state_t *ems1,em_state_t *ems2)
   *ems2 = tmp;
 }
 
-static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
+static void copy_em_coords(em_state_t *ems,t_state *state)
 {
-  int i;
+    int i;
 
-  for(i=0; (i<state->natoms); i++)
-    copy_rvec(ems->s.x[i],state->x[i]);
-  if (f != NULL)
-    copy_rvec(ems->f[i],f[i]);
+    for(i=0; (i<state->natoms); i++)
+    {
+        copy_rvec(ems->s.x[i],state->x[i]);
+    }
 }
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
@@ -460,8 +460,8 @@ static void write_em_traj(FILE *fplog,t_commrec *cr,
 
     if ((bX || bF || confout != NULL) && !DOMAINDECOMP(cr))
     {
+        copy_em_coords(state,state_global);
         f_global = state->f;
-        copy_em_coords_back(state,state_global,bF ? f_global : NULL);
     }
     
     mdof_flags = 0;
@@ -697,16 +697,6 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
   clear_mat(shake_vir);
   clear_mat(pres);
 
-  /* Calculate long range corrections to pressure and energy */
-  calc_dispcorr(fplog,inputrec,fr,count,top_global->natoms,ems->s.box,ems->s.lambda,
-                pres,force_vir,&prescorr,&enercorr,&dvdlcorr);
-  /* don't think these next 4 lines  can be moved in for now, because we 
-     don't always want to write it -- figure out how to clean this up MRS 8/4/2009 */
-  enerd->term[F_DISPCORR] = enercorr;
-  enerd->term[F_EPOT] += enercorr;
-  enerd->term[F_PRES] += prescorr;
-  enerd->term[F_DVDL] += dvdlcorr;
-
     /* Communicate stuff when parallel */
     if (PAR(cr) && inputrec->eI != eiNM)
     {
@@ -722,6 +712,14 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
 
         wallcycle_stop(wcycle,ewcMoveE);
     }
+
+    /* Calculate long range corrections to pressure and energy */
+    calc_dispcorr(fplog,inputrec,fr,count,top_global->natoms,ems->s.box,ems->s.lambda,
+                  pres,force_vir,&prescorr,&enercorr,&dvdlcorr);
+    enerd->term[F_DISPCORR] = enercorr;
+    enerd->term[F_EPOT] += enercorr;
+    enerd->term[F_PRES] += prescorr;
+    enerd->term[F_DVDL] += dvdlcorr;
 
   ems->epot = enerd->term[F_EPOT];
   
@@ -1427,6 +1425,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   int    start,end,number_steps;
   gmx_mdoutf_t *outf;
   int    i,k,m,n,nfmax,gf,step;
+  int    mdof_flags;
   /* not used */
   real   terminate;
 
@@ -1586,7 +1585,18 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(fplog,cr,outf,MDOF_X | MDOF_F,
+    mdof_flags = 0;
+    if (do_x)
+    {
+        mdof_flags |= MDOF_X;
+    }
+
+    if (do_f)
+    {
+        mdof_flags |= MDOF_F;
+    }
+
+    write_traj(fplog,cr,outf,mdof_flags,
                top_global,step,(real)step,state,state,f,f,NULL,NULL);
 
     /* Do the linesearching in the direction dx[point][0..(n-1)] */

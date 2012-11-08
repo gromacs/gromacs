@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
+# Keep CMake suitably quiet on Cygwin
+set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 
 project(Gromacs)
 include(Dart)
@@ -70,16 +72,24 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
-# Fix stupid flags on MSVC
+# Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
-IF(CMAKE_GENERATOR MATCHES "Visual Studio")
+IF( MSVC )
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
     SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
+ENDIF()
+
+IF( WIN32 AND NOT CYGWIN AND CMAKE_C_COMPILER_ID MATCHES "Intel" )
+    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
+    SET(SHARED_LIBS_DEFAULT OFF)	
+ENDIF()
 
 set(GMX_EXTRA_LIBRARIES)
 
@@ -201,7 +211,9 @@ if(GMX_MPI)
         
         include_directories(${MPI_INCLUDE_PATH})
         list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
-        add_definitions( -DMPI ) #for FAHCORE
+        if(GMX_FAHCORE)
+            add_definitions( -DMPI ) #for FAHCORE
+        endif(GMX_FAHCORE)
         include(gmxTestMPI_IN_PLACE)
         if (GMX_MPI_IN_PLACE)
             gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
@@ -331,12 +343,11 @@ check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
-check_function_exists(isfinite          HAVE_ISFINITE)
-check_function_exists(_isfinite         HAVE__ISFINITE)
 check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
+check_function_exists(lstat             HAVE_LSTAT)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -471,11 +482,11 @@ endif(CYGWIN)
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
-        # We need at least git v1.5.1 be able to parse git's date output. If not 
+        # We need at least git v1.5.3 be able to parse git's date output. If not
         # fund or the version is too small, we can't generate version information.
-        find_package(Git 1.5.1)
+        find_package(Git 1.5.3)
         # this should at some point become VERSION_LESS
-        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.1")
+        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.3")
             message("No compatible git version found, won't be able to generate proper development version information.")
             set(USE_VERSION_H OFF)
         endif()
@@ -515,7 +526,6 @@ gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
 
 include(gmxTestLargeFiles)
 gmx_test_large_files(GMX_LARGEFILES)
-check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
 gmx_test_retsigtype(RETSIGTYPE)
@@ -530,6 +540,11 @@ gmx_test_inline(RESTRICT_KEYWORD)
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
+include(gmxTestIsfinite)
+gmx_test_isfinite(HAVE_ISFINITE)
+gmx_test__isfinite(HAVE__ISFINITE)
+gmx_test__finite(HAVE__FINITE)
+
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
@@ -540,12 +555,6 @@ if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
     set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
-    if (GMX_64_BIT)
-      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
-    else (GMX_64_BIT)
-      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
-    endif (GMX_64_BIT)
-
     # Determine the assembler/compiler to use
   else()
     set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
@@ -564,13 +573,19 @@ string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+    
+    if (GMX_64_BIT)
+      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
+    else (GMX_64_BIT)
+      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
+    endif (GMX_64_BIT)
 
-    if(CMAKE_GENERATOR MATCHES "Visual Studio")
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
+    if( WIN32 AND NOT CYGWIN )
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else()
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
     endif()
-	mark_as_advanced(GMX_ASM_USEASM-NASM)
+	mark_as_advanced(GMX_ASM_USEASM_NASM)
 
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
@@ -623,6 +638,13 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
     set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
+# Access to /etc/passwd is not available on the back end of BlueGene,
+# despite being detected by CMake. This can cause linker warnings
+# about harmless things in src/gmxlib/string2.h.
+    set(HAVE_PWD_H OFF)
+# The automatic testing for endianness does not work for the BlueGene cross-compiler
+    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
+    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
@@ -870,7 +892,6 @@ include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
 	enable_testing()
-	add_test(TestBuildAll make)
 	add_subdirectory(tests)
 ENDIF()
 

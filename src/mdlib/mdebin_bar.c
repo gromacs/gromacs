@@ -72,7 +72,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
         dh->bin[i]=NULL;
     }
 
-    snew(dh->dh, ndhmax);
+    snew(dh->dh, dh->ndhmax);
     if ( nbins <= 0 || dx<GMX_REAL_EPS*10 )
     {
         dh->nhist=0;
@@ -89,7 +89,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
         dh->nbins=nbins;
         for(i=0;i<dh->nhist;i++)
         {
-            snew(dh->bin[i], nbins);
+            snew(dh->bin[i], dh->nbins);
         }
     }
     mde_delta_h_reset(dh);

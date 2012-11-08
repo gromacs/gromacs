@@ -1954,7 +1954,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop,gmx_bool bRead,
   else
   {
       mtop->ffparams.cmap_grid.ngrid        = 0;
-      mtop->ffparams.cmap_grid.grid_spacing = 0.1;
+      mtop->ffparams.cmap_grid.grid_spacing = 0;
       mtop->ffparams.cmap_grid.cmapdata     = NULL;
   }
 	  
@@ -2450,7 +2450,7 @@ gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
   }
   else {
     get_stx_coordnum(infile,&natoms);
-    init_t_atoms(&top->atoms,natoms,FALSE);
+    init_t_atoms(&top->atoms,natoms,(fn2ftp(infile) == efPDB));
     bXNULL = (x == NULL);
     snew(*x,natoms);
     if (v)

@@ -30,16 +30,21 @@ if which git >/dev/null && test -d $GITDIR ; then
     # If PKGVERSION ends in a date, replace it with the head commit.
     version=`echo $PKGVERSION | sed -e 's/-dev-[0-9]*$/-dev/'`-$date-$shorthash$dirtystr
     #version=$PKGVERSION-$date-$shorthash$dirtystr
-    # Find the name of the remote which has the git.gromacs.org:gromacs in its url.
+    # Find the names of remotes that come from the official git/gerrit repos.
     # If not found, just set baserev to "unknown".
-    gmxremote=`git --git-dir=$GITDIR config --get-regexp 'remote\..*\.url' 'git\.gromacs\.org[:|/]gromacs' | sed -e 's/remote\.\(.*\)\.url.*/\1/'`
-    if test "x$gmxremote" = "x" ; then
+    gmxremotes=`git --git-dir=$GITDIR config --get-regexp 'remote\..*\.url' '\.gromacs\.org[:/].*gromacs(\.git)?$' | sed -e 's/remote\.\(.*\)\.url.*/\1/'`
+    if test "x$gmxremotes" = "x" ; then
         baserev="unknown"
     else
-        # Find the most recent ancestral commit that appears in $gmxremote.
-        # Gets the hash and the number of local commits that are newer than
-        # the found commit.
-        baserev=`git --git-dir=$GITDIR rev-list HEAD | git --git-dir=$GITDIR name-rev --stdin --refs=refs/remotes/$gmxremote/* | awk 'NF > 1 {print $1 " (" NR-1 " newer local commits)"; exit 0}'`
+        # Construct a command that produces a reverse-time-ordered list of
+        # commits and their annotated names in $gmxremotes.
+        revcommand="git --git-dir=$GITDIR rev-list HEAD"
+        for remote in $gmxremotes ; do
+            revcommand="$revcommand | git --git-dir=$GITDIR name-rev --stdin --refs='refs/remotes/$remote/*'"
+        done
+        # Get the hash of the first commit that is found in $gmxremotes and
+        # the number of local commits that are newer than the found commit.
+        baserev=`eval $revcommand | awk 'NF > 1 {print $1 " (" NR-1 " newer local commits)"; exit 0}'`
         # Extract the base hash
         basehash=`expr "$baserev" : '\([0123456789abcdef]*\) '`
         # Do not report the base revision if it is the same as the most recent commit

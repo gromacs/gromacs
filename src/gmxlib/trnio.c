@@ -250,7 +250,7 @@ void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
 {
   if( do_trn(fio,FALSE,&step,&t,&lambda,box,&natoms,x,v,f) == FALSE)
   {
-      gmx_file("Cannot write trajectory frame; maybe you are out of quota?");
+      gmx_file("Cannot write trajectory frame; maybe you are out of disk space?");
   }
 }
 

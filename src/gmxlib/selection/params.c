@@ -131,8 +131,10 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
         /* Integers to floating point are easy */
         if (value->type == INT_VALUE && type == REAL_VALUE)
         {
-            value->u.r.r1 = (real)value->u.i.i1;
-            value->u.r.r2 = (real)value->u.i.i2;
+            real r1 = (real)value->u.i.i1;
+            real r2 = (real)value->u.i.i2;
+            value->u.r.r1 = r1;
+            value->u.r.r2 = r2;
             value->type = type;
             return 0;
         }
@@ -141,8 +143,10 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
             && gmx_within_tol(value->u.r.r1, (int)value->u.r.r1, GMX_REAL_EPS)
             && gmx_within_tol(value->u.r.r2, (int)value->u.r.r2, GMX_REAL_EPS))
         {
-            value->u.i.i1 = (int)value->u.r.r1;
-            value->u.i.i2 = (int)value->u.r.r2;
+            int i1 = (int)value->u.r.r1;
+            int i2 = (int)value->u.r.r2;
+            value->u.i.i1 = i1;
+            value->u.i.i2 = i2;
             value->type = type;
             return 0;
         }

@@ -2059,7 +2059,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 #ifdef GMX_MPI
     if (nnodes_major*nnodes_minor > 1 && PAR(cr)) 
     {
-        pme->mpi_comm        = cr->mpi_comm_mygroup;
+        pme->mpi_comm = cr->mpi_comm_mygroup;
         
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
@@ -2068,10 +2068,18 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
             gmx_incons("PME node count mismatch");
         }
     }
+    else
+    {
+        pme->mpi_comm = MPI_COMM_NULL;
+    }
 #endif
 
     if (pme->nnodes == 1)
     {
+#ifdef GMX_MPI
+        pme->mpi_comm_d[0] = MPI_COMM_NULL;
+        pme->mpi_comm_d[1] = MPI_COMM_NULL;
+#endif
         pme->ndecompdim = 0;
         pme->nodeid_major = 0;
         pme->nodeid_minor = 0;
@@ -2082,7 +2090,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         {
 #ifdef GMX_MPI
             pme->mpi_comm_d[0] = pme->mpi_comm;
-            pme->mpi_comm_d[1] = NULL;
+            pme->mpi_comm_d[1] = MPI_COMM_NULL;
 #endif
             pme->ndecompdim = 1;
             pme->nodeid_major = pme->nodeid;
@@ -2092,7 +2100,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         else if (nnodes_major == 1)
         {
 #ifdef GMX_MPI
-            pme->mpi_comm_d[0] = NULL;
+            pme->mpi_comm_d[0] = MPI_COMM_NULL;
             pme->mpi_comm_d[1] = pme->mpi_comm;
 #endif
             pme->ndecompdim = 1;

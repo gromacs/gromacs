@@ -2544,7 +2544,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if(fflush(fplog) != 0)
                 {
-                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of disk space?");
                 }
             }
         }
@@ -3087,7 +3087,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
-                            (Flags & MD_APPENDFILES));
+                            (Flags & MD_APPENDFILES),
+			    (Flags & MD_APPENDFILESSET));
 
             if (bReadRNG)
             {
@@ -3608,7 +3609,7 @@ int gmx_membed(int argc,char *argv[])
   { "-multi",   FALSE, etINT,{&nmultisim},
     "HIDDENDo multiple simulations in parallel" },
   { "-replex",  FALSE, etINT, {&repl_ex_nst},
-    "HIDDENAttempt replica exchange every # steps" },
+    "HIDDENAttempt replica exchange periodically with this period (steps)" },
   { "-reseed",  FALSE, etINT, {&repl_ex_seed},
     "HIDDENSeed for replica exchange, -1 is generate a seed" },
   { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
@@ -3759,6 +3760,7 @@ int gmx_membed(int argc,char *argv[])
 	Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
 	Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
 	Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0);
+	Flags = Flags | (opt2parg_bSet("-append", asize(pa),pa) ? MD_APPENDFILESSET : 0); 
 	Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0);
 	Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
 

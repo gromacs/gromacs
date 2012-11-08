@@ -42,32 +42,54 @@
 #include "string.h"
 #include "gmx_fatal.h"
 
+#define BUFSIZE 1024
 static void atom_not_found(int fatal_errno,const char *file,int line,
 			   const char *atomname,int resind,
-			   const char *bondtype,gmx_bool bDontQuit)
+                           const char *resname,
+			   const char *bondtype,gmx_bool bAllowMissing)
 {
-  if (strcmp(bondtype,"check") != 0) {
-    if (bDontQuit) {
-      gmx_warning("WARNING: Atom %s is used in an interaction of type %s in the\n"
-		  "topology database, but an atom of that name was not found in\n"
-		  "residue number %d.\n",
-		  atomname,bondtype,resind+1);
-    } else {
-      gmx_fatal(fatal_errno,file,line,
-		"Atom %s is used in an interaction of type %s in the topology\n"
-		"database, but an atom of that name was not found in residue\n"
-		"number %d.\n",
-		atomname,bondtype,resind+1);
+    char message_buffer[BUFSIZE];
+    if (strcmp(bondtype,"check") != 0)
+    {
+        if (0 != strcmp(bondtype, "atom"))
+        {
+            snprintf(message_buffer, 1024,
+                     "Residue %d named %s of a molecule in the input file was mapped\n"
+                     "to an entry in the topology database, but the atom %s used in\n"
+                     "an interaction of type %s in that entry is not found in the\n"
+                     "input file. Perhaps your atom and/or residue naming needs to be\n"
+                     "fixed.\n",
+                     resind+1, resname, atomname, bondtype);
+        }
+        else
+        {
+            snprintf(message_buffer, 1024,
+                     "Residue %d named %s of a molecule in the input file was mapped\n"
+                     "to an entry in the topology database, but the atom %s used in\n"
+                     "that entry is not found in the input file. Perhaps your atom\n"
+                     "and/or residue naming needs to be fixed.\n",
+                     resind+1, resname, atomname);
+        }
+        if (bAllowMissing)
+        {
+            gmx_warning("WARNING: %s", message_buffer);
+        }
+        else
+        {
+            gmx_fatal(fatal_errno,file,line,message_buffer);
+        }
     }
-  }
 }
 	
-atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
-		    char ** const * anm,
-		    const char *bondtype,gmx_bool bDontQuit)
+atom_id search_atom(const char *type,int start,
+                    t_atoms *atoms,
+		    const char *bondtype,gmx_bool bAllowMissing)
 {
   int     i,resind=-1;
   gmx_bool    bPrevious,bNext;
+  int natoms = atoms->nr;
+  t_atom *at = atoms->atom;
+  char ** const * anm = atoms->atomname;
 
   bPrevious = (strchr(type,'-') != NULL);
   bNext     = (strchr(type,'+') != NULL);
@@ -88,7 +110,9 @@ atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
 	return (atom_id) i;
     }
     if (!(bNext && at[start].resind==at[natoms-1].resind))
-      atom_not_found(FARGS,type,at[start].resind,bondtype,bDontQuit);
+    {
+        atom_not_found(FARGS,type,at[start].resind,*atoms->resinfo[resind].name,bondtype,bAllowMissing);
+    }
   }
   else {
     /* The previous residue */
@@ -99,7 +123,9 @@ atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
       if (gmx_strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
     if (start > 0)
-      atom_not_found(FARGS,type,at[start].resind,bondtype,bDontQuit);
+    {
+        atom_not_found(FARGS,type,at[start].resind,*atoms->resinfo[resind].name,bondtype,bAllowMissing);
+    }
   }
   return NO_ATID;
 }

@@ -51,6 +51,11 @@
 #include "pull.h"
 #include "update.h"
 
+
+#ifdef GMX_THREADS
+#include "thread_mpi/threads.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,6 +73,7 @@ extern "C" {
 #define MD_REPRODUCIBLE   (1<<13)
 #define MD_READ_RNG       (1<<14)
 #define MD_APPENDFILES    (1<<15)
+#define MD_APPENDFILESSET (1<<21)
 #define MD_KEEPANDNUMCPT  (1<<16)
 #define MD_READ_EKIN      (1<<17)
 #define MD_STARTFROMCPT   (1<<18)

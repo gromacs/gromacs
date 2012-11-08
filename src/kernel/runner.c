@@ -428,6 +428,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* now make sure the state is initialized and propagated */
     set_state_entries(state,inputrec,cr->nnodes);
 
+    /* remove when vv and rerun works correctly! */
+    if (PAR(cr) && EI_VV(inputrec->eI) && ((Flags & MD_RERUN) || (Flags & MD_RERUN_VSITE)))
+    {
+        gmx_fatal(FARGS, "Currently can't do velocity verlet with rerun in parallel.");
+    }
+
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
     if (!PAR(cr) &&
@@ -531,7 +537,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
-                            (Flags & MD_APPENDFILES));
+                            (Flags & MD_APPENDFILES),
+                            (Flags & MD_APPENDFILESSET));
             
             if (bReadRNG)
             {

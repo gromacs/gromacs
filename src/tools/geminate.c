@@ -887,13 +887,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	for(i=0; i<GD->nData; i++)
 	  {
 	    dumpdata[i] = (real)(GD->ctTheory[i]);
-#ifdef HAS_ISFINITE
-	    if (!isfinite(dumpdata[i]))
-#elif defined HAS__ISFINITE
-	    if (!_isfinite(dumpdata[i]))
-#else
-            if (0)
-#endif
+	    if (!gmx_isfinite(dumpdata[i]))
 	      {
 		gmx_fatal(FARGS, "Non-finite value in acf.");
 	      }

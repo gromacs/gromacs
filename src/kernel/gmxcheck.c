@@ -157,10 +157,12 @@ static void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol
 	printf("Warning at frame %d: coordinates for atom %d are large (%g)\n",
 	       frame,i,x[i][j]);
     }
-    if ((fabs(x[j][XX]) < tol) && 
-	(fabs(x[j][YY]) < tol) && 
-	(fabs(x[j][ZZ]) < tol))
-      nNul++;
+    if ((fabs(x[i][XX]) < tol) && 
+        (fabs(x[i][YY]) < tol) && 
+        (fabs(x[i][ZZ]) < tol))
+    {
+        nNul++;
+    }
   }
   if (nNul > 0)
     printf("Warning at frame %d: there are %d particles with all coordinates zero\n",
@@ -654,7 +656,7 @@ int main(int argc,char *argv[])
     { "-rmsd",   FALSE, etBOOL, {&bRMSD},
       "Print RMSD for x, v and f" },
     { "-tol",    FALSE, etREAL, {&ftol},
-      "Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)" },
+      "Relative tolerance for comparing real values defined as [MATH]2*(a-b)/([MAG]a[mag]+[MAG]b[mag])[math]" },
     { "-abstol",    FALSE, etREAL, {&abstol},
       "Absolute tolerance, useful when sums are close to zero." },
     { "-ab",     FALSE, etBOOL, {&bCompAB},

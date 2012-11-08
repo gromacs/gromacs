@@ -788,7 +788,7 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
         char buf[STRLEN];
         sprintf(
             buf,
-            "Cannot write file '%s'; maybe you are out of disk space or quota?",
+            "Cannot write file '%s'; maybe you are out of disk space?",
             fio->fn);
         gmx_file(buf);
     }
@@ -1145,12 +1145,12 @@ int xtc_seek_frame(t_fileio *fio, int frame, int natoms)
     return ret;
 }
 
-int xtc_seek_time(t_fileio *fio, real time, int natoms)
+int xtc_seek_time(t_fileio *fio, real time, int natoms,gmx_bool bSeekForwardOnly)
 {
     int ret;
 
     gmx_fio_lock(fio);
-    ret=xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms);
+    ret=xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms, bSeekForwardOnly);
     gmx_fio_unlock(fio);
 
     return ret;

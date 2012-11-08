@@ -98,7 +98,7 @@ static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
     np = interaction_function[ftype].nratoms;
     
     if (ia[1] >= at_start && ia[1] < at_end) {
-      if (ia[np] >= at_end)
+      if (ia[np] >= at_end || (ftype == F_SETTLE && ia[1]+2 >= at_end))
 	gmx_fatal(FARGS,
 		  "Molecule in topology has atom numbers below and "
 		  "above natoms (%d).\n"

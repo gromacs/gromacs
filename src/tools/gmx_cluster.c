@@ -1008,7 +1008,9 @@ int gmx_cluster(int argc,char *argv[])
     "[TT]-cl[tt] writes average (with option [TT]-av[tt]) or central",
     "structure of each cluster or writes numbered files with cluster members",
     "for a selected set of clusters (with option [TT]-wcl[tt], depends on",
-    "[TT]-nst[tt] and [TT]-rmsmin[tt]).[BR]",
+    "[TT]-nst[tt] and [TT]-rmsmin[tt]). The center of a cluster is the",
+    "structure with the smallest average RMSD from all other structures",
+    "of the cluster.[BR]",
   };
   
   FILE         *fp,*log;
@@ -1058,7 +1060,7 @@ int gmx_cluster(int argc,char *argv[])
     { "-dista", FALSE, etBOOL, {&bRMSdist},
       "Use RMSD of distances instead of RMS deviation" },
     { "-nlevels",FALSE,etINT,  {&nlevels},
-      "Discretize RMSD matrix in # levels" },
+      "Discretize RMSD matrix in this number of levels" },
     { "-cutoff",FALSE, etREAL, {&rmsdcut},
       "RMSD cut-off (nm) for two structures to be neighbor" },
     { "-fit",   FALSE, etBOOL, {&bFit},
@@ -1070,9 +1072,9 @@ int gmx_cluster(int argc,char *argv[])
     { "-av",    FALSE, etBOOL, {&bAverage},
       "Write average iso middle structure for each cluster" },
     { "-wcl",   FALSE, etINT,  {&write_ncl},
-      "Write all structures for first # clusters to numbered files" },
+      "Write the structures for this number of clusters to numbered files" },
     { "-nst",   FALSE, etINT,  {&write_nst},
-      "Only write all structures if more than # per cluster" },
+      "Only write all structures if more than this number of structures per cluster" },
     { "-rmsmin",FALSE, etREAL, {&rmsmin},
       "minimum rms difference with rest of cluster for writing structures" },
     { "-method",FALSE, etENUM, {methodname},

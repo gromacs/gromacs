@@ -541,10 +541,13 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->dhc=NULL; 
     if (ir->separate_dhdl_file == sepdhdlfileNO )
     {
-        int i;
-        snew(md->dhc, 1);
+        /* Currently dh histograms are only written with dynamics */
+        if (EI_DYNAMICS(ir->eI))
+        {
+            snew(md->dhc, 1);
 
-        mde_delta_h_coll_init(md->dhc, ir);
+            mde_delta_h_coll_init(md->dhc, ir);
+        }
         md->fp_dhdl = NULL;
     }
     else

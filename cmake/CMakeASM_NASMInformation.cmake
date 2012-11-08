@@ -1,6 +1,6 @@
 # support for the nasm assembler
 
-SET(ASM_DIALECT "-NASM")
+SET(ASM_DIALECT "_NASM")
 
 SET(CMAKE_ASM${ASM_DIALECT}_SOURCE_FILE_EXTENSIONS s)
 

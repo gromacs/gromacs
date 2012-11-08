@@ -124,7 +124,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double     t,t0,lam0;
     gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
     gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-               bFirstStep,bStateFromTPX,bInitStep,bLastStep,
+               bFirstStep,bStateFromCP,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
     gmx_bool       bDoDHDL=FALSE;
     gmx_bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
@@ -375,9 +375,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     update_mdatoms(mdatoms,state->lambda);
 
+    if (opt2bSet("-cpi",nfile,fnm))
+    {
+        bStateFromCP = gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr);
+    }
+    else
+    {
+        bStateFromCP = FALSE;
+    }
+
     if (MASTER(cr))
     {
-        if (opt2bSet("-cpi",nfile,fnm))
+        if (bStateFromCP)
         {
             /* Update mdebin with energy history if appending to output files */
             if ( Flags & MD_APPENDFILES )
@@ -470,6 +479,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
   
     /* I'm assuming we need global communication the first time! MRS */
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
+                  | ((ir->comm_mode != ecmNO) ? CGLO_STOPCM:0)
                   | (bVV ? CGLO_PRESSURE:0)
                   | (bVV ? CGLO_CONSTRAINT:0)
                   | (bRerunMD ? CGLO_RERUNMD:0)
@@ -477,7 +487,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                    NULL,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,NULL,FALSE,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
@@ -488,10 +498,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
            perhaps loses some logic?*/
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                        wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                        NULL,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                         constr,NULL,FALSE,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                        cglo_flags &~ CGLO_PRESSURE);
+                        cglo_flags &~ (CGLO_STOPCM | CGLO_PRESSURE));
     }
     
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -650,7 +660,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* loop over MD steps or if rerunMD to end of input trajectory */
     bFirstStep = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
-    bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
+    bStateFromTPX = !bStateFromCP;
     bInitStep = bFirstStep && (bStateFromTPX || bVV);
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep    = FALSE;
@@ -973,7 +983,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* these CGLO_ options remain the same throughout the iteration */
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
-                      (bStopCM ? CGLO_STOPCM : 0) |
                       (bGStat ? CGLO_GSTAT : 0)
             );
         
@@ -1134,6 +1143,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                 cglo_flags 
                                 | CGLO_ENERGY 
+                                | (bStopCM ? CGLO_STOPCM : 0)
                                 | (bTemp ? CGLO_TEMPERATURE:0) 
                                 | (bPres ? CGLO_PRESSURE : 0) 
                                 | (bPres ? CGLO_CONSTRAINT : 0)
@@ -1575,6 +1585,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
+                            | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
                             | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
@@ -1729,7 +1740,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if(fflush(fplog) != 0)
                 {
-                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of disk space?");
                 }
             }
         }

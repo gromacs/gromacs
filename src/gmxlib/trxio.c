@@ -74,6 +74,7 @@ struct t_trxstatus
     int         NATOMS;
     double      DT,BOX[3];
     gmx_bool        bReadBox;
+    char *persistent_line; /* Persistent line for reading g96 trajectories */
 };
 
 static void initcount(t_trxstatus *status)
@@ -87,6 +88,7 @@ static void status_init(t_trxstatus *status)
     status->xframe=NULL;
     status->fio=NULL;
     status->__frame=-1;
+    status->persistent_line=NULL;
 }
 
 
@@ -690,10 +692,8 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       /* Checkpoint files can not contain mulitple frames */
       break;
     case efG96:
-      gmx_fatal(FARGS,
-		"Reading trajectories in .g96 format is broken. Please use\n"
-		"a different file format.");
-      read_g96_conf(gmx_fio_getfp(status->fio),NULL,fr);
+      read_g96_conf(gmx_fio_getfp(status->fio),NULL,fr, 
+                    status->persistent_line);
       bRet = (fr->natoms > 0);
       break;
     case efG87:
@@ -712,8 +712,9 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
        * accuracy of the control over -b and -e options.
        */
         if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
-            if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms)) {
-                gmx_fatal(FARGS,"Specified frame doesn't exist or file not seekable");
+          if (xtc_seek_time(status->fio, rTimeValue(TBEGIN),fr->natoms,TRUE)) {
+            gmx_fatal(FARGS,"Specified frame (time %f) doesn't exist or file corrupt/inconsistent.",
+                      rTimeValue(TBEGIN));
             }
             initcount(status);
         }
@@ -805,7 +806,12 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
     break;
   case efG96:
     /* Can not rewind a compressed file, so open it twice */
-    read_g96_conf(gmx_fio_getfp(fio),fn,fr);
+    if (!(*status)->persistent_line)
+    {
+        /* allocate the persistent line */
+        snew((*status)->persistent_line, STRLEN+1);
+    }
+    read_g96_conf(gmx_fio_getfp(fio),fn,fr, (*status)->persistent_line);
     gmx_fio_close(fio);
     clear_trxframe(fr,FALSE);
     if (flags & (TRX_READ_X | TRX_NEED_X))

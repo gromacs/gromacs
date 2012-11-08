@@ -1660,18 +1660,19 @@ int gmx_energy(int argc,char *argv[])
     "The term fluctuation gives the RMSD around the least-squares fit.[PAR]",
     
     "Some fluctuation-dependent properties can be calculated provided",
-    "the correct energy terms are selected. The following properties",
+    "the correct energy terms are selected, and that the command line option",
+    "[TT]-fluct_props[tt] is given. The following properties",
     "will be computed:[BR]",
     "Property                        Energy terms needed[BR]",
     "---------------------------------------------------[BR]",
-    "Heat capacity Cp (NPT sims):    Enthalpy, Temp     [BR]",
-    "Heat capacity Cv (NVT sims):    Etot, Temp         [BR]",
+    "Heat capacity C[SUB]p[sub] (NPT sims):    Enthalpy, Temp     [BR]",
+    "Heat capacity C[SUB]v[sub] (NVT sims):    Etot, Temp         [BR]",
     "Thermal expansion coeff. (NPT): Enthalpy, Vol, Temp[BR]",
     "Isothermal compressibility:     Vol, Temp          [BR]",
     "Adiabatic bulk modulus:         Vol, Temp          [BR]",
     "---------------------------------------------------[BR]",
     "You always need to set the number of molecules [TT]-nmol[tt].",
-    "The Cp/Cv computations do [BB]not[bb] include any corrections",
+    "The C[SUB]p[sub]/C[SUB]v[sub] computations do [BB]not[bb] include any corrections",
     "for quantum effects. Use the [TT]g_dos[tt] program if you need that (and you do).[PAR]"
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",
@@ -1703,28 +1704,28 @@ int gmx_energy(int argc,char *argv[])
 
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
-    "  [GRK]Delta[grk] A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
-    "  [GRK]Delta[grk] G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
+    "  [GRK]Delta[grk] A = A(N,V,T) - A[SUB]idealgas[sub](N,V,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln][BR]",
+    "  [GRK]Delta[grk] G = G(N,p,T) - G[SUB]idealgas[sub](N,p,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln][BR]",
     "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
     "the average is over the ensemble (or time in a trajectory).",
     "Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",
     "and using the potential energy. This also allows for an entropy",
     "estimate using:[BR]",
-    "  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (<Upot> - [GRK]Delta[grk] A)/T[BR]",
-    "  [GRK]Delta[grk] S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (<Upot> + pV - [GRK]Delta[grk] G)/T",
+    "  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) - S[SUB]idealgas[sub](N,V,T) = ([CHEVRON]U[SUB]pot[sub][chevron] - [GRK]Delta[grk] A)/T[BR]",
+    "  [GRK]Delta[grk] S(N,p,T) = S(N,p,T) - S[SUB]idealgas[sub](N,p,T) = ([CHEVRON]U[SUB]pot[sub][chevron] + pV - [GRK]Delta[grk] G)/T",
     "[PAR]",
     
     "When a second energy file is specified ([TT]-f2[tt]), a free energy",
-    "difference is calculated dF = -kT ln < e ^ -(EB-EA)/kT >A ,",
-    "where EA and EB are the energies from the first and second energy",
+    "difference is calculated [BR] dF = -kT [LN][CHEVRON][EXP]-(E[SUB]B[sub]-E[SUB]A[sub])/kT[exp][chevron][SUB]A[sub][ln] ,",
+    "where E[SUB]A[sub] and E[SUB]B[sub] are the energies from the first and second energy",
     "files, and the average is over the ensemble A. The running average",
     "of the free energy difference is printed to a file specified by [TT]-ravg[tt].",
     "[BB]Note[bb] that the energies must both be calculated from the same trajectory."
     
   };
   static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE,bDriftCorr=FALSE;
-  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
+  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE,bFluctProps=FALSE;
   static int  skip=0,nmol=1,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -1750,6 +1751,8 @@ int gmx_energy(int argc,char *argv[])
       "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
+    { "-fluct_props", FALSE, etBOOL, {&bFluctProps},
+      "Compute properties based on energy fluctuations, like heat capacity" },
     { "-driftcorr", FALSE, etBOOL, {&bDriftCorr},
       "Useful only for calculations of fluctuation properties. The drift in the observables will be subtracted before computing the fluctuation properties."},
     { "-fluc", FALSE, etBOOL, {&bFluct},
@@ -2394,6 +2397,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	}
       }
+      teller++;
     }
   } while (bCont && (timecheck == 0));
   
@@ -2483,8 +2487,9 @@ int gmx_energy(int argc,char *argv[])
                    time,reftemp,&edat,
                    nset,set,bIsEner,leg,enm,Vaver,ezero,nbmin,nbmax,
                    oenv);
-      calc_fluctuation_props(stdout,bDriftCorr,dt,nset,set,nmol,leg,&edat,
-                             nbmin,nbmax);
+      if (bFluctProps)
+          calc_fluctuation_props(stdout,bDriftCorr,dt,nset,set,nmol,leg,&edat,
+                                 nbmin,nbmax);
   }
   if (opt2bSet("-f2",NFILE,fnm)) {
       fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 

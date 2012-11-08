@@ -555,7 +555,7 @@ int gmx_editconf(int argc, char *argv[])
                 "To convert a truncated octrahedron file produced by a package which uses",
                 "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
                 "[TT]editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
-                "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2." };
+                "where [TT]veclen[tt] is the size of the cubic box times [SQRT]3[sqrt]/2." };
     const char *bugs[] =
         {
             "For complex molecules, the periodicity removal routine may break down, "
@@ -591,7 +591,7 @@ int gmx_editconf(int argc, char *argv[])
                         { visbox },
                         "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
                     { "-bt", FALSE, etENUM,
-                        { btype }, "Box type for -box and -d" },
+                        { btype }, "Box type for [TT]-box[tt] and [TT]-d[tt]" },
                     { "-box", FALSE, etRVEC,
                         { newbox }, "Box vector lengths (a,b,c)" },
                     { "-angles", FALSE, etRVEC,
@@ -600,7 +600,7 @@ int gmx_editconf(int argc, char *argv[])
                         { &dist }, "Distance between the solute and the box" },
                     { "-c", FALSE, etBOOL,
                         { &bCenter },
-                        "Center molecule in box (implied by -box and -d)" },
+                        "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
                     { "-center", FALSE, etRVEC,
                         { center }, "Coordinates of geometrical center" },
                     { "-aligncenter", FALSE, etRVEC,
@@ -634,13 +634,13 @@ int gmx_editconf(int argc, char *argv[])
                         "-rvdw", FALSE, etREAL,
                          { &rvdw },
                         "Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file" },
-                    { "-sig56", FALSE, etREAL,
+                    { "-sig56", FALSE, etBOOL,
                         { &bSig56 },
-                        "Use rmin/2 (minimum in the Van der Waals potential) rather than sigma/2 " },
+                        "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
                     {
                         "-vdwread", FALSE, etBOOL,
                         { &bReadVDW },
-                        "Read the Van der Waals radii from the file vdwradii.dat rather than computing the radii based on the force field" },
+                        "Read the Van der Waals radii from the file [TT]vdwradii.dat[tt] rather than computing the radii based on the force field" },
                     { "-atom", FALSE, etBOOL,
                         { &peratom }, "Force B-factor attachment per atom" },
                     { "-legend", FALSE, etBOOL,
@@ -1036,7 +1036,10 @@ int gmx_editconf(int argc, char *argv[])
     }  
 
     if (check_box(epbcXYZ,box))
-        printf("\nWARNING: %s\n",check_box(epbcXYZ,box));
+        printf("\nWARNING: %s\n"
+               "See the GROMACS manual for a description of the requirements that\n"
+               "must be satisfied by descriptions of simulation cells.\n",
+               check_box(epbcXYZ,box));
 
     if (bDist && btype[0][0]=='t')
     {

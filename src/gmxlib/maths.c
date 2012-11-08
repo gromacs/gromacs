@@ -40,6 +40,9 @@
 #include <math.h>
 #include <limits.h>
 #include "maths.h"
+#ifdef HAVE__FINITE
+#include "float.h"
+#endif
 
 int gmx_nint(real a)
 {   
@@ -192,7 +195,9 @@ double gmx_erf(double x)
     
     conv.d=x;
     
-#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+        /* In release-4-6 and later branches, only the test for
+         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
+#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
     hx=conv.i[0];
 #else
     hx=conv.i[1];
@@ -252,7 +257,9 @@ double gmx_erf(double x)
 
     conv.d = x;
 
-#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+        /* In release-4-6 and later branches, only the test for
+         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
+#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
     conv.i[1] = 0;
 #else
     conv.i[0] = 0;
@@ -282,7 +289,9 @@ double gmx_erfc(double x)
     
     conv.d = x;
     
-#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+        /* In release-4-6 and later branches, only the test for
+         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
+#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
     hx=conv.i[0];
 #else
     hx=conv.i[1];
@@ -353,7 +362,9 @@ double gmx_erfc(double x)
 
         conv.d = x;
 
-#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+        /* In release-4-6 and later branches, only the test for
+         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
+#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
         conv.i[1] = 0;
 #else
         conv.i[0] = 0;
@@ -658,4 +669,50 @@ float fast_float_erfc(float x)
 		t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+
 		t*(-0.82215223+t*0.17087277)))))))));
 	return ans;
+}
+
+gmx_bool gmx_isfinite(real x)
+{
+    gmx_bool returnval = TRUE;
+    /* If no suitable function was found, assume the value is
+     * finite. */
+
+#ifdef HAVE_ISFINITE
+    returnval = isfinite(x);
+#elif defined HAVE__ISFINITE
+    returnval = _isfinite(x);
+#elif defined HAVE__FINITE
+    returnval = _finite(x);
+#endif
+    return returnval;
+}
+
+gmx_bool
+check_int_multiply_for_overflow(gmx_large_int_t a,
+                                gmx_large_int_t b,
+                                gmx_large_int_t *result)
+{
+    gmx_large_int_t sign = 1;
+    if((0 == a) || (0 == b))
+    {
+        *result = 0;
+        return TRUE;
+    }
+    if(a < 0)
+    {
+        a = -a;
+        sign = -sign;
+    }
+    if(b < 0)
+    {
+        b = -b;
+        sign = -sign;
+    }
+    if(GMX_LARGE_INT_MAX / b < a)
+    {
+        *result = (sign > 0) ? GMX_LARGE_INT_MAX : GMX_LARGE_INT_MIN;
+        return FALSE;
+    }
+    *result = sign * a * b;
+    return TRUE;
 }

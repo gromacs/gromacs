@@ -802,7 +802,7 @@ int gmx_order(int argc,char *argv[])
       "Direction of the normal on the membrane" },
     { "-sl",     FALSE, etINT, {&nslices},
       "Calculate order parameter as function of box length, dividing the box"
-      " in #nr slices." },
+      " into this number of slices." },
     { "-szonly", FALSE, etBOOL,{&bSzonly},
       "Only give Sz element of order tensor. (axis can be specified with [TT]-d[tt])" },
     { "-unsat",  FALSE, etBOOL,{&bUnsat},

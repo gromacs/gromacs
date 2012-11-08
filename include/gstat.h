@@ -240,7 +240,7 @@ void expfit(int n, real x[], real y[], real Dy[],
 
 void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 			  real **dih,int nframes,int nangles,
-			  const char *grpname,real t0,real dt,gmx_bool bRb,
+			  const char *grpname,real *time,gmx_bool bRb,
                           const output_env_t oenv);
 /*
  * Analyse dihedral transitions, by counting transitions per dihedral
@@ -260,7 +260,7 @@ void ana_dih_trans(const char *fn_trans,const char *fn_histo,
  * nframes   number of times frames
  * nangles   number of angles
  * grpname   a string for the header of plots
- * t0,dt     starting time resp. time between time frames
+ * time      array (size nframes) of times of trajectory frames
  * bRb       determines whether the polymer convention is used
  *           (trans = 0)
  */
@@ -269,7 +269,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 			      gmx_bool bHisto, const char *fn_histo, int maxchi, 
 			      real **dih, int nlist, t_dlist dlist[], 
                               int nframes, int nangles, const char *grpname, 
-                              int xity[], real t0, real dt, gmx_bool bRb, 
+                              int xity[], real *time, gmx_bool bRb,
                               real core_frac, const output_env_t oenv); 
   /* as above but passes dlist so can copy occupancies into it, and xity[] 
    *  (1..nangles, corresp to dih[this][], so can have non-3 multiplicity of

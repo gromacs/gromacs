@@ -97,12 +97,10 @@ luck: command not found.
 then you have to verify where your version of GROMACS is installed.
 
 In the default case, the binaries are located in
-'/usr/local/gromacs/&lt;arch&gt;/bin', where &lt;arch&gt; is the
-architecture of your computer. However, you can ask your local system
+'/usr/local/gromacs/bin', however, you can ask your local system
 administrator for more information.  If we assume that GROMACS is
-installed in directory <tt>XXX</tt> and your machine architecture is
-<tt>sgi</tt> you would find the executables (programs) in
-<tt>XXX/sgi/bin</tt>.  To be able to access the programs without
+installed in directory <tt>XXX</tt> you would find the executables (programs) in
+<tt>XXX/bin</tt>.  To be able to access the programs without
 problems, you will have to edit the login file for your shell. If you
 use the C shell, this file is called <TT>.cshrc</TT> or
 <TT>.tcshrc</TT>, and it is located in your home directory. Add a line
@@ -114,7 +112,7 @@ like:
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt> 
-setenv PATH "XXX/&lt;arch&gt;/bin:${PATH}".
+source XXX/bin/GMXRC
 </tt>
 <td></td>
 </tr>
@@ -123,10 +121,27 @@ setenv PATH "XXX/&lt;arch&gt;/bin:${PATH}".
 
 Issue this command at the prompt too, or log off and on again to
 automatically get the environment.
+You should have an environment variable set now that is called
+GMXDATA that we will use further on. Let us check whether this was
+successful using:<br><br>
+
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> echo $GMXDATA
+</tt>
+<td></td>
+</tr>
+</table>
+<br>
+If it prints a directory name you are ready to rock, otherwise go back two steps.
 
 <P><H3><A NAME="examples">Examples</A></H3>
 Before starting the examples, you have to copy all the neccesary
-files, to your own directory. Chdir to the directory you want to put
+files, to your own directory, let us call it work. 
+Mkdir and chdir to the directory you want to put
 the examples directory. This directory (named <tt>tutor</tt>) 
 will need
 about 20 MB of disk space, when it is completely filled.<br><br>
@@ -135,7 +150,7 @@ about 20 MB of disk space, when it is completely filled.<br><br>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> cd "your own directory"
+<tt> mkdir work; cd work
 </tt>
 <td></td>
 </tr>
@@ -147,13 +162,13 @@ then copy the examples: <br><br>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> cp -r XXX/share/tutor .
+<tt> cp -r $GMXDATA/gromacs/tutor .
 </tt>
 <td></td>
 </tr>
 </table>
 <br>
-(NOTE: include the "<TT>.</TT>", and replace <tt>XXX</tt> by the real directory)<br>
+(NOTE: include the "<TT>.</TT>")<br>
 If that directory doesn't exist you could look for the files
 in <tt>/usr/local/share/gromacs/tutor</tt>, or ask your local GROMACS expert.
 <br> You now have a subdirectory

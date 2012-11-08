@@ -52,7 +52,9 @@
 #include "pppm.h"
 #include "gmxfio.h"
 
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "thread_mpi/threads.h"
+#endif
 
 #define p2(x) ((x)*(x))
 #define p3(x) ((x)*(x)*(x)) 

@@ -803,7 +803,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
-    int prealloc_size=3*16;
+    unsigned prealloc_size=3*16;
     int prealloc_ip[3*16], prealloc_buf[3*20];
     int we_should_free=0;
 
@@ -1567,7 +1567,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 }
 
 
-
+static
 float 
 xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
@@ -1575,13 +1575,12 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
   float  tinit;
   gmx_off_t off;
   
+  *bOK = 0;
   if((off   = gmx_ftell(fp)) < 0){
     return -1;
   }
   
     tinit = xtc_get_current_frame_time(fp,xdrs,natoms,bOK);
-    
-    *bOK = 1;
     
     if(!(*bOK))
     {
@@ -1596,7 +1595,7 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     }
     
     res -= tinit;
-    if(gmx_fseek(fp,off,SEEK_SET)){
+    if (0 != gmx_fseek(fp,off,SEEK_SET)) {
       *bOK = 0;
       return -1;
     }
@@ -1683,7 +1682,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
 
      
 
-int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
+int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms,gmx_bool bSeekForwardOnly)
 {
     float t;
     float dt;
@@ -1693,6 +1692,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     int res;
     int dt_sign = 0;
 
+    if (bSeekForwardOnly)
+    {
+        low = gmx_ftell(fp);
+    }
     if (gmx_fseek(fp,0,SEEK_END))
     {
         return -1;
@@ -1705,7 +1708,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
     /* round to int  */
     high /= XDR_INT_SIZE;
     high *= XDR_INT_SIZE;
-    offset = ((high / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
+    offset = (((high-low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp,offset,SEEK_SET))
     {

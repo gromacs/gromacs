@@ -734,7 +734,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     if (ed)
     {
-        do_flood(fplog,cr,x,f,ed,box,step);
+        do_flood(fplog,cr,x,f,ed,box,step,bNS);
     }
 	
     if (DOMAINDECOMP(cr))
@@ -800,14 +800,14 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle,ewcVSITESPREAD);
-            spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,
+            spread_vsite_f(fplog,vsite,x,f,fr->fshift,FALSE,NULL,nrnb,
                            &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
             wallcycle_stop(wcycle,ewcVSITESPREAD);
 
             if (bSepLRF)
             {
                 wallcycle_start(wcycle,ewcVSITESPREAD);
-                spread_vsite_f(fplog,vsite,x,fr->f_twin,NULL,
+                spread_vsite_f(fplog,vsite,x,fr->f_twin,NULL,FALSE,NULL,
                                nrnb,
                                &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
                 wallcycle_stop(wcycle,ewcVSITESPREAD);
@@ -875,7 +875,9 @@ void do_force(FILE *fplog,t_commrec *cr,
              * if the constructing atoms aren't local.
              */
             wallcycle_start(wcycle,ewcVSITESPREAD);
-            spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,nrnb,
+            spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,
+                           (flags & GMX_FORCE_VIRIAL),fr->vir_el_recip,
+                           nrnb,
                            &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
             wallcycle_stop(wcycle,ewcVSITESPREAD);
         }
@@ -919,7 +921,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
 {
     int    i,m,start,end;
     gmx_large_int_t step;
-    double mass,tmass,vcm[4];
     real   dt=ir->delta_t;
     real   dvdlambda;
     rvec   *savex;
@@ -996,38 +997,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         }
     }
     
-    for(m=0; (m<4); m++)
-        vcm[m] = 0;
-    for(i=start; i<end; i++) {
-        mass = md->massT[i];
-        for(m=0; m<DIM; m++) {
-            vcm[m] += state->v[i][m]*mass;
-        }
-        vcm[3] += mass;
-    }
-    
-    if (ir->nstcomm != 0 || debug) {
-        /* Compute the global sum of vcm */
-        if (debug)
-            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
-        if (PAR(cr))
-            gmx_sumd(4,vcm,cr);
-        tmass = vcm[3];
-        for(m=0; (m<DIM); m++)
-            vcm[m] /= tmass;
-        if (debug) 
-            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-        if (ir->nstcomm != 0) {
-            /* Now we have the velocity of center of mass, let's remove it */
-            for(i=start; (i<end); i++) {
-                for(m=0; (m<DIM); m++)
-                    state->v[i][m] -= vcm[m];
-            }
-
-        }
-    }
     sfree(savex);
 }
 

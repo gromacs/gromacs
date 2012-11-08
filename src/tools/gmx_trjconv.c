@@ -1201,7 +1201,7 @@ int gmx_trjconv(int argc,char *argv[])
                 if (bSubTraj) {
                     /*if (frame >= clust->clust->nra)
 	    gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");*/
-                    if (frame >= clust->maxframe)
+                    if (frame > clust->maxframe)
                         my_clust = -1;
                     else
                         my_clust = clust->inv_clust[frame];
@@ -1388,8 +1388,8 @@ int gmx_trjconv(int argc,char *argv[])
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout = fr;
-			frout.bV    &= bVels;
-			frout.bF    &= bForce;
+			frout.bV = (frout.bV && bVels);
+			frout.bF = (frout.bF && bForce);
                         frout.natoms = nout;
                         if (bNeedPrec && (bSetPrec || !fr.bPrec)) {
                             frout.bPrec = TRUE;

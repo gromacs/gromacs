@@ -84,9 +84,9 @@ int gmx_genpr(int argc,char *argv[])
 	
   t_pargs pa[] = {
     { "-fc", FALSE, etRVEC, {fc}, 
-      "force constants (kJ/mol nm^2)" },
+      "Force constants (kJ/mol nm^2)" },
     { "-freeze", FALSE, etREAL, {&freeze_level},
-      "if the [TT]-of[tt] option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
+      "If the [TT]-of[tt] option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
     { "-disre", FALSE, etBOOL, {&bDisre},
       "Generate a distance restraint matrix for all the atoms in index" },
     { "-disre_dist", FALSE, etREAL, {&disre_dist},

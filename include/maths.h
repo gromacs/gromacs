@@ -101,6 +101,8 @@ real    cuberoot (real a);
 real    gmx_erf(real x);
 real    gmx_erfc(real x);
 
+gmx_bool gmx_isfinite(real x);
+
 /*! \brief Check if two numbers are within a tolerance
  *
  *  This routine checks if the relative difference between two numbers is
@@ -163,6 +165,14 @@ gmx_log2(real x)
     return log( x ) * iclog2;
 }
 
+/*! /brief Multiply two large ints
+ *
+ *  Returns true when overflow did not occur.
+ */
+gmx_bool
+check_int_multiply_for_overflow(gmx_large_int_t a,
+                                gmx_large_int_t b,
+                                gmx_large_int_t *result);
 
 #ifdef __cplusplus
 }

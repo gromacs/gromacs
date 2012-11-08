@@ -106,7 +106,14 @@ if (THREAD_WINDOWS)
 	endif(HAVE_PROCESSOR_NUMBER)
 endif(THREAD_WINDOWS)
 
-
+# option to set affinity 
+option(THREAD_MPI_SET_AFFINITY "Set thread affinity to a core if number of threads equal to number of hardware threads." ON)
+mark_as_advanced(THREAD_MPI_SET_AFFINITY)
+if (THREAD_MPI_SET_AFFINITY)
+    add_definitions(-DTMPI_SET_AFFINITY)
+else (THREAD_MPI_SET_AFFINITY)
+    add_definitions()
+endif (THREAD_MPI_SET_AFFINITY)
 
 include(CheckFunctionExists)
 if (THREAD_PTHREADS)
@@ -139,6 +146,6 @@ check_include_files(sys/time.h      HAVE_SYS_TIME_H)
 check_function_exists(sysconf       HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
-#check_function_exists(GetSystemInfo HAVE_SYSTEM_INFO)
+
 
 test_tmpi_atomics(TMPI_ATOMICS)

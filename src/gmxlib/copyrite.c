@@ -534,7 +534,12 @@ void please_cite(FILE *fp,const char *key)
       "Computational Electrophysiology: The Molecular Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail",
       "Biophys. J.",
       101, 2011, "809-817"
-    }
+    },
+    { "Sugita1999a",
+      "Y. Sugita, Y. Okamoto",
+      "Replica-exchange molecular dynamics method for protein folding",
+      "Chem. Phys. Lett.",
+      314, 1999, "141-151" }
   };
 #define NSTR (int)asize(citedb)
   

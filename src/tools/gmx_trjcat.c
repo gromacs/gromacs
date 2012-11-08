@@ -128,10 +128,15 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
         }
 
         close_trj(status);
+        if (fr.bX)
+          sfree(fr.x);
+        if (fr.bV)
+          sfree(fr.v);
+        if (fr.bF)
+          sfree(fr.f);
     }
     fprintf(stderr,"\n");
 
-    sfree(fr.x);
 }
 
 static void sort_files(char **fnms, real *settime, int nfile)
@@ -684,7 +689,7 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     searchtime = last_frame_time;
                 }
-                if (xtc_seek_time(stfio,searchtime,fr.natoms))
+                if (xtc_seek_time(stfio,searchtime,fr.natoms,TRUE))
                 {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }
