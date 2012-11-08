@@ -70,8 +70,9 @@ Rdf::Rdf()
         // avem_(new AnalysisDataAverageModule()),
         histm_(new AnalysisDataSimpleHistogramModule(histogramFromRange(0.0, 5.0).binCount(10)))
 {
-    data_.setColumnCount(10);
-    registerAnalysisDataset(&data_, "rdf");
+    data_.setColumnCount(1);
+    data_.setMultipoint(true);
+    registerAnalysisDataset(&data_, "dx_data");
 }
 
 
@@ -94,7 +95,8 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "position in the system, where N/V is the average output",
         "position density in the system.\n",
         "When the output and reference position sets are equal, it is",
-        "sufficient to specify only the former."
+        "sufficient to specify only the former. Self-distances are",
+        "removed from histogram data."
         #ifdef GMX_LIB_MPI
         ,"\n Interactive selection is disabled for MPI builds."
         #endif
@@ -103,20 +105,19 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnDist_).defaultBasename("hist")
+                           .store(&fnHist_).defaultBasename("hist")
                            .description("Computed histogram"));
 
     options->addOption(SelectionOption("select").required()
                        .valueCount(1)
                        .description("Selection for output.")
                        .store(sel_));
+
     options->addOption(SelectionOption("refsel")
                        .valueCount(1)
                        .description("Selection for reference.")
                        .store(refsel_));
-    options->addOption(BooleanOption("aa")
-                       .description("Remove output and reference selection aliasing.")
-                       .store(&aasels_));
+
     options->addOption(BooleanOption("surf")
                        .description("RDF relative surface of reference position set.")
                        .store(&surfref_));
@@ -133,12 +134,27 @@ void
 Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation & /*top*/)
 {
+    // determine rdf mode
+    if (surfref_)
+    {
+        rdfmode_ = SURFREF;
+    }
+    else if (bRefSelectionSet_)
+    {
+        rdfmode_ = REFSEL;
+    }
+    else
+    {
+        rdfmode_ = INTRA;
+    }
+
+    // check for empty selections
     if (sel_[0].posCount() == 0)
     {
         GMX_THROW(InvalidInputError("Selection does not define any positions."));
     }
 
-    if (surfref_ && !bRefSelectionSet_)
+    if ((rdfmode_==(REFSEL|SURFREF)) && !bRefSelectionSet_)
     {
         GMX_THROW(InvalidInputError("No reference selection given."));
     }
@@ -148,15 +164,35 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
         GMX_THROW(InvalidInputError("Reference selection does not define any positions."));
     }
 
-
-    // data_.addModule(avem_);
     data_.addModule(histm_);
-    AnalysisDataPlotModulePointer plotm_(new AnalysisDataPlotModule());
-    plotm_->setSettings(settings.plotSettings());
-    plotm_->setFileName(fnDist_);
-    data_.addModule(plotm_);
-}
 
+#ifdef GMX_LIB_MPI
+    if (!fnHist_.empty() && mpi::isMaster())
+#else
+    if (!fnHist_.empty())
+#endif
+    {
+        AnalysisDataPlotModulePointer plotm(
+            new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnHist_);
+        plotm->setTitle("Histogram");
+        plotm->setYLabel("counts");
+        plotm->setXLabel("radius");
+        histm_->averager().addModule(plotm);
+    }
+
+#ifdef GMX_LIB_MPI
+    if (mpi::isMaster())
+    {
+        fprintf(stderr, "master process: %d\n", getpid());
+    }
+    else
+    {
+        fprintf(stderr, "other process: %d\n", getpid());
+    }
+#endif
+
+}
 
 void
 Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
@@ -167,132 +203,133 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const int           pos = sel.posCount();
 
     rvec                dx;
-    real                r;
-    // double              sum = 0.0;
     int                 dsamples;
 
-    if (surfref_)   /* calculate distances relative reference set surface */
+    switch (rdfmode_)
     {
-        const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
-        const int           rpos = refsel.posCount();
-        real                s, min_s;
-
-        dsamples = pos;
-        min_s = GMX_REAL_MAX;
-
-        for (int j = 0; j < pos; j++)
+        case INTRA:
         {
-            const SelectionPosition &pj = sel.position(j);
+            // dsamples = (pos-1)*pos/2;
+            dh.startFrame(frnr, fr.time);
+
+            for (int i = 0; i < pos-1; i++)
+            {
+                const SelectionPosition &pi = sel.position(i);
+                for (int j = i+1; j < pos; j++)
+                {
+                    const SelectionPosition &pj = sel.position(j);
+                    if (pbc != NULL)
+                    {
+                        pbc_dx(pbc, pi.x(), pj.x(), dx);
+                    }
+                    else
+                    {
+                        rvec_sub(pi.x(), pj.x(), dx);
+                    }
+                    dh.setPoint(0, norm(dx));
+                    dh.finishPointSet();
+                }
+            }
+            dh.finishFrame();
+        } break;
+
+        case REFSEL:
+        {
+            const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
+            const int           rpos = refsel.posCount();
+            real                s;
+
+            dsamples = pos*rpos;
+            dh.startFrame(frnr, fr.time);
+
             for (int i = 0; i < rpos; i++)
             {
-                    const SelectionPosition &pi = refsel.position(i);
-                    if (pbc != NULL)
-                    {
-                        pbc_dx(pbc, pi.x(), pj.x(), dx);
-                    }
-                    else
-                    {
-                        rvec_sub(pi.x(), pj.x(), dx);
-                    }
+                const SelectionPosition &pi = refsel.position(i);
+                for (int j = 0; j < pos; j++)
+                {
+                        const SelectionPosition &pj = sel.position(j);
+                        if (pbc != NULL)
+                        {
+                            pbc_dx(pbc, pi.x(), pj.x(), dx);
+                        }
+                        else
+                        {
+                            rvec_sub(pi.x(), pj.x(), dx);
+                        }
 
-                    s = norm(dx);
-                    if (s < min_s && !(aasels_ && s < GMX_REAL_EPS))
-                    {
-                        min_s = s;
-                    }
+                        s = norm(dx);
+                        if (s > GMX_REAL_EPS)   // remove selection aliasing
+                        {
+                            dh.setPoint(0, s);
+                            dh.finishPointSet();
+                        }
+                        else
+                        {
+                            dsamples--;
+                        }
+                }
             }
-            if (min_s < GMX_REAL_MAX)
-            {
-                // sum += (double) min_s;
-                histm_->settings().finBin(s);
-            }
-            else
-            {
-                dsamples--;
-            }
-        }
-    }
-    else if (bRefSelectionSet_)   /* calculate distances relative reference set*/
-    {
-        const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
-        const int           rpos = refsel.posCount();
-        real                s;
+            dh.finishFrame();
+        } break;
 
-        dsamples = pos*rpos;
-
-        for (int i = 0; i < rpos; i++)
+        case SURFREF:
         {
-            const SelectionPosition &pi = refsel.position(i);
+            const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
+            const int           rpos = refsel.posCount();
+            real                s, min_s;
+
+            dsamples = pos;
+            dh.startFrame(frnr, fr.time);
+
             for (int j = 0; j < pos; j++)
             {
-                    const SelectionPosition &pj = sel.position(j);
-                    if (pbc != NULL)
-                    {
-                        pbc_dx(pbc, pi.x(), pj.x(), dx);
-                    }
-                    else
-                    {
-                        rvec_sub(pi.x(), pj.x(), dx);
-                    }
+                const SelectionPosition &pj = sel.position(j);
+                min_s = GMX_REAL_MAX;
+                for (int i = 0; i < rpos; i++)
+                {
+                        const SelectionPosition &pi = refsel.position(i);
+                        if (pbc != NULL)
+                        {
+                            pbc_dx(pbc, pi.x(), pj.x(), dx);
+                        }
+                        else
+                        {
+                            rvec_sub(pi.x(), pj.x(), dx);
+                        }
 
-                    s = norm(dx);
-                    if (aasels_ && s < GMX_REAL_EPS)
-                    {
-                        dsamples--;     // remove selection aliasing
-                    }
-                    else
-                    {
-                        sum += (double) s;
-                    }
+                        s = norm(dx);
+                        if (s < min_s && s > GMX_REAL_EPS)  // remove selection aliasing
+                        {
+                            min_s = s;
+                        }
+                }
+                if (min_s < GMX_REAL_MAX)
+                {
+                    dh.setPoint(0, min_s);
+                    dh.finishPointSet();
+                }
+                else
+                {
+                    dsamples--;
+                }
             }
-        }
+            dh.finishFrame();
+        } break;
     }
-    else    /* else calculate selection intra distances */
-    {
-        dsamples = (pos-1)*pos/2;
-
-        for (int i = 0; i < pos-1; i++)
-        {
-            const SelectionPosition &pi = sel.position(i);
-            for (int j = i+1; j < pos; j++)
-            {
-                    const SelectionPosition &pj = sel.position(j);
-                    if (pbc != NULL)
-                    {
-                        pbc_dx(pbc, pi.x(), pj.x(), dx);
-                    }
-                    else
-                    {
-                        rvec_sub(pi.x(), pj.x(), dx);
-                    }
-                    sum += (double) norm(dx);
-            }
-        }
-    }
-
-    if (dsamples > 0)
-        r = (real) (sum/dsamples);
-    else
-        r = 0.0;
-
-    dh.startFrame(frnr, fr.time);
-        dh.setPoint(0, r);
-    dh.finishFrame();
 }
 
 
 void
 Rdf::finishAnalysis(int /*nframes*/)
 {
+    histm_->averager().done();
 }
 
 
 void
 Rdf::writeOutput()
 {
-    fprintf(stderr, "Writing some output!");
-    // fprintf(stderr, "Average distance: %f\n", avem_->average(0));
-    // fprintf(stderr, "Std. deviation:   %f\n", avem_->stddev(0));
+    fprintf(stderr, "Writing some output!\n");
 }
 
 } // namespace analysismodules
