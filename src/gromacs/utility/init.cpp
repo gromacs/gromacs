@@ -10,7 +10,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -28,42 +28,55 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \brief
- * Implements the gmx wrapper binary.
+/*! \internal \file
+ * \brief
+ * Implements gmx::init
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Ryan Johnson <ryanphjohnson@gmail.com>
  */
-#include "gromacs/legacyheaders/copyrite.h"
-
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/init.h"
 
-#include "legacymodules.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#include "external/mpp/gmxmpp.h"
 
-int
-main(int argc, char *argv[])
+namespace gmx
 {
-    const gmx::ProgramInfo &info = gmx::init("gmx", argc, argv);
-    // TODO: With the addition of ProgramInfo above, this no longer needs to
-    // be here, so think where it would best go.
-    if (mpi::isMaster())
+namespace
+{
+/*! \brief
+ * Does nothing but call constructor and destructor functions.
+ */
+class GlobalInitializer
+{
+public:
+    /*! Global initialization constructor
+     *
+     * \param[in] argc  argc value passed to main().
+     * \param[in] argv  argv array passed to main().
+     */
+    GlobalInitializer (int &argc, char** &argv)
     {
-        CopyRight(stderr, argv[0]);
+#ifdef GMX_LIB_MPI
+        mpi::init (&argc, &argv);
+#endif
     }
-    try
+    ~GlobalInitializer()
     {
-        gmx::CommandLineModuleManager manager(info);
-        registerTrajectoryAnalysisModules(&manager);
-        registerLegacyModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        return manager.run(argc, argv);
+#ifdef GMX_LIB_MPI
+        mpi::finalize();
+#endif
     }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
+};
+} // end namespace
+const ProgramInfo &init(const char *realBinaryName, int& argc, char** &argv)
+{
+    static GlobalInitializer initSingleton(argc, argv);
+    return ProgramInfo::init(realBinaryName, argc, argv);
 }
+const ProgramInfo &init(int& argc, char** &argv)
+{
+    return init(NULL, argc, argv);
+}
+} // end gmx namespace

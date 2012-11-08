@@ -110,6 +110,15 @@ class TrajectoryAnalysisRunnerCommon
          */
         void initFirstFrame();
         /*! \brief
+         *  \returns total number of frames
+         */
+        size_t getTotalNumberOfFrames();
+        /*! \brief
+         *  \returns frame number currently loaded (undefined if no frame
+         *  loaded).
+         */
+        size_t getCurrentFrameNumber();
+        /*! \brief
          * Reads the next frame from the trajectory.
          *
          * \returns false if there were no more frames.
