@@ -6,7 +6,7 @@ Description: Gromacs library
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
 Requires: @PKG_FFT@ @PKG_XML@
-Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@ @PKG_DL_LIBS@
-Libs: -L${libdir} -lgromacs@GMX_LIBS_SUFFIX@ @PKG_FFT_LIBS@
+Libs.private: @CMAKE_THREAD_LIBS_INIT@ @PKG_DL_LIBS@
+Libs: -L${libdir} -lgmx@GMX_LIBS_SUFFIX@ -lm @PKG_FFT_LIBS@
 Cflags: -I${includedir} @PKG_CFLAGS@
 
