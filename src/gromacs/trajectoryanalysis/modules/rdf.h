@@ -46,11 +46,19 @@
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/selection/selection.h"
 
+
 namespace gmx
 {
 
 namespace analysismodules
 {
+
+// DONNO: where this should go?
+enum rdf_mode   {
+                INTRA,      // RDF for single selection
+                REFSEL,     // RDF for selection relative ref selection
+                SURFREF     // RDF for selection relative ref selection surface
+                };
 
 class Rdf : public TrajectoryAnalysisModule
 {
@@ -70,16 +78,15 @@ class Rdf : public TrajectoryAnalysisModule
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
-
         virtual void finishAnalysis(int nframes);
         virtual void writeOutput();
 
     private:
-        std::string                              fnDist_;
+        rdf_mode                                 rdfmode_;
+        std::string                              fnHist_;
         Selection                                sel_[1];
         Selection                                refsel_[1];
         bool                                     bRefSelectionSet_;
-        bool                                     aasels_;
         bool                                     surfref_;
         AnalysisData                             data_;
         // AnalysisDataAverageModulePointer         avem_;
