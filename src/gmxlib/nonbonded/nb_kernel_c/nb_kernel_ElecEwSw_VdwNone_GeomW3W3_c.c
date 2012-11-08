@@ -283,8 +283,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv00*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -334,8 +335,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv01*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -385,8 +387,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv02*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -436,8 +439,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv10*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -487,8 +491,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv11*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -538,8 +543,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv12*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -589,8 +595,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv20*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -640,8 +647,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv21*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -691,8 +699,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv22*velec*dsw;
             velec           *= sw;
-            felec            = felec*sw + velec*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -824,7 +833,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
     charge           = mdatoms->chargeA;
 
     sh_ewald         = fr->ic->sh_ewald;
-    ewtab            = fr->ic->tabq_coul_F;
+    ewtab            = fr->ic->tabq_coul_FDV0;
     ewtabscale       = fr->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
 
@@ -1008,7 +1017,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv00*velec*dsw;
 
             fscal            = felec;
 
@@ -1055,7 +1065,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv01*velec*dsw;
 
             fscal            = felec;
 
@@ -1102,7 +1113,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv02*velec*dsw;
 
             fscal            = felec;
 
@@ -1149,7 +1161,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv10*velec*dsw;
 
             fscal            = felec;
 
@@ -1196,7 +1209,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv11*velec*dsw;
 
             fscal            = felec;
 
@@ -1243,7 +1257,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv12*velec*dsw;
 
             fscal            = felec;
 
@@ -1290,7 +1305,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv20*velec*dsw;
 
             fscal            = felec;
 
@@ -1337,7 +1353,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv21*velec*dsw;
 
             fscal            = felec;
 
@@ -1384,7 +1401,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv22*velec*dsw;
 
             fscal            = felec;
 

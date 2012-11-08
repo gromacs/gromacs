@@ -175,7 +175,7 @@ void
 
     /* #if 'Ewald' in KERNEL_ELEC */
     sh_ewald         = fr->ic->sh_ewald;
-    /*     #if KERNEL_VF=='Force'  */
+    /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */
     ewtab            = fr->ic->tabq_coul_F;
     ewtabscale       = fr->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
@@ -682,6 +682,17 @@ void
             /*         #endif */
 
             /* Evaluate switch function */
+            /*         #if 'Force' in KERNEL_VF */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
+            felec            = felec*sw - rinv{I}{J}*velec*dsw;
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
+            fvdw             = fvdw*sw - rinv{I}{J}*vvdw*dsw;
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*         #endif */
             /*         #if 'Potential' in KERNEL_VF */
             /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
             velec           *= sw;
@@ -690,16 +701,6 @@ void
             /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
             vvdw            *= sw;
             /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #endif */
-            /*         #endif */
-            /*         #if 'Force' in KERNEL_VF */
-            /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
-            felec            = felec*sw + velec*dsw;
-            /*                 #define INNERFLOPS INNERFLOPS+3 */
-            /*             #endif */
-            /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
-            fvdw             = fvdw*sw + vvdw*dsw;
-            /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
             /*         #endif */
             /*     #endif */
