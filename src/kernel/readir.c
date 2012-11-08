@@ -988,10 +988,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
           if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD)
           {
               sprintf(err_buf,
-                      "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
-                      "If you want optimal energy conservation, consider using a potential modifier.",
-                      eel_names[ir->coulombtype]);
-              CHECK(ir->rcoulomb != ir->rlist);
+                      "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist,\n"
+                      "or rlistlong if nstcalclr=1. For optimal energy conservation,consider using\n"
+                      "a potential modifier.",eel_names[ir->coulombtype]);
+              if(ir->nstcalclr==1)
+              {
+                  CHECK(ir->rcoulomb != ir->rlist && ir->rcoulomb != ir->rlistlong);
+              }
+              else
+              {
+                  CHECK(ir->rcoulomb != ir->rlist);
+              }
           }
       }
   }
