@@ -70,7 +70,7 @@ Zleep::initOptions(Options *options,
                    TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
-        "Description: Zleep just zleeps a little while! :)"
+        "Zleep just zleeps a little while! :)",
     };
 
     options->setDescription(concatenateStrings(desc));
