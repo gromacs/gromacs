@@ -116,6 +116,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   t_fcdata   *fcd;
   time_t     start_t=0;
   bool       bVsites,bParVsites;
+  bool       bRerunMD;
   t_comm_vsites vsitecomm;
   int        i,m;
   char       *gro;
@@ -222,6 +223,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		    inputrec->bOptFFT,inputrec->ewald_geometry);
 
   /* Make molecules whole at start of run */
+  bRerunMD = (Flags & MD_RERUN) == MD_RERUN;
   if ((fr->ePBC != epbcNONE) && !bRerunMD)
   {
     do_pbc_first(stdlog,state->box,fr,graph,state->x);
