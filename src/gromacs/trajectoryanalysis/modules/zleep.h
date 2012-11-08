@@ -72,6 +72,7 @@ class Zleep : public TrajectoryAnalysisModule
 
     private:
         AnalysisData                     data_;
+        double                           zleep_time_;
 };
 
 } // namespace analysismodules

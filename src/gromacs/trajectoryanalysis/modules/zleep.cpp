@@ -70,11 +70,14 @@ Zleep::initOptions(Options *options,
                    TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
-        "Description: Zleep zleeps a little! :)"
+        "Description: Zleep just zleeps a little while! :)"
     };
 
     options->setDescription(concatenateStrings(desc));
 
+    options->addOption(DoubleOption("z").required()
+                        .store(&zleep_time_).timeValue()
+                        .description("Time spent zleeping. (us)"));
 }
 
 
@@ -92,8 +95,8 @@ Zleep::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     AnalysisDataHandle  dh = pdata->dataHandle(data_);
 
     dh.startFrame(frnr, fr.time);
-    usleep(5000);           // dont do any work! HAHA!!!
-    dh.setPoint(0, 1.0);    // just a flag.
+        usleep(zleep_time_);           // dont do any work! HAHA!!!
+        dh.setPoint(0, 1.0);    // just a flag.
     dh.finishFrame();
 }
 
