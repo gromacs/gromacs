@@ -200,7 +200,7 @@ mark_as_advanced(USE_VERSION_H)
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 
 if(UNIX)
-    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX platforms but it might not always work!" OFF)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static archives (Not available on non-*nix platforms and it will only work if static versions of external dependencies are available and found)!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
@@ -470,7 +470,7 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 if(UNIX)
     if(GMX_PREFER_STATIC_LIBS)
-        SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
         if(SHARED_LIBS_DEFAULT)
             if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
                 message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
