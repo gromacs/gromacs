@@ -305,6 +305,9 @@
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF
 
+/* Define to 1 if you have the sched_getaffinity() function */
+#cmakedefine HAVE_SCHED_GETAFFINITY
+
 /* Define to 1 if you have the sched_setaffinity() function */
 #cmakedefine HAVE_SCHED_SETAFFINITY
 
