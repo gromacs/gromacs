@@ -308,8 +308,9 @@ nb_kernel_ElecRFCut_VdwBhamSw_GeomW4W4_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            fvdw             = fvdw*sw - rinv00*vvdw*dsw;
             vvdw            *= sw;
-            fvdw             = fvdw*sw + vvdw*dsw;
 
             /* Update potential sums from outer loop */
             vvdwsum         += vvdw;
@@ -935,7 +936,8 @@ nb_kernel_ElecRFCut_VdwBhamSw_GeomW4W4_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            fvdw             = fvdw*sw + vvdw*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            fvdw             = fvdw*sw - rinv00*vvdw*dsw;
 
             fscal            = fvdw;
 

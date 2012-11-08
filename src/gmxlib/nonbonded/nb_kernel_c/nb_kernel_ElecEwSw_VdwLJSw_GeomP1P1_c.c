@@ -210,10 +210,11 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv00*velec*dsw;
+            fvdw             = fvdw*sw - rinv00*vvdw*dsw;
             velec           *= sw;
             vvdw            *= sw;
-            felec            = felec*sw + velec*dsw;
-            fvdw             = fvdw*sw + vvdw*dsw;
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
@@ -326,7 +327,7 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_c
     vdwtype          = mdatoms->typeA;
 
     sh_ewald         = fr->ic->sh_ewald;
-    ewtab            = fr->ic->tabq_coul_F;
+    ewtab            = fr->ic->tabq_coul_FDV0;
     ewtabscale       = fr->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
 
@@ -445,8 +446,9 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_c
             dsw              = d2*(swF2+d*(swF3+d*swF4));
 
             /* Evaluate switch function */
-            felec            = felec*sw + velec*dsw;
-            fvdw             = fvdw*sw + vvdw*dsw;
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            felec            = felec*sw - rinv00*velec*dsw;
+            fvdw             = fvdw*sw - rinv00*vvdw*dsw;
 
             fscal            = felec+fvdw;
 

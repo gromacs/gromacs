@@ -113,7 +113,7 @@ ModifierList = {
     'None'                    : [],
     'ExactCutoff'             : ['exactcutoff'],        # Zero the interaction outside the cutoff, used for reaction-field-zero
     'PotentialShift'          : ['shift','exactcutoff'],
-    'PotentialSwitch'         : ['r','switch','exactcutoff']
+    'PotentialSwitch'         : ['rinv','r','switch','exactcutoff']
 }
 
 

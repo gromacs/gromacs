@@ -296,8 +296,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                     d2               = d*d;
                     sw               = 1.0+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
                     dsw              = d2*(elec_swF2+d*(elec_swF3+d*elec_swF4));
+                    /* Apply switch function. Note that felec=f/r since it will be multiplied
+                     * by the i-j displacement vector. This means felec'=f'/r=-(v*sw)'/r=
+                     * -(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=felec*sw-v*dsw/r
+                     */
+                    felec            = felec*sw - rinv*velec*dsw;
+                    /* Once we have used velec to update felec we can modify velec too */
                     velec           *= sw;
-                    felec            = felec*sw + velec*dsw;
                 }
                 if(bExactElecCutoff)
                 {
@@ -394,8 +399,9 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                     d2               = d*d;
                     sw               = 1.0+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));
                     dsw              = d2*(vdw_swF2+d*(vdw_swF3+d*vdw_swF4));
+                    /* See coulomb interaction for the force-switch formula */
+                    fvdw             = fvdw*sw - rinv*vvdw*dsw;
                     vvdw            *= sw;
-                    fvdw             = fvdw*sw + vvdw*dsw;
                 }
                 if(bExactVdwCutoff)
                 {
