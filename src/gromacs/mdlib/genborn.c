@@ -1120,7 +1120,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 #else
             genborn_allvsall_calc_still_radii(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
 #endif
-            inc_nrnb(nrnb,eNR_BORN_AVA_RADII_STILL,cnt);
+            /* 13 flops in outer loop, 47 flops in inner loop */
+            inc_nrnb(nrnb,eNR_BORN_AVA_RADII_STILL,md->homenr*13+cnt*47);
         }
         else if(ir->gb_algorithm==egbHCT || ir->gb_algorithm==egbOBC)
         {
@@ -1140,14 +1141,13 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 #else
             genborn_allvsall_calc_hct_obc_radii(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
 #endif
-            inc_nrnb(nrnb,eNR_BORN_AVA_RADII_HCT_OBC,cnt);
+            /* 24 flops in outer loop, 183 in inner */
+            inc_nrnb(nrnb,eNR_BORN_AVA_RADII_HCT_OBC,md->homenr*24+cnt*183);
         }
         else
         {
             gmx_fatal(FARGS,"Bad gb algorithm for all-vs-all interactions");
         }
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,md->homenr);
-
         return 0;
     }
     
@@ -1279,17 +1279,18 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         switch(ir->gb_algorithm)
         {
             case egbSTILL:
-                inc_nrnb(nrnb,eNR_BORN_RADII_STILL,nl->nrj);
+                /* 17 flops per outer loop iteration, 47 flops per inner loop */
+                inc_nrnb(nrnb,eNR_BORN_RADII_STILL,nl->nri*17+nl->nrj*47);
                 break;
             case egbHCT:
             case egbOBC:
-                inc_nrnb(nrnb,eNR_BORN_RADII_HCT_OBC,nl->nrj);
+                /* 61 (assuming 10 for tanh) flops for outer loop iteration, 183 flops per inner loop */
+                inc_nrnb(nrnb,eNR_BORN_RADII_HCT_OBC,nl->nri*61+nl->nrj*183);
                 break;
                 
             default:
                 break;
         }
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,nl->nri);
     }
     
     return 0;        
@@ -1643,7 +1644,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
   
   /* Calculate the bonded GB-interactions using either table or analytical formula */
     enerd->term[F_GBPOL]       += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                                     fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+                                     fr->invsqrta,fr->dvda,fr->gbtab.data,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
     
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
     enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac);         
@@ -1678,8 +1679,8 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
         genborn_allvsall_calc_chainrule(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
 #endif
         cnt = md->homenr*(md->nr/2+1);
-        inc_nrnb(nrnb,eNR_BORN_AVA_CHAINRULE,cnt);
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,md->homenr);
+        /* 9 flops for outer loop, 15 for inner */
+        inc_nrnb(nrnb,eNR_BORN_AVA_CHAINRULE,md->homenr*9+cnt*15);
         return;
     }
     
@@ -1706,9 +1707,8 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 
     if(!fr->bAllvsAll)
     {
-        inc_nrnb(nrnb,eNR_BORN_CHAINRULE,fr->gblist.nrj);
-        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,fr->gblist.nri);
-
+        /* 9 flops for outer loop, 15 for inner */
+        inc_nrnb(nrnb,eNR_BORN_CHAINRULE,fr->gblist.nri*9+fr->gblist.nrj*15);
     }
 }
 

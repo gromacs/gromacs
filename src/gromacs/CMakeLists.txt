@@ -77,3 +77,19 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
         DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
         RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
         COMPONENT development)
+
+if (INSTALL_CUDART_LIB) #can be set manual by user
+    if (GMX_OPENMM OR GMX_GPU)
+        foreach(CUDA_LIB ${CUDA_LIBRARIES})
+            string(REGEX MATCH "cudart" IS_CUDART ${CUDA_LIB})
+            if(IS_CUDART) #libcuda should not be installed
+                #install also name-links (linker uses those)
+                file(GLOB CUDA_LIBS ${CUDA_LIB}*)
+                install(FILES ${CUDA_LIBS} DESTINATION
+                    ${LIB_INSTALL_DIR} COMPONENT libraries)
+            endif()
+        endforeach()
+    else()
+        message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_OPENMM or GMX_GPU")
+    endif()
+endif ()

@@ -567,13 +567,14 @@ void init_QMMMrec(t_commrec *cr,
       /* we now store the LJ C6 and C12 parameters in QM rec in case
        * we need to do an optimization 
        */
-      if(qr->qm[j]->bOPT || qr->qm[j]->bTS){
-	for(i=0;i<qm_nr;i++){
-	  qr->qm[j]->c6[i]  =  C6(fr->nbfp,mtop->ffparams.atnr,
-				  atom->type,atom->type)/c6au;
-	  qr->qm[j]->c12[i] = C12(fr->nbfp,mtop->ffparams.atnr,
-				  atom->type,atom->type)/c12au;
-	}
+      if(qr->qm[j]->bOPT || qr->qm[j]->bTS)
+      {
+          for(i=0;i<qm_nr;i++)
+          {
+              /* nbfp now includes the 6.0/12.0 derivative prefactors */
+              qr->qm[j]->c6[i]  =  C6(fr->nbfp,mtop->ffparams.atnr,atom->type,atom->type)/c6au/6.0;
+              qr->qm[j]->c12[i] = C12(fr->nbfp,mtop->ffparams.atnr,atom->type,atom->type)/c12au/12.0;
+          }
       }
       /* now we check for frontier QM atoms. These occur in pairs that
        * construct the vsite
@@ -628,18 +629,16 @@ void init_QMMMrec(t_commrec *cr,
     /* store QM atoms in the QMrec and initialise
      */
     init_QMrec(0,qr->qm[0],qm_nr,qm_arr,mtop,ir);
-    if(qr->qm[0]->bOPT || qr->qm[0]->bTS){
-      for(i=0;i<qm_nr;i++){
-	gmx_mtop_atomnr_to_atom(alook,qm_arr[i],&atom);
-	qr->qm[0]->c6[i]  =  C6(fr->nbfp,mtop->ffparams.atnr,
-				atom->type,atom->type)/c6au;
-	qr->qm[0]->c12[i] = C12(fr->nbfp,mtop->ffparams.atnr,
-				atom->type,atom->type)/c12au;
-      }
-      
+    if(qr->qm[0]->bOPT || qr->qm[0]->bTS)
+    {
+        for(i=0;i<qm_nr;i++)
+        {
+            gmx_mtop_atomnr_to_atom(alook,qm_arr[i],&atom);
+            /* nbfp now includes the 6.0/12.0 derivative prefactors */
+            qr->qm[0]->c6[i]  =  C6(fr->nbfp,mtop->ffparams.atnr,atom->type,atom->type)/c6au/6.0;
+            qr->qm[0]->c12[i] = C12(fr->nbfp,mtop->ffparams.atnr,atom->type,atom->type)/c12au/12.0;
+        }
     }
-    
-
 
     /* find frontier atoms and mark them true in the frontieratoms array.
      */
@@ -956,13 +955,11 @@ void update_QMMMrec(t_commrec *cr,
        */
       srenew(mm->c6,mm->nrMMatoms);
       srenew(mm->c12,mm->nrMMatoms);
-      for (i=0;i<mm->nrMMatoms;i++){
-	mm->c6[i]  = C6(fr->nbfp,top->idef.atnr,
-			md->typeA[mm->indexMM[i]],
-			md->typeA[mm->indexMM[i]])/c6au;
-	mm->c12[i] =C12(fr->nbfp,top->idef.atnr,
-			md->typeA[mm->indexMM[i]],
-			md->typeA[mm->indexMM[i]])/c12au;
+      for (i=0;i<mm->nrMMatoms;i++)
+      {
+          /* nbfp now includes the 6.0/12.0 derivative prefactors */
+          mm->c6[i]  = C6(fr->nbfp,top->idef.atnr,md->typeA[mm->indexMM[i]],md->typeA[mm->indexMM[i]])/c6au/6.0;
+          mm->c12[i] =C12(fr->nbfp,top->idef.atnr,md->typeA[mm->indexMM[i]],md->typeA[mm->indexMM[i]])/c12au/12.0;
       }
       punch_QMMM_excl(qr->qm[0],mm,&(top->excls));
     }

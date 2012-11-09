@@ -41,7 +41,7 @@
 #include <intrin.h>
 #endif
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 #include "nb_kernel_sse2_single.h"
 
 static nb_kernel_t *

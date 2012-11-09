@@ -75,6 +75,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+}
+#endif
 
 /** Continuation character. */
 #define CONTINUE    '\\'
@@ -131,7 +134,7 @@ char *gmx_strdup(const char *src);
 char *gmx_strndup(const char *src, int n);
 
 /*! \brief
- * Pattern matcing with wildcards.
+ * Pattern matching with wildcards.
  *
  * \param[in] pattern  Pattern to match against.
  * \param[in] str      String to match.
@@ -143,6 +146,27 @@ char *gmx_strndup(const char *src, int n);
  */
 int gmx_wcmatch(const char *pattern, const char *str);
 
+/** Magic hash initialization number from Dan J. Bernstein. */
+extern const unsigned int
+gmx_string_hash_init;
+
+/*! \brief
+ * Return a hash of the string according to Dan J. Bernsteins algorithm.
+ * 
+ * \param[in] s          String to calculate hash for.
+ * \param[in] hash_init  Initial (or previous) hash value.
+ * \returns   Updated hash value (hash_init combined with string hash).
+ *
+ * This routine only uses characters for which isalnum(c) is true,
+ * and all characters are converted to upper case.
+ * On the first invocation for a new string, use the constant
+ * gmx_string_hash_init for the second argument. If you want to create a hash
+ * corresponding to several concatenated strings, provide the returned hash
+ * value as hash_init for the second string, etc.
+ */
+unsigned int
+gmx_string_hash_func(const char *s, unsigned int hash_init);
+    
 /** Return value for gmx_wcmatch() when there is no match. */
 #define GMX_NO_WCMATCH 1
 
@@ -177,7 +201,7 @@ char **split(char sep,const char *str);
  *    errno is still set to ERANGE.
  */
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
-
+    
 #ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
