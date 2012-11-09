@@ -35,47 +35,27 @@
 #ifndef _nb_free_energy_h_
 #define _nb_free_energy_h_
 
+#include "nb_kernel.h"
 #include <typedefs.h>
 
 void
-gmx_nb_free_energy_kernel(int                  icoul,
-                          int                  ivdw,
-                          int                  nri,
-                          int *                iinr,
-                          int *                jindex,
-                          int *                jjnr,
-                          int *                shift,
-                          real *               shiftvec,
-                          real *               fshift,
-                          int *                gid,
-                          real *               x,
-                          real *               f,
-                          real *               chargeA,
-                          real *               chargeB,
-                          real                 facel,
-                          real                 krf,
-                          real                 crf,
-                          real                 ewc,
-                          real *               Vc,
-                          int *                typeA,
-                          int *                typeB,
-                          int                  ntype,
-                          real *               nbfp,
-                          real *               Vvdw,
-                          real                 tabscale,
-                          real *               VFtab,
-                          real                 lambda_coul,
-                          real                 lambda_vdw,
-                          real *               dvdl,
-                          real                 alpha_coul,
-                          real                 alpha_vdw,
-                          int                  lam_power,
-                          real                 sc_r_power,
-                          real                 sigma6_def,
-                          real                 sigma6_min,
-                          gmx_bool             bDoForces,
-                          int *                outeriter,
-                          int *                inneriter);
+gmx_nb_free_energy_kernel(t_nblist *                nlist,
+                          rvec *                    x,
+                          rvec *                    f,
+                          t_forcerec *              fr,
+                          t_mdatoms *               mdatoms,
+                          nb_kernel_data_t *        kernel_data,
+                          t_nrnb *                  nrnb);
+
+real
+nb_free_energy_evaluate_single(real r2,real sc_r_power,real alpha_coul,
+                               real alpha_vdw,real tabscale,real *vftab,
+                               real qqA, real c6A, real c12A, real qqB,
+                               real c6B, real c12B,real LFC[2], real LFV[2],real DLF[2],
+                               real lfac_coul[2], real lfac_vdw[2],real dlfac_coul[2],
+                               real dlfac_vdw[2],real sigma6_def, real sigma6_min,
+                               real sigma2_def, real sigma2_min,
+                               real *velectot, real *vvdwtot, real *dvdl);
 
 #endif
 

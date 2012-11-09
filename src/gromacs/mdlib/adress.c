@@ -543,12 +543,12 @@ adress_thermo_force(int                  start,
                 {
                     if (fr->n_adress_tf_grps > 0 ){
                         /* multi component tf is on, select the right table */
-                        ATFtab = fr->atf_tabs[mdatoms->tf_table_index[iatom]].tab;
+                        ATFtab = fr->atf_tabs[mdatoms->tf_table_index[iatom]].data;
                         tabscale = fr->atf_tabs[mdatoms->tf_table_index[iatom]].scale;
                     }
                     else {
                     /* just on component*/
-                        ATFtab = fr->atf_tabs[DEFAULT_TF_TABLE].tab;
+                        ATFtab = fr->atf_tabs[DEFAULT_TF_TABLE].data;
                         tabscale = fr->atf_tabs[DEFAULT_TF_TABLE].scale;
                     }
 

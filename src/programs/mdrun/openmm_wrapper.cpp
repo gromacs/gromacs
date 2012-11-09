@@ -668,23 +668,24 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     for (i = 0; i < natoms; i++)
     {
         /* i-i */
-        c12 = C12(nbfp, natoms, i, i);
-        c6  = C6(nbfp,  natoms, i, i);
+        /* nbfp now includes the 6.0/12.0 prefactors to save flops in kernels */
+        c12 = C12(nbfp, natoms, i, i)/12.0;
+        c6  = C6(nbfp,  natoms, i, i)/6.0;
         convert_c_12_6(c12, c6, &sigma_ii, &eps_ii);
 
         for (j = 0; j < i; j++)
         {
             /* i-j */
-            c12 = C12(nbfp, natoms, i, j);
-            c6  = C6(nbfp,  natoms, i, j);
+            c12 = C12(nbfp, natoms, i, j)/12.0;
+            c6  = C6(nbfp,  natoms, i, j)/6.0;
             convert_c_12_6(c12, c6, &sigma_ij, &eps_ij);
             /* j-i */
-            c12 = C12(nbfp, natoms, j, i);
-            c6  = C6(nbfp,  natoms, j, i);
+            c12 = C12(nbfp, natoms, j, i)/12.0;
+            c6  = C6(nbfp,  natoms, j, i)/6.0;
             convert_c_12_6(c12, c6, &sigma_ji, &eps_ji);
             /* j-j */
-            c12 = C12(nbfp, natoms, j, j);
-            c6  = C6(nbfp,  natoms, j, j);
+            c12 = C12(nbfp, natoms, j, j)/12.0;
+            c6  = C6(nbfp,  natoms, j, j)/6.0;
             convert_c_12_6(c12, c6, &sigma_jj, &eps_jj);
             /* OpenMM hardcoded combination rules */
             sigma_comb = COMBRULE_SIGMA(sigma_ii, sigma_jj);
@@ -1106,8 +1107,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
         for (int i = 0; i < numAtoms; ++i)
         {
-            double c12 = nbfp[types[i]*2*ntypes+types[i]*2+1];
-            double c6 = nbfp[types[i]*2*ntypes+types[i]*2];
+            /* nbfp now includes the 6.0/12.0 derivative prefactors to save flops in kernels*/
+            double c12 = nbfp[types[i]*2*ntypes+types[i]*2+1]/12.0;
+            double c6 = nbfp[types[i]*2*ntypes+types[i]*2]/6.0;
             double sigma=0.0, epsilon=0.0;
             convert_c_12_6(c12, c6, &sigma, &epsilon);
             nonbondedForce->addParticle(charges[i], sigma, epsilon);

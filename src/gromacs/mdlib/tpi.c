@@ -568,7 +568,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                          state->lambda,
                          NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,
                          GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
-                         (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
+                         (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DO_LR : 0) |
                          (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
                 cr->nnodes = nnodes;
                 bStateChanged = FALSE;

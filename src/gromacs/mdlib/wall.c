@@ -83,7 +83,7 @@ void make_wall_tables(FILE *fplog,const output_env_t oenv,
 	/* Since wall have no charge, we can compress the table */
 	for(i=0; i<=tab->n; i++)
 	  for(j=0; j<8; j++)
-	    tab->tab[8*i+j] = tab->tab[12*i+4+j];
+	    tab->data[8*i+j] = tab->data[12*i+4+j];
       }
     }
   }
@@ -167,8 +167,9 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
                 /* The wall energy groups are always at the end of the list */
                 ggid = gid[i]*ngid + ngid - nwall + w;
                 at = type[i];
-                Cd = nbfp[ntw[w]+2*at];
-                Cr = nbfp[ntw[w]+2*at+1];
+                /* nbfp now includes the 6.0/12.0 derivative prefactors */
+                Cd = nbfp[ntw[w]+2*at]/6.0;
+                Cr = nbfp[ntw[w]+2*at+1]/12.0;
                 if (!((Cd==0 && Cr==0) || (egp_flags[ggid] & EGP_EXCL)))
                 {
                     if (w == 0)
@@ -197,7 +198,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
                         }
                         tab = &(fr->wall_tab[w][gid[i]]);
                         tabscale = tab->scale;
-                        VFtab    = tab->tab;
+                        VFtab    = tab->data;
                         
                         rt    = r*tabscale;
                         n0    = rt;
