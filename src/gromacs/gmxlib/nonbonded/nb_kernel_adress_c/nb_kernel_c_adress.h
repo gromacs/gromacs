@@ -38,7 +38,7 @@
 
 #include <stdio.h>
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 void
 nb_kernel_setup_adress(FILE *fplog,nb_adress_kernel_t **list);

@@ -205,7 +205,7 @@ mark_as_advanced(GMX_GIT_VERSION_INFO)
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 
 if(UNIX)
-    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX platforms but it might not always work!" OFF)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static archives (not available on non-*nix platforms and it will only work if static versions of external dependencies are available and found)!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
@@ -399,6 +399,10 @@ check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 check_function_exists(sysconf           HAVE_SYSCONF)
 check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
+check_function_exists(sched_getaffinity HAVE_SCHED_GETAFFINITY)
+check_function_exists(rsqrt             HAVE_RSQRT)
+check_function_exists(rsqrtf            HAVE_RSQRTF)
+check_function_exists(sqrtf             HAVE_SQRTF)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -430,7 +434,9 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 if(UNIX)
     if(GMX_PREFER_STATIC_LIBS)
-        SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        # On Linux .a is the static library suffix, on Mac OS X .lib can also
+        # be used, so we'll add both to the preference list.
+        SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
         if(SHARED_LIBS_DEFAULT)
             if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
                 message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
@@ -669,6 +675,9 @@ gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
+
+include(gmxTestRestrict)
+gmx_test_restrict(RESTRICT_KEYWORD)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
@@ -1079,7 +1088,7 @@ if(TMP_RESULT)
 endif()
 string(LENGTH "${CC_VERSION}" len)
 if(len)
-    string(REGEX MATCH "[^\n]*" CC_VERSION "${CC_VERSION}")
+    string(REGEX MATCH "[^\n]+" CC_VERSION "${CC_VERSION}")
 endif()
 
 set(BUILD_COMPILER "@CMAKE_C_COMPILER@ @CMAKE_C_COMPILER_ID@ @CC_VERSION@")
