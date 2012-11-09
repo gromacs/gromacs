@@ -270,7 +270,7 @@ typedef struct {
   int  simulation_part; /* Used in checkpointing to separate chunks */
   gmx_large_int_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
   int  nstcalcenergy;	/* frequency of energy calc. and T/P coupl. upd.	*/
-  int  cutoff_scheme;   /* cut-off scheme: group or verlet              */
+  int  cutoff_scheme;   /* group or verlet cutoffs     */
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/
@@ -313,8 +313,9 @@ typedef struct {
   rvec posres_comB;     /* The B-state COM of the posres atoms          */
   int  andersen_seed;   /* Random seed for Andersen thermostat (obsolete) */
   real verletbuf_drift; /* Max. drift (kJ/mol/ps/atom) for list buffer  */
-  real rlist;		/* short range pairlist cut-off (nm)		*/
-  real rlistlong;	/* long range pairlist cut-off (nm)		*/
+  real rlist;		    /* short range pairlist cut-off (nm)		*/
+  real rlistlong;  	    /* long range pairlist cut-off (nm)		*/
+  int  nstcalclr;       /* Frequency of evaluating direct space long-range interactions */
   real rtpi;            /* Radius for test particle insertion           */
   int  coulombtype;	/* Type of electrostatics treatment             */
   int  coulomb_modifier; /* Modify the Coulomb interaction              */
