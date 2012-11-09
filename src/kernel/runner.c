@@ -807,7 +807,9 @@ static void check_cpu_affinity_set(FILE *fplog, const t_commrec *cr,
     }
 
     /* Before proceeding with the actual check, make sure that the number of
-     * detected CPUs is >= the CPUs in the current set. */
+     * detected CPUs is >= the CPUs in the current set.
+     * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
+#ifdef CPU_COUNT
     if (ncpus < CPU_COUNT(&mask_current))
     {
         if (debug)
@@ -817,6 +819,7 @@ static void check_cpu_affinity_set(FILE *fplog, const t_commrec *cr,
         }
         return;
     }
+#endif /* CPU_COUNT */
 
     bAllSet = TRUE;
     for (i = 0; (i < ncpus && i < CPU_SETSIZE); i++)
