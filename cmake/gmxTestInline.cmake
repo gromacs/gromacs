@@ -11,20 +11,20 @@ MACRO(GMX_TEST_INLINE VARIABLE)
 
         MESSAGE(STATUS "Checking for inline keyword")
 
-	FOREACH(KEYWORD "inline" "__inline__" "__inline")
+	FOREACH(KEYWORD "__inline__" "__inline" "inline")
             IF(NOT TEST_${VARIABLE})
                 TRY_COMPILE(TEST_${VARIABLE} "${CMAKE_BINARY_DIR}"    
                             "${CMAKE_SOURCE_DIR}/cmake/TestInline.c"
                             COMPILE_DEFINITIONS "-DTESTINLINEDEF=${KEYWORD}" )
-                SET(CHK_INLINE_KEYWORD ${KEYWORD})
-            ENDIF(NOT TEST_${VARIABLE})
+                SET(LAST_INLINE_KEYWORD ${KEYWORD})
+	    ENDIF(NOT TEST_${VARIABLE})
         ENDFOREACH(KEYWORD)
-             
+
         IF(TEST_${VARIABLE})
-            SET(${VARIABLE} ${KEYWORD})
-            MESSAGE(STATUS "Checking for inline keyword - ${CHK_INLINE_KEYWORD}")
+            SET(${VARIABLE} ${LAST_INLINE_KEYWORD} CACHE INTERNAL "Inline keyword" FORCE)
+            MESSAGE(STATUS "Checking for inline keyword - ${LAST_INLINE_KEYWORD}")
         ELSE(TEST_${VARIABLE})
-	    SET(${VARIABLE} " ")
+	    SET(${VARIABLE} " " CACHE INTERNAL "Inline keyword" FORCE)
             MESSAGE(STATUS "Checking for inline keyword - not found")
         ENDIF(TEST_${VARIABLE})
 

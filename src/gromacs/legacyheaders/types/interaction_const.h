@@ -40,8 +40,6 @@
 extern "C" {
 #endif
 
-enum { tableformatNONE, tableformatF, tableformatFDV0 };
-
 typedef struct {
     /* VdW */
     real rvdw;
@@ -55,7 +53,8 @@ typedef struct {
 
     /* Cut-off */
     real rlist;
-
+    real rlistlong;
+    
     /* PME/Ewald */
     real ewaldcoeff;
     real sh_ewald;   /* For shifting the Ewald potential */
@@ -72,7 +71,6 @@ typedef struct {
     /* Force/energy interpolation tables, linear in force, quadratic in V */
     real tabq_scale;
     int  tabq_size;
-    int  tabq_format;
     /* Coulomb force table, size of array is tabq_size (when used) */
     real *tabq_coul_F;
     /* Coulomb energy table, size of array is tabq_size (when used) */

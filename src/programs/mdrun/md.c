@@ -201,6 +201,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_bool        bAppend;
     gmx_bool        bResetCountersHalfMaxH=FALSE;
     gmx_bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
+    gmx_bool        bUpdateDoLR;
     real        mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
@@ -235,12 +236,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if(MASTER(cr))
     {
-        fprintf(stderr,
-                "\n* WARNING * WARNING * WARNING * WARNING * WARNING * WARNING *\n"
-                "We have just committed the new CPU detection code in this branch,\n"
-                "and will commit new SSE/AVX kernels in a few days. However, this\n"
-                "means that currently only the NxN kernels are accelerated!\n"
-                "In the mean time, you might want to avoid production runs in 4.6.\n\n");
+        gmx_warning("New C kernels (and force-only) kernels are now enabled,\n"
+                    "but it will be another couple of days for SSE/AVX kernels.\n\n");
     }
 
 #ifdef GMX_FAHCORE
@@ -521,8 +518,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* PME tuning is only supported with GPUs or PME nodes and not with rerun */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
-        fr->cutoff_scheme == ecutsVERLET &&
-        (fr->nbv->bUseGPU || !(cr->duty & DUTY_PME)) &&
+        ( (fr->cutoff_scheme == ecutsVERLET && fr->nbv->bUseGPU) || !(cr->duty & DUTY_PME)) &&
         !bRerunMD)
     {
         pme_loadbal_init(&pme_loadbal,ir,state->box,fr->ic,fr->pmedata);
@@ -1101,12 +1097,19 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
                        GMX_FORCE_ALLFORCES |
-                       (bNStList ? GMX_FORCE_DOLR : 0) |
                        GMX_FORCE_SEPLRF |
                        (bCalcVir ? GMX_FORCE_VIRIAL : 0) |
                        (bCalcEner ? GMX_FORCE_ENERGY : 0) |
                        (bDoFEP ? GMX_FORCE_DHDL : 0)
             );
+
+        if(fr->bTwinRange)
+        {
+            if(do_per_step(step,ir->nstcalclr))
+            {
+                force_flags |= GMX_FORCE_DO_LR;
+            }
+        }
         
         if (shellfc)
         {
@@ -1172,8 +1175,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ1);            
             }
 
+            /* If we are using twin-range interactions where the long-range component
+             * is only evaluated every nstcalclr>1 steps, we should do a special update
+             * step to combine the long-range forces on these steps.
+             * For nstcalclr=1 this is not done, since the forces would have been added
+             * directly to the short-range forces already.
+             */
+            bUpdateDoLR = (fr->bTwinRange && do_per_step(step,ir->nstcalclr));
+            
             update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,
-                          f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                          f,bUpdateDoLR,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                           cr,nrnb,constr,&top->idef);
             
@@ -1637,9 +1648,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
                 if (bVV)
                 {
+                    bUpdateDoLR = (fr->bTwinRange && do_per_step(step,ir->nstcalclr));
+
                     /* velocity half-step update */
                     update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
-                                  fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                                  bUpdateDoLR,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,
                                   cr,nrnb,constr,&top->idef);
                 }
@@ -1653,9 +1666,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     copy_rvecn(state->x,cbuf,0,state->natoms);
                 }
-                
+                bUpdateDoLR = (fr->bTwinRange && do_per_step(step,ir->nstcalclr));
+
                 update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
-                              fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                              bUpdateDoLR,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                 wallcycle_stop(wcycle,ewcUPDATE);
 
@@ -1680,8 +1694,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
+                    bUpdateDoLR = (fr->bTwinRange && do_per_step(step,ir->nstcalclr));
+
                     update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
-                                  fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                                  bUpdateDoLR,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                     wallcycle_stop(wcycle,ewcUPDATE);
 
@@ -2051,13 +2067,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                          fr->ic,fr->nbv,&fr->pmedata,
                                          step);
 
+                    /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
                     fr->ewaldcoeff = fr->ic->ewaldcoeff;
+                    fr->rlist      = fr->ic->rlist;
+                    fr->rlistlong  = fr->ic->rlistlong;
+                    fr->rcoulomb   = fr->ic->rcoulomb;
+                    fr->rvdw       = fr->ic->rvdw;
                 }
-
                 cycles_pmes = 0;
             }
         }
-        
+
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
             gs.set[eglsRESETCOUNTERS] != 0)
         {
