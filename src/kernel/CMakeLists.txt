@@ -142,7 +142,7 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
                 #install also name-links (linker uses those)
                 file(GLOB CUDA_LIBS ${CUDA_LIB}*)
                 install(FILES ${CUDA_LIBS} DESTINATION
-                    ${LIB_INSTALL_DIR} COMPONENT mdrun)
+                    ${LIB_INSTALL_DIR} COMPONENT libraries)
             endif()
         endforeach()
     else()
