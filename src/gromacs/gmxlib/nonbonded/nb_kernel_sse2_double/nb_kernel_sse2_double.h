@@ -27,7 +27,7 @@
 
 #include <types/simple.h>
 
-#include "../nb_kerneltype.h"
+#include "../nb_kernel.h"
 
 #ifdef __cplusplus
 extern "C" {

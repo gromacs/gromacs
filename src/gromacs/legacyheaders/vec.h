@@ -208,13 +208,25 @@ static real gmx_invsqrt(real x)
 #define INVSQRT_DONE
 #endif /* powerpc_invsqrt */
 
-
 #ifndef INVSQRT_DONE
-#define gmx_invsqrt(x) (1.0f/sqrt(x))
+#    ifdef GMX_DOUBLE
+#        ifdef HAVE_RSQRT
+#            define gmx_invsqrt(x)     rsqrt(x)
+#        else
+#            define gmx_invsqrt(x)     (1.0/sqrt(x))
+#        endif
+#    else /* single */
+#        ifdef HAVE_RSQRTF
+#            define gmx_invsqrt(x)     rsqrtf(x)
+#        elif defined HAVE_RSQRT
+#            define gmx_invsqrt(x)     rsqrt(x)
+#        elif defined HAVE_SQRTF
+#            define gmx_invsqrt(x)     (1.0/sqrtf(x))
+#        else
+#            define gmx_invsqrt(x)     (1.0/sqrt(x))
+#        endif
+#    endif
 #endif
-
-
-
 
 
 static real sqr(real x)
@@ -516,8 +528,10 @@ static gmx_inline real norm(const rvec a)
    * float/double case here instead to avoid gmx_sqrt() being accidentally used. */
 #ifdef GMX_DOUBLE
   return dnorm(a);
-#else
+#elif defined HAVE_SQRTF
   return sqrtf(iprod(a, a));
+#else
+  return sqrt(iprod(a, a));
 #endif
 }
 
