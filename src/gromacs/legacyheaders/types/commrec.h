@@ -259,10 +259,6 @@ typedef struct {
 } gmx_nodecomm_t;
 
 typedef struct {
-	int dummy;
-} gmx_commrec_thread_t;
-
-typedef struct {
   /* The nodeids in one sim are numbered sequentially from 0.
    * All communication within some simulation should happen
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
@@ -281,10 +277,6 @@ typedef struct {
   int nodeid_group_intra;   /* ID within my group (separate 0-n IDs for PP/PME-only nodes) */
   int nnodes_intra;         /* total number of intra nodes */
   int nnodes_pp_intra;      /* total number of PP intra nodes */
-
-#ifdef GMX_THREAD_SHM_FDECOMP
-  gmx_commrec_thread_t thread;
-#endif
 
   gmx_nodecomm_t nc;
   

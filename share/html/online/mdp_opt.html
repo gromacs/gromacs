@@ -443,9 +443,10 @@ while 99.99% of the particles are fine.
 </dl></dd>
 
 <dt><b>nstcalclr: (-1) [steps]</b></dt>
-<dd><dl compact>
-Controls the period between calculations of long-range forces. Useful
-only with <b>cutoff-scheme</b>=<b>group</b>.
+<dd>
+Controls the period between calculations of long-range forces when
+using the group cut-off scheme.
+<dl compact>
 <dt><b>1</b></dt>
 <dd>Calculate the long-range forces every single step. This is useful
 to have separate neighbor lists with buffers for electrostatics and Van
@@ -465,6 +466,7 @@ vary slower than electrostatics.</dd>
 <dd>Calculate long-range forces on steps where neighbor searching is
 performed. While this is the default value, you might want to consider
 updating the long-range forces more frequently.</dd>
+</dl>
 Note that twin-range force evaluation might be enabled automatically
 by PP-PME load balancing. This is done in order to maintain the chosen
 Van der Waals interaction radius even if the load balancing is
@@ -473,7 +475,7 @@ specifies twin-range interactions (e.g. to evaluate Lennard-Jones
 interactions with a longer cutoff than the PME electrostatics every
 2-3 steps), the load balancing will have also a small effect on
 Lennard-Jones, since the short-range cutoff (inside which forces are
-evaluated every step) is changed.</dl>
+evaluated every step) is changed.
 </dd>
 
 
@@ -1106,7 +1108,7 @@ the process ID number.
 <h3>Bonds</h3>
 
 <dl>
-<dt><b>constraints<!--QuietIdx-->constraint algorithms<!--QuietEIdx-->:</b></dt>
+<dt><b>constraints<!--QuietIdx-->constraint algorithms<!--EQuietIdx-->:</b></dt>
 <dd><dl compact>
 <dt><b>none</b></dt>
 <dd>No constraints except for those defined explicitly in the topology,
