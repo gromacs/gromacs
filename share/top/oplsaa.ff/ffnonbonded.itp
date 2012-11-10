@@ -823,10 +823,7 @@
  MCH3B      MCH3B   0	0.00000     0.000       A    0.00000e+00  0.00000e+00
  MW         MW      0	0.00000     0.000       A    0.00000e+00  0.00000e+00
 ; These ion atomtypes are NOT part of OPLS, but since they are
-; needed for some proteins or tutorial Argon simulations we have added them.
+; needed for some proteins.
  Cu2+       Cu2+   29	63.54600     2.000       A    2.08470e-01  4.76976e+00
- Fe2+       Fe2+   26	55.84700     2.000       A    2.59400e-01  5.43920e-02
- Zn2+       Zn2+   30	65.37000     2.000       A    1.95200e-01  9.78219e-01
- Ar         Ar     18	39.94800     0.000       A    3.41000e-01  2.74580e-02
 ; Added by DvdS 05/2005 copied from GROMACS force field.       
  SI         SI     14	28.08000     0.000       A    3.38550e-01  2.44704e+00
