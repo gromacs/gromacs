@@ -443,9 +443,10 @@ while 99.99% of the particles are fine.
 </dl></dd>
 
 <dt><b>nstcalclr: (-1) [steps]</b></dt>
-<dd><dl compact>
-Controls the period between calculations of long-range forces. Useful
-only with <b>cutoff-scheme</b>=<b>group</b>.
+<dd>
+Controls the period between calculations of long-range forces when
+using the group cut-off scheme.
+<dl compact>
 <dt><b>1</b></dt>
 <dd>Calculate the long-range forces every single step. This is useful
 to have separate neighbor lists with buffers for electrostatics and Van
@@ -1106,7 +1107,7 @@ the process ID number.
 <h3>Bonds</h3>
 
 <dl>
-<dt><b>constraints<!--QuietIdx-->constraint algorithms<!--QuietEIdx-->:</b></dt>
+<dt><b>constraints<!--QuietIdx-->constraint algorithms<!--EQuietIdx-->:</b></dt>
 <dd><dl compact>
 <dt><b>none</b></dt>
 <dd>No constraints except for those defined explicitly in the topology,
