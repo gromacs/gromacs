@@ -225,7 +225,6 @@ int main(int argc,char *argv[])
   static gmx_bool bSort=FALSE;
   static int  ewald_geometry=eewg3D;
   static int  nnodes=1;
-  static int  nthreads=1;
   static int  pme_order=0;
   static rvec grid = { -1, -1, -1 };
   static real rc   = 0.0;
@@ -234,8 +233,6 @@ int main(int argc,char *argv[])
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for [TT]grompp[tt]" },
-    { "-nt",      FALSE, etINT, {&nthreads},
-      "Number of threads to start on each node" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-sort",    FALSE, etBOOL,{&bSort},  
@@ -286,10 +283,6 @@ int main(int argc,char *argv[])
 #ifndef GMX_MPI
   if (nnodes > 1) 
     gmx_fatal(FARGS,"GROMACS compiled without MPI support - can't do parallel runs");
-#endif
-#ifndef GMX_THREAD_SHM_FDECOMP
-  if(nthreads > 1)
-    gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif
 
   /* Open log files on all processors */

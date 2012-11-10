@@ -37,10 +37,6 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_THREAD_SHM_FDECOMP
-#include <pthread.h> 
-#endif
-
 #include <math.h>
 #include <string.h>
 #include "sysstuff.h"
@@ -169,12 +165,6 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,t_nblist *nl_lr,
             fprintf(debug,"Initiating neighbourlist (ielec=%d, ivdw=%d, free=%d) for %s interactions,\nwith %d SR, %d LR atoms.\n",
                     nl->ielec,nl->ivdw,nl->free_energy,gmx_nblist_geometry_names[nl->igeometry],maxsr,maxlr);
         }
-
-#ifdef GMX_THREAD_SHM_FDECOMP
-        nl->counter = 0;
-        snew(nl->mtx,1);
-        pthread_mutex_init(nl->mtx,NULL);
-#endif
     }
 }
 

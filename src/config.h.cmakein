@@ -137,9 +137,6 @@
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
 
-/* Use old threading (domain decomp force calc) code */
-#cmakedefine GMX_THREAD_SHM_FDECOMP 
-
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
 
