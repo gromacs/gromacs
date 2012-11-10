@@ -12,14 +12,6 @@ CU          1
 
 [ moleculetype ]
 ; molname   nrexcl
-ZN          1
-
-[ atoms ]
-; id    at type res nr  residu name at name  cg nr  charge   mass
-1       Zn2+    1       ZN          ZN       1      2        65.37000
-
-[ moleculetype ]
-; molname   nrexcl
 MG          1
 
 [ atoms ]
