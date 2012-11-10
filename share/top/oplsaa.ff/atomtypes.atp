@@ -826,11 +826,5 @@
  MCH3B       0.0      ; Dummy mass in rigid tetraedrical CH3 group
  MW          0.0      ; Dummy mass in rigid tyrosine rings
  DUM         0.0      ; Dummy mass in TIP4P etc.
-; These ion atomtypes are NOT part of OPLS, but since they are
-; needed for some proteins we have added them.
- Cu2+       63.546    ; Copper. See Inorg. Chem. 40, 5223 (2001).
- Fe2+       55.847    ; Iron 
- Zn2+       65.370    ; Zinc 
- Ar         39.948    ; Argon
 ; Added by DvdS 05/2005 copied from GROMACS force field.       
  SI         28.080    ; Silicium in Glass etc.
