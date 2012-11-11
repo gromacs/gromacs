@@ -157,6 +157,9 @@ int
 gmx_kinetics(int argc,char *argv[]);
 
 int 
+gmx_make_edi(int argc,char *argv[]);
+
+int 
 gmx_mindist(int argc,char *argv[]);
 
 int 
@@ -224,6 +227,9 @@ gmx_sgangle(int argc,char *argv[]);
 
 int 
 gmx_sham(int argc,char *argv[]);
+
+int 
+gmx_sigeps(int argc,char *argv[]);
 
 int 
 gmx_sorient(int argc,char *argv[]);

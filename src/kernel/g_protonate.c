@@ -50,7 +50,7 @@
 #include "vec.h"
 #include "hackblock.h"
 
-int main (int argc,char *argv[])
+int cmain (int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]g_protonate[tt] reads (a) conformation(s) and adds all missing",
