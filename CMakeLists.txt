@@ -794,6 +794,15 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
         message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
     endif(NOT HAVE_IMMINTRIN_H)
 
+    if(${GMX_ACCELERATION} STREQUAL "AVX_256")
+        try_compile(TEST_AVX ${CMAKE_BINARY_DIR}
+            "${CMAKE_SOURCE_DIR}/cmake/TestAVX.c"
+            COMPILE_DEFINITIONS "${GROMACS_C_FLAGS}")
+        if(NOT TEST_AVX)
+            message(FATAL_ERROR "Cannot compile AVX intrinsics. Consider switching compiler.")
+        endif()
+    endif()
+
     # AMD says we should include x86intrin.h for FMA support, but MSVC seems to do fine without it, so don't require it.
     check_include_file(x86intrin.h HAVE_X86INTRIN_H ${GROMACS_C_FLAGS})
 
