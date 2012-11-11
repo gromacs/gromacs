@@ -52,7 +52,7 @@
 #include "xmdrun.h"
 #include "vec.h"
 
-int main(int argc,char *argv[])
+int cmain(int argc,char *argv[])
 {
   static char *desc[] = {
     "The ffscan program performs a single point energy and force calculation",
