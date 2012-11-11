@@ -56,7 +56,7 @@
 /* afm stuf */
 #include "pull.h"
 
-int main(int argc,char *argv[])
+int cmain(int argc,char *argv[])
 {
   const char *desc[] = {
  #ifdef GMX_OPENMM

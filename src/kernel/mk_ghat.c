@@ -392,7 +392,7 @@ void read_params(char *fn,t_inputrec *ir,rvec boxs)
     boxs[m] = box[m][m];
 }
       
-int main(int argc,char *argv[]) 
+int cmain(int argc,char *argv[])
 {
   /* FILE   *fp; */
   const  real gold=0.38197;
