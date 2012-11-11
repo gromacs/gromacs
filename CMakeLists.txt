@@ -810,6 +810,15 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
         message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
     endif(NOT HAVE_IMMINTRIN_H)
 
+    if(${GMX_ACCELERATION} STREQUAL "AVX_256")
+        try_compile(TEST_AVX ${CMAKE_BINARY_DIR}
+            "${CMAKE_SOURCE_DIR}/cmake/TestAVX.c"
+            COMPILE_DEFINITIONS "${GROMACS_C_FLAGS}")
+        if(NOT TEST_AVX)
+            message(FATAL_ERROR "Cannot compile AVX intrinsics. Consider switching compiler.")
+        endif()
+    endif()
+
     # GCC requires x86intrin.h for FMA support. MSVC 2010 requires intrin.h for FMA support.
     check_include_file(x86intrin.h HAVE_X86INTRIN_H ${GROMACS_C_FLAGS})
     check_include_file(intrin.h HAVE_INTRIN_H ${GROMACS_C_FLAGS})
