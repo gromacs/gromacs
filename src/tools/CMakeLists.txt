@@ -31,7 +31,7 @@ add_library(gmxana
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
             gmx_membed.c    gmx_pme_error.c gmx_options.c   gmx_dos.c
             gmx_hydorder.c  gmx_densorder.c powerspect.c    dens_filter.c
-            binsearch.c     gmx_dyecoupl.c
+            binsearch.c     gmx_dyecoupl.c  gmx_make_edi.c
             )
 
 
@@ -65,6 +65,9 @@ set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
 
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
+    if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
+        set_source_files_properties(${TOOL}.c PROPERTIES LANGUAGE CXX)
+    endif()
     add_executable(${TOOL} ${TOOL}.c)
     target_link_libraries(${TOOL} gmxana ${OpenMP_LINKER_FLAGS})
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")

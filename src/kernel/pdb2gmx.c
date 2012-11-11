@@ -991,7 +991,7 @@ typedef struct {
   rvec *x;
 } t_chain;
 
-int main(int argc, char *argv[])
+int cmain(int argc, char *argv[])
 {
   const char *desc[] = {
     "This program reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",

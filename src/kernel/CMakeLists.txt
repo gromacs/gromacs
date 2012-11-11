@@ -63,6 +63,10 @@ if(GMX_OPENMM)
     set(GMX_OPENMM_LIBRARIES openmm_api_wrapper ${OpenMM_LIBRARIES})   
 endif(GMX_OPENMM)
 
+if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
+    set_source_files_properties(main.c PROPERTIES LANGUAGE CXX)
+endif()
+
 if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
 else(GMX_FAHCORE)
@@ -73,7 +77,7 @@ set(GMX_KERNEL_PROGRAMS
     grompp tpbconv pdb2gmx g_protonate g_luck gmxdump g_x2top gmxcheck)
 
 foreach(PROGRAM ${GMX_KERNEL_PROGRAMS})
-    add_executable(${PROGRAM} ${PROGRAM}.c)
+    add_executable(${PROGRAM} ${PROGRAM}.c main.c)
     if (NOT ${PROGRAM} STREQUAL "g_luck")
         gmx_add_man_page(${PROGRAM})
     endif()
@@ -81,7 +85,7 @@ foreach(PROGRAM ${GMX_KERNEL_PROGRAMS})
     set_target_properties(${PROGRAM} PROPERTIES OUTPUT_NAME "${PROGRAM}${GMX_BINARY_SUFFIX}")
 endforeach()
 
-add_executable(mdrun ${MDRUN_SOURCES})
+add_executable(mdrun ${MDRUN_SOURCES} main.c)
 gmx_add_man_page(mdrun)
 target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
 set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}" COMPILE_FLAGS "${OpenMP_C_FLAGS}")
