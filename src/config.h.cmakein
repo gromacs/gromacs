@@ -356,6 +356,9 @@
 /* Define to 1 if you have the <x86intrin.h> header file */
 #cmakedefine HAVE_X86INTRIN_H
 
+/* Define to 1 if you have the <intrin.h> header file */
+#cmakedefine HAVE_INTRIN_H
+
 /* Define to 1 if you have the <sched.h> header */
 #cmakedefine HAVE_SCHED_H
 

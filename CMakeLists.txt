@@ -787,6 +787,20 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
         endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
     endif()
 
+    # Set the FMA4 flags (MSVC doesn't require any)
+    if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
+        GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" GROMACS_C_FLAGS)
+        if (NOT GNU_FMA_CFLAG)
+            message(WARNING "No C FMA4 flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
+        endif(NOT GNU_FMA_CFLAG)
+        if (CMAKE_CXX_COMPILER_LOADED)
+            GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" GROMACS_CXX_FLAGS)
+            if (NOT GNU_FMA_CXXFLAG)
+                message(WARNING "No C++ FMA flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
+            endif (NOT GNU_FMA_CXXFLAG)
+        endif()
+    endif()
+
     # Only test the header after we have tried to add the flag for AVX support
     check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${GROMACS_C_FLAGS})
 
@@ -794,8 +808,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
         message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
     endif(NOT HAVE_IMMINTRIN_H)
 
-    # AMD says we should include x86intrin.h for FMA support, but MSVC seems to do fine without it, so don't require it.
+    # GCC requires x86intrin.h for FMA support. MSVC 2010 requires intrin.h for FMA support.
     check_include_file(x86intrin.h HAVE_X86INTRIN_H ${GROMACS_C_FLAGS})
+    check_include_file(intrin.h HAVE_INTRIN_H ${GROMACS_C_FLAGS})
 
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
