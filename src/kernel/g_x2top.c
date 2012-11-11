@@ -343,7 +343,7 @@ static void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
   gmx_fio_fclose(fp);
 }
 
-int main(int argc, char *argv[])
+int cmain(int argc, char *argv[])
 {
   const char *desc[] = {
     "[TT]g_x2top[tt] generates a primitive topology from a coordinate file.",

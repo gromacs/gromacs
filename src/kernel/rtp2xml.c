@@ -194,7 +194,7 @@ static void do_specbonds(FILE *fp,int indent)
   fprintf(fp,"\n");
 }
 
-int main(int argc, char *argv[])
+int cmain(int argc, char *argv[])
 {
   static char *desc[] = {
     "This program reads an [TT].rtp[tt] file and dumps an [TT].xml[tt] file."
