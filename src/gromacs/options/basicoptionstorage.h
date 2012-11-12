@@ -79,7 +79,7 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
     private:
         virtual void convertValue(const std::string &value);
 
-        BooleanOptionInfo       info_;
+        BooleanOptionInfo info_;
 };
 
 /*! \internal \brief
@@ -103,7 +103,7 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
         virtual void convertValue(const std::string &value);
         virtual void processSetValues(ValueList *values);
 
-        IntegerOptionInfo       info_;
+        IntegerOptionInfo info_;
 };
 
 /*! \internal \brief
@@ -129,9 +129,9 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
-        DoubleOptionInfo        info_;
-        bool                    bTime_;
-        double                  factor_;
+        DoubleOptionInfo info_;
+        bool bTime_;
+        double factor_;
 };
 
 /*! \internal \brief
@@ -151,8 +151,8 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         virtual void convertValue(const std::string &value);
         virtual void refreshValues();
 
-        StringOptionInfo        info_;
-        ValueList               allowed_;
+        StringOptionInfo info_;
+        ValueList allowed_;
         int                    *enumIndexStore_;
 };
 

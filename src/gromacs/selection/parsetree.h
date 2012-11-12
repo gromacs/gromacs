@@ -86,10 +86,10 @@ class SelectionParserValue;
 
 //! Container for a list of SelectionParserValue objects.
 typedef std::list<SelectionParserValue>
-        SelectionParserValueList;
+SelectionParserValueList;
 //! Smart pointer type for managing a SelectionParserValueList.
 typedef gmx::gmx_unique_ptr<SelectionParserValueList>::type
-        SelectionParserValueListPointer;
+SelectionParserValueListPointer;
 
 /*! \internal \brief
  * Describes a parsed value, possibly resulting from expression evaluation.
@@ -221,30 +221,33 @@ class SelectionParserValue
 
         // TODO: boost::any or similar could be nicer for the implementation.
         //! Type of the value.
-        e_selvalue_t            type;
+        e_selvalue_t type;
         //! Expression pointer if the value is the result of an expression.
         gmx::SelectionTreeElementPointer expr;
         //! String value for \a type ::STR_VALUE.
-        std::string             str;
+        std::string str;
         //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
         union {
             //! The integer value/range (\a type ::INT_VALUE).
             struct {
                 //! Beginning of the range.
-                int             i1;
+                int i1;
                 //! End of the range; equals \a i1 for a single integer.
-                int             i2;
-            }                   i;
+                int i2;
+            }
+            i;
             //! The real value/range (\a type ::REAL_VALUE).
             struct {
                 //! Beginning of the range.
-                real            r1;
+                real r1;
                 //! End of the range; equals \a r1 for a single number.
-                real            r2;
-            }                   r;
+                real r2;
+            }
+            r;
             //! The position value (\a type ::POS_VALUE).
-            rvec                x;
-        }                       u;
+            rvec x;
+        }
+        u;
 
     private:
         /*! \brief
@@ -265,10 +268,10 @@ class SelectionParserParameter;
 
 //! Container for a list of SelectionParserParameter objects.
 typedef std::list<SelectionParserParameter>
-        SelectionParserParameterList;
+SelectionParserParameterList;
 //! Smart pointer type for managing a SelectionParserParameterList.
 typedef gmx::gmx_unique_ptr<SelectionParserParameterList>::type
-        SelectionParserParameterListPointer;
+SelectionParserParameterListPointer;
 
 /*! \internal \brief
  * Describes a parsed method parameter.
@@ -282,7 +285,7 @@ class SelectionParserParameter
         static SelectionParserParameterListPointer createList()
         {
             return SelectionParserParameterListPointer(
-                    new SelectionParserParameterList);
+                       new SelectionParserParameterList);
         }
         /*! \brief
          * Allocates and initializes a parsed method parameter.
@@ -333,14 +336,14 @@ class SelectionParserParameter
          * expression value is necessary.
          */
         static SelectionParserParameter
-        createFromExpression(const char *name,
+        createFromExpression(const char *                       name,
                              const SelectionTreeElementPointer &expr)
         {
             return create(name, SelectionParserValue::createExpr(expr));
         }
         //! \copydoc createFromExpression(const char *, const SelectionTreeElementPointer &)
         static SelectionParserParameter
-        createFromExpression(const std::string &name,
+        createFromExpression(const std::string &                name,
                              const SelectionTreeElementPointer &expr)
         {
             return create(name.c_str(), SelectionParserValue::createExpr(expr));
@@ -354,7 +357,7 @@ class SelectionParserParameter
          * \throws    std::bad_alloc if out of memory.
          */
         SelectionParserParameter(const char *name,
-                                 SelectionParserValueListPointer values);
+            SelectionParserValueListPointer  values);
 
         //! Returns the name of the parameter (may be empty).
         const std::string &name() const { return name_; }
@@ -362,7 +365,7 @@ class SelectionParserParameter
         const SelectionParserValueList &values() const { return *values_; }
 
         //! Name of the parameter.
-        std::string             name_;
+        std::string name_;
         //! Values for this parameter.
         SelectionParserValueListPointer values_;
 };
@@ -379,13 +382,13 @@ _gmx_selparser_handle_exception(void *scanner, const std::exception &ex);
 /** Propagates the flags for selection elements. */
 void
 _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel,
-                          void *scanner);
+                          void *                                  scanner);
 
 /** Initializes the method parameter data of \ref SEL_EXPRESSION and
  * \ref SEL_MODIFIER elements. */
 void
 _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
-                                void *scanner);
+                                void *                                  scanner);
 /** Initializes the method for a \ref SEL_EXPRESSION selection element. */
 void
 _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
@@ -419,10 +422,10 @@ _gmx_sel_init_method(struct gmx_ana_selmethod_t *method,
                      const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a modifier expression from the parsed data. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_modifier(struct gmx_ana_selmethod_t *mod,
+_gmx_sel_init_modifier(struct gmx_ana_selmethod_t *             mod,
                        gmx::SelectionParserParameterListPointer params,
-                       const gmx::SelectionTreeElementPointer &sel,
-                       void *scanner);
+                       const gmx::SelectionTreeElementPointer & sel,
+                       void *                                   scanner);
 /** Creates a gmx::SelectionTreeElement for evaluation of reference positions. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
@@ -443,19 +446,19 @@ _gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel);
 
 /** Creates a root gmx::SelectionTreeElement for a selection. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_selection(const char *name,
+_gmx_sel_init_selection(const char *                            name,
                         const gmx::SelectionTreeElementPointer &sel,
-                        void *scanner);
+                        void *                                  scanner);
 /** Creates a root gmx::SelectionTreeElement elements for a variable assignment. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_assign_variable(const char *name,
+_gmx_sel_assign_variable(const char *                            name,
                          const gmx::SelectionTreeElementPointer &expr,
-                         void *scanner);
+                         void *                                  scanner);
 /** Appends a root gmx::SelectionTreeElement to a selection collection. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
-                          gmx::SelectionTreeElementPointer last,
-                          void *scanner);
+                          gmx::SelectionTreeElementPointer        last,
+                          void *                                  scanner);
 /** Check whether the parser should finish. */
 bool
 _gmx_sel_parser_should_finish(void *scanner);
@@ -466,7 +469,7 @@ _gmx_sel_handle_empty_cmd(void *scanner);
 /** Process help commands. */
 void
 _gmx_sel_handle_help_cmd(const gmx::SelectionParserValueListPointer &topic,
-                         void *scanner);
+                         void *                                      scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */

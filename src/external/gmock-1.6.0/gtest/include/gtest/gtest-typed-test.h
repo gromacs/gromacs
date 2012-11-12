@@ -44,11 +44,11 @@
 // by a type.  Remember to derive it from testing::Test.
 template <typename T>
 class FooTest : public testing::Test {
- public:
-  ...
-  typedef std::list<T> List;
-  static T shared_;
-  T value_;
+    public:
+        ...
+        typedef std::list<T> List;
+        static T shared_;
+        T value_;
 };
 
 // Next, associate a list of types with the test case, which will be
@@ -64,23 +64,25 @@ TYPED_TEST_CASE(FooTest, MyTypes);
 // Then, use TYPED_TEST() instead of TEST_F() to define as many typed
 // tests for this test case as you want.
 TYPED_TEST(FooTest, DoesBlah) {
-  // Inside a test, refer to TypeParam to get the type parameter.
-  // Since we are inside a derived class template, C++ requires use to
-  // visit the members of FooTest via 'this'.
-  TypeParam n = this->value_;
+    // Inside a test, refer to TypeParam to get the type parameter.
+    // Since we are inside a derived class template, C++ requires use to
+    // visit the members of FooTest via 'this'.
+    TypeParam n = this->value_;
 
-  // To visit static members of the fixture, add the TestFixture::
-  // prefix.
-  n += TestFixture::shared_;
+    // To visit static members of the fixture, add the TestFixture::
+    // prefix.
+    n += TestFixture::shared_;
 
-  // To refer to typedefs in the fixture, add the "typename
-  // TestFixture::" prefix.
-  typename TestFixture::List values;
-  values.push_back(n);
-  ...
+    // To refer to typedefs in the fixture, add the "typename
+    // TestFixture::" prefix.
+    typename TestFixture::List values;
+    values.push_back(n);
+    ...
 }
 
-TYPED_TEST(FooTest, HasPropertyA) { ... }
+TYPED_TEST(FooTest, HasPropertyA) {
+    ...
+}
 
 #endif  // 0
 
@@ -104,7 +106,7 @@ TYPED_TEST(FooTest, HasPropertyA) { ... }
 // by a type.  Remember to derive it from testing::Test.
 template <typename T>
 class FooTest : public testing::Test {
-  ...
+    ...
 };
 
 // Next, declare that you will define a type-parameterized test case
@@ -115,12 +117,14 @@ TYPED_TEST_CASE_P(FooTest);
 // Then, use TYPED_TEST_P() to define as many type-parameterized tests
 // for this type-parameterized test case as you want.
 TYPED_TEST_P(FooTest, DoesBlah) {
-  // Inside a test, refer to TypeParam to get the type parameter.
-  TypeParam n = 0;
-  ...
+    // Inside a test, refer to TypeParam to get the type parameter.
+    TypeParam n = 0;
+    ...
 }
 
-TYPED_TEST_P(FooTest, HasPropertyA) { ... }
+TYPED_TEST_P(FooTest, HasPropertyA) {
+    ...
+}
 
 // Now the tricky part: you need to register all test patterns before
 // you can instantiate them.  The first argument of the macro is the
@@ -157,33 +161,33 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, FooTest, MyTypes);
 //
 // Expands to the name of the typedef for the type parameters of the
 // given test case.
-# define GTEST_TYPE_PARAMS_(TestCaseName) gtest_type_params_##TestCaseName##_
+# define GTEST_TYPE_PARAMS_(TestCaseName) gtest_type_params_ ## TestCaseName ## _
 
 // The 'Types' template argument below must have spaces around it
 // since some compilers may choke on '>>' when passing a template
 // instance (e.g. Types<int>)
 # define TYPED_TEST_CASE(CaseName, Types) \
-  typedef ::testing::internal::TypeList< Types >::type \
-      GTEST_TYPE_PARAMS_(CaseName)
+    typedef ::testing::internal::TypeList< Types >::type \
+    GTEST_TYPE_PARAMS_ (CaseName)
 
 # define TYPED_TEST(CaseName, TestName) \
-  template <typename gtest_TypeParam_> \
-  class GTEST_TEST_CLASS_NAME_(CaseName, TestName) \
-      : public CaseName<gtest_TypeParam_> { \
-   private: \
-    typedef CaseName<gtest_TypeParam_> TestFixture; \
-    typedef gtest_TypeParam_ TypeParam; \
-    virtual void TestBody(); \
-  }; \
-  bool gtest_##CaseName##_##TestName##_registered_ GTEST_ATTRIBUTE_UNUSED_ = \
-      ::testing::internal::TypeParameterizedTest< \
-          CaseName, \
-          ::testing::internal::TemplateSel< \
-              GTEST_TEST_CLASS_NAME_(CaseName, TestName)>, \
-          GTEST_TYPE_PARAMS_(CaseName)>::Register(\
-              "", #CaseName, #TestName, 0); \
-  template <typename gtest_TypeParam_> \
-  void GTEST_TEST_CLASS_NAME_(CaseName, TestName)<gtest_TypeParam_>::TestBody()
+    template <typename gtest_TypeParam_> \
+    class GTEST_TEST_CLASS_NAME_ (CaseName, TestName) \
+        : public CaseName<gtest_TypeParam_> { \
+        private: \
+            typedef CaseName<gtest_TypeParam_> TestFixture; \
+            typedef gtest_TypeParam_ TypeParam; \
+            virtual void TestBody(); \
+    }; \
+    bool gtest_ ## CaseName ## _ ## TestName ## _registered_ GTEST_ATTRIBUTE_UNUSED_ = \
+            ::testing::internal::TypeParameterizedTest< \
+            CaseName, \
+                ::testing::internal::TemplateSel< \
+                GTEST_TEST_CLASS_NAME_(CaseName, TestName)>, \
+            GTEST_TYPE_PARAMS_(CaseName)>::Register( \
+            "", # CaseName, # TestName, 0); \
+    template <typename gtest_TypeParam_> \
+    void GTEST_TEST_CLASS_NAME_(CaseName, TestName) < gtest_TypeParam_ > ::TestBody()
 
 #endif  // GTEST_HAS_TYPED_TEST
 
@@ -197,62 +201,62 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, FooTest, MyTypes);
 // the given type-parameterized test case are defined in.  The exact
 // name of the namespace is subject to change without notice.
 # define GTEST_CASE_NAMESPACE_(TestCaseName) \
-  gtest_case_##TestCaseName##_
+    gtest_case_ ## TestCaseName ## _
 
 // INTERNAL IMPLEMENTATION - DO NOT USE IN USER CODE.
 //
 // Expands to the name of the variable used to remember the names of
 // the defined tests in the given test case.
 # define GTEST_TYPED_TEST_CASE_P_STATE_(TestCaseName) \
-  gtest_typed_test_case_p_state_##TestCaseName##_
+    gtest_typed_test_case_p_state_ ## TestCaseName ## _
 
 // INTERNAL IMPLEMENTATION - DO NOT USE IN USER CODE DIRECTLY.
 //
 // Expands to the name of the variable used to remember the names of
 // the registered tests in the given test case.
 # define GTEST_REGISTERED_TEST_NAMES_(TestCaseName) \
-  gtest_registered_test_names_##TestCaseName##_
+    gtest_registered_test_names_ ## TestCaseName ## _
 
 // The variables defined in the type-parameterized test macros are
 // static as typically these macros are used in a .h file that can be
 // #included in multiple translation units linked together.
 # define TYPED_TEST_CASE_P(CaseName) \
-  static ::testing::internal::TypedTestCasePState \
-      GTEST_TYPED_TEST_CASE_P_STATE_(CaseName)
+    static ::testing::internal::TypedTestCasePState \
+    GTEST_TYPED_TEST_CASE_P_STATE_(CaseName)
 
 # define TYPED_TEST_P(CaseName, TestName) \
-  namespace GTEST_CASE_NAMESPACE_(CaseName) { \
-  template <typename gtest_TypeParam_> \
-  class TestName : public CaseName<gtest_TypeParam_> { \
-   private: \
-    typedef CaseName<gtest_TypeParam_> TestFixture; \
-    typedef gtest_TypeParam_ TypeParam; \
-    virtual void TestBody(); \
-  }; \
-  static bool gtest_##TestName##_defined_ GTEST_ATTRIBUTE_UNUSED_ = \
-      GTEST_TYPED_TEST_CASE_P_STATE_(CaseName).AddTestName(\
-          __FILE__, __LINE__, #CaseName, #TestName); \
-  } \
-  template <typename gtest_TypeParam_> \
-  void GTEST_CASE_NAMESPACE_(CaseName)::TestName<gtest_TypeParam_>::TestBody()
+    namespace GTEST_CASE_NAMESPACE_(CaseName) { \
+        template <typename gtest_TypeParam_> \
+        class TestName : public CaseName<gtest_TypeParam_> { \
+            private: \
+                typedef CaseName<gtest_TypeParam_> TestFixture; \
+                typedef gtest_TypeParam_ TypeParam; \
+                virtual void TestBody(); \
+        }; \
+        static bool gtest_ ## TestName ## _defined_ GTEST_ATTRIBUTE_UNUSED_ = \
+            GTEST_TYPED_TEST_CASE_P_STATE_(CaseName).AddTestName( \
+                __FILE__, __LINE__, # CaseName, # TestName); \
+    } \
+    template <typename gtest_TypeParam_> \
+    void GTEST_CASE_NAMESPACE_(CaseName) ::TestName<gtest_TypeParam_>::TestBody()
 
 # define REGISTER_TYPED_TEST_CASE_P(CaseName, ...) \
-  namespace GTEST_CASE_NAMESPACE_(CaseName) { \
-  typedef ::testing::internal::Templates<__VA_ARGS__>::type gtest_AllTests_; \
-  } \
-  static const char* const GTEST_REGISTERED_TEST_NAMES_(CaseName) = \
-      GTEST_TYPED_TEST_CASE_P_STATE_(CaseName).VerifyRegisteredTestNames(\
-          __FILE__, __LINE__, #__VA_ARGS__)
+    namespace GTEST_CASE_NAMESPACE_(CaseName) { \
+        typedef ::testing::internal::Templates<__VA_ARGS__>::type gtest_AllTests_; \
+    } \
+    static const char* const GTEST_REGISTERED_TEST_NAMES_(CaseName) = \
+        GTEST_TYPED_TEST_CASE_P_STATE_(CaseName).VerifyRegisteredTestNames( \
+            __FILE__, __LINE__, # __VA_ARGS__)
 
 // The 'Types' template argument below must have spaces around it
 // since some compilers may choke on '>>' when passing a template
 // instance (e.g. Types<int>)
 # define INSTANTIATE_TYPED_TEST_CASE_P(Prefix, CaseName, Types) \
-  bool gtest_##Prefix##_##CaseName GTEST_ATTRIBUTE_UNUSED_ = \
-      ::testing::internal::TypeParameterizedTestCase<CaseName, \
-          GTEST_CASE_NAMESPACE_(CaseName)::gtest_AllTests_, \
-          ::testing::internal::TypeList< Types >::type>::Register(\
-              #Prefix, #CaseName, GTEST_REGISTERED_TEST_NAMES_(CaseName))
+    bool gtest_ ## Prefix ## _ ## CaseName GTEST_ATTRIBUTE_UNUSED_ = \
+            ::testing::internal::TypeParameterizedTestCase<CaseName, \
+                                                           GTEST_CASE_NAMESPACE_(CaseName) ::gtest_AllTests_, \
+                                                               ::testing::internal::TypeList< Types >::type>::Register( \
+            # Prefix, # CaseName, GTEST_REGISTERED_TEST_NAMES_(CaseName))
 
 #endif  // GTEST_HAS_TYPED_TEST_P
 

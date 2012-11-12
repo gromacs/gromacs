@@ -114,7 +114,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          */
         template <class U>
         explicit OptionStorageTemplate(const OptionTemplate<T, U> &settings,
-                                       OptionFlags staticFlags = OptionFlags());
+            OptionFlags staticFlags = OptionFlags());
 
 
         virtual void clearSet();
@@ -263,7 +263,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         /*! \brief
          * Vector for temporary storage of values before commitSet() is called.
          */
-        ValueList               setValues_;
+        ValueList setValues_;
         /*! \brief
          * Vector for primary storage of option values.
          *
@@ -288,11 +288,11 @@ class OptionStorageTemplate : public AbstractOptionStorage
 template <typename T>
 template <class U>
 OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &settings,
-                                                OptionFlags staticFlags)
+        OptionFlags staticFlags)
     : AbstractOptionStorage(settings, staticFlags),
-      values_(settings.storeVector_),
-      store_(settings.store_),
-      countptr_(settings.countptr_)
+    values_(settings.storeVector_),
+    store_(settings.store_),
+    countptr_(settings.countptr_)
 {
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.
@@ -327,7 +327,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         {
             values_->clear();
             int count = (settings.isVector() ?
-                            settings.maxValueCount_ : settings.minValueCount_);
+                         settings.maxValueCount_ : settings.minValueCount_);
             for (int i = 0; i < count; ++i)
             {
                 values_->push_back(store_[i]);

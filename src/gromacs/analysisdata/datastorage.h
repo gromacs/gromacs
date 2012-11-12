@@ -189,7 +189,7 @@ class AnalysisDataStorageFrame
          * \param[in] index        Zero-based index for the frame.
          */
         AnalysisDataStorageFrame(AnalysisDataStorage *storage, int columnCount,
-                                 int index);
+            int index);
 
         //! Clear all column values from the frame.
         void clearValues();

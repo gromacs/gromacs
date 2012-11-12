@@ -60,7 +60,7 @@ namespace gmx
  * \ingroup module_analysisdata
  */
 class AnalysisDataProxy : public AbstractAnalysisData,
-                          public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         /*! \brief
@@ -73,7 +73,7 @@ class AnalysisDataProxy : public AbstractAnalysisData,
          * Does not throw.
          */
         AnalysisDataProxy(int firstColumn, int columnSpan,
-                          AbstractAnalysisData *data);
+            AbstractAnalysisData *data);
 
         virtual int flags() const;
 
@@ -88,8 +88,8 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         virtual bool requestStorageInternal(int nframes);
 
         AbstractAnalysisData   &source_;
-        int                     firstColumn_;
-        int                     columnSpan_;
+        int firstColumn_;
+        int columnSpan_;
 
         // Copy and assign disallowed by base.
 };

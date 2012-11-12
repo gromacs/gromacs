@@ -111,8 +111,7 @@
 
 
 static nb_adress_kernel_t *
-kernellist_adress[eNR_NBKERNEL_NR] =
-{
+kernellist_adress[eNR_NBKERNEL_NR] = {
     nb_kernel010_adress_cg,
     nb_kernel020_adress_cg,
     nb_kernel030_adress_cg,
@@ -250,16 +249,18 @@ kernellist_adress[eNR_NBKERNEL_NR] =
 void
 nb_kernel_setup_adress(FILE *log, nb_adress_kernel_t **list_adress)
 {
-  int i;
-  nb_adress_kernel_t *p;
+    int i;
+    nb_adress_kernel_t *p;
 
-    if(NULL != log)
-  fprintf(log,"AdResS simulation: Configuring adress C nonbonded kernels...\n");
+    if(NULL != log) {
+        fprintf(log, "AdResS simulation: Configuring adress C nonbonded kernels...\n");
+    }
 
-  for(i=0;i<eNR_NBKERNEL_NR;i++)
-  {
-    p = kernellist_adress[i];
-    if(p!=NULL)
-      list_adress[i] = p;
-  }
+    for(i = 0; i < eNR_NBKERNEL_NR; i++)
+    {
+        p = kernellist_adress[i];
+        if(p != NULL) {
+            list_adress[i] = p;
+        }
+    }
 }

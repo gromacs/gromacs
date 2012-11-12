@@ -4,7 +4,7 @@
 
 #include "typedefs.h"
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -13,9 +13,9 @@ extern "C" {
 gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop);
 
 /* Sort all the bonded ilists in idef to have the perturbed ones at the end
-* and set nr_nr_nonperturbed in ilist.
-*/
-void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB);
+ * and set nr_nr_nonperturbed in ilist.
+ */
+void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB);
 
 #ifdef __cplusplus
 }

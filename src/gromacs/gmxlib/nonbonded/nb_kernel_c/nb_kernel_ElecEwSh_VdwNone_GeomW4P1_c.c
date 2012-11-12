@@ -39,272 +39,272 @@
  */
 void
 nb_kernel_ElecEwSh_VdwNone_GeomW4P1_VF_c
-                    (t_nblist * gmx_restrict                nlist,
-                     rvec * gmx_restrict                    xx,
-                     rvec * gmx_restrict                    ff,
-                     t_forcerec * gmx_restrict              fr,
-                     t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
-                     t_nrnb * gmx_restrict                  nrnb)
+    (t_nblist * gmx_restrict        nlist,
+    rvec * gmx_restrict             xx,
+    rvec * gmx_restrict             ff,
+    t_forcerec * gmx_restrict       fr,
+    t_mdatoms * gmx_restrict        mdatoms,
+    nb_kernel_data_t * gmx_restrict kernel_data,
+    t_nrnb * gmx_restrict           nrnb)
 {
-    int              i_shift_offset,i_coord_offset,j_coord_offset;
-    int              j_index_start,j_index_end;
-    int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
-    int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
-    int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1;
-    int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2;
-    int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3;
-    int              vdwjidx0;
-    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
-    real             dx10,dy10,dz10,rsq10,rinv10,rinvsq10,r10,qq10,c6_10,c12_10,cexp1_10,cexp2_10;
-    real             dx20,dy20,dz20,rsq20,rinv20,rinvsq20,r20,qq20,c6_20,c12_20,cexp1_20,cexp2_20;
-    real             dx30,dy30,dz30,rsq30,rinv30,rinvsq30,r30,qq30,c6_30,c12_30,cexp1_30,cexp2_30;
-    real             velec,felec,velecsum,facel,crf,krf,krf2;
+    int i_shift_offset, i_coord_offset, j_coord_offset;
+    int j_index_start, j_index_end;
+    int nri, inr, ggid, iidx, jidx, jnr, outeriter, inneriter;
+    real shX, shY, shZ, tx, ty, tz, fscal, rcutoff, rcutoff2;
+    int              *iinr, *jindex, *jjnr, *shiftidx, *gid;
+    real             *shiftvec, *fshift, *x, *f;
+    int vdwioffset1;
+    real ix1, iy1, iz1, fix1, fiy1, fiz1, iq1, isai1;
+    int vdwioffset2;
+    real ix2, iy2, iz2, fix2, fiy2, fiz2, iq2, isai2;
+    int vdwioffset3;
+    real ix3, iy3, iz3, fix3, fiy3, fiz3, iq3, isai3;
+    int vdwjidx0;
+    real jx0, jy0, jz0, fjx0, fjy0, fjz0, jq0, isaj0;
+    real dx10, dy10, dz10, rsq10, rinv10, rinvsq10, r10, qq10, c6_10, c12_10, cexp1_10, cexp2_10;
+    real dx20, dy20, dz20, rsq20, rinv20, rinvsq20, r20, qq20, c6_20, c12_20, cexp1_20, cexp2_20;
+    real dx30, dy30, dz30, rsq30, rinv30, rinvsq30, r30, qq30, c6_30, c12_30, cexp1_30, cexp2_30;
+    real velec, felec, velecsum, facel, crf, krf, krf2;
     real             *charge;
-    int              ewitab;
-    real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
+    int ewitab;
+    real ewtabscale, eweps, sh_ewald, ewrt, ewtabhalfspace;
     real             *ewtab;
 
-    x                = xx[0];
-    f                = ff[0];
+    x              = xx[0];
+    f              = ff[0];
 
-    nri              = nlist->nri;
-    iinr             = nlist->iinr;
-    jindex           = nlist->jindex;
-    jjnr             = nlist->jjnr;
-    shiftidx         = nlist->shift;
-    gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
-    charge           = mdatoms->chargeA;
+    nri            = nlist->nri;
+    iinr           = nlist->iinr;
+    jindex         = nlist->jindex;
+    jjnr           = nlist->jjnr;
+    shiftidx       = nlist->shift;
+    gid            = nlist->gid;
+    shiftvec       = fr->shift_vec[0];
+    fshift         = fr->fshift[0];
+    facel          = fr->epsfac;
+    charge         = mdatoms->chargeA;
 
-    sh_ewald         = fr->ic->sh_ewald;
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = fr->ic->tabq_scale;
-    ewtabhalfspace   = 0.5/ewtabscale;
+    sh_ewald       = fr->ic->sh_ewald;
+    ewtab          = fr->ic->tabq_coul_FDV0;
+    ewtabscale     = fr->ic->tabq_scale;
+    ewtabhalfspace = 0.5 / ewtabscale;
 
     /* Setup water-specific parameters */
-    inr              = nlist->iinr[0];
-    iq1              = facel*charge[inr+1];
-    iq2              = facel*charge[inr+2];
-    iq3              = facel*charge[inr+3];
+    inr = nlist->iinr[0];
+    iq1 = facel * charge[inr + 1];
+    iq2 = facel * charge[inr + 2];
+    iq3 = facel * charge[inr + 3];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
-    rcutoff2         = rcutoff*rcutoff;
+    rcutoff   = fr->rcoulomb;
+    rcutoff2  = rcutoff * rcutoff;
 
-    outeriter        = 0;
-    inneriter        = 0;
+    outeriter = 0;
+    inneriter = 0;
 
     /* Start outer loop over neighborlists */
-    for(iidx=0; iidx<nri; iidx++)
+    for(iidx = 0; iidx < nri; iidx++)
     {
         /* Load shift vector for this list */
-        i_shift_offset   = DIM*shiftidx[iidx];
-        shX              = shiftvec[i_shift_offset+XX];
-        shY              = shiftvec[i_shift_offset+YY];
-        shZ              = shiftvec[i_shift_offset+ZZ];
+        i_shift_offset = DIM * shiftidx[iidx];
+        shX            = shiftvec[i_shift_offset + XX];
+        shY            = shiftvec[i_shift_offset + YY];
+        shZ            = shiftvec[i_shift_offset + ZZ];
 
         /* Load limits for loop over neighbors */
-        j_index_start    = jindex[iidx];
-        j_index_end      = jindex[iidx+1];
+        j_index_start = jindex[iidx];
+        j_index_end   = jindex[iidx + 1];
 
         /* Get outer coordinate index */
-        inr              = iinr[iidx];
-        i_coord_offset   = DIM*inr;
+        inr            = iinr[iidx];
+        i_coord_offset = DIM * inr;
 
         /* Load i particle coords and add shift vector */
-        ix1              = shX + x[i_coord_offset+DIM*1+XX];
-        iy1              = shY + x[i_coord_offset+DIM*1+YY];
-        iz1              = shZ + x[i_coord_offset+DIM*1+ZZ];
-        ix2              = shX + x[i_coord_offset+DIM*2+XX];
-        iy2              = shY + x[i_coord_offset+DIM*2+YY];
-        iz2              = shZ + x[i_coord_offset+DIM*2+ZZ];
-        ix3              = shX + x[i_coord_offset+DIM*3+XX];
-        iy3              = shY + x[i_coord_offset+DIM*3+YY];
-        iz3              = shZ + x[i_coord_offset+DIM*3+ZZ];
+        ix1  = shX + x[i_coord_offset + DIM * 1 + XX];
+        iy1  = shY + x[i_coord_offset + DIM * 1 + YY];
+        iz1  = shZ + x[i_coord_offset + DIM * 1 + ZZ];
+        ix2  = shX + x[i_coord_offset + DIM * 2 + XX];
+        iy2  = shY + x[i_coord_offset + DIM * 2 + YY];
+        iz2  = shZ + x[i_coord_offset + DIM * 2 + ZZ];
+        ix3  = shX + x[i_coord_offset + DIM * 3 + XX];
+        iy3  = shY + x[i_coord_offset + DIM * 3 + YY];
+        iz3  = shZ + x[i_coord_offset + DIM * 3 + ZZ];
 
-        fix1             = 0.0;
-        fiy1             = 0.0;
-        fiz1             = 0.0;
-        fix2             = 0.0;
-        fiy2             = 0.0;
-        fiz2             = 0.0;
-        fix3             = 0.0;
-        fiy3             = 0.0;
-        fiz3             = 0.0;
+        fix1 = 0.0;
+        fiy1 = 0.0;
+        fiz1 = 0.0;
+        fix2 = 0.0;
+        fiy2 = 0.0;
+        fiz2 = 0.0;
+        fix3 = 0.0;
+        fiy3 = 0.0;
+        fiz3 = 0.0;
 
         /* Reset potential sums */
-        velecsum         = 0.0;
+        velecsum = 0.0;
 
         /* Start inner kernel loop */
-        for(jidx=j_index_start; jidx<j_index_end; jidx++)
+        for(jidx = j_index_start; jidx < j_index_end; jidx++)
         {
             /* Get j neighbor index, and coordinate index */
-            jnr              = jjnr[jidx];
-            j_coord_offset   = DIM*jnr;
+            jnr            = jjnr[jidx];
+            j_coord_offset = DIM * jnr;
 
             /* load j atom coordinates */
-            jx0              = x[j_coord_offset+DIM*0+XX];
-            jy0              = x[j_coord_offset+DIM*0+YY];
-            jz0              = x[j_coord_offset+DIM*0+ZZ];
+            jx0 = x[j_coord_offset + DIM * 0 + XX];
+            jy0 = x[j_coord_offset + DIM * 0 + YY];
+            jz0 = x[j_coord_offset + DIM * 0 + ZZ];
 
             /* Calculate displacement vector */
-            dx10             = ix1 - jx0;
-            dy10             = iy1 - jy0;
-            dz10             = iz1 - jz0;
-            dx20             = ix2 - jx0;
-            dy20             = iy2 - jy0;
-            dz20             = iz2 - jz0;
-            dx30             = ix3 - jx0;
-            dy30             = iy3 - jy0;
-            dz30             = iz3 - jz0;
+            dx10 = ix1 - jx0;
+            dy10 = iy1 - jy0;
+            dz10 = iz1 - jz0;
+            dx20 = ix2 - jx0;
+            dy20 = iy2 - jy0;
+            dz20 = iz2 - jz0;
+            dx30 = ix3 - jx0;
+            dy30 = iy3 - jy0;
+            dz30 = iz3 - jz0;
 
             /* Calculate squared distance and things based on it */
-            rsq10            = dx10*dx10+dy10*dy10+dz10*dz10;
-            rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
-            rsq30            = dx30*dx30+dy30*dy30+dz30*dz30;
+            rsq10    = dx10 * dx10 + dy10 * dy10 + dz10 * dz10;
+            rsq20    = dx20 * dx20 + dy20 * dy20 + dz20 * dz20;
+            rsq30    = dx30 * dx30 + dy30 * dy30 + dz30 * dz30;
 
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
-            rinv30           = gmx_invsqrt(rsq30);
+            rinv10   = gmx_invsqrt(rsq10);
+            rinv20   = gmx_invsqrt(rsq20);
+            rinv30   = gmx_invsqrt(rsq30);
 
-            rinvsq10         = rinv10*rinv10;
-            rinvsq20         = rinv20*rinv20;
-            rinvsq30         = rinv30*rinv30;
+            rinvsq10 = rinv10 * rinv10;
+            rinvsq20 = rinv20 * rinv20;
+            rinvsq30 = rinv30 * rinv30;
 
             /* Load parameters for j particles */
-            jq0              = charge[jnr+0];
+            jq0 = charge[jnr + 0];
 
             /**************************
-             * CALCULATE INTERACTIONS *
-             **************************/
+            * CALCULATE INTERACTIONS *
+            **************************/
 
-            if (rsq10<rcutoff2)
+            if (rsq10 < rcutoff2)
             {
 
-            r10              = rsq10*rinv10;
+                r10  = rsq10 * rinv10;
 
-            qq10             = iq1*jq0;
+                qq10 = iq1 * jq0;
 
-            /* EWALD ELECTROSTATICS */
+                /* EWALD ELECTROSTATICS */
 
-            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
-            ewrt             = r10*ewtabscale;
-            ewitab           = ewrt;
-            eweps            = ewrt-ewitab;
-            ewitab           = 4*ewitab;
-            felec            = ewtab[ewitab]+eweps*ewtab[ewitab+1];
-            velec            = qq10*((rinv10-sh_ewald)-(ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+felec)));
-            felec            = qq10*rinv10*(rinvsq10-felec);
+                /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+                ewrt   = r10 * ewtabscale;
+                ewitab = ewrt;
+                eweps  = ewrt - ewitab;
+                ewitab = 4 * ewitab;
+                felec  = ewtab[ewitab] + eweps * ewtab[ewitab + 1];
+                velec  = qq10 * ((rinv10 - sh_ewald) - (ewtab[ewitab + 2] - ewtabhalfspace * eweps * (ewtab[ewitab] + felec)));
+                felec  = qq10 * rinv10 * (rinvsq10 - felec);
 
-            /* Update potential sums from outer loop */
-            velecsum        += velec;
+                /* Update potential sums from outer loop */
+                velecsum += velec;
 
-            fscal            = felec;
+                fscal     = felec;
 
-            /* Calculate temporary vectorial force */
-            tx               = fscal*dx10;
-            ty               = fscal*dy10;
-            tz               = fscal*dz10;
+                /* Calculate temporary vectorial force */
+                tx = fscal * dx10;
+                ty = fscal * dy10;
+                tz = fscal * dz10;
 
-            /* Update vectorial force */
-            fix1            += tx;
-            fiy1            += ty;
-            fiz1            += tz;
-            f[j_coord_offset+DIM*0+XX] -= tx;
-            f[j_coord_offset+DIM*0+YY] -= ty;
-            f[j_coord_offset+DIM*0+ZZ] -= tz;
+                /* Update vectorial force */
+                fix1                             += tx;
+                fiy1                             += ty;
+                fiz1                             += tz;
+                f[j_coord_offset + DIM * 0 + XX] -= tx;
+                f[j_coord_offset + DIM * 0 + YY] -= ty;
+                f[j_coord_offset + DIM * 0 + ZZ] -= tz;
 
             }
 
             /**************************
-             * CALCULATE INTERACTIONS *
-             **************************/
+            * CALCULATE INTERACTIONS *
+            **************************/
 
-            if (rsq20<rcutoff2)
+            if (rsq20 < rcutoff2)
             {
 
-            r20              = rsq20*rinv20;
+                r20  = rsq20 * rinv20;
 
-            qq20             = iq2*jq0;
+                qq20 = iq2 * jq0;
 
-            /* EWALD ELECTROSTATICS */
+                /* EWALD ELECTROSTATICS */
 
-            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
-            ewrt             = r20*ewtabscale;
-            ewitab           = ewrt;
-            eweps            = ewrt-ewitab;
-            ewitab           = 4*ewitab;
-            felec            = ewtab[ewitab]+eweps*ewtab[ewitab+1];
-            velec            = qq20*((rinv20-sh_ewald)-(ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+felec)));
-            felec            = qq20*rinv20*(rinvsq20-felec);
+                /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+                ewrt   = r20 * ewtabscale;
+                ewitab = ewrt;
+                eweps  = ewrt - ewitab;
+                ewitab = 4 * ewitab;
+                felec  = ewtab[ewitab] + eweps * ewtab[ewitab + 1];
+                velec  = qq20 * ((rinv20 - sh_ewald) - (ewtab[ewitab + 2] - ewtabhalfspace * eweps * (ewtab[ewitab] + felec)));
+                felec  = qq20 * rinv20 * (rinvsq20 - felec);
 
-            /* Update potential sums from outer loop */
-            velecsum        += velec;
+                /* Update potential sums from outer loop */
+                velecsum += velec;
 
-            fscal            = felec;
+                fscal     = felec;
 
-            /* Calculate temporary vectorial force */
-            tx               = fscal*dx20;
-            ty               = fscal*dy20;
-            tz               = fscal*dz20;
+                /* Calculate temporary vectorial force */
+                tx = fscal * dx20;
+                ty = fscal * dy20;
+                tz = fscal * dz20;
 
-            /* Update vectorial force */
-            fix2            += tx;
-            fiy2            += ty;
-            fiz2            += tz;
-            f[j_coord_offset+DIM*0+XX] -= tx;
-            f[j_coord_offset+DIM*0+YY] -= ty;
-            f[j_coord_offset+DIM*0+ZZ] -= tz;
+                /* Update vectorial force */
+                fix2                             += tx;
+                fiy2                             += ty;
+                fiz2                             += tz;
+                f[j_coord_offset + DIM * 0 + XX] -= tx;
+                f[j_coord_offset + DIM * 0 + YY] -= ty;
+                f[j_coord_offset + DIM * 0 + ZZ] -= tz;
 
             }
 
             /**************************
-             * CALCULATE INTERACTIONS *
-             **************************/
+            * CALCULATE INTERACTIONS *
+            **************************/
 
-            if (rsq30<rcutoff2)
+            if (rsq30 < rcutoff2)
             {
 
-            r30              = rsq30*rinv30;
+                r30  = rsq30 * rinv30;
 
-            qq30             = iq3*jq0;
+                qq30 = iq3 * jq0;
 
-            /* EWALD ELECTROSTATICS */
+                /* EWALD ELECTROSTATICS */
 
-            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
-            ewrt             = r30*ewtabscale;
-            ewitab           = ewrt;
-            eweps            = ewrt-ewitab;
-            ewitab           = 4*ewitab;
-            felec            = ewtab[ewitab]+eweps*ewtab[ewitab+1];
-            velec            = qq30*((rinv30-sh_ewald)-(ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+felec)));
-            felec            = qq30*rinv30*(rinvsq30-felec);
+                /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+                ewrt   = r30 * ewtabscale;
+                ewitab = ewrt;
+                eweps  = ewrt - ewitab;
+                ewitab = 4 * ewitab;
+                felec  = ewtab[ewitab] + eweps * ewtab[ewitab + 1];
+                velec  = qq30 * ((rinv30 - sh_ewald) - (ewtab[ewitab + 2] - ewtabhalfspace * eweps * (ewtab[ewitab] + felec)));
+                felec  = qq30 * rinv30 * (rinvsq30 - felec);
 
-            /* Update potential sums from outer loop */
-            velecsum        += velec;
+                /* Update potential sums from outer loop */
+                velecsum += velec;
 
-            fscal            = felec;
+                fscal     = felec;
 
-            /* Calculate temporary vectorial force */
-            tx               = fscal*dx30;
-            ty               = fscal*dy30;
-            tz               = fscal*dz30;
+                /* Calculate temporary vectorial force */
+                tx = fscal * dx30;
+                ty = fscal * dy30;
+                tz = fscal * dz30;
 
-            /* Update vectorial force */
-            fix3            += tx;
-            fiy3            += ty;
-            fiz3            += tz;
-            f[j_coord_offset+DIM*0+XX] -= tx;
-            f[j_coord_offset+DIM*0+YY] -= ty;
-            f[j_coord_offset+DIM*0+ZZ] -= tz;
+                /* Update vectorial force */
+                fix3                             += tx;
+                fiy3                             += ty;
+                fiz3                             += tz;
+                f[j_coord_offset + DIM * 0 + XX] -= tx;
+                f[j_coord_offset + DIM * 0 + YY] -= ty;
+                f[j_coord_offset + DIM * 0 + ZZ] -= tz;
 
             }
 
@@ -312,45 +312,45 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4P1_VF_c
         }
         /* End of innermost loop */
 
-        tx = ty = tz = 0;
-        f[i_coord_offset+DIM*1+XX] += fix1;
-        f[i_coord_offset+DIM*1+YY] += fiy1;
-        f[i_coord_offset+DIM*1+ZZ] += fiz1;
-        tx                         += fix1;
-        ty                         += fiy1;
-        tz                         += fiz1;
-        f[i_coord_offset+DIM*2+XX] += fix2;
-        f[i_coord_offset+DIM*2+YY] += fiy2;
-        f[i_coord_offset+DIM*2+ZZ] += fiz2;
-        tx                         += fix2;
-        ty                         += fiy2;
-        tz                         += fiz2;
-        f[i_coord_offset+DIM*3+XX] += fix3;
-        f[i_coord_offset+DIM*3+YY] += fiy3;
-        f[i_coord_offset+DIM*3+ZZ] += fiz3;
-        tx                         += fix3;
-        ty                         += fiy3;
-        tz                         += fiz3;
-        fshift[i_shift_offset+XX]  += tx;
-        fshift[i_shift_offset+YY]  += ty;
-        fshift[i_shift_offset+ZZ]  += tz;
+        tx                                 = ty = tz = 0;
+        f[i_coord_offset + DIM * 1 + XX]  += fix1;
+        f[i_coord_offset + DIM * 1 + YY]  += fiy1;
+        f[i_coord_offset + DIM * 1 + ZZ]  += fiz1;
+        tx                                += fix1;
+        ty                                += fiy1;
+        tz                                += fiz1;
+        f[i_coord_offset + DIM * 2 + XX]  += fix2;
+        f[i_coord_offset + DIM * 2 + YY]  += fiy2;
+        f[i_coord_offset + DIM * 2 + ZZ]  += fiz2;
+        tx                                += fix2;
+        ty                                += fiy2;
+        tz                                += fiz2;
+        f[i_coord_offset + DIM * 3 + XX]  += fix3;
+        f[i_coord_offset + DIM * 3 + YY]  += fiy3;
+        f[i_coord_offset + DIM * 3 + ZZ]  += fiz3;
+        tx                                += fix3;
+        ty                                += fiy3;
+        tz                                += fiz3;
+        fshift[i_shift_offset + XX]       += tx;
+        fshift[i_shift_offset + YY]       += ty;
+        fshift[i_shift_offset + ZZ]       += tz;
 
-        ggid                        = gid[iidx];
+        ggid                               = gid[iidx];
         /* Update potential energies */
         kernel_data->energygrp_elec[ggid] += velecsum;
 
         /* Increment number of inner iterations */
-        inneriter                  += j_index_end - j_index_start;
+        inneriter += j_index_end - j_index_start;
 
         /* Outer loop uses 31 flops */
     }
 
     /* Increment number of outer iterations */
-    outeriter        += nri;
+    outeriter += nri;
 
     /* Update outer/inner flops */
 
-    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W4_VF,outeriter*31 + inneriter*126);
+    inc_nrnb(nrnb, eNR_NBKERNEL_ELEC_W4_VF, outeriter * 31 + inneriter * 126);
 }
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEwSh_VdwNone_GeomW4P1_F_c
@@ -361,254 +361,254 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4P1_VF_c
  */
 void
 nb_kernel_ElecEwSh_VdwNone_GeomW4P1_F_c
-                    (t_nblist * gmx_restrict                nlist,
-                     rvec * gmx_restrict                    xx,
-                     rvec * gmx_restrict                    ff,
-                     t_forcerec * gmx_restrict              fr,
-                     t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
-                     t_nrnb * gmx_restrict                  nrnb)
+    (t_nblist * gmx_restrict        nlist,
+    rvec * gmx_restrict             xx,
+    rvec * gmx_restrict             ff,
+    t_forcerec * gmx_restrict       fr,
+    t_mdatoms * gmx_restrict        mdatoms,
+    nb_kernel_data_t * gmx_restrict kernel_data,
+    t_nrnb * gmx_restrict           nrnb)
 {
-    int              i_shift_offset,i_coord_offset,j_coord_offset;
-    int              j_index_start,j_index_end;
-    int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
-    int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
-    int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1;
-    int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2;
-    int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3;
-    int              vdwjidx0;
-    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
-    real             dx10,dy10,dz10,rsq10,rinv10,rinvsq10,r10,qq10,c6_10,c12_10,cexp1_10,cexp2_10;
-    real             dx20,dy20,dz20,rsq20,rinv20,rinvsq20,r20,qq20,c6_20,c12_20,cexp1_20,cexp2_20;
-    real             dx30,dy30,dz30,rsq30,rinv30,rinvsq30,r30,qq30,c6_30,c12_30,cexp1_30,cexp2_30;
-    real             velec,felec,velecsum,facel,crf,krf,krf2;
+    int i_shift_offset, i_coord_offset, j_coord_offset;
+    int j_index_start, j_index_end;
+    int nri, inr, ggid, iidx, jidx, jnr, outeriter, inneriter;
+    real shX, shY, shZ, tx, ty, tz, fscal, rcutoff, rcutoff2;
+    int              *iinr, *jindex, *jjnr, *shiftidx, *gid;
+    real             *shiftvec, *fshift, *x, *f;
+    int vdwioffset1;
+    real ix1, iy1, iz1, fix1, fiy1, fiz1, iq1, isai1;
+    int vdwioffset2;
+    real ix2, iy2, iz2, fix2, fiy2, fiz2, iq2, isai2;
+    int vdwioffset3;
+    real ix3, iy3, iz3, fix3, fiy3, fiz3, iq3, isai3;
+    int vdwjidx0;
+    real jx0, jy0, jz0, fjx0, fjy0, fjz0, jq0, isaj0;
+    real dx10, dy10, dz10, rsq10, rinv10, rinvsq10, r10, qq10, c6_10, c12_10, cexp1_10, cexp2_10;
+    real dx20, dy20, dz20, rsq20, rinv20, rinvsq20, r20, qq20, c6_20, c12_20, cexp1_20, cexp2_20;
+    real dx30, dy30, dz30, rsq30, rinv30, rinvsq30, r30, qq30, c6_30, c12_30, cexp1_30, cexp2_30;
+    real velec, felec, velecsum, facel, crf, krf, krf2;
     real             *charge;
-    int              ewitab;
-    real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
+    int ewitab;
+    real ewtabscale, eweps, sh_ewald, ewrt, ewtabhalfspace;
     real             *ewtab;
 
-    x                = xx[0];
-    f                = ff[0];
+    x              = xx[0];
+    f              = ff[0];
 
-    nri              = nlist->nri;
-    iinr             = nlist->iinr;
-    jindex           = nlist->jindex;
-    jjnr             = nlist->jjnr;
-    shiftidx         = nlist->shift;
-    gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
-    charge           = mdatoms->chargeA;
+    nri            = nlist->nri;
+    iinr           = nlist->iinr;
+    jindex         = nlist->jindex;
+    jjnr           = nlist->jjnr;
+    shiftidx       = nlist->shift;
+    gid            = nlist->gid;
+    shiftvec       = fr->shift_vec[0];
+    fshift         = fr->fshift[0];
+    facel          = fr->epsfac;
+    charge         = mdatoms->chargeA;
 
-    sh_ewald         = fr->ic->sh_ewald;
-    ewtab            = fr->ic->tabq_coul_F;
-    ewtabscale       = fr->ic->tabq_scale;
-    ewtabhalfspace   = 0.5/ewtabscale;
+    sh_ewald       = fr->ic->sh_ewald;
+    ewtab          = fr->ic->tabq_coul_F;
+    ewtabscale     = fr->ic->tabq_scale;
+    ewtabhalfspace = 0.5 / ewtabscale;
 
     /* Setup water-specific parameters */
-    inr              = nlist->iinr[0];
-    iq1              = facel*charge[inr+1];
-    iq2              = facel*charge[inr+2];
-    iq3              = facel*charge[inr+3];
+    inr = nlist->iinr[0];
+    iq1 = facel * charge[inr + 1];
+    iq2 = facel * charge[inr + 2];
+    iq3 = facel * charge[inr + 3];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
-    rcutoff2         = rcutoff*rcutoff;
+    rcutoff   = fr->rcoulomb;
+    rcutoff2  = rcutoff * rcutoff;
 
-    outeriter        = 0;
-    inneriter        = 0;
+    outeriter = 0;
+    inneriter = 0;
 
     /* Start outer loop over neighborlists */
-    for(iidx=0; iidx<nri; iidx++)
+    for(iidx = 0; iidx < nri; iidx++)
     {
         /* Load shift vector for this list */
-        i_shift_offset   = DIM*shiftidx[iidx];
-        shX              = shiftvec[i_shift_offset+XX];
-        shY              = shiftvec[i_shift_offset+YY];
-        shZ              = shiftvec[i_shift_offset+ZZ];
+        i_shift_offset = DIM * shiftidx[iidx];
+        shX            = shiftvec[i_shift_offset + XX];
+        shY            = shiftvec[i_shift_offset + YY];
+        shZ            = shiftvec[i_shift_offset + ZZ];
 
         /* Load limits for loop over neighbors */
-        j_index_start    = jindex[iidx];
-        j_index_end      = jindex[iidx+1];
+        j_index_start = jindex[iidx];
+        j_index_end   = jindex[iidx + 1];
 
         /* Get outer coordinate index */
-        inr              = iinr[iidx];
-        i_coord_offset   = DIM*inr;
+        inr            = iinr[iidx];
+        i_coord_offset = DIM * inr;
 
         /* Load i particle coords and add shift vector */
-        ix1              = shX + x[i_coord_offset+DIM*1+XX];
-        iy1              = shY + x[i_coord_offset+DIM*1+YY];
-        iz1              = shZ + x[i_coord_offset+DIM*1+ZZ];
-        ix2              = shX + x[i_coord_offset+DIM*2+XX];
-        iy2              = shY + x[i_coord_offset+DIM*2+YY];
-        iz2              = shZ + x[i_coord_offset+DIM*2+ZZ];
-        ix3              = shX + x[i_coord_offset+DIM*3+XX];
-        iy3              = shY + x[i_coord_offset+DIM*3+YY];
-        iz3              = shZ + x[i_coord_offset+DIM*3+ZZ];
+        ix1  = shX + x[i_coord_offset + DIM * 1 + XX];
+        iy1  = shY + x[i_coord_offset + DIM * 1 + YY];
+        iz1  = shZ + x[i_coord_offset + DIM * 1 + ZZ];
+        ix2  = shX + x[i_coord_offset + DIM * 2 + XX];
+        iy2  = shY + x[i_coord_offset + DIM * 2 + YY];
+        iz2  = shZ + x[i_coord_offset + DIM * 2 + ZZ];
+        ix3  = shX + x[i_coord_offset + DIM * 3 + XX];
+        iy3  = shY + x[i_coord_offset + DIM * 3 + YY];
+        iz3  = shZ + x[i_coord_offset + DIM * 3 + ZZ];
 
-        fix1             = 0.0;
-        fiy1             = 0.0;
-        fiz1             = 0.0;
-        fix2             = 0.0;
-        fiy2             = 0.0;
-        fiz2             = 0.0;
-        fix3             = 0.0;
-        fiy3             = 0.0;
-        fiz3             = 0.0;
+        fix1 = 0.0;
+        fiy1 = 0.0;
+        fiz1 = 0.0;
+        fix2 = 0.0;
+        fiy2 = 0.0;
+        fiz2 = 0.0;
+        fix3 = 0.0;
+        fiy3 = 0.0;
+        fiz3 = 0.0;
 
         /* Start inner kernel loop */
-        for(jidx=j_index_start; jidx<j_index_end; jidx++)
+        for(jidx = j_index_start; jidx < j_index_end; jidx++)
         {
             /* Get j neighbor index, and coordinate index */
-            jnr              = jjnr[jidx];
-            j_coord_offset   = DIM*jnr;
+            jnr            = jjnr[jidx];
+            j_coord_offset = DIM * jnr;
 
             /* load j atom coordinates */
-            jx0              = x[j_coord_offset+DIM*0+XX];
-            jy0              = x[j_coord_offset+DIM*0+YY];
-            jz0              = x[j_coord_offset+DIM*0+ZZ];
+            jx0 = x[j_coord_offset + DIM * 0 + XX];
+            jy0 = x[j_coord_offset + DIM * 0 + YY];
+            jz0 = x[j_coord_offset + DIM * 0 + ZZ];
 
             /* Calculate displacement vector */
-            dx10             = ix1 - jx0;
-            dy10             = iy1 - jy0;
-            dz10             = iz1 - jz0;
-            dx20             = ix2 - jx0;
-            dy20             = iy2 - jy0;
-            dz20             = iz2 - jz0;
-            dx30             = ix3 - jx0;
-            dy30             = iy3 - jy0;
-            dz30             = iz3 - jz0;
+            dx10 = ix1 - jx0;
+            dy10 = iy1 - jy0;
+            dz10 = iz1 - jz0;
+            dx20 = ix2 - jx0;
+            dy20 = iy2 - jy0;
+            dz20 = iz2 - jz0;
+            dx30 = ix3 - jx0;
+            dy30 = iy3 - jy0;
+            dz30 = iz3 - jz0;
 
             /* Calculate squared distance and things based on it */
-            rsq10            = dx10*dx10+dy10*dy10+dz10*dz10;
-            rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
-            rsq30            = dx30*dx30+dy30*dy30+dz30*dz30;
+            rsq10    = dx10 * dx10 + dy10 * dy10 + dz10 * dz10;
+            rsq20    = dx20 * dx20 + dy20 * dy20 + dz20 * dz20;
+            rsq30    = dx30 * dx30 + dy30 * dy30 + dz30 * dz30;
 
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
-            rinv30           = gmx_invsqrt(rsq30);
+            rinv10   = gmx_invsqrt(rsq10);
+            rinv20   = gmx_invsqrt(rsq20);
+            rinv30   = gmx_invsqrt(rsq30);
 
-            rinvsq10         = rinv10*rinv10;
-            rinvsq20         = rinv20*rinv20;
-            rinvsq30         = rinv30*rinv30;
+            rinvsq10 = rinv10 * rinv10;
+            rinvsq20 = rinv20 * rinv20;
+            rinvsq30 = rinv30 * rinv30;
 
             /* Load parameters for j particles */
-            jq0              = charge[jnr+0];
+            jq0 = charge[jnr + 0];
 
             /**************************
-             * CALCULATE INTERACTIONS *
-             **************************/
+            * CALCULATE INTERACTIONS *
+            **************************/
 
-            if (rsq10<rcutoff2)
+            if (rsq10 < rcutoff2)
             {
 
-            r10              = rsq10*rinv10;
+                r10  = rsq10 * rinv10;
 
-            qq10             = iq1*jq0;
+                qq10 = iq1 * jq0;
 
-            /* EWALD ELECTROSTATICS */
+                /* EWALD ELECTROSTATICS */
 
-            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
-            ewrt             = r10*ewtabscale;
-            ewitab           = ewrt;
-            eweps            = ewrt-ewitab;
-            felec            = (1.0-eweps)*ewtab[ewitab]+eweps*ewtab[ewitab+1];
-            felec            = qq10*rinv10*(rinvsq10-felec);
+                /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+                ewrt   = r10 * ewtabscale;
+                ewitab = ewrt;
+                eweps  = ewrt - ewitab;
+                felec  = (1.0 - eweps) * ewtab[ewitab] + eweps * ewtab[ewitab + 1];
+                felec  = qq10 * rinv10 * (rinvsq10 - felec);
 
-            fscal            = felec;
+                fscal  = felec;
 
-            /* Calculate temporary vectorial force */
-            tx               = fscal*dx10;
-            ty               = fscal*dy10;
-            tz               = fscal*dz10;
+                /* Calculate temporary vectorial force */
+                tx = fscal * dx10;
+                ty = fscal * dy10;
+                tz = fscal * dz10;
 
-            /* Update vectorial force */
-            fix1            += tx;
-            fiy1            += ty;
-            fiz1            += tz;
-            f[j_coord_offset+DIM*0+XX] -= tx;
-            f[j_coord_offset+DIM*0+YY] -= ty;
-            f[j_coord_offset+DIM*0+ZZ] -= tz;
+                /* Update vectorial force */
+                fix1                             += tx;
+                fiy1                             += ty;
+                fiz1                             += tz;
+                f[j_coord_offset + DIM * 0 + XX] -= tx;
+                f[j_coord_offset + DIM * 0 + YY] -= ty;
+                f[j_coord_offset + DIM * 0 + ZZ] -= tz;
 
             }
 
             /**************************
-             * CALCULATE INTERACTIONS *
-             **************************/
+            * CALCULATE INTERACTIONS *
+            **************************/
 
-            if (rsq20<rcutoff2)
+            if (rsq20 < rcutoff2)
             {
 
-            r20              = rsq20*rinv20;
+                r20  = rsq20 * rinv20;
 
-            qq20             = iq2*jq0;
+                qq20 = iq2 * jq0;
 
-            /* EWALD ELECTROSTATICS */
+                /* EWALD ELECTROSTATICS */
 
-            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
-            ewrt             = r20*ewtabscale;
-            ewitab           = ewrt;
-            eweps            = ewrt-ewitab;
-            felec            = (1.0-eweps)*ewtab[ewitab]+eweps*ewtab[ewitab+1];
-            felec            = qq20*rinv20*(rinvsq20-felec);
+                /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+                ewrt   = r20 * ewtabscale;
+                ewitab = ewrt;
+                eweps  = ewrt - ewitab;
+                felec  = (1.0 - eweps) * ewtab[ewitab] + eweps * ewtab[ewitab + 1];
+                felec  = qq20 * rinv20 * (rinvsq20 - felec);
 
-            fscal            = felec;
+                fscal  = felec;
 
-            /* Calculate temporary vectorial force */
-            tx               = fscal*dx20;
-            ty               = fscal*dy20;
-            tz               = fscal*dz20;
+                /* Calculate temporary vectorial force */
+                tx = fscal * dx20;
+                ty = fscal * dy20;
+                tz = fscal * dz20;
 
-            /* Update vectorial force */
-            fix2            += tx;
-            fiy2            += ty;
-            fiz2            += tz;
-            f[j_coord_offset+DIM*0+XX] -= tx;
-            f[j_coord_offset+DIM*0+YY] -= ty;
-            f[j_coord_offset+DIM*0+ZZ] -= tz;
+                /* Update vectorial force */
+                fix2                             += tx;
+                fiy2                             += ty;
+                fiz2                             += tz;
+                f[j_coord_offset + DIM * 0 + XX] -= tx;
+                f[j_coord_offset + DIM * 0 + YY] -= ty;
+                f[j_coord_offset + DIM * 0 + ZZ] -= tz;
 
             }
 
             /**************************
-             * CALCULATE INTERACTIONS *
-             **************************/
+            * CALCULATE INTERACTIONS *
+            **************************/
 
-            if (rsq30<rcutoff2)
+            if (rsq30 < rcutoff2)
             {
 
-            r30              = rsq30*rinv30;
+                r30  = rsq30 * rinv30;
 
-            qq30             = iq3*jq0;
+                qq30 = iq3 * jq0;
 
-            /* EWALD ELECTROSTATICS */
+                /* EWALD ELECTROSTATICS */
 
-            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
-            ewrt             = r30*ewtabscale;
-            ewitab           = ewrt;
-            eweps            = ewrt-ewitab;
-            felec            = (1.0-eweps)*ewtab[ewitab]+eweps*ewtab[ewitab+1];
-            felec            = qq30*rinv30*(rinvsq30-felec);
+                /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+                ewrt   = r30 * ewtabscale;
+                ewitab = ewrt;
+                eweps  = ewrt - ewitab;
+                felec  = (1.0 - eweps) * ewtab[ewitab] + eweps * ewtab[ewitab + 1];
+                felec  = qq30 * rinv30 * (rinvsq30 - felec);
 
-            fscal            = felec;
+                fscal  = felec;
 
-            /* Calculate temporary vectorial force */
-            tx               = fscal*dx30;
-            ty               = fscal*dy30;
-            tz               = fscal*dz30;
+                /* Calculate temporary vectorial force */
+                tx = fscal * dx30;
+                ty = fscal * dy30;
+                tz = fscal * dz30;
 
-            /* Update vectorial force */
-            fix3            += tx;
-            fiy3            += ty;
-            fiz3            += tz;
-            f[j_coord_offset+DIM*0+XX] -= tx;
-            f[j_coord_offset+DIM*0+YY] -= ty;
-            f[j_coord_offset+DIM*0+ZZ] -= tz;
+                /* Update vectorial force */
+                fix3                             += tx;
+                fiy3                             += ty;
+                fiz3                             += tz;
+                f[j_coord_offset + DIM * 0 + XX] -= tx;
+                f[j_coord_offset + DIM * 0 + YY] -= ty;
+                f[j_coord_offset + DIM * 0 + ZZ] -= tz;
 
             }
 
@@ -616,39 +616,39 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4P1_F_c
         }
         /* End of innermost loop */
 
-        tx = ty = tz = 0;
-        f[i_coord_offset+DIM*1+XX] += fix1;
-        f[i_coord_offset+DIM*1+YY] += fiy1;
-        f[i_coord_offset+DIM*1+ZZ] += fiz1;
-        tx                         += fix1;
-        ty                         += fiy1;
-        tz                         += fiz1;
-        f[i_coord_offset+DIM*2+XX] += fix2;
-        f[i_coord_offset+DIM*2+YY] += fiy2;
-        f[i_coord_offset+DIM*2+ZZ] += fiz2;
-        tx                         += fix2;
-        ty                         += fiy2;
-        tz                         += fiz2;
-        f[i_coord_offset+DIM*3+XX] += fix3;
-        f[i_coord_offset+DIM*3+YY] += fiy3;
-        f[i_coord_offset+DIM*3+ZZ] += fiz3;
-        tx                         += fix3;
-        ty                         += fiy3;
-        tz                         += fiz3;
-        fshift[i_shift_offset+XX]  += tx;
-        fshift[i_shift_offset+YY]  += ty;
-        fshift[i_shift_offset+ZZ]  += tz;
+        tx                                = ty = tz = 0;
+        f[i_coord_offset + DIM * 1 + XX] += fix1;
+        f[i_coord_offset + DIM * 1 + YY] += fiy1;
+        f[i_coord_offset + DIM * 1 + ZZ] += fiz1;
+        tx                               += fix1;
+        ty                               += fiy1;
+        tz                               += fiz1;
+        f[i_coord_offset + DIM * 2 + XX] += fix2;
+        f[i_coord_offset + DIM * 2 + YY] += fiy2;
+        f[i_coord_offset + DIM * 2 + ZZ] += fiz2;
+        tx                               += fix2;
+        ty                               += fiy2;
+        tz                               += fiz2;
+        f[i_coord_offset + DIM * 3 + XX] += fix3;
+        f[i_coord_offset + DIM * 3 + YY] += fiy3;
+        f[i_coord_offset + DIM * 3 + ZZ] += fiz3;
+        tx                               += fix3;
+        ty                               += fiy3;
+        tz                               += fiz3;
+        fshift[i_shift_offset + XX]      += tx;
+        fshift[i_shift_offset + YY]      += ty;
+        fshift[i_shift_offset + ZZ]      += tz;
 
         /* Increment number of inner iterations */
-        inneriter                  += j_index_end - j_index_start;
+        inneriter += j_index_end - j_index_start;
 
         /* Outer loop uses 30 flops */
     }
 
     /* Increment number of outer iterations */
-    outeriter        += nri;
+    outeriter += nri;
 
     /* Update outer/inner flops */
 
-    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W4_F,outeriter*30 + inneriter*102);
+    inc_nrnb(nrnb, eNR_NBKERNEL_ELEC_W4_F, outeriter * 30 + inneriter * 102);
 }

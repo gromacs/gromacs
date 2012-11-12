@@ -65,48 +65,56 @@ using ::std::ostream;
 
 // Prints a segment of bytes in the given object.
 void PrintByteSegmentInObjectTo(const unsigned char* obj_bytes, size_t start,
-                                size_t count, ostream* os) {
-  char text[5] = "";
-  for (size_t i = 0; i != count; i++) {
-    const size_t j = start + i;
-    if (i != 0) {
-      // Organizes the bytes into groups of 2 for easy parsing by
-      // human.
-      if ((j % 2) == 0)
-        *os << ' ';
-      else
-        *os << '-';
+                                size_t count, ostream* os)
+{
+    char text[5] = "";
+    for (size_t i = 0; i != count; i++)
+    {
+        const size_t j = start + i;
+        if (i != 0) {
+            // Organizes the bytes into groups of 2 for easy parsing by
+            // human.
+            if ((j % 2) == 0) {
+                *os << ' ';
+            }
+            else
+            {
+                *os << '-';
+            }
+        }
+        snprintf(text, sizeof(text), "%02X", obj_bytes[j]);
+        *os << text;
     }
-    snprintf(text, sizeof(text), "%02X", obj_bytes[j]);
-    *os << text;
-  }
 }
 
 // Prints the bytes in the given value to the given ostream.
 void PrintBytesInObjectToImpl(const unsigned char* obj_bytes, size_t count,
-                              ostream* os) {
-  // Tells the user how big the object is.
-  *os << count << "-byte object <";
+                              ostream* os)
+{
+    // Tells the user how big the object is.
+    *os << count << "-byte object <";
 
-  const size_t kThreshold = 132;
-  const size_t kChunkSize = 64;
-  // If the object size is bigger than kThreshold, we'll have to omit
-  // some details by printing only the first and the last kChunkSize
-  // bytes.
-  // TODO(wan): let the user control the threshold using a flag.
-  if (count < kThreshold) {
-    PrintByteSegmentInObjectTo(obj_bytes, 0, count, os);
-  } else {
-    PrintByteSegmentInObjectTo(obj_bytes, 0, kChunkSize, os);
-    *os << " ... ";
-    // Rounds up to 2-byte boundary.
-    const size_t resume_pos = (count - kChunkSize + 1)/2*2;
-    PrintByteSegmentInObjectTo(obj_bytes, resume_pos, count - resume_pos, os);
-  }
-  *os << ">";
+    const size_t kThreshold = 132;
+    const size_t kChunkSize = 64;
+    // If the object size is bigger than kThreshold, we'll have to omit
+    // some details by printing only the first and the last kChunkSize
+    // bytes.
+    // TODO(wan): let the user control the threshold using a flag.
+    if (count < kThreshold) {
+        PrintByteSegmentInObjectTo(obj_bytes, 0, count, os);
+    }
+    else
+    {
+        PrintByteSegmentInObjectTo(obj_bytes, 0, kChunkSize, os);
+        *os << " ... ";
+        // Rounds up to 2-byte boundary.
+        const size_t resume_pos = (count - kChunkSize + 1) / 2 * 2;
+        PrintByteSegmentInObjectTo(obj_bytes, resume_pos, count - resume_pos, os);
+    }
+    *os << ">";
 }
 
-}  // namespace
+}   // namespace
 
 namespace internal2 {
 
@@ -116,11 +124,12 @@ namespace internal2 {
 // ::testing::internal namespace, which contains a << operator that
 // sometimes conflicts with the one in STL.
 void PrintBytesInObjectTo(const unsigned char* obj_bytes, size_t count,
-                          ostream* os) {
-  PrintBytesInObjectToImpl(obj_bytes, count, os);
+                          ostream* os)
+{
+    PrintBytesInObjectToImpl(obj_bytes, count, os);
 }
 
-}  // namespace internal2
+}   // namespace internal2
 
 namespace internal {
 
@@ -130,16 +139,17 @@ namespace internal {
 //   - as a hexidecimal escape sequence (e.g. '\x7F'), or
 //   - as a special escape sequence (e.g. '\r', '\n').
 enum CharFormat {
-  kAsIs,
-  kHexEscape,
-  kSpecialEscape
+    kAsIs,
+    kHexEscape,
+    kSpecialEscape
 };
 
 // Returns true if c is a printable ASCII character.  We test the
 // value of c directly instead of calling isprint(), which is buggy on
 // Windows Mobile.
-inline bool IsPrintableAscii(wchar_t c) {
-  return 0x20 <= c && c <= 0x7E;
+inline bool IsPrintableAscii(wchar_t c)
+{
+    return 0x20 <= c && c <= 0x7E;
 }
 
 // Prints a wide or narrow char c as a character literal without the
@@ -147,69 +157,74 @@ inline bool IsPrintableAscii(wchar_t c) {
 // The template argument UnsignedChar is the unsigned version of Char,
 // which is the type of c.
 template <typename UnsignedChar, typename Char>
-static CharFormat PrintAsCharLiteralTo(Char c, ostream* os) {
-  switch (static_cast<wchar_t>(c)) {
+static CharFormat PrintAsCharLiteralTo(Char c, ostream* os)
+{
+    switch (static_cast<wchar_t>(c)) {
     case L'\0':
-      *os << "\\0";
-      break;
+        *os << "\\0";
+        break;
     case L'\'':
-      *os << "\\'";
-      break;
+        *os << "\\'";
+        break;
     case L'\\':
-      *os << "\\\\";
-      break;
+        *os << "\\\\";
+        break;
     case L'\a':
-      *os << "\\a";
-      break;
+        *os << "\\a";
+        break;
     case L'\b':
-      *os << "\\b";
-      break;
+        *os << "\\b";
+        break;
     case L'\f':
-      *os << "\\f";
-      break;
+        *os << "\\f";
+        break;
     case L'\n':
-      *os << "\\n";
-      break;
+        *os << "\\n";
+        break;
     case L'\r':
-      *os << "\\r";
-      break;
+        *os << "\\r";
+        break;
     case L'\t':
-      *os << "\\t";
-      break;
+        *os << "\\t";
+        break;
     case L'\v':
-      *os << "\\v";
-      break;
+        *os << "\\v";
+        break;
     default:
-      if (IsPrintableAscii(c)) {
-        *os << static_cast<char>(c);
-        return kAsIs;
-      } else {
-        *os << String::Format("\\x%X", static_cast<UnsignedChar>(c));
-        return kHexEscape;
-      }
-  }
-  return kSpecialEscape;
+        if (IsPrintableAscii(c)) {
+            *os << static_cast<char>(c);
+            return kAsIs;
+        }
+        else
+        {
+            *os << String::Format("\\x%X", static_cast<UnsignedChar>(c));
+            return kHexEscape;
+        }
+    }
+    return kSpecialEscape;
 }
 
 // Prints a char c as if it's part of a string literal, escaping it when
 // necessary; returns how c was formatted.
-static CharFormat PrintAsWideStringLiteralTo(wchar_t c, ostream* os) {
-  switch (c) {
+static CharFormat PrintAsWideStringLiteralTo(wchar_t c, ostream* os)
+{
+    switch (c) {
     case L'\'':
-      *os << "'";
-      return kAsIs;
+        *os << "'";
+        return kAsIs;
     case L'"':
-      *os << "\\\"";
-      return kSpecialEscape;
+        *os << "\\\"";
+        return kSpecialEscape;
     default:
-      return PrintAsCharLiteralTo<wchar_t>(c, os);
-  }
+        return PrintAsCharLiteralTo<wchar_t>(c, os);
+    }
 }
 
 // Prints a char c as if it's part of a string literal, escaping it when
 // necessary; returns how c was formatted.
-static CharFormat PrintAsNarrowStringLiteralTo(char c, ostream* os) {
-  return PrintAsWideStringLiteralTo(static_cast<unsigned char>(c), os);
+static CharFormat PrintAsNarrowStringLiteralTo(char c, ostream* os)
+{
+    return PrintAsWideStringLiteralTo(static_cast<unsigned char>(c), os);
 }
 
 // Prints a wide or narrow character c and its code.  '\0' is printed
@@ -217,96 +232,111 @@ static CharFormat PrintAsNarrowStringLiteralTo(char c, ostream* os) {
 // using the standard C++ escape sequence.  The template argument
 // UnsignedChar is the unsigned version of Char, which is the type of c.
 template <typename UnsignedChar, typename Char>
-void PrintCharAndCodeTo(Char c, ostream* os) {
-  // First, print c as a literal in the most readable form we can find.
-  *os << ((sizeof(c) > 1) ? "L'" : "'");
-  const CharFormat format = PrintAsCharLiteralTo<UnsignedChar>(c, os);
-  *os << "'";
+void PrintCharAndCodeTo(Char c, ostream* os)
+{
+    // First, print c as a literal in the most readable form we can find.
+    *os << ((sizeof(c) > 1) ? "L'" : "'");
+    const CharFormat format = PrintAsCharLiteralTo<UnsignedChar>(c, os);
+    *os << "'";
 
-  // To aid user debugging, we also print c's code in decimal, unless
-  // it's 0 (in which case c was printed as '\\0', making the code
-  // obvious).
-  if (c == 0)
-    return;
-  *os << " (" << String::Format("%d", c).c_str();
+    // To aid user debugging, we also print c's code in decimal, unless
+    // it's 0 (in which case c was printed as '\\0', making the code
+    // obvious).
+    if (c == 0) {
+        return;
+    }
+    *os << " (" << String::Format("%d", c).c_str();
 
-  // For more convenience, we print c's code again in hexidecimal,
-  // unless c was already printed in the form '\x##' or the code is in
-  // [1, 9].
-  if (format == kHexEscape || (1 <= c && c <= 9)) {
-    // Do nothing.
-  } else {
-    *os << String::Format(", 0x%X",
-                          static_cast<UnsignedChar>(c)).c_str();
-  }
-  *os << ")";
+    // For more convenience, we print c's code again in hexidecimal,
+    // unless c was already printed in the form '\x##' or the code is in
+    // [1, 9].
+    if (format == kHexEscape || (1 <= c && c <= 9)) {
+        // Do nothing.
+    }
+    else
+    {
+        *os << String::Format(", 0x%X",
+                              static_cast<UnsignedChar>(c)).c_str();
+    }
+    *os << ")";
 }
 
-void PrintTo(unsigned char c, ::std::ostream* os) {
-  PrintCharAndCodeTo<unsigned char>(c, os);
+void PrintTo(unsigned char c, ::std::ostream* os)
+{
+    PrintCharAndCodeTo<unsigned char>(c, os);
 }
-void PrintTo(signed char c, ::std::ostream* os) {
-  PrintCharAndCodeTo<unsigned char>(c, os);
+void PrintTo(signed char c, ::std::ostream* os)
+{
+    PrintCharAndCodeTo<unsigned char>(c, os);
 }
 
 // Prints a wchar_t as a symbol if it is printable or as its internal
 // code otherwise and also as its code.  L'\0' is printed as "L'\\0'".
-void PrintTo(wchar_t wc, ostream* os) {
-  PrintCharAndCodeTo<wchar_t>(wc, os);
+void PrintTo(wchar_t wc, ostream* os)
+{
+    PrintCharAndCodeTo<wchar_t>(wc, os);
 }
 
 // Prints the given array of characters to the ostream.
 // The array starts at *begin, the length is len, it may include '\0' characters
 // and may not be null-terminated.
-static void PrintCharsAsStringTo(const char* begin, size_t len, ostream* os) {
-  *os << "\"";
-  bool is_previous_hex = false;
-  for (size_t index = 0; index < len; ++index) {
-    const char cur = begin[index];
-    if (is_previous_hex && IsXDigit(cur)) {
-      // Previous character is of '\x..' form and this character can be
-      // interpreted as another hexadecimal digit in its number. Break string to
-      // disambiguate.
-      *os << "\" \"";
+static void PrintCharsAsStringTo(const char* begin, size_t len, ostream* os)
+{
+    *os << "\"";
+    bool is_previous_hex = false;
+    for (size_t index = 0; index < len; ++index)
+    {
+        const char cur = begin[index];
+        if (is_previous_hex && IsXDigit(cur)) {
+            // Previous character is of '\x..' form and this character can be
+            // interpreted as another hexadecimal digit in its number. Break string to
+            // disambiguate.
+            *os << "\" \"";
+        }
+        is_previous_hex = PrintAsNarrowStringLiteralTo(cur, os) == kHexEscape;
     }
-    is_previous_hex = PrintAsNarrowStringLiteralTo(cur, os) == kHexEscape;
-  }
-  *os << "\"";
+    *os << "\"";
 }
 
 // Prints a (const) char array of 'len' elements, starting at address 'begin'.
-void UniversalPrintArray(const char* begin, size_t len, ostream* os) {
-  PrintCharsAsStringTo(begin, len, os);
+void UniversalPrintArray(const char* begin, size_t len, ostream* os)
+{
+    PrintCharsAsStringTo(begin, len, os);
 }
 
 // Prints the given array of wide characters to the ostream.
 // The array starts at *begin, the length is len, it may include L'\0'
 // characters and may not be null-terminated.
 static void PrintWideCharsAsStringTo(const wchar_t* begin, size_t len,
-                                     ostream* os) {
-  *os << "L\"";
-  bool is_previous_hex = false;
-  for (size_t index = 0; index < len; ++index) {
-    const wchar_t cur = begin[index];
-    if (is_previous_hex && isascii(cur) && IsXDigit(static_cast<char>(cur))) {
-      // Previous character is of '\x..' form and this character can be
-      // interpreted as another hexadecimal digit in its number. Break string to
-      // disambiguate.
-      *os << "\" L\"";
+                                     ostream* os)
+{
+    *os << "L\"";
+    bool is_previous_hex = false;
+    for (size_t index = 0; index < len; ++index)
+    {
+        const wchar_t cur = begin[index];
+        if (is_previous_hex && isascii(cur) && IsXDigit(static_cast<char>(cur))) {
+            // Previous character is of '\x..' form and this character can be
+            // interpreted as another hexadecimal digit in its number. Break string to
+            // disambiguate.
+            *os << "\" L\"";
+        }
+        is_previous_hex = PrintAsWideStringLiteralTo(cur, os) == kHexEscape;
     }
-    is_previous_hex = PrintAsWideStringLiteralTo(cur, os) == kHexEscape;
-  }
-  *os << "\"";
+    *os << "\"";
 }
 
 // Prints the given C string to the ostream.
-void PrintTo(const char* s, ostream* os) {
-  if (s == NULL) {
-    *os << "NULL";
-  } else {
-    *os << ImplicitCast_<const void*>(s) << " pointing to ";
-    PrintCharsAsStringTo(s, strlen(s), os);
-  }
+void PrintTo(const char* s, ostream* os)
+{
+    if (s == NULL) {
+        *os << "NULL";
+    }
+    else
+    {
+        *os << ImplicitCast_<const void*>(s) << " pointing to ";
+        PrintCharsAsStringTo(s, strlen(s), os);
+    }
 }
 
 // MSVC compiler can be configured to define whar_t as a typedef
@@ -317,40 +347,47 @@ void PrintTo(const char* s, ostream* os) {
 // wchar_t is implemented as a native type.
 #if !defined(_MSC_VER) || defined(_NATIVE_WCHAR_T_DEFINED)
 // Prints the given wide C string to the ostream.
-void PrintTo(const wchar_t* s, ostream* os) {
-  if (s == NULL) {
-    *os << "NULL";
-  } else {
-    *os << ImplicitCast_<const void*>(s) << " pointing to ";
-    PrintWideCharsAsStringTo(s, wcslen(s), os);
-  }
+void PrintTo(const wchar_t* s, ostream* os)
+{
+    if (s == NULL) {
+        *os << "NULL";
+    }
+    else
+    {
+        *os << ImplicitCast_<const void*>(s) << " pointing to ";
+        PrintWideCharsAsStringTo(s, wcslen(s), os);
+    }
 }
 #endif  // wchar_t is native
 
 // Prints a ::string object.
 #if GTEST_HAS_GLOBAL_STRING
-void PrintStringTo(const ::string& s, ostream* os) {
-  PrintCharsAsStringTo(s.data(), s.size(), os);
+void PrintStringTo(const ::string& s, ostream* os)
+{
+    PrintCharsAsStringTo(s.data(), s.size(), os);
 }
 #endif  // GTEST_HAS_GLOBAL_STRING
 
-void PrintStringTo(const ::std::string& s, ostream* os) {
-  PrintCharsAsStringTo(s.data(), s.size(), os);
+void PrintStringTo(const ::std::string& s, ostream* os)
+{
+    PrintCharsAsStringTo(s.data(), s.size(), os);
 }
 
 // Prints a ::wstring object.
 #if GTEST_HAS_GLOBAL_WSTRING
-void PrintWideStringTo(const ::wstring& s, ostream* os) {
-  PrintWideCharsAsStringTo(s.data(), s.size(), os);
+void PrintWideStringTo(const ::wstring& s, ostream* os)
+{
+    PrintWideCharsAsStringTo(s.data(), s.size(), os);
 }
 #endif  // GTEST_HAS_GLOBAL_WSTRING
 
 #if GTEST_HAS_STD_WSTRING
-void PrintWideStringTo(const ::std::wstring& s, ostream* os) {
-  PrintWideCharsAsStringTo(s.data(), s.size(), os);
+void PrintWideStringTo(const ::std::wstring& s, ostream* os)
+{
+    PrintWideCharsAsStringTo(s.data(), s.size(), os);
 }
 #endif  // GTEST_HAS_STD_WSTRING
 
-}  // namespace internal
+}   // namespace internal
 
 }  // namespace testing

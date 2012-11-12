@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -62,17 +62,17 @@
 /* This is the part that reads dummy and ascii files.  */
 
 
-static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
-                       const char *desc, const char *srcfile, int line);
-static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
-                        const char *desc, const char *srcfile, int line);
+static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
+                           const char *desc, const char *srcfile, int line);
+static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
+                            const char *desc, const char *srcfile, int line);
 
 
-const t_iotype bin_iotype={do_binread, do_binwrite};
+const t_iotype bin_iotype = {do_binread, do_binwrite};
 
 
-static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
-                        const char *desc, const char *srcfile, int line)
+static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
+                            const char *desc, const char *srcfile, int line)
 {
     size_t size = 0, wsize;
     int ssize;
@@ -134,8 +134,8 @@ static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
     return (wsize == nitem);
 }
 
-static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
-                       const char *desc, const char *srcfile, int line)
+static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
+                           const char *desc, const char *srcfile, int line)
 {
     size_t size = 0, rsize;
     int ssize;
@@ -144,10 +144,13 @@ static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
     switch (eio)
     {
     case eioREAL:
-        if (fio->bDouble)
+        if (fio->bDouble) {
             size = sizeof(double);
+        }
         else
+        {
             size = sizeof(float);
+        }
         break;
     case eioFLOAT:
         size = sizeof(float);
@@ -172,10 +175,13 @@ static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
         break;
     case eioRVEC:
     case eioNRVEC:
-        if (fio->bDouble)
+        if (fio->bDouble) {
             size = sizeof(double) * DIM;
+        }
         else
+        {
             size = sizeof(float) * DIM;
+        }
         break;
     case eioIVEC:
         size = sizeof(ivec);
@@ -187,18 +193,20 @@ static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
     default:
         gmx_fio_fe(fio, eio, desc, srcfile, line);
     }
-    if (item)
+    if (item) {
         rsize = fread(item, size, nitem, fio->fp);
+    }
     else
     {
         /* Skip over it if we have a NULL pointer here */
-        gmx_fseek(fio->fp, (gmx_off_t)(size*nitem), SEEK_CUR);
+        gmx_fseek(fio->fp, (gmx_off_t)(size * nitem), SEEK_CUR);
         rsize = nitem;
     }
-    if ((rsize != nitem) && (fio->bDebug))
+    if ((rsize != nitem) && (fio->bDebug)) {
         fprintf(stderr,
                 "Error reading %s %s from file %s (source %s, line %d)\n",
                 eioNames[eio], desc, fio->fn, srcfile, line);
+    }
 
     return (rsize == nitem);
 }

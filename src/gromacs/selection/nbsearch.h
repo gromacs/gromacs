@@ -69,7 +69,7 @@ gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc,
                           const struct gmx_ana_pos_t *p);
 /** Sets the exclusions for the next neighborhood search. */
 void
-gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[]);
+gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t * d, int nexcl, int excl[]);
 /** Check whether a point is within a neighborhood. */
 bool
 gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, const rvec x);

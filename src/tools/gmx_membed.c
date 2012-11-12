@@ -46,7 +46,7 @@
 #include "gmx_ana.h"
 #include "string2.h"
 
-int gmx_membed(int argc,char *argv[])
+int gmx_membed(int argc, char *argv[])
 {
     const char *desc[] = {
         "[TT]g_membed[tt] embeds a membrane protein into an equilibrated lipid bilayer at the position",
@@ -101,21 +101,21 @@ int gmx_membed(int argc,char *argv[])
 #define NFILE asize(fnm)
 
     /* Command line options ! */
-    real xy_fac = 0.5;
-    real xy_max = 1.0;
-    real z_fac = 1.0;
-    real z_max = 1.0;
-    int it_xy = 1000;
-    int it_z = 0;
-    real probe_rad = 0.22;
-    int low_up_rm = 0;
-    int maxwarn=0;
-    int pieces=1;
-    gmx_bool bALLOW_ASYMMETRY=FALSE;
-    gmx_bool bStart=FALSE;
-    int nstepout=100;
-    gmx_bool bVerbose=FALSE;
-    char *mdrun_path=NULL;
+    real xy_fac               = 0.5;
+    real xy_max               = 1.0;
+    real z_fac                = 1.0;
+    real z_max                = 1.0;
+    int it_xy                 = 1000;
+    int it_z                  = 0;
+    real probe_rad            = 0.22;
+    int low_up_rm             = 0;
+    int maxwarn               = 0;
+    int pieces                = 1;
+    gmx_bool bALLOW_ASYMMETRY = FALSE;
+    gmx_bool bStart           = FALSE;
+    int nstepout              = 100;
+    gmx_bool bVerbose         = FALSE;
+    char *mdrun_path          = NULL;
 
 /* arguments relevant to OPENMM only*/
 #ifdef GMX_OPENMM
@@ -124,94 +124,94 @@ int gmx_membed(int argc,char *argv[])
 
     t_pargs pa[] = {
         { "-xyinit",   FALSE, etREAL,  {&xy_fac},
-            "Resize factor for the protein in the xy dimension before starting embedding" },
+          "Resize factor for the protein in the xy dimension before starting embedding" },
         { "-xyend",   FALSE, etREAL,  {&xy_max},
-            "Final resize factor in the xy dimension" },
+          "Final resize factor in the xy dimension" },
         { "-zinit",    FALSE, etREAL,  {&z_fac},
-            "Resize factor for the protein in the z dimension before starting embedding" },
+          "Resize factor for the protein in the z dimension before starting embedding" },
         { "-zend",    FALSE, etREAL,  {&z_max},
-            "Final resize faction in the z dimension" },
+          "Final resize faction in the z dimension" },
         { "-nxy",     FALSE,  etINT,  {&it_xy},
-            "Number of iteration for the xy dimension" },
+          "Number of iteration for the xy dimension" },
         { "-nz",      FALSE,  etINT,  {&it_z},
-            "Number of iterations for the z dimension" },
+          "Number of iterations for the z dimension" },
         { "-rad",     FALSE, etREAL,  {&probe_rad},
-            "Probe radius to check for overlap between the group to embed and the membrane"},
+          "Probe radius to check for overlap between the group to embed and the membrane"},
         { "-pieces",  FALSE,  etINT,  {&pieces},
-            "Perform piecewise resize. Select parts of the group to insert and resize these with respect to their own geometrical center." },
-        { "-asymmetry",FALSE, etBOOL,{&bALLOW_ASYMMETRY},
-            "Allow asymmetric insertion, i.e. the number of lipids removed from the upper and lower leaflet will not be checked." },
-        { "-ndiff" ,  FALSE, etINT, {&low_up_rm},
-            "Number of lipids that will additionally be removed from the lower (negative number) or upper (positive number) membrane leaflet." },
+          "Perform piecewise resize. Select parts of the group to insert and resize these with respect to their own geometrical center." },
+        { "-asymmetry", FALSE, etBOOL, {&bALLOW_ASYMMETRY},
+          "Allow asymmetric insertion, i.e. the number of lipids removed from the upper and lower leaflet will not be checked." },
+        { "-ndiff",  FALSE, etINT, {&low_up_rm},
+          "Number of lipids that will additionally be removed from the lower (negative number) or upper (positive number) membrane leaflet." },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
-            "Maximum number of warning allowed" },
+          "Maximum number of warning allowed" },
         { "-start",   FALSE, etBOOL, {&bStart},
-            "Call mdrun with membed options" },
+          "Call mdrun with membed options" },
         { "-stepout", FALSE, etINT, {&nstepout},
-            "HIDDENFrequency of writing the remaining runtime" },
-        { "-v",       FALSE, etBOOL,{&bVerbose},
-            "Be loud and noisy" },
+          "HIDDENFrequency of writing the remaining runtime" },
+        { "-v",       FALSE, etBOOL, {&bVerbose},
+          "Be loud and noisy" },
         { "-mdrun_path", FALSE, etSTR, {&mdrun_path},
-            "Path to the mdrun executable compiled with this g_membed version" }
+          "Path to the mdrun executable compiled with this g_membed version" }
     };
 
     FILE *data_out;
     output_env_t oenv;
-    char buf[256],buf2[64];
+    char buf[256], buf2[64];
     gmx_bool bSucces;
 
-    parse_common_args(&argc,argv,0, NFILE,fnm,asize(pa),pa,
-                      asize(desc),desc,0,NULL, &oenv);
+    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                      asize(desc), desc, 0, NULL, &oenv);
 
-    data_out = ffopen(opt2fn("-dat",NFILE,fnm),"w");
+    data_out = ffopen(opt2fn("-dat", NFILE, fnm), "w");
 
-    fprintf(data_out,"nxy = %d\nnz = %d\nxyinit = %f\nxyend = %f\nzinit = %f\nzend = %f\n"
-                     "rad = %f\npieces = %d\nasymmetry = %s\nndiff = %d\nmaxwarn = %d\n",
-                     it_xy,it_z,xy_fac,xy_max,z_fac,z_max,probe_rad,pieces,
-                     bALLOW_ASYMMETRY ? "yes" : "no",low_up_rm,maxwarn);
+    fprintf(data_out, "nxy = %d\nnz = %d\nxyinit = %f\nxyend = %f\nzinit = %f\nzend = %f\n"
+            "rad = %f\npieces = %d\nasymmetry = %s\nndiff = %d\nmaxwarn = %d\n",
+            it_xy, it_z, xy_fac, xy_max, z_fac, z_max, probe_rad, pieces,
+            bALLOW_ASYMMETRY ? "yes" : "no", low_up_rm, maxwarn);
 
     fclose(data_out);
 
-    sprintf(buf,"%s -s %s -membed %s -o %s -c %s -e %s -nt 1 -cpt -1",
-                (mdrun_path==NULL) ? "mdrun" : mdrun_path,
-                opt2fn("-f",NFILE,fnm),opt2fn("-dat",NFILE,fnm),opt2fn("-o",NFILE,fnm),
-                opt2fn("-c",NFILE,fnm),opt2fn("-e",NFILE,fnm));
+    sprintf(buf, "%s -s %s -membed %s -o %s -c %s -e %s -nt 1 -cpt -1",
+            (mdrun_path == NULL) ? "mdrun" : mdrun_path,
+            opt2fn("-f", NFILE, fnm), opt2fn("-dat", NFILE, fnm), opt2fn("-o", NFILE, fnm),
+            opt2fn("-c", NFILE, fnm), opt2fn("-e", NFILE, fnm));
 
-    if (opt2bSet("-n",NFILE,fnm))
+    if (opt2bSet("-n", NFILE, fnm))
     {
-        sprintf(buf2," -mn %s",opt2fn("-n",NFILE,fnm));
-        strcat(buf,buf2);
+        sprintf(buf2, " -mn %s", opt2fn("-n", NFILE, fnm));
+        strcat(buf, buf2);
     }
 
-    if (opt2bSet("-x",NFILE,fnm))
+    if (opt2bSet("-x", NFILE, fnm))
     {
-        sprintf(buf2," -x %s",opt2fn("-x",NFILE,fnm));
-        strcat(buf,buf2);
+        sprintf(buf2, " -x %s", opt2fn("-x", NFILE, fnm));
+        strcat(buf, buf2);
     }
 
-    if (opt2bSet("-p",NFILE,fnm))
+    if (opt2bSet("-p", NFILE, fnm))
     {
-        sprintf(buf2," -mp %s",opt2fn("-p",NFILE,fnm));
-        strcat(buf,buf2);
+        sprintf(buf2, " -mp %s", opt2fn("-p", NFILE, fnm));
+        strcat(buf, buf2);
     }
 
     if (bVerbose)
     {
-        sprintf(buf2," -v -stepout %d",nstepout);
-        strcat(buf,buf2);
+        sprintf(buf2, " -v -stepout %d", nstepout);
+        strcat(buf, buf2);
     }
 
     if (bStart)
     {
-        printf("Start run with:\n%s\n",buf);
+        printf("Start run with:\n%s\n", buf);
         bSucces = system(buf);
     }
     else
     {
-        printf("You can membed your protein now by:\n%s\n",buf);
+        printf("You can membed your protein now by:\n%s\n", buf);
     }
 
-    fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
+    fprintf(stderr, "Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 
     return 0;
 }

@@ -91,7 +91,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          * to true when parsing requested selections.
          */
         void addSelections(const SelectionList &selections,
-                           bool bFullValue);
+                           bool                 bFullValue);
 
         // Required to access the number of values in selection requests.
         // See SelectionCollection::Impl.
@@ -120,9 +120,9 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
-        SelectionOptionInfo     info_;
+        SelectionOptionInfo info_;
         SelectionOptionManager *manager_;
-        SelectionFlags          selectionFlags_;
+        SelectionFlags selectionFlags_;
 };
 
 } // namespace gmx

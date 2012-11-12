@@ -156,15 +156,15 @@ class AnalysisDataValue
         //! Possible flags for \a flags_.
         enum Flag
         {
-            efSet       = 1<<0, //!< Value has been set.
-            efErrorSet  = 1<<1, //!< Error estimate has been set.
-            efPresent   = 1<<2  //!< Value is set as present.
+            efSet      = 1 << 0, //!< Value has been set.
+            efErrorSet = 1 << 1, //!< Error estimate has been set.
+            efPresent  = 1 << 2  //!< Value is set as present.
         };
 
         //! Value for this value.
-        real                    value_;
+        real value_;
         //! Error estimate for this value, zero if not set.
-        real                    error_;
+        real error_;
         //! Status flags for thise value.
         FlagsTemplate<Flag>     flags_;
 };
@@ -254,9 +254,9 @@ class AnalysisDataFrameHeader
         }
 
     private:
-        int                     index_;
-        real                    x_;
-        real                    dx_;
+        int index_;
+        real x_;
+        real dx_;
 };
 
 
@@ -294,8 +294,8 @@ class AnalysisDataPointSetRef
          * The first element in \p values should correspond to \p firstColumn.
          */
         AnalysisDataPointSetRef(const AnalysisDataFrameHeader &header,
-                                int firstColumn,
-                                const AnalysisDataValuesRef &values);
+            int                                                firstColumn,
+            const AnalysisDataValuesRef &                      values);
         /*! \brief
          * Constructs a point set reference from given values.
          *
@@ -306,7 +306,7 @@ class AnalysisDataPointSetRef
          * column.
          */
         AnalysisDataPointSetRef(const AnalysisDataFrameHeader &header,
-                                const std::vector<AnalysisDataValue> &values);
+            const std::vector<AnalysisDataValue> &             values);
         /*! \brief
          * Constructs a point set reference to a subset of columns.
          *
@@ -326,7 +326,7 @@ class AnalysisDataPointSetRef
          * Mainly intended for internal use.
          */
         AnalysisDataPointSetRef(const AnalysisDataPointSetRef &points,
-                                int firstColumn, int columnCount);
+            int firstColumn, int columnCount);
 
         /*! \brief
          * Returns the frame header for the frame of this point set.
@@ -422,8 +422,8 @@ class AnalysisDataPointSetRef
 
     private:
         AnalysisDataFrameHeader header_;
-        int                     firstColumn_;
-        AnalysisDataValuesRef   values_;
+        int firstColumn_;
+        AnalysisDataValuesRef values_;
 };
 
 
@@ -464,7 +464,7 @@ class AnalysisDataFrameRef
          * \param[in] values      Values for each column.
          */
         AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
-                             const AnalysisDataValuesRef &values);
+            const AnalysisDataValuesRef &                   values);
         /*! \brief
          * Constructs a frame reference from given values.
          *
@@ -472,7 +472,7 @@ class AnalysisDataFrameRef
          * \param[in] values      Values for each column.
          */
         AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
-                             const std::vector<AnalysisDataValue> &values);
+            const std::vector<AnalysisDataValue> &          values);
         /*! \brief
          * Constructs a frame reference to a subset of columns.
          *
@@ -487,7 +487,7 @@ class AnalysisDataFrameRef
          * Mainly intended for internal use.
          */
         AnalysisDataFrameRef(const AnalysisDataFrameRef &frame,
-                             int firstColumn, int columnCount);
+            int firstColumn, int columnCount);
 
         /*! \brief
          * Returns whether the object refers to a valid frame.
@@ -584,7 +584,7 @@ class AnalysisDataFrameRef
 
     private:
         AnalysisDataFrameHeader header_;
-        AnalysisDataValuesRef   values_;
+        AnalysisDataValuesRef values_;
 };
 
 } // namespace gmx

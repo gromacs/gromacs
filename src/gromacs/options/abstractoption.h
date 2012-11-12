@@ -67,7 +67,7 @@ class Options;
 
 //! Smart pointer for managing an AbstractOptionStorage object.
 typedef gmx_unique_ptr<AbstractOptionStorage>::type
-        AbstractOptionStoragePointer;
+AbstractOptionStoragePointer;
 
 /*! \brief
  * Abstract base class for specifying option properties.
@@ -98,7 +98,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : minValueCount_(1), maxValueCount_(1),
-              name_(name), descr_(NULL)
+            name_(name), descr_(NULL)
         { }
 
         /*! \brief
@@ -176,9 +176,9 @@ class AbstractOption
         }
 
         //! Minimum number of values required for the option.
-        int                     minValueCount_;
+        int minValueCount_;
         //! Maximum number of values allowed for the option.
-        int                     maxValueCount_;
+        int maxValueCount_;
         //! \endcond
 
     private:
@@ -188,7 +188,7 @@ class AbstractOption
         const char             *name_;
         //! Pointer to description of the option.
         const char             *descr_;
-        OptionFlags             flags_;
+        OptionFlags flags_;
 
         /*! \brief
          * Needed to initialize an AbstractOptionStorage object from this class
@@ -209,8 +209,8 @@ class AbstractOption
  *
  * This template is used as a base class like this:
  * \code
-class ConcreteOption : public OptionTemplate<int, ConcreteOption>
-{
+   class ConcreteOption : public OptionTemplate<int, ConcreteOption>
+   {
  * \endcode
  *
  * All public functions in this class return \c *this casted to a reference to
@@ -343,8 +343,8 @@ class OptionTemplate : public AbstractOption
         //! Initializes the name and default values for an option.
         explicit OptionTemplate(const char *name)
             : AbstractOption(name),
-              defaultValue_(NULL), defaultValueIfSet_(NULL), store_(NULL),
-              countptr_(NULL), storeVector_(NULL)
+            defaultValue_(NULL), defaultValueIfSet_(NULL), store_(NULL),
+            countptr_(NULL), storeVector_(NULL)
         { }
 
         /*! \brief

@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 4.5
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -102,33 +102,33 @@ int tcouple_min_integration_steps(int etc)
 
 int ir_optimal_nsttcouple(const t_inputrec *ir)
 {
-    int  nmin,nwanted,n;
+    int nmin, nwanted, n;
     real tau_min;
-    int  g;
+    int g;
 
-    nmin = tcouple_min_integration_steps(ir->etc);
+    nmin    = tcouple_min_integration_steps(ir->etc);
 
     nwanted = nst_wanted(ir);
 
     tau_min = 1e20;
     if (ir->etc != etcNO)
     {
-        for(g=0; g<ir->opts.ngtc; g++)
+        for(g = 0; g < ir->opts.ngtc; g++)
         {
             if (ir->opts.tau_t[g] > 0)
             {
-                tau_min = min(tau_min,ir->opts.tau_t[g]);
+                tau_min = min(tau_min, ir->opts.tau_t[g]);
             }
         }
     }
 
-    if (nmin == 0 || ir->delta_t*nwanted <= tau_min)
+    if (nmin == 0 || ir->delta_t * nwanted <= tau_min)
     {
         n = nwanted;
     }
     else
     {
-        n = (int)(tau_min/(ir->delta_t*nmin) + 0.001);
+        n = (int)(tau_min / (ir->delta_t * nmin) + 0.001);
         if (n < 1)
         {
             n = 1;
@@ -169,19 +169,19 @@ int pcouple_min_integration_steps(int epc)
 
 int ir_optimal_nstpcouple(const t_inputrec *ir)
 {
-    int  nmin,nwanted,n;
+    int nmin, nwanted, n;
 
-    nmin = pcouple_min_integration_steps(ir->epc);
+    nmin    = pcouple_min_integration_steps(ir->epc);
 
     nwanted = nst_wanted(ir);
 
-    if (nmin == 0 || ir->delta_t*nwanted <= ir->tau_p)
+    if (nmin == 0 || ir->delta_t * nwanted <= ir->tau_p)
     {
         n = nwanted;
     }
     else
     {
-        n = (int)(ir->tau_p/(ir->delta_t*nmin) + 0.001);
+        n = (int)(ir->tau_p / (ir->delta_t * nmin) + 0.001);
         if (n < 1)
         {
             n = 1;

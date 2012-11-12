@@ -58,7 +58,7 @@ class CommandLineModuleInterface
         virtual ~CommandLineModuleInterface() {}
 
         //! Returns the name of the module.
-        virtual const char *name() const = 0;
+        virtual const char *name() const             = 0;
         //! Returns a one-line description of the module.
         virtual const char *shortDescription() const = 0;
 

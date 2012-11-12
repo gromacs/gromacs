@@ -69,7 +69,7 @@ typedef enum
      *
      * Use gmx_histogram_add_item() or gmx_histogram_add_item_to_bin() to sample.
      */
-    HIST_BINAVER 
+    HIST_BINAVER
 } e_histogram_t;
 
 /** Whether bins are centered at integer values. */
@@ -195,17 +195,17 @@ void
 gmx_histogram_scale(gmx_histogram_t *h, real norm);
 /** Scales a histogram with a custom non-uniform normalization factor. */
 void
-gmx_histogram_scale_vec(gmx_histogram_t *h, real norm[]);
+gmx_histogram_scale_vec(gmx_histogram_t * h, real norm[]);
 /** Writes a single histogram to a file. */
 void
 gmx_histogram_write(FILE *fp, gmx_histogram_t *h, gmx_bool bErrors);
 /** Writes a set of histograms to a file. */
 void
-gmx_histogram_write_array(FILE *fp, int n, gmx_histogram_t *h[],
-                              gmx_bool bValue, gmx_bool bErrors);
+gmx_histogram_write_array(FILE * fp, int n, gmx_histogram_t * h[],
+                          gmx_bool bValue, gmx_bool bErrors);
 /** Writes a set of cumulative histograms to a file. */
 void
-gmx_histogram_write_cum_array(FILE *fp, int n, gmx_histogram_t *h[],
+gmx_histogram_write_cum_array(FILE * fp, int n, gmx_histogram_t * h[],
                               gmx_bool bValue, gmx_bool bErrors);
 /*@}*/
 

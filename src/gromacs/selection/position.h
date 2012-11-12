@@ -49,7 +49,7 @@ typedef struct gmx_ana_pos_t
     /*! \brief
      * Number of positions.
      */
-    int                 nr;
+    int nr;
     /*! \brief
      * Array of positions.
      */
@@ -67,7 +67,7 @@ typedef struct gmx_ana_pos_t
      *
      * \see gmx_ana_indexmap_t
      */
-    gmx_ana_indexmap_t  m;
+    gmx_ana_indexmap_t m;
     /*! \brief
      * Pointer to the current evaluation group.
      */
@@ -75,7 +75,7 @@ typedef struct gmx_ana_pos_t
     /*! \brief
      * Number of elements allocated for \c x.
      */
-    int                 nalloc_x;
+    int nalloc_x;
 } gmx_ana_pos_t;
 
 /** Initializes an empty position structure. */

@@ -45,7 +45,7 @@ extern "C" {
 #define GPU_NSUBCELL_Z 2
 #define GPU_NSUBCELL_Y 2
 #define GPU_NSUBCELL_X 2
-#define GPU_NSUBCELL   (GPU_NSUBCELL_Z*GPU_NSUBCELL_Y*GPU_NSUBCELL_X)
+#define GPU_NSUBCELL   (GPU_NSUBCELL_Z * GPU_NSUBCELL_Y * GPU_NSUBCELL_X)
 /* In the non-bonded GPU kernel we operate on cluster-pairs, not cells.
  * The number of cluster in a super-cluster matches the number of sub-cells
  * in a pair-search cell, so we introduce a new name for the same value.
@@ -87,12 +87,12 @@ extern "C" {
 #define PACK_X4      4
 #define PACK_X8      8
 /* Strides for a pack of 4 and 8 coordinates/forces */
-#define STRIDE_P4    (DIM*PACK_X4)
-#define STRIDE_P8    (DIM*PACK_X8)
+#define STRIDE_P4    (DIM * PACK_X4)
+#define STRIDE_P8    (DIM * PACK_X8)
 
 /* Index of atom a into the SSE/AVX coordinate/force array */
-#define X4_IND_A(a)  (STRIDE_P4*((a) >> 2) + ((a) & (PACK_X4 - 1)))
-#define X8_IND_A(a)  (STRIDE_P8*((a) >> 3) + ((a) & (PACK_X8 - 1)))
+#define X4_IND_A(a)  (STRIDE_P4 * ((a) >> 2) + ((a) & (PACK_X4 - 1)))
+#define X8_IND_A(a)  (STRIDE_P8 * ((a) >> 3) + ((a) & (PACK_X8 - 1)))
 
 
 #ifdef __cplusplus

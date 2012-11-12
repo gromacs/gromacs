@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
@@ -49,14 +49,14 @@ extern "C" {
  *  the eigenvalues/vectors will be sorted in ascending order on output.
  *  Gromacs comes with a built-in portable BLAS/LAPACK, but if performance
  *  matters it is advisable to link with an optimized vendor-provided library.
- * 
+ *
  *  \param a            Pointer to matrix data, total size n*n
  *                      The input data in the matrix will be destroyed/changed.
  *  \param n            Side of the matrix to calculate eigenvalues for.
  *  \param index_lower  Index of first eigenvector to determine.
  *  \param index_upper  Last eigenvector determined is index_upper-1.
  *  \param eigenvalues  Array of the eigenvalues on return. The length
- *                      of this array _must_ be n, even if not all 
+ *                      of this array _must_ be n, even if not all
  *                      eigenvectors are calculated, since all eigenvalues
  *                      might be needed as an intermediate step.
  *  \param eigenvectors If this pointer is non-NULL, the eigenvectors
@@ -65,12 +65,12 @@ extern "C" {
  *                      is of length n.
  */
 void
-eigensolver(real *   a,
-            int      n,
-            int      index_lower,
-            int      index_upper,
-            real *   eigenvalues,
-            real *   eigenvec);
+eigensolver(real * a,
+            int    n,
+            int    index_lower,
+            int    index_upper,
+            real * eigenvalues,
+            real * eigenvec);
 
 
 
@@ -83,12 +83,12 @@ eigensolver(real *   a,
  *
  *  maxiter=100000 should suffice in most cases!
  */
-void 
-sparse_eigensolver(gmx_sparsematrix_t *    A,
-                   int                     neig,
-                   real *                  eigenvalues,
-                   real *                  eigenvectors,
-                   int                     maxiter);
+void
+sparse_eigensolver(gmx_sparsematrix_t * A,
+                   int                  neig,
+                   real *               eigenvalues,
+                   real *               eigenvectors,
+                   int                  maxiter);
 
 #ifdef __cplusplus
 }

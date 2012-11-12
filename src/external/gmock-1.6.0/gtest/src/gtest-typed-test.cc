@@ -39,69 +39,78 @@ namespace internal {
 
 // Skips to the first non-space char in str. Returns an empty string if str
 // contains only whitespace characters.
-static const char* SkipSpaces(const char* str) {
-  while (IsSpace(*str))
-    str++;
-  return str;
+static const char* SkipSpaces(const char* str)
+{
+    while (IsSpace(*str))
+    {
+        str++;
+    }
+    return str;
 }
 
 // Verifies that registered_tests match the test names in
 // defined_test_names_; returns registered_tests if successful, or
 // aborts the program otherwise.
 const char* TypedTestCasePState::VerifyRegisteredTestNames(
-    const char* file, int line, const char* registered_tests) {
-  typedef ::std::set<const char*>::const_iterator DefinedTestIter;
-  registered_ = true;
+    const char* file, int line, const char* registered_tests)
+{
+    typedef ::std::set<const char*>::const_iterator DefinedTestIter;
+    registered_ = true;
 
-  // Skip initial whitespace in registered_tests since some
-  // preprocessors prefix stringizied literals with whitespace.
-  registered_tests = SkipSpaces(registered_tests);
+    // Skip initial whitespace in registered_tests since some
+    // preprocessors prefix stringizied literals with whitespace.
+    registered_tests = SkipSpaces(registered_tests);
 
-  Message errors;
-  ::std::set<String> tests;
-  for (const char* names = registered_tests; names != NULL;
-       names = SkipComma(names)) {
-    const String name = GetPrefixUntilComma(names);
-    if (tests.count(name) != 0) {
-      errors << "Test " << name << " is listed more than once.\n";
-      continue;
+    Message errors;
+    ::std::set<String> tests;
+    for (const char* names = registered_tests; names != NULL;
+         names = SkipComma(names))
+    {
+        const String name = GetPrefixUntilComma(names);
+        if (tests.count(name) != 0) {
+            errors << "Test " << name << " is listed more than once.\n";
+            continue;
+        }
+
+        bool found = false;
+        for (DefinedTestIter it = defined_test_names_.begin();
+             it != defined_test_names_.end();
+             ++it)
+        {
+            if (name == *it) {
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            tests.insert(name);
+        }
+        else
+        {
+            errors << "No test named " << name <<
+            " can be found in this test case.\n";
+        }
     }
 
-    bool found = false;
     for (DefinedTestIter it = defined_test_names_.begin();
          it != defined_test_names_.end();
-         ++it) {
-      if (name == *it) {
-        found = true;
-        break;
-      }
+         ++it)
+    {
+        if (tests.count(*it) == 0) {
+            errors << "You forgot to list test " << *it << ".\n";
+        }
     }
 
-    if (found) {
-      tests.insert(name);
-    } else {
-      errors << "No test named " << name
-             << " can be found in this test case.\n";
+    const String& errors_str = errors.GetString();
+    if (errors_str != "") {
+        fprintf(stderr, "%s %s", FormatFileLocation(file, line).c_str(),
+                errors_str.c_str());
+        fflush(stderr);
+        posix::Abort();
     }
-  }
 
-  for (DefinedTestIter it = defined_test_names_.begin();
-       it != defined_test_names_.end();
-       ++it) {
-    if (tests.count(*it) == 0) {
-      errors << "You forgot to list test " << *it << ".\n";
-    }
-  }
-
-  const String& errors_str = errors.GetString();
-  if (errors_str != "") {
-    fprintf(stderr, "%s %s", FormatFileLocation(file, line).c_str(),
-            errors_str.c_str());
-    fflush(stderr);
-    posix::Abort();
-  }
-
-  return registered_tests;
+    return registered_tests;
 }
 
 #endif  // GTEST_HAS_TYPED_TEST_P

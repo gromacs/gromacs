@@ -45,43 +45,51 @@ namespace testing {
 
 // Constructs a matcher that matches a const string& whose value is
 // equal to s.
-Matcher<const internal::string&>::Matcher(const internal::string& s) {
-  *this = Eq(s);
+Matcher<const internal::string&>::Matcher(const internal::string& s)
+{
+    *this = Eq(s);
 }
 
 // Constructs a matcher that matches a const string& whose value is
 // equal to s.
-Matcher<const internal::string&>::Matcher(const char* s) {
-  *this = Eq(internal::string(s));
+Matcher<const internal::string&>::Matcher(const char* s)
+{
+    *this = Eq(internal::string(s));
 }
 
 // Constructs a matcher that matches a string whose value is equal to s.
-Matcher<internal::string>::Matcher(const internal::string& s) { *this = Eq(s); }
+Matcher<internal::string>::Matcher(const internal::string& s)
+{
+    *this = Eq(s);
+}
 
 // Constructs a matcher that matches a string whose value is equal to s.
-Matcher<internal::string>::Matcher(const char* s) {
-  *this = Eq(internal::string(s));
+Matcher<internal::string>::Matcher(const char* s)
+{
+    *this = Eq(internal::string(s));
 }
 
 namespace internal {
 
 // Joins a vector of strings as if they are fields of a tuple; returns
 // the joined string.
-string JoinAsTuple(const Strings& fields) {
-  switch (fields.size()) {
+string JoinAsTuple(const Strings& fields)
+{
+    switch (fields.size()) {
     case 0:
-      return "";
+        return "";
     case 1:
-      return fields[0];
+        return fields[0];
     default:
-      string result = "(" + fields[0];
-      for (size_t i = 1; i < fields.size(); i++) {
-        result += ", ";
-        result += fields[i];
-      }
-      result += ")";
-      return result;
-  }
+        string result = "(" + fields[0];
+        for (size_t i = 1; i < fields.size(); i++)
+        {
+            result += ", ";
+            result += fields[i];
+        }
+        result += ")";
+        return result;
+    }
 }
 
 // Returns the description for a matcher defined using the MATCHER*()
@@ -90,11 +98,13 @@ string JoinAsTuple(const Strings& fields) {
 // negation of the matcher.  'param_values' contains a list of strings
 // that are the print-out of the matcher's parameters.
 string FormatMatcherDescription(bool negation, const char* matcher_name,
-                                const Strings& param_values) {
-  string result = ConvertIdentifierNameToWords(matcher_name);
-  if (param_values.size() >= 1)
-    result += " " + JoinAsTuple(param_values);
-  return negation ? "not (" + result + ")" : result;
+                                const Strings& param_values)
+{
+    string result = ConvertIdentifierNameToWords(matcher_name);
+    if (param_values.size() >= 1) {
+        result += " " + JoinAsTuple(param_values);
+    }
+    return negation ? "not (" + result + ")" : result;
 }
 
 }  // namespace internal

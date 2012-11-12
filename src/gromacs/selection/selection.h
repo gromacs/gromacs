@@ -175,34 +175,34 @@ class SelectionData
             PositionInfo(real mass, real charge) : mass(mass), charge(charge) {}
 
             //! Total mass of atoms that make up the position.
-            real                mass;
+            real mass;
             //! Total charge of atoms that make up the position.
-            real                charge;
+            real charge;
         };
 
         //! Name of the selection.
-        std::string             name_;
+        std::string name_;
         //! The actual selection string.
-        std::string             selectionText_;
+        std::string selectionText_;
         //! Low-level representation of selected positions.
-        gmx_ana_pos_t           rawPositions_;
+        gmx_ana_pos_t rawPositions_;
         //! Information associated with the current positions.
         std::vector<PositionInfo> posInfo_;
         //! Information for all possible positions.
         std::vector<PositionInfo> originalPosInfo_;
-        SelectionFlags          flags_;
+        SelectionFlags flags_;
         //! Root of the selection evaluation tree.
         SelectionTreeElement   &rootElement_;
         //! Type of the covered fraction.
-        e_coverfrac_t           coveredFractionType_;
+        e_coverfrac_t coveredFractionType_;
         //! Covered fraction of the selection for the current frame.
-        real                    coveredFraction_;
+        real coveredFraction_;
         //! The average covered fraction (over the trajectory).
-        real                    averageCoveredFraction_;
+        real averageCoveredFraction_;
         //! true if the value can change as a function of time.
-        bool                    bDynamic_;
+        bool bDynamic_;
         //! true if the covered fraction depends on the frame.
-        bool                    bDynamicCoveredFraction_;
+        bool bDynamicCoveredFraction_;
 
         /*! \brief
          * Needed to wrap access to information.
@@ -216,7 +216,7 @@ class SelectionData
         GMX_DISALLOW_COPY_AND_ASSIGN(SelectionData);
 };
 
-} // namespace internal
+}   // namespace internal
 
 /*! \brief
  * Provides access to a single selection.
@@ -288,7 +288,7 @@ class Selection
         explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
 
         //! Returns the name of the selection.
-        const char *name() const  { return data().name_.c_str(); }
+        const char *name() const { return data().name_.c_str(); }
         //! Returns the string that was parsed to produce this selection.
         const char *selectionText() const { return data().selectionText(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.
@@ -503,8 +503,8 @@ class SelectionPosition
         //! Returns the number of atoms that make up this position.
         int atomCount() const
         {
-            return sel_->rawPositions_.m.mapb.index[i_ + 1]
-                 - sel_->rawPositions_.m.mapb.index[i_];
+            return sel_->rawPositions_.m.mapb.index[i_ + 1] -
+                   sel_->rawPositions_.m.mapb.index[i_];
         }
         //! Return atom indices that make up this position.
         ConstArrayRef<int> atomIndices() const
@@ -578,7 +578,7 @@ class SelectionPosition
 
     private:
         const internal::SelectionData  *sel_;
-        int                             i_;
+        int i_;
 };
 
 

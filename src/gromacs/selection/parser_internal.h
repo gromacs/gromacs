@@ -80,10 +80,10 @@ yyerror(yyscan_t scanner, char const *s)
     } \
     catch(const std::exception &ex) \
     { \
-        if (_gmx_selparser_handle_exception(scanner, ex)) \
-            YYERROR; \
-        else \
-            YYABORT; \
+        if (_gmx_selparser_handle_exception(scanner, ex)) { \
+            YYERROR; } \
+        else{ \
+            YYABORT; } \
     }
 //!\}
 

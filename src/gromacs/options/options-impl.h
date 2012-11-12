@@ -97,25 +97,25 @@ class Options::Impl
         void startSource();
 
         //! Name for the Options object.
-        std::string             name_;
+        std::string name_;
         //! Description title for the Options object.
-        std::string             title_;
+        std::string title_;
         //! Full description for the Options object.
-        std::string             description_;
+        std::string description_;
         /*! \brief
          * List of subsections, in insertion order.
          *
          * This container contains only references to external objects; memory
          * management is performed elsewhere.
          */
-        SubSectionList          subSections_;
+        SubSectionList subSections_;
         /*! \brief
          * List of options, in insertion order.
          *
          * All objects in this container are owned by this object, and are
          * freed in the destructor.
          */
-        OptionList              options_;
+        OptionList options_;
         //! Options object that contains this object as a subsection, or NULL.
         Options                *parent_;
 };

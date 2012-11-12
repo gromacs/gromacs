@@ -50,44 +50,46 @@ namespace internal {
 // assigned to a tr1::function<F>).
 template <typename FunctionImpl>
 class InvokeAction {
- public:
-  // The c'tor makes a copy of function_impl (either a function
-  // pointer or a functor).
-  explicit InvokeAction(FunctionImpl function_impl)
-      : function_impl_(function_impl) {}
+    public:
+        // The c'tor makes a copy of function_impl (either a function
+        // pointer or a functor).
+        explicit InvokeAction(FunctionImpl function_impl)
+            : function_impl_(function_impl) {}
 
-  template <typename Result, typename ArgumentTuple>
-  Result Perform(const ArgumentTuple& args) {
-    return InvokeHelper<Result, ArgumentTuple>::Invoke(function_impl_, args);
-  }
+        template <typename Result, typename ArgumentTuple>
+        Result Perform(const ArgumentTuple& args)
+        {
+            return InvokeHelper<Result, ArgumentTuple>::Invoke(function_impl_, args);
+        }
 
- private:
-  FunctionImpl function_impl_;
+    private:
+        FunctionImpl function_impl_;
 
-  GTEST_DISALLOW_ASSIGN_(InvokeAction);
+        GTEST_DISALLOW_ASSIGN_(InvokeAction);
 };
 
 // Implements the Invoke(object_ptr, &Class::Method) action.
 template <class Class, typename MethodPtr>
 class InvokeMethodAction {
- public:
-  InvokeMethodAction(Class* obj_ptr, MethodPtr method_ptr)
-      : obj_ptr_(obj_ptr), method_ptr_(method_ptr) {}
+    public:
+        InvokeMethodAction(Class* obj_ptr, MethodPtr method_ptr)
+            : obj_ptr_(obj_ptr), method_ptr_(method_ptr) {}
 
-  template <typename Result, typename ArgumentTuple>
-  Result Perform(const ArgumentTuple& args) const {
-    return InvokeHelper<Result, ArgumentTuple>::InvokeMethod(
-        obj_ptr_, method_ptr_, args);
-  }
+        template <typename Result, typename ArgumentTuple>
+        Result Perform(const ArgumentTuple& args) const
+        {
+            return InvokeHelper<Result, ArgumentTuple>::InvokeMethod(
+                       obj_ptr_, method_ptr_, args);
+        }
 
- private:
-  Class* const obj_ptr_;
-  const MethodPtr method_ptr_;
+    private:
+        Class* const obj_ptr_;
+        const MethodPtr method_ptr_;
 
-  GTEST_DISALLOW_ASSIGN_(InvokeMethodAction);
+        GTEST_DISALLOW_ASSIGN_(InvokeMethodAction);
 };
 
-}  // namespace internal
+}   // namespace internal
 
 // Various overloads for Invoke().
 
@@ -95,18 +97,20 @@ class InvokeMethodAction {
 // function's arguments.
 template <typename FunctionImpl>
 PolymorphicAction<internal::InvokeAction<FunctionImpl> > Invoke(
-    FunctionImpl function_impl) {
-  return MakePolymorphicAction(
-      internal::InvokeAction<FunctionImpl>(function_impl));
+    FunctionImpl function_impl)
+{
+    return MakePolymorphicAction(
+               internal::InvokeAction<FunctionImpl>(function_impl));
 }
 
 // Creates an action that invokes the given method on the given object
 // with the mock function's arguments.
 template <class Class, typename MethodPtr>
 PolymorphicAction<internal::InvokeMethodAction<Class, MethodPtr> > Invoke(
-    Class* obj_ptr, MethodPtr method_ptr) {
-  return MakePolymorphicAction(
-      internal::InvokeMethodAction<Class, MethodPtr>(obj_ptr, method_ptr));
+    Class* obj_ptr, MethodPtr method_ptr)
+{
+    return MakePolymorphicAction(
+               internal::InvokeMethodAction<Class, MethodPtr>(obj_ptr, method_ptr));
 }
 
 // WithoutArgs(inner_action) can be used in a mock function with a
@@ -115,8 +119,9 @@ PolymorphicAction<internal::InvokeMethodAction<Class, MethodPtr> > Invoke(
 // argument to one that accepts (and ignores) arguments.
 template <typename InnerAction>
 inline internal::WithArgsAction<InnerAction>
-WithoutArgs(const InnerAction& action) {
-  return internal::WithArgsAction<InnerAction>(action);
+WithoutArgs(const InnerAction& action)
+{
+    return internal::WithArgsAction<InnerAction>(action);
 }
 
 // WithArg<k>(an_action) creates an action that passes the k-th
@@ -126,8 +131,9 @@ WithoutArgs(const InnerAction& action) {
 // WithArgs<k>(an_action) (defined below) as a synonym.
 template <int k, typename InnerAction>
 inline internal::WithArgsAction<InnerAction, k>
-WithArg(const InnerAction& action) {
-  return internal::WithArgsAction<InnerAction, k>(action);
+WithArg(const InnerAction& action)
+{
+    return internal::WithArgsAction<InnerAction, k>(action);
 }
 
 // The ACTION*() macros trigger warning C4100 (unreferenced formal
@@ -144,7 +150,7 @@ WithArg(const InnerAction& action) {
 ACTION_TEMPLATE(ReturnArg,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_0_VALUE_PARAMS()) {
-  return std::tr1::get<k>(args);
+    return std::tr1::get<k>(args);
 }
 
 // Action SaveArg<k>(pointer) saves the k-th (0-based) argument of the
@@ -152,7 +158,7 @@ ACTION_TEMPLATE(ReturnArg,
 ACTION_TEMPLATE(SaveArg,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_1_VALUE_PARAMS(pointer)) {
-  *pointer = ::std::tr1::get<k>(args);
+    *pointer = ::std::tr1::get<k>(args);
 }
 
 // Action SaveArgPointee<k>(pointer) saves the value pointed to
@@ -160,7 +166,7 @@ ACTION_TEMPLATE(SaveArg,
 ACTION_TEMPLATE(SaveArgPointee,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_1_VALUE_PARAMS(pointer)) {
-  *pointer = *::std::tr1::get<k>(args);
+    *pointer = *::std::tr1::get<k>(args);
 }
 
 // Action SetArgReferee<k>(value) assigns 'value' to the variable
@@ -168,13 +174,13 @@ ACTION_TEMPLATE(SaveArgPointee,
 ACTION_TEMPLATE(SetArgReferee,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_1_VALUE_PARAMS(value)) {
-  typedef typename ::std::tr1::tuple_element<k, args_type>::type argk_type;
-  // Ensures that argument #k is a reference.  If you get a compiler
-  // error on the next line, you are using SetArgReferee<k>(value) in
-  // a mock function whose k-th (0-based) argument is not a reference.
-  GTEST_COMPILE_ASSERT_(internal::is_reference<argk_type>::value,
-                        SetArgReferee_must_be_used_with_a_reference_argument);
-  ::std::tr1::get<k>(args) = value;
+    typedef typename ::std::tr1::tuple_element<k, args_type>::type argk_type;
+    // Ensures that argument #k is a reference.  If you get a compiler
+    // error on the next line, you are using SetArgReferee<k>(value) in
+    // a mock function whose k-th (0-based) argument is not a reference.
+    GTEST_COMPILE_ASSERT_(internal::is_reference<argk_type>::value,
+                          SetArgReferee_must_be_used_with_a_reference_argument);
+    ::std::tr1::get<k>(args) = value;
 }
 
 // Action SetArrayArgument<k>(first, last) copies the elements in
@@ -185,13 +191,13 @@ ACTION_TEMPLATE(SetArgReferee,
 ACTION_TEMPLATE(SetArrayArgument,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_2_VALUE_PARAMS(first, last)) {
-  // Microsoft compiler deprecates ::std::copy, so we want to suppress warning
-  // 4996 (Function call with parameters that may be unsafe) there.
+    // Microsoft compiler deprecates ::std::copy, so we want to suppress warning
+    // 4996 (Function call with parameters that may be unsafe) there.
 #ifdef _MSC_VER
 # pragma warning(push)          // Saves the current warning state.
 # pragma warning(disable:4996)  // Temporarily disables warning 4996.
 #endif
-  ::std::copy(first, last, ::std::tr1::get<k>(args));
+    ::std::copy(first, last, ::std::tr1::get<k>(args));
 #ifdef _MSC_VER
 # pragma warning(pop)           // Restores the warning state.
 #endif
@@ -202,11 +208,13 @@ ACTION_TEMPLATE(SetArrayArgument,
 ACTION_TEMPLATE(DeleteArg,
                 HAS_1_TEMPLATE_PARAMS(int, k),
                 AND_0_VALUE_PARAMS()) {
-  delete ::std::tr1::get<k>(args);
+    delete ::std::tr1::get<k>(args);
 }
 
 // This action returns the value pointed to by 'pointer'.
-ACTION_P(ReturnPointee, pointer) { return *pointer; }
+ACTION_P(ReturnPointee, pointer) {
+    return *pointer;
+}
 
 // Action Throw(exception) can be used in a mock function of any type
 // to throw the given exception.  Any copyable value can be thrown.
@@ -217,7 +225,9 @@ ACTION_P(ReturnPointee, pointer) { return *pointer; }
 #  pragma warning(push)          // Saves the current warning state.
 #  pragma warning(disable:4702)  // Temporarily disables warning 4702.
 # endif
-ACTION_P(Throw, exception) { throw exception; }
+ACTION_P(Throw, exception) {
+    throw exception;
+}
 # ifdef _MSC_VER
 #  pragma warning(pop)           // Restores the warning state.
 # endif

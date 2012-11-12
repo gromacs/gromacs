@@ -46,7 +46,7 @@ typedef struct {
     real sh_invrc6; /* For shifting the LJ potential */
 
     /* type of electrostatics (defined in enums.h) */
-    int  eeltype;
+    int eeltype;
 
     /* Coulomb */
     real rcoulomb;
@@ -54,7 +54,7 @@ typedef struct {
     /* Cut-off */
     real rlist;
     real rlistlong;
-    
+
     /* PME/Ewald */
     real ewaldcoeff;
     real sh_ewald;   /* For shifting the Ewald potential */
@@ -70,7 +70,7 @@ typedef struct {
 
     /* Force/energy interpolation tables, linear in force, quadratic in V */
     real tabq_scale;
-    int  tabq_size;
+    int tabq_size;
     /* Coulomb force table, size of array is tabq_size (when used) */
     real *tabq_coul_F;
     /* Coulomb energy table, size of array is tabq_size (when used) */

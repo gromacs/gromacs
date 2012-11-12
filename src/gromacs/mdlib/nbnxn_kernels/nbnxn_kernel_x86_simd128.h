@@ -43,15 +43,15 @@ extern "C" {
 
 /* Wrapper call for the non-bonded cluster vs cluster kernels */
 void
-nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
-                         const nbnxn_atomdata_t     *nbat,
-                         const interaction_const_t  *ic,
-                         rvec                       *shift_vec,
+nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t *     nbl_list,
+                         const nbnxn_atomdata_t *   nbat,
+                         const interaction_const_t *ic,
+                         rvec *                     shift_vec,
                          int                        force_flags,
                          int                        clearF,
-                         real                       *fshift,
-                         real                       *Vc,
-                         real                       *Vvdw);
+                         real *                     fshift,
+                         real *                     Vc,
+                         real *                     Vvdw);
 
 #ifdef __cplusplus
 }

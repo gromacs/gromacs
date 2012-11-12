@@ -177,25 +177,25 @@ GTEST_DECLARE_string_(death_test_style);
 
 // Tests that an exit code describes a normal exit with a given exit code.
 class GTEST_API_ ExitedWithCode {
- public:
-  explicit ExitedWithCode(int exit_code);
-  bool operator()(int exit_status) const;
- private:
-  // No implementation - assignment is unsupported.
-  void operator=(const ExitedWithCode& other);
+    public:
+        explicit ExitedWithCode(int exit_code);
+        bool operator()(int exit_status) const;
+    private:
+        // No implementation - assignment is unsupported.
+        void operator=(const ExitedWithCode& other);
 
-  const int exit_code_;
+        const int exit_code_;
 };
 
 # if !GTEST_OS_WINDOWS
 // Tests that an exit code describes an exit due to termination by a
 // given signal.
 class GTEST_API_ KilledBySignal {
- public:
-  explicit KilledBySignal(int signum);
-  bool operator()(int exit_status) const;
- private:
-  const int signum_;
+    public:
+        explicit KilledBySignal(int signum);
+        bool operator()(int exit_status) const;
+    private:
+        const int signum_;
 };
 # endif  // !GTEST_OS_WINDOWS
 
@@ -245,20 +245,22 @@ class GTEST_API_ KilledBySignal {
 # ifdef NDEBUG
 
 #  define EXPECT_DEBUG_DEATH(statement, regex) \
-  do { statement; } while (::testing::internal::AlwaysFalse())
+    do { statement; } \
+    while (::testing::internal::AlwaysFalse())
 
 #  define ASSERT_DEBUG_DEATH(statement, regex) \
-  do { statement; } while (::testing::internal::AlwaysFalse())
+    do { statement; } \
+    while (::testing::internal::AlwaysFalse())
 
 # else
 
 #  define EXPECT_DEBUG_DEATH(statement, regex) \
-  EXPECT_DEATH(statement, regex)
+    EXPECT_DEATH(statement, regex)
 
 #  define ASSERT_DEBUG_DEATH(statement, regex) \
-  ASSERT_DEATH(statement, regex)
+    ASSERT_DEATH(statement, regex)
 
-# endif  // NDEBUG for EXPECT_DEBUG_DEATH
+# endif // NDEBUG for EXPECT_DEBUG_DEATH
 #endif  // GTEST_HAS_DEATH_TEST
 
 // EXPECT_DEATH_IF_SUPPORTED(statement, regex) and
@@ -275,7 +277,7 @@ class GTEST_API_ KilledBySignal {
 # define EXPECT_DEATH_IF_SUPPORTED(statement, regex) \
     GTEST_UNSUPPORTED_DEATH_TEST_(statement, regex, )
 # define ASSERT_DEATH_IF_SUPPORTED(statement, regex) \
-    GTEST_UNSUPPORTED_DEATH_TEST_(statement, regex, return)
+    GTEST_UNSUPPORTED_DEATH_TEST_(statement, regex, return )
 #endif
 
 }  // namespace testing

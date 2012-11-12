@@ -82,13 +82,13 @@ typedef enum
 typedef struct gmx_ana_index_t
 {
     /** Number of atoms. */
-    int                 isize;
+    int isize;
     /** List of atoms. */
     atom_id            *index;
     /** Group name. */
     char               *name;
     /** Number of items allocated for \p index. */
-    int                 nalloc_index;
+    int nalloc_index;
 } gmx_ana_index_t;
 
 /*! \brief
@@ -97,7 +97,7 @@ typedef struct gmx_ana_index_t
 typedef struct gmx_ana_indexmap_t
 {
     /** Type of the mapping. */
-    e_index_t           type;
+    e_index_t type;
     /*! \brief
      * Current number of mapped values.
      *
@@ -107,7 +107,7 @@ typedef struct gmx_ana_indexmap_t
      * is always equal to \p b.nr, i.e., the number of blocks in the
      * original index group.
      */
-    int                 nr;
+    int nr;
     /*! \brief
      * Current reference IDs.
      *
@@ -136,7 +136,7 @@ typedef struct gmx_ana_indexmap_t
      *
      * A block structure that corresponds to the current index group.
      */
-    t_block             mapb;
+    t_block mapb;
 
     /*! \brief
      * Arbitrary ID numbers for the blocks.
@@ -164,7 +164,7 @@ typedef struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() unless \p bMaskOnly was specified or the
      * index group is identical to the one provided to gmx_ana_indexmap_init().
      */
-    t_blocka            b;
+    t_blocka b;
     /*! \brief
      * true if the current reference IDs are for the whole group (internal use only).
      *
@@ -172,7 +172,7 @@ typedef struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() does not take any time if the group is
      * actually static.
      */
-    bool                bStatic;
+    bool bStatic;
     /*! \brief
      * true if the current mapping is for the whole group (internal use only).
      *
@@ -180,7 +180,7 @@ typedef struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() does not take any time if the group is
      * actually static.
      */
-    bool                bMapStatic;
+    bool bMapStatic;
 } gmx_ana_indexmap_t;
 
 
