@@ -85,7 +85,7 @@ void
 Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "This tool calculates the radial distribution function (RDF)",
+        "The rdf tool calculates the radial distribution function (RDF)",
         "for a set of output positions relative a set of reference",
         "positions.\n"
         "The RDF is defined such that the quantity\n",
