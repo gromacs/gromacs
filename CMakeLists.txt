@@ -180,6 +180,7 @@ set(GMX_ACCELERATION "@GMX_SUGGESTED_ACCELERATION@"
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
+option(GMX_FFTW "Use internal fftw instead of system one" OFF)
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
@@ -642,6 +643,27 @@ endif()
 # include(gmxGenerateVersionString)
 
 ########################################################################
+# Specify install locations and which subdirectories to process        #
+########################################################################
+if (GMX_USE_RELATIVE_INSTALL_PATH)
+    set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
+    mark_as_advanced(GMX_INSTALL_PREFIX)
+else()
+    set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
+endif()
+
+if ( NOT DEFINED GMXLIB )
+    set(GMXLIB lib)
+endif()
+set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
+set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
+set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/gromacs)
+set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
+set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
+
+set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
+
+########################################################################
 # Our own GROMACS tests
 ########################################################################
 
@@ -915,15 +937,19 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     else(GMX_DOUBLE)
         set(FFTW fftwf)
     endif(GMX_DOUBLE)
-    find_package(FFTW COMPONENTS ${FFTW})
-    string(TOUPPER "${FFTW}" FFTW)
+    if(GMX_FFTW)
+      string(TOUPPER "${FFTW}" FFTW)
+      add_subdirectory(contrib)
+    else(GMX_FFTW)
+      find_package(FFTW COMPONENTS ${FFTW})
+      string(TOUPPER "${FFTW}" FFTW)
+    endif(GMX_FFTW)
     set(PKG_FFT "${${FFTW}_PKG}")
     include_directories(${${FFTW}_INCLUDE_DIRS})
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     if(NOT ${FFTW}_FOUND)
       MESSAGE(FATAL_ERROR "Cannot find FFTW3 (with correct precision - libfftw3f for single precision GROMACS or libfftw3 for double precision GROMACS). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
     endif(NOT ${FFTW}_FOUND)
-
     set(GMX_FFT_FFTW3 1)
 
     if (NOT ${GMX_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
@@ -1099,27 +1125,6 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELWITHDEBINFO@")
 endif()
 
-
-########################################################################
-# Specify install locations and which subdirectories to process        #
-########################################################################
-if (GMX_USE_RELATIVE_INSTALL_PATH)
-    set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
-    mark_as_advanced(GMX_INSTALL_PREFIX)
-else()
-    set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
-endif()
-
-if ( NOT DEFINED GMXLIB )
-    set(GMXLIB lib)
-endif()
-set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
-set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
-set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/gromacs)
-set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
-set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
-
-set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
 ##################################################################
 # Shared library settings - Darwin uses INSTALL_NAME_DIR instead!
