@@ -63,12 +63,12 @@ class Select : public TrajectoryAnalysisModule
         Select();
         virtual ~Select();
 
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options *options,
+        virtual void optionsFinished(Options                    *options,
                                      TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
+                                  const TopologyInformation        &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -77,33 +77,33 @@ class Select : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        SelectionList            sel_;
-        SelectionOptionInfo     *selOpt_;
+        SelectionList sel_;
+        SelectionOptionInfo *selOpt_;
 
-        std::string              fnSize_;
-        std::string              fnFrac_;
-        std::string              fnIndex_;
-        std::string              fnNdx_;
-        std::string              fnMask_;
-        std::string              fnOccupancy_;
-        std::string              fnPDB_;
-        bool                     bDump_;
-        bool                     bTotNorm_;
-        bool                     bFracNorm_;
-        bool                     bResInd_;
-        std::string              resNumberType_;
-        std::string              pdbAtoms_;
+        std::string          fnSize_;
+        std::string          fnFrac_;
+        std::string          fnIndex_;
+        std::string          fnNdx_;
+        std::string          fnMask_;
+        std::string          fnOccupancy_;
+        std::string          fnPDB_;
+        bool        bDump_;
+        bool        bTotNorm_;
+        bool        bFracNorm_;
+        bool        bResInd_;
+        std::string resNumberType_;
+        std::string pdbAtoms_;
 
         const TopologyInformation *top_;
-        std::vector<int>         totsize_;
-        AnalysisData             sdata_;
-        AnalysisData             cdata_;
-        AnalysisData             idata_;
-        AnalysisData             mdata_;
+        std::vector<int>           totsize_;
+        AnalysisData sdata_;
+        AnalysisData cdata_;
+        AnalysisData idata_;
+        AnalysisData mdata_;
         AnalysisDataAverageModulePointer occupancyModule_;
 };
 
-} // namespace analysismodules
+}   // namespace analysismodules
 
 } // namespace gmx
 

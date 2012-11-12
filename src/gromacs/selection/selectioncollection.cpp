@@ -75,11 +75,11 @@ namespace gmx
 SelectionCollection::Impl::Impl()
     : debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
 {
-    sc_.nvars     = 0;
-    sc_.varstrs   = NULL;
-    sc_.top       = NULL;
+    sc_.nvars   = 0;
+    sc_.varstrs = NULL;
+    sc_.top     = NULL;
     gmx_ana_index_clear(&sc_.gall);
-    sc_.mempool   = NULL;
+    sc_.mempool = NULL;
     sc_.symtab.reset(new SelectionParserSymbolTable);
     gmx_ana_selmethod_register_defaults(sc_.symtab.get());
 }
@@ -173,12 +173,12 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
 int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
                   bool bInteractive)
 {
-    int status = YYPUSH_MORE;
+    int status    = YYPUSH_MORE;
     int prevToken = 0;
     do
     {
         YYSTYPE value;
-        int token = _gmx_sel_yylex(&value, scanner);
+        int     token = _gmx_sel_yylex(&value, scanner);
         if (bInteractive)
         {
             if (token == 0)
@@ -219,23 +219,23 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
  */
 SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr)
 {
-    boost::shared_ptr<void> scannerGuard(scanner, &_gmx_sel_free_lexer);
+    boost::shared_ptr<void>  scannerGuard(scanner, &_gmx_sel_free_lexer);
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
-    MessageStringCollector errors;
+    MessageStringCollector   errors;
     _gmx_sel_set_lexer_error_reporter(scanner, &errors);
 
-    int oldCount = sc->sel.size();
-    bool bOk = false;
+    int  oldCount = sc->sel.size();
+    bool bOk      = false;
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
-                _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
+            _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
         if (bStdIn)
         {
-            File &stdinFile(File::standardInput());
-            bool bInteractive = _gmx_sel_is_lexer_interactive(scanner);
+            File       &stdinFile(File::standardInput());
+            bool        bInteractive = _gmx_sel_is_lexer_interactive(scanner);
             std::string line;
-            int status;
+            int         status;
             while (promptLine(&stdinFile, bInteractive, &line))
             {
                 line.append("\n");
@@ -290,12 +290,12 @@ early_termination:
     return result;
 }
 
-} // namespace
+}   // namespace
 
 
 void SelectionCollection::Impl::resolveExternalGroups(
-        const SelectionTreeElementPointer &root,
-        MessageStringCollector *errors)
+    const SelectionTreeElementPointer &root,
+    MessageStringCollector            *errors)
 {
 
     if (root->type == SEL_GROUPREF)
@@ -365,17 +365,17 @@ SelectionCollection::~SelectionCollection()
 void
 SelectionCollection::initOptions(Options *options)
 {
-    static const char * const debug_levels[]
+    static const char *const debug_levels[]
         = {"no", "basic", "compile", "eval", "full", NULL};
     /*
-    static const char * const desc[] = {
+       static const char * const desc[] = {
         "This program supports selections in addition to traditional",
         "index files. Use [TT]-select help[tt] for additional information,",
         "or type 'help' in the selection prompt.",
         NULL,
-    };
-    options.setDescription(desc);
-    */
+       };
+       options.setDescription(desc);
+     */
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
     options->addOption(StringOption("selrpos").enumValue(postypes)
@@ -399,8 +399,8 @@ SelectionCollection::setReferencePosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
     // Check that the type is valid, throw if it is not.
-    e_poscalc_t  dummytype;
-    int          dummyflags;
+    e_poscalc_t dummytype;
+    int         dummyflags;
     PositionCalculationCollection::typeFromEnum(type, &dummytype, &dummyflags);
     impl_->rpost_ = type;
 }
@@ -411,8 +411,8 @@ SelectionCollection::setOutputPosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
     // Check that the type is valid, throw if it is not.
-    e_poscalc_t  dummytype;
-    int          dummyflags;
+    e_poscalc_t dummytype;
+    int         dummyflags;
     PositionCalculationCollection::typeFromEnum(type, &dummytype, &dummyflags);
     impl_->spost_ = type;
 }
@@ -429,7 +429,7 @@ void
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
-        "The number of atoms must be given if there is no topology");
+                       "The number of atoms must be given if there is no topology");
     // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
@@ -451,7 +451,7 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     impl_->grps_ = grps;
     impl_->bExternalGroupsSet_ = true;
 
-    MessageStringCollector errors;
+    MessageStringCollector      errors;
     SelectionTreeElementPointer root = impl_->sc_.root;
     while (root)
     {
@@ -468,8 +468,8 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
 bool
 SelectionCollection::requiresTopology() const
 {
-    e_poscalc_t  type;
-    int          flags;
+    e_poscalc_t type;
+    int         flags;
 
     if (!impl_->rpost_.empty())
     {
@@ -526,7 +526,7 @@ SelectionCollection::parseFromFile(const std::string &filename)
     try
     {
         yyscan_t scanner;
-        File file(filename, "r");
+        File     file(filename, "r");
         // TODO: Exception-safe way of using the lexer.
         _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
                             impl_->bExternalGroupsSet_,
@@ -537,8 +537,8 @@ SelectionCollection::parseFromFile(const std::string &filename)
     catch (GromacsException &ex)
     {
         ex.prependContext(formatString(
-                    "Error in parsing selections from file '%s'",
-                    filename.c_str()));
+                              "Error in parsing selections from file '%s'",
+                              filename.c_str()));
         throw;
     }
 }

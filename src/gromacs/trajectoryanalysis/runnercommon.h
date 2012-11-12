@@ -67,9 +67,9 @@ class TrajectoryAnalysisRunnerCommon
          */
         enum HelpFlag
         {
-            efHelpShowOptions           = 1<<0, //!< Show options.
-            efHelpShowHidden            = 1<<1, //!< Show hidden options.
-            efHelpShowDescriptions      = 1<<2  //!< Show detailed description.
+            efHelpShowOptions      = 1 << 0,    //!< Show options.
+            efHelpShowHidden       = 1 << 1,    //!< Show hidden options.
+            efHelpShowDescriptions = 1 << 2     //!< Show detailed description.
         };
         //! Combination of \ref HelpFlag values.
         typedef unsigned long HelpFlags;

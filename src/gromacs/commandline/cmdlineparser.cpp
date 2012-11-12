@@ -64,7 +64,7 @@ class CommandLineParser::Impl
         explicit Impl(Options *options);
 
         //! Helper object for assigning the options.
-        OptionsAssigner         assigner_;
+        OptionsAssigner assigner_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
@@ -100,7 +100,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
 void CommandLineParser::parse(std::vector<std::string> *commandLine)
 {
     ExceptionInitializer errors("Invalid command-line options");
-    std::string currentContext;
+    std::string          currentContext;
     // Start in the discard phase to skip options that can't be understood.
     bool bDiscard = true;
 
@@ -125,7 +125,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
                 currentContext.clear();
             }
             currentContext = "In command-line option " + *arg;
-            bDiscard = false;
+            bDiscard       = false;
             try
             {
                 const char *name = arg->c_str() + 1;

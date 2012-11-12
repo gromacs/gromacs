@@ -97,7 +97,7 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
                                    gmx_hw_opt_t *hw_opt)
 {
     gmx_bool bKmpAffinitySet, bGompCpuAffinitySet;
-    char *kmp_env, *gomp_env;
+    char    *kmp_env, *gomp_env;
 
     /* no need to worry if internal thread pinning is turned off */
     if (!hw_opt->bThreadPinning)
@@ -119,7 +119,7 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
 
     bKmpAffinitySet = FALSE;
 #if defined(__INTEL_COMPILER)
-    kmp_env = getenv("KMP_AFFINITY");
+    kmp_env         = getenv("KMP_AFFINITY");
     bKmpAffinitySet = (kmp_env != NULL);
 
     /* disable Intel OpenMP affinity if neither KMP_AFFINITY nor
@@ -134,7 +134,7 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
 #else
         /* POSIX */
         retval = setenv("KMP_AFFINITY", "disabled", 0);
-#endif /* _MSC_VER */
+#endif  /* _MSC_VER */
 
         if (debug)
         {

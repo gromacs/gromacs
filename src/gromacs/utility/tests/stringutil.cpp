@@ -119,7 +119,7 @@ typedef gmx::test::StringTestBase ConcatenateStringsTest;
 
 TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
 {
-    static const char * const strings[] = {
+    static const char *const strings[] = {
         "First string",
         "Second string ",
         "Third string\n",
@@ -182,7 +182,7 @@ TEST(ReplaceAllTest, HandlesPossibleRecursiveMatches)
  */
 
 //! Simple test string for wrapping.
-const char g_wrapText[] = "A quick brown fox jumps over the lazy dog";
+const char g_wrapText[]  = "A quick brown fox jumps over the lazy dog";
 //! Test string for wrapping with embedded line breaks.
 const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
 //! Test string for wrapping with a long word.

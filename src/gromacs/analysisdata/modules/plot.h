@@ -108,8 +108,8 @@ class AnalysisDataPlotSettings
 
     private:
         const SelectionCollection *selections_;
-        TimeUnit                timeUnit_;
-        int                     plotFormat_;
+        TimeUnit timeUnit_;
+        int      plotFormat_;
 };
 
 /*! \brief
@@ -190,7 +190,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          * Multiple calls to setLegend() and/or appendLegend() are added
          * together.
          */
-        void setLegend(int nsets, const char * const *setname);
+        void setLegend(int nsets, const char *const *setname);
         /*! \brief
          * Add a legend string for the next data set.
          *
@@ -303,17 +303,17 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 
     private:
-        bool                    bWrite_[4];
+        bool bWrite_[4];
 
         // Copy and assign disallowed by base.
 };
 
 //! Smart pointer to manage an AnalysisDataPlotModule object.
 typedef boost::shared_ptr<AnalysisDataPlotModule>
-        AnalysisDataPlotModulePointer;
+AnalysisDataPlotModulePointer;
 //! Smart pointer to manage an AnalysisDataVectorPlotModule object.
 typedef boost::shared_ptr<AnalysisDataVectorPlotModule>
-        AnalysisDataVectorPlotModulePointer;
+AnalysisDataVectorPlotModulePointer;
 
 } // namespace gmx
 

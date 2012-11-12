@@ -90,11 +90,11 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     if (bBoolNo)
     {
         GMX_RELEASE_ASSERT(param->name != NULL,
-                "bBoolNo should only be set for a parameters with a name");
+                           "bBoolNo should only be set for a parameters with a name");
         snew(yylval->str, strlen(param->name) + 3);
         yylval->str[0] = 'n';
         yylval->str[1] = 'o';
-        strcpy(yylval->str+2, param->name);
+        strcpy(yylval->str + 2, param->name);
     }
     else
     {
@@ -123,12 +123,12 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
         /* Keyword */
         switch (method->type)
         {
-            case INT_VALUE:   return KEYWORD_NUMERIC;
-            case REAL_VALUE:  return KEYWORD_NUMERIC;
-            case STR_VALUE:   return KEYWORD_STR;
-            case GROUP_VALUE: return KEYWORD_GROUP;
-            default:
-                GMX_THROW(gmx::InternalError("Unsupported keyword type"));
+        case INT_VALUE:   return KEYWORD_NUMERIC;
+        case REAL_VALUE:  return KEYWORD_NUMERIC;
+        case STR_VALUE:   return KEYWORD_STR;
+        case GROUP_VALUE: return KEYWORD_GROUP;
+        default:
+            GMX_THROW(gmx::InternalError("Unsupported keyword type"));
         }
     }
     else
@@ -163,13 +163,13 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
         }
         switch (method->type)
         {
-            case INT_VALUE:   return METHOD_NUMERIC;
-            case REAL_VALUE:  return METHOD_NUMERIC;
-            case POS_VALUE:   return METHOD_POS;
-            case GROUP_VALUE: return METHOD_GROUP;
-            default:
-                --state->msp;
-                GMX_THROW(gmx::InternalError("Unsupported method type"));
+        case INT_VALUE:   return METHOD_NUMERIC;
+        case REAL_VALUE:  return METHOD_NUMERIC;
+        case POS_VALUE:   return METHOD_POS;
+        case GROUP_VALUE: return METHOD_GROUP;
+        default:
+            --state->msp;
+            GMX_THROW(gmx::InternalError("Unsupported method type"));
         }
     }
     return INVALID; /* Should not be reached */
@@ -181,7 +181,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
     if (state->nextparam)
     {
         gmx_ana_selparam_t *param = state->nextparam;
-        bool                bBoolNo = state->bBoolNo;
+        bool bBoolNo = state->bBoolNo;
 
         if (state->neom > 0)
         {
@@ -215,16 +215,16 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (state->msp >= 0)
     {
         gmx_ana_selparam_t *param = NULL;
-        bool                bBoolNo = false;
-        int                 sp = state->msp;
+        bool bBoolNo = false;
+        int  sp      = state->msp;
         while (!param && sp >= 0)
         {
-            int             i;
+            int i;
             for (i = 0; i < state->mstack[sp]->nparams; ++i)
             {
                 /* Skip NULL parameters and too long parameters */
-                if (state->mstack[sp]->param[i].name == NULL
-                    || strlen(state->mstack[sp]->param[i].name) > yyleng)
+                if (state->mstack[sp]->param[i].name == NULL ||
+                    strlen(state->mstack[sp]->param[i].name) > yyleng)
                 {
                     continue;
                 }
@@ -234,11 +234,11 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                     break;
                 }
                 /* Check separately for a 'no' prefix on boolean parameters */
-                if (state->mstack[sp]->param[i].val.type == NO_VALUE
-                    && yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o'
-                    && !strncmp(state->mstack[sp]->param[i].name, yytext+2, yyleng-2))
+                if (state->mstack[sp]->param[i].val.type == NO_VALUE &&
+                    yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o' &&
+                    !strncmp(state->mstack[sp]->param[i].name, yytext + 2, yyleng - 2))
                 {
-                    param = &state->mstack[sp]->param[i];
+                    param   = &state->mstack[sp]->param[i];
                     bBoolNo = true;
                     break;
                 }
@@ -256,7 +256,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
             }
             if (sp < state->msp)
             {
-                state->neom = state->msp - sp - 1;
+                state->neom      = state->msp - sp - 1;
                 state->nextparam = param;
                 state->bBoolNo   = bBoolNo;
                 return END_OF_METHOD;
@@ -282,8 +282,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (symtype == gmx::SelectionParserSymbol::ReservedSymbol)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString(
-                        "Mismatch between tokenizer and reserved symbol table (for '%s')",
-                        symbol->name().c_str())));
+                                         "Mismatch between tokenizer and reserved symbol table (for '%s')",
+                                         symbol->name().c_str())));
     }
     /* For variable symbols, return the type of the variable value */
     if (symtype == gmx::SelectionParserSymbol::VariableSymbol)
@@ -294,29 +294,29 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
         {
             switch (var->v.type)
             {
-                case INT_VALUE:
-                    yylval->i = var->v.u.i[0];
-                    return TOK_INT;
-                case REAL_VALUE:
-                    yylval->r = var->v.u.r[0];
-                    return TOK_REAL;
-                case POS_VALUE:
-                    break;
-                default:
-                    GMX_THROW(gmx::InternalError("Unsupported variable type"));
+            case INT_VALUE:
+                yylval->i = var->v.u.i[0];
+                return TOK_INT;
+            case REAL_VALUE:
+                yylval->r = var->v.u.r[0];
+                return TOK_REAL;
+            case POS_VALUE:
+                break;
+            default:
+                GMX_THROW(gmx::InternalError("Unsupported variable type"));
             }
         }
         yylval->sel = new gmx::SelectionTreeElementPointer(var);
         switch (var->v.type)
         {
-            case INT_VALUE:   return VARIABLE_NUMERIC;
-            case REAL_VALUE:  return VARIABLE_NUMERIC;
-            case POS_VALUE:   return VARIABLE_POS;
-            case GROUP_VALUE: return VARIABLE_GROUP;
-            default:
-                delete yylval->sel;
-                GMX_THROW(gmx::InternalError("Unsupported variable type"));
-                return INVALID;
+        case INT_VALUE:   return VARIABLE_NUMERIC;
+        case REAL_VALUE:  return VARIABLE_NUMERIC;
+        case POS_VALUE:   return VARIABLE_POS;
+        case GROUP_VALUE: return VARIABLE_GROUP;
+        default:
+            delete yylval->sel;
+            GMX_THROW(gmx::InternalError("Unsupported variable type"));
+            return INVALID;
         }
         delete yylval->sel;
         return INVALID; /* Should not be reached. */
@@ -331,8 +331,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
      * some additional handling. */
     if (symtype == gmx::SelectionParserSymbol::PositionSymbol)
     {
-        state->bMatchOf = true;
-        yylval->str = strdup(symbol->name().c_str());
+        state->bMatchOf    = true;
+        yylval->str        = strdup(symbol->name().c_str());
         state->prev_pos_kw = 2;
         return KEYWORD_POS;
     }
@@ -345,9 +345,9 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 {
     /* Do nothing if the string is empty, or if it is a space and there is
      * no other text yet, or if there already is a space. */
-    if (!str || len == 0 || strlen(str) == 0
-        || (str[0] == ' ' && str[1] == 0
-            && (state->pslen == 0 || state->pselstr[state->pslen - 1] == ' ')))
+    if (!str || len == 0 || strlen(str) == 0 ||
+        (str[0] == ' ' && str[1] == 0 &&
+         (state->pslen == 0 || state->pselstr[state->pslen - 1] == ' ')))
     {
         return;
     }
@@ -382,18 +382,18 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     gmx_sel_lexer_t *state = new gmx_sel_lexer_t;
 
-    state->sc        = sc;
-    state->errors    = NULL;
-    state->bGroups   = bGroups;
-    state->grps      = grps;
-    state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
+    state->sc           = sc;
+    state->errors       = NULL;
+    state->bGroups      = bGroups;
+    state->grps         = grps;
+    state->nexpsel      = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
     state->bInteractive = bInteractive;
 
     snew(state->pselstr, STRSTORE_ALLOCSTEP);
-    state->pselstr[0]   = 0;
-    state->pslen        = 0;
-    state->nalloc_psel  = STRSTORE_ALLOCSTEP;
+    state->pselstr[0]  = 0;
+    state->pslen       = 0;
+    state->nalloc_psel = STRSTORE_ALLOCSTEP;
 
     snew(state->mstack, 20);
     state->mstack_alloc = 20;
@@ -427,7 +427,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 }
 
 void
-_gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
+_gmx_sel_set_lexer_error_reporter(yyscan_t                     scanner,
                                   gmx::MessageStringCollector *errors)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
@@ -435,7 +435,7 @@ _gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
 }
 
 void
-_gmx_sel_lexer_set_exception(yyscan_t scanner,
+_gmx_sel_lexer_set_exception(yyscan_t                    scanner,
                              const boost::exception_ptr &ex)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);

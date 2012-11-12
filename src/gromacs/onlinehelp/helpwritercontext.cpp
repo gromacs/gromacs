@@ -92,9 +92,9 @@ class HelpWriterContext::Impl
         }
 
         //! Output file to which the help is written.
-        File                   &file_;
+        File &file_;
         //! Output format for the help output.
-        HelpOutputFormat        format_;
+        HelpOutputFormat format_;
 };
 
 /********************************************************************
@@ -109,7 +109,7 @@ HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
         // TODO: Implement once the situation with Redmine issue #969 is more
         // clear.
         GMX_THROW(NotImplementedError(
-                    "This output format is not implemented"));
+                      "This output format is not implemented"));
     }
 }
 
@@ -145,8 +145,8 @@ void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
     TextLineWrapper wrapper;
     wrapper.settings().setLineLength(78);
-    const char *program = ProgramInfo::getInstance().programName().c_str();
-    std::string newText = replaceAll(text, "[PROGRAM]", program);
+    const char     *program = ProgramInfo::getInstance().programName().c_str();
+    std::string     newText = replaceAll(text, "[PROGRAM]", program);
     outputFile().writeLine(wrapper.wrapToString(substituteMarkup(newText)));
 }
 

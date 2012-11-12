@@ -49,13 +49,13 @@
 typedef struct
 {
     /** Input positions. */
-    gmx_ana_pos_t    p1;
+    gmx_ana_pos_t p1;
     /** Other input positions. */
-    gmx_ana_pos_t    p2;
+    gmx_ana_pos_t p2;
     /** Group to store the output atom indices. */
-    gmx_ana_index_t  g;
+    gmx_ana_index_t g;
     /** Stride for merging (\c stride values from \c p1 for each in \c p2). */
-    int              stride;
+    int stride;
 } t_methoddata_merge;
 
 /** Allocates data for the merging selection modifiers. */
@@ -133,7 +133,7 @@ gmx_ana_selmethod_t sm_merge = {
 /** \internal Selection method data for the \p plus modifier. */
 gmx_ana_selmethod_t sm_plus = {
     "plus", POS_VALUE, SMETH_MODIFIER,
-    asize(smparams_merge)-1, smparams_merge,
+    asize(smparams_merge) - 1, smparams_merge,
     &init_data_merge,
     NULL,
     &init_merge,
@@ -159,7 +159,7 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
     t_methoddata_merge *data;
 
     snew(data, 1);
-    data->stride = 0;
+    data->stride     = 0;
     param[0].val.u.p = &data->p1;
     param[1].val.u.p = &data->p2;
     if (npar > 2)
@@ -190,7 +190,7 @@ init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     {
         d->stride = d->p1.nr / d->p2.nr;
     }
-    if (d->p1.nr != d->stride*d->p2.nr)
+    if (d->p1.nr != d->stride * d->p2.nr)
     {
         GMX_THROW(gmx::InconsistentInputError("The number of positions to be merged are not compatible"));
     }
@@ -245,14 +245,14 @@ static void
 init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-    int                 i, j;
+    int i, j;
 
     init_output_common(top, out, data);
     for (i = 0; i < d->p2.nr; ++i)
     {
         for (j = 0; j < d->stride; ++j)
         {
-            gmx_ana_pos_append_init(out->u.p, &d->g, &d->p1, d->stride*i+j);
+            gmx_ana_pos_append_init(out->u.p, &d->g, &d->p1, d->stride * i + j);
         }
         gmx_ana_pos_append_init(out->u.p, &d->g, &d->p2, i);
     }
@@ -267,7 +267,7 @@ static void
 init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-    int                 i;
+    int i;
 
     init_output_common(top, out, data);
     for (i = 0; i < d->p1.nr; ++i)
@@ -307,10 +307,10 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-    int                 i, j;
-    int                 refid;
+    int i, j;
+    int refid;
 
-    if (d->p1.nr != d->stride*d->p2.nr)
+    if (d->p1.nr != d->stride * d->p2.nr)
     {
         GMX_THROW(gmx::InconsistentInputError("The number of positions to be merged are not compatible"));
     }
@@ -320,14 +320,14 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         for (j = 0; j < d->stride; ++j)
         {
-            refid = d->p1.m.refid[d->stride*i+j];
+            refid = d->p1.m.refid[d->stride * i + j];
             if (refid != -1)
             {
-                refid = (d->stride+1) * (refid / d->stride) + (refid % d->stride);
+                refid = (d->stride + 1) * (refid / d->stride) + (refid % d->stride);
             }
-            gmx_ana_pos_append(out->u.p, &d->g, &d->p1, d->stride*i+j, refid);
+            gmx_ana_pos_append(out->u.p, &d->g, &d->p1, d->stride * i + j, refid);
         }
-        refid = (d->stride+1)*d->p2.m.refid[i]+d->stride;
+        refid = (d->stride + 1) * d->p2.m.refid[i] + d->stride;
         gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
     }
     gmx_ana_pos_append_finish(out->u.p);
@@ -346,8 +346,8 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-    int                 i;
-    int                 refid;
+    int i;
+    int refid;
 
     d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);

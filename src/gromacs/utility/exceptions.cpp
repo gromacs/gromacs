@@ -99,7 +99,7 @@ class ErrorMessage
         ErrorMessage prependContext(const std::string &context) const;
 
     private:
-        std::string                     text_;
+        std::string text_;
         boost::shared_ptr<ErrorMessage> child_;
 };
 
@@ -109,7 +109,7 @@ class ErrorMessage
  * \ingroup module_utility
  */
 typedef boost::error_info<struct errinfo_message_, ErrorMessage>
-        errinfo_message;
+errinfo_message;
 
 ErrorMessage::ErrorMessage(const std::string &text)
     : text_(text)
@@ -136,9 +136,9 @@ ErrorMessage::prependContext(const std::string &context) const
  * \ingroup module_utility
  */
 typedef boost::error_info<struct errinfo_message_, internal::NestedExceptionList>
-        errinfo_nested_exceptions;
+errinfo_nested_exceptions;
 
-} // namespace
+}   // namespace
 
 /********************************************************************
  * GromacsException
@@ -238,13 +238,13 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
         {
             while (msg != NULL && msg->isContext())
             {
-                internal::printFatalErrorMessageLine(fp, msg->text().c_str(), indent*2);
+                internal::printFatalErrorMessageLine(fp, msg->text().c_str(), indent * 2);
                 ++indent;
                 msg = &msg->child();
             }
             if (msg != NULL && !msg->text().empty())
             {
-                internal::printFatalErrorMessageLine(fp, msg->text().c_str(), indent*2);
+                internal::printFatalErrorMessageLine(fp, msg->text().c_str(), indent * 2);
             }
         }
         else
@@ -256,14 +256,14 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
             = boost::get_error_info<boost::errinfo_errno>(*boostEx);
         if (errorNumber != NULL)
         {
-            std::fprintf(fp, "%*sReason: %s\n", (indent+1)*2, "",
+            std::fprintf(fp, "%*sReason: %s\n", (indent + 1) * 2, "",
                          std::strerror(*errorNumber));
-            const char * const *funcName
+            const char *const *funcName
                 = boost::get_error_info<boost::errinfo_api_function>(*boostEx);
             if (funcName != NULL)
             {
                 std::fprintf(fp, "%*s(call to %s() returned error code %d)\n",
-                             (indent+1)*2, "", *funcName, *errorNumber);
+                             (indent + 1) * 2, "", *funcName, *errorNumber);
             }
         }
 
@@ -293,12 +293,12 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
     }
 }
 
-} // namespace
+}   // namespace
 
 void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {
-    const char *title = "Unknown exception";
-    bool bPrintType = false;
+    const char *title             = "Unknown exception";
+    bool        bPrintType        = false;
     const GromacsException *gmxEx = dynamic_cast<const GromacsException *>(&ex);
     // TODO: Treat more of the standard exceptions
     if (gmxEx != NULL)
@@ -315,12 +315,12 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     }
     else if (dynamic_cast<const std::logic_error *>(&ex) != NULL)
     {
-        title = "Standard library logic error (bug)";
+        title      = "Standard library logic error (bug)";
         bPrintType = true;
     }
     else if (dynamic_cast<const std::runtime_error *>(&ex) != NULL)
     {
-        title = "Standard library runtime error (possible bug)";
+        title      = "Standard library runtime error (possible bug)";
         bPrintType = true;
     }
     else
@@ -330,9 +330,9 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     // We can't call get_error_info directly on ex since our internal boost
     // needs to be compiled with BOOST_NO_RTTI. So we do the dynamic_cast
     // here instead.
-    const char *const *funcPtr = NULL;
-    const char *const *filePtr = NULL;
-    const int         *linePtr = NULL;
+    const char *const      *funcPtr = NULL;
+    const char *const      *filePtr = NULL;
+    const int              *linePtr = NULL;
     const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
     if (boostEx != NULL)
     {

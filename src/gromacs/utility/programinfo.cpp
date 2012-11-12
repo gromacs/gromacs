@@ -68,7 +68,7 @@ tMPI::mutex g_programInfoMutex;
 boost::scoped_ptr<ProgramInfo> g_partialProgramInfo;
 //! Global program info; stores the object initialized with ProgramInfo::init().
 boost::scoped_ptr<ProgramInfo> g_programInfo;
-} // namespace
+}   // namespace
 
 /********************************************************************
  * ProgramInfo::Impl
@@ -89,15 +89,15 @@ class ProgramInfo::Impl
 
 ProgramInfo::Impl::Impl()
     : realBinaryName_("GROMACS"), fullInvokedProgram_("GROMACS"),
-      programName_("GROMACS"), invariantProgramName_("GROMACS")
+    programName_("GROMACS"), invariantProgramName_("GROMACS")
 {
 }
 
 ProgramInfo::Impl::Impl(const char *realBinaryName,
-                        int argc, const char *const argv[])
+        int argc, const char *const argv[])
     : realBinaryName_(realBinaryName != NULL ? realBinaryName : ""),
-      fullInvokedProgram_(argc != 0 ? argv[0] : ""),
-      programName_(Path::splitToPathAndFilename(fullInvokedProgram_).second)
+    fullInvokedProgram_(argc != 0 ? argv[0] : ""),
+    programName_(Path::splitToPathAndFilename(fullInvokedProgram_).second)
 {
     // Temporary hack to make things work on Windows while waiting for #950.
     // Some places in the existing code expect to have DIR_SEPARATOR in all
@@ -109,7 +109,7 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
         std::replace(fullInvokedProgram_.begin(), fullInvokedProgram_.end(),
                      '/', '\\');
     }
-    programName_ = stripSuffixIfPresent(programName_, ".exe");
+    programName_          = stripSuffixIfPresent(programName_, ".exe");
     invariantProgramName_ = programName_;
 #ifdef GMX_BINARY_SUFFIX
     invariantProgramName_ =
@@ -126,8 +126,8 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
         {
             commandLine_.append(" ");
         }
-        const char *arg = argv[i];
-        bool bSpaces = (std::strchr(arg, ' ') != NULL);
+        const char *arg     = argv[i];
+        bool        bSpaces = (std::strchr(arg, ' ') != NULL);
         if (bSpaces)
         {
             commandLine_.append("'");
@@ -182,7 +182,7 @@ const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
                 if (g_partialProgramInfo.get() == NULL)
                 {
                     g_partialProgramInfo.reset(
-                            new ProgramInfo(realBinaryName, -argc, argv));
+                        new ProgramInfo(realBinaryName, -argc, argv));
                 }
                 return *g_partialProgramInfo;
             }
@@ -213,7 +213,7 @@ ProgramInfo::ProgramInfo(int argc, const char *const argv[])
 }
 
 ProgramInfo::ProgramInfo(const char *realBinaryName,
-                         int argc, const char *const argv[])
+        int argc, const char *const argv[])
     : impl_(new Impl(realBinaryName, argc, argv))
 {
 }

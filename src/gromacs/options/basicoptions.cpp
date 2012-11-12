@@ -73,7 +73,7 @@ void expandVector(size_t length, std::vector<ValueType> *values)
         if (values->size() != 1)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                      "Expected 1 or %d values, got %d", length, values->size())));
+                                                 "Expected 1 or %d values, got %d", length, values->size())));
         }
         const ValueType &value = (*values)[0];
         values->resize(length, value);
@@ -141,20 +141,20 @@ std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 void IntegerOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr;
+    char       *endptr;
     errno = 0;
-    long int ival = std::strtol(ptr, &endptr, 10);
-    if (errno == ERANGE
-        || ival < std::numeric_limits<int>::min()
-        || ival > std::numeric_limits<int>::max())
+    long int    ival = std::strtol(ptr, &endptr, 10);
+    if (errno == ERANGE ||
+        ival < std::numeric_limits<int>::min() ||
+        ival > std::numeric_limits<int>::max())
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; it causes an integer overflow"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value +
+                                    "'; it causes an integer overflow"));
     }
     if (*ptr == '\0' || *endptr != '\0')
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; expected an integer"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value +
+                                    "'; expected an integer"));
     }
     addValue(ival);
 }
@@ -208,18 +208,18 @@ std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 void DoubleOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr;
+    char       *endptr;
     errno = 0;
-    double dval = std::strtod(ptr, &endptr);
+    double      dval = std::strtod(ptr, &endptr);
     if (errno == ERANGE)
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; it causes an overflow/underflow"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value +
+                                    "'; it causes an overflow/underflow"));
     }
     if (*ptr == '\0' || *endptr != '\0')
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; expected a number"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + value +
+                                    "'; expected a number"));
     }
     addValue(dval * factor_);
 }
@@ -368,8 +368,8 @@ void StringOptionStorage::convertValue(const std::string &value)
     }
     else
     {
-        ValueList::const_iterator  i;
-        ValueList::const_iterator  match = allowed_.end();
+        ValueList::const_iterator i;
+        ValueList::const_iterator match = allowed_.end();
         for (i = allowed_.begin(); i != allowed_.end(); ++i)
         {
             // TODO: Case independence.

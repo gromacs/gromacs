@@ -178,7 +178,7 @@ class PositionCalculationCollection
          * The array contains a NULL pointer after the last item to indicate
          * the end of the list.
          */
-        static const char * const typeEnumValues[];
+        static const char *const typeEnumValues[];
 
         /*! \brief
          * Converts a string to parameters for createCalculationFromEnum().

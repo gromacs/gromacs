@@ -145,7 +145,7 @@ class ProgramInfo
          * \param[in] argv  argv array passed to main().
          */
         ProgramInfo(const char *realBinaryName,
-                    int argc, const char *const argv[]);
+            int argc, const char *const argv[]);
         ~ProgramInfo();
 
         /*! \brief

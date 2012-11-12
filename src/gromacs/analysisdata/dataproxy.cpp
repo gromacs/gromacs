@@ -44,7 +44,7 @@ namespace gmx
 {
 
 AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
-                                     AbstractAnalysisData *data)
+        AbstractAnalysisData *data)
     : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan)
 {
     GMX_RELEASE_ASSERT(data, "Source data must not be NULL");

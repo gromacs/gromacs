@@ -62,7 +62,7 @@ namespace
 TEST(OptionsAssignerTest, HandlesMissingRequiredParameter)
 {
     gmx::Options options(NULL, NULL);
-    int value = 0;
+    int          value = 0;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                         IntegerOption("p").store(&value).required()));
@@ -73,7 +73,7 @@ TEST(OptionsAssignerTest, HandlesMissingRequiredParameter)
 TEST(OptionsAssignerTest, HandlesRequiredParameterWithDefaultValue)
 {
     gmx::Options options(NULL, NULL);
-    int value = 0;
+    int          value = 0;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                         IntegerOption("p").store(&value).required()
@@ -85,7 +85,7 @@ TEST(OptionsAssignerTest, HandlesRequiredParameterWithDefaultValue)
 
 TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
 {
-    gmx::Options options(NULL, NULL);
+    gmx::Options     options(NULL, NULL);
     std::vector<int> values;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
@@ -107,7 +107,7 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
 
 TEST(OptionsAssignerTest, HandlesMultipleParameter)
 {
-    gmx::Options options(NULL, NULL);
+    gmx::Options     options(NULL, NULL);
     std::vector<int> values;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
@@ -133,7 +133,7 @@ TEST(OptionsAssignerTest, HandlesMultipleParameter)
 TEST(OptionsAssignerTest, HandlesMissingValue)
 {
     gmx::Options options(NULL, NULL);
-    int value1 = 0, value2 = 0;
+    int          value1 = 0, value2 = 0;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value1)));
     ASSERT_NO_THROW(options.addOption(IntegerOption("q").store(&value2)));
@@ -154,7 +154,7 @@ TEST(OptionsAssignerTest, HandlesMissingValue)
 TEST(OptionsAssignerTest, HandlesExtraValue)
 {
     gmx::Options options(NULL, NULL);
-    int value1 = 0;
+    int          value1 = 0;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value1)));
 
@@ -175,9 +175,9 @@ TEST(OptionsAssignerTest, HandlesSubSections)
     gmx::Options options(NULL, NULL);
     gmx::Options sub1("section1", NULL);
     gmx::Options sub2("section2", NULL);
-    int value = 3;
-    int value1 = 1;
-    int value2 = 2;
+    int          value  = 3;
+    int          value1 = 1;
+    int          value2 = 2;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&value1)));
@@ -213,11 +213,11 @@ TEST(OptionsAssignerTest, HandlesNoStrictSubSections)
     gmx::Options options(NULL, NULL);
     gmx::Options sub1("section1", NULL);
     gmx::Options sub2("section2", NULL);
-    int pvalue = 3;
-    int pvalue1 = 1;
-    int qvalue  = 4;
-    int pvalue2 = 2;
-    int rvalue  = 5;
+    int          pvalue  = 3;
+    int          pvalue1 = 1;
+    int          qvalue  = 4;
+    int          pvalue2 = 2;
+    int          rvalue  = 5;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&pvalue)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&pvalue1)));
@@ -259,7 +259,7 @@ TEST(OptionsAssignerTest, HandlesNoStrictSubSections)
 TEST(OptionsAssignerTest, HandlesMultipleSources)
 {
     gmx::Options options(NULL, NULL);
-    int value = -1;
+    int          value = -1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
 
@@ -292,7 +292,7 @@ TEST(OptionsAssignerTest, HandlesMultipleSources)
 TEST(OptionsAssignerBooleanTest, StoresYesValue)
 {
     gmx::Options options(NULL, NULL);
-    bool  value = false;
+    bool         value = false;
     using gmx::BooleanOption;
     ASSERT_NO_THROW(options.addOption(BooleanOption("p").store(&value)));
 
@@ -310,7 +310,7 @@ TEST(OptionsAssignerBooleanTest, StoresYesValue)
 TEST(OptionsAssignerBooleanTest, SetsBooleanWithoutExplicitValue)
 {
     gmx::Options options(NULL, NULL);
-    bool value = false;
+    bool         value = false;
     using gmx::BooleanOption;
     ASSERT_NO_THROW(options.addOption(BooleanOption("p").store(&value)));
 
@@ -327,7 +327,7 @@ TEST(OptionsAssignerBooleanTest, SetsBooleanWithoutExplicitValue)
 TEST(OptionsAssignerBooleanTest, ClearsBooleanWithPrefixNo)
 {
     gmx::Options options(NULL, NULL);
-    bool value = true;
+    bool         value = true;
     using gmx::BooleanOption;
     ASSERT_NO_THROW(options.addOption(BooleanOption("p").store(&value)));
 
@@ -345,7 +345,7 @@ TEST(OptionsAssignerBooleanTest, ClearsBooleanWithPrefixNo)
 TEST(OptionsAssignerBooleanTest, HandlesBooleanWithPrefixAndValue)
 {
     gmx::Options options(NULL, NULL);
-    bool value = false;
+    bool         value = false;
     using gmx::BooleanOption;
     ASSERT_NO_THROW(options.addOption(BooleanOption("p").store(&value)));
 
@@ -376,7 +376,7 @@ TEST(OptionsAssignerBooleanTest, HandlesBooleanWithPrefixAndValue)
 TEST(OptionsAssignerIntegerTest, StoresSingleValue)
 {
     gmx::Options options(NULL, NULL);
-    int value = 1;
+    int          value = 1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
 
@@ -394,7 +394,7 @@ TEST(OptionsAssignerIntegerTest, StoresSingleValue)
 TEST(OptionsAssignerIntegerTest, HandlesEmptyValue)
 {
     gmx::Options options(NULL, NULL);
-    int value = 1;
+    int          value = 1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
 
@@ -412,7 +412,7 @@ TEST(OptionsAssignerIntegerTest, HandlesEmptyValue)
 TEST(OptionsAssignerIntegerTest, HandlesInvalidValue)
 {
     gmx::Options options(NULL, NULL);
-    int value = 1;
+    int          value = 1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
 
@@ -430,7 +430,7 @@ TEST(OptionsAssignerIntegerTest, HandlesInvalidValue)
 TEST(OptionsAssignerIntegerTest, HandlesOverflow)
 {
     gmx::Options options(NULL, NULL);
-    int value = 1;
+    int          value = 1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
 
@@ -438,7 +438,7 @@ TEST(OptionsAssignerIntegerTest, HandlesOverflow)
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("p"));
     std::string overflowValue(
-            gmx::formatString("%d0000", std::numeric_limits<int>::max()));
+        gmx::formatString("%d0000", std::numeric_limits<int>::max()));
     EXPECT_THROW(assigner.appendValue(overflowValue), gmx::InvalidInputError);
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
@@ -450,7 +450,7 @@ TEST(OptionsAssignerIntegerTest, HandlesOverflow)
 TEST(OptionsAssignerIntegerTest, StoresDefaultValue)
 {
     gmx::Options options(NULL, NULL);
-    int value = -1;
+    int          value = -1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                         IntegerOption("p").store(&value).defaultValue(2)));
@@ -467,7 +467,7 @@ TEST(OptionsAssignerIntegerTest, StoresDefaultValue)
 TEST(OptionsAssignerIntegerTest, StoresDefaultValueIfSet)
 {
     gmx::Options options(NULL, NULL);
-    int value = -1;
+    int          value = -1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                         IntegerOption("p").store(&value).defaultValueIfSet(2)));
@@ -486,7 +486,7 @@ TEST(OptionsAssignerIntegerTest, StoresDefaultValueIfSet)
 TEST(OptionsAssignerIntegerTest, HandlesDefaultValueIfSetWhenNotSet)
 {
     gmx::Options options(NULL, NULL);
-    int value = -1;
+    int          value = -1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                         IntegerOption("p").store(&value).defaultValueIfSet(2)));
@@ -503,7 +503,7 @@ TEST(OptionsAssignerIntegerTest, HandlesDefaultValueIfSetWhenNotSet)
 TEST(OptionsAssignerIntegerTest, HandlesBothDefaultValues)
 {
     gmx::Options options(NULL, NULL);
-    int value = -1;
+    int          value = -1;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                         IntegerOption("p").store(&value)
@@ -522,8 +522,8 @@ TEST(OptionsAssignerIntegerTest, HandlesBothDefaultValues)
 
 TEST(OptionsAssignerIntegerTest, StoresToVector)
 {
-    gmx::Options          options(NULL, NULL);
-    std::vector<int>      values;
+    gmx::Options     options(NULL, NULL);
+    std::vector<int> values;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                         IntegerOption("p").storeVector(&values).multiValue()));
@@ -547,7 +547,7 @@ TEST(OptionsAssignerIntegerTest, StoresToVector)
 TEST(OptionsAssignerIntegerTest, HandlesVectors)
 {
     gmx::Options options(NULL, NULL);
-    int  vec[3] = {0, 0, 0};
+    int          vec[3] = {0, 0, 0};
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(vec).vector()));
 
@@ -569,7 +569,7 @@ TEST(OptionsAssignerIntegerTest, HandlesVectors)
 TEST(OptionsAssignerIntegerTest, HandlesVectorFromSingleValue)
 {
     gmx::Options options(NULL, NULL);
-    int  vec[3] = {0, 0, 0};
+    int          vec[3] = {0, 0, 0};
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(vec).vector()));
 
@@ -589,7 +589,7 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorFromSingleValue)
 TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValue)
 {
     gmx::Options options(NULL, NULL);
-    int  vec[3] = {3, 2, 1};
+    int          vec[3] = {3, 2, 1};
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(vec).vector()));
 
@@ -602,9 +602,9 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValue)
 
 TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssignment)
 {
-    gmx::Options options(NULL, NULL);
-    int  vec[3] = {3, 2, 1};
-    std::vector<int> vec2(vec, vec+3);
+    gmx::Options     options(NULL, NULL);
+    int              vec[3] = {3, 2, 1};
+    std::vector<int> vec2(vec, vec + 3);
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(vec)
                                           .storeVector(&vec2).vector()));
@@ -635,7 +635,7 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssign
 TEST(OptionsAssignerDoubleTest, StoresSingleValue)
 {
     gmx::Options options(NULL, NULL);
-    double value = 0.0;
+    double       value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value)));
 
@@ -653,7 +653,7 @@ TEST(OptionsAssignerDoubleTest, StoresSingleValue)
 TEST(OptionsAssignerDoubleTest, HandlesEmptyValue)
 {
     gmx::Options options(NULL, NULL);
-    double value = 1.0;
+    double       value = 1.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value)));
 
@@ -675,8 +675,8 @@ TEST(OptionsAssignerDoubleTest, HandlesEmptyValue)
 
 TEST(OptionsAssignerStringTest, StoresSingleValue)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
+    gmx::Options options(NULL, NULL);
+    std::string  value;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(StringOption("p").store(&value)));
 
@@ -693,10 +693,10 @@ TEST(OptionsAssignerStringTest, StoresSingleValue)
 
 TEST(OptionsAssignerStringTest, HandlesEnumValue)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
-    int                    index = -1;
+    gmx::Options      options(NULL, NULL);
+    std::string       value;
+    const char *const allowed[] = { "none", "test", "value", NULL };
+    int index = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                         StringOption("p").store(&value)
@@ -716,10 +716,10 @@ TEST(OptionsAssignerStringTest, HandlesEnumValue)
 
 TEST(OptionsAssignerStringTest, HandlesIncorrectEnumValue)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
-    int                    index = -1;
+    gmx::Options      options(NULL, NULL);
+    std::string       value;
+    const char *const allowed[] = { "none", "test", "value", NULL };
+    int index = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                         StringOption("p").store(&value)
@@ -733,10 +733,10 @@ TEST(OptionsAssignerStringTest, HandlesIncorrectEnumValue)
 
 TEST(OptionsAssignerStringTest, CompletesEnumValue)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
-    int                    index = -1;
+    gmx::Options      options(NULL, NULL);
+    std::string       value;
+    const char *const allowed[] = { "none", "test", "value", NULL };
+    int index = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                         StringOption("p").store(&value)
@@ -756,10 +756,10 @@ TEST(OptionsAssignerStringTest, CompletesEnumValue)
 
 TEST(OptionsAssignerStringTest, HandlesEnumWithNoValue)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
-    int                    index = -3;
+    gmx::Options      options(NULL, NULL);
+    std::string       value;
+    const char *const allowed[] = { "none", "test", "value", NULL };
+    int index = -3;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                         StringOption("p").store(&value)
@@ -775,10 +775,10 @@ TEST(OptionsAssignerStringTest, HandlesEnumWithNoValue)
 
 TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
-    int                    index = -1;
+    gmx::Options      options(NULL, NULL);
+    std::string       value;
+    const char *const allowed[] = { "none", "test", "value", NULL };
+    int index = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                         StringOption("p").store(&value)
@@ -798,10 +798,10 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
 
 TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndex)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
-    int                    index = -1;
+    gmx::Options      options(NULL, NULL);
+    std::string       value;
+    const char *const allowed[] = { "none", "test", "value", NULL };
+    int index = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                         StringOption("p").store(&value)

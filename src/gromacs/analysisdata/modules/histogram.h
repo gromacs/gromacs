@@ -144,13 +144,13 @@ class AnalysisHistogramSettingsInitializer
         { bIncludeAll_ = enabled; return *this; }
 
     private:
-        real                    min_;
-        real                    max_;
-        real                    binWidth_;
-        int                     binCount_;
-        bool                    bIntegerBins_;
-        bool                    bRoundRange_;
-        bool                    bIncludeAll_;
+        real min_;
+        real max_;
+        real binWidth_;
+        int  binCount_;
+        bool bIntegerBins_;
+        bool bRoundRange_;
+        bool bIncludeAll_;
 
         friend class AnalysisHistogramSettings;
 };
@@ -179,7 +179,7 @@ inline AnalysisHistogramSettingsInitializer
 histogramFromBins(real start, int nbins, real binwidth)
 {
     return AnalysisHistogramSettingsInitializer()
-        .start(start).binCount(nbins).binWidth(binwidth);
+               .start(start).binCount(nbins).binWidth(binwidth);
 }
 
 
@@ -202,7 +202,7 @@ class AnalysisHistogramSettings
          * This constructor is not explicit to allow initialization of
          * histograms directly from AnalysisHistogramSettingsInitializer:
          * \code
-         gmx::AnalysisDataSimpleHistogramModule *hist =
+           gmx::AnalysisDataSimpleHistogramModule *hist =
             new gmx::AnalysisDataSimpleHistogramModule(
                 histogramFromRange(0.0, 5.0).binWidth(0.5));
          * \endcode
@@ -223,12 +223,12 @@ class AnalysisHistogramSettings
         int findBin(real y) const;
 
     private:
-        real                    firstEdge_;
-        real                    lastEdge_;
-        real                    binWidth_;
-        real                    inverseBinWidth_;
-        int                     binCount_;
-        bool                    bAll_;
+        real firstEdge_;
+        real lastEdge_;
+        real binWidth_;
+        real inverseBinWidth_;
+        int  binCount_;
+        bool bAll_;
 };
 
 
@@ -237,13 +237,13 @@ namespace internal
 
 class BasicHistogramImpl;
 
-} // namespace internal
+}   // namespace internal
 
 class AbstractAverageHistogram;
 
 //! Smart pointer to manage an AbstractAverageHistogram object.
 typedef gmx_unique_ptr<AbstractAverageHistogram>::type
-        AverageHistogramPointer;
+AverageHistogramPointer;
 
 /*! \brief
  * Base class for representing histograms averaged over frames.
@@ -317,7 +317,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         void init(const AnalysisHistogramSettings &settings);
 
     private:
-        AnalysisHistogramSettings  settings_;
+        AnalysisHistogramSettings settings_;
 
         // Copy and assign disallowed by base.
 };
@@ -335,7 +335,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * \ingroup module_analysisdata
  */
 class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
-                                          public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         /*! \brief
@@ -400,7 +400,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
-                                            public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
@@ -453,7 +453,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
-                                     public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
@@ -477,20 +477,20 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
         virtual void dataFinished();
 
     private:
-        AnalysisHistogramSettings  settings_;
+        AnalysisHistogramSettings settings_;
 
         // Copy and assign disallowed by base.
 };
 
 //! Smart pointer to manage an AnalysisDataSimpleHistogramModule object.
 typedef boost::shared_ptr<AnalysisDataSimpleHistogramModule>
-        AnalysisDataSimpleHistogramModulePointer;
+AnalysisDataSimpleHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataWeightedHistogramModule object.
 typedef boost::shared_ptr<AnalysisDataWeightedHistogramModule>
-        AnalysisDataWeightedHistogramModulePointer;
+AnalysisDataWeightedHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataBinAverageModule object.
 typedef boost::shared_ptr<AnalysisDataBinAverageModule>
-        AnalysisDataBinAverageModulePointer;
+AnalysisDataBinAverageModulePointer;
 
 } // namespace gmx
 

@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2010
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -54,10 +54,10 @@ extern "C"
  *                equal to, or greater than the second.
  */
 void
-gmx_qsort(void *           base,
-          size_t           nmemb,
-          size_t           size,
-          int            (*compar)(const void *, const void *));
+gmx_qsort(void *base,
+          size_t nmemb,
+          size_t size,
+          int (*compar)(const void *, const void *));
 
 
 /*! \def qsort_threadsafe

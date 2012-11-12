@@ -81,7 +81,7 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
 
         SelectionFileOptionInfo info_;
         SelectionOptionManager *manager_;
-        bool                    bValueParsed_;
+        bool bValueParsed_;
 };
 
 } // namespace gmx

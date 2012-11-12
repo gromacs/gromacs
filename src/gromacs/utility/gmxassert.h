@@ -58,8 +58,8 @@
  */
 #define GMX_RELEASE_ASSERT(condition, msg) \
     ((void) ((condition) ? (void)0 : \
-        ::gmx::internal::assertHandler(#condition, msg, \
-            BOOST_CURRENT_FUNCTION, __FILE__, __LINE__)))
+                 ::gmx::internal::assertHandler(# condition, msg, \
+                                                BOOST_CURRENT_FUNCTION, __FILE__, __LINE__)))
 /*! \def GMX_ASSERT
  * \brief
  * Macro for debug asserts.
@@ -96,7 +96,7 @@ BOOST_ATTRIBUTE_NORETURN
 void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line);
 
-} // namespace internal
+}   // namespace internal
 //! \endcond
 
 } // namespace gmx

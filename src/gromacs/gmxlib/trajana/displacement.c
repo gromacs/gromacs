@@ -84,9 +84,9 @@
 typedef struct gmx_ana_displpos_t
 {
     /** Stored position vector. */
-    rvec                 x;
+    rvec x;
     /** TRUE if there is something stored. */
-    gmx_bool                 bPres;
+    gmx_bool bPres;
 } gmx_ana_displpos_t;
 
 /*! \internal \brief
@@ -98,29 +98,29 @@ typedef struct gmx_ana_displpos_t
 struct gmx_ana_displ_t
 {
     /** Maximum number of particles for which the displacements are calculated. */
-    int                  nmax;
+    int nmax;
     /** Maximum time for which the displacements are needed. */
-    real                 tmax;
+    real tmax;
 
     /** TRUE if no frames have been read. */
-    gmx_bool                 bFirst;
+    gmx_bool bFirst;
     /** Stores the time of the first frame. */
-    real                 t0;
+    real t0;
     /** Stores the time interval between frames. */
-    real                 dt;
+    real dt;
     /** Stores the time of the current frame. */
-    real                 t;
+    real t;
     /** Stores the index in the store for the current positions. */
-    int                  ci;
+    int ci;
 
     /** Maximum number of positions to store for a particle. */
-    int                  max_store;
+    int max_store;
     /** The total number of positions ever stored (can be larger than \p max_store). */
-    int                  nstored;
+    int nstored;
     /** Two-dimensional array of stored positions, second index is the particle position. */
     gmx_ana_displpos_t **p;
     /** Pointer to the memory allocated for \p p. */
-    gmx_ana_displpos_t  *palloc;
+    gmx_ana_displpos_t *palloc;
 };
 
 /*!
@@ -143,22 +143,22 @@ gmx_ana_displ_create(gmx_ana_displ_t **data, int nmax, real tmax)
     gmx_ana_displ_t *d;
 
     snew(d, 1);
-    d->nmax        = nmax;
-    d->tmax        = tmax;
+    d->nmax      = nmax;
+    d->tmax      = tmax;
 
-    d->bFirst      = TRUE;
-    d->t0          = 0;
-    d->dt          = 0;
-    d->t           = 0;
-    d->ci          = -1;
-    d->nstored     = 0;
+    d->bFirst    = TRUE;
+    d->t0        = 0;
+    d->dt        = 0;
+    d->t         = 0;
+    d->ci        = -1;
+    d->nstored   = 0;
 
-    d->max_store   = -1;
+    d->max_store = -1;
     snew(d->palloc, nmax);
     snew(d->p,      1);
-    d->p[0]        = d->palloc;
+    d->p[0] = d->palloc;
 
-    *data = d;
+    *data   = d;
     return 0;
 }
 
@@ -175,7 +175,7 @@ gmx_ana_displ_create(gmx_ana_displ_t **data, int nmax, real tmax)
 int
 gmx_ana_displ_start_frame(gmx_ana_displ_t *d, real t)
 {
-    int   i;
+    int i;
 
     /* Initialize times */
     if (d->bFirst)
@@ -199,13 +199,13 @@ gmx_ana_displ_start_frame(gmx_ana_displ_t *d, real t)
     /* Allocate memory for all the positions once it is possible */
     if (d->max_store == -1 && !d->bFirst)
     {
-        d->max_store = (int)(d->tmax/d->dt + 1);
+        d->max_store = (int)(d->tmax / d->dt + 1);
         srenew(d->palloc, d->nmax * d->max_store);
         sfree(d->p);
         snew(d->p, d->max_store);
         for (i = 0; i < d->max_store; ++i)
         {
-            d->p[i] = &d->palloc[d->nmax*i];
+            d->p[i] = &d->palloc[d->nmax * i];
         }
     }
 

@@ -75,7 +75,7 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
 
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataFrameHeader &header,
+        const AnalysisDataFrameHeader        &header,
         const std::vector<AnalysisDataValue> &values)
     : header_(header), firstColumn_(0), values_(values.begin(), values.end())
 {
@@ -90,9 +90,9 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
 {
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
     GMX_ASSERT(columnCount >= 0, "Invalid column count");
-    if (points.lastColumn() < firstColumn
-        || points.firstColumn() >= firstColumn + columnCount
-        || columnCount == 0)
+    if (points.lastColumn() < firstColumn ||
+        points.firstColumn() >= firstColumn + columnCount ||
+        columnCount == 0)
     {
         return;
     }
@@ -101,7 +101,7 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
     if (newFirstColumn > 0)
     {
         // Offset pointer if the first column is not the first in points.
-        begin += newFirstColumn;
+        begin         += newFirstColumn;
         newFirstColumn = 0;
     }
     else
@@ -144,14 +144,14 @@ AnalysisDataFrameRef::AnalysisDataFrameRef()
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
         const AnalysisDataFrameHeader &header,
-        const AnalysisDataValuesRef &values)
+        const AnalysisDataValuesRef   &values)
     : header_(header), values_(values)
 {
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader &header,
+        const AnalysisDataFrameHeader        &header,
         const std::vector<AnalysisDataValue> &values)
     : header_(header), values_(values.begin(), values.end())
 {

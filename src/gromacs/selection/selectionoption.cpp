@@ -56,9 +56,9 @@ namespace gmx
  */
 
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
-    : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
-                           | efOption_DontCheckMinimumCount),
-      info_(this), manager_(NULL), selectionFlags_(settings.selectionFlags_)
+    : MyBase(settings, OptionFlags() | efOption_NoDefaultValue |
+             efOption_DontCheckMinimumCount),
+    info_(this), manager_(NULL), selectionFlags_(settings.selectionFlags_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
@@ -84,8 +84,8 @@ std::string SelectionOptionStorage::formatSingleValue(const Selection &value) co
 
 
 void SelectionOptionStorage::addSelections(
-        const SelectionList &selections,
-        bool bFullValue)
+    const SelectionList &selections,
+    bool                 bFullValue)
 {
     if (bFullValue && selections.size() < static_cast<size_t>(minValueCount()))
     {
@@ -277,9 +277,9 @@ AbstractOptionStoragePointer SelectionOption::createStorage() const
  */
 
 SelectionFileOptionStorage::SelectionFileOptionStorage(const SelectionFileOption &settings)
-    : AbstractOptionStorage(settings, OptionFlags() | efOption_MultipleTimes
-                                          | efOption_DontCheckMinimumCount),
-      info_(this), manager_(NULL), bValueParsed_(false)
+    : AbstractOptionStorage(settings, OptionFlags() | efOption_MultipleTimes |
+                            efOption_DontCheckMinimumCount),
+    info_(this), manager_(NULL), bValueParsed_(false)
 {
 }
 

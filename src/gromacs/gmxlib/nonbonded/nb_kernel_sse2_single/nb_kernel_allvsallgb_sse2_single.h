@@ -10,16 +10,16 @@
 #include "typedefs.h"
 
 void
-nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
-                                 t_mdatoms *            mdatoms,
-                                 t_blocka *             excl,    
-                                 real *                 x,
-                                 real *                 f,
-                                 real *                 Vc,
-                                 real *                 Vvdw,
-                                 real *                 Vpol,
-                                 int *                  outeriter,
-                                 int *                  inneriter,
-                                 void *                 work);
+nb_kernel_allvsallgb_sse2_single(t_forcerec *fr,
+                                 t_mdatoms  *mdatoms,
+                                 t_blocka   *excl,
+                                 real       *x,
+                                 real       *f,
+                                 real       *Vc,
+                                 real       *Vvdw,
+                                 real       *Vpol,
+                                 int        *outeriter,
+                                 int        *inneriter,
+                                 void       *work);
 
 #endif

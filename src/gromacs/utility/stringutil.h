@@ -126,7 +126,7 @@ std::string formatString(const char *fmt, ...);
  *
  * \inpublicapi
  */
-std::string concatenateStrings(const char * const *sarray, size_t count);
+std::string concatenateStrings(const char *const *sarray, size_t count);
 /*! \brief
  * Convenience overload for joining strings in a C array (static data).
  *
@@ -141,7 +141,7 @@ std::string concatenateStrings(const char * const *sarray, size_t count);
  * \inpublicapi
  */
 template <size_t count>
-std::string concatenateStrings(const char * const (&sarray)[count])
+std::string concatenateStrings(const char *const (&sarray)[count])
 {
     return concatenateStrings(sarray, count);
 }
@@ -288,19 +288,19 @@ class TextLineWrapperSettings
 
     private:
         //! Maximum length of output lines, or <= 0 if no limit.
-        int                     maxLength_;
+        int maxLength_;
         //! Number of spaces to indent each output line with.
-        int                     indent_;
+        int indent_;
         /*! \brief
          * Number of spaces to indent the first line after a newline.
          *
          * If -1, \a indent_ is used.
          */
-        int                     firstLineIndent_;
+        int  firstLineIndent_;
         //! Whether to ignore or preserve space after a newline.
-        bool                    bStripLeadingWhitespace_;
+        bool bStripLeadingWhitespace_;
         //! If not \c '\0', mark each wrapping point with this character.
-        char                    continuationChar_;
+        char continuationChar_;
 
         //! Needed to access the members.
         friend class TextLineWrapper;
@@ -333,9 +333,9 @@ class TextLineWrapperSettings
  *
  * Typical usage:
  * \code
-gmx::TextLineWrapper wrapper;
-wrapper.settings().setLineLength(78);
-printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
+   gmx::TextLineWrapper wrapper;
+   wrapper.settings().setLineLength(78);
+   printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
  * \endcode
  *
  * \inpublicapi
@@ -395,20 +395,20 @@ class TextLineWrapper
          * space.
          *
          * To iterate over lines in a string, use the following code:
-\code
-gmx::TextLineWrapper wrapper;
-// <set desired wrapping settings>
-size_t lineStart = 0;
-size_t length = input.length();
-while (lineStart < length)
-{
-    size_t nextLineStart = wrapper.findNextLine(input, lineStart);
-    std::string line = wrapper.formatLine(input, lineStart, nextLineStart));
-    // <do something with the line>
-    lineStart = nextLineStart;
-}
-return result;
-\endcode
+           \code
+           gmx::TextLineWrapper wrapper;
+           // <set desired wrapping settings>
+           size_t lineStart = 0;
+           size_t length = input.length();
+           while (lineStart < length)
+           {
+           size_t nextLineStart = wrapper.findNextLine(input, lineStart);
+           std::string line = wrapper.formatLine(input, lineStart, nextLineStart));
+           // <do something with the line>
+           lineStart = nextLineStart;
+           }
+           return result;
+           \endcode
          *
          * Does not throw.
          */

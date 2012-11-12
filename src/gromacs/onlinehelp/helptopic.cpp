@@ -51,9 +51,9 @@ namespace gmx
 {
 
 /*! \cond libapi */
-void writeBasicHelpTopic(const HelpWriterContext &context,
+void writeBasicHelpTopic(const HelpWriterContext  &context,
                          const HelpTopicInterface &topic,
-                         const std::string &text)
+                         const std::string        &text)
 {
     const char *title = topic.title();
     if (title != NULL && title[0] != '\0')
@@ -104,7 +104,7 @@ class AbstractCompositeHelpTopic::Impl
          *
          * Owns the contained subtopics.
          */
-        SubTopicMap             subtopics_;
+        SubTopicMap subtopics_;
 };
 
 /********************************************************************
@@ -144,14 +144,14 @@ void AbstractCompositeHelpTopic::writeHelp(const HelpWriterContext &context) con
 
 bool
 AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
-                                              const std::string &title) const
+                                              const std::string       &title) const
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
         // TODO: Implement once the situation with Redmine issue #969 is more
         // clear.
         GMX_THROW(NotImplementedError(
-                    "Subtopic listing is not implemented for this output format"));
+                      "Subtopic listing is not implemented for this output format"));
     }
     int maxNameLength = 0;
     Impl::SubTopicMap::const_iterator topic;
@@ -180,7 +180,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
     file.writeLine(title);
     for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
     {
-        const char *name = topic->first.c_str();
+        const char *name  = topic->first.c_str();
         const char *title = topic->second->title();
         if (title != NULL && title[0] != '\0')
         {

@@ -65,7 +65,7 @@ namespace gmx
  * \ingroup module_analysisdata
  */
 class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
-                                  public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         AnalysisDataAverageModule();
@@ -87,14 +87,14 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
         real stddev(int index) const;
 
     private:
-        std::vector<int>        nsamples_;
+        std::vector<int> nsamples_;
 
         // Copy and assign disallowed by base.
 };
 
 //! Smart pointer to manage an AnalysisDataAverageModule object.
 typedef boost::shared_ptr<AnalysisDataAverageModule>
-        AnalysisDataAverageModulePointer;
+AnalysisDataAverageModulePointer;
 
 /*! \brief
  * Data module for averaging of columns for each frame.
@@ -111,7 +111,7 @@ typedef boost::shared_ptr<AnalysisDataAverageModule>
  * \ingroup module_analysisdata
  */
 class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
-                                       public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         AnalysisDataFrameAverageModule();
@@ -136,7 +136,7 @@ class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
 
 //! Smart pointer to manage an AnalysisDataFrameAverageModule object.
 typedef boost::shared_ptr<AnalysisDataFrameAverageModule>
-        AnalysisDataFrameAverageModulePointer;
+AnalysisDataFrameAverageModulePointer;
 
 } // namespace gmx
 

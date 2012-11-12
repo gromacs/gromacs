@@ -56,9 +56,9 @@
 typedef struct
 {
     /** Cutoff distance. */
-    real                cutoff;
+    real cutoff;
     /** Positions of the reference points. */
-    gmx_ana_pos_t       p;
+    gmx_ana_pos_t p;
     /** Neighborhood search data. */
     gmx_ana_nbsearch_t *nb;
 } t_methoddata_distance;
@@ -271,7 +271,7 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (b = 0; b < pos->nr; ++b)
     {
         n = gmx_ana_nbsearch_pos_mindist(d->nb, pos, b);
-        for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
+        for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b + 1]; ++i)
         {
             out->u.r[i] = n;
         }
@@ -290,7 +290,7 @@ evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
-    int                    b;
+    int b;
 
     out->u.g->isize = 0;
     for (b = 0; b < pos->nr; ++b)

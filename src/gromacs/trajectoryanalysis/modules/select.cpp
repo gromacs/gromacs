@@ -109,16 +109,16 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
                 : name(name), bDynamic(bDynamic)
             { }
 
-            std::string         name;
-            bool                bDynamic;
+            std::string name;
+            bool bDynamic;
         };
 
-        std::string             fnm_;
-        std::vector<GroupInfo>  groups_;
-        FILE                   *fp_;
-        int                     currentGroup_;
-        int                     currentSize_;
-        bool                    bAnyWritten_;
+        std::string fnm_;
+        std::vector<GroupInfo> groups_;
+        FILE                  *fp_;
+        int  currentGroup_;
+        int  currentSize_;
+        bool bAnyWritten_;
 };
 
 /********************************************************************
@@ -178,7 +178,7 @@ void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 
 void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
-    bAnyWritten_ = false;
+    bAnyWritten_  = false;
     currentGroup_ = -1;
 }
 
@@ -241,7 +241,7 @@ void IndexFileWriterModule::dataFinished()
     closeFile();
 }
 
-} // namespace
+}       // namespace
 
 
 /********************************************************************
@@ -254,9 +254,9 @@ const char Select::shortDescription[] =
 
 Select::Select()
     : TrajectoryAnalysisModule(name, shortDescription),
-      selOpt_(NULL),
-      bDump_(false), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
-      top_(NULL), occupancyModule_(new AnalysisDataAverageModule())
+    selOpt_(NULL),
+    bDump_(false), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
+    top_(NULL), occupancyModule_(new AnalysisDataAverageModule())
 {
     registerAnalysisDataset(&sdata_, "size");
     registerAnalysisDataset(&cdata_, "cfrac");
@@ -364,23 +364,23 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
                            .description("PDB file with occupied fraction for selected positions"));
 
     selOpt_ = options->addOption(SelectionOption("select").storeVector(&sel_)
-        .required().multiValue()
-        .description("Selections to analyze"));
+                                     .required().multiValue()
+                                     .description("Selections to analyze"));
 
     options->addOption(BooleanOption("dump").store(&bDump_)
-        .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
+                           .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
     options->addOption(BooleanOption("norm").store(&bTotNorm_)
-        .description("Normalize by total number of positions with -os"));
+                           .description("Normalize by total number of positions with -os"));
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
-        .description("Normalize by covered fraction with -os"));
+                           .description("Normalize by covered fraction with -os"));
     const char *const cResNumberEnum[] = { "number", "index", NULL };
     options->addOption(StringOption("resnr").store(&resNumberType_)
-        .enumValue(cResNumberEnum).defaultEnumIndex(0)
-        .description("Residue number output type with -oi and -on"));
+                           .enumValue(cResNumberEnum).defaultEnumIndex(0)
+                           .description("Residue number output type with -oi and -on"));
     const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected", NULL };
     options->addOption(StringOption("pdbatoms").store(&pdbAtoms_)
-        .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
-        .description("Atoms to write with -ofpdb"));
+                           .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
+                           .description("Atoms to write with -ofpdb"));
 }
 
 void
@@ -392,8 +392,8 @@ Select::optionsFinished(Options * /*options*/,
         settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
         settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
     }
-    if ((!fnIndex_.empty() && bDump_)
-        || !fnMask_.empty() || !fnOccupancy_.empty() || !fnPDB_.empty())
+    if ((!fnIndex_.empty() && bDump_) ||
+        !fnMask_.empty() || !fnOccupancy_.empty() || !fnPDB_.empty())
     {
         selOpt_->setValueCount(1);
     }
@@ -401,12 +401,12 @@ Select::optionsFinished(Options * /*options*/,
 
 void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                     const TopologyInformation &top)
+                     const TopologyInformation        &top)
 {
     if (!sel_[0].isDynamic() && (!fnMask_.empty() || !fnOccupancy_.empty()))
     {
         GMX_THROW(InconsistentInputError(
-                    "-om or -of are not meaningful with a static selection"));
+                      "-om or -of are not meaningful with a static selection"));
     }
     bResInd_ = (resNumberType_ == "index");
 
@@ -509,12 +509,12 @@ void
 Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle sdh = pdata->dataHandle(sdata_);
-    AnalysisDataHandle cdh = pdata->dataHandle(cdata_);
-    AnalysisDataHandle idh = pdata->dataHandle(idata_);
-    AnalysisDataHandle mdh = pdata->dataHandle(mdata_);
+    AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);
+    AnalysisDataHandle   cdh = pdata->dataHandle(cdata_);
+    AnalysisDataHandle   idh = pdata->dataHandle(idata_);
+    AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
     const SelectionList &sel = pdata->parallelSelections(sel_);
-    t_topology *top = top_->topology();
+    t_topology          *top = top_->topology();
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -581,15 +581,15 @@ Select::writeOutput()
     if (!fnPDB_.empty())
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
-                "Topology should have been loaded or an error given earlier");
-        t_atoms atoms;
+                           "Topology should have been loaded or an error given earlier");
+        t_atoms          atoms;
         atoms = top_->topology()->atoms;
-        t_pdbinfo *pdbinfo;
+        t_pdbinfo       *pdbinfo;
         snew(pdbinfo, atoms.nr);
         scoped_ptr_sfree pdbinfoGuard(pdbinfo);
         if (atoms.pdbinfo != NULL)
         {
-            std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
+            std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr * sizeof(*pdbinfo));
         }
         atoms.pdbinfo = pdbinfo;
         for (int i = 0; i < atoms.nr; ++i)
@@ -623,7 +623,7 @@ Select::writeOutput()
         else if (pdbAtoms_ == "maxsel")
         {
             ConstArrayRef<int> atomIndices = sel_[0].atomIndices();
-            t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+            t_trxstatus       *status      = open_trx(fnPDB_.c_str(), "w");
             write_trxframe_indexed(status, &fr, atomIndices.size(),
                                    atomIndices.data(), NULL);
             close_trx(status);
@@ -650,11 +650,11 @@ Select::writeOutput()
         else
         {
             GMX_RELEASE_ASSERT(false,
-                    "Mismatch between -pdbatoms enum values and implementation");
+                               "Mismatch between -pdbatoms enum values and implementation");
         }
     }
 }
 
-} // namespace analysismodules
+}   // namespace analysismodules
 
 } // namespace gmx

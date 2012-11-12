@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -76,33 +76,33 @@
 #ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
-static gmx_bool            nonbonded_setup_done  = FALSE;
+static gmx_bool nonbonded_setup_done = FALSE;
 
 
 void
-gmx_nonbonded_setup(FILE *         fplog,
-                    t_forcerec *   fr,
-                    gmx_bool       bGenericKernelOnly)
+gmx_nonbonded_setup(FILE       *fplog,
+                    t_forcerec *fr,
+                    gmx_bool    bGenericKernelOnly)
 {
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
 #endif
     /* Here we are guaranteed only one thread made it. */
-    if(nonbonded_setup_done==FALSE)
+    if(nonbonded_setup_done == FALSE)
     {
-        if(bGenericKernelOnly==FALSE)
+        if(bGenericKernelOnly == FALSE)
         {
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
 
             /* Add interaction-specific C kernels */
-            nb_kernel_list_add_kernels(kernellist_c,kernellist_c_size);
+            nb_kernel_list_add_kernels(kernellist_c, kernellist_c_size);
 
             /* Add interaction-specific accelerated SSE kernels, etc. here */
         }
         /* Create a hash for faster lookups */
         nb_kernel_list_hash_init();
 
-        nonbonded_setup_done=TRUE;
+        nonbonded_setup_done = TRUE;
     }
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&nonbonded_setup_mutex);
@@ -114,44 +114,44 @@ gmx_nonbonded_setup(FILE *         fplog,
 void
 gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 {
-    const char *     elec;
-    const char *     elec_mod;
-    const char *     vdw;
-    const char *     vdw_mod;
-    const char *     geom;
-    const char *     other;
-    const char *     vf;
+    const char *elec;
+    const char *elec_mod;
+    const char *vdw;
+    const char *vdw_mod;
+    const char *geom;
+    const char *other;
+    const char *vf;
 
-    const char *     archs[] = { "c" };
-    int              i;
+    const char *archs[] = { "c" };
+    int         i;
 
-    if(nonbonded_setup_done==FALSE)
+    if(nonbonded_setup_done == FALSE)
     {
         /* We typically call this setup routine before starting timers,
          * but if that has not been done for whatever reason we do it now.
          */
-        gmx_nonbonded_setup(NULL,NULL,FALSE);
+        gmx_nonbonded_setup(NULL, NULL, FALSE);
     }
 
     /* Not used yet */
-    other="";
+    other = "";
 
     nl->kernelptr_vf = NULL;
     nl->kernelptr_v  = NULL;
     nl->kernelptr_f  = NULL;
 
-    elec     = gmx_nbkernel_elec_names[nl->ielec];
-    elec_mod = eintmod_names[nl->ielecmod];
-    vdw      = gmx_nbkernel_vdw_names[nl->ivdw];
-    vdw_mod  = eintmod_names[nl->ivdwmod];
-    geom     = gmx_nblist_geometry_names[nl->igeometry];
+    elec             = gmx_nbkernel_elec_names[nl->ielec];
+    elec_mod         = eintmod_names[nl->ielecmod];
+    vdw              = gmx_nbkernel_vdw_names[nl->ivdw];
+    vdw_mod          = eintmod_names[nl->ivdwmod];
+    geom             = gmx_nblist_geometry_names[nl->igeometry];
 
     if(nl->free_energy)
     {
         nl->kernelptr_vf = gmx_nb_free_energy_kernel;
         nl->kernelptr_f  = gmx_nb_free_energy_kernel;
     }
-    else if(!gmx_strcasecmp_min(geom,"CG-CG"))
+    else if(!gmx_strcasecmp_min(geom, "CG-CG"))
     {
         nl->kernelptr_vf = gmx_nb_generic_cg_kernel;
         nl->kernelptr_f  = gmx_nb_generic_cg_kernel;
@@ -160,22 +160,22 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     {
         /* Try to find a specific kernel first */
 
-        for(i=0;i<asize(archs) && nl->kernelptr_vf==NULL ;i++)
+        for(i = 0; i < asize(archs) && nl->kernelptr_vf == NULL; i++)
         {
-               nl->kernelptr_vf = nb_kernel_list_findkernel(log,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+            nl->kernelptr_vf = nb_kernel_list_findkernel(log, archs[i], elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
         }
-        for(i=0;i<asize(archs) && nl->kernelptr_f==NULL ;i++)
+        for(i = 0; i < asize(archs) && nl->kernelptr_f == NULL; i++)
         {
-            nl->kernelptr_f  = nb_kernel_list_findkernel(log,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"Force");
+            nl->kernelptr_f = nb_kernel_list_findkernel(log, archs[i], elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if(nl->kernelptr_f == NULL)
             {
-                nl->kernelptr_f  = nb_kernel_list_findkernel(NULL,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+                nl->kernelptr_f = nb_kernel_list_findkernel(NULL, archs[i], elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
             }
         }
 
         /* Give up, pick a generic one instead */
-        if(nl->kernelptr_vf==NULL)
+        if(nl->kernelptr_vf == NULL)
         {
             nl->kernelptr_vf = gmx_nb_generic_kernel;
             nl->kernelptr_f  = gmx_nb_generic_kernel;
@@ -186,7 +186,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
                         "    Elec: '%s', Modifier: '%s'\n"
                         "    Vdw:  '%s', Modifier: '%s'\n"
                         "    Geom: '%s', Other: '%s'\n\n",
-                        elec,elec_mod,vdw,vdw_mod,geom,other);
+                        elec, elec_mod, vdw, vdw_mod, geom, other);
             }
         }
     }
@@ -194,90 +194,90 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     return;
 }
 
-void do_nonbonded(t_commrec *cr,t_forcerec *fr,
-                  rvec x[],rvec f_shortrange[],rvec f_longrange[],t_mdatoms *mdatoms,t_blocka *excl,
-                  gmx_grppairener_t *grppener,rvec box_size,
-                  t_nrnb *nrnb,real *lambda, real *dvdl,
-                  int nls,int eNL,int flags)
+void do_nonbonded(t_commrec *cr, t_forcerec *fr,
+                  rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
+                  gmx_grppairener_t *grppener, rvec box_size,
+                  t_nrnb *nrnb, real *lambda, real *dvdl,
+                  int nls, int eNL, int flags)
 {
-	t_nblist *        nlist;
-	int               n,n0,n1,i,i0,i1,sz,range;
-	t_nblists *       nblists;
-    nb_kernel_data_t  kernel_data;
-    nb_kernel_t *     kernelptr=NULL;
-    rvec *            f;
-    
-    kernel_data.flags                   = flags;
-    kernel_data.exclusions              = excl;
-    kernel_data.lambda                  = lambda;
-    kernel_data.dvdl                    = dvdl;
-    
+    t_nblist        *nlist;
+    int              n, n0, n1, i, i0, i1, sz, range;
+    t_nblists       *nblists;
+    nb_kernel_data_t kernel_data;
+    nb_kernel_t     *kernelptr = NULL;
+    rvec            *f;
+
+    kernel_data.flags = flags;
+    kernel_data.exclusions = excl;
+    kernel_data.lambda = lambda;
+    kernel_data.dvdl = dvdl;
+
     if(fr->bAllvsAll)
     {
         return;
     }
-	
+
     if (eNL >= 0)
     {
-		i0 = eNL;
-		i1 = i0+1;
+        i0 = eNL;
+        i1 = i0 + 1;
     }
     else
     {
-		i0 = 0;
-		i1 = eNL_NR;
-	}
-	
-	if (nls >= 0)
-	{
-		n0 = nls;
-		n1 = nls+1;
-	}
-	else
-	{
-		n0 = 0;
-		n1 = fr->nnblists;
-	}
+        i0 = 0;
+        i1 = eNL_NR;
+    }
 
-	for(n=n0; (n<n1); n++)
-	{
-		nblists = &fr->nblists[n];
+    if (nls >= 0)
+    {
+        n0 = nls;
+        n1 = nls + 1;
+    }
+    else
+    {
+        n0 = 0;
+        n1 = fr->nnblists;
+    }
 
-        kernel_data.table_elec              = &nblists->table_elec;
-        kernel_data.table_vdw               = &nblists->table_vdw;
-        kernel_data.table_elec_vdw          = &nblists->table_elec_vdw;
+    for(n = n0; (n < n1); n++)
+    {
+        nblists = &fr->nblists[n];
 
-        for(range=0;range<2;range++)
+        kernel_data.table_elec = &nblists->table_elec;
+        kernel_data.table_vdw = &nblists->table_vdw;
+        kernel_data.table_elec_vdw = &nblists->table_elec_vdw;
+
+        for(range = 0; range < 2; range++)
         {
             /* Are we doing short/long-range? */
-            if(range==0)
+            if(range == 0)
             {
                 /* Short-range */
                 if(!(flags & GMX_NONBONDED_DO_SR))
                 {
                     continue;
                 }
-                kernel_data.energygrp_elec          = grppener->ener[egCOULSR];
-                kernel_data.energygrp_vdw           = grppener->ener[fr->bBHAM ? egBHAMSR : egLJSR];
-                kernel_data.energygrp_polarization  = grppener->ener[egGB];
+                kernel_data.energygrp_elec         = grppener->ener[egCOULSR];
+                kernel_data.energygrp_vdw          = grppener->ener[fr->bBHAM ? egBHAMSR : egLJSR];
+                kernel_data.energygrp_polarization = grppener->ener[egGB];
                 nlist = nblists->nlist_sr;
-                f                                   = f_shortrange;
+                f                                  = f_shortrange;
             }
-            else if(range==1)
+            else if(range == 1)
             {
                 /* Long-range */
                 if(!(flags & GMX_NONBONDED_DO_LR))
                 {
                     continue;
                 }
-                kernel_data.energygrp_elec          = grppener->ener[egCOULLR];
-                kernel_data.energygrp_vdw           = grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR];
-                kernel_data.energygrp_polarization  = grppener->ener[egGB];
+                kernel_data.energygrp_elec         = grppener->ener[egCOULLR];
+                kernel_data.energygrp_vdw          = grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR];
+                kernel_data.energygrp_polarization = grppener->ener[egGB];
                 nlist = nblists->nlist_lr;
-                f                                   = f_longrange;
+                f                                  = f_longrange;
             }
 
-            for(i=i0; (i<i1); i++)
+            for(i = i0; (i < i1); i++)
             {
                 if (nlist[i].nri > 0)
                 {
@@ -292,20 +292,20 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                         kernelptr = (nb_kernel_t *)nlist[i].kernelptr_f;
                     }
 
-                    if(nlist[i].free_energy==0 && (flags & GMX_NONBONDED_DO_FOREIGNLAMBDA))
+                    if(nlist[i].free_energy == 0 && (flags & GMX_NONBONDED_DO_FOREIGNLAMBDA))
                     {
                         /* We don't need the non-perturbed interactions */
                         continue;
                     }
-                    (*kernelptr)(&(nlist[i]),x,f,fr,mdatoms,&kernel_data,nrnb);
-                 }
+                    (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                }
             }
         }
     }
 }
 
 static void
-nb_listed_warning_rlimit(const rvec *x,int ai, int aj,int * global_atom_index,real r, real rlimit)
+nb_listed_warning_rlimit(const rvec *x, int ai, int aj, int *global_atom_index, real r, real rlimit)
 {
     gmx_warning("Listed nonbonded interaction between particles %d and %d\n"
                 "at distance %.3f which is larger than the table limit %.3f nm.\n\n"
@@ -317,14 +317,14 @@ nb_listed_warning_rlimit(const rvec *x,int ai, int aj,int * global_atom_index,re
                 "IMPORTANT: This should not happen in a stable simulation, so there is\n"
                 "probably something wrong with your system. Only change the table-extension\n"
                 "distance in the mdp file if you are really sure that is the reason.\n",
-                glatnr(global_atom_index,ai),glatnr(global_atom_index,aj),r,rlimit);
+                glatnr(global_atom_index, ai), glatnr(global_atom_index, aj), r, rlimit);
 
     if (debug)
     {
         fprintf(debug,
                 "%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored\n",
-                x[ai][XX],x[ai][YY],x[ai][ZZ],x[aj][XX],x[aj][YY],x[aj][ZZ],
-                glatnr(global_atom_index,ai),glatnr(global_atom_index,aj),r);
+                x[ai][XX], x[ai][YY], x[ai][ZZ], x[aj][XX], x[aj][YY], x[aj][ZZ],
+                glatnr(global_atom_index, ai), glatnr(global_atom_index, aj), r);
     }
 }
 
@@ -335,98 +335,98 @@ nb_listed_warning_rlimit(const rvec *x,int ai, int aj,int * global_atom_index,re
  * extra functional call for every single pair listed in the topology.
  */
 static real
-nb_evaluate_single(real r2, real tabscale,real *vftab,
+nb_evaluate_single(real r2, real tabscale, real *vftab,
                    real qq, real c6, real c12, real *velec, real *vvdw)
 {
-    real       rinv,r,rtab,eps,eps2,Y,F,Geps,Heps2,Fp,VVe,FFe,VVd,FFd,VVr,FFr,fscal;
-    int        ntab;
+    real rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
+    int  ntab;
 
     /* Do the tabulated interactions - first table lookup */
-    rinv             = gmx_invsqrt(r2);
-    r                = r2*rinv;
-    rtab             = r*tabscale;
-    ntab             = rtab;
-    eps              = rtab-ntab;
-    eps2             = eps*eps;
-    ntab             = 12*ntab;
+    rinv = gmx_invsqrt(r2);
+    r = r2 * rinv;
+    rtab = r * tabscale;
+    ntab = rtab;
+    eps = rtab - ntab;
+    eps2 = eps * eps;
+    ntab = 12 * ntab;
     /* Electrostatics */
-    Y                = vftab[ntab];
-    F                = vftab[ntab+1];
-    Geps             = eps*vftab[ntab+2];
-    Heps2            = eps2*vftab[ntab+3];
-    Fp               = F+Geps+Heps2;
-    VVe              = Y+eps*Fp;
-    FFe              = Fp+Geps+2.0*Heps2;
+    Y = vftab[ntab];
+    F = vftab[ntab + 1];
+    Geps = eps * vftab[ntab + 2];
+    Heps2 = eps2 * vftab[ntab + 3];
+    Fp = F + Geps + Heps2;
+    VVe = Y + eps * Fp;
+    FFe = Fp + Geps + 2.0 * Heps2;
     /* Dispersion */
-    Y                = vftab[ntab+4];
-    F                = vftab[ntab+5];
-    Geps             = eps*vftab[ntab+6];
-    Heps2            = eps2*vftab[ntab+7];
-    Fp               = F+Geps+Heps2;
-    VVd              = Y+eps*Fp;
-    FFd              = Fp+Geps+2.0*Heps2;
+    Y = vftab[ntab + 4];
+    F = vftab[ntab + 5];
+    Geps = eps * vftab[ntab + 6];
+    Heps2 = eps2 * vftab[ntab + 7];
+    Fp = F + Geps + Heps2;
+    VVd = Y + eps * Fp;
+    FFd = Fp + Geps + 2.0 * Heps2;
     /* Repulsion */
-    Y                = vftab[ntab+8];
-    F                = vftab[ntab+9];
-    Geps             = eps*vftab[ntab+10];
-    Heps2            = eps2*vftab[ntab+11];
-    Fp               = F+Geps+Heps2;
-    VVr              = Y+eps*Fp;
-    FFr              = Fp+Geps+2.0*Heps2;
+    Y = vftab[ntab + 8];
+    F = vftab[ntab + 9];
+    Geps = eps * vftab[ntab + 10];
+    Heps2 = eps2 * vftab[ntab + 11];
+    Fp = F + Geps + Heps2;
+    VVr = Y + eps * Fp;
+    FFr = Fp + Geps + 2.0 * Heps2;
 
-    *velec           = qq*VVe;
-    *vvdw            = c6*VVd+c12*VVr;
+    *velec = qq * VVe;
+    *vvdw  = c6 * VVd + c12 * VVr;
 
-    fscal            = -(qq*FFe+c6*FFd+c12*FFr)*tabscale*rinv;
+    fscal  = -(qq * FFe + c6 * FFd + c12 * FFr) * tabscale * rinv;
 
     return fscal;
 }
 
 
 real
-do_nonbonded_listed(int ftype,int nbonds,
-                const t_iatom iatoms[],const t_iparams iparams[],
-                const rvec x[],rvec f[],rvec fshift[],
-                const t_pbc *pbc,const t_graph *g,
-                real *lambda, real *dvdl,
-                const t_mdatoms *md,
-                const t_forcerec *fr,gmx_grppairener_t *grppener,
-                int *global_atom_index)
+do_nonbonded_listed(int ftype, int nbonds,
+                    const t_iatom iatoms[], const t_iparams iparams[],
+                    const rvec x[], rvec f[], rvec fshift[],
+                    const t_pbc *pbc, const t_graph *g,
+                    real *lambda, real *dvdl,
+                    const t_mdatoms *md,
+                    const t_forcerec *fr, gmx_grppairener_t *grppener,
+                    int *global_atom_index)
 {
-    int              ielec,ivdw;
-    real             qq,c6,c12;
-    rvec             dx;
-    ivec             dt;
-    int              i,j,itype,ai,aj,gid;
-    int              fshift_index;
-    real             r2,rinv;
-    real             fscal,velec,vvdw;
-    real *           energygrp_elec;
-    real *           energygrp_vdw;
-    static gmx_bool  warned_rlimit=FALSE;
+    int             ielec, ivdw;
+    real            qq, c6, c12;
+    rvec            dx;
+    ivec            dt;
+    int             i, j, itype, ai, aj, gid;
+    int             fshift_index;
+    real            r2, rinv;
+    real            fscal, velec, vvdw;
+    real           *energygrp_elec;
+    real           *energygrp_vdw;
+    static gmx_bool warned_rlimit = FALSE;
     /* Free energy stuff */
-    gmx_bool         bFreeEnergy;
-    real             LFC[2],LFV[2],DLF[2],lfac_coul[2],lfac_vdw[2],dlfac_coul[2],dlfac_vdw[2];
-    real             qqB,c6B,c12B,sigma2_def,sigma2_min;
-    
-    
+    gmx_bool        bFreeEnergy;
+    real            LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
+    real            qqB, c6B, c12B, sigma2_def, sigma2_min;
+
+
     switch (ftype) {
-        case F_LJ14:
-        case F_LJC14_Q:
-            energygrp_elec = grppener->ener[egCOUL14];
-            energygrp_vdw  = grppener->ener[egLJ14];
-            break;
-        case F_LJC_PAIRS_NB:
-            energygrp_elec = grppener->ener[egCOULSR];
-            energygrp_vdw  = grppener->ener[egLJSR];
-            break;
-        default:
-            energygrp_elec = NULL; /* Keep compiler happy */
-            energygrp_vdw  = NULL; /* Keep compiler happy */
-            gmx_fatal(FARGS,"Unknown function type %d in do_nonbonded14",ftype);
-            break;
+    case F_LJ14:
+    case F_LJC14_Q:
+        energygrp_elec = grppener->ener[egCOUL14];
+        energygrp_vdw  = grppener->ener[egLJ14];
+        break;
+    case F_LJC_PAIRS_NB:
+        energygrp_elec = grppener->ener[egCOULSR];
+        energygrp_vdw  = grppener->ener[egLJSR];
+        break;
+    default:
+        energygrp_elec = NULL;     /* Keep compiler happy */
+        energygrp_vdw  = NULL;     /* Keep compiler happy */
+        gmx_fatal(FARGS, "Unknown function type %d in do_nonbonded14", ftype);
+        break;
     }
-    
+
     if(fr->efep != efepNO)
     {
         /* Lambda factor for state A=1-lambda and B=lambda */
@@ -440,15 +440,15 @@ do_nonbonded_listed(int ftype,int nbonds,
         DLF[1] = 1;
 
         /* precalculate */
-        sigma2_def = pow(fr->sc_sigma6_def,1.0/3.0);
-        sigma2_min = pow(fr->sc_sigma6_min,1.0/3.0);
+        sigma2_def = pow(fr->sc_sigma6_def, 1.0 / 3.0);
+        sigma2_min = pow(fr->sc_sigma6_min, 1.0 / 3.0);
 
-        for (i=0;i<2;i++)
+        for (i = 0; i < 2; i++)
         {
-            lfac_coul[i]  = (fr->sc_power==2 ? (1-LFC[i])*(1-LFC[i]) : (1-LFC[i]));
-            dlfac_coul[i] = DLF[i]*fr->sc_power/fr->sc_r_power*(fr->sc_power==2 ? (1-LFC[i]) : 1);
-            lfac_vdw[i]   = (fr->sc_power==2 ? (1-LFV[i])*(1-LFV[i]) : (1-LFV[i]));
-            dlfac_vdw[i]  = DLF[i]*fr->sc_power/fr->sc_r_power*(fr->sc_power==2 ? (1-LFV[i]) : 1);
+            lfac_coul[i]  = (fr->sc_power == 2 ? (1 - LFC[i]) * (1 - LFC[i]) : (1 - LFC[i]));
+            dlfac_coul[i] = DLF[i] * fr->sc_power / fr->sc_r_power * (fr->sc_power == 2 ? (1 - LFC[i]) : 1);
+            lfac_vdw[i]   = (fr->sc_power == 2 ? (1 - LFV[i]) * (1 - LFV[i]) : (1 - LFV[i]));
+            dlfac_vdw[i]  = DLF[i] * fr->sc_power / fr->sc_r_power * (fr->sc_power == 2 ? (1 - LFV[i]) : 1);
         }
     }
     else
@@ -457,41 +457,41 @@ do_nonbonded_listed(int ftype,int nbonds,
     }
 
     bFreeEnergy = FALSE;
-    for(i=0; (i<nbonds); )
+    for(i = 0; (i < nbonds); )
     {
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-        gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
-        
+        gid   = GID(md->cENER[ai], md->cENER[aj], md->nenergrp);
+
         /* Get parameters */
         switch (ftype) {
-            case F_LJ14:
-                bFreeEnergy =
+        case F_LJ14:
+            bFreeEnergy =
                 (fr->efep != efepNO &&
                  ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
                   iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
                   iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
-                qq               = md->chargeA[ai]*md->chargeA[aj]*fr->epsfac*fr->fudgeQQ;
-                c6               = iparams[itype].lj14.c6A;
-                c12              = iparams[itype].lj14.c12A;
-                break;
-            case F_LJC14_Q:
-                qq               = iparams[itype].ljc14.qi*iparams[itype].ljc14.qj*fr->epsfac*iparams[itype].ljc14.fqq;
-                c6               = iparams[itype].ljc14.c6;
-                c12              = iparams[itype].ljc14.c12;
-                break;
-            case F_LJC_PAIRS_NB:
-                qq               = iparams[itype].ljcnb.qi*iparams[itype].ljcnb.qj*fr->epsfac;
-                c6               = iparams[itype].ljcnb.c6;
-                c12              = iparams[itype].ljcnb.c12;
-                break;
-            default:
-                /* Cannot happen since we called gmx_fatal() above in this case */
-                qq = c6 = c12 = 0; /* Keep compiler happy */
-                break;
+            qq = md->chargeA[ai] * md->chargeA[aj] * fr->epsfac * fr->fudgeQQ;
+            c6 = iparams[itype].lj14.c6A;
+            c12 = iparams[itype].lj14.c12A;
+            break;
+        case F_LJC14_Q:
+            qq = iparams[itype].ljc14.qi * iparams[itype].ljc14.qj * fr->epsfac * iparams[itype].ljc14.fqq;
+            c6 = iparams[itype].ljc14.c6;
+            c12 = iparams[itype].ljc14.c12;
+            break;
+        case F_LJC_PAIRS_NB:
+            qq = iparams[itype].ljcnb.qi * iparams[itype].ljcnb.qj * fr->epsfac;
+            c6 = iparams[itype].ljcnb.c6;
+            c12 = iparams[itype].ljcnb.c12;
+            break;
+        default:
+            /* Cannot happen since we called gmx_fatal() above in this case */
+            qq = c6 = c12 = 0;     /* Keep compiler happy */
+            break;
         }
-        
+
         /* To save flops in the optimized kernels, c6/c12 have 6.0/12.0 derivative prefactors
          * included in the general nfbp array now. This means the tables are scaled down by the
          * same factor, so when we use the original c6/c12 parameters from iparams[] they must
@@ -499,25 +499,25 @@ do_nonbonded_listed(int ftype,int nbonds,
          */
         c6  *= 6.0;
         c12 *= 12.0;
-        
+
         /* Do we need to apply full periodic boundary conditions? */
-        if(fr->bMolPBC==TRUE)
+        if(fr->bMolPBC == TRUE)
         {
-            fshift_index = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
+            fshift_index = pbc_dx_aiuc(pbc, x[ai], x[aj], dx);
         }
         else
         {
             fshift_index = CENTRAL;
-            rvec_sub(x[ai],x[aj],dx);
+            rvec_sub(x[ai], x[aj], dx);
         }
-        r2           = norm2(dx);
+        r2 = norm2(dx);
 
-        if(r2>=fr->tab14.r*fr->tab14.r)
+        if(r2 >= fr->tab14.r * fr->tab14.r)
         {
-            if(warned_rlimit==FALSE)
+            if(warned_rlimit == FALSE)
             {
-                nb_listed_warning_rlimit(x,ai,aj,global_atom_index,sqrt(r2),fr->tab14.r);
-                warned_rlimit=TRUE;
+                nb_listed_warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->tab14.r);
+                warned_rlimit = TRUE;
             }
             continue;
         }
@@ -525,39 +525,39 @@ do_nonbonded_listed(int ftype,int nbonds,
         if (bFreeEnergy)
         {
             /* Currently free energy is only supported for F_LJ14, so no need to check for that if we got here */
-            qqB              = md->chargeB[ai]*md->chargeB[aj]*fr->epsfac*fr->fudgeQQ;
-            c6B              = iparams[itype].lj14.c6B*6.0;
-            c12B             = iparams[itype].lj14.c12B*12.0;
+            qqB = md->chargeB[ai] * md->chargeB[aj] * fr->epsfac * fr->fudgeQQ;
+            c6B = iparams[itype].lj14.c6B * 6.0;
+            c12B = iparams[itype].lj14.c12B * 12.0;
 
-            fscal            = nb_free_energy_evaluate_single(r2,fr->sc_r_power,fr->sc_alphacoul,fr->sc_alphavdw,
-                                                              fr->tab14.scale,fr->tab14.data,qq,c6,c12,qqB,c6B,c12B,
-                                                              LFC,LFV,DLF,lfac_coul,lfac_vdw,dlfac_coul,dlfac_vdw,
-                                                              fr->sc_sigma6_def,fr->sc_sigma6_min,sigma2_def,sigma2_min,&velec,&vvdw,dvdl);
+            fscal = nb_free_energy_evaluate_single(r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw,
+                                                   fr->tab14.scale, fr->tab14.data, qq, c6, c12, qqB, c6B, c12B,
+                                                   LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw,
+                                                   fr->sc_sigma6_def, fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
         }
         else
         {
             /* Evaluate tabulated interaction without free energy */
-            fscal            = nb_evaluate_single(r2,fr->tab14.scale,fr->tab14.data,qq,c6,c12,&velec,&vvdw);
+            fscal = nb_evaluate_single(r2, fr->tab14.scale, fr->tab14.data, qq, c6, c12, &velec, &vvdw);
         }
 
-        energygrp_elec[gid]  += velec;
-        energygrp_vdw[gid]   += vvdw;
-        svmul(fscal,dx,dx);
+        energygrp_elec[gid] += velec;
+        energygrp_vdw[gid]  += vvdw;
+        svmul(fscal, dx, dx);
 
         /* Add the forces */
-        rvec_inc(f[ai],dx);
-        rvec_dec(f[aj],dx);
+        rvec_inc(f[ai], dx);
+        rvec_dec(f[aj], dx);
 
         if (g)
         {
             /* Correct the shift forces using the graph */
-            ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             fshift_index = IVEC2IS(dt);
         }
-        if(fshift_index!=CENTRAL)
+        if(fshift_index != CENTRAL)
         {
-            rvec_inc(fshift[fshift_index],dx);
-            rvec_dec(fshift[CENTRAL],dx);
+            rvec_inc(fshift[fshift_index], dx);
+            rvec_dec(fshift[CENTRAL], dx);
         }
     }
     return 0.0;

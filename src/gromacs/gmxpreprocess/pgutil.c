@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -43,13 +43,13 @@
 #include "gmx_fatal.h"
 
 #define BUFSIZE 1024
-static void atom_not_found(int fatal_errno,const char *file,int line,
-			   const char *atomname,int resind,
+static void atom_not_found(int fatal_errno, const char *file, int line,
+                           const char *atomname, int resind,
                            const char *resname,
-			   const char *bondtype,gmx_bool bAllowMissing)
+                           const char *bondtype, gmx_bool bAllowMissing)
 {
     char message_buffer[BUFSIZE];
-    if (strcmp(bondtype,"check") != 0)
+    if (strcmp(bondtype, "check") != 0)
     {
         if (0 != strcmp(bondtype, "atom"))
         {
@@ -59,7 +59,7 @@ static void atom_not_found(int fatal_errno,const char *file,int line,
                      "an interaction of type %s in that entry is not found in the\n"
                      "input file. Perhaps your atom and/or residue naming needs to be\n"
                      "fixed.\n",
-                     resind+1, resname, atomname, bondtype);
+                     resind + 1, resname, atomname, bondtype);
         }
         else
         {
@@ -68,7 +68,7 @@ static void atom_not_found(int fatal_errno,const char *file,int line,
                      "to an entry in the topology database, but the atom %s used in\n"
                      "that entry is not found in the input file. Perhaps your atom\n"
                      "and/or residue naming needs to be fixed.\n",
-                     resind+1, resname, atomname);
+                     resind + 1, resname, atomname);
         }
         if (bAllowMissing)
         {
@@ -76,64 +76,80 @@ static void atom_not_found(int fatal_errno,const char *file,int line,
         }
         else
         {
-            gmx_fatal(fatal_errno,file,line,message_buffer);
+            gmx_fatal(fatal_errno, file, line, message_buffer);
         }
     }
 }
-	
-atom_id search_atom(const char *type,int start,
+
+atom_id search_atom(const char *type, int start,
                     t_atoms *atoms,
-		    const char *bondtype,gmx_bool bAllowMissing)
+                    const char *bondtype, gmx_bool bAllowMissing)
 {
-  int     i,resind=-1;
-  gmx_bool    bPrevious,bNext;
-  int natoms = atoms->nr;
-  t_atom *at = atoms->atom;
-  char ** const * anm = atoms->atomname;
+    int           i, resind = -1;
+    gmx_bool      bPrevious, bNext;
+    int           natoms = atoms->nr;
+    t_atom       *at     = atoms->atom;
+    char **const *anm    = atoms->atomname;
 
-  bPrevious = (strchr(type,'-') != NULL);
-  bNext     = (strchr(type,'+') != NULL);
+    bPrevious = (strchr(type, '-') != NULL);
+    bNext     = (strchr(type, '+') != NULL);
 
-  if (!bPrevious) {
-    resind = at[start].resind;
-    if (bNext) {
-      /* The next residue */
-      type++;
-      while ((start<natoms) && (at[start].resind == resind))
-	start++;
-      if (start < natoms)
-	resind = at[start].resind;
-    }
-    
-    for(i=start; (i<natoms) && (bNext || (at[i].resind == resind)); i++) {
-      if (anm[i] && gmx_strcasecmp(type,*(anm[i]))==0)
-	return (atom_id) i;
-    }
-    if (!(bNext && at[start].resind==at[natoms-1].resind))
+    if (!bPrevious)
     {
-        atom_not_found(FARGS,type,at[start].resind,*atoms->resinfo[resind].name,bondtype,bAllowMissing);
+        resind = at[start].resind;
+        if (bNext)
+        {
+            /* The next residue */
+            type++;
+            while ((start < natoms) && (at[start].resind == resind))
+            {
+                start++;
+            }
+            if (start < natoms)
+            {
+                resind = at[start].resind;
+            }
+        }
+
+        for(i = start; (i < natoms) && (bNext || (at[i].resind == resind)); i++)
+        {
+            if (anm[i] && gmx_strcasecmp(type, *(anm[i])) == 0)
+            {
+                return (atom_id) i;
+            }
+        }
+        if (!(bNext && at[start].resind == at[natoms - 1].resind))
+        {
+            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
+        }
     }
-  }
-  else {
-    /* The previous residue */
-    type++;
-    if (start > 0)
-      resind = at[start-1].resind;
-    for(i=start-1; (i>=0) /*&& (at[i].resind == resind)*/; i--)
-      if (gmx_strcasecmp(type,*(anm[i]))==0)
-	return (atom_id) i;
-    if (start > 0)
+    else
     {
-        atom_not_found(FARGS,type,at[start].resind,*atoms->resinfo[resind].name,bondtype,bAllowMissing);
+        /* The previous residue */
+        type++;
+        if (start > 0)
+        {
+            resind = at[start - 1].resind;
+        }
+        for(i = start - 1; (i >= 0) /*&& (at[i].resind == resind)*/; i--)
+        {
+            if (gmx_strcasecmp(type, *(anm[i])) == 0)
+            {
+                return (atom_id) i;
+            }
+        }
+        if (start > 0)
+        {
+            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
+        }
     }
-  }
-  return NO_ATID;
+    return NO_ATID;
 }
 
-void set_at(t_atom *at,real m,real q,int type,int resind)
+void set_at(t_atom *at, real m, real q, int type, int resind)
 {
-  at->m=m;
-  at->q=q;
-  at->type=type;
-  at->resind=resind;
+    at->m      = m;
+    at->q      = q;
+    at->type   = type;
+    at->resind = resind;
 }

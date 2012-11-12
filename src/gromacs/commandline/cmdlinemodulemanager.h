@@ -51,16 +51,16 @@ class ProgramInfo;
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
-        CommandLineModulePointer;
+CommandLineModulePointer;
 
 /*! \brief
  * Implements a wrapper command-line interface for multiple modules.
  *
  * Typical usage:
  * \code
-int
-main(int argc, char *argv[])
-{
+   int
+   main(int argc, char *argv[])
+   {
     const gmx::ProgramInfo &programInfo =
         gmx::ProgramInfo::init("g_ana", argc, argv);
     CopyRight(stderr, argv[0]);
@@ -75,7 +75,7 @@ main(int argc, char *argv[])
         gmx::printFatalErrorMessage(stderr, ex);
         return 1;
     }
-}
+   }
  * \endcode
  *
  * \inpublicapi

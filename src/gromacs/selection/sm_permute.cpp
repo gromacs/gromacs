@@ -50,15 +50,15 @@
 typedef struct
 {
     /** Positions to permute. */
-    gmx_ana_pos_t    p;
+    gmx_ana_pos_t p;
     /** Group to receive the output permutation. */
-    gmx_ana_index_t  g;
+    gmx_ana_index_t g;
     /** Number of elements in the permutation. */
-    int              n;
+    int n;
     /** Array describing the permutation. */
-    int             *perm;
+    int *perm;
     /** Array that has the permutation reversed. */
-    int             *rperm;
+    int *rperm;
 } t_methoddata_permute;
 
 /** Allocates data for the \p permute selection modifier. */
@@ -147,7 +147,7 @@ static void
 init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
-    int                   i;
+    int i;
 
     gmx_ana_index_reserve(&d->g, d->p.g->isize);
     d->n    = param[1].val.nr;
@@ -155,7 +155,7 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     if (d->p.nr % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                      gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     snew(d->rperm, d->n);
     for (i = 0; i < d->n; ++i)
@@ -186,7 +186,7 @@ static void
 init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
-    int                   i, j, b;
+    int i, j, b;
 
     gmx_ana_pos_copy(out->u.p, &d->p, true);
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
@@ -234,13 +234,13 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
-    int                   i, j, b;
-    int                   refid;
+    int i, j, b;
+    int refid;
 
     if (d->p.nr % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                      gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);
@@ -248,7 +248,7 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         for (j = 0; j < d->n; ++j)
         {
-            b = i + d->rperm[j];
+            b     = i + d->rperm[j];
             refid = d->p.m.refid[b];
             if (refid != -1)
             {

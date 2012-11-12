@@ -56,24 +56,24 @@ extern "C" {
  *  The local and non-local interaction calculations are launched in two
  *  separate streams.
  */
-void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
                               const nbnxn_atomdata_t *nbdata,
-                              int flags,
-                              int iloc) FUNC_TERM
+                              int                     flags,
+                              int                     iloc) FUNC_TERM
 
 /*! Launch asynchronously the download of nonbonded forces from the GPU
  *  (and energies/shift forces if required).
  */
-void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
                                const nbnxn_atomdata_t *nbatom,
-                               int flags,
-                               int aloc) FUNC_TERM
+                               int                     flags,
+                               int                     aloc) FUNC_TERM
 
 /*! Wait for the asynchronously launched nonbonded calculations and data
  *  transfers to finish.
  */
 void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
-                         const nbnxn_atomdata_t * nbatom,
+                         const nbnxn_atomdata_t *nbatom,
                          int flags, int aloc,
                          real *e_lj, real *e_el,
                          rvec *fshift) FUNC_TERM

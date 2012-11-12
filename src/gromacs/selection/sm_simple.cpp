@@ -398,13 +398,13 @@ gmx_ana_selmethod_t sm_betafactor = {
 gmx_ana_selmethod_t sm_x = {
     "x", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_x,
 };
 
@@ -412,13 +412,13 @@ gmx_ana_selmethod_t sm_x = {
 gmx_ana_selmethod_t sm_y = {
     "y", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_y,
 };
 
@@ -426,13 +426,13 @@ gmx_ana_selmethod_t sm_y = {
 gmx_ana_selmethod_t sm_z = {
     "z", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_z,
 };
 
@@ -472,7 +472,7 @@ static void
 evaluate_atomnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -491,13 +491,13 @@ static void
 evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
-    int  resind;
+    int i;
+    int resind;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.i[i] = top->atoms.resinfo[resind].nr;
     }
 }
@@ -512,7 +512,7 @@ static void
 evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -552,12 +552,15 @@ static void
 evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i, j;
+    int i, j;
 
     out->nr = g->isize;
     for (i = j = 0; i < g->isize; ++i)
     {
-        while (top->mols.index[j + 1] <= g->index[i]) ++j;
+        while (top->mols.index[j + 1] <= g->index[i])
+        {
+            ++j;
+        }
         out->u.i[i] = j + 1;
     }
 }
@@ -572,7 +575,7 @@ static void
 evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -591,7 +594,7 @@ static void
 evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -637,7 +640,7 @@ static void
 evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -656,13 +659,13 @@ static void
 evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
-    int  resind;
+    int i;
+    int resind;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.s[i] = *top->atoms.resinfo[resind].name;
     }
 }
@@ -677,13 +680,13 @@ static void
 evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
-    int  resind;
+    int i;
+    int resind;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].ic;
     }
 }
@@ -698,13 +701,13 @@ static void
 evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
-    int  resind;
+    int i;
+    int resind;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].chainid;
     }
 }
@@ -719,7 +722,7 @@ static void
 evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -738,7 +741,7 @@ static void
 evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -778,7 +781,7 @@ static void
 evaluate_altloc(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -798,7 +801,7 @@ static void
 evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -818,7 +821,7 @@ static void
 evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -852,7 +855,7 @@ evaluate_coord(t_trxframe *fr, gmx_ana_index_t *g, real out[],
         for (b = 0; b < pos->nr; ++b)
         {
             v = pos->x[b][d];
-            for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
+            for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b + 1]; ++i)
             {
                 out[i] = v;
             }

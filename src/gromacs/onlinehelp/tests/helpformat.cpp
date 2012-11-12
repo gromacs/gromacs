@@ -45,7 +45,7 @@ namespace
 {
 
 //! Simple test string for wrapping.
-const char g_wrapText[] = "A quick brown fox jumps over the lazy dog";
+const char g_wrapText[]  = "A quick brown fox jumps over the lazy dog";
 //! Test string for wrapping with embedded line breaks.
 const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
 

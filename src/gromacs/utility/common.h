@@ -65,7 +65,7 @@
  * \inlibraryapi
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
-    private: \
+    private : \
         ClassName &operator =(const ClassName &)
 //! \endcond
 
@@ -91,9 +91,9 @@ namespace gmx
  *
  * Intended use:
  * \code
-// In exampleclass.h
-class ExampleClass
-{
+   // In exampleclass.h
+   class ExampleClass
+   {
     public:
         ExampleClass();
         ~ExampleClass(); // Must not be defined inline
@@ -104,20 +104,20 @@ class ExampleClass
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
-};
+   };
 
-// In exampleclass.cpp
+   // In exampleclass.cpp
 
-// <definition of ExampleClass::Impl>
+   // <definition of ExampleClass::Impl>
 
-ExampleClass::ExampleClass()
+   ExampleClass::ExampleClass()
     : impl_(new Impl)
-{
-}
+   {
+   }
 
-ExampleClass::~ExampleClass()
-{
-}
+   ExampleClass::~ExampleClass()
+   {
+   }
  * \endcode
  * \inlibraryapi
  * \ingroup module_utility

@@ -78,13 +78,13 @@ class AnalysisDataModuleInterface
          */
         enum {
             //! The module can process multipoint data.
-            efAllowMultipoint    = 0x01,
+            efAllowMultipoint  = 0x01,
             //! The module does not make sense for non-multipoint data.
-            efOnlyMultipoint     = 0x02,
+            efOnlyMultipoint   = 0x02,
             //! The module can process data with more than one column.
-            efAllowMulticolumn   = 0x04,
+            efAllowMulticolumn = 0x04,
             //! The module can process data with missing points.
-            efAllowMissing       = 0x08,
+            efAllowMissing     = 0x08,
         };
 
         virtual ~AnalysisDataModuleInterface() {};
@@ -136,7 +136,7 @@ class AnalysisDataModuleInterface
          * \throws    unspecified  Can throw any exception required by the
          *      implementing class to report errors.
          */
-        virtual void frameStarted(const AnalysisDataFrameHeader &frame) = 0;
+        virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
         /*! \brief
          * Called one or more times during each data frame.
          *
@@ -152,7 +152,7 @@ class AnalysisDataModuleInterface
          * called exactly once for each frame if the data is not multipoint,
          * but currently this restriction is not enforced.
          */
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
         /*! \brief
          * Called when a data frame is finished.
          *

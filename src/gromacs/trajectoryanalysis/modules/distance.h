@@ -60,10 +60,10 @@ class Distance : public TrajectoryAnalysisModule
         Distance();
         virtual ~Distance();
 
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
+                                  const TopologyInformation        &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -72,15 +72,15 @@ class Distance : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        std::string                      fnDist_;
-        Selection                        sel_[2];
-        AnalysisData                     data_;
+        std::string  fnDist_;
+        Selection    sel_[2];
+        AnalysisData data_;
         AnalysisDataAverageModulePointer avem_;
 
         // Copy and assign disallowed by base.
 };
 
-} // namespace analysismodules
+}   // namespace analysismodules
 
 } // namespace gmx
 

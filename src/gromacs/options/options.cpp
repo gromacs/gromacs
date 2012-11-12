@@ -55,7 +55,7 @@ namespace gmx
 
 Options::Impl::Impl(const char *name, const char *title)
     : name_(name != NULL ? name : ""), title_(title != NULL ? title : ""),
-      parent_(NULL)
+    parent_(NULL)
 {
 }
 

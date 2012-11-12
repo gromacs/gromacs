@@ -50,7 +50,7 @@ namespace
 {
 
 //! Directory separator to use when joining paths.
-const char cDirSeparator = '/';
+const char cDirSeparator    = '/';
 //! Directory separators to use when parsing paths.
 const char cDirSeparators[] = "/\\";
 
@@ -83,7 +83,7 @@ Path::splitToPathAndFilename(const std::string &path)
     {
         return std::make_pair(std::string(), path);
     }
-    return std::make_pair(path.substr(0, pos), path.substr(pos+1));
+    return std::make_pair(path.substr(0, pos), path.substr(pos + 1));
 }
 
 

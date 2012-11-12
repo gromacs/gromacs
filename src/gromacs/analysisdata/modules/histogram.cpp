@@ -68,8 +68,8 @@ namespace gmx
 
 AnalysisHistogramSettingsInitializer::AnalysisHistogramSettingsInitializer()
     : min_(UNDEFINED), max_(UNDEFINED), binWidth_(UNDEFINED),
-      binCount_(0), bIntegerBins_(false), bRoundRange_(false),
-      bIncludeAll_(false)
+    binCount_(0), bIntegerBins_(false), bRoundRange_(false),
+    bIncludeAll_(false)
 {
 }
 
@@ -80,7 +80,7 @@ AnalysisHistogramSettingsInitializer::AnalysisHistogramSettingsInitializer()
 
 AnalysisHistogramSettings::AnalysisHistogramSettings()
     : firstEdge_(0.0), lastEdge_(0.0), binWidth_(0.0), inverseBinWidth_(0.0),
-      binCount_(0), bAll_(false)
+    binCount_(0), bAll_(false)
 {
 }
 
@@ -133,8 +133,8 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
         }
         else
         {
-            firstEdge_     = settings.min_;
-            lastEdge_     = settings.max_;
+            firstEdge_ = settings.min_;
+            lastEdge_  = settings.max_;
             if (settings.binCount_ > 0)
             {
                 binCount_ = settings.binCount_;
@@ -223,7 +223,7 @@ StaticAverageHistogram::StaticAverageHistogram(
 {
 }
 
-} // namespace
+}   // namespace
 
 
 /********************************************************************
@@ -275,18 +275,18 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
 
     AverageHistogramPointer dest(
         new StaticAverageHistogram(
-            histogramFromBins(xstart(), nbins, 2*xstep())
+            histogramFromBins(xstart(), nbins, 2 * xstep())
                 .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
 
-    int  i, j;
+    int i, j;
     for (i = j = 0; i < nbins; ++i)
     {
         const bool bFirstHalfBin = (bIntegerBins && i == 0);
         for (int c = 0; c < columnCount(); ++c)
         {
-            real  v1, v2;
+            real v1, v2;
             if (bFirstHalfBin)
             {
                 v1 = value(0, c);
@@ -381,7 +381,7 @@ namespace internal
  * \ingroup module_analysisdata
  */
 class BasicAverageHistogramModule : public AbstractAverageHistogram,
-                                    public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         BasicAverageHistogramModule();
@@ -400,7 +400,7 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
 
     private:
         //! Number of frames accumulated so far.
-        int                     frameCount_;
+        int frameCount_;
 
         // Copy and assign disallowed by base.
 };
@@ -490,7 +490,7 @@ class BasicHistogramImpl
     public:
         //! Smart pointer to manage an BasicAverageHistogramModule object.
         typedef boost::shared_ptr<BasicAverageHistogramModule>
-                BasicAverageHistogramModulePointer;
+        BasicAverageHistogramModulePointer;
 
         BasicHistogramImpl();
         //! Creates an histogram impl with defined bin parameters.
@@ -507,11 +507,11 @@ class BasicHistogramImpl
         void initFrame(AnalysisDataStorageFrame *frame);
 
         //! Storage implementation object.
-        AnalysisDataStorage                  storage_;
+        AnalysisDataStorage                storage_;
         //! Settings for the histogram object.
-        AnalysisHistogramSettings            settings_;
+        AnalysisHistogramSettings          settings_;
         //! Averager module.
-        BasicAverageHistogramModulePointer   averager_;
+        BasicAverageHistogramModulePointer averager_;
 };
 
 BasicHistogramImpl::BasicHistogramImpl()
@@ -547,7 +547,7 @@ BasicHistogramImpl::initFrame(AnalysisDataStorageFrame *frame)
     }
 }
 
-} // namespace internal
+}   // namespace internal
 
 
 /********************************************************************

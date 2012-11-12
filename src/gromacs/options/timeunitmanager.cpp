@@ -93,9 +93,9 @@ const char *TimeUnitManager::timeUnitAsString() const
 
 double TimeUnitManager::timeScaleFactor() const
 {
-    GMX_RELEASE_ASSERT(timeUnit_ >= 0
-        && (size_t)timeUnit_ < sizeof(g_timeScaleFactors)/sizeof(g_timeScaleFactors[0]),
-        "Time unit index has become out-of-range");
+    GMX_RELEASE_ASSERT(timeUnit_ >= 0 &&
+                       (size_t)timeUnit_ < sizeof(g_timeScaleFactors) / sizeof(g_timeScaleFactors[0]),
+                       "Time unit index has become out-of-range");
     return g_timeScaleFactors[timeUnit_];
 }
 
@@ -142,10 +142,10 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<DoubleOptionInfo>
         }
 
     private:
-        double                  factor_;
+        double factor_;
 };
 
-} // namespace
+}   // namespace
 
 void TimeUnitManager::scaleTimeOptions(Options *options) const
 {

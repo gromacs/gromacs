@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -60,14 +60,14 @@
 #include "tmpi.h"
 #endif
 
-static gmx_bool bDebug = FALSE;
-static char *fatal_tmp_file = NULL;
-static FILE *log_file = NULL;
+static gmx_bool bDebug         = FALSE;
+static char    *fatal_tmp_file = NULL;
+static FILE    *log_file       = NULL;
 
 #ifdef GMX_THREAD_MPI
-static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-static tMPI_Thread_mutex_t where_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t debug_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t fatal_tmp_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
@@ -78,7 +78,7 @@ gmx_bool bDebugMode(void)
 #if 0
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-    ret=bDebug;
+    ret = bDebug;
 /*#ifdef GMX_THREAD_MPI*/
 #if 0
     tMPI_Thread_mutex_unlock(&debug_mutex);
@@ -88,105 +88,136 @@ gmx_bool bDebugMode(void)
 
 void gmx_fatal_set_log_file(FILE *fp)
 {
-  log_file = fp;
+    log_file = fp;
 }
 
-void _where(const char *file,int line)
+void _where(const char *file, int line)
 {
-  static gmx_bool bFirst = TRUE;
-  static int  nskip  = -1;
-  static int  nwhere =  0;
-  FILE *fp;
-  char *temp; 
-  
-  if ( bFirst ) {
-#ifdef GMX_THREAD_MPI
-    tMPI_Thread_mutex_lock(&where_mutex);
-    if (bFirst) /* we repeat the check in the locked section because things
-                   might have changed */
+    static gmx_bool bFirst = TRUE;
+    static int      nskip  = -1;
+    static int      nwhere =  0;
+    FILE           *fp;
+    char           *temp;
+
+    if ( bFirst )
     {
+#ifdef GMX_THREAD_MPI
+        tMPI_Thread_mutex_lock(&where_mutex);
+        if (bFirst) /* we repeat the check in the locked section because things
+                       might have changed */
+        {
 #endif
-        if ((temp=getenv("WHERE")) != NULL)
-            nskip = strtol(temp, NULL, 10); 
+        if ((temp = getenv("WHERE")) != NULL)
+        {
+            nskip = strtol(temp, NULL, 10);
+        }
         bFirst = FALSE;
 #ifdef GMX_THREAD_MPI
     }
     tMPI_Thread_mutex_unlock(&where_mutex);
 #endif
 
-  } 
-
-  if (nskip >= 0) {
-    /* Skip the first n occasions, this allows to see where it goes wrong */
-    if (nwhere >= nskip) {
-      if (log_file)
-	fp = log_file;
-      else
-	fp = stderr;
-      fprintf(fp,"WHERE %d, file %s - line %d\n",nwhere,file,line);
     }
-    nwhere++;
-  }
-}
 
-static void bputc(char *msg,int *len,char ch)
-{
-  msg[(*len)++]=ch;
-}
-
-static void bputs(char *msg,int *len,const char *s,int fld)
-{
-  for (fld-=(int)strlen(s); fld>0; fld--) 
-    bputc(msg,len,' ');
-  while (*s) 
-    bputc(msg,len,*(s++));
-}
-
-static void bputd(char *msg,int *len,int d)
-{
-  if (d<10) bputc(msg,len,d+'0'); else bputc(msg,len,d-10+'a');
-}
-
-static void bputi(char *msg,int *len,int val,int radix,int fld,gmx_bool bNeg)
-{
-  int fmax=0;
-  
-  if (bNeg)
-    fmax=1;
-    
-  if (val<radix)
+    if (nskip >= 0)
     {
-      for (fld--; fld>fmax; fld--) 
-	bputc(msg,len,' ');
-      if (bNeg)
-	bputc(msg,len,'-');
-      bputd(msg,len,val);
+        /* Skip the first n occasions, this allows to see where it goes wrong */
+        if (nwhere >= nskip)
+        {
+            if (log_file)
+            {
+                fp = log_file;
+            }
+            else
+            {
+                fp = stderr;
+            }
+            fprintf(fp, "WHERE %d, file %s - line %d\n", nwhere, file, line);
+        }
+        nwhere++;
     }
-  else
+}
+
+static void bputc(char *msg, int *len, char ch)
+{
+    msg[(*len)++] = ch;
+}
+
+static void bputs(char *msg, int *len, const char *s, int fld)
+{
+    for (fld -= (int)strlen(s); fld > 0; fld--)
     {
-      if (bNeg)
-	bputc(msg,len,'-');
-      bputi(msg,len,val/radix,radix,fld-1,FALSE);
-      bputd(msg,len,val%radix);
+        bputc(msg, len, ' ');
+    }
+    while (*s)
+    {
+        bputc(msg, len, *(s++));
+    }
+}
+
+static void bputd(char *msg, int *len, int d)
+{
+    if (d < 10)
+    {
+        bputc(msg, len, d + '0');
+    }
+    else
+    {
+        bputc(msg, len, d - 10 + 'a');
+    }
+}
+
+static void bputi(char *msg, int *len, int val, int radix, int fld, gmx_bool bNeg)
+{
+    int fmax = 0;
+
+    if (bNeg)
+    {
+        fmax = 1;
+    }
+
+    if (val < radix)
+    {
+        for (fld--; fld > fmax; fld--)
+        {
+            bputc(msg, len, ' ');
+        }
+        if (bNeg)
+        {
+            bputc(msg, len, '-');
+        }
+        bputd(msg, len, val);
+    }
+    else
+    {
+        if (bNeg)
+        {
+            bputc(msg, len, '-');
+        }
+        bputi(msg, len, val / radix, radix, fld - 1, FALSE);
+        bputd(msg, len, val % radix);
     }
 }
 
 static int getfld(const char **p)
 {
-  int fld;
+    int fld;
 
-  fld=0;
-  while (isdigit(**p)) fld=(fld*10)+((*((*p)++))-'0');
-  return fld;
+    fld = 0;
+    while (isdigit(**p))
+    {
+        fld = (fld * 10) + ((*((*p)++)) - '0');
+    }
+    return fld;
 }
 
 /*static void _halt(char *file,int line,char *reason)
-{
-  fprintf(stderr,"\nHALT in file %s line %d because:\n\t%s\n",
-	  file,line,reason);
-  exit(1);
-}
-*/
+   {
+   fprintf(stderr,"\nHALT in file %s line %d because:\n\t%s\n",
+          file,line,reason);
+   exit(1);
+   }
+ */
 
 static int fatal_errno = 0;
 
@@ -195,22 +226,22 @@ static void quit_gmx(const char *msg)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-    if (fatal_errno == 0) 
+    if (fatal_errno == 0)
     {
         if (log_file)
         {
-            fprintf(log_file,"%s\n",msg);
+            fprintf(log_file, "%s\n", msg);
         }
-        fprintf(stderr,"%s\n",msg);
-        /* we set it to no-zero because if this function is called, something 
+        fprintf(stderr, "%s\n", msg);
+        /* we set it to no-zero because if this function is called, something
            has gone wrong */
-        fatal_errno=255;
+        fatal_errno = 255;
     }
-    else 
+    else
     {
         if (fatal_errno != -1)
         {
-            errno=fatal_errno;
+            errno = fatal_errno;
         }
         perror(msg);
     }
@@ -218,19 +249,19 @@ static void quit_gmx(const char *msg)
 #ifdef GMX_LIB_MPI
     if (gmx_mpi_initialized())
     {
-        int  nnodes;
-        int  noderank;
+        int nnodes;
+        int noderank;
 
         nnodes   = gmx_node_num();
         noderank = gmx_node_rank();
 
-        if (nnodes > 1) 
+        if (nnodes > 1)
         {
-            fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",
+            fprintf(stderr, "Error on node %d, will try to stop all the nodes\n",
                     noderank);
         }
-        gmx_abort(noderank,nnodes,-1);
-    } 
+        gmx_abort(noderank, nnodes, -1);
+    }
 #endif
 
     if (debug)
@@ -239,9 +270,9 @@ static void quit_gmx(const char *msg)
     }
     if (bDebugMode())
     {
-        fprintf(stderr,"dump core (y/n):"); 
+        fprintf(stderr, "dump core (y/n):");
         fflush(stderr);
-        if (toupper(getc(stdin))!='N') 
+        if (toupper(getc(stdin)) != 'N')
         {
             (void) abort();
         }
@@ -261,19 +292,23 @@ static void quit_gmx_noquit(const char *msg)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-    if (!fatal_errno) 
+    if (!fatal_errno)
     {
-        if (log_file) 
-            fprintf(log_file,"%s\n",msg);
-        fprintf(stderr,"%s\n",msg);
-        /* we set it to no-zero because if this function is called, something 
+        if (log_file)
+        {
+            fprintf(log_file, "%s\n", msg);
+        }
+        fprintf(stderr, "%s\n", msg);
+        /* we set it to no-zero because if this function is called, something
            has gone wrong */
-        fatal_errno=255;
+        fatal_errno = 255;
     }
-    else 
+    else
     {
         if (fatal_errno != -1)
-            errno=fatal_errno;
+        {
+            errno = fatal_errno;
+        }
         perror(msg);
     }
 
@@ -284,11 +319,11 @@ static void quit_gmx_noquit(const char *msg)
     }
     if (bDebugMode())
     {
-        fprintf(stderr,"dump core (y/n):"); 
+        fprintf(stderr, "dump core (y/n):");
         fflush(stderr);
-        if (toupper(getc(stdin))!='N') 
+        if (toupper(getc(stdin)) != 'N')
         {
-            (void) abort(); 
+            (void) abort();
         }
     }
 #endif
@@ -303,11 +338,15 @@ void _set_fatal_tmp_file(const char *fn, const char *file, int line)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
-  if (fatal_tmp_file == NULL)
-    fatal_tmp_file = strdup(fn);
-  else
-    fprintf(stderr,"BUGWARNING: fatal_tmp_file already set at %s:%d",
-	    file,line);
+    if (fatal_tmp_file == NULL)
+    {
+        fatal_tmp_file = strdup(fn);
+    }
+    else
+    {
+        fprintf(stderr, "BUGWARNING: fatal_tmp_file already set at %s:%d",
+                file, line);
+    }
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
@@ -318,12 +357,16 @@ void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
-  if (strcmp(fn,fatal_tmp_file) == 0) {
-    sfree(fatal_tmp_file);
-    fatal_tmp_file = NULL;
-  } else
-    fprintf(stderr,"BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
-	    fn,file,line);
+    if (strcmp(fn, fatal_tmp_file) == 0)
+    {
+        sfree(fatal_tmp_file);
+        fatal_tmp_file = NULL;
+    }
+    else
+    {
+        fprintf(stderr, "BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
+                fn, file, line);
+    }
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
@@ -334,32 +377,33 @@ static void clean_fatal_tmp_file()
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
-  if (fatal_tmp_file) {
-    fprintf(stderr,"Cleaning up temporary file %s\n",fatal_tmp_file);
-    remove(fatal_tmp_file);
-    sfree(fatal_tmp_file);
-    fatal_tmp_file = NULL;
-  }
+    if (fatal_tmp_file)
+    {
+        fprintf(stderr, "Cleaning up temporary file %s\n", fatal_tmp_file);
+        remove(fatal_tmp_file);
+        sfree(fatal_tmp_file);
+        fatal_tmp_file = NULL;
+    }
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
-static void parse_printf_args(const char *fmt,va_list *ap,char *msg)
+static void parse_printf_args(const char *fmt, va_list *ap, char *msg)
 {
-    int     len;
+    int len;
     const char *p;
-    char    cval,*sval;
-    char    ibuf[64],ifmt[64];
-    int     index,ival,fld;
-    double  dval;
-    
+    char cval, *sval;
+    char ibuf[64], ifmt[64];
+    int index, ival, fld;
+    double dval;
+
     len = 0;
-    for(p=fmt; *p; p++)
+    for(p = fmt; *p; p++)
     {
-        if (*p!='%')
+        if (*p != '%')
         {
-            bputc(msg,&len,*p);
+            bputc(msg, &len, *p);
         }
         else
         {
@@ -367,52 +411,64 @@ static void parse_printf_args(const char *fmt,va_list *ap,char *msg)
             fld = getfld(&p);
             switch(*p) {
             case 'x':
-                ival = va_arg(*ap,int);
-                sprintf(ifmt,"0x%%%dx",fld);
-                sprintf(ibuf,ifmt,(unsigned int)ival);
-                for(index=0; (index<(int)strlen(ibuf)); index++)
-                    bputc(msg,&len,ibuf[index]);
+                ival = va_arg(*ap, int);
+                sprintf(ifmt, "0x%%%dx", fld);
+                sprintf(ibuf, ifmt, (unsigned int)ival);
+                for(index = 0; (index < (int)strlen(ibuf)); index++)
+                {
+                    bputc(msg, &len, ibuf[index]);
+                }
                 break;
             case 'd':
-                ival = va_arg(*ap,int);
-                sprintf(ifmt,"%%%dd",fld);
-                sprintf(ibuf,ifmt,ival);
-                for(index=0; (index<(int)strlen(ibuf)); index++)
-                    bputc(msg,&len,ibuf[index]);
+                ival = va_arg(*ap, int);
+                sprintf(ifmt, "%%%dd", fld);
+                sprintf(ibuf, ifmt, ival);
+                for(index = 0; (index < (int)strlen(ibuf)); index++)
+                {
+                    bputc(msg, &len, ibuf[index]);
+                }
                 break;
             case 'u':
-                ival = va_arg(*ap,unsigned);
-                sprintf(ifmt,"%%%du",fld);
-                sprintf(ibuf,ifmt,ival);
-                for(index=0; (index<(int)strlen(ibuf)); index++)
-                    bputc(msg,&len,ibuf[index]);
+                ival = va_arg(*ap, unsigned);
+                sprintf(ifmt, "%%%du", fld);
+                sprintf(ibuf, ifmt, ival);
+                for(index = 0; (index < (int)strlen(ibuf)); index++)
+                {
+                    bputc(msg, &len, ibuf[index]);
+                }
                 break;
             case 'f':
-                dval = va_arg(*ap,double);
-                sprintf(ifmt,"%%%df",fld);
-                sprintf(ibuf,ifmt,dval);
-                for(index=0; (index<(int)strlen(ibuf)); index++)
-                    bputc(msg,&len,ibuf[index]);
+                dval = va_arg(*ap, double);
+                sprintf(ifmt, "%%%df", fld);
+                sprintf(ibuf, ifmt, dval);
+                for(index = 0; (index < (int)strlen(ibuf)); index++)
+                {
+                    bputc(msg, &len, ibuf[index]);
+                }
                 break;
             case 'g':
-                dval = va_arg(*ap,double);
-                sprintf(ifmt,"%%%dg",fld);
-                sprintf(ibuf,ifmt,dval);
-                for(index=0; (index<(int)strlen(ibuf)); index++)
-                    bputc(msg,&len,ibuf[index]);
+                dval = va_arg(*ap, double);
+                sprintf(ifmt, "%%%dg", fld);
+                sprintf(ibuf, ifmt, dval);
+                for(index = 0; (index < (int)strlen(ibuf)); index++)
+                {
+                    bputc(msg, &len, ibuf[index]);
+                }
                 break;
             case 'c':
-                cval = (char) va_arg(*ap,int); /* char is promoted to int */
-                bputc(msg,&len,cval);
+                cval = (char) va_arg(*ap, int); /* char is promoted to int */
+                bputc(msg, &len, cval);
                 break;
             case 's':
-                sval = va_arg(*ap,char *);
+                sval = va_arg(*ap, char *);
                 if (sval == NULL)
+                {
                     sval = strdup("(null)");
-                bputs(msg,&len,sval,fld);
+                }
+                bputs(msg, &len, sval, fld);
                 break;
             case '%':
-                bputc(msg,&len,*p);
+                bputc(msg, &len, *p);
                 break;
             default:
                 break;
@@ -420,57 +476,57 @@ static void parse_printf_args(const char *fmt,va_list *ap,char *msg)
         }
     }
 
-    bputc(msg,&len,'\0');
+    bputc(msg, &len, '\0');
 }
 
-void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
+void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
 {
-  va_list ap;
-  char    msg[STRLEN];
-  
-  va_start(ap,fmt);
-
-  clean_fatal_tmp_file();
-
-  parse_printf_args(fmt,&ap,msg);
-  
-  va_end(ap);
-
-#ifdef GMX_THREAD_MPI
-  tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
-
-  fatal_errno = f_errno;
-
-#ifdef GMX_THREAD_MPI
-  tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
-
-  _gmx_error("fatal",msg,file,line);
-}
-
-void gmx_fatal_collective(int f_errno,const char *file,int line,
-                          const t_commrec *cr,gmx_domdec_t *dd,
-                          const char *fmt,...)
-{
-    gmx_bool    bFinalize;
     va_list ap;
-    char    msg[STRLEN];
+    char msg[STRLEN];
+
+    va_start(ap, fmt);
+
+    clean_fatal_tmp_file();
+
+    parse_printf_args(fmt, &ap, msg);
+
+    va_end(ap);
+
+#ifdef GMX_THREAD_MPI
+    tMPI_Thread_mutex_lock(&debug_mutex);
+#endif
+
+    fatal_errno = f_errno;
+
+#ifdef GMX_THREAD_MPI
+    tMPI_Thread_mutex_unlock(&debug_mutex);
+#endif
+
+    _gmx_error("fatal", msg, file, line);
+}
+
+void gmx_fatal_collective(int f_errno, const char *file, int line,
+                          const t_commrec *cr, gmx_domdec_t *dd,
+                          const char *fmt, ...)
+{
+    gmx_bool bFinalize;
+    va_list ap;
+    char msg[STRLEN];
 #ifdef GMX_MPI
-    int     result;
+    int result;
 #endif
 
     bFinalize = TRUE;
 
 #ifdef GMX_MPI
-    /* Check if we are calling on all processes in MPI_COMM_WORLD */ 
+    /* Check if we are calling on all processes in MPI_COMM_WORLD */
     if (cr != NULL)
     {
-        MPI_Comm_compare(cr->mpi_comm_mysim,MPI_COMM_WORLD,&result);
+        MPI_Comm_compare(cr->mpi_comm_mysim, MPI_COMM_WORLD, &result);
     }
     else
     {
-        MPI_Comm_compare(dd->mpi_comm_all,MPI_COMM_WORLD,&result);
+        MPI_Comm_compare(dd->mpi_comm_all, MPI_COMM_WORLD, &result);
     }
     /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
     bFinalize = (result != MPI_UNEQUAL);
@@ -479,20 +535,20 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
     if ((cr != NULL && MASTER(cr)  ) ||
         (dd != NULL && DDMASTER(dd)))
     {
-        va_start(ap,fmt);
-        
+        va_start(ap, fmt);
+
         clean_fatal_tmp_file();
-        
-        parse_printf_args(fmt,&ap,msg);
-        
+
+        parse_printf_args(fmt, &ap, msg);
+
         va_end(ap);
-        
+
 #ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-        
+
         fatal_errno = f_errno;
-        
+
 #ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -503,7 +559,7 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
             set_gmx_error_handler(quit_gmx_noquit);
         }
 
-        _gmx_error("fatal",msg,file,line);
+        _gmx_error("fatal", msg, file, line);
     }
 
 #ifdef GMX_MPI
@@ -514,8 +570,8 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
          * to use the return status on a non-master process.
          * The master process in cr and dd always has global rank 0.
          */
-        MPI_Bcast(&fatal_errno,sizeof(fatal_errno),MPI_BYTE,
-                  0,MPI_COMM_WORLD);
+        MPI_Bcast(&fatal_errno, sizeof(fatal_errno), MPI_BYTE,
+                  0, MPI_COMM_WORLD);
 
         /* Finalize nicely instead of aborting */
         MPI_Finalize();
@@ -532,29 +588,29 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
     exit(fatal_errno);
 }
 
-void _invalid_case(const char *fn,int line)
+void _invalid_case(const char *fn, int line)
 {
-  gmx_fatal(FARGS,"Invalid case in switch statement, file %s, line %d",
-	      fn,line);
+    gmx_fatal(FARGS, "Invalid case in switch statement, file %s, line %d",
+              fn, line);
 }
 
-void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline)
+void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline)
 {
-  gmx_fatal(FARGS,"Unexpected end of file in file %s at line %d\n"
-	      "(Source file %s, line %d)",fn,line,srcfn,srcline);
+    gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d\n"
+              "(Source file %s, line %d)", fn, line, srcfn, srcline);
 }
 
-/* 
+/*
  * These files are global variables in the gromacs preprocessor
  * Every routine in a file that includes gmx_fatal.h can write to these
  * debug channels. Depending on the debuglevel used
  * 0 to 3 of these filed are redirected to /dev/null
  *
  */
-FILE *debug=NULL;
-gmx_bool gmx_debug_at=FALSE;
+FILE *debug           = NULL;
+gmx_bool gmx_debug_at = FALSE;
 
-void init_debug (const int dbglevel,const char *dbgfile)
+void init_debug (const int dbglevel, const char *dbgfile)
 {
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
@@ -562,10 +618,12 @@ void init_debug (const int dbglevel,const char *dbgfile)
     if (!bDebug) /* another thread hasn't already run this*/
     {
         no_buffers();
-        debug=gmx_fio_fopen(dbgfile,"w+");
+        debug  = gmx_fio_fopen(dbgfile, "w+");
         bDebug = TRUE;
         if (dbglevel >= 2)
+        {
             gmx_debug_at = TRUE;
+        }
     }
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
@@ -575,44 +633,46 @@ void init_debug (const int dbglevel,const char *dbgfile)
 #if (defined __sgi && defined USE_SGI_FPE)
 static void user_routine(unsigned us[5], int ii[2])
 {
-  fprintf(stderr,"User routine us=(%u,%u,%u,%u,%u) ii=(%d,%d)\n",
-	  us[0],us[1],us[2],us[3],us[4],ii[0],ii[1]);
-  fprintf(stderr,"Exception encountered! Dumping core\n");
-  abort();
+    fprintf(stderr, "User routine us=(%u,%u,%u,%u,%u) ii=(%d,%d)\n",
+            us[0], us[1], us[2], us[3], us[4], ii[0], ii[1]);
+    fprintf(stderr, "Exception encountered! Dumping core\n");
+    abort();
 }
 
 static void abort_routine(unsigned int **ii)
 {
-  fprintf(stderr,"Abort routine\n");
-  abort();
+    fprintf(stderr, "Abort routine\n");
+    abort();
 }
 
 static void handle_signals(int n)
 {
-  fprintf(stderr,"Handle signals: n = %d\n",n);
-  fprintf(stderr,"Dumping core\n");
-  abort();
+    fprintf(stderr, "Handle signals: n = %d\n", n);
+    fprintf(stderr, "Dumping core\n");
+    abort();
 }
 
 void doexceptions(void)
 {
 #include <sigfpe.h>
 #include <signal.h>
-  int hs[] = { SIGILL, SIGFPE, SIGTRAP, SIGEMT, SIGSYS };
-  
-  int onoff,en_mask,abort_action,i;
+    int hs[] = { SIGILL, SIGFPE, SIGTRAP, SIGEMT, SIGSYS };
+
+    int onoff, en_mask, abort_action, i;
 
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-  onoff   = _DEBUG;
-  en_mask = _EN_UNDERFL | _EN_OVERFL | _EN_DIVZERO | 
-    _EN_INVALID | _EN_INT_OVERFL;
-  abort_action = _ABORT_ON_ERROR;
-  handle_sigfpes(onoff,en_mask,user_routine,abort_action,abort_routine);
-  
-  for(i=0; (i<asize(hs)); i++)
-    signal(hs[i],handle_signals);
+    onoff        = _DEBUG;
+    en_mask      = _EN_UNDERFL | _EN_OVERFL | _EN_DIVZERO |
+        _EN_INVALID | _EN_INT_OVERFL;
+    abort_action = _ABORT_ON_ERROR;
+    handle_sigfpes(onoff, en_mask, user_routine, abort_action, abort_routine);
+
+    for(i = 0; (i < asize(hs)); i++)
+    {
+        signal(hs[i], handle_signals);
+    }
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -636,47 +696,57 @@ void set_gmx_error_handler(void (*func)(const char *msg))
 
 char *gmx_strerror(const char *key)
 {
-  typedef struct {
-    const char *key,*msg;
-  } error_msg_t;
-  error_msg_t msg[] = {
-    { "bug",    "Possible bug" },
-    { "call",   "Routine should not have been called" },
-    { "comm",   "Communication (parallel processing) problem" },
-    { "fatal",  "Fatal error" },
-    { "cmd",    "Invalid command line argument" },
-    { "file",   "File input/output error" },
-    { "impl",   "Implementation restriction" },
-    { "incons", "Software inconsistency error" },
-    { "input",  "Input error or input inconsistency" },
-    { "mem",    "Memory allocation/freeing error" },
-    { "open",   "Can not open file" },
-    { "range",  "Range checking error" }
-  };
+    typedef struct {
+        const char *key, *msg;
+    } error_msg_t;
+    error_msg_t msg[] = {
+        { "bug",    "Possible bug" },
+        { "call",   "Routine should not have been called" },
+        { "comm",   "Communication (parallel processing) problem" },
+        { "fatal",  "Fatal error" },
+        { "cmd",    "Invalid command line argument" },
+        { "file",   "File input/output error" },
+        { "impl",   "Implementation restriction" },
+        { "incons", "Software inconsistency error" },
+        { "input",  "Input error or input inconsistency" },
+        { "mem",    "Memory allocation/freeing error" },
+        { "open",   "Can not open file" },
+        { "range",  "Range checking error" }
+    };
 #define NMSG asize(msg)
-  char buf[1024];
-  size_t i;
-  
-  if (key == NULL)
-    return strdup("Empty message");
-  else {
-    for(i=0; (i<NMSG); i++)
-      if (strcmp(key,msg[i].key) == 0) 
-	break;
-    if (i == NMSG) {
-      sprintf(buf,"No error message associated with key %s\n%s",key,gmxuser);
-      return strdup(buf);
+    char buf[1024];
+    size_t i;
+
+    if (key == NULL)
+    {
+        return strdup("Empty message");
     }
     else
-      return strdup(msg[i].msg);
-  }
+    {
+        for(i = 0; (i < NMSG); i++)
+        {
+            if (strcmp(key, msg[i].key) == 0)
+            {
+                break;
+            }
+        }
+        if (i == NMSG)
+        {
+            sprintf(buf, "No error message associated with key %s\n%s", key, gmxuser);
+            return strdup(buf);
+        }
+        else
+        {
+            return strdup(msg[i].msg);
+        }
+    }
 }
 
 
-void _gmx_error(const char *key,const char *msg,const char *file,int line)
+void _gmx_error(const char *key, const char *msg, const char *file, int line)
 {
-  char buf[10240],tmpbuf[1024],errerrbuf[1024];
-    int  cqnum;
+    char buf[10240], tmpbuf[1024], errerrbuf[1024];
+    int cqnum;
     const char *llines = "-------------------------------------------------------";
     char *strerr;
 
@@ -684,52 +754,56 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
 
     if (msg == NULL)
     {
-        sprintf(errerrbuf,"Empty fatal_error message. %s",gmxuser);
+        sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
     }
 
-    cool_quote(tmpbuf,1023,&cqnum);
+    cool_quote(tmpbuf, 1023, &cqnum);
     strerr = gmx_strerror(key);
-    sprintf(buf,"\n%s\nProgram %s, %s\n"
+    sprintf(buf, "\n%s\nProgram %s, %s\n"
             "Source code file: %s, line: %d\n\n"
             "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
             "website at http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
-            llines,ShortProgram(),GromacsVersion(),file,line,
-            strerr,msg ? msg : errerrbuf,llines,tmpbuf);
+            llines, ShortProgram(), GromacsVersion(), file, line,
+            strerr, msg ? msg : errerrbuf, llines, tmpbuf);
     free(strerr);
 
     gmx_error_handler(buf);
 }
 
-void _range_check(int n,int n_min,int n_max,const char *warn_str,
-		  const char *var,const char *file,int line)
+void _range_check(int n, int n_min, int n_max, const char *warn_str,
+                  const char *var, const char *file, int line)
 {
-  char buf[1024];
-  
-  if ((n < n_min) || (n >= n_max)) {
-    if (warn_str != NULL) {
-      strcpy(buf,warn_str);
-      strcat(buf,"\n");
+    char buf[1024];
+
+    if ((n < n_min) || (n >= n_max))
+    {
+        if (warn_str != NULL)
+        {
+            strcpy(buf, warn_str);
+            strcat(buf, "\n");
+        }
+        else
+        {
+            buf[0] = '\0';
+        }
+
+        sprintf(buf + strlen(buf), "Variable %s has value %d. It should have been "
+                "within [ %d .. %d ]\n", var, n, n_min, n_max);
+
+        _gmx_error("range", buf, file, line);
     }
-    else
-      buf[0] = '\0';
-    
-    sprintf(buf+strlen(buf),"Variable %s has value %d. It should have been "
-	    "within [ %d .. %d ]\n",var,n,n_min,n_max);
-    
-    _gmx_error("range",buf,file,line);
-  }
 }
 
-void gmx_warning(const char *fmt,...)
+void gmx_warning(const char *fmt, ...)
 {
     va_list ap;
     char msg[STRLEN];
 
-    va_start(ap,fmt);
+    va_start(ap, fmt);
 
-    parse_printf_args(fmt,&ap,msg);
+    parse_printf_args(fmt, &ap, msg);
 
     va_end(ap);
 
-    fprintf(stderr,"\nWARNING: %s\n\n",msg);
+    fprintf(stderr, "\nWARNING: %s\n\n", msg);
 }

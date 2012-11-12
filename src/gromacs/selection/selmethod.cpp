@@ -114,9 +114,9 @@ typedef struct {
      * If NULL, use the actual name of the method.
      * This field is used for defining synonyms.
      */
-    const char            *name;
+    const char *name;
     /** Method data structure to register. */
-    gmx_ana_selmethod_t   *method;
+    gmx_ana_selmethod_t *method;
 } t_register_method;
 
 /** Array of selection methods defined in the library. */
@@ -223,8 +223,8 @@ static bool
 check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
              const gmx::SelectionParserSymbolTable &symtab)
 {
-    bool              bOk = true;
-    int               i, j;
+    bool bOk = true;
+    int  i, j;
 
     if (nparams > 0 && !param)
     {
@@ -386,13 +386,13 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             bOk = false;
         }
     } /* End of parameter loop */
-    /* Check parameters of existing methods */
+      /* Check parameters of existing methods */
     gmx::SelectionParserSymbolIterator symbol
         = symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab.endIterator())
     {
         gmx_ana_selmethod_t *method = symbol->methodValue();
-        gmx_ana_selparam_t  *param =
+        gmx_ana_selparam_t  *param  =
             gmx_ana_selmethod_find_param(name, method);
         if (param)
         {
@@ -420,9 +420,9 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
 static bool
 check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
-    bool         bOk = true;
-    bool         bNeedInit;
-    int          i;
+    bool bOk = true;
+    bool bNeedInit;
+    int  i;
 
     /* Make some checks on init_data and free */
     if (method->nparams > 0 && !method->init_data)
@@ -466,8 +466,8 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     bNeedInit = false;
     for (i = 0; i < method->nparams; ++i)
     {
-        if (method->param[i].val.type != POS_VALUE
-            && (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
+        if (method->param[i].val.type != POS_VALUE &&
+            (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
             bNeedInit = true;
         }
@@ -498,7 +498,7 @@ static bool
 check_method(FILE *fp, gmx_ana_selmethod_t *method,
              const gmx::SelectionParserSymbolTable &symtab)
 {
-    bool         bOk = true;
+    bool bOk = true;
 
     /* Check the type */
     if (method->type == NO_VALUE)
@@ -526,8 +526,8 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method,
     }
     else
     {
-        if ((method->flags & SMETH_SINGLEVAL)
-            && (method->flags & SMETH_VARNUMVAL))
+        if ((method->flags & SMETH_SINGLEVAL) &&
+            (method->flags & SMETH_VARNUMVAL))
         {
             report_error(fp, method->name, "error: SMETH_SINGLEVAL and SMETH_VARNUMVAL both set");
             bOk = false;
@@ -569,7 +569,7 @@ static bool
 check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
                const gmx::SelectionParserSymbolTable &symtab)
 {
-    bool         bOk = true;
+    bool bOk = true;
 
     /* Check the type */
     if (method->type != NO_VALUE && method->type != POS_VALUE)
@@ -585,7 +585,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
     }
     /* Check the parameters */
     /* The first parameter is skipped */
-    if (!check_params(fp, method->name, method->nparams-1, method->param+1, symtab))
+    if (!check_params(fp, method->name, method->nparams - 1, method->param + 1, symtab))
     {
         bOk = false;
     }
@@ -670,8 +670,8 @@ int
 gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
 {
     size_t i;
-    int  rc;
-    bool bOk;
+    int    rc;
+    bool   bOk;
 
     bOk = true;
     for (i = 0; i < asize(smtable_def); ++i)

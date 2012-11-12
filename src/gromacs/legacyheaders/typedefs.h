@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -75,7 +75,7 @@
 extern "C" {
 #endif
 
-/* 
+/*
  * Memory (re)allocation can be VERY slow, especially with some
  * MPI libraries that replace the standard malloc and realloc calls.
  * To avoid slow memory allocation we use over_alloc to set the memory
@@ -87,24 +87,24 @@ extern "C" {
 #define OVER_ALLOC_FAC 1.19
 
 void set_over_alloc_dd(gmx_bool set);
-  /* Turns over allocation for variable size atoms/cg/top arrays on or off,
-   * default is off.
-   */
-  
+/* Turns over allocation for variable size atoms/cg/top arrays on or off,
+ * default is off.
+ */
+
 int over_alloc_dd(int n);
-  /* Returns n when domain decomposition over allocation is off.
-   * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
-   * This is to avoid frequent reallocation
-   * during domain decomposition in mdrun.
-   */
+/* Returns n when domain decomposition over allocation is off.
+ * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
+ * This is to avoid frequent reallocation
+ * during domain decomposition in mdrun.
+ */
 
 /* Over allocation for small data types: int, real etc. */
-#define over_alloc_small(n) (OVER_ALLOC_FAC*(n) + 8000)
+#define over_alloc_small(n) (OVER_ALLOC_FAC * (n) + 8000)
 
 /* Over allocation for large data types: complex structs */
-#define over_alloc_large(n) (OVER_ALLOC_FAC*(n) + 1000)
+#define over_alloc_large(n) (OVER_ALLOC_FAC * (n) + 1000)
 
-int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
+int gmx_large_int_to_int(gmx_large_int_t step, const char *warn);
 /* Convert a gmx_large_int_t value to int.
  * If warn!=NULL a warning message will be written
  * to stderr when step does not fit in an int,
@@ -114,7 +114,7 @@ int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
 
 #define STEPSTRSIZE 22
 
-char *gmx_step_str(gmx_large_int_t i,char *buf);
+char *gmx_step_str(gmx_large_int_t i, char *buf);
 /* Prints a gmx_large_int_t value in buf and returns the pointer to buf.
  * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
  * When multiple gmx_large_int_t values are printed in the same printf call,
@@ -122,7 +122,7 @@ char *gmx_step_str(gmx_large_int_t i,char *buf);
  */
 
 /* Functions to initiate and delete structures *
- * These functions are defined in gmxlib/typedefs.c 
+ * These functions are defined in gmxlib/typedefs.c
  */
 void init_block(t_block *block);
 void init_blocka(t_blocka *block);
@@ -130,32 +130,32 @@ void init_atom (t_atoms *at);
 void init_mtop(gmx_mtop_t *mtop);
 void init_top (t_topology *top);
 void init_inputrec(t_inputrec *ir);
-void init_energyhistory(energyhistory_t * enerhist);
-void done_energyhistory(energyhistory_t * enerhist);
-void init_gtc_state(t_state *state,int ngtc, int nnhpres, int nhchainlength);
-void init_state(t_state *state,int natoms,int ngtc, int nnhpres, int nhchainlength, int nlambda);
+void init_energyhistory(energyhistory_t *enerhist);
+void done_energyhistory(energyhistory_t *enerhist);
+void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
 void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
-void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
+void copy_df_history(df_history_t *df_dest, df_history_t *df_source);
 
-void copy_blocka(const t_blocka *src,t_blocka *dest);
+void copy_blocka(const t_blocka *src, t_blocka *dest);
 
 void done_block(t_block *block);
 void done_blocka(t_blocka *block);
 void done_atom (t_atoms *at);
 void done_moltype(gmx_moltype_t *molt);
 void done_molblock(gmx_molblock_t *molb);
-void done_mtop(gmx_mtop_t *mtop,gmx_bool bDoneSymtab);
+void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
 void done_top(t_topology *top);
 void done_inputrec(t_inputrec *ir);
 void done_state(t_state *state);
 
-void set_box_rel(t_inputrec *ir,t_state *state);
+void set_box_rel(t_inputrec *ir, t_state *state);
 /* Set state->box_rel used in mdrun to preserve the box shape */
 
-void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b);
+void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
 /* Preserve the box shape, b can be box or boxv */
 
-void stupid_fill_block(t_block *grp, int natom,gmx_bool bOneIndexGroup);
+void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index
  * (0, 1, 2, .. natom-1)
  * If bOneIndexGroup, then all atoms are  lumped in one index group,
@@ -170,31 +170,31 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
 
 void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
- * set pdbinfo to NULL or allocate memory for it */  
+ * set pdbinfo to NULL or allocate memory for it */
 
 t_atoms *copy_t_atoms(t_atoms *src);
 /* copy an atoms struct from src to a new one */
-  
-void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra);
+
+void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);
 /* allocate extra space for more atoms and or residues */
- 
-void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
-				const char *resname,int resnr,unsigned char ic,
-				int chainnum, char chainid);
+
+void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
+                         const char *resname, int resnr, unsigned char ic,
+                         int chainnum, char chainid);
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
  */
 
-void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames);
+void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames);
 /* Free all the arrays and set the nr and nres to 0.
  * bFreeNames tells if to free the atom and residue name strings,
  * don't free them if they still need to be used in e.g. the topology struct.
  */
 
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
-/* generate a t_atoms struct for the system from gmx_mtop_t */ 
+/* generate a t_atoms struct for the system from gmx_mtop_t */
 
-real max_cutoff(real cutoff1,real cutoff2);
+real max_cutoff(real cutoff1, real cutoff2);
 /* Returns the maximum of the cut-off's, taking into account that 0=inf. */
 
 #ifdef __cplusplus
@@ -202,4 +202,4 @@ real max_cutoff(real cutoff1,real cutoff2);
 #endif
 
 
-#endif	/* _typedefs_h */
+#endif  /* _typedefs_h */
