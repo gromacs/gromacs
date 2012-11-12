@@ -106,10 +106,14 @@ endif()
 ########################################################################
 # User input options - enable C++ - before any CXX flags are changed   #
 ########################################################################
-option(GMX_GPU  "Enable GPU acceleration" ON)
+
+# decide on GPU settings based on user-settings and GPU/CUDA detection
+include(gmxManageGPU)
+
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 option(GMX_FORCE_CXX "Enable C++ compilation even if not necessary" OFF)
 mark_as_advanced(GMX_FORCE_CXX)
+
 if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
     enable_language(CXX)
 endif()
@@ -527,64 +531,10 @@ if(GMX_OPENMM)
     find_package(OpenMM) 
 endif(GMX_OPENMM)
 
-
 if(GMX_GPU)
-    if(GMX_DOUBLE)
-        message(WARNING "GPU acceleration is not available in double precision, disabled!")
-        set(GMX_GPU OFF CACHE BOOL "Enable GPU acceleration" FORCE)
-    endif()
+    # now that we have detected the dependencies, do the second configure pass
+    gmx_gpu_setup()
 endif(GMX_GPU)
-
-if(GMX_GPU)
-
-    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
-    if(MSVC)
-        find_package(CUDA 4.1)
-    else()
-        find_package(CUDA 3.2)
-    endif()
-
-    if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
-        message(FATAL_ERROR "
-    mdrun supports native GPU acceleration on NVIDIA hardware with compute
-    capability >=2.0. This requires the NVIDIA CUDA library, which was not
-    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
-
-    CPU or GPU acceleration can be selected at runtime, but if you are
-    sure you can not make use of GPU acceleration, disable it by setting
-    the CMake variable GMX_GPU=OFF.")
-    endif()
-
-    if(NOT GMX_OPENMP)
-        message(WARNING "
-    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreding.
-    Without OpenMP only a single CPU core per GPU can be used which is suboptimal.
-    Note that with MPI multiple processes can be forced to use a single GPU, but this
-    typically inefficient.")
-    endif()
-
-    include(gmxManageNvccConfig)
-
-    # Check whether we can use atomic operations needed for polling wait for GPU
-    # (to avoid the cudaStreamSynchronize + ECC bug).
-    # With thread-MPI testing atomics has already been carried out, but without
-    # thread-MPI we need to invoke the atomics test independently.
-    if (NOT GMX_THREAD_MPI)
-        set(TEST_TMPI_ATOMICS_ONLY ON CACHE INTERNAL
-            "Test only the atomic operations of thread-MPI.")
-        include(ThreadMPI)
-    endif()
-
-    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
-    # but it's too cumbersome to check the ld version and the flag should not hurt
-    if(CMAKE_COMPILER_IS_GNUCC)
-        set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
-    endif()
-endif()
-# Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
-# We need to mark these advanced outside the conditional, otherwise, if the user
-# tuns GMX_GPU=OFF after a failed cmake pass, these variables will be left behind.
-mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -1158,6 +1108,14 @@ add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(scripts)
 
+# issue GPU acceleration/CUDA-related warning or error if GMX_GPU was set
+# Auto and NVIDIA GPUs were detected.
+if (CUDA_NOTFOUND_AUTO)
+    message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
+    unset(CUDA_NOTFOUND_AUTO)
+    unset(CUDA_NOTFOUND_MESSAGE)
+endif()
+
 #######################
 ## uninstall target
 #######################
@@ -1170,7 +1128,6 @@ ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_COMMAND}" -P 
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
-
 
 ########################################################################
 # Tests                                                                #
