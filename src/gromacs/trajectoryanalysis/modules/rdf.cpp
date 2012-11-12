@@ -67,12 +67,8 @@ const char Rdf::shortDescription[] =
 
 Rdf::Rdf()
     : TrajectoryAnalysisModule(name, shortDescription),
-        // avem_(new AnalysisDataAverageModule()),
         histm_(new AnalysisDataSimpleHistogramModule(histogramFromRange(0.0, 5.0).binCount(10)))
 {
-    data_.setColumnCount(1);
-    data_.setMultipoint(true);
-    registerAnalysisDataset(&data_, "dx_data");
 }
 
 
@@ -92,11 +88,11 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "\t(N/V)*RDF(r)*4pi*r^2*dr\n",
         "is the average number of output positions found in a",
         "spherical shell of width dr at a distance r from a reference",
-        "position in the system, where N/V is the average output",
+        "position in the system, where N/V is the overall output",
         "position density in the system.\n",
         "When the output and reference position sets are equal, it is",
-        "sufficient to specify only the former. Self-distances are",
-        "removed from histogram data."
+        "sufficient to specify only the former.\n",
+        "ONLY NON-DYNAMIC SELECTIONS SUPPORTED!"
         #ifdef GMX_LIB_MPI
         ,"\n Interactive selection is disabled for MPI builds."
         #endif
@@ -148,15 +144,26 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
         rdfmode_ = INTRA;
     }
 
+    // check for necessary options for rdf mode.
+    if ((rdfmode_==(REFSEL|SURFREF)) && !bRefSelectionSet_)
+    {
+        GMX_THROW(InvalidInputError("No reference selection given."));
+    }
+
+    // assert non-dynamic selections
+    if (sel_[0].isDynamic())
+    {
+        GMX_THROW(InvalidInputError("Output selection: Dynamic selections not supported."));
+    }
+    if (bRefSelectionSet_ && refsel_[0].isDynamic())
+    {
+        GMX_THROW(InvalidInputError("Reference selection: Dynamic selections not supported."));
+    }
+
     // check for empty selections
     if (sel_[0].posCount() == 0)
     {
         GMX_THROW(InvalidInputError("Selection does not define any positions."));
-    }
-
-    if ((rdfmode_==(REFSEL|SURFREF)) && !bRefSelectionSet_)
-    {
-        GMX_THROW(InvalidInputError("No reference selection given."));
     }
 
     if (bRefSelectionSet_ && refsel_[0].posCount() == 0)
@@ -164,6 +171,33 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
         GMX_THROW(InvalidInputError("Reference selection does not define any positions."));
     }
 
+    // figure out number of columns to use
+    switch (rdfmode_)
+    {
+        case INTRA:
+        {
+            const int   pos = sel_[0].posCount();
+            const int   dsamples = (pos-1)*pos/2;
+            data_.setColumnCount(dsamples);
+        } break;
+
+        case REFSEL:
+        {
+            const int   pos = sel_[0].posCount();
+            const int   rpos = refsel_[0].posCount();
+            const int   dsamples = pos*rpos;
+            data_.setColumnCount(dsamples);
+        } break;
+
+        case SURFREF:
+        {
+            const int   pos = sel_[0].posCount();
+            const int   dsamples = pos;
+            data_.setColumnCount(dsamples);
+        } break;
+    }
+
+    registerAnalysisDataset(&data_, "dx_data");
     data_.addModule(histm_);
 
 #ifdef GMX_LIB_MPI
@@ -203,7 +237,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const int           pos = sel.posCount();
 
     rvec                dx;
-    int                 dsamples;
+    int                 p_index;
 
     switch (rdfmode_)
     {
@@ -211,7 +245,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             // dsamples = (pos-1)*pos/2;
             dh.startFrame(frnr, fr.time);
-
+            p_index = 0;
             for (int i = 0; i < pos-1; i++)
             {
                 const SelectionPosition &pi = sel.position(i);
@@ -226,22 +260,20 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     {
                         rvec_sub(pi.x(), pj.x(), dx);
                     }
-                    dh.setPoint(0, norm(dx));
-                    dh.finishPointSet();
+                    dh.setPoint(p_index, norm(dx));
+                    p_index++;
                 }
             }
             dh.finishFrame();
-        } break;
+        } break;        // end case INTRA
 
         case REFSEL:
         {
             const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
             const int           rpos = refsel.posCount();
-            real                s;
 
-            dsamples = pos*rpos;
             dh.startFrame(frnr, fr.time);
-
+            p_index = 0;
             for (int i = 0; i < rpos; i++)
             {
                 const SelectionPosition &pi = refsel.position(i);
@@ -257,34 +289,26 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                             rvec_sub(pi.x(), pj.x(), dx);
                         }
 
-                        s = norm(dx);
-                        if (s > GMX_REAL_EPS)   // remove selection aliasing
-                        {
-                            dh.setPoint(0, s);
-                            dh.finishPointSet();
-                        }
-                        else
-                        {
-                            dsamples--;
-                        }
+                        dh.setPoint(p_index, norm(dx));
+                        p_index++;
                 }
             }
             dh.finishFrame();
-        } break;
+        } break;        // end case REFSEL
 
         case SURFREF:
         {
             const Selection    &refsel = pdata->parallelSelection(refsel_[0]);
             const int           rpos = refsel.posCount();
-            real                s, min_s;
+            real                min_dx;
 
-            dsamples = pos;
             dh.startFrame(frnr, fr.time);
+            p_index = 0;
 
             for (int j = 0; j < pos; j++)
             {
                 const SelectionPosition &pj = sel.position(j);
-                min_s = GMX_REAL_MAX;
+                min_dx = GMX_REAL_MAX;
                 for (int i = 0; i < rpos; i++)
                 {
                         const SelectionPosition &pi = refsel.position(i);
@@ -297,25 +321,20 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                             rvec_sub(pi.x(), pj.x(), dx);
                         }
 
-                        s = norm(dx);
-                        if (s < min_s && s > GMX_REAL_EPS)  // remove selection aliasing
+                        const real  s = norm(dx);
+                        if (s < min_dx)
                         {
-                            min_s = s;
+                            min_dx = s;
                         }
                 }
-                if (min_s < GMX_REAL_MAX)
-                {
-                    dh.setPoint(0, min_s);
-                    dh.finishPointSet();
-                }
-                else
-                {
-                    dsamples--;
-                }
+
+                dh.setPoint(p_index, min_dx);
+                p_index++;
             }
             dh.finishFrame();
-        } break;
-    }
+        } break;        // end case SURFREF
+
+    }   // end switch (rdfmode_)
 }
 
 

@@ -89,7 +89,6 @@ class Rdf : public TrajectoryAnalysisModule
         bool                                     bRefSelectionSet_;
         bool                                     surfref_;
         AnalysisData                             data_;
-        // AnalysisDataAverageModulePointer         avem_;
         AnalysisDataSimpleHistogramModulePointer histm_;
 
         // Copy and assign disallowed by base.
