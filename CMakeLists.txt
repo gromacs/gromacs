@@ -207,6 +207,10 @@ endif()
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
 mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
+# detect GPUs in the build host machine
+include(gmxDetectGpu)
+gmx_detect_gpu()
+
 ######################################################################
 # compiler tests
 # these need ot be done early (before further tests).
