@@ -81,28 +81,28 @@ class OptionsAssigner::Impl
         AbstractOptionStorage *findOption(const char *name);
 
         //! Options object to assign to.
-        Options                &options_;
+        Options &options_;
         //! Recognize boolean option "name" also as "noname".
-        bool                    bAcceptBooleanNoPrefix_;
+        bool     bAcceptBooleanNoPrefix_;
         //! Look for options in all sections, not just the current one.
-        bool                    bNoStrictSectioning_;
+        bool     bNoStrictSectioning_;
         /*! \brief
          * List of (sub)sections being assigned to.
          *
          * The first element always points to \a options_.
          */
-        std::vector<Options *>  sectionStack_;
+        std::vector<Options *> sectionStack_;
         //! Current option being assigned to, or NULL if none.
-        AbstractOptionStorage  *currentOption_;
+        AbstractOptionStorage *currentOption_;
         /*! \brief
          * Number of values assigned so far to the current option.
          *
          * Counts the number of attempted assignments, whether they have been
          * successful or not.
          */
-        int                     currentValueCount_;
+        int  currentValueCount_;
         //! If true, a "no" prefix was given for the current boolean option.
-        bool                    reverseBoolean_;
+        bool reverseBoolean_;
 };
 
 OptionsAssigner::Impl::Impl(Options *options)
@@ -118,17 +118,17 @@ OptionsAssigner::Impl::findOption(const char *name)
 {
     GMX_RELEASE_ASSERT(currentOption_ == NULL,
                        "Cannot search for another option while processing one");
-    AbstractOptionStorage *option = NULL;
-    Options *section = NULL;
-    Options *root = &currentSection();
-    Options *oldRoot = NULL;
-    int      upcount = 0;
-    std::deque<Options *> searchList;
+    AbstractOptionStorage *option  = NULL;
+    Options               *section = NULL;
+    Options               *root    = &currentSection();
+    Options               *oldRoot = NULL;
+    int                    upcount = 0;
+    std::deque<Options *>  searchList;
     searchList.push_back(root);
     while (option == NULL && !searchList.empty())
     {
         section = searchList.front();
-        option = section->impl_->findOption(name);
+        option  = section->impl_->findOption(name);
         if (option == NULL && bAcceptBooleanNoPrefix_)
         {
             if (name[0] == 'n' && name[1] == 'o')
@@ -233,7 +233,7 @@ void OptionsAssigner::startOption(const char *name)
         GMX_THROW(InvalidInputError("Unknown option"));
     }
     option->startSet();
-    impl_->currentOption_ = option;
+    impl_->currentOption_     = option;
     impl_->currentValueCount_ = 0;
 }
 
@@ -249,7 +249,7 @@ void OptionsAssigner::finishOption()
 {
     AbstractOptionStorage *option = impl_->currentOption_;
     GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
-    bool bBoolReverseValue = false;
+    bool                   bBoolReverseValue = false;
     if (option->isBoolean())
     {
         if (impl_->currentValueCount_ == 0)
@@ -263,7 +263,7 @@ void OptionsAssigner::finishOption()
             bBoolReverseValue = true;
         }
     }
-    impl_->currentOption_ = NULL;
+    impl_->currentOption_  = NULL;
     impl_->reverseBoolean_ = false;
     option->finishSet();
     if (bBoolReverseValue)

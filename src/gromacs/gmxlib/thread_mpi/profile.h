@@ -1,42 +1,42 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+   This source code file is part of thread_mpi.
+   Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-Copyright (c) 2009, Sander Pronk, Erik Lindahl.
-All rights reserved.
+   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1) Redistributions of source code must retain the above copyright
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+   1) Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-2) Redistributions in binary form must reproduce the above copyright
+   2) Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-3) Neither the name of the copyright holders nor the
+   3) Neither the name of the copyright holders nor the
    names of its contributors may be used to endorse or promote products
    derived from this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
+   EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-If you want to redistribute modifications, please consider that
-scientific software is very special. Version control is crucial -
-bugs must be traceable. We will be happy to consider code for
-inclusion in the official distribution, but derived work should not
-be called official thread_mpi. Details are found in the README & COPYING
-files.
-*/
+   If you want to redistribute modifications, please consider that
+   scientific software is very special. Version control is crucial -
+   bugs must be traceable. We will be happy to consider code for
+   inclusion in the official distribution, but derived work should not
+   be called official thread_mpi. Details are found in the README & COPYING
+   files.
+ */
 
 
-/* the profiling functions. Many of these are macros, so they're inlined 
+/* the profiling functions. Many of these are macros, so they're inlined
    forcibly. Profiling is turned on by defining TMPI_PROFILE, but the most
    useful parts depend on the cycle counter, which currently only works for
    x86, x86_64 and ia64. */
@@ -46,7 +46,7 @@ files.
 
 struct tmpi_thread;
 
-enum tmpi_functions 
+enum tmpi_functions
 {
     TMPIFN_Send=0, /* first the point-to-point comm functions */
     TMPIFN_Recv,
@@ -88,21 +88,21 @@ enum tmpi_wait_functions
     TMPIWAIT_Barrier, /* collective recv wait */
     TMPIWAIT_Reduce, /* collective (all)reduce wait */
 
-    TMPIWAIT_N 
+    TMPIWAIT_N
 };
 
 
 /* thread-specific profiling data structure */
-struct tmpi_profile 
+struct tmpi_profile
 {
     unsigned long int mpifn_calls[TMPIFN_Nfunctions]; /* array of counters */
 
     unsigned long int buffered_p2p_xfers; /* number of buffered p2p transfers */
     unsigned long int total_p2p_xfers; /* total number of p2p transfers */
 
-    unsigned long int buffered_coll_xfers; /* number of buffered collective 
+    unsigned long int buffered_coll_xfers; /* number of buffered collective
                                               transfers */
-    unsigned long int total_coll_xfers; /* total number of collective 
+    unsigned long int total_coll_xfers; /* total number of collective
                                            transfers */
 
 #ifdef TMPI_CYCLE_COUNT
@@ -110,14 +110,14 @@ struct tmpi_profile
     tmpi_cycles_t mpifn_cycles[TMPIFN_Nfunctions]; /* array of cycle counters */
     tmpi_cycles_t wait_cycles[TMPIWAIT_N]; /* the wait cycles */
 
-    tmpi_cycles_t global_start,global_stop; /* timing start and stop times */
-    tmpi_cycles_t mpifn_start; /* individual timing start times for profiling 
-                                  function call times.  This can be here 
+    tmpi_cycles_t global_start, global_stop; /* timing start and stop times */
+    tmpi_cycles_t mpifn_start; /* individual timing start times for profiling
+                                  function call times.  This can be here
                                   because tmpi_profile is thread-specific. */
     enum tmpi_functions fn; /* the function being cycle-counted */
 
 
-    tmpi_cycles_t wait_start; /* individual timing start times for profiling 
+    tmpi_cycles_t wait_start; /* individual timing start times for profiling
                                  wait times. */
 
     double totals;            /* totals counter for reporting end results */
@@ -152,16 +152,16 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
 /*void tMPI_Profile_count_stop(struct tmpi_thread *th, enum tmpi_functions fn);*/
 #ifdef TMPI_CYCLE_COUNT
 #define tMPI_Profile_count_stop(th, fn) \
-{ \
-    tmpi_cycles_t stop=tmpi_cycles_read(); \
-    th->profile.mpifn_cycles[fn] += (stop - th->profile.mpifn_start); \
-    (th->profile.mpifn_calls[fn])++; \
-}
+    { \
+        tmpi_cycles_t stop = tmpi_cycles_read(); \
+        th->profile.mpifn_cycles[fn] += (stop - th->profile.mpifn_start); \
+        (th->profile.mpifn_calls[fn])++; \
+    }
 #else
 #define tMPI_Profile_count_stop(th, fn) \
-{ \
-    (th->profile.mpifn_calls[fn])++; \
-}
+    { \
+        (th->profile.mpifn_calls[fn])++; \
+    }
 #endif
 
 
@@ -175,18 +175,18 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
 /* start waiting cycle count */
 /*void tMPI_Profile_wait_start(struct tmpi_thread *th);*/
 #define tMPI_Profile_wait_start(th) \
-{\
-    th->profile.wait_start=tmpi_cycles_read(); \
-}
+    { \
+        th->profile.wait_start = tmpi_cycles_read(); \
+    }
 
 /* stop waiting cycle count */
-/*void tMPI_Profile_wait_stop(struct tmpi_thread *th, 
+/*void tMPI_Profile_wait_stop(struct tmpi_thread *th,
                             enum tmpi_wait_functions fn);*/
-#define tMPI_Profile_wait_stop(th, fn)\
-{ \
-    tmpi_cycles_t wait_stop=tmpi_cycles_read();\
-    th->profile.wait_cycles[fn] += (wait_stop - th->profile.wait_start);\
-}
+#define tMPI_Profile_wait_stop(th, fn) \
+    { \
+        tmpi_cycles_t wait_stop = tmpi_cycles_read(); \
+        th->profile.wait_cycles[fn] += (wait_stop - th->profile.wait_start); \
+    }
 #else
 #define tMPI_Profile_wait_start(th) {}
 #define tMPI_Profile_wait_stop(th, fn) {}
@@ -195,28 +195,28 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
 
 /* count the number of transfers at the receiving end. */
 /*void tMPI_Profile_count_buffered_p2p_xfer(struct tmpi_thread *th);
-void tMPI_Profile_count_p2p_xfer(struct tmpi_thread *th);
-void tMPI_Profile_count_buffered_coll_xfer(struct tmpi_thread *th);
-void tMPI_Profile_count_coll_xfer(struct tmpi_thread *th);*/
+   void tMPI_Profile_count_p2p_xfer(struct tmpi_thread *th);
+   void tMPI_Profile_count_buffered_coll_xfer(struct tmpi_thread *th);
+   void tMPI_Profile_count_coll_xfer(struct tmpi_thread *th);*/
 #define tMPI_Profile_count_buffered_p2p_xfer(th) \
-{ \
-    (th->profile.buffered_p2p_xfers)++; \
-} 
+    { \
+        (th->profile.buffered_p2p_xfers)++; \
+    }
 
 #define tMPI_Profile_count_p2p_xfer(th) \
-{ \
-    (th->profile.total_p2p_xfers)++; \
-}
+    { \
+        (th->profile.total_p2p_xfers)++; \
+    }
 
 #define tMPI_Profile_count_buffered_coll_xfer(th) \
-{ \
-    (th->profile.buffered_coll_xfers)++; \
-}
+    { \
+        (th->profile.buffered_coll_xfers)++; \
+    }
 
 #define tMPI_Profile_count_coll_xfer(th) \
-{ \
-    (th->profile.total_coll_xfers)++; \
-}
+    { \
+        (th->profile.total_coll_xfers)++; \
+    }
 
 
 

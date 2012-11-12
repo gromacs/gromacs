@@ -84,7 +84,7 @@ class TrajectoryAnalysisSettings
              * If this flag is not specified, the topology file is loaded only
              * if it is provided on the command line explicitly.
              */
-            efRequireTop     = 1<<0,
+            efRequireTop = 1<<0,
             /*! \brief
              * Requests topology coordinates.
              *
@@ -93,7 +93,7 @@ class TrajectoryAnalysisSettings
              *
              * \see TopologyInformation
              */
-            efUseTopX        = 1<<1,
+            efUseTopX = 1<<1,
             /*! \brief
              * Disallows the user from changing PBC handling.
              *
@@ -103,13 +103,13 @@ class TrajectoryAnalysisSettings
              *
              * \see setPBC()
              */
-            efNoUserPBC      = 1<<4,
+            efNoUserPBC = 1<<4,
             /*! \brief
              * Disallows the user from changing PBC removal.
              *
              * \see setRmPBC()
              */
-            efNoUserRmPBC    = 1<<5,
+            efNoUserRmPBC = 1<<5,
         };
 
         //! Initializes default settings.
@@ -268,15 +268,15 @@ class TopologyInformation
         ~TopologyInformation();
 
         //! The topology structure, or NULL if no topology loaded.
-        t_topology          *top_;
+        t_topology *top_;
         //! true if full tpx file was loaded, false otherwise.
-        bool                 bTop_;
+        bool        bTop_;
         //! Coordinates from the topology (can be NULL).
-        rvec                *xtop_;
+        rvec       *xtop_;
         //! The box loaded from the topology file.
-        matrix               boxtop_;
+        matrix      boxtop_;
         //! The ePBC field loaded from the topology file.
-        int                  ePBC_;
+        int         ePBC_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TopologyInformation);
 

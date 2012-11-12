@@ -58,7 +58,7 @@ namespace gmx
 namespace analysismodules
 {
 
-const char Angle::name[] = "angle";
+const char Angle::name[]             = "angle";
 const char Angle::shortDescription[] =
     "Calculate angles";
 
@@ -124,15 +124,15 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "[TT]-oall[tt] writes all the individual angles."
         /* TODO: Consider if the dump option is necessary and how to best
          * implement it.
-        "[TT]-od[tt] can be used to dump all the individual angles,",
-        "each on a separate line. This format is better suited for",
-        "further processing, e.g., if angles from multiple runs are needed."
-        */
+           "[TT]-od[tt] can be used to dump all the individual angles,",
+           "each on a separate line. This format is better suited for",
+           "further processing, e.g., if angles from multiple runs are needed."
+         */
     };
     static const char *const cGroup1TypeEnum[] =
-        { "angle", "dihedral", "vector", "plane", NULL };
+    { "angle", "dihedral", "vector", "plane", NULL };
     static const char *const cGroup2TypeEnum[] =
-        { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
+    { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
 
     options->setDescription(concatenateStrings(desc));
 
@@ -145,11 +145,11 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     // TODO: Add histogram output.
 
     options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
-        .defaultEnumIndex(0).store(&g1type_)
-        .description("Type of analysis/first vector group"));
+                           .defaultEnumIndex(0).store(&g1type_)
+                           .description("Type of analysis/first vector group"));
     options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
-        .defaultEnumIndex(0).store(&g2type_)
-        .description("Type of second vector group"));
+                           .defaultEnumIndex(0).store(&g2type_)
+                           .description("Type of second vector group"));
 
     // TODO: Allow multiple angles to be computed in one invocation.
     // Most of the code already supports it, but requires a solution for
@@ -158,11 +158,11 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     // Again, most of the code already supports it, but it needs to be
     // considered how should -oall work, and additional checks should be added.
     sel1info_ = options->addOption(SelectionOption("group1")
-        .required().onlyStatic().storeVector(&sel1_)
-        .description("First analysis/vector selection"));
+                                       .required().onlyStatic().storeVector(&sel1_)
+                                       .description("First analysis/vector selection"));
     sel2info_ = options->addOption(SelectionOption("group2")
-        .onlyStatic().storeVector(&sel2_)
-        .description("Second analysis/vector selection"));
+                                       .onlyStatic().storeVector(&sel2_)
+                                       .description("Second analysis/vector selection"));
 }
 
 
@@ -190,23 +190,23 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
     // Set up the number of positions per angle.
     switch (g1type_[0])
     {
-        case 'a': natoms1_ = 3; break;
-        case 'd': natoms1_ = 4; break;
-        case 'v': natoms1_ = 2; break;
-        case 'p': natoms1_ = 3; break;
-        default:
-            GMX_THROW(InternalError("invalid -g1 value"));
+    case 'a': natoms1_ = 3; break;
+    case 'd': natoms1_ = 4; break;
+    case 'v': natoms1_ = 2; break;
+    case 'p': natoms1_ = 3; break;
+    default:
+        GMX_THROW(InternalError("invalid -g1 value"));
     }
     switch (g2type_[0])
     {
-        case 'n': natoms2_ = 0; break;
-        case 'v': natoms2_ = 2; break;
-        case 'p': natoms2_ = 3; break;
-        case 't': natoms2_ = 0; break;
-        case 'z': natoms2_ = 0; break;
-        case 's': natoms2_ = 1; break;
-        default:
-            GMX_THROW(InternalError("invalid -g2 value"));
+    case 'n': natoms2_ = 0; break;
+    case 'v': natoms2_ = 2; break;
+    case 'p': natoms2_ = 3; break;
+    case 't': natoms2_ = 0; break;
+    case 'z': natoms2_ = 0; break;
+    case 's': natoms2_ = 1; break;
+    default:
+        GMX_THROW(InternalError("invalid -g2 value"));
     }
     if (natoms2_ == 0 && options->isSet("group2"))
     {
@@ -222,7 +222,7 @@ Angle::checkSelections(const SelectionList &sel1,
     if (natoms2_ > 0 && sel1.size() != sel2.size())
     {
         GMX_THROW(InconsistentInputError(
-                    "-group1 and -group2 should specify the same number of selections"));
+                      "-group1 and -group2 should specify the same number of selections"));
     }
 
     for (size_t g = 0; g < sel1.size(); ++g)
@@ -232,24 +232,24 @@ Angle::checkSelections(const SelectionList &sel1,
         if (natoms1_ > 1 && na1 % natoms1_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                "Number of positions in selection %d in the first group not divisible by %d",
-                static_cast<int>(g + 1), natoms1_)));
+                                                 "Number of positions in selection %d in the first group not divisible by %d",
+                                                 static_cast<int>(g + 1), natoms1_)));
         }
         if (natoms2_ > 1 && na2 % natoms2_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                "Number of positions in selection %d in the second group not divisible by %d",
-                static_cast<int>(g + 1), natoms2_)));
+                                                 "Number of positions in selection %d in the second group not divisible by %d",
+                                                 static_cast<int>(g + 1), natoms2_)));
         }
         if (natoms1_ > 0 && natoms2_ > 1 && na1 / natoms1_ != na2 / natoms2_)
         {
             GMX_THROW(InconsistentInputError(
-                      "Number of vectors defined by the two groups are not the same"));
+                          "Number of vectors defined by the two groups are not the same"));
         }
         if (g2type_[0] == 's' && sel2[g].posCount() != 1)
         {
             GMX_THROW(InconsistentInputError(
-                      "The second group should contain a single position with -g2 sphnorm"));
+                          "The second group should contain a single position with -g2 sphnorm"));
         }
     }
 }
@@ -257,7 +257,7 @@ Angle::checkSelections(const SelectionList &sel1,
 
 void
 Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                    const TopologyInformation &top)
+                    const TopologyInformation        &top)
 {
     checkSelections(sel1_, sel2_);
 
@@ -315,38 +315,38 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 {
     switch (natoms)
     {
-        case 2:
-            if (pbc)
-            {
-                pbc_dx(pbc, x[1], x[0], xout);
-            }
-            else
-            {
-                rvec_sub(x[1], x[0], xout);
-            }
-            svmul(0.5, xout, cout);
-            rvec_add(x[0], cout, cout);
-            break;
-        case 3: {
-            rvec v1, v2;
-            if (pbc)
-            {
-                pbc_dx(pbc, x[1], x[0], v1);
-                pbc_dx(pbc, x[2], x[0], v2);
-            }
-            else
-            {
-                rvec_sub(x[1], x[0], v1);
-                rvec_sub(x[2], x[0], v2);
-            }
-            cprod(v1, v2, xout);
-            rvec_add(x[0], x[1], cout);
-            rvec_add(cout, x[2], cout);
-            svmul(1.0/3.0, cout, cout);
-            break;
+    case 2:
+        if (pbc)
+        {
+            pbc_dx(pbc, x[1], x[0], xout);
         }
-        default:
-            GMX_RELEASE_ASSERT(false, "Incorrectly initialized number of atoms");
+        else
+        {
+            rvec_sub(x[1], x[0], xout);
+        }
+        svmul(0.5, xout, cout);
+        rvec_add(x[0], cout, cout);
+        break;
+    case 3: {
+        rvec v1, v2;
+        if (pbc)
+        {
+            pbc_dx(pbc, x[1], x[0], v1);
+            pbc_dx(pbc, x[2], x[0], v2);
+        }
+        else
+        {
+            rvec_sub(x[1], x[0], v1);
+            rvec_sub(x[2], x[0], v2);
+        }
+        cprod(v1, v2, xout);
+        rvec_add(x[0], x[1], cout);
+        rvec_add(cout, x[2], cout);
+        svmul(1.0/3.0, cout, cout);
+        break;
+    }
+    default:
+        GMX_RELEASE_ASSERT(false, "Incorrectly initialized number of atoms");
     }
 }
 
@@ -355,9 +355,9 @@ void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh = pdata->dataHandle(angles_);
-    const SelectionList     &sel1 = pdata->parallelSelections(sel1_);
-    const SelectionList     &sel2 = pdata->parallelSelections(sel2_);
+    AnalysisDataHandle   dh   = pdata->dataHandle(angles_);
+    const SelectionList &sel1 = pdata->parallelSelections(sel1_);
+    const SelectionList &sel2 = pdata->parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 
@@ -365,18 +365,18 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     for (size_t g = 0; g < sel1_.size(); ++g)
     {
-        rvec  v1, v2;
-        rvec  c1, c2;
+        rvec v1, v2;
+        rvec c1, c2;
         switch (g2type_[0])
         {
-            case 'z':
-                clear_rvec(v2);
-                v2[ZZ] = 1.0;
-                clear_rvec(c2);
-                break;
-            case 's':
-                copy_rvec(sel2_[g].position(0).x(), c2);
-                break;
+        case 'z':
+            clear_rvec(v2);
+            v2[ZZ] = 1.0;
+            clear_rvec(c2);
+            break;
+        case 's':
+            copy_rvec(sel2_[g].position(0).x(), c2);
+            break;
         }
         for (int i = 0, j = 0, n = 0;
              i < sel1[g].posCount();
@@ -387,87 +387,87 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             copy_pos(sel1, natoms1_, g, i, x);
             switch (g1type_[0])
             {
-                case 'a':
-                    if (pbc)
-                    {
-                        pbc_dx(pbc, x[0], x[1], v1);
-                        pbc_dx(pbc, x[2], x[1], v2);
-                    }
-                    else
-                    {
-                        rvec_sub(x[0], x[1], v1);
-                        rvec_sub(x[2], x[1], v2);
-                    }
-                    angle = gmx_angle(v1, v2);
-                    break;
-                case 'd': {
-                    rvec dx[3];
-                    if (pbc)
-                    {
-                        pbc_dx(pbc, x[0], x[1], dx[0]);
-                        pbc_dx(pbc, x[2], x[1], dx[1]);
-                        pbc_dx(pbc, x[2], x[3], dx[2]);
-                    }
-                    else
-                    {
-                        rvec_sub(x[0], x[1], dx[0]);
-                        rvec_sub(x[2], x[1], dx[1]);
-                        rvec_sub(x[2], x[3], dx[2]);
-                    }
-                    cprod(dx[0], dx[1], v1);
-                    cprod(dx[1], dx[2], v2);
-                    angle = gmx_angle(v1, v2);
-                    real ipr = iprod(dx[0], v2);
-                    if (ipr < 0)
-                    {
-                        angle = -angle;
-                    }
-                    break;
+            case 'a':
+                if (pbc)
+                {
+                    pbc_dx(pbc, x[0], x[1], v1);
+                    pbc_dx(pbc, x[2], x[1], v2);
                 }
+                else
+                {
+                    rvec_sub(x[0], x[1], v1);
+                    rvec_sub(x[2], x[1], v2);
+                }
+                angle = gmx_angle(v1, v2);
+                break;
+            case 'd': {
+                rvec dx[3];
+                if (pbc)
+                {
+                    pbc_dx(pbc, x[0], x[1], dx[0]);
+                    pbc_dx(pbc, x[2], x[1], dx[1]);
+                    pbc_dx(pbc, x[2], x[3], dx[2]);
+                }
+                else
+                {
+                    rvec_sub(x[0], x[1], dx[0]);
+                    rvec_sub(x[2], x[1], dx[1]);
+                    rvec_sub(x[2], x[3], dx[2]);
+                }
+                cprod(dx[0], dx[1], v1);
+                cprod(dx[1], dx[2], v2);
+                angle = gmx_angle(v1, v2);
+                real ipr = iprod(dx[0], v2);
+                if (ipr < 0)
+                {
+                    angle = -angle;
+                }
+                break;
+            }
+            case 'v':
+            case 'p':
+                calc_vec(natoms1_, x, pbc, v1, c1);
+                switch (g2type_[0])
+                {
                 case 'v':
                 case 'p':
-                    calc_vec(natoms1_, x, pbc, v1, c1);
-                    switch (g2type_[0])
+                    copy_pos(sel2, natoms2_, 0, j, x);
+                    calc_vec(natoms2_, x, pbc, v2, c2);
+                    break;
+                case 't':
+                    // FIXME: This is not parallelizable.
+                    if (frnr == 0)
                     {
-                        case 'v':
-                        case 'p':
-                            copy_pos(sel2, natoms2_, 0, j, x);
-                            calc_vec(natoms2_, x, pbc, v2, c2);
-                            break;
-                        case 't':
-                            // FIXME: This is not parallelizable.
-                            if (frnr == 0)
-                            {
-                                copy_rvec(v1, vt0_[g][n]);
-                            }
-                            copy_rvec(vt0_[g][n], v2);
-                            break;
-                        case 'z':
-                            c1[XX] = c1[YY] = 0.0;
-                            break;
-                        case 's':
-                            if (pbc)
-                            {
-                                pbc_dx(pbc, c1, c2, v2);
-                            }
-                            else
-                            {
-                                rvec_sub(c1, c2, v2);
-                            }
-                            break;
-                        default:
-                            GMX_THROW(InternalError("invalid -g2 value"));
+                        copy_rvec(v1, vt0_[g][n]);
                     }
-                    angle = gmx_angle(v1, v2);
+                    copy_rvec(vt0_[g][n], v2);
+                    break;
+                case 'z':
+                    c1[XX] = c1[YY] = 0.0;
+                    break;
+                case 's':
+                    if (pbc)
+                    {
+                        pbc_dx(pbc, c1, c2, v2);
+                    }
+                    else
+                    {
+                        rvec_sub(c1, c2, v2);
+                    }
                     break;
                 default:
-                    GMX_THROW(InternalError("invalid -g1 value"));
+                    GMX_THROW(InternalError("invalid -g2 value"));
+                }
+                angle = gmx_angle(v1, v2);
+                break;
+            default:
+                GMX_THROW(InternalError("invalid -g1 value"));
             }
             /* TODO: Should we also calculate distances like g_sgangle?
              * Could be better to leave that for a separate tool.
-            real dist = 0.0;
-            if (bDumpDist_)
-            {
+               real dist = 0.0;
+               if (bDumpDist_)
+               {
                 if (pbc)
                 {
                     rvec dx;
@@ -478,8 +478,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 {
                     dist = sqrt(distance2(c1, c2));
                 }
-            }
-            */
+               }
+             */
             dh.setPoint(n, angle * RAD2DEG);
         }
     }

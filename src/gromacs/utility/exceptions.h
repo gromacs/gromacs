@@ -133,8 +133,8 @@ class ExceptionInitializer
         }
 
     private:
-        std::string                     reason_;
-        internal::NestedExceptionList   nested_;
+        std::string                   reason_;
+        internal::NestedExceptionList nested_;
 
         friend class GromacsException;
 };
@@ -339,10 +339,10 @@ class NotImplementedError : public APIError
  *
  * Basic usage:
  * \code
-if (value < 0)
-{
+   if (value < 0)
+   {
     GMX_THROW(InconsistentUserInput("Negative values not allowed for value"));
-}
+   }
  * \endcode
  */
 #define GMX_THROW(e) \
@@ -365,19 +365,20 @@ if (value < 0)
  *
  * Typical usage (note that gmx::File wraps this particular case):
  * \code
-FILE *fp = fopen("filename.txt", "r");
-if (fp == NULL)
-{
+   FILE *fp = fopen("filename.txt", "r");
+   if (fp == NULL)
+   {
     GMX_THROW(FileIOError("Could not open file"), "fopen", errno);
-}
+   }
  * \endcode
  */
 #define GMX_THROW_WITH_ERRNO(e, syscall, err) \
     do { \
         int stored_errno_ = (err); \
         GMX_THROW((e) << boost::errinfo_errno(stored_errno_) \
-                      << boost::errinfo_api_function(syscall)); \
-    } while(0)
+                  << boost::errinfo_api_function(syscall)); \
+    } \
+    while(0)
 
 /*! \brief
  * Formats a standard fatal error message for reporting an exception.
@@ -387,8 +388,8 @@ if (fp == NULL)
  *
  * Normal usage in Gromacs command-line programs is like this:
  * \code
-int main(int argc, char *argv[])
-{
+   int main(int argc, char *argv[])
+   {
     gmx::ProgramInfo::init(argc, argv);
     try
     {
@@ -400,7 +401,7 @@ int main(int argc, char *argv[])
         gmx::printFatalErrorMessage(stderr, ex);
         return 1;
     }
-}
+   }
  * \endcode
  */
 void printFatalErrorMessage(FILE *fp, const std::exception &ex);
@@ -428,11 +429,11 @@ int translateException(const std::exception &ex);
  *
  * Usage:
  * \code
-try
-{
+   try
+   {
     // C++ code
-}
-GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+   }
+   GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
  * \endcode
  *
  * \inlibraryapi

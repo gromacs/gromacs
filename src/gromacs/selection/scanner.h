@@ -65,11 +65,11 @@ void
 _gmx_sel_free_lexer(yyscan_t scanner);
 /** Sets the error reporter object for the selection scanner. */
 void
-_gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
+_gmx_sel_set_lexer_error_reporter(yyscan_t                     scanner,
                                   gmx::MessageStringCollector *errors);
 /** Stores an exception that is caught during parsing. */
 void
-_gmx_sel_lexer_set_exception(yyscan_t scanner,
+_gmx_sel_lexer_set_exception(yyscan_t                    scanner,
                              const boost::exception_ptr &ex);
 /** Rethrows and clears the stored exception if one is present. */
 // TODO: The semantics is a bit confusing, need to be thought more,

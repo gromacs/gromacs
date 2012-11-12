@@ -56,13 +56,13 @@ namespace
 
 struct CommonHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char CommonHelpText::name[] = "selections";
-const char CommonHelpText::title[] =
+const char        CommonHelpText::name[]  = "selections";
+const char        CommonHelpText::title[] =
     "Selection syntax and usage";
 const char *const CommonHelpText::text[] = {
     "Selections are used to select atoms/molecules/residues for analysis.",
@@ -89,13 +89,13 @@ const char *const CommonHelpText::text[] = {
 
 struct ArithmeticHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char ArithmeticHelpText::name[] = "arithmetic";
-const char ArithmeticHelpText::title[] =
+const char        ArithmeticHelpText::name[]  = "arithmetic";
+const char        ArithmeticHelpText::title[] =
     "Arithmetic expressions in selections";
 const char *const ArithmeticHelpText::text[] = {
     "Basic arithmetic evaluation is supported for numeric expressions.",
@@ -106,13 +106,13 @@ const char *const ArithmeticHelpText::text[] = {
 
 struct CmdLineHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char CmdLineHelpText::name[] = "cmdline";
-const char CmdLineHelpText::title[] =
+const char        CmdLineHelpText::name[]  = "cmdline";
+const char        CmdLineHelpText::title[] =
     "Specifying selections from command line";
 const char *const CmdLineHelpText::text[] = {
     "If no selections are provided on the command line, you are prompted to",
@@ -162,13 +162,13 @@ const char *const CmdLineHelpText::text[] = {
 
 struct EvaluationHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char EvaluationHelpText::name[] = "evaluation";
-const char EvaluationHelpText::title[] =
+const char        EvaluationHelpText::name[]  = "evaluation";
+const char        EvaluationHelpText::title[] =
     "Selection evaluation and optimization";
 const char *const EvaluationHelpText::text[] = {
     "Boolean evaluation proceeds from left to right and is short-circuiting",
@@ -201,13 +201,13 @@ const char *const EvaluationHelpText::text[] = {
 
 struct ExamplesHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char ExamplesHelpText::name[] = "examples";
-const char ExamplesHelpText::title[] =
+const char        ExamplesHelpText::name[]  = "examples";
+const char        ExamplesHelpText::title[] =
     "Selection examples";
 const char *const ExamplesHelpText::text[] = {
     // TODO: Once there are more tools available, use examples that invoke
@@ -245,13 +245,13 @@ const char *const ExamplesHelpText::text[] = {
 
 struct KeywordsHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char KeywordsHelpText::name[] = "keywords";
-const char KeywordsHelpText::title[] =
+const char        KeywordsHelpText::name[]  = "keywords";
+const char        KeywordsHelpText::title[] =
     "Selection keywords";
 const char *const KeywordsHelpText::text[] = {
     "The following selection keywords are currently available.",
@@ -261,13 +261,13 @@ const char *const KeywordsHelpText::text[] = {
 
 struct LimitationsHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char LimitationsHelpText::name[] = "limitations";
-const char LimitationsHelpText::title[] =
+const char        LimitationsHelpText::name[]  = "limitations";
+const char        LimitationsHelpText::title[] =
     "Selection limitations";
 const char *const LimitationsHelpText::text[] = {
     "Some analysis programs may require a special structure for the input",
@@ -294,13 +294,13 @@ const char *const LimitationsHelpText::text[] = {
 
 struct PositionsHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char PositionsHelpText::name[] = "positions";
-const char PositionsHelpText::title[] =
+const char        PositionsHelpText::name[]  = "positions";
+const char        PositionsHelpText::title[] =
     "Specifying positions in selections";
 const char *const PositionsHelpText::text[] = {
     "Possible ways of specifying positions in selections are:[PAR]",
@@ -347,13 +347,13 @@ const char *const PositionsHelpText::text[] = {
 
 struct SyntaxHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char SyntaxHelpText::name[] = "syntax";
-const char SyntaxHelpText::title[] =
+const char        SyntaxHelpText::name[]  = "syntax";
+const char        SyntaxHelpText::title[] =
     "Selection syntax";
 const char *const SyntaxHelpText::text[] = {
     "A set of selections consists of one or more selections, separated by",
@@ -437,7 +437,7 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
 {
     public:
         //! Initialize help topic for the given selection method.
-        KeywordDetailsHelpTopic(const std::string &name,
+        KeywordDetailsHelpTopic(const std::string         &name,
                                 const gmx_ana_selmethod_t &method)
             : name_(name), method_(method)
         {
@@ -489,7 +489,7 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
          */
         typedef std::vector<std::pair<std::string,
                                       const gmx_ana_selmethod_t *> >
-                MethodList;
+            MethodList;
 
         /*! \brief
          * Prints a brief list of keywords (selection methods) available.
@@ -502,7 +502,7 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
         void printKeywordList(const HelpWriterContext &context,
                               e_selvalue_t type, bool bModifiers) const;
 
-        MethodList              methods_;
+        MethodList methods_;
 };
 
 KeywordsHelpTopic::KeywordsHelpTopic()
@@ -511,20 +511,20 @@ KeywordsHelpTopic::KeywordsHelpTopic()
     // methods, but this needs to be rewritten in any case if/when #652 is
     // implemented.
     boost::scoped_ptr<SelectionParserSymbolTable> symtab(
-            new SelectionParserSymbolTable);
+        new SelectionParserSymbolTable);
     gmx_ana_selmethod_register_defaults(symtab.get());
 
     SelectionParserSymbolIterator symbol
         = symtab->beginIterator(SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab->endIterator())
     {
-        const std::string &symname = symbol->name();
-        const gmx_ana_selmethod_t *method = symbol->methodValue();
+        const std::string         &symname = symbol->name();
+        const gmx_ana_selmethod_t *method  = symbol->methodValue();
         methods_.push_back(std::make_pair(std::string(symname), method));
         if (method->help.nlhelp > 0 && method->help.help != NULL)
         {
             addSubTopic(HelpTopicPointer(
-                        new KeywordDetailsHelpTopic(symname, *method)));
+                            new KeywordDetailsHelpTopic(symname, *method)));
         }
         ++symbol;
     }
@@ -535,7 +535,7 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
         GMX_THROW(NotImplementedError(
-                    "Selection help is not implemented for this output format"));
+                      "Selection help is not implemented for this output format"));
     }
     // TODO: The markup here is not really appropriate, and printKeywordList()
     // still prints raw text, but these are waiting for discussion of the
@@ -545,31 +545,31 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 
     // Print the list of keywords
     context.writeTextBlock(
-            "Keywords that select atoms by an integer property:[BR]"
-            "(use in expressions or like \"atomnr 1 to 5 7 9\")[BR]");
+        "Keywords that select atoms by an integer property:[BR]"
+        "(use in expressions or like \"atomnr 1 to 5 7 9\")[BR]");
     printKeywordList(context, INT_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Keywords that select atoms by a numeric property:[BR]"
-            "(use in expressions or like \"occupancy 0.5 to 1\")[BR]");
+        "Keywords that select atoms by a numeric property:[BR]"
+        "(use in expressions or like \"occupancy 0.5 to 1\")[BR]");
     printKeywordList(context, REAL_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Keywords that select atoms by a string property:[BR]"
-            "(use like \"name PATTERN [PATTERN] ...\")[BR]");
+        "Keywords that select atoms by a string property:[BR]"
+        "(use like \"name PATTERN [PATTERN] ...\")[BR]");
     printKeywordList(context, STR_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Additional keywords that directly select atoms:[BR]");
+        "Additional keywords that directly select atoms:[BR]");
     printKeywordList(context, GROUP_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Keywords that directly evaluate to positions:[BR]"
-            "(see also \"positions\" subtopic)[BR]");
+        "Keywords that directly evaluate to positions:[BR]"
+        "(see also \"positions\" subtopic)[BR]");
     printKeywordList(context, POS_VALUE, false);
     context.writeTextBlock("[BR]");
 
@@ -579,15 +579,15 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 }
 
 void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
-                                         e_selvalue_t type,
-                                         bool bModifiers) const
+                                         e_selvalue_t             type,
+                                         bool                     bModifiers) const
 {
     File &file = context.outputFile();
     MethodList::const_iterator iter;
     for (iter = methods_.begin(); iter != methods_.end(); ++iter)
     {
         const gmx_ana_selmethod_t &method = *iter->second;
-        bool bIsModifier = (method.flags & SMETH_MODIFIER) != 0;
+        bool bIsModifier                  = (method.flags & SMETH_MODIFIER) != 0;
         if (method.type == type && bModifiers == bIsModifier)
         {
             bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);

@@ -98,9 +98,9 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 typedef struct t_methoddata_kwint
 {
     /** Array of values for the keyword. */
-    int               *v;
+    int *v;
     /** Number of ranges in the \p r array. */
-    int                n;
+    int  n;
     /*! \brief
      * Array of sorted integer ranges to match against.
      *
@@ -108,7 +108,7 @@ typedef struct t_methoddata_kwint
      * This field stores the pointer to the ranges allocated by the
      * parameter parser; see \ref SPAR_RANGES for more information.
      */
-    int               *r;
+    int *r;
 } t_methoddata_kwint;
 
 /*! \internal \brief
@@ -117,9 +117,9 @@ typedef struct t_methoddata_kwint
 typedef struct t_methoddata_kwreal
 {
     /** Array of values for the keyword. */
-    real              *v;
+    real *v;
     /** Number of ranges in the \p r array. */
-    int                n;
+    int   n;
     /*! \brief
      * Array of sorted ranges to match against.
      *
@@ -127,7 +127,7 @@ typedef struct t_methoddata_kwreal
      * This field stores the pointer to the ranges allocated by the
      * parameter parser; see \ref SPAR_RANGES for more information.
      */
-    real              *r;
+    real *r;
 } t_methoddata_kwreal;
 
 namespace
@@ -148,7 +148,7 @@ class StringKeywordMatchItem
          * \param[in] str       String to use for matching.
          */
         StringKeywordMatchItem(gmx::SelectionStringMatchType matchType,
-                               const char *str)
+                               const char                   *str)
             : str_(str)
         {
             bool bRegExp = (matchType == gmx::eStringMatchType_RegularExpression);
@@ -168,8 +168,8 @@ class StringKeywordMatchItem
                 if (!gmx::Regex::isSupported())
                 {
                     GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                                    "No regular expression support, "
-                                    "cannot match \"%s\"", str)));
+                                                         "No regular expression support, "
+                                                         "cannot match \"%s\"", str)));
                 }
                 regex_.reset(new gmx::Regex(str));
             }
@@ -183,7 +183,7 @@ class StringKeywordMatchItem
          * \returns   true if this item matches \p value.
          */
         bool match(gmx::SelectionStringMatchType matchType,
-                   const char *value) const
+                   const char                   *value) const
         {
             if (matchType == gmx::eStringMatchType_Exact)
             {
@@ -201,9 +201,9 @@ class StringKeywordMatchItem
 
     private:
         //! The raw string passed for the matcher.
-        std::string                     str_;
+        std::string                   str_;
         //! Regular expression compiled from \p str_, if applicable.
-        boost::shared_ptr<gmx::Regex>   regex_;
+        boost::shared_ptr<gmx::Regex> regex_;
 };
 
 /*! \internal \brief
@@ -214,7 +214,7 @@ struct t_methoddata_kwstr
     /** Matching type for the strings. */
     gmx::SelectionStringMatchType       matchType;
     /** Array of values for the keyword. */
-    char             **v;
+    char                              **v;
     /** Array of strings/regular expressions to match against.*/
     std::vector<StringKeywordMatchItem> matches;
 };
@@ -244,13 +244,13 @@ gmx_ana_selmethod_t sm_keyword_int = {
     "kw_int", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_int), smparams_keyword_int,
     &init_data_kwint,
-     NULL,
+    NULL,
     &init_kwint,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_keyword_int,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -259,13 +259,13 @@ gmx_ana_selmethod_t sm_keyword_real = {
     "kw_real", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_real), smparams_keyword_real,
     &init_data_kwreal,
-     NULL,
+    NULL,
     &init_kwreal,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_keyword_real,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -274,13 +274,13 @@ gmx_ana_selmethod_t sm_keyword_str = {
     "kw_str", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_str), smparams_keyword_str,
     &init_data_kwstr,
-     NULL,
+    NULL,
     &init_kwstr,
-     NULL,
+    NULL,
     &free_data_kwstr,
-     NULL,
+    NULL,
     &evaluate_keyword_str,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -307,11 +307,11 @@ evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 typedef struct
 {
     /** Wrapped keyword method for evaluating the values. */
-    gmx_ana_selmethod_t  *kwmethod;
+    gmx_ana_selmethod_t *kwmethod;
     /** Method data for \p kwmethod. */
-    void                 *kwmdata;
+    void                *kwmdata;
     /** Group in which \p kwmethod should be evaluated. */
-    gmx_ana_index_t       g;
+    gmx_ana_index_t      g;
 } t_methoddata_kweval;
 
 /** Parameters for keyword evaluation in an arbitrary group. */
@@ -373,7 +373,7 @@ evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     int                 val;
 
     out->u.g->isize = 0;
-    n    = d->n;
+    n               = d->n;
     for (i = 0; i < g->isize; ++i)
     {
         val = d->v[i];
@@ -455,14 +455,14 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  */
 static void
 evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
     int                  n, i, j, jmin, jmax;
     real                 val;
 
     out->u.g->isize = 0;
-    n    = d->n;
+    n               = d->n;
     for (i = 0; i < g->isize; ++i)
     {
         val = d->v[i];
@@ -524,12 +524,12 @@ init_data_kwstr(int npar, gmx_ana_selparam_t *param)
  */
 void
 _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
-                                  gmx::SelectionStringMatchType matchType)
+                                  gmx::SelectionStringMatchType           matchType)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)sel->u.expr.mdata;
 
-    if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
-        || sel->u.expr.method->name != sm_keyword_str.name)
+    if (sel->type != SEL_EXPRESSION || !sel->u.expr.method ||
+        sel->u.expr.method->name != sm_keyword_str.name)
     {
         return;
     }
@@ -547,7 +547,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
 
-    d->v   = param[0].val.u.s;
+    d->v = param[0].val.u.s;
     /* Return if this is not the first time */
     if (!d->matches.empty())
     {
@@ -699,27 +699,27 @@ evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * The name of \p param should be empty.
  */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t *method,
+_gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                     *method,
                                 const gmx::SelectionParserParameterList &params,
-                                void *scanner)
+                                void                                    *scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[1024];
+    char buf[1024];
     sprintf(buf, "In evaluation of '%s'", method->name);
-    gmx::MessageStringContext   context(errors, buf);
+    gmx::MessageStringContext context(errors, buf);
 
-    if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
-        || method->outinit || method->pupdate)
+    if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL)) ||
+        method->outinit || method->pupdate)
     {
         GMX_THROW(gmx::InternalError(
-                "Unsupported keyword method for arbitrary group evaluation"));
+                      "Unsupported keyword method for arbitrary group evaluation"));
     }
 
     gmx::SelectionTreeElementPointer sel(
-            new gmx::SelectionTreeElement(SEL_EXPRESSION));
+        new gmx::SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(sel, method, scanner);
 
-    t_methoddata_kweval  *data;
+    t_methoddata_kweval *data;
     snew(data, 1);
     data->kwmethod = sel->u.expr.method;
     data->kwmdata  = sel->u.expr.mdata;
@@ -727,17 +727,17 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t *method,
 
     snew(sel->u.expr.method, 1);
     memcpy(sel->u.expr.method, data->kwmethod, sizeof(gmx_ana_selmethod_t));
-    sel->u.expr.method->flags       |= SMETH_VARNUMVAL;
-    sel->u.expr.method->init_data    = NULL;
-    sel->u.expr.method->set_poscoll  = NULL;
-    sel->u.expr.method->init         = method->init ? &init_kweval : NULL;
-    sel->u.expr.method->outinit      = &init_output_kweval;
-    sel->u.expr.method->free         = &free_data_kweval;
-    sel->u.expr.method->init_frame   = method->init_frame ? &init_frame_kweval : NULL;
-    sel->u.expr.method->update       = &evaluate_kweval;
-    sel->u.expr.method->pupdate      = NULL;
-    sel->u.expr.method->nparams      = asize(smparams_kweval);
-    sel->u.expr.method->param        = smparams_kweval;
+    sel->u.expr.method->flags      |= SMETH_VARNUMVAL;
+    sel->u.expr.method->init_data   = NULL;
+    sel->u.expr.method->set_poscoll = NULL;
+    sel->u.expr.method->init        = method->init ? &init_kweval : NULL;
+    sel->u.expr.method->outinit     = &init_output_kweval;
+    sel->u.expr.method->free        = &free_data_kweval;
+    sel->u.expr.method->init_frame  = method->init_frame ? &init_frame_kweval : NULL;
+    sel->u.expr.method->update      = &evaluate_kweval;
+    sel->u.expr.method->pupdate     = NULL;
+    sel->u.expr.method->nparams     = asize(smparams_kweval);
+    sel->u.expr.method->param       = smparams_kweval;
     _gmx_selelem_init_method_params(sel, scanner);
     sel->u.expr.mdata = data;
 

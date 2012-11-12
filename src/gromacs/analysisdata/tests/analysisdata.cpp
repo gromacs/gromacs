@@ -98,7 +98,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
     EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
-            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+        new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
     EXPECT_NO_THROW(data.addModule(mod2));
 }
 
@@ -116,7 +116,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
     EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
-            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+        new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
     EXPECT_NO_THROW(data.addModule(mod2));
 }
 
@@ -140,7 +140,7 @@ const real inputdata[] = {
 TEST_F(AnalysisDataTest, CallsModuleCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
@@ -156,7 +156,7 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectly)
 TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
     ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 0, 2, &data));
@@ -171,13 +171,13 @@ TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
 TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 1, 2, &data));
-    gmx::AnalysisDataHandle handle1;
-    gmx::AnalysisDataHandle handle2;
+    gmx::AnalysisDataHandle          handle1;
+    gmx::AnalysisDataHandle          handle2;
     gmx::AnalysisDataParallelOptions options(2);
     ASSERT_NO_THROW(handle1 = data.startData(options));
     ASSERT_NO_THROW(handle2 = data.startData(options));
@@ -195,7 +195,7 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
 TEST_F(AnalysisDataTest, FullStorageWorks)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
     ASSERT_NO_THROW(addStaticStorageCheckerModule(input, -1, &data));
@@ -209,7 +209,7 @@ TEST_F(AnalysisDataTest, FullStorageWorks)
 TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     ASSERT_TRUE(data.requestStorage(-1));
 
@@ -224,7 +224,7 @@ TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
 TEST_F(AnalysisDataTest, LimitedStorageWorks)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
     ASSERT_NO_THROW(addStaticStorageCheckerModule(input, 1, &data));
@@ -245,7 +245,7 @@ const real multipointinputdata[] = {
 TEST_F(AnalysisDataTest, MultipointCallsModuleCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(multipointinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
 
@@ -262,7 +262,7 @@ TEST_F(AnalysisDataTest, MultipointCallsModuleCorrectly)
 TEST_F(AnalysisDataTest, MultipointCallsColumnModuleCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(multipointinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
 

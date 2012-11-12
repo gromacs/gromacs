@@ -53,9 +53,9 @@
 struct gmx_ana_indexgrps_t
 {
     /** Number of index groups. */
-    int                 nr;
+    int              nr;
     /** Array of index groups. */
-    gmx_ana_index_t    *g;
+    gmx_ana_index_t *g;
 };
 
 /*!
@@ -103,8 +103,8 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     else
     {
         snew(*g, 1);
-        (*g)->nr    = 0;
-        (*g)->g     = NULL;
+        (*g)->nr = 0;
+        (*g)->g  = NULL;
         return;
     }
 
@@ -119,7 +119,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
         {
             grp->index[j] = block->a[block->index[i]+j];
         }
-        grp->name = names[i];
+        grp->name         = names[i];
         grp->nalloc_index = grp->isize;
     }
 
@@ -136,7 +136,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
 void
 gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g)
 {
-    int  i;
+    int i;
 
     if (g->nr == 0)
     {
@@ -148,8 +148,8 @@ gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g)
         gmx_ana_index_deinit(&g->g[i]);
     }
     sfree(g->g);
-    g->nr    = 0;
-    g->g     = NULL;
+    g->nr = 0;
+    g->g  = NULL;
     sfree(g);
 }
 
@@ -257,7 +257,7 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *na
 void
 gmx_ana_indexgrps_print(FILE *fp, gmx_ana_indexgrps_t *g, int maxn)
 {
-    int  i;
+    int i;
 
     for (i = 0; i < g->nr; ++i)
     {
@@ -339,7 +339,7 @@ gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, char *name,
 void
 gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms, char *name)
 {
-    int  i;
+    int i;
 
     g->isize = natoms;
     snew(g->index, natoms);
@@ -347,7 +347,7 @@ gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms, char *name)
     {
         g->index[i] = i;
     }
-    g->name = name;
+    g->name         = name;
     g->nalloc_index = natoms;
 }
 
@@ -407,7 +407,7 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
 void
 gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int i, int maxn)
 {
-    int  j, n;
+    int j, n;
 
     if (g->name)
     {
@@ -448,21 +448,21 @@ gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int i, int maxn)
 void
 gmx_ana_index_check(gmx_ana_index_t *g, int natoms)
 {
-    int  j;
+    int j;
 
     for (j = 0; j < g->isize; ++j)
     {
         if (g->index[j] >= natoms)
         {
-            gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) "
-              "larger than number of atoms in trajectory (%d atoms)",
-              g->index[j], g->name, g->isize, natoms);
+            gmx_fatal(FARGS, "Atom index (%d) in index group %s (%d atoms) "
+                      "larger than number of atoms in trajectory (%d atoms)",
+                      g->index[j], g->name, g->isize, natoms);
         }
         else if (g->index[j] < 0)
         {
-            gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) "
-              "is less than zero",
-              g->index[j], g->name, g->isize);
+            gmx_fatal(FARGS, "Atom index (%d) in index group %s (%d atoms) "
+                      "is less than zero",
+                      g->index[j], g->name, g->isize);
         }
     }
 }
@@ -475,7 +475,7 @@ gmx_ana_index_check(gmx_ana_index_t *g, int natoms)
 bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g)
 {
-    int  i;
+    int i;
 
     for (i = 0; i < g->isize-1; ++i)
     {
@@ -495,8 +495,14 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
 static int
 cmp_atomid(const void *a, const void *b)
 {
-    if (*(atom_id *)a < *(atom_id *)b) return -1;
-    if (*(atom_id *)a > *(atom_id *)b) return 1;
+    if (*(atom_id *)a < *(atom_id *)b)
+    {
+        return -1;
+    }
+    if (*(atom_id *)a > *(atom_id *)b)
+    {
+        return 1;
+    }
     return 0;
 }
 
@@ -517,7 +523,7 @@ gmx_ana_index_sort(gmx_ana_index_t *g)
 bool
 gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
-    int  i;
+    int i;
 
     if (a->isize != b->isize)
     {
@@ -545,9 +551,10 @@ gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
 bool
 gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
-    int  i, j;
+    int i, j;
 
-    for (i = j = 0; j < b->isize; ++i, ++j) {
+    for (i = j = 0; j < b->isize; ++i, ++j)
+    {
         while (i < a->isize && a->index[i] != b->index[j])
         {
             ++i;
@@ -573,7 +580,8 @@ gmx_ana_index_intersection(gmx_ana_index_t *dest,
 {
     int i, j, k;
 
-    for (i = j = k = 0; i < a->isize && j < b->isize; ++i) {
+    for (i = j = k = 0; i < a->isize && j < b->isize; ++i)
+    {
         while (j < b->isize && b->index[j] < a->index[i])
         {
             ++j;
@@ -694,9 +702,9 @@ gmx_ana_index_union(gmx_ana_index_t *dest,
     int dsize;
     int i, j, k;
 
-    dsize = gmx_ana_index_difference_size(b, a);
-    i = a->isize - 1;
-    j = b->isize - 1;
+    dsize       = gmx_ana_index_difference_size(b, a);
+    i           = a->isize - 1;
+    j           = b->isize - 1;
     dest->isize = a->isize + dsize;
     for (k = dest->isize - 1; k >= 0; k--)
     {
@@ -731,8 +739,8 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
 {
     int i, j, k;
 
-    i = a->isize - 1;
-    j = b->isize - 1;
+    i           = a->isize - 1;
+    j           = b->isize - 1;
     dest->isize = a->isize + b->isize;
     for (k = dest->isize - 1; k >= 0; k--)
     {
@@ -772,12 +780,12 @@ void
 gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                          e_index_t type, bool bComplete)
 {
-    int      i, j, ai;
-    int      id, cur;
+    int i, j, ai;
+    int id, cur;
 
     if (type == INDEX_UNKNOWN)
     {
-        t->nr           = 1;
+        t->nr = 1;
         snew(t->index, 2);
         t->nalloc_index = 2;
         t->index[0]     = 0;
@@ -809,7 +817,7 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
     }
     else
     {
-        t->nra      = g->isize;
+        t->nra = g->isize;
         if (t->nalloc_a < g->isize)
         {
             srenew(t->a, g->isize);
@@ -828,8 +836,8 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
     }
     /* Clear counters */
     t->nr = 0;
-    j = 0; /* j is used by residue completion for the first atom not stored */
-    id = cur = -1;
+    j     = 0; /* j is used by residue completion for the first atom not stored */
+    id    = cur = -1;
     for (i = 0; i < g->isize; ++i)
     {
         ai = g->index[i];
@@ -837,22 +845,22 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
          * atom ai. */
         switch (type)
         {
-            case INDEX_ATOM:
-                id = ai;
-                break;
-            case INDEX_RES:
-                id = top->atoms.atom[ai].resind;
-                break;
-            case INDEX_MOL:
-                while (ai >= top->mols.index[id+1])
-                {
-                    id++;
-                }
-                break;
-            case INDEX_UNKNOWN: /* Should not occur */
-            case INDEX_ALL:
-                id = 0;
-                break;
+        case INDEX_ATOM:
+            id = ai;
+            break;
+        case INDEX_RES:
+            id = top->atoms.atom[ai].resind;
+            break;
+        case INDEX_MOL:
+            while (ai >= top->mols.index[id+1])
+            {
+                id++;
+            }
+            break;
+        case INDEX_UNKNOWN:     /* Should not occur */
+        case INDEX_ALL:
+            id = 0;
+            break;
         }
         /* If this is the first atom in a new block, initialize the block. */
         if (id != cur)
@@ -864,28 +872,28 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                 /* And then we find all the atoms that should be included. */
                 switch (type)
                 {
-                    case INDEX_RES:
-                        while (top->atoms.atom[j].resind != id)
-                        {
-                            ++j;
-                        }
-                        while (j < top->atoms.nr && top->atoms.atom[j].resind == id)
-                        {
-                            t->a[t->nra++] = j;
-                            ++j;
-                        }
-                        break;
+                case INDEX_RES:
+                    while (top->atoms.atom[j].resind != id)
+                    {
+                        ++j;
+                    }
+                    while (j < top->atoms.nr && top->atoms.atom[j].resind == id)
+                    {
+                        t->a[t->nra++] = j;
+                        ++j;
+                    }
+                    break;
 
-                    case INDEX_MOL:
-                        for (j = top->mols.index[id]; j < top->mols.index[id+1]; ++j)
-                        {
-                            t->a[t->nra++] = j;
-                        }
-                        break;
+                case INDEX_MOL:
+                    for (j = top->mols.index[id]; j < top->mols.index[id+1]; ++j)
+                    {
+                        t->a[t->nra++] = j;
+                    }
+                    break;
 
-                    default: /* Should not be reached */
-                        gmx_bug("internal error");
-                        break;
+                default:     /* Should not be reached */
+                    gmx_bug("internal error");
+                    break;
                 }
             }
             else
@@ -919,7 +927,7 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
 bool
 gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b)
 {
-    int  i, j, bi;
+    int i, j, bi;
 
     i = bi = 0;
     /* Each round in the loop matches one block */
@@ -960,7 +968,7 @@ gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b)
 bool
 gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
 {
-    int  i, j, bi;
+    int i, j, bi;
 
     i = bi = 0;
     /* Each round in the loop matches one block */
@@ -1007,47 +1015,47 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
 {
     switch (type)
     {
-        case INDEX_UNKNOWN:
-        case INDEX_ALL:
-            return false;
+    case INDEX_UNKNOWN:
+    case INDEX_ALL:
+        return false;
 
-        case INDEX_ATOM:
-            return true;
+    case INDEX_ATOM:
+        return true;
 
-        case INDEX_RES:
+    case INDEX_RES:
+    {
+        int i, ai;
+        int id, prev;
+
+        prev = -1;
+        for (i = 0; i < g->isize; ++i)
         {
-            int      i, ai;
-            int      id, prev;
-
-            prev = -1;
-            for (i = 0; i < g->isize; ++i)
+            ai = g->index[i];
+            id = top->atoms.atom[ai].resind;
+            if (id != prev)
             {
-                ai = g->index[i];
-                id = top->atoms.atom[ai].resind;
-                if (id != prev)
+                if (ai > 0 && top->atoms.atom[ai-1].resind == id)
                 {
-                    if (ai > 0 && top->atoms.atom[ai-1].resind == id)
-                    {
-                        return false;
-                    }
-                    if (i > 0 && g->index[i-1] < top->atoms.nr - 1
-                        && top->atoms.atom[g->index[i-1]+1].resind == prev)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                prev = id;
+                if (i > 0 && g->index[i-1] < top->atoms.nr - 1 &&
+                    top->atoms.atom[g->index[i-1]+1].resind == prev)
+                {
+                    return false;
+                }
             }
-            if (g->index[i-1] < top->atoms.nr - 1
-                && top->atoms.atom[g->index[i-1]+1].resind == prev)
-            {
-                return false;
-            }
-            break;
+            prev = id;
         }
+        if (g->index[i-1] < top->atoms.nr - 1 &&
+            top->atoms.atom[g->index[i-1]+1].resind == prev)
+        {
+            return false;
+        }
+        break;
+    }
 
-        case INDEX_MOL:
-            return gmx_ana_index_has_full_blocks(g, &top->mols);
+    case INDEX_MOL:
+        return gmx_ana_index_has_full_blocks(g, &top->mols);
     }
     return true;
 }
@@ -1121,9 +1129,9 @@ void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                       t_topology *top, e_index_t type)
 {
-    int      i, ii, mi;
+    int i, ii, mi;
 
-    m->type   = type;
+    m->type = type;
     gmx_ana_index_make_block(&m->b, top, g, type, false);
     gmx_ana_indexmap_reserve(m, m->b.nr, m->b.nra);
     m->nr = m->b.nr;
@@ -1132,23 +1140,23 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
         ii = (type == INDEX_UNKNOWN ? 0 : m->b.a[m->b.index[i]]);
         switch (type)
         {
-            case INDEX_ATOM:
-                m->orgid[i] = ii;
-                break;
-            case INDEX_RES:
-                m->orgid[i] = top->atoms.atom[ii].resind;
-                break;
-            case INDEX_MOL:
-                while (top->mols.index[mi+1] <= ii)
-                {
-                    ++mi;
-                }
-                m->orgid[i] = mi;
-                break;
-            case INDEX_ALL:
-            case INDEX_UNKNOWN:
-                m->orgid[i] = 0;
-                break;
+        case INDEX_ATOM:
+            m->orgid[i] = ii;
+            break;
+        case INDEX_RES:
+            m->orgid[i] = top->atoms.atom[ii].resind;
+            break;
+        case INDEX_MOL:
+            while (top->mols.index[mi+1] <= ii)
+            {
+                ++mi;
+            }
+            m->orgid[i] = mi;
+            break;
+        case INDEX_ALL:
+        case INDEX_UNKNOWN:
+            m->orgid[i] = 0;
+            break;
         }
     }
     for (i = 0; i < m->nr; ++i)
@@ -1184,13 +1192,13 @@ gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
     m->mapid = m->orgid;
     sfree(m->b.index);
     m->b.nalloc_index = 0;
-    m->b.index = b->index;
+    m->b.index        = b->index;
     sfree(m->mapb.index);
     m->mapb.nalloc_index = 0;
-    m->mapb.index = m->b.index;
+    m->mapb.index        = m->b.index;
     sfree(m->b.a);
     m->b.nalloc_a = 0;
-    m->b.a = b->a;
+    m->b.a        = b->a;
 }
 
 /*!
@@ -1208,18 +1216,18 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
     if (bFirst)
     {
         gmx_ana_indexmap_reserve(dest, src->b.nr, src->b.nra);
-        dest->type       = src->type;
-        dest->b.nr       = src->b.nr;
-        dest->b.nra      = src->b.nra;
+        dest->type  = src->type;
+        dest->b.nr  = src->b.nr;
+        dest->b.nra = src->b.nra;
         memcpy(dest->orgid,      src->orgid,      dest->b.nr*sizeof(*dest->orgid));
         memcpy(dest->b.index,    src->b.index,   (dest->b.nr+1)*sizeof(*dest->b.index));
         memcpy(dest->b.a,        src->b.a,        dest->b.nra*sizeof(*dest->b.a));
     }
-    dest->nr         = src->nr;
-    dest->mapb.nr    = src->mapb.nr;
+    dest->nr      = src->nr;
+    dest->mapb.nr = src->mapb.nr;
     memcpy(dest->refid,      src->refid,      dest->nr*sizeof(*dest->refid));
     memcpy(dest->mapid,      src->mapid,      dest->nr*sizeof(*dest->mapid));
-    memcpy(dest->mapb.index, src->mapb.index,(dest->mapb.nr+1)*sizeof(*dest->mapb.index));
+    memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr+1)*sizeof(*dest->mapb.index));
     dest->bStatic    = src->bStatic;
     dest->bMapStatic = src->bMapStatic;
 }
@@ -1238,7 +1246,7 @@ void
 gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                         bool bMaskOnly)
 {
-    int i, j, bi, bj;
+    int  i, j, bi, bj;
     bool bStatic;
 
     /* Process the simple cases first */
@@ -1329,8 +1337,8 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                 {
                     ++bj;
                 }
-                m->refid[bi] = bj;
-                m->mapid[bi] = m->orgid[bj];
+                m->refid[bi]      = bj;
+                m->mapid[bi]      = m->orgid[bj];
                 m->mapb.index[bi] = i;
                 bi++;
             }

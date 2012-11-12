@@ -52,7 +52,7 @@
 int
 gmx_calc_cog(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
 {
-    int                 m, ai;
+    int m, ai;
 
     clear_rvec(xout);
     for (m = 0; m < nrefat; ++m)
@@ -78,8 +78,8 @@ gmx_calc_cog(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
 int
 gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
 {
-    int                 m, j, ai;
-    real                mass, mtot;
+    int  m, j, ai;
+    real mass, mtot;
 
     if (!top)
     {
@@ -90,7 +90,7 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
     mtot = 0;
     for (m = 0; m < nrefat; ++m)
     {
-        ai = index[m];
+        ai   = index[m];
         mass = top->atoms.atom[ai].m;
         for (j = 0; j < DIM; ++j)
         {
@@ -116,8 +116,8 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
 int
 gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout)
 {
-    int                 m, j, ai;
-    real                mass, mtot;
+    int  m, j, ai;
+    real mass, mtot;
 
     if (!top)
     {
@@ -128,7 +128,7 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
     mtot = 0;
     for (m = 0; m < nrefat; ++m)
     {
-        ai = index[m];
+        ai   = index[m];
         mass = top->atoms.atom[ai].m;
         for (j = 0; j < DIM; ++j)
         {
@@ -212,10 +212,10 @@ int
 gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
-    const real          tol = 1e-4;
-    bool                bChanged;
-    int                 m, j, ai, iter;
-    rvec                dx, xtest;
+    const real tol = 1e-4;
+    bool       bChanged;
+    int        m, j, ai, iter;
+    rvec       dx, xtest;
 
     /* First simple calculation */
     gmx_calc_cog(top, x, nrefat, index, xout);
@@ -269,11 +269,11 @@ int
 gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
-    const real          tol = 1e-4;
-    bool                bChanged;
-    int                 m, j, ai, iter;
-    real                mass, mtot;
-    rvec                dx, xtest;
+    const real tol = 1e-4;
+    bool       bChanged;
+    int        m, j, ai, iter;
+    real       mass, mtot;
+    rvec       dx, xtest;
 
     if (!top)
     {
@@ -285,7 +285,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
     mtot = 0;
     for (m = 0; m < nrefat; ++m)
     {
-        ai = index[m];
+        ai   = index[m];
         mass = top->atoms.atom[ai].m;
         for (j = 0; j < DIM; ++j)
         {
@@ -303,7 +303,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
             bChanged = false;
             for (m = 0; m < nrefat; ++m)
             {
-                ai = index[m];
+                ai   = index[m];
                 mass = top->atoms.atom[ai].m / mtot;
                 pbc_dx(pbc, x[ai], xout, dx);
                 rvec_add(xout, dx, xtest);
@@ -367,8 +367,8 @@ int
 gmx_calc_cog_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
                    rvec xout[])
 {
-    int                 b, i, ai;
-    rvec                xb;
+    int  b, i, ai;
+    rvec xb;
 
     for (b = 0; b < block->nr; ++b)
     {
@@ -398,9 +398,9 @@ int
 gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
                    rvec xout[])
 {
-    int                 b, i, ai, d;
-    rvec                xb;
-    real                mass, mtot;
+    int  b, i, ai, d;
+    rvec xb;
+    real mass, mtot;
 
     if (!top)
     {
@@ -413,7 +413,7 @@ gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
         mtot = 0;
         for (i = block->index[b]; i < block->index[b+1]; ++i)
         {
-            ai = index[i];
+            ai   = index[i];
             mass = top->atoms.atom[ai].m;
             for (d = 0; d < DIM; ++d)
             {
@@ -438,9 +438,9 @@ int
 gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
                      rvec fout[])
 {
-    int                 b, i, ai, d;
-    rvec                fb;
-    real                mass, mtot;
+    int  b, i, ai, d;
+    rvec fb;
+    real mass, mtot;
 
     if (!top)
     {
@@ -453,7 +453,7 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
         mtot = 0;
         for (i = block->index[b]; i < block->index[b+1]; ++i)
         {
-            ai = index[i];
+            ai   = index[i];
             mass = top->atoms.atom[ai].m;
             for (d = 0; d < DIM; ++d)
             {

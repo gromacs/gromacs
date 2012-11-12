@@ -71,19 +71,19 @@ class TrajectoryAnalysisModule::Impl
         }
 
         //! Name of the module.
-        std::string                     name_;
+        std::string              name_;
         //! Description of the module.
-        std::string                     description_;
+        std::string              description_;
         //! List of registered data set names.
-        std::vector<std::string>        datasetNames_;
+        std::vector<std::string> datasetNames_;
         /*! \brief
          * Keeps all registered data sets.
          *
          * This container also includes datasets from \a analysisDatasets_.
          */
-        DatasetContainer                datasets_;
+        DatasetContainer         datasets_;
         //! Keeps registered AnalysisData objects.
-        AnalysisDatasetContainer        analysisDatasets_;
+        AnalysisDatasetContainer analysisDatasets_;
 };
 
 /********************************************************************
@@ -100,23 +100,23 @@ class TrajectoryAnalysisModuleData::Impl
     public:
         //! Container that associates a data handle to its AnalysisData object.
         typedef std::map<const AnalysisData *, AnalysisDataHandle>
-                HandleContainer;
+            HandleContainer;
 
         //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
-        Impl(TrajectoryAnalysisModule *module,
+        Impl(TrajectoryAnalysisModule          *module,
              const AnalysisDataParallelOptions &opt,
-             const SelectionCollection &selections);
+             const SelectionCollection         &selections);
 
         //! Keeps a data handle for each AnalysisData object.
-        HandleContainer         handles_;
+        HandleContainer            handles_;
         //! Stores thread-local selections.
         const SelectionCollection &selections_;
 };
 
 TrajectoryAnalysisModuleData::Impl::Impl(
-        TrajectoryAnalysisModule *module,
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+    TrajectoryAnalysisModule          *module,
+    const AnalysisDataParallelOptions &opt,
+    const SelectionCollection         &selections)
     : selections_(selections)
 {
     TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
@@ -133,9 +133,9 @@ TrajectoryAnalysisModuleData::Impl::Impl(
  */
 
 TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
-        TrajectoryAnalysisModule *module,
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+    TrajectoryAnalysisModule          *module,
+    const AnalysisDataParallelOptions &opt,
+    const SelectionCollection         &selections)
     : impl_(new Impl(module, opt, selections))
 {
 }
@@ -179,10 +179,10 @@ SelectionList
 TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections)
 {
     // TODO: Consider an implementation that does not allocate memory every time.
-    SelectionList newSelections;
+    SelectionList                 newSelections;
     newSelections.reserve(selections.size());
     SelectionList::const_iterator i = selections.begin();
-    for ( ; i != selections.end(); ++i)
+    for (; i != selections.end(); ++i)
     {
         newSelections.push_back(parallelSelection(*i));
     }
@@ -215,17 +215,17 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
          * \param[in] opt        Data parallelization options.
          * \param[in] selections Thread-local selection collection.
          */
-        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *module,
+        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule          *module,
                                           const AnalysisDataParallelOptions &opt,
-                                          const SelectionCollection &selections);
+                                          const SelectionCollection         &selections);
 
         virtual void finish();
 };
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
-        TrajectoryAnalysisModule *module,
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+    TrajectoryAnalysisModule          *module,
+    const AnalysisDataParallelOptions &opt,
+    const SelectionCollection         &selections)
     : TrajectoryAnalysisModuleData(module, opt, selections)
 {
 }
@@ -257,23 +257,23 @@ TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 
 
 void TrajectoryAnalysisModule::optionsFinished(
-        Options * /*options*/,
-        TrajectoryAnalysisSettings * /*settings*/)
+    Options                    * /*options*/,
+    TrajectoryAnalysisSettings * /*settings*/)
 {
 }
 
 
-void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
+void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe & /*fr*/)
 {
 }
 
 
 TrajectoryAnalysisModuleDataPointer
 TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
-                                      const SelectionCollection &selections)
+                                      const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
-            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
+        new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
 }
 
 
@@ -332,7 +332,7 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromName(const char *name
 
 
 void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
-                                                    const char *name)
+                                                    const char           *name)
 {
     // TODO: Strong exception safety should be possible to implement.
     GMX_RELEASE_ASSERT(impl_->datasets_.find(name) == impl_->datasets_.end(),
@@ -343,7 +343,7 @@ void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
 
 
 void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
-                                                       const char *name)
+                                                       const char   *name)
 {
     // TODO: Strong exception safety should be possible to implement.
     registerBasicDataset(data, name);

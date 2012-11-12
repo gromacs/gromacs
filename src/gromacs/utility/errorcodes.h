@@ -132,7 +132,8 @@ ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler);
         int _rc_internal = (retcode); \
         ::gmx::internal::fatalError(_rc_internal, msg, __FILE__, __LINE__); \
         return _rc_internal; \
-    } while (0)
+    } \
+    while (0)
 
 /*! \brief
  * Macro for raising an error in a function that does not return \c int.

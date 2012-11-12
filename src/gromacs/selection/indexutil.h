@@ -82,13 +82,13 @@ typedef enum
 typedef struct gmx_ana_index_t
 {
     /** Number of atoms. */
-    int                 isize;
+    int      isize;
     /** List of atoms. */
-    atom_id            *index;
+    atom_id *index;
     /** Group name. */
-    char               *name;
+    char    *name;
     /** Number of items allocated for \p index. */
-    int                 nalloc_index;
+    int      nalloc_index;
 } gmx_ana_index_t;
 
 /*! \brief
@@ -97,7 +97,7 @@ typedef struct gmx_ana_index_t
 typedef struct gmx_ana_indexmap_t
 {
     /** Type of the mapping. */
-    e_index_t           type;
+    e_index_t type;
     /*! \brief
      * Current number of mapped values.
      *
@@ -107,7 +107,7 @@ typedef struct gmx_ana_indexmap_t
      * is always equal to \p b.nr, i.e., the number of blocks in the
      * original index group.
      */
-    int                 nr;
+    int nr;
     /*! \brief
      * Current reference IDs.
      *
@@ -119,7 +119,7 @@ typedef struct gmx_ana_indexmap_t
      * for blocks not present in the current group are set to -1, otherwise
      * they are removed completely and the \p nr field updated.
      */
-    int                *refid;
+    int *refid;
     /*! \brief
      * Current mapped IDs.
      *
@@ -130,13 +130,13 @@ typedef struct gmx_ana_indexmap_t
      * If \p bMaskOnly is provided to gmx_ana_indexmap_update(), this array
      * equals \p orgid.
      */
-    int                *mapid;
+    int *mapid;
     /*! \brief
      * Mapped block structure.
      *
      * A block structure that corresponds to the current index group.
      */
-    t_block             mapb;
+    t_block mapb;
 
     /*! \brief
      * Arbitrary ID numbers for the blocks.
@@ -153,7 +153,7 @@ typedef struct gmx_ana_indexmap_t
      * if the above are not appropriate.
      * The mapped values can be read through \p mapid.
      */
-    int                *orgid;
+    int *orgid;
 
     /*! \brief
      * Block data that defines the mapping (internal use only).
@@ -164,7 +164,7 @@ typedef struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() unless \p bMaskOnly was specified or the
      * index group is identical to the one provided to gmx_ana_indexmap_init().
      */
-    t_blocka            b;
+    t_blocka b;
     /*! \brief
      * true if the current reference IDs are for the whole group (internal use only).
      *
@@ -172,7 +172,7 @@ typedef struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() does not take any time if the group is
      * actually static.
      */
-    bool                bStatic;
+    bool bStatic;
     /*! \brief
      * true if the current mapping is for the whole group (internal use only).
      *
@@ -180,7 +180,7 @@ typedef struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() does not take any time if the group is
      * actually static.
      */
-    bool                bMapStatic;
+    bool bMapStatic;
 } gmx_ana_indexmap_t;
 
 

@@ -116,13 +116,13 @@ class PositionCalculationCollection::Impl
          * Can be NULL if none of the calculations require topology data or if
          * setTopology() has not been called.
          */
-        t_topology               *top_;
+        t_topology        *top_;
         //! Pointer to the first data structure.
-        gmx_ana_poscalc_t        *first_;
+        gmx_ana_poscalc_t *first_;
         //! Pointer to the last data structure.
-        gmx_ana_poscalc_t        *last_;
+        gmx_ana_poscalc_t *last_;
         //! Whether the collection has been initialized for evaluation.
-        bool                      bInit_;
+        bool               bInit_;
 };
 
 } // namespace gmx
@@ -142,13 +142,13 @@ struct gmx_ana_poscalc_t
      * To provide a consistent interface to the user, the field \p itype
      * should be used when information should be given out.
      */
-    e_poscalc_t               type;
+    e_poscalc_t type;
     /*! \brief
      * Flags for calculation options.
      *
      * See \ref poscalc_flags "documentation of the flags".
      */
-    int                       flags;
+    int flags;
 
     /*! \brief
      * Type for the created indices.
@@ -156,27 +156,27 @@ struct gmx_ana_poscalc_t
      * This field always agrees with the type that the user requested, but
      * may differ from \p type.
      */
-    e_index_t                 itype;
+    e_index_t itype;
     /*! \brief
      * Block data for the calculation.
      */
-    t_blocka                  b;
+    t_blocka b;
     /*! \brief
      * Mapping from the blocks to the blocks of \p sbase.
      *
      * If \p sbase is NULL, this field is also.
      */
-    int                      *baseid;
+    int *baseid;
     /*! \brief
      * Maximum evaluation group.
      */
-    gmx_ana_index_t           gmax;
+    gmx_ana_index_t gmax;
 
     /** Position storage for calculations that are used as a base. */
-    gmx_ana_pos_t            *p;
+    gmx_ana_pos_t *p;
 
     /** true if the positions have been evaluated for the current frame. */
-    bool                      bEval;
+    bool bEval;
     /*! \brief
      * Base position data for this calculation.
      *
@@ -184,13 +184,13 @@ struct gmx_ana_poscalc_t
      * already been calculated in \p sbase.
      * The structure pointed by \p sbase is always a static calculation.
      */
-    struct gmx_ana_poscalc_t *sbase;
+    struct gmx_ana_poscalc_t                 *sbase;
     /** Next structure in the linked list of calculations. */
-    struct gmx_ana_poscalc_t *next;
+    struct gmx_ana_poscalc_t                 *next;
     /** Previous structure in the linked list of calculations. */
-    struct gmx_ana_poscalc_t *prev;
+    struct gmx_ana_poscalc_t                 *prev;
     /** Number of references to this structure. */
-    int                       refcount;
+    int                                       refcount;
     /** Collection this calculation belongs to. */
     gmx::PositionCalculationCollection::Impl *coll;
 };
@@ -219,11 +219,11 @@ index_type_for_poscalc(e_poscalc_t type)
 {
     switch(type)
     {
-        case POS_ATOM:    return INDEX_ATOM;
-        case POS_RES:     return INDEX_RES;
-        case POS_MOL:     return INDEX_MOL;
-        case POS_ALL:     return INDEX_ALL;
-        case POS_ALL_PBC: return INDEX_ALL;
+    case POS_ATOM:    return INDEX_ATOM;
+    case POS_RES:     return INDEX_RES;
+    case POS_MOL:     return INDEX_MOL;
+    case POS_ALL:     return INDEX_ALL;
+    case POS_ALL_PBC: return INDEX_ALL;
     }
     return INDEX_UNKNOWN;
 }
@@ -249,18 +249,18 @@ PositionCalculationCollection::typeFromEnum(const char *post,
     {
         *flags &= ~POS_COMPLMAX;
         *flags |= POS_COMPLWHOLE;
-        ptr = post + 6;
+        ptr     = post + 6;
     }
     else if (post[0] == 'p')
     {
         *flags &= ~POS_COMPLWHOLE;
         *flags |= POS_COMPLMAX;
-        ptr = post + 5;
+        ptr     = post + 5;
     }
     else if (post[0] == 'd')
     {
         *flags &= ~(POS_COMPLMAX | POS_COMPLWHOLE);
-        ptr = post + 4;
+        ptr     = post + 4;
     }
 
     if (ptr[0] == 'r')
@@ -331,8 +331,8 @@ PositionCalculationCollection::Impl::insertCalculation(gmx_ana_poscalc_t *pc,
     }
     else
     {
-        pc->prev     = before->prev;
-        pc->next     = before;
+        pc->prev = before->prev;
+        pc->next = before;
         if (before->prev)
         {
             before->prev->next = pc;
@@ -374,8 +374,8 @@ PositionCalculationCollection::Impl::createCalculation(e_poscalc_t type, int fla
     gmx_ana_poscalc_t *pc;
 
     snew(pc, 1);
-    pc->type     = type;
-    pc->itype    = index_type_for_poscalc(type);
+    pc->type  = type;
+    pc->itype = index_type_for_poscalc(type);
     gmx_ana_poscalc_set_flags(pc, flags);
     pc->refcount = 1;
     pc->coll     = this;
@@ -417,22 +417,22 @@ PositionCalculationCollection::printTree(FILE *fp) const
         fprintf(fp, "%2d ", i);
         switch (pc->type)
         {
-            case POS_ATOM:    fprintf(fp, "ATOM");    break;
-            case POS_RES:     fprintf(fp, "RES");     break;
-            case POS_MOL:     fprintf(fp, "MOL");     break;
-            case POS_ALL:     fprintf(fp, "ALL");     break;
-            case POS_ALL_PBC: fprintf(fp, "ALL_PBC"); break;
+        case POS_ATOM:    fprintf(fp, "ATOM");    break;
+        case POS_RES:     fprintf(fp, "RES");     break;
+        case POS_MOL:     fprintf(fp, "MOL");     break;
+        case POS_ALL:     fprintf(fp, "ALL");     break;
+        case POS_ALL_PBC: fprintf(fp, "ALL_PBC"); break;
         }
         if (pc->itype != index_type_for_poscalc(pc->type))
         {
             fprintf(fp, " (");
             switch (pc->itype)
             {
-                case INDEX_UNKNOWN: fprintf(fp, "???");  break;
-                case INDEX_ATOM:    fprintf(fp, "ATOM"); break;
-                case INDEX_RES:     fprintf(fp, "RES");  break;
-                case INDEX_MOL:     fprintf(fp, "MOL");  break;
-                case INDEX_ALL:     fprintf(fp, "ALL");  break;
+            case INDEX_UNKNOWN: fprintf(fp, "???");  break;
+            case INDEX_ATOM:    fprintf(fp, "ATOM"); break;
+            case INDEX_RES:     fprintf(fp, "RES");  break;
+            case INDEX_MOL:     fprintf(fp, "MOL");  break;
+            case INDEX_ALL:     fprintf(fp, "ALL");  break;
             }
             fprintf(fp, ")");
         }
@@ -517,7 +517,7 @@ PositionCalculationCollection::printTree(FILE *fp) const
             gmx_ana_poscalc_t *base;
 
             fprintf(fp, "   Base: ");
-            j = 1;
+            j    = 1;
             base = impl_->first_;
             while (base && base != pc->sbase)
             {
@@ -549,8 +549,8 @@ PositionCalculationCollection::createCalculation(e_poscalc_t type, int flags)
 gmx_ana_poscalc_t *
 PositionCalculationCollection::createCalculationFromEnum(const char *post, int flags)
 {
-    e_poscalc_t  type;
-    int cflags = flags;
+    e_poscalc_t type;
+    int         cflags = flags;
     typeFromEnum(post, &type, &cflags);
     return impl_->createCalculation(type, cflags);
 }
@@ -572,7 +572,7 @@ void PositionCalculationCollection::initEvaluation()
         /* Construct the mapping of the base positions */
         if (pc->sbase)
         {
-            int                     bi, bj;
+            int bi, bj;
 
             snew(pc->baseid, pc->b.nr);
             for (bi = bj = 0; bi < pc->b.nr; ++bi, ++bj)
@@ -614,7 +614,7 @@ void PositionCalculationCollection::initFrame()
     while (pc)
     {
         pc->bEval = false;
-        pc = pc->next;
+        pc        = pc->next;
     }
 }
 
@@ -637,15 +637,15 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
-        pc->type   = POS_ATOM; 
+        pc->type   = POS_ATOM;
         pc->flags &= ~(POS_MASS | POS_COMPLMAX | POS_COMPLWHOLE);
     }
     /* Set the POS_COMPLWHOLE flag if the calculation in fact always uses
      * complete residues and molecules. */
-    if (!(pc->flags & POS_COMPLWHOLE)
-        && (!(pc->flags & POS_DYNAMIC) || (pc->flags & POS_COMPLMAX))
-        && (pc->type == POS_RES || pc->type == POS_MOL)
-        && gmx_ana_index_has_complete_elems(g, pc->itype, top))
+    if (!(pc->flags & POS_COMPLWHOLE) &&
+        (!(pc->flags & POS_DYNAMIC) || (pc->flags & POS_COMPLMAX)) &&
+        (pc->type == POS_RES || pc->type == POS_MOL) &&
+        gmx_ana_index_has_complete_elems(g, pc->itype, top))
     {
         pc->flags &= ~POS_COMPLMAX;
         pc->flags |= POS_COMPLWHOLE;
@@ -655,7 +655,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
     {
         gmx_ana_index_copy(&pc->gmax, g, true);
         sfree(pc->gmax.name);
-        pc->gmax.name  = NULL;
+        pc->gmax.name = NULL;
     }
     else
     {
@@ -681,14 +681,14 @@ can_use_base(gmx_ana_poscalc_t *pc)
     }
     /* For dynamic selections that do not use completion, it is not possible
      * to use a base. */
-    if ((pc->type == POS_RES || pc->type == POS_MOL)
-        && (pc->flags & POS_DYNAMIC) && !(pc->flags & (POS_COMPLMAX | POS_COMPLWHOLE)))
+    if ((pc->type == POS_RES || pc->type == POS_MOL) &&
+        (pc->flags & POS_DYNAMIC) && !(pc->flags & (POS_COMPLMAX | POS_COMPLWHOLE)))
     {
         return false;
     }
     /* Dynamic calculations for a single position cannot use a base. */
-    if ((pc->type == POS_ALL || pc->type == POS_ALL_PBC)
-        && (pc->flags & POS_DYNAMIC))
+    if ((pc->type == POS_ALL || pc->type == POS_ALL_PBC) &&
+        (pc->flags & POS_DYNAMIC))
     {
         return false;
     }
@@ -711,7 +711,7 @@ static bool
 should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
              gmx_ana_index_t *g1, gmx_ana_index_t *g)
 {
-    gmx_ana_index_t  g2;
+    gmx_ana_index_t g2;
 
     /* Do not merge calculations with different mass weighting. */
     if ((pc1->flags & POS_MASS) != (pc2->flags & POS_MASS))
@@ -732,15 +732,15 @@ should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
         return false;
     }
     /* Full completion calculations always match if the type is correct. */
-    if ((pc1->flags & POS_COMPLWHOLE) && (pc2->flags & POS_COMPLWHOLE)
-        && pc1->type == pc2->type)
+    if ((pc1->flags & POS_COMPLWHOLE) && (pc2->flags & POS_COMPLWHOLE) &&
+        pc1->type == pc2->type)
     {
         return true;
     }
     /* The calculations also match if the intersection consists of full
      * blocks. */
-    if (gmx_ana_index_has_full_ablocks(g, &pc1->b)
-        && gmx_ana_index_has_full_ablocks(g, &pc2->b))
+    if (gmx_ana_index_has_full_ablocks(g, &pc1->b) &&
+        gmx_ana_index_has_full_ablocks(g, &pc2->b))
     {
         return true;
     }
@@ -765,7 +765,7 @@ create_simple_base(gmx_ana_poscalc_t *pc)
     int                flags;
 
     flags = pc->flags & ~(POS_DYNAMIC | POS_MASKONLY);
-    base = pc->coll->createCalculation(pc->type, flags);
+    base  = pc->coll->createCalculation(pc->type, flags);
     set_poscalc_maxindex(base, &pc->gmax, true);
 
     snew(base->p, 1);
@@ -792,9 +792,9 @@ create_simple_base(gmx_ana_poscalc_t *pc)
 static void
 merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
 {
-    gmx_ana_index_t  gp, gb, g;
-    int              isize, bnr;
-    int              i, bi, bj, bo;
+    gmx_ana_index_t gp, gb, g;
+    int             isize, bnr;
+    int             i, bi, bj, bo;
 
     base->flags |= pc->flags & (POS_VELOCITIES | POS_FORCES);
     gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, NULL, 0);
@@ -822,10 +822,10 @@ merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
         gmx_ana_index_merge(&g, &gb, &g);
         /* Merge the blocks */
         srenew(base->b.index, base->b.nr + bnr + 1);
-        i  = g.isize - 1;
-        bi = base->b.nr - 1;
-        bj = pc->b.nr - 1;
-        bo = base->b.nr + bnr - 1;
+        i                   = g.isize - 1;
+        bi                  = base->b.nr - 1;
+        bj                  = pc->b.nr - 1;
+        bo                  = base->b.nr + bnr - 1;
         base->b.index[bo+1] = i + 1;
         while (bo >= 0)
         {
@@ -912,7 +912,7 @@ setup_base(gmx_ana_poscalc_t *pc)
     gmx_ana_index_clear(&g);
     gmx_ana_index_reserve(&g, pc->b.nra);
     pbase = pc;
-    base = pc->coll->first_;
+    base  = pc->coll->first_;
     while (base)
     {
         /* Save the next calculation so that we can safely delete base */
@@ -922,8 +922,8 @@ setup_base(gmx_ana_poscalc_t *pc)
          * If the above conditions are met, check whether we should do a
          * merge.
          */
-        if (base != pc && !base->sbase && can_use_base(base)
-            && should_merge(pbase, base, &gp, &g))
+        if (base != pc && !base->sbase && can_use_base(base) &&
+            should_merge(pbase, base, &gp, &g))
         {
             /* Check whether this is the first base found */
             if (pbase == pc)
@@ -969,8 +969,8 @@ setup_base(gmx_ana_poscalc_t *pc)
     gmx_ana_index_deinit(&g);
 
     /* If no base was found, create one if one is required */
-    if (!pc->sbase && (pc->flags & POS_DYNAMIC)
-        && (pc->flags & (POS_COMPLMAX | POS_COMPLWHOLE)))
+    if (!pc->sbase && (pc->flags & POS_DYNAMIC) &&
+        (pc->flags & (POS_COMPLMAX | POS_COMPLWHOLE)))
     {
         create_simple_base(pc);
     }
@@ -1128,8 +1128,8 @@ void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                        gmx_ana_index_t *g, t_trxframe *fr, t_pbc *pbc)
 {
-    int  i, bi, bj;
-    
+    int i, bi, bj;
+
     if (pc->bEval == true && !(pc->flags & POS_MASKONLY))
     {
         return;
@@ -1158,7 +1158,9 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         gmx_ana_indexmap_update(&p->m, g, true);
         if (pc->bEval)
+        {
             return;
+        }
     }
     if (!(pc->flags & POS_DYNAMIC))
     {
@@ -1244,8 +1246,8 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
         }
         /* Here, we assume that the topology has been properly initialized,
          * and do not check the return values of gmx_calc_comg*(). */
-        t_topology *top = pc->coll->top_;
-        bool bMass = pc->flags & POS_MASS;
+        t_topology *top   = pc->coll->top_;
+        bool        bMass = pc->flags & POS_MASS;
         switch (pc->type)
         {
         case POS_ATOM:

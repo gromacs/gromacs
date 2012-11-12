@@ -63,12 +63,12 @@ class Angle : public TrajectoryAnalysisModule
         Angle();
         virtual ~Angle();
 
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options *options,
+        virtual void optionsFinished(Options                    *options,
                                      TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
+                                  const TopologyInformation        &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -80,22 +80,22 @@ class Angle : public TrajectoryAnalysisModule
         void checkSelections(const SelectionList &sel1,
                              const SelectionList &sel2) const;
 
-        SelectionList           sel1_;
-        SelectionList           sel2_;
-        SelectionOptionInfo    *sel1info_;
-        SelectionOptionInfo    *sel2info_;
-        std::string             fnAverage_;
-        std::string             fnAll_;
+        SelectionList sel1_;
+        SelectionList sel2_;
+        SelectionOptionInfo                  *sel1info_;
+        SelectionOptionInfo                  *sel2info_;
+        std::string                           fnAverage_;
+        std::string                           fnAll_;
 
-        std::string             g1type_;
-        std::string             g2type_;
+        std::string                           g1type_;
+        std::string                           g2type_;
 
-        AnalysisData            angles_;
+        AnalysisData                          angles_;
         AnalysisDataFrameAverageModulePointer averageModule_;
-        int                     natoms1_;
-        int                     natoms2_;
+        int                 natoms1_;
+        int                 natoms2_;
         // TODO: It is not possible to put rvec into a container.
-        std::vector<rvec *>     vt0_;
+        std::vector<rvec *> vt0_;
 
         // Copy and assign disallowed by base.
 };

@@ -30,7 +30,7 @@
  */
 /*! \page page_module_selection_custom Custom selection methods
  *
- * Custom selection methods are defined by creating a new instance of 
+ * Custom selection methods are defined by creating a new instance of
  * \c gmx_ana_selmethod_t and filling it with the necessary data for handling
  * the selection.
  * The structure contains callback pointers that define the actual behavior
@@ -137,7 +137,7 @@
  * \c gmx_ana_selparam_t structures.
  * The order of the parameters does not matter (except possibly for callback
  * implementation), with one important exception:
- * If the method evaluates to a \ref POS_VALUE, the first parameter should 
+ * If the method evaluates to a \ref POS_VALUE, the first parameter should
  * have \ref GROUP_VALUE and be the one that is used to calculate the
  * positions.
  *
@@ -395,7 +395,7 @@ typedef void *(*sel_datafunc)(int npar, gmx_ana_selparam_t *param);
  * The pointer \p pcc should then be stored and used for initialization for
  * any position calculation structures.
  */
-typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data);
+typedef void (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data);
 /*! \brief
  * Does initialization based on topology and/or parameter values.
  *
@@ -440,8 +440,8 @@ typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_initfunc)(t_topology *top, int npar,
-                              gmx_ana_selparam_t *param, void *data);
+typedef void (*sel_initfunc)(t_topology *top, int npar,
+                             gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes output data structure.
  *
@@ -469,8 +469,8 @@ typedef void  (*sel_initfunc)(t_topology *top, int npar,
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
-                                 void *data);
+typedef void (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
+                                void *data);
 /*! \brief
  * Frees the internal data.
  *
@@ -488,7 +488,7 @@ typedef void  (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
  * Pointers set as the value pointer of \ref SPAR_ENUMVAL parameters should not
  * be freed.
  */
-typedef void  (*sel_freefunc)(void *data);
+typedef void (*sel_freefunc)(void *data);
 
 /*! \brief
  * Initializes the evaluation for a new frame.
@@ -512,8 +512,8 @@ typedef void  (*sel_freefunc)(void *data);
  * For static methods, it is called once, with \p fr and \p pbc set to
  * NULL.
  */
-typedef void  (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                               void *data);
+typedef void (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                              void *data);
 /*! \brief
  * Evaluates a selection method.
  *
@@ -539,9 +539,9 @@ typedef void  (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * without freeing; it is the responsibility of this function to provide
  * pointers that can be discarded without memory leaks.
  */
-typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                                gmx_ana_index_t *g, gmx_ana_selvalue_t *out,
-                                void *data);
+typedef void (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                               gmx_ana_index_t *g, gmx_ana_selvalue_t *out,
+                               void *data);
 /*! \brief
  * Evaluates a selection method using positions.
  *
@@ -567,10 +567,10 @@ typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * without freeing; it is the responsibility of this function to provide
  * pointers that can be discarded without memory leaks.
  */
-typedef void  (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                                    struct gmx_ana_pos_t *pos,
-                                    gmx_ana_selvalue_t *out,
-                                    void *data);
+typedef void (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                                   struct gmx_ana_pos_t *pos,
+                                   gmx_ana_selvalue_t *out,
+                                   void *data);
 
 /*! \brief
  * Help information for a selection method.
@@ -585,20 +585,20 @@ typedef struct gmx_ana_selmethod_help_t
      *
      * If NULL, the name of the method is used.
      */
-    const char         *syntax;
+    const char *syntax;
     /*! \brief
      * Number of strings in \p help.
      *
      * Set to 0 if \p help is NULL.
      */
-    int                 nlhelp;
+    int nlhelp;
     /*! \brief
      * Detailed help for the method.
      *
      * If there is no help available in addition to \p syntax, this can be set
      * to NULL.
      */
-    const char        **help;
+    const char **help;
 } gmx_ana_selmethod_help_t;
 
 /*! \brief
@@ -616,9 +616,9 @@ typedef struct gmx_ana_selmethod_help_t
 typedef struct gmx_ana_selmethod_t
 {
     /** Name of the method. */
-    const char         *name;
+    const char  *name;
     /** Type which the method returns. */
-    e_selvalue_t        type;
+    e_selvalue_t type;
     /*! \brief
      * Flags to specify how the method should be handled.
      *
@@ -631,22 +631,22 @@ typedef struct gmx_ana_selmethod_t
     gmx_ana_selparam_t *param;
 
     /** Function for allocating and initializing internal data and parameters. */
-    sel_datafunc        init_data;
+    sel_datafunc    init_data;
     /** Function to set the position calculation collection. */
-    sel_posfunc         set_poscoll;
+    sel_posfunc     set_poscoll;
     /** Function to do initialization based on topology and/or parameter values. */
-    sel_initfunc        init;
+    sel_initfunc    init;
     /** Function to initialize output data structure. */
-    sel_outinitfunc     outinit;
+    sel_outinitfunc outinit;
     /** Function to free the internal data. */
-    sel_freefunc        free;
+    sel_freefunc    free;
 
     /** Function to initialize the calculation for a new frame. */
-    sel_framefunc       init_frame;
+    sel_framefunc      init_frame;
     /** Function to evaluate the value. */
-    sel_updatefunc      update;
+    sel_updatefunc     update;
     /** Function to evaluate the value using positions. */
-    sel_updatefunc_pos  pupdate;
+    sel_updatefunc_pos pupdate;
 
     /** Help data for the method. */
     gmx_ana_selmethod_help_t help;

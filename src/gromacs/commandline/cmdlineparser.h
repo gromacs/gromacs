@@ -54,11 +54,11 @@ class Options;
  *
  * Typical usage (without error checking):
  * \code
-gmx::Options options("name", "description");
-// Fill up options
+   gmx::Options options("name", "description");
+   // Fill up options
 
-gmx::CommandLineParser(&options).parse(&argc, argv);
-options.finish();
+   gmx::CommandLineParser(&options).parse(&argc, argv);
+   options.finish();
  * \endcode
  *
  * \inpublicapi

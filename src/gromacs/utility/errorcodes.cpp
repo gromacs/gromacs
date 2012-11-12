@@ -54,8 +54,7 @@ namespace
  *
  * This has to match the enum in errorcodes.h!
  */
-const char *const error_names[] =
-{
+const char *const error_names[] = {
     "No error",
     "Out of memory",
     "File not found",
@@ -91,7 +90,7 @@ void standardErrorHandler(int retcode, const char *msg,
 //! Global error handler set with setFatalErrorHandler().
 ErrorHandlerFunc g_errorHandler = standardErrorHandler;
 //! Mutex for protecting access to g_errorHandler.
-tMPI::mutex handler_mutex;
+tMPI::mutex      handler_mutex;
 
 } // namespace
 
@@ -107,7 +106,7 @@ const char *getErrorCodeString(int errorcode)
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
 {
     tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
-    ErrorHandlerFunc oldHandler = g_errorHandler;
+    ErrorHandlerFunc              oldHandler = g_errorHandler;
     g_errorHandler = handler;
     return oldHandler;
 }

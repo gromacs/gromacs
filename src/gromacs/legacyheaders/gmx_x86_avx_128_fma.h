@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -35,13 +35,13 @@
 #define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
 
-#define _GMX_MM_PERMUTE128D(fp1,fp0)         (((fp1) << 1) | ((fp0)))
+#define _GMX_MM_PERMUTE128D(fp1, fp0)         (((fp1) << 1) | ((fp0)))
 
 
 #define GMX_MM_TRANSPOSE2_PD(row0, row1) {           \
-    __m128d __gmx_t1 = row0;                         \
-    row0           = _mm_unpacklo_pd(row0,row1);     \
-    row1           = _mm_unpackhi_pd(__gmx_t1,row1); \
+        __m128d __gmx_t1 = row0;                         \
+        row0 = _mm_unpacklo_pd(row0, row1);     \
+        row1 = _mm_unpackhi_pd(__gmx_t1, row1); \
 }
 
 
@@ -91,79 +91,79 @@ static __m128
 _mm_macc_ps(__m128 a, __m128 b, __m128 c)
 {
 
-    return _mm_add_ps(c,_mm_mul_ps(a,b));
+    return _mm_add_ps(c, _mm_mul_ps(a, b));
 }
 
 static __m128
 _mm_nmacc_ps(__m128 a, __m128 b, __m128 c)
 {
 
-    return _mm_sub_ps(c,_mm_mul_ps(a,b));
+    return _mm_sub_ps(c, _mm_mul_ps(a, b));
 }
 
 static __m128d
 _mm_macc_pd(__m128d a, __m128d b, __m128d c)
 {
 
-    return _mm_add_pd(c,_mm_mul_pd(a,b));
+    return _mm_add_pd(c, _mm_mul_pd(a, b));
 }
 
 static __m128d
 _mm_nmacc_pd(__m128d a, __m128d b, __m128d c)
 {
 
-    return _mm_sub_pd(c,_mm_mul_pd(a,b));
+    return _mm_sub_pd(c, _mm_mul_pd(a, b));
 }
 #endif /* FMA4 support */
 
 #endif /* _MSC_VER */
 
 static void
-gmx_mm_printxmm_ps(const char *s,__m128 xmm)
+gmx_mm_printxmm_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
-    _mm_storeu_ps(f,xmm);
-    printf("%s: %15.10e %15.10e %15.10e %15.10e\n",s,f[0],f[1],f[2],f[3]);
+    _mm_storeu_ps(f, xmm);
+    printf("%s: %15.10e %15.10e %15.10e %15.10e\n", s, f[0], f[1], f[2], f[3]);
 }
 
 
 static void
-gmx_mm_printxmmsum_ps(const char *s,__m128 xmm)
+gmx_mm_printxmmsum_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
-    _mm_storeu_ps(f,xmm);
-    printf("%s (sum): %15.10g\n",s,f[0]+f[1]+f[2]+f[3]);
+    _mm_storeu_ps(f, xmm);
+    printf("%s (sum): %15.10g\n", s, f[0]+f[1]+f[2]+f[3]);
 }
 
 
 static void
-gmx_mm_printxmm_pd(const char *s,__m128d xmm)
+gmx_mm_printxmm_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
-    _mm_storeu_pd(f,xmm);
-    printf("%s: %30.20e %30.20e\n",s,f[0],f[1]);
+    _mm_storeu_pd(f, xmm);
+    printf("%s: %30.20e %30.20e\n", s, f[0], f[1]);
 }
 
 static void
-gmx_mm_printxmmsum_pd(const char *s,__m128d xmm)
+gmx_mm_printxmmsum_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
-    _mm_storeu_pd(f,xmm);
-    printf("%s (sum): %15.10g\n",s,f[0]+f[1]);
+    _mm_storeu_pd(f, xmm);
+    printf("%s (sum): %15.10g\n", s, f[0]+f[1]);
 }
 
 
 static void
-gmx_mm_printxmm_epi32(const char *s,__m128i xmmi)
+gmx_mm_printxmm_epi32(const char *s, __m128i xmmi)
 {
     int i[4];
 
-    _mm_storeu_si128((__m128i *)i,xmmi);
-    printf("%10s: %2d %2d %2d %2d\n",s,i[0],i[1],i[2],i[3]);
+    _mm_storeu_si128((__m128i *)i, xmmi);
+    printf("%10s: %2d %2d %2d %2d\n", s, i[0], i[1], i[2], i[3]);
 }
 
 

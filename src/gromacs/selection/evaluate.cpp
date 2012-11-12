@@ -118,13 +118,13 @@ class MempoolSelelemReserver
         void reserve(const SelectionTreeElementPointer &sel, int count)
         {
             GMX_RELEASE_ASSERT(!sel_,
-                    "Can only reserve one element with one instance");
+                               "Can only reserve one element with one instance");
             sel->mempoolReserve(count);
             sel_ = sel;
         }
 
     private:
-        SelectionTreeElementPointer     sel_;
+        SelectionTreeElementPointer sel_;
 };
 
 /*! \internal \brief
@@ -173,8 +173,8 @@ class MempoolGroupReserver
         }
 
     private:
-        gmx_sel_mempool_t      *mp_;
-        gmx_ana_index_t        *g_;
+        gmx_sel_mempool_t *mp_;
+        gmx_ana_index_t   *g_;
 };
 
 /*! \internal \brief
@@ -202,7 +202,7 @@ class SelelemTemporaryValueAssigner
          * \see assign()
          */
         SelelemTemporaryValueAssigner(const SelectionTreeElementPointer &sel,
-                                      const SelectionTreeElement &vsource)
+                                      const SelectionTreeElement        &vsource)
         {
             assign(sel, vsource);
         }
@@ -226,22 +226,22 @@ class SelelemTemporaryValueAssigner
          * actually accesses values in \p vsource.
          */
         void assign(const SelectionTreeElementPointer &sel,
-                    const SelectionTreeElement &vsource)
+                    const SelectionTreeElement        &vsource)
         {
             GMX_RELEASE_ASSERT(!sel_,
                                "Can only assign one element with one instance");
             GMX_RELEASE_ASSERT(sel->v.type == vsource.v.type,
                                "Mismatching selection value types");
-            old_ptr_ = sel->v.u.ptr;
+            old_ptr_    = sel->v.u.ptr;
             old_nalloc_ = sel->v.nalloc;
             _gmx_selvalue_setstore(&sel->v, vsource.v.u.ptr);
             sel_ = sel;
         }
 
     private:
-        SelectionTreeElementPointer     sel_;
-        void                           *old_ptr_;
-        int                             old_nalloc_;
+        SelectionTreeElementPointer sel_;
+        void                       *old_ptr_;
+        int old_nalloc_;
 };
 
 } // namespace
@@ -254,35 +254,65 @@ void
 _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc)
 {
     if (!evalfunc)
+    {
         fprintf(fp, "none");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_root)
+    {
         fprintf(fp, "root");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_static)
+    {
         fprintf(fp, "static");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr_simple)
+    {
         fprintf(fp, "subexpr_simple");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr_staticeval)
+    {
         fprintf(fp, "subexpr_staticeval");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr)
+    {
         fprintf(fp, "subexpr");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexprref_simple)
+    {
         fprintf(fp, "ref_simple");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexprref)
+    {
         fprintf(fp, "ref");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_method)
+    {
         fprintf(fp, "method");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_modifier)
+    {
         fprintf(fp, "mod");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_not)
+    {
         fprintf(fp, "not");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_and)
+    {
         fprintf(fp, "and");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_or)
+    {
         fprintf(fp, "or");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_arithmetic)
+    {
         fprintf(fp, "arithmetic");
+    }
     else
+    {
         fprintf(fp, "%p", (void*)(evalfunc));
+    }
 }
 
 /*!
@@ -363,7 +393,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
                              t_trxframe *fr, t_pbc *pbc)
 {
     gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
-    gmx_sel_evaluate_t  data;
+    gmx_sel_evaluate_t       data;
 
     _gmx_sel_evaluate_init(&data, sc->mempool, &sc->gall, sc->top, fr, pbc);
     init_frame_eval(sc->root);
@@ -408,7 +438,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
 void
 SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
 {
-    gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
+    gmx_ana_selcollection_t          *sc = &coll->impl_->sc_;
 
     SelectionDataList::const_iterator isel;
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
@@ -430,9 +460,9 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
  * Evaluates each child of \p sel in \p g.
  */
 void
-_gmx_sel_evaluate_children(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_children(gmx_sel_evaluate_t                *data,
                            const SelectionTreeElementPointer &sel,
-                           gmx_ana_index_t *g)
+                           gmx_ana_index_t                   *g)
 {
     SelectionTreeElementPointer child = sel->child;
     while (child)
@@ -461,9 +491,9 @@ _gmx_sel_evaluate_children(gmx_sel_evaluate_t *data,
  * \ref SEL_ROOT elements.
  */
 void
-_gmx_sel_evaluate_root(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
                        const SelectionTreeElementPointer &sel,
-                       gmx_ana_index_t *g)
+                       gmx_ana_index_t                   *g)
 {
     if (sel->u.cgrp.isize == 0 || !sel->child->evaluate)
     {
@@ -486,9 +516,9 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t *data,
  * \ref SEL_CONST elements with value type \ref GROUP_VALUE.
  */
 void
-_gmx_sel_evaluate_static(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_static(gmx_sel_evaluate_t                *data,
                          const SelectionTreeElementPointer &sel,
-                         gmx_ana_index_t *g)
+                         gmx_ana_index_t                   *g)
 {
     gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
 }
@@ -513,9 +543,9 @@ _gmx_sel_evaluate_static(gmx_sel_evaluate_t *data,
  * full subexpression handling.
  */
 void
-_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t                *data,
                                  const SelectionTreeElementPointer &sel,
-                                 gmx_ana_index_t *g)
+                                 gmx_ana_index_t                   *g)
 {
     if (sel->child->evaluate)
     {
@@ -541,9 +571,9 @@ _gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data,
  * not need full subexpression handling.
  */
 void
-_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t                *data,
                                      const SelectionTreeElementPointer &sel,
-                                     gmx_ana_index_t *g)
+                                     gmx_ana_index_t                   *g)
 {
     if (sel->u.cgrp.isize == 0)
     {
@@ -581,11 +611,11 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data,
  * major problem.
  */
 void
-_gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t                *data,
                           const SelectionTreeElementPointer &sel,
-                          gmx_ana_index_t *g)
+                          gmx_ana_index_t                   *g)
 {
-    gmx_ana_index_t  gmiss;
+    gmx_ana_index_t      gmiss;
 
     MempoolGroupReserver gmissreserver(data->mp);
     if (sel->u.cgrp.isize == 0)
@@ -599,7 +629,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data,
         char *name = sel->u.cgrp.name;
         gmx_ana_index_copy(&sel->u.cgrp, g, false);
         sel->u.cgrp.name = name;
-        gmiss.isize = 0;
+        gmiss.isize      = 0;
     }
     else
     {
@@ -619,7 +649,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data,
         }
         else
         {
-            int  i, j, k;
+            int i, j, k;
 
             i = sel->u.cgrp.isize - 1;
             j = gmiss.isize - 1;
@@ -627,57 +657,57 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data,
              * do this portably without C++ templates. */
             switch (sel->v.type)
             {
-                case INT_VALUE:
-                    for (k = sel->u.cgrp.isize + gmiss.isize - 1; k >= 0; k--)
+            case INT_VALUE:
+                for (k = sel->u.cgrp.isize + gmiss.isize - 1; k >= 0; k--)
+                {
+                    if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                     {
-                        if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
-                        {
-                            sel->v.u.i[k] = sel->child->v.u.i[j--];
-                        }
-                        else
-                        {
-                            sel->v.u.i[k] = sel->v.u.i[i--];
-                        }
+                        sel->v.u.i[k] = sel->child->v.u.i[j--];
                     }
-                    break;
-
-                case REAL_VALUE:
-                    for (k = sel->u.cgrp.isize + gmiss.isize - 1; k >= 0; k--)
+                    else
                     {
-                        if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
-                        {
-                            sel->v.u.r[k] = sel->child->v.u.r[j--];
-                        }
-                        else
-                        {
-                            sel->v.u.r[k] = sel->v.u.r[i--];
-                        }
+                        sel->v.u.i[k] = sel->v.u.i[i--];
                     }
-                    break;
+                }
+                break;
 
-                case STR_VALUE:
-                    // Note: with the currently allowed syntax, this case is never
-                    // reached.
-                    for (k = sel->u.cgrp.isize + gmiss.isize - 1; k >= 0; k--)
+            case REAL_VALUE:
+                for (k = sel->u.cgrp.isize + gmiss.isize - 1; k >= 0; k--)
+                {
+                    if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                     {
-                        if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
-                        {
-                            sel->v.u.s[k] = sel->child->v.u.s[j--];
-                        }
-                        else
-                        {
-                            sel->v.u.s[k] = sel->v.u.s[i--];
-                        }
+                        sel->v.u.r[k] = sel->child->v.u.r[j--];
                     }
-                    break;
+                    else
+                    {
+                        sel->v.u.r[k] = sel->v.u.r[i--];
+                    }
+                }
+                break;
 
-                case POS_VALUE:
-                    /* TODO: Implement this */
-                    GMX_THROW(gmx::NotImplementedError("position subexpressions not implemented properly"));
+            case STR_VALUE:
+                // Note: with the currently allowed syntax, this case is never
+                // reached.
+                for (k = sel->u.cgrp.isize + gmiss.isize - 1; k >= 0; k--)
+                {
+                    if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
+                    {
+                        sel->v.u.s[k] = sel->child->v.u.s[j--];
+                    }
+                    else
+                    {
+                        sel->v.u.s[k] = sel->v.u.s[i--];
+                    }
+                }
+                break;
 
-                case NO_VALUE:
-                case GROUP_VALUE:
-                    GMX_THROW(gmx::InternalError("Invalid subexpression type"));
+            case POS_VALUE:
+                /* TODO: Implement this */
+                GMX_THROW(gmx::NotImplementedError("position subexpressions not implemented properly"));
+
+            case NO_VALUE:
+            case GROUP_VALUE:
+                GMX_THROW(gmx::InternalError("Invalid subexpression type"));
             }
         }
         gmx_ana_index_merge(&sel->u.cgrp, &sel->u.cgrp, &gmiss);
@@ -699,9 +729,9 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data,
  * other references.
  */
 void
-_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t                *data,
                                     const SelectionTreeElementPointer &sel,
-                                    gmx_ana_index_t *g)
+                                    gmx_ana_index_t                   *g)
 {
     if (g)
     {
@@ -738,11 +768,11 @@ _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data,
  * \ref SEL_SUBEXPRREF elements.
  */
 void
-_gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                *data,
                              const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *g)
+                             gmx_ana_index_t                   *g)
 {
-    int        i, j;
+    int i, j;
 
     if (g)
     {
@@ -751,89 +781,89 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data,
     const SelectionTreeElementPointer &expr = sel->child;
     switch (sel->v.type)
     {
-        case INT_VALUE:
-            if (!g)
+    case INT_VALUE:
+        if (!g)
+        {
+            sel->v.nr = expr->v.nr;
+            memcpy(sel->v.u.i, expr->v.u.i, sel->v.nr*sizeof(*sel->v.u.i));
+        }
+        else
+        {
+            sel->v.nr = g->isize;
+            /* Extract the values corresponding to g */
+            for (i = j = 0; i < g->isize; ++i, ++j)
             {
-                sel->v.nr = expr->v.nr;
-                memcpy(sel->v.u.i, expr->v.u.i, sel->v.nr*sizeof(*sel->v.u.i));
-            }
-            else
-            {
-                sel->v.nr = g->isize;
-                /* Extract the values corresponding to g */
-                for (i = j = 0; i < g->isize; ++i, ++j)
+                while (sel->child->u.cgrp.index[j] < g->index[i])
                 {
-                    while (sel->child->u.cgrp.index[j] < g->index[i])
-                    {
-                        ++j;
-                    }
-                    sel->v.u.i[i] = expr->v.u.i[j];
+                    ++j;
                 }
+                sel->v.u.i[i] = expr->v.u.i[j];
             }
-            break;
+        }
+        break;
 
-        case REAL_VALUE:
-            if (!g)
+    case REAL_VALUE:
+        if (!g)
+        {
+            sel->v.nr = expr->v.nr;
+            memcpy(sel->v.u.r, expr->v.u.r, sel->v.nr*sizeof(*sel->v.u.r));
+        }
+        else
+        {
+            sel->v.nr = g->isize;
+            /* Extract the values corresponding to g */
+            for (i = j = 0; i < g->isize; ++i, ++j)
             {
-                sel->v.nr = expr->v.nr;
-                memcpy(sel->v.u.r, expr->v.u.r, sel->v.nr*sizeof(*sel->v.u.r));
-            }
-            else
-            {
-                sel->v.nr = g->isize;
-                /* Extract the values corresponding to g */
-                for (i = j = 0; i < g->isize; ++i, ++j)
+                while (sel->child->u.cgrp.index[j] < g->index[i])
                 {
-                    while (sel->child->u.cgrp.index[j] < g->index[i])
-                    {
-                        ++j;
-                    }
-                    sel->v.u.r[i] = expr->v.u.r[j];
+                    ++j;
                 }
+                sel->v.u.r[i] = expr->v.u.r[j];
             }
-            break;
+        }
+        break;
 
-        case STR_VALUE:
-            if (!g)
+    case STR_VALUE:
+        if (!g)
+        {
+            sel->v.nr = expr->v.nr;
+            memcpy(sel->v.u.s, expr->v.u.s, sel->v.nr*sizeof(*sel->v.u.s));
+        }
+        else
+        {
+            sel->v.nr = g->isize;
+            /* Extract the values corresponding to g */
+            for (i = j = 0; i < g->isize; ++i, ++j)
             {
-                sel->v.nr = expr->v.nr;
-                memcpy(sel->v.u.s, expr->v.u.s, sel->v.nr*sizeof(*sel->v.u.s));
-            }
-            else
-            {
-                sel->v.nr = g->isize;
-                /* Extract the values corresponding to g */
-                for (i = j = 0; i < g->isize; ++i, ++j)
+                while (sel->child->u.cgrp.index[j] < g->index[i])
                 {
-                    while (sel->child->u.cgrp.index[j] < g->index[i])
-                    {
-                        ++j;
-                    }
-                    sel->v.u.s[i] = expr->v.u.s[j];
+                    ++j;
                 }
+                sel->v.u.s[i] = expr->v.u.s[j];
             }
-            break;
+        }
+        break;
 
-        case POS_VALUE:
-            /* Currently, there is no need to do anything fancy here,
-             * but some future extensions may need a more flexible
-             * implementation. */
-            gmx_ana_pos_copy(sel->v.u.p, expr->v.u.p, false);
-            break;
+    case POS_VALUE:
+        /* Currently, there is no need to do anything fancy here,
+         * but some future extensions may need a more flexible
+         * implementation. */
+        gmx_ana_pos_copy(sel->v.u.p, expr->v.u.p, false);
+        break;
 
-        case GROUP_VALUE:
-            if (!g)
-            {
-                gmx_ana_index_copy(sel->v.u.g, expr->v.u.g, false);
-            }
-            else
-            {
-                gmx_ana_index_intersection(sel->v.u.g, expr->v.u.g, g);
-            }
-            break;
+    case GROUP_VALUE:
+        if (!g)
+        {
+            gmx_ana_index_copy(sel->v.u.g, expr->v.u.g, false);
+        }
+        else
+        {
+            gmx_ana_index_intersection(sel->v.u.g, expr->v.u.g, g);
+        }
+        break;
 
-        default: /* should not be reached */
-            GMX_THROW(gmx::InternalError("Invalid subexpression reference type"));
+    default:     /* should not be reached */
+        GMX_THROW(gmx::InternalError("Invalid subexpression reference type"));
     }
     /* Store the number of values if needed */
     if (sel->u.param)
@@ -863,9 +893,9 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data,
  * but is used internally.
  */
 void
-_gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_method_params(gmx_sel_evaluate_t                *data,
                                 const SelectionTreeElementPointer &sel,
-                                gmx_ana_index_t *g)
+                                gmx_ana_index_t                   *g)
 {
     SelectionTreeElementPointer child = sel->child;
     while (child)
@@ -904,9 +934,9 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data,
  * \ref SEL_EXPRESSION elements.
  */
 void
-_gmx_sel_evaluate_method(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_method(gmx_sel_evaluate_t                *data,
                          const SelectionTreeElementPointer &sel,
-                         gmx_ana_index_t *g)
+                         gmx_ana_index_t                   *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
     if (sel->flags & SEL_INITFRAME)
@@ -946,16 +976,16 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t *data,
  * \ref SEL_MODIFIER elements.
  */
 void
-_gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                *data,
                            const SelectionTreeElementPointer &sel,
-                           gmx_ana_index_t *g)
+                           gmx_ana_index_t                   *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
     if (sel->flags & SEL_INITFRAME)
     {
         sel->flags &= ~SEL_INITFRAME;
         sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
-                                            sel->u.expr.mdata);
+                                       sel->u.expr.mdata);
     }
     GMX_RELEASE_ASSERT(sel->child != NULL,
                        "Modifier element with a value must have a child");
@@ -980,16 +1010,16 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data,
  * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates the child element (there should be only one) in the group
- * \p g, and then sets the value of \p sel to the complement of the 
+ * \p g, and then sets the value of \p sel to the complement of the
  * child value.
  *
  * This function is used as gmx::SelectionTreeElement::evaluate for
  * \ref SEL_BOOLEAN elements with \ref BOOL_NOT.
  */
 void
-_gmx_sel_evaluate_not(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_not(gmx_sel_evaluate_t                *data,
                       const SelectionTreeElementPointer &sel,
-                      gmx_ana_index_t *g)
+                      gmx_ana_index_t                   *g)
 {
     MempoolSelelemReserver reserver(sel->child, g->isize);
     sel->child->evaluate(data, sel->child, g);
@@ -1022,9 +1052,9 @@ _gmx_sel_evaluate_not(gmx_sel_evaluate_t *data,
  * \ref SEL_BOOLEAN elements with \ref BOOL_AND.
  */
 void
-_gmx_sel_evaluate_and(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_and(gmx_sel_evaluate_t                *data,
                       const SelectionTreeElementPointer &sel,
-                      gmx_ana_index_t *g)
+                      gmx_ana_index_t                   *g)
 {
     SelectionTreeElementPointer child = sel->child;
     /* Skip the first child if it does not have an evaluation function. */
@@ -1075,11 +1105,11 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t *data,
  * \ref SEL_BOOLEAN elements with \ref BOOL_OR.
  */
 void
-_gmx_sel_evaluate_or(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_or(gmx_sel_evaluate_t                *data,
                      const SelectionTreeElementPointer &sel,
-                     gmx_ana_index_t *g)
+                     gmx_ana_index_t                   *g)
 {
-    gmx_ana_index_t  tmp, tmp2;
+    gmx_ana_index_t             tmp, tmp2;
 
     SelectionTreeElementPointer child = sel->child;
     if (child->evaluate)
@@ -1102,9 +1132,9 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data,
             gmx_ana_index_partition(&tmp, &tmp2, &tmp, child->v.u.g);
         }
         sel->v.u.g->isize += tmp.isize;
-        tmp.isize = tmp2.isize;
-        tmp.index = tmp2.index;
-        child = child->next;
+        tmp.isize          = tmp2.isize;
+        tmp.index          = tmp2.index;
+        child              = child->next;
     }
     gmx_ana_index_sort(sel->v.u.g);
 }
@@ -1121,18 +1151,18 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data,
  * \returns   0 on success, a non-zero error code on error.
  */
 void
-_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data,
+_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t                *data,
                              const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *g)
+                             gmx_ana_index_t                   *g)
 {
-    int         n, i, i1, i2;
-    real        lval, rval=0., val=0.;
+    int  n, i, i1, i2;
+    real lval, rval = 0., val = 0.;
 
     const SelectionTreeElementPointer &left  = sel->child;
     const SelectionTreeElementPointer &right = left->next;
 
-    SelelemTemporaryValueAssigner assigner;
-    MempoolSelelemReserver reserver;
+    SelelemTemporaryValueAssigner      assigner;
+    MempoolSelelemReserver             reserver;
     if (left->mempool)
     {
         assigner.assign(left, *sel);
@@ -1147,7 +1177,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data,
     }
     _gmx_sel_evaluate_children(data, sel, g);
 
-    n = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
+    n         = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
     sel->v.nr = n;
 
     bool bArithNeg = (sel->u.arith.type == ARITH_NEG);
@@ -1162,12 +1192,12 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data,
         }
         switch (sel->u.arith.type)
         {
-            case ARITH_PLUS:    val = lval + rval;     break;
-            case ARITH_MINUS:   val = lval - rval;     break;
-            case ARITH_NEG:     val = -lval;           break;
-            case ARITH_MULT:    val = lval * rval;     break;
-            case ARITH_DIV:     val = lval / rval;     break;
-            case ARITH_EXP:     val = pow(lval, rval); break;
+        case ARITH_PLUS:    val = lval + rval;     break;
+        case ARITH_MINUS:   val = lval - rval;     break;
+        case ARITH_NEG:     val = -lval;           break;
+        case ARITH_MULT:    val = lval * rval;     break;
+        case ARITH_DIV:     val = lval / rval;     break;
+        case ARITH_EXP:     val = pow(lval, rval); break;
         }
         sel->v.u.r[i] = val;
         if (!(left->flags & SEL_SINGLEVAL))

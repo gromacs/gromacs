@@ -109,7 +109,7 @@ class FlagsTemplate
         //! Creates a flags object with the given flags.
         explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
 
-        unsigned long           flags_;
+        unsigned long flags_;
 };
 
 } // namespace gmx

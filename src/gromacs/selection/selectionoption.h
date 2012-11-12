@@ -131,7 +131,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 
         virtual AbstractOptionStoragePointer createStorage() const;
 
-        SelectionFlags          selectionFlags_;
+        SelectionFlags selectionFlags_;
 
         /*! \brief
          * Needed to initialize SelectionOptionStorage from this class without
@@ -165,20 +165,20 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
  *
  * Example use:
  * \code
-SelectionList sel;
-Options options("example", "Example options");
-SelectionOptionInfo *info;
-info = options.addOption(SelectionOption("sel").storeVector(&sel)
+   SelectionList sel;
+   Options options("example", "Example options");
+   SelectionOptionInfo *info;
+   info = options.addOption(SelectionOption("sel").storeVector(&sel)
                              .multiValue());
-// < ... assign values to options ...>
-if ( condition )
-{
+   // < ... assign values to options ...>
+   if ( condition )
+   {
     // Put limitations on the selections based on the condition,
     // which can depend on other option values.
     // Throws if input given so far violates the limitations.
     info->setValueCount(2);
     info->setOnlyStatic(true);
-}
+   }
  * \endcode
  *
  * \inpublicapi

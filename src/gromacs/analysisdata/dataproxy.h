@@ -87,9 +87,9 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        AbstractAnalysisData   &source_;
-        int                     firstColumn_;
-        int                     columnSpan_;
+        AbstractAnalysisData &source_;
+        int                   firstColumn_;
+        int                   columnSpan_;
 
         // Copy and assign disallowed by base.
 };
