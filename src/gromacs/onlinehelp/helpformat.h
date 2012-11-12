@@ -70,25 +70,25 @@ class File;
  *
  * Typical usage:
  * \code
-gmx::TextTableFormatter formatter;
-formatter.addColumn("Name", 10, false);
-formatter.addColumn("Type", 10, false);
-formatter.addColumn("Description", 50, true);
+   gmx::TextTableFormatter formatter;
+   formatter.addColumn("Name", 10, false);
+   formatter.addColumn("Type", 10, false);
+   formatter.addColumn("Description", 50, true);
 
-formatter.clear();
-formatter.addColumnLine(0, "name");
-formatter.addColumnLine(1, "type");
-formatter.addColumnLine(2, "Description for name");
-printf("%s", formatter.formatRow().c_str());
+   formatter.clear();
+   formatter.addColumnLine(0, "name");
+   formatter.addColumnLine(1, "type");
+   formatter.addColumnLine(2, "Description for name");
+   printf("%s", formatter.formatRow().c_str());
 
-formatter.clear();
-formatter.addColumnLine(0, "averylongname");
-formatter.addColumnLine(1, "type");
-formatter.setColumnFirstLineOffset(1, 1);
-formatter.addColumnLine(2, "Description for name");
-printf("%s", formatter.formatRow().c_str());
+   formatter.clear();
+   formatter.addColumnLine(0, "averylongname");
+   formatter.addColumnLine(1, "type");
+   formatter.setColumnFirstLineOffset(1, 1);
+   formatter.addColumnLine(2, "Description for name");
+   printf("%s", formatter.formatRow().c_str());
 
-// format other rows by repeating the above code
+   // format other rows by repeating the above code
  * \endcode
  *
  * Methods in this class may throw std::bad_alloc if out of memory.

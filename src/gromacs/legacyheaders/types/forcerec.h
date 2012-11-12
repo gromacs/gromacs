@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
@@ -59,11 +59,11 @@ typedef struct
     enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
     enum gmx_table_format       format;      /* Interpolation type and data format */
 
-    real                        r;         /* range of the table */
-    int                         n;         /* n+1 is the number of table points */
-    real                        scale;     /* distance (nm) between two table points */
-    real                        scale_exp; /* distance for exponential part of VdW table, not always used */
-    real *                      data;      /* the actual table data */
+    real                        r;           /* range of the table */
+    int                         n;           /* n+1 is the number of table points */
+    real                        scale;       /* distance (nm) between two table points */
+    real                        scale_exp;   /* distance for exponential part of VdW table, not always used */
+    real *                      data;        /* the actual table data */
 
     /* Some information about the table layout. This can also be derived from the interpolation
      * type and the table interactions, but it is convenient to have here for sanity checks, and it makes it
@@ -95,13 +95,13 @@ typedef struct
  * But there is a smaller limit due to the t_excl data structure
  * which is defined in nblist.h.
  */
-#define SET_CGINFO_GID(cgi,gid)      (cgi) = (((cgi)  &  ~65535)  |  (gid)   )
+#define SET_CGINFO_GID(cgi, gid)      (cgi) = (((cgi)  &  ~65535)  |  (gid)   )
 #define GET_CGINFO_GID(cgi)        ( (cgi)            &   65535)
 #define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))
 #define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1<<16))
 #define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
 #define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
-#define SET_CGINFO_SOLOPT(cgi,opt)   (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
+#define SET_CGINFO_SOLOPT(cgi, opt)   (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
 #define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   3)
 #define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1<<20))
 #define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1<<20))
@@ -114,7 +114,7 @@ typedef struct
 #define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1<<23))
 #define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
 #define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
-#define SET_CGINFO_NATOMS(cgi,opt)   (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
+#define SET_CGINFO_NATOMS(cgi, opt)   (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
 #define GET_CGINFO_NATOMS(cgi)     (((cgi)>>25)       &   63)
 
 
@@ -125,26 +125,32 @@ typedef struct
 #define GMX_CUTOFF_INF 1E+18
 
 /* enums for the neighborlist type */
-enum { enbvdwNONE,enbvdwLJ,enbvdwBHAM,enbvdwTAB,enbvdwNR};
+enum {
+    enbvdwNONE, enbvdwLJ, enbvdwBHAM, enbvdwTAB, enbvdwNR
+};
 /* OOR is "one over r" -- standard coul */
-enum { enbcoulNONE,enbcoulOOR,enbcoulRF,enbcoulTAB,enbcoulGB,enbcoulFEWALD,enbcoulNR};
+enum {
+    enbcoulNONE, enbcoulOOR, enbcoulRF, enbcoulTAB, enbcoulGB, enbcoulFEWALD, enbcoulNR
+};
 
-enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
-       egCOUL14, egLJ14, egGB, egNR };
+enum {
+    egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
+    egCOUL14, egLJ14, egGB, egNR
+};
 
 typedef struct {
-  int  nener;        /* The number of energy group pairs     */
-  real *ener[egNR];  /* Energy terms for each pair of groups */
+    int   nener;      /* The number of energy group pairs     */
+    real *ener[egNR]; /* Energy terms for each pair of groups */
 } gmx_grppairener_t;
 
 typedef struct {
-  real term[F_NRE];    /* The energies for all different interaction types */
-  gmx_grppairener_t grpp;
-  double dvdl_lin[efptNR];       /* Contributions to dvdl with linear lam-dependence */
-  double dvdl_nonlin[efptNR];    /* Idem, but non-linear dependence                  */
-  int    n_lambda;
-  int    fep_state;              /*current fep state -- just for printing */
-  double *enerpart_lambda; /* Partial energy for lambda and flambda[] */
+    real              term[F_NRE];         /* The energies for all different interaction types */
+    gmx_grppairener_t grpp;
+    double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
+    double            dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
+    int               n_lambda;
+    int               fep_state;           /*current fep state -- just for printing */
+    double           *enerpart_lambda;     /* Partial energy for lambda and flambda[] */
 } gmx_enerdata_t;
 /* The idea is that dvdl terms with linear lambda dependence will be added
  * automatically to enerpart_lambda. Terms with non-linear lambda dependence
@@ -153,322 +159,322 @@ typedef struct {
  */
 
 typedef struct {
-  int cg_start;
-  int cg_end;
-  int cg_mod;
-  int *cginfo;
+    int  cg_start;
+    int  cg_end;
+    int  cg_mod;
+    int *cginfo;
 } cginfo_mb_t;
 
 
 /* ewald table type */
-typedef struct ewald_tab *ewald_tab_t; 
+typedef struct ewald_tab *ewald_tab_t;
 
 typedef struct {
-    rvec *f;
-    int  f_nalloc;
-    unsigned red_mask; /* Mask for marking which parts of f are filled */
-    rvec *fshift;
-    real ener[F_NRE];
+    rvec             *f;
+    int               f_nalloc;
+    unsigned          red_mask; /* Mask for marking which parts of f are filled */
+    rvec             *fshift;
+    real              ener[F_NRE];
     gmx_grppairener_t grpp;
-    real Vcorr;
-    real dvdl[efptNR];
-    tensor vir;
+    real              Vcorr;
+    real              dvdl[efptNR];
+    tensor            vir;
 } f_thread_t;
 
 typedef struct {
-  interaction_const_t *ic;
+    interaction_const_t *ic;
 
-  /* Domain Decomposition */
-  gmx_bool bDomDec;
+    /* Domain Decomposition */
+    gmx_bool bDomDec;
 
-  /* PBC stuff */
-  int  ePBC;
-  gmx_bool bMolPBC;
-  int  rc_scaling;
-  rvec posres_com;
-  rvec posres_comB;
+    /* PBC stuff */
+    int            ePBC;
+    gmx_bool       bMolPBC;
+    int            rc_scaling;
+    rvec           posres_com;
+    rvec           posres_comB;
 
-  gmx_hw_info_t *hwinfo;
-  gmx_bool      use_cpu_acceleration;
+    gmx_hw_info_t *hwinfo;
+    gmx_bool       use_cpu_acceleration;
 
-  /* Interaction for calculated in kernels. In many cases this is similar to
-   * the electrostatics settings in the inputrecord, but the difference is that
-   * these variables always specify the actual interaction in the kernel - if
-   * we are tabulating reaction-field the inputrec will say reaction-field, but
-   * the kernel interaction will say cubic-spline-table. To be safe we also
-   * have a kernel-specific setting for the modifiers - if the interaction is
-   * tabulated we already included the inputrec modification there, so the kernel
-   * modification setting will say 'none' in that case.
-   */
-  int nbkernel_elec_interaction;
-  int nbkernel_vdw_interaction;
-  int nbkernel_elec_modifier;
-  int nbkernel_vdw_modifier;
+    /* Interaction for calculated in kernels. In many cases this is similar to
+     * the electrostatics settings in the inputrecord, but the difference is that
+     * these variables always specify the actual interaction in the kernel - if
+     * we are tabulating reaction-field the inputrec will say reaction-field, but
+     * the kernel interaction will say cubic-spline-table. To be safe we also
+     * have a kernel-specific setting for the modifiers - if the interaction is
+     * tabulated we already included the inputrec modification there, so the kernel
+     * modification setting will say 'none' in that case.
+     */
+    int nbkernel_elec_interaction;
+    int nbkernel_vdw_interaction;
+    int nbkernel_elec_modifier;
+    int nbkernel_vdw_modifier;
 
-  /* Use special N*N kernels? */
-  gmx_bool bAllvsAll;
-  /* Private work data */
-  void *AllvsAll_work;
-  void *AllvsAll_workgb;
+    /* Use special N*N kernels? */
+    gmx_bool bAllvsAll;
+    /* Private work data */
+    void    *AllvsAll_work;
+    void    *AllvsAll_workgb;
 
-  /* Cut-Off stuff.
-   * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
-   */
-  real rlist,rlistlong;
+    /* Cut-Off stuff.
+     * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
+     */
+    real rlist, rlistlong;
 
-  /* Dielectric constant resp. multiplication factor for charges */
-  real zsquare,temp;
-  real epsilon_r,epsilon_rf,epsfac;  
-  
-  /* Constants for reaction fields */
-  real kappa,k_rf,c_rf;
+    /* Dielectric constant resp. multiplication factor for charges */
+    real zsquare, temp;
+    real epsilon_r, epsilon_rf, epsfac;
 
-  /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
-  double qsum[2];
-  double q2sum[2];
-  rvec   mu_tot[2];
+    /* Constants for reaction fields */
+    real kappa, k_rf, c_rf;
 
-  /* Dispersion correction stuff */
-  int  eDispCorr;
+    /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
+    double qsum[2];
+    double q2sum[2];
+    rvec   mu_tot[2];
 
-  /* The shift of the shift or user potentials */
-  real enershiftsix;
-  real enershifttwelve;
-  /* Integrated differces for energy and virial with cut-off functions */
-  real enerdiffsix;
-  real enerdifftwelve;
-  real virdiffsix;
-  real virdifftwelve;
-  /* Constant for long range dispersion correction (average dispersion)
-   * for topology A/B ([0]/[1]) */
-  real avcsix[2];
-  /* Constant for long range repulsion term. Relative difference of about 
-   * 0.1 percent with 0.8 nm cutoffs. But hey, it's cheap anyway...
-   */
-  real avctwelve[2];
-  
-  /* Fudge factors */
-  real fudgeQQ;
+    /* Dispersion correction stuff */
+    int  eDispCorr;
 
-  /* Table stuff */
-  gmx_bool bcoultab;
-  gmx_bool bvdwtab;
-  /* The normal tables are in the nblists struct(s) below */
-  t_forcetable tab14; /* for 1-4 interactions only */
+    /* The shift of the shift or user potentials */
+    real enershiftsix;
+    real enershifttwelve;
+    /* Integrated differces for energy and virial with cut-off functions */
+    real enerdiffsix;
+    real enerdifftwelve;
+    real virdiffsix;
+    real virdifftwelve;
+    /* Constant for long range dispersion correction (average dispersion)
+     * for topology A/B ([0]/[1]) */
+    real avcsix[2];
+    /* Constant for long range repulsion term. Relative difference of about
+     * 0.1 percent with 0.8 nm cutoffs. But hey, it's cheap anyway...
+     */
+    real avctwelve[2];
 
-  /* PPPM & Shifting stuff */
-  int coulomb_modifier;
-  real rcoulomb_switch,rcoulomb;
-  real *phi;
+    /* Fudge factors */
+    real fudgeQQ;
 
-  /* VdW stuff */
-  int vdw_modifier;
-  double reppow;
-  real rvdw_switch,rvdw;
-  real bham_b_max;
+    /* Table stuff */
+    gmx_bool     bcoultab;
+    gmx_bool     bvdwtab;
+    /* The normal tables are in the nblists struct(s) below */
+    t_forcetable tab14; /* for 1-4 interactions only */
 
-  /* Free energy */
-  int  efep;
-  real sc_alphavdw;
-  real sc_alphacoul;
-  int  sc_power;
-  real sc_r_power;
-  real sc_sigma6_def;
-  real sc_sigma6_min;
-  gmx_bool bSepDVDL;
+    /* PPPM & Shifting stuff */
+    int   coulomb_modifier;
+    real  rcoulomb_switch, rcoulomb;
+    real *phi;
 
-  /* NS Stuff */
-  int  eeltype;
-  int  vdwtype;
-  int  cg0,hcg;
-  /* solvent_opt contains the enum for the most common solvent
-   * in the system, which will be optimized.
-   * It can be set to esolNO to disable all water optimization */
-  int  solvent_opt;
-  int  nWatMol;
-  gmx_bool bGrid;
-  gmx_bool bExcl_IntraCGAll_InterCGNone;
-  cginfo_mb_t *cginfo_mb;
-  int  *cginfo;
-  rvec *cg_cm;
-  int  cg_nalloc;
-  rvec *shift_vec;
+    /* VdW stuff */
+    int    vdw_modifier;
+    double reppow;
+    real   rvdw_switch, rvdw;
+    real   bham_b_max;
 
-  /* The neighborlists including tables */
-  int  nnblists;
-  int  *gid2nblists;
-  t_nblists *nblists;
+    /* Free energy */
+    int      efep;
+    real     sc_alphavdw;
+    real     sc_alphacoul;
+    int      sc_power;
+    real     sc_r_power;
+    real     sc_sigma6_def;
+    real     sc_sigma6_min;
+    gmx_bool bSepDVDL;
 
-  int cutoff_scheme; /* group- or Verlet-style cutoff */
-  gmx_bool bNonbonded;    /* true if nonbonded calculations are *not* turned off */
-  nonbonded_verlet_t *nbv;
+    /* NS Stuff */
+    int  eeltype;
+    int  vdwtype;
+    int  cg0, hcg;
+    /* solvent_opt contains the enum for the most common solvent
+     * in the system, which will be optimized.
+     * It can be set to esolNO to disable all water optimization */
+    int          solvent_opt;
+    int          nWatMol;
+    gmx_bool     bGrid;
+    gmx_bool     bExcl_IntraCGAll_InterCGNone;
+    cginfo_mb_t *cginfo_mb;
+    int         *cginfo;
+    rvec        *cg_cm;
+    int          cg_nalloc;
+    rvec        *shift_vec;
 
-  /* The wall tables (if used) */
-  int  nwall;
-  t_forcetable **wall_tab;
+    /* The neighborlists including tables */
+    int                 nnblists;
+    int                *gid2nblists;
+    t_nblists          *nblists;
 
-  /* The number of charge groups participating in do_force_lowlevel */
-  int ncg_force;
-  /* The number of atoms participating in do_force_lowlevel */
-  int natoms_force;
-  /* The number of atoms participating in force and constraints */
-  int natoms_force_constr;
-  /* The allocation size of vectors of size natoms_force */
-  int nalloc_force;
+    int                 cutoff_scheme; /* group- or Verlet-style cutoff */
+    gmx_bool            bNonbonded;    /* true if nonbonded calculations are *not* turned off */
+    nonbonded_verlet_t *nbv;
 
-  /* Twin Range stuff, f_twin has size natoms_force */
-  gmx_bool bTwinRange;
-  int  nlr;
-  rvec *f_twin;
+    /* The wall tables (if used) */
+    int            nwall;
+    t_forcetable **wall_tab;
 
-  /* Forces that should not enter into the virial summation:
-   * PPPM/PME/Ewald/posres
-   */
-  gmx_bool bF_NoVirSum;
-  int  f_novirsum_n;
-  int  f_novirsum_nalloc;
-  rvec *f_novirsum_alloc;
-  /* Pointer that points to f_novirsum_alloc when pressure is calcaluted,
-   * points to the normal force vectors wen pressure is not requested.
-   */
-  rvec *f_novirsum;
+    /* The number of charge groups participating in do_force_lowlevel */
+    int ncg_force;
+    /* The number of atoms participating in do_force_lowlevel */
+    int natoms_force;
+    /* The number of atoms participating in force and constraints */
+    int natoms_force_constr;
+    /* The allocation size of vectors of size natoms_force */
+    int nalloc_force;
 
-  /* Long-range forces and virial for PPPM/PME/Ewald */
-  gmx_pme_t pmedata;
-  tensor    vir_el_recip;
+    /* Twin Range stuff, f_twin has size natoms_force */
+    gmx_bool bTwinRange;
+    int      nlr;
+    rvec    *f_twin;
 
-  /* PME/Ewald stuff */
-  gmx_bool bEwald;
-  real ewaldcoeff;
-  ewald_tab_t ewald_table;
+    /* Forces that should not enter into the virial summation:
+     * PPPM/PME/Ewald/posres
+     */
+    gmx_bool bF_NoVirSum;
+    int      f_novirsum_n;
+    int      f_novirsum_nalloc;
+    rvec    *f_novirsum_alloc;
+    /* Pointer that points to f_novirsum_alloc when pressure is calcaluted,
+     * points to the normal force vectors wen pressure is not requested.
+     */
+    rvec *f_novirsum;
 
-  /* Virial Stuff */
-  rvec *fshift;
-  rvec vir_diag_posres;
-  dvec vir_wall_z;
+    /* Long-range forces and virial for PPPM/PME/Ewald */
+    gmx_pme_t pmedata;
+    tensor    vir_el_recip;
 
-  /* Non bonded Parameter lists */
-  int  ntype; /* Number of atom types */
-  gmx_bool bBHAM;
-  real *nbfp;
+    /* PME/Ewald stuff */
+    gmx_bool    bEwald;
+    real        ewaldcoeff;
+    ewald_tab_t ewald_table;
 
-  /* Energy group pair flags */
-  int *egp_flags;
+    /* Virial Stuff */
+    rvec *fshift;
+    rvec  vir_diag_posres;
+    dvec  vir_wall_z;
 
-  /* xmdrun flexible constraints */
-  real fc_stepsize;
+    /* Non bonded Parameter lists */
+    int      ntype; /* Number of atom types */
+    gmx_bool bBHAM;
+    real    *nbfp;
 
-  /* Generalized born implicit solvent */
-  gmx_bool bGB;
-  /* Generalized born stuff */
-  real gb_epsilon_solvent;
-  /* Table data for GB */
-  t_forcetable gbtab;
-  /* VdW radius for each atomtype (dim is thus ntype) */
-  real *atype_radius;
-  /* Effective radius (derived from effective volume) for each type */
-  real *atype_vol;
-  /* Implicit solvent - surface tension for each atomtype */
-  real *atype_surftens;
-  /* Implicit solvent - radius for GB calculation */
-  real *atype_gb_radius;
-  /* Implicit solvent - overlap for HCT model */
-  real *atype_S_hct;
-  /* Generalized born interaction data */
-  gmx_genborn_t *born;
+    /* Energy group pair flags */
+    int *egp_flags;
 
-  /* Table scale for GB */
-  real gbtabscale;
-  /* Table range for GB */
-  real gbtabr;
-  /* GB neighborlists (the sr list will contain for each atom all other atoms                                            
-   * (for use in the SA calculation) and the lr list will contain                                                  
-   * for each atom all atoms 1-4 or greater (for use in the GB calculation)                                        
-   */
-  t_nblist gblist_sr;
-  t_nblist gblist_lr;
-  t_nblist gblist;
+    /* xmdrun flexible constraints */
+    real fc_stepsize;
 
-  /* Inverse square root of the Born radii for implicit solvent */
-  real *invsqrta;
-  /* Derivatives of the potential with respect to the Born radii */
-  real *dvda;
-  /* Derivatives of the Born radii with respect to coordinates */
-  real *dadx;
-  real *dadx_rawptr;
-  int   nalloc_dadx; /* Allocated size of dadx */
-	
-  /* If > 0 signals Test Particle Insertion,
-   * the value is the number of atoms of the molecule to insert
-   * Only the energy difference due to the addition of the last molecule
-   * should be calculated.
-   */
-  gmx_bool n_tpi;
+    /* Generalized born implicit solvent */
+    gmx_bool       bGB;
+    /* Generalized born stuff */
+    real           gb_epsilon_solvent;
+    /* Table data for GB */
+    t_forcetable   gbtab;
+    /* VdW radius for each atomtype (dim is thus ntype) */
+    real          *atype_radius;
+    /* Effective radius (derived from effective volume) for each type */
+    real          *atype_vol;
+    /* Implicit solvent - surface tension for each atomtype */
+    real          *atype_surftens;
+    /* Implicit solvent - radius for GB calculation */
+    real          *atype_gb_radius;
+    /* Implicit solvent - overlap for HCT model */
+    real          *atype_S_hct;
+    /* Generalized born interaction data */
+    gmx_genborn_t *born;
 
-  /* Neighbor searching stuff */
-  gmx_ns_t ns;
+    /* Table scale for GB */
+    real gbtabscale;
+    /* Table range for GB */
+    real gbtabr;
+    /* GB neighborlists (the sr list will contain for each atom all other atoms
+     * (for use in the SA calculation) and the lr list will contain
+     * for each atom all atoms 1-4 or greater (for use in the GB calculation)
+     */
+    t_nblist gblist_sr;
+    t_nblist gblist_lr;
+    t_nblist gblist;
 
-  /* QMMM stuff */
-  gmx_bool         bQMMM;
-  t_QMMMrec    *qr;
+    /* Inverse square root of the Born radii for implicit solvent */
+    real *invsqrta;
+    /* Derivatives of the potential with respect to the Born radii */
+    real *dvda;
+    /* Derivatives of the Born radii with respect to coordinates */
+    real *dadx;
+    real *dadx_rawptr;
+    int   nalloc_dadx; /* Allocated size of dadx */
 
-  /* QM-MM neighborlists */
-  t_nblist QMMMlist;
+    /* If > 0 signals Test Particle Insertion,
+     * the value is the number of atoms of the molecule to insert
+     * Only the energy difference due to the addition of the last molecule
+     * should be calculated.
+     */
+    gmx_bool n_tpi;
 
-  /* Limit for printing large forces, negative is don't print */
-  real print_force;
+    /* Neighbor searching stuff */
+    gmx_ns_t ns;
 
-  /* coarse load balancing time measurement */
-  double t_fnbf;
-  double t_wait;
-  int timesteps;
+    /* QMMM stuff */
+    gmx_bool         bQMMM;
+    t_QMMMrec       *qr;
 
-  /* parameter needed for AdResS simulation */
-  int  adress_type;
-  gmx_bool badress_tf_full_box;
-  real adress_const_wf;
-  real adress_ex_width;
-  real adress_hy_width;
-  int  adress_icor;
-  int  adress_site;
-  rvec adress_refs;
-  int n_adress_tf_grps;
-  int * adress_tf_table_index;
-  int *adress_group_explicit;
-  t_forcetable *  atf_tabs;
-  real adress_ex_forcecap;
-  gmx_bool adress_do_hybridpairs;
+    /* QM-MM neighborlists */
+    t_nblist QMMMlist;
 
-  /* User determined parameters, copied from the inputrec */
-  int  userint1;
-  int  userint2;
-  int  userint3;
-  int  userint4;
-  real userreal1;
-  real userreal2;
-  real userreal3;
-  real userreal4;
+    /* Limit for printing large forces, negative is don't print */
+    real print_force;
 
-  /* Thread local force and energy data */ 
-  /* FIXME move to bonded_thread_data_t */
-  int  nthreads;
-  int  red_ashift;
-  int  red_nblock;
-  f_thread_t *f_t;
+    /* coarse load balancing time measurement */
+    double t_fnbf;
+    double t_wait;
+    int    timesteps;
 
-  /* Exclusion load distribution over the threads */
-  int  *excl_load;
+    /* parameter needed for AdResS simulation */
+    int             adress_type;
+    gmx_bool        badress_tf_full_box;
+    real            adress_const_wf;
+    real            adress_ex_width;
+    real            adress_hy_width;
+    int             adress_icor;
+    int             adress_site;
+    rvec            adress_refs;
+    int             n_adress_tf_grps;
+    int           * adress_tf_table_index;
+    int            *adress_group_explicit;
+    t_forcetable *  atf_tabs;
+    real            adress_ex_forcecap;
+    gmx_bool        adress_do_hybridpairs;
+
+    /* User determined parameters, copied from the inputrec */
+    int  userint1;
+    int  userint2;
+    int  userint3;
+    int  userint4;
+    real userreal1;
+    real userreal2;
+    real userreal3;
+    real userreal4;
+
+    /* Thread local force and energy data */
+    /* FIXME move to bonded_thread_data_t */
+    int         nthreads;
+    int         red_ashift;
+    int         red_nblock;
+    f_thread_t *f_t;
+
+    /* Exclusion load distribution over the threads */
+    int  *excl_load;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have
  * been scaled by 6.0 or 12.0 to save flops in the kernels. We have corrected this everywhere
  * in the code, but beware if you are using these macros externally.
  */
-#define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]
-#define C12(nbfp,ntp,ai,aj)    (nbfp)[2*((ntp)*(ai)+(aj))+1]
-#define BHAMC(nbfp,ntp,ai,aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
-#define BHAMA(nbfp,ntp,ai,aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
-#define BHAMB(nbfp,ntp,ai,aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]
+#define C6(nbfp, ntp, ai, aj)     (nbfp)[2*((ntp)*(ai)+(aj))]
+#define C12(nbfp, ntp, ai, aj)    (nbfp)[2*((ntp)*(ai)+(aj))+1]
+#define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
+#define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
+#define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]
 
 #ifdef __cplusplus
 }

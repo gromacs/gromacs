@@ -232,9 +232,9 @@ namespace gmx
 /*! \brief
  * Function pointer for evaluating a gmx::SelectionTreeElement.
  */
-typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t *data,
+typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t         *data,
                              const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *g);
+                             gmx_ana_index_t                   *g);
 
 /*! \internal \brief
  * Represents an element of a selection expression.
@@ -349,7 +349,8 @@ class SelectionTreeElement
                 struct gmx_ana_pos_t       *pos;
                 //! Pointer to the evaluation data for \p pos.
                 struct gmx_ana_poscalc_t   *pc;
-            }                               expr;
+            }
+            expr;
             //! Operation type for \ref SEL_BOOLEAN elements.
             e_boolean_t                     boolt;
             //! Operation type for \ref SEL_ARITHMETIC elements.
@@ -358,7 +359,8 @@ class SelectionTreeElement
                 e_arithmetic_t              type;
                 //! String representation.
                 char                       *opstr;
-            }                               arith;
+            }
+            arith;
             //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
             struct gmx_ana_selparam_t      *param;
             //! The string/number used to reference the group.
@@ -367,8 +369,10 @@ class SelectionTreeElement
                 char                       *name;
                 //! If \a name is NULL, the index number of the referenced group.
                 int                         id;
-            }                               gref;
-        }                                   u;
+            }
+            gref;
+        }
+        u;
         //! Memory pool to use for values, or NULL if standard memory handling.
         struct gmx_sel_mempool_t           *mempool;
         //! Internal data for the selection compiler.
@@ -408,7 +412,7 @@ _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc);
 /** Sets the value type of a gmx::SelectionTreeElement. */
 void
 _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
-                       e_selvalue_t vtype);
+                       e_selvalue_t                            vtype);
 
 /** Frees the memory allocated for a selection method. */
 void

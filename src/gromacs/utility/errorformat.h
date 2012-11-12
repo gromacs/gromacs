@@ -73,7 +73,7 @@ void printFatalErrorMessageLine(FILE *fp, const char *text, int indent);
  */
 void printFatalErrorFooter(FILE *fp);
 
-} // namespace internal
+}   // namespace internal
 //! \endcond
 
 } // namespace gmx

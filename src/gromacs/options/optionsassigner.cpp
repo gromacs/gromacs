@@ -118,17 +118,17 @@ OptionsAssigner::Impl::findOption(const char *name)
 {
     GMX_RELEASE_ASSERT(currentOption_ == NULL,
                        "Cannot search for another option while processing one");
-    AbstractOptionStorage *option = NULL;
-    Options *section = NULL;
-    Options *root = &currentSection();
-    Options *oldRoot = NULL;
-    int      upcount = 0;
-    std::deque<Options *> searchList;
+    AbstractOptionStorage *option  = NULL;
+    Options               *section = NULL;
+    Options               *root    = &currentSection();
+    Options               *oldRoot = NULL;
+    int                    upcount = 0;
+    std::deque<Options *>  searchList;
     searchList.push_back(root);
     while (option == NULL && !searchList.empty())
     {
         section = searchList.front();
-        option = section->impl_->findOption(name);
+        option  = section->impl_->findOption(name);
         if (option == NULL && bAcceptBooleanNoPrefix_)
         {
             if (name[0] == 'n' && name[1] == 'o')
@@ -233,7 +233,7 @@ void OptionsAssigner::startOption(const char *name)
         GMX_THROW(InvalidInputError("Unknown option"));
     }
     option->startSet();
-    impl_->currentOption_ = option;
+    impl_->currentOption_     = option;
     impl_->currentValueCount_ = 0;
 }
 
@@ -249,7 +249,7 @@ void OptionsAssigner::finishOption()
 {
     AbstractOptionStorage *option = impl_->currentOption_;
     GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
-    bool bBoolReverseValue = false;
+    bool                   bBoolReverseValue = false;
     if (option->isBoolean())
     {
         if (impl_->currentValueCount_ == 0)
@@ -263,7 +263,7 @@ void OptionsAssigner::finishOption()
             bBoolReverseValue = true;
         }
     }
-    impl_->currentOption_ = NULL;
+    impl_->currentOption_  = NULL;
     impl_->reverseBoolean_ = false;
     option->finishSet();
     if (bBoolReverseValue)

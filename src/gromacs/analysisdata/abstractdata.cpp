@@ -83,7 +83,7 @@ class AbstractAnalysisData::Impl
          * calls the notification functions in \p module as if the module had
          * been registered to the data object when the data was added.
          */
-        void presentData(AbstractAnalysisData *data,
+        void presentData(AbstractAnalysisData        *data,
                          AnalysisDataModuleInterface *module);
 
         //! List of modules added to the data.
@@ -113,12 +113,12 @@ AbstractAnalysisData::Impl::Impl()
 }
 
 void
-AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
+AbstractAnalysisData::Impl::presentData(AbstractAnalysisData        *data,
                                         AnalysisDataModuleInterface *module)
 {
     module->dataStarted(data);
-    bool bCheckMissing = bAllowMissing_
-        && !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
+    bool bCheckMissing = bAllowMissing_ &&
+        !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);
@@ -200,9 +200,9 @@ AbstractAnalysisData::requestStorage(int nframes)
 void
 AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
-    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
-        || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
+    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn)) ||
+        (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint)) ||
+        (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
     {
         GMX_THROW(APIError("Data module not compatible with data object properties"));
     }
@@ -233,7 +233,7 @@ AbstractAnalysisData::addColumnModule(int col, int span,
     }
 
     boost::shared_ptr<AnalysisDataProxy> proxy(
-            new AnalysisDataProxy(col, span, this));
+        new AnalysisDataProxy(col, span, this));
     proxy->addModule(module);
     addModule(proxy);
 }
@@ -242,9 +242,9 @@ AbstractAnalysisData::addColumnModule(int col, int span,
 void
 AbstractAnalysisData::applyModule(AnalysisDataModuleInterface *module)
 {
-    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
-        || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
+    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn)) ||
+        (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint)) ||
+        (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
     {
         GMX_THROW(APIError("Data module not compatible with data object properties"));
     }
@@ -310,7 +310,7 @@ AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) co
                "notifyFrameStart() called while inside a frame");
     GMX_ASSERT(header.index() == impl_->nframes_,
                "Out of order frames");
-    impl_->bInFrame_ = true;
+    impl_->bInFrame_  = true;
     impl_->currIndex_ = header.index();
 
     Impl::ModuleList::const_iterator i;
@@ -349,7 +349,7 @@ AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header)
     GMX_ASSERT(impl_->bInFrame_, "notifyFrameStart() not called");
     GMX_ASSERT(header.index() == impl_->currIndex_,
                "Header does not correspond to current frame");
-    impl_->bInFrame_ = false;
+    impl_->bInFrame_  = false;
     impl_->currIndex_ = -1;
 
     // Increment the counter before notifications to allow frame access from

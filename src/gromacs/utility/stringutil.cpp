@@ -58,8 +58,8 @@ bool endsWith(const std::string &str, const char *suffix)
         return true;
     }
     size_t length = std::strlen(suffix);
-    return (str.length() >= length
-            && str.compare(str.length() - length, length, suffix) == 0);
+    return (str.length() >= length &&
+            str.compare(str.length() - length, length, suffix) == 0);
 }
 
 std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
@@ -77,11 +77,11 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
 
 std::string formatString(const char *fmt, ...)
 {
-    va_list ap;
-    char staticBuf[1024];
-    int length = 1024;
+    va_list           ap;
+    char              staticBuf[1024];
+    int               length = 1024;
     std::vector<char> dynamicBuf;
-    char *buf = staticBuf;
+    char             *buf = staticBuf;
 
     // TODO: There may be a better way of doing this on Windows, Microsoft
     // provides their own way of doing things...
@@ -147,17 +147,17 @@ replaceInternal(const std::string &input, const char *from, const char *to,
 {
     GMX_RELEASE_ASSERT(from != NULL && to != NULL,
                        "Replacement strings must not be NULL");
-    size_t matchLength = std::strlen(from);
+    size_t      matchLength = std::strlen(from);
     std::string result;
-    size_t inputPos = 0;
-    size_t matchPos = input.find(from);
+    size_t      inputPos = 0;
+    size_t      matchPos = input.find(from);
     while (matchPos < input.length())
     {
         size_t matchEnd = matchPos + matchLength;
         if (bWholeWords)
         {
-            if (!((matchPos == 0 || !std::isalnum(input[matchPos-1]))
-                  && (matchEnd == input.length() || !std::isalnum(input[matchEnd]))))
+            if (!((matchPos == 0 || !std::isalnum(input[matchPos-1])) &&
+                  (matchEnd == input.length() || !std::isalnum(input[matchEnd]))))
             {
                 matchPos = input.find(from, matchPos + 1);
                 continue;
@@ -173,7 +173,7 @@ replaceInternal(const std::string &input, const char *from, const char *to,
     return result;
 }
 
-} // namespace
+}   // namespace
 
 std::string
 replaceAll(const std::string &input, const char *from, const char *to)
@@ -207,7 +207,7 @@ size_t
 TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
 {
     size_t inputLength = std::strlen(input);
-    bool bFirstLine = (lineStart == 0 || input[lineStart - 1] == '\n');
+    bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Ignore leading whitespace if necessary.
     if (!bFirstLine || settings_.bStripLeadingWhitespace_)
     {
@@ -218,7 +218,7 @@ TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
         }
     }
 
-    int indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
+    int    indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     size_t lastAllowedBreakPoint
         = (settings_.lineLength() > 0
            ? std::min(lineStart + settings_.lineLength() - indent, inputLength)
@@ -229,7 +229,7 @@ TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
     do
     {
         const char *nextBreakPtr = std::strpbrk(input + lineEnd, " \n");
-        size_t nextBreak
+        size_t      nextBreak
             = (nextBreakPtr != NULL ? nextBreakPtr - input : inputLength);
         if (nextBreak > lastAllowedBreakPoint && lineEnd > lineStart)
         {
@@ -252,7 +252,7 @@ TextLineWrapper::formatLine(const std::string &input,
                             size_t lineStart, size_t lineEnd) const
 {
     size_t inputLength = input.length();
-    bool bFirstLine = (lineStart == 0 || input[lineStart - 1] == '\n');
+    bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Strip leading whitespace if necessary.
     if (!bFirstLine || settings_.bStripLeadingWhitespace_)
     {
@@ -262,7 +262,7 @@ TextLineWrapper::formatLine(const std::string &input,
             return std::string();
         }
     }
-    int indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
+    int  indent        = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     bool bContinuation = (lineEnd < inputLength && input[lineEnd - 1] != '\n');
     // Strip trailing whitespace.
     while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
@@ -270,7 +270,7 @@ TextLineWrapper::formatLine(const std::string &input,
         --lineEnd;
     }
 
-    size_t lineLength = lineEnd - lineStart;
+    size_t      lineLength = lineEnd - lineStart;
     std::string result(indent, ' ');
     result.append(input, lineStart, lineLength);
     if (bContinuation && settings_.continuationChar_ != '\0')
@@ -285,14 +285,14 @@ std::string
 TextLineWrapper::wrapToString(const std::string &input) const
 {
     std::string result;
-    size_t lineStart = 0;
-    size_t length = input.length();
+    size_t      lineStart = 0;
+    size_t      length    = input.length();
     while (lineStart < length)
     {
         size_t nextLineStart = findNextLine(input, lineStart);
         result.append(formatLine(input, lineStart, nextLineStart));
-        if (nextLineStart < length
-            || (nextLineStart == length && input[length - 1] == '\n'))
+        if (nextLineStart < length ||
+            (nextLineStart == length && input[length - 1] == '\n'))
         {
             result.append("\n");
         }
@@ -305,8 +305,8 @@ std::vector<std::string>
 TextLineWrapper::wrapToVector(const std::string &input) const
 {
     std::vector<std::string> result;
-    size_t lineStart = 0;
-    size_t length = input.length();
+    size_t                   lineStart = 0;
+    size_t                   length    = input.length();
     while (lineStart < length)
     {
         size_t nextLineStart = findNextLine(input, lineStart);

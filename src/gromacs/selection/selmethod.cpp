@@ -386,13 +386,13 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             bOk = false;
         }
     } /* End of parameter loop */
-    /* Check parameters of existing methods */
+      /* Check parameters of existing methods */
     gmx::SelectionParserSymbolIterator symbol
         = symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab.endIterator())
     {
         gmx_ana_selmethod_t *method = symbol->methodValue();
-        gmx_ana_selparam_t  *param =
+        gmx_ana_selparam_t  *param  =
             gmx_ana_selmethod_find_param(name, method);
         if (param)
         {
@@ -466,8 +466,8 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     bNeedInit = false;
     for (i = 0; i < method->nparams; ++i)
     {
-        if (method->param[i].val.type != POS_VALUE
-            && (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
+        if (method->param[i].val.type != POS_VALUE &&
+            (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
             bNeedInit = true;
         }
@@ -526,8 +526,8 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method,
     }
     else
     {
-        if ((method->flags & SMETH_SINGLEVAL)
-            && (method->flags & SMETH_VARNUMVAL))
+        if ((method->flags & SMETH_SINGLEVAL) &&
+            (method->flags & SMETH_VARNUMVAL))
         {
             report_error(fp, method->name, "error: SMETH_SINGLEVAL and SMETH_VARNUMVAL both set");
             bOk = false;
@@ -670,8 +670,8 @@ int
 gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
 {
     size_t i;
-    int  rc;
-    bool bOk;
+    int    rc;
+    bool   bOk;
 
     bOk = true;
     for (i = 0; i < asize(smtable_def); ++i)

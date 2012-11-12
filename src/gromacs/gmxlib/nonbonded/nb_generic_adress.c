@@ -46,51 +46,51 @@
 #define ALMOST_ZERO 1e-30
 #define ALMOST_ONE 1-(1e-30)
 void
-gmx_nb_generic_adress_kernel(t_nblist *           nlist,
-                             t_forcerec *         fr,
-                             t_mdatoms *          mdatoms,
-                             real *               x,
-                             real *               f,
-                             real *               fshift,
-                             real *               Vc,
-                             real *               Vvdw,
-                             real                 tabscale,
-                             real *               VFtab,
-                             int *                outeriter,
-                             int *                inneriter,
+gmx_nb_generic_adress_kernel(t_nblist    *           nlist,
+                             t_forcerec    *         fr,
+                             t_mdatoms    *          mdatoms,
+                             real    *               x,
+                             real    *               f,
+                             real    *               fshift,
+                             real    *               Vc,
+                             real    *               Vvdw,
+                             real                    tabscale,
+                             real    *               VFtab,
+                             int    *                outeriter,
+                             int    *                inneriter,
                              gmx_bool                bCG)
 {
-    int           nri,ntype,table_nelements,ielec,ivdw;
-    real          facel,gbtabscale;
-    int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid,nnn,n0;
-    real          shX,shY,shZ;
-    real          fscal,tx,ty,tz;
+    int           nri, ntype, table_nelements, ielec, ivdw;
+    real          facel, gbtabscale;
+    int           n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid, nnn, n0;
+    real          shX, shY, shZ;
+    real          fscal, tx, ty, tz;
     real          rinvsq;
     real          iq;
-    real          qq,vcoul,krsq,vctot;
-    int           nti,nvdwparam;
+    real          qq, vcoul, krsq, vctot;
+    int           nti, nvdwparam;
     int           tj;
-    real          rt,r,eps,eps2,Y,F,Geps,Heps2,VV,FF,Fp,fijD,fijR;
+    real          rt, r, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
     real          rinvsix;
     real          Vvdwtot;
-    real          Vvdw_rep,Vvdw_disp;
-    real          ix,iy,iz,fix,fiy,fiz;
-    real          jx,jy,jz;
-    real          dx,dy,dz,rsq,rinv;
-    real          c6,c12,cexp1,cexp2,br;
+    real          Vvdw_rep, Vvdw_disp;
+    real          ix, iy, iz, fix, fiy, fiz;
+    real          jx, jy, jz;
+    real          dx, dy, dz, rsq, rinv;
+    real          c6, c12, cexp1, cexp2, br;
     real *        charge;
     real *        shiftvec;
     real *        vdwparam;
     int *         shift;
     int *         type;
 
-    real *     wf;
-    real       weight_cg1;
-    real       weight_cg2;
-    real       weight_product;
-    real       hybscal; /* the multiplicator to the force for hybrid interactions*/
-    gmx_bool   bHybrid; /*Are we in the hybrid zone ?*/
-    real       force_cap;
+    real    *     wf;
+    real          weight_cg1;
+    real          weight_cg2;
+    real          weight_product;
+    real          hybscal; /* the multiplicator to the force for hybrid interactions*/
+    gmx_bool      bHybrid; /*Are we in the hybrid zone ?*/
+    real          force_cap;
 
     wf                  = mdatoms->wf;
 
@@ -106,9 +106,9 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
     eps2                = 0.0;
 
     /* 3 VdW parameters for buckingham, otherwise 2 */
-    nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
-    table_nelements     = (ielec==3) ? 4 : 0;
-    table_nelements    += (ivdw==3) ? 8 : 0;
+    nvdwparam           = (nlist->ivdw == 2) ? 3 : 2;
+    table_nelements     = (ielec == 3) ? 4 : 0;
+    table_nelements    += (ivdw == 3) ? 8 : 0;
 
     charge              = mdatoms->chargeA;
     type                = mdatoms->typeA;
@@ -120,7 +120,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 
 
 
-   for(n=0; (n<nlist->nri); n++)
+    for(n = 0; (n < nlist->nri); n++)
     {
         is3              = 3*nlist->shift[n];
         shX              = shiftvec[is3];
@@ -146,7 +146,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
         /* TODO: why does this line her not speed up things ?
          * if ((!bCG) && weight_cg1 < ALMOST_ZERO) continue;
          */
-        for(k=nj0; (k<nj1); k++)
+        for(k = nj0; (k < nj1); k++)
         {
             jnr              = nlist->jjnr[k];
             weight_cg2       = wf[jnr];
@@ -154,8 +154,8 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
             weight_product   = weight_cg1*weight_cg2;
 
             if (weight_product < ALMOST_ZERO)
-            {                
-		/* if it's a explicit loop, skip this atom */
+            {
+                /* if it's a explicit loop, skip this atom */
                 if (!bCG)
                 {
                     continue;
@@ -163,18 +163,18 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
                 else /* if it's a coarse grained loop, include this atom */
                 {
                     bHybrid = FALSE;
-	            hybscal = 1.0;
+                    hybscal = 1.0;
                 }
             }
             else if (weight_product >= ALMOST_ONE)
             {
-                
-		/* if it's a explicit loop, include this atom */
+
+                /* if it's a explicit loop, include this atom */
                 if(!bCG)
                 {
                     bHybrid = FALSE;
-	            hybscal = 1.0;
-                }             
+                    hybscal = 1.0;
+                }
                 else  /* if it's a coarse grained loop, skip this atom */
                 {
                     continue;
@@ -183,7 +183,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
             /* both have double identity, get hybrid scaling factor */
             else
             {
-                bHybrid = TRUE;                       
+                bHybrid = TRUE;
                 hybscal = weight_product;
 
                 if(bCG)
@@ -192,7 +192,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
                 }
             }
 
-            
+
             j3               = 3*jnr;
             jx               = x[j3+0];
             jy               = x[j3+1];
@@ -207,7 +207,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 
             fscal            = 0;
 
-            if(ielec==3 || ivdw==3)
+            if(ielec == 3 || ivdw == 3)
             {
                 r                = rsq*rinv;
                 rt               = r*tabscale;
@@ -218,128 +218,128 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
             }
 
             /* Coulomb interaction. ielec==0 means no interaction */
-            if(ielec>0)
+            if(ielec > 0)
             {
                 qq               = iq*charge[jnr];
 
                 switch(ielec)
                 {
-                    case 1:
-                        /* Vanilla cutoff coulomb */
-                        vcoul            = qq*rinv;
-                        fscal            = vcoul*rinvsq;
-                        break;
+                case 1:
+                    /* Vanilla cutoff coulomb */
+                    vcoul            = qq*rinv;
+                    fscal            = vcoul*rinvsq;
+                    break;
 
-                    case 2:
-                        /* Reaction-field */
-                        krsq             = fr->k_rf*rsq;
-                        vcoul            = qq*(rinv+krsq-fr->c_rf);
-                        fscal            = qq*(rinv-2.0*krsq)*rinvsq;
-                        break;
+                case 2:
+                    /* Reaction-field */
+                    krsq             = fr->k_rf*rsq;
+                    vcoul            = qq*(rinv+krsq-fr->c_rf);
+                    fscal            = qq*(rinv-2.0*krsq)*rinvsq;
+                    break;
 
-                    case 3:
-                        /* Tabulated coulomb */
-                        Y                = VFtab[nnn];
-                        F                = VFtab[nnn+1];
-                        Geps             = eps*VFtab[nnn+2];
-                        Heps2            = eps2*VFtab[nnn+3];
-                        nnn             += 4;
-                        Fp               = F+Geps+Heps2;
-                        VV               = Y+eps*Fp;
-                        FF               = Fp+Geps+2.0*Heps2;
-                        vcoul            = qq*VV;
-                        fscal            = -qq*FF*tabscale*rinv;
-                        break;
+                case 3:
+                    /* Tabulated coulomb */
+                    Y                = VFtab[nnn];
+                    F                = VFtab[nnn+1];
+                    Geps             = eps*VFtab[nnn+2];
+                    Heps2            = eps2*VFtab[nnn+3];
+                    nnn             += 4;
+                    Fp               = F+Geps+Heps2;
+                    VV               = Y+eps*Fp;
+                    FF               = Fp+Geps+2.0*Heps2;
+                    vcoul            = qq*VV;
+                    fscal            = -qq*FF*tabscale*rinv;
+                    break;
 
-                    case 4:
-                        /* GB */
-                        gmx_fatal(FARGS,"Death & horror! GB generic interaction not implemented.\n");
-                        break;
+                case 4:
+                    /* GB */
+                    gmx_fatal(FARGS, "Death & horror! GB generic interaction not implemented.\n");
+                    break;
 
-                    default:
-                        gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for ielec=%d.\n",ielec);
-                        break;
+                default:
+                    gmx_fatal(FARGS, "Death & horror! No generic coulomb interaction for ielec=%d.\n", ielec);
+                    break;
                 }
                 vctot            = vctot+vcoul;
             } /* End of coulomb interactions */
 
             /* VdW interaction. ivdw==0 means no interaction */
-            if(ivdw>0)
+            if(ivdw > 0)
             {
                 tj               = nti+nvdwparam*type[jnr];
 
                 switch(ivdw)
                 {
-					case 1:
-						/* Vanilla Lennard-Jones cutoff */
-						c6               = vdwparam[tj];
-						c12              = vdwparam[tj+1];
+                case 1:
+                    /* Vanilla Lennard-Jones cutoff */
+                    c6               = vdwparam[tj];
+                    c12              = vdwparam[tj+1];
 
-						rinvsix          = rinvsq*rinvsq*rinvsq;
-						Vvdw_disp        = c6*rinvsix;
-						Vvdw_rep         = c12*rinvsix*rinvsix;
-						fscal           += (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
-						Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
-						break;
+                    rinvsix          = rinvsq*rinvsq*rinvsq;
+                    Vvdw_disp        = c6*rinvsix;
+                    Vvdw_rep         = c12*rinvsix*rinvsix;
+                    fscal           += (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
+                    Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
+                    break;
 
-					case 2:
-						/* Buckingham */
-						c6               = vdwparam[tj];
-						cexp1            = vdwparam[tj+1];
-						cexp2            = vdwparam[tj+2];
+                case 2:
+                    /* Buckingham */
+                    c6               = vdwparam[tj];
+                    cexp1            = vdwparam[tj+1];
+                    cexp2            = vdwparam[tj+2];
 
-						rinvsix          = rinvsq*rinvsq*rinvsq;
-						Vvdw_disp        = c6*rinvsix;
-						br               = cexp2*rsq*rinv;
-						Vvdw_rep         = cexp1*exp(-br);
-						fscal           += (br*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
-						Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
-						break;
+                    rinvsix          = rinvsq*rinvsq*rinvsq;
+                    Vvdw_disp        = c6*rinvsix;
+                    br               = cexp2*rsq*rinv;
+                    Vvdw_rep         = cexp1*exp(-br);
+                    fscal           += (br*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
+                    Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
+                    break;
 
-					case 3:
-						/* Tabulated VdW */
-						c6               = vdwparam[tj];
-						c12              = vdwparam[tj+1];
+                case 3:
+                    /* Tabulated VdW */
+                    c6               = vdwparam[tj];
+                    c12              = vdwparam[tj+1];
 
-						Y                = VFtab[nnn];
-						F                = VFtab[nnn+1];
-						Geps             = eps*VFtab[nnn+2];
-						Heps2            = eps2*VFtab[nnn+3];
-						Fp               = F+Geps+Heps2;
-						VV               = Y+eps*Fp;
-						FF               = Fp+Geps+2.0*Heps2;
-						Vvdw_disp        = c6*VV;
-						fijD             = c6*FF;
-						nnn             += 4;
-						Y                = VFtab[nnn];
-						F                = VFtab[nnn+1];
-						Geps             = eps*VFtab[nnn+2];
-						Heps2            = eps2*VFtab[nnn+3];
-						Fp               = F+Geps+Heps2;
-						VV               = Y+eps*Fp;
-						FF               = Fp+Geps+2.0*Heps2;
-						Vvdw_rep         = c12*VV;
-						fijR             = c12*FF;
-						fscal           += -(fijD+fijR)*tabscale*rinv;
-						Vvdwtot          = Vvdwtot + Vvdw_disp + Vvdw_rep;
-                                                if(!bCG && force_cap>0 && (fabs(fscal)> force_cap))
-                                                {
-                                                     fscal=force_cap*fscal/fabs(fscal);
-                                                }
-						break;
-
-					default:
-						gmx_fatal(FARGS,"Death & horror! No generic VdW interaction for ivdw=%d.\n",ivdw);
-						break;
-				}
-			} /* end VdW interactions */
-
-             /* force weight is one anyway */
-                    if (bHybrid)
+                    Y                = VFtab[nnn];
+                    F                = VFtab[nnn+1];
+                    Geps             = eps*VFtab[nnn+2];
+                    Heps2            = eps2*VFtab[nnn+3];
+                    Fp               = F+Geps+Heps2;
+                    VV               = Y+eps*Fp;
+                    FF               = Fp+Geps+2.0*Heps2;
+                    Vvdw_disp        = c6*VV;
+                    fijD             = c6*FF;
+                    nnn             += 4;
+                    Y                = VFtab[nnn];
+                    F                = VFtab[nnn+1];
+                    Geps             = eps*VFtab[nnn+2];
+                    Heps2            = eps2*VFtab[nnn+3];
+                    Fp               = F+Geps+Heps2;
+                    VV               = Y+eps*Fp;
+                    FF               = Fp+Geps+2.0*Heps2;
+                    Vvdw_rep         = c12*VV;
+                    fijR             = c12*FF;
+                    fscal           += -(fijD+fijR)*tabscale*rinv;
+                    Vvdwtot          = Vvdwtot + Vvdw_disp + Vvdw_rep;
+                    if(!bCG && force_cap > 0 && (fabs(fscal) > force_cap))
                     {
-                        fscal *= hybscal;
+                        fscal = force_cap*fscal/fabs(fscal);
                     }
-                        
+                    break;
+
+                default:
+                    gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
+                    break;
+                }
+            } /* end VdW interactions */
+
+            /* force weight is one anyway */
+            if (bHybrid)
+            {
+                fscal *= hybscal;
+            }
+
             tx               = fscal*dx;
             ty               = fscal*dy;
             tz               = fscal*dz;

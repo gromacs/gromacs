@@ -75,29 +75,29 @@ class TrajectoryAnalysisRunnerCommon::Impl
         void finishTrajectory();
 
         TrajectoryAnalysisSettings &settings_;
-        TopologyInformation     topInfo_;
+        TopologyInformation         topInfo_;
 
-        bool                    bHelp_;
-        bool                    bShowHidden_;
-        bool                    bQuiet_;
+        bool                        bHelp_;
+        bool                        bShowHidden_;
+        bool                        bQuiet_;
         //! Name of the trajectory file (empty if not provided).
-        std::string             trjfile_;
+        std::string                 trjfile_;
         //! Name of the topology file (empty if no topology provided).
-        std::string             topfile_;
+        std::string                 topfile_;
         //! Name of the index file (empty if no index file provided).
-        std::string             ndxfile_;
-        double                  startTime_;
-        double                  endTime_;
-        double                  deltaTime_;
+        std::string                 ndxfile_;
+        double                      startTime_;
+        double                      endTime_;
+        double                      deltaTime_;
 
-        gmx_ana_indexgrps_t    *grps_;
-        bool                    bTrajOpen_;
+        gmx_ana_indexgrps_t        *grps_;
+        bool                        bTrajOpen_;
         //! The current frame, or \p NULL if no frame loaded yet.
-        t_trxframe          *fr;
-        gmx_rmpbc_t             gpbc_;
+        t_trxframe                 *fr;
+        gmx_rmpbc_t                 gpbc_;
         //! Used to store the status variable from read_first_frame().
-        t_trxstatus            *status_;
-        output_env_t            oenv_;
+        t_trxstatus                *status_;
+        output_env_t                oenv_;
 };
 
 
@@ -153,7 +153,7 @@ TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
  */
 
 TrajectoryAnalysisRunnerCommon::TrajectoryAnalysisRunnerCommon(
-        TrajectoryAnalysisSettings *settings)
+    TrajectoryAnalysisSettings *settings)
     : impl_(new Impl(settings))
 {
 }
@@ -241,7 +241,7 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
     }
 
     impl_->settings_.impl_->plotSettings.setTimeUnit(
-            impl_->settings_.impl_->timeUnitManager.timeUnit());
+        impl_->settings_.impl_->timeUnitManager.timeUnit());
 
     if (impl_->trjfile_.empty() && impl_->topfile_.empty())
     {
@@ -249,11 +249,17 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
     }
 
     if (options->isSet("b"))
+    {
         setTimeValue(TBEGIN, impl_->startTime_);
+    }
     if (options->isSet("e"))
+    {
         setTimeValue(TEND, impl_->endTime_);
+    }
     if (options->isSet("dt"))
+    {
         setTimeValue(TDELTA, impl_->deltaTime_);
+    }
 
     return true;
 }
@@ -292,8 +298,8 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
 {
     const TrajectoryAnalysisSettings &settings = impl_->settings_;
     bool bRequireTop
-        = settings.hasFlag(TrajectoryAnalysisSettings::efRequireTop)
-          || selections->requiresTopology();
+        = settings.hasFlag(TrajectoryAnalysisSettings::efRequireTop) ||
+            selections->requiresTopology();
     if (bRequireTop && impl_->topfile_.empty())
     {
         GMX_THROW(InconsistentInputError("No topology provided, but one is required for analysis"));
@@ -306,10 +312,10 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
 
         snew(impl_->topInfo_.top_, 1);
         impl_->topInfo_.bTop_ = read_tps_conf(impl_->topfile_.c_str(), title,
-                impl_->topInfo_.top_, &impl_->topInfo_.ePBC_,
-                &impl_->topInfo_.xtop_, NULL, impl_->topInfo_.boxtop_, TRUE);
-        if (hasTrajectory()
-            && !settings.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
+                                              impl_->topInfo_.top_, &impl_->topInfo_.ePBC_,
+                                              &impl_->topInfo_.xtop_, NULL, impl_->topInfo_.boxtop_, TRUE);
+        if (hasTrajectory() &&
+            !settings.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
             sfree(impl_->topInfo_.xtop_);
             impl_->topInfo_.xtop_ = NULL;
@@ -327,12 +333,12 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
     selections->setTopology(impl_->topInfo_.topology(), natoms);
 
     /*
-    if (impl_->bSelDump)
-    {
+       if (impl_->bSelDump)
+       {
         gmx_ana_poscalc_coll_print_tree(stderr, impl_->pcc);
         fprintf(stderr, "\n");
-    }
-    */
+       }
+     */
 }
 
 
@@ -366,20 +372,20 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         if (top.hasTopology() && impl_->fr->natoms > top.topology()->atoms.nr)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                      "Trajectory (%d atoms) does not match topology (%d atoms)",
-                      impl_->fr->natoms, top.topology()->atoms.nr)));
+                                                 "Trajectory (%d atoms) does not match topology (%d atoms)",
+                                                 impl_->fr->natoms, top.topology()->atoms.nr)));
         }
         // Check index groups if they have been initialized based on the topology.
         /*
-        if (top)
-        {
+           if (top)
+           {
             for (int i = 0; i < impl_->sel->nr(); ++i)
             {
                 gmx_ana_index_check(impl_->sel->sel(i)->indexGroup(),
                                     impl_->fr->natoms);
             }
-        }
-        */
+           }
+         */
     }
     else
     {

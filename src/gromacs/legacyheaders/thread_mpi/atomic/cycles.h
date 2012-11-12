@@ -13,7 +13,7 @@ static __inline__ tmpi_cycles_t tmpi_cycles_read(void)
 {
     /* x86 with GCC inline assembly - pentium TSC register */
     tmpi_cycles_t   cycle;
-    unsigned       low,high;
+    unsigned        low, high;
 
 #ifdef HAVE_RDTSCP
     __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
@@ -40,7 +40,7 @@ static __inline__ tmpi_cycles_t tmpi_cycles_read(void)
 {
     /* ia64 with GCC inline assembly */
     tmpi_cycles_t ret;
-    __asm__ __volatile__ ("mov %0=ar.itc" : "=r"(ret));
+    __asm__ __volatile__ ("mov %0=ar.itc" : "=r" (ret));
     return ret;
 }
 #elif defined(_MSC_VER)
@@ -52,7 +52,7 @@ static __inline tmpi_cycles_t tmpi_cycles_read(void)
     unsigned int ui;
     return __rdtscp(&ui);
 #else
-	return __rdtsc();
+    return __rdtsc();
 #endif
 }
 #endif

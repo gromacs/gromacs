@@ -65,7 +65,7 @@ typedef struct
 } verletbuf_atomtype_t;
 
 
-void verletbuf_get_list_setup(gmx_bool bGPU,
+void verletbuf_get_list_setup(gmx_bool                bGPU,
                               verletbuf_list_setup_t *list_setup)
 {
     list_setup->cluster_size_i     = NBNXN_CPU_CLUSTER_I_SIZE;
@@ -91,11 +91,11 @@ void verletbuf_get_list_setup(gmx_bool bGPU,
     }
 }
 
-static void add_at(verletbuf_atomtype_t **att_p,int *natt_p,
-                   real mass,int type,real q,int con,int nmol)
+static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
+                   real mass, int type, real q, int con, int nmol)
 {
     verletbuf_atomtype_t *att;
-    int natt,i;
+    int                   natt, i;
 
     if (mass == 0)
     {
@@ -123,7 +123,7 @@ static void add_at(verletbuf_atomtype_t **att_p,int *natt_p,
     else
     {
         (*natt_p)++;
-        srenew(*att_p,*natt_p);
+        srenew(*att_p, *natt_p);
         (*att_p)[i].mass = mass;
         (*att_p)[i].type = type;
         (*att_p)[i].q    = q;
@@ -132,19 +132,19 @@ static void add_at(verletbuf_atomtype_t **att_p,int *natt_p,
     }
 }
 
-static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
+static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                                         verletbuf_atomtype_t **att_p,
-                                        int *natt_p,
-                                        int *n_nonlin_vsite)
+                                        int                   *natt_p,
+                                        int                   *n_nonlin_vsite)
 {
     verletbuf_atomtype_t *att;
-    int natt;
-    int mb,nmol,ft,i,j,a1,a2,a3,a;
-    const t_atoms *atoms;
-    const t_ilist *il;
-    const t_atom *at;
-    const t_iparams *ip;
-    real *con_m,*vsite_m,cam[5];
+    int                   natt;
+    int                   mb, nmol, ft, i, j, a1, a2, a3, a;
+    const t_atoms        *atoms;
+    const t_ilist        *il;
+    const t_atom         *at;
+    const t_iparams      *ip;
+    real                 *con_m, *vsite_m, cam[5];
 
     att  = NULL;
     natt = 0;
@@ -154,24 +154,24 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
         *n_nonlin_vsite = 0;
     }
 
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for(mb = 0; mb < mtop->nmolblock; mb++)
     {
         nmol = mtop->molblock[mb].nmol;
 
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
 
         /* Check for constraints, as they affect the kinetic energy */
-        snew(con_m,atoms->nr);
-        snew(vsite_m,atoms->nr);
+        snew(con_m, atoms->nr);
+        snew(vsite_m, atoms->nr);
 
-        for(ft=F_CONSTR; ft<=F_CONSTRNC; ft++)
+        for(ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
         {
             il = &mtop->moltype[mtop->molblock[mb].type].ilist[ft];
 
-            for(i=0; i<il->nr; i+=1+NRAL(ft))
+            for(i = 0; i < il->nr; i += 1+NRAL(ft))
             {
-                a1 = il->iatoms[i+1];
-                a2 = il->iatoms[i+2];
+                a1         = il->iatoms[i+1];
+                a2         = il->iatoms[i+2];
                 con_m[a1] += atoms->atom[a2].m;
                 con_m[a2] += atoms->atom[a1].m;
             }
@@ -179,30 +179,30 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
 
         il = &mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE];
 
-        for(i=0; i<il->nr; i+=1+NRAL(F_SETTLE))
+        for(i = 0; i < il->nr; i += 1+NRAL(F_SETTLE))
         {
-            a1 = il->iatoms[i+1];
-            a2 = il->iatoms[i+2];
-            a3 = il->iatoms[i+3];
+            a1         = il->iatoms[i+1];
+            a2         = il->iatoms[i+2];
+            a3         = il->iatoms[i+3];
             con_m[a1] += atoms->atom[a2].m + atoms->atom[a3].m;
             con_m[a2] += atoms->atom[a1].m + atoms->atom[a3].m;
             con_m[a3] += atoms->atom[a1].m + atoms->atom[a2].m;
         }
 
         /* Check for virtual sites, determine mass from constructing atoms */
-        for(ft=0; ft<F_NRE; ft++)
+        for(ft = 0; ft < F_NRE; ft++)
         {
             if (IS_VSITE(ft))
             {
                 il = &mtop->moltype[mtop->molblock[mb].type].ilist[ft];
 
-                for(i=0; i<il->nr; i+=1+NRAL(ft))
+                for(i = 0; i < il->nr; i += 1+NRAL(ft))
                 {
                     ip = &mtop->ffparams.iparams[il->iatoms[i]];
 
                     a1 = il->iatoms[i+1];
 
-                    for(j=1; j<NRAL(ft); j++)
+                    for(j = 1; j < NRAL(ft); j++)
                     {
                         cam[j] = atoms->atom[il->iatoms[i+1+j]].m;
                         if (cam[j] == 0)
@@ -211,7 +211,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
                         }
                         if (cam[j] == 0)
                         {
-                            gmx_fatal(FARGS,"In molecule type '%s' %s construction involves atom %d, which is a virtual site of equal or high complexity. This is not supported.",
+                            gmx_fatal(FARGS, "In molecule type '%s' %s construction involves atom %d, which is a virtual site of equal or high complexity. This is not supported.",
                                       *mtop->moltype[mtop->molblock[mb].type].name,
                                       interaction_function[ft].longname,
                                       il->iatoms[i+1+j]+1);
@@ -241,11 +241,11 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
                          * construction, so even there the total drift
                          * estimation shouldn't be far off.
                          */
-                        assert(j>=1);
+                        assert(j >= 1);
                         vsite_m[a1] = cam[1];
-                        for(j=2; j<NRAL(ft); j++)
+                        for(j = 2; j < NRAL(ft); j++)
                         {
-                            vsite_m[a1] = min(vsite_m[a1],cam[j]);
+                            vsite_m[a1] = min(vsite_m[a1], cam[j]);
                         }
                         if (n_nonlin_vsite != NULL)
                         {
@@ -257,15 +257,15 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
             }
         }
 
-        for(a=0; a<atoms->nr; a++)
+        for(a = 0; a < atoms->nr; a++)
         {
             at = &atoms->atom[a];
             /* We consider an atom constrained, #DOF=2, when it is
              * connected with constraints to one or more atoms with
              * total mass larger than 1.5 that of the atom itself.
              */
-            add_at(&att,&natt,
-                   at->m,at->type,at->q,con_m[a] > 1.5*at->m,nmol);
+            add_at(&att, &natt,
+                   at->m, at->type, at->q, con_m[a] > 1.5*at->m, nmol);
         }
 
         sfree(vsite_m);
@@ -274,10 +274,10 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
 
     if (gmx_debug_at)
     {
-        for(a=0; a<natt; a++)
+        for(a = 0; a < natt; a++)
         {
-            fprintf(debug,"type %d: m %5.2f t %d q %6.3f con %d n %d\n",
-                    a,att[a].mass,att[a].type,att[a].q,att[a].con,att[a].n);
+            fprintf(debug, "type %d: m %5.2f t %d q %6.3f con %d n %d\n",
+                    a, att[a].mass, att[a].type, att[a].q, att[a].con, att[a].n);
         }
     }
 
@@ -285,8 +285,8 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
     *natt_p = natt;
 }
 
-static void approx_2dof(real s2,real x,
-                        real *shift,real *scale)
+static void approx_2dof(real s2, real x,
+                        real *shift, real *scale)
 {
     /* A particle with 1 DOF constrained has 2 DOFs instead of 3.
      * This code is also used for particles with multiple constraints,
@@ -296,7 +296,7 @@ static void approx_2dof(real s2,real x,
      * by matching the distribution value and derivative at x.
      * This is a tight overestimate for all r>=0 at any s and x.
      */
-    real ex,er;
+    real ex, er;
 
     ex = exp(-x*x/(2*s2));
     er = gmx_erfc(x/sqrt(2*s2));
@@ -305,33 +305,33 @@ static void approx_2dof(real s2,real x,
     *scale = 0.5*M_PI*exp(ex*ex/(M_PI*er*er))*er;
 }
 
-static real ener_drift(const verletbuf_atomtype_t *att,int natt,
+static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                        const gmx_ffparams_t *ffp,
                        real kT_fac,
-                       real md_ljd,real md_ljr,real md_el,real dd_el,
+                       real md_ljd, real md_ljr, real md_el, real dd_el,
                        real r_buffer,
-                       real rlist,real boxvol)
+                       real rlist, real boxvol)
 {
-    double drift_tot,pot1,pot2,pot;
-    int    i,j;
-    real   s2i,s2j,s2,s;
-    int    ti,tj;
-    real   md,dd;
-    real   sc_fac,rsh;
-    double c_exp,c_erfc;
+    double drift_tot, pot1, pot2, pot;
+    int    i, j;
+    real   s2i, s2j, s2, s;
+    int    ti, tj;
+    real   md, dd;
+    real   sc_fac, rsh;
+    double c_exp, c_erfc;
 
     drift_tot = 0;
 
     /* Loop over the different atom type pairs */
-    for(i=0; i<natt; i++)
+    for(i = 0; i < natt; i++)
     {
         s2i = kT_fac/att[i].mass;
         ti  = att[i].type;
 
-        for(j=i; j<natt; j++)
+        for(j = i; j < natt; j++)
         {
             s2j = kT_fac/att[j].mass;
-            tj = att[j].type;
+            tj  = att[j].type;
 
             /* Note that attractive and repulsive potentials for individual
              * pairs will partially cancel.
@@ -352,15 +352,15 @@ static real ener_drift(const verletbuf_atomtype_t *att,int natt,
             /* For constraints: adapt r and scaling for the Gaussian */
             if (att[i].con)
             {
-                real sh,sc;
-                approx_2dof(s2i,r_buffer*s2i/s2,&sh,&sc);
+                real sh, sc;
+                approx_2dof(s2i, r_buffer*s2i/s2, &sh, &sc);
                 rsh    += sh;
                 sc_fac *= sc;
             }
             if (att[j].con)
             {
-                real sh,sc;
-                approx_2dof(s2j,r_buffer*s2j/s2,&sh,&sc);
+                real sh, sc;
+                approx_2dof(s2j, r_buffer*s2j/s2, &sh, &sc);
                 rsh    += sh;
                 sc_fac *= sc;
             }
@@ -388,10 +388,10 @@ static real ener_drift(const verletbuf_atomtype_t *att,int natt,
 
             if (gmx_debug_at)
             {
-                fprintf(debug,"n %d %d d s %.3f %.3f con %d md %8.1e dd %8.1e pot1 %8.1e pot2 %8.1e pot %8.1e\n",
-                        att[i].n,att[j].n,sqrt(s2i),sqrt(s2j),
+                fprintf(debug, "n %d %d d s %.3f %.3f con %d md %8.1e dd %8.1e pot1 %8.1e pot2 %8.1e pot %8.1e\n",
+                        att[i].n, att[j].n, sqrt(s2i), sqrt(s2j),
                         att[i].con+att[j].con,
-                        md,dd,pot1,pot2,pot);
+                        md, dd, pot1, pot2, pot);
             }
 
             /* Multiply by the number of atom pairs */
@@ -416,9 +416,9 @@ static real ener_drift(const verletbuf_atomtype_t *att,int natt,
     return drift_tot;
 }
 
-static real surface_frac(int cluster_size,real particle_distance,real rlist)
+static real surface_frac(int cluster_size, real particle_distance, real rlist)
 {
-    real d,area_rel;
+    real d, area_rel;
 
     if (rlist < 0.5*particle_distance)
     {
@@ -463,31 +463,31 @@ static real surface_frac(int cluster_size,real particle_distance,real rlist)
         gmx_incons("surface_frac called with unsupported cluster_size");
         area_rel = 1.0;
     }
-        
+
     return area_rel/cluster_size;
 }
 
-void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
-                             const t_inputrec *ir,real drift_target,
+void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
+                             const t_inputrec *ir, real drift_target,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist)
 {
-    double resolution;
-    char *env;
+    double                resolution;
+    char                 *env;
 
-    real particle_distance;
-    real nb_clust_frac_pairs_not_in_list_at_cutoff;
+    real                  particle_distance;
+    real                  nb_clust_frac_pairs_not_in_list_at_cutoff;
 
-    verletbuf_atomtype_t *att=NULL;
-    int  natt=-1,i;
-    double reppow;
-    real md_ljd,md_ljr,md_el,dd_el;
-    real elfac;
-    real kT_fac,mass_min;
-    int  ib0,ib1,ib;
-    real rb,rl;
-    real drift;
+    verletbuf_atomtype_t *att  = NULL;
+    int                   natt = -1, i;
+    double                reppow;
+    real                  md_ljd, md_ljr, md_el, dd_el;
+    real                  elfac;
+    real                  kT_fac, mass_min;
+    int                   ib0, ib1, ib;
+    real                  rb, rl;
+    real                  drift;
 
     /* Resolution of the buffer size */
     resolution = 0.001;
@@ -495,7 +495,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     env = getenv("GMX_VERLET_BUFFER_RES");
     if (env != NULL)
     {
-        sscanf(env,"%lf",&resolution);
+        sscanf(env, "%lf", &resolution);
     }
 
     /* In an atom wise pair-list there would be no pairs in the list
@@ -523,16 +523,16 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
      */
 
     /* Worst case assumption: HCP packing of particles gives largest distance */
-    particle_distance = pow(boxvol*sqrt(2)/mtop->natoms,1.0/3.0);
+    particle_distance = pow(boxvol*sqrt(2)/mtop->natoms, 1.0/3.0);
 
-    get_verlet_buffer_atomtypes(mtop,&att,&natt,n_nonlin_vsite);
+    get_verlet_buffer_atomtypes(mtop, &att, &natt, n_nonlin_vsite);
     assert(att != NULL && natt >= 0);
 
     if (debug)
     {
-        fprintf(debug,"particle distance assuming HCP packing: %f nm\n",
+        fprintf(debug, "particle distance assuming HCP packing: %f nm\n",
                 particle_distance);
-        fprintf(debug,"energy drift atom types: %d\n",natt);
+        fprintf(debug, "energy drift atom types: %d\n", natt);
     }
 
     reppow = mtop->ffparams.reppow;
@@ -541,13 +541,13 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     if (ir->vdwtype == evdwCUT)
     {
         /* -dV/dr of -r^-6 and r^-repporw */
-        md_ljd = -6*pow(ir->rvdw,-7.0);
-        md_ljr = reppow*pow(ir->rvdw,-(reppow+1));
+        md_ljd = -6*pow(ir->rvdw, -7.0);
+        md_ljr = reppow*pow(ir->rvdw, -(reppow+1));
         /* The contribution of the second derivative is negligible */
     }
     else
     {
-        gmx_fatal(FARGS,"Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
+        gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
     }
 
     elfac = ONE_4PI_EPS0/ir->epsilon_r;
@@ -557,46 +557,46 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     dd_el = 0;
     if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
     {
-        real eps_rf,k_rf;
+        real eps_rf, k_rf;
 
         if (ir->coulombtype == eelCUT)
         {
             eps_rf = 1;
-            k_rf = 0;
+            k_rf   = 0;
         }
         else
         {
             eps_rf = ir->epsilon_rf/ir->epsilon_r;
             if (eps_rf != 0)
             {
-                k_rf = pow(ir->rcoulomb,-3.0)*(eps_rf - ir->epsilon_r)/(2*eps_rf + ir->epsilon_r);
+                k_rf = pow(ir->rcoulomb, -3.0)*(eps_rf - ir->epsilon_r)/(2*eps_rf + ir->epsilon_r);
             }
             else
             {
                 /* epsilon_rf = infinity */
-                k_rf = 0.5*pow(ir->rcoulomb,-3.0);
+                k_rf = 0.5*pow(ir->rcoulomb, -3.0);
             }
         }
 
         if (eps_rf > 0)
         {
-            md_el = elfac*(pow(ir->rcoulomb,-2.0) - 2*k_rf*ir->rcoulomb);
+            md_el = elfac*(pow(ir->rcoulomb, -2.0) - 2*k_rf*ir->rcoulomb);
         }
-        dd_el = elfac*(2*pow(ir->rcoulomb,-3.0) + 2*k_rf);
+        dd_el = elfac*(2*pow(ir->rcoulomb, -3.0) + 2*k_rf);
     }
     else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
     {
-        real b,rc,br;
+        real b, rc, br;
 
-        b  = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
-        rc = ir->rcoulomb;
-        br = b*rc;
+        b     = calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+        rc    = ir->rcoulomb;
+        br    = b*rc;
         md_el = elfac*(2*b*exp(-br*br)/(sqrt(M_PI)*rc) + gmx_erfc(br)/(rc*rc));
         dd_el = elfac/(rc*rc)*(4*b*(1 + br*br)*exp(-br*br)/sqrt(M_PI) + 2*gmx_erfc(br)/rc);
     }
     else
     {
-        gmx_fatal(FARGS,"Energy drift calculation is only implemented for Reaction-Field and Ewald electrostatics");
+        gmx_fatal(FARGS, "Energy drift calculation is only implemented for Reaction-Field and Ewald electrostatics");
     }
 
     /* Determine the variance of the atomic displacement
@@ -620,7 +620,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
             /* Set the masses to 1 as kT_fac is the full sigma^2,
              * but we divide by m in ener_drift().
              */
-            for(i=0; i<natt; i++)
+            for(i = 0; i < natt; i++)
             {
                 att[i].mass = 1;
             }
@@ -631,9 +631,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
             /* Per group tau_t is not implemented yet, use the maximum */
             tau_t = ir->opts.tau_t[0];
-            for(i=1; i<ir->opts.ngtc; i++)
+            for(i = 1; i < ir->opts.ngtc; i++)
             {
-                tau_t = max(tau_t,ir->opts.tau_t[i]);
+                tau_t = max(tau_t, ir->opts.tau_t[i]);
             }
 
             kT_fac *= tau_t;
@@ -646,17 +646,17 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     }
 
     mass_min = att[0].mass;
-    for(i=1; i<natt; i++)
+    for(i = 1; i < natt; i++)
     {
-        mass_min = min(mass_min,att[i].mass);
+        mass_min = min(mass_min, att[i].mass);
     }
 
     if (debug)
     {
-        fprintf(debug,"md_ljd %e md_ljr %e\n",md_ljd,md_ljr);
-        fprintf(debug,"md_el %e dd_el %e\n",md_el,dd_el);
-        fprintf(debug,"sqrt(kT_fac) %f\n",sqrt(kT_fac));
-        fprintf(debug,"mass_min %f\n",mass_min);
+        fprintf(debug, "md_ljd %e md_ljr %e\n", md_ljd, md_ljr);
+        fprintf(debug, "md_el %e dd_el %e\n", md_el, dd_el);
+        fprintf(debug, "sqrt(kT_fac) %f\n", sqrt(kT_fac));
+        fprintf(debug, "mass_min %f\n", mass_min);
     }
 
     /* Search using bisection */
@@ -667,25 +667,25 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     {
         ib = (ib0 + ib1)/2;
         rb = ib*resolution;
-        rl = max(ir->rvdw,ir->rcoulomb) + rb;
+        rl = max(ir->rvdw, ir->rcoulomb) + rb;
 
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
          */
-        drift = ener_drift(att,natt,&mtop->ffparams,
+        drift = ener_drift(att, natt, &mtop->ffparams,
                            kT_fac,
-                           md_ljd,md_ljr,md_el,dd_el,rb,
-                           rl,boxvol);
+                           md_ljd, md_ljr, md_el, dd_el, rb,
+                           rl, boxvol);
 
         /* Correct for the fact that we are using a Ni x Nj particle pair list
          * and not a 1 x 1 particle pair list. This reduces the drift.
          */
         /* We don't have a formula for 8 (yet), use 4 which is conservative */
         nb_clust_frac_pairs_not_in_list_at_cutoff =
-            surface_frac(min(list_setup->cluster_size_i,4),
-                         particle_distance,rl)*
-            surface_frac(min(list_setup->cluster_size_j,4),
-                         particle_distance,rl);
+            surface_frac(min(list_setup->cluster_size_i, 4),
+                         particle_distance, rl)*
+            surface_frac(min(list_setup->cluster_size_j, 4),
+                         particle_distance, rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */
@@ -693,9 +693,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
         if (debug)
         {
-            fprintf(debug,"ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %f\n",
-                    ib0,ib,ib1,rb,
-                    list_setup->cluster_size_i,list_setup->cluster_size_j,
+            fprintf(debug, "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %f\n",
+                    ib0, ib, ib1, rb,
+                    list_setup->cluster_size_i, list_setup->cluster_size_j,
                     nb_clust_frac_pairs_not_in_list_at_cutoff,
                     drift);
         }
@@ -712,5 +712,5 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
     sfree(att);
 
-    *rlist = max(ir->rvdw,ir->rcoulomb) + ib1*resolution;
+    *rlist = max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
 }

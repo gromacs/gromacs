@@ -1,11 +1,11 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -61,9 +61,9 @@
 #define MAX_SUZUKI_YOSHIDA_NUM 5
 #define SUZUKI_YOSHIDA_NUM  5
 
-static const double sy_const_1[] = { 1. };
-static const double sy_const_3[] = { 0.828981543588751,-0.657963087177502,0.828981543588751 };
-static const double sy_const_5[] = { 0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065 };
+static const double  sy_const_1[] = { 1. };
+static const double  sy_const_3[] = { 0.828981543588751, -0.657963087177502, 0.828981543588751 };
+static const double  sy_const_5[] = { 0.2967324292201065, 0.2967324292201065, -0.186929716880426, 0.2967324292201065, 0.2967324292201065 };
 
 static const double* sy_const[] = {
     NULL,
@@ -75,126 +75,141 @@ static const double* sy_const[] = {
 };
 
 /*
-static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
+   static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
     {},
     {1},
     {},
     {0.828981543588751,-0.657963087177502,0.828981543588751},
     {},
     {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
-};*/
+   };*/
 
 /* these integration routines are only referenced inside this file */
-static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtfull,
-                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
+static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real dtfull,
+                        double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int   i,j,mi,mj,jmax;
-    double Ekin,Efac,reft,kT,nd;
-    double dt;
+    int           i, j, mi, mj, jmax;
+    double        Ekin, Efac, reft, kT, nd;
+    double        dt;
     t_grp_tcstat *tcstat;
-    double *ivxi,*ixi;
-    double *iQinv;
-    double *GQ;
-    gmx_bool bBarostat;
-    int mstepsi, mstepsj;
-    int ns = SUZUKI_YOSHIDA_NUM;  /* set the degree of integration in the types/state.h file */
-    int nh = opts->nhchainlength;
-    
-    snew(GQ,nh);
+    double       *ivxi, *ixi;
+    double       *iQinv;
+    double       *GQ;
+    gmx_bool      bBarostat;
+    int           mstepsi, mstepsj;
+    int           ns = SUZUKI_YOSHIDA_NUM; /* set the degree of integration in the types/state.h file */
+    int           nh = opts->nhchainlength;
+
+    snew(GQ, nh);
     mstepsi = mstepsj = ns;
 
 /* if scalefac is NULL, we are doing the NHC of the barostat */
-    
+
     bBarostat = FALSE;
-    if (scalefac == NULL) {
+    if (scalefac == NULL)
+    {
         bBarostat = TRUE;
     }
 
-    for (i=0; i<nvar; i++) 
+    for (i = 0; i < nvar; i++)
     {
 
-        /* make it easier to iterate by selecting 
+        /* make it easier to iterate by selecting
            out the sub-array that corresponds to this T group */
-        
+
         ivxi = &vxi[i*nh];
-        ixi = &xi[i*nh];
-        if (bBarostat) {
-            iQinv = &(MassQ->QPinv[i*nh]); 
-            nd = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
-            reft = max(0.0,opts->ref_t[0]);
-            Ekin = sqr(*veta)/MassQ->Winv;
-        } else {
-            iQinv = &(MassQ->Qinv[i*nh]);  
+        ixi  = &xi[i*nh];
+        if (bBarostat)
+        {
+            iQinv = &(MassQ->QPinv[i*nh]);
+            nd    = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
+            reft  = max(0.0, opts->ref_t[0]);
+            Ekin  = sqr(*veta)/MassQ->Winv;
+        }
+        else
+        {
+            iQinv  = &(MassQ->Qinv[i*nh]);
             tcstat = &ekind->tcstat[i];
-            nd = opts->nrdf[i];
-            reft = max(0.0,opts->ref_t[i]);
-            if (bEkinAveVel) 
+            nd     = opts->nrdf[i];
+            reft   = max(0.0, opts->ref_t[i]);
+            if (bEkinAveVel)
             {
                 Ekin = 2*trace(tcstat->ekinf)*tcstat->ekinscalef_nhc;
-            } else {
+            }
+            else
+            {
                 Ekin = 2*trace(tcstat->ekinh)*tcstat->ekinscaleh_nhc;
             }
         }
         kT = BOLTZ*reft;
 
-        for(mi=0;mi<mstepsi;mi++) 
+        for(mi = 0; mi < mstepsi; mi++)
         {
-            for(mj=0;mj<mstepsj;mj++)
-            { 
+            for(mj = 0; mj < mstepsj; mj++)
+            {
                 /* weighting for this step using Suzuki-Yoshida integration - fixed at 5 */
                 dt = sy_const[ns][mj] * dtfull / mstepsi;
-                
+
                 /* compute the thermal forces */
                 GQ[0] = iQinv[0]*(Ekin - nd*kT);
-                
-                for (j=0;j<nh-1;j++) 
-                { 	
-                    if (iQinv[j+1] > 0) {
-                        /* we actually don't need to update here if we save the 
+
+                for (j = 0; j < nh-1; j++)
+                {
+                    if (iQinv[j+1] > 0)
+                    {
+                        /* we actually don't need to update here if we save the
                            state of the GQ, but it's easier to just recompute*/
-                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
-                    } else {
+                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);
+                    }
+                    else
+                    {
                         GQ[j+1] = 0;
                     }
                 }
-                
+
                 ivxi[nh-1] += 0.25*dt*GQ[nh-1];
-                for (j=nh-1;j>0;j--) 
-                { 
-                    Efac = exp(-0.125*dt*ivxi[j]);
+                for (j = nh-1; j > 0; j--)
+                {
+                    Efac      = exp(-0.125*dt*ivxi[j]);
                     ivxi[j-1] = Efac*(ivxi[j-1]*Efac + 0.25*dt*GQ[j-1]);
                 }
-                
+
                 Efac = exp(-0.5*dt*ivxi[0]);
-                if (bBarostat) {
-                    *veta *= Efac;                
-                } else {
+                if (bBarostat)
+                {
+                    *veta *= Efac;
+                }
+                else
+                {
                     scalefac[i] *= Efac;
                 }
                 Ekin *= (Efac*Efac);
-                
+
                 /* Issue - if the KE is an average of the last and the current temperatures, then we might not be
                    able to scale the kinetic energy directly with this factor.  Might take more bookkeeping -- have to
                    think about this a bit more . . . */
 
                 GQ[0] = iQinv[0]*(Ekin - nd*kT);
-                
+
                 /* update thermostat positions */
-                for (j=0;j<nh;j++) 
-                { 
+                for (j = 0; j < nh; j++)
+                {
                     ixi[j] += 0.5*dt*ivxi[j];
                 }
-                
-                for (j=0;j<nh-1;j++) 
-                { 
-                    Efac = exp(-0.125*dt*ivxi[j+1]);
+
+                for (j = 0; j < nh-1; j++)
+                {
+                    Efac    = exp(-0.125*dt*ivxi[j+1]);
                     ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
-                    if (iQinv[j+1] > 0) {
-                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
-                    } else {
+                    if (iQinv[j+1] > 0)
+                    {
+                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);
+                    }
+                    else
+                    {
                         GQ[j+1] = 0;
                     }
                 }
@@ -205,56 +220,56 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
     sfree(GQ);
 }
 
-static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
+static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
                          gmx_ekindata_t *ekind, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
 {
 
-    real  pscal;
+    real   pscal;
     double alpha;
-    int   i,j,d,n,nwall;
-    real  T,GW,vol;
-    tensor Winvm,ekinmod,localpres;
-    
-    /* The heat bath is coupled to a separate barostat, the last temperature group.  In the 
+    int    i, j, d, n, nwall;
+    real   T, GW, vol;
+    tensor Winvm, ekinmod, localpres;
+
+    /* The heat bath is coupled to a separate barostat, the last temperature group.  In the
        2006 Tuckerman et al paper., the order is iL_{T_baro} iL {T_part}
-    */
-    
-    if (ir->epct==epctSEMIISOTROPIC) 
+     */
+
+    if (ir->epct == epctSEMIISOTROPIC)
     {
         nwall = 2;
-    } 
-    else 
+    }
+    else
     {
         nwall = 3;
     }
 
-    /* eta is in pure units.  veta is in units of ps^-1. GW is in 
-       units of ps^-2.  However, eta has a reference of 1 nm^3, so care must be 
+    /* eta is in pure units.  veta is in units of ps^-1. GW is in
+       units of ps^-2.  However, eta has a reference of 1 nm^3, so care must be
        taken to use only RATIOS of eta in updating the volume. */
-    
-    /* we take the partial pressure tensors, modify the 
+
+    /* we take the partial pressure tensors, modify the
        kinetic energy tensor, and recovert to pressure */
-    
-    if (ir->opts.nrdf[0]==0) 
-    { 
-        gmx_fatal(FARGS,"Barostat is coupled to a T-group with no degrees of freedom\n");    
-    } 
+
+    if (ir->opts.nrdf[0] == 0)
+    {
+        gmx_fatal(FARGS, "Barostat is coupled to a T-group with no degrees of freedom\n");
+    }
     /* alpha factor for phase space volume, then multiply by the ekin scaling factor.  */
-    alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
+    alpha  = 1.0 + DIM/((double)ir->opts.nrdf[0]);
     alpha *= ekind->tcstat[0].ekinscalef_nhc;
-    msmul(ekind->ekin,alpha,ekinmod);  
+    msmul(ekind->ekin, alpha, ekinmod);
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
 
-    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres);
+    pscal   = calc_pres(ir->ePBC, nwall, box, ekinmod, vir, localpres);
 
     vol = det(box);
-    GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   /* W is in ps^2 * bar * nm^3 */
+    GW  = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));  /* W is in ps^2 * bar * nm^3 */
 
-    *veta += 0.5*dt*GW;   
+    *veta += 0.5*dt*GW;
 }
 
-/* 
+/*
  * This file implements temperature and pressure coupling algorithms:
  * For now only the Weak coupling and the modified weak coupling.
  *
@@ -262,343 +277,418 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
  *
  */
 
-real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
+real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
                tensor pres)
 {
-    int  n,m;
+    int  n, m;
     real fac;
-    
-    if (ePBC==epbcNONE || (ePBC==epbcXY && nwall!=2))
+
+    if (ePBC == epbcNONE || (ePBC == epbcXY && nwall != 2))
+    {
         clear_mat(pres);
-    else {
-        /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. 
-         * Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in  
-         * het systeem...       
+    }
+    else
+    {
+        /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E.
+         * Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in
+         * het systeem...
          */
-        
-        fac=PRESFAC*2.0/det(box);
-        for(n=0; (n<DIM); n++)
-            for(m=0; (m<DIM); m++)
+
+        fac = PRESFAC*2.0/det(box);
+        for(n = 0; (n < DIM); n++)
+        {
+            for(m = 0; (m < DIM); m++)
+            {
                 pres[n][m] = (ekin[n][m] - vir[n][m])*fac;
-        
-        if (debug) {
-            pr_rvecs(debug,0,"PC: pres",pres,DIM);
-            pr_rvecs(debug,0,"PC: ekin",ekin,DIM);
-            pr_rvecs(debug,0,"PC: vir ",vir, DIM);
-            pr_rvecs(debug,0,"PC: box ",box, DIM);
+            }
+        }
+
+        if (debug)
+        {
+            pr_rvecs(debug, 0, "PC: pres", pres, DIM);
+            pr_rvecs(debug, 0, "PC: ekin", ekin, DIM);
+            pr_rvecs(debug, 0, "PC: vir ", vir, DIM);
+            pr_rvecs(debug, 0, "PC: box ", box, DIM);
         }
     }
     return trace(pres)/DIM;
 }
 
-real calc_temp(real ekin,real nrdf)
+real calc_temp(real ekin, real nrdf)
 {
     if (nrdf > 0)
+    {
         return (2.0*ekin)/(nrdf*BOLTZ);
+    }
     else
+    {
         return 0;
+    }
 }
 
-void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
-			     t_inputrec *ir,real dt,tensor pres,
-			     tensor box,tensor box_rel,tensor boxv,
-			     tensor M,matrix mu,gmx_bool bFirstStep)
+void parrinellorahman_pcoupl(FILE *fplog, gmx_large_int_t step,
+                             t_inputrec *ir, real dt, tensor pres,
+                             tensor box, tensor box_rel, tensor boxv,
+                             tensor M, matrix mu, gmx_bool bFirstStep)
 {
-  /* This doesn't do any coordinate updating. It just
-   * integrates the box vector equations from the calculated
-   * acceleration due to pressure difference. We also compute
-   * the tensor M which is used in update to couple the particle
-   * coordinates to the box vectors.
-   *
-   * In Nose and Klein (Mol.Phys 50 (1983) no 5., p 1055) this is
-   * given as
-   *            -1    .           .     -1
-   * M_nk = (h')   * (h' * h + h' h) * h
-   *
-   * with the dots denoting time derivatives and h is the transformation from
-   * the scaled frame to the real frame, i.e. the TRANSPOSE of the box. 
-   * This also goes for the pressure and M tensors - they are transposed relative
-   * to ours. Our equation thus becomes:
-   *
-   *                  -1       .    .           -1
-   * M_gmx = M_nk' = b  * (b * b' + b * b') * b'
-   * 
-   * where b is the gromacs box matrix.                       
-   * Our box accelerations are given by
-   *   ..                                    ..
-   *   b = vol/W inv(box') * (P-ref_P)     (=h')
-   */
-  
-  int    d,n;
-  tensor winv;
-  real   vol=box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-  real   atot,arel,change,maxchange,xy_pressure;
-  tensor invbox,pdiff,t1,t2;
-
-  real maxl;
-
-  m_inv_ur0(box,invbox);
-
-  if (!bFirstStep) {
-    /* Note that PRESFAC does not occur here.
-     * The pressure and compressibility always occur as a product,
-     * therefore the pressure unit drops out.
+    /* This doesn't do any coordinate updating. It just
+     * integrates the box vector equations from the calculated
+     * acceleration due to pressure difference. We also compute
+     * the tensor M which is used in update to couple the particle
+     * coordinates to the box vectors.
+     *
+     * In Nose and Klein (Mol.Phys 50 (1983) no 5., p 1055) this is
+     * given as
+     *            -1    .           .     -1
+     * M_nk = (h')   * (h' * h + h' h) * h
+     *
+     * with the dots denoting time derivatives and h is the transformation from
+     * the scaled frame to the real frame, i.e. the TRANSPOSE of the box.
+     * This also goes for the pressure and M tensors - they are transposed relative
+     * to ours. Our equation thus becomes:
+     *
+     *                  -1       .    .           -1
+     * M_gmx = M_nk' = b  * (b * b' + b * b') * b'
+     *
+     * where b is the gromacs box matrix.
+     * Our box accelerations are given by
+     *   ..                                    ..
+     *   b = vol/W inv(box') * (P-ref_P)     (=h')
      */
-    maxl=max(box[XX][XX],box[YY][YY]);
-    maxl=max(maxl,box[ZZ][ZZ]);
-    for(d=0;d<DIM;d++)
-      for(n=0;n<DIM;n++)
-	winv[d][n]=
-	  (4*M_PI*M_PI*ir->compress[d][n])/(3*ir->tau_p*ir->tau_p*maxl);
-    
-    m_sub(pres,ir->ref_p,pdiff);
-    
-    if(ir->epct==epctSURFACETENSION) {
-      /* Unlike Berendsen coupling it might not be trivial to include a z
-       * pressure correction here? On the other hand we don't scale the
-       * box momentarily, but change accelerations, so it might not be crucial.
-       */
-      xy_pressure=0.5*(pres[XX][XX]+pres[YY][YY]);
-      for(d=0;d<ZZ;d++)
-	pdiff[d][d]=(xy_pressure-(pres[ZZ][ZZ]-ir->ref_p[d][d]/box[d][d]));
+
+    int    d, n;
+    tensor winv;
+    real   vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+    real   atot, arel, change, maxchange, xy_pressure;
+    tensor invbox, pdiff, t1, t2;
+
+    real   maxl;
+
+    m_inv_ur0(box, invbox);
+
+    if (!bFirstStep)
+    {
+        /* Note that PRESFAC does not occur here.
+         * The pressure and compressibility always occur as a product,
+         * therefore the pressure unit drops out.
+         */
+        maxl = max(box[XX][XX], box[YY][YY]);
+        maxl = max(maxl, box[ZZ][ZZ]);
+        for(d = 0; d < DIM; d++)
+        {
+            for(n = 0; n < DIM; n++)
+            {
+                winv[d][n] =
+                    (4*M_PI*M_PI*ir->compress[d][n])/(3*ir->tau_p*ir->tau_p*maxl);
+            }
+        }
+
+        m_sub(pres, ir->ref_p, pdiff);
+
+        if(ir->epct == epctSURFACETENSION)
+        {
+            /* Unlike Berendsen coupling it might not be trivial to include a z
+             * pressure correction here? On the other hand we don't scale the
+             * box momentarily, but change accelerations, so it might not be crucial.
+             */
+            xy_pressure = 0.5*(pres[XX][XX]+pres[YY][YY]);
+            for(d = 0; d < ZZ; d++)
+            {
+                pdiff[d][d] = (xy_pressure-(pres[ZZ][ZZ]-ir->ref_p[d][d]/box[d][d]));
+            }
+        }
+
+        tmmul(invbox, pdiff, t1);
+        /* Move the off-diagonal elements of the 'force' to one side to ensure
+         * that we obey the box constraints.
+         */
+        for(d = 0; d < DIM; d++)
+        {
+            for(n = 0; n < d; n++)
+            {
+                t1[d][n] += t1[n][d];
+                t1[n][d]  = 0;
+            }
+        }
+
+        switch (ir->epct) {
+        case epctANISOTROPIC:
+            for(d = 0; d < DIM; d++)
+            {
+                for(n = 0; n <= d; n++)
+                {
+                    t1[d][n] *= winv[d][n]*vol;
+                }
+            }
+            break;
+        case epctISOTROPIC:
+            /* calculate total volume acceleration */
+            atot = box[XX][XX]*box[YY][YY]*t1[ZZ][ZZ]+
+                box[XX][XX]*t1[YY][YY]*box[ZZ][ZZ]+
+                t1[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+            arel = atot/(3*vol);
+            /* set all RELATIVE box accelerations equal, and maintain total V
+             * change speed */
+            for(d = 0; d < DIM; d++)
+            {
+                for(n = 0; n <= d; n++)
+                {
+                    t1[d][n] = winv[0][0]*vol*arel*box[d][n];
+                }
+            }
+            break;
+        case epctSEMIISOTROPIC:
+        case epctSURFACETENSION:
+            /* Note the correction to pdiff above for surftens. coupling  */
+
+            /* calculate total XY volume acceleration */
+            atot = box[XX][XX]*t1[YY][YY]+t1[XX][XX]*box[YY][YY];
+            arel = atot/(2*box[XX][XX]*box[YY][YY]);
+            /* set RELATIVE XY box accelerations equal, and maintain total V
+             * change speed. Dont change the third box vector accelerations */
+            for(d = 0; d < ZZ; d++)
+            {
+                for(n = 0; n <= d; n++)
+                {
+                    t1[d][n] = winv[d][n]*vol*arel*box[d][n];
+                }
+            }
+            for(n = 0; n < DIM; n++)
+            {
+                t1[ZZ][n] *= winv[d][n]*vol;
+            }
+            break;
+        default:
+            gmx_fatal(FARGS, "Parrinello-Rahman pressure coupling type %s "
+                      "not supported yet\n", EPCOUPLTYPETYPE(ir->epct));
+            break;
+        }
+
+        maxchange = 0;
+        for(d = 0; d < DIM; d++)
+        {
+            for(n = 0; n <= d; n++)
+            {
+                boxv[d][n] += dt*t1[d][n];
+
+                /* We do NOT update the box vectors themselves here, since
+                 * we need them for shifting later. It is instead done last
+                 * in the update() routine.
+                 */
+
+                /* Calculate the change relative to diagonal elements-
+                   since it's perfectly ok for the off-diagonal ones to
+                   be zero it doesn't make sense to check the change relative
+                   to its current size.
+                 */
+
+                change = fabs(dt*boxv[d][n]/box[d][d]);
+
+                if (change > maxchange)
+                {
+                    maxchange = change;
+                }
+            }
+        }
+
+        if (maxchange > 0.01 && fplog)
+        {
+            char buf[22];
+            fprintf(fplog,
+                    "\nStep %s  Warning: Pressure scaling more than 1%%. "
+                    "This may mean your system\n is not yet equilibrated. "
+                    "Use of Parrinello-Rahman pressure coupling during\n"
+                    "equilibration can lead to simulation instability, "
+                    "and is discouraged.\n",
+                    gmx_step_str(step, buf));
+        }
     }
-    
-    tmmul(invbox,pdiff,t1);
-    /* Move the off-diagonal elements of the 'force' to one side to ensure
-     * that we obey the box constraints.
+
+    preserve_box_shape(ir, box_rel, boxv);
+
+    mtmul(boxv, box, t1);   /* t1=boxv * b' */
+    mmul(invbox, t1, t2);
+    mtmul(t2, invbox, M);
+
+    /* Determine the scaling matrix mu for the coordinates */
+    for(d = 0; d < DIM; d++)
+    {
+        for(n = 0; n <= d; n++)
+        {
+            t1[d][n] = box[d][n] + dt*boxv[d][n];
+        }
+    }
+    preserve_box_shape(ir, box_rel, t1);
+    /* t1 is the box at t+dt, determine mu as the relative change */
+    mmul_ur0(invbox, t1, mu);
+}
+
+void berendsen_pcoupl(FILE *fplog, gmx_large_int_t step,
+                      t_inputrec *ir, real dt, tensor pres, matrix box,
+                      matrix mu)
+{
+    int     d, n;
+    real    scalar_pressure, xy_pressure, p_corr_z;
+    char   *ptr, buf[STRLEN];
+
+    /*
+     *  Calculate the scaling matrix mu
      */
-    for(d=0;d<DIM;d++) {
-      for(n=0;n<d;n++) {
-	t1[d][n] += t1[n][d];
-	t1[n][d] = 0;
-      }
+    scalar_pressure = 0;
+    xy_pressure     = 0;
+    for(d = 0; d < DIM; d++)
+    {
+        scalar_pressure += pres[d][d]/DIM;
+        if (d != ZZ)
+        {
+            xy_pressure += pres[d][d]/(DIM-1);
+        }
     }
-    
+    /* Pressure is now in bar, everywhere. */
+#define factor(d, m) (ir->compress[d][m]*dt/ir->tau_p)
+
+    /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
+     * necessary for triclinic scaling
+     */
+    clear_mat(mu);
     switch (ir->epct) {
-    case epctANISOTROPIC:
-      for(d=0;d<DIM;d++) 
-	for(n=0;n<=d;n++)
-	  t1[d][n] *= winv[d][n]*vol;
-      break;
     case epctISOTROPIC:
-      /* calculate total volume acceleration */
-      atot=box[XX][XX]*box[YY][YY]*t1[ZZ][ZZ]+
-	box[XX][XX]*t1[YY][YY]*box[ZZ][ZZ]+
-	t1[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-      arel=atot/(3*vol);
-      /* set all RELATIVE box accelerations equal, and maintain total V
-       * change speed */
-      for(d=0;d<DIM;d++)
-	for(n=0;n<=d;n++)
-	  t1[d][n] = winv[0][0]*vol*arel*box[d][n];    
-      break;
+        for(d = 0; d < DIM; d++)
+        {
+            mu[d][d] = 1.0 - factor(d, d)*(ir->ref_p[d][d] - scalar_pressure) /DIM;
+        }
+        break;
     case epctSEMIISOTROPIC:
+        for(d = 0; d < ZZ; d++)
+        {
+            mu[d][d] = 1.0 - factor(d, d)*(ir->ref_p[d][d]-xy_pressure)/DIM;
+        }
+        mu[ZZ][ZZ] =
+            1.0 - factor(ZZ, ZZ)*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ])/DIM;
+        break;
+    case epctANISOTROPIC:
+        for(d = 0; d < DIM; d++)
+        {
+            for(n = 0; n < DIM; n++)
+            {
+                mu[d][n] = (d == n ? 1.0 : 0.0)-
+                    factor(d, n)*(ir->ref_p[d][n] - pres[d][n])/DIM;
+            }
+        }
+        break;
     case epctSURFACETENSION:
-      /* Note the correction to pdiff above for surftens. coupling  */
-      
-      /* calculate total XY volume acceleration */
-      atot=box[XX][XX]*t1[YY][YY]+t1[XX][XX]*box[YY][YY];
-      arel=atot/(2*box[XX][XX]*box[YY][YY]);
-      /* set RELATIVE XY box accelerations equal, and maintain total V
-       * change speed. Dont change the third box vector accelerations */
-      for(d=0;d<ZZ;d++)
-	for(n=0;n<=d;n++)
-	  t1[d][n] = winv[d][n]*vol*arel*box[d][n];
-      for(n=0;n<DIM;n++)
-	t1[ZZ][n] *= winv[d][n]*vol;
-      break;
+        /* ir->ref_p[0/1] is the reference surface-tension times *
+         * the number of surfaces                                */
+        if (ir->compress[ZZ][ZZ])
+        {
+            p_corr_z = dt/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
+        }
+        else
+        {
+            /* when the compressibity is zero, set the pressure correction   *
+             * in the z-direction to zero to get the correct surface tension */
+            p_corr_z = 0;
+        }
+        mu[ZZ][ZZ] = 1.0 - ir->compress[ZZ][ZZ]*p_corr_z;
+        for(d = 0; d < DIM-1; d++)
+        {
+            mu[d][d] = 1.0 + factor(d, d)*(ir->ref_p[d][d]/(mu[ZZ][ZZ]*box[ZZ][ZZ])-
+                                           (pres[ZZ][ZZ]+p_corr_z - xy_pressure))/(DIM-1);
+        }
+        break;
     default:
-      gmx_fatal(FARGS,"Parrinello-Rahman pressure coupling type %s "
-		  "not supported yet\n",EPCOUPLTYPETYPE(ir->epct));
-      break;
+        gmx_fatal(FARGS, "Berendsen pressure coupling type %s not supported yet\n",
+                  EPCOUPLTYPETYPE(ir->epct));
+        break;
     }
-    
-    maxchange=0;
-    for(d=0;d<DIM;d++)
-      for(n=0;n<=d;n++) {
-	boxv[d][n] += dt*t1[d][n];
-	
-	/* We do NOT update the box vectors themselves here, since
-	 * we need them for shifting later. It is instead done last
-	 * in the update() routine.
-	 */
-	
-	/* Calculate the change relative to diagonal elements-
-	   since it's perfectly ok for the off-diagonal ones to
-	   be zero it doesn't make sense to check the change relative
-	   to its current size.
-	*/
-	
-	change=fabs(dt*boxv[d][n]/box[d][d]);
-	
-	if (change>maxchange)
-	  maxchange=change;
-      }
-    
-    if (maxchange > 0.01 && fplog) {
-      char buf[22];
-      fprintf(fplog,
-              "\nStep %s  Warning: Pressure scaling more than 1%%. "
-              "This may mean your system\n is not yet equilibrated. "
-              "Use of Parrinello-Rahman pressure coupling during\n"
-              "equilibration can lead to simulation instability, "
-              "and is discouraged.\n",
-	      gmx_step_str(step,buf));
+    /* To fullfill the orientation restrictions on triclinic boxes
+     * we will set mu_yx, mu_zx and mu_zy to 0 and correct
+     * the other elements of mu to first order.
+     */
+    mu[YY][XX] += mu[XX][YY];
+    mu[ZZ][XX] += mu[XX][ZZ];
+    mu[ZZ][YY] += mu[YY][ZZ];
+    mu[XX][YY]  = 0;
+    mu[XX][ZZ]  = 0;
+    mu[YY][ZZ]  = 0;
+
+    if (debug)
+    {
+        pr_rvecs(debug, 0, "PC: pres ", pres, 3);
+        pr_rvecs(debug, 0, "PC: mu   ", mu, 3);
     }
-  }
-  
-  preserve_box_shape(ir,box_rel,boxv);
 
-  mtmul(boxv,box,t1);       /* t1=boxv * b' */
-  mmul(invbox,t1,t2);
-  mtmul(t2,invbox,M);
-
-  /* Determine the scaling matrix mu for the coordinates */
-  for(d=0;d<DIM;d++)
-    for(n=0;n<=d;n++)
-      t1[d][n] = box[d][n] + dt*boxv[d][n];
-  preserve_box_shape(ir,box_rel,t1);
-  /* t1 is the box at t+dt, determine mu as the relative change */
-  mmul_ur0(invbox,t1,mu);
+    if (mu[XX][XX] < 0.99 || mu[XX][XX] > 1.01 ||
+        mu[YY][YY] < 0.99 || mu[YY][YY] > 1.01 ||
+        mu[ZZ][ZZ] < 0.99 || mu[ZZ][ZZ] > 1.01)
+    {
+        char buf2[22];
+        sprintf(buf, "\nStep %s  Warning: pressure scaling more than 1%%, "
+                "mu: %g %g %g\n",
+                gmx_step_str(step, buf2), mu[XX][XX], mu[YY][YY], mu[ZZ][ZZ]);
+        if (fplog)
+        {
+            fprintf(fplog, "%s", buf);
+        }
+        fprintf(stderr, "%s", buf);
+    }
 }
 
-void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step, 
-		      t_inputrec *ir,real dt, tensor pres,matrix box,
-		      matrix mu)
+void berendsen_pscale(t_inputrec *ir, matrix mu,
+                      matrix box, matrix box_rel,
+                      int start, int nr_atoms,
+                      rvec x[], unsigned short cFREEZE[],
+                      t_nrnb *nrnb)
 {
-  int    d,n;
-  real   scalar_pressure, xy_pressure, p_corr_z;
-  char   *ptr,buf[STRLEN];
+    ivec   *nFreeze = ir->opts.nFreeze;
+    int     n, d, g = 0;
 
-  /*
-   *  Calculate the scaling matrix mu
-   */
-  scalar_pressure=0;
-  xy_pressure=0;
-  for(d=0; d<DIM; d++) {
-    scalar_pressure += pres[d][d]/DIM;
-    if (d != ZZ)
-      xy_pressure += pres[d][d]/(DIM-1);
-  }
-  /* Pressure is now in bar, everywhere. */
-#define factor(d,m) (ir->compress[d][m]*dt/ir->tau_p)
-  
-  /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
-   * necessary for triclinic scaling
-   */
-  clear_mat(mu);
-  switch (ir->epct) {
-  case epctISOTROPIC:
-    for(d=0; d<DIM; d++) 
-      {
-	mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d] - scalar_pressure) /DIM;
-      }
-    break;
-  case epctSEMIISOTROPIC:
-    for(d=0; d<ZZ; d++)
-      mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d]-xy_pressure)/DIM;
-    mu[ZZ][ZZ] = 
-      1.0 - factor(ZZ,ZZ)*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ])/DIM;
-    break;
-  case epctANISOTROPIC:
-    for(d=0; d<DIM; d++)
-      for(n=0; n<DIM; n++)
-	mu[d][n] = (d==n ? 1.0 : 0.0) 
-	  -factor(d,n)*(ir->ref_p[d][n] - pres[d][n])/DIM;
-    break;
-  case epctSURFACETENSION:
-    /* ir->ref_p[0/1] is the reference surface-tension times *
-     * the number of surfaces                                */
-    if (ir->compress[ZZ][ZZ])
-      p_corr_z = dt/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
-    else
-      /* when the compressibity is zero, set the pressure correction   *
-       * in the z-direction to zero to get the correct surface tension */
-      p_corr_z = 0;
-    mu[ZZ][ZZ] = 1.0 - ir->compress[ZZ][ZZ]*p_corr_z;
-    for(d=0; d<DIM-1; d++)
-      mu[d][d] = 1.0 + factor(d,d)*(ir->ref_p[d][d]/(mu[ZZ][ZZ]*box[ZZ][ZZ])
-				    - (pres[ZZ][ZZ]+p_corr_z - xy_pressure))/(DIM-1);
-    break;
-  default:
-    gmx_fatal(FARGS,"Berendsen pressure coupling type %s not supported yet\n",
-		EPCOUPLTYPETYPE(ir->epct));
-    break;
-  }
-  /* To fullfill the orientation restrictions on triclinic boxes
-   * we will set mu_yx, mu_zx and mu_zy to 0 and correct
-   * the other elements of mu to first order.
-   */
-  mu[YY][XX] += mu[XX][YY];
-  mu[ZZ][XX] += mu[XX][ZZ];
-  mu[ZZ][YY] += mu[YY][ZZ];
-  mu[XX][YY] = 0;
-  mu[XX][ZZ] = 0;
-  mu[YY][ZZ] = 0;
+    /* Scale the positions */
+    for (n = start; n < start+nr_atoms; n++)
+    {
+        if (cFREEZE)
+        {
+            g = cFREEZE[n];
+        }
 
-  if (debug) {
-    pr_rvecs(debug,0,"PC: pres ",pres,3);
-    pr_rvecs(debug,0,"PC: mu   ",mu,3);
-  }
-  
-  if (mu[XX][XX]<0.99 || mu[XX][XX]>1.01 ||
-      mu[YY][YY]<0.99 || mu[YY][YY]>1.01 ||
-      mu[ZZ][ZZ]<0.99 || mu[ZZ][ZZ]>1.01) {
-    char buf2[22];
-    sprintf(buf,"\nStep %s  Warning: pressure scaling more than 1%%, "
-	    "mu: %g %g %g\n",
-	    gmx_step_str(step,buf2),mu[XX][XX],mu[YY][YY],mu[ZZ][ZZ]);
-    if (fplog)
-      fprintf(fplog,"%s",buf);
-    fprintf(stderr,"%s",buf);
-  }
+        if (!nFreeze[g][XX])
+        {
+            x[n][XX] = mu[XX][XX]*x[n][XX]+mu[YY][XX]*x[n][YY]+mu[ZZ][XX]*x[n][ZZ];
+        }
+        if (!nFreeze[g][YY])
+        {
+            x[n][YY] = mu[YY][YY]*x[n][YY]+mu[ZZ][YY]*x[n][ZZ];
+        }
+        if (!nFreeze[g][ZZ])
+        {
+            x[n][ZZ] = mu[ZZ][ZZ]*x[n][ZZ];
+        }
+    }
+    /* compute final boxlengths */
+    for (d = 0; d < DIM; d++)
+    {
+        box[d][XX] = mu[XX][XX]*box[d][XX]+mu[YY][XX]*box[d][YY]+mu[ZZ][XX]*box[d][ZZ];
+        box[d][YY] = mu[YY][YY]*box[d][YY]+mu[ZZ][YY]*box[d][ZZ];
+        box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
+    }
+
+    preserve_box_shape(ir, box_rel, box);
+
+    /* (un)shifting should NOT be done after this,
+     * since the box vectors might have changed
+     */
+    inc_nrnb(nrnb, eNR_PCOUPL, nr_atoms);
 }
 
-void berendsen_pscale(t_inputrec *ir,matrix mu,
-		      matrix box,matrix box_rel,
-		      int start,int nr_atoms,
-		      rvec x[],unsigned short cFREEZE[],
-		      t_nrnb *nrnb)
-{
-  ivec   *nFreeze=ir->opts.nFreeze;
-  int    n,d,g=0;
-      
-  /* Scale the positions */
-  for (n=start; n<start+nr_atoms; n++) {
-    if (cFREEZE)
-      g = cFREEZE[n];
-    
-    if (!nFreeze[g][XX])
-      x[n][XX] = mu[XX][XX]*x[n][XX]+mu[YY][XX]*x[n][YY]+mu[ZZ][XX]*x[n][ZZ];
-    if (!nFreeze[g][YY])
-      x[n][YY] = mu[YY][YY]*x[n][YY]+mu[ZZ][YY]*x[n][ZZ];
-    if (!nFreeze[g][ZZ])
-      x[n][ZZ] = mu[ZZ][ZZ]*x[n][ZZ];
-  }
-  /* compute final boxlengths */
-  for (d=0; d<DIM; d++) {
-    box[d][XX] = mu[XX][XX]*box[d][XX]+mu[YY][XX]*box[d][YY]+mu[ZZ][XX]*box[d][ZZ];
-    box[d][YY] = mu[YY][YY]*box[d][YY]+mu[ZZ][YY]*box[d][ZZ];
-    box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
-  }      
-
-  preserve_box_shape(ir,box_rel,box);
-  
-  /* (un)shifting should NOT be done after this,
-   * since the box vectors might have changed
-   */
-  inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
-}
-
-void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt)
+void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
 {
     t_grpopts *opts;
-    int    i;
-    real   T,reft=0,lll;
+    int        i;
+    real       T, reft = 0, lll;
 
     opts = &ir->opts;
 
-    for(i=0; (i<opts->ngtc); i++)
+    for(i = 0; (i < opts->ngtc); i++)
     {
         if (ir->eI == eiVV)
         {
@@ -609,47 +699,51 @@ void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt)
             T = ekind->tcstat[i].Th;
         }
 
-        if ((opts->tau_t[i] > 0) && (T > 0.0)) {  
-            reft = max(0.0,opts->ref_t[i]);
-            lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-            ekind->tcstat[i].lambda = max(min(lll,1.25),0.8);
+        if ((opts->tau_t[i] > 0) && (T > 0.0))
+        {
+            reft                    = max(0.0, opts->ref_t[i]);
+            lll                     = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
+            ekind->tcstat[i].lambda = max(min(lll, 1.25), 0.8);
         }
-        else {
+        else
+        {
             ekind->tcstat[i].lambda = 1.0;
         }
 
         if (debug)
         {
-            fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
-                    i,T,ekind->tcstat[i].lambda);
+            fprintf(debug, "TC: group %d: T: %g, Lambda: %g\n",
+                    i, T, ekind->tcstat[i].lambda);
         }
     }
 }
 
-static int poisson_variate(real lambda,gmx_rng_t rng) {
+static int poisson_variate(real lambda, gmx_rng_t rng)
+{
 
     real L;
-    int k=0;
-    real p=1.0;
+    int  k = 0;
+    real p = 1.0;
 
     L = exp(-lambda);
 
     do
     {
-        k = k+1;
+        k  = k+1;
         p *= gmx_rng_uniform_real(rng);
-    } while (p>L);
+    }
+    while (p > L);
 
     return k-1;
 }
 
-void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock,gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac)
+void andersen_tcoupl(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock, gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac)
 {
     t_grpopts *opts;
-    int    i,j,k,d,len,n,ngtc,gc=0;
-    int    nshake, nsettle, nrandom, nrand_group;
-    real   boltz,scal,reft,prand;
-    t_iatom *iatoms;
+    int        i, j, k, d, len, n, ngtc, gc = 0;
+    int        nshake, nsettle, nrandom, nrand_group;
+    real       boltz, scal, reft, prand;
+    t_iatom   *iatoms;
 
     /* convenience variables */
     opts = &ir->opts;
@@ -658,7 +752,8 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
     /* idef is only passed in if it's chance-per-particle andersen, so
        it essentially serves as a boolean to determine which type of
        andersen is being used */
-    if (idef) {
+    if (idef)
+    {
 
         /* randomly atoms to randomize.  However, all constraint
            groups have to have either all of the atoms or none of the
@@ -670,7 +765,7 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
               2a. for each constraint group, determine the fraction f of that constraint group that are
                   chosen to be randomized.
               2b. all atoms in the constraint group are randomized with probability f.
-        */
+         */
 
         nrandom = 0;
         if ((rate < 0.05) && (md->homenr > 50))
@@ -679,19 +774,19 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
              * use poisson */
             /* poisson distributions approxmation, more efficient for
              * low rates, fewer random numbers required */
-            nrandom = poisson_variate(md->homenr*rate,rng);  /* how many do we randomize? Use Poisson. */
+            nrandom = poisson_variate(md->homenr*rate, rng);  /* how many do we randomize? Use Poisson. */
             /* now we know how many, choose them randomly. No worries about repeats, at this rate, it's negligible.
                worst thing that happens, it lowers the true rate an negligible amount */
-            for (i=0;i<nrandom;i++)
+            for (i = 0; i < nrandom; i++)
             {
                 randatom[(int)(gmx_rng_uniform_real(rng)*md->homenr)] = TRUE;
             }
         }
         else
         {
-            for (i=0;i<md->homenr;i++)
+            for (i = 0; i < md->homenr; i++)
             {
-                if (gmx_rng_uniform_real(rng)<rate)
+                if (gmx_rng_uniform_real(rng) < rate)
                 {
                     randatom[i] = TRUE;
                     nrandom++;
@@ -708,11 +803,11 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
         /* first, loop through the settles to make sure all groups either entirely randomized, or not randomized. */
 
         nsettle  = idef->il[F_SETTLE].nr/2;
-        for (i=0;i<nsettle;i++)
+        for (i = 0; i < nsettle; i++)
         {
-            iatoms = idef->il[F_SETTLE].iatoms;
+            iatoms      = idef->il[F_SETTLE].iatoms;
             nrand_group = 0;
-            for (k=0;k<3;k++)  /* settles are always 3 atoms, hardcoded */
+            for (k = 0; k < 3; k++)  /* settles are always 3 atoms, hardcoded */
             {
                 if (randatom[iatoms[2*i+1]+k])
                 {
@@ -725,28 +820,28 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
             {
                 prand = (nrand_group)/3.0;  /* use this fraction to compute the probability the
                                                whole group is randomized */
-                if (gmx_rng_uniform_real(rng)<prand)
+                if (gmx_rng_uniform_real(rng) < prand)
                 {
-                    for (k=0;k<3;k++)
+                    for (k = 0; k < 3; k++)
                     {
                         randatom[iatoms[2*i+1]+k] = TRUE;   /* mark them all to be randomized */
                     }
-                    nrandom+=3;
+                    nrandom += 3;
                 }
             }
         }
 
         /* now loop through the shake groups */
         nshake = nblocks;
-        for (i=0;i<nshake;i++)
+        for (i = 0; i < nshake; i++)
         {
-            iatoms = &(idef->il[F_CONSTR].iatoms[sblock[i]]);
-            len = sblock[i+1]-sblock[i];
+            iatoms      = &(idef->il[F_CONSTR].iatoms[sblock[i]]);
+            len         = sblock[i+1]-sblock[i];
             nrand_group = 0;
-            for (k=0;k<len;k++)
+            for (k = 0; k < len; k++)
             {
                 if (k%3 != 0)
-                {  /* only 2/3 of the sblock items are atoms, the others are labels */
+                {   /* only 2/3 of the sblock items are atoms, the others are labels */
                     if (randatom[iatoms[k]])
                     {
                         nrand_group++;
@@ -759,12 +854,12 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
             if (nrand_group > 0)
             {
                 prand = (nrand_group)/(1.0*(2*len/3));
-                if (gmx_rng_uniform_real(rng)<prand)
+                if (gmx_rng_uniform_real(rng) < prand)
                 {
-                    for (k=0;k<len;k++)
+                    for (k = 0; k < len; k++)
                     {
                         if (k%3 != 0)
-                        {  /* only 2/3 of the sblock items are atoms, the others are labels */
+                        {                               /* only 2/3 of the sblock items are atoms, the others are labels */
                             randatom[iatoms[k]] = TRUE; /* randomize all of them */
                             nrandom++;
                         }
@@ -775,7 +870,7 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
         if (nrandom > 0)
         {
             n = 0;
-            for (i=0;i<md->homenr;i++)  /* now loop over the list of atoms */
+            for (i = 0; i < md->homenr; i++)  /* now loop over the list of atoms */
             {
                 if (randatom[i])
                 {
@@ -789,14 +884,14 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
                              recount and use this number (which we
                              calculate anyway: it will not affect
                              the average number of atoms accepted.
-                          */
+                           */
         }
     }
     else
     {
         /* if it's andersen-massive, then randomize all the atoms */
         nrandom = md->homenr;
-        for (i=0;i<nrandom;i++)
+        for (i = 0; i < nrandom; i++)
         {
             randatom_list[i] = i;
         }
@@ -804,7 +899,7 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
 
     /* randomize the velocities of the selected particles */
 
-    for (i=0;i<nrandom;i++)  /* now loop over the list of atoms */
+    for (i = 0; i < nrandom; i++)  /* now loop over the list of atoms */
     {
         n = randatom_list[i];
         if (md->cTC)
@@ -814,7 +909,7 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
         if (randomize[gc])
         {
             scal = sqrt(boltzfac[gc]*md->invmass[n]);
-            for (d=0;d<DIM;d++)
+            for (d = 0; d < DIM; d++)
             {
                 state->v[n][d] = scal*gmx_rng_gaussian_table(rng);
             }
@@ -824,38 +919,38 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
 }
 
 
-void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
-                       double xi[],double vxi[], t_extmass *MassQ)
+void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
+                       double xi[], double vxi[], t_extmass *MassQ)
 {
     int   i;
-    real  reft,oldvxi;
-    
+    real  reft, oldvxi;
+
     /* note that this routine does not include Nose-hoover chains yet. Should be easy to add. */
-    
-    for(i=0; (i<opts->ngtc); i++)
+
+    for(i = 0; (i < opts->ngtc); i++)
     {
-        reft = max(0.0,opts->ref_t[i]);
-        oldvxi = vxi[i];
+        reft     = max(0.0, opts->ref_t[i]);
+        oldvxi   = vxi[i];
         vxi[i]  += dt*MassQ->Qinv[i]*(ekind->tcstat[i].Th - reft);
-        xi[i] += dt*(oldvxi + vxi[i])*0.5;
+        xi[i]   += dt*(oldvxi + vxi[i])*0.5;
     }
 }
 
 t_state *init_bufstate(const t_state *template_state)
 {
     t_state *state;
-    int nc = template_state->nhchainlength;
-    snew(state,1);
-    snew(state->nosehoover_xi,nc*template_state->ngtc);
-    snew(state->nosehoover_vxi,nc*template_state->ngtc);
-    snew(state->therm_integral,template_state->ngtc);
-    snew(state->nhpres_xi,nc*template_state->nnhpres);
-    snew(state->nhpres_vxi,nc*template_state->nnhpres);
+    int      nc = template_state->nhchainlength;
+    snew(state, 1);
+    snew(state->nosehoover_xi, nc*template_state->ngtc);
+    snew(state->nosehoover_vxi, nc*template_state->ngtc);
+    snew(state->therm_integral, template_state->ngtc);
+    snew(state->nhpres_xi, nc*template_state->nnhpres);
+    snew(state->nhpres_vxi, nc*template_state->nnhpres);
 
     return state;
-}  
+}
 
-void destroy_bufstate(t_state *state) 
+void destroy_bufstate(t_state *state)
 {
     sfree(state->x);
     sfree(state->v);
@@ -865,38 +960,40 @@ void destroy_bufstate(t_state *state)
     sfree(state->nhpres_xi);
     sfree(state->nhpres_vxi);
     sfree(state);
-}  
+}
 
-void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind, 
-                    gmx_enerdata_t *enerd, t_state *state, 
-                    tensor vir, t_mdatoms *md, 
-                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno) 
+void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
+                    gmx_enerdata_t *enerd, t_state *state,
+                    tensor vir, t_mdatoms *md,
+                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
 {
-    
-    int n,i,j,d,ntgrp,ngtc,gc=0;
-    t_grp_tcstat *tcstat;
-    t_grpopts *opts;
+
+    int             n, i, j, d, ntgrp, ngtc, gc = 0;
+    t_grp_tcstat   *tcstat;
+    t_grpopts      *opts;
     gmx_large_int_t step_eff;
-    real ecorr,pcorr,dvdlcorr;
-    real bmass,qmass,reft,kT,dt,nd;
-    tensor dumpres,dumvir;
-    double *scalefac,dtc;
-    int *trotter_seq;
-    rvec sumv={0,0,0},consk;
-    gmx_bool bCouple;
+    real            ecorr, pcorr, dvdlcorr;
+    real            bmass, qmass, reft, kT, dt, nd;
+    tensor          dumpres, dumvir;
+    double         *scalefac, dtc;
+    int            *trotter_seq;
+    rvec            sumv = {0, 0, 0}, consk;
+    gmx_bool        bCouple;
 
     if (trotter_seqno <= ettTSEQ2)
     {
         step_eff = step-1;  /* the velocity verlet calls are actually out of order -- the first half step
                                is actually the last half step from the previous step.  Thus the first half step
                                actually corresponds to the n-1 step*/
-                               
-    } else {
+
+    }
+    else
+    {
         step_eff = step;
     }
 
     bCouple = (ir->nsttcouple == 1 ||
-               do_per_step(step_eff+ir->nsttcouple,ir->nsttcouple));
+               do_per_step(step_eff+ir->nsttcouple, ir->nsttcouple));
 
     trotter_seq = trotter_seqlist[trotter_seqno];
 
@@ -906,24 +1003,25 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
         return;
     }
 
-    dtc = ir->nsttcouple*ir->delta_t;
+    dtc  = ir->nsttcouple*ir->delta_t;
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
-    assert(ngtc>0);
-    snew(scalefac,opts->ngtc);
-    for (i=0;i<ngtc;i++) 
+    assert(ngtc > 0);
+    snew(scalefac, opts->ngtc);
+    for (i = 0; i < ngtc; i++)
     {
         scalefac[i] = 1;
     }
     /* execute the series of trotter updates specified in the trotterpart array */
-    
-    for (i=0;i<NTROTTERPARTS;i++){
+
+    for (i = 0; i < NTROTTERPARTS; i++)
+    {
         /* allow for doubled intgrators by doubling dt instead of making 2 calls */
         if ((trotter_seq[i] == etrtBAROV2) || (trotter_seq[i] == etrtBARONHC2) || (trotter_seq[i] == etrtNHC2))
         {
             dt = 2 * dtc;
         }
-        else 
+        else
         {
             dt = dtc;
         }
@@ -932,68 +1030,68 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
         {
         case etrtBAROV:
         case etrtBAROV2:
-            boxv_trotter(ir,&(state->veta),dt,state->box,ekind,vir,
-                         enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
+            boxv_trotter(ir, &(state->veta), dt, state->box, ekind, vir,
+                         enerd->term[F_PDISPCORR], enerd->term[F_DISPCORR], MassQ);
             break;
         case etrtBARONHC:
         case etrtBARONHC2:
-            NHC_trotter(opts,state->nnhpres,ekind,dt,state->nhpres_xi,
-                        state->nhpres_vxi,NULL,&(state->veta),MassQ,FALSE);      
+            NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
+                        state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE);
             break;
         case etrtNHC:
         case etrtNHC2:
-            NHC_trotter(opts,opts->ngtc,ekind,dt,state->nosehoover_xi,
-                        state->nosehoover_vxi,scalefac,NULL,MassQ,(ir->eI==eiVV));
-            /* need to rescale the kinetic energies and velocities here.  Could 
-               scale the velocities later, but we need them scaled in order to 
+            NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
+                        state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
+            /* need to rescale the kinetic energies and velocities here.  Could
+               scale the velocities later, but we need them scaled in order to
                produce the correct outputs, so we'll scale them here. */
-            
-            for (i=0; i<ngtc;i++) 
+
+            for (i = 0; i < ngtc; i++)
             {
-                tcstat = &ekind->tcstat[i];
-                tcstat->vscale_nhc = scalefac[i]; 
-                tcstat->ekinscaleh_nhc *= (scalefac[i]*scalefac[i]); 
-                tcstat->ekinscalef_nhc *= (scalefac[i]*scalefac[i]); 
+                tcstat                  = &ekind->tcstat[i];
+                tcstat->vscale_nhc      = scalefac[i];
+                tcstat->ekinscaleh_nhc *= (scalefac[i]*scalefac[i]);
+                tcstat->ekinscalef_nhc *= (scalefac[i]*scalefac[i]);
             }
             /* now that we've scaled the groupwise velocities, we can add them up to get the total */
             /* but do we actually need the total? */
-            
+
             /* modify the velocities as well */
-            for (n=md->start;n<md->start+md->homenr;n++) 
+            for (n = md->start; n < md->start+md->homenr; n++)
             {
                 if (md->cTC)   /* does this conditional need to be here? is this always true?*/
-                { 
+                {
                     gc = md->cTC[n];
                 }
-                for (d=0;d<DIM;d++) 
+                for (d = 0; d < DIM; d++)
                 {
                     state->v[n][d] *= scalefac[gc];
                 }
-                
-                if (debug) 
+
+                if (debug)
                 {
-                    for (d=0;d<DIM;d++) 
+                    for (d = 0; d < DIM; d++)
                     {
                         sumv[d] += (state->v[n][d])/md->invmass[n];
                     }
                 }
-            }          
+            }
             break;
         default:
             break;
         }
     }
-    /* check for conserved momentum -- worth looking at this again eventually, but not working right now.*/  
+    /* check for conserved momentum -- worth looking at this again eventually, but not working right now.*/
 #if 0
-    if (debug) 
+    if (debug)
     {
-        if (bFirstHalf) 
+        if (bFirstHalf)
         {
-            for (d=0;d<DIM;d++) 
+            for (d = 0; d < DIM; d++)
             {
-                consk[d] = sumv[d]*exp((1 + 1.0/opts->nrdf[0])*((1.0/DIM)*log(det(state->box)/state->vol0)) + state->nosehoover_xi[0]); 
+                consk[d] = sumv[d]*exp((1 + 1.0/opts->nrdf[0])*((1.0/DIM)*log(det(state->box)/state->vol0)) + state->nosehoover_xi[0]);
             }
-            fprintf(debug,"Conserved kappa: %15.8f %15.8f %15.8f\n",consk[0],consk[1],consk[2]);    
+            fprintf(debug, "Conserved kappa: %15.8f %15.8f %15.8f\n", consk[0], consk[1], consk[2]);
         }
     }
 #endif
@@ -1003,44 +1101,45 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
 
 extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
 {
-    int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
+    int           n, i, j, d, ntgrp, ngtc, nnhpres, nh, gc = 0;
     t_grp_tcstat *tcstat;
-    t_grpopts *opts;
-    real ecorr,pcorr,dvdlcorr;
-    real bmass,qmass,reft,kT,dt,ndj,nd;
-    tensor dumpres,dumvir;
+    t_grpopts    *opts;
+    real          ecorr, pcorr, dvdlcorr;
+    real          bmass, qmass, reft, kT, dt, ndj, nd;
+    tensor        dumpres, dumvir;
 
-    opts = &(ir->opts); /* just for ease of referencing */
-    ngtc = ir->opts.ngtc;
+    opts    = &(ir->opts); /* just for ease of referencing */
+    ngtc    = ir->opts.ngtc;
     nnhpres = state->nnhpres;
-    nh = state->nhchainlength; 
+    nh      = state->nhchainlength;
 
-    if (ir->eI == eiMD) {
+    if (ir->eI == eiMD)
+    {
         if (bInit)
         {
-            snew(MassQ->Qinv,ngtc);
+            snew(MassQ->Qinv, ngtc);
         }
-        for(i=0; (i<ngtc); i++) 
-        { 
-            if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
+        for(i = 0; (i < ngtc); i++)
+        {
+            if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
             {
-                MassQ->Qinv[i]=1.0/(sqr(opts->tau_t[i]/M_2PI)*opts->ref_t[i]);
-            } 
-            else 
+                MassQ->Qinv[i] = 1.0/(sqr(opts->tau_t[i]/M_2PI)*opts->ref_t[i]);
+            }
+            else
             {
-                MassQ->Qinv[i]=0.0;     
+                MassQ->Qinv[i] = 0.0;
             }
         }
     }
     else if (EI_VV(ir->eI))
     {
-    /* Set pressure variables */
+        /* Set pressure variables */
 
         if (bInit)
         {
             if (state->vol0 == 0)
             {
-                state->vol0 = det(state->box); 
+                state->vol0 = det(state->box);
                 /* because we start by defining a fixed
                    compressibility, we need the volume at this
                    compressibility to solve the problem. */
@@ -1050,34 +1149,34 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
         /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
         /* Consider evaluating eventually if this the right mass to use.  All are correct, some might be more stable  */
         MassQ->Winv = (PRESFAC*trace(ir->compress)*BOLTZ*opts->ref_t[0])/(DIM*state->vol0*sqr(ir->tau_p/M_2PI));
-        /* An alternate mass definition, from Tuckerman et al. */ 
+        /* An alternate mass definition, from Tuckerman et al. */
         /* MassQ->Winv = 1.0/(sqr(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*BOLTZ*opts->ref_t[0]); */
-        for (d=0;d<DIM;d++) 
+        for (d = 0; d < DIM; d++)
         {
-            for (n=0;n<DIM;n++) 
+            for (n = 0; n < DIM; n++)
             {
-                MassQ->Winvm[d][n]= PRESFAC*ir->compress[d][n]/(state->vol0*sqr(ir->tau_p/M_2PI)); 
+                MassQ->Winvm[d][n] = PRESFAC*ir->compress[d][n]/(state->vol0*sqr(ir->tau_p/M_2PI));
                 /* not clear this is correct yet for the anisotropic case. Will need to reevaluate
-                 before using MTTK for anisotropic states.*/
+                   before using MTTK for anisotropic states.*/
             }
         }
         /* Allocate space for thermostat variables */
         if (bInit)
         {
-            snew(MassQ->Qinv,ngtc*nh);
+            snew(MassQ->Qinv, ngtc*nh);
         }
 
         /* now, set temperature variables */
-        for (i=0; i<ngtc; i++)
+        for (i = 0; i < ngtc; i++)
         {
             if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
             {
-                reft = max(0.0,opts->ref_t[i]);
-                nd = opts->nrdf[i];
-                kT = BOLTZ*reft;
-                for (j=0;j<nh;j++)
+                reft = max(0.0, opts->ref_t[i]);
+                nd   = opts->nrdf[i];
+                kT   = BOLTZ*reft;
+                for (j = 0; j < nh; j++)
                 {
-                    if (j==0)
+                    if (j == 0)
                     {
                         ndj = nd;
                     }
@@ -1090,8 +1189,8 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
             }
             else
             {
-                reft=0.0;
-                for (j=0;j<nh;j++)
+                reft = 0.0;
+                for (j = 0; j < nh; j++)
                 {
                     MassQ->Qinv[i*nh+j] = 0.0;
                 }
@@ -1102,33 +1201,34 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
 
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
-    int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
+    int           n, i, j, d, ntgrp, ngtc, nnhpres, nh, gc = 0;
     t_grp_tcstat *tcstat;
-    t_grpopts *opts;
-    real ecorr,pcorr,dvdlcorr;
-    real bmass,qmass,reft,kT,dt,ndj,nd;
-    tensor dumpres,dumvir;
-    int **trotter_seq;
+    t_grpopts    *opts;
+    real          ecorr, pcorr, dvdlcorr;
+    real          bmass, qmass, reft, kT, dt, ndj, nd;
+    tensor        dumpres, dumvir;
+    int         **trotter_seq;
 
-    opts = &(ir->opts); /* just for ease of referencing */
-    ngtc = state->ngtc;
+    opts    = &(ir->opts); /* just for ease of referencing */
+    ngtc    = state->ngtc;
     nnhpres = state->nnhpres;
-    nh = state->nhchainlength;
+    nh      = state->nhchainlength;
 
     init_npt_masses(ir, state, MassQ, TRUE);
-    
+
     /* first, initialize clear all the trotter calls */
-    snew(trotter_seq,ettTSEQMAX);
-    for (i=0;i<ettTSEQMAX;i++) 
+    snew(trotter_seq, ettTSEQMAX);
+    for (i = 0; i < ettTSEQMAX; i++)
     {
-        snew(trotter_seq[i],NTROTTERPARTS);
-        for (j=0;j<NTROTTERPARTS;j++) {
+        snew(trotter_seq[i], NTROTTERPARTS);
+        for (j = 0; j < NTROTTERPARTS; j++)
+        {
             trotter_seq[i][j] = etrtNONE;
         }
         trotter_seq[i][0] = etrtSKIPALL;
     }
-    
-    if (!bTrotter) 
+
+    if (!bTrotter)
     {
         /* no trotter calls, so we never use the values in the array.
          * We access them (so we need to define them, but ignore
@@ -1140,9 +1240,9 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     /* compute the kinetic energy by using the half step velocities or
      * the kinetic energies, depending on the order of the trotter calls */
 
-    if (ir->eI==eiVV)
+    if (ir->eI == eiVV)
     {
-        if (IR_NPT_TROTTER(ir)) 
+        if (IR_NPT_TROTTER(ir))
         {
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
@@ -1162,8 +1262,8 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             trotter_seq[3][2] = etrtBAROV;
 
             /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
-            
-        } 
+
+        }
         else if (IR_NVT_TROTTER(ir))
         {
             /* This is the easy version - there are only two calls, both the same.
@@ -1191,7 +1291,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
         }
     }
-    else if (ir->eI==eiVVAK)
+    else if (ir->eI == eiVVAK)
     {
         if (IR_NPT_TROTTER(ir))
         {
@@ -1206,14 +1306,14 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* The first half trotter update, part 2 */
             trotter_seq[2][0] = etrtBAROV;
             trotter_seq[2][1] = etrtBARONHC;
-            
+
             /* The second half trotter update, part 1 */
             trotter_seq[3][0] = etrtBARONHC;
             trotter_seq[3][1] = etrtBAROV;
 
             /* The second half trotter update */
             trotter_seq[4][0] = etrtNHC;
-        } 
+        }
         else if (IR_NVT_TROTTER(ir))
         {
             /* This is the easy version - there is only one call, both the same.
@@ -1226,7 +1326,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
             /* first, a round that estimates veta. */
-            trotter_seq[0][0] = etrtBAROV; 
+            trotter_seq[0][0] = etrtBAROV;
 
             /* The first half trotter update, part 1 -- leave zero */
             trotter_seq[1][0] = etrtNHC;
@@ -1245,25 +1345,27 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
 
     switch (ir->epct)
     {
-    case epctISOTROPIC:  
+    case epctISOTROPIC:
     default:
         bmass = DIM*DIM;  /* recommended mass parameters for isotropic barostat */
-    }    
+    }
 
-    snew(MassQ->QPinv,nnhpres*opts->nhchainlength);
+    snew(MassQ->QPinv, nnhpres*opts->nhchainlength);
 
     /* barostat temperature */
     if ((ir->tau_p > 0) && (opts->ref_t[0] > 0))
     {
-        reft = max(0.0,opts->ref_t[0]);
-        kT = BOLTZ*reft;
-        for (i=0;i<nnhpres;i++) {
-            for (j=0;j<nh;j++) 
+        reft = max(0.0, opts->ref_t[0]);
+        kT   = BOLTZ*reft;
+        for (i = 0; i < nnhpres; i++)
+        {
+            for (j = 0; j < nh; j++)
             {
-                if (j==0) {
+                if (j == 0)
+                {
                     qmass = bmass;
-                } 
-                else 
+                }
+                else
                 {
                     qmass = 1;
                 }
@@ -1271,74 +1373,76 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             }
         }
     }
-    else 
+    else
     {
-        for (i=0;i<nnhpres;i++) {
-            for (j=0;j<nh;j++) 
+        for (i = 0; i < nnhpres; i++)
+        {
+            for (j = 0; j < nh; j++)
             {
-                MassQ->QPinv[i*nh+j]=0.0;
+                MassQ->QPinv[i*nh+j] = 0.0;
             }
         }
-    }    
+    }
     return trotter_seq;
 }
 
 real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 {
-    int  i,j,nd,ndj,bmass,qmass,ngtcall;
-    real ener_npt,reft,eta,kT,tau;
+    int     i, j, nd, ndj, bmass, qmass, ngtcall;
+    real    ener_npt, reft, eta, kT, tau;
     double *ivxi, *ixi;
     double *iQinv;
-    real vol,dbaro,W,Q;
-    int nh = state->nhchainlength;
+    real    vol, dbaro, W, Q;
+    int     nh = state->nhchainlength;
 
     ener_npt = 0;
-    
+
     /* now we compute the contribution of the pressure to the conserved quantity*/
-    
-    if (ir->epc==epcMTTK) 
+
+    if (ir->epc == epcMTTK)
     {
         /* find the volume, and the kinetic energy of the volume */
-        
+
         switch (ir->epct) {
-            
+
         case epctISOTROPIC:
             /* contribution from the pressure momenenta */
             ener_npt += 0.5*sqr(state->veta)/MassQ->Winv;
-            
+
             /* contribution from the PV term */
-            vol = det(state->box);
+            vol       = det(state->box);
             ener_npt += vol*trace(ir->ref_p)/(DIM*PRESFAC);
 
             break;
         case epctANISOTROPIC:
-            
+
             break;
-            
+
         case epctSURFACETENSION:
-            
+
             break;
         case epctSEMIISOTROPIC:
-            
+
             break;
         default:
             break;
         }
     }
-    
+
     if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
     {
         /* add the energy from the barostat thermostat chain */
-        for (i=0;i<state->nnhpres;i++) {
+        for (i = 0; i < state->nnhpres; i++)
+        {
 
             /* note -- assumes only one degree of freedom that is thermostatted in barostat */
-            ivxi = &state->nhpres_vxi[i*nh];
-            ixi = &state->nhpres_xi[i*nh];
+            ivxi  = &state->nhpres_vxi[i*nh];
+            ixi   = &state->nhpres_xi[i*nh];
             iQinv = &(MassQ->QPinv[i*nh]);
-            reft = max(ir->opts.ref_t[0],0); /* using 'System' temperature */
-            kT = BOLTZ * reft;
-        
-            for (j=0;j<nh;j++) 
+            reft  = max(ir->opts.ref_t[0], 0); /* using 'System' temperature */
+            kT    = BOLTZ * reft;
+
+            for (j = 0; j < nh; j++)
             {
                 if (iQinv[j] > 0)
                 {
@@ -1346,49 +1450,51 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
                     /* contribution from the thermal variable of the NH chain */
                     ener_npt += ixi[j]*kT;
                 }
-                if (debug) 
+                if (debug)
                 {
-                    fprintf(debug,"P-T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f",i,j,ivxi[j],ixi[j]);
+                    fprintf(debug, "P-T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f", i, j, ivxi[j], ixi[j]);
                 }
             }
         }
     }
-        
-    if (ir->etc) 
+
+    if (ir->etc)
     {
-        for(i=0; i<ir->opts.ngtc; i++) 
+        for(i = 0; i < ir->opts.ngtc; i++)
         {
-            ixi = &state->nosehoover_xi[i*nh];
-            ivxi = &state->nosehoover_vxi[i*nh];
+            ixi   = &state->nosehoover_xi[i*nh];
+            ivxi  = &state->nosehoover_vxi[i*nh];
             iQinv = &(MassQ->Qinv[i*nh]);
-            
-            nd = ir->opts.nrdf[i];
-            reft = max(ir->opts.ref_t[i],0);
-            kT = BOLTZ * reft;
-            
-            if (nd > 0) 
+
+            nd   = ir->opts.nrdf[i];
+            reft = max(ir->opts.ref_t[i], 0);
+            kT   = BOLTZ * reft;
+
+            if (nd > 0)
             {
                 if (IR_NVT_TROTTER(ir))
                 {
                     /* contribution from the thermal momenta of the NH chain */
-                    for (j=0;j<nh;j++) 
+                    for (j = 0; j < nh; j++)
                     {
-                        if (iQinv[j] > 0) {
+                        if (iQinv[j] > 0)
+                        {
                             ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
                             /* contribution from the thermal variable of the NH chain */
-                            if (j==0) {
+                            if (j == 0)
+                            {
                                 ndj = nd;
-                            } 
-                            else 
+                            }
+                            else
                             {
                                 ndj = 1;
-                            } 
+                            }
                             ener_npt += ndj*ixi[j]*kT;
                         }
                     }
                 }
                 else  /* Other non Trotter temperature NH control  -- no chains yet. */
-                { 
+                {
                     ener_npt += 0.5*BOLTZ*nd*sqr(ivxi[0])/iQinv[0];
                     ener_npt += nd*ixi[0]*kT;
                 }
@@ -1401,15 +1507,15 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 static real vrescale_gamdev(int ia, gmx_rng_t rng)
 /* Gamma distribution, adapted from numerical recipes */
 {
-    int j;
-    real am,e,s,v1,v2,x,y;
+    int  j;
+    real am, e, s, v1, v2, x, y;
 
     if (ia < 6)
     {
         do
         {
             x = 1.0;
-            for(j=1; j<=ia; j++)
+            for(j = 1; j <= ia; j++)
             {
                 x *= gmx_rng_uniform_real(rng);
             }
@@ -1433,10 +1539,10 @@ static real vrescale_gamdev(int ia, gmx_rng_t rng)
                 /* The last check above ensures that both x (3.0 > 2.0 in s)
                  * and the pre-factor for e do not go out of range.
                  */
-                y = v2/v1;
+                y  = v2/v1;
                 am = ia - 1;
-                s = sqrt(2.0*am + 1.0);
-                x = s*y + am;
+                s  = sqrt(2.0*am + 1.0);
+                x  = s*y + am;
             }
             while (x <= 0.0);
             e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
@@ -1447,30 +1553,37 @@ static real vrescale_gamdev(int ia, gmx_rng_t rng)
     return x;
 }
 
-static real vrescale_sumnoises(int nn,gmx_rng_t rng)
+static real vrescale_sumnoises(int nn, gmx_rng_t rng)
 {
 /*
  * Returns the sum of n independent gaussian noises squared
  * (i.e. equivalent to summing the square of the return values
  * of nn calls to gmx_rng_gaussian_real).xs
  */
-  real rr;
+    real rr;
 
-  if (nn == 0) {
-    return 0.0;
-  } else if (nn == 1) {
-    rr = gmx_rng_gaussian_real(rng);
-    return rr*rr;
-  } else if (nn % 2 == 0) {
-    return 2.0*vrescale_gamdev(nn/2,rng);
-  } else {
-    rr = gmx_rng_gaussian_real(rng);
-    return 2.0*vrescale_gamdev((nn-1)/2,rng) + rr*rr;
-  }
+    if (nn == 0)
+    {
+        return 0.0;
+    }
+    else if (nn == 1)
+    {
+        rr = gmx_rng_gaussian_real(rng);
+        return rr*rr;
+    }
+    else if (nn % 2 == 0)
+    {
+        return 2.0*vrescale_gamdev(nn/2, rng);
+    }
+    else
+    {
+        rr = gmx_rng_gaussian_real(rng);
+        return 2.0*vrescale_gamdev((nn-1)/2, rng) + rr*rr;
+    }
 }
 
-static real vrescale_resamplekin(real kk,real sigma, int ndeg, real taut,
-				 gmx_rng_t rng)
+static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
+                                 gmx_rng_t rng)
 {
 /*
  * Generates a new value for the kinetic energy,
@@ -1480,30 +1593,33 @@ static real vrescale_resamplekin(real kk,real sigma, int ndeg, real taut,
  * ndeg:  number of degrees of freedom of the atoms to be thermalized
  * taut:  relaxation time of the thermostat, in units of 'how often this routine is called'
  */
-  real factor,rr;
+    real factor, rr;
 
-  if (taut > 0.1) {
-    factor = exp(-1.0/taut);
-  } else {
-    factor = 0.0;
-  }
-  rr = gmx_rng_gaussian_real(rng);
-  return
-    kk +
-    (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1,rng) + rr*rr)/ndeg - kk) +
-    2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
+    if (taut > 0.1)
+    {
+        factor = exp(-1.0/taut);
+    }
+    else
+    {
+        factor = 0.0;
+    }
+    rr = gmx_rng_gaussian_real(rng);
+    return
+        kk +
+        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, rng) + rr*rr)/ndeg - kk) +
+        2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
 }
 
-void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
-                     double therm_integral[],gmx_rng_t rng)
+void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
+                     double therm_integral[], gmx_rng_t rng)
 {
     t_grpopts *opts;
-    int    i;
-    real   Ek,Ek_ref1,Ek_ref,Ek_new; 
-    
+    int        i;
+    real       Ek, Ek_ref1, Ek_ref, Ek_new;
+
     opts = &ir->opts;
 
-    for(i=0; (i<opts->ngtc); i++)
+    for(i = 0; (i < opts->ngtc); i++)
     {
         if (ir->eI == eiVV)
         {
@@ -1513,14 +1629,14 @@ void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
         {
             Ek = trace(ekind->tcstat[i].ekinh);
         }
-        
+
         if (opts->tau_t[i] > 0 && opts->nrdf[i] > 0 && Ek > 0)
         {
             Ek_ref1 = 0.5*opts->ref_t[i]*BOLTZ;
             Ek_ref  = Ek_ref1*opts->nrdf[i];
 
-            Ek_new  = vrescale_resamplekin(Ek,Ek_ref,opts->nrdf[i],
-                                           opts->tau_t[i]/dt,rng);
+            Ek_new  = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i],
+                                           opts->tau_t[i]/dt, rng);
 
             /* Analytically Ek_new>=0, but we check for rounding errors */
             if (Ek_new <= 0)
@@ -1536,8 +1652,8 @@ void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
 
             if (debug)
             {
-                fprintf(debug,"TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
-                        i,Ek_ref,Ek,Ek_new,ekind->tcstat[i].lambda);
+                fprintf(debug, "TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
+                        i, Ek_ref, Ek, Ek_new, ekind->tcstat[i].lambda);
             }
         }
         else
@@ -1547,28 +1663,29 @@ void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
     }
 }
 
-real vrescale_energy(t_grpopts *opts,double therm_integral[])
+real vrescale_energy(t_grpopts *opts, double therm_integral[])
 {
-  int i;
-  real ener;
+    int  i;
+    real ener;
 
-  ener = 0;
-  for(i=0; i<opts->ngtc; i++) {
-    ener += therm_integral[i];
-  }
-  
-  return ener;
+    ener = 0;
+    for(i = 0; i < opts->ngtc; i++)
+    {
+        ener += therm_integral[i];
+    }
+
+    return ener;
 }
 
-void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
-                        int start,int end,rvec v[])
+void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
+                        int start, int end, rvec v[])
 {
     t_grp_acc      *gstat;
     t_grp_tcstat   *tcstat;
-    unsigned short *cACC,*cTC;
-    int  ga,gt,n,d;
-    real lg;
-    rvec vrel;
+    unsigned short *cACC, *cTC;
+    int             ga, gt, n, d;
+    real            lg;
+    rvec            vrel;
 
     tcstat = ekind->tcstat;
     cTC    = mdatoms->cTC;
@@ -1580,9 +1697,9 @@ void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
 
         ga = 0;
         gt = 0;
-        for(n=start; n<end; n++) 
+        for(n = start; n < end; n++)
         {
-            if (cACC) 
+            if (cACC)
             {
                 ga   = cACC[n];
             }
@@ -1591,9 +1708,9 @@ void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
                 gt   = cTC[n];
             }
             /* Only scale the velocity component relative to the COM velocity */
-            rvec_sub(v[n],gstat[ga].u,vrel);
+            rvec_sub(v[n], gstat[ga].u, vrel);
             lg = tcstat[gt].lambda;
-            for(d=0; d<DIM; d++)
+            for(d = 0; d < DIM; d++)
             {
                 v[n][d] = gstat[ga].u[d] + lg*vrel[d];
             }
@@ -1602,14 +1719,14 @@ void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
     else
     {
         gt = 0;
-        for(n=start; n<end; n++) 
+        for(n = start; n < end; n++)
         {
             if (cTC)
             {
                 gt   = cTC[n];
             }
             lg = tcstat[gt].lambda;
-            for(d=0; d<DIM; d++)
+            for(d = 0; d < DIM; d++)
             {
                 v[n][d] *= lg;
             }
@@ -1619,52 +1736,62 @@ void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
 
 
 /* set target temperatures if we are annealing */
-void update_annealing_target_temp(t_grpopts *opts,real t)
+void update_annealing_target_temp(t_grpopts *opts, real t)
 {
-  int i,j,n,npoints;
-  real pert,thist=0,x;
+    int  i, j, n, npoints;
+    real pert, thist = 0, x;
 
-  for(i=0;i<opts->ngtc;i++) {
-    npoints = opts->anneal_npoints[i];
-    switch (opts->annealing[i]) {
-    case eannNO:
-      continue;
-    case  eannPERIODIC:
-      /* calculate time modulo the period */
-      pert  = opts->anneal_time[i][npoints-1];
-      n     = t / pert;
-      thist = t - n*pert; /* modulo time */
-      /* Make sure rounding didn't get us outside the interval */
-      if (fabs(thist-pert) < GMX_REAL_EPS*100)
-	thist=0;
-      break;
-    case eannSINGLE:
-      thist = t;
-      break;
-    default:
-      gmx_fatal(FARGS,"Death horror in update_annealing_target_temp (i=%d/%d npoints=%d)",i,opts->ngtc,npoints);
+    for(i = 0; i < opts->ngtc; i++)
+    {
+        npoints = opts->anneal_npoints[i];
+        switch (opts->annealing[i]) {
+        case eannNO:
+            continue;
+        case  eannPERIODIC:
+            /* calculate time modulo the period */
+            pert  = opts->anneal_time[i][npoints-1];
+            n     = t / pert;
+            thist = t - n*pert; /* modulo time */
+            /* Make sure rounding didn't get us outside the interval */
+            if (fabs(thist-pert) < GMX_REAL_EPS*100)
+            {
+                thist = 0;
+            }
+            break;
+        case eannSINGLE:
+            thist = t;
+            break;
+        default:
+            gmx_fatal(FARGS, "Death horror in update_annealing_target_temp (i=%d/%d npoints=%d)", i, opts->ngtc, npoints);
+        }
+        /* We are doing annealing for this group if we got here,
+         * and we have the (relative) time as thist.
+         * calculate target temp */
+        j = 0;
+        while ((j < npoints-1) && (thist > (opts->anneal_time[i][j+1])))
+        {
+            j++;
+        }
+        if (j < npoints-1)
+        {
+            /* Found our position between points j and j+1.
+             * Interpolate: x is the amount from j+1, (1-x) from point j
+             * First treat possible jumps in temperature as a special case.
+             */
+            if ((opts->anneal_time[i][j+1]-opts->anneal_time[i][j]) < GMX_REAL_EPS*100)
+            {
+                opts->ref_t[i] = opts->anneal_temp[i][j+1];
+            }
+            else
+            {
+                x = ((thist-opts->anneal_time[i][j])/
+                     (opts->anneal_time[i][j+1]-opts->anneal_time[i][j]));
+                opts->ref_t[i] = x*opts->anneal_temp[i][j+1]+(1-x)*opts->anneal_temp[i][j];
+            }
+        }
+        else
+        {
+            opts->ref_t[i] = opts->anneal_temp[i][npoints-1];
+        }
     }
-    /* We are doing annealing for this group if we got here, 
-     * and we have the (relative) time as thist.
-     * calculate target temp */
-    j=0;
-    while ((j < npoints-1) && (thist>(opts->anneal_time[i][j+1])))
-      j++;
-    if (j < npoints-1) {
-      /* Found our position between points j and j+1. 
-       * Interpolate: x is the amount from j+1, (1-x) from point j 
-       * First treat possible jumps in temperature as a special case.
-       */
-      if ((opts->anneal_time[i][j+1]-opts->anneal_time[i][j]) < GMX_REAL_EPS*100)
-	opts->ref_t[i]=opts->anneal_temp[i][j+1];
-      else {
-	x = ((thist-opts->anneal_time[i][j])/
-	     (opts->anneal_time[i][j+1]-opts->anneal_time[i][j]));
-	opts->ref_t[i] = x*opts->anneal_temp[i][j+1]+(1-x)*opts->anneal_temp[i][j];
-      }
-    }
-    else {
-      opts->ref_t[i] = opts->anneal_temp[i][npoints-1];
-    }
-  }
 }

@@ -255,7 +255,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * derived classes if necessary, and refreshValues() should be called
          * if any changes are made.
          */
-        ValueList &values() { return *values_; }
+        ValueList       &values() { return *values_; }
         //! Provides derived classes access to the current list of values.
         const ValueList &values() const { return *values_; }
 
@@ -275,11 +275,11 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * and other storage locations are updated only when refreshValues() is
          * called.
          */
-        ValueList              *values_;
-        T                      *store_;
-        int                    *countptr_;
+        ValueList                   *values_;
+        T                           *store_;
+        int                         *countptr_;
         boost::scoped_ptr<ValueList> ownedValues_;
-        boost::scoped_ptr<T>    defaultValueIfSet_;
+        boost::scoped_ptr<T>         defaultValueIfSet_;
 
         // Copy and assign disallowed by base.
 };
@@ -305,14 +305,14 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         ownedValues_.reset(new std::vector<T>);
         values_ = ownedValues_.get();
     }
-    if (hasFlag(efOption_NoDefaultValue)
-        && (settings.defaultValue_ != NULL
-            || settings.defaultValueIfSet_ != NULL))
+    if (hasFlag(efOption_NoDefaultValue) &&
+        (settings.defaultValue_ != NULL ||
+         settings.defaultValueIfSet_ != NULL))
     {
         GMX_THROW(APIError("Option does not support default value, but one is set"));
     }
-    if (store_ != NULL && countptr_ == NULL && !isVector()
-        && minValueCount() != maxValueCount())
+    if (store_ != NULL && countptr_ == NULL && !isVector() &&
+        minValueCount() != maxValueCount())
     {
         GMX_THROW(APIError("Count storage is not set, although the number of produced values is not known"));
     }
@@ -327,7 +327,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         {
             values_->clear();
             int count = (settings.isVector() ?
-                            settings.maxValueCount_ : settings.minValueCount_);
+                         settings.maxValueCount_ : settings.minValueCount_);
             for (int i = 0; i < count; ++i)
             {
                 values_->push_back(store_[i]);
@@ -384,8 +384,8 @@ void OptionStorageTemplate<T>::processSet()
     {
         clearFlag(efOption_HasDefaultValue);
     }
-    if (!hasFlag(efOption_DontCheckMinimumCount)
-        && setValues_.size() < static_cast<size_t>(minValueCount()))
+    if (!hasFlag(efOption_DontCheckMinimumCount) &&
+        setValues_.size() < static_cast<size_t>(minValueCount()))
     {
         GMX_THROW(InvalidInputError("Too few (valid) values"));
     }
@@ -396,8 +396,8 @@ void OptionStorageTemplate<T>::processSet()
 template <typename T>
 void OptionStorageTemplate<T>::addValue(const T &value)
 {
-    if (maxValueCount() >= 0
-        && setValues_.size() >= static_cast<size_t>(maxValueCount()))
+    if (maxValueCount() >= 0 &&
+        setValues_.size() >= static_cast<size_t>(maxValueCount()))
     {
         GMX_THROW(InvalidInputError("Too many values"));
     }

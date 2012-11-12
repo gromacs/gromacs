@@ -52,7 +52,7 @@ namespace gmx
  */
 
 AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
-                                             OptionFlags staticFlags)
+                                             OptionFlags           staticFlags)
     : flags_(settings.flags_ | staticFlags),
       minValueCount_(settings.minValueCount_),
       maxValueCount_(settings.maxValueCount_),
@@ -92,13 +92,13 @@ void AbstractOptionStorage::startSet()
     // The last condition takes care of the situation where multiple
     // sources are used, and a later source should be able to reassign
     // the value even though the option is already set.
-    if (isSet() && !hasFlag(efOption_MultipleTimes)
-        && !hasFlag(efOption_ClearOnNextSet))
+    if (isSet() && !hasFlag(efOption_MultipleTimes) &&
+        !hasFlag(efOption_ClearOnNextSet))
     {
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
     clearSet();
-    bInSet_ = true;
+    bInSet_              = true;
     bSetValuesHadErrors_ = false;
 }
 
@@ -153,8 +153,8 @@ void AbstractOptionStorage::setMinValueCount(int count)
                        "setMinValueCount() not supported with efOption_MultipleTimes");
     GMX_RELEASE_ASSERT(count >= 0, "Invalid value count");
     minValueCount_ = count;
-    if (isSet() && !hasFlag(efOption_DontCheckMinimumCount)
-        && valueCount() < minValueCount_)
+    if (isSet() && !hasFlag(efOption_DontCheckMinimumCount) &&
+        valueCount() < minValueCount_)
     {
         GMX_THROW(InvalidInputError("Too few values"));
     }

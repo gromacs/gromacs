@@ -192,17 +192,17 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          * \p dest should not have previous contents.
          */
         static void copyContents(const AbstractAnalysisArrayData *src,
-                                 AbstractAnalysisArrayData *dest);
+                                 AbstractAnalysisArrayData       *dest);
 
     private:
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        int                  rowCount_;
+        int                            rowCount_;
         std::vector<AnalysisDataValue> value_;
-        real                 xstart_;
-        real                 xstep_;
-        bool                 bReady_;
+        real                           xstart_;
+        real                           xstep_;
+        bool                           bReady_;
 
         // Copy and assign disallowed by base.
 };

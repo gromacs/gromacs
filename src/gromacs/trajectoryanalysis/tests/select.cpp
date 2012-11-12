@@ -62,7 +62,7 @@ using gmx::test::CommandLine;
 
 //! Test fixture for the select analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Select>
-        SelectModuleTest;
+    SelectModuleTest;
 
 TEST_F(SelectModuleTest, BasicTest)
 {

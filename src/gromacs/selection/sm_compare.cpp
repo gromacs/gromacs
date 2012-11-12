@@ -73,9 +73,9 @@ typedef struct
     /** Flags that describe the type of the operand. */
     int             flags;
     /** (Array of) integer value(s). */
-    int        *i;
+    int            *i;
     /** (Array of) real value(s). */
-    real       *r;
+    real           *r;
 } t_compare_value;
 
 /*! \internal \brief
@@ -152,10 +152,10 @@ comparison_type(char *str)
 {
     switch (str[0])
     {
-        case '<': return (str[1] == '=') ? CMP_LEQ   : CMP_LESS;
-        case '>': return (str[1] == '=') ? CMP_GEQ   : CMP_GTR;
-        case '=': return (str[1] == '=') ? CMP_EQUAL : CMP_INVALID;
-        case '!': return (str[1] == '=') ? CMP_NEQ   : CMP_INVALID;
+    case '<': return (str[1] == '=') ? CMP_LEQ   : CMP_LESS;
+    case '>': return (str[1] == '=') ? CMP_GEQ   : CMP_GTR;
+    case '=': return (str[1] == '=') ? CMP_EQUAL : CMP_INVALID;
+    case '!': return (str[1] == '=') ? CMP_NEQ   : CMP_INVALID;
     }
     return CMP_INVALID;
 }
@@ -167,7 +167,7 @@ comparison_type(char *str)
  * \returns   Pointer to a string that corresponds to \p cmpt.
  *
  * The return value points to a string constant and should not be \p free'd.
- * 
+ *
  * The function returns NULL if \p cmpt is not one of the valid values.
  */
 static const char *
@@ -175,13 +175,13 @@ comparison_type_str(e_comparison_t cmpt)
 {
     switch (cmpt)
     {
-        case CMP_INVALID: return "INVALID"; break;
-        case CMP_LESS:    return "<";  break;
-        case CMP_LEQ:     return "<="; break;
-        case CMP_GTR:     return ">";  break;
-        case CMP_GEQ:     return ">="; break;
-        case CMP_EQUAL:   return "=="; break;
-        case CMP_NEQ:     return "!="; break;
+    case CMP_INVALID: return "INVALID"; break;
+    case CMP_LESS:    return "<";  break;
+    case CMP_LEQ:     return "<="; break;
+    case CMP_GTR:     return ">";  break;
+    case CMP_GEQ:     return ">="; break;
+    case CMP_EQUAL:   return "=="; break;
+    case CMP_NEQ:     return "!="; break;
     }
     return NULL;
 }
@@ -262,11 +262,11 @@ reverse_comparison_type(e_comparison_t type)
 {
     switch (type)
     {
-        case CMP_LESS: return CMP_GTR;
-        case CMP_LEQ:  return CMP_GEQ;
-        case CMP_GTR:  return CMP_LESS;
-        case CMP_GEQ:  return CMP_LEQ;
-        default:       break;
+    case CMP_LESS: return CMP_GTR;
+    case CMP_LEQ:  return CMP_GEQ;
+    case CMP_GTR:  return CMP_LESS;
+    case CMP_GEQ:  return CMP_LEQ;
+    default:       break;
     }
     return type;
 }
@@ -359,25 +359,25 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
     {
         switch (cmpt)
         {
-            case CMP_LESS:
-            case CMP_GEQ:
-                iv[i] = (int)ceil(val->r[i]);
-                break;
-            case CMP_GTR:
-            case CMP_LEQ:
-                iv[i] = (int)floor(val->r[i]);
-                break;
-            case CMP_EQUAL:
-            case CMP_NEQ:
-                sfree(iv);
-                /* TODO: Implement, although it isn't typically very useful.
-                 * Implementation is only a matter or proper initialization,
-                 * the evaluation function can already handle this case with
-                 * proper preparations. */
-                GMX_THROW(gmx::NotImplementedError("Equality comparison between dynamic integer and static real expressions not implemented"));
-            case CMP_INVALID: /* Should not be reached */
-                sfree(iv);
-                GMX_THROW(gmx::InternalError("Invalid comparison type"));
+        case CMP_LESS:
+        case CMP_GEQ:
+            iv[i] = (int)ceil(val->r[i]);
+            break;
+        case CMP_GTR:
+        case CMP_LEQ:
+            iv[i] = (int)floor(val->r[i]);
+            break;
+        case CMP_EQUAL:
+        case CMP_NEQ:
+            sfree(iv);
+            /* TODO: Implement, although it isn't typically very useful.
+             * Implementation is only a matter or proper initialization,
+             * the evaluation function can already handle this case with
+             * proper preparations. */
+            GMX_THROW(gmx::NotImplementedError("Equality comparison between dynamic integer and static real expressions not implemented"));
+        case CMP_INVALID:     /* Should not be reached */
+            sfree(iv);
+            GMX_THROW(gmx::InternalError("Invalid comparison type"));
         }
     }
     /* Free the previous value if one is present. */
@@ -440,14 +440,14 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         {
             /* Reverse the sides to place the integer on the right */
             int    flags;
-            d->left.r  = d->right.r;
-            d->right.r = NULL;
-            d->right.i = d->left.i;
-            d->left.i  = NULL;
+            d->left.r      = d->right.r;
+            d->right.r     = NULL;
+            d->right.i     = d->left.i;
+            d->left.i      = NULL;
             flags          = d->left.flags;
             d->left.flags  = d->right.flags;
             d->right.flags = flags;
-            d->cmpt = reverse_comparison_type(d->cmpt);
+            d->cmpt        = reverse_comparison_type(d->cmpt);
         }
         else if (!(d->left.flags & CMP_DYNAMICVAL))
         {
@@ -509,18 +509,18 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
-        a = d->left.i[i1];
-        b = d->right.i[i2];
+        a       = d->left.i[i1];
+        b       = d->right.i[i2];
         bAccept = false;
         switch (d->cmpt)
         {
-            case CMP_INVALID: break;
-            case CMP_LESS:    bAccept = a <  b; break;
-            case CMP_LEQ:     bAccept = a <= b; break;
-            case CMP_GTR:     bAccept = a >  b; break;
-            case CMP_GEQ:     bAccept = a >= b; break;
-            case CMP_EQUAL:   bAccept = a == b; break;
-            case CMP_NEQ:     bAccept = a != b; break;
+        case CMP_INVALID: break;
+        case CMP_LESS:    bAccept = a <  b; break;
+        case CMP_LEQ:     bAccept = a <= b; break;
+        case CMP_GTR:     bAccept = a >  b; break;
+        case CMP_GEQ:     bAccept = a >= b; break;
+        case CMP_EQUAL:   bAccept = a == b; break;
+        case CMP_NEQ:     bAccept = a != b; break;
         }
         if (bAccept)
         {
@@ -557,18 +557,18 @@ evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
-        a = d->left.r[i1];
-        b = (d->right.flags & CMP_REALVAL) ? d->right.r[i2] : d->right.i[i2];
+        a       = d->left.r[i1];
+        b       = (d->right.flags & CMP_REALVAL) ? d->right.r[i2] : d->right.i[i2];
         bAccept = false;
         switch (d->cmpt)
         {
-            case CMP_INVALID: break;
-            case CMP_LESS:    bAccept = a <  b; break;
-            case CMP_LEQ:     bAccept = a <= b; break;
-            case CMP_GTR:     bAccept = a >  b; break;
-            case CMP_GEQ:     bAccept = a >= b; break;
-            case CMP_EQUAL:   bAccept =  gmx_within_tol(a, b, GMX_REAL_EPS); break;
-            case CMP_NEQ:     bAccept = !gmx_within_tol(a, b, GMX_REAL_EPS); break;
+        case CMP_INVALID: break;
+        case CMP_LESS:    bAccept = a <  b; break;
+        case CMP_LEQ:     bAccept = a <= b; break;
+        case CMP_GTR:     bAccept = a >  b; break;
+        case CMP_GEQ:     bAccept = a >= b; break;
+        case CMP_EQUAL:   bAccept =  gmx_within_tol(a, b, GMX_REAL_EPS); break;
+        case CMP_NEQ:     bAccept = !gmx_within_tol(a, b, GMX_REAL_EPS); break;
         }
         if (bAccept)
         {

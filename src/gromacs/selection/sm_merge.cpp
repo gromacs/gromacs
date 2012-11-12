@@ -159,7 +159,7 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
     t_methoddata_merge *data;
 
     snew(data, 1);
-    data->stride = 0;
+    data->stride     = 0;
     param[0].val.u.p = &data->p1;
     param[1].val.u.p = &data->p2;
     if (npar > 2)
