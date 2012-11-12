@@ -193,6 +193,9 @@ option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_R
 mark_as_advanced(GMX_GIT_VERSION_INFO)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
+if(UNIX)
+    option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" ON)
+endif()
 
 if(UNIX)
     option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static archives (not available on non-*nix platforms and it will only work if static versions of external dependencies are available and found)!" OFF)
