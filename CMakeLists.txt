@@ -180,6 +180,8 @@ set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
+    option(GMX_CONTRIBUTED_FFTW "Build internal fftw3 instead of using the system one. Binaries build with this option must not be distrubted due to licensing issue!" OFF)
+    mark_as_advanced(GMX_CONTRIBUTED_FFTW)
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
@@ -934,7 +936,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     else(GMX_DOUBLE)
         set(FFTW fftwf)
     endif(GMX_DOUBLE)
-    find_package(FFTW COMPONENTS ${FFTW})
+    if(GMX_CONTRIBUTED_FFTW)
+      add_subdirectory(src/contrib/fftw)
+    else(GMX_CONTRIBUTED_FFTW)
+      find_package(FFTW COMPONENTS ${FFTW})
+    endif(GMX_CONTRIBUTED_FFTW)
     string(TOUPPER "${FFTW}" FFTW)
     set(PKG_FFT "${${FFTW}_PKG}")
     include_directories(${${FFTW}_INCLUDE_DIRS})
