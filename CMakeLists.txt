@@ -180,6 +180,8 @@ set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
+option(GMX_BUILD_OWN_FFTW "Download and build FFTW 3 during the GROMACS build process, rather than fall back on the really slow fftpack." OFF)
+mark_as_advanced(GMX_BUILD_OWN_FFTW)
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
@@ -931,23 +933,29 @@ set(PKG_FFT_LIBS "")
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     if(GMX_DOUBLE)
         set(FFTW fftw)
-    else(GMX_DOUBLE)
+    else()
         set(FFTW fftwf)
-    endif(GMX_DOUBLE)
-    find_package(FFTW COMPONENTS ${FFTW})
+    endif()
+
+    if(GMX_BUILD_OWN_FFTW)
+      add_subdirectory(src/contrib/fftw)
+    else()
+      find_package(FFTW COMPONENTS ${FFTW})
+    endif()
+
     string(TOUPPER "${FFTW}" FFTW)
     set(PKG_FFT "${${FFTW}_PKG}")
     include_directories(${${FFTW}_INCLUDE_DIRS})
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW3 (with correct precision - libfftw3f for single precision GROMACS or libfftw3 for double precision GROMACS). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT ${FFTW}_FOUND)
+      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for single-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library, enable the advanced option to let GROMACS build FFTW 3 for you, or use the really slow GROMACS built-in fftpack library.")
+    endif()
 
     set(GMX_FFT_FFTW3 1)
 
     if (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
       message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-    endif (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
+    endif()
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
