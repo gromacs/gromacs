@@ -22,6 +22,10 @@ endif()
 
 add_library(md ${MDLIB_SOURCES})
 
+if(GMX_FFTW)
+  add_dependencies(md fftw)
+endif(GMX_FFTW)
+
 target_link_libraries(md ${GMX_GPU_LIBRARIES} gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES} ${OpenMP_SHARED_LINKER_FLAGS})
 
 set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
