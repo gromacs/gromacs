@@ -962,6 +962,62 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
     }
 }
 
+static void
+nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
+                            nbnxn_atomdata_output_t * gmx_restrict src,
+                            int nsrc,
+                            int i0, int i1)
+{
+    int i,s;
+
+    for(i=i0; i<i1; i++)
+    {
+        for(s=0; s<nsrc; s++)
+        {
+            dest[i] += src[s].f[i];
+        }
+    }
+}
+
+static void
+nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
+                                     nbnxn_atomdata_output_t * gmx_restrict src,
+                                     int nsrc,
+                                     int i0, int i1)
+{
+#ifdef NBNXN_SEARCH_SSE
+#ifdef GMX_X86_AVX_256
+#define GMX_MM256_HERE
+#else
+#define GMX_MM128_HERE
+#endif
+#include "gmx_x86_simd_macros.h"
+
+    int       i,s;
+    gmx_mm_pr dest_SSE,src_SSE;
+
+    if ((i0 & (GMX_X86_SIMD_WIDTH_HERE-1)) ||
+        (i1 & (GMX_X86_SIMD_WIDTH_HERE-1)))
+    {
+        gmx_incons("bounds not a multiple of GMX_X86_SIMD_WIDTH_HERE in nbnxn_atomdata_reduce_reals_x86_simd");
+    }
+
+    for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
+    {
+        dest_SSE = gmx_load_pr(dest+i);
+        for(s=0; s<nsrc; s++)
+        {
+            src_SSE  = gmx_load_pr(src[s].f+i);
+            dest_SSE = gmx_add_pr(dest_SSE,src_SSE);
+        }
+        gmx_store_pr(dest+i,dest_SSE);
+    }
+
+#undef GMX_MM128_HERE
+#undef GMX_MM256_HERE
+#endif
+}
+
 /* Add part of the force array(s) from nbnxn_atomdata_t to f */
 static void
 nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
@@ -1079,6 +1135,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
 {
     int a0=0,na=0;
     int nth,th;
+    gmx_bool bStreamingReduce;
 
     nbs_cycle_start(&nbs->cc[enbsCCreducef]);
 
@@ -1099,15 +1156,65 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
     }
 
     nth = gmx_omp_nthreads_get(emntNonbonded);
+
+    /* Using the two-step streaming reduction is probably always faster */
+    bStreamingReduce = (nbat->nout > 1);
+
+    if (bStreamingReduce)
+    {
+        /* Reduce the force thread output buffers into buffer 0, before adding
+         * them to the, differently ordered, "real" force buffer.
+         */
+#pragma omp parallel for num_threads(nth) schedule(static)
+        for(th=0; th<nth; th++)
+        {
+            int g0,g1;
+            int b0,b1,nb;
+            int blocksize,i0,i1;
+
+            /* For which grids should we reduce the force output? */
+            g0 = ((locality==eatLocal || locality==eatAll) ? 0 : 1);
+            g1 = (locality==eatLocal ? 1 : nbs->ngrid);
+
+            /* Get the grid cell bounds */
+            b0 = nbs->grid[g0].cell0;
+            b1 = nbs->grid[g1-1].cell0 + nbs->grid[g1-1].nc;
+            blocksize = nbs->grid[g0].na_sc*nbat->fstride;
+            /* The simple grid size in atoms is a multiple of na_cj.
+             * With float-AVX256 we use this and make blocksize a multiple of 8.
+             */
+            if (nbs->grid[0].bSimple && nbs->grid[0].na_cj > nbs->grid[0].na_c)
+            {
+                blocksize *= 2;
+                b0 /= 2;
+                b1 /= 2;
+            }
+            nb = b1 - b0;
+
+            /* Calculate the index range for our thread */
+            i0 = (b0 + (nb* th   )/nth)*blocksize;
+            i1 = (b0 + (nb*(th+1))/nth)*blocksize;
+
+#ifdef NBNXN_SEARCH_SSE
+            nbnxn_atomdata_reduce_reals_x86_simd(
+#else
+            nbnxn_atomdata_reduce_reals(    
+#endif
+                                        nbat->out[0].f,
+                                        nbat->out+1,nbat->nout - 1,
+                                        i0,i1);
+        }
+    }
+
 #pragma omp parallel for num_threads(nth) schedule(static)
     for(th=0; th<nth; th++)
     {
         nbnxn_atomdata_add_nbat_f_to_f_part(nbs,nbat,
-                                             nbat->out,
-                                             nbat->nout,
-                                             a0+((th+0)*na)/nth,
-                                             a0+((th+1)*na)/nth,
-                                             f);
+                                            nbat->out,
+                                            bStreamingReduce ? 1 : nbat->nout,
+                                            a0+((th+0)*na)/nth,
+                                            a0+((th+1)*na)/nth,
+                                            f);
     }
 
     nbs_cycle_stop(&nbs->cc[enbsCCreducef]);

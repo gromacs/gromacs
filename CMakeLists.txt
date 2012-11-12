@@ -650,10 +650,10 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
 include(gmxSetBuildInformation)
 gmx_set_build_information()
-if(BUILD_CPU_FEATURES MATCHES "rdtscp")
+if(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
     # The timestep counter headers do not include config.h
     add_definitions(-DHAVE_RDTSCP)
-endif(BUILD_CPU_FEATURES MATCHES "rdtscp")
+endif(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
 
 include(gmxTestFloatFormat)
 gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754 
@@ -785,6 +785,20 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
        message(WARNING "No C++ AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
     endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
 
+    # Set the FMA4 flags (MSVC doesn't require any)
+    if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
+        GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" GROMACS_C_FLAGS)
+        if (NOT GNU_FMA_CFLAG)
+            message(WARNING "No C FMA4 flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
+        endif(NOT GNU_FMA_CFLAG)
+        if (CMAKE_CXX_COMPILER_LOADED)
+            GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" GROMACS_CXX_FLAGS)
+            if (NOT GNU_FMA_CXXFLAG)
+                message(WARNING "No C++ FMA flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
+            endif (NOT GNU_FMA_CXXFLAG)
+        endif()
+    endif()
+
     # Only test the header after we have tried to add the flag for AVX support
     check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${GROMACS_C_FLAGS})
 
@@ -792,8 +806,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
         message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
     endif(NOT HAVE_IMMINTRIN_H)
 
-    # AMD says we should include x86intrin.h for FMA support, but MSVC seems to do fine without it, so don't require it.
+    # GCC requires x86intrin.h for FMA support. MSVC 2010 requires intrin.h for FMA support.
     check_include_file(x86intrin.h HAVE_X86INTRIN_H ${GROMACS_C_FLAGS})
+    check_include_file(intrin.h HAVE_INTRIN_H ${GROMACS_C_FLAGS})
 
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)

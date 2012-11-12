@@ -25,6 +25,9 @@
 #ifdef HAVE_X86INTRIN_H
 #include <x86intrin.h> /* FMA */
 #endif
+#ifdef HAVE_INTRIN_H
+#include <intrin.h> /* FMA MSVC */
+#endif
 
 #include <math.h>
 
