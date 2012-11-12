@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
@@ -56,14 +56,16 @@ extern "C" {
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-  enum { estLAMBDA,
-         estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
-         estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI, 
-         estDISRE_INITF, estDISRE_RM3TAV,
-         estORIRE_INITF, estORIRE_DTAV,
-         estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
-         estFEPSTATE, estMC_RNG, estMC_RNGI,
-         estNR };
+enum {
+    estLAMBDA,
+    estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
+    estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
+    estDISRE_INITF, estDISRE_RM3TAV,
+    estORIRE_INITF, estORIRE_DTAV,
+    estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
+    estFEPSTATE, estMC_RNG, estMC_RNGI,
+    estNR
+};
 
 #define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
 
@@ -72,12 +74,12 @@ extern const char *est_names[estNR];
 
 typedef struct
 {
-  real disre_initf;    /* The scaling factor for initializing the time av. */
-  int  ndisrepairs;    /* The number of distance restraints                */
-  real *disre_rm3tav;  /* The r^-3 time averaged pair distances            */
-  real orire_initf;    /* The scaling factor for initializing the time av. */
-  int  norire_Dtav;    /* The number of matrix element in dtav (npair*5)   */
-  real *orire_Dtav;    /* The time averaged orientation tensors            */
+    real  disre_initf;  /* The scaling factor for initializing the time av. */
+    int   ndisrepairs;  /* The number of distance restraints                */
+    real *disre_rm3tav; /* The r^-3 time averaged pair distances            */
+    real  orire_initf;  /* The scaling factor for initializing the time av. */
+    int   norire_Dtav;  /* The number of matrix element in dtav (npair*5)   */
+    real *orire_Dtav;   /* The time averaged orientation tensors            */
 } history_t;
 
 /* Struct used for checkpointing only.
@@ -88,139 +90,139 @@ typedef struct
  */
 typedef struct
 {
-  gmx_bool     bUpToDate;
-  int      ekin_n;
-  tensor  *ekinh;
-  tensor  *ekinf;
-  tensor  *ekinh_old;
-  tensor   ekin_total;
-  double  *ekinscalef_nhc;
-  double  *ekinscaleh_nhc;
-  double  *vscale_nhc;
-  real     dekindl;
-  real     mvcos;
+    gmx_bool bUpToDate;
+    int      ekin_n;
+    tensor  *ekinh;
+    tensor  *ekinf;
+    tensor  *ekinh_old;
+    tensor   ekin_total;
+    double  *ekinscalef_nhc;
+    double  *ekinscaleh_nhc;
+    double  *vscale_nhc;
+    real     dekindl;
+    real     mvcos;
 } ekinstate_t;
 
 /* energy history for delta_h histograms */
 typedef struct
 {
-    int nndh;           /* the number of energy difference lists */
-    int  *ndh;          /* the number in each energy difference list */
-    real **dh;          /* the energy difference lists */
+    int      nndh;             /* the number of energy difference lists */
+    int     *ndh;              /* the number in each energy difference list */
+    real   **dh;               /* the energy difference lists */
 
-    double start_time;     /* the start time of these energy diff blocks */
-    double start_lambda;   /* lambda at start time */
+    double   start_time;       /* the start time of these energy diff blocks */
+    double   start_lambda;     /* lambda at start time */
 
     gmx_bool start_lambda_set; /* whether the lambda value is set. Here
                                   For backward-compatibility. */
-} delta_h_history_t; 
+} delta_h_history_t;
 
 typedef struct
 {
-  int nlambda;               /* total number of lambda states - for history*/
+    int      nlambda;        /* total number of lambda states - for history*/
 
-  gmx_bool bEquil;           /* reached equilibration */
-  int  *n_at_lam;            /* number of points observed at each lambda */
-  real *wl_histo;            /* histogram for WL flatness determination */
-  real wl_delta;             /* current wang-landau delta */
+    gmx_bool bEquil;         /* reached equilibration */
+    int     *n_at_lam;       /* number of points observed at each lambda */
+    real    *wl_histo;       /* histogram for WL flatness determination */
+    real     wl_delta;       /* current wang-landau delta */
 
-  real *sum_weights;         /* weights of the states */
-  real *sum_dg;              /* free energies of the states -- not actually used for weighting, but informational */
-  real *sum_minvar;          /* corrections to weights for minimum variance */
-  real *sum_variance;        /* variances of the states */
+    real    *sum_weights;    /* weights of the states */
+    real    *sum_dg;         /* free energies of the states -- not actually used for weighting, but informational */
+    real    *sum_minvar;     /* corrections to weights for minimum variance */
+    real    *sum_variance;   /* variances of the states */
 
-  real **accum_p;            /* accumulated bennett weights for n+1 */
-  real **accum_m;            /* accumulated bennett weights for n-1 */
-  real **accum_p2;           /* accumulated squared bennett weights for n+1 */
-  real **accum_m2;           /* accumulated squared bennett weights for n-1 */
+    real   **accum_p;        /* accumulated bennett weights for n+1 */
+    real   **accum_m;        /* accumulated bennett weights for n-1 */
+    real   **accum_p2;       /* accumulated squared bennett weights for n+1 */
+    real   **accum_m2;       /* accumulated squared bennett weights for n-1 */
 
-  real **Tij;                /* transition matrix */
-  real **Tij_empirical;      /* Empirical transition matrix */
+    real   **Tij;            /* transition matrix */
+    real   **Tij_empirical;  /* Empirical transition matrix */
 } df_history_t;
 
 typedef struct
 {
-  gmx_large_int_t nsteps;       /* The number of steps in the history            */
-  gmx_large_int_t nsum;         /* The nr. of steps in the ener_ave and ener_sum */
-  double *   ener_ave;     /* Energy term history sum to get fluctuations   */
-  double *   ener_sum;     /* Energy term history sum to get fluctuations   */
-  int        nener;        /* Number of energy terms in two previous arrays */
-  gmx_large_int_t nsteps_sim;   /* The number of steps in ener_sum_sim      */
-  gmx_large_int_t nsum_sim;     /* The number of frames in ener_sum_sim     */
-  double *   ener_sum_sim; /* Energy term history sum of the whole sim      */
+    gmx_large_int_t    nsteps;       /* The number of steps in the history            */
+    gmx_large_int_t    nsum;         /* The nr. of steps in the ener_ave and ener_sum */
+    double           * ener_ave;     /* Energy term history sum to get fluctuations   */
+    double           * ener_sum;     /* Energy term history sum to get fluctuations   */
+    int                nener;        /* Number of energy terms in two previous arrays */
+    gmx_large_int_t    nsteps_sim;   /* The number of steps in ener_sum_sim      */
+    gmx_large_int_t    nsum_sim;     /* The number of frames in ener_sum_sim     */
+    double           * ener_sum_sim; /* Energy term history sum of the whole sim      */
 
-  delta_h_history_t *dht;  /* The BAR energy differences */
+    delta_h_history_t *dht;          /* The BAR energy differences */
 }
 energyhistory_t;
 
 typedef struct
 {
-  int           natoms;
-  int           ngtc;
-  int           nnhpres;
-  int           nhchainlength; /* number of nose-hoover chains               */
-  int           nrng;
-  int           nrngi;
-  int           flags;  /* Flags telling which entries are present      */
-  int           fep_state; /* indicates which of the alchemical states we are in                 */
-  real          *lambda; /* lambda vector                               */
-  matrix 	box;    /* box vector coordinates                      	*/
-  matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
-  matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
-  matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
-  matrix        svir_prev; /* Shake virial for previous step for pcoupl */
-  matrix        fvir_prev; /* Force virial of the previous step for pcoupl  */
-  double        *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
-  double        *nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
-  double        *nhpres_xi;  /* for Nose-Hoover pcoupl for barostat     */
-  double        *nhpres_vxi; /* for Nose-Hoover pcoupl for barostat     */
-  double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
-  real          veta; /* trotter based isotropic P-coupling             */
-  real          vol0; /* initial volume,required for computing NPT conserverd quantity */
-  int           nalloc; /* Allocation size for x, v and sd_x when !=NULL*/
-  rvec          *x;     /* the coordinates (natoms)                     */
-  rvec          *v;     /* the velocities (natoms)                      */
-  rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
-  rvec          *cg_p;  /* p vector for conjugate gradient minimization */
+    int             natoms;
+    int             ngtc;
+    int             nnhpres;
+    int             nhchainlength; /* number of nose-hoover chains               */
+    int             nrng;
+    int             nrngi;
+    int             flags;           /* Flags telling which entries are present      */
+    int             fep_state;       /* indicates which of the alchemical states we are in                 */
+    real           *lambda;          /* lambda vector                               */
+    matrix          box;             /* box vector coordinates                          */
+    matrix          box_rel;         /* Relitaive box vectors to preserve shape     */
+    matrix          boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
+    matrix          pres_prev;       /* Pressure of the previous step for pcoupl  */
+    matrix          svir_prev;       /* Shake virial for previous step for pcoupl */
+    matrix          fvir_prev;       /* Force virial of the previous step for pcoupl  */
+    double         *nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
+    double         *nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
+    double         *nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
+    double         *nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
+    double         *therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
+    real            veta;            /* trotter based isotropic P-coupling             */
+    real            vol0;            /* initial volume,required for computing NPT conserverd quantity */
+    int             nalloc;          /* Allocation size for x, v and sd_x when !=NULL*/
+    rvec           *x;               /* the coordinates (natoms)                     */
+    rvec           *v;               /* the velocities (natoms)                      */
+    rvec           *sd_X;            /* random part of the x update for stoch. dyn.  */
+    rvec           *cg_p;            /* p vector for conjugate gradient minimization */
 
-  unsigned int  *ld_rng;  /* RNG random state                           */
-  int           *ld_rngi; /* RNG index                                  */
+    unsigned int   *ld_rng;          /* RNG random state                           */
+    int            *ld_rngi;         /* RNG index                                  */
 
-  int           nmcrng;   /* number of RNG states                       */
-  unsigned int  *mc_rng;  /* lambda MC RNG random state                 */
-  int           *mc_rngi; /* lambda MC RNG index                        */
+    int             nmcrng;          /* number of RNG states                       */
+    unsigned int   *mc_rng;          /* lambda MC RNG random state                 */
+    int            *mc_rngi;         /* lambda MC RNG index                        */
 
-  history_t     hist;   /* Time history for restraints                  */
+    history_t       hist;            /* Time history for restraints                  */
 
-  ekinstate_t   ekinstate; /* The state of the kinetic energy data      */
+    ekinstate_t     ekinstate;       /* The state of the kinetic energy data      */
 
-  energyhistory_t  enerhist; /* Energy history for statistics           */
-  df_history_t  dfhist; /*Free energy history for free energy analysis  */
+    energyhistory_t enerhist;        /* Energy history for statistics           */
+    df_history_t    dfhist;          /*Free energy history for free energy analysis  */
 
-  int           ddp_count; /* The DD partitioning count for this state  */
-  int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
-  int           ncg_gl; /* The number of local charge groups            */
-  int           *cg_gl; /* The global cg number of the local cgs        */
-  int           cg_gl_nalloc; /* Allocation size of cg_gl;              */
+    int             ddp_count;       /* The DD partitioning count for this state  */
+    int             ddp_count_cg_gl; /* The DD part. count for index_gl     */
+    int             ncg_gl;          /* The number of local charge groups            */
+    int            *cg_gl;           /* The global cg number of the local cgs        */
+    int             cg_gl_nalloc;    /* Allocation size of cg_gl;              */
 } t_state;
 
-typedef struct 
-{ 
-  double *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
-  double *QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
-  double Winv;   /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
-  tensor Winvm;  /* inverse pressure mass tensor, computed       */       
+typedef struct
+{
+    double *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
+    double *QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
+    double  Winv;  /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
+    tensor  Winvm; /* inverse pressure mass tensor, computed       */
 } t_extmass;
 
 
 typedef struct
-{ 
-  real veta;   
-  double rscale;
-  double vscale;
-  double rvscale;
-  double alpha;
-  double *vscale_nhc;
+{
+    real    veta;
+    double  rscale;
+    double  vscale;
+    double  rvscale;
+    double  alpha;
+    double *vscale_nhc;
 } t_vetavars;
 
 #ifdef __cplusplus

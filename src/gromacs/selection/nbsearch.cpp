@@ -86,69 +86,69 @@
 struct gmx_ana_nbsearch_t
 {
     /** The cutoff. */
-    real           cutoff;
+    real cutoff;
     /** The cutoff squared. */
-    real           cutoff2;
+    real cutoff2;
     /** Maximum number of reference points. */
-    int            maxnref;
+    int  maxnref;
 
     /** Number of reference points for the current frame. */
-    int            nref;
+    int    nref;
     /** Reference point positions. */
-    rvec          *xref;
+    rvec  *xref;
     /** Reference position ids (NULL if not available). */
-    int           *refid;
+    int   *refid;
     /** PBC data. */
-    t_pbc         *pbc;
+    t_pbc *pbc;
 
     /** Number of excluded reference positions for current test particle. */
-    int            nexcl;
+    int  nexcl;
     /** Exclusions for current test particle. */
-    int           *excl;
+    int *excl;
 
     /** Whether to try grid searching. */
-    bool           bTryGrid;
+    bool      bTryGrid;
     /** Whether grid searching is actually used for the current positions. */
-    bool           bGrid;
+    bool      bGrid;
     /** Array allocated for storing in-unit-cell reference positions. */
-    rvec          *xref_alloc;
+    rvec     *xref_alloc;
     /** false if the box is rectangular. */
-    bool           bTric;
+    bool      bTric;
     /** Box vectors of a single grid cell. */
-    matrix         cellbox;
+    matrix    cellbox;
     /** The reciprocal cell vectors as columns; the inverse of \p cellbox. */
-    matrix         recipcell;
+    matrix    recipcell;
     /** Number of cells along each dimension. */
-    ivec           ncelldim;
+    ivec      ncelldim;
     /** Total number of cells. */
-    int            ncells;
+    int       ncells;
     /** Number of reference positions in each cell. */
-    int           *ncatoms;
+    int      *ncatoms;
     /** List of reference positions in each cell. */
-    atom_id      **catom;
+    atom_id **catom;
     /** Allocation counts for each \p catom[i]. */
-    int           *catom_nalloc;
+    int      *catom_nalloc;
     /** Allocation count for the per-cell arrays. */
-    int            cells_nalloc;
+    int       cells_nalloc;
     /** Number of neighboring cells to consider. */
-    int            ngridnb;
+    int       ngridnb;
     /** Offsets of the neighboring cells to consider. */
-    ivec          *gnboffs;
+    ivec     *gnboffs;
     /** Allocation count for \p gnboffs. */
-    int            gnboffs_nalloc;
+    int       gnboffs_nalloc;
 
     /** Stores test position during a pair loop. */
-    rvec           xtest;
+    rvec xtest;
     /** Stores the previous returned position during a pair loop. */
-    int            previ;
+    int  previ;
     /** Stores the current exclusion index during loops. */
-    int            exclind;
+    int  exclind;
     /** Stores the test particle cell index during loops. */
-    ivec           testcell;
+    ivec testcell;
     /** Stores the current cell neighbor index during pair loops. */
-    int            prevnbi;
+    int  prevnbi;
     /** Stores the index within the current cell during pair loops. */
-    int            prevcai;
+    int  prevcai;
 };
 
 /*!
@@ -166,26 +166,26 @@ gmx_ana_nbsearch_create(real cutoff, int maxn)
     d->bTryGrid = true;
     if (cutoff <= 0)
     {
-        cutoff = GMX_REAL_MAX;
+        cutoff      = GMX_REAL_MAX;
         d->bTryGrid = false;
     }
-    d->cutoff = cutoff;
+    d->cutoff  = cutoff;
     d->cutoff2 = sqr(cutoff);
     d->maxnref = maxn;
 
-    d->xref = NULL;
-    d->nexcl = 0;
+    d->xref    = NULL;
+    d->nexcl   = 0;
     d->exclind = 0;
 
-    d->xref_alloc = NULL;
-    d->ncells = 0;
-    d->ncatoms = NULL;
-    d->catom = NULL;
+    d->xref_alloc   = NULL;
+    d->ncells       = 0;
+    d->ncatoms      = NULL;
+    d->catom        = NULL;
     d->catom_nalloc = 0;
     d->cells_nalloc = 0;
 
-    d->ngridnb = 0;
-    d->gnboffs = NULL;
+    d->ngridnb        = 0;
+    d->gnboffs        = NULL;
     d->gnboffs_nalloc = 0;
 
     return d;
@@ -225,16 +225,16 @@ gmx_ana_nbsearch_free(gmx_ana_nbsearch_t *d)
 static void
 grid_init_cell_nblist(gmx_ana_nbsearch_t *d, t_pbc *pbc)
 {
-    int   maxx, maxy, maxz;
-    int   x, y, z, i;
-    real  rvnorm;
+    int  maxx, maxy, maxz;
+    int  x, y, z, i;
+    real rvnorm;
 
     /* Find the extent of the sphere in triclinic coordinates */
-    maxz = (int)(d->cutoff * d->recipcell[ZZ][ZZ]) + 1;
+    maxz   = (int)(d->cutoff * d->recipcell[ZZ][ZZ]) + 1;
     rvnorm = sqrt(sqr(d->recipcell[YY][YY]) + sqr(d->recipcell[ZZ][YY]));
-    maxy = (int)(d->cutoff * rvnorm) + 1;
-    rvnorm = sqrt(sqr(d->recipcell[XX][XX]) + sqr(d->recipcell[YY][XX])
-                  + sqr(d->recipcell[ZZ][XX]));
+    maxy   = (int)(d->cutoff * rvnorm) + 1;
+    rvnorm = sqrt(sqr(d->recipcell[XX][XX]) + sqr(d->recipcell[YY][XX])+
+                  sqr(d->recipcell[ZZ][XX]));
     maxx = (int)(d->cutoff * rvnorm) + 1;
 
     /* Calculate the number of cells and reallocate if necessary */
@@ -277,18 +277,18 @@ grid_setup_cells(gmx_ana_nbsearch_t *d, t_pbc *pbc)
     int  dd;
 
 #ifdef HAVE_CBRT
-    targetsize = cbrt(pbc->box[XX][XX] * pbc->box[YY][YY] * pbc->box[ZZ][ZZ]
-                      * 10 / d->nref);
+    targetsize = cbrt(pbc->box[XX][XX] * pbc->box[YY][YY] * pbc->box[ZZ][ZZ]*
+                      10 / d->nref);
 #else
-    targetsize = pow(pbc->box[XX][XX] * pbc->box[YY][YY] * pbc->box[ZZ][ZZ]
-                     * 10 / d->nref, (real)(1./3.));
+    targetsize = pow(pbc->box[XX][XX] * pbc->box[YY][YY] * pbc->box[ZZ][ZZ]*
+                     10 / d->nref, (real)(1./3.));
 #endif
 
     d->ncells = 1;
     for (dd = 0; dd < DIM; ++dd)
     {
         d->ncelldim[dd] = (int)(pbc->box[dd][dd] / targetsize);
-        d->ncells *= d->ncelldim[dd];
+        d->ncells      *= d->ncelldim[dd];
         if (d->ncelldim[dd] < 3)
         {
             return false;
@@ -297,14 +297,14 @@ grid_setup_cells(gmx_ana_nbsearch_t *d, t_pbc *pbc)
     /* Reallocate if necessary */
     if (d->cells_nalloc < d->ncells)
     {
-        int  i;
+        int i;
 
         srenew(d->ncatoms, d->ncells);
         srenew(d->catom, d->ncells);
         srenew(d->catom_nalloc, d->ncells);
         for (i = d->cells_nalloc; i < d->ncells; ++i)
         {
-            d->catom[i] = NULL;
+            d->catom[i]        = NULL;
             d->catom_nalloc[i] = 0;
         }
         d->cells_nalloc = d->ncells;
@@ -348,7 +348,7 @@ grid_set_box(gmx_ana_nbsearch_t *d, t_pbc *pbc)
     {
         for (dd = 0; dd < DIM; ++dd)
         {
-            d->cellbox[dd][dd] = pbc->box[dd][dd] / d->ncelldim[dd];
+            d->cellbox[dd][dd]   = pbc->box[dd][dd] / d->ncelldim[dd];
             d->recipcell[dd][dd] = 1 / d->cellbox[dd][dd];
         }
     }
@@ -399,8 +399,8 @@ grid_map_onto(gmx_ana_nbsearch_t *d, const rvec x, ivec cell)
 static int
 grid_index(gmx_ana_nbsearch_t *d, const ivec cell)
 {
-    return cell[XX] + cell[YY] * d->ncelldim[XX]
-        + cell[ZZ] * d->ncelldim[XX] * d->ncelldim[YY];
+    return cell[XX] + cell[YY] * d->ncelldim[XX]+
+           cell[ZZ] * d->ncelldim[XX] * d->ncelldim[YY];
 }
 
 /*! \brief
@@ -411,7 +411,7 @@ grid_index(gmx_ana_nbsearch_t *d, const ivec cell)
 static void
 grid_clear_cells(gmx_ana_nbsearch_t *d)
 {
-    int  ci;
+    int ci;
 
     for (ci = 0; ci < d->ncells; ++ci)
     {
@@ -463,7 +463,7 @@ gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, const rvec x[])
     }
     if (d->bGrid)
     {
-        int  i;
+        int i;
 
         if (!d->xref_alloc)
         {
@@ -521,7 +521,7 @@ gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[])
 {
 
     d->nexcl = nexcl;
-    d->excl = excl;
+    d->excl  = excl;
 }
 
 /*! \brief
@@ -534,7 +534,7 @@ is_excluded(gmx_ana_nbsearch_t *d, int j)
     {
         if (d->refid)
         {
-            while (d->exclind < d->nexcl && d->refid[j] > d->excl[d->exclind])
+            while (d->exclind < d->nexcl &&d->refid[j] > d->excl[d->exclind])
             {
                 ++d->exclind;
             }
@@ -594,12 +594,12 @@ grid_search(gmx_ana_nbsearch_t *d,
 
     if (d->bGrid)
     {
-        int  nbi, ci, cai;
+        int nbi, ci, cai;
 
         nbi = d->prevnbi;
         cai = d->prevcai + 1;
 
-        for ( ; nbi < d->ngridnb; ++nbi)
+        for (; nbi < d->ngridnb; ++nbi)
         {
             ivec cell;
 
@@ -608,9 +608,9 @@ grid_search(gmx_ana_nbsearch_t *d,
             cell[XX] = (cell[XX] + d->ncelldim[XX]) % d->ncelldim[XX];
             cell[YY] = (cell[YY] + d->ncelldim[YY]) % d->ncelldim[YY];
             cell[ZZ] = (cell[ZZ] + d->ncelldim[ZZ]) % d->ncelldim[ZZ];
-            ci = grid_index(d, cell);
+            ci       = grid_index(d, cell);
             /* TODO: Calculate the required PBC shift outside the inner loop */
-            for ( ; cai < d->ncatoms[ci]; ++cai)
+            for (; cai < d->ncatoms[ci]; ++cai)
             {
                 i = d->catom[ci][cai];
                 if (is_excluded(d, i))
@@ -631,13 +631,13 @@ grid_search(gmx_ana_nbsearch_t *d,
                 }
             }
             d->exclind = 0;
-            cai = 0;
+            cai        = 0;
         }
     }
     else
     {
         i = d->previ + 1;
-        for ( ; i < d->nref; ++i)
+        for (; i < d->nref; ++i)
         {
             if (is_excluded(d, i))
             {
@@ -725,7 +725,7 @@ gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, const rvec x)
 
     grid_search_start(d, x);
     grid_search(d, &mindist_action);
-    mind = sqrt(d->cutoff2);
+    mind       = sqrt(d->cutoff2);
     d->cutoff2 = sqr(d->cutoff);
     return mind;
 }

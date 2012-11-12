@@ -144,7 +144,7 @@ class TimeUnitManager
          * StringOption::storeEnumIndex(), but it should always one of the
          * allowed values for TimeUnit.
          */
-        int                     timeUnit_;
+        int timeUnit_;
 };
 
 } // namespace gmx

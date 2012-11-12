@@ -86,7 +86,7 @@ AnalysisHistogramSettings::AnalysisHistogramSettings()
 
 
 AnalysisHistogramSettings::AnalysisHistogramSettings(
-        const AnalysisHistogramSettingsInitializer &settings)
+    const AnalysisHistogramSettingsInitializer &settings)
 {
     GMX_RELEASE_ASSERT(isDefined(settings.min_),
                        "Histogram start value must be defined");
@@ -133,8 +133,8 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
         }
         else
         {
-            firstEdge_     = settings.min_;
-            lastEdge_     = settings.max_;
+            firstEdge_ = settings.min_;
+            lastEdge_  = settings.max_;
             if (settings.binCount_ > 0)
             {
                 binCount_ = settings.binCount_;
@@ -218,12 +218,12 @@ StaticAverageHistogram::StaticAverageHistogram()
 
 
 StaticAverageHistogram::StaticAverageHistogram(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : AbstractAverageHistogram(settings)
 {
 }
 
-} // namespace
+}   // namespace
 
 
 /********************************************************************
@@ -236,7 +236,7 @@ AbstractAverageHistogram::AbstractAverageHistogram()
 
 
 AbstractAverageHistogram::AbstractAverageHistogram(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : settings_(settings)
 {
     setRowCount(settings.binCount());
@@ -280,13 +280,13 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
     dest->setColumnCount(columnCount());
     dest->allocateValues();
 
-    int  i, j;
+    int i, j;
     for (i = j = 0; i < nbins; ++i)
     {
         const bool bFirstHalfBin = (bIntegerBins && i == 0);
         for (int c = 0; c < columnCount(); ++c)
         {
-            real  v1, v2;
+            real v1, v2;
             if (bFirstHalfBin)
             {
                 v1 = value(0, c);
@@ -400,7 +400,7 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
 
     private:
         //! Number of frames accumulated so far.
-        int                     frameCount_;
+        int frameCount_;
 
         // Copy and assign disallowed by base.
 };
@@ -413,7 +413,7 @@ BasicAverageHistogramModule::BasicAverageHistogramModule()
 
 
 BasicAverageHistogramModule::BasicAverageHistogramModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : AbstractAverageHistogram(settings), frameCount_(0)
 {
     setColumnCount(2);
@@ -490,7 +490,7 @@ class BasicHistogramImpl
     public:
         //! Smart pointer to manage an BasicAverageHistogramModule object.
         typedef boost::shared_ptr<BasicAverageHistogramModule>
-                BasicAverageHistogramModulePointer;
+            BasicAverageHistogramModulePointer;
 
         BasicHistogramImpl();
         //! Creates an histogram impl with defined bin parameters.
@@ -507,11 +507,11 @@ class BasicHistogramImpl
         void initFrame(AnalysisDataStorageFrame *frame);
 
         //! Storage implementation object.
-        AnalysisDataStorage                  storage_;
+        AnalysisDataStorage                storage_;
         //! Settings for the histogram object.
-        AnalysisHistogramSettings            settings_;
+        AnalysisHistogramSettings          settings_;
         //! Averager module.
-        BasicAverageHistogramModulePointer   averager_;
+        BasicAverageHistogramModulePointer averager_;
 };
 
 BasicHistogramImpl::BasicHistogramImpl()
@@ -547,7 +547,7 @@ BasicHistogramImpl::initFrame(AnalysisDataStorageFrame *frame)
     }
 }
 
-} // namespace internal
+}   // namespace internal
 
 
 /********************************************************************
@@ -561,7 +561,7 @@ AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
 
 
 AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : impl_(new internal::BasicHistogramImpl(settings))
 {
 }
@@ -672,7 +672,7 @@ AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule()
 
 
 AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : impl_(new internal::BasicHistogramImpl(settings))
 {
 }
@@ -787,7 +787,7 @@ AnalysisDataBinAverageModule::AnalysisDataBinAverageModule()
 
 
 AnalysisDataBinAverageModule::AnalysisDataBinAverageModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : settings_(settings)
 {
     setColumnCount(3);

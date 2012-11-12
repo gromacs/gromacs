@@ -64,29 +64,29 @@ class AnalysisDataDisplacementModule::Impl
         ~Impl();
 
         //! Maximum number of particles for which the displacements are calculated.
-        int                     nmax;
+        int  nmax;
         //! Maximum time for which the displacements are needed.
-        real                    tmax;
+        real tmax;
         //! Number of dimensions per data point.
-        int                     ndim;
+        int  ndim;
 
         //! true if no frames have been read.
-        bool                    bFirst;
+        bool bFirst;
         //! Stores the time of the first frame.
-        real                    t0;
+        real t0;
         //! Stores the time interval between frames.
-        real                    dt;
+        real dt;
         //! Stores the time of the current frame.
-        real                    t;
+        real t;
         //! Stores the index in the store for the current positions.
-        int                     ci;
+        int  ci;
 
         //! Maximum number of positions to store for a particle.
-        int                     max_store;
+        int   max_store;
         //! The total number of positions ever stored (can be larger than \p max_store).
-        int                     nstored;
+        int   nstored;
         //! Old values.
-        real                   *oldval;
+        real *oldval;
         //! The most recently calculated displacements.
         std::vector<AnalysisDataValue> currValues_;
 
@@ -132,7 +132,7 @@ AnalysisDataDisplacementModule::setMaxTime(real tmax)
 
 void
 AnalysisDataDisplacementModule::setMSDHistogram(
-        AnalysisDataBinAverageModulePointer histm)
+    AnalysisDataBinAverageModulePointer histm)
 {
     GMX_RELEASE_ASSERT(_impl->histm == NULL, "Can only set MSD histogram once");
     _impl->histm = histm.get();
@@ -222,7 +222,7 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     {
         _impl->p[_impl->ci + i].bPres = false;
     }
-*/
+ */
     _impl->nstored++;
     _impl->bFirst = false;
 }
@@ -231,8 +231,8 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
 void
 AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (points.firstColumn() % _impl->ndim != 0
-        || points.columnCount() % _impl->ndim != 0)
+    if (points.firstColumn() % _impl->ndim != 0 ||
+        points.columnCount() % _impl->ndim != 0)
     {
         GMX_THROW(APIError("Partial data points"));
     }
@@ -282,8 +282,8 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
 
             for (int d = 0; d < _impl->ndim; ++d)
             {
-                real displ = _impl->oldval[_impl->ci + j + d]
-                             - _impl->oldval[i + j + d];
+                real displ = _impl->oldval[_impl->ci + j + d]-
+                    _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
             _impl->currValues_.push_back(AnalysisDataValue(dist2));

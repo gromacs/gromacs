@@ -11,13 +11,13 @@
 #include "../nb_kernel.h"
 
 void
-nb_kernel_allvsall(t_nblist *                nlist,
-                   rvec *                    x,
-                   rvec *                    f,
-                   t_forcerec *              fr,
-                   t_mdatoms *               mdatoms,
-                   nb_kernel_data_t *        kernel_data,
-                   t_nrnb *                  nrnb);
+nb_kernel_allvsall(t_nblist         * nlist,
+                   rvec             * x,
+                   rvec             * f,
+                   t_forcerec       * fr,
+                   t_mdatoms        * mdatoms,
+                   nb_kernel_data_t * kernel_data,
+                   t_nrnb           * nrnb);
 
 
 #endif

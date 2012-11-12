@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
@@ -52,33 +52,33 @@ typedef unsigned long t_excl;
  */
 #define MAX_CGCGSIZE 32
 
-typedef struct 
+typedef struct
 {
-    int             igeometry;    /* The type of list (atom, water, etc.)  */
-    int             ielec;        /* Coulomb loop type index for kernels   */
-    int             ielecmod;     /* Coulomb modifier (e.g. switch/shift)  */
-    int             ivdw;         /* VdW loop type index for kernels       */
-    int             ivdwmod;      /* VdW modifier (e.g. switch/shift)      */
-    int             free_energy;  /* Free energy setting for this list     */
+    int      igeometry;           /* The type of list (atom, water, etc.)  */
+    int      ielec;               /* Coulomb loop type index for kernels   */
+    int      ielecmod;            /* Coulomb modifier (e.g. switch/shift)  */
+    int      ivdw;                /* VdW loop type index for kernels       */
+    int      ivdwmod;             /* VdW modifier (e.g. switch/shift)      */
+    int      free_energy;         /* Free energy setting for this list     */
 
-    int             nri,maxnri;   /* Current/max number of i particles	   */
-    int             nrj,maxnrj;   /* Current/max number of j particles	   */
-    int             maxlen;       /* maxnr of j atoms for a single i atom  */
-    int *           iinr;         /* The i-elements                        */
-    int *           iinr_end;     /* The end atom, only with enlistCG      */
-    int *           gid;          /* Index in energy arrays                */
-    int *           shift;        /* Shift vector index                    */
-    int *           jindex;       /* Index in jjnr                         */
-    int *           jjnr;         /* The j-atom list                       */
-    int *           jjnr_end;     /* The end atom, only with enltypeCG     */
-    t_excl *        excl;         /* Exclusions, only with enltypeCG       */
+    int      nri, maxnri;         /* Current/max number of i particles	   */
+    int      nrj, maxnrj;         /* Current/max number of j particles	   */
+    int      maxlen;              /* maxnr of j atoms for a single i atom  */
+    int    * iinr;                /* The i-elements                        */
+    int    * iinr_end;            /* The end atom, only with enlistCG      */
+    int    * gid;                 /* Index in energy arrays                */
+    int    * shift;               /* Shift vector index                    */
+    int    * jindex;              /* Index in jjnr                         */
+    int    * jjnr;                /* The j-atom list                       */
+    int    * jjnr_end;            /* The end atom, only with enltypeCG     */
+    t_excl * excl;                /* Exclusions, only with enltypeCG       */
 
     /* We use separate pointers for kernels that compute both potential
      * and force (vf suffix), only potential (v) or only force (f)
      */
-    void *          kernelptr_vf;
-    void *          kernelptr_v;
-    void *          kernelptr_f;
+    void * kernelptr_vf;
+    void * kernelptr_v;
+    void * kernelptr_f;
 } t_nblist;
 
 

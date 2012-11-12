@@ -78,13 +78,13 @@ class AnalysisDataModuleInterface
          */
         enum {
             //! The module can process multipoint data.
-            efAllowMultipoint    = 0x01,
+            efAllowMultipoint = 0x01,
             //! The module does not make sense for non-multipoint data.
-            efOnlyMultipoint     = 0x02,
+            efOnlyMultipoint = 0x02,
             //! The module can process data with more than one column.
-            efAllowMulticolumn   = 0x04,
+            efAllowMulticolumn = 0x04,
             //! The module can process data with missing points.
-            efAllowMissing       = 0x08,
+            efAllowMissing = 0x08,
         };
 
         virtual ~AnalysisDataModuleInterface() {};

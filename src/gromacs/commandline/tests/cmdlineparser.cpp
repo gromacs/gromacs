@@ -58,11 +58,11 @@ class CommandLineParserTest : public ::testing::Test
     public:
         CommandLineParserTest();
 
-        gmx::Options            options_;
-        gmx::CommandLineParser  parser_;
-        bool                    flag_;
-        std::vector<int>        ivalues_;
-        std::vector<double>     dvalues_;
+        gmx::Options           options_;
+        gmx::CommandLineParser parser_;
+        bool                   flag_;
+        std::vector<int>       ivalues_;
+        std::vector<double>    dvalues_;
 };
 
 CommandLineParserTest::CommandLineParserTest()
@@ -82,7 +82,7 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
     const char *const cmdline[] = {
         "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW(options_.finish());
 
@@ -98,7 +98,7 @@ TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
     const char *const cmdline[] = {
         "test", "-mvi", "1", "-2", "-mvd", "-2.7"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW(options_.finish());
 

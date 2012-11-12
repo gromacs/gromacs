@@ -143,7 +143,7 @@ class NeighborhoodSearch
         { return gmx_ana_nbsearch_next_within(d_, jp); }
 
     private:
-        gmx_ana_nbsearch_t  *d_;
+        gmx_ana_nbsearch_t *d_;
 };
 
 } // namespace gmx

@@ -1,39 +1,39 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+   This source code file is part of thread_mpi.
+   Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-Copyright (c) 2009, Sander Pronk, Erik Lindahl.
-All rights reserved.
+   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1) Redistributions of source code must retain the above copyright
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+   1) Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-2) Redistributions in binary form must reproduce the above copyright
+   2) Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-3) Neither the name of the copyright holders nor the
+   3) Neither the name of the copyright holders nor the
    names of its contributors may be used to endorse or promote products
    derived from this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
+   EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-If you want to redistribute modifications, please consider that
-scientific software is very special. Version control is crucial -
-bugs must be traceable. We will be happy to consider code for
-inclusion in the official distribution, but derived work should not
-be called official thread_mpi. Details are found in the README & COPYING
-files.
-*/
+   If you want to redistribute modifications, please consider that
+   scientific software is very special. Version control is crucial -
+   bugs must be traceable. We will be happy to consider code for
+   inclusion in the official distribution, but derived work should not
+   be called official thread_mpi. Details are found in the README & COPYING
+   files.
+ */
 
 #ifdef HAVE_TMPI_CONFIG_H
 #include "tmpi_config.h"
@@ -51,7 +51,7 @@ files.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
+#if !(defined( _WIN32 ) || defined( _WIN64 ) )
 #include <sys/time.h>
 #endif
 
@@ -66,15 +66,14 @@ struct tmpi_errhandler_ tmpi_errors_are_fatal = { 0, tmpi_errors_are_fatal_fn };
 struct tmpi_errhandler_ tmpi_errors_return = { 0, tmpi_errors_return_fn };
 
 
-tMPI_Errhandler TMPI_ERRORS_ARE_FATAL=&tmpi_errors_are_fatal;
-tMPI_Errhandler TMPI_ERRORS_RETURN=&tmpi_errors_return;
+tMPI_Errhandler TMPI_ERRORS_ARE_FATAL = &tmpi_errors_are_fatal;
+tMPI_Errhandler TMPI_ERRORS_RETURN    = &tmpi_errors_return;
 
 
 
 
 /* error messages. Must match error codes in thread_mpi.h */
-static const char *tmpi_errmsg[] =
-{
+static const char *tmpi_errmsg[] = {
     "No error",
     "malloc failure in tMPI (out of memory)",
     "tMPI Initialization error",
@@ -106,7 +105,7 @@ int tMPI_Error(tMPI_Comm comm, int tmpi_errno)
 {
     if (comm)
     {
-        comm->erh->err=tmpi_errno;
+        comm->erh->err = tmpi_errno;
         comm->erh->fn(&comm, &tmpi_errno);
     }
     else
@@ -120,20 +119,22 @@ int tMPI_Error(tMPI_Comm comm, int tmpi_errno)
 
 int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
 {
-    if (errorcode<0 || errorcode>=N_TMPI_ERR)
-        errorcode=TMPI_ERR_UNKNOWN;
+    if (errorcode < 0 || errorcode >= N_TMPI_ERR)
+    {
+        errorcode = TMPI_ERR_UNKNOWN;
+    }
 
-#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
+#if !(defined( _WIN32 ) || defined( _WIN64 ) )
     strncpy(strn, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
 #else
     strncpy_s(strn, TMPI_MAX_ERROR_STRING, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
 #endif
-    *resultlen=strlen(strn);
+    *resultlen = strlen(strn);
     return TMPI_SUCCESS;
 }
 
-int tMPI_Create_errhandler(tMPI_Errhandler_fn *function, 
-                           tMPI_Errhandler *errhandler) 
+int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
+                           tMPI_Errhandler    *errhandler)
 {
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Create_errhandler(%p, %p)", function, errhandler);
@@ -141,15 +142,15 @@ int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
 
     /* we don't use a special malloc here because this is the error handler
        creation function. */
-    *errhandler=(tMPI_Errhandler)malloc(sizeof(struct tmpi_errhandler_));
+    *errhandler = (tMPI_Errhandler)malloc(sizeof(struct tmpi_errhandler_));
     if (!*errhandler)
     {
-        fprintf(stderr, "tMPI fatal error (%s), bailing out\n", 
+        fprintf(stderr, "tMPI fatal error (%s), bailing out\n",
                 tmpi_errmsg[TMPI_ERR_MALLOC]);
         abort();
     }
-    (*errhandler)->err=0;
-    (*errhandler)->fn=*function;
+    (*errhandler)->err = 0;
+    (*errhandler)->fn  = *function;
     return TMPI_SUCCESS;
 }
 
@@ -180,13 +181,13 @@ int tMPI_Comm_get_errhandler(tMPI_Comm comm, tMPI_Errhandler *errhandler)
     tMPI_Trace_print("tMPI_Comm_get_errhandler(%p, %p)", comm, errhandler);
 #endif
 
-    *errhandler=comm->erh;
+    *errhandler = comm->erh;
     return TMPI_SUCCESS;
 }
 
 void tmpi_errors_are_fatal_fn(tMPI_Comm *comm, int *err)
 {
-    char errstr[TMPI_MAX_ERROR_STRING];
+    char   errstr[TMPI_MAX_ERROR_STRING];
     size_t len;
 
     tMPI_Error_string(*err, errstr, &len);
@@ -204,7 +205,7 @@ void tmpi_errors_are_fatal_fn(tMPI_Comm *comm, int *err)
 
 void tmpi_errors_return_fn(tMPI_Comm *comm, int *err)
 {
-    char errstr[TMPI_MAX_ERROR_STRING];
+    char   errstr[TMPI_MAX_ERROR_STRING];
     size_t len;
 
     tMPI_Error_string(*err, errstr, &len);

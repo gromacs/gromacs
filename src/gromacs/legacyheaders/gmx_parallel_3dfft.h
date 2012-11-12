@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 typedef struct gmx_parallel_3dfft *
-gmx_parallel_3dfft_t;
+    gmx_parallel_3dfft_t;
 
 
 
@@ -41,7 +41,7 @@ gmx_parallel_3dfft_t;
  *
  *  The routine is optimized for small-to-medium size FFTs used for PME and
  *  PPPM algorithms, and do allocate extra workspace whenever it might improve
- *  performance. 
+ *  performance.
  *
  *  \param pfft_setup     Pointer to parallel 3dfft setup structure, previously
  *                        allocated or with automatic storage.
@@ -57,19 +57,19 @@ gmx_parallel_3dfft_t;
  *                        that could make results differ for two runs with
  *                        identical input (reproducibility for debugging).
  *  \param nthreads       Run in parallel using n threads
- *    
+ *
  *  \return 0 or a standard error code.
  */
 int
-gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
-                           ivec                      ndata,
-                           real **                   real_data,
-                           t_complex **              complex_data,
-                           MPI_Comm                  comm[2],
-                           int *                     slab2index_major,
-                           int *                     slab2index_minor,
-                           gmx_bool                  bReproducible,
-                           int                       nthreads);
+    gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
+                               ivec ndata,
+                               real **real_data,
+                               t_complex **complex_data,
+                               MPI_Comm comm[2],
+                               int *                     slab2index_major,
+                               int *                     slab2index_minor,
+                               gmx_bool bReproducible,
+                               int nthreads);
 
 
 
@@ -78,29 +78,29 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
 /*! \brief Get direct space grid index limits
  */
 int
-gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
-                               ivec                      local_ndata,
-                               ivec                      local_offset,
-                               ivec                      local_size);
+gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t pfft_setup,
+                               ivec                 local_ndata,
+                               ivec                 local_offset,
+                               ivec                 local_size);
 
 
 /*! \brief Get reciprocal space grid index limits
  */
 int
-gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
-                                  ivec                      complex_order,
-                                  ivec                      local_ndata,
-                                  ivec                      local_offset,
-                                  ivec                      local_size);
+gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t pfft_setup,
+                                  ivec                 complex_order,
+                                  ivec                 local_ndata,
+                                  ivec                 local_offset,
+                                  ivec                 local_size);
 
 
 int
-gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
-                           enum gmx_fft_direction  dir,
-                           void *                  in_data,
-                           void *                  out_data,
-                           int                     thread,
-                           gmx_wallcycle_t         wcycle);
+gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t   pfft_setup,
+                           enum gmx_fft_direction dir,
+                           void                 * in_data,
+                           void                 * out_data,
+                           int                    thread,
+                           gmx_wallcycle_t        wcycle);
 
 
 /*! \brief Release all data in parallel fft setup
@@ -119,7 +119,7 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
  *  \return 0 or a standard error code.
  */
 int
-gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
+gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t pfft_setup);
 
 #ifdef __cplusplus
 }

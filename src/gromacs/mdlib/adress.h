@@ -66,13 +66,13 @@
  *
  */
 real
-adress_weight(rvec             x,
-              int              adresstype,
-              real             adressr,
-              real             adressw,
-              rvec *           ref,
-              t_pbc *          pbc,
-              t_forcerec *         fr);
+adress_weight(rvec         x,
+              int          adresstype,
+              real         adressr,
+              real         adressw,
+              rvec       * ref,
+              t_pbc      * pbc,
+              t_forcerec * fr);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
  *
@@ -86,14 +86,14 @@ adress_weight(rvec             x,
  * \param[in] pbc for shortest distance in adress_weight
  */
 void
-update_adress_weights_com(FILE *               fplog,
-                          int                  cg0,
-                          int                  cg1,
-                          t_block *            cgs,
-                          rvec                 x[],
-                          t_forcerec *         fr,
-                          t_mdatoms *          mdatoms,
-                          t_pbc *              pbc);
+update_adress_weights_com(FILE       * fplog,
+                          int          cg0,
+                          int          cg1,
+                          t_block    * cgs,
+                          rvec         x[],
+                          t_forcerec * fr,
+                          t_mdatoms  * mdatoms,
+                          t_pbc      * pbc);
 
 /** \brief update the weight of all coarse-grained particles for cog vsites
  *
@@ -105,12 +105,12 @@ update_adress_weights_com(FILE *               fplog,
  * \param[in] pbc for shortest distance in adress_weight
  */
 void
-update_adress_weights_cog(t_iparams            ip[],
-                          t_ilist              ilist[],
-                          rvec                 x[],
-                          t_forcerec *         fr,
-                          t_mdatoms *          mdatoms,
-                          t_pbc *              pbc);
+update_adress_weights_cog(t_iparams    ip[],
+                          t_ilist      ilist[],
+                          rvec         x[],
+                          t_forcerec * fr,
+                          t_mdatoms  * mdatoms,
+                          t_pbc      * pbc);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for atom vsites
  *
@@ -123,13 +123,13 @@ update_adress_weights_cog(t_iparams            ip[],
  * \param[in] pbc for shortest distance in adress_weight
  */
 void
-update_adress_weights_atom(int                  cg0,
-                           int                  cg1,
-                           t_block *            cgs,
-                           rvec                 x[],
-                           t_forcerec *         fr,
-                           t_mdatoms *          mdatoms,
-                           t_pbc *              pbc);
+update_adress_weights_atom(int          cg0,
+                           int          cg1,
+                           t_block    * cgs,
+                           rvec         x[],
+                           t_forcerec * fr,
+                           t_mdatoms  * mdatoms,
+                           t_pbc      * pbc);
 
 /** \brief update the weight on per atom basis of all coarse-grained particles in several charge groups for atom vsites
  *
@@ -142,13 +142,13 @@ update_adress_weights_atom(int                  cg0,
  * \param[in] pbc for shortest distance in adress_weight
  */
 void
-update_adress_weights_atom_per_atom(int                  cg0,
-                           int                  cg1,
-                           t_block *            cgs,
-                           rvec                 x[],
-                           t_forcerec *         fr,
-                           t_mdatoms *          mdatoms,
-                           t_pbc *              pbc);
+update_adress_weights_atom_per_atom(int          cg0,
+                                    int          cg1,
+                                    t_block    * cgs,
+                                    rvec         x[],
+                                    t_forcerec * fr,
+                                    t_mdatoms  * mdatoms,
+                                    t_pbc      * pbc);
 
 /** \brief add AdResS IC thermodynamic force to f_novirsum
  *
@@ -162,14 +162,14 @@ update_adress_weights_atom_per_atom(int                  cg0,
  * \param[in] pbc for shortest distance to fr->adress_refs
  */
 void
-adress_thermo_force(int                  cg0,
-                    int                  cg1,
-                    t_block *            cgs,
-                    rvec                 x[],
-                    rvec                 f[],
-                    t_forcerec *         fr,
-                    t_mdatoms *          mdatoms,
-                    t_pbc *              pbc);
+adress_thermo_force(int          cg0,
+                    int          cg1,
+                    t_block    * cgs,
+                    rvec         x[],
+                    rvec         f[],
+                    t_forcerec * fr,
+                    t_mdatoms  * mdatoms,
+                    t_pbc      * pbc);
 
 
 /** \brief checks weather a cpu calculates only coarse-grained or explicit interactions
@@ -186,12 +186,12 @@ void adress_set_kernel_flags(int n_ex, int n_hyb, int n_cg, t_mdatoms * mdatoms)
  * \param[in] egp_nr energy group number
  * \return boolean if explicit or not
  */
-gmx_bool egp_explicit(t_forcerec *   fr, int egp_nr);
+gmx_bool egp_explicit(t_forcerec * fr, int egp_nr);
 
 /** \brief looks up  if a energy group is coarse-grained
  * \param[in] fr the forcerec containing all the parameters
  * \param[in] egp_nr energy group number
  * \return boolean if coarse-grained or not
  */
-gmx_bool egp_coarsegrained(t_forcerec *   fr, int egp_nr);
+gmx_bool egp_coarsegrained(t_forcerec * fr, int egp_nr);
 #endif

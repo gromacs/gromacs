@@ -67,7 +67,7 @@ class SelectionCollectionTest : public ::testing::Test
     public:
         static void SetUpTestCase();
 
-        static int               s_debugLevel;
+        static int s_debugLevel;
 
         SelectionCollectionTest();
         ~SelectionCollectionTest();
@@ -123,10 +123,10 @@ SelectionCollectionTest::~SelectionCollectionTest()
 void
 SelectionCollectionTest::loadTopology(const char *filename)
 {
-    char    title[STRLEN];
-    int     ePBC;
-    rvec   *xtop;
-    matrix  box;
+    char   title[STRLEN];
+    int    ePBC;
+    rvec  *xtop;
+    matrix box;
 
     snew(top_, 1);
     read_tps_conf(gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
@@ -138,7 +138,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
     frame_->bX     = TRUE;
     snew(frame_->x, frame_->natoms);
     memcpy(frame_->x, xtop, sizeof(*frame_->x) * frame_->natoms);
-    frame_->bBox   = TRUE;
+    frame_->bBox = TRUE;
     copy_mat(box, frame_->box);
 
     sfree(xtop);
@@ -156,11 +156,11 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
     public:
         enum TestFlag
         {
-            efTestEvaluation            = 1<<0,
-            efTestPositionAtoms         = 1<<1,
-            efTestPositionCoordinates   = 1<<2,
-            efTestPositionMapping       = 1<<3,
-            efDontTestCompiledAtoms     = 1<<8
+            efTestEvaluation          = 1<<0,
+            efTestPositionAtoms       = 1<<1,
+            efTestPositionCoordinates = 1<<2,
+            efTestPositionMapping     = 1<<3,
+            efDontTestCompiledAtoms   = 1<<8
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
@@ -195,18 +195,18 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         void runEvaluate();
         void runEvaluateFinal();
 
-        gmx::test::TestReferenceData  data_;
+        gmx::test::TestReferenceData    data_;
         gmx::test::TestReferenceChecker checker_;
-        size_t                        count_;
-        int                           framenr_;
-        TestFlags                     flags_;
+        size_t    count_;
+        int       framenr_;
+        TestFlags flags_;
 };
 
 
 void
 SelectionCollectionDataTest::checkSelection(
-        gmx::test::TestReferenceChecker *checker,
-        const gmx::Selection &sel, TestFlags flags)
+    gmx::test::TestReferenceChecker *checker,
+    const gmx::Selection &sel, TestFlags flags)
 {
     using gmx::test::TestReferenceChecker;
 
@@ -214,15 +214,15 @@ SelectionCollectionDataTest::checkSelection(
         gmx::ConstArrayRef<int> atoms = sel.atomIndices();
         checker->checkSequence(atoms.begin(), atoms.end(), "Atoms");
     }
-    if (flags.test(efTestPositionAtoms)
-        || flags.test(efTestPositionCoordinates)
-        || flags.test(efTestPositionMapping))
+    if (flags.test(efTestPositionAtoms) ||
+        flags.test(efTestPositionCoordinates) ||
+        flags.test(efTestPositionMapping))
     {
         TestReferenceChecker compound(
-                checker->checkSequenceCompound("Positions", sel.posCount()));
+            checker->checkSequenceCompound("Positions", sel.posCount()));
         for (int i = 0; i < sel.posCount(); ++i)
         {
-            TestReferenceChecker poscompound(compound.checkCompound("Position", NULL));
+            TestReferenceChecker          poscompound(compound.checkCompound("Position", NULL));
             const gmx::SelectionPosition &p = sel.position(i);
             if (flags.test(efTestPositionAtoms))
             {
@@ -245,33 +245,33 @@ SelectionCollectionDataTest::checkSelection(
 
 void
 SelectionCollectionDataTest::runParser(const char *const *selections,
-                                       size_t count)
+                                       size_t             count)
 {
     using gmx::test::TestReferenceChecker;
 
     TestReferenceChecker compound(checker_.checkCompound("ParsedSelections", "Parsed"));
-    size_t varcount = 0;
+    size_t               varcount = 0;
     count_ = 0;
     for (size_t i = 0; i < count; ++i)
     {
-        SCOPED_TRACE(std::string("Parsing selection \"")
-                     + selections[i] + "\"");
+        SCOPED_TRACE(std::string("Parsing selection \"")+
+                     selections[i] + "\"");
         gmx::SelectionList result;
         ASSERT_NO_THROW(result = sc_.parseFromString(selections[i]));
         sel_.insert(sel_.end(), result.begin(), result.end());
         if (sel_.size() == count_)
         {
-            std::string id = gmx::formatString("Variable%d", static_cast<int>(varcount + 1));
+            std::string          id = gmx::formatString("Variable%d", static_cast<int>(varcount + 1));
             TestReferenceChecker varcompound(
-                    compound.checkCompound("ParsedVariable", id.c_str()));
+                compound.checkCompound("ParsedVariable", id.c_str()));
             varcompound.checkString(selections[i], "Input");
             ++varcount;
         }
         else
         {
-            std::string id = gmx::formatString("Selection%d", static_cast<int>(count_ + 1));
+            std::string          id = gmx::formatString("Selection%d", static_cast<int>(count_ + 1));
             TestReferenceChecker selcompound(
-                    compound.checkCompound("ParsedSelection", id.c_str()));
+                compound.checkCompound("ParsedSelection", id.c_str()));
             selcompound.checkString(selections[i], "Input");
             selcompound.checkString(sel_[count_].name(), "Name");
             selcompound.checkString(sel_[count_].selectionText(), "Text");
@@ -295,16 +295,16 @@ void
 SelectionCollectionDataTest::checkCompiled()
 {
     using gmx::test::TestReferenceChecker;
-    const TestFlags mask = ~TestFlags(efTestPositionCoordinates);
+    const TestFlags      mask = ~TestFlags(efTestPositionCoordinates);
 
     TestReferenceChecker compound(checker_.checkCompound("CompiledSelections", "Compiled"));
     for (size_t i = 0; i < count_; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
                      sel_[i].selectionText() + "\"");
-        std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
+        std::string          id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
-                compound.checkCompound("Selection", id.c_str()));
+            compound.checkCompound("Selection", id.c_str()));
         if (!flags_.test(efDontTestCompiledAtoms))
         {
             checkSelection(&selcompound, sel_[i], flags_ & mask);
@@ -320,16 +320,16 @@ SelectionCollectionDataTest::runEvaluate()
 
     ++framenr_;
     ASSERT_NO_THROW(sc_.evaluate(frame_, NULL));
-    std::string frame = gmx::formatString("Frame%d", framenr_);
+    std::string          frame = gmx::formatString("Frame%d", framenr_);
     TestReferenceChecker compound(
-            checker_.checkCompound("EvaluatedSelections", frame.c_str()));
+        checker_.checkCompound("EvaluatedSelections", frame.c_str()));
     for (size_t i = 0; i < count_; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
                      sel_[i].selectionText() + "\"");
-        std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
+        std::string          id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
-                compound.checkCompound("Selection", id.c_str()));
+            compound.checkCompound("Selection", id.c_str()));
         checkSelection(&selcompound, sel_[i], flags_);
     }
 }
@@ -357,9 +357,9 @@ SelectionCollectionDataTest::runTest(int natoms, const char * const *selections,
 
 
 void
-SelectionCollectionDataTest::runTest(const char *filename,
+SelectionCollectionDataTest::runTest(const char         *filename,
                                      const char * const *selections,
-                                     size_t count)
+                                     size_t              count)
 {
     ASSERT_NO_FATAL_FAILURE(runParser(selections, count));
     ASSERT_NO_FATAL_FAILURE(loadTopology(filename));
@@ -385,7 +385,7 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
     ASSERT_NO_THROW(sel_ = sc_.parseFromFile(
-                gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
+                            gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel_.size());
     EXPECT_STREQ("resname RA RB", sel_[0].selectionText());
@@ -396,9 +396,9 @@ TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
 {
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     EXPECT_THROW({
-            sc_.parseFromString("resname ~ \"R[A\"");
-            sc_.compile();
-        }, gmx::InvalidInputError);
+                     sc_.parseFromString("resname ~ \"R[A\"");
+                     sc_.compile();
+                 }, gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
@@ -407,9 +407,9 @@ TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
     {
         ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
         EXPECT_THROW({
-                sc_.parseFromString("resname \"R[AD]\"");
-                sc_.compile();
-            }, gmx::InvalidInputError);
+                         sc_.parseFromString("resname \"R[AD]\"");
+                         sc_.compile();
+                     }, gmx::InvalidInputError);
     }
 }
 
@@ -654,8 +654,8 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionKeywords)
         "part_res_cog of x < 3",
         "dyn_res_cog of x < 3"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates|
+             efTestPositionAtoms);
     runTest("simple.gro", selections);
 }
 
@@ -709,8 +709,8 @@ TEST_F(SelectionCollectionDataTest, HandlesPermuteModifier)
         "res_cog of resnr 1 to 4 permute 2 1",
         "name CB S1 and res_cog x < 3 permute 2 1"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms | efTestPositionMapping);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates|
+             efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -722,8 +722,8 @@ TEST_F(SelectionCollectionDataTest, HandlesPlusModifier)
         "res_cog of resnr 2 plus res_cog of resnr 1 plus res_cog of resnr 3",
         "name S1 and y < 3 plus res_cog of x < 2.5"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms | efTestPositionMapping);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates|
+             efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -735,8 +735,8 @@ TEST_F(SelectionCollectionDataTest, HandlesMergeModifier)
         "resnr 1 2 and name S2 merge resnr 1 2 and name S1 merge res_cog of resnr 1 2",
         "name S1 and x < 2.5 merge res_cog of x < 2.5"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms | efTestPositionMapping);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates|
+             efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -888,8 +888,8 @@ TEST_F(SelectionCollectionDataTest, HandlesConstantPositionInVariable)
         "constpos",
         "within 2 of constpos"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-            | efTestPositionAtoms);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates|
+             efTestPositionAtoms);
     runTest("simple.gro", selections);
 }
 

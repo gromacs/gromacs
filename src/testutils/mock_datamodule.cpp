@@ -102,20 +102,20 @@ class MockAnalysisDataModule::Impl
          *
          * Must be non-NULL if startReferenceFrame() is called.
          */
-        boost::scoped_ptr<TestReferenceChecker>  rootChecker_;
+        boost::scoped_ptr<TestReferenceChecker> rootChecker_;
         /*! \brief
          * Reference data checker to use to check the current frame.
          *
          * Non-NULL between startReferenceFrame() and finishReferenceFrame()
          * calls.
          */
-        boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
+        boost::scoped_ptr<TestReferenceChecker> frameChecker_;
         //! Flags that will be returned by the mock module.
-        int                     flags_;
+        int flags_;
         //! Index of the current/next frame.
-        int                     frameIndex_;
+        int frameIndex_;
         //! Number of columns in the source data (for reference checking only).
-        int                     columnCount_;
+        int columnCount_;
 };
 
 namespace
@@ -126,7 +126,7 @@ namespace
  *
  * \ingroup module_testutils
  */
-void checkReferenceDataPoint(TestReferenceChecker *checker,
+void checkReferenceDataPoint(TestReferenceChecker    *checker,
                              const AnalysisDataValue &value)
 {
     TestReferenceChecker compound(checker->checkCompound("DataValue", NULL));
@@ -141,7 +141,7 @@ void checkReferenceDataPoint(TestReferenceChecker *checker,
     }
 }
 
-} // namespace
+}       // namespace
 
 MockAnalysisDataModule::Impl::Impl(int flags)
     : flags_(flags), frameIndex_(0), columnCount_(-1)
@@ -158,31 +158,31 @@ MockAnalysisDataModule::Impl::startReferenceData(AbstractAnalysisData *data)
 
 void
 MockAnalysisDataModule::Impl::startReferenceFrame(
-        const AnalysisDataFrameHeader &header)
+    const AnalysisDataFrameHeader &header)
 {
     GMX_RELEASE_ASSERT(rootChecker_.get() != NULL,
                        "Root checker not set, but reference data used");
     EXPECT_TRUE(frameChecker_.get() == NULL);
     EXPECT_EQ(frameIndex_, header.index());
     frameChecker_.reset(new TestReferenceChecker(
-        rootChecker_->checkCompound("DataFrame",
-                                    formatString("Frame%d", frameIndex_).c_str())));
+                            rootChecker_->checkCompound("DataFrame",
+                                                        formatString("Frame%d", frameIndex_).c_str())));
     frameChecker_->checkReal(header.x(), "X");
 }
 
 
 void
 MockAnalysisDataModule::Impl::checkReferencePoints(
-        const AnalysisDataPointSetRef &points)
+    const AnalysisDataPointSetRef &points)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     if (frameChecker_.get() != NULL)
     {
         TestReferenceChecker checker(
-                frameChecker_->checkSequenceCompound("Y",
-                                                     points.columnCount()));
-        bool bAllColumns = (points.firstColumn() == 0
-                            && points.columnCount() == columnCount_);
+            frameChecker_->checkSequenceCompound("Y",
+                                                 points.columnCount()));
+        bool bAllColumns = (points.firstColumn() == 0 &&
+                            points.columnCount() == columnCount_);
         if (checker.checkPresent(!bAllColumns, "FirstColumn"))
         {
             checker.checkInteger(points.firstColumn(), "FirstColumn");
@@ -199,7 +199,7 @@ MockAnalysisDataModule::Impl::checkReferencePoints(
 
 void
 MockAnalysisDataModule::Impl::finishReferenceFrame(
-        const AnalysisDataFrameHeader &header)
+    const AnalysisDataFrameHeader &header)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     EXPECT_EQ(frameIndex_, header.index());
@@ -221,7 +221,7 @@ namespace
  * \param[in] header    Frame header to check.
  * \param[in] refFrame  Data to check against.
  */
-void checkHeader(const AnalysisDataFrameHeader &header,
+void checkHeader(const AnalysisDataFrameHeader    &header,
                  const AnalysisDataTestInputFrame &refFrame)
 {
     EXPECT_EQ(refFrame.index(), header.index());
@@ -236,16 +236,16 @@ void checkHeader(const AnalysisDataFrameHeader &header,
  * \param[in] refPoints    Data to check against.
  * \param[in] columnOffset Offset of first column of \p points in \p refPoints.
  */
-void checkPoints(const AnalysisDataPointSetRef &points,
+void checkPoints(const AnalysisDataPointSetRef       &points,
                  const AnalysisDataTestInputPointSet &refPoints,
-                 int columnOffset)
+                 int                                  columnOffset)
 {
     for (int i = 0; i < points.columnCount(); ++i)
     {
         EXPECT_FLOAT_EQ(refPoints.y(points.firstColumn() + columnOffset + i),
-                        points.y(i))
-            << "  Column: " << i << " (+" << points.firstColumn() << ") / "
-            << points.columnCount();
+                        points.y(i))<<
+        "  Column: " << i << " (+" << points.firstColumn() << ") / "<<
+        points.columnCount();
     }
 }
 
@@ -255,7 +255,7 @@ void checkPoints(const AnalysisDataPointSetRef &points,
  * \param[in] frame     Frame to check.
  * \param[in] refFrame  Data to check against.
  */
-void checkFrame(const AnalysisDataFrameRef &frame,
+void checkFrame(const AnalysisDataFrameRef       &frame,
                 const AnalysisDataTestInputFrame &refFrame)
 {
     checkHeader(frame.header(), refFrame);
@@ -333,10 +333,10 @@ class StaticDataPointsChecker
         }
 
     private:
-        const AnalysisDataTestInputFrame *frame_;
+        const AnalysisDataTestInputFrame    *frame_;
         const AnalysisDataTestInputPointSet *points_;
-        int                     firstcol_;
-        int                     n_;
+        int firstcol_;
+        int n_;
 };
 
 /*! \internal \brief
@@ -365,7 +365,7 @@ class DataStorageRequester
         }
 
     private:
-        int                     count_;
+        int count_;
 };
 
 /*! \internal \brief
@@ -414,24 +414,25 @@ class StaticDataPointsStorageChecker
                  (storageCount_ < 0 || past <= storageCount_) && past <= frameIndex_;
                  ++past)
             {
-                int   index = frameIndex_ - past;
+                int index = frameIndex_ - past;
                 SCOPED_TRACE(formatString("Checking storage of frame %d", index));
                 ASSERT_NO_THROW({
-                    AnalysisDataFrameRef frame = source_->getDataFrame(index);
-                    ASSERT_TRUE(frame.isValid());
-                    checkFrame(frame, data_->frame(index));
-                });
+                                    AnalysisDataFrameRef frame = source_->getDataFrame(index);
+                                    ASSERT_TRUE(frame.isValid());
+                                    checkFrame(frame, data_->frame(index));
+                                }
+                                );
             }
         }
 
     private:
-        AbstractAnalysisData   *source_;
+        AbstractAnalysisData        *source_;
         const AnalysisDataTestInput *data_;
-        int                     frameIndex_;
-        int                     storageCount_;
+        int frameIndex_;
+        int storageCount_;
 };
 
-} // anonymous namespace
+}       // anonymous namespace
 
 
 MockAnalysisDataModule::MockAnalysisDataModule(int flags)
@@ -453,7 +454,7 @@ int MockAnalysisDataModule::flags() const
 
 void
 MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
-                                         AbstractAnalysisData *source)
+                                         AbstractAnalysisData        *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -485,8 +486,8 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
 
 void
 MockAnalysisDataModule::setupStaticColumnCheck(
-        const AnalysisDataTestInput &data,
-        int firstcol, int n, AbstractAnalysisData *source)
+    const AnalysisDataTestInput &data,
+    int firstcol, int n, AbstractAnalysisData *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -519,8 +520,8 @@ MockAnalysisDataModule::setupStaticColumnCheck(
 
 void
 MockAnalysisDataModule::setupStaticStorageCheck(
-        const AnalysisDataTestInput &data,
-        int storageCount, AbstractAnalysisData *source)
+    const AnalysisDataTestInput &data,
+    int storageCount, AbstractAnalysisData *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -551,7 +552,7 @@ MockAnalysisDataModule::setupStaticStorageCheck(
 
 void
 MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
-                                            AbstractAnalysisData *source)
+                                            AbstractAnalysisData       *source)
 {
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
 
@@ -566,16 +567,16 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     using ::testing::Invoke;
 
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source))
-        .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
+            .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
     Expectation frameStart = EXPECT_CALL(*this, frameStarted(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));
+            .After(dataStart)
+            .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));
     Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::checkReferencePoints));
+            .After(dataStart)
+            .WillRepeatedly(Invoke(impl_.get(), &Impl::checkReferencePoints));
     Expectation frameFinish = EXPECT_CALL(*this, frameFinished(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
+            .After(dataStart)
+            .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
     EXPECT_CALL(*this, dataFinished())
         .After(frameStart, pointsAdd, frameFinish);
 }

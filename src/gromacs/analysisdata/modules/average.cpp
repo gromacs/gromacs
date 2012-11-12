@@ -133,9 +133,9 @@ class AnalysisDataFrameAverageModule::Impl
 {
     public:
         //! Storage implementation object.
-        AnalysisDataStorage     storage_;
+        AnalysisDataStorage storage_;
         //! Number of samples in a frame.
-        int                     sampleCount_;
+        int                 sampleCount_;
 };
 
 AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule()
@@ -179,7 +179,7 @@ AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &point
         if (points.present(i))
         {
             const real y = points.y(i);
-            frame.value(0) += y;
+            frame.value(0)      += y;
             impl_->sampleCount_ += 1;
         }
     }
@@ -190,7 +190,7 @@ AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &hea
 {
     AnalysisDataStorageFrame &frame =
         impl_->storage_.currentFrame(header.index());
-    const int samples = impl_->sampleCount_;
+    const int                 samples = impl_->sampleCount_;
     if (samples > 0)
     {
         frame.value(0) /= samples;
