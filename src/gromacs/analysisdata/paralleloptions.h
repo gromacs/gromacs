@@ -73,7 +73,7 @@ class AnalysisDataParallelOptions
         int parallelizationFactor() const { return parallelizationFactor_; }
 
     private:
-        int                     parallelizationFactor_;
+        int parallelizationFactor_;
 };
 
 } // namespace gmx

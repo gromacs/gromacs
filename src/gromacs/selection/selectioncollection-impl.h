@@ -76,9 +76,9 @@ class SelectionParserSymbolTable;
 struct gmx_ana_selcollection_t
 {
     //! Position calculation collection used for selection position evaluation.
-    gmx::PositionCalculationCollection  pcc;
+    gmx::PositionCalculationCollection pcc;
     //! Root of the selection element tree.
-    gmx::SelectionTreeElementPointer    root;
+    gmx::SelectionTreeElementPointer root;
     /*! \brief
      * Array of compiled selections.
      *
@@ -86,22 +86,22 @@ struct gmx_ana_selcollection_t
      * but note that gmx::Selection instances also hold pointers to the
      * objects.
      */
-    gmx::SelectionDataList         sel;
+    gmx::SelectionDataList sel;
     /** Number of variables defined. */
-    int                            nvars;
+    int nvars;
     /** Selection strings for variables. */
-    char                         **varstrs;
+    char **varstrs;
 
     /** Topology for the collection. */
-    t_topology                    *top;
+    t_topology *top;
     /** Index group that contains all the atoms. */
-    struct gmx_ana_index_t         gall;
+    struct gmx_ana_index_t gall;
     /** Memory pool used for selection evaluation. */
-    struct gmx_sel_mempool_t      *mempool;
+    struct gmx_sel_mempool_t *mempool;
     //! Parser symbol table.
     boost::scoped_ptr<gmx::SelectionParserSymbolTable> symtab;
     //! Root of help topic tree (NULL is no help yet requested).
-    gmx::HelpTopicPointer          rootHelp;
+    gmx::HelpTopicPointer rootHelp;
 };
 
 namespace gmx
@@ -147,7 +147,7 @@ class SelectionCollection::Impl
          * underlying code is converted to C++.
          */
         void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
-                                   MessageStringCollector *errors);
+                                   MessageStringCollector                 *errors);
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t sc_;
@@ -165,11 +165,11 @@ class SelectionCollection::Impl
          *  - 3: like 1, also print the tree after evaluation
          *  - 4: combine 2 and 3
          */
-        int                     debugLevel_;
+        int                  debugLevel_;
         //! Whether setIndexGroups() has been called.
-        bool                    bExternalGroupsSet_;
+        bool                 bExternalGroupsSet_;
         //! External index groups (can be NULL).
-        gmx_ana_indexgrps_t    *grps_;
+        gmx_ana_indexgrps_t *grps_;
 };
 
 /*! \internal \brief

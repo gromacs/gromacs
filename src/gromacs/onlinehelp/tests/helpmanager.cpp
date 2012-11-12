@@ -62,19 +62,19 @@ class HelpTestBase : public gmx::test::StringTestBase
         HelpTestBase();
 
         gmx::test::TestFileManager tempFiles_;
-        MockHelpTopic           rootTopic_;
-        std::string             filename_;
-        gmx::File               helpFile_;
-        gmx::HelpWriterContext  context_;
-        gmx::HelpManager        manager_;
+        MockHelpTopic              rootTopic_;
+        std::string                filename_;
+        gmx::File                  helpFile_;
+        gmx::HelpWriterContext     context_;
+        gmx::HelpManager           manager_;
 };
 
 HelpTestBase::HelpTestBase()
     : rootTopic_("", NULL, "Root topic text"),
-      filename_(tempFiles_.getTemporaryFilePath("helptext.txt")),
-      helpFile_(filename_, "w"),
-      context_(&helpFile_, gmx::eHelpOutputFormat_Console),
-      manager_(rootTopic_, context_)
+    filename_(tempFiles_.getTemporaryFilePath("helptext.txt")),
+    helpFile_(filename_, "w"),
+    context_(&helpFile_, gmx::eHelpOutputFormat_Console),
+    manager_(rootTopic_, context_)
 {
 }
 
@@ -94,7 +94,7 @@ TEST_F(HelpManagerTest, HandlesRootTopic)
 
 TEST_F(HelpManagerTest, HandlesSubTopics)
 {
-    MockHelpTopic &first =
+    MockHelpTopic &first    =
         rootTopic_.addSubTopic("first", "First topic", "First topic text");
     MockHelpTopic &firstSub =
         first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
@@ -132,9 +132,9 @@ struct TestHelpText
     static const char *const text[];
 };
 
-const char TestHelpText::name[] = "testtopic";
-const char TestHelpText::title[] = "Topic title";
-const char *const TestHelpText::text[] = {
+const char        TestHelpText::name[]  = "testtopic";
+const char        TestHelpText::title[] = "Topic title";
+const char *const TestHelpText::text[]  = {
     "Test topic text.[PAR]",
     "Another paragraph of text."
 };
@@ -157,7 +157,7 @@ void HelpTopicFormattingTest::checkHelpFormatting()
 TEST_F(HelpTopicFormattingTest, FormatsSimpleTopic)
 {
     rootTopic_.addSubTopic(gmx::HelpTopicPointer(
-                new gmx::SimpleHelpTopic<TestHelpText>));
+                               new gmx::SimpleHelpTopic<TestHelpText>));
     checkHelpFormatting();
 }
 

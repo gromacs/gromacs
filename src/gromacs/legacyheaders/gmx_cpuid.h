@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -136,32 +136,32 @@ gmx_cpuid_t;
  * Return 0 on success, 1 if something bad happened.
  */
 int
-gmx_cpuid_init              (gmx_cpuid_t *              cpuid);
+gmx_cpuid_init              (gmx_cpuid_t * cpuid);
 
 
 /* Return the vendor id as enumerated type. Use gmx_cpuid_vendor_string[]
  * to get the corresponding text string.
  */
 enum gmx_cpuid_vendor
-gmx_cpuid_vendor            (gmx_cpuid_t                cpuid);
+gmx_cpuid_vendor            (gmx_cpuid_t cpuid);
 
 
 /* Return a constant pointer to the processor brand string. */
 const char *
-gmx_cpuid_brand             (gmx_cpuid_t                cpuid);
+gmx_cpuid_brand             (gmx_cpuid_t cpuid);
 
 
 /* Return processor family version. For a chip of version 1.2.3, this is 1 */
 int
-gmx_cpuid_family            (gmx_cpuid_t                cpuid);
+gmx_cpuid_family            (gmx_cpuid_t cpuid);
 
 /* Return processor model version, For a chip of version 1.2.3, this is 2. */
 int
-gmx_cpuid_model             (gmx_cpuid_t                cpuid);
+gmx_cpuid_model             (gmx_cpuid_t cpuid);
 
 /* Return processor stepping version, For a chip of version 1.2.3, this is 3. */
 int
-gmx_cpuid_stepping          (gmx_cpuid_t                cpuid);
+gmx_cpuid_stepping          (gmx_cpuid_t cpuid);
 
 
 /* Check whether a particular CPUID feature is set.
@@ -169,8 +169,8 @@ gmx_cpuid_stepping          (gmx_cpuid_t                cpuid);
  * gmx_bool here since this file must be possible to compile without simple.h.
  */
 int
-gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
-                             enum gmx_cpuid_feature     feature);
+gmx_cpuid_feature           (gmx_cpuid_t            cpuid,
+                             enum gmx_cpuid_feature feature);
 
 
 /* Enumerated values for x86 SMT enabled-status. Note that this does not refer
@@ -221,16 +221,16 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid);
  * The output will have max 80 chars between newline characters.
  */
 int
-gmx_cpuid_formatstring      (gmx_cpuid_t                cpuid,
-                             char *                     s,
-                             int                        n);
+gmx_cpuid_formatstring      (gmx_cpuid_t cpuid,
+                             char      * s,
+                             int         n);
 
 
 /* Suggests a suitable gromacs acceleration based on the support in the
  * hardware.
  */
 enum gmx_cpuid_acceleration
-gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                    cpuid);
+gmx_cpuid_acceleration_suggest  (gmx_cpuid_t cpuid);
 
 
 /* Check if this binary was compiled with the same acceleration as we
@@ -238,15 +238,15 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                    cpuid);
  * if it is non-NULL, and print a warning in stdout if we don't have a match.
  */
 int
-gmx_cpuid_acceleration_check    (gmx_cpuid_t                cpuid,
-                                 FILE *                     log);
+gmx_cpuid_acceleration_check    (gmx_cpuid_t cpuid,
+                                 FILE      * log);
 
 
 /* Release resources used by data structure. Note that the pointer to the
  * CPU brand string will no longer be valid once this routine has been called.
  */
 void
-gmx_cpuid_done              (gmx_cpuid_t                cpuid);
+gmx_cpuid_done              (gmx_cpuid_t cpuid);
 
 
 

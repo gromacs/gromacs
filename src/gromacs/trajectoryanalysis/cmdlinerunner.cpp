@@ -73,8 +73,8 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         Impl(TrajectoryAnalysisModule *module);
         ~Impl();
 
-        void printHelp(const Options &options,
-                       const TrajectoryAnalysisSettings &settings,
+        void printHelp(const Options                        &options,
+                       const TrajectoryAnalysisSettings     &settings,
                        const TrajectoryAnalysisRunnerCommon &common);
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
@@ -82,13 +82,13 @@ class TrajectoryAnalysisCommandLineRunner::Impl
                           int *argc, char *argv[]);
 
         TrajectoryAnalysisModule *module_;
-        int                     debugLevel_;
-        bool                    bPrintCopyright_;
+        int  debugLevel_;
+        bool bPrintCopyright_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
-        TrajectoryAnalysisModule *module)
+    TrajectoryAnalysisModule *module)
     : module_(module), debugLevel_(0), bPrintCopyright_(true)
 {
 }
@@ -101,9 +101,9 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 
 void
 TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
-        const Options &options,
-        const TrajectoryAnalysisSettings &settings,
-        const TrajectoryAnalysisRunnerCommon &common)
+    const Options                        &options,
+    const TrajectoryAnalysisSettings     &settings,
+    const TrajectoryAnalysisRunnerCommon &common)
 {
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
@@ -121,10 +121,10 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
 
 bool
 TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
-        TrajectoryAnalysisSettings *settings,
-        TrajectoryAnalysisRunnerCommon *common,
-        SelectionCollection *selections,
-        int *argc, char *argv[])
+    TrajectoryAnalysisSettings *settings,
+    TrajectoryAnalysisRunnerCommon *common,
+    SelectionCollection *selections,
+    int *argc, char *argv[])
 {
     Options options(NULL, NULL);
     Options moduleOptions(module_->name(), module_->description());
@@ -142,7 +142,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     setManagerForSelectionOptions(&options, &seloptManager);
 
     {
-        CommandLineParser  parser(&options);
+        CommandLineParser parser(&options);
         try
         {
             parser.parse(argc, argv);
@@ -179,7 +179,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
  */
 
 TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
-        TrajectoryAnalysisModule *module)
+    TrajectoryAnalysisModule *module)
     : impl_(new Impl(module))
 {
 }
@@ -214,11 +214,11 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
         CopyRight(stderr, argv[0]);
     }
 
-    SelectionCollection  selections;
+    SelectionCollection selections;
     selections.setDebugLevel(impl_->debugLevel_);
 
-    TrajectoryAnalysisSettings  settings;
-    TrajectoryAnalysisRunnerCommon  common(&settings);
+    TrajectoryAnalysisSettings     settings;
+    TrajectoryAnalysisRunnerCommon common(&settings);
 
     if (!impl_->parseOptions(&settings, &common, &selections, &argc, argv))
     {
@@ -236,12 +236,12 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     module->initAfterFirstFrame(common.frame());
 
     t_pbc  pbc;
-    t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
+    t_pbc *ppbc    = settings.hasPBC() ? &pbc : NULL;
 
-    int nframes = 0;
-    AnalysisDataParallelOptions dataOptions;
+    int    nframes = 0;
+    AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
-            module->startFrames(dataOptions, selections));
+        module->startFrames(dataOptions, selections));
     do
     {
         common.initFrame();
@@ -289,9 +289,9 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
 {
     // TODO: This method duplicates some code from run() and Impl::printHelp().
     // See how to best refactor it to share the common code.
-    SelectionCollection             selections;
-    TrajectoryAnalysisSettings      settings;
-    TrajectoryAnalysisRunnerCommon  common(&settings);
+    SelectionCollection            selections;
+    TrajectoryAnalysisSettings     settings;
+    TrajectoryAnalysisRunnerCommon common(&settings);
 
     Options options(NULL, NULL);
     Options moduleOptions(impl_->module_->name(), impl_->module_->description());

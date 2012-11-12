@@ -69,9 +69,9 @@ class StringOptionStorage;
  *
  * Example:
  * \code
-bool  bPBC;
-using gmx::BooleanOption;
-options.addOption(BooleanOption("pbc").store(&bPBC));
+   bool  bPBC;
+   using gmx::BooleanOption;
+   options.addOption(BooleanOption("pbc").store(&bPBC));
  * \endcode
  *
  * Public methods in this class do not throw.
@@ -97,13 +97,13 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
  *
  * Examples:
  * \code
-using gmx::IntegerOption;
-// Simple option
-int  rcut = 0;
-options.addOption(IntegerOption("rcut").store(&rcut));
-// Vector-valued option
-int  box[3] = {1, 1, 1};  // Default value
-options.addOption(IntegerOption("box").store(box).vector());
+   using gmx::IntegerOption;
+   // Simple option
+   int  rcut = 0;
+   options.addOption(IntegerOption("rcut").store(&rcut));
+   // Vector-valued option
+   int  box[3] = {1, 1, 1};  // Default value
+   options.addOption(IntegerOption("box").store(box).vector());
  * \endcode
  *
  * Public methods in this class do not throw.
@@ -192,15 +192,15 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
  *
  * Examples:
  * \code
-using gmx::StringOption;
-// Simple option
-std::string  str;
-options.addOption(StringOption("str").store(&str));
-// Option that only accepts predefined values
-const char * const  allowed[] = { "atom", "residue", "molecule", NULL };
-std::string  str;
-int          type;
-options.addOption(StringOption("type").enumValue(allowed).store(&str)
+   using gmx::StringOption;
+   // Simple option
+   std::string  str;
+   options.addOption(StringOption("str").store(&str));
+   // Option that only accepts predefined values
+   const char * const  allowed[] = { "atom", "residue", "molecule", NULL };
+   std::string  str;
+   int          type;
+   options.addOption(StringOption("type").enumValue(allowed).store(&str)
                      .storeEnumIndex(&type));
  * \endcode
  *
@@ -217,7 +217,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
             : MyBase(name), enumValues_(NULL), defaultEnumIndex_(-1),
-              enumIndexStore_(NULL)
+            enumIndexStore_(NULL)
         {
         }
 
@@ -269,9 +269,9 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         virtual AbstractOptionStoragePointer createStorage() const;
         virtual std::string createDescription() const;
 
-        const char *const      *enumValues_;
-        int                     defaultEnumIndex_;
-        int                    *enumIndexStore_;
+        const char *const *enumValues_;
+        int                defaultEnumIndex_;
+        int               *enumIndexStore_;
 
         /*! \brief
          * Needed to initialize StringOptionStorage from this class without

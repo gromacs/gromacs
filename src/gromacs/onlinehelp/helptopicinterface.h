@@ -76,7 +76,7 @@ class HelpTopicInterface
          * This should be a single lowercase word, used to identify the topic.
          * It is not used for the root of the help topic tree.
          */
-        virtual const char *name() const = 0;
+        virtual const char *name() const  = 0;
         /*! \brief
          * Returns a title for the topic.
          *

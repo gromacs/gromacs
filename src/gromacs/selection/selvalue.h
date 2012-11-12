@@ -46,7 +46,7 @@
 /** Defines the value type of a different selection objects. */
 typedef enum
 {
-    NO_VALUE,           /**< No value; either an error condition or an boolean 
+    NO_VALUE,           /**< No value; either an error condition or an boolean
                              parameter. */
     INT_VALUE,          /**< One or more integer values. */
     REAL_VALUE,         /**< One or more real values. */
@@ -64,7 +64,7 @@ typedef enum
 typedef struct gmx_ana_selvalue_t
 {
     /** Type of the value. */
-    e_selvalue_t                type;
+    e_selvalue_t type;
     /*! \brief
      * Number of values in the array pointed by the union.
      *
@@ -72,7 +72,7 @@ typedef struct gmx_ana_selvalue_t
      * data structures in the array, not the number of positions or
      * the number of atoms in the group.
      */
-    int                         nr;
+    int nr;
     /** Pointer to the value. */
     union {
         /*! \brief
@@ -80,24 +80,24 @@ typedef struct gmx_ana_selvalue_t
          *
          * Needs to be the first member to be able to use initialized arrays.
          */
-        void                   *ptr;
+        void *ptr;
         /** Integer value(s) (type \ref INT_VALUE). */
-        int                    *i;
+        int *i;
         /** Real value(s) (type \ref REAL_VALUE). */
-        real                   *r;
+        real *r;
         /** String value(s) (type \ref STR_VALUE). */
-        char                  **s;
+        char **s;
         /** Structure for the position value(s) (type \ref POS_VALUE). */
-        struct gmx_ana_pos_t   *p;
+        struct gmx_ana_pos_t *p;
         /** Group value (type \ref GROUP_VALUE). */
         struct gmx_ana_index_t *g;
         /** Boolean value (only parameters of type \ref NO_VALUE); */
-        bool                   *b;
+        bool *b;
     }                           u;
     /*! \brief
      * Number of elements allocated for the value array.
      */
-    int                         nalloc;
+    int nalloc;
 } gmx_ana_selvalue_t;
 
 /** Initializes an empty selection value structure. */

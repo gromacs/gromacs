@@ -96,7 +96,7 @@ class SelectionOptionManager::Impl
             }
 
             //! Storage object to which the selections will be added.
-            SelectionOptionStorage     *storage_;
+            SelectionOptionStorage *storage_;
         };
 
         //! Collection for a list of selection requests.
@@ -124,7 +124,7 @@ class SelectionOptionManager::Impl
                 }
 
             private:
-                RequestList    *requests_;
+                RequestList *requests_;
         };
 
         /*! \brief
@@ -155,11 +155,11 @@ class SelectionOptionManager::Impl
         void requestUnsetRequiredOptions();
 
         //! Selection collection to which selections are stored.
-        SelectionCollection    &collection_;
+        SelectionCollection &collection_;
         //! List of selection options (storage objects) this manager manages.
-        OptionList              options_;
+        OptionList           options_;
         //! List of selections requested for later parsing.
-        RequestList             requests_;
+        RequestList          requests_;
 };
 
 SelectionOptionManager::Impl::Impl(SelectionCollection *collection)
@@ -168,18 +168,18 @@ SelectionOptionManager::Impl::Impl(SelectionCollection *collection)
 }
 
 void SelectionOptionManager::Impl::placeSelectionsInRequests(
-        const SelectionList &selections)
+    const SelectionList &selections)
 {
     if (requests_.empty())
     {
         requestUnsetRequiredOptions();
     }
 
-    RequestsClearer clearRequestsOnExit(&requests_);
+    RequestsClearer               clearRequestsOnExit(&requests_);
 
     SelectionList::const_iterator first = selections.begin();
-    SelectionList::const_iterator last = first;
-    RequestList::const_iterator i;
+    SelectionList::const_iterator last  = first;
+    RequestList::const_iterator   i;
     for (i = requests_.begin(); i != requests_.end(); ++i)
     {
         const SelectionRequest &request = *i;
@@ -190,11 +190,11 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
             {
                 int assigned = first - selections.begin();
                 GMX_THROW(InvalidInputError(formatString(
-                                "Too few selections provided for '%s': "
-                                "Expected %d selections, but only %d left "
-                                "after assigning the first %d to other selections.",
-                                request.name().c_str(), request.count(),
-                                remaining, assigned)));
+                                                "Too few selections provided for '%s': "
+                                                "Expected %d selections, but only %d left "
+                                                "after assigning the first %d to other selections.",
+                                                request.name().c_str(), request.count(),
+                                                remaining, assigned)));
             }
             last = first + request.count();
         }
@@ -204,16 +204,16 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
             ++nextRequest;
             if (nextRequest != requests_.end())
             {
-                const char *name = request.name().c_str();
+                const char *name         = request.name().c_str();
                 const char *conflictName = nextRequest->name().c_str();
                 GMX_THROW(InvalidInputError(formatString(
-                                "Ambiguous selections for '%s' and '%s': "
-                                "Any number of selections is acceptable for "
-                                "'%s', but you have requested subsequent "
-                                "selections to be assigned to '%s'. "
-                                "Resolution for such cases is not implemented, "
-                                "and may be impossible.",
-                                name, conflictName, name, conflictName)));
+                                                "Ambiguous selections for '%s' and '%s': "
+                                                "Any number of selections is acceptable for "
+                                                "'%s', but you have requested subsequent "
+                                                "selections to be assigned to '%s'. "
+                                                "Resolution for such cases is not implemented, "
+                                                "and may be impossible.",
+                                                name, conflictName, name, conflictName)));
             }
             last = selections.end();
         }
@@ -223,14 +223,14 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
     }
     if (last != selections.end())
     {
-        int count = selections.end() - selections.begin();
+        int count     = selections.end() - selections.begin();
         int remaining = selections.end() - last;
-        int assigned = last - selections.begin();
+        int assigned  = last - selections.begin();
         GMX_THROW(InvalidInputError(formatString(
-                        "Too many selections provided: "
-                        "Expected %d selections, but %d provided. "
-                        "Last %d selections could not be assigned to any option.",
-                        assigned, count, remaining)));
+                                        "Too many selections provided: "
+                                        "Expected %d selections, but %d provided. "
+                                        "Last %d selections could not be assigned to any option.",
+                                        assigned, count, remaining)));
     }
 }
 
@@ -270,7 +270,7 @@ SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
 
 void
 SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
-                                           const std::string &value)
+                                           const std::string      &value)
 {
     SelectionList selections = impl_->collection_.parseFromString(value);
     storage->addSelections(selections, false);
@@ -278,7 +278,7 @@ SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
 
 void
 SelectionOptionManager::requestOptionDelayedParsing(
-        SelectionOptionStorage *storage)
+    SelectionOptionStorage *storage)
 {
     impl_->requests_.push_back(Impl::SelectionRequest(storage));
 }
@@ -286,7 +286,7 @@ SelectionOptionManager::requestOptionDelayedParsing(
 void
 SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
 {
-    Impl::RequestsClearer clearRequestsOnExit(&impl_->requests_);
+    Impl::RequestsClearer             clearRequestsOnExit(&impl_->requests_);
 
     Impl::RequestList::const_iterator i;
     for (i = impl_->requests_.begin(); i != impl_->requests_.end(); ++i)
@@ -329,8 +329,8 @@ SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
     catch (GromacsException &ex)
     {
         ex.prependContext(formatString(
-                    "Error in adding selections from file '%s'",
-                    filename.c_str()));
+                              "Error in adding selections from file '%s'",
+                              filename.c_str()));
         throw;
     }
 }
@@ -390,9 +390,9 @@ class SelectionOptionManagerSetter : public OptionsModifyingVisitor
         SelectionOptionManager *manager_;
 };
 
-} // namespace
+}   // namespace
 
-void setManagerForSelectionOptions(Options *options,
+void setManagerForSelectionOptions(Options                *options,
                                    SelectionOptionManager *manager)
 {
     SelectionOptionManagerSetter(manager).visitSubSection(options);

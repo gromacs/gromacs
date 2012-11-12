@@ -63,7 +63,7 @@ class TextTableFormatter::Impl
         {
             ColumnData(const char *title, int width, bool bWrap)
                 : title_(title != NULL ? title : ""),
-                  width_(width), bWrap_(bWrap), firstLine_(0)
+                width_(width), bWrap_(bWrap), firstLine_(0)
             {
                 GMX_ASSERT(width >= 0, "Negative width not possible");
                 GMX_ASSERT(title_.length() <= static_cast<size_t>(width),
@@ -112,15 +112,15 @@ class TextTableFormatter::Impl
             }
 
             //! Statit data: title of the column.
-            std::string                 title_;
+            std::string title_;
             //! Static data: width of the column.
-            int                         width_;
+            int width_;
             //! Static data: whether to automatically wrap input text.
-            bool                        bWrap_;
+            bool bWrap_;
             //! First line offset for the current row.
-            int                         firstLine_;
+            int firstLine_;
             //! Text lines for the current row.
-            std::vector<std::string>    lines_;
+            std::vector<std::string> lines_;
         };
 
         //! Container type for column data.
@@ -148,13 +148,13 @@ class TextTableFormatter::Impl
         }
 
         //! Container for column data.
-        ColumnList              columns_;
+        ColumnList columns_;
         //! Indentation before the first column.
-        int                     firstColumnIndent_;
+        int        firstColumnIndent_;
         //! If true, no output has yet been produced.
-        bool                    bFirstRow_;
+        bool       bFirstRow_;
         //! If true, a header will be printed before the first row.
-        bool                    bPrintHeader_;
+        bool       bPrintHeader_;
 };
 
 TextTableFormatter::Impl::Impl()
@@ -208,7 +208,7 @@ void TextTableFormatter::clear()
 void TextTableFormatter::addColumnLine(int index, const std::string &text)
 {
     Impl::ColumnData &column = impl_->columnData(index);
-    TextLineWrapper wrapper;
+    TextLineWrapper   wrapper;
     if (column.bWrap_)
     {
         wrapper.settings().setLineLength(column.width());
@@ -274,7 +274,7 @@ std::string TextTableFormatter::formatRow()
     for (int line = 0; line <= lastLine; ++line)
     {
         std::string lineResult;
-        size_t currentWidth = 0;
+        size_t      currentWidth = 0;
         for (column  = impl_->columns_.begin();
              column != impl_->columns_.end();
              ++column)

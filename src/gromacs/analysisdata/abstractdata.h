@@ -416,8 +416,8 @@ class AbstractAnalysisData
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
-        int                     columnCount_;
-        bool                    bMultiPoint_;
+        int columnCount_;
+        bool                     bMultiPoint_;
 
         /*! \brief
          * Needed to provide access to notification methods.

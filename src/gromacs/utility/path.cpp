@@ -50,7 +50,7 @@ namespace
 {
 
 //! Directory separator to use when joining paths.
-const char cDirSeparator = '/';
+const char cDirSeparator    = '/';
 //! Directory separators to use when parsing paths.
 const char cDirSeparators[] = "/\\";
 

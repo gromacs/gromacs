@@ -111,24 +111,24 @@ class AbstractPlotModule::Impl
         void closeFile();
 
         AnalysisDataPlotSettings settings_;
-        std::string             filename_;
-        FILE                   *fp_;
+        std::string              filename_;
+        FILE                    *fp_;
 
-        bool                    bPlain_;
-        bool                    gOmitX_;
-        std::string             title_;
-        std::string             subtitle_;
-        std::string             xlabel_;
-        std::string             ylabel_;
-        std::vector<std::string>  legend_;
-        char                    xformat_[15];
-        char                    yformat_[15];
-        real                    xscale_;
+        bool                     bPlain_;
+        bool                     gOmitX_;
+        std::string              title_;
+        std::string              subtitle_;
+        std::string              xlabel_;
+        std::string              ylabel_;
+        std::vector<std::string> legend_;
+        char                     xformat_[15];
+        char                     yformat_[15];
+        real                     xscale_;
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
     : settings_(settings), fp_(NULL), bPlain_(false), gOmitX_(false),
-      xscale_(1.0)
+    xscale_(1.0)
 {
     strcpy(xformat_, "%11.3f");
     strcpy(yformat_, " %8.3f");
@@ -264,8 +264,8 @@ AbstractPlotModule::appendLegend(const char *setname)
 void
 AbstractPlotModule::setXFormat(int width, int precision, char format)
 {
-    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
-                       && width <= 99 && precision <= 99,
+    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0 &&
+                       width <= 99 && precision <= 99,
                        "Invalid width or precision");
     GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != NULL,
                        "Invalid format specifier");
@@ -276,8 +276,8 @@ AbstractPlotModule::setXFormat(int width, int precision, char format)
 void
 AbstractPlotModule::setYFormat(int width, int precision, char format)
 {
-    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
-                       && width <= 99 && precision <= 99,
+    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0 &&
+                       width <= 99 && precision <= 99,
                        "Invalid width or precision");
     GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != NULL,
                        "Invalid format specifier");
@@ -303,13 +303,13 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
         }
         else
         {
-            time_unit_t time_unit
+            time_unit_t  time_unit
                 = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
             xvg_format_t xvg_format
                 = (impl_->settings_.plotFormat() > 0
-                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
-                    : exvgNONE);
-            output_env_t oenv;
+                   ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
+                   : exvgNONE);
+            output_env_t                  oenv;
             output_env_init(&oenv, 0, NULL, time_unit, FALSE, xvg_format, 0, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
@@ -325,8 +325,8 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
             {
                 xvgr_subtitle(impl_->fp_, impl_->subtitle_.c_str(), oenv);
             }
-            if (output_env_get_print_xvgr_codes(oenv)
-                && !impl_->legend_.empty())
+            if (output_env_get_print_xvgr_codes(oenv) &&
+                !impl_->legend_.empty())
             {
                 std::vector<const char *> legend;
                 legend.reserve(impl_->legend_.size());
@@ -397,7 +397,7 @@ AnalysisDataPlotModule::AnalysisDataPlotModule()
 }
 
 AnalysisDataPlotModule::AnalysisDataPlotModule(
-        const AnalysisDataPlotSettings &settings)
+    const AnalysisDataPlotSettings &settings)
     : AbstractPlotModule(settings)
 {
 }
@@ -432,7 +432,7 @@ AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
 
 
 AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
-        const AnalysisDataPlotSettings &settings)
+    const AnalysisDataPlotSettings &settings)
     : AbstractPlotModule(settings)
 {
     for (int i = 0; i < DIM; ++i)

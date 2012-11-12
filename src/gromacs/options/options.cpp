@@ -55,7 +55,7 @@ namespace gmx
 
 Options::Impl::Impl(const char *name, const char *title)
     : name_(name != NULL ? name : ""), title_(title != NULL ? title : ""),
-      parent_(NULL)
+    parent_(NULL)
 {
 }
 
@@ -170,7 +170,7 @@ bool Options::isSet(const char *name) const
 void Options::finish()
 {
     // TODO: Consider how to customize these error messages based on context.
-    ExceptionInitializer errors("Invalid input values");
+    ExceptionInitializer             errors("Invalid input values");
     Impl::OptionList::const_iterator i;
     for (i = impl_->options_.begin(); i != impl_->options_.end(); ++i)
     {

@@ -232,9 +232,9 @@ namespace gmx
 /*! \brief
  * Function pointer for evaluating a gmx::SelectionTreeElement.
  */
-typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t *data,
+typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t         *data,
                              const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *g);
+                             gmx_ana_index_t                   *g);
 
 /*! \internal \brief
  * Represents an element of a selection expression.
@@ -304,14 +304,14 @@ class SelectionTreeElement
         void setName(const std::string &name) { name_ = name; }
 
         //! Type of the element.
-        e_selelem_t                         type;
+        e_selelem_t type;
         /*! \brief
          * Value storage of the element.
          *
          * This field contains the evaluated value of the element, as well as
          * the output value type.
          */
-        gmx_ana_selvalue_t                  v;
+        gmx_ana_selvalue_t v;
         /*! \brief
          * Evaluation function for the element.
          *
@@ -319,14 +319,14 @@ class SelectionTreeElement
          * require evaluation) or point to one of the functions defined in
          * evaluate.h.
          */
-        sel_evalfunc                        evaluate;
+        sel_evalfunc evaluate;
         /*! \brief
          * Information flags about the element.
          *
          * Allowed flags are listed here:
          * \ref selelem_flags "flags for gmx::SelectionTreeElement".
          */
-        int                                 flags;
+        int flags;
         //! Data required by the evaluation function.
         union {
             /*! \brief Index group data for several element types.
@@ -338,49 +338,53 @@ class SelectionTreeElement
              *  - \ref SEL_SUBEXPR : holds the group for which the subexpression
              *    has been evaluated.
              */
-            gmx_ana_index_t                 cgrp;
+            gmx_ana_index_t cgrp;
             //! Data for \ref SEL_EXPRESSION and \ref SEL_MODIFIER elements.
             struct {
                 //! Pointer the the method used in this expression.
                 struct gmx_ana_selmethod_t *method;
                 //! Pointer to the data allocated by the method's \p init_data (see sel_datafunc()).
-                void                       *mdata;
+                void *mdata;
                 //! Pointer to the position data passed to the method.
-                struct gmx_ana_pos_t       *pos;
+                struct gmx_ana_pos_t *pos;
                 //! Pointer to the evaluation data for \p pos.
-                struct gmx_ana_poscalc_t   *pc;
-            }                               expr;
+                struct gmx_ana_poscalc_t *pc;
+            }
+            expr;
             //! Operation type for \ref SEL_BOOLEAN elements.
-            e_boolean_t                     boolt;
+            e_boolean_t boolt;
             //! Operation type for \ref SEL_ARITHMETIC elements.
             struct {
                 //! Operation type.
-                e_arithmetic_t              type;
+                e_arithmetic_t type;
                 //! String representation.
-                char                       *opstr;
-            }                               arith;
+                char *opstr;
+            }
+            arith;
             //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
-            struct gmx_ana_selparam_t      *param;
+            struct gmx_ana_selparam_t *param;
             //! The string/number used to reference the group.
             struct {
                 //! Name of the referenced external group.
-                char                       *name;
+                char *name;
                 //! If \a name is NULL, the index number of the referenced group.
-                int                         id;
-            }                               gref;
-        }                                   u;
+                int id;
+            }
+            gref;
+        }
+        u;
         //! Memory pool to use for values, or NULL if standard memory handling.
-        struct gmx_sel_mempool_t           *mempool;
+        struct gmx_sel_mempool_t *mempool;
         //! Internal data for the selection compiler.
-        t_compiler_data                    *cdata;
+        t_compiler_data          *cdata;
 
         /*! \brief The first child element.
          *
          * Other children can be accessed through the \p next field of \p child.
          */
-        SelectionTreeElementPointer         child;
+        SelectionTreeElementPointer child;
         //! The next sibling element.
-        SelectionTreeElementPointer         next;
+        SelectionTreeElementPointer next;
 
     private:
         /*! \brief
@@ -388,7 +392,7 @@ class SelectionTreeElement
          *
          * This field is only used for informative purposes.
          */
-        std::string                         name_;
+        std::string name_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(SelectionTreeElement);
 };
@@ -408,7 +412,7 @@ _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc);
 /** Sets the value type of a gmx::SelectionTreeElement. */
 void
 _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
-                       e_selvalue_t vtype);
+                       e_selvalue_t                            vtype);
 
 /** Frees the memory allocated for a selection method. */
 void

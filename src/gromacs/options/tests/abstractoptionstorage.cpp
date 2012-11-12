@@ -111,7 +111,7 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         virtual gmx::OptionInfo &optionInfo() { return info_; }
         // These are not used.
         virtual const char *typeString() const { return "mock"; }
-        virtual std::string formatSingleValue(const std::string &/*value*/) const
+        virtual std::string formatSingleValue(const std::string & /*value*/) const
         {
             return "";
         }
@@ -121,7 +121,7 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         MOCK_METHOD0(processAll, void());
 
     private:
-        MockOptionInfo          info_;
+        MockOptionInfo info_;
 };
 
 /*! \internal \brief
@@ -174,11 +174,11 @@ MockOptionStorage &MockOptionInfo::option()
  */
 TEST(AbstractOptionStorageTest, HandlesSetInFinish)
 {
-    gmx::Options                options(NULL, NULL);
-    std::vector<std::string>    values;
-    MockOptionInfo *info = options.addOption(
+    gmx::Options             options(NULL, NULL);
+    std::vector<std::string> values;
+    MockOptionInfo          *info = options.addOption(
             MockOption("name").required().storeVector(&values));
-    MockOptionStorage *mock = &info->option();
+    MockOptionStorage       *mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -204,11 +204,11 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
  */
 TEST(AbstractOptionStorageTest, HandlesValueRemoval)
 {
-    gmx::Options                options(NULL, NULL);
-    std::vector<std::string>    values;
-    MockOptionInfo *info = options.addOption(
+    gmx::Options             options(NULL, NULL);
+    std::vector<std::string> values;
+    MockOptionInfo          *info = options.addOption(
             MockOption("name").storeVector(&values).multiValue());
-    MockOptionStorage *mock = &info->option();
+    MockOptionStorage       *mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::ElementsAre;
@@ -243,11 +243,11 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
  */
 TEST(AbstractOptionStorageTest, HandlesValueAddition)
 {
-    gmx::Options                options(NULL, NULL);
-    std::vector<std::string>    values;
-    MockOptionInfo *info = options.addOption(
+    gmx::Options             options(NULL, NULL);
+    std::vector<std::string> values;
+    MockOptionInfo          *info = options.addOption(
             MockOption("name").storeVector(&values).multiValue());
-    MockOptionStorage *mock = &info->option();
+    MockOptionStorage       *mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -283,11 +283,11 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
  */
 TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
 {
-    gmx::Options                options(NULL, NULL);
-    std::vector<std::string>    values;
-    MockOptionInfo *info = options.addOption(
+    gmx::Options             options(NULL, NULL);
+    std::vector<std::string> values;
+    MockOptionInfo          *info = options.addOption(
             MockOption("name").storeVector(&values).valueCount(2));
-    MockOptionStorage *mock = &info->option();
+    MockOptionStorage       *mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -319,11 +319,11 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
  */
 TEST(AbstractOptionStorageTest, AllowsEmptyValues)
 {
-    gmx::Options                options(NULL, NULL);
-    std::vector<std::string>    values;
-    MockOptionInfo *info = options.addOption(
+    gmx::Options             options(NULL, NULL);
+    std::vector<std::string> values;
+    MockOptionInfo          *info = options.addOption(
             MockOption("name").storeVector(&values).valueCount(0));
-    MockOptionStorage *mock = &info->option();
+    MockOptionStorage       *mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;

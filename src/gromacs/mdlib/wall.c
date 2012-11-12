@@ -1,34 +1,34 @@
 /*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- 
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -49,66 +49,74 @@
 #include "nrnb.h"
 #include "vec.h"
 
-void make_wall_tables(FILE *fplog,const output_env_t oenv,
-                      const t_inputrec *ir,const char *tabfn,
+void make_wall_tables(FILE *fplog, const output_env_t oenv,
+                      const t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
                       t_forcerec *fr)
 {
-  int  w,negp_pp,egp,i,j;
-  int  *nm_ind;
-  char buf[STRLEN];
-  t_forcetable *tab;
+    int           w, negp_pp, egp, i, j;
+    int          *nm_ind;
+    char          buf[STRLEN];
+    t_forcetable *tab;
 
-  negp_pp = ir->opts.ngener - ir->nwall;
-  nm_ind  = groups->grps[egcENER].nm_ind;
+    negp_pp = ir->opts.ngener - ir->nwall;
+    nm_ind  = groups->grps[egcENER].nm_ind;
 
-  if (fplog) {
-    fprintf(fplog,"Reading user tables for %d energy groups with %d walls\n",
-	    negp_pp,ir->nwall);
-  }
-
-  snew(fr->wall_tab,ir->nwall);
-  for(w=0; w<ir->nwall; w++) {
-    snew(fr->wall_tab[w],negp_pp);
-    for(egp=0; egp<negp_pp; egp++) {
-      /* If the energy group pair is excluded, we don't need a table */
-      if (!(fr->egp_flags[egp*ir->opts.ngener+negp_pp+w] & EGP_EXCL)) {
-	tab = &fr->wall_tab[w][egp];
-	sprintf(buf,"%s",tabfn);
-	sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
-		*groups->grpname[nm_ind[egp]],
-		*groups->grpname[nm_ind[negp_pp+w]],
-		ftp2ext(efXVG));
-	*tab = make_tables(fplog,oenv,fr,FALSE,buf,0,GMX_MAKETABLES_FORCEUSER);
-	/* Since wall have no charge, we can compress the table */
-	for(i=0; i<=tab->n; i++)
-	  for(j=0; j<8; j++)
-	    tab->data[8*i+j] = tab->data[12*i+4+j];
-      }
+    if (fplog)
+    {
+        fprintf(fplog, "Reading user tables for %d energy groups with %d walls\n",
+                negp_pp, ir->nwall);
     }
-  }
+
+    snew(fr->wall_tab, ir->nwall);
+    for(w = 0; w < ir->nwall; w++)
+    {
+        snew(fr->wall_tab[w], negp_pp);
+        for(egp = 0; egp < negp_pp; egp++)
+        {
+            /* If the energy group pair is excluded, we don't need a table */
+            if (!(fr->egp_flags[egp*ir->opts.ngener+negp_pp+w] & EGP_EXCL))
+            {
+                tab = &fr->wall_tab[w][egp];
+                sprintf(buf, "%s", tabfn);
+                sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
+                        *groups->grpname[nm_ind[egp]],
+                        *groups->grpname[nm_ind[negp_pp+w]],
+                        ftp2ext(efXVG));
+                *tab = make_tables(fplog, oenv, fr, FALSE, buf, 0, GMX_MAKETABLES_FORCEUSER);
+                /* Since wall have no charge, we can compress the table */
+                for(i = 0; i <= tab->n; i++)
+                {
+                    for(j = 0; j < 8; j++)
+                    {
+                        tab->data[8*i+j] = tab->data[12*i+4+j];
+                    }
+                }
+            }
+        }
+    }
 }
 
-static void wall_error(int a,rvec *x,real r)
+static void wall_error(int a, rvec *x, real r)
 {
     gmx_fatal(FARGS,
               "An atom is beyond the wall: coordinates %f %f %f, distance %f\n"
               "You might want to use the mdp option wall_r_linpot",
-              x[a][XX],x[a][YY],x[a][ZZ],r);
+              x[a][XX], x[a][YY], x[a][ZZ], r);
 }
 
-real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
-	      rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb)
+real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
+              rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb)
 {
-    int  nwall,w,lam,i;
-    int  ntw[2],at,ntype,ngid,ggid,*egp_flags,*type;
-    real *nbfp,lamfac,fac_d[2],fac_r[2],Cd,Cr,Vtot,Fwall[2];
-    real wall_z[2],r,mr,r1,r2,r4,Vd,Vr,V=0,Fd,Fr,F=0,dvdlambda;
-    dvec xf_z;
-    int  n0,nnn;
-    real tabscale,*VFtab,rt,eps,eps2,Yt,Ft,Geps,Heps,Heps2,Fp,VV,FF;
-    unsigned short *gid=md->cENER;
-    t_forcetable *tab;
+    int             nwall, w, lam, i;
+    int             ntw[2], at, ntype, ngid, ggid, *egp_flags, *type;
+    real           *nbfp, lamfac, fac_d[2], fac_r[2], Cd, Cr, Vtot, Fwall[2];
+    real            wall_z[2], r, mr, r1, r2, r4, Vd, Vr, V = 0, Fd, Fr, F = 0, dvdlambda;
+    dvec            xf_z;
+    int             n0, nnn;
+    real            tabscale, *VFtab, rt, eps, eps2, Yt, Ft, Geps, Heps, Heps2, Fp, VV, FF;
+    unsigned short *gid = md->cENER;
+    t_forcetable   *tab;
 
     nwall     = ir->nwall;
     ngid      = ir->opts.ngener;
@@ -116,7 +124,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     nbfp      = fr->nbfp;
     egp_flags = fr->egp_flags;
 
-    for(w=0; w<nwall; w++)
+    for(w = 0; w < nwall; w++)
     {
         ntw[w] = 2*ntype*ir->wall_atomtype[w];
         switch (ir->wall_type)
@@ -137,40 +145,40 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     wall_z[0] = 0;
     wall_z[1] = box[ZZ][ZZ];
 
-    Vtot = 0;
+    Vtot      = 0;
     dvdlambda = 0;
     clear_dvec(xf_z);
-    for(lam=0; lam<(md->nPerturbed ? 2 : 1); lam++)
+    for(lam = 0; lam < (md->nPerturbed ? 2 : 1); lam++)
     {
         if (md->nPerturbed)
         {
             if (lam == 0)
             {
                 lamfac = 1 - lambda;
-                type = md->typeA;
+                type   = md->typeA;
             }
             else
             {
                 lamfac = 0;
-                type = md->typeB;
+                type   = md->typeB;
             }
         }
         else
         {
             lamfac = 1;
-            type = md->typeA;
+            type   = md->typeA;
         }
-        for(i=md->start; i<md->start+md->homenr; i++)
+        for(i = md->start; i < md->start+md->homenr; i++)
         {
-            for(w=0; w<nwall; w++)
+            for(w = 0; w < nwall; w++)
             {
                 /* The wall energy groups are always at the end of the list */
                 ggid = gid[i]*ngid + ngid - nwall + w;
-                at = type[i];
+                at   = type[i];
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                Cd = nbfp[ntw[w]+2*at]/6.0;
-                Cr = nbfp[ntw[w]+2*at+1]/12.0;
-                if (!((Cd==0 && Cr==0) || (egp_flags[ggid] & EGP_EXCL)))
+                Cd   = nbfp[ntw[w]+2*at]/6.0;
+                Cr   = nbfp[ntw[w]+2*at+1]/12.0;
+                if (!((Cd == 0 && Cr == 0) || (egp_flags[ggid] & EGP_EXCL)))
                 {
                     if (w == 0)
                     {
@@ -194,19 +202,19 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
                     case ewtTABLE:
                         if (r < 0)
                         {
-                            wall_error(i,x,r);
+                            wall_error(i, x, r);
                         }
-                        tab = &(fr->wall_tab[w][gid[i]]);
+                        tab      = &(fr->wall_tab[w][gid[i]]);
                         tabscale = tab->scale;
                         VFtab    = tab->data;
-                        
-                        rt    = r*tabscale;
-                        n0    = rt;
+
+                        rt       = r*tabscale;
+                        n0       = rt;
                         if (n0 >= tab->n)
                         {
                             /* Beyond the table range, set V and F to zero */
-                            V     = 0;
-                            F     = 0;
+                            V = 0;
+                            F = 0;
                         }
                         else
                         {
@@ -241,7 +249,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
                     case ewt93:
                         if (r <= 0)
                         {
-                            wall_error(i,x,r);
+                            wall_error(i, x, r);
                         }
                         r1 = 1/r;
                         r2 = r1*r1;
@@ -254,7 +262,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
                     case ewt104:
                         if (r <= 0)
                         {
-                            wall_error(i,x,r);
+                            wall_error(i, x, r);
                         }
                         r1 = 1/r;
                         r2 = r1*r1;
@@ -267,7 +275,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
                     case ewt126:
                         if (r <= 0)
                         {
-                            wall_error(i,x,r);
+                            wall_error(i, x, r);
                         }
                         r1 = 1/r;
                         r2 = r1*r1;
@@ -308,13 +316,13 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
         }
         if (md->nPerturbed)
         {
-            dvdlambda += (lam==0 ? -1 : 1)*Vtot;
+            dvdlambda += (lam == 0 ? -1 : 1)*Vtot;
         }
-        
-        inc_nrnb(nrnb,eNR_WALLS,md->homenr);
+
+        inc_nrnb(nrnb, eNR_WALLS, md->homenr);
     }
 
-    for(i=0; i<DIM; i++)
+    for(i = 0; i < DIM; i++)
     {
         fr->vir_wall_z[i] = -0.5*xf_z[i];
     }

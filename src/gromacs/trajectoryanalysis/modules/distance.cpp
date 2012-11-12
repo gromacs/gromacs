@@ -57,13 +57,13 @@ namespace gmx
 namespace analysismodules
 {
 
-const char Distance::name[] = "distance";
+const char Distance::name[]             = "distance";
 const char Distance::shortDescription[] =
     "Calculate distances";
 
 Distance::Distance()
     : TrajectoryAnalysisModule(name, shortDescription),
-      avem_(new AnalysisDataAverageModule())
+    avem_(new AnalysisDataAverageModule())
 {
     data_.setColumnCount(4);
     registerAnalysisDataset(&data_, "distance");
@@ -96,7 +96,7 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
 
 void
 Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                       const TopologyInformation & /*top*/)
+                       const                             TopologyInformation & /*top*/)
 {
     if (sel_[0].posCount() != 1)
     {
@@ -122,11 +122,11 @@ void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle  dh = pdata->dataHandle(data_);
-    const Selection    &sel1 = pdata->parallelSelection(sel_[0]);
-    const Selection    &sel2 = pdata->parallelSelection(sel_[1]);
-    rvec                dx;
-    real                r;
+    AnalysisDataHandle       dh   = pdata->dataHandle(data_);
+    const Selection         &sel1 = pdata->parallelSelection(sel_[0]);
+    const Selection         &sel2 = pdata->parallelSelection(sel_[1]);
+    rvec                     dx;
+    real                     r;
     const SelectionPosition &p1 = sel1.position(0);
     const SelectionPosition &p2 = sel2.position(0);
 
@@ -159,6 +159,6 @@ Distance::writeOutput()
     fprintf(stderr, "Std. deviation:   %f\n", avem_->stddev(0));
 }
 
-} // namespace analysismodules
+}   // namespace analysismodules
 
 } // namespace gmx

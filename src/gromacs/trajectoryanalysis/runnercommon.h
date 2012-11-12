@@ -67,9 +67,9 @@ class TrajectoryAnalysisRunnerCommon
          */
         enum HelpFlag
         {
-            efHelpShowOptions           = 1<<0, //!< Show options.
-            efHelpShowHidden            = 1<<1, //!< Show hidden options.
-            efHelpShowDescriptions      = 1<<2  //!< Show detailed description.
+            efHelpShowOptions      = 1<<0,      //!< Show options.
+            efHelpShowHidden       = 1<<1,      //!< Show hidden options.
+            efHelpShowDescriptions = 1<<2       //!< Show detailed description.
         };
         //! Combination of \ref HelpFlag values.
         typedef unsigned long HelpFlags;
@@ -131,7 +131,7 @@ class TrajectoryAnalysisRunnerCommon
         //! Returns the topology information object.
         const TopologyInformation &topologyInformation() const;
         //! Returns the currently loaded frame.
-        t_trxframe &frame() const;
+        t_trxframe                &frame() const;
 
     private:
         class Impl;

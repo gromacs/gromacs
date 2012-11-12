@@ -63,10 +63,10 @@ const real inputdata[] = {
 //! Multipoint input data for gmx::AnalysisDataAverageModule tests.
 const real mpinputdata[] = {
     1.0,  0.0, 1.0, 2.0, MPSTOP,
-          1.0, 0.0, MPSTOP,
-          2.0, END_OF_FRAME,
+    1.0, 0.0, MPSTOP,
+    2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, MPSTOP,
-          2.0, END_OF_FRAME,
+    2.0, END_OF_FRAME,
     3.0,  2.0, 0.0, 0.0, END_OF_FRAME
 };
 
@@ -80,11 +80,11 @@ typedef gmx::test::AnalysisDataTestFixture AverageModuleTest;
 
 TEST_F(AverageModuleTest, BasicTest)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::test::AnalysisDataTestInput      input(inputdata);
+    gmx::AnalysisData                     data;
     data.setColumnCount(input.columnCount());
     gmx::AnalysisDataAverageModulePointer module(
-            new gmx::AnalysisDataAverageModule);
+        new gmx::AnalysisDataAverageModule);
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
@@ -96,11 +96,11 @@ TEST_F(AverageModuleTest, BasicTest)
 TEST_F(AverageModuleTest, HandlesMultipointData)
 {
     gmx::test::AnalysisDataTestInput input(mpinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
     gmx::AnalysisDataAverageModulePointer module(
-            new gmx::AnalysisDataAverageModule);
+        new gmx::AnalysisDataAverageModule);
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
@@ -111,8 +111,8 @@ TEST_F(AverageModuleTest, HandlesMultipointData)
 
 TEST_F(AverageModuleTest, CanCustomizeXAxis)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::test::AnalysisDataTestInput      input(inputdata);
+    gmx::AnalysisData                     data;
     data.setColumnCount(input.columnCount());
     gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
     data.addModule(module);
@@ -133,11 +133,11 @@ typedef gmx::test::AnalysisDataTestFixture FrameAverageModuleTest;
 
 TEST_F(FrameAverageModuleTest, BasicTest)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
+    gmx::test::AnalysisDataTestInput           input(inputdata);
+    gmx::AnalysisData                          data;
     data.setColumnCount(input.columnCount());
     gmx::AnalysisDataFrameAverageModulePointer module(
-            new gmx::AnalysisDataFrameAverageModule);
+        new gmx::AnalysisDataFrameAverageModule);
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));

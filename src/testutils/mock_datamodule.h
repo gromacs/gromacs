@@ -71,15 +71,15 @@ class MockAnalysisDataModule : public AnalysisDataModuleInterface
         MOCK_METHOD0(dataFinished, void());
 
         void setupStaticCheck(const AnalysisDataTestInput &data,
-                              AbstractAnalysisData *source);
+                              AbstractAnalysisData        *source);
         void setupStaticColumnCheck(const AnalysisDataTestInput &data,
                                     int firstcol, int n,
                                     AbstractAnalysisData *source);
         void setupStaticStorageCheck(const AnalysisDataTestInput &data,
-                                     int storageCount,
-                                     AbstractAnalysisData *source);
+                                     int                          storageCount,
+                                     AbstractAnalysisData        *source);
         void setupReferenceCheck(const TestReferenceChecker &checker,
-                                 AbstractAnalysisData *source);
+                                 AbstractAnalysisData       *source);
 
     private:
         class Impl;
@@ -89,7 +89,7 @@ class MockAnalysisDataModule : public AnalysisDataModuleInterface
 
 //! Smart pointer to manage an MockAnalysisDataModule object.
 typedef boost::shared_ptr<MockAnalysisDataModule>
-        MockAnalysisDataModulePointer;
+MockAnalysisDataModulePointer;
 
 } // namespace test
 } // namespace gmx

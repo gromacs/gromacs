@@ -67,61 +67,61 @@ struct gmx_sel_lexer_t;
 typedef struct gmx_sel_lexer_t
 {
     //! Selection collection to put parsed selections in.
-    struct gmx_ana_selcollection_t  *sc;
+    struct gmx_ana_selcollection_t *sc;
     //! Error reporter object.
-    gmx::MessageStringCollector     *errors;
+    gmx::MessageStringCollector *errors;
     //! Stores an exception that occurred during parsing.
-    boost::exception_ptr             exception;
+    boost::exception_ptr exception;
     //! Whether external index groups have been set.
-    bool                             bGroups;
+    bool bGroups;
     //! External index groups for resolving \c group keywords.
-    struct gmx_ana_indexgrps_t      *grps;
+    struct gmx_ana_indexgrps_t *grps;
     //! Number of selections at which the parser should stop.
-    int                              nexpsel;
+    int nexpsel;
 
     //! Whether the parser is interactive.
-    bool                             bInteractive;
+    bool bInteractive;
 
     //! Pretty-printed version of the string parsed since last clear.
-    char                            *pselstr;
+    char *pselstr;
     //! Length of the string in \a pselstr.
-    int                              pslen;
+    int pslen;
     //! Number of bytes allocated for \a pselstr.
-    int                              nalloc_psel;
+    int nalloc_psel;
 
     //! Stack of methods in which parameters should be looked up.
-    struct gmx_ana_selmethod_t     **mstack;
+    struct gmx_ana_selmethod_t **mstack;
     //! Index of the top of the stack in \a mstack.
-    int                              msp;
+    int msp;
     //! Number of elements allocated for \a mstack.
-    int                              mstack_alloc;
+    int mstack_alloc;
 
     //! Number of END_OF_METHOD tokens to return before \a nextparam.
-    int                              neom;
+    int neom;
     //! Parameter symbol to return before resuming scanning.
-    struct gmx_ana_selparam_t       *nextparam;
+    struct gmx_ana_selparam_t *nextparam;
     //! Whether \a nextparam was a boolean parameter with a 'no' prefix.
-    bool                             bBoolNo;
+    bool bBoolNo;
     /*! \brief
      * Method symbol to return before resuming scanning
      *
      * Only used when \p nextparam is NULL.
      */
-    struct gmx_ana_selmethod_t      *nextmethod;
+    struct gmx_ana_selmethod_t *nextmethod;
     //! Used to track whether the previous token was a position modifier.
-    int                              prev_pos_kw;
+    int prev_pos_kw;
 
     //! Whether the 'of' keyword is acceptable as the next token.
-    bool                             bMatchOf;
+    bool bMatchOf;
     //! Whether boolean values (yes/no/on/off) are acceptable as the next token.
-    bool                             bMatchBool;
+    bool bMatchBool;
     //! Whether the next token starts a new selection.
-    bool                             bCmdStart;
+    bool bCmdStart;
 
     //! Whether an external buffer is set for the scanner.
-    bool                             bBuffer;
+    bool bBuffer;
     //! The current buffer for the scanner.
-    YY_BUFFER_STATE                  buffer;
+    YY_BUFFER_STATE buffer;
 } gmx_sel_lexer_t;
 
 /* Because Flex defines yylval, yytext, and yyleng as macros,

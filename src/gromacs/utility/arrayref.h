@@ -74,9 +74,9 @@ class ConstArrayRef
 {
     public:
         //! Type of values stored in the container.
-        typedef T         value_type;
+        typedef T value_type;
         //! Type for representing size of the container.
-        typedef size_t    size_type;
+        typedef size_t size_type;
         //! Type for representing difference between two container indices.
         typedef ptrdiff_t difference_type;
         //! Const reference to a container element.
@@ -88,9 +88,9 @@ class ConstArrayRef
         //! Equal to \a const_reference since changes are not allowed.
         typedef const_reference reference;
         //! Equal to \a const_pointer since changes are not allowed.
-        typedef const_pointer   pointer;
+        typedef const_pointer pointer;
         //! Equal to \a const_iterator since changes are not allowed.
-        typedef const_iterator  iterator;
+        typedef const_iterator iterator;
         //! Standard reverse iterator.
         typedef std::reverse_iterator<iterator>       reverse_iterator;
         //! Standard reverse iterator.
@@ -125,7 +125,7 @@ class ConstArrayRef
         ConstArrayRef(typename std::vector<T>::const_iterator begin,
                       typename std::vector<T>::const_iterator end)
             : begin_((begin != end) ? &*begin : NULL),
-              end_(begin_+(end-begin))
+            end_(begin_+(end-begin))
         {
             GMX_ASSERT(end >= begin, "Invalid range");
         }
@@ -191,8 +191,8 @@ class ConstArrayRef
         }
 
     private:
-        const_pointer           begin_;
-        const_pointer           end_;
+        const_pointer begin_;
+        const_pointer end_;
 };
 
 /*! \brief

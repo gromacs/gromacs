@@ -91,7 +91,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          * to true when parsing requested selections.
          */
         void addSelections(const SelectionList &selections,
-                           bool bFullValue);
+                           bool                 bFullValue);
 
         // Required to access the number of values in selection requests.
         // See SelectionCollection::Impl.

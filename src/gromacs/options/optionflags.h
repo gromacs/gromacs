@@ -61,32 +61,32 @@ namespace gmx
 enum OptionFlag
 {
     //! %Option has been set.
-    efOption_Set                        = 1<<0,
+    efOption_Set = 1<<0,
     //! The current value of the option is a programmatic default value.
-    efOption_HasDefaultValue            = 1<<1,
+    efOption_HasDefaultValue       = 1<<1,
     //! An explicit default value has been provided for the option.
-    efOption_ExplicitDefaultValue      = 1<<2,
+    efOption_ExplicitDefaultValue  = 1<<2,
     /*! \brief
      * Next assignment to the option clears old values.
      *
      * This flag is set when a new option source starts, such that values
      * from the new source will overwrite old ones.
      */
-    efOption_ClearOnNextSet             = 1<<3,
+    efOption_ClearOnNextSet        = 1<<3,
     //! %Option is required to be set.
-    efOption_Required                   = 1<<4,
+    efOption_Required              = 1<<4,
     //! %Option can be specified multiple times.
-    efOption_MultipleTimes              = 1<<5,
+    efOption_MultipleTimes         = 1<<5,
     //! %Option is hidden from standard help.
-    efOption_Hidden                     = 1<<6,
+    efOption_Hidden                = 1<<6,
     /*! \brief
      * %Option value is a vector, but a single value is also accepted.
      *
      * \see AbstractOption::setVector()
      */
-    efOption_Vector                     = 1<<8,
+    efOption_Vector                = 1<<8,
     //! %Option does not support default values.
-    efOption_NoDefaultValue             = 1<<9,
+    efOption_NoDefaultValue        = 1<<9,
     /*! \brief
      * Storage object does its custom checking for minimum value count.
      *
@@ -96,7 +96,7 @@ enum OptionFlag
      * This is useful to override the default check, which is done in
      * OptionStorageTemplate::processSet().
      */
-    efOption_DontCheckMinimumCount      = 1<<10
+    efOption_DontCheckMinimumCount = 1<<10
 };
 
 //! \libinternal Holds a combination of ::OptionFlag values.

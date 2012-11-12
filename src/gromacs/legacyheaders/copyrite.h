@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -43,20 +43,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-/* Has to be a function, so we can get version number from autoconf */   
+
+/* Has to be a function, so we can get version number from autoconf */
 const char *GromacsVersion(void);
 
-void 
-gmx_print_version_info(FILE *fp);
-  
 void
-pr_difftime(FILE *out,double dt);
+gmx_print_version_info(FILE *fp);
 
 void
-CopyRight(FILE *out,const char *szProgram);
- 
-  
+pr_difftime(FILE *out, double dt);
+
+void
+CopyRight(FILE *out, const char *szProgram);
+
+
 /* For both bromacs() and cool_quote() you have to provide a pointer to
  * a string of reasonable length (say 256) and the string length. This
  * is necessary to make the routines threadsafe and avoid allocating
@@ -64,9 +64,9 @@ CopyRight(FILE *out,const char *szProgram);
  */
 void
 bromacs(char *retstring, int retsize);
-  
-/* For cool_quote, the number of the quote used will be returned in cqnum 
- * if it is non-NULL. 
+
+/* For cool_quote, the number of the quote used will be returned in cqnum
+ * if it is non-NULL.
  */
 void
 cool_quote(char *retstring, int retsize, int *cqnum);
@@ -78,8 +78,10 @@ be_cool(void);
 void
 thanx(FILE *fp);
 
-enum { eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR, 
-       eCITEDISRE, eCITERF, eCITELINCS, eCITENR };
+enum {
+    eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR,
+    eCITEDISRE, eCITERF, eCITELINCS, eCITENR
+};
 
 void
 please_cite(FILE *fp, const char *key);
@@ -89,4 +91,4 @@ please_cite(FILE *fp, const char *key);
 }
 #endif
 
-#endif	/* _copyright_h */
+#endif  /* _copyright_h */

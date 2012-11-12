@@ -53,10 +53,10 @@ class SelectionTester : public TrajectoryAnalysisModule
         SelectionTester();
         virtual ~SelectionTester();
 
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
+                                  const TopologyInformation        &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -67,13 +67,13 @@ class SelectionTester : public TrajectoryAnalysisModule
     private:
         void printSelections();
 
-        SelectionList            selections_;
-        int                      nmaxind_;
+        SelectionList selections_;
+        int           nmaxind_;
 };
 
 SelectionTester::SelectionTester()
     : TrajectoryAnalysisModule("testing", "Selection testing and debugging"),
-      nmaxind_(20)
+    nmaxind_(20)
 {
 }
 
@@ -110,21 +110,21 @@ SelectionTester::initOptions(Options *options,
 }
 
 void
-SelectionTester::initAnalysis(const TrajectoryAnalysisSettings &/*settings*/,
-                              const TopologyInformation &/*top*/)
+SelectionTester::initAnalysis(const TrajectoryAnalysisSettings & /*settings*/,
+                              const TopologyInformation & /*top*/)
 {
     printSelections();
 }
 
 void
-SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*pbc*/,
+SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /*pbc*/,
                               TrajectoryAnalysisModuleData * /*pdata*/)
 {
     fprintf(stderr, "\n");
     for (size_t g = 0; g < selections_.size(); ++g)
     {
         const Selection &sel = selections_[g];
-        int n;
+        int              n;
 
         fprintf(stderr, "  Atoms (%d pcs):", sel.atomCount());
         n = sel.atomCount();
@@ -186,7 +186,7 @@ main(int argc, char *argv[])
     gmx::ProgramInfo::init(argc, argv);
     try
     {
-        gmx::SelectionTester module;
+        gmx::SelectionTester                     module;
         gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
         runner.setSelectionDebugLevel(1);
         return runner.run(argc, argv);

@@ -53,12 +53,12 @@
 void
 gmx_ana_pos_clear(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->x  = NULL;
-    pos->v  = NULL;
-    pos->f  = NULL;
+    pos->nr       = 0;
+    pos->x        = NULL;
+    pos->v        = NULL;
+    pos->f        = NULL;
     gmx_ana_indexmap_clear(&pos->m);
-    pos->g  = NULL;
+    pos->g        = NULL;
     pos->nalloc_x = 0;
 }
 
@@ -156,11 +156,11 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
 void
 gmx_ana_pos_deinit(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
+    pos->nr               = 0;
     sfree(pos->x); pos->x = NULL;
     sfree(pos->v); pos->v = NULL;
     sfree(pos->f); pos->f = NULL;
-    pos->nalloc_x = 0;
+    pos->nalloc_x         = 0;
     gmx_ana_indexmap_deinit(&pos->m);
 }
 
@@ -252,18 +252,18 @@ gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g)
 void
 gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
-    pos->m.mapb.nr = 0;
-    pos->m.b.nr = 0;
-    pos->m.b.nra = 0;
+    pos->nr              = 0;
+    pos->m.nr            = 0;
+    pos->m.mapb.nr       = 0;
+    pos->m.b.nr          = 0;
+    pos->m.b.nra         = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
-    pos->m.b.index[0] = 0;
+    pos->m.b.index[0]    = 0;
     /* This function should only be used to construct all the possible
      * positions, so the result should always be static. */
-    pos->m.bStatic = true;
-    pos->m.bMapStatic = true;
+    pos->m.bStatic       = true;
+    pos->m.bMapStatic    = true;
 }
 
 /*!
@@ -274,17 +274,17 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_empty(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
-    pos->m.mapb.nr = 0;
+    pos->nr              = 0;
+    pos->m.nr            = 0;
+    pos->m.mapb.nr       = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
     /* We set the flags to true, although really in the empty state they
      * should be false. This makes it possible to update the flags in
      * gmx_ana_pos_append(), and just make a simple check in
      * gmx_ana_pos_append_finish(). */
-    pos->m.bStatic = true;
-    pos->m.bMapStatic = true;
+    pos->m.bStatic       = true;
+    pos->m.bMapStatic    = true;
 }
 
 /*!
@@ -297,7 +297,7 @@ void
 gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
                         gmx_ana_pos_t *src, int i)
 {
-    int  j, k;
+    int j, k;
 
     j = dest->nr;
     copy_rvec(src->x[i], dest->x[j]);
@@ -334,9 +334,9 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
     dest->m.mapb.index[j+1] = g->isize;
     dest->m.b.index[j+1]    = g->isize;
     dest->nr++;
-    dest->m.nr = dest->nr;
-    dest->m.mapb.nr = dest->nr;
-    dest->m.b.nr = dest->nr;
+    dest->m.nr              = dest->nr;
+    dest->m.mapb.nr         = dest->nr;
+    dest->m.b.nr            = dest->nr;
 }
 
 /*!
@@ -354,7 +354,7 @@ void
 gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
                    gmx_ana_pos_t *src, int i, int refid)
 {
-    int  j, k;
+    int j, k;
 
     for (k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
     {
@@ -389,7 +389,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         if (refid < 0)
         {
             dest->m.refid[j] = -1;
-            dest->m.bStatic = false;
+            dest->m.bStatic  = false;
             /* If we are using masks, there is no need to alter the
              * mapid field. */
         }
@@ -397,7 +397,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         {
             if (refid != j)
             {
-                dest->m.bStatic = false;
+                dest->m.bStatic    = false;
                 dest->m.bMapStatic = false;
             }
             dest->m.refid[j] = refid;
@@ -407,8 +407,8 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         }
         dest->m.mapb.index[j+1] = g->isize;
         dest->nr++;
-        dest->m.nr = dest->nr;
-        dest->m.mapb.nr = dest->nr;
+        dest->m.nr              = dest->nr;
+        dest->m.mapb.nr         = dest->nr;
     }
 }
 
@@ -424,7 +424,7 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
 {
     if (pos->m.nr != pos->m.b.nr)
     {
-        pos->m.bStatic = false;
+        pos->m.bStatic    = false;
         pos->m.bMapStatic = false;
     }
 }

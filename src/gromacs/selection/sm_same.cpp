@@ -59,9 +59,9 @@ typedef struct
     /** Value for each atom to match. */
     union
     {
-        int                 *i;
-        char               **s;
-        void                *ptr;
+        int *i;
+        char **s;
+        void *ptr;
     }                        val;
     /*! \brief
      * Number of values in the \p as array.
@@ -69,13 +69,13 @@ typedef struct
      * For string values, this is actually the number of values in the
      * \p as_s_sorted array.
      */
-    int                      nas;
+    int nas;
     /** Values to match against. */
     union
     {
-        int                 *i;
-        char               **s;
-        void                *ptr;
+        int *i;
+        char **s;
+        void *ptr;
     }                        as;
     /*! \brief
      * Separate array for sorted \p as.s array.
@@ -85,9 +85,9 @@ typedef struct
      * may be reused for several evaluations), so we keep our own copy for
      * modifications.
      */
-    char                   **as_s_sorted;
+    char **as_s_sorted;
     /** Whether simple matching can be used. */
-    bool                     bSorted;
+    bool bSorted;
 } t_methoddata_same;
 
 /** Allocates data for the \p same selection method. */
@@ -112,7 +112,7 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p same selection method. */
 static void
 evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_int[] = {
@@ -186,7 +186,7 @@ init_data_same(int npar, gmx_ana_selparam_t *param)
 
     snew(data, 1);
     data->as_s_sorted = NULL;
-    param[1].nvalptr = &data->nas;
+    param[1].nvalptr  = &data->nas;
     return data;
 }
 
@@ -200,9 +200,9 @@ init_data_same(int npar, gmx_ana_selparam_t *param)
  * immediately.
  */
 int
-_gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
+_gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **method,
                               const gmx::SelectionParserParameterListPointer &params,
-                              void *scanner)
+                              void                                           *scanner)
 {
 
     /* Do nothing if this is not a same method. */
@@ -212,8 +212,8 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
     }
 
     const gmx::SelectionParserValueList &kwvalues = params->front().values();
-    if (kwvalues.size() != 1 || !kwvalues.front().hasExpressionValue()
-        || kwvalues.front().expr->type != SEL_EXPRESSION)
+    if (kwvalues.size() != 1 || !kwvalues.front().hasExpressionValue() ||
+        kwvalues.front().expr->type != SEL_EXPRESSION)
     {
         _gmx_selparser_error(scanner, "'same' should be followed by a single keyword");
         return -1;
@@ -228,11 +228,11 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
     gmx::SelectionParserParameterList::iterator asparam = ++params->begin();
     if (asparam != params->end() && asparam->name() == sm_same.param[1].name)
     {
-        gmx::SelectionParserParameterList kwparams;
+        gmx::SelectionParserParameterList    kwparams;
         gmx::SelectionParserValueListPointer values(
-                new gmx::SelectionParserValueList(asparam->values()));
+            new gmx::SelectionParserValueList(asparam->values()));
         kwparams.push_back(
-                gmx::SelectionParserParameter::create(NULL, move(values)));
+            gmx::SelectionParserParameter::create(NULL, move(values)));
 
         /* Create a second keyword evaluation element for the keyword given as
          * the first parameter, evaluating the keyword in the group given by the
@@ -273,8 +273,8 @@ init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     if (!(param[0].flags & SPAR_ATOMVAL))
     {
         GMX_THROW(gmx::InvalidInputError(
-                    "The 'same' selection keyword combined with a "
-                    "non-keyword does not make sense"));
+                      "The 'same' selection keyword combined with a "
+                      "non-keyword does not make sense"));
     }
 }
 
@@ -369,16 +369,19 @@ evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
-    int                    i, j;
+    int                i, j;
 
     out->u.g->isize = 0;
-    i = j = 0;
+    i               = j = 0;
     while (j < g->isize)
     {
         if (d->bSorted)
         {
             /* If we are sorted, we can do a simple linear scan. */
-            while (i < d->nas && d->as.i[i] < d->val.i[j]) ++i;
+            while (i < d->nas && d->as.i[i] < d->val.i[j])
+            {
+                ++i;
+            }
         }
         else
         {
@@ -407,7 +410,10 @@ evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             /* If not, skip all atoms with the same value. */
             int tmpval = d->val.i[j];
             ++j;
-            while (j < g->isize && d->val.i[j] == tmpval) ++j;
+            while (j < g->isize && d->val.i[j] == tmpval)
+            {
+                ++j;
+            }
         }
         else
         {
@@ -452,7 +458,7 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
     /* Collapse adjacent values.
      * For strings, it's unlikely that the values would be sorted originally,
      * so set bSorted always to false. */
-    d->bSorted = false;
+    d->bSorted        = false;
     d->as_s_sorted[0] = d->as.s[0];
     for (i = 1, j = 0; i < d->nas; ++i)
     {
@@ -491,10 +497,10 @@ evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
-    int                    j;
+    int                j;
 
     out->u.g->isize = 0;
-    j = 0;
+    j               = 0;
     while (j < g->isize)
     {
         /* Do a binary search of the strings. */
@@ -507,7 +513,10 @@ evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             /* If not, skip all atoms with the same value. */
             const char *tmpval = d->val.s[j];
             ++j;
-            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0) ++j;
+            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0)
+            {
+                ++j;
+            }
         }
         else
         {

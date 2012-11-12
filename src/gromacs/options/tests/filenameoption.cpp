@@ -55,8 +55,8 @@ using gmx::test::TestFileManager;
 
 TEST(FileNameOptionTest, AddsMissingExtension)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
+    gmx::Options options(NULL, NULL);
+    std::string  value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
                             .filetype(gmx::eftTrajectory).outputFile()));
@@ -74,8 +74,8 @@ TEST(FileNameOptionTest, AddsMissingExtension)
 
 TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
+    gmx::Options options(NULL, NULL);
+    std::string  value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value).required()
                             .filetype(gmx::eftGenericData).outputFile()
@@ -92,8 +92,8 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
+    gmx::Options options(NULL, NULL);
+    std::string  value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
                             .filetype(gmx::eftIndex).outputFile()
@@ -112,15 +112,15 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, AddsMissingExtensionBasedOnExistingFile)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
+    gmx::Options options(NULL, NULL);
+    std::string  value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
                             .filetype(gmx::eftTrajectory).inputFile()));
-    TestFileManager tempFiles;
-    std::string filename(tempFiles.getTemporaryFilePath(".trr"));
+    TestFileManager      tempFiles;
+    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");
-    std::string inputValue(filename.substr(0, filename.length() - 4));
+    std::string          inputValue(filename.substr(0, filename.length() - 4));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());

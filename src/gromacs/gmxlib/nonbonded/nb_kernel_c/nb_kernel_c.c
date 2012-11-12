@@ -329,8 +329,7 @@ nb_kernel_t nb_kernel_ElecRF_VdwBham_GeomW4W4_F_c;
 
 
 nb_kernel_info_t
-kernellist_c[] =
-{
+    kernellist_c[] = {
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_c, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_c", "c", "None", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_c, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_c", "c", "None", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c, "nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c", "c", "None", "None", "LennardJones", "PotentialShift", "ParticleParticle", "", "PotentialAndForce" },
@@ -636,6 +635,6 @@ kernellist_c[] =
 };
 
 int
-kernellist_c_size = sizeof(kernellist_c)/sizeof(kernellist_c[0]);
+    kernellist_c_size = sizeof(kernellist_c)/sizeof(kernellist_c[0]);
 
 #endif

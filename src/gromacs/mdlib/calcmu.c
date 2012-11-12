@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -48,19 +48,19 @@
 #include "calcmu.h"
 #include "gmx_omp_nthreads.h"
 
-void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
+void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
              int nChargePerturbed,
-             dvec mu,dvec mu_B)
+             dvec mu, dvec mu_B)
 {
-    int i,end,m;
+    int    i, end, m;
     double mu_x, mu_y, mu_z;
 
-    end   = start + homenr;
+    end  = start + homenr;
 
     mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-                         num_threads(gmx_omp_nthreads_get(emntDefault))
-    for(i=start; i<end; i++)
+    num_threads(gmx_omp_nthreads_get(emntDefault))
+    for(i = start; i < end; i++)
     {
         mu_x += q[i]*x[i][XX];
         mu_y += q[i]*x[i][YY];
@@ -70,7 +70,7 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
     mu[YY] = mu_y;
     mu[ZZ] = mu_z;
 
-    for(m=0; (m<DIM); m++)
+    for(m = 0; (m < DIM); m++)
     {
         mu[m] *= ENM2DEBYE;
     }
@@ -79,12 +79,12 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
     {
         mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-                         num_threads(gmx_omp_nthreads_get(emntDefault))
-        for(i=start; i<end; i++)
+        num_threads(gmx_omp_nthreads_get(emntDefault))
+        for(i = start; i < end; i++)
         {
-             mu_x += qB[i]*x[i][XX];
-             mu_y += qB[i]*x[i][YY];
-             mu_z += qB[i]*x[i][ZZ];
+            mu_x += qB[i]*x[i][XX];
+            mu_y += qB[i]*x[i][YY];
+            mu_z += qB[i]*x[i][ZZ];
         }
         mu_B[XX] = mu_x * ENM2DEBYE;
         mu_B[YY] = mu_y * ENM2DEBYE;
@@ -92,21 +92,21 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
     }
     else
     {
-        copy_dvec(mu,mu_B);
+        copy_dvec(mu, mu_B);
     }
 }
 
-gmx_bool read_mu(FILE *fp,rvec mu,real *vol)
+gmx_bool read_mu(FILE *fp, rvec mu, real *vol)
 {
     /* For backward compatibility */
     real mmm[4];
 
-    if (fread(mmm,(size_t)(4*sizeof(real)),1,fp) != 1)
+    if (fread(mmm, (size_t)(4*sizeof(real)), 1, fp) != 1)
     {
         return FALSE;
     }
 
-    copy_rvec(mmm,mu);
+    copy_rvec(mmm, mu);
     *vol = mmm[3];
 
     return TRUE;

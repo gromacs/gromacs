@@ -82,7 +82,7 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         }
         initReferenceData(argc, argv);
         boost::scoped_ptr<std::vector<std::string> > commandLine(
-                new std::vector<std::string>());
+            new std::vector<std::string>());
         for (int i = 0; i < *argc; ++i)
         {
             commandLine->push_back(argv[i]);

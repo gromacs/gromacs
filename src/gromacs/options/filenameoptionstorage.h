@@ -74,11 +74,11 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
     private:
         virtual void convertValue(const std::string &value);
 
-        FileNameOptionInfo      info_;
-        OptionFileType          filetype_;
-        bool                    bRead_;
-        bool                    bWrite_;
-        bool                    bLibrary_;
+        FileNameOptionInfo info_;
+        OptionFileType     filetype_;
+        bool               bRead_;
+        bool               bWrite_;
+        bool               bLibrary_;
 };
 
 } // namespace gmx

@@ -75,9 +75,9 @@ struct RootHelpText
 };
 
 // The first two are not used.
-const char RootHelpText::name[] = "";
-const char RootHelpText::title[] = "";
-const char *const RootHelpText::text[] = {
+const char        RootHelpText::name[]  = "";
+const char        RootHelpText::title[] = "";
+const char *const RootHelpText::text[]  = {
     "Usage: [PROGRAM] <command> [<args>]",
 };
 
@@ -118,7 +118,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         // TODO: Implement once the situation with Redmine issue #969 is more
         // clear.
         GMX_THROW(NotImplementedError(
-                    "Root help is not implemented for this output format"));
+                      "Root help is not implemented for this output format"));
     }
     writeBasicHelpTopic(context, *this, helpText());
     // TODO: If/when this list becomes long, it may be better to only print
@@ -126,11 +126,11 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
     // "help commands") that prints the full list.
     printModuleList(context);
     context.writeTextBlock(
-            "For additional help on a command, use '[PROGRAM] help <command>'");
+        "For additional help on a command, use '[PROGRAM] help <command>'");
     writeSubTopicList(context,
-            "\nAdditional help is available on the following topics:");
+                      "\nAdditional help is available on the following topics:");
     context.writeTextBlock(
-            "To access the help, use '[PROGRAM] help <topic>'.");
+        "To access the help, use '[PROGRAM] help <topic>'.");
 }
 
 void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
@@ -140,7 +140,7 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
         // TODO: Implement once the situation with Redmine issue #969 is more
         // clear.
         GMX_THROW(NotImplementedError(
-                    "Module list is not implemented for this output format"));
+                      "Module list is not implemented for this output format"));
     }
     int maxNameLength = 0;
     CommandLineModuleMap::const_iterator module;
@@ -152,7 +152,7 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
             maxNameLength = nameLength;
         }
     }
-    File &file = context.outputFile();
+    File              &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);
@@ -161,7 +161,7 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
     file.writeLine("Available commands:");
     for (module = modules_.begin(); module != modules_.end(); ++module)
     {
-        const char *name = module->first.c_str();
+        const char *name        = module->first.c_str();
         const char *description = module->second->shortDescription();
         formatter.clear();
         formatter.addColumnLine(0, name);
@@ -212,7 +212,7 @@ void ModuleHelpTopic::writeHelp(const HelpWriterContext &context) const
     module_.writeHelp(context);
 }
 
-} // namespace
+}   // namespace
 
 /********************************************************************
  * CommandLineHelpModule
@@ -258,7 +258,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         void printUsage() const;
 
     private:
-        CompositeHelpTopicPointer   rootTopic_;
+        CompositeHelpTopicPointer rootTopic_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
 };
@@ -277,7 +277,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
 {
     HelpWriterContext context(&File::standardOutput(),
                               eHelpOutputFormat_Console);
-    HelpManager helpManager(*rootTopic_, context);
+    HelpManager       helpManager(*rootTopic_, context);
     try
     {
         for (int i = 1; i < argc; ++i)
@@ -298,7 +298,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
 void CommandLineHelpModule::writeHelp(const HelpWriterContext &context) const
 {
     context.writeTextBlock(
-            "Usage: [PROGRAM] help [<command>|<topic> [<subtopic> [...]]]");
+        "Usage: [PROGRAM] help [<command>|<topic> [<subtopic> [...]]]");
     // TODO: More information.
 }
 
@@ -364,15 +364,15 @@ class CommandLineModuleManager::Impl
          *
          * Owns the contained modules.
          */
-        CommandLineModuleMap    modules_;
+        CommandLineModuleMap modules_;
         //! Information about the currently running program.
-        const ProgramInfo      &programInfo_;
+        const ProgramInfo   &programInfo_;
         /*! \brief
          * Module that implements help for the binary.
          *
          * The pointed module is owned by the \a modules_ container.
          */
-        CommandLineHelpModule  *helpModule_;
+        CommandLineHelpModule *helpModule_;
 };
 
 CommandLineModuleManager::Impl::Impl(const ProgramInfo &programInfo)
@@ -389,7 +389,7 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
 
 CommandLineModuleMap::const_iterator
 CommandLineModuleManager::Impl::findModuleFromBinaryName(
-        const ProgramInfo &programInfo) const
+    const ProgramInfo &programInfo) const
 {
     std::string binaryName = programInfo.invariantProgramName();
     if (binaryName == programInfo.realBinaryName())
@@ -445,7 +445,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
             impl_->helpModule_->printUsage();
             return 2;
         }
-        module = impl_->findModuleByName(argv[1]);
+        module    = impl_->findModuleByName(argv[1]);
         argOffset = 1;
     }
     if (module == impl_->modules_.end())

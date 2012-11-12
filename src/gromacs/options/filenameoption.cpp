@@ -141,7 +141,7 @@ class FileTypeRegistry
         //! Returns a singleton instance of this class.
         static const FileTypeRegistry &instance();
         //! Returns a handler for a single file type.
-        const FileTypeHandler &handlerForType(OptionFileType type) const;
+        const FileTypeHandler         &handlerForType(OptionFileType type) const;
 
     private:
         //! Initializes the file type registry.
@@ -152,7 +152,7 @@ class FileTypeRegistry
         //! Registers a file type with multiple extensions.
         template <size_t count>
         void registerType(OptionFileType type,
-                          const char *const (&extensions)[count]);
+                          const          char *const (&extensions)[count]);
 
         std::vector<FileTypeHandler> filetypes_;
 };
@@ -191,7 +191,7 @@ FileTypeRegistry::FileTypeRegistry()
 }
 
 void FileTypeRegistry::registerType(OptionFileType type,
-                                    const char *extension)
+                                    const char    *extension)
 {
     GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
                        "Invalid file type");
@@ -200,7 +200,7 @@ void FileTypeRegistry::registerType(OptionFileType type,
 
 template <size_t count>
 void FileTypeRegistry::registerType(OptionFileType type,
-                                    const char *const (&extensions)[count])
+                                    const          char *const (&extensions)[count])
 {
     GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
                        "Invalid file type");
@@ -226,8 +226,8 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
         // file has an unrecognized extension.
         return value;
     }
-    const FileTypeRegistry &registry = FileTypeRegistry::instance();
-    const FileTypeHandler &typeHandler = registry.handlerForType(filetype);
+    const FileTypeRegistry &registry    = FileTypeRegistry::instance();
+    const FileTypeHandler  &typeHandler = registry.handlerForType(filetype);
     if (typeHandler.hasKnownExtension(value))
     {
         return value;
@@ -243,7 +243,7 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
     return typeHandler.addExtension(value);
 }
 
-} // namespace
+}   // namespace
 
 /********************************************************************
  * FileNameOptionStorage
@@ -251,8 +251,8 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
 
 FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
     : MyBase(settings), info_(this), filetype_(settings.filetype_),
-      bRead_(settings.bRead_), bWrite_(settings.bWrite_),
-      bLibrary_(settings.bLibrary_)
+    bRead_(settings.bRead_), bWrite_(settings.bWrite_),
+    bLibrary_(settings.bLibrary_)
 {
     if (settings.defaultBasename_ != NULL)
     {

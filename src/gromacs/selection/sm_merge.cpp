@@ -49,13 +49,13 @@
 typedef struct
 {
     /** Input positions. */
-    gmx_ana_pos_t    p1;
+    gmx_ana_pos_t p1;
     /** Other input positions. */
-    gmx_ana_pos_t    p2;
+    gmx_ana_pos_t p2;
     /** Group to store the output atom indices. */
-    gmx_ana_index_t  g;
+    gmx_ana_index_t g;
     /** Stride for merging (\c stride values from \c p1 for each in \c p2). */
-    int              stride;
+    int stride;
 } t_methoddata_merge;
 
 /** Allocates data for the merging selection modifiers. */
@@ -159,7 +159,7 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
     t_methoddata_merge *data;
 
     snew(data, 1);
-    data->stride = 0;
+    data->stride     = 0;
     param[0].val.u.p = &data->p1;
     param[1].val.u.p = &data->p2;
     if (npar > 2)

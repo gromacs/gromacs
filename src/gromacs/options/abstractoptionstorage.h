@@ -108,17 +108,17 @@ class AbstractOptionStorage
         /*! \brief
          * Returns an option info object corresponding to this option.
          */
-        virtual OptionInfo &optionInfo() = 0;
+        virtual OptionInfo &optionInfo()             = 0;
         /*! \brief
          * Returns a short string describing the type of the option.
          *
          * The caller is free to discard the returned string.
          */
-        virtual const char *typeString() const = 0;
+        virtual const char *typeString() const       = 0;
         /*! \brief
          * Returns the number of option values added so far.
          */
-        virtual int valueCount() const = 0;
+        virtual int valueCount() const               = 0;
         /*! \brief
          * Returns the i'th value formatted as a string.
          *
@@ -199,7 +199,7 @@ class AbstractOptionStorage
          * \throws  APIError if invalid settings have been provided.
          */
         AbstractOptionStorage(const AbstractOption &settings,
-                              OptionFlags staticFlags);
+                              OptionFlags           staticFlags);
 
         //! Marks the option as set.
         void markAsSet() { flags_.set(efOption_Set); }
@@ -302,18 +302,18 @@ class AbstractOptionStorage
         virtual void processAll() = 0;
 
     private:
-        std::string             name_;
-        std::string             descr_;
+        std::string name_;
+        std::string descr_;
         //! Flags for the option.
-        OptionFlags             flags_;
+        OptionFlags flags_;
         //! Minimum number of values required (in one set).
-        int                     minValueCount_;
+        int         minValueCount_;
         //! Maximum allowed number of values (in one set), or -1 if no limit.
-        int                     maxValueCount_;
+        int         maxValueCount_;
         //! Whether we are currently assigning values to a set.
-        bool                    bInSet_;
+        bool        bInSet_;
         //! Whether there were errors in set values.
-        bool                    bSetValuesHadErrors_;
+        bool        bSetValuesHadErrors_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };

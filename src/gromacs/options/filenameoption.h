@@ -67,7 +67,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), filetype_(eftUnknown), defaultBasename_(NULL),
-              bRead_(false), bWrite_(false), bLibrary_(false)
+            bRead_(false), bWrite_(false), bLibrary_(false)
         {
         }
 
@@ -122,11 +122,11 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Creates a FileNameOptionStorage object.
         virtual AbstractOptionStoragePointer createStorage() const;
 
-        OptionFileType          filetype_;
-        const char             *defaultBasename_;
-        bool                    bRead_;
-        bool                    bWrite_;
-        bool                    bLibrary_;
+        OptionFileType filetype_;
+        const char    *defaultBasename_;
+        bool           bRead_;
+        bool           bWrite_;
+        bool           bLibrary_;
 
         /*! \brief
          * Needed to initialize FileNameOptionStorage from this class without
