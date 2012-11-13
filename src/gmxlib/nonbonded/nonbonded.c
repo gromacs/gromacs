@@ -71,6 +71,9 @@
 
 /* Different default (c) and accelerated interaction-specific kernels */
 #include "nb_kernel_c/nb_kernel_c.h"
+#if (defined GMX_X86_SSE2) && !(defined GMX_DOUBLE)
+#    include "nb_kernel_sse2_single/nb_kernel_sse2_single.h"
+#endif
 
 #ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -94,9 +97,12 @@ gmx_nonbonded_setup(FILE *         fplog,
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
             nb_kernel_list_add_kernels(kernellist_c,kernellist_c_size);
             
-            if(fr->use_cpu_acceleration==TRUE)
+            if(!(fr!=NULL && fr->use_cpu_acceleration==FALSE))
             {
                 /* Add interaction-specific kernels for different architectures */
+#if (defined GMX_X86_SSE2) && !(defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_sse2_single,kernellist_sse2_single_size);
+#endif
                 ; /* empty statement to avoid a completely empty block */
             }
         }
@@ -125,6 +131,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 
     const char *     arch[] =
     {
+#if (defined GMX_X86_SSE2) && !(defined GMX_DOUBLE)
+        "sse2_single",
+#endif
         "c"
     };
     int              narch = asize(arch);
