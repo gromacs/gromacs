@@ -391,7 +391,6 @@ nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_c
 
             /* CUBIC SPLINE TABLE DISPERSION */
             vfitab          += 0;
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -400,7 +399,6 @@ nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_c
             fvdw6            = c6_00*FF;
 
             /* CUBIC SPLINE TABLE REPULSION */
-            Y                = vftab[vfitab+4];
             F                = vftab[vfitab+5];
             Geps             = vfeps*vftab[vfitab+6];
             Heps2            = vfeps*vfeps*vftab[vfitab+7];

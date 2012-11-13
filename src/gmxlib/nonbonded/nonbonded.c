@@ -64,14 +64,13 @@
 #include "nonbonded.h"
 
 #include "nb_kernel.h"
-#include "nb_kernel_c/nb_kernel_c.h"
-
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
 #include "nb_generic_adress.h"
 
-
+/* Different default (c) and accelerated interaction-specific kernels */
+#include "nb_kernel_c/nb_kernel_c.h"
 
 #ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -93,11 +92,13 @@ gmx_nonbonded_setup(FILE *         fplog,
         if(bGenericKernelOnly==FALSE)
         {
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
-
-            /* Add interaction-specific C kernels */
             nb_kernel_list_add_kernels(kernellist_c,kernellist_c_size);
-
-            /* Add interaction-specific accelerated SSE kernels, etc. here */
+            
+            if(fr->use_cpu_acceleration==TRUE)
+            {
+                /* Add interaction-specific kernels for different architectures */
+                ; /* empty statement to avoid a completely empty block */
+            }
         }
         /* Create a hash for faster lookups */
         nb_kernel_list_hash_init();
@@ -122,7 +123,11 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     const char *     other;
     const char *     vf;
 
-    const char *     archs[] = { "c" };
+    const char *     arch[] =
+    {
+        "c"
+    };
+    int              narch = asize(arch);
     int              i;
 
     if(nonbonded_setup_done==FALSE)
@@ -160,17 +165,17 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     {
         /* Try to find a specific kernel first */
 
-        for(i=0;i<asize(archs) && nl->kernelptr_vf==NULL ;i++)
+        for(i=0;i<narch && nl->kernelptr_vf==NULL ;i++)
         {
-               nl->kernelptr_vf = nb_kernel_list_findkernel(log,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+               nl->kernelptr_vf = nb_kernel_list_findkernel(log,arch[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
         }
-        for(i=0;i<asize(archs) && nl->kernelptr_f==NULL ;i++)
+        for(i=0;i<narch && nl->kernelptr_f==NULL ;i++)
         {
-            nl->kernelptr_f  = nb_kernel_list_findkernel(log,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"Force");
+            nl->kernelptr_f  = nb_kernel_list_findkernel(log,arch[i],elec,elec_mod,vdw,vdw_mod,geom,other,"Force");
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if(nl->kernelptr_f == NULL)
             {
-                nl->kernelptr_f  = nb_kernel_list_findkernel(NULL,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+                nl->kernelptr_f  = nb_kernel_list_findkernel(NULL,arch[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
             }
         }
 
@@ -211,7 +216,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
     kernel_data.exclusions              = excl;
     kernel_data.lambda                  = lambda;
     kernel_data.dvdl                    = dvdl;
-    
+        
     if(fr->bAllvsAll)
     {
         return;
