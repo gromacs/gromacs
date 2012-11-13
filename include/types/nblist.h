@@ -79,6 +79,14 @@ typedef struct
     void *          kernelptr_vf;
     void *          kernelptr_v;
     void *          kernelptr_f;
+
+    /* Pad the list of neighbors for each i atom with "-1" entries up to the
+     * simd_padding_width, if it is larger than 0. This is necessary for many
+     * accelerated kernels using single-instruction multiple-data operations
+     * internally.
+     */
+    int             simd_padding_width;
+
 } t_nblist;
 
 

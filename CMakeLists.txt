@@ -167,16 +167,16 @@ option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
 include(gmxDetectAcceleration)
-if(NOT DEFINED GMX_ACCELERATION)
+if(NOT DEFINED GMX_CPU_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
-        set(GMX_SUGGESTED_ACCELERATION "None")
+        set(GMX_SUGGESTED_CPU_ACCELERATION "None")
     else(CMAKE_CROSSCOMPILING)
-        gmx_detect_acceleration(GMX_SUGGESTED_ACCELERATION)
+        gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
     endif(CMAKE_CROSSCOMPILING)
-endif(NOT DEFINED GMX_ACCELERATION)
+endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
-set(GMX_ACCELERATION "@GMX_SUGGESTED_ACCELERATION@"
-    CACHE STRING "Accelerated kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
+set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
+    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -343,11 +343,11 @@ if(GMX_OPENMM)
         set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
                 "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
     endif(GMX_SOFTWARE_INVSQRT)
-    string(TOUPPER ${GMX_ACCELERATION} GMX_ACCELERATION)
-    if(NOT GMX_ACCELERATION STREQUAL "NONE")
-        message(STATUS "Switching off CPU-based acceleration, the OpenMM build does not support/need any!")	
-        set(GMX_ACCELERATION "none" CACHE STRING 
-		"Switching off CPU-based acceleration, the OpenMM build does not support/need any!" FORCE)
+    string(TOUPPER ${GMX_CPU_ACCELERATION} GMX_CPU_ACCELERATION)
+    if(NOT GMX_CPU_ACCELERATION STREQUAL "NONE")
+        message(STATUS "Switching off CPU-based acceleration, the OpenMM build does not support/need any!")
+        set(GMX_CPU_ACCELERATION "None" CACHE STRING
+            "Switching off CPU-based acceleration, the OpenMM build does not support/need any!" FORCE)
     endif()
     if(GMX_FAHCORE)
         message(FATAL_ERROR "The OpenMM build does not support FAH build!")
@@ -356,10 +356,10 @@ if(GMX_OPENMM)
         message(FATAL_ERROR  "The OpenMM-build does not support double precision calculations!")
     endif()
     # mark as advanced the unused variables
-    mark_as_advanced(FORCE GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
+    mark_as_advanced(FORCE GMX_CPU_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
         GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
 else(GMX_OPENMM)
-     mark_as_advanced(CLEAR GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
+     mark_as_advanced(CLEAR GMX_CPU_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
         GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
 endif(GMX_OPENMM)
 
@@ -695,10 +695,10 @@ if(NOT GMX_SYSTEM_XDR)
 endif(NOT GMX_SYSTEM_XDR)
 
 # Process nonbonded accelerated kernels settings
-string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
-if(${GMX_ACCELERATION} STREQUAL "NONE")
+string(TOUPPER ${GMX_CPU_ACCELERATION} ${GMX_CPU_ACCELERATION})
+if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
     # nothing to do
-elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
 
     GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" GROMACS_C_FLAGS)
     if(NOT GNU_SSE2_CFLAG)
@@ -721,13 +721,14 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE2")
         message(FATAL_ERROR "Cannot find emmintrin.h, which is required for SSE2 intrinsics support.")
     endif(NOT HAVE_EMMINTRIN_H)
 
+    set(GMX_CPU_ACCELERATION_X86_SSE2 1)
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
     if (NOT ACCELERATION_QUIETLY)
       message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
     endif()
 
-elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
 
     GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" GROMACS_C_FLAGS)
     if (NOT GNU_SSE4_CFLAG)
@@ -760,6 +761,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
         message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
     endif(NOT HAVE_SMMINTRIN_H)
 
+    set(GMX_CPU_ACCELERATION_X86_SSE4_1 1)
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
@@ -767,7 +769,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE4.1")
       message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
     endif()
 
-elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUAL "AVX_256")
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
 
     # Set the AVX compiler flag for both these choices!
 
@@ -790,7 +792,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
     endif()
 
     # Set the FMA4 flags (MSVC doesn't require any)
-    if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
+    if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
         GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" GROMACS_C_FLAGS)
         if (NOT GNU_FMA_CFLAG)
             message(WARNING "No C FMA4 flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
@@ -828,27 +830,29 @@ elseif(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_ACCELERATION} STREQUA
     set(GMX_X86_SSE2   1)
 
     # But just enable one of the choices internally...
-    if(${GMX_ACCELERATION} STREQUAL "AVX_128_FMA")
+    if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA")
+        set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
         set(GMX_X86_AVX_128_FMA 1)
         if (NOT ACCELERATION_QUIETLY)
           message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
         endif()
     else()
         # If we are not doing AVX_128, it must be AVX_256...
+        set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
         set(GMX_X86_AVX_256 1)
         if (NOT ACCELERATION_QUIETLY)
           message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
         endif()
     endif()
 
-elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "FORTRAN")
 
 #    Fortran is temporarily disabled while we push in nbNxN kernels.
 #    We need to fake it a bit here to avoid jenkins build errors!
 #    add_definitions(-DGMX_FORTRAN)
 
-elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
-# GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
+# GMX_CPU_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
     if (NOT ACCELERATION_QUIETLY)
       message(STATUS "Configuring for BlueGene")
     endif()
@@ -869,13 +873,13 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
 # The automatic testing for endianness does not work for the BlueGene cross-compiler
     set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
     set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
-elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
-else(${GMX_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
-endif(${GMX_ACCELERATION} STREQUAL "NONE")
+else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
+endif(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
 set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
 if(GMX_FORTRAN OR GMX_POWER6)
@@ -952,9 +956,9 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(GMX_FFT_FFTW3 1)
 
-    if (NOT ${GMX_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
+    if (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
       message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-    endif (NOT ${GMX_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
+    endif (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
