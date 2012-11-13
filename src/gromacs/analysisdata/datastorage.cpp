@@ -272,11 +272,13 @@ class AnalysisDataStorage::Impl
          * frame (see \a frames_).
          */
         int                     nextIndex_;
+        /* Analysis data set is split over more than one MPI process */
+        bool                    parallelDataMPI_;
 };
 
 AnalysisDataStorage::Impl::Impl()
     : data_(NULL), bMultipoint_(false),
-      storageLimit_(0), pendingLimit_(1), firstFrameLocation_(0), nextIndex_(0)
+      storageLimit_(0), pendingLimit_(1), firstFrameLocation_(0), nextIndex_(0), parallelDataMPI_(false)
 {
 }
 
@@ -507,6 +509,7 @@ AnalysisDataStorage::setParallelOptions(const AnalysisDataParallelOptions &opt)
 {
     if (opt.useMPI())
     {
+        impl_->parallelDataMPI_ = true;
         requestStorage(-1);
     }
     impl_->pendingLimit_ = 2 * opt.parallelizationFactor() - 1;
@@ -670,66 +673,69 @@ AnalysisDataStorage::finishFrame(int index)
 void
 AnalysisDataStorage::finishDataStorage()
 {
-#ifdef GMX_LIB_MPI //otherwise nothing to do
-    using mpi::comm;
-    Impl timpl;
-    std::vector<int> recv_counts;
-    std::vector<int> recv_sel;
-    if (mpi::isMaster())
+    if (impl_->parallelDataMPI_)
     {
-        timpl.data_ = impl_->data_;
-        recv_counts.resize(comm::world.size());
-    }
-    // Determine information needed by master
-    std::vector<int> selection;
-    int recv_size=0;
-    // It would be nice to have gather work with in-place. Then
-    // this for loop isn't necessary on the master
-    // (master wouldn't need to send to itself). Also we could
-    // get rid of the whole timpl.
-    for (size_t i=0; i<impl_->frames_.size(); i++)
-    {
-        GMX_ASSERT (mpi::isMaster() || !impl_->frames_[i].isNotified(),
-                    "Tried to collect an already notified frame!");
-        if (impl_->frames_[i].isFinished())
+        using mpi::comm;
+        Impl timpl;
+        std::vector<int> recv_counts;
+        std::vector<int> recv_sel;
+        if (mpi::isMaster())
         {
-            recv_size++;
-            selection.push_back(i);
+            timpl.data_ = impl_->data_;
+            recv_counts.resize(comm::world.size());
         }
-    }
-    comm::world.gather(&recv_size, (&recv_size)+1, recv_counts.begin(), recv_counts.end(), 0); //gather number of frames on each node
-
-    if (mpi::isMaster())
-    {
-        size_t totalFrames=0;
-        for (int i=0; i<comm::world.size(); i++)
+        // Determine information needed by master
+        std::vector<int> selection;
+        int recv_size=0;
+        // It would be nice to have gather work with in-place. Then
+        // this for loop isn't necessary on the master
+        // (master wouldn't need to send to itself). Also we could
+        // get rid of the whole timpl.
+        for (size_t i=0; i<impl_->frames_.size(); i++)
         {
-            totalFrames += recv_counts[i];
+            GMX_ASSERT (mpi::isMaster() || !impl_->frames_[i].isNotified(),
+                        "Tried to collect an already notified frame!");
+            if (impl_->frames_[i].isFinished())
+            {
+                recv_size++;
+                selection.push_back(i);
+            }
         }
-        recv_sel.resize(totalFrames);
-        timpl.extendBuffer(this, std::max(totalFrames, impl_->frames_.size()));
-    }
-    comm::world.gatherv(selection.begin(), selection.end(),
-            recv_sel.begin(), recv_sel.end(),
-            recv_counts.begin(), recv_counts.end(), 0); //gather frame numbers of frames
-    //gather frames
+        comm::world.gather(&recv_size, (&recv_size)+1, recv_counts.begin(), recv_counts.end(), 0); //gather number of frames on each node
 
-    comm::world.gatherv(
-            make_permutation_iterator(impl_->frames_.begin(),selection.begin()),
-            make_permutation_iterator(impl_->frames_.begin(),selection.end()),
-            make_permutation_iterator(timpl.frames_.begin(),recv_sel.begin()),
-            make_permutation_iterator(timpl.frames_.begin(),recv_sel.end()),
-            recv_counts.begin(), recv_counts.end(), 0);
+        if (mpi::isMaster())
+        {
+            size_t totalFrames=0;
+            for (int i=0; i<comm::world.size(); i++)
+            {
+                totalFrames += recv_counts[i];
+            }
+            recv_sel.resize(totalFrames);
+            timpl.extendBuffer(this, std::max(totalFrames, impl_->frames_.size()));
+        }
+        comm::world.gatherv(selection.begin(), selection.end(),
+                recv_sel.begin(), recv_sel.end(),
+                recv_counts.begin(), recv_counts.end(), 0); //gather frame numbers of frames
+        //gather frames
+
+        comm::world.gatherv(
+                make_permutation_iterator(impl_->frames_.begin(),selection.begin()),
+                make_permutation_iterator(impl_->frames_.begin(),selection.end()),
+                make_permutation_iterator(timpl.frames_.begin(),recv_sel.begin()),
+                make_permutation_iterator(timpl.frames_.begin(),recv_sel.end()),
+                recv_counts.begin(), recv_counts.end(), 0);
+
+        if (mpi::isMaster())
+        {
+            impl_->frames_.swap(timpl.frames_);
+        }
+        impl_->notifyNextFrames(0);
+    }
 
     if (mpi::isMaster())
     {
-        impl_->frames_.swap(timpl.frames_);
-    }
-    impl_->notifyNextFrames(0);
-#endif//GMX_LIB_MPI
-    if (mpi::isMaster())
-    {
-        impl_->data_->notifyDataFinish();
+        impl_->parallelDataMPI_ = false;    // now all data is collected by master process.
+        impl_->data_->notifyDataFinish();   // finish up in serial mode.
     }
 }
 
