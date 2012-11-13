@@ -235,12 +235,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double          cycles_pmes;
     gmx_bool        bPMETuneTry=FALSE,bPMETuneRunning=FALSE;
 
-    if(MASTER(cr))
-    {
-        gmx_warning("New C kernels (and force-only) kernels are now enabled,\n"
-                    "but it will be another couple of days for SSE/AVX kernels.\n\n");
-    }
-
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;

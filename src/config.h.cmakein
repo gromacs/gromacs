@@ -100,20 +100,32 @@
 /* Use AMD core math library */
 #cmakedefine GMX_FFT_ACML
 
-/* What type of acceleration is used? (string, for dumping to files) */
-#define GMX_ACCELERATION "@GMX_ACCELERATION@"
-
-/* SSE2 acceleration */
+/* SSE2 instructions available */
 #cmakedefine GMX_X86_SSE2
 
-/* SSE4.1 acceleration */
+/* SSE4.1 instructions available */
 #cmakedefine GMX_X86_SSE4_1
 
-/* AVX 128-bit acceleration with FMA, useful on modern AMD hardware */
+/* AVX 128-bit FMA instructions available */
 #cmakedefine GMX_X86_AVX_128_FMA
 
-/* AVX 256-bit acceleration, usually for intel hardware */
+/* AVX 256-bit instructions available */
 #cmakedefine GMX_X86_AVX_256
+
+/* SSE2 was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_SSE2
+
+/* SSE4.1 was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_SSE4_1
+
+/* AVX 128-bit FMA was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_128_FMA
+
+/* AVX 256-bit was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_256
+
+/* String for CPU acceleration choice (for writing to log files and stdout) */
+#define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
 
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN 
