@@ -53,15 +53,15 @@ namespace gmx
 namespace analysismodules
 {
 
-// DONNO: where this should go?
-enum rdf_mode   {
-                INTRA,      // RDF for single selection
-                REFSEL,     // RDF for selection relative ref selection
-                SURFREF     // RDF for selection relative ref selection surface
-                };
-
 class Rdf : public TrajectoryAnalysisModule
 {
+    // DONNO: where this should go?
+    enum rdf_mode   {
+                    INTRA,      // RDF for single selection
+                    REFSEL,     // RDF for selection relative ref selection
+                    SURFREF     // RDF for selection relative ref selection surface
+                    };
+
     public:
         static const char name[];
         static const char shortDescription[];

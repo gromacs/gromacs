@@ -124,6 +124,19 @@ Rdf::optionsFinished(Options * options, TrajectoryAnalysisSettings * /*settings*
 {
     // check if a reference selection has been given.
     bRefSelectionSet_ = options->isSet("refsel");
+
+#ifdef GMX_LIB_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (mpi::isMaster())
+    {
+        fprintf(stderr, "master process: %d\n", getpid());
+    }
+    else
+    {
+        fprintf(stderr, "other process: %d\n", getpid());
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
 }
 
 void
@@ -147,13 +160,13 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // check for necessary options for rdf mode.
     if ((rdfmode_==(REFSEL|SURFREF)) && !bRefSelectionSet_)
     {
-        GMX_THROW(InvalidInputError("No reference selection given."));
+        GMX_THROW(InvalidInputError("Reference selection is not given."));
     }
 
     // assert non-dynamic selections
     if (sel_[0].isDynamic())
     {
-        GMX_THROW(InvalidInputError("Output selection: Dynamic selections not supported."));
+        GMX_THROW(InvalidInputError("Dynamic selections not supported."));
     }
     if (bRefSelectionSet_ && refsel_[0].isDynamic())
     {
@@ -163,12 +176,12 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // check for empty selections
     if (sel_[0].posCount() == 0)
     {
-        GMX_THROW(InvalidInputError("Selection does not define any positions."));
+        GMX_THROW(InvalidInputError("Selection is empty."));
     }
 
     if (bRefSelectionSet_ && refsel_[0].posCount() == 0)
     {
-        GMX_THROW(InvalidInputError("Reference selection does not define any positions."));
+        GMX_THROW(InvalidInputError("Reference selection is empty."));
     }
 
     // figure out number of columns to use
@@ -197,14 +210,11 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
         } break;
     }
 
-    registerAnalysisDataset(&data_, "dx_data");
+    data_.setMultipoint(false);
     data_.addModule(histm_);
 
-#ifdef GMX_LIB_MPI
+
     if (!fnHist_.empty() && mpi::isMaster())
-#else
-    if (!fnHist_.empty())
-#endif
     {
         AnalysisDataPlotModulePointer plotm(
             new AnalysisDataPlotModule(settings.plotSettings()));
@@ -215,17 +225,7 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
         histm_->averager().addModule(plotm);
     }
 
-#ifdef GMX_LIB_MPI
-    if (mpi::isMaster())
-    {
-        fprintf(stderr, "master process: %d\n", getpid());
-    }
-    else
-    {
-        fprintf(stderr, "other process: %d\n", getpid());
-    }
-#endif
-
+    registerAnalysisDataset(&data_, "dx_data");
 }
 
 void
