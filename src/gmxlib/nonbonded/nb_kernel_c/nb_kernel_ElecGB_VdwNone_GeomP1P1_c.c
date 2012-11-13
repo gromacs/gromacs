@@ -227,7 +227,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_c
         /* Update potential energies */
         kernel_data->energygrp_elec[ggid] += velecsum;
         kernel_data->energygrp_polarization[ggid] += vgbsum;
-        dvda[nri]                   = dvda[nri] + dvdasum*isai0*isai0;
+        dvda[inr]                   = dvda[inr] + dvdasum*isai0*isai0;
 
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;
@@ -428,7 +428,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_c
         fshift[i_shift_offset+YY]  += ty;
         fshift[i_shift_offset+ZZ]  += tz;
 
-        dvda[nri]                   = dvda[nri] + dvdasum*isai0*isai0;
+        dvda[inr]                   = dvda[inr] + dvdasum*isai0*isai0;
 
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;
