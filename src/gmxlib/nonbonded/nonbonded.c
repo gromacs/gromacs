@@ -71,6 +71,9 @@
 
 /* Different default (c) and accelerated interaction-specific kernels */
 #include "nb_kernel_c/nb_kernel_c.h"
+#if (defined GMX_X86_SSE2) && !(defined GMX_DOUBLE)
+#    include "nb_kernel_sse2_single/nb_kernel_sse2_single.h"
+#endif
 
 #ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -94,9 +97,12 @@ gmx_nonbonded_setup(FILE *         fplog,
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
             nb_kernel_list_add_kernels(kernellist_c,kernellist_c_size);
             
-            if(fr->use_cpu_acceleration==TRUE)
+            if(!(fr!=NULL && fr->use_cpu_acceleration==FALSE))
             {
                 /* Add interaction-specific kernels for different architectures */
+#if (defined GMX_X86_SSE2) && !(defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_sse2_single,kernellist_sse2_single_size);
+#endif
                 ; /* empty statement to avoid a completely empty block */
             }
         }
@@ -123,11 +129,19 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     const char *     other;
     const char *     vf;
 
-    const char *     arch[] =
+    struct
     {
-        "c"
+        const char *  arch;
+        int           simd_padding_width;
+    }
+    arch_and_padding[] =
+    {
+#if (defined GMX_X86_SSE2) && !(defined GMX_DOUBLE)
+        { "sse2_single", 1 },
+#endif
+        { "c", 1 },
     };
-    int              narch = asize(arch);
+    int              narch = asize(arch_and_padding);
     int              i;
 
     if(nonbonded_setup_done==FALSE)
@@ -167,18 +181,19 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 
         for(i=0;i<narch && nl->kernelptr_vf==NULL ;i++)
         {
-               nl->kernelptr_vf = nb_kernel_list_findkernel(log,arch[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+            nl->kernelptr_vf = nb_kernel_list_findkernel(log,arch_and_padding[i].arch,elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
         }
         for(i=0;i<narch && nl->kernelptr_f==NULL ;i++)
         {
-            nl->kernelptr_f  = nb_kernel_list_findkernel(log,arch[i],elec,elec_mod,vdw,vdw_mod,geom,other,"Force");
+            nl->kernelptr_f = nb_kernel_list_findkernel(log,arch_and_padding[i].arch,elec,elec_mod,vdw,vdw_mod,geom,other,"Force");
+
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if(nl->kernelptr_f == NULL)
             {
-                nl->kernelptr_f  = nb_kernel_list_findkernel(NULL,arch[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+                nl->kernelptr_f  = nb_kernel_list_findkernel(NULL,arch_and_padding[i].arch,elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
             }
         }
-
+        
         /* Give up, pick a generic one instead */
         if(nl->kernelptr_vf==NULL)
         {
