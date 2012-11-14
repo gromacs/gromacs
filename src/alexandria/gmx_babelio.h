@@ -55,3 +55,4 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
                                      gau_atomprop_t gaps,
                                      real th_toler,real ph_toler,
                                      int maxpot,gmx_bool bVerbose);
+

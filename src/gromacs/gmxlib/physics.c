@@ -50,7 +50,7 @@ double convert2gmx(double x,int unit)
     case eg2cBohr:
         return x*BOHR2NM;
     case eg2cKcal_Mole:
-        return x/CAL2JOULE;
+        return x*CAL2JOULE;
     case eg2cHartree:
         return x*ONE_4PI_EPS0/BOHR2NM;
     case eg2cHartree_e:
@@ -84,7 +84,7 @@ double gmx2convert(double x,int unit)
     case eg2cBohr:
         return x/BOHR2NM;
     case eg2cKcal_Mole:
-        return x*CAL2JOULE;
+        return x/CAL2JOULE;
     case eg2cHartree:
         return x/(ONE_4PI_EPS0/BOHR2NM);
     case eg2cHartree_e:
