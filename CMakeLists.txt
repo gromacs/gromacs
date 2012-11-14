@@ -23,8 +23,9 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.6-dev")
-set(CUSTOM_VERSION_STRING ""
+set(PROJECT_VERSION "4.6-ScalaLife-121114")
+# git release-4-6 9f6b21f plus SSE2 single-precision kernels f4ddf2cf
+set(CUSTOM_VERSION_STRING "ScalaLife release 12/11/14"
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
 if (CUSTOM_VERSION_STRING)
@@ -106,7 +107,7 @@ endif()
 ########################################################################
 # User input options - enable C++ - before any CXX flags are changed   #
 ########################################################################
-option(GMX_GPU  "Enable GPU acceleration" ON)
+option(GMX_GPU  "Enable GPU acceleration" OFF)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 option(GMX_FORCE_CXX "Enable C++ compilation even if not necessary" OFF)
 mark_as_advanced(GMX_FORCE_CXX)
