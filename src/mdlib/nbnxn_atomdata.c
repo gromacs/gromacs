@@ -966,7 +966,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
 
 static void
 nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
-                            nbnxn_atomdata_output_t * gmx_restrict src,
+                            real ** gmx_restrict src,
                             int nsrc,
                             int i0, int i1)
 {
@@ -976,23 +976,22 @@ nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
     {
         for(s=0; s<nsrc; s++)
         {
-            dest[i] += src[s].f[i];
+            dest[i] += src[s][i];
         }
     }
 }
 
 static void
 nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
-                                     nbnxn_atomdata_output_t * gmx_restrict src,
+                                     real ** gmx_restrict src,
                                      int nsrc,
                                      int i0, int i1)
 {
 #ifdef NBNXN_SEARCH_SSE
-#ifdef GMX_X86_AVX_256
-#define GMX_MM256_HERE
-#else
+/* We can use AVX256 here, but not when AVX128 kernels are selected.
+ * As this reduction is not faster with AVX256 anyway, we use 128-bit SIMD.
+ */
 #define GMX_MM128_HERE
-#endif
 #include "gmx_x86_simd_macros.h"
 
     int       i,s;
@@ -1009,7 +1008,7 @@ nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
         dest_SSE = gmx_load_pr(dest+i);
         for(s=0; s<nsrc; s++)
         {
-            src_SSE  = gmx_load_pr(src[s].f+i);
+            src_SSE  = gmx_load_pr(src[s]+i);
             dest_SSE = gmx_add_pr(dest_SSE,src_SSE);
         }
         gmx_store_pr(dest+i,dest_SSE);
@@ -1170,41 +1169,80 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
 #pragma omp parallel for num_threads(nth) schedule(static)
         for(th=0; th<nth; th++)
         {
-            int g0,g1;
-            int b0,b1,nb;
-            int blocksize,i0,i1;
+            int g0,g1,g;
 
             /* For which grids should we reduce the force output? */
             g0 = ((locality==eatLocal || locality==eatAll) ? 0 : 1);
             g1 = (locality==eatLocal ? 1 : nbs->ngrid);
 
-            /* Get the grid cell bounds */
-            b0 = nbs->grid[g0].cell0;
-            b1 = nbs->grid[g1-1].cell0 + nbs->grid[g1-1].nc;
-            blocksize = nbs->grid[g0].na_sc*nbat->fstride;
-            /* The simple grid size in atoms is a multiple of na_cj.
-             * With float-AVX256 we use this and make blocksize a multiple of 8.
-             */
-            if (nbs->grid[0].bSimple && nbs->grid[0].na_cj > nbs->grid[0].na_c)
+            for(g=g0; g<g1; g++)
             {
-                blocksize *= 2;
-                b0 /= 2;
-                b1 /= 2;
-            }
-            nb = b1 - b0;
+                nbnxn_grid_t *grid;
+                int b0,b1,b;
+                int c0,c1,i0,i1;
+                int nfptr;
+                real *fptr[NBNXN_CELLBLOCK_MAX_THREADS];
+                int out;
 
-            /* Calculate the index range for our thread */
-            i0 = (b0 + (nb* th   )/nth)*blocksize;
-            i1 = (b0 + (nb*(th+1))/nth)*blocksize;
+                grid = &nbs->grid[g];
+
+                /* Calculate the cell-block range for our thread */
+                b0 = (grid->cellblock_flags.ncb* th   )/nth;
+                b1 = (grid->cellblock_flags.ncb*(th+1))/nth;
+
+                if (grid->cellblock_flags.bUse)
+                {
+                    for(b=b0; b<b1; b++)
+                    {
+                        c0 = b*NBNXN_CELLBLOCK_SIZE;
+                        c1 = min(c0 + NBNXN_CELLBLOCK_SIZE,grid->nc);
+                        i0 = (grid->cell0 + c0)*grid->na_c*nbat->fstride;
+                        i1 = (grid->cell0 + c1)*grid->na_c*nbat->fstride;
+
+                        nfptr = 0;
+                        for(out=1; out<nbat->nout; out++)
+                        {
+                            if (grid->cellblock_flags.flag[b] & (1U<<out))
+                            {
+                                fptr[nfptr++] = nbat->out[out].f;
+                            }
+                        }
+                        if (nfptr > 0)
+                        {
+#ifdef NBNXN_SEARCH_SSE
+                            nbnxn_atomdata_reduce_reals_x86_simd
+#else
+                            nbnxn_atomdata_reduce_reals
+#endif
+                                                       (nbat->out[0].f,
+                                                        fptr,nfptr,
+                                                        i0,i1);
+                        }
+                    }
+                }
+                else
+                {
+                    c0 = b0*NBNXN_CELLBLOCK_SIZE;
+                    c1 = min(b1*NBNXN_CELLBLOCK_SIZE,grid->nc);
+                    i0 = (grid->cell0 + c0)*grid->na_c*nbat->fstride;
+                    i1 = (grid->cell0 + c1)*grid->na_c*nbat->fstride;
+
+                    nfptr = 0;
+                    for(out=1; out<nbat->nout; out++)
+                    {
+                        fptr[nfptr++] = nbat->out[out].f;
+                    }
 
 #ifdef NBNXN_SEARCH_SSE
-            nbnxn_atomdata_reduce_reals_x86_simd(
+                    nbnxn_atomdata_reduce_reals_x86_simd
 #else
-            nbnxn_atomdata_reduce_reals(    
+                    nbnxn_atomdata_reduce_reals
 #endif
-                                        nbat->out[0].f,
-                                        nbat->out+1,nbat->nout - 1,
-                                        i0,i1);
+                                               (nbat->out[0].f,
+                                                fptr,nfptr,
+                                                i0,i1);
+                }
+            }
         }
     }
 
