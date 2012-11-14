@@ -348,7 +348,7 @@ Rdf::finishAnalysis(int /*nframes*/)
 void
 Rdf::writeOutput()
 {
-    fprintf(stderr, "Writing some output!\n");
+    fprintf(stderr, "Writing some output to stderr!\n");
 }
 
 } // namespace analysismodules

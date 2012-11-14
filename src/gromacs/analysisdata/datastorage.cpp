@@ -730,12 +730,13 @@ AnalysisDataStorage::finishDataStorage()
             impl_->frames_.swap(timpl.frames_);
         }
         impl_->notifyNextFrames(0);
+
+        impl_->parallelDataMPI_ = false;    // now all data is collected by master process.
     }
 
     if (mpi::isMaster())
     {
-        impl_->parallelDataMPI_ = false;    // now all data is collected by master process.
-        impl_->data_->notifyDataFinish();   // finish up in serial mode.
+        impl_->data_->notifyDataFinish();   // serial mode.
     }
 }
 
