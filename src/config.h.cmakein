@@ -82,8 +82,8 @@
 /* Enable special hacks for Cray XT3 */
 #cmakedefine GMX_CRAY_XT3
 
-/* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
-#cmakedefine GMX_DISABLE_FFTW_MEASURE
+/* Optimize FFTW setups (not needed with SIMD FFT) */
+#cmakedefine GMX_ENABLE_FFTW_MEASURE
 
 /* Compile in double precision */
 #cmakedefine GMX_DOUBLE
