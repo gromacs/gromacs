@@ -481,8 +481,8 @@ void nbnxn_atomdata_init(FILE *fp,
      */
     for(i=0; i<ntype; i++)
     {
-        c6  = nbfp[(i*ntype+i)*2  ];
-        c12 = nbfp[(i*ntype+i)*2+1];
+        c6  = nbfp[(i*ntype+i)*2  ]/6.0;
+        c12 = nbfp[(i*ntype+i)*2+1]/12.0;
         if (c6 > 0 && c12 > 0)
         {
             nbat->nbfp_comb[i*2  ] = pow(c12/c6,1.0/6.0);
@@ -513,13 +513,15 @@ void nbnxn_atomdata_init(FILE *fp,
                 c12 = nbfp[(i*ntype+j)*2+1];
                 nbat->nbfp[(i*nbat->ntype+j)*2  ] = c6;
                 nbat->nbfp[(i*nbat->ntype+j)*2+1] = c12;
-                c6  /= 6.0;
-                c12 /= 12.0;
-                
+
+                /* Compare 6*C6 and 12*C12 for geometric cobination rule */
                 bCombGeom = bCombGeom &&
                     gmx_within_tol(c6*c6  ,nbfp[(i*ntype+i)*2  ]*nbfp[(j*ntype+j)*2  ],tol) &&
                     gmx_within_tol(c12*c12,nbfp[(i*ntype+i)*2+1]*nbfp[(j*ntype+j)*2+1],tol);
 
+                /* Compare C6 and C12 for Lorentz-Berthelot combination rule */
+                c6  /= 6.0;
+                c12 /= 12.0;
                 bCombLB = bCombLB &&
                     ((c6 == 0 && c12 == 0 &&
                       (nbat->nbfp_comb[i*2+1] == 0 || nbat->nbfp_comb[j*2+1] == 0)) ||
