@@ -36,9 +36,9 @@ else()
 endif()
 
 find_package(PkgConfig)
-if(NOT __pkg_config_checked_PC_${FFTW})
+if(NOT __pkg_config_checked_PC_${FFTW} OR NOT ${FFTW}_LIBRARY)
   pkg_check_modules(PC_${FFTW} "${${FFTW}_PKG}")
-endif(NOT __pkg_config_checked_PC_${FFTW})
+endif(NOT __pkg_config_checked_PC_${FFTW} OR NOT ${FFTW}_LIBRARY)
 
 find_path(${FFTW}_INCLUDE_DIR "fftw3.h" HINTS ${PC_${FFTW}_INCLUDE_DIRS})
 find_library(${FFTW}_LIBRARY NAMES "${${FFTW}_PKG}" HINTS ${PC_${FFTW}_LIBRARY_DIRS})
