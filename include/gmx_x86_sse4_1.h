@@ -33,6 +33,9 @@
  */
 
 
+/* Dont ask me why, but this is (slightly) faster than the built-in 
+ * SSE4.1 _mm_extract_epi32() (Tested with icc on 2012-11-15 by Erik)
+ */
 #define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
 #define GMX_MM_TRANSPOSE2_PD(row0, row1) {           \
@@ -41,6 +44,7 @@
     row1           = _mm_unpackhi_pd(__gmx_t1,row1); \
 }
 
+#define _GMX_MM_BLEND(b3,b2,b1,b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
 
 #if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
 #  define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
