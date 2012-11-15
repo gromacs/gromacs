@@ -1158,7 +1158,6 @@ int gmx_poldata_get_bond(gmx_poldata_t pd,char **atom1,char **atom2,
                          double *bondorder,char **params)
 {
     t_gt_bond *gt_b;
-    int i;
   
     if (pd->ngt_bond_c < pd->ngt_bond) {
         gt_b = &(pd->gt_bond[pd->ngt_bond_c]);
@@ -1184,10 +1183,9 @@ int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
-    int i;
 
     gt_b = search_bond(pd,atom1,atom2,0);
-    if (NULL == gt_b) 
+    if (NULL != gt_b) 
     {
         if (((strcasecmp(gt_b->atom1,atom1) == 0) && 
              (strcasecmp(gt_b->atom2,atom2) == 0)) ||
@@ -1199,7 +1197,7 @@ int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
             assign_scal(bondorder,gt_b->bondorder);
             assign_str(params,gt_b->params);
         
-            return i+1;
+            return (gt_b - pd->gt_bond);
         }
     }
     return 0;

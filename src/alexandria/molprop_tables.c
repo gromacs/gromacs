@@ -445,7 +445,7 @@ static void atomtype_tab_end(FILE *fp)
 }
 
 typedef struct {
-    char *gt_type,*elem,*miller_equiv,*spref,*geometry;
+    char *gt_type,*elem,*miller_equiv,*spref;
     gmx_stats_t lsq,nexp,nqm;
 } t_sm_lsq;
     
@@ -462,7 +462,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     double exp_val,qm_val;
     real   alexandria_aver,alexandria_sigma,nnn;
     char   *gt_type[2] = { NULL, NULL };
-    char   *name,*geometry,*elem,*miller_equiv,*prop_reference,group[32],*spref;
+    char   *name,*elem,*miller_equiv,*prop_reference,group[32],*spref;
     char   *pol_tmp,*pol_error,*desc;
     char   *neighbors,*charge;
     int    nsmlsq=0,estats,N,nset;
@@ -495,7 +495,6 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     smlsq[j].elem = strdup(elem);
                     smlsq[j].miller_equiv = strdup(miller_equiv);
                     smlsq[j].spref = strdup(spref);
-                    smlsq[j].geometry = strdup(geometry);
                 }
                 if ((estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)) != estatsOK)
                     gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
@@ -628,7 +627,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
     int    i,k,m,cur=0,numbonds;
     double alexandria_pol,sig_pol,valence;
     char   *name,*elem,*gt_type[2] = { NULL, NULL };
-    char   *charge,*miller_equiv,*spref,*geometry,*neighbors,*desc;
+    char   *charge,*miller_equiv,*spref,*neighbors,*desc;
 #define prev (1-cur)
 #define NEQG 5
     int    eqgcol[NEQG] = { eqgAXp, eqgAXs, eqgAXg };
@@ -893,22 +892,22 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
                     if (bPrintConf)
                     {
                         sprintf(mylbuf,"      & %s ",(NULL != exp_conf) ? exp_conf : "-");
-                        strncat(myline,mylbuf,BLEN);
+                        strncat(myline,mylbuf,BLEN-strlen(myline));
                     }
                     if (nexp > 0) 
                     {
                         sprintf(mylbuf,"& %8.3f",val_exp[ne]);
-                        strncat(myline,mylbuf,BLEN);
+                        strncat(myline,mylbuf,BLEN-strlen(myline));
                         if (strcmp(ref_exp[ne],"Maaren2009a") == 0)
                             sprintf(mylbuf," (*)");
                         else
                             sprintf(mylbuf,"~\\cite{%s} ",ref_exp[ne]);
-                        strncat(myline,mylbuf,BLEN);
+                        strncat(myline,mylbuf,BLEN-strlen(myline));
                     }
                     else 
                     {
                         sprintf(mylbuf,"& - ");
-                        strncat(myline,mylbuf,BLEN);
+                        strncat(myline,mylbuf,BLEN-strlen(myline));
                     }
                     bOutlier = FALSE;
                     for(j=0; (j<qmc->n); j++) 
@@ -941,16 +940,16 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
                             }
                             else
                                 sprintf(mylbuf,"& %s ",vbuf);
-                            strncat(myline,mylbuf,BLEN);
+                            strncat(myline,mylbuf,BLEN-strlen(myline));
                         }
                         else
                         {
                             sprintf(mylbuf,"& ");
-                            strncat(myline,mylbuf,BLEN);
+                            strncat(myline,mylbuf,BLEN-strlen(myline));
                         }
                     }
                     sprintf(mylbuf,"\\\\\n");
-                    strncat(myline,mylbuf,BLEN);
+                    strncat(myline,mylbuf,BLEN-strlen(myline));
                     /*if ((toler > 0) && bOutlier)
                       {*/
                         fprintf(fp,"%s",myline);

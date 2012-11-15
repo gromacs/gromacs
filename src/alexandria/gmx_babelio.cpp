@@ -81,8 +81,10 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   /* Read a gaussian log file */
   OpenBabel::OBMol mol;
   OpenBabel::OBAtomIterator OBai;
+  OpenBabel::OBBondIterator OBbi;
   OpenBabel::OBConversion conv;
-  OpenBabel::OBAtom *OBa;
+  OpenBabel::OBAtom *OBa,*OBa1,*OBa2;
+  OpenBabel::OBBond *OBb;
   OpenBabel::OBPairData *OBpd;
   OpenBabel::OBGenericData *OBdhf;
   OpenBabel::OBVectorData *dipole;
@@ -92,7 +94,7 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   
   const char *reference="Spoel2013a",*unknown="unknown";
   char *program,*method,*basis,*charge_model;
-  int calcref,atomref,atomid;
+  int calcref,atomref,atomid,bondid;
   gmx_molprop_t mpt;  
   int k;
   const char *etypes[] = { "DHf(0K)", "DHf(298.15K)" };
@@ -139,7 +141,7 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
     
   
   conv.SetOutFormat("inchi");
-  inchi = conv.WriteString(&mol);
+  inchi = conv.WriteString(&mol,true);
 
   if (inchi.size() > 0)
     gmx_molprop_set_inchi(mpt,inchi.c_str());
@@ -184,6 +186,15 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
     gmx_molprop_calc_set_atomcharge(mpt,calcref,atomref,charge_model,
                                     "e",OBa->GetPartialCharge());
     atomid++;
+  }
+  
+  OBbi = mol.BeginBonds();
+  bondid = 1;
+  for (OBb = mol.BeginBond(OBbi); (NULL != OBb); OBb = mol.NextBond(OBbi)) {
+    OBa1 = OBb->GetBeginAtom();
+    OBa2 = OBb->GetEndAtom(); 
+    gmx_molprop_add_bond(mpt,1+OBa1->GetIndex(),1+OBa2->GetIndex(),OBb->GetBondOrder());
+    bondid++;
   }
   
   // Dipole

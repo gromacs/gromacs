@@ -95,6 +95,11 @@ typedef struct
     double q;
 } t_charge;
 
+typedef struct
+{
+    int ai,aj,bondorder;
+} t_mpbond;
+
 typedef struct 
 {
     char     *name,*unit;
@@ -132,6 +137,8 @@ typedef struct gmx_molprop
     t_composition *composition;
     int           ncategory,ncateg_c;
     char          **category;
+    int           nbond,nbond_c;
+    t_mpbond      *bond;
 } gmx_molprop;
 
 #define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
@@ -221,6 +228,8 @@ void gmx_molprop_delete(gmx_molprop_t mp)
     mp->ncategory = mp->ncateg_c = 0;
     mp->nexper = mp->nexper_c = 0;
     mp->ncalc = mp->ncalc_c = 0;
+    sfree(mp->bond);
+    mp->nbond = mp->nbond_c = 0;
     sfree(mp->molname);
     sfree(mp->formula);
     sfree(mp->iupac);
@@ -1089,11 +1098,64 @@ static void merge_props(gmx_molprop_t dst,gmx_molprop_t src,int dstref,int srcre
     }
 }
 
+int gmx_molprop_get_bond(gmx_molprop_t mpt,int *ai,int *aj,int *bondorder)
+{
+    if (mpt->nbond_c < mpt->nbond)
+    {
+        assign_scal(ai,mpt->bond[mpt->nbond_c].ai);
+        assign_scal(aj,mpt->bond[mpt->nbond_c].aj);
+        assign_scal(bondorder,mpt->bond[mpt->nbond_c].bondorder);
+        mpt->nbond_c++;
+        
+        return 1;
+    }
+    else
+    {
+        mpt->nbond_c = 0;
+        
+        return 0;
+    }
+}
+
+void gmx_molprop_add_bond(gmx_molprop_t mpt,int ai,int aj,int bondorder)
+{
+    int i;
+    for(i=0; (i<mpt->nbond); i++)
+    {
+        if (((mpt->bond[i].ai == ai) && (mpt->bond[i].aj == aj)) ||
+            ((mpt->bond[i].aj == ai) && (mpt->bond[i].ai == aj)))
+        {
+            if (mpt->bond[i].bondorder == bondorder)
+            {
+                if (NULL != debug)
+                    fprintf(debug,"Bond %d %d order %d already present\n",
+                            ai,aj,bondorder);
+            }
+            else
+            {
+                fprintf(stderr,"Updating bondorder for %d-%d in %s to %d\n",
+                        ai,aj,gmx_molprop_get_molname(mpt),bondorder);
+                mpt->bond[i].bondorder = bondorder;
+            }
+            break;
+        }
+    }
+    if (mpt->nbond == i) 
+    {
+        srenew(mpt->bond,i+1);
+        mpt->bond[i].ai = ai;
+        mpt->bond[i].aj = aj;
+        mpt->bond[i].bondorder = bondorder;
+        mpt->nbond++;
+    }
+}
+
 void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
 {
     gmx_molprop *ddd = (gmx_molprop *)dst;
     gmx_molprop *sss = (gmx_molprop *)src;
     int i,nd,ns,atomid,ndcomp,dstref,srcref,datomref,satomref,mult,smult;
+    int ai,aj,bondorder;
     const char *tmp,*stmp,*dtmp;
     char **name,*type,*program,*method,*basisset,*catom,*formula;
     int cnumber,charge,multiplicity;
@@ -1149,6 +1211,10 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
         (NULL != stmp))
         gmx_molprop_set_inchi(dst,stmp);
   
+    while (gmx_molprop_get_bond(src,&ai,&aj,&bondorder) == 1) 
+    {
+        gmx_molprop_add_bond(dst,ai,aj,bondorder);
+    }
     while (gmx_molprop_get_experiment(src,&reference,&conformation,&srcref) == 1) 
     {
         gmx_molprop_add_experiment(dst,reference,conformation,&dstref);

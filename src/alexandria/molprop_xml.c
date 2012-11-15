@@ -92,6 +92,7 @@ enum {
     exmlPOLARIZABILITY, exmlENERGY, exmlDIPOLE, exmlQUADRUPOLE, exmlPOTENTIAL,
     exmlNAME, exmlVALUE, exmlERROR, 
     exmlMETHOD, exmlREFERENCE, exmlTYPE, exmlSOURCE,
+    exmlBOND, exmlAI, exmlAJ, exmlBONDORDER,
     exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
     exmlCALCULATION, exmlPROGRAM, exmlBASISSET, exmlCONFORMATION,
     exmlUNIT, exmlATOM, exmlATOMID, exmlX_UNIT, exmlV_UNIT, exmlESPID,
@@ -108,6 +109,7 @@ static const char *exml_names[exmlNR] = {
     "polarizability", "energy", "dipole", "quadrupole", "potential",
     "name", "average", "error", 
     "method", "reference", "type", "source",
+    "bond", "ai", "aj", "bondorder",
     "composition", "compname", "catom", "cname", "cnumber",
     "calculation", "program", "basisset", "conformation",
     "unit", "atom", "atomid", "coord_unit", "potential_unit", "espid",
@@ -309,6 +311,14 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                                                     my_atof(xbuf[exmlXX]),my_atof(xbuf[exmlYY]),
                                                     my_atof(xbuf[exmlZZ]),my_atof(xbuf[exmlXY]),
                                                     my_atof(xbuf[exmlXZ]),my_atof(xbuf[exmlYZ]));
+                    break;
+                case exmlBOND: 
+                    process_children(tree->children,xbuf);
+                    if (NN(xbuf[exmlAI]) && NN(xbuf[exmlAJ]) &&
+                        NN(xbuf[exmlBONDORDER]))
+                        gmx_molprop_add_bond(mpt,atoi(xbuf[exmlAI]),
+                                             atoi(xbuf[exmlAJ]),
+                                             atoi(xbuf[exmlBONDORDER]));
                     break;
                 case exmlENERGY:
                     process_children(tree,xbuf);
@@ -568,7 +578,7 @@ static void add_properties(xmlNodePtr exp,gmx_molprop_t mpt,int ref)
 static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
 {
     xmlNodePtr ptr,child,grandchild,comp,atomptr,baby;
-    int    i,eMP,atomid,cnumber,expref,calcref,atomref;
+    int    i,ai,aj,bondorder,eMP,atomid,cnumber,expref,calcref,atomref;
     char   *program,*basisset,*method,*name,*type,*unit,*reference;
     char   *catom,*atomname,*coords,*conformation,*p;
     const  char   *iupac,*cas,*cid,*inchi,*category,*composition;
@@ -592,6 +602,13 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
     add_xml_char(child,exml_names[exmlCAS],cas);
     add_xml_char(child,exml_names[exmlCID],cid);
     add_xml_char(child,exml_names[exmlINCHI],inchi);
+    while (gmx_molprop_get_bond(mpt,&ai,&aj,&bondorder) == 1)
+    {
+        child = add_xml_child(ptr,exml_names[exmlBOND]);
+        add_xml_int(child,exml_names[exmlAI],ai);
+        add_xml_int(child,exml_names[exmlAJ],aj);
+        add_xml_int(child,exml_names[exmlBONDORDER],bondorder);
+    }
     while (gmx_molprop_get_experiment(mpt,&reference,&conformation,&expref) == 1) 
     {
         child = add_xml_child(ptr,exml_names[exmlEXPERIMENT]);

@@ -198,6 +198,10 @@ extern void gmx_molprop_reset_calculation(gmx_molprop_t mpt);
 
 extern void gmx_molprop_reset(gmx_molprop_t mpt);
 
+extern int gmx_molprop_get_bond(gmx_molprop_t mpt,int *ai,int *aj,int *bondorder);
+
+extern void gmx_molprop_add_bond(gmx_molprop_t mpt,int ai,int aj,int bondorder);
+  
 /* Returns calcref that can be used to add properties later on */
 extern void gmx_molprop_add_calculation(gmx_molprop_t mpt,
 					const char *program,const char *method,

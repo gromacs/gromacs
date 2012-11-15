@@ -17,7 +17,7 @@ set(ALEXANDRIA_SOURCES
         molprop_sqlite3.c
 	molselect.c
         gmx_babelio.cpp
-        gmx_babelio.h
+#        gmx_babelio.h
 	slater_integrals.cpp
 	DSlater_1S_1S.cpp
 	DSlater_1S_2S.cpp 
