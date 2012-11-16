@@ -34,7 +34,7 @@
  */
 #ifndef _SPARSEMATRIX_H_
 #define _SPARSEMATRIX_H_
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "types/simple.h"
 
@@ -122,6 +122,7 @@ gmx_sparsematrix_t;
  *  be FALSE. Set it to TRUE manually if you are only storing either the
  *  upper or lower half of the matrix.
  */
+GMX_LIBGMX_EXPORT
 gmx_sparsematrix_t *
 gmx_sparsematrix_init            (int                    nrow);
 
@@ -130,6 +131,7 @@ gmx_sparsematrix_init            (int                    nrow);
  *
  *  All arrays in the structure will be freed, and the structure itself.  
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_sparsematrix_destroy         (gmx_sparsematrix_t *   A);
 
@@ -161,6 +163,7 @@ gmx_sparsematrix_value          (gmx_sparsematrix_t *    A,
 * The column sort order might change, so you need to run fix_sparsematrix
 * once you are done changing the matrix.
 */
+GMX_LIBGMX_EXPORT
 void
 gmx_sparsematrix_increment_value(gmx_sparsematrix_t *    A,
                                  int                     row, 
@@ -187,6 +190,7 @@ gmx_sparsematrix_compress       (gmx_sparsematrix_t *    A);
  * 
  * Calculate y = A * x for a sparse matrix A. 
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *    A,
                                  real *                  x,

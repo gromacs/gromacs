@@ -35,7 +35,7 @@
 
 #ifndef _readir_h
 #define _readir_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "string2.h"
 #include "readinp.h"
@@ -73,30 +73,37 @@ typedef struct {
 } t_gromppopts;
 
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 		     warninp_t wi);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
+GMX_LIBGMXPREPROCESS_EXPORT
 extern int search_string(char *s,int ng,char *gn[]);
 /* Returns the index of string s in the index groups */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,
 			 warninp_t wi);
 /* Do more checks */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 			 warninp_t wi);
 /* Do even more checks */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,
 				    rvec *x,
 				    warninp_t wi);
 /* Even more checks, charge group radii vs. cut-off's only. */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void get_ir(const char *mdparin,const char *mdparout,
 		   t_inputrec *ir,t_gromppopts *opts,
 		   warninp_t wi);
@@ -105,6 +112,7 @@ extern void get_ir(const char *mdparin,const char *mdparout,
  * function is called. Also prints the input file back to mdparout.
  */
  
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void do_index(const char* mdparin, 
 		     const char *ndx,
 		     gmx_mtop_t *mtop,
@@ -128,6 +136,7 @@ extern void make_pull_groups(t_pull *pull,char **pgnames,
 			     t_blocka *grps,char **gnames);
 /* Process the pull parameters after reading the index groups */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
 			  const output_env_t oenv, gmx_bool bStart);
 /* Prints the initial pull group distances in x.
@@ -150,6 +159,7 @@ extern void make_rotation_groups(t_rot *rot,char **rotgnames,
                  t_blocka *grps,char **gnames);
 /* Process the rotation parameters after reading the index groups */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
         const char *fn, gmx_bool bSet, warninp_t wi);
 

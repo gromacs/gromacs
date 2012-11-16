@@ -37,7 +37,7 @@
 #define _sighandler_h
 
 #include <signal.h>
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -66,20 +66,25 @@ extern const char *gmx_stop_cond_name[];
 /* the externally visible functions: */
 
 /* install the signal handlers that can set the stop condition. */
+GMX_LIBGMX_EXPORT
 void signal_handler_install(void);
 
 /* get the current stop condition */
+GMX_LIBGMX_EXPORT
 gmx_stop_cond_t gmx_get_stop_condition(void);
 
 /* set the stop condition upon receiving a remote one */
+GMX_LIBGMX_EXPORT
 void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
 
 /* get the signal name that lead to the current stop condition. */
+GMX_LIBGMX_EXPORT
 const char *gmx_get_signal_name(void);
 
 /* check whether we received a USR1 signal. 
    The condition is reset once a TRUE value is returned, so this function
    only returns TRUE once for a single signal. */
+GMX_LIBGMX_EXPORT
 gmx_bool gmx_got_usr_signal(void);
 
 

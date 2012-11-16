@@ -36,6 +36,7 @@
 #ifndef _hackblock_h
 #define _hackblock_h
 
+#include "visibility.h"
 #include "typedefs.h"
 #include "pdbio.h"
 #include "grompp.h"
@@ -186,6 +187,7 @@ void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void init_t_protonate(t_protonate *protonate);
 /* initialize t_protein struct */
 

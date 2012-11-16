@@ -35,7 +35,7 @@
 
 #ifndef _3dview_h
 #define _3dview_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -61,20 +61,26 @@ typedef struct {
   mat4   RotM[DIM];
 } t_3dview;
 
+GMX_LIBGMX_EXPORT
 extern void print_m4(FILE *fp,const char *s,mat4 A);
 
 extern void print_v4(FILE *fp,char *s,int dim,real *a);
 
+GMX_LIBGMX_EXPORT
 extern void m4_op(mat4 m,rvec x,vec4 v);
 
 extern void unity_m4(mat4 m);
 
+GMX_LIBGMX_EXPORT
 extern void mult_matrix(mat4 A, mat4 B, mat4 C);
 
+GMX_LIBGMX_EXPORT
 extern void rotate(int axis, real angle, mat4 A);
 
+GMX_LIBGMX_EXPORT
 extern void translate(real tx, real ty, real tz, mat4 A);
 
+GMX_LIBGMX_EXPORT
 extern void m4_op(mat4 m,rvec x,vec4 v);
 
 extern void calculate_view(t_3dview *view);

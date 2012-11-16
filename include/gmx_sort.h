@@ -18,6 +18,8 @@
 #ifndef _GMX_SORT_H_
 #define _GMX_SORT_H_
 
+#include "visibility.h"
+
 /** @file gmx_sort.h
  *
  *  @brief Portable implementation of thread-safe sort routines.
@@ -49,6 +51,7 @@ extern "C"
  *                 first argument is considered to be respectively less than,
  *                 equal to, or greater than the second.
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_qsort(void *           base, 
           size_t           nmemb, 

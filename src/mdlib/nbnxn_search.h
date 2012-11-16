@@ -35,7 +35,7 @@
 
 #ifndef _nbnxn_search_h
 #define _nsnxn_search_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -54,6 +54,7 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
 /* Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. This function gives the extra distance.
  */
+GMX_LIBMD_EXPORT
 real nbnxn_get_rlist_effective_inc(int cluster_size,real atom_density);
 
 /* Allocates and initializes a pair search data structure */

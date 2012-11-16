@@ -35,13 +35,14 @@
 
 #ifndef _nrjac_h
 #define _nrjac_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 void jacobi(double **a,int n,double d[],double **v,int *nrot);
 /* 
  * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
@@ -52,6 +53,7 @@ void jacobi(double **a,int n,double d[],double **v,int *nrot);
  * int      *irot = number of jacobi rotations
  */
 
+GMX_LIBGMX_EXPORT
 int m_inv_gen(real **m,int n,real **minv);
 /* Produces minv, a generalized inverse of m.
  * Inversion is done via diagonalization,

@@ -35,7 +35,7 @@
 
 #ifndef _nrama_h
 #define _nrama_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
@@ -73,9 +73,11 @@ typedef struct {
   output_env_t oenv;
 } t_xrama;
 
+GMX_LIBGMX_EXPORT
 t_topology *init_rama(const output_env_t oenv, const char *infile,
                              const char *topfile, t_xrama *xr,int mult);
 
+GMX_LIBGMX_EXPORT
 gmx_bool new_data(t_xrama *xr);
 
 #ifdef __cplusplus

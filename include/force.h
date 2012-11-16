@@ -36,7 +36,7 @@
 #ifndef _force_h
 #define _force_h
 
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "types/force_flags.h"
 #include "pbc.h"
@@ -91,6 +91,7 @@ void make_wall_tables(FILE *fplog,const output_env_t oenv,
 real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 	      rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb);
 
+GMX_LIBMD_EXPORT
 t_forcerec *mk_forcerec(void);
 
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
@@ -120,6 +121,7 @@ extern t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 				   const char *fn,
 				   matrix box);
 
+GMX_LIBMD_EXPORT
 void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 
 void
@@ -129,6 +131,7 @@ forcerec_set_ranges(t_forcerec *fr,
 		    int natoms_force_constr,int natoms_f_novirsum);
 /* Set the number of cg's and atoms for the force calculation */
 
+GMX_LIBMD_EXPORT
 gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                              gmx_bool bPrintNote,t_commrec *cr,FILE *fp);
 /* Returns if we can use all-vs-all loops.
@@ -136,6 +139,7 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
+GMX_LIBMD_EXPORT
 gmx_bool uses_simple_tables(int cutoff_scheme,
                             nonbonded_verlet_t *nbv,
                             int group);
@@ -143,6 +147,7 @@ gmx_bool uses_simple_tables(int cutoff_scheme,
  * with the type of kernel indicated.
  */
 
+GMX_LIBMD_EXPORT
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
                                    gmx_bool bSimpleTable,
@@ -160,6 +165,7 @@ void init_interaction_const(FILE *fp,
  * uses forcerec as input. 
  */
 
+GMX_LIBMD_EXPORT
 void init_forcerec(FILE       *fplog,     
                           const output_env_t oenv,
 			  t_forcerec *fr,   
@@ -183,10 +189,12 @@ void init_forcerec(FILE       *fplog,
  * print_force >= 0: print forces for atoms with force >= print_force
  */
 
+GMX_LIBMD_EXPORT
 void forcerec_set_excl_load(t_forcerec *fr,
 			    const gmx_localtop_t *top,const t_commrec *cr);
   /* Set the exclusion load for the local exclusions and possibly threads */
 
+GMX_LIBMD_EXPORT
 void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
 
@@ -202,6 +210,7 @@ void reset_enerdata(t_grpopts *opts,
 void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
 /* Locally sum the non-bonded potential energy terms */
 
+GMX_LIBMD_EXPORT
 void sum_dhdl(gmx_enerdata_t *enerd,real *lambda,t_lambda *fepvals);
 /* Sum the free energy contributions */
 
@@ -212,6 +221,7 @@ void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const gmx_mtop_t *mtop);
 
+GMX_LIBMD_EXPORT
 extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,
 		     gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -239,6 +249,7 @@ extern void do_force(FILE *log,t_commrec *cr,
  * f is always required.
  */
 
+GMX_LIBMD_EXPORT
 void ns(FILE       *fplog,
 	       t_forcerec *fr,
 	       rvec       x[],

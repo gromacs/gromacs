@@ -41,6 +41,7 @@
 #endif
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -62,6 +63,7 @@ extern void fflib_filename_base(const char *filename,char *filebase,int maxlen);
  * base should be at least of size maxlen.
  */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern int fflib_search_file_end(const char *ffdir,
 				 const char *file_end,
 				 gmx_bool bFatalError,
@@ -77,9 +79,11 @@ extern int fflib_search_file_in_dirend(const char *filename,const char *dirend,
  * ending on dirend.
  * Return the number of files and the directory names in dirnames.
  */
+GMX_LIBGMXPREPROCESS_EXPORT
 extern gmx_bool fflib_fexist(const char *file);
 /* Check if a file exists in the force field library */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern FILE *fflib_open(const char *file);
 /* Open force field library file "file" for reading.
  * "file" should contain the whole path to the force field library,

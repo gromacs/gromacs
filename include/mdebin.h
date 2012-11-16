@@ -35,7 +35,7 @@
 
 #ifndef _mdebin_h
 #define _mdebin_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "ebin.h"
@@ -99,12 +99,14 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                              FILE *fp_dhdl);
 /* Initiate MD energy bin and write header to energy file. */
 
+GMX_LIBMD_EXPORT
 FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 		       const output_env_t oenv);
 /* Open the dhdl file for output */
 
 /* update the averaging structures. Called every time 
    the energies are evaluated. */
+GMX_LIBMD_EXPORT
 void upd_mdebin(t_mdebin *md, 
         gmx_bool bDoDHDL,
         gmx_bool bSum,
@@ -123,11 +125,14 @@ void upd_mdebin(t_mdebin *md,
         rvec mu_tot,
         gmx_constr_t constr);
 
+GMX_LIBMD_EXPORT
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
   
+GMX_LIBMD_EXPORT
 void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
 
+GMX_LIBMD_EXPORT
 void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
 		       FILE *log,
 		       gmx_large_int_t step,double time,
@@ -143,9 +148,11 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
    that is written to checkpoints in checkpoint.c */
 
 /* Set the energyhistory_t data structure from a mdebin structure */
+GMX_LIBMD_EXPORT
 void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
 
 /* Read the energyhistory_t data structure to a mdebin structure*/
+GMX_LIBMD_EXPORT
 void restore_energyhistory_from_state(t_mdebin * mdebin,
                                              energyhistory_t * enerhist);
 

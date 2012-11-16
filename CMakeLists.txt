@@ -120,9 +120,13 @@ set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external li
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
 IF( WIN32 AND NOT CYGWIN)
-  option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
-  mark_as_advanced(GMX_PREFER_STATIC_LIBS)
-  SET(SHARED_LIBS_DEFAULT OFF)  #is currently not working on Windows
+  if (NOT BUILD_SHARED_LIBS)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
+    mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+    SET(SHARED_LIBS_DEFAULT OFF)
+  else()
+    add_definitions(-DUSE_VISIBILITY)
+  endif()
 
   IF (GMX_PREFER_STATIC_LIBS)
     #Only setting Debug and Release flags. Others configurations current not used.

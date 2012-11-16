@@ -47,6 +47,7 @@
 #include "statutil.h"
 #include "typedefs.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 	
 static const char *etitles[] = { "E-docked", "Free Energy" };
 

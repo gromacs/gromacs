@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "visibility.h"
 #include "gmx_header_config.h"
 
 #ifdef GMX_CRAY_XT3
@@ -174,6 +175,7 @@ void trim (char *str)
   rtrim (str);
 }
 
+GMX_LIBGMX_EXPORT
 char *
 gmx_ctime_r(const time_t *clock,char *buf, int n)
 {

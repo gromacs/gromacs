@@ -53,6 +53,7 @@
 #include "enxio.h"
 #include "mtop_util.h"
 #include "string2.h"
+#include "tpbcmp.h"
 
 static void cmp_int(FILE *fp,const char *s,int index,int i1,int i2)
 {

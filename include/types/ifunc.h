@@ -36,7 +36,7 @@
 
 #ifndef _ifunc_h
 #define _ifunc_h
-
+#include "visibility.h"
 #include "idef.h"
 #include "mdatom.h"
 #include "fcdata.h"
@@ -120,6 +120,7 @@ typedef struct
 
 #define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)
 
+GMX_LIBGMX_EXPORT
 extern const t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
 

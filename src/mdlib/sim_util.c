@@ -48,6 +48,7 @@
 #include <sys/time.h>
 #endif
 #include <math.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "string2.h"
 #include "gmxfio.h"
@@ -114,6 +115,7 @@ typedef struct gmx_timeprint {
 #endif
 
 /* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+GMX_LIBGMX_EXPORT
 char *
 gmx_ctime_r(const time_t *clock,char *buf, int n);
 

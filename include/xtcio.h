@@ -36,6 +36,7 @@
 #ifndef _xtcio_h
 #define _xtcio_h
 
+#include "visibility.h"
 #include "typedefs.h"
 #include "gmxfio.h"
 #include "xdrf.h"
@@ -48,22 +49,27 @@ extern "C" {
  * bOK tells if a frame is not corrupted 
  */  
 
+GMX_LIBGMX_EXPORT
 t_fileio *open_xtc(const char *filename,const char *mode);
 /* Open a file for xdr I/O */
   
+GMX_LIBGMX_EXPORT
 void close_xtc(t_fileio *fio);
 /* Close the file for xdr I/O */
   
+GMX_LIBGMX_EXPORT
 int read_first_xtc(t_fileio *fio,
 			  int *natoms,int *step,real *time,
 			  matrix box,rvec **x,real *prec,gmx_bool *bOK);
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
+GMX_LIBGMX_EXPORT
 int read_next_xtc(t_fileio *fio,
 			 int natoms,int *step,real *time,
 			 matrix box,rvec *x,real *prec,gmx_bool *bOK);
 /* Read subsequent frames */
 
+GMX_LIBGMX_EXPORT
 int write_xtc(t_fileio *fio,
 		     int natoms,int step,real time,
 		     matrix box,rvec *x,real prec);

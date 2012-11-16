@@ -35,7 +35,7 @@
 
 #ifndef _chargegroup_h
 #define _chargegroup_h
-
+#include "visibility.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 
@@ -43,6 +43,7 @@
 extern "C" { 
 #endif
 
+GMX_LIBGMX_EXPORT
   void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
 				     real *rvdw1,real *rvdw2,
 				     real *rcoul1,real *rcoul2);
@@ -50,12 +51,14 @@ extern "C" {
    * separately for VdW and Coulomb interactions.
    */
 
+GMX_LIBGMX_EXPORT
   void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
 			rvec pos[],rvec cg_cm[]);
   /* Routine to compute centers of geometry of charge groups. No periodicity
    * is used.
    */
   
+GMX_LIBGMX_EXPORT
   void put_charge_groups_in_box (FILE *log,int cg0,int cg1,
 					int ePBC,matrix box,t_block *cgs,
 					rvec pos[],

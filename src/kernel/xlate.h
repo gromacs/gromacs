@@ -35,12 +35,13 @@
 
 #ifndef _xlate_h
 #define _xlate_h
-
+#include "visibility.h"
 #include "index.h"
 
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void rename_atoms(const char *xlfile,const char *ffdir,
 			 t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
 			 gmx_bool bResname,gmx_residuetype_t rt,gmx_bool bReorderNum,

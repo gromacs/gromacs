@@ -32,13 +32,14 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 real calc_grid(FILE *fp,
 		      matrix box,real gr_sp,
 		      int *nx,int *ny,int *nz);

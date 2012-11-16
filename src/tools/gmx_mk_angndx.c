@@ -45,6 +45,7 @@
 #include "string2.h"
 #include "futil.h"
 #include "gmx_fatal.h"
+#include "gmx_ana.h"
 
 static int calc_ntype(int nft,int *ft,t_idef *idef)
 {

@@ -40,6 +40,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "typedefs.h"
+#include "compute_io.h"
 
 static int div_nsteps(int nsteps,int nst)
 {

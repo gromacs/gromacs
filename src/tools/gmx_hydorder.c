@@ -59,6 +59,7 @@
 #include "matio.h"
 #include "binsearch.h"
 #include "powerspect.h"
+#include "gmx_ana.h"
 
 /* Print name of first atom in all groups in index file */
 static void print_types(atom_id index[], atom_id a[], int ngrps, 

@@ -37,6 +37,7 @@
 #define _grompp_h
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "macros.h"
 
@@ -101,6 +102,7 @@ typedef struct {
   int  nr;
 } t_mols;
 
+GMX_LIBGMXPREPROCESS_EXPORT
 gmx_bool is_int(double x);
 /* Returns TRUE when x is integer */
 
