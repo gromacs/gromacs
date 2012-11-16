@@ -35,21 +35,24 @@
 
 #ifndef _do_fit_h
 #define _do_fit_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 real calc_similar_ind(gmx_bool bRho,int nind,atom_id *index,real mass[],
 			     rvec x[],rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */
 
+GMX_LIBGMX_EXPORT
 real rmsdev_ind(int nind,atom_id index[],real mass[],
 		       rvec x[],rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms in index */
 
+GMX_LIBGMX_EXPORT
 real rmsdev(int natoms,real mass[],rvec x[],rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms */
 
@@ -63,6 +66,7 @@ real rhodev(int natoms,real mass[],rvec x[],rvec xp[]);
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
 
+GMX_LIBGMX_EXPORT
 void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
 		       matrix R);
 /* Calculates the rotation matrix R for which
@@ -72,6 +76,7 @@ void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
  * x_rotated[i] = sum R[i][j]*x[j]
  */
 
+GMX_LIBGMX_EXPORT
 void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Do a least squares fit of x to xp. Atoms which have zero mass
  * (w_rls[i]) are not taken into account in fitting.
@@ -80,9 +85,11 @@ void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
  * therefore both xp and x should be centered round the origin.
  */
 
+GMX_LIBGMX_EXPORT
 void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Calls do_fit with ndim=3, thus fitting in 3D */
 
+GMX_LIBGMX_EXPORT
 void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
 			 int nreset,const atom_id *ind_reset,
 			 rvec x[],const real mass[]);
@@ -94,6 +101,7 @@ void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
  * When ind_reset==NULL the coordinates up to nreset are reset.
  */
 
+GMX_LIBGMX_EXPORT
 void reset_x(int ncm,const atom_id *ind_cm,
 		    int nreset,const atom_id *ind_reset,
 		    rvec x[],const real mass[]);

@@ -35,7 +35,7 @@
 
 #ifndef _copyrite_h
 #define _copyrite_h
-
+#include "visibility.h"
 
 #include <stdio.h>
 #include "types/simple.h"
@@ -45,6 +45,7 @@ extern "C" {
 #endif
     
 /* Has to be a function, so we can get version number from autoconf */   
+GMX_LIBGMX_EXPORT
 const char *GromacsVersion(void);
 
 void 
@@ -77,6 +78,7 @@ GPLText[] = {
 void
 pr_difftime(FILE *out,double dt);
 
+GMX_LIBGMX_EXPORT
 void
 CopyRight(FILE *out,const char *szProgram);
  
@@ -86,12 +88,14 @@ CopyRight(FILE *out,const char *szProgram);
  * is necessary to make the routines threadsafe and avoid allocating
  * a new string each time. The retstring pointer will be the return value.
  */
+GMX_LIBGMX_EXPORT
 void
 bromacs(char *retstring, int retsize);
   
 /* For cool_quote, the number of the quote used will be returned in cqnum 
  * if it is non-NULL. 
  */
+GMX_LIBGMX_EXPORT
 void
 cool_quote(char *retstring, int retsize, int *cqnum);
 
@@ -99,12 +103,14 @@ gmx_bool
 be_cool(void);
 /* Return TRUE when the user is COOL, FALSE otherwise */
 
+GMX_LIBGMX_EXPORT
 void
 thanx(FILE *fp);
 
 enum { eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR, 
        eCITEDISRE, eCITERF, eCITELINCS, eCITENR };
 
+GMX_LIBGMX_EXPORT
 void
 please_cite(FILE *fp, const char *key);
 /* Print a message asking to cite something... */

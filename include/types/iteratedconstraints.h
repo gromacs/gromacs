@@ -34,7 +34,7 @@
  */
 #ifndef _iteratedconstraints_h
 #define _iteratedconstraints_h
-
+#include "visibility.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,8 +59,10 @@ typedef struct
     int num_close; /* number of "close" violations, caused by limited precision. */
 } gmx_iterate_t;
 
+GMX_LIBMD_EXPORT
 void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate);
 
+GMX_LIBMD_EXPORT
 gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf);
 
 #ifdef __cplusplus

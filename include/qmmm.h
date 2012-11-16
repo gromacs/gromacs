@@ -34,7 +34,7 @@
 
 #ifndef _QMMM_h
 #define _QMMM_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "pbc.h"
 #include "network.h"
@@ -49,6 +49,7 @@ void atomic_number(int nr, char ***atomtype, int *nucnum);
 t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
+GMX_LIBMD_EXPORT
 void init_QMMMrec(t_commrec *cr,
 			 matrix box,
 			 gmx_mtop_t *mtop,

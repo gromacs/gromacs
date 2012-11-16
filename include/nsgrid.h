@@ -32,7 +32,7 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -55,6 +55,7 @@ extern "C" {
  * that a charge group moved to another DD domain.
  */
 
+GMX_LIBMD_EXPORT
 t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
 void done_grid(t_grid *grid);

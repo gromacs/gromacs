@@ -35,7 +35,7 @@
  */
 
 #include <stdio.h>
-
+#include "visibility.h"
 #include "types/simple.h"
 #include "gmxcomplex.h"
 
@@ -158,6 +158,7 @@ gmx_fft_init_many_1d        (gmx_fft_t *       fft,
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
+GMX_LIBMD_EXPORT
 int
 gmx_fft_init_1d_real        (gmx_fft_t *       fft,
                              int               nx,
@@ -221,6 +222,7 @@ gmx_fft_init_2d        (gmx_fft_t *         fft,
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
+GMX_LIBMD_EXPORT
 int
 gmx_fft_init_2d_real        (gmx_fft_t *         fft,
                              int                 nx, 
@@ -348,6 +350,7 @@ gmx_fft_many_1d          (gmx_fft_t                  setup,
  * \note Data pointers are declared as void, to avoid casting pointers 
  *       depending on transform direction.
  */
+GMX_LIBMD_EXPORT
 int 
 gmx_fft_1d_real          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
@@ -437,6 +440,7 @@ gmx_fft_2d               (gmx_fft_t                  setup,
  * \note Data pointers are declared as void, to avoid casting pointers 
  *       depending on transform direction.
  */
+GMX_LIBMD_EXPORT
 int
 gmx_fft_2d_real          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
@@ -513,6 +517,7 @@ gmx_fft_3d_real          (gmx_fft_t                  setup,
  *		 of the other initializers.
  *
  */
+GMX_LIBMD_EXPORT
 void
 gmx_fft_destroy          (gmx_fft_t                 setup);
 

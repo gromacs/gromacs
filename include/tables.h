@@ -36,7 +36,7 @@
 #ifndef _tables_h
 #define _tables_h
 
-
+#include "visibility.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -44,6 +44,7 @@ extern "C" {
 }
 #endif
 
+GMX_LIBMD_EXPORT
 void table_spline3_fill_ewald_lr(real *table_F,
                                  real *table_V,
                                  real *table_FDV0,

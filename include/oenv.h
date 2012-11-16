@@ -35,7 +35,7 @@
 
 #ifndef _oenv_h
 #define _oenv_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -99,24 +99,31 @@ int output_env_get_verbosity(const output_env_t oenv);
 int output_env_get_debug_level(const output_env_t oenv);
 /* return the debug level */
 
+GMX_LIBGMX_EXPORT
 const char *output_env_get_time_unit(const output_env_t oenv);
 /* return time unit (e.g. ps or ns) */
 
+GMX_LIBGMX_EXPORT
 const char *output_env_get_time_label(const output_env_t oenv);
 /* return time unit label (e.g. "Time (ps)") */
 
+GMX_LIBGMX_EXPORT
 const char *output_env_get_xvgr_tlabel(const output_env_t oenv);
 /* retrun x-axis time label for xmgr */
 
+GMX_LIBGMX_EXPORT
 real output_env_get_time_factor(const output_env_t oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
+GMX_LIBGMX_EXPORT
 real output_env_get_time_invfactor(const output_env_t oenv);
 /* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
 
+GMX_LIBGMX_EXPORT
 real output_env_conv_time(const output_env_t oenv, real time);
 /* return converted time */
 
+GMX_LIBGMX_EXPORT
 void output_env_conv_times(const output_env_t oenv, int n, real *time);
 /* convert array of times */
 
@@ -124,6 +131,7 @@ gmx_bool output_env_get_view(const output_env_t oenv);
 /* Return TRUE when user requested viewing of the file */
 
 
+GMX_LIBGMX_EXPORT
 xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
 /* Returns enum (see above) for xvg output formatting */
 

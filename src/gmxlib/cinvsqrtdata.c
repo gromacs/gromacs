@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include "vec.h"
 
 struct gmx_invsqrtdata 
 {

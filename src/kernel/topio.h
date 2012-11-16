@@ -35,15 +35,17 @@
 
 #ifndef _topio_h
 #define _topio_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "readir.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern double check_mol(gmx_mtop_t *mtop,warninp_t wi);
 /* Check mass and charge */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern char **do_top(gmx_bool         bVerbose,
 		     const char   *topfile,
 		     const char   *topppfile,
@@ -65,6 +67,7 @@ extern char **do_top(gmx_bool         bVerbose,
 
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
+GMX_LIBGMXPREPROCESS_EXPORT
 void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir,warninp_t    wi);
 
 #endif	/* _topio_h */

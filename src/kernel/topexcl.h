@@ -35,7 +35,7 @@
 
 #ifndef _topexcl_h
 #define _topexcl_h
-
+#include "visibility.h"
 #include "topio.h"
 
 typedef struct {
@@ -48,9 +48,11 @@ typedef struct {
   int ***a;		/* like this: a[i][nre][nrx]			*/
 } t_nextnb;
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void init_nnb(t_nextnb *nnb, int nr, int nrex);
 /* Initiate the arrays for nnb (see above) */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void done_nnb(t_nextnb *nnb);
 /* Cleanup the nnb struct */
 
@@ -62,6 +64,7 @@ extern void print_nnb(t_nextnb *nnb, char *s);
 #define print_nnb(nnb, s)
 #endif
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void gen_nnb(t_nextnb *nnb,t_params plist[]);
 /* Generate a t_nextnb structure from bond information. 
  * With the structure you can either generate exclusions

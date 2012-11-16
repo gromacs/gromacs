@@ -36,12 +36,14 @@
 #ifndef _index_h
 #define _index_h
 
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" { 
 #endif
 
+GMX_LIBGMX_EXPORT
 void check_index(char *gname,int n,atom_id index[],
 			char *traj,int natoms);
 /* Checks if any index is smaller than zero or larger than natoms,
@@ -49,9 +51,11 @@ void check_index(char *gname,int n,atom_id index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
+GMX_LIBGMX_EXPORT
 t_blocka *init_index(const char *gfile, char ***grpname);
 /* Lower level routine than the next */
 
+GMX_LIBGMX_EXPORT
 void rd_index(const char *statfile,int ngrps,int isize[],
 	      atom_id *index[],char *grpnames[]);
 /* Assume the group file is generated, so the
@@ -73,6 +77,7 @@ void rd_index_nrs(char *statfile,int ngrps,int isize[],
 		  atom_id *index[],char *grpnames[],int grpnr[]);
 /* the same but also reads the number of the selected group*/
 
+GMX_LIBGMX_EXPORT
 void get_index(t_atoms *atoms, const char *fnm, int ngrps,
 	       int isize[], atom_id *index[],char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
@@ -87,6 +92,7 @@ typedef struct {
   atom_id  *inv_clust;
 } t_cluster_ndx;
 
+GMX_LIBGMX_EXPORT
 t_cluster_ndx *cluster_index(FILE *fplog,const char *ndx);
   
 typedef struct {
@@ -97,15 +103,19 @@ typedef struct {
 typedef struct gmx_residuetype *
 gmx_residuetype_t;
 
+GMX_LIBGMX_EXPORT
 int
 gmx_residuetype_init(gmx_residuetype_t *rt);
 
+GMX_LIBGMX_EXPORT
 int
 gmx_residuetype_destroy(gmx_residuetype_t rt);
 
+GMX_LIBGMX_EXPORT
 int
 gmx_residuetype_get_type(gmx_residuetype_t rt,const char * resname, const char ** p_restype);
 
+GMX_LIBGMX_EXPORT
 int
 gmx_residuetype_add(gmx_residuetype_t rt,const char *newresname, const char *newrestype);
 
@@ -114,21 +124,27 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
                              const char ***       p_typenames,
                              int *                ntypes);
 
+GMX_LIBGMX_EXPORT
 gmx_bool 
 gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm);
 
+GMX_LIBGMX_EXPORT
 gmx_bool 
 gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
 
+GMX_LIBGMX_EXPORT
 gmx_bool 
 gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
 
+GMX_LIBGMX_EXPORT
 int
 gmx_residuetype_get_size(gmx_residuetype_t rt);
 
+GMX_LIBGMX_EXPORT
 int
 gmx_residuetype_get_index(gmx_residuetype_t rt, const char *resnm);
 
+GMX_LIBGMX_EXPORT
 const char *
 gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
 
@@ -137,21 +153,26 @@ gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
 
 
 
+GMX_LIBGMX_EXPORT
 t_blocka *new_blocka(void);
 /* allocate new block */
 
+GMX_LIBGMX_EXPORT
 void write_index(const char *outf, t_blocka *b,char **gnames);
 /* Writes index blocks to outf (writes an indexfile) */
 
+GMX_LIBGMX_EXPORT
 void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);
 /* Ads group a with name name to block b and namelist gnames */ 
 
+GMX_LIBGMX_EXPORT
 void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
                     gmx_bool bASK,gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.
  */
 
+GMX_LIBGMX_EXPORT
 int find_group(char s[], int ngrps, char **grpname);
 
 

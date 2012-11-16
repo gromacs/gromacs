@@ -36,12 +36,14 @@
 #ifndef _md_logging_h
 #define _md_logging_h
 
+#include "visibility.h"
 #include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 void md_print_info(const t_commrec *cr, FILE *fplog,
                    const char *fmt, ...);
 /* Print an general information message to stderr on the master node
@@ -50,6 +52,7 @@ void md_print_info(const t_commrec *cr, FILE *fplog,
  * the arguments after that contain the values to be printed, as in printf.
  */
 
+GMX_LIBGMX_EXPORT
 void md_print_warn(const t_commrec *cr, FILE *fplog,
                    const char *fmt, ...);
 /* As md_print_info above, but for important notices or warnings.

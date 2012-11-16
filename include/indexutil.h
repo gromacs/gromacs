@@ -53,7 +53,7 @@
  */
 #ifndef INDEXUTIL_H
 #define INDEXUTIL_H
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -333,6 +333,7 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m);
 void
 gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize);
 /** Initializes an index group mapping. */
+GMX_LIBGMX_EXPORT
 void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                       t_topology *top, e_index_t type);
@@ -346,6 +347,7 @@ gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m);
 void
 gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, gmx_bool bFirst);
 /** Updates an index group mapping. */
+GMX_LIBGMX_EXPORT
 void
 gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g, gmx_bool bMaskOnly);
 /*@}*/

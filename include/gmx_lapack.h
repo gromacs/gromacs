@@ -35,7 +35,7 @@
 #ifndef _GMX_LAPACK_H_
 #define _GMX_LAPACK_H_
 
-
+#include "visibility.h"
 /** @file
  *
  *  @brief Header definitions for the standard LAPACK library.
@@ -776,6 +776,7 @@ void
 F77_FUNC(ssytrd,SSYTRD)(const char *uplo, int *n, float *  a, int *lda, float *d, 
 	float *e, float *tau, float *work, int *lwork, int *info);
 
+GMX_LIBGMX_EXPORT
 void
 F77_FUNC(ssyevr,SSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	float *a, int *lda, float *vl, float *vu, int *

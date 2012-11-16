@@ -40,7 +40,7 @@
 
 #ifndef _MTXIO_H_
 #define _MTXIO_H_
-
+#include "visibility.h"
 #include "types/simple.h"
 #include "sparsematrix.h"
 
@@ -54,6 +54,7 @@ extern "C" {
  * EITHER a pointer to a full storage matrix or a sparse storage
  * matrix. If both pointers are non-NULL a fatal error will occur.
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_mtxio_write(const char *             filename,
                 int                      nrow,
@@ -73,6 +74,7 @@ gmx_mtxio_write(const char *             filename,
  * To determine the format you should set *full_matrix and *sparse_matrix to NULL
  * before calling this routine, and check which one is non-NULL on return.
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_mtxio_read (const char *            filename,
                 int *                   nrow,

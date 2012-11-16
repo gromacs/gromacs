@@ -35,7 +35,7 @@
 
 #ifndef _fatal_collective_h
 #define _fatal_collective_h
-
+#include "visibility.h"
 #include "types/simple.h"
 #include "types/commrec.h"
 
@@ -44,6 +44,7 @@ extern "C" {
 #endif
   
 
+GMX_LIBGMX_EXPORT
 void
 gmx_fatal_collective(int f_errno,const char *file,int line,
 		     const t_commrec *cr,gmx_domdec_t *dd,

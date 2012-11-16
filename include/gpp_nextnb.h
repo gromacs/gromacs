@@ -35,7 +35,7 @@
 
 #ifndef _gpp_nextnb_h
 #define _gpp_nextnb_h
-
+#include "visibility.h"
 #include "grompp.h"
 
 #ifdef __cplusplus
@@ -52,9 +52,11 @@ typedef struct {
   int ***a;		/* like this: a[i][nre][nrx]			*/
 } t_nextnb;
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void init_nnb(t_nextnb *nnb, int nr, int nrex);
 /* Initiate the arrays for nnb (see above) */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void done_nnb(t_nextnb *nnb);
 /* Cleanup the nnb struct */
 
@@ -66,6 +68,7 @@ void print_nnb(t_nextnb *nnb, char *s);
 #define print_nnb(nnb, s)
 #endif
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void gen_nnb(t_nextnb *nnb,t_params plist[]);
 /* Generate a t_nextnb structure from bond information. 
  * With the structure you can either generate exclusions

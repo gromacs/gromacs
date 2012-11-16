@@ -35,9 +35,10 @@
 
 #ifndef _compute_io_h
 #define _compute_io_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
 			 int nrener,int nrepl);
 /* Return total output to be written from this simulation. */

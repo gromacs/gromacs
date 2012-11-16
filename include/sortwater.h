@@ -35,13 +35,14 @@
 
 #ifndef _sortwater_h
 #define _sortwater_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 void randwater(int astart,int nwater,int nwatom,
 		      rvec x[],rvec v[],int *seed);
 /* Randomize the order of nwater molecules of length nwatom, the
@@ -51,12 +52,14 @@ void randwater(int astart,int nwater,int nwatom,
  */
 
 
+GMX_LIBGMX_EXPORT
 void sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[]);
 /* Sort the order of nwater molecules of length nwatom on X coordinate
  * If v is not NULL it will be shuffled along
  * IS NOT THREAD SAFE 
  */
 
+GMX_LIBGMX_EXPORT
 void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
 		      int nnode,matrix box);
 /* Make compact subboxes 

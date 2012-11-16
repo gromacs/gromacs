@@ -21,7 +21,7 @@
 
 #ifndef GMX_HARDWARE_DETECT_H
 #define GMX_HARDWARE_DETECT_H
-
+#include "visibility.h"
 #include "types/hw_info.h"
 
 #ifdef __cplusplus
@@ -31,13 +31,16 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+GMX_LIBGMX_EXPORT
 void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
                          const t_commrec *cr,
                          gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
                          const char *gpu_id);
 
+GMX_LIBGMX_EXPORT
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
+GMX_LIBGMX_EXPORT
 void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                                       const t_commrec *cr, int ntmpi_requsted,
                                       gmx_bool bUseGPU);

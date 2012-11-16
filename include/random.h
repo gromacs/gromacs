@@ -35,21 +35,24 @@
 
 #ifndef _random_h
 #define _random_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 int make_seed(void);
 /* Make a random seed: (time+getpid) % 1000000 */
 
+GMX_LIBGMX_EXPORT
 real rando(int *seed);
 /* Generate a random number 0 <= r < 1. seed is the (address of) the
  * random seed variable.
  */
 
+GMX_LIBGMX_EXPORT
 void maxwell_speed(real tempi,int seed, 
 			  gmx_mtop_t *mtop, rvec v[]);
 /* Generate velocites according to a maxwellian distribution */
@@ -60,6 +63,7 @@ real calc_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[],
  * moment of Inertia. Returns the total mass.
  */
 
+GMX_LIBGMX_EXPORT
 void stop_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[]);
 
 #ifdef __cplusplus

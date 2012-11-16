@@ -36,7 +36,7 @@
 #ifndef _confio_h
 #define _confio_h
 
-
+#include "visibility.h"
 #include "typedefs.h"
 
 /* For reading coordinate files it is assumed that enough memory
@@ -56,6 +56,7 @@ int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr, char *line);
  * title, atoms, x, v can all be NULL, in which case they won't be read *
  * line holds the previous line for trajectory reading                  */
 
+GMX_LIBGMX_EXPORT
 void write_g96_conf(FILE *out,t_trxframe *fr,int nindex,atom_id *index);
 /* write a Gromos96 coordinate file or trajectory frame *
  * index can be NULL                                    */
@@ -68,31 +69,37 @@ void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
 				  int nx,atom_id index[],int ndec,
 				  rvec *x,rvec *v,matrix box);
 		
+GMX_LIBGMX_EXPORT
 void write_hconf_p(FILE *out,const char *title,t_atoms *atoms, int ndec,
 			  rvec *x,rvec *v,matrix box); 
 /* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */ 
 
+GMX_LIBGMX_EXPORT
 void write_sto_conf_indexed(const char *outfile,const char *title,
 			    t_atoms *atoms, 
 			    rvec x[],rvec *v,int ePBC,matrix box,
 			    atom_id nindex,atom_id index[]);
 /* like write_sto_conf, but indexed */ 
 
+GMX_LIBGMX_EXPORT
 void write_sto_conf(const char *outfile,const char *title,
 			   t_atoms *atoms, 
 			   rvec x[],rvec *v,int ePBC,matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
  * to an STO (.gro or .pdb) file */ 
 
+GMX_LIBGMX_EXPORT
 void write_sto_conf_mtop(const char *outfile,const char *title,
 				gmx_mtop_t *mtop,
 				rvec x[],rvec *v,int ePBC,matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
+GMX_LIBGMX_EXPORT
 void get_stx_coordnum (const char *infile,int *natoms);
 /* read the number of atoms from an STX file */
 
+GMX_LIBGMX_EXPORT
 void read_stx_conf(const char *infile,char *title,
 			  t_atoms *atoms, 
 			  rvec x[],rvec *v,int *ePBC,matrix box);

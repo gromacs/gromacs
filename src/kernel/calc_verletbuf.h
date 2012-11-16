@@ -35,7 +35,7 @@
 
 #ifndef _calc_verletbuf_h
 #define _calc_verletbuf_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 typedef struct
@@ -49,6 +49,7 @@ typedef struct
  * The setup with smallest cluster sizes is return, such that the Verlet
  * buffer size estimated with this setup will be conservative.
  */
+GMX_LIBGMXPREPROCESS_EXPORT
 void verletbuf_get_list_setup(gmx_bool bGPU,
 			      verletbuf_list_setup_t *list_setup);
 
@@ -61,6 +62,7 @@ void verletbuf_get_list_setup(gmx_bool bGPU,
  * to determine their contribution to the drift exaclty, so we approximate.
  * Returns the pair-list cut-off.
  */
+GMX_LIBGMXPREPROCESS_EXPORT
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 			     const t_inputrec *ir,real drift_target,
 			     const verletbuf_list_setup_t *list_setup,

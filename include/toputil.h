@@ -35,7 +35,7 @@
 
 #ifndef _toputil_h
 #define _toputil_h
-
+#include "visibility.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
@@ -49,23 +49,28 @@ int name2index(char *str, char ***typenames, int ntypes);
 
 void pr_alloc (int extra, t_params *pr);
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void set_p_string(t_param *p,const char *s);
 
 void cp_param(t_param *dest,t_param *src);
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void add_param_to_list(t_params *list, t_param *b);
 
 /* INITIATE */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void init_plist(t_params plist[]);
 
 void init_molinfo(t_molinfo *mol);
 
+GMX_LIBGMX_EXPORT
 void init_top  (t_topology *top);
 
 void done_top(t_topology *top);
 
 /* FREE */
+GMX_LIBGMXPREPROCESS_EXPORT
 void done_mi(t_molinfo *mi);
 
 /* PRINTING */

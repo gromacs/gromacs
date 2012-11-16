@@ -35,7 +35,7 @@
 
 #ifndef _mvdata_h
 #define _mvdata_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 
@@ -43,17 +43,20 @@
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 void bcast_ir_mtop(const t_commrec *cr,
 			 t_inputrec *inputrec,gmx_mtop_t *mtop);
 /* Broadcasts ir and mtop from the master to all nodes in cr->mpi_comm_mygroup.
  */
 
+GMX_LIBGMX_EXPORT
 void bcast_state_setup(const t_commrec *cr,t_state *state);
 /* Broadcasts the state sizes and flags
  * from the master to all nodes in cr->mpi_comm_mygroup.
  * The arrays are not broadcasted.
  */
 
+GMX_LIBGMX_EXPORT
 void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  * The arrays in state are allocated when bAlloc is TRUE.
@@ -64,6 +67,7 @@ void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc);
 
 void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[]);
 		     
+GMX_LIBMD_EXPORT
 void move_rvecs(const t_commrec *cr,gmx_bool bForward,gmx_bool bSum,
 		       int left,int right,rvec vecs[],rvec buf[],
 		       int shift,t_nrnb *nrnb);

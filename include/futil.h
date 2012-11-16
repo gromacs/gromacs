@@ -35,7 +35,7 @@
 
 #ifndef _futil_h
 #define _futil_h
-
+#include "visibility.h"
 #include <stdio.h>
 #include "typedefs.h"
 #include "types/commrec.h"
@@ -89,9 +89,11 @@ extern "C" {
 void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
+GMX_LIBGMX_EXPORT
 gmx_bool gmx_fexist(const char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
+GMX_LIBGMX_EXPORT
 gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
 /* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
 
@@ -104,14 +106,17 @@ gmx_bool is_pipe(FILE *fp);
 /*  Make a backup of file if necessary.  
     Return false if there was a problem.
 */
+GMX_LIBGMX_EXPORT
 gmx_bool make_backup(const char * file);
 
+GMX_LIBGMX_EXPORT
 FILE *ffopen(const char *file, const char *mode);
 /* Return a valid file pointer when successful, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)
  */
 
+GMX_LIBGMX_EXPORT
 int ffclose(FILE *fp);
 /* Close files or pipes */
 
@@ -122,18 +127,22 @@ void frewind(FILE *fp);
 #define rewind frewind
 
 
+GMX_LIBGMX_EXPORT
 int gmx_fseek(FILE *stream, gmx_off_t offset, int whence); 
 /* OS-independent fseek. 64-bit when available */
 
+GMX_LIBGMX_EXPORT
 gmx_off_t gmx_ftell(FILE *stream); 
 /* OS-independent fseek. 64-bit when available. */
 
 
 gmx_bool is_pipe(FILE *fp);
 
+GMX_LIBGMX_EXPORT
 char *gmxlibfn(const char *file);
 /* allocates and returns a string with the full file name for a library file */
 
+GMX_LIBGMX_EXPORT
 FILE *libopen(const char *file);
 /* Open a library file for reading. This looks in the current directory
  * first, and then in the library directory. If the file is not found,
@@ -147,6 +156,7 @@ gmx_directory_t;
 /* Open a directory for reading. The first argument should be a pointer
  * to a declared gmx_directory_t variable. Returns 0 on success.
  */
+GMX_LIBGMX_EXPORT
 int
 gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
 
@@ -157,17 +167,21 @@ gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
  * number of characters that will be written. Just as strncpy, the
  * string will NOT be terminated it it is longer than maxlength_name.
  */
+GMX_LIBGMX_EXPORT
 int
 gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name);
     
 /* Release all data for a directory structure */
+GMX_LIBGMX_EXPORT
 int 
 gmx_directory_close(gmx_directory_t gmxdir);
     
 
     
+GMX_LIBGMX_EXPORT
 gmx_bool get_libdir(char *libdir);
 
+GMX_LIBGMX_EXPORT
 char *low_gmxlibfn(const char *file,gmx_bool bAddCWD,gmx_bool bFatal);
 
 FILE *low_libopen(const char *file,gmx_bool bFatal);
@@ -176,6 +190,7 @@ FILE *low_libopen(const char *file,gmx_bool bFatal);
 /* Create unique name for temp file (wrapper around mkstemp). 
  * Buf should be at least 7 bytes long 
  */
+GMX_LIBGMX_EXPORT
 void gmx_tmpnam(char *buf);
 
 /* truncte the file to the specified length */

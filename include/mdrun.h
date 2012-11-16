@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "network.h"
 #include "sim_util.h"
@@ -146,46 +147,58 @@ gmx_integrator_t do_md_openmm;
 
 /* ROUTINES from minimize.c */
 
+GMX_LIBMD_EXPORT
 gmx_integrator_t do_steep;
 /* Do steepest descents EM */
 
+GMX_LIBMD_EXPORT
 gmx_integrator_t do_cg;
 /* Do conjugate gradient EM */
 
+GMX_LIBMD_EXPORT
 gmx_integrator_t do_lbfgs;
 /* Do conjugate gradient L-BFGS */
 
+GMX_LIBMD_EXPORT
 gmx_integrator_t do_nm;
 /* Do normal mode analysis */
 
 /* ROUTINES from tpi.c */
 
+GMX_LIBMD_EXPORT
 gmx_integrator_t do_tpi;
 /* Do test particle insertion */
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
+GMX_LIBMD_EXPORT
 int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd,
                              t_state *state, t_extmass *MassQ, df_history_t *dfhist,
                              gmx_large_int_t step, gmx_rng_t mcrng,
                              rvec *v, t_mdatoms *mdatoms);
 
+GMX_LIBMD_EXPORT
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
                                int nlam, int frequency, gmx_large_int_t step);
 
+GMX_LIBMD_EXPORT
 void get_mc_state(gmx_rng_t rng,t_state *state);
 
+GMX_LIBMD_EXPORT
 void set_mc_state(gmx_rng_t rng,t_state *state);
 
 /* check the version */
+GMX_LIBMD_EXPORT
 void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                                t_inputrec *ir,gmx_mtop_t *mtop);
 
 /* Allocate and initialize node-local state entries. */
+GMX_LIBMD_EXPORT
 void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes);
 
 /* Broadcast the data for a simulation, and allocate node-specific settings
    such as rng generators. */
+GMX_LIBMD_EXPORT
 void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
                           gmx_mtop_t *mtop);
 

@@ -43,7 +43,7 @@
 
 #ifndef _pull_rotation_h
 #define _pull_rotation_h
-
+#include "visibility.h"
 #include "vec.h"
 #include "typedefs.h"
 
@@ -71,6 +71,7 @@ extern "C" {
  * \param Flags             Flags passed over from main, used to determine
  *                          whether or not we are doing a rerun.
  */
+GMX_LIBMD_EXPORT
 extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const output_env_t oenv,
         gmx_bool bVerbose, unsigned long Flags);
@@ -132,6 +133,7 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_large_int_t 
  * \param fplog             General output file, normally md.log.
  * \param rot               Pointer to all the enforced rotation data.
  */
+GMX_LIBMD_EXPORT
 extern void finish_rot(FILE *fplog,t_rot *rot);
 
 

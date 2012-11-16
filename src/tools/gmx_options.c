@@ -40,6 +40,7 @@
 #include "macros.h"
 #include "statutil.h"
 #include "copyrite.h"
+#include "gmx_ana.h"
 
 /* 
  * This program is needed to create the files:
