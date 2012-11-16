@@ -43,7 +43,7 @@
     extern "C" {
 #endif
 
-void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
+GMX_LIBGMX_EXPORT void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
 			rvec x[],
 			const t_inputrec *ir,
 			const gmx_multisim_t *ms,t_oriresdata *od,
@@ -59,20 +59,20 @@ real calc_orires_dev(const gmx_multisim_t *ms,
  * Returns the weighted RMS deviation of the orientation restraints.
  */
 
-void diagonalize_orires_tensors(t_oriresdata *od);
+GMX_LIBGMX_EXPORT void diagonalize_orires_tensors(t_oriresdata *od);
 /*
  * Diagonalizes the order tensor(s) of the orienation restraints.
  * For each experiment eig containts first 3 eigenvalues and then
  * the 3 eigenvectors. The eigenvalues are ordered on magnitude.
  */
 
-void print_orires_log(FILE *log,t_oriresdata *od);
+GMX_LIBGMX_EXPORT void print_orires_log(FILE *log,t_oriresdata *od);
 /* Print order parameter, eigenvalues and eigenvectors to the log file */
 
 t_ifunc orires;
 /* Does only the orientation restraint force calculation */
 
-void update_orires_history(t_fcdata *fcd,history_t *hist);
+GMX_LIBGMX_EXPORT void update_orires_history(t_fcdata *fcd,history_t *hist);
 /* Copy the new time averages that have been calculated in calc_orires_dev */
 
 #ifdef __cplusplus

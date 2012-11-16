@@ -47,7 +47,7 @@ extern "C" {
 typedef struct warninp *warninp_t;
 
 
-warninp_t
+GMX_LIBGMX_EXPORT warninp_t
 init_warning(gmx_bool bAllowWarnings,int maxwarning);
 /* Initialize the warning data structure.
  * If bAllowWarnings=FALSE, all warnings (calls to warning()) will be
@@ -59,20 +59,20 @@ init_warning(gmx_bool bAllowWarnings,int maxwarning);
  * a -maxwarn command line option.
  */
 
-void 
+GMX_LIBGMX_EXPORT void 
 set_warning_line(warninp_t wi,const char *fn,int line);
 /* Set filename and linenumber for the warning */
   
-int 
+GMX_LIBGMX_EXPORT int 
 get_warning_line(warninp_t wi);
 /* Get linenumber for the warning */
   
 
-const char *
+GMX_LIBGMX_EXPORT const char *
 get_warning_file(warninp_t wi);
 /* Get filename for the warning */
   
-void
+GMX_LIBGMX_EXPORT void
 warning(warninp_t wi,const char *s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
@@ -83,7 +83,7 @@ warning(warninp_t wi,const char *s);
  * otherwise warning_note should be called.
  */
 
-void 
+GMX_LIBGMX_EXPORT void 
 warning_note(warninp_t wi,const char *s);
 /* Issue a note, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
@@ -92,20 +92,20 @@ warning_note(warninp_t wi,const char *s);
  * but 100% ok for other systems.
  */
 
-void 
+GMX_LIBGMX_EXPORT void 
 warning_error(warninp_t wi,const char *s);
 /* Issue an error, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_error (local) is incremented.
  */
  
-void 
+GMX_LIBGMX_EXPORT void 
 check_warning_error(warninp_t wi,int f_errno,const char *file,int line);
 /* When warning_error has been called at least once gmx_fatal is called,
  * otherwise does nothing.
  */
 
-void
+GMX_LIBGMX_EXPORT void
 done_warning(warninp_t wi,int f_errno,const char *file,int line);
 /* Should be called when finished processing the input file.
  * Prints the number of notes and warnings
@@ -114,12 +114,12 @@ done_warning(warninp_t wi,int f_errno,const char *file,int line);
  * Frees the data structure pointed to by wi.
  */
   
-void 
+GMX_LIBGMX_EXPORT void 
 _too_few(warninp_t wi,const char *fn,int line);
 #define too_few(wi) _too_few(wi,__FILE__,__LINE__)
 /* Issue a warning stating 'Too few parameters' */
 
-void 
+GMX_LIBGMX_EXPORT void 
 _incorrect_n_param(warninp_t wi,const char *fn,int line);
 #define incorrect_n_param(wi) _incorrect_n_param(wi,__FILE__,__LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */

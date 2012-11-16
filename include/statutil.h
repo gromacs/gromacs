@@ -89,17 +89,17 @@ typedef gmx_bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
    a real problem. */
     
 /* Return the name of the program */
-const char *command_line(void);
+GMX_LIBGMX_EXPORT const char *command_line(void);
 void set_command_line(int argc, char *argv[]);
 
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
  */    
-const char *Program(void);
-void set_program_name(const char *argvzero);
+GMX_LIBGMX_EXPORT const char *Program(void);
+GMX_LIBGMX_EXPORT void set_program_name(const char *argvzero);
 /* Id. without leading directory */
-const char *ShortProgram(void);
+GMX_LIBGMX_EXPORT const char *ShortProgram(void);
 
 /************************************************
  *             Trajectory functions
@@ -108,7 +108,7 @@ const char *ShortProgram(void);
 int prec2ndec(real prec);
 /* Convert precision in 1/(nm) to number of decimal places */
 
-void clear_trxframe(t_trxframe *fr,gmx_bool bFirst);
+GMX_LIBGMX_EXPORT void clear_trxframe(t_trxframe *fr,gmx_bool bFirst);
 /* Set all content gmx_booleans to FALSE.
  * When bFirst = TRUE, set natoms=-1, all pointers to NULL
  *                     and all data to zero.
@@ -124,7 +124,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
                            atom_id *ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
-int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
+GMX_LIBGMX_EXPORT int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
 /* Write a frame to a TRX file. 
  * Only entries for which the gmx_boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
@@ -147,11 +147,11 @@ void close_trx(t_trxstatus *status);
  * or open_trx. Identical to close_trj.
  */
 
-t_trxstatus *open_trx(const char *outfile,const char *filemode);
+GMX_LIBGMX_EXPORT t_trxstatus *open_trx(const char *outfile,const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
 /* get a fileio from a trxstatus */
-t_fileio *trx_get_fileio(t_trxstatus *status);
+GMX_LIBGMX_EXPORT t_fileio *trx_get_fileio(t_trxstatus *status);
 
 
 gmx_bool bRmod_fd(double a, double b, double c,gmx_bool bDouble);
@@ -206,7 +206,7 @@ int check_times(real t);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-int read_first_frame(const output_env_t oenv,t_trxstatus **status,
+GMX_LIBGMX_EXPORT int read_first_frame(const output_env_t oenv,t_trxstatus **status,
                             const char *fn, t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
    * defined further up in this file. 
@@ -216,7 +216,7 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
+GMX_LIBGMX_EXPORT gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
                             t_trxframe *fr);
   /* Reads the next frame which is in accordance with fr->flags.
    * Returns TRUE when succeeded, FALSE otherwise.
@@ -237,7 +237,7 @@ gmx_bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
  * status is the integer set in read_first_x.
  */
 
-void close_trj(t_trxstatus *status);
+GMX_LIBGMX_EXPORT void close_trj(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trx.
  */
@@ -301,13 +301,13 @@ char *sscan(int argc,char *argv[],int *i);
 void vscan(int argc,char *argv[],int *i,rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
-int nenum(const char *const enumc[]);
+GMX_LIBGMX_EXPORT int nenum(const char *const enumc[]);
 /* returns ordinal number of selected enum from args 
  * depends on enumc[0] pointing to one of the other elements
  * array must be terminated by a NULL pointer 
  */
 
-void parse_common_args(int *argc,char *argv[],unsigned long Flags,
+GMX_LIBGMX_EXPORT void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                               int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
                               int ndesc,const char **desc,
                               int nbugs,const char **bugs, 

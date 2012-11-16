@@ -42,15 +42,15 @@ extern "C"
 
 
 
-int ir_optimal_nstcalcenergy(const t_inputrec *ir);
+GMX_LIBGMX_EXPORT int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
-int tcouple_min_integration_steps(int etc);
+GMX_LIBGMX_EXPORT int tcouple_min_integration_steps(int etc);
 
-int ir_optimal_nsttcouple(const t_inputrec *ir);
+GMX_LIBGMX_EXPORT int ir_optimal_nsttcouple(const t_inputrec *ir);
 
-int pcouple_min_integration_steps(int epc);
+GMX_LIBGMX_EXPORT int pcouple_min_integration_steps(int epc);
 
-int ir_optimal_nstpcouple(const t_inputrec *ir);
+GMX_LIBGMX_EXPORT int ir_optimal_nstpcouple(const t_inputrec *ir);
 
 #ifdef __cplusplus
 }

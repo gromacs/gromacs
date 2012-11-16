@@ -89,10 +89,10 @@ extern "C" {
 void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
-gmx_bool gmx_fexist(const char *fname);
+GMX_LIBGMX_EXPORT gmx_bool gmx_fexist(const char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
-gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
+GMX_LIBGMX_EXPORT gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
 /* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
 
 gmx_bool gmx_eof(FILE *fp);
@@ -106,13 +106,13 @@ gmx_bool is_pipe(FILE *fp);
 */
 gmx_bool make_backup(const char * file);
 
-FILE *ffopen(const char *file, const char *mode);
+GMX_LIBGMX_EXPORT FILE *ffopen(const char *file, const char *mode);
 /* Return a valid file pointer when successful, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)
  */
 
-int ffclose(FILE *fp);
+GMX_LIBGMX_EXPORT int ffclose(FILE *fp);
 /* Close files or pipes */
 
 
@@ -131,10 +131,10 @@ gmx_off_t gmx_ftell(FILE *stream);
 
 gmx_bool is_pipe(FILE *fp);
 
-char *gmxlibfn(const char *file);
+GMX_LIBGMX_EXPORT char *gmxlibfn(const char *file);
 /* allocates and returns a string with the full file name for a library file */
 
-FILE *libopen(const char *file);
+GMX_LIBGMX_EXPORT FILE *libopen(const char *file);
 /* Open a library file for reading. This looks in the current directory
  * first, and then in the library directory. If the file is not found,
  * it terminates with a fatal_error
@@ -147,7 +147,7 @@ gmx_directory_t;
 /* Open a directory for reading. The first argument should be a pointer
  * to a declared gmx_directory_t variable. Returns 0 on success.
  */
-int
+GMX_LIBGMX_EXPORT int
 gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
 
     
@@ -157,18 +157,18 @@ gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
  * number of characters that will be written. Just as strncpy, the
  * string will NOT be terminated it it is longer than maxlength_name.
  */
-int
+GMX_LIBGMX_EXPORT int
 gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name);
     
 /* Release all data for a directory structure */
-int 
+GMX_LIBGMX_EXPORT int 
 gmx_directory_close(gmx_directory_t gmxdir);
     
 
     
-gmx_bool get_libdir(char *libdir);
+GMX_LIBGMX_EXPORT gmx_bool get_libdir(char *libdir);
 
-char *low_gmxlibfn(const char *file,gmx_bool bAddCWD,gmx_bool bFatal);
+GMX_LIBGMX_EXPORT char *low_gmxlibfn(const char *file,gmx_bool bAddCWD,gmx_bool bFatal);
 
 FILE *low_libopen(const char *file,gmx_bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */

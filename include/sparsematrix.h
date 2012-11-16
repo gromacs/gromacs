@@ -130,7 +130,7 @@ gmx_sparsematrix_init            (int                    nrow);
  *
  *  All arrays in the structure will be freed, and the structure itself.  
  */
-void
+GMX_LIBGMX_EXPORT void
 gmx_sparsematrix_destroy         (gmx_sparsematrix_t *   A);
 
 
@@ -161,7 +161,7 @@ gmx_sparsematrix_value          (gmx_sparsematrix_t *    A,
 * The column sort order might change, so you need to run fix_sparsematrix
 * once you are done changing the matrix.
 */
-void
+GMX_LIBGMX_EXPORT void
 gmx_sparsematrix_increment_value(gmx_sparsematrix_t *    A,
                                  int                     row, 
                                  int                     col,

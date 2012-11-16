@@ -83,21 +83,21 @@ void write_sto_conf_indexed(const char *outfile,const char *title,
 			    atom_id nindex,atom_id index[]);
 /* like write_sto_conf, but indexed */ 
 
-void write_sto_conf(const char *outfile,const char *title,
+GMX_LIBGMX_EXPORT void write_sto_conf(const char *outfile,const char *title,
 			   t_atoms *atoms, 
 			   rvec x[],rvec *v,int ePBC,matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
  * to an STO (.gro or .pdb) file */ 
 
-void write_sto_conf_mtop(const char *outfile,const char *title,
+GMX_LIBGMX_EXPORT void write_sto_conf_mtop(const char *outfile,const char *title,
 				gmx_mtop_t *mtop,
 				rvec x[],rvec *v,int ePBC,matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
-void get_stx_coordnum (const char *infile,int *natoms);
+GMX_LIBGMX_EXPORT void get_stx_coordnum (const char *infile,int *natoms);
 /* read the number of atoms from an STX file */
 
-void read_stx_conf(const char *infile,char *title,
+GMX_LIBGMX_EXPORT void read_stx_conf(const char *infile,char *title,
 			  t_atoms *atoms, 
 			  rvec x[],rvec *v,int *ePBC,matrix box);
 /* Read atoms, x, v and box from an STX file.

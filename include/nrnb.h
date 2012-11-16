@@ -43,13 +43,13 @@
 extern "C" {
 #endif
 
-void init_nrnb(t_nrnb *nrnb);
+GMX_LIBGMX_EXPORT void init_nrnb(t_nrnb *nrnb);
 
 void cp_nrnb(t_nrnb *dest, t_nrnb *src);
 
 void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2);
 
-void print_nrnb(FILE *out, t_nrnb *nrnb);
+GMX_LIBGMX_EXPORT void print_nrnb(FILE *out, t_nrnb *nrnb);
 
 void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 
@@ -60,24 +60,24 @@ void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 #endif
 
  
-void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
+GMX_LIBGMX_EXPORT void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
 /* Calculates the non-bonded forces and flop count.
  * When out!=NULL also prints the full count table.
  */
 
-void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
+GMX_LIBGMX_EXPORT void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
 		       gmx_large_int_t nsteps,real delta_t,
 		       double nbfs,double mflop,
                        int omp_nth_pp);
 /* Prints the performance, nbfs and mflop come from print_flop */
 
-void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
+GMX_LIBGMX_EXPORT void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
 /* Print detailed load balancing info */
 
-int cost_nrnb(int enr);
+GMX_LIBGMX_EXPORT int cost_nrnb(int enr);
 /* Cost in i860 cycles of this component of MD */
 
-const char *nrnb_str(int enr);
+GMX_LIBGMX_EXPORT const char *nrnb_str(int enr);
 /* Name of this component */
 
 #ifdef __cplusplus

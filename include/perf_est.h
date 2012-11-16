@@ -45,7 +45,7 @@ int n_bonded_dx(gmx_mtop_t *mtop,gmx_bool bExcl);
  * This number is also roughly proportional to the computational cost.
  */
 
-float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box);
 /* Returns an estimate for the relative load of the PME mesh calculation
  * in the total force calculation.
  * This estimate is reasonable for recent Intel and AMD x86_64 CPUs.

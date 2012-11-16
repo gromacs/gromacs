@@ -97,12 +97,12 @@ int gmx_fio_fp_close(t_fileio *fp);
 
 
 /* Open a file, return a stream, record the entry in internal FIO object */
-FILE* gmx_fio_fopen(const char *fn,const char *mode);
+GMX_LIBGMX_EXPORT FILE* gmx_fio_fopen(const char *fn,const char *mode);
 
 /* Close a file previously opened with gmx_fio_fopen. 
  * Do not mix these calls with standard fopen/fclose ones!
  * Returns 0 on success.  */
-int gmx_fio_fclose(FILE *fp);
+GMX_LIBGMX_EXPORT int gmx_fio_fclose(FILE *fp);
 
 
 
@@ -122,7 +122,7 @@ int gmx_fio_getftp(t_fileio *fio);
     was opened as a specific file type and changing that midway is most 
     likely an evil hack. */
 
-void gmx_fio_setdebug(t_fileio *fio,gmx_bool bDebug);
+GMX_LIBGMX_EXPORT void gmx_fio_setdebug(t_fileio *fio,gmx_bool bDebug);
 /* Set the debug mode */
 
 gmx_bool gmx_fio_getdebug(t_fileio *fio);
@@ -142,7 +142,7 @@ void gmx_fio_checktype(t_fileio *fio);
 void gmx_fio_rewind(t_fileio *fio);
 /* Rewind the tpa file in fio */
 
-int gmx_fio_flush(t_fileio *fio);
+GMX_LIBGMX_EXPORT int gmx_fio_flush(t_fileio *fio);
 /* Flush the fio, returns 0 on success */
 
 int gmx_fio_fsync(t_fileio *fio);
@@ -152,7 +152,7 @@ int gmx_fio_fsync(t_fileio *fio);
    can cause dramatically slowed down IO performance. Some OSes (Linux, 
    for example), may implement fsync as a full sync() point. */
 
-gmx_off_t gmx_fio_ftell(t_fileio *fio);
+GMX_LIBGMX_EXPORT gmx_off_t gmx_fio_ftell(t_fileio *fio);
 /* Return file position if possible */
 
 int gmx_fio_seek(t_fileio *fio,gmx_off_t fpos);
@@ -183,7 +183,7 @@ typedef struct
 gmx_file_position_t;
 
 
-int gmx_fio_check_file_position(t_fileio *fio);
+GMX_LIBGMX_EXPORT int gmx_fio_check_file_position(t_fileio *fio);
 /* Check if the file position is out of the range of off_t.
  * The result is stored along with the other file data of fio.
  */

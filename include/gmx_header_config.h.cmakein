@@ -10,4 +10,4 @@
 /* Detect native (i.e. non-Cygwin) Windows */
 #cmakedefine GMX_NATIVE_WINDOWS
 
-
+#include "DLLdefines.h"

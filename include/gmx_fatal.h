@@ -36,6 +36,7 @@
 
 #ifndef _fatal_h
 #define _fatal_h
+#include "DLLdefines.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -64,7 +65,7 @@ extern "C" {
 #endif
 #endif
   
-void 
+GMX_LIBGMX_EXPORT void 
 _where(const char *file,int line);
 #define where() _where(__FILE__,__LINE__)
 /* Prints filename and line to stdlog and only on amba memvail */
@@ -79,7 +80,7 @@ _unset_fatal_tmp_file(const char *fn, const char *file, int line);
 #define unset_fatal_tmp_file(fn) _unset_fatal_tmp_file(fn,__FILE__,__LINE__)
 /* unsets filename to be removed */
 
-void 
+GMX_LIBGMX_EXPORT void 
 gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...) GMX_ATTRIBUTE_NORETURN;
 #define FARGS 0,__FILE__,__LINE__
 /*
@@ -108,7 +109,7 @@ void
 gmx_fatal_set_log_file(FILE *fp);
 /* Set the log file for printing error messages */
   
-void 
+GMX_LIBGMX_EXPORT void 
 _invalid_case(const char *fn,int line);
 #define invalid_case() _invalid_case(__FILE__,__LINE__)
 /* Issue a warning stating 'Invalid case in switch' */
@@ -127,7 +128,7 @@ extern gmx_bool gmx_debug_at;
 
 void init_debug (const int dbglevel,const char *dbgfile);
   
-gmx_bool bDebugMode(void);
+GMX_LIBGMX_EXPORT gmx_bool bDebugMode(void);
 /* Return TRUE when the program was started in debug mode */
   
 #if (defined __sgi && defined USE_SGI_FPE)
@@ -137,7 +138,7 @@ void doexceptions(void);
 
   /* warn_str is allowed to be NULL.
    */
-  void _range_check(int n,int n_min,int n_max,const char *warn_str,
+GMX_LIBGMX_EXPORT   void _range_check(int n,int n_min,int n_max,const char *warn_str,
 			   const char *var,
 			   const char *file,int line);
 
@@ -159,7 +160,7 @@ void doexceptions(void);
    * The messages are stored in src/gmxlib/fatal.c
    */
   
-  void _gmx_error(const char *key,const char *msg,const char *file,int line) GMX_ATTRIBUTE_NORETURN;
+GMX_LIBGMX_EXPORT   void _gmx_error(const char *key,const char *msg,const char *file,int line) GMX_ATTRIBUTE_NORETURN;
 #define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
   /* Error msg of type key is generated and the program is 
    * terminated unless and error handle is set (see below)
@@ -187,7 +188,7 @@ set_gmx_error_handler(void (*func)(const char *msg));
    * The string may be a multi-line string.
    */
 
-void gmx_warning(const char *fmt,...);
+GMX_LIBGMX_EXPORT void gmx_warning(const char *fmt,...);
 /* Print a warning message to stderr.
  * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
  * are allowed as format specifiers.

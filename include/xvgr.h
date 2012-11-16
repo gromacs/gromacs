@@ -95,7 +95,7 @@ enum {
   exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
 };
 
-void xvgr_header(FILE *fp,const char *title,const char *xaxis,
+GMX_LIBGMX_EXPORT void xvgr_header(FILE *fp,const char *title,const char *xaxis,
 			const char *yaxis,int exvg_graph_type,
 			const output_env_t oenv);
 /* In most cases you want to use xvgropen_type, which does the same thing
@@ -110,14 +110,14 @@ FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
  * The xvgr graph type enum is defined above.
  */
 
-FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
+GMX_LIBGMX_EXPORT FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
                       const char *yaxis,const output_env_t oenv);
 /* Calls xvgropen_type with graph type xvggtXNY. */
 
 /* Close xvgr file, and clean up internal file buffers correctly */
 void xvgrclose(FILE *fp);
 
-void xvgr_subtitle(FILE *out,const char *subtitle,
+GMX_LIBGMX_EXPORT void xvgr_subtitle(FILE *out,const char *subtitle,
                           const output_env_t oenv);
 /* Set the subtitle in xvgr */
 
@@ -129,7 +129,7 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
                        const output_env_t oenv);
 /* Set the world in xvgr */
 
-void xvgr_legend(FILE *out,int nsets,const char** setnames,
+GMX_LIBGMX_EXPORT void xvgr_legend(FILE *out,int nsets,const char** setnames,
                  const output_env_t oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
@@ -166,7 +166,7 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,
  * 0 is the first y legend, the legend string will be NULL when not present.
  */
 
-int read_xvg(const char *fn,double ***y,int *ny);
+GMX_LIBGMX_EXPORT int read_xvg(const char *fn,double ***y,int *ny);
 /* As read_xvg_legend, but does not read legends. */
  
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,

@@ -45,7 +45,7 @@ extern "C" {
 void set_default_file_name(const char *name);
 /* Set the default file name for all file types to name */
 
-const char *ftp2ext(int ftp);
+GMX_LIBGMX_EXPORT const char *ftp2ext(int ftp);
 /* Return extension for filetype */
 
 const char *ftp2ext_generic(int ftp);
@@ -78,17 +78,17 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 /* Parse command line for file names. When bKeep is set args are 
  * not removed from argv. */
 
-const char *opt2fn(const char *opt,int nfile, const t_filenm fnm[]);
+GMX_LIBGMX_EXPORT const char *opt2fn(const char *opt,int nfile, const t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when 
  * no such option. */
 
-const char *opt2fn_master(const char *opt, int nfile, 
+GMX_LIBGMX_EXPORT const char *opt2fn_master(const char *opt, int nfile, 
                                 const t_filenm fnm[], t_commrec *cr);
 /* Return the filename belonging to cmd-line option opt, or NULL when 
  * no such option or not running on master */
 
 
-int opt2fns(char **fns[], const char *opt,int nfile,
+GMX_LIBGMX_EXPORT int opt2fns(char **fns[], const char *opt,int nfile,
                    const t_filenm fnm[]);
 /* Return the filenames belonging to cmd-line option opt, or NULL when 
  * no such option. */
@@ -96,10 +96,10 @@ int opt2fns(char **fns[], const char *opt,int nfile,
 #define opt2FILE(opt,nfile,fnm,mode) ffopen(opt2fn(opt,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
 
-int fn2ftp(const char *fn);
+GMX_LIBGMX_EXPORT int fn2ftp(const char *fn);
 /* Return the filetype corrsponding to filename */
 
-const char *ftp2fn(int ftp,int nfile,const t_filenm fnm[]);
+GMX_LIBGMX_EXPORT const char *ftp2fn(int ftp,int nfile,const t_filenm fnm[]);
 /* Return the first file name with type ftp, or NULL when none found. */
 
 int ftp2fns(char **fns[], int ftp,int nfile,const t_filenm fnm[]);
@@ -115,19 +115,19 @@ char *ftp2filter(int ftp);
 #define ftp2FILE(ftp,nfile,fnm,mode) ffopen(ftp2fn(ftp,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
 
-gmx_bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[]);
+GMX_LIBGMX_EXPORT gmx_bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[]);
 /* Return TRUE when this file type has been found on the cmd-line */
 
-gmx_bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[]);
+GMX_LIBGMX_EXPORT gmx_bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[]);
 /* Return TRUE when this option has been found on the cmd-line */
 
-const char *opt2fn_null(const char *opt,int nfile,const t_filenm fnm[]);
+GMX_LIBGMX_EXPORT const char *opt2fn_null(const char *opt,int nfile,const t_filenm fnm[]);
 /* Return the filenm belonging top cmd-line option opt, or NULL when 
  * no such option. 
  * Also return NULL when opt is optional and option is not set. 
  */
 
-const char *ftp2fn_null(int ftp,int nfile,const t_filenm fnm[]);
+GMX_LIBGMX_EXPORT const char *ftp2fn_null(int ftp,int nfile,const t_filenm fnm[]);
 /* Return the first file name with type ftp, or NULL when none found.
  * Also return NULL when ftp is optional and option is not set.
  */
@@ -144,11 +144,11 @@ gmx_bool is_set(const t_filenm *fnm);
 /* When we do checkpointing, this routine is called to check for previous
  * output files and append a '.partNNNN' suffix before the (output) file extensions.
  */
-int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
+GMX_LIBGMX_EXPORT int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
 
 /* duplicate the filename list (to make a private copy for each thread, 
    for example) */
-t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
+GMX_LIBGMX_EXPORT t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
 
 /* Free memory allocated for file names by parse_file_args(). */
 void done_filenms(int nf, t_filenm fnm[]);

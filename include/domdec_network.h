@@ -80,7 +80,7 @@ dd_sendrecv2_rvec(const gmx_domdec_t *dd,
  * The DD master node is the master for these operations.
  */
 
-void
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void
 dd_bcast(gmx_domdec_t *dd,int nbytes,void *data);
 
 /* Copies src to dest on the master node and then broadcasts */

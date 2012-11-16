@@ -55,7 +55,7 @@ enum
     econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
-int n_flexible_constraints(struct gmx_constr *constr);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT int n_flexible_constraints(struct gmx_constr *constr);
 /* Returns the total number of flexible constraints in the system */
 
 void too_many_constraint_warnings(int eConstrAlg,int warncount);
@@ -177,13 +177,13 @@ gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
  *
  */
 
-gmx_constr_t init_constraints(FILE *log,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_constr_t init_constraints(FILE *log,
 				     gmx_mtop_t *mtop,t_inputrec *ir, 
 				     gmx_edsam_t ed,t_state *state,
 				     t_commrec *cr);
 /* Initialize constraints stuff */
 
-void set_constraints(gmx_constr_t constr,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_constraints(gmx_constr_t constr,
 							gmx_localtop_t *top,
 							t_inputrec *ir,
 							t_mdatoms *md,
@@ -224,7 +224,7 @@ real *constr_rmsd_data(gmx_constr_t constr);
  * Returns NULL when LINCS is not used.
  */
 
-real constr_rmsd(gmx_constr_t constr,gmx_bool bSD2);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT real constr_rmsd(gmx_constr_t constr,gmx_bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
 real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
