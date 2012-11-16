@@ -49,7 +49,7 @@ void atomic_number(int nr, char ***atomtype, int *nucnum);
 t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
-void init_QMMMrec(t_commrec *cr,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void init_QMMMrec(t_commrec *cr,
 			 matrix box,
 			 gmx_mtop_t *mtop,
 			 t_inputrec *ir,

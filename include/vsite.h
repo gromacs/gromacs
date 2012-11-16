@@ -78,7 +78,7 @@ typedef struct {
   int  th_ind_nalloc;         /* Size of th_ind                          */
 } gmx_vsite_t;
 
-void construct_vsites(FILE *log,gmx_vsite_t *vsite,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     rvec x[],t_nrnb *nrnb,
 			     real dt,rvec v[],
 			     t_iparams ip[],t_ilist ilist[],
@@ -94,7 +94,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
  * for the integration, they are only useful for analysis.
  */
 
-void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
 			   gmx_mtop_t *mtop,rvec x[]);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the whole system.
@@ -115,7 +115,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
  * as for instance for the PME mesh contribution.
  */
 
-gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr,
 			gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
@@ -132,7 +132,7 @@ void split_vsites_over_threads(const t_ilist *ilist,
  * Should be called at the end of the domain decomposition.
  */
 
-void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 			  t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.

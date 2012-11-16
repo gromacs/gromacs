@@ -96,14 +96,14 @@ static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1]
     {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
 };*/
 
-int		gmx_nint(real a);
+GMX_LIBGMX_EXPORT int		gmx_nint(real a);
 real    sign(real x,real y);
 
 real    cuberoot (real a);
-double  gmx_erfd(double x);
+GMX_LIBGMX_EXPORT double  gmx_erfd(double x);
 double  gmx_erfcd(double x);
-float   gmx_erff(float x);
-float   gmx_erfcf(float x);
+GMX_LIBGMX_EXPORT float   gmx_erff(float x);
+GMX_LIBGMX_EXPORT float   gmx_erfcf(float x);
 #ifdef GMX_DOUBLE
 #define gmx_erf(x)   gmx_erfd(x)
 #define gmx_erfc(x)  gmx_erfcd(x)
@@ -112,7 +112,7 @@ float   gmx_erfcf(float x);
 #define gmx_erfc(x)  gmx_erfcf(x)
 #endif
 
-gmx_bool gmx_isfinite(real x);
+GMX_LIBGMX_EXPORT gmx_bool gmx_isfinite(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *

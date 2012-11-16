@@ -56,18 +56,18 @@ typedef struct gmx_update *gmx_update_t;
 gmx_update_t init_update(FILE *fplog,t_inputrec *ir);
 
 /* Store the random state from sd in state */
-void get_stochd_state(gmx_update_t sd,t_state *state);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void get_stochd_state(gmx_update_t sd,t_state *state);
 
 /* Set the random in sd from state */
-void set_stochd_state(gmx_update_t sd,t_state *state);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_stochd_state(gmx_update_t sd,t_state *state);
 
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
  */
-void set_deform_reference_box(gmx_update_t upd,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_deform_reference_box(gmx_update_t upd,
 				     gmx_large_int_t step,matrix box);
 
-void update_tcouple(FILE         *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void update_tcouple(FILE         *fplog,
 			   gmx_large_int_t   step,
 			   t_inputrec   *inputrec,   
 			   t_state      *state,
@@ -78,7 +78,7 @@ void update_tcouple(FILE         *fplog,
 			   t_mdatoms    *md
 );
 
-void update_pcouple(FILE         *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void update_pcouple(FILE         *fplog,
 			   gmx_large_int_t   step,
 			   t_inputrec   *inputrec,   
 			   t_state      *state,
@@ -88,7 +88,7 @@ void update_pcouple(FILE         *fplog,
 			   gmx_update_t upd,
 			   gmx_bool         bInitStep);
 
-void update_coords(FILE         *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void update_coords(FILE         *fplog,
 			  gmx_large_int_t   step,
 			  t_inputrec   *inputrec,  /* input record and box stuff	*/
 			  t_mdatoms    *md,
@@ -111,9 +111,9 @@ void update_coords(FILE         *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
 
-void update_constraints(FILE         *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void update_constraints(FILE         *fplog,
 			       gmx_large_int_t   step,
 			       real         *dvdlambda, /* FEP stuff */
 			       t_inputrec   *inputrec,  /* input record and box stuff	*/
@@ -138,7 +138,7 @@ void update_constraints(FILE         *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void update_box(FILE         *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void update_box(FILE         *fplog,
 		       gmx_large_int_t   step,
 		       t_inputrec   *inputrec,  /* input record and box stuff	*/
 		       t_mdatoms    *md,
@@ -176,7 +176,7 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
 void
 init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir);
 
-void
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void
 update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind);
 
 void
@@ -190,15 +190,15 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			      double xi[],double vxi[],t_extmass *MassQ);
 
-t_state *init_bufstate(const t_state *template_state);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT t_state *init_bufstate(const t_state *template_state);
 
 void destroy_bufstate(t_state *state);
 
-void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind, 
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind, 
 			   gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md, 
 			   t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter); 
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter); 
 
 real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
@@ -218,7 +218,7 @@ void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
 			       int start,int end,rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 
-void update_annealing_target_temp(t_grpopts *opts,real t); 
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void update_annealing_target_temp(t_grpopts *opts,real t); 
 /* Set reference temp for simulated annealing at time t*/
 
 real calc_temp(real ekin,real nrdf);

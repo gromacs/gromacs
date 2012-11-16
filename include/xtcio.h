@@ -48,23 +48,23 @@ extern "C" {
  * bOK tells if a frame is not corrupted 
  */  
 
-t_fileio *open_xtc(const char *filename,const char *mode);
+GMX_LIBGMX_EXPORT t_fileio *open_xtc(const char *filename,const char *mode);
 /* Open a file for xdr I/O */
   
-void close_xtc(t_fileio *fio);
+GMX_LIBGMX_EXPORT void close_xtc(t_fileio *fio);
 /* Close the file for xdr I/O */
   
-int read_first_xtc(t_fileio *fio,
+GMX_LIBGMX_EXPORT int read_first_xtc(t_fileio *fio,
 			  int *natoms,int *step,real *time,
 			  matrix box,rvec **x,real *prec,gmx_bool *bOK);
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
-int read_next_xtc(t_fileio *fio,
+GMX_LIBGMX_EXPORT int read_next_xtc(t_fileio *fio,
 			 int natoms,int *step,real *time,
 			 matrix box,rvec *x,real *prec,gmx_bool *bOK);
 /* Read subsequent frames */
 
-int write_xtc(t_fileio *fio,
+GMX_LIBGMX_EXPORT int write_xtc(t_fileio *fio,
 		     int natoms,int step,real time,
 		     matrix box,rvec *x,real prec);
 /* Write a frame to xtc file */

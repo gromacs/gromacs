@@ -63,22 +63,22 @@ enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr, 
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr, 
                                int nthreads_pp, int nthreads_pme);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
 
-void wallcycle_start(gmx_wallcycle_t wc, int ewc);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void wallcycle_start(gmx_wallcycle_t wc, int ewc);
 /* Starts the cycle counter (and increases the call count) */
 
 void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
 /* Starts the cycle counter without increasing the call count */
 
-double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
 
-void wallcycle_reset_all(gmx_wallcycle_t wc);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void wallcycle_reset_all(gmx_wallcycle_t wc);
 /* Resets all cycle counters to zero */
 
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
@@ -88,10 +88,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 			    gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
-gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 /* Return reset_counters from wc struct */
 
-void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
 /* Set reset_counters */
 
 /* Uncomment the next line to get extra cycle counters of sub parts */

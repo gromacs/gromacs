@@ -68,7 +68,7 @@ void pdb_use_ter(gmx_bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).
    This function is fundamentally broken as far as thread-safety is concerned.*/
 
-void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
+GMX_LIBGMX_EXPORT void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
 /* write the box in the CRYST1 record,
  * with ePBC=-1 the pbc is guessed from the box
  * This function is fundamentally broken as far as thread-safety is concerned.
@@ -80,7 +80,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,t_atoms *atoms,
 				  gmx_conect conect,gmx_bool bTerSepChains);
 /* REALLY low level */
 
-void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
+GMX_LIBGMX_EXPORT void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
 			  rvec x[],int ePBC,matrix box,char chain,
 			  int model_nr,gmx_conect conect,gmx_bool bTerSepChains);
 /* Low level pdb file writing routine.
@@ -96,7 +96,7 @@ void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
   
-void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
+GMX_LIBGMX_EXPORT void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
 /* Routine to extract atomic numbers from the atom names */
 
 int read_pdbfile(FILE *in,char *title,int *model_nr,
@@ -118,10 +118,10 @@ void read_pdb_conf(const char *infile,char *title,
 void get_pdb_coordnum(FILE *in,int *natoms);
 /* Read a pdb file and count the ATOM and HETATM fields. */
 
-gmx_bool is_hydrogen(const char *nm);
+GMX_LIBGMX_EXPORT gmx_bool is_hydrogen(const char *nm);
 /* Return whether atom nm is a hydrogen */
 
-gmx_bool is_dummymass(const char *nm);
+GMX_LIBGMX_EXPORT gmx_bool is_dummymass(const char *nm);
 /* Return whether atom nm is a dummy mass */
 
 /* Routines to handle CONECT records if they have been read in */

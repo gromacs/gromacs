@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
+GMX_LIBGMX_EXPORT void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
 			t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
 			t_fcdata *fcd,t_state *state);
 /* Initiate *fcd data, must be called once, nbonds is the number 
@@ -64,7 +64,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 t_ifunc ta_disres;
 /* Calculate the distance restraint forces, return the potential */
 
-void update_disres_history(t_fcdata *fcd,history_t *hist);
+GMX_LIBGMX_EXPORT void update_disres_history(t_fcdata *fcd,history_t *hist);
 /* Copy the new time averages that have been calculated in calc_disres_R_6 */
 
 #ifdef __cplusplus

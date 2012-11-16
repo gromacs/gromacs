@@ -48,7 +48,7 @@ extern "C" {
    for mdrun to interface with the pull code */
 
 /* Get the distance to the reference and deviation for pull group g */
-void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 				 dvec dr,dvec dev);
 
 /* Set the all the pull forces to zero */
@@ -69,12 +69,12 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 /* Make a selection of the home atoms for all pull groups.
  * Should be called at every domain decomposition.
  */
-void dd_make_local_pull_groups(gmx_domdec_t *dd,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void dd_make_local_pull_groups(gmx_domdec_t *dd,
 				      t_pull *pull,t_mdatoms *md);
 
 /* get memory and initialize the fields of pull that still need it, and
    do runtype specific initialization */
-void init_pull(FILE *fplog,  
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void init_pull(FILE *fplog,  
                       t_inputrec *ir, /* the inputrec */
                       int nfile,       
                       const t_filenm fnm[], /* standard filename struct */
@@ -86,15 +86,15 @@ void init_pull(FILE *fplog,
                       unsigned long Flags);
 
 /* Close the pull output files */
-void finish_pull(FILE *fplog,t_pull *pull);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void finish_pull(FILE *fplog,t_pull *pull);
 
 /* Print the pull output (x and/or f) */
-void pull_print_output(t_pull *pull, gmx_large_int_t step, double time);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void pull_print_output(t_pull *pull, gmx_large_int_t step, double time);
 
 /* In pullutil.c */
 
 /* Calculates centers of mass all pull groups */
-void pull_calc_coms(t_commrec *cr,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void pull_calc_coms(t_commrec *cr,
 			   t_pull *pull,   /* the pull group */
 			   t_mdatoms *md,  /* all atoms */
 			   t_pbc *pbc,

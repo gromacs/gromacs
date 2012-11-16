@@ -104,13 +104,13 @@ int pd_shift(const t_commrec *cr);
 
 int pd_bshift(const t_commrec *cr);
 
-void pd_cg_range(const t_commrec *cr,int *cg0,int *cg1);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void pd_cg_range(const t_commrec *cr,int *cg0,int *cg1);
 /* Get the range for the home charge groups */
 
-void pd_at_range(const t_commrec *cr,int *at0,int *at1);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void pd_at_range(const t_commrec *cr,int *at0,int *at1);
 /* Get the range for the home particles */
 
-gmx_localtop_t *split_system(FILE *log,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_localtop_t *split_system(FILE *log,
 				    gmx_mtop_t *mtop,t_inputrec *inputrec,
 				    t_commrec *cr);
 /* Split the system over N processors. */
@@ -118,7 +118,7 @@ gmx_localtop_t *split_system(FILE *log,
 gmx_bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 				  t_comm_vsites *vsitecomm);
 
-t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global);
 /* Generate a local state struct from the global one */
 
 void

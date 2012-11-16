@@ -20,7 +20,7 @@
  */
 #ifndef GMX_CPUID_H_
 #define GMX_CPUID_H_
-
+#include "DLLdefines.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -140,7 +140,7 @@ gmx_cpuid_init              (gmx_cpuid_t *              cpuid);
 /* Return the vendor id as enumerated type. Use gmx_cpuid_vendor_string[]
  * to get the corresponding text string.
  */
-enum gmx_cpuid_vendor
+GMX_LIBGMX_EXPORT enum gmx_cpuid_vendor
 gmx_cpuid_vendor            (gmx_cpuid_t                cpuid);
 
 
@@ -150,11 +150,11 @@ gmx_cpuid_brand             (gmx_cpuid_t                cpuid);
 
 
 /* Return processor family version. For a chip of version 1.2.3, this is 1 */
-int
+GMX_LIBGMX_EXPORT int
 gmx_cpuid_family            (gmx_cpuid_t                cpuid);
 
 /* Return processor model version, For a chip of version 1.2.3, this is 2. */
-int
+GMX_LIBGMX_EXPORT int
 gmx_cpuid_model             (gmx_cpuid_t                cpuid);
 
 /* Return processor stepping version, For a chip of version 1.2.3, this is 3. */
@@ -166,7 +166,7 @@ gmx_cpuid_stepping          (gmx_cpuid_t                cpuid);
  * Returns 0 if flag "feature" is not set, 1 if the flag is set. We cannot use
  * gmx_bool here since this file must be possible to compile without simple.h.
  */
-int
+GMX_LIBGMX_EXPORT int
 gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
                              enum gmx_cpuid_feature     feature);
 
@@ -210,7 +210,7 @@ enum gmx_cpuid_x86_smt
  * even tested the performance on other SMT implementations, so it is not
  * obvious we shouldn't use SMT there.
  */
-enum gmx_cpuid_x86_smt
+GMX_LIBGMX_EXPORT enum gmx_cpuid_x86_smt
 gmx_cpuid_x86_smt(gmx_cpuid_t cpuid);
 
 

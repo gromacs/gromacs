@@ -44,7 +44,7 @@ extern "C" {
 #endif
   
 
-void
+GMX_LIBGMX_EXPORT void
 gmx_fatal_collective(int f_errno,const char *file,int line,
 		     const t_commrec *cr,gmx_domdec_t *dd,
 		     const char *fmt,...);

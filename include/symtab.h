@@ -54,11 +54,11 @@ extern "C" {
  * back to a text string handle by get_symtab_handle().
  */
 
-void open_symtab(t_symtab *symtab);
+GMX_LIBGMX_EXPORT void open_symtab(t_symtab *symtab);
      /* Initialises the symbol table symtab.
       */
 
-void close_symtab(t_symtab *symtab);
+GMX_LIBGMX_EXPORT void close_symtab(t_symtab *symtab);
      /* Undoes the effect of open_symtab(), after invoking this function, 
       * no value can be added to the symbol table, only values can be 
       * retrieved using get_symtab().
@@ -67,11 +67,11 @@ void close_symtab(t_symtab *symtab);
 void free_symtab(t_symtab *symtab);
      /* Frees the space allocated by the symbol table itself */
 
-void done_symtab(t_symtab *symtab);
+GMX_LIBGMX_EXPORT void done_symtab(t_symtab *symtab);
      /* Frees the space allocated by the symbol table, including all
       * entries in it */
 
-char **put_symtab(t_symtab *symtab,const char *name);
+GMX_LIBGMX_EXPORT char **put_symtab(t_symtab *symtab,const char *name);
      /* Enters a string into the symbol table symtab, if it was not
       * available, a reference to a copy is returned else a reference 
       * to the earlier entered value is returned. Strings are trimmed
@@ -102,7 +102,7 @@ long rd_symtab(FILE *fp,t_symtab *symtab);
       * state afterwards, so no strings can be added to it.
       */
 
-void pr_symtab(FILE *fp,int indent,const char *title,t_symtab *symtab);
+GMX_LIBGMX_EXPORT void pr_symtab(FILE *fp,int indent,const char *title,t_symtab *symtab);
      /* This routine prints out a (human) readable representation of 
       * the symbol table symtab to the file fp. Ident specifies the
       * number of spaces the text should be indented. Title is used
