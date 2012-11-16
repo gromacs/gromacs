@@ -50,6 +50,7 @@
 #include <io.h>
 #endif
 
+#include "visibility.h"
 #include "statutil.h"
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -76,6 +77,7 @@
 #include "string2.h"
 
 /* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+GMX_LIBGMX_EXPORT
 char *
 gmx_ctime_r(const time_t *clock,char *buf, int n);
 

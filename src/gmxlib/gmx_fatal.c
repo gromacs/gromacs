@@ -52,6 +52,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "gmxfio.h"
+#include "gmx_fatal_collective.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

@@ -37,9 +37,11 @@
 #define _gmx_matrix_h
 	
 #include <stdio.h>
+#include "visibility.h"
 	
 double **alloc_matrix(int n,int m);
 
+GMX_LIBGMX_EXPORT
 void free_matrix(double **a,int n);
 
 void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z);
@@ -47,6 +49,7 @@ void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z);
 /* Return 0 if OK or row number where inversion failed otherwise. */
 int matrix_invert(FILE *fp,int n,double **a);
 
+GMX_LIBGMX_EXPORT
 double multi_regression(FILE *fp,int ny,double *y,
                                int nx,double **xx,double *a0);
 /* Perform a regression analysis to fit

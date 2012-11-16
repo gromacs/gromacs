@@ -35,7 +35,7 @@
 
 #ifndef _viewit_h
 #define _viewit_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -43,12 +43,14 @@ extern "C" {
 #endif
 
 
+GMX_LIBGMX_EXPORT
 void do_view(const output_env_t oenv,const char *fn, const char *opts);
 /* forks off appropriate command to view file.
  * currently eps, xpm, xvg and pdb are supported 
  * defaults are provided, can be overriden with environment vars 
  */
 
+GMX_LIBGMX_EXPORT
 void view_all(const output_env_t oenv,int nf, t_filenm fnm[]);
 /* calls do_view for all viewable output files in fnm[] */
  

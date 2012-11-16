@@ -34,7 +34,7 @@
  */
 #ifndef _nlistheuristics_h
 #define _nlistheuristics_h
-
+#include "visibility.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -60,11 +60,13 @@ typedef struct {
 
 void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step);
 
+GMX_LIBMD_EXPORT
 void init_nlistheuristics(gmx_nlheur_t *nlh,
 			  gmx_bool bGStatEveryStep,gmx_large_int_t step);
 
 void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step);
 
+GMX_LIBMD_EXPORT
 void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step);
 
 #ifdef __cplusplus

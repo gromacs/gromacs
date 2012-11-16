@@ -35,8 +35,8 @@
 
 #ifndef _vsite_h
 #define _vsite_h
-
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 
@@ -78,6 +78,7 @@ typedef struct {
   int  th_ind_nalloc;         /* Size of th_ind                          */
 } gmx_vsite_t;
 
+GMX_LIBMD_EXPORT
 void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     rvec x[],t_nrnb *nrnb,
 			     real dt,rvec v[],
@@ -94,6 +95,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
  * for the integration, they are only useful for analysis.
  */
 
+GMX_LIBMD_EXPORT
 void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
 			   gmx_mtop_t *mtop,rvec x[]);
 /* Create positions of vsite atoms based on surrounding atoms
@@ -115,6 +117,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
  * as for instance for the PME mesh contribution.
  */
 
+GMX_LIBMD_EXPORT
 gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr,
 			gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,
@@ -132,6 +135,7 @@ void split_vsites_over_threads(const t_ilist *ilist,
  * Should be called at the end of the domain decomposition.
  */
 
+GMX_LIBMD_EXPORT
 void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 			  t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.

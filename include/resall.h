@@ -35,7 +35,7 @@
 
 #ifndef _resall_h
 #define _resall_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "hackblock.h"
 #include "gpp_atomtype.h"
@@ -56,14 +56,17 @@ t_restp *get_restp(const char *rtpname,int nrtp,t_restp rtp[]);
  * Generates a fatal error when rtpname is not found.
  */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab);
 /* read atom type database(s) */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void read_resall(char *resdb, int *nrtp,t_restp **rtp, 
 		 gpp_atomtype_t atype, t_symtab *tab,
 		 gmx_bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void print_resall(FILE *out, int nrtp, t_restp rtp[], 
 			 gpp_atomtype_t atype);
 /* write rtp database */

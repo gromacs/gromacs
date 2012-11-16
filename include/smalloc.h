@@ -35,7 +35,7 @@
 
 #ifndef _smalloc_h
 #define _smalloc_h
-
+#include "visibility.h"
 #include <stdlib.h>
 
 /*
@@ -130,21 +130,28 @@
 extern "C" { 
 #endif
 
-void *save_malloc(const char *name,const char *file,int line,size_t size); 
+GMX_LIBGMX_EXPORT
+void *save_malloc(const char *name,const char *file,int line,size_t size);
+GMX_LIBGMX_EXPORT
 void *save_calloc(const char *name,const char *file,int line,
 		  size_t nelem,size_t elsize); 
+GMX_LIBGMX_EXPORT
 void *save_realloc(const char *name,const char *file,int line,
 		   void *ptr,size_t nelem,size_t elsize);
+GMX_LIBGMX_EXPORT
 void save_free(const char *name,const char *file,int line, void *ptr);
 size_t maxavail(void);
 size_t memavail(void);
 
 /* Aligned-memory counterparts */
 
+GMX_LIBGMX_EXPORT
 void *save_malloc_aligned(const char *name,const char *file,int line,
                           unsigned nelem,size_t elsize,size_t alignment);
+GMX_LIBGMX_EXPORT
 void *save_calloc_aligned(const char *name,const char *file,int line,
                           unsigned nelem,size_t elsize,size_t alignment);
+GMX_LIBGMX_EXPORT
 void save_free_aligned(const char *name,const char *file,int line, void *ptr);
 
 #ifdef __cplusplus

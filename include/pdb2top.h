@@ -35,7 +35,7 @@
 
 #ifndef _pdb2top_h
 #define _pdb2top_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
@@ -44,6 +44,7 @@
 
 /* this *MUST* correspond to array in pdb2top.c */
 enum { ehisA, ehisB, ehisH, ehis1, ehisNR };
+GMX_LIBGMXPREPROCESS_EXPORT
 extern const char *hh[ehisNR];
 
 typedef struct {
@@ -51,6 +52,7 @@ typedef struct {
   char *a1,*a2;
 } t_ssbond;
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void choose_ff(const char *ffsel,
 		      char *forcefield, int ff_maxlen,
 		      char *ffdir, int ffdir_maxlen);
@@ -59,6 +61,7 @@ void choose_ff(const char *ffsel,
  * If ffsel==NULL: interactive selection.
  */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void choose_watermodel(const char *wmsel,const char *ffdir,
 			      char **watermodel);
 /* Choose, possibly interactively, which water model to include,
@@ -66,6 +69,7 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
  * in ffdir.
  */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
 			       int nrtp, t_restp rtp[],
 			       int nres, t_resinfo *resinfo, 
@@ -76,6 +80,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
  * and store them in restp and hb.
  */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
 				     t_atoms *pdba,rvec *x,
 				     gmx_bool bVerbose);
@@ -84,16 +89,20 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
  * add these atoms to restp.
  */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void print_top_comment(FILE *out,const char *filename,const char *generator,const char *ffdir,gmx_bool bITP);
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void print_top_header(FILE *out,const char *filename,const char *title,gmx_bool bITP, 
                              const char *ffdir,real mHmult);
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void print_top_mols(FILE *out,
                            const char *title, const char *ffdir, const char *water,
                            int nincl, char **incls,
                            int nmol, t_mols *mols);
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void write_top(FILE *out, char *pr,char *molname,
                       t_atoms *at,gmx_bool bRTPresname,
                       int bts[],t_params plist[],t_excls excls[],
@@ -101,6 +110,7 @@ void write_top(FILE *out, char *pr,char *molname,
 /* NOTE: nrexcl is not the size of *excl! */
 
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    t_atoms *atoms,rvec **x,
 		    gpp_atomtype_t atype,t_symtab *tab,
@@ -117,6 +127,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    gmx_bool bRenumRes,gmx_bool bRTPresname);
 /* Create a topology ! */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void print_sums(t_atoms *atoms, gmx_bool bSystem);
 
 

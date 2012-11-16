@@ -54,7 +54,7 @@
  */
 #ifndef TRAJANA_H
 #define TRAJANA_H
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "filenm.h"
 #include "readinp.h"
@@ -179,6 +179,7 @@ typedef struct gmx_ana_traj_t gmx_ana_traj_t;
 /*@{*/
 
 /** Allocates and initializes data structure for trajectory analysis. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_traj_create(gmx_ana_traj_t **data, unsigned long flags);
 /** Frees the memory allocated for trajectory analysis data. */
@@ -191,6 +192,7 @@ gmx_ana_add_flags(gmx_ana_traj_t *d, unsigned long flags);
 int
 gmx_ana_set_nrefgrps(gmx_ana_traj_t *d, int nrefgrps);
 /** Sets the number of analysis groups required. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_set_nanagrps(gmx_ana_traj_t *d, int nanagrps);
 /** Sets whether PBC are used. */
@@ -203,6 +205,7 @@ gmx_ana_set_rmpbc(gmx_ana_traj_t *d, gmx_bool bRmPBC);
 int
 gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags);
 /** Parses command-line arguments and performs some initialization. */
+GMX_LIBGMX_EXPORT
 int
 parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
                   unsigned long pca_flags, int nfile, t_filenm fnm[],
@@ -214,6 +217,7 @@ parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
 int
 gmx_ana_init_selections(gmx_ana_traj_t *d);
 /** Initializes calculation of covered fractions for selections. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type);
 
@@ -221,6 +225,7 @@ gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type);
 gmx_bool
 gmx_ana_has_pbc(gmx_ana_traj_t *d);
 /** Gets the topology information. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_topology(gmx_ana_traj_t *d, gmx_bool bReq, t_topology **top, gmx_bool *bTop);
 /** Gets the configuration from the topology. */
@@ -234,21 +239,25 @@ gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr);
 int
 gmx_ana_get_ngrps(gmx_ana_traj_t *d, int *ngrps);
 /** Gets the number of analysis groups provided by the user. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_nanagrps(gmx_ana_traj_t *d, int *nanagrps);
 /** Gets the selection object for a reference selection. */
 int
 gmx_ana_get_refsel(gmx_ana_traj_t *d, int i, gmx_ana_selection_t **sel);
 /** Gets the selection object for a reference selection. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_anagrps(gmx_ana_traj_t *d, gmx_ana_selection_t ***sel);
 /** Gets an array of names for the selections. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_grpnames(gmx_ana_traj_t *d, char ***grpnames);
 /** Gets the selection collection object that contains all the selections. */
 int
 gmx_ana_get_selcollection(gmx_ana_traj_t *d, gmx_ana_selcollection_t **sc);
 /** Prints the selection strings into an XVGR file as comments. */
+GMX_LIBGMX_EXPORT
 int
 xvgr_selections(FILE *out, gmx_ana_traj_t *d);
 
@@ -282,6 +291,7 @@ typedef int (*gmx_analysisfunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 	                        int nr, gmx_ana_selection_t *sel[], void *data);
 
 /** Loops through all frames in the trajectory. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data);
 /** Gets the total number of frames analyzed. */

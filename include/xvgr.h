@@ -36,6 +36,7 @@
 #ifndef _xvgr_h
 #define _xvgr_h
 
+#include "visibility.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "viewit.h"
@@ -88,6 +89,7 @@ enum {
  * \4 : (deprecated) end symbol font
  */
 
+GMX_LIBGMX_EXPORT
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv);
 /* Returns if we should print xmgrace or xmgr codes */
 
@@ -95,6 +97,7 @@ enum {
   exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
 };
 
+GMX_LIBGMX_EXPORT
 void xvgr_header(FILE *fp,const char *title,const char *xaxis,
 			const char *yaxis,int exvg_graph_type,
 			const output_env_t oenv);
@@ -102,6 +105,7 @@ void xvgr_header(FILE *fp,const char *title,const char *xaxis,
  * but takes a filename and opens it.
  */
 
+GMX_LIBGMX_EXPORT
 FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
 			   const char *yaxis,int exvg_graph_type,
 			   const output_env_t oenv);
@@ -110,30 +114,37 @@ FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
  * The xvgr graph type enum is defined above.
  */
 
+GMX_LIBGMX_EXPORT
 FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
                       const char *yaxis,const output_env_t oenv);
 /* Calls xvgropen_type with graph type xvggtXNY. */
 
 /* Close xvgr file, and clean up internal file buffers correctly */
+GMX_LIBGMX_EXPORT
 void xvgrclose(FILE *fp);
 
+GMX_LIBGMX_EXPORT
 void xvgr_subtitle(FILE *out,const char *subtitle,
                           const output_env_t oenv);
 /* Set the subtitle in xvgr */
 
+GMX_LIBGMX_EXPORT
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax,        
                       const output_env_t oenv);
 /* Set the view in xvgr */
 
+GMX_LIBGMX_EXPORT
 void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
                        const output_env_t oenv);
 /* Set the world in xvgr */
 
+GMX_LIBGMX_EXPORT
 void xvgr_legend(FILE *out,int nsets,const char** setnames,
                  const output_env_t oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
 
+GMX_LIBGMX_EXPORT
 void xvgr_new_dataset(FILE *out, 
                       int nr_first, int nsets, const char **setnames, 
                       const output_env_t oenv);
@@ -143,6 +154,7 @@ void xvgr_new_dataset(FILE *out,
     setnames = the set names (or NULL if no legends)
 */
 
+GMX_LIBGMX_EXPORT
 void xvgr_line_props(FILE *out,int NrSet,int LineStyle,int LineColor,
                             const output_env_t oenv);
 /* Set xvgr line styles and colors */
@@ -155,6 +167,7 @@ void xvgr_box(FILE *out,
                      const output_env_t oenv);
 /* Make a box */
 
+GMX_LIBGMX_EXPORT
 int read_xvg_legend(const char *fn,double ***y,int *ny,
 			   char **subtitle,char ***legend);
 /* Read an xvg file for post processing. The number of rows is returned
@@ -166,9 +179,11 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,
  * 0 is the first y legend, the legend string will be NULL when not present.
  */
 
+GMX_LIBGMX_EXPORT
 int read_xvg(const char *fn,double ***y,int *ny);
 /* As read_xvg_legend, but does not read legends. */
  
+GMX_LIBGMX_EXPORT
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
                       const char** leg, const output_env_t oenv);
 /* Write a two D array (y) of dimensions nx rows times
@@ -179,6 +194,7 @@ void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
 /* This function reads ascii (xvg) files and extracts the data sets to a 
  * two dimensional array which is returned.
  */
+GMX_LIBGMX_EXPORT
 real **read_xvg_time(const char *fn,
 			    gmx_bool bHaveT,
 			    gmx_bool bTB,real tb,

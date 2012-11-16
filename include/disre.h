@@ -36,7 +36,7 @@
 
 #ifndef _disre_h
 #define _disre_h
-
+#include "visibility.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 
@@ -44,6 +44,7 @@
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
 			t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
 			t_fcdata *fcd,t_state *state);
@@ -53,6 +54,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
  * unless it was read before from a checkpoint file.
  */
 
+GMX_LIBGMX_EXPORT
 void calc_disres_R_6(const gmx_multisim_t *ms,
 			    int nfa,const t_iatom *fa,const t_iparams ip[],
 			    const rvec *x,const t_pbc *pbc,
@@ -64,6 +66,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 t_ifunc ta_disres;
 /* Calculate the distance restraint forces, return the potential */
 
+GMX_LIBGMX_EXPORT
 void update_disres_history(t_fcdata *fcd,history_t *hist);
 /* Copy the new time averages that have been calculated in calc_disres_R_6 */
 

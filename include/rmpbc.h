@@ -35,7 +35,7 @@
 
 #ifndef _rmpbc_h
 #define _rmpbc_h
-
+#include "visibility.h"
 #include "typedefs.h"
 	
 #ifdef __cplusplus
@@ -44,11 +44,14 @@ extern "C" {
 
   typedef struct gmx_rmpbc *gmx_rmpbc_t;
   
+GMX_LIBGMX_EXPORT
   gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
 				    matrix box);
   
+GMX_LIBGMX_EXPORT
   void gmx_rmpbc_done(gmx_rmpbc_t gpbc);
 
+GMX_LIBGMX_EXPORT
   void gmx_rmpbc(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[]);
   /* Correct coordinates x for atoms within every molecule for the periodic
    * boundary conditions such that every molecule is whole.
@@ -57,10 +60,12 @@ extern "C" {
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
 
+GMX_LIBGMX_EXPORT
   void gmx_rmpbc_copy(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[],
 			     rvec x_s[]);
   /* As gmx_rmpbc, but outputs in x_s and does not modify x. */
 
+GMX_LIBGMX_EXPORT
   void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc,t_trxframe *fr);
   /* As gmx_rmpbc but operates on a t_trxframe data structure. */
 
@@ -68,6 +73,7 @@ extern "C" {
     matrix box,rvec x[],rvec x_s[]);*/
   /* Convenience function that still holds a static variable. */
   
+GMX_LIBGMX_EXPORT
   void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);
   /* Simple routine for use in analysis tools that just have a pdb or 
    * similar file.

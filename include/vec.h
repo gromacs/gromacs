@@ -105,7 +105,7 @@
   void tmvmul_ur0(matrix a,rvec src,rvec dest)     dest = a* . src
   real trace(matrix m)                             = trace(m)
 */
-
+#include "visibility.h"
 #include "types/simple.h"
 #include "maths.h"
 #include "typedefs.h"
@@ -134,7 +134,9 @@ extern "C" {
 #define PR_VEC(a)       a[XX],a[YY],a[ZZ]
 
 #ifdef GMX_SOFTWARE_INVSQRT
+GMX_LIBGMX_EXPORT
 extern const unsigned int *  gmx_invsqrt_exptab;
+GMX_LIBGMX_EXPORT
 extern const unsigned int *  gmx_invsqrt_fracttab;
 #endif
 

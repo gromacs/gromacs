@@ -37,6 +37,7 @@
 #define _statutil_h
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "filenm.h"
 #include "readinp.h"
@@ -89,6 +90,7 @@ typedef gmx_bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
    a real problem. */
     
 /* Return the name of the program */
+GMX_LIBGMX_EXPORT
 const char *command_line(void);
 void set_command_line(int argc, char *argv[]);
 
@@ -96,34 +98,43 @@ void set_command_line(int argc, char *argv[]);
  * that it must be a real file - we determine the library
  * directory from its location!
  */    
+GMX_LIBGMX_EXPORT
 const char *Program(void);
+GMX_LIBGMX_EXPORT
 void set_program_name(const char *argvzero);
 /* Id. without leading directory */
+GMX_LIBGMX_EXPORT
 const char *ShortProgram(void);
 
 /************************************************
  *             Trajectory functions
  ************************************************/
 
+GMX_LIBGMX_EXPORT
 int prec2ndec(real prec);
 /* Convert precision in 1/(nm) to number of decimal places */
 
+GMX_LIBGMX_EXPORT
 void clear_trxframe(t_trxframe *fr,gmx_bool bFirst);
 /* Set all content gmx_booleans to FALSE.
  * When bFirst = TRUE, set natoms=-1, all pointers to NULL
  *                     and all data to zero.
  */
 
+GMX_LIBGMX_EXPORT
 void set_trxframe_ePBC(t_trxframe *fr,int ePBC);
 /* Set the type of periodic boundary conditions, ePBC=-1 is not set */
 
+GMX_LIBGMX_EXPORT
 int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */
 
+GMX_LIBGMX_EXPORT
 int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
                            atom_id *ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
+GMX_LIBGMX_EXPORT
 int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
 /* Write a frame to a TRX file. 
  * Only entries for which the gmx_boolean is TRUE will be written,
@@ -134,6 +145,7 @@ int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
  * gc is important for pdb file writing only and may be NULL.
  */
 
+GMX_LIBGMX_EXPORT
 int write_trx(t_trxstatus *status,int nind,atom_id *ind,t_atoms *atoms,
               int step,real time,matrix box,rvec x[],rvec *v,
               gmx_conect gc);
@@ -142,18 +154,22 @@ int write_trx(t_trxstatus *status,int nind,atom_id *ind,t_atoms *atoms,
  * atoms can be NULL for file types which don't need atom names.
  */ 
 
+GMX_LIBGMX_EXPORT
 void close_trx(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trj.
  */
 
+GMX_LIBGMX_EXPORT
 t_trxstatus *open_trx(const char *outfile,const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
 /* get a fileio from a trxstatus */
+GMX_LIBGMX_EXPORT
 t_fileio *trx_get_fileio(t_trxstatus *status);
 
 
+GMX_LIBGMX_EXPORT
 gmx_bool bRmod_fd(double a, double b, double c,gmx_bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
  * larger than the float/double precision.
@@ -176,6 +192,7 @@ int check_times2(real t,real t0,real tp,real tpp,gmx_bool bDouble);
  * on the value of bDouble.
  */
 
+GMX_LIBGMX_EXPORT
 int check_times(real t);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin,
@@ -206,6 +223,7 @@ int check_times(real t);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
+GMX_LIBGMX_EXPORT
 int read_first_frame(const output_env_t oenv,t_trxstatus **status,
                             const char *fn, t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
@@ -216,12 +234,14 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
+GMX_LIBGMX_EXPORT
 gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
                             t_trxframe *fr);
   /* Reads the next frame which is in accordance with fr->flags.
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
+GMX_LIBGMX_EXPORT
 int read_first_x(const output_env_t oenv,t_trxstatus **status,
                         const char *fn, real *t,rvec **x,matrix box);
 /* These routines read first coordinates and box, and allocates 
@@ -230,6 +250,7 @@ int read_first_x(const output_env_t oenv,t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
+GMX_LIBGMX_EXPORT
 gmx_bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
                         int natoms, rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
@@ -237,6 +258,7 @@ gmx_bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
  * status is the integer set in read_first_x.
  */
 
+GMX_LIBGMX_EXPORT
 void close_trj(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trx.
@@ -245,6 +267,7 @@ void close_trj(t_trxstatus *status);
 void rewind_trj(t_trxstatus *status);
 /* Rewind trj file as opened with read_first_x */
 
+GMX_LIBGMX_EXPORT
 t_topology *read_top(const char *fn,int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
@@ -301,12 +324,14 @@ char *sscan(int argc,char *argv[],int *i);
 void vscan(int argc,char *argv[],int *i,rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
+GMX_LIBGMX_EXPORT
 int nenum(const char *const enumc[]);
 /* returns ordinal number of selected enum from args 
  * depends on enumc[0] pointing to one of the other elements
  * array must be terminated by a NULL pointer 
  */
 
+GMX_LIBGMX_EXPORT
 void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                               int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
                               int ndesc,const char **desc,

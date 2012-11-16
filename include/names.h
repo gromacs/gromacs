@@ -36,7 +36,7 @@
 #ifndef _names_h
 #define _names_h
 
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -47,56 +47,105 @@ extern "C" {
  * extra argument (the +1)
  * these should correspond to names.c and include/types/enums.h
  */
+GMX_LIBGMX_EXPORT
 extern const char *epbc_names[epbcNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *etcoupl_names[etcNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *epcoupl_names[epcNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *epcoupltype_names[epctNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *erefscaling_names[erscNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *ecutscheme_names[ecutsNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *ens_names[ensNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *ei_names[eiNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *yesno_names[BOOL_NR+1];
+GMX_LIBGMX_EXPORT
 extern const char *bool_names[BOOL_NR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eintmod_names[eintmodNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eel_names[eelNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eewg_names[eewgNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *evdw_names[evdwNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *econstr_names[econtNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *ptype_str[eptNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *egrp_nm[egNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *edisre_names[edrNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *edisreweighting_names[edrwNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *enbf_names[eNBF_NR+1];
+GMX_LIBGMX_EXPORT
 extern const char *ecomb_names[eCOMB_NR+1];
+GMX_LIBGMX_EXPORT
 extern const char *gtypes[egcNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *esimtemp_names[esimtempNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *efep_names[efepNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *efpt_names[efptNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *elamstats_names[elamstatsNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *elmcmove_names[elmcmoveNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *elmceq_names[elmceqNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *separate_dhdl_file_names[esepdhdlfileNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *dhdl_derivatives_names[edhdlderivativesNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *esol_names[esolNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *edispc_names[edispcNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *ecm_names[ecmNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eann_names[eannNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *egb_names[egbNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eis_names[eisNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *esa_names[esaNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *ewt_names[ewtNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *epull_names[epullNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *epullg_names[epullgNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *erotg_names[erotgNR+1];
 extern const char *erotg_originnames[erotgNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *erotg_fitnames[erotgFitNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eQMmethod_names[eQMmethodNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eQMbasis_names[eQMbasisNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
 extern const char *eMultentOpt_names[eMultentOptNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eAdresstype_names[eAdressNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eAdressICtype_names[eAdressICNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *eAdressSITEtype_names[eAdressSITENR+1];
+GMX_LIBGMX_EXPORT
 extern const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1];
 extern const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1];
 extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];

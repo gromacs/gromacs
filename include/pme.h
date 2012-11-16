@@ -37,6 +37,7 @@
 #define _pme_h
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "gmxcomplex.h"
 #include "gmx_wallcycle.h"
@@ -49,6 +50,7 @@ typedef real *splinevec[DIM];
 
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
+GMX_LIBMD_EXPORT
 int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
                  int nnodes_major,int nnodes_minor,
                  t_inputrec *ir,int homenr,
@@ -57,6 +59,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
+GMX_LIBMD_EXPORT
 int gmx_pme_reinit(gmx_pme_t *         pmedata,
 		   t_commrec *         cr,
 		   gmx_pme_t           pme_src,
@@ -92,6 +95,7 @@ int gmx_pme_do(gmx_pme_t pme,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
+GMX_LIBMD_EXPORT
 int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
@@ -127,9 +131,11 @@ void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
+GMX_LIBMD_EXPORT
 void gmx_pme_send_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
 
+GMX_LIBMD_EXPORT
 void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff);
 /* Tell our PME-only node to switch to a new grid size */
 

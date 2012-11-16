@@ -54,7 +54,7 @@
 #include "gstat.h"
 #include "tpxio.h"
 #include "viewit.h"
-
+#include "gmx_ana.h"
 
 static int strip_dssp(char *dsspfile,int nres,
 		       gmx_bool bPhobres[],real t,

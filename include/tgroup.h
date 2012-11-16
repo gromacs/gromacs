@@ -35,7 +35,7 @@
 
 #ifndef _tgroup_h
 #define _tgroup_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "network.h"
 
@@ -43,6 +43,7 @@
 extern "C" {
 #endif
 
+GMX_LIBMD_EXPORT
 void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 			  gmx_ekindata_t *ekind);
 /* Allocate memory and set the grpnr array. */
@@ -58,6 +59,7 @@ void accumulate_u(t_commrec *cr,t_grpopts *opts,
  * and sum them up. Return them in grps.
  */
 
+GMX_LIBMD_EXPORT
 real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind, real *dekindlambda, 
 		     gmx_bool bEkinFullStep,gmx_bool bSaveEkinOld, gmx_bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,

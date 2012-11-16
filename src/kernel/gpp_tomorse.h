@@ -41,9 +41,11 @@
 #endif
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "macros.h"
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void convert_harmonics(int nrmols,t_molinfo mols[],gpp_atomtype_t atype);
 
 #endif	/* _grompp_h */

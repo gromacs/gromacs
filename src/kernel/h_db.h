@@ -35,7 +35,7 @@
 
 #ifndef _h_db_h
 #define _h_db_h
-
+#include "visibility.h"
 #include "sysstuff.h"
 #include "hackblock.h"
 
@@ -47,6 +47,7 @@ extern const int ncontrol[];
 extern void read_ab(char *line,const char *fn,t_hack *ab);
 /* Read one add block */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern int read_h_db(const char *ffdir,t_hackblock **ah);
 /* Read the database from hdb file(s) in ffdir or current dir */
 

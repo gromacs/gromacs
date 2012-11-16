@@ -32,12 +32,14 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" { 
 #endif
 
+GMX_LIBGMX_EXPORT
 void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 
@@ -47,8 +49,10 @@ void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
  *the y-axis. Finally the third longest distance is placed along the x-axis
  */
 
+GMX_LIBGMX_EXPORT
 void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box);
 /*genconf() generates a new configuration by adding boxes*/
+GMX_LIBGMX_EXPORT
 void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
 		    gmx_bool bCenter);
 /* gen_box() generates a box around a configuration, box_space is optional 

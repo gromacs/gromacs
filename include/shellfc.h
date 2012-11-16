@@ -31,7 +31,7 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "vsite.h"
 
@@ -42,15 +42,18 @@ extern "C" {
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
+GMX_LIBMD_EXPORT
 gmx_shellfc_t init_shell_flexcon(FILE *log,
 					gmx_mtop_t *mtop,int nflexcon,
 					rvec *x);
 
 /* Get the local shell with domain decomposition */
+GMX_LIBMD_EXPORT
 void make_local_shells(t_commrec *cr,t_mdatoms *md,
 			      gmx_shellfc_t shfc);
 
 /* Optimize shell positions */
+GMX_LIBMD_EXPORT
 int relax_shell_flexcon(FILE *log,t_commrec *cr,gmx_bool bVerbose,
 			       gmx_large_int_t mdstep,t_inputrec *inputrec,
 			       gmx_bool bDoNS,int force_flags,

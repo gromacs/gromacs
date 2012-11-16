@@ -47,6 +47,7 @@
 #include "toputil.h"
 #include "pdb2top.h"
 #include "string2.h"
+#include "hizzie.h"
 
 static int in_strings(char *key,int nstr,const char **str)
 {

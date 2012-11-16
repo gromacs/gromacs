@@ -35,13 +35,14 @@
 
 #ifndef _calch_h
 #define _calch_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 	
+GMX_LIBGMX_EXPORT
 void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
 /*
  *    w.f. van gunsteren, groningen, july 1981 

@@ -36,7 +36,7 @@
 #ifndef _checkpoint_h
 #define _checkpoint_h
 
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "gmxfio.h"
 
@@ -51,6 +51,7 @@ extern "C" {
  * Appends the _step<step>.cpt with bNumberAndKeep,
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
+GMX_LIBGMX_EXPORT
 void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
 		      FILE *fplog,t_commrec *cr,
 		      int eIntegrator, int simulation_part,
@@ -68,6 +69,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
  * With bAppend and bForceAppend: truncate anyhow if the system does not
  * support file locking.
  */
+GMX_LIBGMX_EXPORT
 void load_checkpoint(const char *fn,FILE **fplog,
 		     t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
 		     t_inputrec *ir,t_state *state,gmx_bool *bReadRNG,
@@ -78,6 +80,7 @@ void load_checkpoint(const char *fn,FILE **fplog,
  * If bReadRNG=TRUE a RNG state compatible with the current
  * number of nodes was read.
  */
+GMX_LIBGMX_EXPORT
 void read_checkpoint_state(const char *fn,int *simulation_part,
 				  gmx_large_int_t *step,double *t,t_state *state);
 
@@ -85,6 +88,7 @@ void read_checkpoint_state(const char *fn,int *simulation_part,
 void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr);
 
 /* Print the complete contents of checkpoint file fn to out */
+GMX_LIBGMX_EXPORT
 void list_checkpoint(const char *fn,FILE *out);
 
 /* Read just the simulation 'generation' and with bAppendReq check files.
@@ -97,6 +101,7 @@ void list_checkpoint(const char *fn,FILE *out);
  * When TRUE is returned, bAddPart will tell whether the simulation part
  * needs to be added to the output file name.
  */
+GMX_LIBGMX_EXPORT
 gmx_bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
                                      gmx_large_int_t *step,t_commrec *cr,
                                      gmx_bool bAppendReq,

@@ -39,6 +39,7 @@
 #include <nbsearch.h>
 #include <trajana.h>
 #include <math.h>
+#include "gmx_ana.h"
 
 
 int gmx_dyecoupl(int argc, char *argv[])

@@ -32,7 +32,7 @@
 #ifndef _GMX_ARPACK_H
 #define _GMX_ARPACK_H
 
-
+#include "visibility.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -231,6 +231,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
  *                 and 3 that no shifts could be applied. Negative numbers
  *                 correspond to errors in the arguments provided.
  */
+GMX_LIBGMX_EXPORT
 void 
 F77_FUNC(ssaupd,SSAUPD)(int *     ido, 
                         const char *    bmat, 
@@ -292,6 +293,7 @@ F77_FUNC(ssaupd,SSAUPD)(int *     ido,
  *  \param lworkl  Provide the same argument as you did to ssaupd()
  *  \param info    Provide the same argument as you did to ssaupd()
  */
+GMX_LIBGMX_EXPORT
 void
 F77_FUNC(sseupd,SSEUPD)(int *     rvec, 
                         const char *    howmny, 

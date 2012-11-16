@@ -37,6 +37,7 @@
 #define _gpp_atomtype_h
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "grompp.h"
@@ -47,13 +48,16 @@ extern "C" {
 
 typedef struct gpp_atomtype *gpp_atomtype_t;
 
+GMX_LIBGMXPREPROCESS_EXPORT
 int get_atomtype_type(const char *str,gpp_atomtype_t at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 int get_atomtype_ntypes(gpp_atomtype_t at);
 /* Return number of atomtypes */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 char *get_atomtype_name(int nt,gpp_atomtype_t at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
 
@@ -61,13 +65,19 @@ real get_atomtype_massA(int nt,gpp_atomtype_t at);
 real get_atomtype_massB(int nt,gpp_atomtype_t at);
 real get_atomtype_qA(int nt,gpp_atomtype_t at);
 real get_atomtype_qB(int nt,gpp_atomtype_t at);
+GMX_LIBGMXPREPROCESS_EXPORT
 real get_atomtype_radius(int nt,gpp_atomtype_t at);
+GMX_LIBGMXPREPROCESS_EXPORT
 real get_atomtype_vol(int nt,gpp_atomtype_t at);
+GMX_LIBGMXPREPROCESS_EXPORT
 real get_atomtype_surftens(int nt,gpp_atomtype_t at);
+GMX_LIBGMXPREPROCESS_EXPORT
 real get_atomtype_gb_radius(int nt,gpp_atomtype_t at);
+GMX_LIBGMXPREPROCESS_EXPORT
 real get_atomtype_S_hct(int nt,gpp_atomtype_t at);
 int get_atomtype_ptype(int nt,gpp_atomtype_t at);
 int get_atomtype_batype(int nt,gpp_atomtype_t at);
+GMX_LIBGMXPREPROCESS_EXPORT
 int get_atomtype_atomnumber(int nt,gpp_atomtype_t at);
 
 /* Return the above variable for atomtype nt, or NOTSET if not found */
@@ -75,6 +85,7 @@ int get_atomtype_atomnumber(int nt,gpp_atomtype_t at);
 real get_atomtype_nbparam(int nt,int param,gpp_atomtype_t at);
 /* Similar to the previous but returns the paramth parameter or NOTSET */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 gpp_atomtype_t init_atomtype(void);
 /* Return a new atomtype structure */
 
@@ -105,10 +116,12 @@ int add_atomtype(gpp_atomtype_t at,t_symtab *tab,
 void print_at (FILE * out, gpp_atomtype_t at);
 /* Print an atomtype record to a text file */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 			int *wall_atomtype,
 			gpp_atomtype_t at,gmx_bool bVerbose);
 			
+GMX_LIBGMXPREPROCESS_EXPORT
 void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
 /* Copy from one structure to another */
 

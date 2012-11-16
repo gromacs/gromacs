@@ -34,7 +34,7 @@
 
 #ifndef _GMX_RANDOM_H_
 #define _GMX_RANDOM_H_
-
+#include "visibility.h"
 #include <stdio.h>
 #include "types/simple.h"
 
@@ -57,6 +57,7 @@ gmx_rng_t;
  * Returns the size of the RNG integer data structure.
  * \threadsafe Yes.
  */
+GMX_LIBGMX_EXPORT
 int
 gmx_rng_n(void);
 
@@ -74,6 +75,7 @@ gmx_rng_n(void);
  *
  * \threadsafe Yes.
  */
+GMX_LIBGMX_EXPORT
 gmx_rng_t 
 gmx_rng_init(unsigned int seed);
 
@@ -92,6 +94,7 @@ gmx_rng_init(unsigned int seed);
  *
  * \threadsafe Yes.
  */
+GMX_LIBGMX_EXPORT
 unsigned int
 gmx_rng_make_seed(void);
 
@@ -131,6 +134,7 @@ gmx_rng_init_array(unsigned int    seed[],
  * \threadsafe Function itself is threadsafe, but you should only destroy a 
  *             certain RNG once (i.e. from one thread).
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_rng_destroy(gmx_rng_t rng);
 
@@ -143,6 +147,7 @@ gmx_rng_destroy(gmx_rng_t rng);
  *  \param rng Handle to random number generator previously returned by
  *		       gmx_rng_init() or gmx_rng_init_array().
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt,int *mti);
 
@@ -155,6 +160,7 @@ gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt,int *mti);
  *  \param rng Handle to random number generator previously returned by
  *		       gmx_rng_init() or gmx_rng_init_array().
  */
+GMX_LIBGMX_EXPORT
 void
 gmx_rng_set_state(gmx_rng_t rng, unsigned int *mt,int mti);
 
@@ -177,7 +183,8 @@ gmx_rng_set_state(gmx_rng_t rng, unsigned int *mt,int mti);
  *		solutions: either use a mutex and lock it before calling
  *              the function, or use a separate RNG handle for each thread.
  */
-unsigned int 
+GMX_LIBGMX_EXPORT
+unsigned int
 gmx_rng_uniform_uint32(gmx_rng_t rng);
 
 
@@ -199,6 +206,7 @@ gmx_rng_uniform_uint32(gmx_rng_t rng);
  *		solutions: either use a mutex and lock it before calling
  *              the function, or use a separate RNG handle for each thread.
  */
+GMX_LIBGMX_EXPORT
 real
 gmx_rng_uniform_real(gmx_rng_t rng);
 
@@ -234,6 +242,7 @@ gmx_rng_uniform_real(gmx_rng_t rng);
  *  numbers it is probably better to use separate random number generator
  *  structures.
  */
+GMX_LIBGMX_EXPORT
 real
 gmx_rng_gaussian_real(gmx_rng_t rng);
 
@@ -254,6 +263,7 @@ gmx_rng_gaussian_real(gmx_rng_t rng);
  *
  * threadsafe: yes
  */
+GMX_LIBGMX_EXPORT
 real
 gmx_rng_gaussian_table(gmx_rng_t rng);
 

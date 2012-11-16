@@ -35,7 +35,7 @@
 
 #ifndef _enxio_h
 #define _enxio_h
-
+#include "visibility.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "pbc.h"
@@ -87,6 +87,7 @@ extern "C" {
   };
 
   /* names for the above enum */
+GMX_LIBGMX_EXPORT
   extern const char *enx_block_id_name[];
 
 
@@ -164,25 +165,34 @@ extern "C" {
 
 
   /* initialize a pre-allocated frame */
+GMX_LIBGMX_EXPORT
   void init_enxframe(t_enxframe *ef);
   /* delete a frame's memory (except the ef itself) */
+GMX_LIBGMX_EXPORT
   void free_enxframe(t_enxframe *ef);
 
 
+GMX_LIBGMX_EXPORT
   ener_file_t open_enx(const char *fn,const char *mode);
 
+GMX_LIBGMX_EXPORT
   t_fileio *enx_file_pointer(const ener_file_t ef);
 
+GMX_LIBGMX_EXPORT
   void close_enx(ener_file_t ef);
   
+GMX_LIBGMX_EXPORT
   void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
   
+GMX_LIBGMX_EXPORT
   void free_enxnms(int n,gmx_enxnm_t *nms);
   /* Frees nms and all strings in it */
 
+GMX_LIBGMX_EXPORT
   gmx_bool do_enx(ener_file_t ef,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
+GMX_LIBGMX_EXPORT
   void get_enx_state(const char *fn, real t,
 			    gmx_groups_t *groups, t_inputrec *ir,
 			    t_state *state);
@@ -196,16 +206,19 @@ extern "C" {
   /* block funtions */
 
   /* allocate n blocks to a frame (if neccesary). Don't touch existing blocks */
+GMX_LIBGMX_EXPORT
   void add_blocks_enxframe(t_enxframe *ef, int n);
 
   /* find a block by id number; if prev!=NULL, it searches from 
      that block's next block. 
      Returns NULL if no block is found with the given id. */
+GMX_LIBGMX_EXPORT
   t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev);
 
 
    /* allocate n subblocks to a block (if neccesary). Don't touch existing 
       subbblocks. */
+GMX_LIBGMX_EXPORT
   void add_subblocks_enxblock(t_enxblock *eb, int n);
 
 
