@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "futil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "statutil.h"
 #include "gmxfio.h"
 #include "vec.h" 
