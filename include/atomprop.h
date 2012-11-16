@@ -48,17 +48,17 @@ typedef struct gmx_atomprop *gmx_atomprop_t;
 enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement, 
        epropNR };
 
-gmx_atomprop_t gmx_atomprop_init(void);
+GMX_LIBGMX_EXPORT gmx_atomprop_t gmx_atomprop_init(void);
 /* Initializes and returns the atom properties struct */
 
-void gmx_atomprop_destroy(gmx_atomprop_t aps);
+GMX_LIBGMX_EXPORT void gmx_atomprop_destroy(gmx_atomprop_t aps);
 /* Get rid of memory after use */
 
 char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber);
 
 int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *element);
 
-gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
+GMX_LIBGMX_EXPORT gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
                         int eprop,const char *resnm,const char *atomnm,
                         real *value);
 /* Extract a value from the database. Returns TRUE on succes,

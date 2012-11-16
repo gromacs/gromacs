@@ -38,7 +38,7 @@ files.
 
 #ifndef TMPI_THREADS_H_
 #define TMPI_THREADS_H_
-
+#include "DLLdefines.h"
 /*! \file threads.h
  *
  *  \brief Platform-independent multithreading support.
@@ -267,7 +267,7 @@ enum tMPI_Thread_support tMPI_Thread_support(void);
         If this number cannot be determined for the current architecture,
         0 is returned.
  */
-int tMPI_Thread_get_hw_number(void);
+GMX_LIBGMX_EXPORT int tMPI_Thread_get_hw_number(void);
 
 
 /** Create a new thread
@@ -424,7 +424,7 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx);
 *  \param mtx  Pointer to the mutex to lock
 *  \return 0 or a non-zero error code.
 */
-int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
+GMX_LIBGMX_EXPORT int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
 
 
 
@@ -448,7 +448,7 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
  *  \param mtx  Pointer to the mutex to release
  *  \return 0 or a non-zero error code.
  */
-int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx);
+GMX_LIBGMX_EXPORT int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx);
 
 
 

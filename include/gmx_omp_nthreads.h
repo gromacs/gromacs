@@ -52,7 +52,7 @@ typedef enum module_nth
 /*! Initializes the per-module thread count. It is compatible with tMPI, 
  *  thread-safety is ensured (for the features available with tMPI). 
  *  This function should caled only once during the initialization of mdrun. */
-void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
+GMX_LIBGMX_EXPORT void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
@@ -60,9 +60,9 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            gmx_bool bFullOmpSupport);
 
 /*! Returns the number of threads to be used in the given module m. */
-int gmx_omp_nthreads_get(int mod);
+GMX_LIBGMX_EXPORT int gmx_omp_nthreads_get(int mod);
 
 /*! Read the OMP_NUM_THREADS env. var. and check against the value set on the command line. */
-void gmx_omp_nthreads_read_env(int *nthreads_omp);
+GMX_LIBGMX_EXPORT void gmx_omp_nthreads_read_env(int *nthreads_omp);
 
 #endif /* GMX_OMP_NTHREADS */

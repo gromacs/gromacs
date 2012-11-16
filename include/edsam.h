@@ -46,7 +46,7 @@ void do_edsam(t_inputrec *ir,gmx_large_int_t step,t_mdatoms *md,
                      t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
 /* Essential dynamics constraints, called from constrain() */
 
-gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec *cr);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec *cr);
 /* Sets the ED input/output filenames, opens output (.edo) file */
 
 void init_edsam(gmx_mtop_t *mtop,t_inputrec *ir,t_commrec *cr,

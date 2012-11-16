@@ -165,28 +165,28 @@ gmx_integrator_t do_tpi;
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
-int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd,
                              t_state *state, t_extmass *MassQ, df_history_t *dfhist,
                              gmx_large_int_t step, gmx_rng_t mcrng,
                              rvec *v, t_mdatoms *mdatoms);
 
-void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
                                int nlam, int frequency, gmx_large_int_t step);
 
-void get_mc_state(gmx_rng_t rng,t_state *state);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void get_mc_state(gmx_rng_t rng,t_state *state);
 
-void set_mc_state(gmx_rng_t rng,t_state *state);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_mc_state(gmx_rng_t rng,t_state *state);
 
 /* check the version */
-void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                                t_inputrec *ir,gmx_mtop_t *mtop);
 
 /* Allocate and initialize node-local state entries. */
-void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes);
 
 /* Broadcast the data for a simulation, and allocate node-specific settings
    such as rng generators. */
-void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
                           gmx_mtop_t *mtop);
 
 int mdrunner(gmx_hw_opt_t *hw_opt,

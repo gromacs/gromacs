@@ -60,12 +60,12 @@ typedef struct {
 
 void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step);
 
-void init_nlistheuristics(gmx_nlheur_t *nlh,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void init_nlistheuristics(gmx_nlheur_t *nlh,
 			  gmx_bool bGStatEveryStep,gmx_large_int_t step);
 
 void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step);
 
-void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step);
 
 #ifdef __cplusplus
 }

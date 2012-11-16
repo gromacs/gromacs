@@ -83,11 +83,11 @@ extern "C" {
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
 
-int continuing(char *s);
+GMX_LIBGMX_EXPORT int continuing(char *s);
 
-char *fgets2(char *s, int n, FILE *stream);
+GMX_LIBGMX_EXPORT char *fgets2(char *s, int n, FILE *stream);
 
-void strip_comment (char *line);
+GMX_LIBGMX_EXPORT void strip_comment (char *line);
 
 int break_line (char *line,
 		       char *variable,
@@ -95,24 +95,24 @@ int break_line (char *line,
 
 void upstring (char *str);
 
-void ltrim (char *str);
+GMX_LIBGMX_EXPORT void ltrim (char *str);
 
-void rtrim (char *str);
+GMX_LIBGMX_EXPORT void rtrim (char *str);
 
-void trim (char *str);
+GMX_LIBGMX_EXPORT void trim (char *str);
 
-void nice_header (FILE *out,const char *fn);
+GMX_LIBGMX_EXPORT void nice_header (FILE *out,const char *fn);
 
-int gmx_strcasecmp_min(const char *str1, const char *str2);
-int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
+GMX_LIBGMX_EXPORT int gmx_strcasecmp_min(const char *str1, const char *str2);
+GMX_LIBGMX_EXPORT int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
 /* This funny version of strcasecmp, is not only case-insensitive,
  * but also ignores '-' and '_'.
  */
 
-int gmx_strcasecmp(const char *str1, const char *str2);
-int gmx_strncasecmp(const char *str1, const char *str2, int n);
+GMX_LIBGMX_EXPORT int gmx_strcasecmp(const char *str1, const char *str2);
+GMX_LIBGMX_EXPORT int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
-char *gmx_strdup(const char *src);
+GMX_LIBGMX_EXPORT char *gmx_strdup(const char *src);
 char *gmx_strndup(const char *src, int n);
 
 /* Magic hash initialization number from Dan J. Bernstein. */
@@ -131,7 +131,7 @@ unsigned int
 gmx_string_hash_func(const char *s, unsigned int hash_init);
     
 /** Pattern matcing with wildcards. */
-int gmx_wcmatch(const char *pattern, const char *src);
+GMX_LIBGMX_EXPORT int gmx_wcmatch(const char *pattern, const char *src);
 
 /** Return value for gmx_wcmatch() when there is no match. */
 #define GMX_NO_WCMATCH 1
@@ -139,10 +139,10 @@ int gmx_wcmatch(const char *pattern, const char *src);
 
 /* this is our implementation of strsep, the thread-safe replacement for
    strtok */
-char *gmx_strsep(char **stringp, const char *delim);
+GMX_LIBGMX_EXPORT char *gmx_strsep(char **stringp, const char *delim);
 
 
-char *wrap_lines(const char *buf,int line_width, int indent,
+GMX_LIBGMX_EXPORT char *wrap_lines(const char *buf,int line_width, int indent,
 			gmx_bool bIndentFirst);
 /* wraps lines at 'linewidth', indenting all following
  * lines by 'indent' spaces. A temp buffer is allocated and returned,

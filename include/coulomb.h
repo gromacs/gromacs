@@ -51,7 +51,7 @@ init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
                    FILE *fp);
 /* initialize the ewald table (as found in the t_forcerec) */
 
-real 
+GMX_LIBGMX_EXPORT real 
 calc_ewaldcoeff(real rc,real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
 
@@ -68,7 +68,7 @@ do_ewald(FILE *log,       gmx_bool bVerbose,
          ewald_tab_t et);
 /* Do an Ewald calculation for the long range electrostatics. */
  
-real
+GMX_LIBGMX_EXPORT real
 ewald_LRcorrection(FILE *fp,
 		   int start,int end,
 		   t_commrec *cr,int thread,t_forcerec *fr,
@@ -83,7 +83,7 @@ ewald_LRcorrection(FILE *fp,
  * due to excluded pairs and/or surface dipole terms.
  */
 
-real
+GMX_LIBGMX_EXPORT real
 ewald_charge_correction(t_commrec *cr,t_forcerec *fr,real lambda,matrix box,
 			real *dvdlambda,tensor vir);
 /* Calculate the Long range correction to the Ewald sum,
@@ -94,7 +94,7 @@ ewald_charge_correction(t_commrec *cr,t_forcerec *fr,real lambda,matrix box,
 /* Routines to set global constants for speeding up the calculation
  * of potentials and forces.
  */
-void 
+GMX_LIBGMX_EXPORT void 
 set_shift_consts(FILE *log,real r1,real rc,rvec box,
 			     t_forcerec *fr);
 

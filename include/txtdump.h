@@ -51,42 +51,42 @@ extern "C" {
 #define	USE_WIDTH	((LINE_WIDTH)-(RMARGIN))
 #define INDENT		3
 
-int pr_indent(FILE *fp,int n);
-int available(FILE *fp,void *p,int indent,const char *title);
-int pr_title(FILE *fp,int indent,const char *title);
+GMX_LIBGMX_EXPORT int pr_indent(FILE *fp,int n);
+GMX_LIBGMX_EXPORT int available(FILE *fp,void *p,int indent,const char *title);
+GMX_LIBGMX_EXPORT int pr_title(FILE *fp,int indent,const char *title);
 int pr_title_n(FILE *fp,int indent,const char *title,int n);
 int pr_title_nxn(FILE *fp,int indent,const char *title,int n1,int n2);
-void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, gmx_bool bShowNumbers);
+GMX_LIBGMX_EXPORT void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, gmx_bool bShowNumbers);
 void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, gmx_bool bShowNumbers);
-void pr_bvec(FILE *fp,int indent,const char *title,gmx_bool vec[],int n, gmx_bool bShowNnumbers);
-void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, gmx_bool bShowNumbers);
+GMX_LIBGMX_EXPORT void pr_bvec(FILE *fp,int indent,const char *title,gmx_bool vec[],int n, gmx_bool bShowNnumbers);
+GMX_LIBGMX_EXPORT void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, gmx_bool bShowNumbers);
 void pr_dvec(FILE *fp,int indent,const char *title,double vec[],int n, gmx_bool bShowNumbers);
-void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n);
+GMX_LIBGMX_EXPORT void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n);
 void pr_rvecs_len(FILE *fp,int indent,const char *title,rvec vec[],int n);
 void pr_reals(FILE *fp,int indent,const char *title,real vec[],int n);
-void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n);
+GMX_LIBGMX_EXPORT void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n);
 void pr_block(FILE *fp,int indent,const char *title,t_block *block,gmx_bool bShowNumbers);
-void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,gmx_bool bShowNumbers);
+GMX_LIBGMX_EXPORT void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,gmx_bool bShowNumbers);
 void pr_ilist(FILE *fp,int indent,const char *title,
 	       t_functype *functype,t_ilist *ilist, gmx_bool bShowNumbers);
-void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
+GMX_LIBGMX_EXPORT void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
 void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, gmx_bool bShowNumbers);
-void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
+GMX_LIBGMX_EXPORT void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
 		 gmx_bool bMDPformat);
 void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms, 
 	      gmx_bool bShownumbers);
 void pr_atomtypes(FILE *fp,int indent,const char *title,
 		  t_atomtypes *atomtypes,gmx_bool bShowNumbers);
-void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
+GMX_LIBGMX_EXPORT void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
 	     gmx_bool bShowNumbers);
-void pr_top(FILE *fp,int indent,const char *title,t_topology *top, gmx_bool bShowNumbers);
+GMX_LIBGMX_EXPORT void pr_top(FILE *fp,int indent,const char *title,t_topology *top, gmx_bool bShowNumbers);
 /*
  * This routine prints out a (human) readable representation of 
  * the topology to the file fp. Ident specifies the number of 
  * spaces the text should be indented. Title is used to print a 
  * header text.
  */
-void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh);
+GMX_LIBGMX_EXPORT void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh);
 /*
  * This routine prints out a (human) readable representation of
  * a header to the file fp. Ident specifies the number of spaces

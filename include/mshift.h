@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-t_graph *mk_graph(FILE *fplog,
+GMX_LIBGMX_EXPORT t_graph *mk_graph(FILE *fplog,
 			 t_idef *idef,int at_start,int at_end,
 			 gmx_bool bShakeOnly,gmx_bool bSettle);
 /* Build a graph from an idef description. The graph can be used
@@ -51,32 +51,32 @@ t_graph *mk_graph(FILE *fplog,
  * If bSettle && bShakeOnly the settles are used too.
  */
 
-void mk_graph_ilist(FILE *fplog,
+GMX_LIBGMX_EXPORT void mk_graph_ilist(FILE *fplog,
 			   t_ilist *ilist,int at_start,int at_end,
 			   gmx_bool bShakeOnly,gmx_bool bSettle,
 			   t_graph *g);
 /* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */
 
 
-void done_graph(t_graph *g);
+GMX_LIBGMX_EXPORT void done_graph(t_graph *g);
 /* Free the memory in g */
  
-void p_graph(FILE *log,const char *title,t_graph *g);
+GMX_LIBGMX_EXPORT void p_graph(FILE *log,const char *title,t_graph *g);
 /* Print a graph to log */
 
-void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[]);
+GMX_LIBGMX_EXPORT void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[]);
 /* Calculate the mshift codes, based on the connection graph in g. */
 
-void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
+GMX_LIBGMX_EXPORT void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
 /* Add the shift vector to x, and store in x_s (may be same array as x) */
 
-void shift_self(t_graph *g,matrix box,rvec x[]);
+GMX_LIBGMX_EXPORT void shift_self(t_graph *g,matrix box,rvec x[]);
 /* Id. but in place */
 
-void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
+GMX_LIBGMX_EXPORT void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
 /* Subtract the shift vector from x_s, and store in x (may be same array) */
 
-void unshift_self(t_graph *g,matrix box,rvec x[]);
+GMX_LIBGMX_EXPORT void unshift_self(t_graph *g,matrix box,rvec x[]);
 /* Id, but in place */
 
 #ifdef __cplusplus

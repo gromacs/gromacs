@@ -73,9 +73,9 @@ int dd_pme_maxshift_x(gmx_domdec_t *dd);
 int dd_pme_maxshift_y(gmx_domdec_t *dd);
 /* Returns the maximum shift for coordinate communication in PME, dim y */
 
-void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
 
-gmx_domdec_t *
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_domdec_t *
 init_domain_decomposition(FILE *fplog,
                           t_commrec *cr,
                           unsigned long Flags,
@@ -88,7 +88,7 @@ init_domain_decomposition(FILE *fplog,
                           gmx_ddbox_t *ddbox,
                           int *npme_x, int *npme_y);
 
-void dd_init_bondeds(FILE *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void dd_init_bondeds(FILE *fplog,
                             gmx_domdec_t *dd,gmx_mtop_t *mtop,
                             gmx_vsite_t *vsite,gmx_constr_t constr,
                             t_inputrec *ir,gmx_bool bBCheck,cginfo_mb_t *cginfo_mb);
@@ -97,31 +97,31 @@ void dd_init_bondeds(FILE *fplog,
 gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd,int ePBC);
 /* Returns if we need to do pbc for calculating bonded interactions */
 
-void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
                               t_inputrec *ir,t_forcerec *fr,
                               gmx_ddbox_t *ddbox);
 /* Set DD grid dimensions and limits,
  * should be called after calling dd_init_bondeds.
  */
 
-gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
                           real cutoff_req );
 /* Change the DD non-bonded communication cut-off.
  * This could fail when trying to increase the cut-off,
  * then FALSE will be returned and the cut-off is not modified.
  */
 
-void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
 void dd_collect_vec(gmx_domdec_t *dd,
                            t_state *state_local,rvec *lv,rvec *v);
 
-void dd_collect_state(gmx_domdec_t *dd,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void dd_collect_state(gmx_domdec_t *dd,
                              t_state *state_local,t_state *state);
 
 enum { ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr };
 
-void dd_cycles_add(gmx_domdec_t *dd,float cycles,int ddCycl);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void dd_cycles_add(gmx_domdec_t *dd,float cycles,int ddCycl);
 /* Add the wallcycle count to the DD counter */
 
 void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb);
@@ -130,7 +130,7 @@ void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb);
 void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb);
 /* Stop the force flop count */
 
-float dd_pme_f_ratio(gmx_domdec_t *dd);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT float dd_pme_f_ratio(gmx_domdec_t *dd);
 /* Return the PME/PP force load ratio, or -1 if nothing was measured.
  * Should only be called on the DD master node.
  */
@@ -150,7 +150,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd,real v[]);
 void dd_atom_sum_real(gmx_domdec_t *dd,real v[]);
 /* Sum the contributions to a real for each atom over the neighboring cells. */
 
-void dd_partition_system(FILE            *fplog,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void dd_partition_system(FILE            *fplog,
                                 gmx_large_int_t      step,
                                 t_commrec       *cr,
                                 gmx_bool            bMasterState,
@@ -176,7 +176,7 @@ void dd_partition_system(FILE            *fplog,
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
 
-void reset_dd_statistics_counters(gmx_domdec_t *dd);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void reset_dd_statistics_counters(gmx_domdec_t *dd);
 /* Reset all the statistics and counters for total run counting */
 
 void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog);
@@ -239,9 +239,9 @@ void dd_sort_local_top(gmx_domdec_t *dd,t_mdatoms *mdatoms,
                               gmx_localtop_t *ltop);
 /* Sort ltop->ilist when we are doing free energy. */
 
-gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global);
 
-void dd_init_local_state(gmx_domdec_t *dd,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void dd_init_local_state(gmx_domdec_t *dd,
                                 t_state *state_global,t_state *local_state);
 
 t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,

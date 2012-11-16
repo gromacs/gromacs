@@ -49,7 +49,7 @@ void check_index(char *gname,int n,atom_id index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
-t_blocka *init_index(const char *gfile, char ***grpname);
+GMX_LIBGMX_EXPORT t_blocka *init_index(const char *gfile, char ***grpname);
 /* Lower level routine than the next */
 
 void rd_index(const char *statfile,int ngrps,int isize[],
@@ -73,7 +73,7 @@ void rd_index_nrs(char *statfile,int ngrps,int isize[],
 		  atom_id *index[],char *grpnames[],int grpnr[]);
 /* the same but also reads the number of the selected group*/
 
-void get_index(t_atoms *atoms, const char *fnm, int ngrps,
+GMX_LIBGMX_EXPORT void get_index(t_atoms *atoms, const char *fnm, int ngrps,
 	       int isize[], atom_id *index[],char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
@@ -97,16 +97,16 @@ typedef struct {
 typedef struct gmx_residuetype *
 gmx_residuetype_t;
 
-int
+GMX_LIBGMX_EXPORT int
 gmx_residuetype_init(gmx_residuetype_t *rt);
 
-int
+GMX_LIBGMX_EXPORT int
 gmx_residuetype_destroy(gmx_residuetype_t rt);
 
-int
+GMX_LIBGMX_EXPORT int
 gmx_residuetype_get_type(gmx_residuetype_t rt,const char * resname, const char ** p_restype);
 
-int
+GMX_LIBGMX_EXPORT int
 gmx_residuetype_add(gmx_residuetype_t rt,const char *newresname, const char *newrestype);
 
 int
@@ -114,13 +114,13 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
                              const char ***       p_typenames,
                              int *                ntypes);
 
-gmx_bool 
+GMX_LIBGMX_EXPORT gmx_bool 
 gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm);
 
-gmx_bool 
+GMX_LIBGMX_EXPORT gmx_bool 
 gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
 
-gmx_bool 
+GMX_LIBGMX_EXPORT gmx_bool 
 gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
 
 int
@@ -137,16 +137,16 @@ gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
 
 
 
-t_blocka *new_blocka(void);
+GMX_LIBGMX_EXPORT t_blocka *new_blocka(void);
 /* allocate new block */
 
-void write_index(const char *outf, t_blocka *b,char **gnames);
+GMX_LIBGMX_EXPORT void write_index(const char *outf, t_blocka *b,char **gnames);
 /* Writes index blocks to outf (writes an indexfile) */
 
-void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);
+GMX_LIBGMX_EXPORT void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);
 /* Ads group a with name name to block b and namelist gnames */ 
 
-void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
+GMX_LIBGMX_EXPORT void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
                     gmx_bool bASK,gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.

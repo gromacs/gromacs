@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-real calc_grid(FILE *fp,
+GMX_LIBGMX_EXPORT real calc_grid(FILE *fp,
 		      matrix box,real gr_sp,
 		      int *nx,int *ny,int *nz);
 /* Sets the number of grid points for each zero n* to the first reasonable

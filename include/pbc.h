@@ -57,10 +57,10 @@ extern "C" {
     ecenterDEF = ecenterTRIC
   };
 
-  int ePBC2npbcdim(int ePBC);
+GMX_LIBGMX_EXPORT   int ePBC2npbcdim(int ePBC);
   /* Returns the number of dimensions that use pbc, starting at X */
 
-  int inputrec2nboundeddim(t_inputrec *ir);
+GMX_LIBGMX_EXPORT   int inputrec2nboundeddim(t_inputrec *ir);
   /* Returns the number of dimensions in which
    * the coordinates of the particles are bounded, starting at X.
    */
@@ -68,13 +68,13 @@ extern "C" {
   void dump_pbc(FILE *fp,t_pbc *pbc);
   /* Dump the contents of the pbc structure to the file */
   
-  const char *check_box(int ePBC,matrix box);
+GMX_LIBGMX_EXPORT   const char *check_box(int ePBC,matrix box);
   /* Returns NULL if the box is supported by Gromacs.
    * Otherwise is returns a string with the problem.
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
 
-  real max_cutoff2(int ePBC,matrix box);
+GMX_LIBGMX_EXPORT   real max_cutoff2(int ePBC,matrix box);
   /* Returns the square of the maximum cut-off allowed for the box,
    * taking into account that the grid neighborsearch code and pbc_dx
    * only check combinations of single box-vector shifts.
@@ -83,23 +83,23 @@ extern "C" {
   int guess_ePBC(matrix box);
   /* Guesses the type of periodic boundary conditions using the box */
 
-  gmx_bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph);
+GMX_LIBGMX_EXPORT   gmx_bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph);
   /* Checks for un-allowed box angles and corrects the box
    * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
    * Returns TRUE when the box was corrected.
    */
 
-  int ndof_com(t_inputrec *ir);
+GMX_LIBGMX_EXPORT   int ndof_com(t_inputrec *ir);
   /* Returns the number of degrees of freedom of the center of mass */
 
-  void set_pbc(t_pbc *pbc,int ePBC,matrix box);
+GMX_LIBGMX_EXPORT   void set_pbc(t_pbc *pbc,int ePBC,matrix box);
   /* Initiate the periodic boundary conditions.
    * pbc_dx will not use pbc and return the normal difference vector
    * when one or more of the diagonal elements of box are zero.
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
 
-  t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
+GMX_LIBGMX_EXPORT   t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
 			   gmx_domdec_t *dd,gmx_bool bSingleDir,matrix box);
   /* As set_pbc, but additionally sets that correct distances can
    * be obtained using (combinations of) single box-vector shifts.
@@ -110,7 +110,7 @@ extern "C" {
    * Returns pbc when pbc operations are required, NULL otherwise.
    */
 
-  void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx);
+GMX_LIBGMX_EXPORT   void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx);
   /* Calculate the correct distance vector from x2 to x1 and put it in dx.
    * set_pbc must be called before ever calling this routine.
    *
@@ -123,7 +123,7 @@ extern "C" {
    * pbc->bLimitDistance=FALSE and thus all distances are correct.
    */
 
-  int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1,const rvec x2,rvec dx);
+GMX_LIBGMX_EXPORT   int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1,const rvec x2,rvec dx);
   /* Calculate the correct distance vector from x2 to x1 and put it in dx,
    * This function can only be used when all atoms are in the rectangular
    * or triclinic unit-cell.
@@ -132,7 +132,7 @@ extern "C" {
    * (see calc_shifts below on how to obtain shift_vec)
    * set_pbc_dd or set_pbc must be called before ever calling this routine.
    */
-  void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx);
+GMX_LIBGMX_EXPORT   void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx);
   /* As pbc_dx, but for double precision vectors.
    * set_pbc must be called before ever calling this routine.
    */
@@ -166,7 +166,7 @@ extern "C" {
    * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
    */
 
-  void calc_shifts(matrix box,rvec shift_vec[]);
+GMX_LIBGMX_EXPORT   void calc_shifts(matrix box,rvec shift_vec[]);
   /* This routine calculates ths shift vectors necessary to use the
    * ns routine.
    */
@@ -190,7 +190,7 @@ extern "C" {
    * The index does not change, so it needs to be retrieved only once.
    */
 
-  void put_atoms_in_box_omp(int ePBC,matrix box,int natoms,rvec x[]);
+GMX_LIBGMX_EXPORT   void put_atoms_in_box_omp(int ePBC,matrix box,int natoms,rvec x[]);
   /* This wrapper function around put_atoms_in_box() with the ugly manual
    * workload splitting is needed toavoid silently introducing multithreading
    * in tools.

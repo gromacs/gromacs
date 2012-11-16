@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-void jacobi(double **a,int n,double d[],double **v,int *nrot);
+GMX_LIBGMX_EXPORT void jacobi(double **a,int n,double d[],double **v,int *nrot);
 /* 
  * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
  * int     natoms = number of rows and columns

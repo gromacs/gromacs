@@ -43,13 +43,13 @@
 extern "C" {
 #endif
 
-gmx_bool get_a_line(FILE *fp,char line[],int n);
+GMX_LIBGMX_EXPORT gmx_bool get_a_line(FILE *fp,char line[],int n);
 /* Read a line of at most n characters form *fp to line. 
  * Comment ';...' and leading spaces are removed, empty lines are skipped.
  * Return FALSE when eof. 
  */
 
-gmx_bool get_header(char line[],char header[]);
+GMX_LIBGMX_EXPORT gmx_bool get_header(char line[],char header[]);
 /* Read a header between '[' and ']' from line to header.
  * Returns FALSE no header is found.
  */
@@ -59,7 +59,7 @@ int fget_lines(FILE *in,char ***strings);
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
-int get_lines(const char *db,char ***strings);
+GMX_LIBGMX_EXPORT int get_lines(const char *db,char ***strings);
 /* Open file db, or if non-existant file $GMXLIB/db and read strings 
  * return the number of strings.
  */
@@ -74,7 +74,7 @@ int get_strings(const char *db,char ***strings);
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
-int get_file(const char *db,char ***strings);
+GMX_LIBGMX_EXPORT int get_file(const char *db,char ***strings);
 /* Read an array of strings from file db or $GMXLIB/db. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * Does not need number of lines as first line in the file. 

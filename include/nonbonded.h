@@ -51,7 +51,7 @@ extern "C" {
 
 
 
-void
+GMX_LIBGMX_EXPORT void
 gmx_nonbonded_setup(FILE *         fplog,
                     t_forcerec *   fr,
                     gmx_bool       bGenericKernelOnly);
@@ -60,7 +60,7 @@ gmx_nonbonded_setup(FILE *         fplog,
 
 
 
-void
+GMX_LIBGMX_EXPORT void
 gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
                                   t_nblist *   nl);
 
@@ -72,7 +72,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 #define GMX_NONBONDED_DO_POTENTIAL      (1<<3)
 #define GMX_NONBONDED_DO_SR             (1<<4)
 
-void
+GMX_LIBGMX_EXPORT void
 do_nonbonded(t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f_shortrange[],rvec f_longrange[],t_mdatoms *md,t_blocka *excl,
              gmx_grppairener_t *grppener,rvec box_size,

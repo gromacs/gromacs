@@ -46,14 +46,14 @@ int gmx_omp_get_num_procs(void);
 
 /*! Returns the thread number of the thread executing within its thread team.
  *  Acts as a wrapper for omp_get_thread_num(void). */
-int  gmx_omp_get_thread_num(void);
+GMX_LIBGMX_EXPORT int  gmx_omp_get_thread_num(void);
 
 /*! Sets the number of threads in subsequent parallel regions, unless overridden
  *  by a num_threads clause. Acts as a wrapper for omp_get_max_threads(void). */
 void gmx_omp_set_num_threads(int num_threads);
 
 /*! Check for externally set thread affinity to avoid conflicts with GROMACS internal setting. */
-void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
+GMX_LIBGMX_EXPORT void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
                                    gmx_hw_opt_t *hw_opt);
 
 #endif /* GMX_OMP_H */

@@ -49,7 +49,7 @@ typedef real *splinevec[DIM];
 
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
-int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
                  int nnodes_major,int nnodes_minor,
                  t_inputrec *ir,int homenr,
                  gmx_bool bFreeEnergy, gmx_bool bReproducible, int nthread);
@@ -57,7 +57,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-int gmx_pme_reinit(gmx_pme_t *         pmedata,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT int gmx_pme_reinit(gmx_pme_t *         pmedata,
 		   t_commrec *         cr,
 		   gmx_pme_t           pme_src,
 		   const t_inputrec *  ir,
@@ -92,7 +92,7 @@ int gmx_pme_do(gmx_pme_t pme,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-int gmx_pmeonly(gmx_pme_t pme,
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
 		       real ewaldcoeff,   gmx_bool bGatherOnly,
@@ -127,10 +127,10 @@ void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
-void gmx_pme_send_finish(t_commrec *cr);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void gmx_pme_send_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
 
-void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff);
 /* Tell our PME-only node to switch to a new grid size */
 
 void gmx_pme_receive_f(t_commrec *cr,

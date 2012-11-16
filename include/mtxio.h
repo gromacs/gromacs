@@ -73,7 +73,7 @@ gmx_mtxio_write(const char *             filename,
  * To determine the format you should set *full_matrix and *sparse_matrix to NULL
  * before calling this routine, and check which one is non-NULL on return.
  */
-void
+GMX_LIBGMX_EXPORT void
 gmx_mtxio_read (const char *            filename,
                 int *                   nrow,
                 int *                   ncol,

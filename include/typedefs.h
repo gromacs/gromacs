@@ -86,12 +86,12 @@ extern "C" {
 /* This factor leads to 4 realloc calls to double the array size */
 #define OVER_ALLOC_FAC 1.19
 
-void set_over_alloc_dd(gmx_bool set);
+GMX_LIBGMX_EXPORT void set_over_alloc_dd(gmx_bool set);
   /* Turns over allocation for variable size atoms/cg/top arrays on or off,
    * default is off.
    */
   
-int over_alloc_dd(int n);
+GMX_LIBGMX_EXPORT int over_alloc_dd(int n);
   /* Returns n when domain decomposition over allocation is off.
    * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
    * This is to avoid frequent reallocation
@@ -114,7 +114,7 @@ int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
 
 #define STEPSTRSIZE 22
 
-char *gmx_step_str(gmx_large_int_t i,char *buf);
+GMX_LIBGMX_EXPORT char *gmx_step_str(gmx_large_int_t i,char *buf);
 /* Prints a gmx_large_int_t value in buf and returns the pointer to buf.
  * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
  * When multiple gmx_large_int_t values are printed in the same printf call,
@@ -124,38 +124,38 @@ char *gmx_step_str(gmx_large_int_t i,char *buf);
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c 
  */
-void init_block(t_block *block);
-void init_blocka(t_blocka *block);
-void init_atom (t_atoms *at);
-void init_mtop(gmx_mtop_t *mtop);
+GMX_LIBGMX_EXPORT void init_block(t_block *block);
+GMX_LIBGMX_EXPORT void init_blocka(t_blocka *block);
+GMX_LIBGMX_EXPORT void init_atom (t_atoms *at);
+GMX_LIBGMX_EXPORT void init_mtop(gmx_mtop_t *mtop);
 void init_top (t_topology *top);
 void init_inputrec(t_inputrec *ir);
-void init_energyhistory(energyhistory_t * enerhist);
-void done_energyhistory(energyhistory_t * enerhist);
-void init_gtc_state(t_state *state,int ngtc, int nnhpres, int nhchainlength);
-void init_state(t_state *state,int natoms,int ngtc, int nnhpres, int nhchainlength, int nlambda);
-void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
-void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
+GMX_LIBGMX_EXPORT void init_energyhistory(energyhistory_t * enerhist);
+GMX_LIBGMX_EXPORT void done_energyhistory(energyhistory_t * enerhist);
+GMX_LIBGMX_EXPORT void init_gtc_state(t_state *state,int ngtc, int nnhpres, int nhchainlength);
+GMX_LIBGMX_EXPORT void init_state(t_state *state,int natoms,int ngtc, int nnhpres, int nhchainlength, int nlambda);
+GMX_LIBGMX_EXPORT void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
+GMX_LIBGMX_EXPORT void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
 
-void copy_blocka(const t_blocka *src,t_blocka *dest);
+GMX_LIBGMX_EXPORT void copy_blocka(const t_blocka *src,t_blocka *dest);
 
-void done_block(t_block *block);
-void done_blocka(t_blocka *block);
-void done_atom (t_atoms *at);
+GMX_LIBGMX_EXPORT void done_block(t_block *block);
+GMX_LIBGMX_EXPORT void done_blocka(t_blocka *block);
+GMX_LIBGMX_EXPORT void done_atom (t_atoms *at);
 void done_moltype(gmx_moltype_t *molt);
 void done_molblock(gmx_molblock_t *molb);
 void done_mtop(gmx_mtop_t *mtop,gmx_bool bDoneSymtab);
 void done_top(t_topology *top);
 void done_inputrec(t_inputrec *ir);
-void done_state(t_state *state);
+GMX_LIBGMX_EXPORT void done_state(t_state *state);
 
-void set_box_rel(t_inputrec *ir,t_state *state);
+GMX_LIBGMX_EXPORT void set_box_rel(t_inputrec *ir,t_state *state);
 /* Set state->box_rel used in mdrun to preserve the box shape */
 
-void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b);
+GMX_LIBGMX_EXPORT void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b);
 /* Preserve the box shape, b can be box or boxv */
 
-void stupid_fill_block(t_block *grp, int natom,gmx_bool bOneIndexGroup);
+GMX_LIBGMX_EXPORT void stupid_fill_block(t_block *grp, int natom,gmx_bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index
  * (0, 1, 2, .. natom-1)
  * If bOneIndexGroup, then all atoms are  lumped in one index group,
@@ -168,7 +168,7 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
  * There is one atom per index entry
  */
 
-void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
+GMX_LIBGMX_EXPORT void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
@@ -185,7 +185,7 @@ void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
  * of atom index atom_ind.
  */
 
-void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames);
+GMX_LIBGMX_EXPORT void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames);
 /* Free all the arrays and set the nr and nres to 0.
  * bFreeNames tells if to free the atom and residue name strings,
  * don't free them if they still need to be used in e.g. the topology struct.
@@ -194,7 +194,7 @@ void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames);
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */ 
 
-real max_cutoff(real cutoff1,real cutoff2);
+GMX_LIBGMX_EXPORT real max_cutoff(real cutoff1,real cutoff2);
 /* Returns the maximum of the cut-off's, taking into account that 0=inf. */
 
 #ifdef __cplusplus

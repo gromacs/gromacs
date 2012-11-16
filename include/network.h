@@ -67,10 +67,10 @@ int gmx_hostname_num(void);
    If the first part of the hostname does not ends in a number (0-9 characters), returns 0.
 */
 
-void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
+GMX_LIBGMX_EXPORT void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-void gmx_init_intra_counters(t_commrec *cr);
+GMX_LIBGMX_EXPORT void gmx_init_intra_counters(t_commrec *cr);
 /* Initializes intra-node process counts and ID. */
 
 gmx_bool gmx_mpi_initialized(void);
@@ -82,22 +82,22 @@ gmx_bool gmx_mpi_initialized(void);
 void gmx_barrier(const t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
 
-void gmx_bcast(int nbytes,void *b,const t_commrec *cr);
+GMX_LIBGMX_EXPORT void gmx_bcast(int nbytes,void *b,const t_commrec *cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */
 
-void gmx_bcast_sim(int nbytes,void *b,const t_commrec *cr);
+GMX_LIBGMX_EXPORT void gmx_bcast_sim(int nbytes,void *b,const t_commrec *cr);
 /* Broadcast nbytes bytes from the sim master to cr->mpi_comm_mysim */
 
-void gmx_sumi(int nr,int r[],const t_commrec *cr);
+GMX_LIBGMX_EXPORT void gmx_sumi(int nr,int r[],const t_commrec *cr);
 /* Calculate the global sum of an array of ints */
 
 void gmx_sumli(int nr,gmx_large_int_t r[],const t_commrec *cr);
 /* Calculate the global sum of an array of large ints */
 
-void gmx_sumf(int nr,float r[],const t_commrec *cr);
+GMX_LIBGMX_EXPORT void gmx_sumf(int nr,float r[],const t_commrec *cr);
 /* Calculate the global sum of an array of floats */
 
-void gmx_sumd(int nr,double r[],const t_commrec *cr);
+GMX_LIBGMX_EXPORT void gmx_sumd(int nr,double r[],const t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
 void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm);
@@ -106,13 +106,13 @@ void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm);
 void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm);
 /* Calculate the global sum of an array of doubles */
 
-void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms);
+GMX_LIBGMX_EXPORT void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
 
-void gmx_sumli_sim(int nr,gmx_large_int_t r[],const gmx_multisim_t *ms);
+GMX_LIBGMX_EXPORT void gmx_sumli_sim(int nr,gmx_large_int_t r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of large ints */
 
-void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms);
+GMX_LIBGMX_EXPORT void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of floats */
 
 void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
@@ -121,7 +121,7 @@ void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
 void gmx_abort(int nodeid,int nnodes,int errorno);
 /* Abort the parallel run */
 
-void gmx_finalize_par(void);
+GMX_LIBGMX_EXPORT void gmx_finalize_par(void);
 /* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE

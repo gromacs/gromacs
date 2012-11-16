@@ -59,9 +59,9 @@ typedef struct
     int num_close; /* number of "close" violations, caused by limited precision. */
 } gmx_iterate_t;
 
-void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate);
 
-gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf);
+GMX_LIBGMXPREPROCESS_EXPORT GMX_LIBMD_EXPORT gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf);
 
 #ifdef __cplusplus
 }

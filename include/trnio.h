@@ -81,18 +81,18 @@ typedef struct		/* This struct describes the order and the	*/
   int	fep_state;  /* Current value of alchemical state */
 } t_trnheader;
 
-t_fileio *open_trn(const char *fn,const char *mode);
+GMX_LIBGMX_EXPORT t_fileio *open_trn(const char *fn,const char *mode);
 /* Open a trj / trr file */
 
-void close_trn(t_fileio *fio);
+GMX_LIBGMX_EXPORT void close_trn(t_fileio *fio);
 /* Close it */
 
-gmx_bool fread_trnheader(t_fileio *fio,t_trnheader *trn,gmx_bool *bOK);
+GMX_LIBGMX_EXPORT gmx_bool fread_trnheader(t_fileio *fio,t_trnheader *trn,gmx_bool *bOK);
 /* Read the header of a trn file. Return FALSE if there is no frame.
  * bOK will be FALSE when the header is incomplete.
  */
 
-void read_trnheader(const char *fn,t_trnheader *header);
+GMX_LIBGMX_EXPORT void read_trnheader(const char *fn,t_trnheader *header);
 /* Read the header of a trn file from fn, and close the file afterwards. 
  */
 
@@ -104,11 +104,11 @@ gmx_bool is_trn(FILE *fp);
  * afterwards.
  */
 
-void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
+GMX_LIBGMX_EXPORT void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
 		       rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
-gmx_bool fread_htrn(t_fileio *fio,t_trnheader *sh,
+GMX_LIBGMX_EXPORT gmx_bool fread_htrn(t_fileio *fio,t_trnheader *sh,
 		       rvec *box,rvec *x,rvec *v,rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
@@ -122,11 +122,11 @@ gmx_bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
  * return FALSE on error
  */
  
-void write_trn(const char *fn,int step,real t,real lambda,
+GMX_LIBGMX_EXPORT void write_trn(const char *fn,int step,real t,real lambda,
 		      rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a single trn frame to file fn, which is closed afterwards */
 
-void read_trn(const char *fn,int *step,real *t,real *lambda,
+GMX_LIBGMX_EXPORT void read_trn(const char *fn,int *step,real *t,real *lambda,
 		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a single trn frame from file fn, which is closed afterwards 
  */

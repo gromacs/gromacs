@@ -38,7 +38,7 @@
 extern "C" { 
 #endif
 
-void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
+GMX_LIBGMX_EXPORT void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 
 void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
@@ -49,7 +49,7 @@ void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
 
 void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box);
 /*genconf() generates a new configuration by adding boxes*/
-void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
+GMX_LIBGMX_EXPORT void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
 		    gmx_bool bCenter);
 /* gen_box() generates a box around a configuration, box_space is optional 
  * extra space around it. If NTB = 1 then a truncated octahedon will be 

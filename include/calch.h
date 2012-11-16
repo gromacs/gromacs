@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 	
-void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
+GMX_LIBGMX_EXPORT void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
 /*
  *    w.f. van gunsteren, groningen, july 1981 
  *
