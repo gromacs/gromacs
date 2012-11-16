@@ -21,7 +21,6 @@ Requires:	gromacs-common  = %{version}-%{release}
 
 BuildRequires:	fftw-devel
 BuildRequires:	gsl-devel
-BuildRequires:	libxml2-devel
 BuildRequires:	openmpi-devel
 
 %if 0%{?rhel} == 4
