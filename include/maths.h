@@ -99,8 +99,6 @@ static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1]
 int		gmx_nint(real a);
 real    sign(real x,real y);
 
-int		gmx_nint(real a);
-real    sign(real x,real y);
 real    cuberoot (real a);
 double  gmx_erfd(double x);
 double  gmx_erfcd(double x);
