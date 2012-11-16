@@ -1446,22 +1446,27 @@ static void pick_nbnxn_kernel(FILE *fp,
                               gmx_bool *bUseGPU,
                               int *kernel_type)
 {
-    gmx_bool bEmulateGPU, bGPU;
+    gmx_bool bEmulateGPU, bGPU, bEmulateGPUEnvVarSet;
     char gpu_err_str[STRLEN];
 
     assert(kernel_type);
 
     *kernel_type = nbkNotSet;
+    bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
+
     /* if bUseGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
-    bGPU = (bUseGPU != NULL) && hwinfo->bCanUseGPU;
+    bGPU = ((bUseGPU != NULL) && hwinfo->bCanUseGPU);
 
-    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined or in case if nobonded
-       calculations are turned off via GMX_NO_NONBONDED -- this is the simple way
-       to turn off GPU/CUDA initializations as well.. */
-    bEmulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
-                   (getenv("GMX_NO_NONBONDED") != NULL));
+    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined. We will
+       automatically switch to emulation if nonbonded calculations are
+       turned off via GMX_NO_NONBONDED - this is the simple way to turn
+       off GPU initialization, data movement, and cleanup. */
+    bEmulateGPU = (bEmulateGPUEnvVarSet || (getenv("GMX_NO_NONBONDED") != NULL));
 
-    if (bGPU)
+    /* Will enable GPU mode when GPUs are available or GPU emualation is
+     * requested. The latter is useful with mdrun compiled without GPU
+     * acceleration to assess the potential performance with GPUs. */
+    if (bGPU || bEmulateGPUEnvVarSet)
     {
         if (bEmulateGPU)
         {
