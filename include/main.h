@@ -38,6 +38,7 @@
 
 
 #include <stdio.h>
+#include "visibility.h"
 #include "network.h"
 
 #ifdef __cplusplus
@@ -50,17 +51,21 @@ char *gmx_gethostname(char *name, size_t len);
  * Returns name.
  */
 
+GMX_LIBGMX_EXPORT
 void gmx_log_open(const char *fn,const t_commrec *cr,
                           gmx_bool bMasterOnly, gmx_bool bAppendFiles, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
 
+GMX_LIBGMX_EXPORT
 void gmx_log_close(FILE *fp);
 /* Close the log file */
 
+GMX_LIBGMX_EXPORT
 void check_multi_int(FILE *log,const gmx_multisim_t *ms,
 			    int val,const char *name);
+GMX_LIBGMX_EXPORT
 void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
                            gmx_large_int_t val,const char *name);
 /* Check if val is the same on all processors for a mdrun -multi run
@@ -76,6 +81,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
  * If bParFn is set, the nodeid is appended to the tpx and each output file.
  */
 
+GMX_LIBGMX_EXPORT
 t_commrec *init_par(int *argc,char ***argv_ptr);
 /* Initiate the parallel computer. Return the communication record
  * (see network.h). The command line arguments are communicated so that they can be
@@ -84,6 +90,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr);
  * array of argument strings. Both are allowed to be NULL.
  */
 
+GMX_LIBGMX_EXPORT
 t_commrec *init_par_threads(const t_commrec *cro);
 /* Initialize communication records for thread-parallel simulations. 
    Must be called on all threads before any communication takes place by 

@@ -35,15 +35,17 @@
 
 #ifndef _ter_db_h
 #define _ter_db_h
-
+#include "visibility.h"
 #include "sysstuff.h"
 #include "hackblock.h"
 #include "grompp.h"
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern int read_ter_db(const char *ffdir,char ter,
 		       t_hackblock **tbptr,gpp_atomtype_t atype);
 /* Read database for N&C terminal hacking */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern t_hackblock **filter_ter(int nrtp,t_restp rtp[],
                                 int nb,t_hackblock tb[],
                                 const char *resname,
@@ -51,6 +53,7 @@ extern t_hackblock **filter_ter(int nrtp,t_restp rtp[],
                                 int *nret);
 /* Return a list of pointers to blocks that match residue name */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title);
 /* Interactively select one.. */
 

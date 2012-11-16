@@ -35,7 +35,7 @@
 
 #ifndef _pdbio_h
 #define _pdbio_h
-
+#include "visibility.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "symtab.h"
@@ -61,6 +61,7 @@ enum { epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum { U11, U22, U33, U12, U13, U23 };
        
+GMX_LIBGMX_EXPORT
 void set_pdb_wide_format(gmx_bool bSet);
 /* If bSet, use wider format for occupancy and bfactor */
 
@@ -68,18 +69,21 @@ void pdb_use_ter(gmx_bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).
    This function is fundamentally broken as far as thread-safety is concerned.*/
 
+GMX_LIBGMX_EXPORT
 void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
 /* write the box in the CRYST1 record,
  * with ePBC=-1 the pbc is guessed from the box
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
+GMX_LIBGMX_EXPORT
 void write_pdbfile_indexed(FILE *out,const char *title,t_atoms *atoms,
 				  rvec x[],int ePBC,matrix box,char chain,
 				  int model_nr,atom_id nindex,atom_id index[],
 				  gmx_conect conect,gmx_bool bTerSepChains);
 /* REALLY low level */
 
+GMX_LIBGMX_EXPORT
 void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
 			  rvec x[],int ePBC,matrix box,char chain,
 			  int model_nr,gmx_conect conect,gmx_bool bTerSepChains);
@@ -96,6 +100,7 @@ void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
   
+GMX_LIBGMX_EXPORT
 void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
 /* Routine to extract atomic numbers from the atom names */
 
@@ -118,9 +123,11 @@ void read_pdb_conf(const char *infile,char *title,
 void get_pdb_coordnum(FILE *in,int *natoms);
 /* Read a pdb file and count the ATOM and HETATM fields. */
 
+GMX_LIBGMX_EXPORT
 gmx_bool is_hydrogen(const char *nm);
 /* Return whether atom nm is a hydrogen */
 
+GMX_LIBGMX_EXPORT
 gmx_bool is_dummymass(const char *nm);
 /* Return whether atom nm is a dummy mass */
 
@@ -133,6 +140,7 @@ gmx_bool gmx_conect_exist(gmx_conect conect,int ai,int aj);
 void gmx_conect_add(gmx_conect conect,int ai,int aj);
 /* Add a connection between ai and aj (numbered from 0 to natom-1) */ 
 
+GMX_LIBGMX_EXPORT
 gmx_conect gmx_conect_generate(t_topology *top);
 /* Generate a conect structure from a topology */
 

@@ -35,9 +35,10 @@
 
 #ifndef _convparm_h
 #define _convparm_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern void convert_params(int atnr,t_params nbtypes[],
 			   t_molinfo *mi,int comb,double reppow,real fudgeQQ,
 			   gmx_mtop_t *mtop);

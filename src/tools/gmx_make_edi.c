@@ -63,6 +63,7 @@
 #include "txtdump.h"
 #include "eigio.h"
 #include "index.h"
+#include "gmx_ana.h"
 
 /* Suppress Cygwin compiler warnings from using newlib version of
  * ctype.h */

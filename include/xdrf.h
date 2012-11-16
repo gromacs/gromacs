@@ -38,6 +38,7 @@
 
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __PGI    /*Portland group compiler*/
@@ -77,6 +78,7 @@ typedef enum
 } xdr_datatype;
 
 /* names corresponding to the xdr_datatype enum */
+GMX_LIBGMX_EXPORT
 extern const char *xdr_datatype_names[];
 
 /* Read or write reduced precision *float* coordinates */
@@ -107,6 +109,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms,gmx_bool bSeekF
 int xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
 
 
+GMX_LIBGMX_EXPORT
 float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 

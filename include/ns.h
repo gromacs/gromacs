@@ -37,6 +37,7 @@
 #define _ns_h
 
 #include <stdio.h>
+#include "visibility.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "pbc.h"
@@ -54,6 +55,7 @@ extern "C" {
  *
  ****************************************************/
 
+GMX_LIBMD_EXPORT
 void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
 /* 
  * nn is the number of energy terms in the energy matrix
@@ -80,6 +82,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
 		    const gmx_mtop_t *mtop,
 		    matrix box);
 
+GMX_LIBMD_EXPORT
 int search_neighbours(FILE *log,t_forcerec *fr,
 			     rvec x[],matrix box,
 			     gmx_localtop_t *top,
@@ -94,11 +97,13 @@ int search_neighbours(FILE *log,t_forcerec *fr,
  
 
 /* Debugging routines from wnblist.c */
+GMX_LIBMD_EXPORT
 void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
 
 int read_nblist(FILE *in,FILE *out,int **mat,int natoms,gmx_bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
 
+GMX_LIBMD_EXPORT
 int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 				   matrix scale_tot,rvec *x);
 /* Returns the number of atoms that moved beyond the ns buffer */

@@ -35,6 +35,7 @@
 
 #ifndef _gmxcpp_h
 #define _gmxcpp_h
+#include "visibility.h"
 typedef struct gmx_cpp *gmx_cpp_t; 
 	
 	/* The possible return codes for these functions */
@@ -50,6 +51,7 @@ enum { eCPP_OK, eCPP_FILE_NOT_FOUND, eCPP_EOF, eCPP_SYNTAX, eCPP_INTERRUPT,
    
    NOT THREAD SAFE 
    */
+GMX_LIBGMX_EXPORT
 int cpp_open_file(const char *filenm,gmx_cpp_t *handlep, char **cppopts);
 
 /* Return one whole line from the file into buf which holds at most n
@@ -57,24 +59,28 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handlep, char **cppopts);
    
    NOT THREAD SAFE 
    */
+GMX_LIBGMX_EXPORT
 int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[]);
 
 /* Return the file currently being read. 
    
    NOT THREAD SAFE 
    */
+GMX_LIBGMX_EXPORT
 char *cpp_cur_file(const gmx_cpp_t *handlep);
 
 /* Return the current line number. 
    
    NOT THREAD SAFE 
    */
+GMX_LIBGMX_EXPORT
 int cpp_cur_linenr(const gmx_cpp_t *handlep);
 
 /* Close the file! Return integer status. 
    
    NOT THREAD SAFE 
    */
+GMX_LIBGMX_EXPORT
 int cpp_close_file(gmx_cpp_t *handlep);
 
 /* Return a string containing the error message coresponding to status
@@ -82,5 +88,6 @@ int cpp_close_file(gmx_cpp_t *handlep);
    
    NOT THREAD SAFE 
    */
+GMX_LIBGMX_EXPORT
 char *cpp_error(gmx_cpp_t *handlep,int status);
 #endif

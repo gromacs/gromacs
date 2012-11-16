@@ -38,6 +38,7 @@
 
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 #include "nrnb.h"
 #include "pbc.h"
@@ -54,6 +55,7 @@ int glatnr(int *global_atom_index,int i);
  * When global_atom_index=NULL returns i+1.
  */
 
+GMX_LIBGMX_EXPORT
 void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 const t_idef *idef,
                 rvec x[],history_t *hist,
@@ -91,6 +93,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
  *	    the total potential energy (sum over epot).
  */
 
+GMX_LIBGMX_EXPORT
 void calc_bonds_lambda(FILE *fplog,
 			      const t_idef *idef,
 			      rvec x[],
@@ -105,6 +108,7 @@ void calc_bonds_lambda(FILE *fplog,
  * The shift forces in fr are not affected.
  */
 
+GMX_LIBGMX_EXPORT
 real posres(int nbonds,
 		   const t_iatom forceatoms[],const t_iparams forceparams[],
 		   const rvec x[],rvec f[],rvec vir_diag,
@@ -113,12 +117,14 @@ real posres(int nbonds,
 		   int refcoord_scaling,int ePBC,rvec comA,rvec comB);
 /* Position restraints require a different pbc treatment from other bondeds */
 
+GMX_LIBGMX_EXPORT
 real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 		       const t_pbc *pbc,
 		       rvec r_ij,rvec r_kj,real *costh,
 		       int *t1,int *t2);	/* out */
 /* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 
+GMX_LIBGMX_EXPORT
 real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 		      const t_pbc *pbc,
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */
@@ -152,6 +158,7 @@ void make_dp_periodic(real *dp);
  * over threads. This should be called each time the bonded setup
  * changes; i.e. at start-up without domain decomposition and at DD.
  */ 
+GMX_LIBGMX_EXPORT
 void init_bonded_thread_force_reduction(t_forcerec *fr,
                                         const t_idef *idef);
 

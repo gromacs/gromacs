@@ -35,7 +35,7 @@
 
 #ifndef _edsam_h
 #define _edsam_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -46,6 +46,7 @@ void do_edsam(t_inputrec *ir,gmx_large_int_t step,t_mdatoms *md,
                      t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
 /* Essential dynamics constraints, called from constrain() */
 
+GMX_LIBMD_EXPORT
 gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec *cr);
 /* Sets the ED input/output filenames, opens output (.edo) file */
 

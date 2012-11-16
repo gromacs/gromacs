@@ -50,6 +50,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "index.h"
+#include "gmx_ana.h"
 
 #define MAXNAMES 30
 #define NAME_LEN 30

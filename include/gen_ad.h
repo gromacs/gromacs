@@ -35,7 +35,7 @@
 
 #ifndef _gen_ad_h
 #define _gen_ad_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "toputil.h"
 #include "gpp_nextnb.h"
@@ -48,6 +48,7 @@ extern "C" {
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
+GMX_LIBGMXPREPROCESS_EXPORT
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
              gmx_bool bAllowMissing);

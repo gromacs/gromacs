@@ -35,7 +35,7 @@
 
 #ifndef _orires_h
 #define _orires_h
-
+#include "visibility.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 
@@ -43,6 +43,7 @@
     extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
 			rvec x[],
 			const t_inputrec *ir,
@@ -59,6 +60,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
  * Returns the weighted RMS deviation of the orientation restraints.
  */
 
+GMX_LIBGMX_EXPORT
 void diagonalize_orires_tensors(t_oriresdata *od);
 /*
  * Diagonalizes the order tensor(s) of the orienation restraints.
@@ -66,12 +68,14 @@ void diagonalize_orires_tensors(t_oriresdata *od);
  * the 3 eigenvectors. The eigenvalues are ordered on magnitude.
  */
 
+GMX_LIBGMX_EXPORT
 void print_orires_log(FILE *log,t_oriresdata *od);
 /* Print order parameter, eigenvalues and eigenvectors to the log file */
 
 t_ifunc orires;
 /* Does only the orientation restraint force calculation */
 
+GMX_LIBGMX_EXPORT
 void update_orires_history(t_fcdata *fcd,history_t *hist);
 /* Copy the new time averages that have been calculated in calc_orires_dev */
 

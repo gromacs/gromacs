@@ -37,6 +37,7 @@
 #define _wgms_h
 
 #include <stdio.h>
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -48,6 +49,7 @@ void write_gms(FILE *fp,int natoms,rvec x[],matrix box);
  * If box == NULL it is not written
  */
 
+GMX_LIBGMX_EXPORT
 void write_gms_ndx(FILE *fp,int isize,atom_id index[],
 			  rvec x[],matrix box);
 /* Write a gromos-87 trajectory frame (10f8.3) + box size for

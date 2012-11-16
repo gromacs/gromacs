@@ -35,7 +35,7 @@
  
 #ifndef _splitter_h
 #define _splitter_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "types/inputrec.h"
 
@@ -43,6 +43,7 @@
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
 		      t_inputrec *ir,t_block *mols,
 		      real *capacity,int *mulitnr_cgs,int **multinr_nre,
@@ -55,6 +56,7 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
  * Info is written to the file pointer fp.
  */
 
+GMX_LIBGMX_EXPORT
 void gen_sblocks(FILE *fp,int at_start,int at_end,
 			t_idef *idef,t_blocka *sblock,
 			gmx_bool bSettle);

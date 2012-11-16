@@ -54,6 +54,7 @@
 #include "trnio.h"
 #include "symtab.h"
 #include "confio.h"
+#include "gmx_ana.h"
 
 real pot(real x,real qq,real c6,real cn,int npow)
 {

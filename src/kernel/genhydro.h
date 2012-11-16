@@ -35,10 +35,11 @@
 
 #ifndef _genhydro_h
 #define _genhydro_h
-
+#include "visibility.h"
 #include "pdbio.h"
 #include "hackblock.h"
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern int add_h(t_atoms **pdbaptr, rvec *xptr[], 
 		 int nah, t_hackblock ah[],
 		 int nterpairs,
@@ -58,6 +59,7 @@ extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
  * return the New total number of atoms 
  */
 
+GMX_LIBGMXPREPROCESS_EXPORT
 extern int protonate(t_atoms **atoms, rvec **x, t_protonate *protdata);
 /* Protonate molecule according to gmx2.ff/aminoacids.hdb 
  * when called the first time, new atoms are added to atoms, 

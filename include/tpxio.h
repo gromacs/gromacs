@@ -45,6 +45,7 @@
    * can also be used with the routines in gmxfio.h
    *
    **************************************************************/
+#include "visibility.h"
 #include "typedefs.h"
 #include "gmxfio.h"
 
@@ -86,12 +87,15 @@ typedef struct
  * but double and single precision can be read by either.
  */
 
+GMX_LIBGMX_EXPORT
 t_fileio *open_tpx(const char *fn, const char *mode);
 /* Return an file pointer corresponding to the file you have just opened */
   
+GMX_LIBGMX_EXPORT
 void close_tpx(t_fileio *fio);
 /*  Close the file corresponding to fio */
   
+GMX_LIBGMX_EXPORT
 void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
                            int *version, int *generation);
 /* Read the header from a tpx file and then close it again.
@@ -104,6 +108,7 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
  * are returned in the two last arguments.
  */
 
+GMX_LIBGMX_EXPORT
 void write_tpx_state(const char *fn,
 			    t_inputrec *ir,t_state *state,gmx_mtop_t *mtop);
 /* Write a file, and close it again. 
@@ -111,9 +116,11 @@ void write_tpx_state(const char *fn,
  * will not be closed afterwards)
  */
 
+GMX_LIBGMX_EXPORT
 void read_tpx_state(const char *fn,
 			   t_inputrec *ir,t_state *state,rvec *f,
 			   gmx_mtop_t *mtop);
+GMX_LIBGMX_EXPORT
 int read_tpx(const char *fn,
 		    t_inputrec *ir,matrix box,int *natoms,
 		    rvec *x,rvec *v,rvec *f,gmx_mtop_t *mtop);
@@ -124,14 +131,17 @@ int read_tpx(const char *fn,
  * Returns ir->ePBC, if it could be read from the file.
  */
 
+GMX_LIBGMX_EXPORT
 int read_tpx_top(const char *fn,
 			t_inputrec *ir, matrix box,int *natoms,
 			rvec *x,rvec *v,rvec *f,t_topology *top);
 /* As read_tpx, but for the old t_topology struct */
 
+GMX_LIBGMX_EXPORT
 gmx_bool fn2bTPX(const char *file);
 /* return if *file is one of the TPX file types */ 
 
+GMX_LIBGMX_EXPORT
 gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,
                           int *ePBC, rvec **x,rvec **v,matrix box,gmx_bool bMass);
 /* Read title, top.atoms, x, v (if not NULL) and box from an STX file,

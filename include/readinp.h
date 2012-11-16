@@ -35,7 +35,7 @@
 
 #ifndef _readinp_h
 #define _readinp_h
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "warninp.h"
 
@@ -59,6 +59,7 @@ typedef struct {
 
 
 
+GMX_LIBGMX_EXPORT
 t_inpfile *read_inpfile(const char *fn,int *ninp,
 			       char **cppopts,
 			       warninp_t wi);
@@ -67,29 +68,37 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
    ninp = the number of read parameters
    cppopts = the cpp-style options for #include paths and #defines */
 
+GMX_LIBGMX_EXPORT
 void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
 			  gmx_bool bHaltOnUnknown,
 			  warninp_t wi);
 
+GMX_LIBGMX_EXPORT
 void replace_inp_entry(int ninp,t_inpfile *inp,
 			      const char *old_entry,const char *new_entry);
 
+GMX_LIBGMX_EXPORT
 int get_eint(int *ninp,t_inpfile **inp,const char *name,int def,
 		      warninp_t wi);
 
+GMX_LIBGMX_EXPORT
 gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,
 					  const char *name,gmx_large_int_t def,
 					  warninp_t);
   
+GMX_LIBGMX_EXPORT
 double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def,
 			warninp_t wi);
 
+GMX_LIBGMX_EXPORT
 const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def);
 
+GMX_LIBGMX_EXPORT
 int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 		      warninp_t wi);
 /* defs must be NULL terminated */
 
+GMX_LIBGMX_EXPORT
 int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
 /* defs must be NULL terminated */
 
@@ -157,12 +166,15 @@ int opt2parg_int(const char *option,int nparg,t_pargs pa[]);
 
 gmx_bool opt2parg_gmx_bool(const char *option,int nparg,t_pargs pa[]);
 
+GMX_LIBGMX_EXPORT
 real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
 
+GMX_LIBGMX_EXPORT
 const char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
 
 const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
 
+GMX_LIBGMX_EXPORT
 gmx_bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
 
 void print_pargs(FILE *fp, int npargs,t_pargs pa[],gmx_bool bLeadingSpace);

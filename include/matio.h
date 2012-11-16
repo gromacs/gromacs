@@ -35,20 +35,23 @@
 
 #ifndef _matio_h
 #define _matio_h
-
+#include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+GMX_LIBGMX_EXPORT
 gmx_bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
 
+GMX_LIBGMX_EXPORT
 t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c);
 /* Seach in the map for code 'c' and return entry number. 
  * return -1 if not found
  */
 
+GMX_LIBGMX_EXPORT
 int getcmap(FILE *in,const char *fn,t_mapping **map);
 /* Read the mapping table from in, return number of entries */
 
@@ -61,18 +64,22 @@ void printcmap(FILE *out,int n,t_mapping map[]);
 void writecmap(const char *fn,int n,t_mapping map[]);
 /* print mapping table to fn */
 
+GMX_LIBGMX_EXPORT
 int read_xpm_matrix(const char *fnm, t_matrix **matrix);
 /* Reads a number of matrices from .xpm file fnm and returns this number */
 
+GMX_LIBGMX_EXPORT
 real **matrix2real(t_matrix *matrix,real **mat);
 /* Converts an matrix in a t_matrix struct to a matrix of reals
  * When mat==NULL memory will be allocated 
  * Returns NULL when something went wrong
  */
 
+GMX_LIBGMX_EXPORT
 void write_xpm_m(FILE *out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */ 
 
+GMX_LIBGMX_EXPORT
 void write_xpm3(FILE *out,unsigned int flags,
 		       const char *title,const char *legend,
 		       const char *label_x,const char *label_y,
@@ -82,6 +89,7 @@ void write_xpm3(FILE *out,unsigned int flags,
 /* See write_xpm.
  * Writes a colormap varying as rlo -> rmid -> rhi.
  */
+GMX_LIBGMX_EXPORT
 void write_xpm_split(FILE *out,unsigned int flags,
 			    const char *title,const char *legend,
 			    const char *label_x,const char *label_y,
@@ -98,6 +106,7 @@ void write_xpm_split(FILE *out,unsigned int flags,
  * which is white.
  */
 
+GMX_LIBGMX_EXPORT
 void write_xpm(FILE *out,unsigned int flags,
 		      const char *title,const char *legend,
 		      const char *label_x,const char *label_y,
@@ -126,8 +135,10 @@ void write_xpm(FILE *out,unsigned int flags,
  * nlevels    number of color levels for the output
  */
 
+GMX_LIBGMX_EXPORT
 real **mk_matrix(int nx, int ny, gmx_bool b1D);
 
+GMX_LIBGMX_EXPORT
 void done_matrix(int nx, real ***m);
 
 void clear_matrix(int nx, int ny, real **m);
