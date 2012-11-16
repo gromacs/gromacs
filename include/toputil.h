@@ -66,11 +66,7 @@ void init_top  (t_topology *top);
 void done_top(t_topology *top);
 
 /* FREE */
-void done_block(t_block *block);
-
 void done_top(t_topology *top);
-
-void done_atom (t_atoms *at);
 
 void done_mi(t_molinfo *mi);
 

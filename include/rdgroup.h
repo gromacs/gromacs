@@ -68,12 +68,6 @@ void rd_index_nrs(char *statfile,int ngrps,int isize[],
 		  atom_id *index[],char *grpnames[],int grpnr[]);
 /* the same but also reads the number of the selected group*/
 
-void get_index(t_atoms *atoms, const char *fnm, int ngrps,
-	       int isize[], atom_id *index[],char *grpnames[]);
-/* Does the same as rd_index, but if the fnm pointer is NULL it
- * will not read from fnm, but it will make default index groups
- * for the atoms in *atoms.
- */ 
 
 #ifdef __cplusplus
 }
