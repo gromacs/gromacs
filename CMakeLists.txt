@@ -208,15 +208,15 @@ option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cy
 mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 ######################################################################
-# compiler tests
-# these need ot be done early (before further tests).
+# Compiler tests
+# These need to be done early (before further tests).
 #####################################################################
 
-# cmake/Check{C,CXX}CompilerFlag.cmake are lifted from CMake git next
-# branch (proposed for v2.8.9) to be able to detect invalid options
-# with the Intel Compilers.
-# Remove these files from the source tree when a CMake version that
-# includes the features in question becomes required.
+# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
+# are used with permission from CMake v2.8.9 so that GROMACS can detect
+# invalid options with the Intel Compilers.
+# These files should be removed from the source tree when a CMake version that
+# includes the features in question becomes required for building GROMACS.
 include(CheckCCompilerFlag)
 if(CMAKE_CXX_COMPILER_LOADED)
     include(CheckCXXCompilerFlag)
