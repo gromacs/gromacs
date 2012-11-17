@@ -89,10 +89,6 @@ static const int ftpASC[] =
     { efTPA, efGRO, efPDB };
 static const int ftpBIN[] =
     { efTPB, efTRJ };
-#ifdef HAVE_XML
-static const int ftpXML[] =
-    {   efXML};
-#endif
 
 const char *itemstr[eitemNR] =
     { "[header]", "[inputrec]", "[box]", "[topology]", "[coordinates]",
@@ -233,12 +229,6 @@ static void gmx_fio_set_iotype(t_fileio *fio)
     {
         fio->iotp=&bin_iotype;
     }
-#ifdef HAVE_XMl
-    else if (in_ftpset(fio->iFTP,asize(ftpXML),ftpXML))
-    {
-        fio->iotp=&dummy_iotype;
-    }
-#endif
     else
         fio->iotp=&dummy_iotype;
 }
@@ -909,12 +899,6 @@ void gmx_fio_checktype(t_fileio *fio)
     {
         return;
     }
-#ifdef HAVE_XMl
-    else if (in_ftpset(fio->iFTP,asize(ftpXML),ftpXML))
-    {
-        return;
-    }
-#endif
     else
         gmx_fatal(FARGS, "Can not read/write topologies to file type %s",
                   ftp2ext(fio->iFTP));
