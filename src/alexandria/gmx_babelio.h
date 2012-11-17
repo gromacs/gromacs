@@ -52,7 +52,7 @@ extern "C"
 gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
                                      gmx_atomprop_t aps,gmx_poldata_t pd,
                                      char *molnm,char *iupac,char *conformation,
-                                     gau_atomprop_t gaps,
+                                     char *basisset,gau_atomprop_t gaps,
                                      real th_toler,real ph_toler,
                                      int maxpot,gmx_bool bVerbose);
 

@@ -342,7 +342,7 @@ static int espv_comp(const void *a,const void *b)
 gmx_molprop_t gmx_molprop_read_log(const char *fn,
                                    gmx_atomprop_t aps,gmx_poldata_t pd,
                                    char *molnm,char *iupac,char *conformation,
-                                   gau_atomprop_t gaps,
+                                   char *basisset,gau_atomprop_t gaps,
                                    real th_toler,real ph_toler,
                                    int maxpot,gmx_bool bVerbose)
 {
@@ -401,9 +401,8 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
               program[len-1] = '\0';
           }
       }
-      else if ((NULL != strstr(strings[i],"Standard basis:")) || 
-               (NULL != strstr(strings[i],"Basis read from chk")) ||
-               (NULL != strstr(strings[i],"General basis read from cards"))) 
+      else if ((NULL != strstr(strings[i],"Standard basis:")) &&
+               (NULL == basisset))
       {
           ptr = split(' ',strings[i]);
           if (NULL != ptr[2]) 
@@ -543,6 +542,8 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
   }
   
   /* Add the calculation */
+  if ((NULL == basis) && (NULL != basisset))
+      basis = basisset;
   if ((calcref == NOTSET) && (NULL != program) && (NULL != method) && (NULL != basis))
   {
       gmx_molprop_add_calculation(mpt,program,method,basis,reference,conformation,&calcref);
@@ -791,7 +792,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static gmx_bool bVerbose = FALSE;
-  static char *molnm=NULL,*iupac=NULL,*conf="minimum";
+  static char *molnm=NULL,*iupac=NULL,*conf="minimum",*basis=NULL;
   static real th_toler=170,ph_toler=5;
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
@@ -810,6 +811,8 @@ int main(int argc, char *argv[])
       "IUPAC name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
     { "-conf",  FALSE, etSTR, {&conf},
       "Conformation of the molecule" },
+    { "-basis",  FALSE, etSTR, {&basis},
+      "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
     { "-maxpot", FALSE, etINT, {&maxpot},
       "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" }
   };
@@ -844,10 +847,10 @@ int main(int argc, char *argv[])
   for(i=0; (i<nfn); i++) 
   {
 #ifdef HAVE_LIBOPENBABEL2
-      mp = gmx_molprop_read_gauss(fns[i],aps,pd,molnm,iupac,conf,gaps,
+      mp = gmx_molprop_read_gauss(fns[i],aps,pd,molnm,iupac,conf,basis,gaps,
                                   th_toler,ph_toler,maxpot,bVerbose);
 #else
-      mp = gmx_molprop_read_log(fns[i],aps,pd,molnm,iupac,conf,gaps,
+      mp = gmx_molprop_read_log(fns[i],aps,pd,molnm,iupac,conf,basis,gaps,
                                 th_toler,ph_toler,maxpot,bVerbose);
 #endif
       if (NULL != mp) 

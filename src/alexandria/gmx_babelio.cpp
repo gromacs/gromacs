@@ -92,7 +92,7 @@ int read_babel(const char *g98,OpenBabel::OBMol *mol)
 gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
                                      gmx_atomprop_t aps,gmx_poldata_t pd,
                                      char *molnm,char *iupac,char *conformation,
-                                     gau_atomprop_t gaps,
+                                     char *basisset,gau_atomprop_t gaps,
                                      real th_toler,real ph_toler,
                                      int maxpot,gmx_bool bVerbose)
 {
@@ -130,7 +130,9 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   mpt = gmx_molprop_init();
 
   OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
-  if (NULL != OBpd)
+  if (NULL != basisset)
+    basis = basisset;
+  else if (NULL != OBpd)
     basis = strdup(OBpd->GetValue().c_str());
   else
     basis = strdup(unknown);
