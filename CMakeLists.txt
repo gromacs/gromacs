@@ -113,6 +113,7 @@ mark_as_advanced(GMX_FORCE_CXX)
 if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
     enable_language(CXX)
 endif()
+set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
 ########################################################################
 # Fix stupid flags on Windows
