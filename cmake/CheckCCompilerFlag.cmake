@@ -7,8 +7,9 @@
 # that can modify the build.
 
 #=============================================================================
-# Copyright 2006-2010 Kitware, Inc.
+# Copyright 2006-2011 Kitware, Inc.
 # Copyright 2006 Alexander Neundorf <neundorf@kde.org>
+# Copyright 2011 Matthias Kretz <kretz@kde.org>
 #
 # ORIGINAL Copyright notice (from Copyright.txt):
 #
@@ -57,7 +58,7 @@ MACRO (CHECK_C_COMPILER_FLAG _FLAG _RESULT)
      FAIL_REGEX "unknown .*option"                          # Clang
      FAIL_REGEX "ignoring unknown option"                   # MSVC
      FAIL_REGEX "warning D9002"                             # MSVC, any lang
-     FAIL_REGEX "option .*not supported"                    # Intel
+     FAIL_REGEX "option.*not supported"                     # Intel
      FAIL_REGEX "invalid argument .*option"                 # Intel
      FAIL_REGEX "ignoring option .*argument required"       # Intel
      FAIL_REGEX "[Uu]nknown option"                         # HP
