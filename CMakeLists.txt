@@ -927,46 +927,46 @@ endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
+
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+    set(GMX_FFT_FFTW3 1)
+
     if(GMX_DOUBLE)
         set(FFTW fftw)
     else(GMX_DOUBLE)
         set(FFTW fftwf)
     endif(GMX_DOUBLE)
     find_package(FFTW COMPONENTS ${FFTW})
-    string(TOUPPER "${FFTW}" FFTW)
-    set(PKG_FFT "${${FFTW}_PKG}")
-    include_directories(${${FFTW}_INCLUDE_DIRS})
-    set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
-    if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW3 (with correct precision - libfftw3f for single precision GROMACS or libfftw3 for double precision GROMACS). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT ${FFTW}_FOUND)
+    include_directories(${FFTW_INCLUDE_DIRS})
+    set(FFT_LIBRARIES ${FFTW_LIBRARIES})
+    # Set variables so GROMACS can support pkgconfig
+    set(PKG_FFT ${FFTW_PKG})
+    set(PKG_FFT_LIBS ${FFTW_LIBRARIES})
 
-    set(GMX_FFT_FFTW3 1)
+    if(NOT FFTW_FOUND)
+      MESSAGE(FATAL_ERROR "Cannot find FFTW3 (with correct precision - libfftw3f for single precision GROMACS or libfftw3 for double precision GROMACS). Fix it, choose another FFT library, or use the GROMACS built-in fftpack (slower)!")
+    endif(NOT FFTW_FOUND)
 
-    if (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
-      message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-    endif (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
+    # Check for compilation consistency
+    if (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT FFTW_HAVE_SIMD)
+      message(WARNING "The FFTW library found is compiled without SIMD support, which makes it slow. Consider recompiling it.")
+    endif (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT FFTW_HAVE_SIMD)
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-#    MESSAGE(STATUS "Using external FFT library - Intel MKL")
+    set(GMX_FFT_MKL 1)
+    set(HAVE_MKL 1)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIR})
     set(FFT_LIBRARIES ${MKL_LIBRARIES})
-    set(PKG_FFT_LIBS ${MKL_LIBRARIES})
+    set(PKG_FFT_LIBS ${MKL_LIBRARIES}) # Set so we can support pkgconfig
 
-    set(GMX_FFT_MKL 1)
-    set(HAVE_MKL 1)
-
-#elseif(${GMX_FFT_LIBRARY} STREQUAL "ACML")
-#    MESSAGE(STATUS "Using external FFT library - AMD core math library")
-#    set(GMX_FFT_ACML 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
-    MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
-else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+    MESSAGE(STATUS "Using really slow internal FFT library - fftpack")
+
+else()
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
-endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+endif()
 
 # enable threaded fftw3 if we've found it 
 if(FFTW3_THREADS OR FFTW3F_THREADS)
