@@ -25,6 +25,24 @@
 
 using namespace std;
 
+typedef struct {
+  int  id;
+  real x,y,z;
+  real V;
+} t_espv;
+
+static int esp_comp(const void *a,const void *b)
+{
+  t_espv *ea = (t_espv *)a;
+  t_espv *eb = (t_espv *)b;
+  
+  if (ea->V < eb->V)
+    return -1;
+  else if (ea->V > ea->V)
+    return 1;
+  return 0;
+}
+ 
 int read_babel(const char *g98,OpenBabel::OBMol *mol)
 {
   ifstream         g98f;
@@ -92,10 +110,12 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   OpenBabel::OBFreeGrid *esp;
   std::string formula,attr,value,inchi;
   
+  t_espv *espv = NULL;
   const char *reference="Spoel2013a",*unknown="unknown";
   char *program,*method,*basis,*charge_model;
-  int calcref,atomref,atomid,bondid;
+  int i,ii0,calcref,atomref,atomid,bondid,natom;
   gmx_molprop_t mpt;  
+  double ii,deltai;
   int k;
   const char *etypes[] = { "DHf(0K)", "DHf(298.15K)" };
   
@@ -164,9 +184,9 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
       if (NULL != OBdhf)
         {
           value = OBdhf->GetValue();
-          gmx_molprop_add_energy(mpt,calcref,etypes[k],"kJ/mol",
-                                 convert2gmx(atof(value.c_str()),
-                                             eg2cKcal_Mole),0);
+          gmx_molprop_add_energy(mpt,calcref,etypes[k],
+                                 unit2string(eg2cKcal_Mole),
+                                 atof(value.c_str()),0);
         }
     }
   
@@ -181,8 +201,8 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   atomid = 1;
   for (OBa = mol.BeginAtom(OBai); (NULL != OBa); OBa = mol.NextAtom(OBai)) {
     gmx_molprop_calc_add_atom(mpt,calcref,OBa->GetType(),atomid,&atomref);
-    gmx_molprop_calc_set_atomcoords(mpt,calcref,atomref,"Angstrom",
-                                    OBa->x(),OBa->y(),OBa->z());
+    gmx_molprop_calc_set_atomcoords(mpt,calcref,atomref,unit2string(eg2cPm),
+                                    100*OBa->x(),100*OBa->y(),100*OBa->z());
     gmx_molprop_calc_set_atomcharge(mpt,calcref,atomref,charge_model,
                                     "e",OBa->GetPartialCharge());
     atomid++;
@@ -202,7 +222,8 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   if (NULL != dipole)
     {
       OpenBabel::vector3 v3 = dipole->GetData();
-      gmx_molprop_add_dipole(mpt,calcref,"electronic","Debye",
+      gmx_molprop_add_dipole(mpt,calcref,"electronic",
+                             unit2string(eg2cAngstrom),
                              v3.GetX(),v3.GetY(),v3.GetZ(),
                              v3.length(),0.0);
     }
@@ -214,7 +235,8 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
       OpenBabel::matrix3x3 m3 = quadrupole->GetData();
       double mm[9];
       m3.GetArray(mm);
-      gmx_molprop_add_quadrupole(mpt,calcref,"electronic","Debye-Ang",
+      gmx_molprop_add_quadrupole(mpt,calcref,"electronic",
+                                 unit2string(eg2cBuckingham),
                                  mm[0],mm[4],mm[8],mm[1],mm[2],mm[5]);
     }
   
@@ -231,7 +253,8 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
         mm[i] *= fac; 
       //cout << "fac = " << fac << "\n";
       alpha = (mm[0]+mm[4]+mm[8])/3.0;
-      gmx_molprop_add_polar(mpt,calcref,"electronic","Angstrom^3",
+      gmx_molprop_add_polar(mpt,calcref,"electronic",
+                            unit2string(eg2cAngstrom3),
                             mm[0],mm[4],mm[8],alpha,0);
     }
   
@@ -241,19 +264,55 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
     {
       OpenBabel::OBFreeGridPoint *fgp;
       OpenBabel::OBFreeGridPointIterator fgpi;
-      int espid=1;
+      int espid=0;
       
       fgpi = esp->BeginPoints();
+      snew(espv,esp->NumPoints());
       for(fgp = esp->BeginPoint(fgpi); (NULL != fgp); fgp = esp->NextPoint(fgpi))
         {
-          gmx_molprop_add_potential(mpt,calcref,
-                                    unit2string(eg2cAngstrom),
-                                    unit2string(eg2cHartree_e),espid,
-                                    fgp->GetX(),fgp->GetY(),fgp->GetZ(),fgp->GetV());
+          espv[espid].id = espid+1;
+          espv[espid].x = 100*fgp->GetX();
+          espv[espid].y = 100*fgp->GetY();
+          espv[espid].z = 100*fgp->GetZ();
+          espv[espid].V = fgp->GetV();
           espid++;
         }
+      natom = mol.NumAtoms();
+      
+      if ((maxpot > 0) && (maxpot < esp->NumPoints())) 
+        {
+          qsort(espv+natom,espid-natom,sizeof(espv[0]),esp_comp);
+          deltai = (esp->NumPoints()-natom)/maxpot;
+        }
+      else 
+        {
+          maxpot = esp->NumPoints();
+          deltai = 1;
+        }
+      for(i=0; (i<natom); i++) 
+        {
+          gmx_molprop_add_potential(mpt,calcref,
+                                    unit2string(eg2cPm),
+                                    unit2string(eg2cHartree_e),
+                                    espv[i].id,
+                                    espv[i].x,espv[i].y,espv[i].z,
+                                    espv[i].V);
+        }
+      ii = natom;
+      for(; (i<maxpot); i++) 
+        {
+          /* Convert to integer */
+          ii0 = ii;
+          gmx_molprop_add_potential(mpt,calcref,
+                                    unit2string(eg2cPm),
+                                    unit2string(eg2cHartree_e),
+                                    i,
+                                    espv[ii0].x,espv[ii0].y,espv[ii0].z,
+                                    espv[ii0].V);
+          ii+=deltai;
+      }
+      sfree(espv);
     }
-  
   
   return mpt;
 }
