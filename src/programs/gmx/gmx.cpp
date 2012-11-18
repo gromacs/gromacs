@@ -29,7 +29,7 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \brief
- * Implements the g_ana tool.
+ * Implements the gmx wrapper binary.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
@@ -47,7 +47,7 @@ int
 main(int argc, char *argv[])
 {
     const gmx::ProgramInfo &info =
-        gmx::ProgramInfo::init("g_ana", argc, argv);
+        gmx::ProgramInfo::init("gmx", argc, argv);
     // TODO: With the addition of ProgramInfo above, this no longer needs to
     // be here, so think where it would best go.
     CopyRight(stderr, argv[0]);
