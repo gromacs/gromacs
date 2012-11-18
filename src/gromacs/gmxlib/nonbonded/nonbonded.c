@@ -64,13 +64,22 @@
 #include "nonbonded.h"
 
 #include "nb_kernel.h"
-#include "nb_kernel_c/nb_kernel_c.h"
-
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
 #include "nb_generic_adress.h"
 
+/* Different default (c) and accelerated interaction-specific kernels */
+#include "nb_kernel_c/nb_kernel_c.h"
+
+/* Temporary enabler until we add the AVX kernels */
+#if (defined GMX_CPU_ACCELERATION_X86_SSE4_1) || (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA) || (defined GMX_CPU_ACCELERATION_X86_AVX_256)
+#    define GMX_CPU_ACCELERATION_X86_SSE2
+#endif
+
+#if (defined GMX_CPU_ACCELERATION_X86_SSE2) && !(defined GMX_DOUBLE)
+#    include "nb_kernel_sse2_single/nb_kernel_sse2_single.h"
+#endif
 
 
 #ifdef GMX_THREAD_MPI
@@ -93,11 +102,16 @@ gmx_nonbonded_setup(FILE *         fplog,
         if(bGenericKernelOnly==FALSE)
         {
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
-
-            /* Add interaction-specific C kernels */
             nb_kernel_list_add_kernels(kernellist_c,kernellist_c_size);
-
-            /* Add interaction-specific accelerated SSE kernels, etc. here */
+            
+            if(!(fr!=NULL && fr->use_cpu_acceleration==FALSE))
+            {
+                /* Add interaction-specific kernels for different architectures */
+#if (defined GMX_CPU_ACCELERATION_X86_SSE2) && !(defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_sse2_single,kernellist_sse2_single_size);
+#endif
+                ; /* empty statement to avoid a completely empty block */
+            }
         }
         /* Create a hash for faster lookups */
         nb_kernel_list_hash_init();
@@ -122,7 +136,19 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     const char *     other;
     const char *     vf;
 
-    const char *     archs[] = { "c" };
+    struct
+    {
+        const char *  arch;
+        int           simd_padding_width;
+    }
+    arch_and_padding[] =
+    {
+#if (defined GMX_CPU_ACCELERATION_X86_SSE2) && !(defined GMX_DOUBLE)
+        { "sse2_single", 4 },
+#endif
+        { "c", 1 },
+    };
+    int              narch = asize(arch_and_padding);
     int              i;
 
     if(nonbonded_setup_done==FALSE)
@@ -150,35 +176,42 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     {
         nl->kernelptr_vf = gmx_nb_free_energy_kernel;
         nl->kernelptr_f  = gmx_nb_free_energy_kernel;
+        nl->simd_padding_width = 1;
     }
     else if(!gmx_strcasecmp_min(geom,"CG-CG"))
     {
         nl->kernelptr_vf = gmx_nb_generic_cg_kernel;
         nl->kernelptr_f  = gmx_nb_generic_cg_kernel;
+        nl->simd_padding_width = 1;
     }
     else
     {
         /* Try to find a specific kernel first */
 
-        for(i=0;i<asize(archs) && nl->kernelptr_vf==NULL ;i++)
+        for(i=0;i<narch && nl->kernelptr_vf==NULL ;i++)
         {
-               nl->kernelptr_vf = nb_kernel_list_findkernel(log,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+            nl->kernelptr_vf = nb_kernel_list_findkernel(log,arch_and_padding[i].arch,elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+            nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
         }
-        for(i=0;i<asize(archs) && nl->kernelptr_f==NULL ;i++)
+        for(i=0;i<narch && nl->kernelptr_f==NULL ;i++)
         {
-            nl->kernelptr_f  = nb_kernel_list_findkernel(log,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"Force");
+            nl->kernelptr_f = nb_kernel_list_findkernel(log,arch_and_padding[i].arch,elec,elec_mod,vdw,vdw_mod,geom,other,"Force");
+            nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
+
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if(nl->kernelptr_f == NULL)
             {
-                nl->kernelptr_f  = nb_kernel_list_findkernel(NULL,archs[i],elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+                nl->kernelptr_f  = nb_kernel_list_findkernel(NULL,arch_and_padding[i].arch,elec,elec_mod,vdw,vdw_mod,geom,other,"PotentialAndForce");
+                nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
             }
         }
-
+        
         /* Give up, pick a generic one instead */
         if(nl->kernelptr_vf==NULL)
         {
             nl->kernelptr_vf = gmx_nb_generic_kernel;
             nl->kernelptr_f  = gmx_nb_generic_kernel;
+            nl->simd_padding_width = 1;
             if(log)
             {
                 fprintf(log,
@@ -211,7 +244,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
     kernel_data.exclusions              = excl;
     kernel_data.lambda                  = lambda;
     kernel_data.dvdl                    = dvdl;
-    
+        
     if(fr->bAllvsAll)
     {
         return;
