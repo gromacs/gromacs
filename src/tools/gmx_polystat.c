@@ -164,7 +164,6 @@ int gmx_polystat(int argc,char *argv[])
   char   **legp,buf[STRLEN];
   gmx_rmpbc_t  gpbc=NULL;
 
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
 		    PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);

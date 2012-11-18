@@ -328,7 +328,6 @@ int gmx_nmeig(int argc,char *argv[])
   real       factor_omega_to_wavenumber;
   real       *spectrum=NULL;
   real       wfac;
-  t_commrec  *cr;
   output_env_t oenv;
   const char *qcleg[] = { "Heat Capacity cV (J/mol K)", 
                           "Enthalpy H (kJ/mol)" };
@@ -346,12 +345,7 @@ int gmx_nmeig(int argc,char *argv[])
   };
 #define NFILE asize(fnm) 
 
-  cr = init_par(&argc,&argv);
-
-  if (MASTER(cr))
-    CopyRight(stderr,argv[0]); 
-  
-  parse_common_args(&argc,argv,PCA_BE_NICE | (MASTER(cr) ? 0 : PCA_QUIET),
+  parse_common_args(&argc,argv,PCA_BE_NICE,
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   /* Read tpr file for volume and number of harmonic terms */

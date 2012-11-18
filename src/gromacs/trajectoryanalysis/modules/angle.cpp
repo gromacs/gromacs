@@ -58,7 +58,7 @@ namespace gmx
 namespace analysismodules
 {
 
-const char Angle::name[] = "angle";
+const char Angle::name[] = "gangle";
 const char Angle::shortDescription[] =
     "Calculate angles";
 

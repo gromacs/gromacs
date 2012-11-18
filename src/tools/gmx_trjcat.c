@@ -486,7 +486,6 @@ int gmx_trjcat(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    CopyRight(stderr, argv[0]);
     parse_common_args(&argc, argv, PCA_BE_NICE | PCA_TIME_UNIT, NFILE, fnm,
                       asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
 
