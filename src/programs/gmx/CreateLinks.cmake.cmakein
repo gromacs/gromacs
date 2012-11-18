@@ -97,6 +97,6 @@ foreach (linkname ${SYMLINK_NAMES})
     endif ()
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E create_symlink
-            g_ana${GMX_BINARY_SUFFIX} ${linkpath})
+            gmx${GMX_BINARY_SUFFIX} ${linkpath})
 endforeach ()
 

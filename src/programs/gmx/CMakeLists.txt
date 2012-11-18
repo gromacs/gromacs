@@ -1,6 +1,6 @@
-add_executable(g_ana g_ana.cpp legacymodules.cpp)
-target_link_libraries(g_ana libgromacs gmxana)
-set_target_properties(g_ana PROPERTIES OUTPUT_NAME "g_ana${GMX_BINARY_SUFFIX}")
+add_executable(gmx gmx.cpp legacymodules.cpp)
+target_link_libraries(gmx libgromacs gmxana)
+set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}")
 configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)
 set(CREATE_LINKS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/CreateLinks.cmake)
 # Based on documentation, CMake only supports symbolic links on Unix,
@@ -15,7 +15,7 @@ if (UNIX)
             -DBINARY_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
             -DQUIETLY=TRUE
             -P ${CREATE_LINKS_SCRIPT}
-        DEPENDS g_ana
+        DEPENDS gmx
         COMMENT "Creating symlinks for alternative binary names"
         VERBATIM)
 endif ()
@@ -26,7 +26,7 @@ endif ()
 # be possible to handle everything uniformly instead of having several
 # different CMake-side mechanisms.
 
-install(TARGETS g_ana
+install(TARGETS gmx
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 if (GMX_SYMLINK_OLD_BINARY_NAMES)
     install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
