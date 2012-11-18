@@ -232,7 +232,6 @@ int gmx_wheel(int argc,char *argv[])
   int  i,nres;
   char **resnm;
   
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL,&oenv);
   

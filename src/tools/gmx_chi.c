@@ -1156,7 +1156,6 @@ int gmx_chi(int argc,char *argv[])
   int     npargs;
   t_pargs *ppa;
 
-  CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
