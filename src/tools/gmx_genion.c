@@ -402,7 +402,6 @@ int gmx_genion(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc, asize(bugs),bugs,&oenv);
   bPDB = ftp2bSet(efPDB,NFILE,fnm);

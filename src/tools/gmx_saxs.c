@@ -94,8 +94,6 @@ int gmx_saxs(int argc,char *argv[])
         { efXVG, "-sq", "sq",      ffWRITE },
     };
 #define NFILE asize(fnm)
-
-    CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv, PCA_CAN_TIME | PCA_BE_NICE,
                       NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 

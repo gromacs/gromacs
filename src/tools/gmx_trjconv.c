@@ -814,7 +814,6 @@ int gmx_trjconv(int argc,char *argv[])
     };
 #define NFILE asize(fnm)
 
-    CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
                       PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | 
                       PCA_TIME_UNIT | PCA_BE_NICE,

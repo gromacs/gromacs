@@ -169,7 +169,6 @@ int gmx_g_angle(int argc,char *argv[])
   t_pargs *ppa;
   output_env_t oenv;
   
-  CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,

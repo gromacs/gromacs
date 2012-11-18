@@ -667,7 +667,6 @@ int gmx_make_edi(int argc,char *argv[])
     };
 #define NFILE asize(fnm)
     edi_params.outfrq=100; edi_params.slope=0.0; edi_params.maxedsteps=0;
-    CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv, 0 ,
                       NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
