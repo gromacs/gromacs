@@ -1414,6 +1414,14 @@ int main (int argc, char *argv[])
 
   bNeedVel = EI_STATE_VELOCITY(ir->eI);
   bGenVel  = (bNeedVel && opts->bGenVel);
+  if (bGenVel && ir->bContinuation)
+  {
+      sprintf(warn_buf,
+              "Generating velocities is inconsistent with attempting "
+              "to continue a previous run. Choose only one of "
+              "gen-vel = yes and continuation = yes.");
+      warning_error(wi, warn_buf);
+  }
 
   snew(plist,F_NRE);
   init_plist(plist);

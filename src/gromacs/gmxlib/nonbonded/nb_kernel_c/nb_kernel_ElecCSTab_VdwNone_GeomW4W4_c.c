@@ -849,7 +849,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -885,7 +884,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -921,7 +919,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -957,7 +954,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -993,7 +989,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -1029,7 +1024,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -1065,7 +1059,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -1101,7 +1094,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -1137,7 +1129,6 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_c
             vfitab           = 1*4*vfitab;
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
