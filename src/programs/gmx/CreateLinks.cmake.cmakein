@@ -105,7 +105,7 @@ foreach (linkname ${SYMLINK_NAMES})
         endif ()
         execute_process(
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${BINARY_DIRECTORY}/g_ana${BINARY_SUFFIX} ${linkpath})
+                ${BINARY_DIRECTORY}/gmx${BINARY_SUFFIX} ${linkpath})
     else()
         if (NOT QUIETLY)
             message(STATUS "Installing: Creating symbolic link ${linkpath}")
@@ -115,6 +115,6 @@ foreach (linkname ${SYMLINK_NAMES})
         endif ()
         execute_process(
             COMMAND ${CMAKE_COMMAND} -E create_symlink
-                g_ana${BINARY_SUFFIX} ${linkpath})
+                gmx${BINARY_SUFFIX} ${linkpath})
     endif()
 endforeach ()

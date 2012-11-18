@@ -1,6 +1,6 @@
 add_subdirectory(mdrun)
 if (NOT GMX_FAHCORE)
-    add_subdirectory(g_ana)
+    add_subdirectory(gmx)
     add_subdirectory(g_protonate)
     add_subdirectory(g_x2top)
     add_subdirectory(gmxcheck)
