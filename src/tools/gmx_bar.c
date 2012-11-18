@@ -2598,7 +2598,6 @@ int gmx_bar(int argc,char *argv[])
     double   sum_histrange_err=0.; /* histogram range error */
     double   stat_err=0.; /* statistical error */
     
-    CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
                       PCA_CAN_VIEW,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);

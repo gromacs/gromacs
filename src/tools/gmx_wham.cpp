@@ -2954,8 +2954,6 @@ int gmx_wham(int argc,char *argv[])
     FILE *histout,*profout;
     char ylabel[256],title[256];  
 
-    CopyRight(stderr,argv[0]);
-
     opt.bins=200;
     opt.verbose=FALSE;
     opt.bHistOnly=FALSE;

@@ -681,7 +681,6 @@ int gmx_editconf(int argc, char *argv[])
             { efDAT, "-bf", "bfact", ffOPTRD } };
 #define NFILE asize(fnm)
 
-    CopyRight(stderr, argv[0]);
     parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa,
                       asize(desc), desc, asize(bugs), bugs, &oenv);
 

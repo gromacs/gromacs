@@ -731,7 +731,6 @@ int gmx_genbox(int argc,char *argv[])
       "Keep velocities from input solute and solvent" }
   };
 
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv, PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs,&oenv);
   
