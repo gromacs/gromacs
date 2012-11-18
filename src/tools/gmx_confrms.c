@@ -427,7 +427,6 @@ int gmx_confrms(int argc,char *argv[])
   real    *msds;
 
   
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE | PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   matchndxfile = opt2fn_null("-no",NFILE,fnm);
