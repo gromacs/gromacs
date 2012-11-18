@@ -162,7 +162,6 @@ int gmx_densmap(int argc,char *argv[])
 #define NFILE asize(fnm) 
   int     npargs;
   
-  CopyRight(stderr,argv[0]);
   npargs = asize(pa);
 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,

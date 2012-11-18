@@ -41,20 +41,10 @@ set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" S
 # used to create build rules automatically.
 #
 set(GMX_TOOLS_PROGRAMS
-    do_dssp editconf eneconv genbox genconf genrestr g_nmtraj 
-    make_ndx mk_angndx trjcat trjconv trjorder g_wheel 
-    xpm2ps genion g_anadock make_edi g_analyze g_anaeig
-    g_angle g_bond g_bundle g_chi g_cluster g_confrms g_covar
-    g_current g_density g_densmap g_dih g_dielectric
-    g_helixorient g_principal g_dipoles g_disre
-    g_dyndom g_enemat g_energy g_lie g_filter g_gyrate
-    g_h2order g_hbond g_helix g_mindist g_msd g_morph g_nmeig
-    g_nmens g_order g_kinetics g_polystat g_potential g_rama g_rdf g_rms
-    g_rmsf g_rotacf g_saltbr g_sas g_sgangle g_sham g_sorient
-    g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
-    g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
-    g_pme_error g_rmsdist g_rotmat g_options
-    g_dos    g_hydorder  g_densorder g_dyecoupl g_sans
+    do_dssp
+    make_ndx mk_angndx
+    g_anadock make_edi
+    g_tune_pme g_sigeps g_pme_error
     )
 
 set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
@@ -64,9 +54,7 @@ set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     add_executable(${TOOL} ${TOOL}.c)
-    if (NOT ${TOOL} STREQUAL "g_options")
-        gmx_add_man_page(${TOOL})
-    endif()
+    gmx_add_man_page(${TOOL})
     target_link_libraries(${TOOL} gmxana ${OpenMP_LINKER_FLAGS})
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
