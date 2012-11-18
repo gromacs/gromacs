@@ -494,7 +494,6 @@ int gmx_eneconv(int argc,char *argv[])
       "Stop on errors in the file" }
   };
   
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),
                     pa,asize(desc),desc,asize(bugs),bugs,&oenv);
   tadjust  = 0;

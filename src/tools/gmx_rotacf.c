@@ -110,7 +110,6 @@ int gmx_rotacf(int argc,char *argv[])
 
   output_env_t oenv;
   
-  CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   

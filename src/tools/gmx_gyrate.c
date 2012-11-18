@@ -206,7 +206,6 @@ int gmx_gyrate(int argc,char *argv[])
   int     npargs;
   t_pargs *ppa;
   
-  CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
 

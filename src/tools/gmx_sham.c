@@ -915,8 +915,6 @@ int gmx_sham(int argc,char *argv[])
   int     npargs;
 
   npargs = asize(pa); 
-  
-  CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE ,
 		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL,&oenv); 
 

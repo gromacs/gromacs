@@ -1195,7 +1195,6 @@ int gmx_xpm2ps(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,NPA,pa,
 		    asize(desc),desc,0,NULL,&oenv);

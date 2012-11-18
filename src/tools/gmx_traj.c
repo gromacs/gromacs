@@ -702,7 +702,6 @@ int gmx_traj(int argc,char *argv[])
     };
 #define NFILE asize(fnm)
 
-    CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
                       PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
