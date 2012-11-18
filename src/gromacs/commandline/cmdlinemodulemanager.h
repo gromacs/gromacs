@@ -62,7 +62,7 @@ int
 main(int argc, char *argv[])
 {
     const gmx::ProgramInfo &programInfo =
-        gmx::ProgramInfo::init("g_ana", argc, argv);
+        gmx::ProgramInfo::init("gmx", argc, argv);
     CopyRight(stderr, argv[0]);
     try
     {
