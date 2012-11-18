@@ -301,7 +301,6 @@ int gmx_dos(int argc,char *argv[])
         "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]" 
     };
     
-    CopyRight(stderr,argv[0]);
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs,pa);
     parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,

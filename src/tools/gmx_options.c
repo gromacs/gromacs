@@ -103,7 +103,6 @@ gmx_options(int argc,char *argv[])
   };
 
   output_env_t oenv=NULL;
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,
 		    0,NULL,0,NULL,asize(desc),desc,asize(bugs),bugs,&oenv);
   
