@@ -107,7 +107,6 @@ int gmx_sigeps(int argc,char *argv[])
   int       cur=0;
 #define next (1-cur)
   
-  /* CopyRight(stdout,argv[0]);*/
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,asize(desc),
 		    desc,0,NULL,&oenv);

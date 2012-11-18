@@ -124,7 +124,6 @@ int gmx_genpr(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   
-  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,npargs,pa,
 		    asize(desc),desc,0,NULL,&oenv);
   
