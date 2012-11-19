@@ -48,7 +48,6 @@
 #include "names.h"
 #include "gmx_fatal.h"
 #include "macros.h"
-#include "rdgroup.h"
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"

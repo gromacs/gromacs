@@ -52,7 +52,6 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
 #include "pdbio.h"
 #include "confio.h"
 #include "tpxio.h"

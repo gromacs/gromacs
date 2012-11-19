@@ -42,6 +42,7 @@
 #include "gmx_fatal.h"
 #include "mdrun.h"
 #include "md_support.h"
+#include "md_logging.h"
 #include "types/iteratedconstraints.h"
 
 #ifdef GMX_DOUBLE
