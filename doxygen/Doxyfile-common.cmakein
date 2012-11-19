@@ -10,6 +10,8 @@ EXCLUDE                = @CMAKE_SOURCE_DIR@/src/contrib \
                          @CMAKE_SOURCE_DIR@/src/gromacs/legacyheaders/thread_mpi/atomic \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
 EXCLUDE_SYMBOLS        = YY* yy* _gmx_sel_yy*
+EXCLUDE_SYMBOLS       += TEST TEST_F TEST_P INSTANTIATE_TEST_CASE_P
+EXCLUDE_SYMBOLS       += MOCK_METHOD* MOCK_CONST_METHOD*
 FULL_PATH_NAMES        = YES
 STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@
 STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src

@@ -219,7 +219,7 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
 void write_pdbfile_indexed(FILE *out,const char *title,
 			   t_atoms *atoms,rvec x[],
 			   int ePBC,matrix box,char chainid,
-			   int model_nr, atom_id nindex, atom_id index[],
+			   int model_nr, atom_id nindex, const atom_id index[],
 			   gmx_conect conect, gmx_bool bTerSepChains)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
@@ -361,6 +361,8 @@ void write_pdbfile_indexed(FILE *out,const char *title,
       fprintf(out,"CONECT%5d%5d\n",gc->conect[i].ai+1,gc->conect[i].aj+1);
     }
   }
+
+  gmx_residuetype_destroy(rt);
 }
 
 void write_pdbfile(FILE *out,const char *title, t_atoms *atoms,rvec x[],
@@ -505,6 +507,7 @@ static int read_atom(t_symtab *symtab,
   for(k=0; (k<4); k++,j++) anm[k]=line[j];
   anm[k]=nc;
   strcpy(anm_copy,anm);
+  rtrim(anm_copy);
   atomnumber = NOTSET;
   trim(anm);
   altloc=line[j];

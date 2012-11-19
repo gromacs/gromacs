@@ -46,15 +46,11 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <string.h>
 
-#include "maths.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
@@ -67,6 +63,9 @@
 #include "mempool.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+
+using gmx::SelectionTreeElement;
+using gmx::SelectionTreeElementPointer;
 
 namespace
 {
@@ -83,7 +82,7 @@ class MempoolSelelemReserver
 {
     public:
         //! Constructs a reserver without initial reservation.
-        MempoolSelelemReserver() : sel_(NULL) {}
+        MempoolSelelemReserver() {}
         /*! \brief
          * Constructs a reserver with initial reservation.
          *
@@ -92,17 +91,16 @@ class MempoolSelelemReserver
          *
          * \see reserve()
          */
-        MempoolSelelemReserver(t_selelem *sel, int count)
-            : sel_(NULL)
+        MempoolSelelemReserver(const SelectionTreeElementPointer &sel, int count)
         {
             reserve(sel, count);
         }
         //! Frees any memory allocated using this reserver.
         ~MempoolSelelemReserver()
         {
-            if (sel_ != NULL)
+            if (sel_)
             {
-                _gmx_selelem_mempool_release(sel_);
+                sel_->mempoolRelease();
             }
         }
 
@@ -117,15 +115,16 @@ class MempoolSelelemReserver
          * memory pool.  Type of values to allocate is automatically determined
          * from \p sel.
          */
-        void reserve(t_selelem *sel, int count)
+        void reserve(const SelectionTreeElementPointer &sel, int count)
         {
-            GMX_RELEASE_ASSERT(sel_ == NULL, "Can only reserve one element with one instance");
-            _gmx_selelem_mempool_reserve(sel, count);
+            GMX_RELEASE_ASSERT(!sel_,
+                    "Can only reserve one element with one instance");
+            sel->mempoolReserve(count);
             sel_ = sel;
         }
 
     private:
-        t_selelem              *sel_;
+        SelectionTreeElementPointer     sel_;
 };
 
 /*! \internal \brief
@@ -191,7 +190,7 @@ class SelelemTemporaryValueAssigner
     public:
         //! Constructs an assigner without an initial assignment.
         SelelemTemporaryValueAssigner()
-            : sel_(NULL), old_ptr_(NULL), old_nalloc_(0)
+            : old_ptr_(NULL), old_nalloc_(0)
         {
         }
         /*! \brief
@@ -202,15 +201,15 @@ class SelelemTemporaryValueAssigner
          *
          * \see assign()
          */
-        SelelemTemporaryValueAssigner(t_selelem *sel, t_selelem *vsource)
-            : sel_(NULL)
+        SelelemTemporaryValueAssigner(const SelectionTreeElementPointer &sel,
+                                      const SelectionTreeElement &vsource)
         {
             assign(sel, vsource);
         }
         //! Undoes any temporary assignment done using this assigner.
         ~SelelemTemporaryValueAssigner()
         {
-            if (sel_ != NULL)
+            if (sel_)
             {
                 _gmx_selvalue_setstore_alloc(&sel_->v, old_ptr_, old_nalloc_);
             }
@@ -226,22 +225,23 @@ class SelelemTemporaryValueAssigner
          * \p vsource, i.e., any access/modification to values in \p sel
          * actually accesses values in \p vsource.
          */
-        void assign(t_selelem *sel, t_selelem *vsource)
+        void assign(const SelectionTreeElementPointer &sel,
+                    const SelectionTreeElement &vsource)
         {
-            GMX_RELEASE_ASSERT(sel_ == NULL,
+            GMX_RELEASE_ASSERT(!sel_,
                                "Can only assign one element with one instance");
-            GMX_RELEASE_ASSERT(sel->v.type == vsource->v.type,
+            GMX_RELEASE_ASSERT(sel->v.type == vsource.v.type,
                                "Mismatching selection value types");
             old_ptr_ = sel->v.u.ptr;
             old_nalloc_ = sel->v.nalloc;
-            _gmx_selvalue_setstore(&sel->v, vsource->v.u.ptr);
+            _gmx_selvalue_setstore(&sel->v, vsource.v.u.ptr);
             sel_ = sel;
         }
 
     private:
-        t_selelem              *sel_;
-        void                   *old_ptr_;
-        int                     old_nalloc_;
+        SelectionTreeElementPointer     sel_;
+        void                           *old_ptr_;
+        int                             old_nalloc_;
 };
 
 } // namespace
@@ -251,7 +251,7 @@ class SelelemTemporaryValueAssigner
  * \param[in] evalfunc Function pointer to print.
  */
 void
-_gmx_sel_print_evalfunc_name(FILE *fp, sel_evalfunc evalfunc)
+_gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc)
 {
     if (!evalfunc)
         fprintf(fp, "none");
@@ -317,7 +317,7 @@ _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
  * The \ref SEL_EVALFRAME flag is cleared for all elements.
  */
 static void
-init_frame_eval(t_selelem *sel)
+init_frame_eval(SelectionTreeElementPointer sel)
 {
     while (sel)
     {
@@ -364,11 +364,10 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
 {
     gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
     gmx_sel_evaluate_t  data;
-    t_selelem          *sel;
 
     _gmx_sel_evaluate_init(&data, sc->mempool, &sc->gall, sc->top, fr, pbc);
     init_frame_eval(sc->root);
-    sel = sc->root;
+    SelectionTreeElementPointer sel = sc->root;
     while (sel)
     {
         /* Clear the evaluation group of subexpressions */
@@ -431,12 +430,11 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
  * Evaluates each child of \p sel in \p g.
  */
 void
-_gmx_sel_evaluate_children(gmx_sel_evaluate_t *data, t_selelem *sel,
+_gmx_sel_evaluate_children(gmx_sel_evaluate_t *data,
+                           const SelectionTreeElementPointer &sel,
                            gmx_ana_index_t *g)
 {
-    t_selelem  *child;
-
-    child = sel->child;
+    SelectionTreeElementPointer child = sel->child;
     while (child)
     {
         if (child->evaluate)
@@ -459,11 +457,13 @@ _gmx_sel_evaluate_children(gmx_sel_evaluate_t *data, t_selelem *sel,
  * The value of \p sel is not touched (root elements do not evaluate to
  * values).
  *
- * This function can be used as \c t_selelem::evaluate for \ref SEL_ROOT
- * elements.
+ * This function can be used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_ROOT elements.
  */
 void
-_gmx_sel_evaluate_root(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_root(gmx_sel_evaluate_t *data,
+                       const SelectionTreeElementPointer &sel,
+                       gmx_ana_index_t *g)
 {
     if (sel->u.cgrp.isize == 0 || !sel->child->evaluate)
     {
@@ -482,11 +482,13 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t
  *
  * Sets the value of \p sel to the intersection of \p g and \p sel->u.cgrp.
  *
- * This function can be used as \c t_selelem::evaluate for \ref SEL_CONST
- * elements with value type \ref GROUP_VALUE.
+ * This function can be used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_CONST elements with value type \ref GROUP_VALUE.
  */
 void
-_gmx_sel_evaluate_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_static(gmx_sel_evaluate_t *data,
+                         const SelectionTreeElementPointer &sel,
+                         gmx_ana_index_t *g)
 {
     gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
 }
@@ -506,12 +508,14 @@ _gmx_sel_evaluate_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index
  * The compiler has taken care that the child actually stores the evaluated
  * value in the value pointer of this element.
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_SUBEXPR
- * elements that are used only once, and hence do not need full subexpression
- * handling.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_SUBEXPR elements that are used only once, and hence do not need
+ * full subexpression handling.
  */
 void
-_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data,
+                                 const SelectionTreeElementPointer &sel,
+                                 gmx_ana_index_t *g)
 {
     if (sel->child->evaluate)
     {
@@ -532,18 +536,27 @@ _gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_a
  * value in the value pointer of this element.
  * Assumes that \p g is persistent for the duration of the whole evaluation.
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_SUBEXPR
- * elements that have a static evaluation group, and hence do not need full
- * subexpression handling.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_SUBEXPR elements that have a static evaluation group, and hence do
+ * not need full subexpression handling.
  */
 void
-_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data,
+                                     const SelectionTreeElementPointer &sel,
+                                     gmx_ana_index_t *g)
 {
     if (sel->u.cgrp.isize == 0)
     {
         sel->child->evaluate(data, sel->child, g);
         sel->v.nr = sel->child->v.nr;
-        gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
+        if (!g)
+        {
+            sel->u.cgrp.isize = -1;
+        }
+        else
+        {
+            gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
+        }
     }
 }
 
@@ -568,7 +581,9 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, g
  * major problem.
  */
 void
-_gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data,
+                          const SelectionTreeElementPointer &sel,
+                          gmx_ana_index_t *g)
 {
     gmx_ana_index_t  gmiss;
 
@@ -576,7 +591,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
     if (sel->u.cgrp.isize == 0)
     {
         {
-            SelelemTemporaryValueAssigner assigner(sel->child, sel);
+            SelelemTemporaryValueAssigner assigner(sel->child, *sel);
             sel->child->evaluate(data, sel->child, g);
         }
         /* We need to keep the name for the cgrp across the copy to avoid
@@ -590,6 +605,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
     {
         gmissreserver.reserve(&gmiss, g->isize);
         gmx_ana_index_difference(&gmiss, g, &sel->u.cgrp);
+        gmiss.name = NULL;
     }
     if (gmiss.isize > 0)
     {
@@ -616,11 +632,11 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->v.u.i[k] = sel->v.u.i[j--];
+                            sel->v.u.i[k] = sel->child->v.u.i[j--];
                         }
                         else
                         {
-                            sel->v.u.i[k] = sel->child->v.u.i[i--];
+                            sel->v.u.i[k] = sel->v.u.i[i--];
                         }
                     }
                     break;
@@ -630,25 +646,27 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->v.u.r[k] = sel->v.u.r[j--];
+                            sel->v.u.r[k] = sel->child->v.u.r[j--];
                         }
                         else
                         {
-                            sel->v.u.r[k] = sel->child->v.u.r[i--];
+                            sel->v.u.r[k] = sel->v.u.r[i--];
                         }
                     }
                     break;
 
                 case STR_VALUE:
+                    // Note: with the currently allowed syntax, this case is never
+                    // reached.
                     for (k = sel->u.cgrp.isize + gmiss.isize - 1; k >= 0; k--)
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->v.u.s[k] = sel->v.u.s[j--];
+                            sel->v.u.s[k] = sel->child->v.u.s[j--];
                         }
                         else
                         {
-                            sel->v.u.s[k] = sel->child->v.u.s[i--];
+                            sel->v.u.s[k] = sel->v.u.s[i--];
                         }
                     }
                     break;
@@ -676,11 +694,14 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
  * memory as the value pointer of this element to avoid copying, and then
  * evaluates evaluates the child.
  *
- * This function is used as \c t_selelem:evaluate for \ref SEL_SUBEXPRREF
- * elements for which the \ref SEL_SUBEXPR does not have other references.
+ * This function is used as gmx::SelectionTreeElement:evaluate for
+ * \ref SEL_SUBEXPRREF elements for which the \ref SEL_SUBEXPR does not have
+ * other references.
  */
 void
-_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data,
+                                    const SelectionTreeElementPointer &sel,
+                                    gmx_ana_index_t *g)
 {
     if (g)
     {
@@ -713,20 +734,21 @@ _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gm
  * group \p g, and the value of the child is then copied.
  * There should be only one child element.
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_SUBEXPRREF
- * elements.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_SUBEXPRREF elements.
  */
 void
-_gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data,
+                             const SelectionTreeElementPointer &sel,
+                             gmx_ana_index_t *g)
 {
-    t_selelem *expr;
     int        i, j;
 
     if (g)
     {
         sel->child->evaluate(data, sel->child, g);
     }
-    expr = sel->child;
+    const SelectionTreeElementPointer &expr = sel->child;
     switch (sel->v.type)
     {
         case INT_VALUE:
@@ -837,15 +859,15 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_i
  * Evaluates each child of a \ref SEL_EXPRESSION element.
  * The value of \p sel is not touched.
  *
- * This function is not used as \c t_selelem::evaluate,
+ * This function is not used as gmx::SelectionTreeElement::evaluate,
  * but is used internally.
  */
 void
-_gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data,
+                                const SelectionTreeElementPointer &sel,
+                                gmx_ana_index_t *g)
 {
-    t_selelem *child;
-
-    child = sel->child;
+    SelectionTreeElementPointer child = sel->child;
     while (child)
     {
         if (child->evaluate && !(child->flags & SEL_EVALFRAME))
@@ -878,11 +900,13 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_an
  * the positions are also updated, and sel_updatefunc_pos() is used to
  * evaluate the value. Otherwise, sel_updatefunc() is used.
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_EXPRESSION
- * elements.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_EXPRESSION elements.
  */
 void
-_gmx_sel_evaluate_method(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_method(gmx_sel_evaluate_t *data,
+                         const SelectionTreeElementPointer &sel,
+                         gmx_ana_index_t *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
     if (sel->flags & SEL_INITFRAME)
@@ -918,11 +942,13 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index
  * the frame, sel_framefunc() callback is called if one is provided.
  * The modifier is then evaluated using sel_updatefunc_pos().
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_MODIFIER
- * elements.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_MODIFIER elements.
  */
 void
-_gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data,
+                           const SelectionTreeElementPointer &sel,
+                           gmx_ana_index_t *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
     if (sel->flags & SEL_INITFRAME)
@@ -957,11 +983,13 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_ind
  * \p g, and then sets the value of \p sel to the complement of the 
  * child value.
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_BOOLEAN
- * elements with \ref BOOL_NOT.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_BOOLEAN elements with \ref BOOL_NOT.
  */
 void
-_gmx_sel_evaluate_not(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_not(gmx_sel_evaluate_t *data,
+                      const SelectionTreeElementPointer &sel,
+                      gmx_ana_index_t *g)
 {
     MempoolSelelemReserver reserver(sel->child, g->isize);
     sel->child->evaluate(data, sel->child, g);
@@ -990,15 +1018,15 @@ _gmx_sel_evaluate_not(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
  * of the constant group
  * (currently, the compiler never detects this).
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_BOOLEAN
- * elements with \ref BOOL_AND.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_BOOLEAN elements with \ref BOOL_AND.
  */
 void
-_gmx_sel_evaluate_and(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_and(gmx_sel_evaluate_t *data,
+                      const SelectionTreeElementPointer &sel,
+                      gmx_ana_index_t *g)
 {
-    t_selelem *child;
-
-    child = sel->child;
+    SelectionTreeElementPointer child = sel->child;
     /* Skip the first child if it does not have an evaluation function. */
     if (!child->evaluate)
     {
@@ -1043,16 +1071,17 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
  * In this case, the compiler has taken care of that the child value is a
  * subset of \p g, making it unnecessary to evaluate it.
  *
- * This function is used as \c t_selelem::evaluate for \ref SEL_BOOLEAN
- * elements with \ref BOOL_OR.
+ * This function is used as gmx::SelectionTreeElement::evaluate for
+ * \ref SEL_BOOLEAN elements with \ref BOOL_OR.
  */
 void
-_gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_or(gmx_sel_evaluate_t *data,
+                     const SelectionTreeElementPointer &sel,
+                     gmx_ana_index_t *g)
 {
-    t_selelem     *child;
     gmx_ana_index_t  tmp, tmp2;
 
-    child = sel->child;
+    SelectionTreeElementPointer child = sel->child;
     if (child->evaluate)
     {
         MempoolSelelemReserver reserver(child, g->isize);
@@ -1092,20 +1121,21 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *
  * \returns   0 on success, a non-zero error code on error.
  */
 void
-_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
+_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data,
+                             const SelectionTreeElementPointer &sel,
                              gmx_ana_index_t *g)
 {
     int         n, i, i1, i2;
     real        lval, rval=0., val=0.;
 
-    t_selelem  *const left  = sel->child;
-    t_selelem  *const right = left->next;
+    const SelectionTreeElementPointer &left  = sel->child;
+    const SelectionTreeElementPointer &right = left->next;
 
     SelelemTemporaryValueAssigner assigner;
     MempoolSelelemReserver reserver;
     if (left->mempool)
     {
-        assigner.assign(left, sel);
+        assigner.assign(left, *sel);
         if (right)
         {
             reserver.reserve(right, g->isize);
@@ -1113,7 +1143,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
     }
     else if (right && right->mempool)
     {
-        assigner.assign(right, sel);
+        assigner.assign(right, *sel);
     }
     _gmx_sel_evaluate_children(data, sel, g);
 

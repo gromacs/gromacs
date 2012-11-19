@@ -37,20 +37,21 @@
  */
 #include "select.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
-#include <cstdio>
 #include <string>
 #include <vector>
 
-#include "gmxfio.h"
+#include "gromacs/legacyheaders/gmxfio.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -59,6 +60,7 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -83,6 +85,11 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
 
         //! Sets the file name to write the index file to.
         void setFileName(const std::string &fnm);
+        /*! \brief
+         * Adds information about a group to be printed.
+         *
+         * Must be called for each group present in the input data.
+         */
         void addGroup(const std::string &name, bool bDynamic);
 
         virtual int flags() const;
@@ -187,6 +194,8 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
     if (points.firstColumn() == 0)
     {
         ++currentGroup_;
+        GMX_RELEASE_ASSERT(currentGroup_ < static_cast<int>(groups_.size()),
+                           "Too few groups initialized");
         if (bFirstFrame || groups_[currentGroup_].bDynamic)
         {
             if (!bFirstFrame || currentGroup_ > 0)
@@ -245,8 +254,9 @@ const char Select::shortDescription[] =
 
 Select::Select()
     : TrajectoryAnalysisModule(name, shortDescription),
+      selOpt_(NULL),
       bDump_(false), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
-      top_(NULL)
+      top_(NULL), occupancyModule_(new AnalysisDataAverageModule())
 {
     registerAnalysisDataset(&sdata_, "size");
     registerAnalysisDataset(&cdata_, "cfrac");
@@ -254,6 +264,8 @@ Select::Select()
     idata_.setMultipoint(true);
     registerAnalysisDataset(&idata_, "index");
     registerAnalysisDataset(&mdata_, "mask");
+    occupancyModule_->setXAxis(1.0, 1.0);
+    registerBasicDataset(occupancyModule_.get(), "occupancy");
 }
 
 
@@ -310,28 +322,48 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "one frame, and contains either 0/1 for each atom/residue/molecule",
         "possibly selected. 1 stands for the atom/residue/molecule being",
         "selected for the current frame, 0 for not selected.",
-        "With [TT]-dump[tt], the frame time is omitted from the output."
+        "With [TT]-dump[tt], the frame time is omitted from the output.[PAR]",
+        "With [TT]-of[tt], the occupancy fraction of each position (i.e.,",
+        "the fraction of frames where the position is selected) is",
+        "printed.[PAR]",
+        "With [TT]-ofpdb[tt], a PDB file is written out where the occupancy",
+        "column is filled with the occupancy fraction of each atom in the",
+        "selection. The coordinates in the PDB file will be those from the",
+        "input topology. [TT]-pdbatoms[tt] can be used to control which atoms",
+        "appear in the output PDB file: with [TT]all[tt] all atoms are",
+        "present, with [TT]maxsel[tt] all atoms possibly selected by the",
+        "selection are present, and with [TT]selected[tt] only atoms that are",
+        "selected at least in one frame are present.[PAR]",
+        "With [TT]-om[tt], [TT]-of[tt] and [TT]-ofpdb[tt], only one selection",
+        "can be provided. [TT]-om[tt] and [TT]-of[tt] only accept dynamic",
+        "selections."
     };
 
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
-                           .store(&fnSize_).defaultValueIfSet("size")
+                           .store(&fnSize_).defaultBasename("size")
                            .description("Number of positions in each selection"));
     options->addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
-                           .store(&fnFrac_).defaultValueIfSet("frac")
+                           .store(&fnFrac_).defaultBasename("cfrac")
                            .description("Covered fraction for each selection"));
     options->addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
-                           .store(&fnIndex_).defaultValueIfSet("index")
+                           .store(&fnIndex_).defaultBasename("index")
                            .description("Indices selected by each selection"));
     options->addOption(FileNameOption("on").filetype(eftIndex).outputFile()
-                           .store(&fnNdx_).defaultValueIfSet("index")
+                           .store(&fnNdx_).defaultBasename("index")
                            .description("Index file from the selection"));
     options->addOption(FileNameOption("om").filetype(eftPlot).outputFile()
-                           .store(&fnMask_).defaultValueIfSet("mask")
+                           .store(&fnMask_).defaultBasename("mask")
                            .description("Mask for selected positions"));
+    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile()
+                           .store(&fnOccupancy_).defaultBasename("occupancy")
+                           .description("Occupied fraction for selected positions"));
+    options->addOption(FileNameOption("ofpdb").filetype(eftPDB).outputFile()
+                           .store(&fnPDB_).defaultBasename("occupancy")
+                           .description("PDB file with occupied fraction for selected positions"));
 
-    options->addOption(SelectionOption("select").storeVector(&sel_)
+    selOpt_ = options->addOption(SelectionOption("select").storeVector(&sel_)
         .required().multiValue()
         .description("Selections to analyze"));
 
@@ -344,17 +376,37 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     const char *const cResNumberEnum[] = { "number", "index", NULL };
     options->addOption(StringOption("resnr").store(&resNumberType_)
         .enumValue(cResNumberEnum).defaultEnumIndex(0)
-        .description("Residue number output type"));
+        .description("Residue number output type with -oi and -on"));
+    const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected", NULL };
+    options->addOption(StringOption("pdbatoms").store(&pdbAtoms_)
+        .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
+        .description("Atoms to write with -ofpdb"));
 }
 
+void
+Select::optionsFinished(Options * /*options*/,
+                        TrajectoryAnalysisSettings *settings)
+{
+    if (!fnPDB_.empty())
+    {
+        settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
+        settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
+    }
+    if ((!fnIndex_.empty() && bDump_)
+        || !fnMask_.empty() || !fnOccupancy_.empty() || !fnPDB_.empty())
+    {
+        selOpt_->setValueCount(1);
+    }
+}
 
 void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
                      const TopologyInformation &top)
 {
-    if (!fnIndex_.empty() && bDump_ && sel_.size() > 1U)
+    if (!sel_[0].isDynamic() && (!fnMask_.empty() || !fnOccupancy_.empty()))
     {
-        GMX_THROW(InconsistentInputError("With -oi and -dump, there can be only one selection"));
+        GMX_THROW(InconsistentInputError(
+                    "-om or -of are not meaningful with a static selection"));
     }
     bResInd_ = (resNumberType_ == "index");
 
@@ -424,32 +476,32 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     mdata_.setColumnCount(sel_[0].posCount());
+    mdata_.addModule(occupancyModule_);
     if (!fnMask_.empty())
     {
-        if (sel_.size() > 1U)
-        {
-            fprintf(stderr, "WARNING: the mask (-om) will only be written for the first group\n");
-        }
-        if (!sel_[0].isDynamic())
-        {
-            fprintf(stderr, "WARNING: will not write the mask (-om) for a static selection\n");
-        }
-        else
-        {
-            AnalysisDataPlotModulePointer plot(
-                new AnalysisDataPlotModule(settings.plotSettings()));
-            plot->setFileName(fnMask_);
-            plot->setPlainOutput(bDump_);
-            plot->setOmitX(bDump_);
-            plot->setTitle("Selection mask");
-            plot->setXAxisIsTime();
-            plot->setYLabel("Occupancy");
-            plot->setYFormat(1, 0);
-            mdata_.addModule(plot);
-        }
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
+        plot->setFileName(fnMask_);
+        plot->setPlainOutput(bDump_);
+        plot->setOmitX(bDump_);
+        plot->setTitle("Selection mask");
+        plot->setXAxisIsTime();
+        plot->setYLabel("Occupancy");
+        plot->setYFormat(1, 0);
+        mdata_.addModule(plot);
+    }
+    if (!fnOccupancy_.empty())
+    {
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
+        plot->setFileName(fnOccupancy_);
+        plot->setTitle("Fraction of time selection matches");
+        plot->setXLabel("Selected position");
+        plot->setYLabel("Occupied fraction");
+        occupancyModule_->addColumnModule(0, 1, plot);
     }
 
-    top_ = top.topology();
+    top_ = &top;
 }
 
 
@@ -462,6 +514,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     AnalysisDataHandle idh = pdata->dataHandle(idata_);
     AnalysisDataHandle mdh = pdata->dataHandle(mdata_);
     const SelectionList &sel = pdata->parallelSelections(sel_);
+    t_topology *top = top_->topology();
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -492,7 +545,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             const SelectionPosition &p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setPoint(1, top_->atoms.resinfo[p.mappedId()].nr);
+                idh.setPoint(1, top->atoms.resinfo[p.mappedId()].nr);
             }
             else
             {
@@ -525,6 +578,81 @@ Select::finishAnalysis(int /*nframes*/)
 void
 Select::writeOutput()
 {
+    if (!fnPDB_.empty())
+    {
+        GMX_RELEASE_ASSERT(top_->hasTopology(),
+                "Topology should have been loaded or an error given earlier");
+        t_atoms atoms;
+        atoms = top_->topology()->atoms;
+        t_pdbinfo *pdbinfo;
+        snew(pdbinfo, atoms.nr);
+        scoped_ptr_sfree pdbinfoGuard(pdbinfo);
+        if (atoms.pdbinfo != NULL)
+        {
+            std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
+        }
+        atoms.pdbinfo = pdbinfo;
+        for (int i = 0; i < atoms.nr; ++i)
+        {
+            pdbinfo[i].occup = 0.0;
+        }
+        for (int i = 0; i < sel_[0].posCount(); ++i)
+        {
+            ConstArrayRef<int> atomIndices = sel_[0].position(i).atomIndices();
+            ConstArrayRef<int>::const_iterator ai;
+            for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
+            {
+                pdbinfo[*ai].occup = occupancyModule_->average(i);
+            }
+        }
+
+        t_trxframe fr;
+        clear_trxframe(&fr, TRUE);
+        fr.bAtoms = TRUE;
+        fr.atoms  = &atoms;
+        fr.bX     = TRUE;
+        fr.bBox   = TRUE;
+        top_->getTopologyConf(&fr.x, fr.box);
+
+        if (pdbAtoms_ == "all")
+        {
+            t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+            write_trxframe(status, &fr, NULL);
+            close_trx(status);
+        }
+        else if (pdbAtoms_ == "maxsel")
+        {
+            ConstArrayRef<int> atomIndices = sel_[0].atomIndices();
+            t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+            write_trxframe_indexed(status, &fr, atomIndices.size(),
+                                   atomIndices.data(), NULL);
+            close_trx(status);
+        }
+        else if (pdbAtoms_ == "selected")
+        {
+            std::vector<int> indices;
+            for (int i = 0; i < sel_[0].posCount(); ++i)
+            {
+                if (occupancyModule_->average(i) > 0)
+                {
+                    ConstArrayRef<int> atomIndices = sel_[0].position(i).atomIndices();
+                    ConstArrayRef<int>::const_iterator ai;
+                    for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
+                    {
+                        indices.push_back(*ai);
+                    }
+                }
+            }
+            t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+            write_trxframe_indexed(status, &fr, indices.size(), &indices[0], NULL);
+            close_trx(status);
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false,
+                    "Mismatch between -pdbatoms enum values and implementation");
+        }
+    }
 }
 
 } // namespace analysismodules

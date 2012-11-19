@@ -131,6 +131,16 @@ std::string concatenateStrings(const char *const *sarray, size_t count)
 namespace
 {
 
+/*! \brief
+ * Common implementation for string replacement functions.
+ *
+ * \param[in] input  Input string.
+ * \param[in] from   String to find.
+ * \param[in] to     String to use to replace \p from.
+ * \param[in] bWholeWords  Whether to only consider matches to whole words.
+ * \returns   \p input with all occurrences of \p from replaced with \p to.
+ * \throws    std::bad_alloc if out of memory.
+ */
 std::string
 replaceInternal(const std::string &input, const char *from, const char *to,
                 bool bWholeWords)
@@ -177,71 +187,83 @@ replaceAllWords(const std::string &input, const char *from, const char *to)
     return replaceInternal(input, from, to, true);
 }
 
+
 /********************************************************************
- * TextLineWrapper::Impl
+ * TextLineWrapperSettings
  */
 
-/*! \internal \brief
- * Private implementation class for TextLineWrapper.
- *
- * \ingroup module_utility
- */
-class TextLineWrapper::Impl
+TextLineWrapperSettings::TextLineWrapperSettings()
+    : maxLength_(0), indent_(0), firstLineIndent_(-1),
+      bStripLeadingWhitespace_(true), continuationChar_('\0')
 {
-    public:
-        //! Initialize default values for the wrapper.
-        Impl() : maxLength_(0) {}
+}
 
-        /*! \brief
-         * Helper method to find the next wrapped line.
-         *
-         * \param[in]     input         Full input string.
-         * \param[in,out] lineStartPtr
-         *      Index of first character for the line to wrap.
-         *      On exit, index of the first character of the next line.
-         * \returns   Next output line.
-         */
-        std::string wrapNextLine(const std::string &input,
-                                 size_t *lineStartPtr) const;
 
-        //! Maximum length of output lines, or <= 0 if no limit.
-        int                     maxLength_;
-};
+/********************************************************************
+ * TextLineWrapper
+ */
+
+size_t
+TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
+{
+    size_t inputLength = std::strlen(input);
+    bool bFirstLine = (lineStart == 0 || input[lineStart - 1] == '\n');
+    // Ignore leading whitespace if necessary.
+    if (!bFirstLine || settings_.bStripLeadingWhitespace_)
+    {
+        lineStart += std::strspn(input + lineStart, " ");
+        if (lineStart >= inputLength)
+        {
+            return inputLength;
+        }
+    }
+
+    int indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
+    size_t lastAllowedBreakPoint
+        = (settings_.lineLength() > 0
+           ? std::min(lineStart + settings_.lineLength() - indent, inputLength)
+           : inputLength);
+    // Ignore trailing whitespace.
+    lastAllowedBreakPoint += std::strspn(input + lastAllowedBreakPoint, " ");
+    size_t lineEnd = lineStart;
+    do
+    {
+        const char *nextBreakPtr = std::strpbrk(input + lineEnd, " \n");
+        size_t nextBreak
+            = (nextBreakPtr != NULL ? nextBreakPtr - input : inputLength);
+        if (nextBreak > lastAllowedBreakPoint && lineEnd > lineStart)
+        {
+            break;
+        }
+        lineEnd = nextBreak + 1;
+    }
+    while (lineEnd < lastAllowedBreakPoint && input[lineEnd - 1] != '\n');
+    return (lineEnd < inputLength ? lineEnd : inputLength);
+}
+
+size_t
+TextLineWrapper::findNextLine(const std::string &input, size_t lineStart) const
+{
+    return findNextLine(input.c_str(), lineStart);
+}
 
 std::string
-TextLineWrapper::Impl::wrapNextLine(const std::string &input,
-                                    size_t *lineStartPtr) const
+TextLineWrapper::formatLine(const std::string &input,
+                            size_t lineStart, size_t lineEnd) const
 {
-    // Strip leading whitespace.
-    size_t lineStart = input.find_first_not_of(' ', *lineStartPtr);
-    if (lineStart == std::string::npos)
+    size_t inputLength = input.length();
+    bool bFirstLine = (lineStart == 0 || input[lineStart - 1] == '\n');
+    // Strip leading whitespace if necessary.
+    if (!bFirstLine || settings_.bStripLeadingWhitespace_)
     {
-        *lineStartPtr = lineStart;
-        return std::string();
-    }
-
-    size_t lineEnd = std::string::npos;
-    size_t nextNewline
-        = std::min(input.find('\n', lineStart), input.length());
-    if (maxLength_ <= 0 || nextNewline <= lineStart + maxLength_)
-    {
-        lineEnd = nextNewline;
-    }
-    else
-    {
-        size_t bestSpace = input.rfind(' ', lineStart + maxLength_);
-        if (bestSpace < lineStart || bestSpace == std::string::npos)
+        lineStart = input.find_first_not_of(' ', lineStart);
+        if (lineStart >= inputLength)
         {
-            bestSpace = input.find(' ', lineStart);
+            return std::string();
         }
-        lineEnd = std::min(bestSpace, nextNewline);
     }
-
-    if (lineEnd == std::string::npos)
-    {
-        lineEnd = input.length();
-    }
-    *lineStartPtr = lineEnd + 1;
+    int indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
+    bool bContinuation = (lineEnd < inputLength && input[lineEnd - 1] != '\n');
     // Strip trailing whitespace.
     while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
     {
@@ -249,26 +271,14 @@ TextLineWrapper::Impl::wrapNextLine(const std::string &input,
     }
 
     size_t lineLength = lineEnd - lineStart;
-    return input.substr(lineStart, lineLength);
-}
-
-/********************************************************************
- * TextLineWrapper
- */
-
-TextLineWrapper::TextLineWrapper()
-    : impl_(new Impl)
-{
-}
-
-TextLineWrapper::~TextLineWrapper()
-{
-}
-
-TextLineWrapper &TextLineWrapper::setLineLength(int length)
-{
-    impl_->maxLength_ = length;
-    return *this;
+    std::string result(indent, ' ');
+    result.append(input, lineStart, lineLength);
+    if (bContinuation && settings_.continuationChar_ != '\0')
+    {
+        result.append(1, ' ');
+        result.append(1, settings_.continuationChar_);
+    }
+    return result;
 }
 
 std::string
@@ -279,12 +289,14 @@ TextLineWrapper::wrapToString(const std::string &input) const
     size_t length = input.length();
     while (lineStart < length)
     {
-        result.append(impl_->wrapNextLine(input, &lineStart));
-        if (lineStart < length
-            || (lineStart == length && input[length - 1] == '\n'))
+        size_t nextLineStart = findNextLine(input, lineStart);
+        result.append(formatLine(input, lineStart, nextLineStart));
+        if (nextLineStart < length
+            || (nextLineStart == length && input[length - 1] == '\n'))
         {
             result.append("\n");
         }
+        lineStart = nextLineStart;
     }
     return result;
 }
@@ -294,9 +306,12 @@ TextLineWrapper::wrapToVector(const std::string &input) const
 {
     std::vector<std::string> result;
     size_t lineStart = 0;
-    while (lineStart < input.length())
+    size_t length = input.length();
+    while (lineStart < length)
     {
-        result.push_back(impl_->wrapNextLine(input, &lineStart));
+        size_t nextLineStart = findNextLine(input, lineStart);
+        result.push_back(formatLine(input, lineStart, nextLineStart));
+        lineStart = nextLineStart;
     }
     return result;
 }

@@ -118,7 +118,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
 
 
         virtual void clearSet();
-        /*! \copydoc AbstractOptionStorage::convertValue()
+        /*! \copydoc gmx::AbstractOptionStorage::convertValue()
          *
          * Derived classes should call addValue() after they have converted
          * \p value to the storage type.  It is allowed to call addValue()
@@ -143,7 +143,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual void processSetValues(ValueList *values)
         {
         }
-        /*! \copydoc AbstractOptionStorage::processSet()
+        /*! \copydoc gmx::AbstractOptionStorage::processSet()
          *
          * OptionStorageTemplate implements transaction support for a set of
          * values in this method (see the class description), and provides a
@@ -153,7 +153,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * necessary.
          */
         virtual void processSet();
-        /*! \copydoc AbstractOptionStorage::processAll()
+        /*! \copydoc gmx::AbstractOptionStorage::processAll()
          *
          * The implementation in OptionStorageTemplate does nothing.
          */
@@ -447,6 +447,7 @@ void OptionStorageTemplate<T>::setDefaultValue(const T &value)
     }
     if (hasFlag(efOption_HasDefaultValue))
     {
+        setFlag(efOption_ExplicitDefaultValue);
         clear();
         clearSet();
         addValue(value);

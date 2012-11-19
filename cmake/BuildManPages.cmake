@@ -54,12 +54,12 @@ function (gmx_add_man_page EXENAME)
         add_custom_command(TARGET ${EXENAME} POST_BUILD 
             #The redirect is a hack to avoid showing copyright. 
             #Ideally -quiet would also cause programs to not print copyright.
-            COMMAND ${EXENAME} -quiet -man nroff 2>${EXENAME}.err
             COMMAND ${CMAKE_COMMAND} -DINFILE=${EXENAME}${GMX_BINARY_SUFFIX}.nroff 
                 -DOUTFILE=${MAN1_PATH}/${EXENAME}.1 -DDESC=" - ${DESC}"
-                -P ${CMAKE_SOURCE_DIR}/cmake/Filter.cmake)
+                -DEXENAME="${CMAKE_BINARY_DIR}/bin/${EXENAME}${GMX_BINARY_SUFFIX}"
+                -P ${CMAKE_SOURCE_DIR}/cmake/CreateManPage.cmake)
         install(FILES ${MAN1_PATH}/${EXENAME}.1 DESTINATION 
-            ${MAN_INSTALL_DIR}/man1)
+            ${MAN_INSTALL_DIR}/man1 OPTIONAL)
     elseif(NOT EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
         install(FILES ${CMAKE_SOURCE_DIR}/man/man1/${EXENAME}.1 DESTINATION 
             ${MAN_INSTALL_DIR}/man1)

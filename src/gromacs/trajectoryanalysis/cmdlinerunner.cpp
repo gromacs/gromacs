@@ -35,14 +35,16 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_trajectoryanalysis
  */
+#include "cmdlinerunner.h"
+
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
-#include "copyrite.h"
-#include "pbc.h"
-#include "rmpbc.h"
-#include "statutil.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/rmpbc.h"
+#include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -50,11 +52,9 @@
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"

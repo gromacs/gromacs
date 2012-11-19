@@ -25,6 +25,9 @@
 #ifdef HAVE_X86INTRIN_H
 #include <x86intrin.h> /* FMA */
 #endif
+#ifdef HAVE_INTRIN_H
+#include <intrin.h> /* FMA MSVC */
+#endif
 
 #include <math.h>
 
@@ -636,7 +639,7 @@ gmx_mm_erfc_ps(__m128 x)
  *    vectorial force to add to the particles.
  *
  */
-__m128
+static __m128
 gmx_mm_pmecorrF_ps(__m128 z2)
 {
     const __m128  FN6      = _mm_set1_ps(-1.7357322914161492954e-8f);
@@ -706,7 +709,7 @@ gmx_mm_pmecorrF_ps(__m128 z2)
  * 6. Add the result to 1/r, multiply by the product of the charges,
  *    and you have your potential.
  */
-__m128
+static __m128
 gmx_mm_pmecorrV_ps(__m128 z2)
 {
     const __m128  VN6      = _mm_set1_ps(1.9296833005951166339e-8f);

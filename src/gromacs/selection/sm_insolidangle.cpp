@@ -83,6 +83,8 @@
  *     \f[\sin^2 \frac{\Delta \phi}{2} = \frac{\sin^2 \frac{\alpha}{2} - \sin^2 \frac{\theta - \theta'}{2}}{\sin \theta \sin \theta'}\f]
  *     (distance in spherical geometry),
  *     where \f$\theta'\f$ is the zenith angle of the bin edge.
+ *     Treat zenith angle bins that are completely covered by the cone (in the
+ *     case that the cone is centered close to the pole) as a special case.
  *  -# Using the values calculated above, loop through the azimuthal bins that
  *     are partially or completely covered by the cone and update them.
  *
@@ -107,20 +109,16 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <algorithm>
 
 #include <math.h>
 
-#include "macros.h"
-#include "maths.h"
-#include "pbc.h"
-#include "physics.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/physics.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
@@ -404,6 +402,7 @@ free_data_insolidangle(void *data)
     }
     free_surface_points(d);
     sfree(d->bin);
+    sfree(d);
 }
 
 /*!
@@ -495,19 +494,15 @@ evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  *   _gmx_selelem_estimate_coverfrac(), false otherwise.
  */
 bool
-_gmx_selelem_can_estimate_cover(t_selelem *sel)
+_gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel)
 {
-    t_selelem   *child;
-    bool         bFound;
-    bool         bDynFound;
-
-    if (sel->type == SEL_BOOLEAN && sel->u.boolt == BOOL_OR)
+    if (sel.type == SEL_BOOLEAN && sel.u.boolt == BOOL_OR)
     {
         return false;
     }
-    bFound    = false;
-    bDynFound = false;
-    child     = sel->child;
+    bool bFound    = false;
+    bool bDynFound = false;
+    gmx::SelectionTreeElementPointer child = sel.child;
     while (child)
     {
         if (child->type == SEL_EXPRESSION)
@@ -530,7 +525,7 @@ _gmx_selelem_can_estimate_cover(t_selelem *sel)
                 bDynFound = true;
             }
         }
-        else if (!_gmx_selelem_can_estimate_cover(child))
+        else if (!_gmx_selelem_can_estimate_cover(*child))
         {
             return false;
         }
@@ -549,23 +544,22 @@ _gmx_selelem_can_estimate_cover(t_selelem *sel)
  * frame.
  */
 real
-_gmx_selelem_estimate_coverfrac(t_selelem *sel)
+_gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel)
 {
-    t_selelem   *child;
     real         cfrac;
 
-    if (sel->type == SEL_EXPRESSION && sel->u.expr.method->name == sm_insolidangle.name)
+    if (sel.type == SEL_EXPRESSION && sel.u.expr.method->name == sm_insolidangle.name)
     {
-        t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)sel->u.expr.mdata;
+        t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)sel.u.expr.mdata;
         if (d->cfrac < 0)
         {
-            d->cfrac = estimate_covered_fraction(d);        
+            d->cfrac = estimate_covered_fraction(d);
         }
         return d->cfrac;
     }
-    if (sel->type == SEL_BOOLEAN && sel->u.boolt == BOOL_NOT)
+    if (sel.type == SEL_BOOLEAN && sel.u.boolt == BOOL_NOT)
     {
-        cfrac = _gmx_selelem_estimate_coverfrac(sel->child);
+        cfrac = _gmx_selelem_estimate_coverfrac(*sel.child);
         if (cfrac < 1.0)
         {
             return 1 - cfrac;
@@ -574,10 +568,10 @@ _gmx_selelem_estimate_coverfrac(t_selelem *sel)
     }
 
     /* Here, we assume that the selection is simple enough */
-    child = sel->child;
+    gmx::SelectionTreeElementPointer child = sel.child;
     while (child)
     {
-        cfrac = _gmx_selelem_estimate_coverfrac(child); 
+        cfrac = _gmx_selelem_estimate_coverfrac(*child);
         if (cfrac < 1.0)
         {
             return cfrac;
@@ -767,22 +761,36 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
                    rvec x)
 {
     real pdelta, phi1, phi2;
-    int  pbin1, pbin2, pbin;
+    int  pbin1, pbin2, pbiniter, pbin;
 
     /* Find the edges of the bins affected */
     pdelta = max(max(pdelta1, pdelta2), pdeltamax);
     phi1 = phi - pdelta;
-    if (phi1 < -M_PI)
+    if (phi1 >= -M_PI)
     {
-        phi1 += M_2PI;
+        pbin = find_partition_bin(&surf->tbin[tbin], phi1);
+        pbin1 = pbin;
+    }
+    else
+    {
+        pbin = find_partition_bin(&surf->tbin[tbin], phi1 + M_2PI);
+        pbin1 = pbin - surf->tbin[tbin].n;
     }
     phi2 = phi + pdelta;
-    if (phi2 > M_PI)
+    if (phi2 <= M_PI)
     {
-        phi2 -= M_2PI;
+        pbin2 = find_partition_bin(&surf->tbin[tbin], phi2);
     }
-    pbin1 = find_partition_bin(&surf->tbin[tbin], phi1);
-    pbin2 = find_partition_bin(&surf->tbin[tbin], phi2);
+    else
+    {
+        pbin2 = find_partition_bin(&surf->tbin[tbin], phi2 - M_2PI);
+        pbin2 += surf->tbin[tbin].n;
+    }
+    ++pbin2;
+    if (pbin2 - pbin1 > surf->tbin[tbin].n)
+    {
+        pbin2 = pbin1 + surf->tbin[tbin].n;
+    }
     /* Find the edges of completely covered region */
     pdelta = min(pdelta1, pdelta2);
     phi1 = phi - pdelta;
@@ -792,8 +800,7 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
     }
     phi2 = phi + pdelta;
     /* Loop over all affected bins */
-    pbin = pbin1;
-    do
+    for (pbiniter = pbin1; pbiniter != pbin2; ++pbiniter, ++pbin)
     {
         /* Wrap bin around if end reached */
         if (pbin == surf->tbin[tbin].n)
@@ -813,7 +820,6 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
             add_surface_point(surf, tbin, pbin, x);
         }
     }
-    while (pbin++ != pbin2); /* Loop including pbin2 */
 }
 
 /*!
@@ -868,14 +874,24 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
         theta2 = (tbin+1) * surf->tbinsize;
         if (theta2 > theta + surf->angcut)
         {
+            /* The circle is completely outside the cone */
             pdelta2 = 0;
         }
-        else if (tbin == surf->ntbins - 1)
+        else if (theta2 <= -(theta - surf->angcut)
+                 || theta2 >= M_2PI - (theta + surf->angcut)
+                 || tbin == surf->ntbins - 1)
         {
+            /* The circle is completely inside the cone, or we are in the
+             * 360 degree bin covering the pole. */
             pdelta2 = M_PI;
         }
         else
         {
+            /* TODO: This formula is numerically unstable if theta is very
+             * close to the pole.  In practice, it probably does not matter
+             * much, but it would be nicer to adjust the theta bin boundaries
+             * such that the case above catches this instead of falling through
+             * here. */
             pdelta2 = 2*asin(sqrt(
                     (sqr(sin(surf->angcut/2)) - sqr(sin((theta2-theta)/2))) /
                     (sin(theta) * sin(theta2))));

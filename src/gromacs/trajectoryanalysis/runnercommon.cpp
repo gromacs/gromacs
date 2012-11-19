@@ -35,18 +35,20 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_trajectoryanalysis
  */
+#include "runnercommon.h"
+
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <string.h>
 
-#include "oenv.h"
-#include "rmpbc.h"
-#include "smalloc.h"
-#include "statutil.h"
-#include "tpxio.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/rmpbc.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/tpxio.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -55,7 +57,6 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
-#include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -182,17 +183,17 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
     options->addOption(FileNameOption("f")
                            .filetype(eftTrajectory).inputFile()
                            .store(&impl_->trjfile_)
-                           .defaultValueIfSet("traj")
+                           .defaultBasename("traj")
                            .description("Input trajectory or single configuration"));
     options->addOption(FileNameOption("s")
                            .filetype(eftTopology).inputFile()
                            .store(&impl_->topfile_)
-                           .defaultValueIfSet("topol")
+                           .defaultBasename("topol")
                            .description("Input structure"));
     options->addOption(FileNameOption("n")
                            .filetype(eftIndex).inputFile()
                            .store(&impl_->ndxfile_)
-                           .defaultValueIfSet("index")
+                           .defaultBasename("index")
                            .description("Extra index groups"));
     options->addOption(SelectionFileOption("sf"));
 

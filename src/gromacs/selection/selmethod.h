@@ -218,7 +218,8 @@
  *    and \ref SMETH_VARNUMVAL methods.
  *  - sel_freefunc() should be provided if sel_datafunc() and/or
  *    sel_initfunc() allocate any dynamic memory in addition to the data
- *    structure itself.
+ *    structure itself (or allocates the data structure using some other means
+ *    than malloc()).
  *  - sel_updatefunc_pos() only makes sense for methods with \ref SMETH_DYNAMIC
  *    set.
  *  - At least one update function should be provided unless the method type is
@@ -296,6 +297,7 @@
 namespace gmx
 {
 class PositionCalculationCollection;
+class SelectionParserSymbolTable;
 } // namespace gmx
 
 struct gmx_ana_pos_t;
@@ -355,8 +357,8 @@ struct gmx_ana_selcollection_t;
  * \returns       Pointer to method-specific data structure.
  *   This pointer will be passed as the last parameter of all other function
  *   calls.
- *   Should return NULL on error (only error that should occur is out of
- *   memory).
+ * \throws        unspecified Any errors should be indicated by throwing an
+ *      exception.
  *
  * Should allocate and initialize any internal data required by the method.
  * Should also initialize the value pointers (\c gmx_ana_selparam_t::val) in
@@ -476,9 +478,11 @@ typedef void  (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
  *
  * This function should be provided if the internal data structure contains
  * dynamically allocated data, and should free any such data.
- * The data structure itself should not be freed; this is handled automatically.
- * If there is no dynamically allocated data within the structure,
- * this function is not needed.
+ * The data structure itself should also be freed.
+ * For convenience, if there is no dynamically allocated data within the
+ * structure and the structure is allocated using malloc()/snew(), this
+ * function is not needed: the selection engine automatically frees the
+ * structure using sfree().
  * Any memory pointers received as values of parameters are managed externally,
  * and should not be freed.
  * Pointers set as the value pointer of \ref SPAR_ENUMVAL parameters should not
@@ -650,11 +654,11 @@ typedef struct gmx_ana_selmethod_t
 
 /** Registers a selection method. */
 int
-gmx_ana_selmethod_register(struct gmx_sel_symtab_t *symtab,
+gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
                            const char *name, gmx_ana_selmethod_t *method);
 /** Registers all selection methods in the library. */
 int
-gmx_ana_selmethod_register_defaults(struct gmx_sel_symtab_t *symtab);
+gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab);
 
 /** Finds a parameter from a selection method by name. */
 gmx_ana_selparam_t *

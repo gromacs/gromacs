@@ -70,6 +70,19 @@ TEST(OptionsAssignerTest, HandlesMissingRequiredParameter)
     EXPECT_THROW(options.finish(), gmx::InvalidInputError);
 }
 
+TEST(OptionsAssignerTest, HandlesRequiredParameterWithDefaultValue)
+{
+    gmx::Options options(NULL, NULL);
+    int value = 0;
+    using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addOption(
+                        IntegerOption("p").store(&value).required()
+                            .defaultValue(1)));
+
+    EXPECT_NO_THROW(options.finish());
+    EXPECT_EQ(1, value);
+}
+
 TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
 {
     gmx::Options options(NULL, NULL);

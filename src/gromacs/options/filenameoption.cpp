@@ -30,22 +30,19 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in filenameoption.h, filenameoptioninfo.h and
- * filenameoptionstorage.h.
+ * Implements classes in filenameoption.h and filenameoptionstorage.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
 #include "filenameoption.h"
+#include "filenameoptionstorage.h"
 
 #include <string>
 #include <vector>
 
-#include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "filenameoptionstorage.h"
 
 namespace gmx
 {
@@ -187,6 +184,7 @@ FileTypeRegistry::FileTypeRegistry()
     };
     registerType(eftTopology,    topExtensions);
     registerType(eftTrajectory,  trajExtensions);
+    registerType(eftPDB,         ".pdb");
     registerType(eftIndex,       ".ndx");
     registerType(eftPlot,        ".xvg");
     registerType(eftGenericData, ".dat");
@@ -256,15 +254,18 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
-    if (settings.defaultValue())
+    if (settings.defaultBasename_ != NULL)
     {
-        setDefaultValue(completeFileName(*settings.defaultValue(),
-                                         filetype_, false));
-    }
-    if (settings.defaultValueIfSet())
-    {
-        setDefaultValueIfSet(completeFileName(*settings.defaultValueIfSet(),
-                                              filetype_, false));
+        if (isRequired())
+        {
+            setDefaultValue(completeFileName(settings.defaultBasename_,
+                                             filetype_, false));
+        }
+        else
+        {
+            setDefaultValueIfSet(completeFileName(settings.defaultBasename_,
+                                                  filetype_, false));
+        }
     }
 }
 

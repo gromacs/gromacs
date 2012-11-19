@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -50,6 +51,8 @@
 #include "physics.h"
 #include "force.h"
 #include "gmxfio.h"
+#include "macros.h"
+#include "tables.h"
 
 /* All the possible (implemented) table functions */
 enum { 
@@ -124,6 +127,184 @@ typedef struct {
 #define pow4(x) ((x)*(x)*(x)*(x))
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
 
+
+static double v_ewald_lr(double beta,double r)
+{
+    if (r == 0)
+    {
+        return beta*2/sqrt(M_PI);
+    }
+    else
+    {
+        return gmx_erfd(beta*r)/r;
+    }
+}
+
+void table_spline3_fill_ewald_lr(real *table_f,
+                                 real *table_v,
+                                 real *table_fdv0,
+                                 int   ntab,
+                                 real  dx,
+                                 real  beta)
+{
+    real tab_max;
+    int i,i_inrange;
+    double dc,dc_new;
+    gmx_bool bOutOfRange;
+    double v_r0,v_r1,v_inrange,vi,a0,a1,a2dx;
+    double x_r0;
+
+    if (ntab < 2)
+    {
+        gmx_fatal(FARGS,"Can not make a spline table with less than 2 points");
+    }
+
+    /* We need some margin to be able to divide table values by r
+     * in the kernel and also to do the integration arithmetics
+     * without going out of range. Furthemore, we divide by dx below.
+     */
+    tab_max = GMX_REAL_MAX*0.0001;
+
+    /* This function produces a table with:
+     * maximum energy error: V'''/(6*12*sqrt(3))*dx^3
+     * maximum force error:  V'''/(6*4)*dx^2
+     * The rms force error is the max error times 1/sqrt(5)=0.45.
+     */
+
+    bOutOfRange = FALSE;
+    i_inrange = ntab;
+    v_inrange = 0;
+    dc = 0;
+    for(i=ntab-1; i>=0; i--)
+    {
+        x_r0 = i*dx;
+
+        v_r0 = v_ewald_lr(beta,x_r0);
+
+        if (!bOutOfRange)
+        {
+            i_inrange = i;
+            v_inrange = v_r0;
+    
+            vi = v_r0;
+        }
+        else
+        {
+            /* Linear continuation for the last point in range */
+            vi = v_inrange - dc*(i - i_inrange)*dx;
+        }
+
+        if(table_v!=NULL)
+        {
+            table_v[i] = vi;
+        }
+
+        if (i == 0)
+        {
+            continue;
+        }
+
+        /* Get the potential at table point i-1 */
+        v_r1 = v_ewald_lr(beta,(i-1)*dx);
+
+        if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
+        {
+            bOutOfRange = TRUE;
+        }
+
+        if (!bOutOfRange)
+        {
+            /* Calculate the average second derivative times dx over interval i-1 to i.
+             * Using the function values at the end points and in the middle.
+             */
+            a2dx = (v_r0 + v_r1 - 2*v_ewald_lr(beta,x_r0-0.5*dx))/(0.25*dx);
+            /* Set the derivative of the spline to match the difference in potential
+             * over the interval plus the average effect of the quadratic term.
+             * This is the essential step for minimizing the error in the force.
+             */
+            dc = (v_r0 - v_r1)/dx + 0.5*a2dx;
+        }
+
+        if (i == ntab - 1)
+        {
+            /* Fill the table with the force, minus the derivative of the spline */
+            table_f[i] = -dc;
+        }
+        else
+        {
+            /* tab[i] will contain the average of the splines over the two intervals */
+            table_f[i] += -0.5*dc;
+        }
+
+        if (!bOutOfRange)
+        {
+            /* Make spline s(x) = a0 + a1*(x - xr) + 0.5*a2*(x - xr)^2
+             * matching the potential at the two end points
+             * and the derivative dc at the end point xr.
+             */
+            a0   = v_r0;
+            a1   = dc;
+            a2dx = (a1*dx + v_r1 - a0)*2/dx;
+
+            /* Set dc to the derivative at the next point */
+            dc_new = a1 - a2dx;
+                
+            if (dc_new != dc_new || dc_new < -tab_max || dc_new > tab_max)
+            {
+                bOutOfRange = TRUE;
+            }
+            else
+            {
+                dc = dc_new;
+            }
+        }
+
+        table_f[(i-1)] = -0.5*dc;
+    }
+    /* Currently the last value only contains half the force: double it */
+    table_f[0] *= 2;
+
+    if(table_v!=NULL && table_fdv0!=NULL)
+    {
+        /* Copy to FDV0 table too. Allocation occurs in forcerec.c,
+         * init_ewald_f_table().
+         */
+        for(i=0;i<ntab-1;i++)
+        {
+            table_fdv0[4*i]     = table_f[i];
+            table_fdv0[4*i+1]   = table_f[i+1]-table_f[i];
+            table_fdv0[4*i+2]   = table_v[i];
+            table_fdv0[4*i+3]   = 0.0;
+        }
+        table_fdv0[4*(ntab-1)]    = table_f[(ntab-1)];
+        table_fdv0[4*(ntab-1)+1]  = -table_f[(ntab-1)];
+        table_fdv0[4*(ntab-1)+2]  = table_v[(ntab-1)];
+        table_fdv0[4*(ntab-1)+3]  = 0.0;
+    }
+}
+
+/* The scale (1/spacing) for third order spline interpolation
+ * of the Ewald mesh contribution which needs to be subtracted
+ * from the non-bonded interactions.
+ */
+real ewald_spline3_table_scale(real ewaldcoeff,real rc)
+{
+    double erf_x_d3=1.0522; /* max of (erf(x)/x)''' */
+    double ftol,etol;
+    double sc_f,sc_e;
+
+    /* Force tolerance: single precision accuracy */
+    ftol = GMX_FLOAT_EPS;
+    sc_f = sqrt(erf_x_d3/(6*4*ftol*ewaldcoeff))*ewaldcoeff;
+
+    /* Energy tolerance: 10x more accurate than the cut-off jump */
+    etol = 0.1*gmx_erfc(ewaldcoeff*rc);
+    etol = max(etol,GMX_REAL_EPS);
+    sc_e = pow(erf_x_d3/(6*12*sqrt(3)*etol),1.0/3.0)*ewaldcoeff;
+
+    return max(sc_f,sc_e);
+}
+
 /* Calculate the potential and force for an r value
  * in exactly the same way it is done in the inner loop.
  * VFtab is a pointer to the table data, offset is
@@ -156,7 +337,7 @@ static void evaluate_table(real VFtab[], int offset, int stride,
 }
 
 static void copy2table(int n,int offset,int stride,
-		       double x[],double Vtab[],double Ftab[],
+		       double x[],double Vtab[],double Ftab[],real scalefactor,
 		       real dest[])
 {
 /* Use double prec. for the intermediary variables
@@ -182,10 +363,10 @@ static void copy2table(int n,int offset,int stride,
       H   = 0;
     }
     nn0 = offset + i*stride;
-    dest[nn0]   = Vtab[i];
-    dest[nn0+1] = F;
-    dest[nn0+2] = G;
-    dest[nn0+3] = H;
+    dest[nn0]   = scalefactor*Vtab[i];
+    dest[nn0+1] = scalefactor*F;
+    dest[nn0+2] = scalefactor*G;
+    dest[nn0+3] = scalefactor*H;
   }
 }
 
@@ -573,30 +754,31 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 
     switch (tp) {
     case etabLJ6:
-      /* Dispersion */
-      Vtab  = -r6;
-      Ftab  = 6.0*Vtab/r;
-      break;
+            /* Dispersion */
+            Vtab = -r6;
+            Ftab = 6.0*Vtab/r;
+            break;
     case etabLJ6Switch:
     case etabLJ6Shift:
       /* Dispersion */
       if (r < rc) {      
-	Vtab  = -r6;
-	Ftab  = 6.0*Vtab/r;
+          Vtab = -r6;
+          Ftab = 6.0*Vtab/r;
+          break;
       }
       break;
     case etabLJ12:
-      /* Repulsion */
-      Vtab  = r12;
-      Ftab  = reppow*Vtab/r;
+            /* Repulsion */
+            Vtab  = r12;
+            Ftab  = reppow*Vtab/r;
       break;
     case etabLJ12Switch:
     case etabLJ12Shift:
       /* Repulsion */
       if (r < rc) {                
-	Vtab  = r12;
-	Ftab  = reppow*Vtab/r;
-      }  
+          Vtab  = r12;
+          Ftab  = reppow*Vtab/r;
+      }
       break;
 	case etabLJ6Encad:
         if(r < rc) {
@@ -609,9 +791,9 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
         break;
     case etabLJ12Encad:
         if(r < rc) {
-            Vtab  = r12-12.0*(rc-r)*rc6*rc6/rc-1.0*rc6*rc6;
-            Ftab  = 12.0*r12/r-12.0*rc6*rc6/rc;
-        } else { /* r>rc */ 
+            Vtab  = -(r6-6.0*(rc-r)*rc6/rc-rc6);
+            Ftab  = -(6.0*r6/r-6.0*rc6/rc);
+        } else { /* r>rc */
             Vtab  = 0;
             Ftab  = 0;
         } 
@@ -687,8 +869,8 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     if ((r > r1) && bSwitch) {
       Ftab = Ftab*swi - Vtab*swi1;
       Vtab = Vtab*swi;
-    }  
-    
+    }
+
     /* Convert to single precision when we store to mem */
     td->v[i]  = Vtab;
     td->f[i]  = Ftab;
@@ -831,7 +1013,8 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   gmx_bool        b14only,bReadTab,bGenTab;
   real        x0,y0,yp;
   int         i,j,k,nx,nx0,tabsel[etiNR];
-  
+  real        scalefactor;
+
   t_forcetable table;
 
   b14only = (flags & GMX_MAKETABLES_14ONLY);
@@ -851,6 +1034,12 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   nx0             = 10;
   nx              = 0;
   
+  table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
+  table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+  table.formatsize    = 4;
+  table.ninteractions = 3;
+  table.stride        = table.formatsize*table.ninteractions;
+
   /* Check whether we have to read or generate */
   bReadTab = FALSE;
   bGenTab  = FALSE;
@@ -896,7 +1085,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
    * numbers per nx+1 data points. For performance reasons we want
    * the table data to be aligned to 16-byte.
    */
-  snew_aligned(table.tab, 12*(nx+1)*sizeof(real),16);
+  snew_aligned(table.data, 12*(nx+1)*sizeof(real),16);
 
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
@@ -911,7 +1100,27 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
 		td[k].nx,b14only?"1-4 ":"",tprops[tabsel[k]].name,
 		td[k].tabscale);
     }
-    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,table.tab);
+
+    /* Set scalefactor for c6/c12 tables. This is because we save flops in the non-table kernels
+     * by including the derivative constants (6.0 or 12.0) in the parameters, since
+     * we no longer calculate force in most steps. This means the c6/c12 parameters
+     * have been scaled up, so we need to scale down the table interactions too.
+     * It comes here since we need to scale user tables too.
+     */
+      if(k==etiLJ6)
+      {
+          scalefactor = 1.0/6.0;
+      }
+      else if(k==etiLJ12 && tabsel[k]!=etabEXPMIN)
+      {
+          scalefactor = 1.0/12.0;
+      }
+      else
+      {
+          scalefactor = 1.0;
+      }
+
+    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,scalefactor,table.data);
     
     if (bDebugMode() && bVerbose) {
       if (b14only)
@@ -921,7 +1130,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
       /* plot the output 5 times denser than the table data */
       for(i=5*((nx0+1)/2); i<5*table.n; i++) {
 	x0 = i*table.r/(5*(table.n-1));
-	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
+	evaluate_table(table.data,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
       }
       gmx_fio_fclose(fp);
@@ -966,12 +1175,17 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 * use etiNR (since we only have one table, but ...) 
 	 */
 	snew(td,1);
-	table.r         = fr->gbtabr;
-	table.scale     = fr->gbtabscale;
-	table.scale_exp = 0;
-	table.n         = table.scale*table.r;
-	nx0             = 0;
-	nx              = table.scale*table.r;
+    table.interaction   = GMX_TABLE_INTERACTION_ELEC;
+    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+	table.r             = fr->gbtabr;
+	table.scale         = fr->gbtabscale;
+	table.scale_exp     = 0;
+	table.n             = table.scale*table.r;
+    table.formatsize    = 4;
+    table.ninteractions = 1;
+    table.stride        = table.formatsize*table.ninteractions;
+	nx0                 = 0;
+	nx                  = table.scale*table.r;
 	
 	/* Check whether we have to read or generate 
 	 * We will always generate a table, so remove the read code
@@ -989,7 +1203,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-	snew_aligned(table.tab,4*nx,16);
+	snew_aligned(table.data,4*nx,16);
 	
 	init_table(out,nx,nx0,table.scale,&(td[0]),!bReadTab);
 	
@@ -1018,7 +1232,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 		
     }
 	
-	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,1.0,table.data);
 	
 	if(bDebugMode())
     {
@@ -1029,7 +1243,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 		{
 			/* x0=i*table.r/(5*table.n); */
 			x0=i*table.r/table.n;
-			evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
+			evaluate_table(table.data,0,4,table.scale,x0,&y0,&yp);
 			fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 			
 		}
@@ -1047,7 +1261,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 Ftab = (r-0.25*r*expterm)/((r2+expterm)*sqrt(r2+expterm));
 	 
 	 
-	 evaluate_table(table.tab,0,4,table.scale,r,&y0,&yp);
+	 evaluate_table(table.data,0,4,table.scale,r,&y0,&yp);
 	 printf("gb: i=%d, x0=%g, y0=%15.15f, Vtab=%15.15f, yp=%15.15f, Ftab=%15.15f\n",i,r, y0, Vtab, yp, Ftab);
 	 
 	 abs_error_r=fabs(y0-Vtab);
@@ -1149,9 +1363,9 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-    snew_aligned(table.tab,4*nx,16);
-	
-	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+    snew_aligned(table.data,4*nx,16);
+
+	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,1.0,table.data);
 	
 	if(bDebugMode())
 	  {
@@ -1163,7 +1377,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	      {
 		/* x0=i*table.r/(5*table.n); */
 		x0 = i*table.r/(5*(table.n-1));
-		evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
+		evaluate_table(table.data,0,4,table.scale,x0,&y0,&yp);
 		fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 		
 	      }
@@ -1172,6 +1386,13 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 
 	done_tabledata(&(td[0]));
 	sfree(td);
+
+    table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
+    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+    table.formatsize    = 4;
+    table.ninteractions = 3;
+    table.stride        = table.formatsize*table.ninteractions;
+
 	
 	return table;
 }
@@ -1198,8 +1419,8 @@ bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle)
   }
   tab.n = td.nx;
   tab.scale = td.tabscale;
-  snew(tab.tab,tab.n*4);
-  copy2table(tab.n,0,4,td.x,td.v,td.f,tab.tab);
+  snew(tab.data,tab.n*4);
+  copy2table(tab.n,0,4,td.x,td.v,td.f,1.0,tab.data);
   done_tabledata(&td);
 
   return tab;

@@ -60,20 +60,32 @@
         Positions (count: <xsl:value-of select="Int[@Name='Length']"/>):
         <table border="1">
             <tr>
-                <th>Atom count</th>
-                <th>Atoms</th>
+                <xsl:if test="Position/Sequence[@Name='Atoms']">
+                    <th>Atom count</th>
+                    <th>Atoms</th>
+                </xsl:if>
+                <xsl:if test="Position/Int[@Name='RefId']">
+                    <th>RefId</th>
+                    <th>MappedId</th>
+                </xsl:if>
                 <xsl:if test="Position/Vector[@Name='Coordinates']">
                     <th>Coordinates</th>
                 </xsl:if>
             </tr>
             <xsl:for-each select="Position">
             <tr>
-                <td><xsl:value-of select="Sequence[@Name='Atoms']/Int[@Name='Length']"/></td>
-                <td>
-                    <xsl:call-template name="SequenceAsCSV">
-                        <xsl:with-param name="root" select="Sequence[@Name='Atoms']"/>
-                    </xsl:call-template>
-                </td>
+                <xsl:if test="Sequence[@Name='Atoms']">
+                    <td><xsl:value-of select="Sequence[@Name='Atoms']/Int[@Name='Length']"/></td>
+                    <td>
+                        <xsl:call-template name="SequenceAsCSV">
+                            <xsl:with-param name="root" select="Sequence[@Name='Atoms']"/>
+                        </xsl:call-template>
+                    </td>
+                </xsl:if>
+                <xsl:if test="Int[@Name='RefId']">
+                    <td><xsl:value-of select="Int[@Name='RefId']"/></td>
+                    <td><xsl:value-of select="Int[@Name='MappedId']"/></td>
+                </xsl:if>
                 <xsl:if test="Vector[@Name='Coordinates']">
                     <td>
                         <xsl:apply-templates select="Vector[@Name='Coordinates']"/>

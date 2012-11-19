@@ -35,13 +35,9 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "maths.h"
-#include "macros.h"
-#include "smalloc.h"
+#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
@@ -418,6 +414,11 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         GMX_THROW(gmx::InternalError("Invalid comparison type"));
     }
     /* Convert the values to the same type */
+    /* TODO: Currently, there are no dynamic integer-valued selection methods,
+     * which means that only the branches with convert_int_real() will ever be
+     * taken. It should be considered whether it is necessary to support these
+     * other cases at all.
+     */
     if ((d->left.flags & CMP_REALVAL) && !(d->right.flags & CMP_REALVAL))
     {
         if (d->left.flags & d->right.flags & CMP_DYNAMICVAL)
@@ -486,6 +487,7 @@ free_data_compare(void *data)
     {
         sfree(d->right.r);
     }
+    sfree(d);
 }
 
 /*!

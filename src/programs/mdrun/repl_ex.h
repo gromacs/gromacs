@@ -37,6 +37,7 @@
 #define _repl_ex_h
 
 #include "typedefs.h"
+#include "types/commrec.h"
 
 /* Abstract type for replica exchange */
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
@@ -53,7 +54,7 @@ extern gmx_bool replica_exchange(FILE *fplog,
 			     gmx_repl_ex_t re,
 			     t_state *state,gmx_enerdata_t *enerd,
 			     t_state *state_local,
-			     int step,real time);
+			     gmx_large_int_t step,real time);
 /* Attempts replica exchange, should be called on all nodes.
  * Returns TRUE if this state has been exchanged.
  * When running each replica in parallel,

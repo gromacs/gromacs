@@ -154,7 +154,7 @@ extern "C" {
   /* Convert the string to one of the units supported. Returns -1 if not found. */
   extern int string2unit(char *string);
   
-  /* Convert the unit to a strong. Return NULL when unit is out of range. */
+  /* Convert the unit to a string. Return NULL when unit is out of range. */
   extern const char *unit2string(int unit);
 
 #ifdef __cplusplus

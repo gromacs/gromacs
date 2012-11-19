@@ -38,14 +38,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "macros.h"
-#include "pbc.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
@@ -236,6 +232,7 @@ free_data_common(void *data)
     {
         gmx_ana_nbsearch_free(d->nb);
     }
+    sfree(d);
 }
 
 /*!

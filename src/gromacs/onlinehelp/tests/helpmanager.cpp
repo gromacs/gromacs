@@ -82,6 +82,7 @@ HelpTestBase::HelpTestBase()
  * Tests for HelpManager
  */
 
+//! Test fixture for gmx::HelpManager.
 typedef HelpTestBase HelpManagerTest;
 
 TEST_F(HelpManagerTest, HandlesRootTopic)

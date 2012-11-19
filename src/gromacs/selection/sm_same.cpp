@@ -35,15 +35,11 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
 
-#include "macros.h"
-#include "smalloc.h"
-#include "string2.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
@@ -205,54 +201,53 @@ init_data_same(int npar, gmx_ana_selparam_t *param)
  */
 int
 _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
-                              t_selexpr_param *params,
+                              const gmx::SelectionParserParameterListPointer &params,
                               void *scanner)
 {
-    gmx_ana_selmethod_t *kwmethod;
-    t_selelem           *kwelem;
-    t_selexpr_param     *param;
-    char                *pname;
-    int                  rc;
 
     /* Do nothing if this is not a same method. */
-    if (!*method || (*method)->name != sm_same.name)
+    if (!*method || (*method)->name != sm_same.name || params->empty())
     {
         return 0;
     }
 
-    if (params->nval != 1 || !params->value->bExpr
-        || params->value->u.expr->type != SEL_EXPRESSION)
+    const gmx::SelectionParserValueList &kwvalues = params->front().values();
+    if (kwvalues.size() != 1 || !kwvalues.front().hasExpressionValue()
+        || kwvalues.front().expr->type != SEL_EXPRESSION)
     {
         _gmx_selparser_error(scanner, "'same' should be followed by a single keyword");
         return -1;
     }
-    kwmethod = params->value->u.expr->u.expr.method;
-
+    gmx_ana_selmethod_t *kwmethod = kwvalues.front().expr->u.expr.method;
     if (kwmethod->type == STR_VALUE)
     {
         *method = &sm_same_str;
     }
 
-    /* We do custom processing with the second parameter, so remove it from
-     * the params list, but save the name for later. */
-    param        = params->next;
-    params->next = NULL;
-    pname        = param->name;
-    param->name  = NULL;
-    /* Create a second keyword evaluation element for the keyword given as
-     * the first parameter, evaluating the keyword in the group given by the
-     * second parameter. */
-    rc = _gmx_sel_init_keyword_evaluator(&kwelem, kwmethod, param, scanner);
-    if (rc != 0)
+    /* We do custom processing for the "as" parameter. */
+    gmx::SelectionParserParameterList::iterator asparam = ++params->begin();
+    if (asparam != params->end() && asparam->name() == sm_same.param[1].name)
     {
-        sfree(pname);
-        return rc;
+        gmx::SelectionParserParameterList kwparams;
+        gmx::SelectionParserValueListPointer values(
+                new gmx::SelectionParserValueList(asparam->values()));
+        kwparams.push_back(
+                gmx::SelectionParserParameter::create(NULL, move(values)));
+
+        /* Create a second keyword evaluation element for the keyword given as
+         * the first parameter, evaluating the keyword in the group given by the
+         * second parameter. */
+        gmx::SelectionTreeElementPointer kwelem
+            = _gmx_sel_init_keyword_evaluator(kwmethod, kwparams, scanner);
+        // FIXME: Use exceptions.
+        if (!kwelem)
+        {
+            return -1;
+        }
+        /* Replace the second parameter with one with a value from \p kwelem. */
+        std::string pname = asparam->name();
+        *asparam = gmx::SelectionParserParameter::createFromExpression(pname, kwelem);
     }
-    /* Replace the second parameter with one with a value from \p kwelem. */
-    param        = _gmx_selexpr_create_param(pname);
-    param->nval  = 1;
-    param->value = _gmx_selexpr_create_value_expr(kwelem);
-    params->next = param;
     return 0;
 }
 
@@ -292,6 +287,7 @@ free_data_same(void *data)
     t_methoddata_same *d = (t_methoddata_same *)data;
 
     sfree(d->as_s_sorted);
+    sfree(d);
 }
 
 /*! \brief

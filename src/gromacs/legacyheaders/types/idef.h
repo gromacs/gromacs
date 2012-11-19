@@ -147,6 +147,12 @@ enum {
 
 #define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_RESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES)))
 
+/* A macro for checking if ftype is an explicit pair-listed LJ or COULOMB
+ * interaction type:
+ * bonded LJ (usually 1-4), or special listed non-bonded for FEP.
+ */
+#define IS_LISTED_LJ_C(ftype) ((ftype) >= F_LJ14 && (ftype) <= F_LJC_PAIRS_NB)
+
 typedef union
 {
   /* Some parameters have A and B values for free energy calculations.
@@ -314,7 +320,7 @@ typedef struct
 typedef struct {
   int  n;         /* n+1 is the number of points */
   real scale;     /* distance between two points */
-  real *tab;      /* the actual tables, per point there are  4 numbers */
+  real *data;     /* the actual table data, per point there are 4 numbers */
 } bondedtable_t;
 
 #ifdef __cplusplus

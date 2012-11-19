@@ -186,10 +186,9 @@ static int read_g96_vel(char line[],FILE *fp,const char *infile,
   return natoms;
 }
 
-int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
+int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr, char *line)
 {
   t_symtab *symtab=NULL;
-  char line[STRLEN+1]; 
   gmx_bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
   int    natoms,nbp;
   double db1,db2,db3,db4,db5,db6,db7,db8,db9;
@@ -289,7 +288,7 @@ int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
 }
 
 void write_g96_conf(FILE *out,t_trxframe *fr,
-		    int nindex,atom_id *index)
+                    int nindex,const atom_id *index)
 {
   t_atoms *atoms;
   int nout,i,a;
@@ -699,10 +698,10 @@ static void get_coordnum (const char *infile,int *natoms)
   gmx_fio_fclose (in);
 }
 
-static gmx_bool get_w_conf(FILE *in,const char *infile,char *title,
-		       t_atoms *atoms, int *ndec, rvec x[],rvec *v, matrix box)
+static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
+                           t_symtab *symtab, t_atoms *atoms, int *ndec,
+                           rvec x[], rvec *v, matrix box)
 {
-  t_symtab *symtab=NULL;
   char   name[6];
   char   line[STRLEN+1],*ptr;
   char   buf[256];
@@ -716,11 +715,6 @@ static gmx_bool get_w_conf(FILE *in,const char *infile,char *title,
   oldres  = NOTSET; /* Unlikely number for the first residue! */
   ddist   = 0;
   
-  if (!symtab) {
-    snew(symtab,1);
-    open_symtab(symtab);
-  }
-
   /* Read the title and number of atoms */
   get_coordnum_fp(in,title,&natoms);
 
@@ -858,7 +852,6 @@ static gmx_bool get_w_conf(FILE *in,const char *infile,char *title,
     box[ZZ][XX] = y2;
     box[ZZ][YY] = z2;
   }
-  close_symtab(symtab);
 
   return bVel;
 }
@@ -868,18 +861,24 @@ static void read_whole_conf(const char *infile,char *title,
 {
   FILE   *in;
   int    ndec;
-  
+  t_symtab symtab;
+
   /* open file */
   in=gmx_fio_fopen(infile,"r");
 
-  get_w_conf(in, infile, title, atoms, &ndec, x, v, box);
-  
+  open_symtab(&symtab);
+  get_w_conf(in, infile, title, &symtab, atoms, &ndec, x, v, box);
+  /* We can't free the symbols, as they are still used in atoms, so
+   * the only choice is to leak them. */
+  free_symtab(&symtab);
+
   gmx_fio_fclose(in);
 }
 
 gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 {
   t_atoms atoms;
+  t_symtab symtab;
   char    title[STRLEN],*p;
   double  tt;
   int     ndec=0,i;
@@ -887,13 +886,14 @@ gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   if (gmx_eof(status))
     return FALSE;
 
+  open_symtab(&symtab);
   atoms.nr=fr->natoms;
   snew(atoms.atom,fr->natoms);
   atoms.nres=fr->natoms;
   snew(atoms.resinfo,fr->natoms);
   snew(atoms.atomname,fr->natoms);
   
-  fr->bV = get_w_conf(status,title,title,&atoms,&ndec,fr->x,fr->v,fr->box);
+  fr->bV = get_w_conf(status,title,title,&symtab,&atoms,&ndec,fr->x,fr->v,fr->box);
   fr->bPrec = TRUE;
   fr->prec = 1;
   /* prec = 10^ndec: */
@@ -907,6 +907,7 @@ gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   sfree(atoms.atom);
   sfree(atoms.resinfo);
   sfree(atoms.atomname);
+  done_symtab(&symtab);
 
   if ((p=strstr(title,"t=")) != NULL) {
     p+=2;
@@ -992,7 +993,7 @@ static void write_hconf_box(FILE *out,int pr,matrix box)
 }
 
 void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
-			   int nx,atom_id index[], int pr,
+			   int nx,const atom_id index[], int pr,
 			   rvec *x,rvec *v,matrix box)
 {
   char resnm[6],nm[6],format[100];
@@ -1320,6 +1321,7 @@ void get_stx_coordnum(const char *infile,int *natoms)
   FILE *in;
   int ftp,tpxver,tpxgen;
   t_trxframe fr;
+  char g96_line[STRLEN+1];
 
   ftp=fn2ftp(infile);
   range_check(ftp,0,efNR);
@@ -1335,7 +1337,7 @@ void get_stx_coordnum(const char *infile,int *natoms)
     fr.x = NULL;
     fr.v = NULL;
     fr.f = NULL;
-    *natoms=read_g96_conf(in,infile,&fr);
+    *natoms=read_g96_conf(in,infile,&fr,g96_line);
     gmx_fio_fclose(in);
     break;
   case efXYZ:
@@ -1376,6 +1378,7 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
   t_trxframe fr;
   int        i,ftp,natoms;
   real       d;
+  char       g96_line[STRLEN+1];
 
   if (atoms->nr == 0)
     fprintf(stderr,"Warning: Number of atoms in %s is 0\n",infile);
@@ -1401,7 +1404,7 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     fr.v = v;
     fr.f = NULL;
     in = gmx_fio_fopen(infile,"r");
-    read_g96_conf(in, infile, &fr);
+    read_g96_conf(in, infile, &fr, g96_line);
     gmx_fio_fclose(in);
     copy_mat(fr.box,box);
     break;
@@ -1435,7 +1438,7 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
      * structure, so we should not free them. But there is no place to put the
      * symbols; the only choice is to leak the memory...
      * So we clear the symbol table before freeing the topology structure. */
-    open_symtab(&top.symtab);
+    free_symtab(&top.symtab);
     done_top(&top);
 		  
     break;

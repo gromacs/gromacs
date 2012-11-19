@@ -43,11 +43,7 @@
  * \ingroup module_selection
  */
 %{
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <string2.h>
+#include "gromacs/legacyheaders/string2.h"
 
 #include "parser.h"
 #include "scanner.h"
@@ -137,7 +133,7 @@ COMMENT    (#.*)
 <cmdstart><<EOF>> { state->bCmdStart = true; yyterminate(); }
 <<EOF>>         { state->bCmdStart = true; return CMD_SEP; }
 
-<cmdstart>help  { BEGIN(help); return HELP; }
+help            { if (YYSTATE == cmdstart) { BEGIN(help); } return HELP; }
 <help>{
 [[:blank:]]+
 {IDENTIFIER}    { yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }

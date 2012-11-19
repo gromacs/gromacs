@@ -35,13 +35,9 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
@@ -218,6 +214,7 @@ free_data_permute(void *data)
 
     gmx_ana_index_deinit(&d->g);
     sfree(d->rperm);
+    sfree(d);
 }
 
 /*!

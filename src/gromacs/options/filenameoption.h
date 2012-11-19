@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::FileNameOption for setting file name options.
+ * Declares gmx::FileNameOption and gmx::FileNameOptionInfo.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
@@ -47,6 +47,7 @@
 namespace gmx
 {
 
+class FileNameOptionInfo;
 class FileNameOptionStorage;
 
 /*! \brief
@@ -54,17 +55,18 @@ class FileNameOptionStorage;
  *
  * Public methods in this class do not throw.
  *
- * This class is currently a stub implementation.
- *
  * \inpublicapi
  * \ingroup module_options
  */
 class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef FileNameOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
-            : MyBase(name), filetype_(eftUnknown),
+            : MyBase(name), filetype_(eftUnknown), defaultBasename_(NULL),
               bRead_(false), bWrite_(false), bLibrary_(false)
         {
         }
@@ -91,14 +93,37 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         /*! \brief
          * Tells that the file will be looked up in library directories in
          * addition to working directory.
+         *
+         * \todo
+         * Currently, this flag only affects the help output.  Callers must
+         * take care themselves to actually search the file in the library
+         * directories.  It would be nicer to do this searching within the
+         * file name option implementation.
          */
         MyClass &libraryFile() { bLibrary_ = true; return me(); }
+        /*! \brief
+         * Sets a default basename for the file option.
+         *
+         * Use this method instead of defaultValue() or defaultValueIfSet() to
+         * set a default value for a file name option.  No extension needs to
+         * be provided; it is automatically added based on filetype().
+         * The behavior is also adjusted based on required(): if the option is
+         * required, the value given to defaultBasename() is treated as for
+         * defaultValue(), otherwise it is treated as for defaultValueIfSet().
+         */
+        MyClass &defaultBasename(const char *basename)
+        { defaultBasename_ = basename; return me(); }
 
     private:
+        // Use defaultBasename() instead.
+        using MyBase::defaultValue;
+        using MyBase::defaultValueIfSet;
+
         //! Creates a FileNameOptionStorage object.
         virtual AbstractOptionStoragePointer createStorage() const;
 
         OptionFileType          filetype_;
+        const char             *defaultBasename_;
         bool                    bRead_;
         bool                    bWrite_;
         bool                    bLibrary_;
@@ -108,6 +133,35 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * otherwise unnecessary accessors.
          */
         friend class FileNameOptionStorage;
+};
+
+/*! \brief
+ * Wrapper class for accessing file name option information.
+ *
+ * \inpublicapi
+ * \ingroup module_options
+ */
+class FileNameOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit FileNameOptionInfo(FileNameOptionStorage *option);
+
+        //! Whether the option specifies an input file.
+        bool isInputFile() const;
+        //! Whether the option specifies an output file.
+        bool isOutputFile() const;
+        //! Whether the option specifies a file used for both input and output.
+        bool isInputOutputFile() const;
+        /*! \brief
+         * Whether the option specifies a library file.
+         *
+         * \see FileNameOption::libraryFile()
+         */
+        bool isLibraryFile() const;
+
+    private:
+        const FileNameOptionStorage &option() const;
 };
 
 } // namespace gmx

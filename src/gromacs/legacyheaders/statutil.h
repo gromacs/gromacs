@@ -67,12 +67,6 @@ void setTimeValue(int tcontrol,real value);
 
 /* a dedicated status type contains fp, etc. */
 typedef struct t_trxstatus t_trxstatus;
-  
-typedef int t_first_x(t_trxstatus **status,const char *fn,real *t,rvec **x,
-                      matrix box);
-
-typedef gmx_bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
-                      matrix box);
 
 /* I/O function types */
 
@@ -117,7 +111,7 @@ int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */
 
 int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
-                           atom_id *ind, gmx_conect gc);
+                           const atom_id *ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
 int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
@@ -130,7 +124,7 @@ int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
  * gc is important for pdb file writing only and may be NULL.
  */
 
-int write_trx(t_trxstatus *status,int nind,atom_id *ind,t_atoms *atoms,
+int write_trx(t_trxstatus *status,int nind,const atom_id *ind,t_atoms *atoms,
               int step,real time,matrix box,rvec x[],rvec *v,
               gmx_conect gc);
 /* Write an indexed frame to a TRX file.

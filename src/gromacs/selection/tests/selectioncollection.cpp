@@ -48,6 +48,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
+#include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
@@ -106,6 +107,7 @@ SelectionCollectionTest::~SelectionCollectionTest()
 {
     if (top_ != NULL)
     {
+        free_t_atoms(&top_->atoms, TRUE);
         done_top(top_);
         sfree(top_);
     }
@@ -139,6 +141,8 @@ SelectionCollectionTest::loadTopology(const char *filename)
     frame_->bBox   = TRUE;
     copy_mat(box, frame_->box);
 
+    sfree(xtop);
+
     ASSERT_NO_THROW(sc_.setTopology(top_, -1));
 }
 
@@ -154,7 +158,9 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         {
             efTestEvaluation            = 1<<0,
             efTestPositionAtoms         = 1<<1,
-            efTestPositionCoordinates   = 1<<2
+            efTestPositionCoordinates   = 1<<2,
+            efTestPositionMapping       = 1<<3,
+            efDontTestCompiledAtoms     = 1<<8
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
@@ -165,14 +171,25 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 
         void setFlags(TestFlags flags) { flags_ = flags; }
 
-        void runTest(int natoms, const char *const *selections);
-        void runTest(const char *filename, const char *const *selections);
+        void runTest(int natoms, const char *const *selections, size_t count);
+        void runTest(const char *filename, const char *const *selections,
+                     size_t count);
+        template <size_t count>
+        void runTest(int natoms, const char *const (&selections)[count])
+        {
+            runTest(natoms, selections, count);
+        }
+        template <size_t count>
+        void runTest(const char *filename, const char *const (&selections)[count])
+        {
+            runTest(filename, selections, count);
+        }
 
     private:
         static void checkSelection(gmx::test::TestReferenceChecker *checker,
                                    const gmx::Selection &sel, TestFlags flags);
 
-        void runParser(const char *const *selections);
+        void runParser(const char *const *selections, size_t count);
         void runCompiler();
         void checkCompiled();
         void runEvaluate();
@@ -198,7 +215,8 @@ SelectionCollectionDataTest::checkSelection(
         checker->checkSequence(atoms.begin(), atoms.end(), "Atoms");
     }
     if (flags.test(efTestPositionAtoms)
-        || flags.test(efTestPositionCoordinates))
+        || flags.test(efTestPositionCoordinates)
+        || flags.test(efTestPositionMapping))
     {
         TestReferenceChecker compound(
                 checker->checkSequenceCompound("Positions", sel.posCount()));
@@ -215,20 +233,26 @@ SelectionCollectionDataTest::checkSelection(
             {
                 poscompound.checkVector(p.x(), "Coordinates");
             }
+            if (flags.test(efTestPositionMapping))
+            {
+                poscompound.checkInteger(p.refId(), "RefId");
+                poscompound.checkInteger(p.mappedId(), "MappedId");
+            }
         }
     }
 }
 
 
 void
-SelectionCollectionDataTest::runParser(const char *const *selections)
+SelectionCollectionDataTest::runParser(const char *const *selections,
+                                       size_t count)
 {
     using gmx::test::TestReferenceChecker;
 
     TestReferenceChecker compound(checker_.checkCompound("ParsedSelections", "Parsed"));
     size_t varcount = 0;
     count_ = 0;
-    for (size_t i = 0; selections[i] != NULL; ++i)
+    for (size_t i = 0; i < count; ++i)
     {
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
@@ -281,7 +305,10 @@ SelectionCollectionDataTest::checkCompiled()
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
-        checkSelection(&selcompound, sel_[i], flags_ & mask);
+        if (!flags_.test(efDontTestCompiledAtoms))
+        {
+            checkSelection(&selcompound, sel_[i], flags_ & mask);
+        }
     }
 }
 
@@ -320,18 +347,21 @@ SelectionCollectionDataTest::runEvaluateFinal()
 
 
 void
-SelectionCollectionDataTest::runTest(int natoms, const char * const *selections)
+SelectionCollectionDataTest::runTest(int natoms, const char * const *selections,
+                                     size_t count)
 {
-    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(runParser(selections, count));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(natoms));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
 
 void
-SelectionCollectionDataTest::runTest(const char *filename, const char * const *selections)
+SelectionCollectionDataTest::runTest(const char *filename,
+                                     const char * const *selections,
+                                     size_t count)
 {
-    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(runParser(selections, count));
     ASSERT_NO_FATAL_FAILURE(loadTopology(filename));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
     if (flags_.test(efTestEvaluation))
@@ -362,6 +392,27 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
     EXPECT_STREQ("resname RB RC", sel_[1].selectionText());
 }
 
+TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
+{
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW({
+            sc_.parseFromString("resname ~ \"R[A\"");
+            sc_.compile();
+        }, gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
+{
+    if (!gmx::Regex::isSupported())
+    {
+        ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+        EXPECT_THROW({
+                sc_.parseFromString("resname \"R[AD]\"");
+                sc_.compile();
+            }, gmx::InvalidInputError);
+    }
+}
+
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
     EXPECT_THROW(sc_.parseFromString("mindist from atomnr 1 cutoff"),
@@ -377,6 +428,12 @@ TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue2)
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
 {
     EXPECT_THROW(sc_.parseFromString("within of atomnr 1"),
+                 gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
+{
+    EXPECT_THROW(sc_.parseFromString("resname help"),
                  gmx::InvalidInputError);
 }
 
@@ -444,8 +501,7 @@ TEST_F(SelectionCollectionDataTest, HandlesAllNone)
 {
     static const char * const selections[] = {
         "all",
-        "none",
-        NULL
+        "none"
     };
     runTest(10, selections);
 }
@@ -455,8 +511,7 @@ TEST_F(SelectionCollectionDataTest, HandlesAtomnr)
     static const char * const selections[] = {
         "atomnr 1 to 3 6 to 8",
         "atomnr 4 2 5 to 7",
-        "atomnr <= 5",
-        NULL
+        "atomnr <= 5"
     };
     runTest(10, selections);
 }
@@ -465,8 +520,7 @@ TEST_F(SelectionCollectionDataTest, HandlesResnr)
 {
     static const char * const selections[] = {
         "resnr 1 2 5",
-        "resnr 4 to 3",
-        NULL
+        "resid 4 to 3"
     };
     runTest("simple.gro", selections);
 }
@@ -475,7 +529,7 @@ TEST_F(SelectionCollectionDataTest, HandlesResIndex)
 {
     static const char * const selections[] = {
         "resindex 1 4",
-        NULL
+        "residue 1 3"
     };
     runTest("simple.pdb", selections);
 }
@@ -486,10 +540,20 @@ TEST_F(SelectionCollectionDataTest, HandlesAtomname)
 {
     static const char * const selections[] = {
         "name CB",
-        "name S1 S2",
-        NULL
+        "atomname S1 S2"
     };
     runTest("simple.gro", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesPdbAtomname)
+{
+    static const char * const selections[] = {
+        "name HG21",
+        "name 1HG2",
+        "pdbname HG21 CB",
+        "pdbatomname 1HG2"
+    };
+    runTest("simple.pdb", selections);
 }
 
 // TODO: Add test for atomtype
@@ -498,8 +562,7 @@ TEST_F(SelectionCollectionDataTest, HandlesChain)
 {
     static const char * const selections[] = {
         "chain A",
-        "chain B",
-        NULL
+        "chain B"
     };
     runTest("simple.pdb", selections);
 }
@@ -511,8 +574,7 @@ TEST_F(SelectionCollectionDataTest, HandlesAltLoc)
 {
     static const char * const selections[] = {
         "altloc \" \"",
-        "altloc A",
-        NULL
+        "altloc A"
     };
     runTest("simple.pdb", selections);
 }
@@ -521,8 +583,7 @@ TEST_F(SelectionCollectionDataTest, HandlesInsertCode)
 {
     static const char * const selections[] = {
         "insertcode \" \"",
-        "insertcode A",
-        NULL
+        "insertcode A"
     };
     runTest("simple.pdb", selections);
 }
@@ -531,8 +592,7 @@ TEST_F(SelectionCollectionDataTest, HandlesOccupancy)
 {
     static const char * const selections[] = {
         "occupancy 1",
-        "occupancy < .5",
-        NULL
+        "occupancy < .5"
     };
     runTest("simple.pdb", selections);
 }
@@ -541,8 +601,7 @@ TEST_F(SelectionCollectionDataTest, HandlesBeta)
 {
     static const char * const selections[] = {
         "beta 0",
-        "beta >= 0.3",
-        NULL
+        "beta >= 0.3"
     };
     runTest("simple.pdb", selections);
 }
@@ -551,8 +610,7 @@ TEST_F(SelectionCollectionDataTest, HandlesResname)
 {
     static const char * const selections[] = {
         "resname RA",
-        "resname RB RC",
-        NULL
+        "resname RB RC"
     };
     runTest("simple.gro", selections);
 }
@@ -562,8 +620,7 @@ TEST_F(SelectionCollectionDataTest, HandlesCoordinateKeywords)
     static const char * const selections[] = {
         "x < 3",
         "y >= 3",
-        "x {-1 to 2}",
-        NULL
+        "x {-1 to 2}"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -573,8 +630,7 @@ TEST_F(SelectionCollectionDataTest, HandlesCoordinateKeywords)
 TEST_F(SelectionCollectionDataTest, HandlesSameResidue)
 {
     static const char * const selections[] = {
-        "same residue as atomnr 1 4 12",
-        NULL
+        "same residue as atomnr 1 4 12"
     };
     runTest("simple.gro", selections);
 }
@@ -583,8 +639,7 @@ TEST_F(SelectionCollectionDataTest, HandlesSameResidue)
 TEST_F(SelectionCollectionDataTest, HandlesSameResidueName)
 {
     static const char * const selections[] = {
-        "same resname as atomnr 1 14",
-        NULL
+        "same resname as atomnr 1 14"
     };
     runTest("simple.gro", selections);
 }
@@ -597,8 +652,7 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionKeywords)
         "res_cog of name CB and resnr 1 3",
         "whole_res_cog of name CB and resnr 1 3",
         "part_res_cog of x < 3",
-        "dyn_res_cog of x < 3",
-        NULL
+        "dyn_res_cog of x < 3"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
              | efTestPositionAtoms);
@@ -609,8 +663,7 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionKeywords)
 TEST_F(SelectionCollectionDataTest, HandlesDistanceKeyword)
 {
     static const char * const selections[] = {
-        "distance from cog of resnr 1 < 2",
-        NULL
+        "distance from cog of resnr 1 < 2"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -620,8 +673,7 @@ TEST_F(SelectionCollectionDataTest, HandlesDistanceKeyword)
 TEST_F(SelectionCollectionDataTest, HandlesMinDistanceKeyword)
 {
     static const char * const selections[] = {
-        "mindistance from resnr 1 < 2",
-        NULL
+        "mindistance from resnr 1 < 2"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -631,46 +683,47 @@ TEST_F(SelectionCollectionDataTest, HandlesMinDistanceKeyword)
 TEST_F(SelectionCollectionDataTest, HandlesWithinKeyword)
 {
     static const char * const selections[] = {
-        "within 1 of resnr 2",
-        NULL
+        "within 1 of resnr 2"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
 }
 
 
-// TODO: Add test for "insolidangle"
+TEST_F(SelectionCollectionDataTest, HandlesInSolidAngleKeyword)
+{
+    // Both of these should evaluate to empty on a correct implementation.
+    static const char * const selections[] = {
+        "resname TP and not insolidangle center cog of resname C span resname R cutoff 20",
+        "resname TN and insolidangle center cog of resname C span resname R cutoff 20"
+    };
+    setFlags(TestFlags() | efDontTestCompiledAtoms | efTestEvaluation);
+    runTest("sphere.gro", selections);
+}
 
-
-// TODO: Check the handling of mapped and reference IDs in the modifier tests
-// below.
 
 TEST_F(SelectionCollectionDataTest, HandlesPermuteModifier)
 {
     static const char * const selections[] = {
         "all permute 3 1 2",
         "res_cog of resnr 1 to 4 permute 2 1",
-        "name CB S1 and res_cog x < 3 permute 2 1",
-        NULL
+        "name CB S1 and res_cog x < 3 permute 2 1"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms);
+             | efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
-
-// TODO: Add tests for plus/merge on dynamic selections
-// (can't remember whether it's actually implemented or not).
 
 TEST_F(SelectionCollectionDataTest, HandlesPlusModifier)
 {
     static const char * const selections[] = {
         "name S2 plus name S1",
         "res_cog of resnr 2 plus res_cog of resnr 1 plus res_cog of resnr 3",
-        NULL
+        "name S1 and y < 3 plus res_cog of x < 2.5"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
-             | efTestPositionAtoms);
+             | efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -679,10 +732,11 @@ TEST_F(SelectionCollectionDataTest, HandlesMergeModifier)
 {
     static const char * const selections[] = {
         "name S2 merge name S1",
-        "name S2 merge name S1 merge name CB",
-        NULL
+        "resnr 1 2 and name S2 merge resnr 1 2 and name S1 merge res_cog of resnr 1 2",
+        "name S1 and x < 2.5 merge res_cog of x < 2.5"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -694,8 +748,7 @@ TEST_F(SelectionCollectionDataTest, HandlesMergeModifier)
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 {
     static const char * const selections[] = {
-        "[1, -2, 3.5]",
-        NULL
+        "[1, -2, 3.5]"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -705,24 +758,43 @@ TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
 {
     static const char * const selections[] = {
-        "within 1 of [2, 1, 0]",
-        NULL
+        "within 1 of [2, 1, 0]"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
 }
 
-#ifdef HAVE_REGEX_H
+
+TEST_F(SelectionCollectionDataTest, HandlesForcedStringMatchingMode)
+{
+    static const char * const selections[] = {
+        "name = S1 \"C?\"",
+        "name ? S1 \"C?\""
+    };
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesWildcardMatching)
+{
+    static const char * const selections[] = {
+        "name \"S?\"",
+        "name ? \"S?\""
+    };
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
-#else
-TEST_F(SelectionCollectionDataTest, DISABLED_HandlesRegexMatching)
-#endif
 {
     static const char * const selections[] = {
         "resname \"R[BD]\"",
-        NULL
+        "resname ~ \"R[BD]\""
     };
-    runTest("simple.gro", selections);
+    if (gmx::Regex::isSupported())
+    {
+        runTest("simple.gro", selections);
+    }
 }
 
 
@@ -733,10 +805,23 @@ TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
         "atomnr 1 to 5 or not atomnr 3 to 8",
         "not not atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7",
         "atomnr 1 to 5 and (atomnr 2 to 7 and atomnr 3 to 6)",
-        "x < 5 and atomnr 1 to 5 and y < 3 and atomnr 2 to 4",
-        NULL
+        "x < 5 and atomnr 1 to 5 and y < 3 and atomnr 2 to 4"
     };
     runTest(10, selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
+{
+    static const char * const selections[] = {
+        "x > 2",
+        "2 < x",
+        "y > resnr",
+        "resnr < 2.5",
+        "2.5 > resnr"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
 }
 
 
@@ -746,8 +831,7 @@ TEST_F(SelectionCollectionDataTest, HandlesArithmeticExpressions)
         "x+1 > 3",
         "(y-1)^2 <= 1",
         "x+--1 > 3",
-        "-x+-1 < -3",
-        NULL
+        "-x+-1 < -3"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -760,8 +844,64 @@ TEST_F(SelectionCollectionDataTest, HandlesNumericVariables)
         "value = x + y",
         "value <= 4",
         "index = resnr",
-        "index < 3",
-        NULL
+        "index < 3"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesComplexNumericVariables)
+{
+    static const char * const selections[] = {
+        "value = x + y",
+        "resname RA and value <= 4",
+        "resname RA RB and x < 3 and value <= 4",
+        "index = atomnr",
+        "resname RA and index < 3",
+        "resname RB and y < 3 and index < 6"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesPositionVariables)
+{
+    static const char * const selections[] = {
+        "foo = res_cog of resname RA",
+        "foo",
+        "within 1 of foo",
+        "bar = cog of resname RA",
+        "bar",
+        "within 1 of bar"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesConstantPositionInVariable)
+{
+    static const char * const selections[] = {
+        "constpos = [1.0, 2.5, 0.5]",
+        "constpos",
+        "within 2 of constpos"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+            | efTestPositionAtoms);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesNumericConstantsInVariables)
+{
+    static const char * const selections[] = {
+        "constint = 4",
+        "constreal1 = 0.5",
+        "constreal2 = 2.7",
+        "resnr < constint",
+        "x + constreal1 < constreal2"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -779,8 +919,7 @@ TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysis)
         "atomnr 1 to 5 and (atomnr 4 to 7 or x < 2)",
         "atomnr 1 to 5 and y < 3 and (atomnr 4 to 7 or x < 2)",
         "atomnr 1 to 5 and not (atomnr 4 to 7 or x < 2)",
-        "atomnr 1 to 5 or (atomnr 4 to 6 and (atomnr 5 to 7 or x < 2))",
-        NULL
+        "atomnr 1 to 5 or (atomnr 4 to 6 and (atomnr 5 to 7 or x < 2))"
     };
     runTest(10, selections);
 }
@@ -792,8 +931,7 @@ TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysisWithVariables)
         "foo = atomnr 4 to 7 or x < 2",
         "atomnr 1 to 4 and foo",
         "atomnr 2 to 6 and y < 3 and foo",
-        "atomnr 6 to 10 and not foo",
-        NULL
+        "atomnr 6 to 10 and not foo"
     };
     runTest(10, selections);
 }
@@ -807,8 +945,7 @@ TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysisWithMoreVariable
         "bar2 = foo and y < 2",
         "atomnr 1 to 4 and bar",
         "atomnr 2 to 6 and y < 3 and bar2",
-        "atomnr 6 to 10 and not foo",
-        NULL
+        "atomnr 6 to 10 and not foo"
     };
     runTest(10, selections);
 }
@@ -827,8 +964,7 @@ TEST_F(SelectionCollectionDataTest, HandlesUnusedVariables)
         "unused1 = atomnr 1 to 3",
         "foo = atomnr 4 to 7",
         "atomnr 1 to 6 and foo",
-        "unused2 = atomnr 3 to 5",
-        NULL
+        "unused2 = atomnr 3 to 5"
     };
     runTest(10, selections);
 }
@@ -839,8 +975,7 @@ TEST_F(SelectionCollectionDataTest, HandlesVariablesWithStaticEvaluationGroups)
     static const char * const selections[] = {
         "foo = atomnr 4 to 7 and x < 2",
         "atomnr 1 to 5 and foo",
-        "atomnr 3 to 7 and foo",
-        NULL
+        "atomnr 3 to 7 and foo"
     };
     runTest(10, selections);
 }
@@ -852,8 +987,7 @@ TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups)
         "foo = atomnr 4 to 7 and x < 2",
         "atomnr 1 to 6 and foo",
         "within 1 of foo",
-        "foo",
-        NULL
+        "foo"
     };
     runTest(10, selections);
 }

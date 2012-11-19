@@ -97,10 +97,10 @@ struct tmpi_global *tmpi_global=NULL;
 
 
 
-
-
 /* start N threads with argc, argv (used by tMPI_Init)*/
-void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv, 
+void tMPI_Start_threads(tmpi_bool main_returns, int N, 
+                        tMPI_Affinity_strategy aff_strategy,
+                        int *argc, char ***argv, 
                         void (*start_fn)(void*), void *start_arg,
                         int (*start_fn_main)(int, char**));
 
@@ -120,14 +120,19 @@ static void tMPI_Thread_destroy(struct tmpi_thread *th);
 void tMPI_Trace_print(const char *fmt, ...)
 {
     va_list argp;
-    struct tmpi_thread* th=tMPI_Get_current();
+    struct tmpi_thread* th=NULL;
     static tMPI_Thread_mutex_t mtx=TMPI_THREAD_MUTEX_INITIALIZER;
 
     tMPI_Thread_mutex_lock(&mtx);
     if (threads)
+    {
+        th=tMPI_Get_current();
         printf("THREAD %02d: ", (int)(th-threads));
+    }
     else
+    {
         printf("THREAD main: ");
+    }
     va_start(argp, fmt);
     vprintf(fmt, argp);
     printf("\n");
@@ -313,6 +318,8 @@ static void tMPI_Global_init(struct tmpi_global *g, int Nthreads)
 
     tMPI_Thread_barrier_init( &(g->barrier), Nthreads);
 
+    tMPI_Thread_mutex_init(&(g->comm_link_lock));
+
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     /* the time at initialization. */
     gettimeofday( &(g->timer_init), NULL);
@@ -325,7 +332,9 @@ static void tMPI_Global_init(struct tmpi_global *g, int Nthreads)
 
 static void tMPI_Global_destroy(struct tmpi_global *g)
 {
+    tMPI_Thread_barrier_destroy(&(g->barrier));
     tMPI_Thread_mutex_destroy(&(g->timer_mutex));
+    tMPI_Thread_mutex_destroy(&(g->comm_link_lock));
 }
 
 
@@ -357,13 +366,16 @@ static void* tMPI_Thread_starter(void *arg)
 }
 
 
-void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv, 
+void tMPI_Start_threads(tmpi_bool main_returns, int N, 
+                        tMPI_Affinity_strategy aff_strategy,
+                        int *argc, char ***argv, 
                         void (*start_fn)(void*), void *start_arg,
                         int (*start_fn_main)(int, char**))
 {
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Start_threads(%d, %p, %p, %p, %p)", N, argc,
-                       argv, start_fn, start_arg);
+    tMPI_Trace_print("tMPI_Start_threads(%d, %d, %d, %d, %d, %p, %p, %p, %p)", 
+                      main_returns, N, aff_strategy, argc, argv, start_fn, 
+                      start_arg);
 #endif
     if (N>0) 
     {
@@ -418,7 +430,7 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
         }
 
         /* now check whether to set affinity */
-#ifdef TMPI_THREAD_AFFINITY
+        if (aff_strategy == TMPI_AFFINITY_ALL_CORES) 
         {
             int nhw=tMPI_Thread_get_hw_number();
             if ((nhw > 1) && (nhw == N))
@@ -426,25 +438,26 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
                 set_affinity=TRUE;
             }
         }
-#endif
+
+        /* set thread 0's properties */
+        threads[0].thread_id=tMPI_Thread_self();
+        if (set_affinity)
+        {
+            /* set the main thread's affinity */
+            tMPI_Thread_setaffinity_single(threads[0].thread_id, 0);
+        }
 
         for(i=1;i<N;i++) /* zero is the main thread */
         {
             int ret;
+            ret=tMPI_Thread_create(&(threads[i].thread_id), 
+                                   tMPI_Thread_starter,
+                                   (void*)&(threads[i]) ) ;
 
             if (set_affinity)
             {
-                ret=tMPI_Thread_create_aff(&(threads[i].thread_id), 
-                                           tMPI_Thread_starter,
-                                           (void*)&(threads[i]) ) ;
+                tMPI_Thread_setaffinity_single(threads[i].thread_id, i);
             }
-            else
-            {
-                ret=tMPI_Thread_create(&(threads[i].thread_id), 
-                                       tMPI_Thread_starter,
-                                       (void*)&(threads[i]) ) ;
-            }
-
             if(ret)
             {
                 tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_INIT);
@@ -460,7 +473,8 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
 }
 
 
-int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**))
+int tMPI_Init(int *argc, char ***argv, 
+              int (*start_function)(int, char**))
 {
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Init(%p, %p, %p)", argc, argv, start_function);
@@ -471,7 +485,8 @@ int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**))
     {
         int N=0;
         tMPI_Get_N(argc, argv, "-nt", &N);
-        tMPI_Start_threads(FALSE, N, argc, argv, NULL, NULL, start_function);
+        tMPI_Start_threads(FALSE, N, TMPI_AFFINITY_ALL_CORES, argc, argv, 
+                           NULL, NULL, start_function);
     }
     else
     {
@@ -482,7 +497,11 @@ int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**))
     return TMPI_SUCCESS;
 }
 
+
+
+
 int tMPI_Init_fn(int main_thread_returns, int N, 
+                 tMPI_Affinity_strategy aff_strategy,
                  void (*start_function)(void*), void *arg)
 {
 #ifdef TMPI_TRACE
@@ -497,8 +516,8 @@ int tMPI_Init_fn(int main_thread_returns, int N,
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
-        tMPI_Start_threads(main_thread_returns, N, 0, 0, start_function, arg, 
-                           NULL);
+        tMPI_Start_threads(main_thread_returns, N, aff_strategy, 
+                           0, 0, start_function, arg, NULL);
     }
     return TMPI_SUCCESS;
 }
@@ -561,14 +580,18 @@ int tMPI_Finalize(void)
         tMPI_Thread_key_delete(id_key);
         /* de-allocate all the comm stuctures. */
         {
-            tMPI_Comm cur=TMPI_COMM_WORLD->next;
+            tMPI_Comm cur;
+
+            tMPI_Thread_mutex_lock(&(tmpi_global->comm_link_lock));
+            cur=TMPI_COMM_WORLD->next;
             while(cur && (cur!=TMPI_COMM_WORLD) )
             {
                 tMPI_Comm next=cur->next;
-                tMPI_Comm_destroy(cur);
+                tMPI_Comm_destroy(cur, FALSE);
                 cur=next;
             }
-            tMPI_Comm_destroy(TMPI_COMM_WORLD);
+            tMPI_Comm_destroy(TMPI_COMM_WORLD, FALSE);
+            tMPI_Thread_mutex_unlock(&(tmpi_global->comm_link_lock));
         }
 
         tMPI_Group_free(&TMPI_GROUP_EMPTY);

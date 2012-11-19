@@ -39,7 +39,6 @@
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
-#include "gromacs/options/optioninfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -142,7 +141,7 @@ void AbstractOptionStorage::finish()
 {
     GMX_RELEASE_ASSERT(!bInSet_, "finishSet() not called");
     processAll();
-    if (isRequired() && !isSet())
+    if (isRequired() && !(isSet() || hasFlag(efOption_ExplicitDefaultValue)))
     {
         GMX_THROW(InvalidInputError("Option is required, but not set"));
     }

@@ -309,8 +309,9 @@ static void upd_nbfplj(FILE *log,real *nbfp,int atnr,real f6[],real f12[],
 	else
 	  sig  = sqrt(sigma[n]*sigma[m]);
 	sig6 = pow(sig,6.0);
-	C6 (nbfp,atnr,n,m) = 4*eps*sig6; 
-	C12(nbfp,atnr,n,m) = 4*eps*sig6*sig6;
+    /* nbfp now includes the 6.0/12.0 derivative prefactors */
+	C6 (nbfp,atnr,n,m) = 4*eps*sig6/6.0;
+	C12(nbfp,atnr,n,m) = 4*eps*sig6*sig6/12.0;
       }
     }
     sfree(sigma);
@@ -677,9 +678,12 @@ void do_coupling(FILE *log,const output_env_t oenv,int nfile,
       ati = tclj->at_i;
       atj = tclj->at_j;
       if (atj == -1) 
-	atj = ati;
-      tclj->c6  =  C6(fr->nbfp,fr->ntype,ati,atj);
-      tclj->c12 = C12(fr->nbfp,fr->ntype,ati,atj);
+      {
+          atj = ati;
+      }
+      /* nbfp now includes the 6.0/12.0 derivative prefactors */
+      tclj->c6  =  C6(fr->nbfp,fr->ntype,ati,atj)/6.0;
+      tclj->c12 = C12(fr->nbfp,fr->ntype,ati,atj)/12.0;
     }
   }
   else {
@@ -707,10 +711,13 @@ void do_coupling(FILE *log,const output_env_t oenv,int nfile,
       ati = tcbu->at_i;
       atj = tcbu->at_j;
       if (atj == -1) 
-	atj = ati;
+      {
+          atj = ati;
+      }
+      /* nbfp now includes the 6.0 derivative prefactors */
       tcbu->a = BHAMA(fr->nbfp,fr->ntype,ati,atj);
       tcbu->b = BHAMB(fr->nbfp,fr->ntype,ati,atj);
-      tcbu->c = BHAMC(fr->nbfp,fr->ntype,ati,atj);
+      tcbu->c = BHAMC(fr->nbfp,fr->ntype,ati,atj)/6.0;
       if (debug)
 	fprintf(debug,"buck (type=%d) = %e, %e, %e\n",
 		tcbu->at_i,tcbu->a,tcbu->b,tcbu->c);

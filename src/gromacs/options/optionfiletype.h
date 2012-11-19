@@ -51,6 +51,7 @@ enum OptionFileType {
     eftUnknown,
     eftTopology,
     eftTrajectory,
+    eftPDB,
     eftIndex,
     eftPlot,
     eftGenericData,

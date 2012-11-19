@@ -61,9 +61,6 @@
 #ifdef GMX_OPENMP
 /* TODO: Do we still need this? Are we still planning ot use fftw + OpenMP? */
 #define FFT5D_THREADS
-#endif
-#ifdef FFT5D_THREADS
-#include "gmx_omp.h"
 /* requires fftw compiled with openmp */
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
@@ -376,13 +373,31 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     if (!(flags&FFT5D_NOMALLOC)) { 
         snew_aligned(lin, lsize, 32);
         snew_aligned(lout, lsize, 32);
-        snew_aligned(lout2, lsize, 32);
-        snew_aligned(lout3, lsize, 32);
+        if (nthreads > 1)
+        {
+            /* We need extra transpose buffers to avoid OpenMP barriers */
+            snew_aligned(lout2, lsize, 32);
+            snew_aligned(lout3, lsize, 32);
+        }
+        else
+        {
+            /* We can reuse the buffers to avoid cache misses */
+            lout2 = lin;
+            lout3 = lout;
+        }
     } else {
         lin = *rlin;
         lout = *rlout;
-        lout2 = *rlout2;
-        lout3 = *rlout3;
+        if (nthreads > 1)
+        {
+            lout2 = *rlout2;
+            lout3 = *rlout3;
+        }
+        else
+        {
+            lout2 = lin;
+            lout3 = lout;
+        }
     }
 
     plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
@@ -502,6 +517,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
              */
 #pragma omp parallel for num_threads(nthreads) schedule(static) ordered
             for(t=0; t<nthreads; t++)
+#pragma omp ordered
             {
                 int tsize = ((t+1)*pM[s]*pK[s]/nthreads)-(t*pM[s]*pK[s]/nthreads);
 
@@ -741,7 +757,7 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
 /*    int direction = plan->direction;
     int fftorder = plan->fftorder;*/
     
-    int o;
+    int o=0;
     int pos[3],i;
     int *pM=plan->pM, *pK=plan->pK, *oM=plan->oM, *oK=plan->oK,
         *C=plan->C, *rC=plan->rC;
@@ -898,7 +914,7 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
         }
 #endif
 
-        if (bParallelDim) {
+        if (bParallelDim || plan->nthreads == 1) {
             fftout = lout;
         }
         else
@@ -1085,6 +1101,7 @@ llToAll
 
 void fft5d_destroy(fft5d_plan plan) {
     int s,t;
+
     for (s=0;s<3;s++)
     {
         if (plan->p1d[s])
@@ -1135,8 +1152,11 @@ void fft5d_destroy(fft5d_plan plan) {
     {
         sfree_aligned(plan->lin);
         sfree_aligned(plan->lout);
-        sfree_aligned(plan->lout2);
-        sfree_aligned(plan->lout3);
+        if (plan->nthreads > 1)
+        {
+            sfree_aligned(plan->lout2);
+            sfree_aligned(plan->lout3);
+        }
     }
     
 #ifdef FFT5D_THREADS

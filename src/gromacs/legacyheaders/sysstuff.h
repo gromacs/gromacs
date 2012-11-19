@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
+#include "gromacs/version.h"
 #include <limits.h>
 #include <time.h>
 

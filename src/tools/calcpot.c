@@ -36,6 +36,9 @@
 #include <config.h>
 #endif
 
+#include <stddef.h>
+
+#include "types/commrec.h"
 #include "vec.h"
 #include "calcpot.h"
 #include "nrnb.h"
@@ -155,7 +158,7 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
   
   nlist = &fr->nblists[0].nlist_sr[nl_type];
   
-  c_tabpot(fr->nblists[0].tab.scale,fr->nblists[0].tab.tab,
+  c_tabpot(fr->nblists[0].table_elec_vdw.scale,fr->nblists[0].table_elec_vdw.data,
 	   nlist->nri,nlist->iinr,
 	   nlist->shift,nlist->jindex,nlist->jjnr,
 	   x[0],fr->epsfac,mdatoms->chargeA,pot,fr->shift_vec[0]);
@@ -188,7 +191,7 @@ void calc_pot(FILE *logf,t_commrec *cr,
    * also do the calculation of long range forces and energies.
    */
   ns(logf,fr,x,box,&mtop->groups,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,&lam[0],&dum[0],&enerd->grpp,TRUE,FALSE,FALSE,NULL);
+     &nrnb,&lam[0],&dum[0],&enerd->grpp,TRUE,FALSE);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
@@ -215,8 +218,8 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 		   matrix box,rvec **x, const output_env_t oenv)
 {
   gmx_localtop_t *ltop;
-  double   t,t0,lam0;
-  real     lam;
+  double   t,t0;
+  real     lam[efptNR];
   int      fep_state;
   gmx_bool     bNEMD,bSA;
   int      traj=0,xtc_traj=0;
@@ -247,7 +250,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   }
 
   clear_rvec(mutot);
-  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&fep_state,&lam0,
+  init_md(fplog,*cr,inputrec,oenv,&t,&t0,lam,&fep_state,NULL,
 	  &nrnb,mtop,NULL,-1,NULL,NULL,NULL,
 	  force_vir,shake_vir,mutot,&bSA,NULL,NULL,0);
 
@@ -284,8 +287,8 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(fplog,oenv,*fr,NULL,inputrec,mtop,*cr,
-		state->box,FALSE,NULL,table,NULL,table,NULL,TRUE,-1);
-  
+		state->box,FALSE,NULL,table,NULL,table,NULL,NULL,TRUE,-1);
+
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
     box_size[m] = state->box[m][m];

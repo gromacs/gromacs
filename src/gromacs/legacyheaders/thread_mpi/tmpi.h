@@ -55,6 +55,12 @@ files.
 */
 
 
+/* for size_t, include stddef.h - which is in C89. This is done  
+   regardless of whether we're compiling C++ or C code because the base
+   library for this is in C. */
+#include <stddef.h>
+
+
 #ifdef __cplusplus
 extern "C" 
 {  
@@ -63,10 +69,32 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
+
+
 /** tMPI definition. 
 
 Use this to check for thread_mpi with the preprocessor. */
 #define TMPI 
+
+
+/** tMPI initialization thread affinity strategy.
+
+    Used in the tMPI_Init_affinity() and  tMPI_Init_fn_affinity() functions,
+    to control how affinity is set. The default tMPI_Init() and tMPI_Init_fn()
+    functions use the TMPI_AFFINITY_ALL_CORES strategy.
+
+    These strategies are fairly basic. For more flexibility, use the 
+    tMPI_Set_affinity() function.*/
+typedef enum
+{
+    TMPI_AFFINITY_NONE=0,       /**< Do not set any thread affinity */
+    TMPI_AFFINITY_ALL_CORES,    /**< Only set affinity if the number of threads 
+                                     is equal to the number of hardware threads
+                                     (cores + hyperthreads). This is the only
+                                     safe way to set thread affinity, 
+                                     without clashes between multiple
+                                     instances of the same program. */
+} tMPI_Affinity_strategy;
 
 
 
@@ -150,6 +178,8 @@ enum
     TMPI_ERR_ENVELOPES,
     TMPI_ERR_REQUESTS,
     TMPI_ERR_IN_STATUS,
+    TMPI_ERR_PROCNR,                /*!< Hardware processor number (such as for 
+                                         thread affinity) error */
     TMPI_FAILURE,
     TMPI_ERR_UNKNOWN,
     N_TMPI_ERR  /* this must be the last one */
@@ -285,9 +315,9 @@ tMPI_Comm tMPI_Get_comm_self(void);
 
 /*! \name Initialization and exit functions 
     \{ */
-/** Traditional MPI initializer; spawns threads that start at 
-    the given function. 
-  
+/** Traditional MPI initializer; spawns threads that start at the given
+    function.
+
     Seeks the argument '-nt n', where n is the number of 
     threads that will be created. If n==0, the number of threads will
     be the recommended number of threads for this platform as obtained
@@ -297,17 +327,23 @@ tMPI_Comm tMPI_Get_comm_self(void);
     argc and argv. This function could be main(), or any other function; 
     calling this function again - whether from the started threads or from 
     the main thread - has no effect.
-    
-    \param[in] argc     argc of original main() invocation, or NULL
-    \param[in] argv     argv of original main() invocation, or NULL. 
-    \param[in] start_function Starting function of type 
-                        int start_function(int argc, char *argv[]);
+
+    On platforms that support thread affinity setting, this function will
+    use the 'all-cores' affinity strategy: it will only set thread affinity
+    if the number of threads is equal to the number of hardware threads 
+    (cores + hyperthreads). 
+
+    \param[in] argc             argc of original main() invocation, or NULL
+    \param[in] argv             argv of original main() invocation, or NULL. 
+    \param[in] start_function   Starting function of type 
+                                int start_function(int argc, char *argv[]);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
-int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**));
+int tMPI_Init(int *argc, char ***argv, 
+              int (*start_function)(int, char**));
 
 
-/** Alternate thread MPI intializer and thread spawner.
+/** Generic init function thread MPI intializer and thread spawner.
   
     Creates N threads (including main thread) 
     that run the function start_function, which takes a void* argument, 
@@ -319,12 +355,17 @@ int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**));
     If N==0, the number of threads will be the recommended number of 
     threads for this platform as obtained from tMPI_Get_recommended_ntreads(). 
 
+    Note that thread affinity strategy only has an effect when this is 
+    supported by the underlying platform. As of yet (2012), this is not the 
+    case for Mac OS X, for example.
+
     \param[in]  main_thread_returns   whether the control in the main thread 
                                       should return immediately (if true), or 
                                       the start_function() should be called 
                                       from the main thread, too (if false).
     \param[in] N                      The number of threads to start (or 0 to
                                       automatically determine this).
+    \param[in] aff_strategy           The thread affinity strategy to use.
     \param[in] start_function         The function to start threads at 
                                       (including main thread if 
                                       main_thread_returns). 
@@ -332,8 +373,13 @@ int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**));
 
     \return  TMPI_FAILURE on failure, TMPI_SUCCESS on succes (after all
              threads have finished if main_thread_returns=true).  */
-int tMPI_Init_fn(int main_thread_returns, int N, 
+int tMPI_Init_fn(int main_thread_returns, int N,
+                 tMPI_Affinity_strategy aff_strategy,
                  void (*start_function)(void*), void *arg);
+
+
+
+
 
 /** get the number of threads from the command line
   
@@ -1201,7 +1247,7 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
     \param[in]  sendbuf     The operand parameters. Any process may specify 
                             TMPI_IN_PLACE, in which case recvbuf will hold
                             the operand parameters for that process.
-    \param[out] recvbuf     The result buffer.
+    \param[in,out] recvbuf  The result buffer.
     \param[in]  count       The number of items to do operation on.
     \param[in]  datatype    The data type of the items.
     \param[in]  op          The operation to perform.
@@ -1236,6 +1282,27 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count, 
                      tMPI_Datatype datatype, tMPI_Op op, int root, 
                      tMPI_Comm comm);
+
+/** Do a partial reduce operation, based on rank: the results of the 
+    reduction operation of ranks 0 - i will be put in the recvbuf of
+    rank i.
+  
+    Collective function.
+
+    \param[in]     sendbuf     The operand parameters. All ranks may specify 
+                               TMPI_IN_PLACE, in which case recvbuf will hold
+                               the operand parameters.
+    \param[in,out] recvbuf     The result buffer.
+    \param[in]     count       The number of items to do operation on.
+    \param[in]     datatype    The data type of the items.
+    \param[in]     op          The operation to perform.
+    \param[in]     comm        The communicator.
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Scan(void* sendbuf, void* recvbuf, int count, 
+              tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
+
+
 /*! \} */
 
 

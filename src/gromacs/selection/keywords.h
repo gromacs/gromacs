@@ -37,12 +37,13 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifndef SELECTION_KEYWORDS_H
-#define SELECTION_KEYWORDS_H
+#ifndef GMX_SELECTION_KEYWORDS_H
+#define GMX_SELECTION_KEYWORDS_H
+
+#include "parsetree.h"
+#include "selelem.h"
 
 struct gmx_ana_selmethod_t;
-struct t_selelem;
-struct t_selexpr_param;
 
 /** Selection method data for comparison expression evaluation. */
 extern struct gmx_ana_selmethod_t sm_compare;
@@ -62,20 +63,26 @@ _gmx_selelem_print_compare_info(FILE *fp, void *data);
 
 /** Sets the position type for position keyword evaluation. */
 void
-_gmx_selelem_set_kwpos_type(struct t_selelem *sel, const char *type);
+_gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type);
 /** Sets the flags for position keyword evaluation. */
 void
-_gmx_selelem_set_kwpos_flags(struct t_selelem *sel, int flags);
+_gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags);
+
+/** Sets the string match type for string keyword evaluation. */
+void
+_gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
+                                  gmx::SelectionStringMatchType matchType);
 
 /** Does custom processing for parameters of the \c same selection method. */
 int
 _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t **method,
-                              struct t_selexpr_param *params, void *scanner);
+                              const gmx::SelectionParserParameterListPointer &params,
+                              void *scanner);
 
 /** Initializes a selection element for evaluating a keyword in a given group. */
-int
-_gmx_sel_init_keyword_evaluator(struct t_selelem **sel,
-                                struct gmx_ana_selmethod_t *method,
-                                struct t_selexpr_param *param, void *scanner);
+gmx::SelectionTreeElementPointer
+_gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t *method,
+                                const gmx::SelectionParserParameterList &params,
+                                void *scanner);
 
 #endif

@@ -64,6 +64,7 @@
 #include "vsite.h"
 #include "force.h"
 #include "mdrun.h"
+#include "md_support.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "trnio.h"
@@ -73,6 +74,9 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "bondf.h"
+#include "gmx_omp_nthreads.h"
+
 
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
@@ -129,26 +133,37 @@ static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 
 static void warn_step(FILE *fp,real ftol,gmx_bool bLastStep,gmx_bool bConstrain)
 {
+    char buffer[2048];
     if (bLastStep)
     {
-        fprintf(fp,"\nReached the maximum number of steps before reaching Fmax < %g\n",ftol);
+        sprintf(buffer,
+                "\nEnergy minimization reached the maximum number"
+                "of steps before the forces reached the requested"
+                "precision Fmax < %g.\n",ftol);
     }
     else
     {
-        fprintf(fp,"\nStepsize too small, or no change in energy.\n"
-                "Converged to machine precision,\n"
-                "but not to the requested precision Fmax < %g\n",
-                ftol);
-        if (sizeof(real)<sizeof(double))
-        {
-            fprintf(fp,"\nDouble precision normally gives you higher accuracy.\n");
-        }
-        if (bConstrain)
-        {
-            fprintf(fp,"You might need to increase your constraint accuracy, or turn\n"
-                    "off constraints alltogether (set constraints = none in mdp file)\n");
-        }
+        sprintf(buffer,
+                "\nEnergy minimization has stopped, but the forces have"
+                "not converged to the requested precision Fmax < %g (which"
+                "may not be possible for your system). It stopped"
+                "because the algorithm tried to make a new step whose size"
+                "was too small, or there was no change in the energy since"
+                "last step. Either way, we regard the minimization as"
+                "converged to within the available machine precision,"
+                "given your starting configuration and EM parameters.\n%s%s",
+                ftol,
+                sizeof(real)<sizeof(double) ?
+                "\nDouble precision normally gives you higher accuracy, but"
+                "this is often not needed for preparing to run molecular"
+                "dynamics.\n" :
+                "",
+                bConstrain ?
+                "You might need to increase your constraint accuracy, or turn\n"
+                "off constraints altogether (set constraints = none in mdp file)\n" :
+                "");
     }
+    fputs(wrap_lines(buffer, 78, 0, FALSE), fp);
 }
 
 
@@ -339,7 +354,11 @@ void init_em(FILE *fplog,const char *title,
         }
         *f_global = *f;
 
-        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols)
+        forcerec_set_excl_load(fr,*top,cr);
+
+        init_bonded_thread_force_reduction(fr,&(*top)->idef);      
+        
+        if (ir->ePBC != epbcNONE && !fr->bMolPBC)
         {
             *graph = mk_graph(fplog,&((*top)->idef),0,top_global->natoms,FALSE,FALSE);
         }
@@ -387,7 +406,7 @@ void init_em(FILE *fplog,const char *title,
             dvdlambda=0;
             constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
                       ir,NULL,cr,-1,0,mdatoms,
-                      ems->s.x,ems->s.x,NULL,ems->s.box,
+                      ems->s.x,ems->s.x,NULL,fr->bMolPBC,ems->s.box,
                       ems->s.lambda[efptFEP],&dvdlambda,
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
         }
@@ -419,7 +438,7 @@ static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf,
 {
   if (!(cr->duty & DUTY_PME)) {
     /* Tell the PME only node to finish */
-    gmx_pme_finish(cr);
+    gmx_pme_send_finish(cr);
   }
 
   done_mdoutf(outf);
@@ -485,87 +504,123 @@ static void write_em_traj(FILE *fplog,t_commrec *cr,
 }
 
 static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
-		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
-		       gmx_constr_t constr,gmx_localtop_t *top,
-		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       gmx_large_int_t count)
+                       gmx_bool bMolPBC,
+                       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
+                       gmx_constr_t constr,gmx_localtop_t *top,
+                       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+                       gmx_large_int_t count)
 
 {
-  t_state *s1,*s2;
-  int  start,end,gf,i,m;
-  rvec *x1,*x2;
-  real dvdlambda;
+    t_state *s1,*s2;
+    int  i;
+    int  start,end;
+    rvec *x1,*x2;
+    real dvdlambda;
 
-  s1 = &ems1->s;
-  s2 = &ems2->s;
+    s1 = &ems1->s;
+    s2 = &ems2->s;
 
-  if (DOMAINDECOMP(cr) && s1->ddp_count != cr->dd->ddp_count)
-    gmx_incons("state mismatch in do_em_step");
-
-  s2->flags = s1->flags;
-
-  if (s2->nalloc != s1->nalloc) {
-    s2->nalloc = s1->nalloc;
-    srenew(s2->x,s1->nalloc);
-    srenew(ems2->f,  s1->nalloc);
-    if (s2->flags & (1<<estCGP))
-      srenew(s2->cg_p,  s1->nalloc);
-  }
-
-  s2->natoms = s1->natoms;
-  /* Copy free energy state -> is this necessary? */
-  for (i=0;i<efptNR;i++)
-  {
-      s2->lambda[i] = s1->lambda[i];
-  }
-  copy_mat(s1->box,s2->box);
-
-  start = md->start;
-  end   = md->start + md->homenr;
-
-  x1 = s1->x;
-  x2 = s2->x;
-  gf = 0;
-  for(i=start; i<end; i++) {
-    if (md->cFREEZE)
-      gf = md->cFREEZE[i];
-    for(m=0; m<DIM; m++) {
-      if (ir->opts.nFreeze[gf][m])
-	x2[i][m] = x1[i][m];
-      else
-	x2[i][m] = x1[i][m] + a*f[i][m];
+    if (DOMAINDECOMP(cr) && s1->ddp_count != cr->dd->ddp_count)
+    {
+        gmx_incons("state mismatch in do_em_step");
     }
-  }
 
-  if (s2->flags & (1<<estCGP)) {
-    /* Copy the CG p vector */
-    x1 = s1->cg_p;
-    x2 = s2->cg_p;
-    for(i=start; i<end; i++)
-      copy_rvec(x1[i],x2[i]);
-  }
+    s2->flags = s1->flags;
 
-  if (DOMAINDECOMP(cr)) {
-    s2->ddp_count = s1->ddp_count;
-    if (s2->cg_gl_nalloc < s1->cg_gl_nalloc) {
-      s2->cg_gl_nalloc = s1->cg_gl_nalloc;
-      srenew(s2->cg_gl,s2->cg_gl_nalloc);
+    if (s2->nalloc != s1->nalloc)
+    {
+        s2->nalloc = s1->nalloc;
+        srenew(s2->x,s1->nalloc);
+        srenew(ems2->f,  s1->nalloc);
+        if (s2->flags & (1<<estCGP))
+        {
+            srenew(s2->cg_p,  s1->nalloc);
+        }
     }
-    s2->ncg_gl = s1->ncg_gl;
-    for(i=0; i<s2->ncg_gl; i++)
-      s2->cg_gl[i] = s1->cg_gl[i];
-    s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
-  }
+  
+    s2->natoms = s1->natoms;
+    copy_mat(s1->box,s2->box);
+    /* Copy free energy state */
+    for (i=0;i<efptNR;i++)
+    {
+        s2->lambda[i] = s1->lambda[i];
+    }
+    copy_mat(s1->box,s2->box);
 
-  if (constr) {
-    wallcycle_start(wcycle,ewcCONSTR);
-    dvdlambda = 0;
-    constrain(NULL,TRUE,TRUE,constr,&top->idef,
-              ir,NULL,cr,count,0,md,
-              s1->x,s2->x,NULL,s2->box,s2->lambda[efptBONDED],
-              &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
-    wallcycle_stop(wcycle,ewcCONSTR);
-  }
+    start = md->start;
+    end   = md->start + md->homenr;
+
+    x1 = s1->x;
+    x2 = s2->x;
+
+#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntUpdate))
+    {
+        int gf,i,m;
+
+        gf = 0;
+#pragma omp for schedule(static) nowait
+        for(i=start; i<end; i++)
+        {
+            if (md->cFREEZE)
+            {
+                gf = md->cFREEZE[i];
+            }
+            for(m=0; m<DIM; m++)
+            {
+                if (ir->opts.nFreeze[gf][m])
+                {
+                    x2[i][m] = x1[i][m];
+                }
+                else
+                {
+                    x2[i][m] = x1[i][m] + a*f[i][m];
+                }
+            }
+        }
+
+        if (s2->flags & (1<<estCGP))
+        {
+            /* Copy the CG p vector */
+            x1 = s1->cg_p;
+            x2 = s2->cg_p;
+#pragma omp for schedule(static) nowait
+            for(i=start; i<end; i++)
+            {
+                copy_rvec(x1[i],x2[i]);
+            }
+        }
+        
+        if (DOMAINDECOMP(cr))
+        {
+            s2->ddp_count = s1->ddp_count;
+            if (s2->cg_gl_nalloc < s1->cg_gl_nalloc)
+            {
+#pragma omp barrier
+                s2->cg_gl_nalloc = s1->cg_gl_nalloc;
+                srenew(s2->cg_gl,s2->cg_gl_nalloc);
+#pragma omp barrier
+            }
+            s2->ncg_gl = s1->ncg_gl;
+#pragma omp for schedule(static) nowait
+            for(i=0; i<s2->ncg_gl; i++)
+            {
+                s2->cg_gl[i] = s1->cg_gl[i];
+            }
+            s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
+        }
+    }
+    
+    if (constr)
+    {
+        wallcycle_start(wcycle,ewcCONSTR);
+        dvdlambda = 0;
+        constrain(NULL,TRUE,TRUE,constr,&top->idef,	
+                  ir,NULL,cr,count,0,md,
+                  s1->x,s2->x,NULL,bMolPBC,s2->box,
+                  s2->lambda[efptBONDED],&dvdlambda,
+                  NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+        wallcycle_stop(wcycle,ewcCONSTR);
+    }
 }
 
 static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
@@ -648,8 +703,9 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
              ems->s.box,ems->s.x,&ems->s.hist,
              ems->f,force_vir,mdatoms,enerd,fcd,
              ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,TRUE,
-             GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
-             (bNS ? GMX_FORCE_NS | GMX_FORCE_DOLR : 0));
+             GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
+             GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
+             (bNS ? GMX_FORCE_NS | GMX_FORCE_DO_LR : 0));
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -687,7 +743,8 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
     dvdlambda = 0;
     constrain(NULL,FALSE,FALSE,constr,&top->idef,
               inputrec,NULL,cr,count,0,mdatoms,
-              ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda[efptBONDED],&dvdlambda,
+              ems->s.x,ems->f,ems->f,fr->bMolPBC,ems->s.box,
+              ems->s.lambda[efptBONDED],&dvdlambda,
               NULL,&shake_vir,nrnb,econqForceDispl,FALSE,0,0);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdlambda);
@@ -1041,8 +1098,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
     }
 
     /* Take a trial step (new coords in s_c) */
-    do_em_step(cr,inputrec,mdatoms,s_min,c,s_min->s.cg_p,s_c,
-	       constr,top,nrnb,wcycle,-1);
+    do_em_step(cr,inputrec,mdatoms,fr->bMolPBC,s_min,c,s_min->s.cg_p,s_c,
+               constr,top,nrnb,wcycle,-1);
 
     neval++;
     /* Calculate energy for the trial step */
@@ -1128,8 +1185,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
 	}
 
 	/* Take a trial step to this new point - new coords in s_b */
-	do_em_step(cr,inputrec,mdatoms,s_min,b,s_min->s.cg_p,s_b,
-		   constr,top,nrnb,wcycle,-1);
+	do_em_step(cr,inputrec,mdatoms,fr->bMolPBC,s_min,b,s_min->s.cg_p,s_b,
+               constr,top,nrnb,wcycle,-1);
 
 	neval++;
 	/* Calculate energy for the trial step */
@@ -2070,8 +2127,9 @@ double do_steep(FILE *fplog,t_commrec *cr,
 
     /* set new coordinates, except for first step */
     if (count > 0) {
-      do_em_step(cr,inputrec,mdatoms,s_min,stepsize,s_min->f,s_try,
-		 constr,top,nrnb,wcycle,count);
+        do_em_step(cr,inputrec,mdatoms,fr->bMolPBC,
+                   s_min,stepsize,s_min->f,s_try,
+                   constr,top,nrnb,wcycle,count);
     }
 
     evaluate_energy(fplog,bVerbose,cr,

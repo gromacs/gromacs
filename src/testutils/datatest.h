@@ -60,10 +60,8 @@ class AnalysisDataHandle;
 namespace test
 {
 
-//! Constant to use to signify end of data for AnalysisDataTestInput.
-const real END_OF_DATA = std::numeric_limits<real>::max();
 //! Constant to use to signify end of one data frame for AnalysisDataTestInput.
-const real END_OF_FRAME = std::numeric_limits<real>::min();
+const real END_OF_FRAME = std::numeric_limits<real>::max();
 //! Constant to use to signify end of one multipoint set for AnalysisDataTestInput.
 const real MPSTOP = -std::numeric_limits<real>::max();
 
@@ -155,6 +153,7 @@ class AnalysisDataTestInput
         /*! \brief
          * Constructs data representation from a simple array.
          *
+         * \tparam    count Number of elements in the array.
          * \param[in] data  Array to construct data from.
          *
          * The input array should consist of a set of frames, separated by a
@@ -166,10 +165,14 @@ class AnalysisDataTestInput
          * assumed to start from column zero, but the sets may contain
          * different number of columns.  For non-multipoint data, all frames
          * must containt the same number of columns.
-         * The final element in the array (after the last END_OF_FRAME) should
-         * be END_OF_DATA.
+         * The final element in the array should be an END_OF_FRAME.
          */
-        explicit AnalysisDataTestInput(const real *data);
+        template <size_t count>
+        explicit AnalysisDataTestInput(const real (&data)[count])
+            : columnCount_(0), bMultipoint_(false)
+        {
+            initFromArray(data, count);
+        }
         ~AnalysisDataTestInput();
 
         //! Returns the number of frames in the input data.
@@ -182,6 +185,8 @@ class AnalysisDataTestInput
         const AnalysisDataTestInputFrame &frame(int index) const;
 
     private:
+        void initFromArray(const real *data, size_t count);
+
         int                     columnCount_;
         bool                    bMultipoint_;
         std::vector<AnalysisDataTestInputFrame> frames_;

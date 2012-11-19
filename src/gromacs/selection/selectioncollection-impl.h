@@ -44,6 +44,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/scoped_ptr.hpp>
+
 #include "../legacyheaders/typedefs.h"
 
 #include "../onlinehelp/helptopicinterface.h"
@@ -52,14 +54,19 @@
 #include "poscalc.h"
 #include "selection.h" // For gmx::SelectionList
 #include "selectioncollection.h"
+#include "selelem.h"
 
 namespace gmx
 {
+
 //! Smart pointer for managing an internal selection data object.
 typedef gmx_unique_ptr<internal::SelectionData>::type SelectionDataPointer;
 //! Container for storing a list of selections internally.
 typedef std::vector<SelectionDataPointer> SelectionDataList;
-}
+
+class SelectionParserSymbolTable;
+
+} // namespace gmx
 
 /*! \internal \brief
  * Information for a collection of selections.
@@ -68,8 +75,10 @@ typedef std::vector<SelectionDataPointer> SelectionDataList;
  */
 struct gmx_ana_selcollection_t
 {
-    /** Root of the selection element tree. */
-    struct t_selelem           *root;
+    //! Position calculation collection used for selection position evaluation.
+    gmx::PositionCalculationCollection  pcc;
+    //! Root of the selection element tree.
+    gmx::SelectionTreeElementPointer    root;
     /*! \brief
      * Array of compiled selections.
      *
@@ -87,12 +96,10 @@ struct gmx_ana_selcollection_t
     t_topology                    *top;
     /** Index group that contains all the atoms. */
     struct gmx_ana_index_t         gall;
-    /** Position calculation collection used for selection position evaluation. */
-    gmx::PositionCalculationCollection  pcc;
     /** Memory pool used for selection evaluation. */
     struct gmx_sel_mempool_t      *mempool;
-    /** Parser symbol table. */
-    struct gmx_sel_symtab_t     *symtab;
+    //! Parser symbol table.
+    boost::scoped_ptr<gmx::SelectionParserSymbolTable> symtab;
     //! Root of help topic tree (NULL is no help yet requested).
     gmx::HelpTopicPointer          rootHelp;
 };
@@ -139,7 +146,7 @@ class SelectionCollection::Impl
          * Does not throw currently, but this is subject to change when more
          * underlying code is converted to C++.
          */
-        void resolveExternalGroups(struct t_selelem *root,
+        void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
                                    MessageStringCollector *errors);
 
         //! Internal data, used for interfacing with old C code.

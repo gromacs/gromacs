@@ -13,10 +13,15 @@ MACRO(TEST_TMPI_ATOMICS VARIABLE)
 
         if (TEST_ATOMICS)
             message(STATUS "Atomics found")
-            set(${VARIABLE} CACHE INTERNAL 1)
+            set(${VARIABLE} TRUE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         else (TEST_ATOMICS)
-            message(WARNING "Atomics not found for this compiler+cpu combination. Thread support will be unbearably slow: disable threads. Atomics should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-            set(${VARIABLE} CACHE INTERNAL 0)
+            if (TEST_TMPI_ATOMICS_ONLY)
+                message(WARNING "Atomic operations not found for this CPU+compiler combination. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+            else (TEST_TMPI_ATOMICS_ONLY)
+                message(WARNING "Atomic operations not found for this
+            CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+            endif (TEST_TMPI_ATOMICS_ONLY)
+            set(${VARIABLE} FALSE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         endif(TEST_ATOMICS)
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TEST_TMPI_ATOMICS VARIABLE)
@@ -58,10 +63,15 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
              thread_mpi/group.c         thread_mpi/tmpi_init.c
              thread_mpi/topology.c      thread_mpi/list.c
              thread_mpi/type.c          thread_mpi/lock.c
-             thread_mpi/numa_malloc.c   thread_mpi/once.c )
-    endif ()
+             thread_mpi/numa_malloc.c   thread_mpi/once.c
+             thread_mpi/scan.c)
+    endif()
 ENDMACRO(TMPI_GET_SOURCE_LIST)
 
+test_tmpi_atomics(TMPI_ATOMICS)
+
+# do we want to only the atomics of tMPI (with GPU + MPI)
+if(NOT TEST_TMPI_ATOMICS_ONLY)
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
@@ -108,18 +118,6 @@ endif (THREAD_MPI_PROFILING)
 
 include(CheckCSourceCompiles)
 
-## Windows NUMA allocator
-#if (THREAD_WINDOWS)
-#	check_c_source_compiles(
-#	"#include <windows.h>
-#	int main(void) { PROCESSOR_NUMBER a; return 0; }"
-#	HAVE_PROCESSOR_NUMBER)
-#	if(HAVE_PROCESSOR_NUMBER)
-#            #add_definitions(-DTMPI_WINDOWS_NUMA_API)
-#            set(TMPI_WINDOWS_NUMA_API 1)
-#	endif(HAVE_PROCESSOR_NUMBER)
-#endif(THREAD_WINDOWS)
-
 # option to set affinity 
 option(THREAD_MPI_SET_AFFINITY "Set thread affinity to a core if number of threads equal to number of hardware threads." ON)
 mark_as_advanced(THREAD_MPI_SET_AFFINITY)
@@ -150,6 +148,7 @@ int main(void) { cpu_set_t set;
     if (PTHREAD_SETAFFINITY)
         set(HAVE_PTHREAD_SETAFFINITY 1)
     endif (PTHREAD_SETAFFINITY)
+    set(CMAKE_REQUIRED_LIBRARIES)
 endif (THREAD_PTHREADS)
 
 
@@ -161,5 +160,4 @@ check_function_exists(sysconf       HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
 
-
-test_tmpi_atomics(TMPI_ATOMICS)
+endif(NOT TEST_TMPI_ATOMICS_ONLY)

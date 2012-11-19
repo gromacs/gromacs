@@ -35,15 +35,11 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <string.h>
 
-#include "smalloc.h"
-#include "typedefs.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
@@ -135,7 +131,7 @@ gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
  * \param[in]     x    Position vector to use.
  */
 void
-gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x)
+gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
 {
     gmx_ana_pos_clear(pos);
     pos->nr = 1;

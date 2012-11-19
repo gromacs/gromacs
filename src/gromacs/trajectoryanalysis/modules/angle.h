@@ -39,9 +39,11 @@
 #define GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
 
 #include <string>
+#include <vector>
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -82,21 +84,18 @@ class Angle : public TrajectoryAnalysisModule
         SelectionList           sel2_;
         SelectionOptionInfo    *sel1info_;
         SelectionOptionInfo    *sel2info_;
-        std::string             fnAngle_;
-        std::string             fnDump_;
+        std::string             fnAverage_;
+        std::string             fnAll_;
 
         std::string             g1type_;
         std::string             g2type_;
-        bool                    bSplit1_;
-        bool                    bSplit2_;
-        bool                    bMulti_;
-        bool                    bAll_;
-        bool                    bDumpDist_;
 
-        AnalysisData            data_;
+        AnalysisData            angles_;
+        AnalysisDataFrameAverageModulePointer averageModule_;
         int                     natoms1_;
         int                     natoms2_;
-        rvec                   *vt0_;
+        // TODO: It is not possible to put rvec into a container.
+        std::vector<rvec *>     vt0_;
 
         // Copy and assign disallowed by base.
 };

@@ -62,9 +62,11 @@ namespace gmx
 
 namespace
 {
+//! Mutex for updates to the global program info objects.
 tMPI::mutex g_programInfoMutex;
 //! Partially filled program info, needed to support set_program_name().
 boost::scoped_ptr<ProgramInfo> g_partialProgramInfo;
+//! Global program info; stores the object initialized with ProgramInfo::init().
 boost::scoped_ptr<ProgramInfo> g_programInfo;
 } // namespace
 

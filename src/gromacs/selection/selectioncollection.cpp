@@ -35,9 +35,7 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "selectioncollection.h"
 
 #include <cstdio>
 
@@ -50,7 +48,6 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
-#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
@@ -78,22 +75,22 @@ namespace gmx
 SelectionCollection::Impl::Impl()
     : debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
 {
-    sc_.root      = NULL;
     sc_.nvars     = 0;
     sc_.varstrs   = NULL;
     sc_.top       = NULL;
     gmx_ana_index_clear(&sc_.gall);
     sc_.mempool   = NULL;
-    sc_.symtab    = NULL;
-
-    _gmx_sel_symtab_create(&sc_.symtab);
-    gmx_ana_selmethod_register_defaults(sc_.symtab);
+    sc_.symtab.reset(new SelectionParserSymbolTable);
+    gmx_ana_selmethod_register_defaults(sc_.symtab.get());
 }
 
 
 SelectionCollection::Impl::~Impl()
 {
-    _gmx_selelem_free_chain(sc_.root);
+    clearSymbolTable();
+    // The tree must be freed before the SelectionData objects, since the
+    // tree may hold references to the position data in SelectionData.
+    sc_.root.reset();
     sc_.sel.clear();
     for (int i = 0; i < sc_.nvars; ++i)
     {
@@ -105,24 +102,29 @@ SelectionCollection::Impl::~Impl()
     {
         _gmx_sel_mempool_destroy(sc_.mempool);
     }
-    clearSymbolTable();
 }
 
 
 void
 SelectionCollection::Impl::clearSymbolTable()
 {
-    if (sc_.symtab)
-    {
-        _gmx_sel_symtab_free(sc_.symtab);
-        sc_.symtab = NULL;
-    }
+    sc_.symtab.reset();
 }
 
 
 namespace
 {
 
+/*! \brief
+ * Reads a single selection line from stdin.
+ *
+ * \param[in]  infile        File to read from (typically File::standardInput()).
+ * \param[in]  bInteractive  Whether to print interactive prompts.
+ * \param[out] line          The read line in stored here.
+ * \returns true if something was read, false if at end of input.
+ *
+ * Handles line continuation, reading also the continuing line(s) in one call.
+ */
 bool promptLine(File *infile, bool bInteractive, std::string *line)
 {
     if (bInteractive)
@@ -154,9 +156,20 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
     {
         fprintf(stderr, "\n");
     }
-    return line;
+    return true;
 }
 
+/*! \brief
+ * Helper function for tokenizing the input and pushing them to the parser.
+ *
+ * \param     scanner       Tokenizer data structure.
+ * \param     parserState   Parser data structure.
+ * \param[in] bInteractive  Whether to operate in interactive mode.
+ *
+ * Repeatedly reads tokens using \p scanner and pushes them to the parser with
+ * \p parserState until there is no more input, or until enough input is given
+ * (only in interactive mode).
+ */
 int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
                   bool bInteractive)
 {
@@ -172,6 +185,9 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
             {
                 break;
             }
+            // Empty commands cause the interactive parser to print out
+            // status information. This avoids producing those unnecessarily,
+            // e.g., from "resname RA;;".
             if (prevToken == CMD_SEP && token == CMD_SEP)
             {
                 continue;
@@ -278,7 +294,8 @@ early_termination:
 
 
 void SelectionCollection::Impl::resolveExternalGroups(
-        t_selelem *root, MessageStringCollector *errors)
+        const SelectionTreeElementPointer &root,
+        MessageStringCollector *errors)
 {
 
     if (root->type == SEL_GROUPREF)
@@ -317,12 +334,12 @@ void SelectionCollection::Impl::resolveExternalGroups(
         if (bOk)
         {
             root->type = SEL_CONST;
-            root->name = root->u.cgrp.name;
+            root->setName(root->u.cgrp.name);
         }
     }
 
-    t_selelem *child = root->child;
-    while (child != NULL)
+    SelectionTreeElementPointer child = root->child;
+    while (child)
     {
         resolveExternalGroups(child, errors);
         child = child->next;
@@ -435,8 +452,8 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     impl_->bExternalGroupsSet_ = true;
 
     MessageStringCollector errors;
-    t_selelem *root = impl_->sc_.root;
-    while (root != NULL)
+    SelectionTreeElementPointer root = impl_->sc_.root;
+    while (root)
     {
         impl_->resolveExternalGroups(root, &errors);
         root = root->next;
@@ -451,7 +468,6 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
 bool
 SelectionCollection::requiresTopology() const
 {
-    t_selelem   *sel;
     e_poscalc_t  type;
     int          flags;
 
@@ -478,10 +494,10 @@ SelectionCollection::requiresTopology() const
         }
     }
 
-    sel = impl_->sc_.root;
+    SelectionTreeElementPointer sel = impl_->sc_.root;
     while (sel)
     {
-        if (_gmx_selelem_requires_top(sel))
+        if (_gmx_selelem_requires_top(*sel))
         {
             return true;
         }
@@ -506,15 +522,25 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive)
 SelectionList
 SelectionCollection::parseFromFile(const std::string &filename)
 {
-    yyscan_t scanner;
 
-    File file(filename, "r");
-    // TODO: Exception-safe way of using the lexer.
-    _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
-                        impl_->bExternalGroupsSet_,
-                        impl_->grps_);
-    _gmx_sel_set_lex_input_file(scanner, file.handle());
-    return runParser(scanner, false, -1);
+    try
+    {
+        yyscan_t scanner;
+        File file(filename, "r");
+        // TODO: Exception-safe way of using the lexer.
+        _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
+                            impl_->bExternalGroupsSet_,
+                            impl_->grps_);
+        _gmx_sel_set_lex_input_file(scanner, file.handle());
+        return runParser(scanner, false, -1);
+    }
+    catch (GromacsException &ex)
+    {
+        ex.prependContext(formatString(
+                    "Error in parsing selections from file '%s'",
+                    filename.c_str()));
+        throw;
+    }
 }
 
 
@@ -594,12 +620,10 @@ SelectionCollection::evaluateFinal(int nframes)
 void
 SelectionCollection::printTree(FILE *fp, bool bValues) const
 {
-    t_selelem *sel;
-
-    sel = impl_->sc_.root;
+    SelectionTreeElementPointer sel = impl_->sc_.root;
     while (sel)
     {
-        _gmx_selelem_print_tree(fp, sel, bValues, 0);
+        _gmx_selelem_print_tree(fp, *sel, bValues, 0);
         sel = sel->next;
     }
 }

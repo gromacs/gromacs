@@ -63,7 +63,7 @@ using namespace std;
 #include "mdrun.h"
 #include "physics.h"
 #include "string2.h"
-#include "gmx_gpu_utils.h"
+#include "gpu_utils.h"
 #include "mtop_util.h"
 
 #include "openmm_wrapper.h"
@@ -142,7 +142,7 @@ static void splitOptionValue(const string &s, string &opt, string &val)
                  integer less than, equal to, or greater than 0 if \p s1 less than, 
                  identical to, or greater than \p s2.
  */
-static gmx_bool isStringEqNCase(const string s1, const string s2)
+static gmx_bool isStringEqNCase(const string& s1, const string& s2)
 {
     return (gmx_strncasecmp(s1.c_str(), s2.c_str(), max(s1.length(), s2.length())) == 0);
 }
@@ -668,23 +668,24 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     for (i = 0; i < natoms; i++)
     {
         /* i-i */
-        c12 = C12(nbfp, natoms, i, i);
-        c6  = C6(nbfp,  natoms, i, i);
+        /* nbfp now includes the 6.0/12.0 prefactors to save flops in kernels */
+        c12 = C12(nbfp, natoms, i, i)/12.0;
+        c6  = C6(nbfp,  natoms, i, i)/6.0;
         convert_c_12_6(c12, c6, &sigma_ii, &eps_ii);
 
         for (j = 0; j < i; j++)
         {
             /* i-j */
-            c12 = C12(nbfp, natoms, i, j);
-            c6  = C6(nbfp,  natoms, i, j);
+            c12 = C12(nbfp, natoms, i, j)/12.0;
+            c6  = C6(nbfp,  natoms, i, j)/6.0;
             convert_c_12_6(c12, c6, &sigma_ij, &eps_ij);
             /* j-i */
-            c12 = C12(nbfp, natoms, j, i);
-            c6  = C6(nbfp,  natoms, j, i);
+            c12 = C12(nbfp, natoms, j, i)/12.0;
+            c6  = C6(nbfp,  natoms, j, i)/6.0;
             convert_c_12_6(c12, c6, &sigma_ji, &eps_ji);
             /* j-j */
-            c12 = C12(nbfp, natoms, j, j);
-            c6  = C6(nbfp,  natoms, j, j);
+            c12 = C12(nbfp, natoms, j, j)/12.0;
+            c6  = C6(nbfp,  natoms, j, j)/6.0;
             convert_c_12_6(c12, c6, &sigma_jj, &eps_jj);
             /* OpenMM hardcoded combination rules */
             sigma_comb = COMBRULE_SIGMA(sigma_ii, sigma_jj);
@@ -1106,8 +1107,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
         for (int i = 0; i < numAtoms; ++i)
         {
-            double c12 = nbfp[types[i]*2*ntypes+types[i]*2+1];
-            double c6 = nbfp[types[i]*2*ntypes+types[i]*2];
+            /* nbfp now includes the 6.0/12.0 derivative prefactors to save flops in kernels*/
+            double c12 = nbfp[types[i]*2*ntypes+types[i]*2+1]/12.0;
+            double c6 = nbfp[types[i]*2*ntypes+types[i]*2]/6.0;
             double sigma=0.0, epsilon=0.0;
             convert_c_12_6(c12, c6, &sigma, &epsilon);
             nonbondedForce->addParticle(charges[i], sigma, epsilon);
@@ -1308,7 +1310,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             /* check GPU compatibility */
             char gpuname[STRLEN];
             devId = atoi(opt->getOptionValue("deviceid").c_str());
-            if (!is_supported_cuda_gpu(-1, gpuname))
+            if (!is_gmx_openmm_supported_gpu(-1, gpuname))
             {
                 if (!gmx_strcasecmp(opt->getOptionValue("force-device").c_str(), "yes"))
                 {

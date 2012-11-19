@@ -1,4 +1,16 @@
+/*! \libinternal \file
+ * \brief
+ * Include file for configuration macros from the build system.
+ *
+ * This header is not installed, so headers must not reference macros defined
+ * here.
+ *
+ * \inlibraryapi
+ */
 #include "gromacs/utility/gmx_header_config.h"
+
+/* TODO: For now, disable Doxygen warnings from here */
+/*! \cond */
 
 /* Disable warnings about double-to-float conversion accuracy loss on MSVC */
 #ifdef _MSC_VER
@@ -16,8 +28,8 @@
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 
-/* Use the version string from generated version.h */
-#cmakedefine USE_VERSION_H
+/* Use extra version information generated with git */
+#cmakedefine GMX_GIT_VERSION_INFO
 
 /* Default location of data files */
 #define GMXLIBDIR "@GMXLIBDIR@"
@@ -143,9 +155,6 @@
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
 
-/* Use old threading (domain decomp force calc) code */
-#cmakedefine GMX_THREAD_SHM_FDECOMP 
-
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
 
@@ -167,6 +176,9 @@
 /* Use the PowerPC hardware 1/sqrt(x) */
 #cmakedefine GMX_POWERPC_INVSQRT
 
+/* Use sub-counters */
+#cmakedefine GMX_CYCLE_SUBCOUNTERS
+
 /* Compile with plugin support */
 #cmakedefine GMX_USE_PLUGINS
 
@@ -178,6 +190,9 @@
 
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
+
+/* Define when thread-MPI atomic operations are available */
+#cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
 #cmakedefine TMPI_WAIT_FOR_NO_ONE
@@ -196,6 +211,9 @@
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
+
+/* Use GPU native acceleration */
+#cmakedefine GMX_GPU
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
@@ -269,6 +287,15 @@
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine HAVE_SIGACTION
 
+/* Define to 1 if you have the rsqrt() function. */
+#cmakedefine HAVE_RSQRT
+
+/* Define to 1 if you have the rsqrtf() function. */
+#cmakedefine HAVE_RSQRTF
+
+/* Define to 1 if you have the sqrtf() function. */
+#cmakedefine HAVE_SQRTF
+
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
@@ -281,20 +308,32 @@
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H
 
-/* Define to 1 if yo have the <regex.h> header file. */
-#cmakedefine HAVE_REGEX_H
-
-/* Define to 1 if you have the <sys/types.h> header file. */
-#cmakedefine HAVE_SYS_TYPES_H
-
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
 
 /* Define to 1 if you have the <x86intrin.h> header file */
 #cmakedefine HAVE_X86INTRIN_H
 
-/* Define for sched.h (this is for thread_mpi)*/
-#define HAVE_SCHED_H
+/* Define to 1 if you have the <intrin.h> header file */
+#cmakedefine HAVE_INTRIN_H
+
+/* Define to 1 if you have the <sched.h> header */
+#cmakedefine HAVE_SCHED_H
+
+/* Define to 1 if you have the POSIX <regex.h> header file. */
+#cmakedefine HAVE_POSIX_REGEX
+
+/* Define to 1 if you have the C++11 <regex> header file. */
+#cmakedefine HAVE_CXX11_REGEX
+
+/* Define to 1 if you have the sysconf() function */
+#cmakedefine HAVE_SYSCONF
+
+/* Define to 1 if you have the sched_getaffinity() function */
+#cmakedefine HAVE_SCHED_GETAFFINITY
+
+/* Define to 1 if you have the sched_setaffinity() function */
+#cmakedefine HAVE_SCHED_SETAFFINITY
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
@@ -333,11 +372,23 @@
 #cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
 /* Define to __inline__ or __inline if that is what the C compiler
-   calls it, or to nothing if inline is not supported under any name.  */
+   calls it, or to nothing if inline is not supported under any name.
+   Please do NOT remove the gmx_inline keyword from here. The classical
+   C++ inline keyword is merely a recommendation to the compiler, and
+   many compilers support stronger alternatives (e.g. __forceinline)
+   that we might want to use. */
+#define gmx_inline ${INLINE_KEYWORD}
 #ifndef __cplusplus
 #define inline ${INLINE_KEYWORD}
 #endif
 
+/* Define to __restrict__ or __restrict if that is what the C compiler
+   calls it, unless we are on C99 when it is simply called restrict.
+   Since restrict is a reserved key word in C99 we are not allowed to
+   redefine the word itself, so call this gmx_restrict to avoid having
+   to identify the language standard level. If it is not supported, it
+   is still defined to an empty string here. */
+#define gmx_restrict ${RESTRICT_KEYWORD}
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 
@@ -361,3 +412,5 @@
 #    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
 #  endif
 #endif
+
+/*! \endcond */

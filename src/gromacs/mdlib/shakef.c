@@ -179,7 +179,7 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
                real tol,rvec x[],rvec prime[],real omega,
                gmx_bool bFEP,real lambda,real lagr[],
                real invdt,rvec *v,
-               gmx_bool bCalcVir,tensor rmdr,int econq, 
+               gmx_bool bCalcVir,tensor vir_r_m_dr,int econq, 
                t_vetavars *vetavar)
 {
     rvec *rij;
@@ -293,7 +293,7 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
                 tmp = mm*rij[ll][i];
                 for(j=0; j<DIM; j++) 
                 {
-                    rmdr[i][j] -= tmp*rij[ll][j];
+                    vir_r_m_dr[i][j] -= tmp*rij[ll][j];
                 }
             }
             /* 21 flops */
@@ -358,10 +358,11 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec prime[], rvec v[],
 }
 
 gmx_bool bshakef(FILE *log,gmx_shakedata_t shaked,
-             int natoms,real invmass[],int nblocks,int sblock[],
-             t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec prime[],
-             t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-             real invdt,rvec *v,gmx_bool bCalcVir,tensor rmdr,gmx_bool bDumpOnError,int econq,t_vetavars *vetavar)
+                 int natoms,real invmass[],int nblocks,int sblock[],
+                 t_idef *idef,t_inputrec *ir,rvec x_s[],rvec prime[],
+                 t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
+                 real invdt,rvec *v,gmx_bool bCalcVir,tensor vir_r_m_dr,
+                 gmx_bool bDumpOnError,int econq,t_vetavars *vetavar)
 {
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;
@@ -384,7 +385,8 @@ gmx_bool bshakef(FILE *log,gmx_shakedata_t shaked,
     blen /= 3;
     n0 = vec_shakef(log,shaked,natoms,invmass,blen,idef->iparams,
                     iatoms,ir->shake_tol,x_s,prime,shaked->omega,
-                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq,vetavar);
+                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,vir_r_m_dr,
+                    econq,vetavar);
 
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,prime,v,idef->iparams,iatoms,invmass,econq);

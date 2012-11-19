@@ -26,6 +26,9 @@ int main(void) {
         MESSAGE(STATUS "Checking for MPI_IN_PLACE - no")
     endif(MPI_IN_PLACE_COMPILE_OK)
     set(MPI_IN_PLACE_COMPILE_OK "${MPI_IN_PLACE_COMPILE_OK}" CACHE INTERNAL "Result of mpi_in_place check")
+    set(CMAKE_REQUIRED_DEFINITIONS)
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LIBRARIES)
   endif()
   if (MPI_IN_PLACE_COMPILE_OK)
     set(${VARIABLE} ${MPI_IN_PLACE_COMPILE_OK} 

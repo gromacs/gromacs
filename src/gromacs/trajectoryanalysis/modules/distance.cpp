@@ -37,12 +37,8 @@
  */
 #include "distance.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "pbc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -91,7 +87,7 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnDist_).defaultValueIfSet("dist")
+                           .store(&fnDist_).defaultBasename("dist")
                            .description("Computed distances"));
     options->addOption(SelectionOption("select").required().valueCount(2)
                            .store(sel_));

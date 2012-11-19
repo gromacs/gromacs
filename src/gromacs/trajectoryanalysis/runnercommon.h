@@ -38,6 +38,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 #define GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 
+#include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/types/trx.h"
+
 #include "../utility/common.h"
 
 namespace gmx

@@ -490,6 +490,10 @@ struct tmpi_global
     /* spinlock/mutex for manipulating tmpi_user_types */
     tMPI_Spinlock_t  datatype_lock;
 
+    /* Lock to prevent multiple threads manipulating the linked list of comm
+       structures.*/
+    tMPI_Thread_mutex_t comm_link_lock;
+
     /* barrier for tMPI_Finalize(), etc. */
     tMPI_Thread_barrier_t barrier;
 
@@ -584,7 +588,11 @@ struct tmpi_comm_
        TMPI_COMM_WORLD. Used to de-allocate the comm structures after 
        tMPI_Finalize(). */
     struct tmpi_comm_ *next,*prev;
+
+    /* A counter that counts up to N before the comm is freed. */
+    tMPI_Atomic_t destroy_counter;
 };
+
 
 
 /* specific for tMPI_Split: */
@@ -733,7 +741,7 @@ int tMPI_Comm_N(tMPI_Comm comm);
 /* allocate a comm object, making space for N threads */
 tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N);
 /* de-allocate a comm object */
-void tMPI_Comm_destroy(tMPI_Comm comm);
+void tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock);
 /* allocate a group object */
 tMPI_Group tMPI_Group_alloc(void);
 
@@ -808,6 +816,10 @@ void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
 #endif
 
 
+/* reduce ops: run a single iteration of a reduce operation on a, b -> dest */
+int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
+                       tMPI_Datatype datatype, int count, tMPI_Op op,
+                       tMPI_Comm comm);
 
 
 /* and we need this prototype */

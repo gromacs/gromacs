@@ -35,13 +35,9 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
@@ -295,6 +291,7 @@ free_data_merge(void *data)
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
     gmx_ana_index_deinit(&d->g);
+    sfree(d);
 }
 
 /*!

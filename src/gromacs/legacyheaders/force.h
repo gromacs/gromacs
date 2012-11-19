@@ -38,11 +38,13 @@
 
 
 #include "typedefs.h"
+#include "types/force_flags.h"
 #include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
 #include "vsite.h"
 #include "genborn.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +136,30 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
+gmx_bool uses_simple_tables(int cutoff_scheme,
+                            nonbonded_verlet_t *nbv,
+                            int group);
+/* Returns whether simple tables (i.e. not for use with GPUs) are used
+ * with the type of kernel indicated.
+ */
+
+void init_interaction_const_tables(FILE *fp, 
+                                   interaction_const_t *ic,
+                                   gmx_bool bSimpleTable,
+                                   real rtab);
+/* Initializes the tables in the interaction constant data structure.
+ * Setting verlet_kernel_type to -1 always initializes tables for
+ * use with group kernels.
+ */
+
+void init_interaction_const(FILE *fp, 
+                            interaction_const_t **interaction_const,
+                            const t_forcerec *fr,
+                            real  rtab);
+/* Initializes the interaction constant data structure. Currently it 
+ * uses forcerec as input. 
+ */
+
 void init_forcerec(FILE       *fplog,     
                           const output_env_t oenv,
 			  t_forcerec *fr,   
@@ -148,7 +174,8 @@ void init_forcerec(FILE       *fplog,
 			  const char *tabafn,
 			  const char *tabpfn,
 			  const char *tabbfn,
-			  gmx_bool       bNoSolvOpt,
+		          const char *nbpu_opt,
+			  gmx_bool   bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 
  * The gmx_booleans have the following meaning:
@@ -156,6 +183,10 @@ void init_forcerec(FILE       *fplog,
  * bMolEpot: Use the free energy stuff per molecule
  * print_force >= 0: print forces for atoms with force >= print_force
  */
+
+void forcerec_set_excl_load(t_forcerec *fr,
+			    const gmx_localtop_t *top,const t_commrec *cr);
+  /* Set the exclusion load for the local exclusions and possibly threads */
 
 void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
@@ -182,30 +213,7 @@ void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const gmx_mtop_t *mtop);
 
-/* The state has changed */
-#define GMX_FORCE_STATECHANGED (1<<0)
-/* The box might have changed */
-#define GMX_FORCE_DYNAMICBOX   (1<<1)
-/* Do neighbor searching */
-#define GMX_FORCE_NS           (1<<2)
-/* Calculate bonded energies/forces */
-#define GMX_FORCE_DOLR         (1<<3)
-/* Calculate long-range energies/forces */
-#define GMX_FORCE_BONDED       (1<<4)
-/* Store long-range forces in a separate array */
-#define GMX_FORCE_SEPLRF       (1<<5)
-/* Calculate non-bonded energies/forces */
-#define GMX_FORCE_NONBONDED    (1<<6)
-/* Calculate forces (not only energies) */
-#define GMX_FORCE_FORCES       (1<<7)
-/* Calculate the virial */
-#define GMX_FORCE_VIRIAL       (1<<8)
-/* Calculate dHdl */
-#define GMX_FORCE_DHDL         (1<<9)
-/* Normally one want all energy terms and forces */
-#define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
-
-void do_force(FILE *log,t_commrec *cr,
+extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,
 		     gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		     gmx_localtop_t *top,
@@ -217,10 +225,12 @@ void do_force(FILE *log,t_commrec *cr,
 		     t_mdatoms *mdatoms,
 		     gmx_enerdata_t *enerd,t_fcdata *fcd,
 		     real *lambda,t_graph *graph,
-		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+		     t_forcerec *fr,
+                     gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
 		     gmx_bool bBornRadii,
 		     int flags);
+
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
  * Calculate forces.
@@ -244,12 +254,10 @@ void ns(FILE       *fplog,
 	       real       *dvdlambda,
 	       gmx_grppairener_t *grppener,
 	       gmx_bool       bFillGrid,
-	       gmx_bool       bDoLongRange,
-	       gmx_bool       bDoForces,
-	       rvec       *f);
+           gmx_bool       bDoLongRangeNS);
 /* Call the neighborsearcher */
 
-void do_force_lowlevel(FILE         *fplog,  
+extern void do_force_lowlevel(FILE         *fplog,  
 			      gmx_large_int_t   step,
 			      t_forcerec   *fr,
 			      t_inputrec   *ir,
@@ -261,7 +269,8 @@ void do_force_lowlevel(FILE         *fplog,
 			      t_grpopts    *opts,
 			      rvec         x[],
 			      history_t    *hist,
-			      rvec         f[],    
+			      rvec         f_shortrange[],
+                  rvec         f_longrange[],
 			      gmx_enerdata_t *enerd,
 			      t_fcdata     *fcd,
 			      gmx_mtop_t     *mtop,

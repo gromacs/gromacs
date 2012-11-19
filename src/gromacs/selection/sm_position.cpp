@@ -35,13 +35,9 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
@@ -201,7 +197,7 @@ set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
  * are neglected.
  */
 void
-_gmx_selelem_set_kwpos_type(t_selelem *sel, const char *type)
+_gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 
@@ -231,7 +227,7 @@ _gmx_selelem_set_kwpos_type(t_selelem *sel, const char *type)
  * are neglected.
  */
 void
-_gmx_selelem_set_kwpos_flags(t_selelem *sel, int flags)
+_gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 
@@ -336,6 +332,7 @@ free_data_pos(void *data)
 
     sfree(d->type);
     gmx_ana_poscalc_free(d->pc);
+    sfree(d);
 }
 
 /*!

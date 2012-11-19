@@ -11,10 +11,32 @@
 }
 
 {
-   read_tps_conf
+   gmx_fio_fopen
    Memcheck:Leak
    ...
-   fun:read_tps_conf
+   fun:gmx_fio_fopen
+}
+{
+   new_symbuf
+   Memcheck:Leak
+   ...
+   fun:new_symbuf
+}
+{
+   bTimeSet/tMPI_Thread_mutex_init_once
+   Memcheck:Leak
+   ...
+   fun:tMPI_Thread_mutex_init_once
+   fun:tMPI_Thread_mutex_lock
+   fun:bTimeSet
+}
+{
+   ffclose/tMPI_Thread_mutex_init_once
+   Memcheck:Leak
+   ...
+   fun:tMPI_Thread_mutex_init_once
+   fun:tMPI_Thread_mutex_lock
+   fun:ffclose
 }
 
 {
@@ -83,11 +105,16 @@
 {
    scanf
    Memcheck:Leak
-   fun:malloc
    ...
    fun:__svfscanf_l
 }
 
+{
+   __cxa_get_globals
+   Memcheck:Leak
+   fun:malloc
+   fun:__cxa_get_globals
+}
 {
    __cxa_get_globals
    Memcheck:Leak

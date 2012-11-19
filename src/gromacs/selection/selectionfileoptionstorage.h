@@ -39,7 +39,7 @@
 #define GMX_SELECTION_SELECTIONFILEOPTIONSTORAGE_H
 
 #include "../options/abstractoptionstorage.h"
-#include "selectionfileoptioninfo.h"
+#include "selectionfileoption.h"
 
 namespace gmx
 {

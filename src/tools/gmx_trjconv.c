@@ -279,7 +279,7 @@ static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
         copy_rvec(com,new_com);
         switch (unitcell_enum) {
         case euRect: 
-            put_atoms_in_box(box,1,&new_com);
+            put_atoms_in_box(ePBC,box,1,&new_com);
             break;
         case euTric: 
             put_atoms_in_triclinic_unitcell(ecenter,box,1,&new_com);
@@ -327,7 +327,7 @@ static void put_residue_com_in_box(int unitcell_enum,int ecenter,
             copy_rvec(com,new_com);
             switch (unitcell_enum) {
             case euRect: 
-                put_atoms_in_box(box,1,&new_com);
+                put_atoms_in_box(ePBC,box,1,&new_com);
                 break;
             case euTric: 
                 put_atoms_in_triclinic_unitcell(ecenter,box,1,&new_com);
@@ -1336,7 +1336,7 @@ int gmx_trjconv(int argc,char *argv[])
                         if (bPBCcomAtom) {
                             switch (unitcell_enum) {
                             case euRect:
-                                put_atoms_in_box(fr.box,natoms,fr.x);
+                                put_atoms_in_box(ePBC,fr.box,natoms,fr.x);
                                 break;
                             case euTric:
                                 put_atoms_in_triclinic_unitcell(ecenter,fr.box,natoms,fr.x);
@@ -1362,8 +1362,8 @@ int gmx_trjconv(int argc,char *argv[])
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout = fr;
-			frout.bV    &= bVels;
-			frout.bF    &= bForce;
+			frout.bV = (frout.bV && bVels);
+			frout.bF = (frout.bF && bForce);
                         frout.natoms = nout;
                         if (bNeedPrec && (bSetPrec || !fr.bPrec)) {
                             frout.bPrec = TRUE;

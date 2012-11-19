@@ -43,7 +43,6 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoption.h"
-#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -87,6 +86,7 @@ void SelectionOptionTestBase::setManager()
  * Tests for SelectionOption
  */
 
+//! Test fixture for gmx::SelectionOption.
 typedef SelectionOptionTestBase SelectionOptionTest;
 
 TEST_F(SelectionOptionTest, ParsesSimpleSelection)
@@ -103,8 +103,6 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
-
-    ASSERT_FALSE(sel.isDynamic());
 }
 
 
@@ -165,11 +163,9 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
 TEST_F(SelectionOptionTest, HandlesAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).multiValue()
-                            .getAdjuster(&info)));
+    gmx::SelectionOptionInfo *info = options_.addOption(
+            SelectionOption("sel").storeVector(&sel).multiValue());
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -187,11 +183,9 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
 TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 {
     gmx::Selection sel;
-    gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").store(&sel)
-                            .getAdjuster(&info)));
+    gmx::SelectionOptionInfo *info = options_.addOption(
+            SelectionOption("sel").store(&sel));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -208,11 +202,9 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).multiValue()
-                            .getAdjuster(&info)));
+    gmx::SelectionOptionInfo *info = options_.addOption(
+            SelectionOption("sel").storeVector(&sel).multiValue());
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -230,11 +222,9 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).multiValue()
-                            .getAdjuster(&info)));
+    gmx::SelectionOptionInfo *info = options_.addOption(
+            SelectionOption("sel").storeVector(&sel).multiValue());
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -260,7 +250,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
     EXPECT_NO_THROW(assigner.start());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
-    EXPECT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
+    ASSERT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
     ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
@@ -295,7 +285,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options_.finish());
-    EXPECT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
+    ASSERT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
     ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
@@ -303,11 +293,9 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
 TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
 {
     gmx::SelectionList sel;
-    gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                        SelectionOption("sel").storeVector(&sel).valueCount(3)
-                            .getAdjuster(&info)));
+    gmx::SelectionOptionInfo *info = options_.addOption(
+            SelectionOption("sel").storeVector(&sel).valueCount(3));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);

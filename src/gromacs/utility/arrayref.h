@@ -175,6 +175,9 @@ class ConstArrayRef
         //! Returns the last element in the container.
         const_reference back() const { return *(end_ - 1); }
 
+        //! Returns a raw pointer to the contents of the array.
+        const_pointer data() const { return begin_; }
+
         /*! \brief
          * Swaps referenced memory with the other object.
          *

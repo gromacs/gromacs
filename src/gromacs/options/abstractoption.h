@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Defines gmx::AbstractOption and a related template.
+ * Defines gmx::AbstractOption, gmx::OptionTemplate and gmx::OptionInfo.
  *
  * This header defines base classes for option settings that are used with
  * Options::addOption().  These classes implement the "named parameter"
@@ -53,6 +53,7 @@
 #include <string>
 #include <vector>
 
+#include "../utility/common.h"
 #include "../utility/uniqueptr.h"
 
 #include "optionflags.h"
@@ -79,7 +80,10 @@ typedef gmx_unique_ptr<AbstractOptionStorage>::type
  * point when the actual option is created.
  *
  * Subclasses should override createStorage() to create the correct type
- * of storage object.
+ * of storage object.  If they use their own info type derived from OptionInfo,
+ * they should also have a public typedef \c InfoType that specifies that
+ * info type.  This is required for Options::addOption() to return the correct
+ * info type.
  *
  * \ingroup module_options
  */
@@ -239,7 +243,13 @@ class OptionTemplate : public AbstractOption
         //! Hides the option from normal help output.
         MyClass &hidden(bool bHidden = true)
         { setFlag(efOption_Hidden, bHidden); return me(); }
-        //! Requires the option to be specified explicitly.
+        /*! \brief
+         * Requires the option to be specified explicitly.
+         *
+         * Note that if you specify defaultValue() together with required(),
+         * the user is not required to explicitly provide the option.
+         * In this case, required() only affects possible help output.
+         */
         MyClass &required(bool bRequired = true)
         { setFlag(efOption_Required, bRequired); return me(); }
         //! Allows the option to be specified multiple times.
@@ -260,8 +270,6 @@ class OptionTemplate : public AbstractOption
          * is no default value, the storage is not altered, which can also be
          * used to provide a default value.  The latter method has to be used
          * if the option can take multiple values.
-         * If required() is specified, only affects the default value shown in
-         * help output.
          *
          * \p defaultValue is copied when the option is created.
          */
@@ -365,6 +373,121 @@ class OptionTemplate : public AbstractOption
          * unnecessary accessors.
          */
         friend class OptionStorageTemplate<T>;
+};
+
+/*! \brief
+ * Gives information and allows modifications to an option after creation.
+ *
+ * When an option is added with Options::addOption(), an object of a subclass
+ * of OptionInfo is returned.  This object can be later used to access
+ * information about the option.  Non-const methods also allow later changing
+ * (some of) the option settings provided at initialization time.
+ * The properties accessible/modifiable through this interface are implemented
+ * based on need, and may not be implemented for all cases.
+ *
+ * \if libapi
+ * This class is also used by OptionsVisitor and OptionsModifyingVisitor as
+ * the interface that allows querying/modifying each visited option.
+ * \endif
+ *
+ * This class isolates the details of the internal option implementation from
+ * callers.  Although this class is a simple reference to the underlying
+ * implementation, it is implemented as non-copyable to allow const/non-const
+ * status of a reference to this class to indicate whether modifications are
+ * allowed.  Otherwise, separate classes would be needed for access and
+ * modification, complicating the implementation.  In the implementation,
+ * there is always a single OptionInfo instance referring to one option.
+ * The underlying implementation object always owns this instance, and only
+ * references are passed to callers.
+ *
+ * \see Options::addOption()
+ * \if libapi
+ * \see OptionsVisitor
+ * \see OptionsModifyingVisitor
+ * \endif
+ *
+ * \inpublicapi
+ * \ingroup module_options
+ */
+class OptionInfo
+{
+    public:
+        virtual ~OptionInfo();
+
+        /*! \brief
+         * Test whether the option is of a particular type.
+         *
+         * \tparam InfoType  Option type to test for. Should be a class derived
+         *      from OptionInfo.
+         */
+        template <class InfoType>
+        bool isType() const
+        {
+            return toType<InfoType>() != NULL;
+        }
+        /*! \brief
+         * Convert the info object to a particular type if the type is correct.
+         *
+         * \tparam InfoType  Option type to convert to. Should be a class
+         *      derived from OptionInfo.
+         * \retval this converted to a pointer to \p InfoType, or NULL if the
+         *      conversion is not possible.
+         */
+        template <class InfoType>
+        InfoType *toType()
+        {
+            return dynamic_cast<InfoType *>(this);
+        }
+        //! \copydoc toType()
+        template <class InfoType>
+        const InfoType *toType() const
+        {
+            return dynamic_cast<const InfoType *>(this);
+        }
+
+        //! Returns true if the option has been set.
+        bool isSet() const;
+        //! Returns true if the option is a hidden option.
+        bool isHidden() const;
+        //! Returns true if the option is required.
+        bool isRequired() const;
+        //! Returns the name of the option.
+        const std::string &name() const;
+        //! Returns the description of the option.
+        const std::string &description() const;
+        //! Returns the type of the option as a string.
+        const char *type() const;
+        //! Returns the number of values given for the option.
+        int valueCount() const;
+        //! Returns the i'th value of the option as a string.
+        std::string formatValue(int i) const;
+        /*! \brief
+         * Returns the default value if set for the option as a string.
+         *
+         * \see OptionTemplate::defaultValueIfSet()
+         */
+        std::string formatDefaultValueIfSet() const;
+
+    protected:
+        /*! \cond libapi */
+        /*! \brief
+         * Wraps a given option object.
+         *
+         * Does not throw.
+         */
+        explicit OptionInfo(AbstractOptionStorage *option);
+
+        //! Returns the wrapped option storage object.
+        AbstractOptionStorage &option() { return option_; }
+        //! Returns the wrapped option storage object.
+        const AbstractOptionStorage &option() const { return option_; }
+        //! \endcond
+
+    private:
+        //! The wrapped option.
+        AbstractOptionStorage  &option_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(OptionInfo);
 };
 
 } // namespace gmx

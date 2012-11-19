@@ -30,7 +30,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::SelectionFileOption.
+ * Declares gmx::SelectionFileOption and gmx::SelectionFileOptionInfo.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
@@ -43,6 +43,10 @@
 
 namespace gmx
 {
+
+class SelectionFileOptionInfo;
+class SelectionFileOptionStorage;
+class SelectionOptionManager;
 
 /*! \libinternal \brief
  * Specifies a special option that provides selections from a file.
@@ -61,11 +65,38 @@ namespace gmx
 class SelectionFileOption : public AbstractOption
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef SelectionFileOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit SelectionFileOption(const char *name);
 
     private:
         virtual AbstractOptionStoragePointer createStorage() const;
+};
+
+/*! \libinternal \brief
+ * Wrapper class for accessing and modifying selection file option information.
+ *
+ * \inlibraryapi
+ * \ingroup module_selection
+ */
+class SelectionFileOptionInfo : public OptionInfo
+{
+    public:
+        /*! \brief
+         * Creates option info object for given storage object.
+         *
+         * Does not throw.
+         */
+        explicit SelectionFileOptionInfo(SelectionFileOptionStorage *option);
+
+        //! \copydoc SelectionOptionInfo::setManager()
+        void setManager(SelectionOptionManager *manager);
+
+    private:
+        SelectionFileOptionStorage &option();
+        const SelectionFileOptionStorage &option() const;
 };
 
 } // namespace gmx

@@ -33,8 +33,14 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
+#ifndef ENUMS_H_
+#define ENUMS_H_
+
 #ifdef __cplusplus
 extern "C" {
+#endif
+#if 0
+} /* fixes auto-indentation problems */
 #endif
 
 /* note: these enums should correspond to the names in gmxlib/names.c */
@@ -73,6 +79,18 @@ enum {
   erscNO, erscALL, erscCOM, erscNR
 };
 
+enum {
+  ecutsGROUP, ecutsVERLET, ecutsNR
+};
+
+/* Coulomb / VdW interaction modifiers.
+ * grompp replaces eintmodPOTSHIFT_VERLET by eintmodPOTSHIFT or eintmodNONE.
+ * Exactcutoff is only used by Reaction-field-zero, and is not user-selectable.
+ */
+enum eintmod {
+    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodNR
+};
+
 /*
  * eelNOTUSED1 used to be GB, but to enable generalized born with different
  * forms of electrostatics (RF, switch, etc.) in the future it is now selected
@@ -95,6 +113,8 @@ enum {
 #define EEL_FULL(e) (EEL_PME(e) || (e) == eelPOISSON || (e) == eelEWALD)
 
 #define EEL_SWITCHED(e) ((e) == eelSWITCH || (e) == eelSHIFT || (e) == eelENCADSHIFT || (e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
+
+#define EEL_USER(e) ((e) == eelUSER || (e) == eelPMEUSER || (e) == (eelPMESWITCH))
 
 #define EEL_IS_ZERO_AT_CUTOFF(e) (EEL_SWITCHED(e) || (e) == eelRF_ZERO)
 
@@ -121,14 +141,15 @@ enum {
   eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
 };
 #define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
+#define EI_MD(e) ((e) == eiMD || EI_VV(e))
 #define EI_SD(e) ((e) == eiSD1 || (e) == eiSD2)
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/
-#define EI_DYNAMICS(e) ((e) == eiMD || EI_SD(e) || (e) == eiBD || EI_VV(e))
+#define EI_DYNAMICS(e) (EI_MD(e) || EI_SD(e) || (e) == eiBD)
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 #define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 
-#define EI_STATE_VELOCITY(e) ((e) == eiMD || EI_VV(e) || EI_SD(e))
+#define EI_STATE_VELOCITY(e) (EI_MD(e) || EI_SD(e))
 
 enum {
   econtLINCS, econtSHAKE, econtNR
@@ -334,7 +355,88 @@ enum {
   eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
 };
 
+
+/* The interactions contained in a (possibly merged) table
+ * for computing electrostatic, VDW repulsion and/or VDW dispersion 
+ * contributions.
+ */
+enum gmx_table_interaction
+{
+    GMX_TABLE_INTERACTION_ELEC,
+    GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWDISP,
+    GMX_TABLE_INTERACTION_NR
+};
+
+/* Different formats for table data. Cubic spline tables are typically stored
+ * with the four Y,F,G,H intermediate values (check tables.c for format), which
+ * makes it easy to load with a single 4-way SIMD instruction too.
+ * Linear tables only need one value per table point, or two if both V and F
+ * are calculated. However, with SIMD instructions this makes the loads unaligned,
+ * and in that case we store the data as F, D=F(i+1)-F(i), V, and then a blank value,
+ * which again makes it possible to load as a single instruction.
+ */
+enum gmx_table_format
+{
+    GMX_TABLE_FORMAT_CUBICSPLINE_YFGH,
+    GMX_TABLE_FORMAT_LINEAR_VF,
+    GMX_TABLE_FORMAT_LINEAR_V,
+    GMX_TABLE_FORMAT_LINEAR_F,
+    GMX_TABLE_FORMAT_LINEAR_FDV0,
+    GMX_TABLE_FORMAT_NR
+};
+
+/* Neighborlist geometry type.
+ * Kernels will compute interactions between two particles, 
+ * 3-center water, 4-center water or coarse-grained beads.
+ */
+enum gmx_nblist_kernel_geometry
+{
+    GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE,
+    GMX_NBLIST_GEOMETRY_WATER3_PARTICLE,
+    GMX_NBLIST_GEOMETRY_WATER3_WATER3,
+    GMX_NBLIST_GEOMETRY_WATER4_PARTICLE,
+    GMX_NBLIST_GEOMETRY_WATER4_WATER4,
+    GMX_NBLIST_GEOMETRY_CG_CG,
+    GMX_NBLIST_GEOMETRY_NR
+};
+
+/* Types of electrostatics calculations available inside nonbonded kernels.
+ * Note that these do NOT necessarily correspond to the user selections in the MDP file;
+ * many interactions for instance map to tabulated kernels.
+ */
+enum gmx_nbkernel_elec
+{
+    GMX_NBKERNEL_ELEC_NONE,
+    GMX_NBKERNEL_ELEC_COULOMB,
+    GMX_NBKERNEL_ELEC_REACTIONFIELD,
+    GMX_NBKERNEL_ELEC_CUBICSPLINETABLE,
+    GMX_NBKERNEL_ELEC_GENERALIZEDBORN,
+    GMX_NBKERNEL_ELEC_EWALD,
+    GMX_NBKERNEL_ELEC_NR
+};
+
+/* Types of vdw calculations available inside nonbonded kernels.
+ * Note that these do NOT necessarily correspond to the user selections in the MDP file;
+ * many interactions for instance map to tabulated kernels.
+ */
+enum gmx_nbkernel_vdw
+{
+    GMX_NBKERNEL_VDW_NONE,
+    GMX_NBKERNEL_VDW_LENNARDJONES,
+    GMX_NBKERNEL_VDW_BUCKINGHAM,
+    GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
+    GMX_NBKERNEL_VDW_NR
+};
+
+
+
 #ifdef __cplusplus
 }
 #endif
 
+#endif /* ENUMS_H_ */

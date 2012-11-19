@@ -132,7 +132,7 @@ int gmx_covar(int argc,char *argv[])
   t_atoms    *atoms;  
   rvec       *x,*xread,*xref,*xav,*xproj;
   matrix     box,zerobox;
-  real       *sqrtm,*mat,*eigval,sum,trace,inv_nframes;
+  real       *sqrtm,*mat,*eigenvalues,sum,trace,inv_nframes;
   real       t,tstart,tend,**mat2;
   real       xj,*w_rls=NULL;
   real       min,max,*axis;
@@ -150,7 +150,7 @@ int gmx_covar(int argc,char *argv[])
   time_t     now;
   char       timebuf[STRLEN];
   t_rgb      rlo,rmi,rhi;
-  real       *tmp;
+  real       *eigenvectors;
   output_env_t oenv;
   gmx_rmpbc_t  gpbc=NULL;
 
@@ -425,20 +425,20 @@ int gmx_covar(int argc,char *argv[])
 
   /* call diagonalization routine */
   
+  snew(eigenvalues,ndim);
+  snew(eigenvectors,ndim*ndim);
+
+  memcpy(eigenvectors,mat,ndim*ndim*sizeof(real));
   fprintf(stderr,"\nDiagonalizing ...\n");
   fflush(stderr);
-
-  snew(eigval,ndim);
-  snew(tmp,ndim*ndim);
-  memcpy(tmp,mat,ndim*ndim*sizeof(real));
-  eigensolver(tmp,ndim,0,ndim,eigval,mat);
-  sfree(tmp);
+  eigensolver(eigenvectors,ndim,0,ndim,eigenvalues,mat);
+  sfree(eigenvectors);
   
   /* now write the output */
 
   sum=0;
   for(i=0; i<ndim; i++)
-    sum+=eigval[i];
+    sum+=eigenvalues[i];
   fprintf(stderr,"\nSum of the eigenvalues: %g (%snm^2)\n",
 	  sum,bM ? "u " : "");
   if (fabs(trace-sum)>0.01*trace)
@@ -451,7 +451,7 @@ int gmx_covar(int argc,char *argv[])
 	       "Eigenvalues of the covariance matrix",
 	       "Eigenvector index",str,oenv);  
   for (i=0; (i<ndim); i++)
-    fprintf (out,"%10d %g\n",(int)i+1,eigval[ndim-1-i]);
+    fprintf (out,"%10d %g\n",(int)i+1,eigenvalues[ndim-1-i]);
   ffclose(out);  
 
   if (end==-1) {
@@ -474,7 +474,7 @@ int gmx_covar(int argc,char *argv[])
   }
 
   write_eigenvectors(eigvecfile,natoms,mat,TRUE,1,end,
-		     WriteXref,x,bDiffMass1,xproj,bM,eigval);
+		     WriteXref,x,bDiffMass1,xproj,bM,eigenvalues);
 
   out = ffopen(logfile,"w");
 

@@ -37,12 +37,8 @@
  */
 #include "angle.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "pbc.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -51,7 +47,6 @@
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
-#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -69,17 +64,22 @@ const char Angle::shortDescription[] =
 
 Angle::Angle()
     : TrajectoryAnalysisModule(name, shortDescription),
-      sel1info_(NULL), sel2info_(NULL),
-      bSplit1_(false), bSplit2_(false), bMulti_(false), bAll_(false),
-      bDumpDist_(false), natoms1_(0), natoms2_(0), vt0_(NULL)
+      sel1info_(NULL), sel2info_(NULL), natoms1_(0), natoms2_(0)
 {
-    registerAnalysisDataset(&data_, "angle");
+    averageModule_.reset(new AnalysisDataFrameAverageModule());
+    angles_.addModule(averageModule_);
+
+    registerAnalysisDataset(&angles_, "angle");
+    registerBasicDataset(averageModule_.get(), "average");
 }
 
 
 Angle::~Angle()
 {
-    delete[] vt0_;
+    for (size_t g = 0; g < vt0_.size(); ++g)
+    {
+        delete [] vt0_[g];
+    }
 }
 
 
@@ -98,31 +98,36 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "The type of the angle is specified with [TT]-g1[tt] and [TT]-g2[tt].",
         "If [TT]-g1[tt] is [TT]angle[tt] or [TT]dihedral[tt], [TT]-g2[tt]",
         "should not be specified.",
-        "In this case, one selection is required, and it should contain",
-        "triplets or quartets of positions that define the angles to be",
-        "calculated.",
-        "If [TT]-g1[tt] is not [TT]angle[tt] or [TT]dihedral[tt], [TT]-g2[tt]",
-        "should not be [TT]none[tt], and the two options define two vectors",
-        "for the calculation. For vectors ([TT]vector[tt]), a selection with",
-        "pairs of positions is required, and for planes ([TT]plane[tt]),",
-        "triplets of positions are required.",
-        "If both vectors are specified by positions, the number of vectors",
-        "should be the same in both selections.",
-        "[TT]-g2 sphnorm[tt] requires a reference selection that defines",
-        "the center of the sphere.",
-        "[TT]-g2 z[tt] does not require any selection.[PAR]",
-        "With [TT]-split1[tt], the positions for [TT]-g1[tt] are specified",
-        "using N separate selections with M positions each, instead of the",
-        "default M*N positions in one selection.",
-        "[TT]-split2[tt] does the same for [TT]-g2[tt].[PAR]",
+        "In this case, [TT]-group1[tt] should specify one selection,",
+        "and it should contain triplets or quartets of positions that define",
+        "the angles to be calculated.[PAR]",
+        "If [TT]-g1[tt] is [TT]vector[tt] or [TT]plane[tt], [TT]-group1[tt]",
+        "should specify a selection that has either pairs ([TT]vector[tt])",
+        "or triplets ([TT]plane[tt]) of positions. For vectors, the positions",
+        "set the endpoints of the vector, and for planes, the three positions",
+        "are used to calculate the normal of the plane. In both cases,",
+        "[TT]-g2[tt] specifies the other vector to use (see below).[PAR]",
+        "With [TT]-g2 vector[tt] or [TT]-g2 plane[tt], [TT]-group2[tt] should",
+        "specify another set of vectors. Both selections should specify the",
+        "same number of vectors.[PAR]",
+        "With [TT]-g2 sphnorm[tt], [TT]-group2[tt] should specify a single",
+        "position that is the center of the sphere. The second vector is then",
+        "calculated as the vector from the center to the midpoint of the",
+        "positions specified by [TT]-group1[tt].[PAR]",
+        "With [TT]-g2 z[tt], [TT]-group2[tt] is not necessary, and angles",
+        "between the first vectors and the positive Z axis are calculated.[PAR]",
+        "With [TT]-g2 t0[tt], [TT]-group2[tt] is not necessary, and angles",
+        "are calculated from the vectors as they are in the first frame.[PAR]",
         "There are two options for output:",
-        "[TT]-o[tt] writes an xvgr file with the time and the average angle",
+        "[TT]-oav[tt] writes an xvgr file with the time and the average angle",
         "for each frame.",
-        "With [TT]-all[tt], also the individual angles are written (only",
-        "supported for static selections).",
+        "[TT]-oall[tt] writes all the individual angles."
+        /* TODO: Consider if the dump option is necessary and how to best
+         * implement it.
         "[TT]-od[tt] can be used to dump all the individual angles,",
         "each on a separate line. This format is better suited for",
         "further processing, e.g., if angles from multiple runs are needed."
+        */
     };
     static const char *const cGroup1TypeEnum[] =
         { "angle", "dihedral", "vector", "plane", NULL };
@@ -131,12 +136,13 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 
     options->setDescription(concatenateStrings(desc));
 
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnAngle_).defaultValueIfSet("angle")
-                           .description("Computed angles"));
-    options->addOption(FileNameOption("od").filetype(eftPlot).outputFile()
-                           .store(&fnDump_).defaultValueIfSet("angdump")
-                           .description("Individual angles on separate lines"));
+    options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
+                           .store(&fnAverage_).defaultBasename("angaver")
+                           .description("Average angles as a function of time"));
+    options->addOption(FileNameOption("oall").filetype(eftPlot).outputFile()
+                           .store(&fnAll_).defaultBasename("angles")
+                           .description("All angles as a function of time"));
+    // TODO: Add histogram output.
 
     options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
         .defaultEnumIndex(0).store(&g1type_)
@@ -144,22 +150,18 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
         .defaultEnumIndex(0).store(&g2type_)
         .description("Type of second vector group"));
-    options->addOption(BooleanOption("split1").store(&bSplit1_)
-        .description("Each position of first group in separate selection"));
-    options->addOption(BooleanOption("split2").store(&bSplit2_)
-        .description("Each position of second group in separate selection"));
-    options->addOption(BooleanOption("multi").store(&bMulti_)
-        .description("Analyze multiple sets of angles/dihedrals"));
-    options->addOption(BooleanOption("all").store(&bAll_)
-        .description("Print individual angles together with the average"));
-    options->addOption(BooleanOption("dumpd").store(&bDumpDist_)
-        .description("Write also distances with -od"));
 
-    options->addOption(SelectionOption("group1").multiValue().required()
-        .dynamicOnlyWhole().storeVector(&sel1_).getAdjuster(&sel1info_)
+    // TODO: Allow multiple angles to be computed in one invocation.
+    // Most of the code already supports it, but requires a solution for
+    // Redmine issue #1010.
+    // TODO: Consider what is the best way to support dynamic selections.
+    // Again, most of the code already supports it, but it needs to be
+    // considered how should -oall work, and additional checks should be added.
+    sel1info_ = options->addOption(SelectionOption("group1")
+        .required().onlyStatic().storeVector(&sel1_)
         .description("First analysis/vector selection"));
-    options->addOption(SelectionOption("group2").multiValue()
-        .dynamicOnlyWhole().storeVector(&sel2_).getAdjuster(&sel2info_)
+    sel2info_ = options->addOption(SelectionOption("group2")
+        .onlyStatic().storeVector(&sel2_)
         .description("Second analysis/vector selection"));
 }
 
@@ -167,7 +169,6 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 void
 Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
 {
-    // Validity checks.
     bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
 
     if (bSingle && g2type_[0] != 'n')
@@ -184,28 +185,6 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
     {
         GMX_THROW(InconsistentInputError("Should specify a second group (-g2) "
                                          "if the first group is not an angle or a dihedral"));
-    }
-    if (bSingle && bDumpDist_)
-    {
-        GMX_THROW(InconsistentInputError("Cannot calculate distances with -g1 angle or dihedral"));
-        // bDumpDist_ = false;
-    }
-    if (bMulti_ && !bSingle)
-    {
-        GMX_THROW(InconsistentInputError("-mult can only be combined with -g1 angle or dihedral"));
-    }
-    if (bMulti_ && bSplit1_)
-    {
-        GMX_THROW(InconsistentInputError("-mult can not be combined with -split1"));
-    }
-    if (bMulti_ && bAll_)
-    {
-        GMX_THROW(InconsistentInputError("-mult and -all are mutually exclusive options"));
-    }
-
-    if (bAll_)
-    {
-        sel1info_->setOnlyStatic(true);
     }
 
     // Set up the number of positions per angle.
@@ -233,15 +212,6 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }
-
-    if (!bMulti_)
-    {
-        sel1info_->setValueCount(bSplit1_ ? natoms1_ : 1);
-    }
-    if (natoms2_ > 0)
-    {
-        sel2info_->setValueCount(bSplit2_ ? natoms2_ : 1);
-    }
 }
 
 
@@ -249,80 +219,38 @@ void
 Angle::checkSelections(const SelectionList &sel1,
                        const SelectionList &sel2) const
 {
-    if (bMulti_)
-    {
-        for (size_t g = 0; g < sel1.size(); ++g)
-        {
-            if (sel1[g].posCount() % natoms1_ != 0)
-            {
-                GMX_THROW(InconsistentInputError(formatString(
-                    "Number of positions in selection %d not divisible by %d",
-                    static_cast<int>(g + 1), natoms1_)));
-            }
-        }
-        return;
-    }
-
-    int na1 = sel1[0].posCount();
-    int na2 = (natoms2_ > 0) ? sel2[0].posCount() : 0;
-
-    if (!bSplit1_ && natoms1_ > 1 && na1 % natoms1_ != 0)
-    {
-        GMX_THROW(InconsistentInputError(formatString(
-            "Number of positions in the first group not divisible by %d",
-            natoms1_)));
-    }
-    if (!bSplit2_ && natoms2_ > 1 && na2 % natoms2_ != 0)
-    {
-        GMX_THROW(InconsistentInputError(formatString(
-            "Number of positions in the second group not divisible by %d",
-            natoms2_)));
-    }
-
-    if (bSplit1_)
-    {
-        for (int g = 1; g < natoms1_; ++g)
-        {
-            if (sel1[g].posCount() != na1)
-            {
-                GMX_THROW(InconsistentInputError(
-                          "All selections in the first group should contain "
-                          "the same number of positions"));
-            }
-        }
-    }
-    else
-    {
-        na1 /= natoms1_;
-    }
-    if (natoms2_ > 1)
-    {
-        if (bSplit2_)
-        {
-            for (int g = 1; g < natoms2_; ++g)
-            {
-                if (sel2[g].posCount() != na2)
-                {
-                    GMX_THROW(InconsistentInputError(
-                              "All selections in the second group should contain "
-                              "the same number of positions"));
-                }
-            }
-        }
-        else
-        {
-            na2 /= natoms2_;
-        }
-    }
-    if (natoms1_ > 0 && natoms2_ > 1 && na1 != na2)
+    if (natoms2_ > 0 && sel1.size() != sel2.size())
     {
         GMX_THROW(InconsistentInputError(
-                  "Number of vectors defined by the two groups are not the same"));
+                    "-group1 and -group2 should specify the same number of selections"));
     }
-    if (g2type_[0] == 's' && sel2[0].posCount() != 1)
+
+    for (size_t g = 0; g < sel1.size(); ++g)
     {
-        GMX_THROW(InconsistentInputError(
-                  "The second group should contain a single position with -g2 sphnorm"));
+        int na1 = sel1[g].posCount();
+        int na2 = (natoms2_ > 0) ? sel2[g].posCount() : 0;
+        if (natoms1_ > 1 && na1 % natoms1_ != 0)
+        {
+            GMX_THROW(InconsistentInputError(formatString(
+                "Number of positions in selection %d in the first group not divisible by %d",
+                static_cast<int>(g + 1), natoms1_)));
+        }
+        if (natoms2_ > 1 && na2 % natoms2_ != 0)
+        {
+            GMX_THROW(InconsistentInputError(formatString(
+                "Number of positions in selection %d in the second group not divisible by %d",
+                static_cast<int>(g + 1), natoms2_)));
+        }
+        if (natoms1_ > 0 && natoms2_ > 1 && na1 / natoms1_ != na2 / natoms2_)
+        {
+            GMX_THROW(InconsistentInputError(
+                      "Number of vectors defined by the two groups are not the same"));
+        }
+        if (g2type_[0] == 's' && sel2[g].posCount() != 1)
+        {
+            GMX_THROW(InconsistentInputError(
+                      "The second group should contain a single position with -g2 sphnorm"));
+        }
     }
 }
 
@@ -333,67 +261,55 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 {
     checkSelections(sel1_, sel2_);
 
-    if (bMulti_)
-    {
-        data_.setColumnCount(sel1_.size());
-    }
-    else if (bAll_)
-    {
-        int na = sel1_[0].posCount();
-        if (!bSplit1_)
-        {
-            na /= natoms1_;
-        }
-        data_.setColumnCount(na + 1);
-    }
-    else
-    {
-        data_.setColumnCount(1);
-    }
+    angles_.setColumnCount(sel1_[0].posCount() / natoms1_);
 
     if (g2type_ == "t0")
     {
-        int na = sel1_[0].posCount();
-        if (!bSplit1_)
+        vt0_.resize(sel1_.size());
+        for (size_t g = 0; g < sel1_.size(); ++g)
         {
-            na /= natoms1_;
+            vt0_[g] = new rvec[sel1_[g].posCount() / natoms1_];
         }
-        vt0_ = new rvec[na];
     }
 
-    AnalysisDataPlotModulePointer plotm(
-        new AnalysisDataPlotModule(settings.plotSettings()));
-    plotm->setFileName(fnAngle_);
-    plotm->setTitle("Angle");
-    plotm->setXAxisIsTime();
-    plotm->setYLabel("Angle (degrees)");
-    data_.addModule(plotm);
+    if (!fnAverage_.empty())
+    {
+        AnalysisDataPlotModulePointer plotm(
+            new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnAverage_);
+        plotm->setTitle("Average angle");
+        plotm->setXAxisIsTime();
+        plotm->setYLabel("Angle (degrees)");
+        // TODO: Add legends
+        averageModule_->addModule(plotm);
+    }
+
+    if (!fnAll_.empty())
+    {
+        AnalysisDataPlotModulePointer plotm(
+            new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnAll_);
+        plotm->setTitle("Angle");
+        plotm->setXAxisIsTime();
+        plotm->setYLabel("Angle (degrees)");
+        // TODO: Add legends? (there can be a massive amount of columns)
+        angles_.addModule(plotm);
+    }
 }
 
 
 //! Helper method to process selections into an array of coordinates.
 static void
-copy_pos(const SelectionList &sel, bool bSplit, int natoms,
-         int firstg, int first, rvec x[])
+copy_pos(const SelectionList &sel, int natoms, int g, int first, rvec x[])
 {
-    if (bSplit)
+    for (int k = 0; k < natoms; ++k)
     {
-        for (int k = 0; k < natoms; ++k)
-        {
-            copy_rvec(sel[firstg + k].position(first).x(), x[k]);
-        }
-    }
-    else
-    {
-        for (int k = 0; k < natoms; ++k)
-        {
-            copy_rvec(sel[firstg].position(first + k).x(), x[k]);
-        }
+        copy_rvec(sel[g].position(first + k).x(), x[k]);
     }
 }
 
 
-//! Helper method to calculate a vector from two or three positions..
+//! Helper method to calculate a vector from two or three positions.
 static void
 calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 {
@@ -439,42 +355,36 @@ void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh = pdata->dataHandle(data_);
+    AnalysisDataHandle       dh = pdata->dataHandle(angles_);
     const SelectionList     &sel1 = pdata->parallelSelections(sel1_);
     const SelectionList     &sel2 = pdata->parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 
-    rvec  v1, v2;
-    rvec  c1, c2;
-    switch (g2type_[0])
-    {
-        case 'z':
-            clear_rvec(v2);
-            v2[ZZ] = 1.0;
-            clear_rvec(c2);
-            break;
-        case 's':
-            copy_rvec(sel2_[0].position(0).x(), c2);
-            break;
-    }
-
     dh.startFrame(frnr, fr.time);
 
-    int incr1 = bSplit1_ ? 1 : natoms1_;
-    int incr2 = bSplit2_ ? 1 : natoms2_;
-    int ngrps = bMulti_ ? sel1_.size() : 1;
-
-    for (int g = 0; g < ngrps; ++g)
+    for (size_t g = 0; g < sel1_.size(); ++g)
     {
-        real ave = 0.0;
-        int n = 0;
-        int i, j;
-        for (i = j = 0; i < sel1[g].posCount(); i += incr1)
+        rvec  v1, v2;
+        rvec  c1, c2;
+        switch (g2type_[0])
+        {
+            case 'z':
+                clear_rvec(v2);
+                v2[ZZ] = 1.0;
+                clear_rvec(c2);
+                break;
+            case 's':
+                copy_rvec(sel2_[g].position(0).x(), c2);
+                break;
+        }
+        for (int i = 0, j = 0, n = 0;
+             i < sel1[g].posCount();
+             i += natoms1_, j += natoms2_, ++n)
         {
             rvec x[4];
             real angle;
-            copy_pos(sel1, bSplit1_, natoms1_, g, i, x);
+            copy_pos(sel1, natoms1_, g, i, x);
             switch (g1type_[0])
             {
                 case 'a':
@@ -521,17 +431,16 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     {
                         case 'v':
                         case 'p':
-                            copy_pos(sel2, bSplit2_, natoms2_, 0, j, x);
+                            copy_pos(sel2, natoms2_, 0, j, x);
                             calc_vec(natoms2_, x, pbc, v2, c2);
-                            j += incr2;
                             break;
                         case 't':
                             // FIXME: This is not parallelizable.
                             if (frnr == 0)
                             {
-                                copy_rvec(v1, vt0_[n]);
+                                copy_rvec(v1, vt0_[g][n]);
                             }
-                            copy_rvec(vt0_[n], v2);
+                            copy_rvec(vt0_[g][n], v2);
                             break;
                         case 'z':
                             c1[XX] = c1[YY] = 0.0;
@@ -554,8 +463,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 default:
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
-            angle *= RAD2DEG;
-            /* TODO: add support for -od and -dumpd 
+            /* TODO: Should we also calculate distances like g_sgangle?
+             * Could be better to leave that for a separate tool.
             real dist = 0.0;
             if (bDumpDist_)
             {
@@ -571,18 +480,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 }
             }
             */
-            if (bAll_)
-            {
-                dh.setPoint(n + 1, angle);
-            }
-            ave += angle;
-            ++n;
+            dh.setPoint(n, angle * RAD2DEG);
         }
-        if (n > 0)
-        {
-            ave /= n;
-        }
-        dh.setPoint(g, ave);
     }
     dh.finishFrame();
 }

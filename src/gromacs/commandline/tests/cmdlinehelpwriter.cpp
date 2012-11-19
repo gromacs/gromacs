@@ -53,7 +53,6 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoption.h"
-#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/file.h"
 
@@ -122,16 +121,16 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     options.addOption(FileNameOption("f")
                         .description("Input file description")
                         .filetype(eftTrajectory).inputFile().required()
-                        .defaultValue("traj"));
+                        .defaultBasename("traj"));
     options.addOption(FileNameOption("lib")
                         .description("Library file description")
                         .filetype(eftGenericData).inputFile().libraryFile()
-                        .defaultValueIfSet("libdata"));
+                        .defaultBasename("libdata"));
     options.addOption(FileNameOption("io")
                         .store(&filename)
                         .description("Input/Output file description")
                         .filetype(eftGenericData).inputOutputFile()
-                        .defaultValueIfSet("inout"));
+                        .defaultBasename("inout"));
     options.addOption(FileNameOption("o")
                         .description("Output file description")
                         .filetype(eftPlot).outputFile());
@@ -158,23 +157,23 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongFileOptions)
     options.addOption(FileNameOption("f")
                         .description("File name option with a long value")
                         .filetype(eftTrajectory).inputFile().required()
-                        .defaultValue("path/to/long/trajectory/name"));
+                        .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("f2")
                         .description("File name option with a long value")
                         .filetype(eftTrajectory).inputFile().required()
-                        .defaultValue("path/to/long/trajectory"));
+                        .defaultBasename("path/to/long/trajectory"));
     options.addOption(FileNameOption("lib")
                         .description("File name option with a long value and type")
                         .filetype(eftTrajectory).inputFile().libraryFile()
-                        .defaultValue("path/to/long/trajectory/name"));
+                        .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("longfileopt")
                         .description("File name option with a long name")
                         .filetype(eftGenericData).inputFile()
-                        .defaultValue("deffile"));
+                        .defaultBasename("deffile"));
     options.addOption(FileNameOption("longfileopt2")
                         .description("File name option with multiple long fields")
                         .filetype(eftGenericData).inputFile().libraryFile()
-                        .defaultValue("path/to/long/file/name"));
+                        .defaultBasename("path/to/long/file/name"));
 
     gmx::CommandLineHelpWriter writer(options);
     checkHelp(&writer);

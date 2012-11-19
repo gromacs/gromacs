@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Declares option settings objects for basic option types.
+ * Declares option objects for basic option types.
  *
  * Together with options.h, this header forms the part of the public API
  * that most classes will use to provide options.
@@ -51,8 +51,13 @@
 namespace gmx
 {
 
+class BooleanOptionInfo;
+class BooleanOptionStorage;
+class IntegerOptionInfo;
 class IntegerOptionStorage;
+class DoubleOptionInfo;
 class DoubleOptionStorage;
+class StringOptionInfo;
 class StringOptionStorage;
 
 /*! \addtogroup module_options
@@ -76,6 +81,9 @@ options.addOption(BooleanOption("pbc").store(&bPBC));
 class BooleanOption : public OptionTemplate<bool, BooleanOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef BooleanOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit BooleanOption(const char *name) : MyBase(name) {}
 
@@ -105,6 +113,9 @@ options.addOption(IntegerOption("box").store(box).vector());
 class IntegerOption : public OptionTemplate<int, IntegerOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef IntegerOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit IntegerOption(const char *name) : MyBase(name) {}
 
@@ -139,6 +150,9 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 class DoubleOption : public OptionTemplate<double, DoubleOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef DoubleOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit DoubleOption(const char *name) : MyBase(name), bTime_(false)
         {
@@ -197,6 +211,9 @@ options.addOption(StringOption("type").enumValue(allowed).store(&str)
 class StringOption : public OptionTemplate<std::string, StringOption>
 {
     public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef StringOptionInfo InfoType;
+
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
             : MyBase(name), enumValues_(NULL), defaultEnumIndex_(-1),
@@ -261,6 +278,71 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * otherwise unnecessary accessors.
          */
         friend class StringOptionStorage;
+};
+
+/*! \brief
+ * Wrapper class for accessing boolean option information.
+ *
+ * \inpublicapi
+ */
+class BooleanOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit BooleanOptionInfo(BooleanOptionStorage *option);
+};
+
+/*! \brief
+ * Wrapper class for accessing integer option information.
+ *
+ * \inpublicapi
+ */
+class IntegerOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit IntegerOptionInfo(IntegerOptionStorage *option);
+};
+
+/*! \brief
+ * Wrapper class for accessing floating-point option information.
+ *
+ * \inpublicapi
+ */
+class DoubleOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit DoubleOptionInfo(DoubleOptionStorage *option);
+
+        //! Whether the option specifies a time value.
+        bool isTime() const;
+
+        /*! \brief
+         * Sets a scale factor for user-provided values.
+         *
+         * Any user-provided value is scaled by the provided factor.
+         * Programmatically set default values are not scaled.
+         * If called multiple times, later calls override the previously set
+         * value.  In other words, the scaling is not cumulative.
+         */
+        void setScaleFactor(double factor);
+
+    private:
+        DoubleOptionStorage &option();
+        const DoubleOptionStorage &option() const;
+};
+
+/*! \brief
+ * Wrapper class for accessing string option information.
+ *
+ * \inpublicapi
+ */
+class StringOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit StringOptionInfo(StringOptionStorage *option);
 };
 
 /*!\}*/

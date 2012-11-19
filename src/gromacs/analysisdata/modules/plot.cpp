@@ -37,10 +37,6 @@
  */
 #include "gromacs/analysisdata/modules/plot.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <string>
 #include <vector>
 

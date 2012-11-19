@@ -1,12 +1,11 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
 set(MDRUN_SOURCES
-    do_gct.c    gctio.c         genalg.c    ionize.c
-    md.c        md_openmm.c     mdrun.c     membed.c
-    repl_ex.c   runner.c        xutils.c)
+    do_gct.c      gctio.c       genalg.c    ionize.c
+    md.c          md_openmm.c   mdrun.c     membed.c
+    pme_loadbal.c repl_ex.c     runner.c    xutils.c)
 
 if(GMX_OPENMM) 
-    add_subdirectory(gmx_gpu_utils)
     include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
     link_directories(${OpenMM_LIBRARY_DIR}) 
     # with this define no evn.var. is needed with OPENMM_PLUGIN_DIR
@@ -23,8 +22,10 @@ if(GMX_FAHCORE)
 else(GMX_FAHCORE)
     add_executable(mdrun ${MDRUN_SOURCES})
     gmx_add_man_page(mdrun)
-    target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_OPENMM_LIBRARIES})
-    set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}")
+    target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_OPENMM_LIBRARIES}
+        ${OpenMP_LINKER_FLAGS})
+    set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}"
+        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
 
     if(GMX_OPENMM AND MSVC)

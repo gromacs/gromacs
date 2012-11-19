@@ -70,6 +70,10 @@ const char *ptype_str[eptNR+1] = {
   "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
 };
 
+const char *ecutscheme_names[ecutsNR+1] = {
+  "Group", "Verlet", NULL
+};
+
 const char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
   "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User", 
@@ -88,6 +92,10 @@ const char *evdw_names[evdwNR+1] = {
 
 const char *econstr_names[econtNR+1] = {
   "Lincs", "Shake", NULL
+};
+
+const char *eintmod_names[eintmodNR+1] = { 
+  "Potential-shift-Verlet","Potential-shift","None","Potential-switch","Exact-cutoff", NULL
 };
 
 const char *egrp_nm[egNR+1] = { 
@@ -168,10 +176,6 @@ const char *esol_names[esolNR+1] = {
   "No", "SPC", "TIP4p", NULL
 };
 
-const char *enlist_names[enlistNR+1] = {
-  "Atom-Atom", "SPC-Atom", "SPC-SPC", "TIP4p-Atom", "TIP4p-TIP4p", "CG-CG", NULL
-};
-
 const char *edispc_names[edispcNR+1] = {
   "No", "EnerPres", "Ener", "AllEnerPres", "AllEner", NULL
 };
@@ -248,4 +252,20 @@ const char *eAdressICtype_names[eAdressICNR+1] = {
 const char *eAdressSITEtype_names[eAdressSITENR+1] = {
   "com","cog", "atom", "atomperatom", NULL
 };
+
+const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1] = {
+    "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle", "Water4-Water4", "CG-CG", NULL
+};
+
+const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1] =
+{
+    "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Generalized-Born", "Ewald", NULL
+};
+
+const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1] =
+{
+    "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", NULL
+};
+
+
 

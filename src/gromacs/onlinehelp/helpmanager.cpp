@@ -146,6 +146,11 @@ void HelpManager::enterTopic(const char *name)
     impl_->topicStack_.push_back(newTopic);
 }
 
+void HelpManager::enterTopic(const std::string &name)
+{
+    enterTopic(name.c_str());
+}
+
 void HelpManager::writeCurrentTopic() const
 {
     const HelpTopicInterface &topic = impl_->currentTopic();

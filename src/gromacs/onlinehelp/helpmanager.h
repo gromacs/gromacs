@@ -39,6 +39,8 @@
 #ifndef GMX_ONLINEHELP_HELPMANAGER_H
 #define GMX_ONLINEHELP_HELPMANAGER_H
 
+#include <string>
+
 #include "../utility/common.h"
 
 namespace gmx
@@ -79,6 +81,8 @@ class HelpManager
          * \throws    InvalidInputError if topic with \p name is not found.
          */
         void enterTopic(const char *name);
+        //! \copydoc enterTopic(const char *)
+        void enterTopic(const std::string &name);
 
         /*! \brief
          * Writes out the help for the currently active topic.

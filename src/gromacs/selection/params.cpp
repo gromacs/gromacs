@@ -35,20 +35,17 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <algorithm>
+#include <string>
 
-#include "smalloc.h"
-#include "string2.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/selection/selparam.h"
-#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/stringutil.h"
@@ -58,8 +55,12 @@
 #include "scanner.h"
 #include "selelem.h"
 
-using std::min;
-using std::max;
+using gmx::SelectionParserValue;
+using gmx::SelectionParserValueList;
+using gmx::SelectionParserParameter;
+using gmx::SelectionParserParameterList;
+using gmx::SelectionTreeElement;
+using gmx::SelectionTreeElementPointer;
 
 /*!
  * \param[in] name   Name of the parameter to search.
@@ -108,7 +109,7 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
 }
 
 /*! \brief
- * Does a type conversion on a \c t_selexpr_value.
+ * Does a type conversion on a SelectionParserValue.
  *
  * \param[in,out] value    Value to convert.
  * \param[in]     type     Type to convert to.
@@ -116,25 +117,26 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
  * \returns       0 on success, a non-zero value on error.
  */
 static int
-convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
+convert_value(SelectionParserValue *value, e_selvalue_t type, void *scanner)
 {
     if (value->type == type || type == NO_VALUE)
     {
         return 0;
     }
-    if (value->bExpr)
+    if (value->hasExpressionValue())
     {
         /* Conversion from atom selection to position using default
          * reference positions. */
         if (value->type == GROUP_VALUE && type == POS_VALUE)
         {
-            value->u.expr =
-                _gmx_sel_init_position(value->u.expr, NULL, scanner);
-            if (value->u.expr == NULL)
+            SelectionTreeElementPointer expr =
+                _gmx_sel_init_position(value->expr, NULL, scanner);
+            // FIXME: Use exceptions
+            if (!expr)
             {
                 return -1;
             }
-            value->type = type;
+            *value = SelectionParserValue::createExpr(expr);
             return 0;
         }
         return -1;
@@ -144,24 +146,21 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
         /* Integers to floating point are easy */
         if (value->type == INT_VALUE && type == REAL_VALUE)
         {
-            real r1 = (real)value->u.i.i1;
-            real r2 = (real)value->u.i.i2;
-            value->u.r.r1 = r1;
-            value->u.r.r2 = r2;
-            value->type = type;
+            *value = SelectionParserValue::createRealRange(value->u.i.i1,
+                                                           value->u.i.i2);
             return 0;
         }
         /* Reals that are integer-valued can also be converted */
-        if (value->type == REAL_VALUE && type == INT_VALUE
-            && gmx_within_tol(value->u.r.r1, (int)value->u.r.r1, GMX_REAL_EPS)
-            && gmx_within_tol(value->u.r.r2, (int)value->u.r.r2, GMX_REAL_EPS))
+        if (value->type == REAL_VALUE && type == INT_VALUE)
         {
-            int i1 = (int)value->u.r.r1;
-            int i2 = (int)value->u.r.r2;
-            value->u.i.i1 = i1;
-            value->u.i.i2 = i2;
-            value->type = type;
-            return 0;
+            int i1 = static_cast<int>(value->u.r.r1);
+            int i2 = static_cast<int>(value->u.r.r2);
+            if (gmx_within_tol(value->u.r.r1, i1, GMX_REAL_EPS)
+                && gmx_within_tol(value->u.r.r2, i2, GMX_REAL_EPS))
+            {
+                *value = SelectionParserValue::createIntegerRange(i1, i2);
+                return 0;
+            }
         }
     }
     return -1;
@@ -176,21 +175,17 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
  * \returns       0 on success, a non-zero value on error.
  */
 static int
-convert_values(t_selexpr_value *values, e_selvalue_t type, void *scanner)
+convert_values(SelectionParserValueList *values, e_selvalue_t type, void *scanner)
 {
-    t_selexpr_value *value;
-    int              rc, rc1;
-
-    rc = 0;
-    value = values;
-    while (value)
+    int rc = 0;
+    SelectionParserValueList::iterator value;
+    for (value = values->begin(); value != values->end(); ++value)
     {
-        rc1 = convert_value(value, type, scanner);
+        int rc1 = convert_value(&*value, type, scanner);
         if (rc1 != 0 && rc == 0)
         {
             rc = rc1;
         }
-        value = value->next;
     }
     /* FIXME: More informative error messages */
     return rc;
@@ -207,7 +202,9 @@ convert_values(t_selexpr_value *values, e_selvalue_t type, void *scanner)
  * in the same order as the corresponding parameters.
  */
 static void
-place_child(t_selelem *root, t_selelem *child, gmx_ana_selparam_t *param)
+place_child(const SelectionTreeElementPointer &root,
+            const SelectionTreeElementPointer &child,
+            gmx_ana_selparam_t *param)
 {
     gmx_ana_selparam_t *ps;
     int                 n;
@@ -222,9 +219,7 @@ place_child(t_selelem *root, t_selelem *child, gmx_ana_selparam_t *param)
     }
     else
     {
-        t_selelem *prev;
-
-        prev = root->child;
+        SelectionTreeElementPointer prev = root->child;
         while (prev->next && prev->next->u.param - ps >= n)
         {
             prev = prev->next;
@@ -293,94 +288,75 @@ cmp_real_range(const void *a, const void *b)
 /*! \brief
  * Parses the values for a parameter that takes integer or real ranges.
  * 
- * \param[in] nval   Number of values in \p values.
- * \param[in] values Pointer to the list of values.
+ * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
  * \returns   true if the values were parsed successfully, false otherwise.
  */
 static bool
-parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
-                   void *scanner)
+parse_values_range(const SelectionParserValueList &values,
+                   gmx_ana_selparam_t *param, void *scanner)
 {
-    t_selexpr_value    *value;
     int                *idata;
     real               *rdata;
     int                 i, j, n;
 
     param->flags &= ~SPAR_DYNAMIC;
-    if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid range parameter type");
-        return false;
-    }
+    GMX_RELEASE_ASSERT(param->val.type == INT_VALUE || param->val.type == REAL_VALUE,
+                       "Invalid range parameter type");
     idata = NULL;
     rdata = NULL;
     if (param->val.type == INT_VALUE)
     {
-        snew(idata, nval*2);
+        snew(idata, values.size()*2);
     }
     else
     {
-        snew(rdata, nval*2);
+        snew(rdata, values.size()*2);
     }
-    value = values;
     i = 0;
-    while (value)
+    SelectionParserValueList::const_iterator value;
+    for (value = values.begin(); value != values.end(); ++value)
     {
-        if (value->bExpr)
+        if (value->hasExpressionValue())
         {
             _gmx_selparser_error(scanner, "expressions not supported within range parameters");
             return false;
         }
-        if (value->type != param->val.type)
-        {
-            GMX_ERROR_NORET(gmx::eeInternalError, "Invalid range value type");
-            return false;
-        }
+        GMX_RELEASE_ASSERT(value->type == param->val.type,
+                           "Invalid range value type (should have been caught earlier)");
         if (param->val.type == INT_VALUE)
         {
-            /* Make sure the input range is in increasing order */
-            if (value->u.i.i1 > value->u.i.i2)
-            {
-                int tmp       = value->u.i.i1;
-                value->u.i.i1 = value->u.i.i2;
-                value->u.i.i2 = tmp;
-            }
+            int i1 = std::min(value->u.i.i1, value->u.i.i2);
+            int i2 = std::max(value->u.i.i1, value->u.i.i2);
             /* Check if the new range overlaps or extends the previous one */
-            if (i > 0 && value->u.i.i1 <= idata[i-1]+1 && value->u.i.i2 >= idata[i-2]-1)
+            if (i > 0 && i1 <= idata[i-1]+1 && i2 >= idata[i-2]-1)
             {
-                idata[i-2] = min(idata[i-2], value->u.i.i1);
-                idata[i-1] = max(idata[i-1], value->u.i.i2);
+                idata[i-2] = std::min(idata[i-2], i1);
+                idata[i-1] = std::max(idata[i-1], i2);
             }
             else
             {
-                idata[i++] = value->u.i.i1;
-                idata[i++] = value->u.i.i2;
+                idata[i++] = i1;
+                idata[i++] = i2;
             }
         }
         else
         {
-            /* Make sure the input range is in increasing order */
-            if (value->u.r.r1 > value->u.r.r2)
-            {
-                real tmp      = value->u.r.r1;
-                value->u.r.r1 = value->u.r.r2;
-                value->u.r.r2 = tmp;
-            }
+            real r1 = std::min(value->u.r.r1, value->u.r.r2);
+            real r2 = std::max(value->u.r.r1, value->u.r.r2);
             /* Check if the new range overlaps or extends the previous one */
-            if (i > 0 && value->u.r.r1 <= rdata[i-1] && value->u.r.r2 >= rdata[i-2])
+            if (i > 0 && r1 <= rdata[i-1] && r2 >= rdata[i-2])
             {
-                rdata[i-2] = min(rdata[i-2], value->u.r.r1);
-                rdata[i-1] = max(rdata[i-1], value->u.r.r2);
+                rdata[i-2] = std::min(rdata[i-2], r1);
+                rdata[i-1] = std::max(rdata[i-1], r2);
             }
             else
             {
-                rdata[i++] = value->u.r.r1;
-                rdata[i++] = value->u.r.r2;
+                rdata[i++] = r1;
+                rdata[i++] = r2;
             }
         }
-        value = value->next;
     }
     n = i/2;
     /* Sort the ranges and merge consequent ones */
@@ -472,8 +448,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
 /*! \brief
  * Parses the values for a parameter that takes a variable number of values.
  * 
- * \param[in] nval   Number of values in \p values.
- * \param[in] values Pointer to the list of values.
+ * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
  * \param[in] scanner Scanner data structure.
@@ -483,24 +458,25 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * is stored, each as a separate value.
  */
 static bool
-parse_values_varnum(int nval, t_selexpr_value *values,
-                    gmx_ana_selparam_t *param, t_selelem *root, void *scanner)
+parse_values_varnum(const SelectionParserValueList &values,
+                    gmx_ana_selparam_t *param,
+                    const SelectionTreeElementPointer &root,
+                    void *scanner)
 {
-    t_selexpr_value    *value;
     int                 i, j;
 
     param->flags &= ~SPAR_DYNAMIC;
-    /* Update nval if there are integer ranges. */
+    /* Compute number of values, considering also integer ranges. */
+    size_t valueCount = values.size();
     if (param->val.type == INT_VALUE)
     {
-        value = values;
-        while (value)
+        SelectionParserValueList::const_iterator value;
+        for (value = values.begin(); value != values.end(); ++value)
         {
-            if (value->type == INT_VALUE && !value->bExpr)
+            if (value->type == INT_VALUE && !value->hasExpressionValue())
             {
-                nval += abs(value->u.i.i2 - value->u.i.i1);
+                valueCount += abs(value->u.i.i2 - value->u.i.i1);
             }
-            value = value->next;
         }
     }
 
@@ -508,37 +484,32 @@ parse_values_varnum(int nval, t_selexpr_value *values,
     if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE
         && param->val.type != STR_VALUE && param->val.type != POS_VALUE)
     {
-        GMX_ERROR_NORET(gmx::eeInternalError,
-                        "Variable-count value type not implemented");
-        return false;
+        GMX_THROW(gmx::InternalError("Variable-count value type not implemented"));
     }
 
     /* Reserve appropriate amount of memory */
     if (param->val.type == POS_VALUE)
     {
-        gmx_ana_pos_reserve(param->val.u.p, nval, 0);
-        gmx_ana_pos_set_nr(param->val.u.p, nval);
+        gmx_ana_pos_reserve(param->val.u.p, valueCount, 0);
+        gmx_ana_pos_set_nr(param->val.u.p, valueCount);
         gmx_ana_indexmap_init(&param->val.u.p->m, NULL, NULL, INDEX_UNKNOWN);
     }
     else
     {
-        _gmx_selvalue_reserve(&param->val, nval);
+        _gmx_selvalue_reserve(&param->val, valueCount);
     }
 
-    value = values;
     i     = 0;
-    while (value)
+    SelectionParserValueList::const_iterator value;
+    for (value = values.begin(); value != values.end(); ++value)
     {
-        if (value->bExpr)
+        if (value->hasExpressionValue())
         {
             _gmx_selparser_error(scanner, "expressions not supported within value lists");
             return false;
         }
-        if (value->type != param->val.type)
-        {
-            GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-            return false;
-        }
+        GMX_RELEASE_ASSERT(value->type == param->val.type,
+                           "Invalid value type (should have been caught earlier)");
         switch (param->val.type)
         {
             case INT_VALUE:
@@ -565,13 +536,13 @@ parse_values_varnum(int nval, t_selexpr_value *values,
                 }
                 param->val.u.r[i++] = value->u.r.r1;
                 break;
-            case STR_VALUE:  param->val.u.s[i++] = strdup(value->u.s); break;
+            case STR_VALUE:
+                param->val.u.s[i++] = strdup(value->stringValue().c_str());
+                break;
             case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
-                GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-                return false;
+                GMX_THROW(gmx::InternalError("Variable-count value type not implemented"));
         }
-        value = value->next;
     }
     param->val.nr = i;
     if (param->nvalptr)
@@ -584,11 +555,9 @@ parse_values_varnum(int nval, t_selexpr_value *values,
      * other function. */
     if (param->val.type == STR_VALUE)
     {
-        t_selelem *child;
-
-        child = _gmx_selelem_create(SEL_CONST);
+        SelectionTreeElementPointer child(new SelectionTreeElement(SEL_CONST));
         _gmx_selelem_set_vtype(child, STR_VALUE);
-        child->name = param->name;
+        child->setName(param->name);
         child->flags &= ~SEL_ALLOCVAL;
         child->flags |= SEL_FLAGSSET | SEL_VARNUMVAL | SEL_ALLOCDATA;
         child->v.nr = param->val.nr;
@@ -617,19 +586,13 @@ parse_values_varnum(int nval, t_selexpr_value *values,
  * If \p expr is already a \ref SEL_SUBEXPRREF, it is used as it is.
  * \ref SEL_ALLOCVAL is cleared for the returned element.
  */
-static t_selelem *
-add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr,
-          void *scanner)
+static SelectionTreeElementPointer
+add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
+          const SelectionTreeElementPointer &expr, void *scanner)
 {
-    t_selelem          *child;
-    int                 rc;
-
-    if (root->type != SEL_EXPRESSION && root->type != SEL_MODIFIER)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError,
-                        "Unsupported root element for selection parameter parser");
-        return NULL;
-    }
+    GMX_RELEASE_ASSERT(root->type == SEL_EXPRESSION || root->type == SEL_MODIFIER,
+                       "Unsupported root element for selection parameter parser");
+    SelectionTreeElementPointer child;
     /* Create a subexpression reference element if necessary */
     if (expr->type == SEL_SUBEXPRREF)
     {
@@ -637,11 +600,7 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr,
     }
     else
     {
-        child = _gmx_selelem_create(SEL_SUBEXPRREF);
-        if (!child)
-        {
-            return NULL;
-        }
+        child.reset(new SelectionTreeElement(SEL_SUBEXPRREF));
         _gmx_selelem_set_vtype(child, expr->v.type);
         child->child  = expr;
     }
@@ -651,17 +610,15 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr,
     if (child->v.type != param->val.type)
     {
         _gmx_selparser_error(scanner, "invalid expression value");
-        goto on_error;
+        // FIXME: Use exceptions.
+        return SelectionTreeElementPointer();
     }
-    rc = _gmx_selelem_update_flags(child, scanner);
-    if (rc != 0)
-    {
-        goto on_error;
-    }
+    _gmx_selelem_update_flags(child, scanner);
     if ((child->flags & SEL_DYNAMIC) && !(param->flags & SPAR_DYNAMIC))
     {
         _gmx_selparser_error(scanner, "dynamic values not supported");
-        goto on_error;
+        // FIXME: Use exceptions.
+        return SelectionTreeElementPointer();
     }
     if (!(child->flags & SEL_DYNAMIC))
     {
@@ -670,42 +627,28 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr,
     /* Put the child element in the correct place */
     place_child(root, child, param);
     return child;
-
-on_error:
-    if (child != expr)
-    {
-        _gmx_selelem_free(child);
-    }
-    return NULL;
 }
 
 /*! \brief
  * Parses an expression value for a parameter that takes a variable number of values.
  * 
- * \param[in] nval   Number of values in \p values.
- * \param[in] values Pointer to the list of values.
+ * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
  * \param[in] scanner Scanner data structure.
  * \returns   true if the values were parsed successfully, false otherwise.
  */
 static bool
-parse_values_varnum_expr(int nval, t_selexpr_value *values,
-                         gmx_ana_selparam_t *param, t_selelem *root,
+parse_values_varnum_expr(const SelectionParserValueList &values,
+                         gmx_ana_selparam_t *param,
+                         const SelectionTreeElementPointer &root,
                          void *scanner)
 {
-    t_selexpr_value    *value;
-    t_selelem          *child;
+    GMX_RELEASE_ASSERT(values.size() == 1 && values.front().hasExpressionValue(),
+            "Called with an invalid type of value");
 
-    if (nval != 1 || !values->bExpr)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid expression value");
-        return false;
-    }
-
-    value = values;
-    child = add_child(root, param, value->u.expr, scanner);
-    value->u.expr = NULL;
+    SelectionTreeElementPointer child
+        = add_child(root, param, values.front().expr, scanner);
     if (!child)
     {
         return false;
@@ -755,8 +698,8 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
  * This function is used internally by parse_values_std().
  */
 static bool
-set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
-                     void *scanner)
+set_expr_value_store(const SelectionTreeElementPointer &sel,
+                     gmx_ana_selparam_t *param, int i, void *scanner)
 {
     if (sel->v.type != GROUP_VALUE && !(sel->flags & SEL_SINGLEVAL))
     {
@@ -771,8 +714,7 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
         case POS_VALUE:   sel->v.u.p = &param->val.u.p[i]; break;
         case GROUP_VALUE: sel->v.u.g = &param->val.u.g[i]; break;
         default: /* Error */
-            GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-            return false;
+            GMX_THROW(gmx::InternalError("Invalid value type"));
     }
     sel->v.nr = 1;
     sel->v.nalloc = -1;
@@ -781,9 +723,8 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
 
 /*! \brief
  * Parses the values for a parameter that takes a constant number of values.
- * 
- * \param[in] nval   Number of values in \p values.
- * \param[in] values Pointer to the list of values.
+ *
+ * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
  * \param[in] scanner Scanner data structure.
@@ -793,27 +734,25 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
  * is stored, each as a separate value.
  */
 static bool
-parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
-                 t_selelem *root, void *scanner)
+parse_values_std(const SelectionParserValueList &values,
+                 gmx_ana_selparam_t *param,
+                 const SelectionTreeElementPointer &root, void *scanner)
 {
-    t_selexpr_value   *value;
-    t_selelem         *child;
     int                i, j;
     bool               bDynamic;
 
     /* Handle atom-valued parameters */
     if (param->flags & SPAR_ATOMVAL)
     {
-        if (nval > 1)
+        if (values.size() > 1)
         {
             _gmx_selparser_error(scanner, "more than one value not supported");
             return false;
         }
-        value = values;
-        if (value->bExpr)
+        if (values.front().hasExpressionValue())
         {
-            child = add_child(root, param, value->u.expr, scanner);
-            value->u.expr = NULL;
+            SelectionTreeElementPointer child
+                = add_child(root, param, values.front().expr, scanner);
             if (!child)
             {
                 return false;
@@ -856,22 +795,20 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
         param->flags &= ~SPAR_DYNAMIC;
     }
 
-    value = values;
     i = 0;
     bDynamic = false;
-    while (value && i < param->val.nr)
+    SelectionParserValueList::const_iterator value;
+    for (value = values.begin(); value != values.end() && i < param->val.nr; ++value)
     {
         if (value->type != param->val.type)
         {
             _gmx_selparser_error(scanner, "incorrect value skipped");
-            value = value->next;
             continue;
         }
-        if (value->bExpr)
+        if (value->hasExpressionValue())
         {
-            child = add_child(root, param, value->u.expr, scanner);
-            /* Clear the expression from the value once it is stored */
-            value->u.expr = NULL;
+            SelectionTreeElementPointer child
+                = add_child(root, param, value->expr, scanner);
             /* Check that the expression is valid */
             if (!child)
             {
@@ -925,24 +862,21 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                     param->val.u.r[i] = value->u.r.r1;
                     break;
                 case STR_VALUE:
-                    param->val.u.s[i] = strdup(value->u.s);
+                    param->val.u.s[i] = strdup(value->stringValue().c_str());
                     break;
                 case POS_VALUE:
                     gmx_ana_pos_init_const(&param->val.u.p[i], value->u.x);
                     break;
                 case NO_VALUE:
                 case GROUP_VALUE:
-                    GMX_ERROR_NORET(gmx::eeInternalError,
-                                    "Invalid non-expression value");
-                    return false;
+                    GMX_THROW(gmx::InternalError("Invalid non-expression value type"));
             }
         }
         ++i;
-        value = value->next;
     }
-    if (value != NULL)
+    if (value != values.end())
     {
-        _gmx_selparser_error(scanner, "extra values'");
+        _gmx_selparser_error(scanner, "extra values");
         return false;
     }
     if (i < param->val.nr)
@@ -967,45 +901,38 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * Parses the values for a boolean parameter.
  *
  * \param[in] name   Name by which the parameter was given.
- * \param[in] nval   Number of values in \p values.
- * \param[in] values Pointer to the list of values.
+ * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
  * \returns   true if the values were parsed successfully, false otherwise.
  */
 static bool
-parse_values_bool(const char *name, int nval, t_selexpr_value *values,
+parse_values_bool(const std::string &name,
+                  const SelectionParserValueList &values,
                   gmx_ana_selparam_t *param, void *scanner)
 {
-    bool bSetNo;
-    int  len;
-
-    if (param->val.type != NO_VALUE)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid boolean parameter");
-        return false;
-    }
-    if (nval > 1 || (values && values->type != INT_VALUE))
+    GMX_ASSERT(param->val.type == NO_VALUE,
+            "Boolean parser called for non-boolean parameter");
+    if (values.size() > 1 || (!values.empty() && values.front().type != INT_VALUE))
     {
         _gmx_selparser_error(scanner, "parameter takes only a yes/no/on/off/0/1 value");
         return false;
     }
 
-    bSetNo = false;
+    bool bSetNo = false;
     /* Check if the parameter name is given with a 'no' prefix */
-    len = name != NULL ? strlen(name) : 0;
-    if (len > 2 && name[0] == 'n' && name[1] == 'o'
-        && strncmp(name+2, param->name, len-2) == 0)
+    if (name.length() > 2 && name[0] == 'n' && name[1] == 'o'
+        && name.compare(2, name.length() - 2, param->name) == 0)
     {
         bSetNo = true;
     }
-    if (bSetNo && nval > 0)
+    if (bSetNo && !values.empty())
     {
         _gmx_selparser_error(scanner, "parameter 'no%s' should not have a value",
                              param->name);
         return false;
     }
-    if (values && values->u.i.i1 == 0)
+    if (!values.empty() && values.front().u.i.i1 == 0)
     {
         bSetNo = true;
     }
@@ -1017,40 +944,38 @@ parse_values_bool(const char *name, int nval, t_selexpr_value *values,
 /*! \brief
  * Parses the values for an enumeration parameter.
  *
- * \param[in] nval   Number of values in \p values.
- * \param[in] values Pointer to the list of values.
+ * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
  * \returns   true if the values were parsed successfully, false otherwise.
  */
 static bool
-parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
+parse_values_enum(const SelectionParserValueList &values,
+                  gmx_ana_selparam_t *param,
                   void *scanner)
 {
-    int  i, len, match;
-
-    if (nval != 1)
+    GMX_ASSERT(param->val.type == STR_VALUE,
+            "Enum parser called for non-string parameter");
+    if (values.size() != 1)
     {
         _gmx_selparser_error(scanner, "a single value is required");
         return false;
     }
-    if (values->type != STR_VALUE || param->val.type != STR_VALUE)
-    {
-        GMX_ERROR_NORET(gmx::eeInternalError, "Invalid enum parameter");
-        return false;
-    }
-    if (values->bExpr)
+    const SelectionParserValue &value = values.front();
+    GMX_RELEASE_ASSERT(value.type == param->val.type,
+                       "Invalid value type (should have been caught earlier)");
+    if (value.hasExpressionValue())
     {
         _gmx_selparser_error(scanner, "expression value for enumerated parameter not supported");
         return false;
     }
 
-    len = strlen(values->u.s);
-    i = 1;
-    match = 0;
+    const std::string &svalue = value.stringValue();
+    int i = 1;
+    int match = 0;
     while (param->val.u.s[i] != NULL)
     {
-        if (strncmp(values->u.s, param->val.u.s[i], len) == 0)
+        if (gmx::startsWith(param->val.u.s[i], svalue))
         {
             /* Check if there is a duplicate match */
             if (match > 0)
@@ -1077,40 +1002,34 @@ parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * \param[in,out] values First element in the value list to process.
  */
 static void
-convert_const_values(t_selexpr_value *values)
+convert_const_values(SelectionParserValueList *values)
 {
-    t_selexpr_value *val;
-
-    val = values;
-    while (val)
+    SelectionParserValueList::iterator value;
+    for (value = values->begin(); value != values->end(); ++value)
     {
-        if (val->bExpr && val->u.expr->v.type != GROUP_VALUE &&
-            val->u.expr->type == SEL_CONST)
+        if (value->hasExpressionValue() && value->expr->v.type != GROUP_VALUE &&
+            value->expr->type == SEL_CONST)
         {
-            t_selelem *expr = val->u.expr;
-            val->bExpr = false;
+            SelectionTreeElementPointer expr = value->expr;
             switch (expr->v.type)
             {
                 case INT_VALUE:
-                    val->u.i.i1 = val->u.i.i2 = expr->v.u.i[0];
+                    *value = SelectionParserValue::createInteger(expr->v.u.i[0]);
                     break;
                 case REAL_VALUE:
-                    val->u.r.r1 = val->u.r.r2 = expr->v.u.r[0];
+                    *value = SelectionParserValue::createReal(expr->v.u.r[0]);
                     break;
                 case STR_VALUE:
-                    val->u.s = expr->v.u.s[0];
+                    *value = SelectionParserValue::createString(expr->v.u.s[0]);
                     break;
                 case POS_VALUE:
-                    copy_rvec(expr->v.u.p->x[0], val->u.x);
+                    *value = SelectionParserValue::createPosition(expr->v.u.p->x[0]);
                     break;
                 default:
-                    GMX_ERROR_NORET(gmx::eeInternalError,
-                                    "Unsupported value type");
-                    break;
+                    GMX_THROW(gmx::InternalError(
+                                "Unsupported constant expression value type"));
             }
-            _gmx_selelem_free(expr);
         }
-        val = val->next;
     }
 }
 
@@ -1130,11 +1049,11 @@ convert_const_values(t_selexpr_value *values)
  * have been processed, no matter is there was an error or not.
  */
 bool
-_gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *params,
-                      t_selelem *root, void *scanner)
+_gmx_sel_parse_params(const SelectionParserParameterList &pparams,
+                      int nparam, gmx_ana_selparam_t *params,
+                      const SelectionTreeElementPointer &root, void *scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    t_selexpr_param    *pparam;
     gmx_ana_selparam_t *oparam;
     bool                bOk, rc;
     int                 i;
@@ -1173,21 +1092,20 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
     }
     if (!bOk)
     {
-        _gmx_selexpr_free_params(pparams);
         return false;
     }
     /* Parse the parameters */
-    pparam = pparams;
-    i      = 0;
-    while (pparam)
+    i = 0;
+    SelectionParserParameterList::const_iterator pparam;
+    for (pparam = pparams.begin(); pparam != pparams.end(); ++pparam)
     {
         std::string contextStr;
         /* Find the parameter and make some checks */
-        if (pparam->name != NULL)
+        if (!pparam->name().empty())
         {
-            contextStr = gmx::formatString("In parameter '%s'", pparam->name);
+            contextStr = gmx::formatString("In parameter '%s'", pparam->name().c_str());
             i = -1;
-            oparam = gmx_ana_selparam_find(pparam->name, nparam, params);
+            oparam = gmx_ana_selparam_find(pparam->name().c_str(), nparam, params);
         }
         else if (i >= 0)
         {
@@ -1198,7 +1116,6 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
                 oparam = NULL;
                 _gmx_selparser_error(scanner, "too many NULL parameters provided");
                 bOk = false;
-                pparam = pparam->next;
                 continue;
             }
             ++i;
@@ -1207,7 +1124,6 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         {
             _gmx_selparser_error(scanner, "all NULL parameters should appear in the beginning of the list");
             bOk = false;
-            pparam = pparam->next;
             continue;
         }
         gmx::MessageStringContext  context(errors, contextStr);
@@ -1215,64 +1131,61 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         {
             _gmx_selparser_error(scanner, "unknown parameter skipped");
             bOk = false;
-            goto next_param;
+            continue;
         }
-        if (oparam->val.type != NO_VALUE && pparam->value == NULL)
+        if (oparam->val.type != NO_VALUE && pparam->values().empty())
         {
-            GMX_ASSERT(pparam->nval == 0, "Inconsistent values and value count");
             _gmx_selparser_error(scanner, "no value provided");
             bOk = false;
-            goto next_param;
+            continue;
         }
         if (oparam->flags & SPAR_SET)
         {
             _gmx_selparser_error(scanner, "parameter set multiple times, extra values skipped");
             bOk = false;
-            goto next_param;
+            continue;
         }
         oparam->flags |= SPAR_SET;
         /* Process the values for the parameter */
-        convert_const_values(pparam->value);
-        if (convert_values(pparam->value, oparam->val.type, scanner) != 0)
+        convert_const_values(pparam->values_.get());
+        if (convert_values(pparam->values_.get(), oparam->val.type, scanner) != 0)
         {
             _gmx_selparser_error(scanner, "invalid value");
             bOk = false;
-            goto next_param;
+            continue;
         }
         if (oparam->val.type == NO_VALUE)
         {
-            rc = parse_values_bool(pparam->name, pparam->nval, pparam->value, oparam, scanner);
+            rc = parse_values_bool(pparam->name(), pparam->values(), oparam, scanner);
         }
         else if (oparam->flags & SPAR_RANGES)
         {
-            rc = parse_values_range(pparam->nval, pparam->value, oparam, scanner);
+            rc = parse_values_range(pparam->values(), oparam, scanner);
         }
         else if (oparam->flags & SPAR_VARNUM)
         {
-            if (pparam->nval == 1 && pparam->value->bExpr)
+            if (pparam->values().size() == 1
+                && pparam->values().front().hasExpressionValue())
             {
-                rc = parse_values_varnum_expr(pparam->nval, pparam->value, oparam, root, scanner);
+                rc = parse_values_varnum_expr(pparam->values(), oparam, root, scanner);
             }
             else
             {
-                rc = parse_values_varnum(pparam->nval, pparam->value, oparam, root, scanner);
+                rc = parse_values_varnum(pparam->values(), oparam, root, scanner);
             }
         }
         else if (oparam->flags & SPAR_ENUMVAL)
         {
-            rc = parse_values_enum(pparam->nval, pparam->value, oparam, scanner);
+            rc = parse_values_enum(pparam->values(), oparam, scanner);
         }
         else
         {
-            rc = parse_values_std(pparam->nval, pparam->value, oparam, root, scanner);
+            rc = parse_values_std(pparam->values(), oparam, root, scanner);
         }
         if (!rc)
         {
             bOk = false;
         }
-        /* Advance to the next parameter */
-next_param:
-        pparam = pparam->next;
     }
     /* Check that all required parameters are present */
     for (i = 0; i < nparam; ++i)
@@ -1284,6 +1197,5 @@ next_param:
         }
     }
 
-    _gmx_selexpr_free_params(pparams);
     return bOk;
 }

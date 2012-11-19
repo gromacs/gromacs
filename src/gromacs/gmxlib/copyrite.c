@@ -424,10 +424,10 @@ void please_cite(FILE *fp,const char *key)
       "Phys. Chem. Chem. Phys.",
       13, 2011, "169-181" },
     { "Caleman2011b",
-      "C. Caleman and M. Hong and J. S. Hub and L. T. da Costa and P. J. van Maaren and D. van der Spoel",
-      "Force Field Benchmark 1: Density, Heat of Vaporization, Heat Capacity, Surface Tension and Dielectric Constant of 152 Organic Liquids",
-      "Submitted",
-      0, 2011, "" },
+      "C. Caleman and P. J. van Maaren and M. Hong and J. S. Hub and L. T. da Costa and D. van der Spoel",
+      "Force Field Benchmark of Organic Liquids: Density, Enthalpy of Vaporization, Heat Capacities, Surface Tension, Isothermal Compressibility, Volumetric Expansion Coefficient, and Dielectric Constant",
+      "J. Chem. Theo. Comp.",
+      8, 2012, "61" },
     { "Lindahl2001a",
       "E. Lindahl and B. Hess and D. van der Spoel",
       "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
@@ -542,12 +542,12 @@ void please_cite(FILE *fp,const char *key)
       "O. Engin, A. Villa, M. Sayar and B. Hess",
       "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
       "J. Phys. Chem. B",
-      0, 2010, "???" },
+      114, 2010, "11093" },
     { "Fritsch12",
       "S. Fritsch, C. Junghans and K. Kremer",
       "Adaptive molecular simulation study on structure formation of toluene around C60 using Gromacs",
       "J. Chem. Theo. Comp.",
-      0, 2012, "doi:10.1021/ct200706f" },
+      8, 2012, "398" },
     { "Junghans10",
       "C. Junghans and S. Poblete",
       "A reference implementation of the adaptive resolution scheme in ESPResSo",
@@ -558,6 +558,11 @@ void please_cite(FILE *fp,const char *key)
       "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
       "J. Chem. Phys. B",
       133, 2010, "034117" },
+    { "Sugita1999a",
+      "Y. Sugita, Y. Okamoto",
+      "Replica-exchange molecular dynamics method for protein folding",
+      "Chem. Phys. Lett.",
+      314, 1999, "141-151" },
     { "Kutzner2011",
       "C. Kutzner and J. Czub and H. Grubmuller",
       "Keep it Flexible: Driving Macromolecular Rotary Motions in Atomistic Simulations with GROMACS",
@@ -616,9 +621,9 @@ void please_cite(FILE *fp,const char *key)
   fflush(fp);
 }
 
-#ifdef USE_VERSION_H
+#ifdef GMX_GIT_VERSION_INFO
 /* Version information generated at compile time. */
-#include "version.h"
+#include "gromacs/utility/gitversion.h"
 #else
 /* Fall back to statically defined version. */
 static const char _gmx_ver_string[]="VERSION " VERSION;
@@ -638,7 +643,7 @@ const char *GromacsVersion()
 void gmx_print_version_info(FILE *fp)
 {
     fprintf(fp, "Version:          %s\n", _gmx_ver_string);
-#ifdef USE_VERSION_H
+#ifdef GMX_GIT_VERSION_INFO
     fprintf(fp, "GIT SHA1 hash:    %s\n", _gmx_full_git_hash);
     /* Only print out the branch information if present.
      * The generating script checks whether the branch point actually

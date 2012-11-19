@@ -35,9 +35,9 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <cctype>
+
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
@@ -70,14 +70,18 @@ check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data
 static void
 evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-/** Evaluates the \p name selection keyword. */
+/** Evaluates the \p atomname selection keyword. */
 static void
 evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+/** Evaluates the \p pdbatomname selection keyword. */
+static void
+evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Checks whether atom types are present in the topology. */
 static void
 check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Evaluates the \p type selection keyword. */
+/** Evaluates the \p atomtype selection keyword. */
 static void
 evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
@@ -129,6 +133,26 @@ evaluate_y(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static void
 evaluate_z(t_topology *top, t_trxframe *fr, t_pbc *pbc,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
+
+/** Help text for atom name selection keywords. */
+static const char *help_atomname[] = {
+    "ATOM NAME SELECTION KEYWORDS[PAR]",
+
+    "[TT]name[tt] [TT]pdbname[tt] [TT]atomname[tt] [TT]pdbatomname[tt][PAR]",
+
+    "These keywords select atoms by name. [TT]name[tt] selects atoms using",
+    "the Gromacs atom naming convention.",
+    "For input formats other than PDB, the atom names are matched exactly",
+    "as they appear in the input file. For PDB files, 4 character atom names",
+    "that start with a digit are matched after moving the digit to the end",
+    "(e.g., to match 3HG2 from a PDB file, use [TT]name HG23[tt]).",
+    "[TT]pdbname[tt] can only be used with a PDB input file, and selects",
+    "atoms based on the exact name given in the input file, without the",
+    "transformation described above.[PAR]",
+
+    "[TT]atomname[tt] and [TT]pdbatomname[tt] are synonyms for the above two",
+    "keywords."
+};
 
 /** \internal Selection method data for \p all selection keyword. */
 gmx_ana_selmethod_t sm_all = {
@@ -214,9 +238,9 @@ gmx_ana_selmethod_t sm_molindex = {
     NULL,
 };
 
-/** \internal Selection method data for \p name selection keyword. */
+/** \internal Selection method data for \p atomname selection keyword. */
 gmx_ana_selmethod_t sm_atomname = {
-    "name", STR_VALUE, SMETH_REQTOP,
+    "atomname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
     NULL,
@@ -226,11 +250,27 @@ gmx_ana_selmethod_t sm_atomname = {
     NULL,
     &evaluate_atomname,
     NULL,
+    {NULL, asize(help_atomname), help_atomname}
 };
 
-/** \internal Selection method data for \p type selection keyword. */
+/** \internal Selection method data for \p pdbatomname selection keyword. */
+gmx_ana_selmethod_t sm_pdbatomname = {
+    "pdbatomname", STR_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    &check_pdbinfo,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_pdbatomname,
+    NULL,
+    {NULL, asize(help_atomname), help_atomname}
+};
+
+/** \internal Selection method data for \p atomtype selection keyword. */
 gmx_ana_selmethod_t sm_atomtype = {
-    "type", STR_VALUE, SMETH_REQTOP,
+    "atomtype", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
     NULL,
@@ -538,6 +578,30 @@ evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (i = 0; i < g->isize; ++i)
     {
         out->u.s[i] = *top->atoms.atomname[g->index[i]];
+    }
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the PDB atom name for each atom in \p out->u.s.
+ */
+static void
+evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        char *s = top->atoms.pdbinfo[g->index[i]].atomnm;
+        while (std::isspace(*s))
+        {
+            ++s;
+        }
+        out->u.s[i] = s;
     }
 }
 

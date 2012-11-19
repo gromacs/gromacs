@@ -30,480 +30,381 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in symrec.h.
+ * Implements classes in symrec.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <map>
+#include <string>
+#include <utility>
 
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
-#include <typedefs.h>
-#include <gmx_fatal.h>
+#include "gromacs/legacyheaders/macros.h"
 
-#include "gromacs/selection/poscalc.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/uniqueptr.h"
 
+#include "poscalc.h"
 #include "selelem.h"
 #include "symrec.h"
 
-/*! \internal \brief
- * Symbol table for the selection parser.
- */
-struct gmx_sel_symtab_t
+namespace gmx
 {
-    /** Pointer to the first symbol in the linked list of symbols. */
-    gmx_sel_symrec_t *first;
-};
+
+/********************************************************************
+ * SelectionParserSymbol
+ */
 
 /*! \internal \brief
- * Single symbol for the selection parser.
+ * Private implementation class for SelectionParserSymbol.
+ *
+ * \ingroup module_selection
  */
-struct gmx_sel_symrec_t
+class SelectionParserSymbol::Impl
 {
-    /** Name of the symbol. */
-    char                           *name;
-    /** Type of the symbol. */
-    e_symbol_t                      type;
-    /** Value of the symbol. */
-    union {
-        /** Pointer to the method structure (\ref SYMBOL_METHOD). */
-        struct gmx_ana_selmethod_t *meth;
-        /** Pointer to the variable value (\ref SYMBOL_VARIABLE). */
-        struct t_selelem           *var;
-    }                               u;
-    /** Pointer to the next symbol. */
-    struct gmx_sel_symrec_t        *next;
+    public:
+        /*! \brief
+         * Initializes a symbol.
+         *
+         * \param[in] type  Type for the symbol.
+         * \param[in] name  Name for the symbol.
+         *
+         * The symbol table is responsible for initializing the \a meth_ and
+         * \a var_ members as appropriate.
+         */
+        Impl(SymbolType type, const char *name)
+            : name_(name), type_(type), meth_(NULL)
+        {
+        }
+
+        //! Name of the symbol.
+        std::string                     name_;
+        //! Type of the symbol.
+        SymbolType                      type_;
+        //! Pointer to the method structure (\ref MethodSymbol).
+        gmx_ana_selmethod_t            *meth_;
+        //! Pointer to the variable value (\ref VariableSymbol).
+        SelectionTreeElementPointer     var_;
 };
 
-/** List of reserved symbols to register in add_reserved_symbols(). */
-static const char *const sym_reserved[] = {
-    "group",
-    "to",
-    "not",
-    "and",
-    "or",
-    "xor",
-    "yes",
-    "no",
-    "on",
-    "off",
-    "help",
+SelectionParserSymbol::SelectionParserSymbol(Impl *impl)
+    : impl_(impl)
+{
+}
+
+SelectionParserSymbol::~SelectionParserSymbol()
+{
+}
+
+const std::string &
+SelectionParserSymbol::name() const
+{
+    return impl_->name_;
+}
+
+SelectionParserSymbol::SymbolType
+SelectionParserSymbol::type() const
+{
+    return impl_->type_;
+}
+
+gmx_ana_selmethod_t *
+SelectionParserSymbol::methodValue() const
+{
+    GMX_RELEASE_ASSERT(type() == MethodSymbol,
+            "Attempting to get method handle for a non-method symbol");
+    return impl_->meth_;
+}
+
+const gmx::SelectionTreeElementPointer &
+SelectionParserSymbol::variableValue() const
+{
+    GMX_RELEASE_ASSERT(type() == VariableSymbol,
+            "Attempting to get variable value for a non-variable symbol");
+    return impl_->var_;
+}
+
+/********************************************************************
+ * SelectionParserSymbolTable::Impl
+ */
+
+/*! \internal \brief
+ * Private implementation class for SelectionParserSymbolTable.
+ *
+ * All methods in this class may throw std::bad_alloc if out of memory.
+ *
+ * \ingroup module_selection
+ */
+class SelectionParserSymbolTable::Impl
+{
+    public:
+        //! Smart pointer type for managing a SelectionParserSymbol.
+        typedef gmx::gmx_unique_ptr<SelectionParserSymbol>::type
+                SymbolPointer;
+        //! Container type for the list of symbols.
+        typedef std::map<std::string, SymbolPointer> SymbolMap;
+
+        /*! \brief
+         * Adds a symbol to the symbol list.
+         *
+         * \param[in] symbol  Symbol to add.
+         */
+        void addSymbol(SymbolPointer symbol);
+        //! Adds the reserved symbols to this symbol table.
+        void addReservedSymbols();
+        //! Adds the position symbols to this symbol table.
+        void addPositionSymbols();
+
+        //! Symbols in this symbol table.
+        SymbolMap               symbols_;
 };
 
-/*!
- * \param[in] sym Symbol to query.
- * \returns   The name of \p sym.
- *
- * The returned pointer should not be free'd.
- */
-char *
-_gmx_sel_sym_name(gmx_sel_symrec_t *sym)
+void
+SelectionParserSymbolTable::Impl::addSymbol(SymbolPointer symbol)
 {
-    return sym->name;
+    symbols_.insert(std::make_pair(symbol->name(), move(symbol)));
 }
 
-/*!
- * \param[in] sym Symbol to query.
- * \returns   The type of \p sym.
- */
-e_symbol_t
-_gmx_sel_sym_type(gmx_sel_symrec_t *sym)
+void
+SelectionParserSymbolTable::Impl::addReservedSymbols()
 {
-    return sym->type;
-}
+    const char *const sym_reserved[] = {
+        "group",
+        "to",
+        "not",
+        "and",
+        "or",
+        "xor",
+        "yes",
+        "no",
+        "on",
+        "off",
+        "help",
+    };
 
-/*!
- * \param[in] sym Symbol to query.
- * \returns   The method associated with \p sym, or NULL if \p sym is not a
- *   \ref SYMBOL_METHOD symbol.
- */
-struct gmx_ana_selmethod_t *
-_gmx_sel_sym_value_method(gmx_sel_symrec_t *sym)
-{
-    if (sym->type != SYMBOL_METHOD)
+    for (size_t i = 0; i < asize(sym_reserved); ++i)
     {
-        gmx_call("symbol is not a method symbol");
-        return NULL;
-    }
-    return sym->u.meth;
-}
-
-/*!
- * \param[in] sym Symbol to query.
- * \returns   The variable expression associated with \p sym, or NULL if
- *   \p sym is not a \ref SYMBOL_VARIABLE symbol.
- */
-struct t_selelem *
-_gmx_sel_sym_value_var(gmx_sel_symrec_t *sym)
-{
-    if (sym->type != SYMBOL_VARIABLE)
-    {
-        gmx_call("symbol is not a variable symbol");
-        return NULL;
-    }
-    return sym->u.var;
-}
-
-/*! \brief
- * Adds the reserved symbols to a symbol table.
- * 
- * \param[in,out] tab  Symbol table to which the symbols are added.
- *
- * Assumes that the symbol table is empty.
- */
-static void
-add_reserved_symbols(gmx_sel_symtab_t *tab)
-{
-    gmx_sel_symrec_t *sym;
-    gmx_sel_symrec_t *last;
-    size_t            i;
-
-    last = NULL;
-    for (i = 0; i < asize(sym_reserved); ++i)
-    {
-        snew(sym, 1);
-        sym->name = strdup(sym_reserved[i]);
-        sym->type = SYMBOL_RESERVED;
-        sym->next = NULL;
-        if (last)
-        {
-            last->next = sym;
-        }
-        else
-        {
-            tab->first = sym;
-        }
-        last = sym;
+        SymbolPointer sym(new SelectionParserSymbol(
+                new SelectionParserSymbol::Impl(
+                    SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
+        addSymbol(move(sym));
     }
 }
 
-/*! \brief
- * Adds the position symbols to the symbol list.
- * 
- * \param[in,out] tab  Symbol table to which the symbols are added.
- */
-static void
-add_position_symbols(gmx_sel_symtab_t *tab)
+void
+SelectionParserSymbolTable::Impl::addPositionSymbols()
 {
-    gmx_sel_symrec_t  *sym;
-    gmx_sel_symrec_t  *last;
-    int                i;
-
     const char *const *postypes
         = gmx::PositionCalculationCollection::typeEnumValues;
-    last = tab->first;
-    while (last && last->next)
+    for (int i = 0; postypes[i] != NULL; ++i)
     {
-        last = last->next;
+        SymbolPointer sym(new SelectionParserSymbol(
+                new SelectionParserSymbol::Impl(
+                    SelectionParserSymbol::PositionSymbol, postypes[i])));
+        addSymbol(move(sym));
     }
-    for (i = 0; postypes[i] != NULL; ++i)
-    {
-        snew(sym, 1);
-        sym->name = strdup(postypes[i]);
-        sym->type = SYMBOL_POS;
-        sym->next = NULL;
-        if (last)
+}
+
+/********************************************************************
+ * SelectionParserSymbolIterator
+ */
+
+/*! \internal \brief
+ * Private implementation class for SelectionParserSymbolIterator.
+ *
+ * \ingroup module_selection
+ */
+class SelectionParserSymbolIterator::Impl
+{
+    public:
+        //! Shorthand for the underlying iterator type.
+        typedef SelectionParserSymbolTable::Impl::SymbolMap::const_iterator
+                IteratorType;
+
+        /*! \brief
+         * Constructs an end iterator.
+         *
+         * \param[in] end  Iterator to the end of the iterated container.
+         */
+        explicit Impl(IteratorType end)
+            : iter_(end), end_(end)
         {
-            last->next = sym;
+        }
+        /*! \brief
+         * Constructs an iterator.
+         *
+         * \param[in] iter Iterator to the current symbol.
+         * \param[in] end  Iterator to the end of the iterated container.
+         */
+        Impl(IteratorType iter, IteratorType end)
+            : iter_(iter), end_(end)
+        {
+        }
+
+        //! Underlying iterator to the symbol container.
+        IteratorType            iter_;
+        //! End of the symbol container being iterated.
+        IteratorType            end_;
+};
+
+SelectionParserSymbolIterator::SelectionParserSymbolIterator(Impl *impl)
+    : impl_(impl)
+{
+}
+
+SelectionParserSymbolIterator::SelectionParserSymbolIterator(
+        const SelectionParserSymbolIterator &other)
+    : impl_(new Impl(*other.impl_))
+{
+}
+
+SelectionParserSymbolIterator::~SelectionParserSymbolIterator()
+{
+}
+
+SelectionParserSymbolIterator &SelectionParserSymbolIterator::operator=(
+        const SelectionParserSymbolIterator &other)
+{
+    impl_.reset(new Impl(*other.impl_));
+    return *this;
+}
+
+bool SelectionParserSymbolIterator::operator==(
+        const SelectionParserSymbolIterator &other) const
+{
+    return impl_->iter_ == other.impl_->iter_;
+}
+
+const SelectionParserSymbol &SelectionParserSymbolIterator::operator*() const
+{
+    return *impl_->iter_->second;
+}
+
+SelectionParserSymbolIterator &SelectionParserSymbolIterator::operator++()
+{
+    SelectionParserSymbol::SymbolType type = impl_->iter_->second->type();
+    do
+    {
+        ++impl_->iter_;
+    }
+    while (impl_->iter_ != impl_->end_ && impl_->iter_->second->type() != type);
+    return *this;
+}
+
+/********************************************************************
+ * SelectionParserSymbolTable
+ */
+
+SelectionParserSymbolTable::SelectionParserSymbolTable()
+    : impl_(new Impl)
+{
+    impl_->addReservedSymbols();
+    impl_->addPositionSymbols();
+}
+
+SelectionParserSymbolTable::~SelectionParserSymbolTable()
+{
+}
+
+const SelectionParserSymbol *
+SelectionParserSymbolTable::findSymbol(const std::string &name,
+                                       bool bExact) const
+{
+    Impl::SymbolMap::const_iterator sym = impl_->symbols_.lower_bound(name);
+    if (sym == impl_->symbols_.end())
+    {
+        return NULL;
+    }
+    if (sym->second->name() == name)
+    {
+        return sym->second.get();
+    }
+    if (!bExact && startsWith(sym->second->name(), name))
+    {
+        Impl::SymbolMap::const_iterator next = sym;
+        ++next;
+        if (next != impl_->symbols_.end()
+            && startsWith(next->second->name(), name))
+        {
+            GMX_THROW(InvalidInputError("'" + name + "' is ambiguous"));
+        }
+        if (sym->second->type() == SelectionParserSymbol::MethodSymbol)
+        {
+            return sym->second.get();
+        }
+    }
+    return NULL;
+}
+
+SelectionParserSymbolIterator
+SelectionParserSymbolTable::beginIterator(SelectionParserSymbol::SymbolType type) const
+{
+    Impl::SymbolMap::const_iterator sym;
+    Impl::SymbolMap::const_iterator end = impl_->symbols_.end();
+    for (sym = impl_->symbols_.begin(); sym != end; ++sym)
+    {
+        if (sym->second->type() == type)
+        {
+            return SelectionParserSymbolIterator(
+                    new SelectionParserSymbolIterator::Impl(sym, end));
+        }
+    }
+    return endIterator();
+}
+
+SelectionParserSymbolIterator
+SelectionParserSymbolTable::endIterator() const
+{
+    return SelectionParserSymbolIterator(
+            new SelectionParserSymbolIterator::Impl(impl_->symbols_.end()));
+}
+
+void
+SelectionParserSymbolTable::addVariable(const char *name,
+                                        const gmx::SelectionTreeElementPointer &sel)
+{
+    // In the current parser implementation, a syntax error is produced before
+    // this point is reached, but the check is here for robustness.
+    Impl::SymbolMap::const_iterator other = impl_->symbols_.find(name);
+    if (other != impl_->symbols_.end())
+    {
+        if (other->second->type() == SelectionParserSymbol::VariableSymbol)
+        {
+            GMX_THROW(InvalidInputError(
+                        formatString("Reassigning variable '%s' is not supported",
+                                     name)));
         }
         else
         {
-            tab->first = sym;
+            GMX_THROW(InvalidInputError(
+                        formatString("Variable name '%s' conflicts with a reserved keyword",
+                                     name)));
         }
-        last = sym;
     }
+    Impl::SymbolPointer sym(new SelectionParserSymbol(
+                new SelectionParserSymbol::Impl(
+                    SelectionParserSymbol::VariableSymbol, name)));
+    sym->impl_->var_ = sel;
+    impl_->addSymbol(move(sym));
 }
 
-/*!
- * \param[out] tabp Symbol table pointer to initialize.
- *
- * Reserved and position symbols are added to the created table.
- */
-int
-_gmx_sel_symtab_create(gmx_sel_symtab_t **tabp)
-{
-    gmx_sel_symtab_t *tab;
-
-    snew(tab, 1);
-    add_reserved_symbols(tab);
-    add_position_symbols(tab);
-    *tabp = tab;
-    return 0;
-}
-
-/*!
- * \param[in] tab Symbol table to free.
- *
- * The pointer \p tab is invalid after the call.
- */
 void
-_gmx_sel_symtab_free(gmx_sel_symtab_t *tab)
+SelectionParserSymbolTable::addMethod(const char *name,
+                                      gmx_ana_selmethod_t *method)
 {
-    gmx_sel_symrec_t *sym;
-
-    while (tab->first)
+    if (impl_->symbols_.find(name) != impl_->symbols_.end())
     {
-        sym = tab->first;
-        tab->first = sym->next;
-        if (sym->type == SYMBOL_VARIABLE)
-        {
-            _gmx_selelem_free(sym->u.var);
-        }
-        sfree(sym->name);
-        sfree(sym);
+        GMX_THROW(APIError(
+                    formatString("Method name '%s' conflicts with another symbol",
+                                 name)));
     }
-    sfree(tab);
+    Impl::SymbolPointer sym(new SelectionParserSymbol(
+                new SelectionParserSymbol::Impl(
+                    SelectionParserSymbol::MethodSymbol, name)));
+    sym->impl_->meth_ = method;
+    impl_->addSymbol(move(sym));
 }
 
-/*!
- * \param[in] tab    Symbol table to search.
- * \param[in] name   Symbol name to find.
- * \param[in] bExact If false, symbols that begin with \p name are also
- *   considered.
- * \returns   Pointer to the symbol with name \p name, or NULL if not found.
- *
- * If no exact match is found and \p bExact is false, returns a symbol that
- * begins with \p name if a unique matching symbol is found.
- */
-gmx_sel_symrec_t *
-_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact)
-{
-    return _gmx_sel_find_symbol_len(tab, name, strlen(name), bExact);
-}
-
-/*!
- * \param[in] tab    Symbol table to search.
- * \param[in] name   Symbol name to find.
- * \param[in] len    Only consider the first \p len characters of \p name.
- * \param[in] bExact If false, symbols that begin with \p name are also
- *   considered.
- * \returns   Pointer to the symbol with name \p name, or NULL if not found.
- *
- * If no exact match is found and \p bExact is false, returns a symbol that
- * begins with \p name if a unique matching symbol is found.
- *
- * The parameter \p len is there to allow using this function from scanner.l
- * without modifying the text to be scanned or copying it.
- */
-gmx_sel_symrec_t *
-_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
-                         bool bExact)
-{
-    gmx_sel_symrec_t *sym;
-    gmx_sel_symrec_t *match;
-    bool              bUnique;
-    bool              bMatch;
-
-    match = NULL;
-    bUnique = true;
-    bMatch  = false;
-    sym = tab->first;
-    while (sym)
-    {
-        if (!strncmp(sym->name, name, len))
-        {
-            if (strlen(sym->name) == len)
-            {
-                return sym;
-            }
-            if (bMatch)
-            {
-                bUnique = false;
-            }
-            bMatch = true;
-            if (sym->type == SYMBOL_METHOD)
-            {
-                match = sym;
-            }
-        }
-        sym = sym->next;
-    }
-    if (bExact)
-    {
-        return NULL;
-    }
-
-    if (!bUnique)
-    {
-        fprintf(stderr, "parse error: ambiguous symbol\n");
-        return NULL;
-    }
-    return match;
-}
-
-/*!
- * \param[in] tab   Symbol table to search.
- * \param[in] type  Type of symbol to find.
- * \returns   The first symbol in \p tab with type \p type,
- *   or NULL if there are no such symbols.
- */
-gmx_sel_symrec_t *
-_gmx_sel_first_symbol(gmx_sel_symtab_t *tab, e_symbol_t type)
-{
-    gmx_sel_symrec_t *sym;
-
-    sym = tab->first;
-    while (sym)
-    {
-        if (sym->type == type)
-        {
-            return sym;
-        }
-        sym = sym->next;
-    }
-    return NULL;
-}
-
-/*!
- * \param[in] after Start the search after this symbol.
- * \param[in] type  Type of symbol to find.
- * \returns   The next symbol after \p after with type \p type,
- *   or NULL if there are no more symbols.
- */
-gmx_sel_symrec_t *
-_gmx_sel_next_symbol(gmx_sel_symrec_t *after, e_symbol_t type)
-{
-    gmx_sel_symrec_t *sym;
-
-    sym = after->next;
-    while (sym)
-    {
-        if (sym->type == type)
-        {
-            return sym;
-        }
-        sym = sym->next;
-    }
-    return NULL;
-}
-
-/*! \brief
- * Internal utility function used in adding symbols to a symbol table.
- *
- * \param[in,out] tab   Symbol table to add the symbol to.
- * \param[in]     name  Name of the symbol to add.
- * \param[out]    ctype On error, the type of the conflicting symbol is
- *   written to \p *ctype.
- * \returns       Pointer to the new symbol record, or NULL if \p name
- *   conflicts with an existing symbol.
- */
-static gmx_sel_symrec_t *
-add_symbol(gmx_sel_symtab_t *tab, const char *name, e_symbol_t *ctype)
-{
-    gmx_sel_symrec_t *sym, *psym;
-
-    /* Check if there is a conflicting symbol */
-    psym = NULL;
-    sym  = tab->first;
-    while (sym)
-    {
-        if (!gmx_strcasecmp(sym->name, name))
-        {
-            *ctype = sym->type;
-            return NULL;
-        }
-        psym = sym;
-        sym  = sym->next;
-    }
-
-    /* Create a new symbol record */
-    if (psym == NULL)
-    {
-        snew(tab->first, 1);
-        sym = tab->first;
-    }
-    else
-    {
-        snew(psym->next, 1);
-        sym = psym->next;
-    }
-    sym->name = strdup(name);
-    return sym;
-}
-
-/*!
- * \param[in,out] tab    Symbol table to add the symbol to.
- * \param[in]     name   Name of the new symbol.
- * \param[in]     sel    Value of the variable.
- * \returns       Pointer to the created symbol record, or NULL if there was a
- *   symbol with the same name.
- */
-gmx_sel_symrec_t *
-_gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, const char *name,
-                        struct t_selelem *sel)
-{
-    gmx_sel_symrec_t *sym;
-    e_symbol_t        ctype;
-
-    sym = add_symbol(tab, name, &ctype);
-    if (!sym)
-    {
-        fprintf(stderr, "parse error: ");
-        switch (ctype)
-        {
-            case SYMBOL_RESERVED:
-            case SYMBOL_POS:
-                fprintf(stderr, "variable name (%s) conflicts with a reserved keyword\n",
-                        name);
-                break;
-            case SYMBOL_VARIABLE:
-                fprintf(stderr, "duplicate variable name (%s)\n", name);
-                break;
-            case SYMBOL_METHOD:
-                fprintf(stderr, "variable name (%s) conflicts with a selection keyword\n",
-                        name);
-                break;
-        }
-        return NULL;
-    }
-
-    sym->type  = SYMBOL_VARIABLE;
-    sym->u.var = sel;
-    sel->refcount++;
-    return sym;
-}
-
-/*!
- * \param[in,out] tab    Symbol table to add the symbol to.
- * \param[in]     name   Name of the new symbol.
- * \param[in]     method Method that this symbol represents.
- * \returns       Pointer to the created symbol record, or NULL if there was a
- *   symbol with the same name.
- */
-gmx_sel_symrec_t *
-_gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, const char *name,
-                           struct gmx_ana_selmethod_t *method)
-{
-    gmx_sel_symrec_t *sym;
-    e_symbol_t        ctype;
-
-    sym = add_symbol(tab, name, &ctype);
-    if (!sym)
-    {
-        fprintf(stderr, "parse error: ");
-        switch (ctype)
-        {
-            case SYMBOL_RESERVED:
-            case SYMBOL_POS:
-                fprintf(stderr, "method name (%s) conflicts with a reserved keyword\n",
-                        name);
-                break;
-            case SYMBOL_VARIABLE:
-                fprintf(stderr, "method name (%s) conflicts with a variable name\n",
-                        name);
-                break;
-            case SYMBOL_METHOD:
-                fprintf(stderr, "duplicate method name (%s)\n", name);
-                break;
-        }
-        return NULL;
-    }
-
-    sym->type   = SYMBOL_METHOD;
-    sym->u.meth = method;
-    return sym;
-}
+} // namespace gmx

@@ -39,7 +39,7 @@
 #include <vector>
 #include <utility>
 
-#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
@@ -282,7 +282,14 @@ const char *const LimitationsHelpText::text[] = {
     "[TT]charge -1 to -0.7[tt][BR]",
     "result in a syntax error. A workaround is to write[BR]",
     "[TT]charge {-1 to -0.7}[tt][BR]",
-    "instead.",
+    "instead.[PAR]",
+
+    "When [TT]name[tt] selection keyword is used together with PDB input",
+    "files, the behavior may be unintuitive. When Gromacs reads in a PDB",
+    "file, 4 character atom names that start with a digit are transformed",
+    "such that, e.g., 1HG2 becomes HG21, and the latter is what is matched",
+    "by the [TT]name[tt] keyword. Use [TT]pdbname[tt] to match the atom name",
+    "as it appears in the input PDB file.",
 };
 
 struct PositionsHelpText
@@ -392,6 +399,11 @@ const char *const SyntaxHelpText::text[] = {
     "The match type is automatically guessed from the string: if it contains",
     "other characters than letters, numbers, '*', or '?', it is interpreted",
     "as a regular expression.",
+    "To force the matching to use literal string matching, use",
+    "[TT]name = \"C*\"[tt] to match a literal C*.",
+    "To force other type of matching, use '?' or '~' in place of '=' to force",
+    "wildcard or regular expression matching, respectively.[PAR]",
+
     "Strings that contain non-alphanumeric characters should be enclosed in",
     "double quotes as in the examples. For other strings, the quotes are",
     "optional, but if the value conflicts with a reserved keyword, a syntax",
@@ -425,14 +437,15 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
 {
     public:
         //! Initialize help topic for the given selection method.
-        explicit KeywordDetailsHelpTopic(const gmx_ana_selmethod_t &method)
-            : method_(method)
+        KeywordDetailsHelpTopic(const std::string &name,
+                                const gmx_ana_selmethod_t &method)
+            : name_(name), method_(method)
         {
         }
 
         virtual const char *name() const
         {
-            return method_.name;
+            return name_.c_str();
         }
         virtual const char *title() const
         {
@@ -446,6 +459,7 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
         }
 
     private:
+        std::string                name_;
         const gmx_ana_selmethod_t &method_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(KeywordDetailsHelpTopic);
@@ -496,22 +510,23 @@ KeywordsHelpTopic::KeywordsHelpTopic()
     // TODO: This is not a very elegant way of getting the list of selection
     // methods, but this needs to be rewritten in any case if/when #652 is
     // implemented.
-    gmx_sel_symtab_t *symtab;
-    _gmx_sel_symtab_create(&symtab);
-    gmx_ana_selmethod_register_defaults(symtab);
-    boost::shared_ptr<gmx_sel_symtab_t> symtabGuard(symtab, &_gmx_sel_symtab_free);
+    boost::scoped_ptr<SelectionParserSymbolTable> symtab(
+            new SelectionParserSymbolTable);
+    gmx_ana_selmethod_register_defaults(symtab.get());
 
-    gmx_sel_symrec_t *symbol = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
-    while (symbol)
+    SelectionParserSymbolIterator symbol
+        = symtab->beginIterator(SelectionParserSymbol::MethodSymbol);
+    while (symbol != symtab->endIterator())
     {
-        const char *symname = _gmx_sel_sym_name(symbol);
-        const gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
+        const std::string &symname = symbol->name();
+        const gmx_ana_selmethod_t *method = symbol->methodValue();
         methods_.push_back(std::make_pair(std::string(symname), method));
         if (method->help.nlhelp > 0 && method->help.help != NULL)
         {
-            addSubTopic(HelpTopicPointer(new KeywordDetailsHelpTopic(*method)));
+            addSubTopic(HelpTopicPointer(
+                        new KeywordDetailsHelpTopic(symname, *method)));
         }
-        symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
+        ++symbol;
     }
 }
 

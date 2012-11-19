@@ -60,6 +60,7 @@ using gmx::test::CommandLine;
  * Tests for gmx::analysismodules::Select.
  */
 
+//! Test fixture for the select analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Select>
         SelectModuleTest;
 
@@ -70,9 +71,64 @@ TEST_F(SelectModuleTest, BasicTest)
         "-select", "y < 2.5", "resname RA"
     };
     setTopology("simple.gro");
+    setTrajectory("simple.gro");
     setOutputFile("-oi", "index.dat");
     setOutputFile("-on", "index.ndx");
     excludeDataset("cfrac");
+    runTest(CommandLine::create(cmdline));
+}
+
+TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
+{
+    const char *const cmdline[] = {
+        "select",
+        "-select", "resname RA RD and y < 2.5"
+    };
+    setTopology("simple.gro");
+    setTrajectory("simple.gro");
+    includeDataset("occupancy");
+    setOutputFile("-ofpdb", "occupancy.pdb");
+    runTest(CommandLine::create(cmdline));
+}
+
+TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
+{
+    const char *const cmdline[] = {
+        "select",
+        "-select", "resname RA RD and y < 2.5"
+    };
+    setTopology("simple.pdb");
+    setTrajectory("simple.gro");
+    includeDataset("occupancy");
+    setOutputFile("-ofpdb", "occupancy.pdb");
+    runTest(CommandLine::create(cmdline));
+}
+
+TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
+{
+    const char *const cmdline[] = {
+        "select",
+        "-select", "resname RA RD and y < 2.5",
+        "-pdbatoms", "maxsel"
+    };
+    setTopology("simple.pdb");
+    setTrajectory("simple.gro");
+    includeDataset("occupancy");
+    setOutputFile("-ofpdb", "occupancy.pdb");
+    runTest(CommandLine::create(cmdline));
+}
+
+TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
+{
+    const char *const cmdline[] = {
+        "select",
+        "-select", "resname RA RD and y < 2.5",
+        "-pdbatoms", "selected"
+    };
+    setTopology("simple.pdb");
+    setTrajectory("simple.gro");
+    includeDataset("occupancy");
+    setOutputFile("-ofpdb", "occupancy.pdb");
     runTest(CommandLine::create(cmdline));
 }
 
