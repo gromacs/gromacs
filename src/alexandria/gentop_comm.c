@@ -49,7 +49,7 @@
 #include "network.h"
 #include "gentop_comm.h"
 	
-void gmx_send(const t_commrec *cr,int dest,void *buf,int bufsize)
+void gmx_send(const t_commrec *cr,int dest,const void *buf,int bufsize)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_send"); 
@@ -83,7 +83,7 @@ void gmx_recv(const t_commrec *cr,int src,void *buf,int bufsize)
 #endif
 }
 
-void gmx_send_str(t_commrec *cr,int dest,char *ptr)
+void gmx_send_str(t_commrec *cr,int dest,const char *ptr)
 {
     int len;
     

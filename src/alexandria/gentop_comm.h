@@ -1,11 +1,11 @@
 #ifndef GENTOP_COMM_H
 #define GENTOP_COMM_H
 
-extern void gmx_send(const t_commrec *cr,int dest,void *buf,int bufsize);
+extern void gmx_send(const t_commrec *cr,int dest,const void *buf,int bufsize);
 
 extern void gmx_recv(const t_commrec *cr,int src,void *buf,int bufsize);
 
-extern void gmx_send_str(t_commrec *cr,int dest,char *ptr);
+extern void gmx_send_str(t_commrec *cr,int dest,const char *ptr);
 
 extern char *gmx_recv_str(t_commrec *cr,int src);
 

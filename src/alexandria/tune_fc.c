@@ -826,7 +826,7 @@ static double calc_opt_deviation(opt_param_t *opt)
     }
     init_nrnb(&my_nrnb);
   
-    wcycle  = wallcycle_init(stdout,0,opt->md->cr,1);
+    wcycle  = wallcycle_init(stdout,0,opt->md->cr,1,0);
     for(j=0; (j<ermsNR); j++)
     {
         opt->md->ener[j] = 0;

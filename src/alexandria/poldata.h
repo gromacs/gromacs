@@ -37,6 +37,8 @@
 #ifndef _poldata_h
 #define _poldata_h
 
+#include "network.h"
+
 /* This source code file is part of the Alexandria project */
 	
 enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,

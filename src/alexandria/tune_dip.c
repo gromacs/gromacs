@@ -455,14 +455,17 @@ static void split_shell_charges(gmx_mtop_t *mtop,t_idef *idef)
     gmx_mtop_atomloop_all_t aloop;
     t_atom *atom,*atom_i,*atom_j;     
     int    at_global,resnr;
-  
+    gmx_mtop_atomlookup_t alook;
+    
+    alook = gmx_mtop_atomlookup_init(mtop);
+
     for(k=0; (k<idef->il[F_POLARIZATION].nr); ) {
         tp = idef->il[F_POLARIZATION].iatoms[k++];
         ai = idef->il[F_POLARIZATION].iatoms[k++];
         aj = idef->il[F_POLARIZATION].iatoms[k++];
     
-        gmx_mtop_atomnr_to_atom(mtop,ai,&atom_i);
-        gmx_mtop_atomnr_to_atom(mtop,aj,&atom_j);
+        gmx_mtop_atomnr_to_atom(alook,ai,&atom_i);
+        gmx_mtop_atomnr_to_atom(alook,aj,&atom_j);
     
         if ((atom_i->ptype == eptAtom) &&
             (atom_j->ptype == eptShell)) {
@@ -489,6 +492,7 @@ static void split_shell_charges(gmx_mtop_t *mtop,t_idef *idef)
     if (fabs(q-Z) > 1e-3) {
         gmx_fatal(FARGS,"Total charge in molecule is not zero, but %f",q-Z);
     }
+    gmx_mtop_atomlookup_destroy(alook);
 }
 
 static void calc_moldip_deviation(t_moldip *md)
@@ -522,7 +526,7 @@ static void calc_moldip_deviation(t_moldip *md)
     init_nrnb(&my_nrnb);
     snew(epot,1);
   
-    wcycle  = wallcycle_init(stdout,0,md->cr,1);
+    wcycle  = wallcycle_init(stdout,0,md->cr,1,0);
     for(j=0; (j<ermsNR); j++)
     {
         etot[j] = 0;
