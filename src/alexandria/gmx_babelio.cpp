@@ -120,8 +120,10 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   const char *etypes[] = { "DHf(0K)", "DHf(298.15K)" };
   
   if (0 != read_babel(g98,&mol))
-    gmx_fatal(FARGS,"Failed reading %s",g98);
-
+    {
+      fprintf(stderr,"Failed reading %s\n",g98);
+      return NULL;
+    }
   //  ...manipulate molecule
   //cout << " Molecule has: " << mol.NumAtoms()
   //     << " atoms." << endl;
