@@ -931,7 +931,7 @@ gmx_mm_pmecorrF_pd(__m128d z2)
  *       -----------
  *           r 
  *
- * 6. Add the result to 1/r, multiply by the product of the charges,
+ * 6. Subtract the result from 1/r, multiply by the product of the charges,
  *    and you have your potential.
  *
  */
