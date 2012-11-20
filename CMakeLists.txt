@@ -265,6 +265,19 @@ get_compiler_version()
 include(gmxGCC44O3BugWorkaround)
 gmx_check_gcc44_bug_workaround_needed(GMX_USE_GCC44_BUG_WORKAROUND)
 
+# clang 3.0 is believed to be buggy for some unknown reason detected during
+# adding the SSE2 group kernels for GROMACS 4.6. If we ever work out what
+# that is, we should replace these tests with a compiler feature test,
+# update GROMACS Redmine task #1039 and perhaps report a clang bug.
+#
+# In the meantime, until we require CMake 2.8.10 we cannot rely on it to detect
+# the compiler version for us. So we need a manual check for clang 3.0.
+include(gmxDetectClang30)
+gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
+if(COMPILER_IS_CLANG_3_0)
+    message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
+endif()
+
 ########################################################################
 # Set up binary and library suffixing 
 ########################################################################
