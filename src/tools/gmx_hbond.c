@@ -4032,61 +4032,68 @@ int gmx_hbond(int argc,char *argv[])
         if (opt2bSet("-hbm",NFILE,fnm)) {
             t_matrix mat;
             int id,ia,hh,x,y;
-      
-            mat.nx=nframes;
-            mat.ny=hb->nrhb;
-
-            snew(mat.matrix,mat.nx);
-            for(x=0; (x<mat.nx); x++) 
-                snew(mat.matrix[x],mat.ny);
-            y=0;
-            for(id=0; (id<hb->d.nrd); id++) 
-                for(ia=0; (ia<hb->a.nra); ia++) {
-                    for(hh=0; (hh<hb->maxhydro); hh++) {
-                        if (hb->hbmap[id][ia]) {
-                            if (ISHB(hb->hbmap[id][ia]->history[hh])) {
-                                /* Changed '<' into '<=' in the for-statement below.
-                                 * It fixed the previously undiscovered bug that caused
-                                 * the last occurance of an hbond/contact to not be
-                                 * set in mat.matrix. Have a look at any old -hbm-output
-                                 * and you will notice that the last column is allways empty.
-                                 * - Erik Marklund May 30, 2006
-                                 */
-                                for(x=0; (x<=hb->hbmap[id][ia]->nframes); x++) {
-                                    int nn0 = hb->hbmap[id][ia]->n0;
-                                    range_check(y,0,mat.ny);
-                                    mat.matrix[x+nn0][y] = is_hb(hb->hbmap[id][ia]->h[hh],x);
+            
+            if ((nframes > 0) && (hb->nrhb > 0))
+            {
+                mat.nx=nframes;
+                mat.ny=hb->nrhb;
+                
+                snew(mat.matrix,mat.nx);
+                for(x=0; (x<mat.nx); x++) 
+                    snew(mat.matrix[x],mat.ny);
+                y=0;
+                for(id=0; (id<hb->d.nrd); id++) 
+                    for(ia=0; (ia<hb->a.nra); ia++) {
+                        for(hh=0; (hh<hb->maxhydro); hh++) {
+                            if (hb->hbmap[id][ia]) {
+                                if (ISHB(hb->hbmap[id][ia]->history[hh])) {
+                                    /* Changed '<' into '<=' in the for-statement below.
+                                     * It fixed the previously undiscovered bug that caused
+                                     * the last occurance of an hbond/contact to not be
+                                     * set in mat.matrix. Have a look at any old -hbm-output
+                                     * and you will notice that the last column is allways empty.
+                                     * - Erik Marklund May 30, 2006
+                                     */
+                                    for(x=0; (x<=hb->hbmap[id][ia]->nframes); x++) {
+                                        int nn0 = hb->hbmap[id][ia]->n0;
+                                        range_check(y,0,mat.ny);
+                                        mat.matrix[x+nn0][y] = is_hb(hb->hbmap[id][ia]->h[hh],x);
+                                    }
+                                    y++;
                                 }
-                                y++;
                             }
                         }
                     }
+                mat.axis_x=hb->time;
+                snew(mat.axis_y,mat.ny);
+                for(j=0; j<mat.ny; j++)
+                    mat.axis_y[j]=j;
+                sprintf(mat.title,bContact ? "Contact Existence Map":
+                        "Hydrogen Bond Existence Map");
+                sprintf(mat.legend,bContact ? "Contacts" : "Hydrogen Bonds");
+                sprintf(mat.label_x,"%s",output_env_get_xvgr_tlabel(oenv));
+                sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
+                mat.bDiscrete=TRUE;
+                mat.nmap=2;
+                snew(mat.map,mat.nmap);
+                for(i=0; i<mat.nmap; i++) {
+                    mat.map[i].code.c1=hbmap[i];
+                    mat.map[i].desc=hbdesc[i];
+                    mat.map[i].rgb=hbrgb[i];
                 }
-            mat.axis_x=hb->time;
-            snew(mat.axis_y,mat.ny);
-            for(j=0; j<mat.ny; j++)
-                mat.axis_y[j]=j;
-            sprintf(mat.title,bContact ? "Contact Existence Map":
-                    "Hydrogen Bond Existence Map");
-            sprintf(mat.legend,bContact ? "Contacts" : "Hydrogen Bonds");
-            sprintf(mat.label_x,"%s",output_env_get_xvgr_tlabel(oenv));
-            sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
-            mat.bDiscrete=TRUE;
-            mat.nmap=2;
-            snew(mat.map,mat.nmap);
-            for(i=0; i<mat.nmap; i++) {
-                mat.map[i].code.c1=hbmap[i];
-                mat.map[i].desc=hbdesc[i];
-                mat.map[i].rgb=hbrgb[i];
+                fp = opt2FILE("-hbm",NFILE,fnm,"w");
+                write_xpm_m(fp, mat);
+                ffclose(fp);
+                for(x=0; x<mat.nx; x++)
+                    sfree(mat.matrix[x]);
+                sfree(mat.axis_y);
+                sfree(mat.matrix);
+                sfree(mat.map);
             }
-            fp = opt2FILE("-hbm",NFILE,fnm,"w");
-            write_xpm_m(fp, mat);
-            ffclose(fp);
-            for(x=0; x<mat.nx; x++)
-                sfree(mat.matrix[x]);
-            sfree(mat.axis_y);
-            sfree(mat.matrix);
-            sfree(mat.map);
+            else 
+            {
+                fprintf(stderr,"No hydrogen bonds/contacts found. No hydrogen bond map will be printed.\n");
+            }
         }
     }
 
