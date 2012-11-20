@@ -33,6 +33,8 @@
 
 #include "gmx_x86_sse4_1.h"
 
+#undef gmx_restrict
+#define gmx_restrict 
 
 /* Normal sum of four xmm registers */
 #define gmx_mm_sum4_ps(t0,t1,t2,t3)  _mm_add_ps(_mm_add_ps(t0,t1),_mm_add_ps(t2,t3))
@@ -619,10 +621,10 @@ gmx_mm_decrement_4rvec_1ptr_noswizzle_ps(float * gmx_restrict ptrA,
 
 
 static gmx_inline void
-gmx_mm_decrement_1rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA,
-                                       float * gmx_restrict ptrB,
-                                       float * gmx_restrict ptrC,
-                                       float * gmx_restrict ptrD,
+gmx_mm_decrement_1rvec_4ptr_swizzle_ps(float * ptrA,
+                                       float * ptrB,
+                                       float * ptrC,
+                                       float * ptrD,
                                        __m128 x1, __m128 y1, __m128 z1)
 {
     __m128 t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12;
@@ -689,33 +691,34 @@ gmx_mm_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_re
     t1          = _mm_loadu_ps(ptrA);
     t2          = _mm_loadu_ps(ptrA+4);
     t3          = _mm_load_ss(ptrA+8);
+    t4          = _mm_loadu_ps(ptrB);
+    t5          = _mm_loadu_ps(ptrB+4);
+    t6          = _mm_load_ss(ptrB+8);
+    t7          = _mm_loadu_ps(ptrC);
+    t8          = _mm_loadu_ps(ptrC+4);
+    t9          = _mm_load_ss(ptrC+8);
+    t10         = _mm_loadu_ps(ptrD);
+    t11         = _mm_loadu_ps(ptrD+4);
+    t12         = _mm_load_ss(ptrD+8);
+    
     t1          = _mm_sub_ps(t1,t20);
     t2          = _mm_sub_ps(t2,t23);
     t3          = _mm_sub_ss(t3,z3);
     _mm_storeu_ps(ptrA,t1);
     _mm_storeu_ps(ptrA+4,t2);
     _mm_store_ss(ptrA+8,t3);
-    t4          = _mm_loadu_ps(ptrB);
-    t5          = _mm_loadu_ps(ptrB+4);
-    t6          = _mm_load_ss(ptrB+8);
     t4          = _mm_sub_ps(t4,t21);
     t5          = _mm_sub_ps(t5,t24);
     t6          = _mm_sub_ss(t6,t17);
     _mm_storeu_ps(ptrB,t4);
     _mm_storeu_ps(ptrB+4,t5);
     _mm_store_ss(ptrB+8,t6);
-    t7          = _mm_loadu_ps(ptrC);
-    t8          = _mm_loadu_ps(ptrC+4);
-    t9          = _mm_load_ss(ptrC+8);
     t7          = _mm_sub_ps(t7,t22);
     t8          = _mm_sub_ps(t8,t25);
     t9          = _mm_sub_ss(t9,t18);
     _mm_storeu_ps(ptrC,t7);
     _mm_storeu_ps(ptrC+4,t8);
     _mm_store_ss(ptrC+8,t9);
-    t10         = _mm_loadu_ps(ptrD);
-    t11         = _mm_loadu_ps(ptrD+4);
-    t12         = _mm_load_ss(ptrD+8);
     t10         = _mm_sub_ps(t10,t14);
     t11         = _mm_sub_ps(t11,t16);
     t12         = _mm_sub_ss(t12,t19);
