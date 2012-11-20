@@ -34,6 +34,7 @@
 
 #define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
+#define _GMX_MM_BLEND(b3,b2,b1,b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
 
 #define _GMX_MM_PERMUTE128D(fp1,fp0)         (((fp1) << 1) | ((fp0)))
 
@@ -85,7 +86,9 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
  * does not support overriding built-in functions anyway...
  */
 #if !defined(HAVE_X86INTRIN_H) || !defined(__FMA4__)
-#warning Emulating FMA instructions - this is probably not what you want!
+#    ifndef GMX_NO_FMA_EMULATION_WARNING
+#        warning Emulating FMA instructions - this is probably not what you want!
+#    endif
 /* Wrapper routines so we can do test builds on non-FMA hardware */
 static __m128
 _mm_macc_ps(__m128 a, __m128 b, __m128 c)
@@ -100,7 +103,12 @@ _mm_nmacc_ps(__m128 a, __m128 b, __m128 c)
 
     return _mm_sub_ps(c,_mm_mul_ps(a,b));
 }
-
+static __m128
+_mm_msub_ps(__m128 a, __m128 b, __m128 c)
+{
+    
+    return _mm_sub_ps(_mm_mul_ps(a,b),c);
+}
 static __m128d
 _mm_macc_pd(__m128d a, __m128d b, __m128d c)
 {
@@ -113,6 +121,12 @@ _mm_nmacc_pd(__m128d a, __m128d b, __m128d c)
 {
 
     return _mm_sub_pd(c,_mm_mul_pd(a,b));
+}
+static __m128d
+_mm_msub_pd(__m128d a, __m128d b, __m128d c)
+{
+    
+    return _mm_sub_pd(_mm_mul_pd(a,b),c);
 }
 #endif /* FMA4 support */
 
