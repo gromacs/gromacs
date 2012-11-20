@@ -1,0 +1,389 @@
+\documentclass{article}[12pt,a4paper,twoside]
+\usepackage{hyperref}
+% haven't made these work with LaTeXML yet...
+%\usepackage[strings]{underscore}
+%\usepackage[english]{babel}
+
+\title{GROMACS installation guide}
+
+% macros to keep style uniform
+\newcommand{\gromacs}{GROMACS}
+\newcommand{\nvidia}{NVIDIA}
+\newcommand{\cuda}{CUDA}
+\newcommand{\fftw}{FFTW}
+\newcommand{\mkl}{MKL}
+\newcommand{\mpi}{MPI}
+\newcommand{\threadmpi}{ThreadMPI}
+\newcommand{\openmpi}{OpenMPI}
+\newcommand{\openmp}{OpenMP}
+\newcommand{\openmm}{OpenMM}
+\newcommand{\lammpi}{LAM/MPI}
+\newcommand{\mpich}{MPICH}
+\newcommand{\cmake}{CMake}
+\newcommand{\sse}{SSE}
+\newcommand{\ssetwo}{SSE2}
+\newcommand{\avx}{AVX}
+\newcommand{\fft}{FFT}
+\newcommand{\blas}{BLAS}
+\newcommand{\lapack}{LAPACK}
+\newcommand{\vmd}{VMD}
+\newcommand{\pymol}{PyMOL}
+\newcommand{\grace}{Grace}
+%\newcommand{\}{}
+%\newcommand{\}{}
+
+% later, make CMake keep this version current for us
+\newcommand{\fftwversion}{3.3.2}
+\newcommand{\cmakeversion}{2.8.0}
+\newcommand{\cudaversion}{3.2}
+
+\begin{document}
+\section{Prerequisites}
+
+\subsection{Platform}
+
+\gromacs{} can be compiled for any distribution of Linux, Mac OS X,
+Windows (native, Cygwin or MinGW), BlueGene, Cray and probably others.
+Technically, it can be compiled on any platform with an ANSI C
+compiler and supporting libraries, such as the GNU C library. It can
+even compile on an iPhone! There is a detailed list of hardware,
+platform and compilers upon which we do build and regression testing
+later in this document.
+
+\subsection{Compiler}
+
+\gromacs{} requires an ANSI C compiler that complies with the C89
+standard. For best performance, the \gromacs{} team strongly
+recommends you get the most recent version of your preferred compiler
+for your platform (e.g. GCC 4.7 or Intel 12.0 or newer on x86
+hardware). There is a large amount of \gromacs{} code introduced in
+version 4.6 that depends on effective compiler optimization to get
+high performance - the old assembly-language routines have all
+gone. For other platforms, use the vendor's compiler, and check for
+specialized information below.
+
+\subsubsection{Running in parallel}
+
+\gromacs{} can run in parallel on multiple cores of a single
+workstation using its built-in \threadmpi. No user action is required
+in order to enable this.
+
+If you wish to use the excellent new native GPU support in \gromacs,
+\nvidia{}'s \cuda{}
+\url{http://www.nvidia.com/object/cuda_home_new.html} version
+\cudaversion{} software development kit is required, and the latest
+version is encouraged. \nvidia{} GPUs with at least \nvidia{} compute
+capability 2.0 are required, e.g. Fermi or Kepler cards.
+
+The GPU support from \gromacs{} version 4.5 using \openmm{}
+\url{https://simtk.org/home/openmm} is still available, also requires
+\cuda{} (version ??), and remains the only hardware-based acceleration
+available for implicit solvent simulations in \gromacs{}.
+
+If you wish to run in parallel on multiple machines across a network,
+you will need to have
+\begin{itemize}
+\item an \mpi{} library installed that supports the \mpi{} 1.3
+  standard, and
+\item wrapper compilers that will compile code using that library.
+\end{itemize}
+The \gromacs{} team recommends \openmpi{}
+\url{http://www.open-mpi.org/} version 1.4.1 (or higher), \mpich{}
+\url{http://www.mpich.org/} version 1.4.1 (or higher), or your
+hardware vendor's \mpi{} installation. The most recent version of
+either of this is likely to be the best. \lammpi{}
+\url{http://www.lam-mpi.org/} may work, but since it has been
+deprecated for years, it is not supported.
+
+In some cases, \openmp{} parallelism is an advantage for \gromacs{},
+but support for this is generally built into your compiler and you
+need to make no advance preparation for this.
+
+\subsection{CMake}
+
+From version 4.6, \gromacs{} has moved to use the build system
+\cmake{}. The previous build system that used \texttt{configure} from
+the GNU autotools package has been removed permanently. \cmake{}
+permits the \gromacs{} team to support a very wide range of hardware,
+compilers and build configurations while continuing to provide the
+portability, robustness and performance for which \gromacs{} is known.
+
+\gromacs{} requires \cmake{} version \cmakeversion{} or higher. Lower
+versions will not work. You can check whether \cmake{} is installed,
+and what version it is, with \texttt{cmake --version}. If you need to
+install \cmake{}, then first check whether your platform's package
+management system provides a suitable version, or visit
+\url{http://www.cmake.org/cmake/help/install.html} for pre-compiled
+binaries, source code and installation instructions. The \gromacs{}
+team recommends you install the most recent version of \cmake{} you
+can.
+
+\subsection{Fast Fourier Transform library}
+
+Many simulations in \gromacs{} make extensive use of Fourier transforms,
+and a software library to perform these is always required. We
+recommend \fftw{} \url{http://www.fftw.org/} (version 3 or higher
+only) or Intel's \mkl{}
+\url{http://software.intel.com/en-us/intel-mkl}.
+
+\subsubsection{\fftw{}}
+
+\fftw{} is likely to be available for your platform via its package
+management system, but there can be compatibility and significant
+performance issues associated with these packages. In particular,
+\gromacs{} simulations are normally run in single floating-point
+precision whereas the default \fftw{} package is normally in double
+precision, and good compiler options to use for \fftw{} when linked to
+\gromacs{} may not have been used. Accordingly, the \gromacs{} team
+recommends either
+\begin{itemize}
+\item that you permit the \gromacs{} installation to download and
+  build \fftw{} \fftwversion{} from source automatically
+  for you, or
+\item that you build \fftw{} from the source code.
+\end{itemize}
+
+If you build \fftw{} from source yourself, get the most recent version
+and follow its installation guide
+(e.g. \url{http://www.fftw.org/fftw3_doc/Installation-and-Customization.html}). Choose
+the precision (i.e. single or float vs double) to match what you will
+later require for \gromacs{}. There is no need to compile with
+threading or \mpi{} support, but it does no harm. On x86 hardware,
+compile \emph{only} with \texttt{--enable-sse2} (regardless of
+precision) even if your processors can take advantage of \avx{}
+extensions to \sse{}. The way \gromacs{} uses Fourier transforms
+cannot take advantage of this feature in \fftw{} because of memory
+system performance limitations, it can degrade performance by around
+20\%, and there is no way for \gromacs{} to require the use of the
+\ssetwo{} at run time if \avx{} support has been compiled into \fftw{}.
+
+\subsubsection{\mkl{}}
+
+Using \mkl{} requires a set of linker flags that \gromacs{} is not
+able to detect for you, so setting up optimal linking is tricky at the
+moment. Need better documentation later.
+
+\subsection{Optional build components}
+
+\begin{itemize}
+\item A hardware-optimized \blas{} or \lapack{} library is useful for
+  some of the \gromacs{} utilities, but is not needed for running
+  simulations.
+\item The built-in \gromacs{} trajectory viewer \texttt{ngmx} requires
+  X11 and Motif/Lesstif libraries and header files. Generally, the
+  \gromacs{} team recommends you use third-party software for
+  visualization, such as \vmd{}
+  \url{http://www.ks.uiuc.edu/Research/vmd/} or \pymol{}
+  \url{http://www.pymol.org/}.
+\end{itemize}
+
+\section{Doing a build of \gromacs}
+
+This section will cover a general build of \gromacs{} with \cmake{},
+but it is not an exhaustive discussion of how to use \cmake{}. There
+are many resources available on the web, which we suggest you search
+for when you encounter problems not covered here. The material below
+applies specifically to builds on Unix-like systems, including Linux,
+Mac OS X, MinGW and Cygwin. For other platforms, see the specialist
+instructions below.
+
+\subsection{Configuring with \cmake{}}
+
+\cmake{} will run many tests on your system and do its best to work
+out how to build \gromacs{} for you. If you are building \gromacs{} on
+hardware that is identical to that where you will run \texttt{mdrun},
+then you can be sure that the defaults will be pretty good. Howver, if
+you want to control aspects of the build, there's plenty of things you
+can set, too.
+
+The best way to use \cmake{} to configure \gromacs{} is to do an
+``out-of-source'' build, by making another directory from which you
+will run \cmake{}. This can be a subdirectory or not, it doesn't
+matter. It also means you can never corrupt your source code by trying
+to build it! So, the only required argument on the \cmake{} command
+line is the name of the directory containing the
+\texttt{CMakeLists.txt} file of the code you want to build. For
+example, download the source tarball and use
+% TODO: keep up to date as we approach real releases!
+\begin{verbatim}
+$ tar xfz gromacs-4.6-beta1.tgz
+$ cd gromacs-4.6
+$ mkdir build-cmake
+$ cd build-cmake
+$ cmake ..
+\end{verbatim}
+
+You will see \texttt{cmake} report the results of a large number of tests on
+your system made by \cmake{} and by \gromacs{}. These are written to
+the \cmake{} cache, kept in \texttt{CMakeCache.txt}. You can edit this
+file by hand, but this is not recommended because it is easy to reach
+an inconsistent state. You should not attempt to move or copy this
+file to do another build, because the paths are hard-coded within it.
+
+If there's a serious problem detected at this stage, then you will see
+a fatal error and some suggestions for how to overcome it. If you're
+not sure how to deal with that, please start by searching on the web
+(most computer problems already have known solutions!) and then
+consult the \texttt{gmx-users} mailing list. There are also
+informational warnings that you might like to take on board or
+not. Piping the output of \texttt{cmake} through \texttt{less} or
+\texttt{tee} can be useful, too.
+
+\cmake{} works in an iterative fashion, re-running each time a setting
+is changed to try to make sure other things are consistent. Once
+things seem consistent, the iterations stop. Once \texttt{cmake}
+returns, you can see all the settings that were chosen and information
+about them by using \verb+ccmake ..+. Check out
+\url{http://www.cmake.org/cmake/help/runningcmake.html} for general
+advice on what you are seeing and how to navigate and change
+things. The settings you might normally want to change are already
+presented. If you make any changes, then \texttt{ccmake} will notice
+that and require that you re-configure (using '\verb+c+'), so that it
+gets a chance to make changes that depend on yours and perform more
+checking. This might require several configuration stages when you are
+using \texttt{ccmake} - when you are using \texttt{cmake} the
+iteration is done behind the scenes.
+
+A key thing to consider here is the setting of
+\texttt{GMX\_INSTALL\_PREFIX}. You will need to be able to write to this
+directory in order to install \gromacs{} later, and if you change your
+mind later, changing it in the cache triggers a full re-build,
+unfortunately. So if you do not have super-user privileges on your
+machine, then you will need to choose a sensible location within your
+home directory for your \gromacs{} installation.
+
+When \texttt{cmake} or \texttt{ccmake} have completed iterating, the
+cache is stable and a build tree can be generated, with '\verb+g+' in
+\texttt{ccmake} or automatically with \texttt{cmake}.
+
+\subsection{Building \gromacs{}}
+
+Once you have a stable cache, you can build \gromacs{}. If you're not
+sure the cache is stable, you can re-run \verb+cmake ..+ or
+\verb+ccmake ..+' to see. Then you can run \texttt{make} to start the
+compilation. Before actual compilation starts, \texttt{make} checks that the
+cache is stable, so if it isn't you will see \cmake{} run again.
+
+So long as any changes you've made to the configuration are sensible,
+it is expected that the \texttt{make} procedure will always complete
+successfully. The tests \gromacs{} makes on the settings you choose
+are pretty extensive, but there are probably a few cases we haven't
+thought of yet. Search the web first for solutions to problems,
+but if you need help, ask on \texttt{gmx-users}, being sure to provide
+as much information as possible about what you did, the system you are
+building on, and what went wrong.
+
+If you have a multi-core or multi-CPU machine with \texttt{N}
+processors, then using
+\begin{verbatim}
+$ make -j N
+\end{verbatim}
+will generally speed things up by about a factor of \texttt{N}.
+
+\subsection{Installing \gromacs{}}
+
+Finally, \texttt{make install} will install \gromacs{} in the
+directory given in \texttt{GMX\_INSTALL\_PREFIX}. If this is an system
+directory, then you will need permission to write there, and you
+should use super-user privileges only for \texttt{make install} and
+not the whole procedure.
+
+\subsection{Getting access to \gromacs{} after installation}
+
+\gromacs{} installs the script \texttt{GMXRC} in the \texttt{bin}
+subdirectory of the installation directory
+(e.g. \texttt{/usr/local/gromacs/bin/GMXRC}), which you should source
+from your shell:
+\begin{verbatim}
+$ source your-installation-prefix-here/bin/GMXRC
+\end{verbatim}
+
+It will detect what kind of shell you are running and
+set up your environment for using \gromacs{}. You may wish to arrange
+for your login scripts to do this automatically; please search the web
+for instructions on how to do this for your shell.
+
+\subsection{Testing \gromacs{}}
+TODO install and use regression set
+
+\subsection{Having difficulty?}
+
+You're not alone, this can be a complex task. If you encounter a
+problem with installing GROMACS, then there are a number of locations
+where you can find assistance. It is recommended that you follow these
+steps to find the solution:
+
+\begin{enumerate}
+\item Read the installation instructions again, taking note that you
+  have followed each and every step correctly.
+\item Search the \gromacs{} website and users emailing list for information on the error.
+\item Search the internet using a search engine such as Google.
+\item Post to the \gromacs{} users emailing list \texttt{gmx-users} for
+  assistance. Be sure to give a full description of what you have done
+  and why you think it didn't work. Give details about the system on
+  which you are installing. Copy and paste your command line and as
+  much of the output as you think might be relevant - certainly from
+  the first indication of a problem. Describe the machine and
+  operating system you are running on. People who might volunteer to
+  help you do not have time to ask you interactive detailed follow-up
+  questions, so you will get an answer faster if you provide as much
+  information as you think could possibly help.
+\end{enumerate}
+
+\subsection{Advanced configuration}
+
+TODO...
+\begin{itemize}
+\item manual compiler and linker flags
+\item use of -D on the cmake command line (but avoid on ccmake command
+line)
+\item scripting \cmake{} once you are comfortable with things
+\item use of shared vs static libraries
+\item links to discussion of how to take advantage at configuration
+  time of various forms of parallelism, acceleration and optimization,
+  and when you'd want to... Berk? Szilard?
+\end{itemize}
+
+\section{Special instructions for some platforms}
+
+\subsection{Building on Windows}
+
+I need a volunteer for this section, because I've never done it!
+
+Cygwin works just like Unix
+
+\subsection{Building on Cray}
+
+Static libraries only? Volunteer needed.
+
+\subsection{Building on BlueGene}
+
+\subsubsection{BlueGene/P}
+
+Mark to write later
+
+\subsubsection{BlueGene/Q}
+
+Mark to write later
+
+\subsection{Building on XXX?}
+
+\section{Tested platforms}
+
+While it is our best belief that \gromacs{} will build and run pretty
+much everywhere, it's important that we tell you where we really know
+it works because we've tested it. Every commit in our \texttt{git}
+source code repository is test on ... We test irregularly on...
+
+Contributions to this section are welcome.
+
+Later we might set up the ability for users to contribute test results
+to Jenkins.
+
+\section{Other issues}
+
+The \gromacs{} utility programs often write data files in formats
+suitable for the \grace{} plotting tool, but it is straightforward to
+use these files in other plotting programs, too.
+
+\end{document}
