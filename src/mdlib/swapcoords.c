@@ -26,7 +26,7 @@
 static char* IonString[eIonNr] = {"anion", "cation" };
 static char* IonStr[eIonNr] = {"-", "+" };
 
-static char* CompString[eCompNr] = {"Compartment A", "Compartment B" };
+/* static char* CompString[eCompNr] = {"Compartment A", "Compartment B" }; */
 static char* CompStr[eCompNr] = {"A", "B" };
 
 /* eGrpSplit0 and eGrpSplit1 _must_ be neighbors in this list because
@@ -44,7 +44,7 @@ static char *DimStr[DIM+1] = {
 
 /* Keep track of through which channel the ions have passed */
 enum eChannelHistory { eChHistPassedNone, eChHistPassedCh0, eChHistPassedCh1, eChHistNr };
-static char* ChannelHistString[eChHistNr] = { "none", "channel0", "channel1" };
+/* static char* ChannelHistString[eChHistNr] = { "none", "channel0", "channel1" }; */
 
 /* Keep track of from which compartment the ions came before passing the channel */
 enum eDomain { eDomainNotset, eDomainA, eDomainB, eDomainNr };
@@ -683,8 +683,8 @@ static void compartmentalize_solvent(
     if (NULL != fpout)
     {
         fprintf(fpout, "# Solv. molecules in comp.%s: %d   comp.%s: %d\n",
-                CompStr[eCompA], s->compsol[eCompA].nat,
-                CompStr[eCompB], s->compsol[eCompB].nat);
+                CompStr[eCompA], s->compsol[eCompA].nat/apm,
+                CompStr[eCompB], s->compsol[eCompB].nat/apm);
     }
 
     /* Consistency checks */
