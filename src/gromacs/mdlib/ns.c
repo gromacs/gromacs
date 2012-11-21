@@ -80,6 +80,15 @@ static gmx_bool NOTEXCL_(t_excl e[],atom_id i,atom_id j)
 #define NOTEXCL(e,i,j) !(ISEXCL(e,i,j))
 #endif
 
+static int
+round_up_to_simd_width(int length, int simd_width)
+{
+    int offset,newlength;
+    
+    offset = (simd_width>0) ? length % simd_width : 0;
+
+    return (offset==0) ? length : length-offset+simd_width;
+}
 /************************************************
  *
  *  U T I L I T I E S    F O R    N S
@@ -140,6 +149,7 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,t_nblist *nl_lr,
             nl->igeometry  = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
         }
         
+        /* This will also set the simd_padding_width field */
         gmx_nonbonded_set_kernel_pointers( (i==0) ? log : NULL,nl);
         
         /* maxnri is influenced by the number of shifts (maximum is 8)
@@ -384,6 +394,15 @@ static inline void close_i_nblist(t_nblist *nlist)
     
     if (nri >= 0)
     {
+        /* Add elements up to padding. Since we allocate memory in units
+         * of the simd_padding width, we do not have to check for possible
+         * list reallocation here.
+         */
+        while((nlist->nrj % nlist->simd_padding_width)!=0)
+        {
+            /* Use -4 here, so we can write forces for 4 atoms before real data */
+            nlist->jjnr[nlist->nrj++]=-4;
+        }
         nlist->jindex[nri+1] = nlist->nrj;
         
         len=nlist->nrj -  nlist->jindex[nri];
@@ -446,7 +465,8 @@ static inline void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,gmx_bool bLR)
     
     if (nlist->nrj >= nlist->maxnrj)
     {
-        nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
+        nlist->maxnrj = round_up_to_simd_width(over_alloc_small(nlist->nrj + 1),nlist->simd_padding_width);
+        
         if (gmx_debug_at)
             fprintf(debug,"Increasing %s nblist (ielec=%d,ivdw=%d,free=%d,igeometry=%d) j size to %d\n",
                     bLR ? "LR" : "SR",nlist->ielec,nlist->ivdw,nlist->free_energy,nlist->igeometry,nlist->maxnrj);
@@ -2362,7 +2382,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       real *lambda,real *dvdlambda,
                       gmx_grppairener_t *grppener,
                       gmx_bool bFillGrid,
-                      gmx_bool bDoLongRangeNS)
+                      gmx_bool bDoLongRangeNS,
+                      gmx_bool bPadListsForKernels)
 {
     t_block  *cgs=&(top->cgs);
     rvec     box_size,grid_x0,grid_x1;

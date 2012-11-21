@@ -538,7 +538,7 @@ void
             /*         #elif KERNEL_ELEC=='CubicSplineTable' */
 
             /* CUBIC SPLINE TABLE ELECTROSTATICS */
-            /*             #if 'Force' in KERNEL_VF */
+            /*             #if 'Potential' in KERNEL_VF */
             Y                = vftab[vfitab];
             /*             #endif */
             F                = vftab[vfitab+1];
@@ -618,7 +618,7 @@ void
 
             /* CUBIC SPLINE TABLE DISPERSION */
             vfitab          += {TABLE_VDW_OFFSET};
-            /*             #if 'Force' in KERNEL_VF */
+            /*             #if 'Potential' in KERNEL_VF */
             Y                = vftab[vfitab];
             /*             #endif */
             F                = vftab[vfitab+1];
@@ -638,7 +638,7 @@ void
             /*             #endif */
 
             /* CUBIC SPLINE TABLE REPULSION */
-            /*             #if 'Force' in KERNEL_VF */
+            /*             #if 'Potential' in KERNEL_VF */
             Y                = vftab[vfitab+4];
             /*             #endif */
             F                = vftab[vfitab+5];
@@ -797,7 +797,7 @@ void
         /*     #endif */
         /* #endif */
         /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
-        dvda[nri]                   = dvda[nri] + dvdasum*isai{I}*isai{I};
+        dvda[inr]                   = dvda[inr] + dvdasum*isai{I}*isai{I};
         /*     #endif */
 
         /* Increment number of inner iterations */

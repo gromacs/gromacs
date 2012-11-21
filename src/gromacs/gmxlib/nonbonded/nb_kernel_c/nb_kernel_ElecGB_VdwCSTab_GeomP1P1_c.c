@@ -275,7 +275,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_c
         kernel_data->energygrp_elec[ggid] += velecsum;
         kernel_data->energygrp_polarization[ggid] += vgbsum;
         kernel_data->energygrp_vdw[ggid] += vvdwsum;
-        dvda[nri]                   = dvda[nri] + dvdasum*isai0*isai0;
+        dvda[inr]                   = dvda[inr] + dvdasum*isai0*isai0;
 
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;
@@ -468,7 +468,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_c
 
             /* CUBIC SPLINE TABLE DISPERSION */
             vfitab          += 0;
-            Y                = vftab[vfitab];
             F                = vftab[vfitab+1];
             Geps             = vfeps*vftab[vfitab+2];
             Heps2            = vfeps*vfeps*vftab[vfitab+3];
@@ -477,7 +476,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_c
             fvdw6            = c6_00*FF;
 
             /* CUBIC SPLINE TABLE REPULSION */
-            Y                = vftab[vfitab+4];
             F                = vftab[vfitab+5];
             Geps             = vfeps*vftab[vfitab+6];
             Heps2            = vfeps*vfeps*vftab[vfitab+7];
@@ -516,7 +514,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_c
         fshift[i_shift_offset+YY]  += ty;
         fshift[i_shift_offset+ZZ]  += tz;
 
-        dvda[nri]                   = dvda[nri] + dvdasum*isai0*isai0;
+        dvda[inr]                   = dvda[inr] + dvdasum*isai0*isai0;
 
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;

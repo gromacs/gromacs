@@ -1371,10 +1371,11 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
 }
 
 
-static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
+static void init_forcerec_f_threads(t_forcerec *fr,int nenergrp)
 {
     int t,i;
 
+    /* These thread local data structures are used for bondeds only */
     fr->nthreads = gmx_omp_nthreads_get(emntBonded);
 
     if (fr->nthreads > 1)
@@ -1386,11 +1387,10 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
             fr->f_t[t].f = NULL;
             fr->f_t[t].f_nalloc = 0;
             snew(fr->f_t[t].fshift,SHIFTS);
-            /* snew(fr->f_t[t].ener,F_NRE); */
-            fr->f_t[t].grpp.nener = grpp_nener;
+            fr->f_t[t].grpp.nener = nenergrp*nenergrp;
             for(i=0; i<egNR; i++)
             {
-                snew(fr->f_t[t].grpp.ener[i],grpp_nener);
+                snew(fr->f_t[t].grpp.ener[i],fr->f_t[t].grpp.nener);
             }
         }
     }

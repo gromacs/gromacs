@@ -1552,6 +1552,25 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     }
 }
 
+static void init_grid_flags(nbnxn_cellblock_flags *flags,
+                            const nbnxn_grid_t *grid)
+{
+    int cb;
+
+    flags->ncb = (grid->nc + NBNXN_CELLBLOCK_SIZE - 1)/NBNXN_CELLBLOCK_SIZE;
+    if (flags->ncb > flags->flag_nalloc)
+    {
+        flags->flag_nalloc = over_alloc_large(flags->ncb);
+        srenew(flags->flag,flags->flag_nalloc);
+    }
+    for(cb=0; cb<flags->ncb; cb++)
+    {
+        flags->flag[cb] = 0;
+    }
+
+    flags->bUse = TRUE;
+}
+
 /* Sets up a grid and puts the atoms on the grid.
  * This function only operates on one domain of the domain decompostion.
  * Note that without domain decomposition there is only one domain.
@@ -1657,6 +1676,8 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
     {
         nbat->natoms_local = nbat->natoms;
     }
+
+    init_grid_flags(&grid->cellblock_flags,grid);
 
     nbs_cycle_stop(&nbs->cc[enbsCCgrid]);
 }
@@ -2359,6 +2380,13 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     nbl_list->bCombined = bCombined;
 
     nbl_list->nnbl = gmx_omp_nthreads_get(emntNonbonded);
+
+    if (!nbl_list->bCombined &&
+        nbl_list->nnbl > NBNXN_CELLBLOCK_MAX_THREADS)
+    {
+        gmx_fatal(FARGS,"%d OpenMP threads were requested. Since the non-bonded force buffer reduction is prohibitively slow with more than %d threads, we do not allow this. Use %d or less OpenMP threads.",
+                  nbl_list->nnbl,NBNXN_CELLBLOCK_MAX_THREADS,NBNXN_CELLBLOCK_MAX_THREADS);
+    }
 
     snew(nbl_list->nbl,nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
@@ -3964,6 +3992,54 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
 #endif
 }
 
+static int get_ci_block_size(const nbnxn_grid_t *gridi,
+                             gmx_bool bDomDec, int nth,
+                             gmx_bool *bFBufferFlag)
+{
+    const int ci_block_enum = 5;
+    const int ci_block_denom = 11;
+    const int ci_block_min_atoms = 16;
+    int ci_block;
+
+    /* Here we decide how to distribute the blocks over the threads.
+     * We use prime numbers to try to avoid that the grid size becomes
+     * a multiple of the number of threads, which would lead to some
+     * threads getting "inner" pairs and others getting boundary pairs,
+     * which in turns will lead to load imbalance between threads.
+     * Set the block size as 5/11/ntask times the average number of cells
+     * in a y,z slab. This should ensure a quite uniform distribution
+     * of the grid parts of the different thread along all three grid
+     * zone boundaries with 3D domain decomposition. At the same time
+     * the blocks will not become too small.
+     */
+    ci_block = (gridi->nc*ci_block_enum)/(ci_block_denom*gridi->ncx*nth);
+
+    /* Ensure the blocks are not too small: avoids cache invalidation */
+    if (ci_block*gridi->na_sc < ci_block_min_atoms)
+    {
+        ci_block = (ci_block_min_atoms + gridi->na_sc - 1)/gridi->na_sc;
+    }
+    
+    /* Without domain decomposition
+     * or with less than 3 blocks per task, divide in nth blocks.
+     */
+    if (!bDomDec || ci_block*3*nth > gridi->nc)
+    {
+        ci_block = (gridi->nc + nth - 1)/nth;
+        /* With non-interleaved blocks it makes sense to flag which
+         * part of the force output thread buffer we access.
+         * We use bit flags, so we have to check if it fits.
+         */
+        *bFBufferFlag = (nth > 1 && nth <= sizeof(unsigned int)*8);
+    }
+    else
+    {
+        *bFBufferFlag = FALSE;
+    }
+
+    return ci_block;
+}
+
 /* Generates the part of pair-list nbl assigned to our thread */
 static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      const nbnxn_grid_t *gridi,
@@ -3973,6 +4049,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      const t_blocka *excl,
                                      real rlist,
                                      int nb_kernel_type,
+                                     int ci_block,
+                                     gmx_bool bFBufferFlag,
                                      int nsubpair_max,
                                      gmx_bool progBal,
                                      int min_ci_balanced,
@@ -3984,7 +4062,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     real rl2;
     float rbb2;
     int  d;
-    int  ci_block,ci_b,ci,ci_x,ci_y,ci_xy,cj;
+    int  ci_b,ci,ci_x,ci_y,ci_xy,cj;
     ivec shp;
     int  tx,ty,tz;
     int  shift;
@@ -4001,6 +4079,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int  c0,c1,cs,cf,cl;
     int  ndistc;
     int  ncpcheck;
+    int  gridj_flag_shift=0,gridj_flag_offset=0;
+    unsigned *gridj_flag=NULL;
+    int  ncj_old_i,ncj_old_j;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
 
@@ -4010,13 +4091,27 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     }
 
     sync_work(nbl);
-
     nbl->na_sc = gridj->na_sc;
     nbl->na_ci = gridj->na_c;
     nbl->na_cj = nbnxn_kernel_to_cj_size(nb_kernel_type);
     na_cj_2log = get_2log(nbl->na_cj);
 
     nbl->rlist  = rlist;
+
+    if (bFBufferFlag)
+    {
+        init_grid_flags(&work->gridi_flags,gridi);
+        init_grid_flags(&work->gridj_flags,gridj);
+
+        gridj_flag_shift = 0;
+        while ((nbl->na_cj<<gridj_flag_shift) < NBNXN_CELLBLOCK_SIZE*nbl->na_ci)
+        {
+            gridj_flag_shift++;
+        }
+        gridj_flag_offset = gridj->cell0>>NBNXN_CELLBLOCK_SIZE_2LOG;
+
+        gridj_flag = work->gridj_flags.flag;
+    }
 
     copy_mat(nbs->box,box);
 
@@ -4071,38 +4166,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     bbcz_j = gridj->bbcz;
 
-    if (conv_i == 1)
-    {
-#define CI_BLOCK_ENUM    5
-#define CI_BLOCK_DENOM  11
-        /* Here we decide how to distribute the blocks over the threads.
-         * We use prime numbers to try to avoid that the grid size becomes
-         * a multiple of the number of threads, which would lead to some
-         * threads getting "inner" pairs and others getting boundary pairs,
-         * which in turns will lead to load imbalance between threads.
-         * Set the block size as 5/11/ntask times the average number of cells
-         * in a y,z slab. This should ensure a quite uniform distribution
-         * of the grid parts of the different thread along all three grid
-         * zone boundaries with 3D domain decomposition. At the same time
-         * the blocks will not become too small.
-         */
-        ci_block = (gridi->nc*CI_BLOCK_ENUM)/(CI_BLOCK_DENOM*gridi->ncx*nth);
-
-        /* Ensure the blocks are not too small: avoids cache invalidation */
-        if (ci_block*gridi->na_sc < 16)
-        {
-            ci_block = (16 + gridi->na_sc - 1)/gridi->na_sc;
-        }
-
-        /* Without domain decomposition
-         * or with less than 3 blocks per task, divide in nth blocks.
-         */
-        if (!nbs->DomDec || ci_block*3*nth > gridi->nc)
-        {
-            ci_block = (gridi->nc + nth - 1)/nth;
-        }
-    }
-    else
+    if (conv_i != 1)
     {
         /* Blocks of the conversion factor - 1 give a large repeat count
          * combined with a small block size. This should result in good
@@ -4119,6 +4183,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     ndistc = 0;
     ncpcheck = 0;
 
+    /* Initially ci_b and ci to 1 before where we want them to start,
+     * as they will both be incremented in next_ci.
+     */
     ci_b = -1;
     ci   = th*ci_block - 1;
     ci_x = 0;
@@ -4129,6 +4196,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         {
             continue;
         }
+
+        ncj_old_i = nbl->ncj;
 
         d2cx = 0;
         if (gridj != gridi && shp[XX] == 0)
@@ -4424,6 +4493,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
                                 if (cf <= cl)
                                 {
+                                    /* For f buffer flags with simple lists */
+                                    ncj_old_j = nbl->ncj;
+
                                     switch (nb_kernel_type)
                                     {
                                     case nbk4x4_PlainC:
@@ -4473,6 +4545,18 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                         break;
                                     }
                                     ncpcheck += cl - cf + 1;
+
+                                    if (bFBufferFlag && nbl->ncj > ncj_old_j)
+                                    {
+                                        int cbf,cbl,cb;
+
+                                        cbf = (nbl->cj[ncj_old_j].cj >> gridj_flag_shift) - gridj_flag_offset;
+                                        cbl = (nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift) - gridj_flag_offset;
+                                        for(cb=cbf; cb<=cbl; cb++)
+                                        {
+                                            gridj_flag[cb] = 1U<<th;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -4514,6 +4598,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                 }
             }
         }
+
+        if (bFBufferFlag && nbl->ncj > ncj_old_i)
+        {
+            work->gridi_flags.flag[ci>>NBNXN_CELLBLOCK_SIZE_2LOG] = 1U<<th;
+        }
     }
 
     work->ndistc = ndistc;
@@ -4538,6 +4627,79 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     }
 }
 
+static void reduce_cellblock_flags(const nbnxn_search_t nbs,
+                                   int nnbl,
+                                   const nbnxn_grid_t *gridi,
+                                   const nbnxn_grid_t *gridj)
+{
+    int nbl,cb;
+    const unsigned *flag;
+
+    if (gridi->cellblock_flags.bUse)
+    {
+        for(nbl=0; nbl<nnbl; nbl++)
+        {
+            flag = nbs->work[nbl].gridi_flags.flag;
+            
+            for(cb=0; cb<gridi->cellblock_flags.ncb; cb++)
+            {
+                gridi->cellblock_flags.flag[cb] |= flag[cb];
+            }
+        }
+    }
+    if (gridj->cellblock_flags.bUse)
+    {
+        for(nbl=0; nbl<nnbl; nbl++)
+        {
+            flag = nbs->work[nbl].gridj_flags.flag;
+
+            for(cb=0; cb<gridj->cellblock_flags.ncb; cb++)
+            {
+                gridj->cellblock_flags.flag[cb] |= flag[cb];
+            }
+        }
+    }
+}
+
+static void print_reduction_cost(const nbnxn_grid_t *grids,int ngrid,int nnbl)
+{
+    int g,c0,c,cb,nbl;
+    const nbnxn_grid_t *grid;
+
+    for(g=0; g<ngrid; g++)
+    {
+        grid = &grids[g];
+
+        c0 = 0;
+        if (grid->cellblock_flags.bUse)
+        {
+            c  = 0;
+            for(cb=0; cb<grid->cellblock_flags.ncb; cb++)
+            {
+                for(nbl=0; nbl<nnbl; nbl++)
+                {
+                    if (grid->cellblock_flags.flag[cb] == 1)
+                    {
+                        c0++;
+                    }
+                    else if (grid->cellblock_flags.flag[cb] & (1U<<nbl))
+                    {
+                        c++;
+                    }
+                }
+            }
+        }
+        else
+        {
+            c = nnbl*grid->cellblock_flags.ncb;
+        }
+        fprintf(debug,"nbnxn reduction buffers, grid %d: %d flag %d only buf. 0: %4.2f av. reduction: %4.2f\n",
+                g,nnbl,grid->cellblock_flags.bUse,
+                c0/(double)(grid->cellblock_flags.ncb),
+                c/(double)(grid->cellblock_flags.ncb));
+    }
+}
+
 /* Make a local or non-local pair-list, depending on iloc */
 void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                          const nbnxn_atomdata_t *nbat,
@@ -4549,13 +4711,14 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                          int nb_kernel_type,
                          t_nrnb *nrnb)
 {
-    const nbnxn_grid_t *gridi,*gridj;
+    nbnxn_grid_t *gridi,*gridj;
     int nzi,zi,zj0,zj1,zj;
     int nsubpair_max;
-    int nth,th;
+    int th;
     int nnbl;
     nbnxn_pairlist_t **nbl;
-    gmx_bool CombineNBLists;
+    int ci_block;
+    gmx_bool CombineNBLists,bFBufferFlag;
     int np_tot,np_noq,np_hlj,nap;
 
     nnbl            = nbl_list->nnbl;
@@ -4646,6 +4809,27 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
             nbs_cycle_start(&nbs->cc[enbsCCsearch]);
 
+            if (nbl[0]->bSimple && !gridi->bSimple)
+            {
+                /* Hybrid list, determine blocking later */
+                ci_block = 0;
+                bFBufferFlag = FALSE;
+            }
+            else
+            {
+                ci_block = get_ci_block_size(gridi,nbs->DomDec,nnbl,
+                                             &bFBufferFlag);
+                if (CombineNBLists)
+                {
+                    bFBufferFlag = FALSE;
+                }
+            }
+            if (debug != NULL)
+            {
+                fprintf(debug,"grid %d %d F buffer flags %d\n",
+                        zi,zj,bFBufferFlag);
+            }
+
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for(th=0; th<nnbl; th++)
             {
@@ -4659,6 +4843,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                                          &nbs->work[th],nbat,excl,
                                          rlist,
                                          nb_kernel_type,
+                                         ci_block,
+                                         bFBufferFlag,
                                          nsubpair_max,
                                          (LOCAL_I(iloc) || nbs->zones->n <= 2),
                                          min_ci_balanced,
@@ -4700,6 +4886,15 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                 nbs_cycle_stop(&nbs->cc[enbsCCcombine]);
             }
 
+            if (bFBufferFlag)
+            {
+                reduce_cellblock_flags(nbs,nnbl,gridi,gridj);
+            }
+            else
+            {
+                gridi->cellblock_flags.bUse = FALSE;
+                gridj->cellblock_flags.bUse = FALSE;
+            }
         }
     }
 
@@ -4741,5 +4936,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
         {
             print_nblist_sci_cj(debug,nbl[0]);
         }
+
+        print_reduction_cost(nbs->grid,nbs->ngrid,nnbl);
     }
 }

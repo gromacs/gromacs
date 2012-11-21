@@ -95,7 +95,7 @@ void ns(FILE *fp,
 
     nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
                                 lambda,dvdlambda,grppener,
-                                bFillGrid,bDoLongRangeNS);
+                                bFillGrid,bDoLongRangeNS,TRUE);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
 
