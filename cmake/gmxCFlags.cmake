@@ -101,7 +101,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_LANG "-qlanglvl=extc99" GMXC_CFLAGS)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
-        GMX_TEST_CXXFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
     endif()
 
     #msvc
@@ -109,7 +109,7 @@ MACRO(gmx_c_flags)
         # disable warnings for: 
         #      inconsistent dll linkage
         GMX_TEST_CFLAG(CFLAGS_WARN "/wd4273" GMXC_CFLAGS)
-        GMX_TEST_CFLAG(CXXFLAGS_WARN "/wd4273" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4273" GMXC_CXXFLAGS)
     endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
