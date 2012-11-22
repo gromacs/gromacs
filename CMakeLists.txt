@@ -780,11 +780,15 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         if (NOT GNU_FMA_CFLAG)
             message(WARNING "No C FMA4 flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
         endif(NOT GNU_FMA_CFLAG)
+        GMX_TEST_CFLAG(GNU_XOP_CFLAG "-mxop" GROMACS_C_FLAGS)
+        # No big deal if we do not have xop, so no point yelling warnings about it.
         if (CMAKE_CXX_COMPILER_LOADED)
             GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" GROMACS_CXX_FLAGS)
             if (NOT GNU_FMA_CXXFLAG)
                 message(WARNING "No C++ FMA flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
             endif (NOT GNU_FMA_CXXFLAG)
+            GMX_TEST_CXXFLAG(GNU_XOP_CXXFLAG "-mxop" GROMACS_CXX_FLAGS)
+            # No big deal if we do not have xop, so no point yelling warnings about it.
         endif()
     endif()
 
