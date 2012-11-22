@@ -64,7 +64,22 @@ extern "C" {
 #ifndef M_1_PI
 #define M_1_PI      0.31830988618379067154
 #endif
-    
+
+#ifndef M_FLOAT_1_SQRTPI /* used in CUDA kernels */
+/* 1.0 / sqrt(M_PI) */
+#define M_FLOAT_1_SQRTPI 0.564189583547756f
+#endif
+
+#ifndef M_1_SQRTPI
+/* 1.0 / sqrt(M_PI) */
+#define M_1_SQRTPI 0.564189583547756
+#endif
+
+#ifndef M_2_SQRTPI
+/* 2.0 / sqrt(M_PI) */
+#define M_2_SQRTPI  1.128379167095513
+#endif
+
 /* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
 /* for n=1, w0 = 1 */
 /* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
