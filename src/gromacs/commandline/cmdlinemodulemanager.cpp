@@ -147,7 +147,8 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
     for (module = modules_.begin(); module != modules_.end(); ++module)
     {
         int nameLength = static_cast<int>(module->first.length());
-        if (nameLength > maxNameLength)
+        if (module->second->shortDescription() != NULL
+            && nameLength > maxNameLength)
         {
             maxNameLength = nameLength;
         }
@@ -163,10 +164,13 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
     {
         const char *name = module->first.c_str();
         const char *description = module->second->shortDescription();
-        formatter.clear();
-        formatter.addColumnLine(0, name);
-        formatter.addColumnLine(1, description);
-        file.writeString(formatter.formatRow());
+        if (description != NULL)
+        {
+            formatter.clear();
+            formatter.addColumnLine(0, name);
+            formatter.addColumnLine(1, description);
+            file.writeString(formatter.formatRow());
+        }
     }
 }
 
