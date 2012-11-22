@@ -541,8 +541,8 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #endif
 #endif
 #ifdef CALC_COUL_EWALD
-            /* 0.5*beta*2/sqrt(pi) */
-            Vc_sub_self = 0.5*ic->ewaldcoeff*1.128379167095513;
+            /* beta/sqrt(pi) */
+            Vc_sub_self = ic->ewaldcoeff*M_1_SQRTPI
 #endif
 
             for(ia=0; ia<UNROLLI; ia++)
