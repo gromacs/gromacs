@@ -47,12 +47,12 @@ enum { mGuillot2001a, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG, mGG_
 
 static double erf2(double x)
 {
-  return -(4*x/(sqrt(M_PI)))*exp(-x*x);
+  return -(4*x*M_1_SQRTPI)*exp(-x*x);
 }
 
 static double erf1(double x)
 {
-  return (2/sqrt(M_PI))*exp(-x*x);
+  return 2*M_1_SQRTPI*exp(-x*x);
 }
 
 static void do_hard(FILE *fp,int pts_nm,double efac,double delta)
@@ -142,7 +142,6 @@ static void lo_do_ljc_pme(double r,
 			  double *vr,double *fr)
 {
   double r2,r_6,r_12;
-  double isp= 0.564189583547756;
   double ewc;
 
   ewc  = calc_ewaldcoeff(rcoulomb,ewald_rtol);
@@ -152,9 +151,9 @@ static void lo_do_ljc_pme(double r,
   r_12 = r_6*r_6;
   
   *vc   = erfc(ewc*r)/r;
-  /* *vc2  = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
-     4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;*/
-  *fc  = 2*ewc*exp(-ewc*ewc*r2)*isp/r + erfc(ewc*r)/r2;
+  /* *vc2  = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*M_1_SQRTPI/r2+
+     4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*M_1_SQRTPI;*/
+  *fc  = 2*ewc*exp(-ewc*ewc*r2)*M_1_SQRTPI/r + erfc(ewc*r)/r2;
 
   *vd  = -r_6;
   *fd  = -6.0*(*vd)/r;

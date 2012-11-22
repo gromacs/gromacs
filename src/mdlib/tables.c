@@ -662,7 +662,6 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   /* Temporary parameters */
   gmx_bool bSwitch,bShift;
   double ewc=fr->ewaldcoeff;
-  double isp= 0.564189583547756;
    
   bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) || 
 	     (tp == etabCOULSwitch) ||
@@ -811,13 +810,13 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     case etabEwald:
     case etabEwaldSwitch:
       Vtab  = gmx_erfc(ewc*r)/r;
-      Ftab  = gmx_erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
+      Ftab  = gmx_erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*M_1_SQRTPI/r;
       break;
     case etabEwaldUser:
     case etabEwaldUserSwitch:
       /* Only calculate minus the reciprocal space contribution */
       Vtab  = -gmx_erf(ewc*r)/r;
-      Ftab  = -gmx_erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
+      Ftab  = -gmx_erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*M_1_SQRTPI/r;
       break;
     case etabRF:
     case etabRF_ZERO:
