@@ -86,6 +86,8 @@ static const char *nbk_name[] =
 #endif
     "CUDA 8x8x8", "plain C 8x8x8" };
 
+enum { ewaldexclTable, ewaldexclAnalytical };
+
 /* Atom locality indicator: local, non-local, all, used for calls to:
    gridding, pair-search, force calculation, x/f buffer operations */
 enum { eatLocal = 0, eatNonlocal = 1, eatAll  };
@@ -109,6 +111,7 @@ typedef struct {
     nbnxn_pairlist_set_t nbl_lists;   /* pair list(s)                       */
     nbnxn_atomdata_t     *nbat;       /* atom data                          */
     int                  kernel_type; /* non-bonded kernel - see enum above */
+    int                  ewald_excl;  /* Ewald exclusion - see enum above   */
 } nonbonded_verlet_group_t;
 
 /* non-bonded data structure with Verlet-type cut-off */
