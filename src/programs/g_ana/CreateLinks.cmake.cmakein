@@ -1,16 +1,35 @@
 # TODO: It would be nicer to have the list generated from the binary,
 # but this has some complications.  As the same list is also needed for
 # man page generation, this can wait for now.
-set(SYMLINK_NAMES g_select)
+set(SYMLINK_NAMES g_dist g_select)
 
-set(BINARY_DIRECTORY "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/@BIN_INSTALL_DIR@")
-set(GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@")
+if (NOT DEFINED BINARY_DIRECTORY)
+    set(BINARY_DIRECTORY "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/@BIN_INSTALL_DIR@")
+endif ()
+set(BINARY_SUFFIX "@GMX_BINARY_SUFFIX@@CMAKE_EXECUTABLE_SUFFIX@")
+set(GMX_NATIVE_WINDOWS "@GMX_NATIVE_WINDOWS@")
 
 foreach (linkname ${SYMLINK_NAMES})
-    set(linkpath ${BINARY_DIRECTORY}/${linkname}${GMX_BINARY_SUFFIX})
-    message(STATUS "Installing: Creating symbolic link ${linkpath}")
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
-            g_ana${GMX_BINARY_SUFFIX} ${linkpath})
+    set(linkpath ${BINARY_DIRECTORY}/${linkname}${BINARY_SUFFIX})
+    # Based on documentation, CMake only supports symbolic links on Unix,
+    # although NTFS also has those (since Windows Vista; they require admin
+    # permissions to create).
+    if (GMX_NATIVE_WINDOWS)
+        if (NOT QUIETLY)
+            message(STATUS "Installing: Creating alias binary ${linkpath}")
+        endif ()
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${BINARY_DIRECTORY}/g_ana${BINARY_SUFFIX} ${linkpath})
+    else()
+        if (NOT QUIETLY)
+            message(STATUS "Installing: Creating symbolic link ${linkpath}")
+        endif ()
+        if (EXISTS ${linkpath})
+            FILE(REMOVE ${linkpath})
+        endif ()
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E create_symlink
+                g_ana${BINARY_SUFFIX} ${linkpath})
+    endif()
 endforeach ()
-
