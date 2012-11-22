@@ -79,7 +79,6 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     int           do_coultab,do_vdwtab,do_tab,tab_elemsize;
     int           n0,n1C,n1V,nnn;
     real          Y,F,G,H,Fp,Geps,Heps2,epsC,eps2C,epsV,eps2V,VV,FF;
-    double        isp=0.564189583547756;
     int           icoul,ivdw;
     int           nri;
     int *         iinr;
@@ -523,11 +522,11 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                 if (r != 0)
                 {
                     VV    = gmx_erf(ewc*r)*rinv;
-                    FF    = rinv*rinv*(VV - 2.0*ewc*isp*exp(-ewc*ewc*rsq));
+                    FF    = rinv*rinv*(VV - ewc*M_2_SQRTPI*exp(-ewc*ewc*rsq));
                 }
                 else
                 {
-                    VV    = ewc*2.0/sqrt(M_PI);
+                    VV    = ewc*M_2_SQRTPI;
                     FF    = 0;
                 }
 
