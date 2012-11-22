@@ -1401,9 +1401,11 @@ static void init_forcerec_f_threads(t_forcerec *fr,int nenergrp)
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
                                   const gmx_cpuid_t cpuid_info,
-                                  int *kernel_type)
+                                  int *kernel_type,
+                                  int *ewald_excl)
 {
     *kernel_type = nbk4x4_PlainC;
+    *ewald_excl  = ewaldexclTable;
 
 #ifdef GMX_X86_SSE2
     {
@@ -1436,6 +1438,23 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
             gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but GROMACS was built without AVX support");
 #endif
         }
+
+        /* Analytical Ewald exclusion correction is only an option in the
+         * x86 SIMD kernel. This is faster in single precision
+         * on Bulldozer and slightly faster on Sandy Bridge.
+         */
+#if (defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE
+        *ewald_excl = ewaldexclAnalytical;
+#endif
+        if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
+        {
+            *ewald_excl = ewaldexclTable;
+        }
+        if (getenv("GMX_NBNXN_EWALD_ANALYTICAL") != NULL)
+        {
+            *ewald_excl = ewaldexclAnalytical;
+        }
+
     }
 #endif /* GMX_X86_SSE2 */
 }
@@ -1445,7 +1464,8 @@ static void pick_nbnxn_kernel(FILE *fp,
                               const gmx_hw_info_t *hwinfo,
                               gmx_bool use_cpu_acceleration,
                               gmx_bool *bUseGPU,
-                              int *kernel_type)
+                              int *kernel_type,
+                              int *ewald_excl)
 {
     gmx_bool bEmulateGPU, bGPU;
     char gpu_err_str[STRLEN];
@@ -1453,6 +1473,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     assert(kernel_type);
 
     *kernel_type = nbkNotSet;
+    *ewald_excl  = ewaldexclTable;
     /* if bUseGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
     bGPU = (bUseGPU != NULL) && hwinfo->bCanUseGPU;
 
@@ -1500,7 +1521,8 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,kernel_type);
+            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,
+                                  kernel_type,ewald_excl);
         }
         else
         {
@@ -1722,7 +1744,8 @@ static void init_nb_verlet(FILE *fp,
         {
             pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                               &nbv->bUseGPU,
-                              &nbv->grp[i].kernel_type);
+                              &nbv->grp[i].kernel_type,
+                              &nbv->grp[i].ewald_excl);
         }
         else /* non-local */
         {
@@ -1731,7 +1754,8 @@ static void init_nb_verlet(FILE *fp,
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                                   NULL,
-                                  &nbv->grp[i].kernel_type);
+                                  &nbv->grp[i].kernel_type,
+                                  &nbv->grp[i].ewald_excl);
 
                 bHybridGPURun = TRUE;
             }
