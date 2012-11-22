@@ -32,6 +32,12 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+
+/* Note that floating-point constants in CUDA code should be suffixed
+ * with f (e.g. 0.5f), to stop the compiler producing intermediate
+ * code that is in double precision.
+ */
+
 #include "../../gmxlib/cuda_tools/vectype_ops.cuh"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH

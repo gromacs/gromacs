@@ -177,7 +177,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
             else
             {
                 /* last factor 1/sqrt(pi) */
-                vctot *= -facel*iconst->ewaldcoeff*0.564189583548;
+                vctot *= -facel*iconst->ewaldcoeff*M_1_SQRTPI;
             }
         }
         

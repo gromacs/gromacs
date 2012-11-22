@@ -33,6 +33,11 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
+/* Note that floating-point constants in CUDA code should be suffixed
+ * with f (e.g. 0.5f), to stop the compiler producing intermediate
+ * code that is in double precision.
+ */
+
 #if __CUDA_ARCH__ >= 300
 #define REDUCE_SHUFFLE
 /* On Kepler pre-loading i-atom types to shmem gives a few %,
@@ -188,7 +193,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef EL_RF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
-        E_el *= -nbparam.epsfac*beta*0.56418958f; /* last factor 1/sqrt(pi) */
+        E_el *= -nbparam.epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
     }
 #endif
