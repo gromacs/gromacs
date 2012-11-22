@@ -45,7 +45,7 @@
 #define EXCL_FORCES
 #endif
 
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !(defined __GNUC__ && (defined CALC_COUL_TAB || (defined CALC_COUL_RF && defined GMX_MM128_HERE)))
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES || defined CALC_COUL_EWALD) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !(defined __GNUC__ && (defined CALC_COUL_TAB || (defined CALC_COUL_RF && defined GMX_MM128_HERE)))
 /* Without exclusions and energies we only need to mask the cut-off,
  * this is faster with blendv (only available with SSE4.1 and later).
  * With gcc and PME or RF in 128-bit, blendv is slower;
@@ -118,6 +118,11 @@
             gmx_mm_pr  fsub_SSE2;
             gmx_mm_pr  fsub_SSE3;
 #endif
+#ifdef CALC_COUL_EWALD
+            gmx_mm_pr  brsq_SSE0,brsq_SSE1,brsq_SSE2,brsq_SSE3;
+            gmx_mm_pr  ewcorr_SSE0,ewcorr_SSE1,ewcorr_SSE2,ewcorr_SSE3;
+#endif
+
             /* frcoul = (1/r - fsub)*r */
             gmx_mm_pr  frcoul_SSE0;
             gmx_mm_pr  frcoul_SSE1;
@@ -146,12 +151,14 @@
             gmx_mm_pr  ctabv_SSE1;
             gmx_mm_pr  ctabv_SSE2;
             gmx_mm_pr  ctabv_SSE3;
+#endif
+#endif
+#if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
             /* The potential (PME mesh) we need to subtract from 1/r */
             gmx_mm_pr  vc_sub_SSE0;
             gmx_mm_pr  vc_sub_SSE1;
             gmx_mm_pr  vc_sub_SSE2;
             gmx_mm_pr  vc_sub_SSE3;
-#endif
 #endif
 #ifdef CALC_ENERGIES
             /* Electrostatic potential */
@@ -537,6 +544,29 @@
 #endif
 #endif
 
+#ifdef CALC_COUL_EWALD
+            brsq_SSE0     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE0,wco_SSE0));
+            brsq_SSE1     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE1,wco_SSE1));
+            brsq_SSE2     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE2,wco_SSE2));
+            brsq_SSE3     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE3,wco_SSE3));
+            ewcorr_SSE0   = gmx_mul_pr(gmx_pmecorrF_pr(brsq_SSE0),beta_SSE);
+            ewcorr_SSE1   = gmx_mul_pr(gmx_pmecorrF_pr(brsq_SSE1),beta_SSE);
+            ewcorr_SSE2   = gmx_mul_pr(gmx_pmecorrF_pr(brsq_SSE2),beta_SSE);
+            ewcorr_SSE3   = gmx_mul_pr(gmx_pmecorrF_pr(brsq_SSE3),beta_SSE);
+            frcoul_SSE0   = gmx_mul_pr(qq_SSE0,gmx_add_pr(rinv_ex_SSE0,gmx_mul_pr(ewcorr_SSE0,brsq_SSE0)));
+            frcoul_SSE1   = gmx_mul_pr(qq_SSE1,gmx_add_pr(rinv_ex_SSE1,gmx_mul_pr(ewcorr_SSE1,brsq_SSE1)));
+            frcoul_SSE2   = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_mul_pr(ewcorr_SSE2,brsq_SSE2)));
+            frcoul_SSE3   = gmx_mul_pr(qq_SSE3,gmx_add_pr(rinv_ex_SSE3,gmx_mul_pr(ewcorr_SSE3,brsq_SSE3)));
+
+#ifdef CALC_ENERGIES
+            vc_sub_SSE0   = gmx_mul_pr(gmx_pmecorrV_pr(brsq_SSE0),beta_SSE);
+            vc_sub_SSE1   = gmx_mul_pr(gmx_pmecorrV_pr(brsq_SSE1),beta_SSE);
+            vc_sub_SSE2   = gmx_mul_pr(gmx_pmecorrV_pr(brsq_SSE2),beta_SSE);
+            vc_sub_SSE3   = gmx_mul_pr(gmx_pmecorrV_pr(brsq_SSE3),beta_SSE);
+#endif
+
+#endif /* CALC_COUL_EWALD */
+
 #ifdef CALC_COUL_TAB
             /* Electrostatic interactions */
             r_SSE0        = gmx_mul_pr(rsq_SSE0,rinv_SSE0);
@@ -607,7 +637,10 @@
             vc_sub_SSE1   = gmx_add_pr(ctabv_SSE1,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE1),gmx_add_pr(ctab0_SSE1,fsub_SSE1)));
             vc_sub_SSE2   = gmx_add_pr(ctabv_SSE2,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE2),gmx_add_pr(ctab0_SSE2,fsub_SSE2)));
             vc_sub_SSE3   = gmx_add_pr(ctabv_SSE3,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE3),gmx_add_pr(ctab0_SSE3,fsub_SSE3)));
+#endif
+#endif /* CALC_COUL_TAB */
 
+#if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
 #ifndef NO_SHIFT_EWALD
             /* Add Ewald potential shift to vc_sub for convenience */
 #ifdef CHECK_EXCLS
@@ -628,7 +661,6 @@
             vcoul_SSE2    = gmx_mul_pr(qq_SSE2,gmx_sub_pr(rinv_ex_SSE2,vc_sub_SSE2));
             vcoul_SSE3    = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,vc_sub_SSE3));
 
-#endif
 #endif
 
 #ifdef CALC_ENERGIES
