@@ -58,10 +58,13 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
     int              i_shift_offset,i_coord_offset,outeriter,inneriter;
     int              j_index_start,j_index_end,jidx,nri,inr,ggid,iidx;
     int              jnrA,jnrB,jnrC,jnrD;
+    int              jnrlistA,jnrlistB,jnrlistC,jnrlistD;
     int              j_coord_offsetA,j_coord_offsetB,j_coord_offsetC,j_coord_offsetD;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             shX,shY,shZ,rcutoff_scalar;
+    real             rcutoff_scalar;
     real             *shiftvec,*fshift,*x,*f;
+    real             *fjptrA,*fjptrB,*fjptrC,*fjptrD;
+    real             scratch[4*DIM];
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     int              vdwioffset0;
     __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
@@ -71,7 +74,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
     __m128           velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
     __m128i          gbitab;
-    __m128           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,dvdaj,gbeps,dvdatmp;
+    __m128           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,gbeps,dvdatmp;
     __m128           minushalf = _mm_set1_ps(-0.5);
     real             *invsqrta,*dvda,*gbtab;
     int              nvdwtype;
@@ -124,14 +127,16 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
     outeriter        = 0;
     inneriter        = 0;
 
+    for(iidx=0;iidx<4*DIM;iidx++)
+    {
+        scratch[iidx] = 0.0;
+    }  
+
     /* Start outer loop over neighborlists */
     for(iidx=0; iidx<nri; iidx++)
     {
         /* Load shift vector for this list */
         i_shift_offset   = DIM*shiftidx[iidx];
-        shX              = shiftvec[i_shift_offset+XX];
-        shY              = shiftvec[i_shift_offset+YY];
-        shZ              = shiftvec[i_shift_offset+ZZ];
 
         /* Load limits for loop over neighbors */
         j_index_start    = jindex[iidx];
@@ -142,10 +147,8 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
         i_coord_offset   = DIM*inr;
 
         /* Load i particle coords and add shift vector */
-        ix0              = _mm_set1_ps(shX + x[i_coord_offset+DIM*0+XX]);
-        iy0              = _mm_set1_ps(shY + x[i_coord_offset+DIM*0+YY]);
-        iz0              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*0+ZZ]);
-
+        gmx_mm_load_shift_and_1rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,&ix0,&iy0,&iz0);
+        
         fix0             = _mm_setzero_ps();
         fiy0             = _mm_setzero_ps();
         fiz0             = _mm_setzero_ps();
@@ -170,7 +173,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
             jnrB             = jjnr[jidx+1];
             jnrC             = jjnr[jidx+2];
             jnrD             = jjnr[jidx+3];
-
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -225,7 +227,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
             isaprod          = _mm_mul_ps(isai0,isaj0);
             gbqqfactor       = _mm_xor_ps(signbit,_mm_mul_ps(qq00,_mm_mul_ps(isaprod,gbinvepsdiff)));
             gbscale          = _mm_mul_ps(isaprod,gbtabscale);
-            dvdaj            = gmx_mm_load_4real_swizzle_ps(dvda+jnrA+0,dvda+jnrB+0,dvda+jnrC+0,dvda+jnrD+0);
 
             /* Calculate generalized born table index - this is a separate table from the normal one,
              * but we use the same procedure by multiplying r with scale and truncating to integer.
@@ -249,8 +250,11 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
             dvdatmp          = _mm_mul_ps(minushalf,_mm_add_ps(vgb,_mm_mul_ps(fgb,r00)));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
-            gmx_mm_store_4real_swizzle_ps(dvda+jnrA,dvda+jnrB,dvda+jnrC,dvda+jnrD,
-                                          _mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
+            fjptrA           = dvda+jnrA;
+            fjptrB           = dvda+jnrB;
+            fjptrC           = dvda+jnrC;
+            fjptrD           = dvda+jnrD;
+            gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
             felec            = _mm_mul_ps(_mm_sub_ps(_mm_mul_ps(velec,rinv00),fgb),rinv00);
 
@@ -300,10 +304,12 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
             fiy0             = _mm_add_ps(fiy0,ty);
             fiz0             = _mm_add_ps(fiz0,tz);
 
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
-                                                   tx,ty,tz);
-
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            
             /* Inner loop uses 92 flops */
         }
 
@@ -311,21 +317,19 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
         {
 
             /* Get j neighbor index, and coordinate index */
-            jnrA             = jjnr[jidx];
-            jnrB             = jjnr[jidx+1];
-            jnrC             = jjnr[jidx+2];
-            jnrD             = jjnr[jidx+3];
-
+            jnrlistA         = jjnr[jidx];
+            jnrlistB         = jjnr[jidx+1];
+            jnrlistC         = jjnr[jidx+2];
+            jnrlistD         = jjnr[jidx+3];
             /* Sign of each element will be negative for non-real atoms.
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_ps(mask,val) to clear dummy entries.
              */
             dummy_mask = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
-            jnrA       = (jnrA>=0) ? jnrA : 0;
-            jnrB       = (jnrB>=0) ? jnrB : 0;
-            jnrC       = (jnrC>=0) ? jnrC : 0;
-            jnrD       = (jnrD>=0) ? jnrD : 0;
-
+            jnrA       = (jnrlistA>=0) ? jnrlistA : 0;
+            jnrB       = (jnrlistB>=0) ? jnrlistB : 0;
+            jnrC       = (jnrlistC>=0) ? jnrlistC : 0;
+            jnrD       = (jnrlistD>=0) ? jnrlistD : 0;
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -381,7 +385,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
             isaprod          = _mm_mul_ps(isai0,isaj0);
             gbqqfactor       = _mm_xor_ps(signbit,_mm_mul_ps(qq00,_mm_mul_ps(isaprod,gbinvepsdiff)));
             gbscale          = _mm_mul_ps(isaprod,gbtabscale);
-            dvdaj            = gmx_mm_load_4real_swizzle_ps(dvda+jnrA+0,dvda+jnrB+0,dvda+jnrC+0,dvda+jnrD+0);
 
             /* Calculate generalized born table index - this is a separate table from the normal one,
              * but we use the same procedure by multiplying r with scale and truncating to integer.
@@ -405,8 +408,12 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
             dvdatmp          = _mm_mul_ps(minushalf,_mm_add_ps(vgb,_mm_mul_ps(fgb,r00)));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
-            gmx_mm_store_4real_swizzle_ps(dvda+jnrA,dvda+jnrB,dvda+jnrC,dvda+jnrD,
-                                          _mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
+            /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
+            fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
+            fjptrB             = (jnrlistB>=0) ? dvda+jnrB : scratch;
+            fjptrC             = (jnrlistC>=0) ? dvda+jnrC : scratch;
+            fjptrD             = (jnrlistD>=0) ? dvda+jnrD : scratch;
+            gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
             felec            = _mm_mul_ps(_mm_sub_ps(_mm_mul_ps(velec,rinv00),fgb),rinv00);
 
@@ -461,10 +468,12 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
             fiy0             = _mm_add_ps(fiy0,ty);
             fiz0             = _mm_add_ps(fiz0,tz);
 
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
-                                                   tx,ty,tz);
-
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            
             /* Inner loop uses 93 flops */
         }
 
@@ -484,7 +493,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;
 
-        /* Outer loop uses 13 flops */
+        /* Outer loop uses 10 flops */
     }
 
     /* Increment number of outer iterations */
@@ -492,7 +501,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_sse2_single
 
     /* Update outer/inner flops */
 
-    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_VF,outeriter*13 + inneriter*93);
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_VF,outeriter*10 + inneriter*93);
 }
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
@@ -519,10 +528,13 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
     int              i_shift_offset,i_coord_offset,outeriter,inneriter;
     int              j_index_start,j_index_end,jidx,nri,inr,ggid,iidx;
     int              jnrA,jnrB,jnrC,jnrD;
+    int              jnrlistA,jnrlistB,jnrlistC,jnrlistD;
     int              j_coord_offsetA,j_coord_offsetB,j_coord_offsetC,j_coord_offsetD;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             shX,shY,shZ,rcutoff_scalar;
+    real             rcutoff_scalar;
     real             *shiftvec,*fshift,*x,*f;
+    real             *fjptrA,*fjptrB,*fjptrC,*fjptrD;
+    real             scratch[4*DIM];
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     int              vdwioffset0;
     __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
@@ -532,7 +544,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
     __m128           velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
     __m128i          gbitab;
-    __m128           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,dvdaj,gbeps,dvdatmp;
+    __m128           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,gbeps,dvdatmp;
     __m128           minushalf = _mm_set1_ps(-0.5);
     real             *invsqrta,*dvda,*gbtab;
     int              nvdwtype;
@@ -585,14 +597,16 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
     outeriter        = 0;
     inneriter        = 0;
 
+    for(iidx=0;iidx<4*DIM;iidx++)
+    {
+        scratch[iidx] = 0.0;
+    }  
+
     /* Start outer loop over neighborlists */
     for(iidx=0; iidx<nri; iidx++)
     {
         /* Load shift vector for this list */
         i_shift_offset   = DIM*shiftidx[iidx];
-        shX              = shiftvec[i_shift_offset+XX];
-        shY              = shiftvec[i_shift_offset+YY];
-        shZ              = shiftvec[i_shift_offset+ZZ];
 
         /* Load limits for loop over neighbors */
         j_index_start    = jindex[iidx];
@@ -603,10 +617,8 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
         i_coord_offset   = DIM*inr;
 
         /* Load i particle coords and add shift vector */
-        ix0              = _mm_set1_ps(shX + x[i_coord_offset+DIM*0+XX]);
-        iy0              = _mm_set1_ps(shY + x[i_coord_offset+DIM*0+YY]);
-        iz0              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*0+ZZ]);
-
+        gmx_mm_load_shift_and_1rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,&ix0,&iy0,&iz0);
+        
         fix0             = _mm_setzero_ps();
         fiy0             = _mm_setzero_ps();
         fiz0             = _mm_setzero_ps();
@@ -627,7 +639,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
             jnrB             = jjnr[jidx+1];
             jnrC             = jjnr[jidx+2];
             jnrD             = jjnr[jidx+3];
-
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -682,7 +693,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
             isaprod          = _mm_mul_ps(isai0,isaj0);
             gbqqfactor       = _mm_xor_ps(signbit,_mm_mul_ps(qq00,_mm_mul_ps(isaprod,gbinvepsdiff)));
             gbscale          = _mm_mul_ps(isaprod,gbtabscale);
-            dvdaj            = gmx_mm_load_4real_swizzle_ps(dvda+jnrA+0,dvda+jnrB+0,dvda+jnrC+0,dvda+jnrD+0);
 
             /* Calculate generalized born table index - this is a separate table from the normal one,
              * but we use the same procedure by multiplying r with scale and truncating to integer.
@@ -706,8 +716,11 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
             dvdatmp          = _mm_mul_ps(minushalf,_mm_add_ps(vgb,_mm_mul_ps(fgb,r00)));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
-            gmx_mm_store_4real_swizzle_ps(dvda+jnrA,dvda+jnrB,dvda+jnrC,dvda+jnrD,
-                                          _mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
+            fjptrA           = dvda+jnrA;
+            fjptrB           = dvda+jnrB;
+            fjptrC           = dvda+jnrC;
+            fjptrD           = dvda+jnrD;
+            gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
             felec            = _mm_mul_ps(_mm_sub_ps(_mm_mul_ps(velec,rinv00),fgb),rinv00);
 
@@ -747,10 +760,12 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
             fiy0             = _mm_add_ps(fiy0,ty);
             fiz0             = _mm_add_ps(fiz0,tz);
 
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
-                                                   tx,ty,tz);
-
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            
             /* Inner loop uses 82 flops */
         }
 
@@ -758,21 +773,19 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
         {
 
             /* Get j neighbor index, and coordinate index */
-            jnrA             = jjnr[jidx];
-            jnrB             = jjnr[jidx+1];
-            jnrC             = jjnr[jidx+2];
-            jnrD             = jjnr[jidx+3];
-
+            jnrlistA         = jjnr[jidx];
+            jnrlistB         = jjnr[jidx+1];
+            jnrlistC         = jjnr[jidx+2];
+            jnrlistD         = jjnr[jidx+3];
             /* Sign of each element will be negative for non-real atoms.
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_ps(mask,val) to clear dummy entries.
              */
             dummy_mask = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
-            jnrA       = (jnrA>=0) ? jnrA : 0;
-            jnrB       = (jnrB>=0) ? jnrB : 0;
-            jnrC       = (jnrC>=0) ? jnrC : 0;
-            jnrD       = (jnrD>=0) ? jnrD : 0;
-
+            jnrA       = (jnrlistA>=0) ? jnrlistA : 0;
+            jnrB       = (jnrlistB>=0) ? jnrlistB : 0;
+            jnrC       = (jnrlistC>=0) ? jnrlistC : 0;
+            jnrD       = (jnrlistD>=0) ? jnrlistD : 0;
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -828,7 +841,6 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
             isaprod          = _mm_mul_ps(isai0,isaj0);
             gbqqfactor       = _mm_xor_ps(signbit,_mm_mul_ps(qq00,_mm_mul_ps(isaprod,gbinvepsdiff)));
             gbscale          = _mm_mul_ps(isaprod,gbtabscale);
-            dvdaj            = gmx_mm_load_4real_swizzle_ps(dvda+jnrA+0,dvda+jnrB+0,dvda+jnrC+0,dvda+jnrD+0);
 
             /* Calculate generalized born table index - this is a separate table from the normal one,
              * but we use the same procedure by multiplying r with scale and truncating to integer.
@@ -852,8 +864,12 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
             dvdatmp          = _mm_mul_ps(minushalf,_mm_add_ps(vgb,_mm_mul_ps(fgb,r00)));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
-            gmx_mm_store_4real_swizzle_ps(dvda+jnrA,dvda+jnrB,dvda+jnrC,dvda+jnrD,
-                                          _mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
+            /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
+            fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
+            fjptrB             = (jnrlistB>=0) ? dvda+jnrB : scratch;
+            fjptrC             = (jnrlistC>=0) ? dvda+jnrC : scratch;
+            fjptrD             = (jnrlistD>=0) ? dvda+jnrD : scratch;
+            gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
             felec            = _mm_mul_ps(_mm_sub_ps(_mm_mul_ps(velec,rinv00),fgb),rinv00);
 
@@ -895,10 +911,12 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
             fiy0             = _mm_add_ps(fiy0,ty);
             fiz0             = _mm_add_ps(fiz0,tz);
 
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
-                                                   tx,ty,tz);
-
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            
             /* Inner loop uses 83 flops */
         }
 
@@ -913,7 +931,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;
 
-        /* Outer loop uses 10 flops */
+        /* Outer loop uses 7 flops */
     }
 
     /* Increment number of outer iterations */
@@ -921,5 +939,5 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_sse2_single
 
     /* Update outer/inner flops */
 
-    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_F,outeriter*10 + inneriter*83);
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_F,outeriter*7 + inneriter*83);
 }
