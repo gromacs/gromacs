@@ -41,6 +41,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programinfo.h"
 
+#include "legacymodules.h"
+
 int
 main(int argc, char *argv[])
 {
@@ -53,6 +55,7 @@ main(int argc, char *argv[])
     {
         gmx::CommandLineModuleManager manager(info);
         registerTrajectoryAnalysisModules(&manager);
+        registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
         return manager.run(argc, argv);
     }
