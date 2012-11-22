@@ -33,8 +33,8 @@ add_library(gmxana
             )
 
 
-target_link_libraries(gmxana libgromacs ${GSL_LIBRARIES})
-set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+target_link_libraries(gmxana libgromacs ${GSL_LIBRARIES} ${GMX_SHARED_LINKER_FLAGS})
+set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION}
     COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 # List of programs with single corresponding .c source file,
@@ -67,7 +67,7 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     if (NOT ${TOOL} STREQUAL "g_options")
         gmx_add_man_page(${TOOL})
     endif()
-    target_link_libraries(${TOOL} gmxana ${OpenMP_LINKER_FLAGS})
+    target_link_libraries(${TOOL} gmxana ${GMX_EXE_LINKER_FLAGS})
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
 
