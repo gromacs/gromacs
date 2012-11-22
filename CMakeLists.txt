@@ -683,7 +683,7 @@ gmx_test__finite(HAVE__FINITE)
 include(gmxTestCXX11)
 gmx_test_cxx11(GMX_CXX11 CXX11_FLAG)
 set(GROMACS_CXX_FLAGS "${CXX11_FLAG} ${GROMACS_CXX_FLAGS}")
-if(CXX11_FLAG)
+if(CXX11_FLAG AND GMX_GPU)
     #FIXME: add proper solution for progate all but cxx11 flag
     set(CUDA_PROPAGATE_HOST_FLAGS no)
     message(WARNING "Please manually add compiler flags to CUDA_NVCC_FLAGS. Automatic propogation temporary not working.")
