@@ -70,6 +70,9 @@
 #undef gmx_calc_rsq_pr
 #undef gmx_sum4_pr
 
+#undef gmx_pmecorrF_pr
+#undef gmx_pmecorrV_pr
+
 
 /* By defining GMX_MM128_HERE or GMX_MM256_HERE before including this file
  * the same intrinsics, with defines, can be compiled for either 128 or 256
@@ -130,6 +133,9 @@
 #define gmx_calc_rsq_pr   gmx_mm_calc_rsq_ps
 #define gmx_sum4_pr       gmx_mm_sum4_ps
 
+#define gmx_pmecorrF_pr   gmx_mm_pmecorrF_ps
+#define gmx_pmecorrV_pr   gmx_mm_pmecorrV_ps
+
 #else /* ifndef GMX_DOUBLE */
 
 #include "gmx_x86_simd_double.h"
@@ -167,6 +173,9 @@
 #define gmx_invsqrt_pr    gmx_mm_invsqrt_pd
 #define gmx_calc_rsq_pr   gmx_mm_calc_rsq_pd
 #define gmx_sum4_pr       gmx_mm_sum4_pd
+
+#define gmx_pmecorrF_pr   gmx_mm_pmecorrF_pd
+#define gmx_pmecorrV_pr   gmx_mm_pmecorrV_pd
 
 #endif /* ifndef GMX_DOUBLE */
 
@@ -216,6 +225,9 @@
 #define gmx_calc_rsq_pr   gmx_mm256_calc_rsq_ps
 #define gmx_sum4_pr       gmx_mm256_sum4_ps
 
+#define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_ps
+#define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_ps
+
 #else
 
 #include "gmx_x86_simd_double.h"
@@ -255,6 +267,9 @@
 #define gmx_invsqrt_pr    gmx_mm256_invsqrt_pd
 #define gmx_calc_rsq_pr   gmx_mm256_calc_rsq_pd
 #define gmx_sum4_pr       gmx_mm256_sum4_pd
+
+#define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_pd
+#define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_pd
 
 #endif
 

@@ -108,6 +108,13 @@
 #define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab_twin,e)
 #endif
 #endif
+#ifdef CALC_COUL_EWALD
+#ifndef VDW_CUTOFF_CHECK
+#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,ewald,e)
+#else
+#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,ewald_twin,e)
+#endif
+#endif
 
 #ifdef GMX_MM128_HERE
 #define NBK_FUNC_NAME_S128_OR_S256(b,e) NBK_FUNC_NAME(b,x86_simd128,e)
@@ -285,8 +292,10 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #endif
 #ifdef CALC_ENERGIES
     gmx_mm_pr  mhalfsp_SSE;
-    gmx_mm_pr  sh_ewald_SSE;
 #endif
+#endif
+#if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
+    gmx_mm_pr  sh_ewald_SSE;
 #endif
 
 #ifdef LJ_COMB_LB
@@ -356,6 +365,13 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     nbfp_stride = NBFP_STRIDE;
 #endif
 
+#ifdef CALC_COUL_EWALD
+    gmx_mm_pr beta2_SSE,beta_SSE;
+
+    beta2_SSE = gmx_set1_pr(ic->ewaldcoeff*ic->ewaldcoeff);
+    beta_SSE  = gmx_set1_pr(ic->ewaldcoeff);
+#endif
+
 #ifdef CALC_COUL_TAB
 #ifdef GMX_MM256_HERE
     /* Generate aligned table pointers */
@@ -368,8 +384,6 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     invtsp_SSE  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES
     mhalfsp_SSE = gmx_set1_pr(-0.5/ic->tabq_scale);
-
-    sh_ewald_SSE = gmx_set1_pr(ic->sh_ewald);
 #endif
 
 #ifdef TAB_FDV0
@@ -378,6 +392,10 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     tab_coul_F = ic->tabq_coul_F;
     tab_coul_V = ic->tabq_coul_V;
 #endif
+#endif /* CALC_COUL_TAB */
+
+#if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
+    sh_ewald_SSE = gmx_set1_pr(ic->sh_ewald);
 #endif
 
     q                   = nbat->q;
@@ -523,6 +541,10 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #else
             Vc_sub_self = 0.5*tab_coul_V[0];
 #endif
+#endif
+#ifdef CALC_COUL_EWALD
+            /* 0.5*beta*2/sqrt(pi) */
+            Vc_sub_self = 0.5*ic->ewaldcoeff*1.128379167095513;
 #endif
 
             for(ia=0; ia<UNROLLI; ia++)
