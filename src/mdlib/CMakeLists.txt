@@ -1,5 +1,6 @@
-
-file(GLOB MDLIB_SOURCES *.c nbnxn_kernels/*.c)
+# The nbnxn kernel files take the longest time to compile, so we sneak
+# them in first to take best advantage of make-time parallelisation.
+file(GLOB MDLIB_SOURCES nbnxn_kernels/*.c *.c)
 
 if(GMX_GPU)
     add_subdirectory(nbnxn_cuda)
