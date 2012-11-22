@@ -1139,15 +1139,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
-    /* if we use the GPU turn off the nonbonded */
     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f, bSepLRF ? fr->f_twin : f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       inputrec->fepvals,lambda,graph,&(top->excls),fr->mu_tot,
-                      ((nb_kernel_type == nbk8x8x8_CUDA || nb_kernel_type == nbk8x8x8_PlainC) 
-                        ? flags&~GMX_FORCE_NONBONDED : flags),
-                      &cycles_pme);
+                      flags, &cycles_pme);
 
     if(bSepLRF)
     {
