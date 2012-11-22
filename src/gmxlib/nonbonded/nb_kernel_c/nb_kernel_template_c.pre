@@ -399,7 +399,8 @@ void
              * CALCULATE INTERACTIONS *
              **************************/
 
-            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+	    /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
             /*         ## We always calculate rinv/rinvsq above to enable pipelineing in compilers (performance tested on x86) */
             if (rsq{I}{J}<rcutoff2)
             {
@@ -748,7 +749,8 @@ void
             /*         #define INNERFLOPS INNERFLOPS+9 */
             /*     #endif */
 
-            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
             /*         #if 0    ## This and next two lines is a hack to maintain indentation in template file */
             {
                 /*     #endif */
