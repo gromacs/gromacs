@@ -51,12 +51,12 @@
 static gmx_inline __m128
 gmx_mm_invsqrt_ps(__m128 x)
 {
-    const __m128 half  = _mm_set_ps(0.5,0.5,0.5,0.5);
-    const __m128 three = _mm_set_ps(3.0,3.0,3.0,3.0);
+    const __m128 half  = _mm_set1_ps(0.5);
+    const __m128 one   = _mm_set1_ps(1.0);
 
     __m128 lu = _mm_rsqrt_ps(x);
 
-    return _mm_mul_ps(_mm_mul_ps(half,lu),_mm_nmacc_ps(_mm_mul_ps(lu,lu),x,three));
+    return _mm_macc_ps(_mm_nmacc_ps(x,_mm_mul_ps(lu,lu),one),_mm_mul_ps(lu,half),lu);
 }
 
 /* sqrt(x) - Do NOT use this (but rather invsqrt) if you actually need 1.0/sqrt(x) */
@@ -78,7 +78,7 @@ gmx_mm_sqrt_ps(__m128 x)
 static gmx_inline __m128
 gmx_mm_inv_ps(__m128 x)
 {
-    const __m128 two = _mm_set_ps(2.0f,2.0f,2.0f,2.0f);
+    const __m128 two = _mm_set1_ps(2.0);
 
     __m128 lu = _mm_rcp_ps(x);
 
