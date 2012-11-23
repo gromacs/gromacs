@@ -63,8 +63,8 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
   gmx_domdec_zones_t *dd_zones;
 
   if (nblist->nri > 0) {  
-    fprintf(out,"ielec: %d, ivdw: %d, free_energy: %d, Solvent opt: %s\n",
-            nblist->ielec,nblist->ivdw,nblist->free_energy,
+    fprintf(out,"ielec: %d, ivdw: %d, type: %d, Solvent opt: %s\n",
+            nblist->ielec,nblist->ivdw,nblist->type,
             gmx_nblist_geometry_names[nblist->igeometry]);
     fprintf(out,"nri: %d  npair: %d\n",nblist->nri,nblist->nrj);
     if (dd) {
