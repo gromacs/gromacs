@@ -42,7 +42,7 @@ extern "C" {
 enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
        eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
        eNL_VDWQQ_WATER, eNL_QQ_WATER, 
-       eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER, 
+       eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER,
        eNL_NR };
 
 #define MAX_CG 1024

@@ -60,6 +60,7 @@ typedef struct
     int             ivdw;         /* VdW loop type index for kernels       */
     int             ivdwmod;      /* VdW modifier (e.g. switch/shift)      */
     int             free_energy;  /* Free energy setting for this list     */
+    gmx_bool        hybrid;      /* If true, neigbour list contains hybrid AdResS interactions*/
 
     int             nri,maxnri;   /* Current/max number of i particles	   */
     int             nrj,maxnrj;   /* Current/max number of j particles	   */

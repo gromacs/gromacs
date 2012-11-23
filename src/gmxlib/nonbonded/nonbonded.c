@@ -181,6 +181,13 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     vdw_mod  = eintmod_names[nl->ivdwmod];
     geom     = gmx_nblist_geometry_names[nl->igeometry];
 
+    if(nl->hybrid){
+        nl->kernelptr_vf = gmx_nb_generic_adress_kernel;
+        nl->kernelptr_f = gmx_nb_generic_adress_kernel;
+        nl->simd_padding_width = 1;
+        return;
+    }
+
     if(nl->free_energy)
     {
         nl->kernelptr_vf = gmx_nb_free_energy_kernel;
