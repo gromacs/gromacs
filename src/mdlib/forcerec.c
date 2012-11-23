@@ -2463,6 +2463,11 @@ void init_forcerec(FILE *fp,
         if (fr->nnblists > 1)
             snew(fr->gid2nblists,ir->opts.ngener*ir->opts.ngener);
     }
+
+    if (ir->adress){
+        fr->nnblists*=2;
+    }
+
     snew(fr->nblists,fr->nnblists);
     
     /* This code automatically gives table length tabext without cut-off's,
@@ -2475,6 +2480,9 @@ void init_forcerec(FILE *fp,
         /* make tables for ordinary interactions */
         if (bNormalnblists) {
             make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
+            if (ir->adress){
+                make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[fr->nnblists/2]);
+            }
             if (!bSep14tab)
                 fr->tab14 = fr->nblists[0].table_elec_vdw;
             m = 1;
@@ -2497,6 +2505,12 @@ void init_forcerec(FILE *fp,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
+                        if (ir->adress){
+                             make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,
+                                        *mtop->groups.grpname[nm_ind[egi]],
+                                        *mtop->groups.grpname[nm_ind[egj]],
+                                        &fr->nblists[fr->nnblists/2+m]);
+                        }
                         m++;
                     } else if (fr->nnblists > 1) {
                         fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = 0;
