@@ -29,7 +29,8 @@ add_library(gmxana
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
             gmx_pme_error.c gmx_options.c   gmx_dos.c
             gmx_hydorder.c  gmx_densorder.c powerspect.c    dens_filter.c
-            binsearch.c     gmx_dyecoupl.c
+            binsearch.c     gmx_dyecoupl.c  gmx_make_edi.c  gmx_sigeps.c
+            gmx_do_dssp.c   gmx_anadock.c   gmx_make_ndx.c  gmx_mk_angndx.c
             )
 
 

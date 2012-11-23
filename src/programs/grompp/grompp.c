@@ -1217,7 +1217,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     }
 }
 
-int main (int argc, char *argv[])
+int cmain (int argc, char *argv[])
 {
   static const char *desc[] = {
     "The gromacs preprocessor",

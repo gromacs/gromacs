@@ -58,10 +58,13 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
     int              i_shift_offset,i_coord_offset,outeriter,inneriter;
     int              j_index_start,j_index_end,jidx,nri,inr,ggid,iidx;
     int              jnrA,jnrB,jnrC,jnrD;
+    int              jnrlistA,jnrlistB,jnrlistC,jnrlistD;
     int              j_coord_offsetA,j_coord_offsetB,j_coord_offsetC,j_coord_offsetD;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             shX,shY,shZ,rcutoff_scalar;
+    real             rcutoff_scalar;
     real             *shiftvec,*fshift,*x,*f;
+    real             *fjptrA,*fjptrB,*fjptrC,*fjptrD;
+    real             scratch[4*DIM];
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     int              vdwioffset0;
     __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
@@ -158,14 +161,16 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
     outeriter        = 0;
     inneriter        = 0;
 
+    for(iidx=0;iidx<4*DIM;iidx++)
+    {
+        scratch[iidx] = 0.0;
+    }  
+
     /* Start outer loop over neighborlists */
     for(iidx=0; iidx<nri; iidx++)
     {
         /* Load shift vector for this list */
         i_shift_offset   = DIM*shiftidx[iidx];
-        shX              = shiftvec[i_shift_offset+XX];
-        shY              = shiftvec[i_shift_offset+YY];
-        shZ              = shiftvec[i_shift_offset+ZZ];
 
         /* Load limits for loop over neighbors */
         j_index_start    = jindex[iidx];
@@ -176,19 +181,9 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
         i_coord_offset   = DIM*inr;
 
         /* Load i particle coords and add shift vector */
-        ix0              = _mm_set1_ps(shX + x[i_coord_offset+DIM*0+XX]);
-        iy0              = _mm_set1_ps(shY + x[i_coord_offset+DIM*0+YY]);
-        iz0              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*0+ZZ]);
-        ix1              = _mm_set1_ps(shX + x[i_coord_offset+DIM*1+XX]);
-        iy1              = _mm_set1_ps(shY + x[i_coord_offset+DIM*1+YY]);
-        iz1              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*1+ZZ]);
-        ix2              = _mm_set1_ps(shX + x[i_coord_offset+DIM*2+XX]);
-        iy2              = _mm_set1_ps(shY + x[i_coord_offset+DIM*2+YY]);
-        iz2              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*2+ZZ]);
-        ix3              = _mm_set1_ps(shX + x[i_coord_offset+DIM*3+XX]);
-        iy3              = _mm_set1_ps(shY + x[i_coord_offset+DIM*3+YY]);
-        iz3              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*3+ZZ]);
-
+        gmx_mm_load_shift_and_4rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                 &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        
         fix0             = _mm_setzero_ps();
         fiy0             = _mm_setzero_ps();
         fiz0             = _mm_setzero_ps();
@@ -215,7 +210,6 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             jnrB             = jjnr[jidx+1];
             jnrC             = jjnr[jidx+2];
             jnrD             = jjnr[jidx+3];
-
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -355,7 +349,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx0             = _mm_add_ps(fjx0,tx);
             fjy0             = _mm_add_ps(fjy0,ty);
             fjz0             = _mm_add_ps(fjz0,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -399,7 +393,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -443,7 +437,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -487,7 +481,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -531,7 +525,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -575,7 +569,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -619,7 +613,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -663,7 +657,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -707,7 +701,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -751,9 +745,13 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
+            
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
 
-            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
+            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
                                                    fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,
                                                    fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
 
@@ -764,21 +762,19 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
         {
 
             /* Get j neighbor index, and coordinate index */
-            jnrA             = jjnr[jidx];
-            jnrB             = jjnr[jidx+1];
-            jnrC             = jjnr[jidx+2];
-            jnrD             = jjnr[jidx+3];
-
+            jnrlistA         = jjnr[jidx];
+            jnrlistB         = jjnr[jidx+1];
+            jnrlistC         = jjnr[jidx+2];
+            jnrlistD         = jjnr[jidx+3];
             /* Sign of each element will be negative for non-real atoms.
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_ps(mask,val) to clear dummy entries.
              */
             dummy_mask = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
-            jnrA       = (jnrA>=0) ? jnrA : 0;
-            jnrB       = (jnrB>=0) ? jnrB : 0;
-            jnrC       = (jnrC>=0) ? jnrC : 0;
-            jnrD       = (jnrD>=0) ? jnrD : 0;
-
+            jnrA       = (jnrlistA>=0) ? jnrlistA : 0;
+            jnrB       = (jnrlistB>=0) ? jnrlistB : 0;
+            jnrC       = (jnrlistC>=0) ? jnrlistC : 0;
+            jnrD       = (jnrlistD>=0) ? jnrlistD : 0;
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -922,7 +918,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx0             = _mm_add_ps(fjx0,tx);
             fjy0             = _mm_add_ps(fjy0,ty);
             fjz0             = _mm_add_ps(fjz0,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -970,7 +966,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1018,7 +1014,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1066,7 +1062,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1114,7 +1110,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1162,7 +1158,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1210,7 +1206,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1258,7 +1254,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1306,7 +1302,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1354,9 +1350,13 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
+            
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
 
-            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
+            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
                                                    fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,
                                                    fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
 
@@ -1376,7 +1376,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;
 
-        /* Outer loop uses 38 flops */
+        /* Outer loop uses 26 flops */
     }
 
     /* Increment number of outer iterations */
@@ -1384,7 +1384,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_single
 
     /* Update outer/inner flops */
 
-    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_VF,outeriter*38 + inneriter*456);
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_VF,outeriter*26 + inneriter*456);
 }
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
@@ -1411,10 +1411,13 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
     int              i_shift_offset,i_coord_offset,outeriter,inneriter;
     int              j_index_start,j_index_end,jidx,nri,inr,ggid,iidx;
     int              jnrA,jnrB,jnrC,jnrD;
+    int              jnrlistA,jnrlistB,jnrlistC,jnrlistD;
     int              j_coord_offsetA,j_coord_offsetB,j_coord_offsetC,j_coord_offsetD;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             shX,shY,shZ,rcutoff_scalar;
+    real             rcutoff_scalar;
     real             *shiftvec,*fshift,*x,*f;
+    real             *fjptrA,*fjptrB,*fjptrC,*fjptrD;
+    real             scratch[4*DIM];
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     int              vdwioffset0;
     __m128           ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
@@ -1511,14 +1514,16 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
     outeriter        = 0;
     inneriter        = 0;
 
+    for(iidx=0;iidx<4*DIM;iidx++)
+    {
+        scratch[iidx] = 0.0;
+    }  
+
     /* Start outer loop over neighborlists */
     for(iidx=0; iidx<nri; iidx++)
     {
         /* Load shift vector for this list */
         i_shift_offset   = DIM*shiftidx[iidx];
-        shX              = shiftvec[i_shift_offset+XX];
-        shY              = shiftvec[i_shift_offset+YY];
-        shZ              = shiftvec[i_shift_offset+ZZ];
 
         /* Load limits for loop over neighbors */
         j_index_start    = jindex[iidx];
@@ -1529,19 +1534,9 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
         i_coord_offset   = DIM*inr;
 
         /* Load i particle coords and add shift vector */
-        ix0              = _mm_set1_ps(shX + x[i_coord_offset+DIM*0+XX]);
-        iy0              = _mm_set1_ps(shY + x[i_coord_offset+DIM*0+YY]);
-        iz0              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*0+ZZ]);
-        ix1              = _mm_set1_ps(shX + x[i_coord_offset+DIM*1+XX]);
-        iy1              = _mm_set1_ps(shY + x[i_coord_offset+DIM*1+YY]);
-        iz1              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*1+ZZ]);
-        ix2              = _mm_set1_ps(shX + x[i_coord_offset+DIM*2+XX]);
-        iy2              = _mm_set1_ps(shY + x[i_coord_offset+DIM*2+YY]);
-        iz2              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*2+ZZ]);
-        ix3              = _mm_set1_ps(shX + x[i_coord_offset+DIM*3+XX]);
-        iy3              = _mm_set1_ps(shY + x[i_coord_offset+DIM*3+YY]);
-        iz3              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*3+ZZ]);
-
+        gmx_mm_load_shift_and_4rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                 &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        
         fix0             = _mm_setzero_ps();
         fiy0             = _mm_setzero_ps();
         fiz0             = _mm_setzero_ps();
@@ -1564,7 +1559,6 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             jnrB             = jjnr[jidx+1];
             jnrC             = jjnr[jidx+2];
             jnrD             = jjnr[jidx+3];
-
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -1696,7 +1690,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx0             = _mm_add_ps(fjx0,tx);
             fjy0             = _mm_add_ps(fjy0,ty);
             fjz0             = _mm_add_ps(fjz0,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1735,7 +1729,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1774,7 +1768,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1813,7 +1807,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1852,7 +1846,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1891,7 +1885,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1930,7 +1924,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1969,7 +1963,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2008,7 +2002,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2047,9 +2041,13 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
+            
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
 
-            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
+            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
                                                    fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,
                                                    fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
 
@@ -2060,21 +2058,19 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
         {
 
             /* Get j neighbor index, and coordinate index */
-            jnrA             = jjnr[jidx];
-            jnrB             = jjnr[jidx+1];
-            jnrC             = jjnr[jidx+2];
-            jnrD             = jjnr[jidx+3];
-
+            jnrlistA         = jjnr[jidx];
+            jnrlistB         = jjnr[jidx+1];
+            jnrlistC         = jjnr[jidx+2];
+            jnrlistD         = jjnr[jidx+3];
             /* Sign of each element will be negative for non-real atoms.
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_ps(mask,val) to clear dummy entries.
              */
             dummy_mask = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
-            jnrA       = (jnrA>=0) ? jnrA : 0;
-            jnrB       = (jnrB>=0) ? jnrB : 0;
-            jnrC       = (jnrC>=0) ? jnrC : 0;
-            jnrD       = (jnrD>=0) ? jnrD : 0;
-
+            jnrA       = (jnrlistA>=0) ? jnrlistA : 0;
+            jnrB       = (jnrlistB>=0) ? jnrlistB : 0;
+            jnrC       = (jnrlistC>=0) ? jnrlistC : 0;
+            jnrD       = (jnrlistD>=0) ? jnrlistD : 0;
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
             j_coord_offsetC  = DIM*jnrC;
@@ -2209,7 +2205,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx0             = _mm_add_ps(fjx0,tx);
             fjy0             = _mm_add_ps(fjy0,ty);
             fjz0             = _mm_add_ps(fjz0,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2251,7 +2247,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2293,7 +2289,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2335,7 +2331,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2377,7 +2373,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2419,7 +2415,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2461,7 +2457,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2503,7 +2499,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx1             = _mm_add_ps(fjx1,tx);
             fjy1             = _mm_add_ps(fjy1,ty);
             fjz1             = _mm_add_ps(fjz1,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2545,7 +2541,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx2             = _mm_add_ps(fjx2,tx);
             fjy2             = _mm_add_ps(fjy2,ty);
             fjz2             = _mm_add_ps(fjz2,tz);
-
+            
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -2587,9 +2583,13 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
             fjx3             = _mm_add_ps(fjx3,tx);
             fjy3             = _mm_add_ps(fjy3,ty);
             fjz3             = _mm_add_ps(fjz3,tz);
+            
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
 
-            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
+            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
                                                    fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,
                                                    fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
 
@@ -2604,7 +2604,7 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;
 
-        /* Outer loop uses 36 flops */
+        /* Outer loop uses 24 flops */
     }
 
     /* Increment number of outer iterations */
@@ -2612,5 +2612,5 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_single
 
     /* Update outer/inner flops */
 
-    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_F,outeriter*36 + inneriter*412);
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_F,outeriter*24 + inneriter*412);
 }

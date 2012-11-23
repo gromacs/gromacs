@@ -1,4 +1,4 @@
-file(GLOB GMXDUMP_SOURCES gmxdump.c)
+file(GLOB GMXDUMP_SOURCES gmxdump.c ../main.cpp)
 
 add_executable(gmxdump ${GMXDUMP_SOURCES})
 gmx_add_man_page(gmxdump)
