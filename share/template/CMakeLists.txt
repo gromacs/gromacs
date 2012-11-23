@@ -1,5 +1,5 @@
 add_executable(template template.cpp)
-target_link_libraries(template libgromacs)
+target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
 install(FILES CMakeLists.txt.template
         DESTINATION ${DATA_INSTALL_DIR}/template
         RENAME CMakeLists.txt
