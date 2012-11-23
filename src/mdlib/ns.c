@@ -99,8 +99,8 @@ static void reallocate_nblist(t_nblist *nl)
 {
     if (gmx_debug_at)
     {
-        fprintf(debug,"reallocating neigborlist (ielec=%d, ivdw=%d, igeometry=%d, free_energy=%d), maxnri=%d\n",
-                nl->ielec,nl->ivdw,nl->igeometry,nl->free_energy,nl->maxnri);
+        fprintf(debug,"reallocating neigborlist (ielec=%d, ivdw=%d, igeometry=%d, type=%d), maxnri=%d\n",
+                nl->ielec,nl->ivdw,nl->igeometry,nl->type,nl->maxnri);
     }
     srenew(nl->iinr,   nl->maxnri);
     if (nl->igeometry == GMX_NBLIST_GEOMETRY_CG_CG)
@@ -117,7 +117,7 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,t_nblist *nl_lr,
                         int maxsr,int maxlr,
                         int ivdw, int ivdwmod,
                         int ielec, int ielecmod,
-                        gmx_bool bfree, int igeometry)
+                        int igeometry, int type)
 {
     t_nblist *nl;
     int      homenr;
@@ -141,14 +141,14 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,t_nblist *nl_lr,
         nl->ivdwmod     = ivdwmod;
         nl->ielec       = ielec;
         nl->ielecmod    = ielecmod;
-        nl->free_energy = bfree;
+        nl->type        = type;
         nl->igeometry   = igeometry;
 
-        if (bfree)
+        if (nl->type==GMX_NBLIST_INTERACTION_FREE_ENERGY)
         {
             nl->igeometry  = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
         }
-        
+
         /* This will also set the simd_padding_width field */
         gmx_nonbonded_set_kernel_pointers( (i==0) ? log : NULL,nl);
         
@@ -172,8 +172,8 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,t_nblist *nl_lr,
 
         if(debug)
         {
-            fprintf(debug,"Initiating neighbourlist (ielec=%d, ivdw=%d, free=%d) for %s interactions,\nwith %d SR, %d LR atoms.\n",
-                    nl->ielec,nl->ivdw,nl->free_energy,gmx_nblist_geometry_names[nl->igeometry],maxsr,maxlr);
+            fprintf(debug,"Initiating neighbourlist (ielec=%d, ivdw=%d, type=%d) for %s interactions,\nwith %d SR, %d LR atoms.\n",
+                    nl->ielec,nl->ivdw,nl->type,gmx_nblist_geometry_names[nl->igeometry],maxsr,maxlr);
         }
     }
 }
@@ -186,7 +186,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
     * cache trashing.
     */
    int maxsr,maxsr_wat,maxlr,maxlr_wat;
-   int ielec,ielecf,ivdw,ielecmod,ielecmodf,ivdwmod;
+   int ielec,ielecf,ivdw,ielecmod,ielecmodf,ivdwmod,type;
    int solvent;
    int igeometry_def,igeometry_w,igeometry_ww;
    int i;
@@ -220,6 +220,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    ivdw  = fr->nbkernel_vdw_interaction;
    ielecmod = fr->nbkernel_elec_modifier;
    ivdwmod  = fr->nbkernel_vdw_modifier;
+   type     = GMX_NBLIST_INTERACTION_STANDARD;
 
    fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
    if (!fr->ns.bCGlist)
@@ -246,20 +247,24 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    for(i=0; i<fr->nnblists; i++) 
    {
        nbl = &(fr->nblists[i]);
+
+       if ((fr->adress_type!=eAdressOff) && (i>=fr->nnblists/2)){
+           type=GMX_NBLIST_INTERACTION_ADRESS;
+       }
        init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
-                   maxsr,maxlr,ivdw,ivdwmod,ielec,ielecmod,FALSE,igeometry_def);
+                   maxsr,maxlr,ivdw,ivdwmod,ielec,ielecmod,igeometry_def, type);
        init_nblist(log,&nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
-                   maxsr,maxlr,ivdw,ivdwmod,GMX_NBKERNEL_ELEC_NONE,eintmodNONE,FALSE,igeometry_def);
+                   maxsr,maxlr,ivdw,ivdwmod,GMX_NBKERNEL_ELEC_NONE,eintmodNONE,igeometry_def, type);
        init_nblist(log,&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
-                   maxsr,maxlr,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod,FALSE,igeometry_def);
+                   maxsr,maxlr,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod,igeometry_def, type);
        init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
-                   maxsr_wat,maxlr_wat,ivdw,ivdwmod,ielec,ielecmod, FALSE,igeometry_w);
+                   maxsr_wat,maxlr_wat,ivdw,ivdwmod,ielec,ielecmod, igeometry_w, type);
        init_nblist(log,&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
-                   maxsr_wat,maxlr_wat,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod, FALSE,igeometry_w);
+                   maxsr_wat,maxlr_wat,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod, igeometry_w, type);
        init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,ivdw,ivdwmod,ielec,ielecmod, FALSE,igeometry_ww);
+                   maxsr_wat,maxlr_wat,ivdw,ivdwmod,ielec,ielecmod, igeometry_ww, type);
        init_nblist(log,&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod, FALSE,igeometry_ww);
+                   maxsr_wat,maxlr_wat,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod, igeometry_ww, type);
 
        /* Did we get the solvent loops so we can use optimized water kernels? */
        if(nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf==NULL
@@ -288,18 +293,18 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
            }
 
            init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
-                       maxsr,maxlr,ivdw,ivdwmod,ielecf,ielecmod,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
+                       maxsr,maxlr,ivdw,ivdwmod,ielecf,ielecmod,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
            init_nblist(log,&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
-                       maxsr,maxlr,ivdw,ivdwmod,GMX_NBKERNEL_ELEC_NONE,eintmodNONE,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
+                       maxsr,maxlr,ivdw,ivdwmod,GMX_NBKERNEL_ELEC_NONE,eintmodNONE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
            init_nblist(log,&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
-                       maxsr,maxlr,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielecf,ielecmod,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
+                       maxsr,maxlr,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielecf,ielecmod,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
        }  
    }
    /* QMMM MM list */
    if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
    {
        init_nblist(log,&fr->QMMMlist,NULL,
-                   maxsr,maxlr,0,0,ielec,ielecmod,FALSE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
+                   maxsr,maxlr,0,0,ielec,ielecmod,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_STANDARD);
    }
 
    if(log!=NULL)
@@ -468,8 +473,8 @@ static inline void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,gmx_bool bLR)
         nlist->maxnrj = round_up_to_simd_width(over_alloc_small(nlist->nrj + 1),nlist->simd_padding_width);
         
         if (gmx_debug_at)
-            fprintf(debug,"Increasing %s nblist (ielec=%d,ivdw=%d,free=%d,igeometry=%d) j size to %d\n",
-                    bLR ? "LR" : "SR",nlist->ielec,nlist->ivdw,nlist->free_energy,nlist->igeometry,nlist->maxnrj);
+            fprintf(debug,"Increasing %s nblist (ielec=%d,ivdw=%d,type=%d,igeometry=%d) j size to %d\n",
+                    bLR ? "LR" : "SR",nlist->ielec,nlist->ivdw,nlist->type,nlist->igeometry,nlist->maxnrj);
         
         srenew(nlist->jjnr,nlist->maxnrj);
     }
@@ -490,8 +495,8 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
     {
         nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
         if (gmx_debug_at)
-            fprintf(debug,"Increasing %s nblist (ielec=%d,ivdw=%d,free=%d,igeometry=%d) j size to %d\n",
-                    bLR ? "LR" : "SR",nlist->ielec,nlist->ivdw,nlist->free_energy,nlist->igeometry,nlist->maxnrj);
+            fprintf(debug,"Increasing %s nblist (ielec=%d,ivdw=%d,type=%d,igeometry=%d) j size to %d\n",
+                    bLR ? "LR" : "SR",nlist->ielec,nlist->ivdw,nlist->type,nlist->igeometry,nlist->maxnrj);
         
         srenew(nlist->jjnr    ,nlist->maxnrj);
         srenew(nlist->jjnr_end,nlist->maxnrj);
@@ -694,7 +699,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                 {
                     continue;
                 }
-                
+
                 jj0 = index[jcg];
                 jwater = GET_CGINFO_SOLOPT(cginfo[jcg]);
                 
@@ -1077,6 +1082,459 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             close_i_nblist(vdwc_free);
         }
     }
+}
+
+static void
+put_in_list_adress(gmx_bool              bHaveVdW[],
+               int               ngid,
+               t_mdatoms *       md,
+               int               icg,
+               int               jgid,
+               int               nj,
+               atom_id           jjcg[],
+               atom_id           index[],
+               t_excl            bExcl[],
+               int               shift,
+               t_forcerec *      fr,
+               gmx_bool          bLR,
+               gmx_bool          bDoVdW,
+               gmx_bool          bDoCoul,
+               int               solvent_opt)
+{
+    /* The a[] index has been removed,
+     * to put it back in i_atom should be a[i0] and jj should be a[jj].
+     */
+    t_nblist *   vdwc;
+    t_nblist *   vdw;
+    t_nblist *   coul;
+    t_nblist *   vdwc_adress  = NULL;
+    t_nblist *   vdw_adress   = NULL;
+    t_nblist *   coul_adress  = NULL;
+    t_nblist *   vdwc_ww    = NULL;
+    t_nblist *   coul_ww    = NULL;
+
+    int 	    i,j,jcg,igid,gid,nbl_ind,nbl_ind_adress;
+    atom_id   jj,jj0,jj1,i_atom;
+    int       i0,nicg,len;
+
+    int       *cginfo;
+    int       *type,*typeB;
+    real      *charge,*chargeB;
+    real      *wf;
+    real      qi,qiB,qq,rlj;
+    gmx_bool      bFreeEnergy,bFree,bFreeJ,bNotEx,*bPert;
+    gmx_bool      bDoVdW_i,bDoCoul_i,bDoCoul_i_sol;
+    gmx_bool      b_hybrid;
+    gmx_bool      j_all_atom;
+    int       iwater,jwater;
+    t_nblist  *nlist, *nlist_adress;
+
+    /* Copy some pointers */
+    cginfo  = fr->cginfo;
+    charge  = md->chargeA;
+    chargeB = md->chargeB;
+    type    = md->typeA;
+    typeB   = md->typeB;
+    bPert   = md->bPerturbed;
+    wf      = md->wf;
+
+    /* Get atom range */
+    i0     = index[icg];
+    nicg   = index[icg+1]-i0;
+
+    /* Get the i charge group info */
+    igid   = GET_CGINFO_GID(cginfo[icg]);
+
+    iwater = (solvent_opt!=esolNO) ? GET_CGINFO_SOLOPT(cginfo[icg]) : esolNO;
+
+    if (md->nPerturbed)
+    {
+        gmx_fatal(FARGS,"AdResS does not support free energy pertubation\n");
+    }
+
+    /* Unpack pointers to neighbourlist structs */
+    if (fr->nnblists == 2)
+    {
+        nbl_ind = 0;
+        nbl_ind_adress = 1;
+    }
+    else
+    {
+        nbl_ind = fr->gid2nblists[GID(igid,jgid,ngid)];
+        nbl_ind_adress = nbl_ind+fr->nnblists/2;
+    }
+    if (bLR)
+    {
+        nlist = fr->nblists[nbl_ind].nlist_lr;
+        nlist_adress= fr->nblists[nbl_ind_adress].nlist_lr;
+    }
+    else
+    {
+        nlist = fr->nblists[nbl_ind].nlist_sr;
+        nlist_adress = fr->nblists[nbl_ind_adress].nlist_sr;
+    }
+
+    if (iwater != esolNO)
+    {
+        vdwc = &nlist[eNL_VDWQQ_WATER];
+        vdw  = &nlist[eNL_VDW];
+        coul = &nlist[eNL_QQ_WATER];
+#ifndef DISABLE_WATERWATER_NLIST
+        vdwc_ww = &nlist[eNL_VDWQQ_WATERWATER];
+        coul_ww = &nlist[eNL_QQ_WATERWATER];
+#endif
+    }
+    else
+    {
+        vdwc = &nlist[eNL_VDWQQ];
+        vdw  = &nlist[eNL_VDW];
+        coul = &nlist[eNL_QQ];
+    }
+
+        vdwc_adress = &nlist_adress[eNL_VDWQQ];
+        vdw_adress  = &nlist_adress[eNL_VDW];
+        coul_adress = &nlist_adress[eNL_QQ];
+
+
+        if (iwater != esolNO)
+        {
+            /* Loop over the atoms in the i charge group */
+            i_atom  = i0;
+            gid     = GID(igid,jgid,ngid);
+            /* Create new i_atom for each energy group */
+            if (bDoCoul && bDoVdW)
+            {
+                new_i_nblist(vdwc,bLR,i_atom,shift,gid);
+
+                if(wf[i_atom]!=0){
+                    new_i_nblist(vdwc_adress,bLR,i_atom,shift,gid);
+                }
+#ifndef DISABLE_WATERWATER_NLIST
+                new_i_nblist(vdwc_ww,bLR,i_atom,shift,gid);
+#endif
+            }
+            if (bDoVdW)
+            {
+                new_i_nblist(vdw,bLR,i_atom,shift,gid);
+                if(wf[i_atom]!=0){
+                    new_i_nblist(vdw_adress,bLR,i_atom,shift,gid);
+                }
+            }
+            if (bDoCoul)
+            {
+                new_i_nblist(coul,bLR,i_atom,shift,gid);
+                if(wf[i_atom]!=0){
+                    new_i_nblist(coul_adress,bLR,i_atom,shift,gid);
+                }
+#ifndef DISABLE_WATERWATER_NLIST
+                new_i_nblist(coul_ww,bLR,i_atom,shift,gid);
+#endif
+            }
+	  /* Loop over the j charge groups */
+            for(j=0; (j<nj); j++)
+            {
+                jcg=jjcg[j];
+
+                if (jcg == icg)
+                {
+                    continue;
+                }
+
+                jj0 = index[jcg];
+                jwater = GET_CGINFO_SOLOPT(cginfo[jcg]);
+
+                if (iwater == esolSPC && jwater == esolSPC && wf[jj0] == 1)
+                {
+                    /* Interaction between two SPC molecules */
+                    if (!bDoCoul)
+                    {
+                        /* VdW only - only first atoms in each water interact */
+                        add_j_to_nblist(vdw,jj0,bLR);
+                    }
+                    else
+                    {
+#ifdef DISABLE_WATERWATER_NLIST
+                        /* Add entries for the three atoms - only do VdW if we need to */
+                        if (!bDoVdW)
+                        {
+                            add_j_to_nblist(coul,jj0,bLR);
+                        }
+                        else
+                        {
+                            add_j_to_nblist(vdwc,jj0,bLR);
+                        }
+                        add_j_to_nblist(coul,jj0+1,bLR);
+                        add_j_to_nblist(coul,jj0+2,bLR);
+#else
+                        /* One entry for the entire water-water interaction */
+                        if (!bDoVdW)
+                        {
+                            add_j_to_nblist(coul_ww,jj0,bLR);
+                        }
+                        else
+                        {
+                            add_j_to_nblist(vdwc_ww,jj0,bLR);
+                        }
+#endif
+                    }
+                }
+                else if (iwater == esolTIP4P && jwater == esolTIP4P && wf[jj0] == 1)
+                {
+                    /* Interaction between two TIP4p molecules */
+                    if (!bDoCoul)
+                    {
+                        /* VdW only - only first atoms in each water interact */
+                        add_j_to_nblist(vdw,jj0,bLR);
+                    }
+                    else
+                    {
+#ifdef DISABLE_WATERWATER_NLIST
+                        /* Add entries for the four atoms - only do VdW if we need to */
+                        if (bDoVdW)
+                        {
+                            add_j_to_nblist(vdw,jj0,bLR);
+                        }
+                        add_j_to_nblist(coul,jj0+1,bLR);
+                        add_j_to_nblist(coul,jj0+2,bLR);
+                        add_j_to_nblist(coul,jj0+3,bLR);
+#else
+                        /* One entry for the entire water-water interaction */
+                        if (!bDoVdW)
+                        {
+                            add_j_to_nblist(coul_ww,jj0,bLR);
+                        }
+                        else
+                        {
+                            add_j_to_nblist(vdwc_ww,jj0,bLR);
+                        }
+#endif
+                    }
+                }
+                else
+                {
+                    /* j charge group is not water, but i is.
+                     * Add entries to the water-other_atom lists; the geometry of the water
+                     * molecule doesn't matter - that is taken care of in the nonbonded kernel,
+                     * so we don't care if it is SPC or TIP4P...
+                     */
+
+                    jj1 = index[jcg+1];
+
+                    if (!bDoVdW)
+                    {
+                        for(jj=jj0; (jj<jj1); jj++)
+                        {
+                            b_hybrid=!((wf[i_atom]==1&&wf[jj]==1)||(wf[i_atom] ==0 && wf[jj]==0));
+                            
+                            if (charge[jj] != 0)
+                            {
+                                if(!b_hybrid){
+                                    add_j_to_nblist(coul,jj,bLR);
+                                }
+                                else{
+                                    add_j_to_nblist(coul_adress,jj,bLR);
+                                }
+                            }
+                        }
+                    }
+                    else if (!bDoCoul)
+                    {
+                        for(jj=jj0; (jj<jj1); jj++)
+                        {
+                            b_hybrid=!((wf[i_atom]==1&&wf[jj]==1)||(wf[i_atom] ==0 && wf[jj]==0));
+                            if (bHaveVdW[type[jj]])
+                            {
+                                if(!b_hybrid){
+                                    add_j_to_nblist(vdw,jj,bLR);
+                                }else{
+                                    add_j_to_nblist(vdw_adress,jj,bLR);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        /* _charge_ _groups_ interact with both coulomb and LJ */
+                        /* Check which atoms we should add to the lists!       */
+                        for(jj=jj0; (jj<jj1); jj++)
+                        {
+                            b_hybrid=!((wf[i_atom]==1&&wf[jj]==1)||(wf[i_atom] ==0 && wf[jj]==0));
+                            if (bHaveVdW[type[jj]])
+                            {
+                                if (charge[jj] != 0)
+                                {
+                                    if(!b_hybrid){
+                                        add_j_to_nblist(vdwc,jj,bLR);
+                                    }else{
+                                        add_j_to_nblist(vdwc_adress,jj,bLR);
+                                    }
+                                }
+                                else
+                                {
+                                    if(!b_hybrid){
+                                        add_j_to_nblist(vdw,jj,bLR);
+                                    }
+                                    else{
+                                        add_j_to_nblist(vdw_adress,jj,bLR);
+                                    }
+                                }
+                            }
+                            else if (charge[jj] != 0)
+                            {
+                                if(!b_hybrid){
+                                    add_j_to_nblist(coul,jj,bLR);
+                                }else{
+                                    add_j_to_nblist(coul_adress,jj,bLR);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            close_i_nblist(vdw);
+            close_i_nblist(coul);
+            close_i_nblist(vdwc);
+#ifndef DISABLE_WATERWATER_NLIST
+            close_i_nblist(coul_ww);
+            close_i_nblist(vdwc_ww);
+#endif
+            close_i_nblist(vdw_adress);
+            close_i_nblist(coul_adress);
+            close_i_nblist(vdwc_adress);
+        }
+        else
+        {
+            /* no solvent as i charge group */
+            /* Loop over the atoms in the i charge group */
+            for(i=0; i<nicg; i++)
+            {
+                i_atom  = i0+i;
+                gid     = GID(igid,jgid,ngid);
+                qi      = charge[i_atom];
+
+                /* Create new i_atom for each energy group */
+                if (bDoVdW && bDoCoul)
+                {
+                    new_i_nblist(vdwc,bLR,i_atom,shift,gid);
+                    if(wf[i_atom]!=0){
+                        new_i_nblist(vdwc_adress,bLR,i_atom,shift,gid);
+                    }
+
+                }
+                if (bDoVdW)
+                {
+                    new_i_nblist(vdw,bLR,i_atom,shift,gid);
+                    if(wf[i_atom]!=0){
+                        new_i_nblist(vdw_adress,bLR,i_atom,shift,gid);
+                    }
+
+                }
+                if (bDoCoul)
+                {
+                    new_i_nblist(coul,bLR,i_atom,shift,gid);
+                    if(wf[i_atom]!=0){
+                        new_i_nblist(coul_adress,bLR,i_atom,shift,gid);
+                    }
+                }
+                bDoVdW_i  = (bDoVdW  && bHaveVdW[type[i_atom]]);
+                bDoCoul_i = (bDoCoul && qi!=0);
+
+                if (bDoVdW_i || bDoCoul_i)
+                {
+                    /* Loop over the j charge groups */
+                    for(j=0; (j<nj); j++)
+                    {
+                        jcg=jjcg[j];
+
+                        /* Check for large charge groups */
+                        if (jcg == icg)
+                        {
+                            jj0 = i0 + i + 1;
+                        }
+                        else
+                        {
+                            jj0 = index[jcg];
+                        }
+
+                        jj1=index[jcg+1];
+                        /* Finally loop over the atoms in the j-charge group */
+                        for(jj=jj0; jj<jj1; jj++)
+                        {
+                            bNotEx = NOTEXCL(bExcl,i,jj);
+
+                            b_hybrid=!((wf[i_atom]==1&&wf[jj]==1)||(wf[i_atom] ==0 && wf[jj]==0));
+
+                            if (bNotEx)
+                            {
+                                if (!bDoVdW_i)
+                                {
+                                    if (charge[jj] != 0)
+                                    {
+                                        if(!b_hybrid){
+                                            add_j_to_nblist(coul,jj,bLR);
+                                        }else{
+                                            add_j_to_nblist(coul_adress,jj,bLR);
+                                        }
+                                    }
+                                }
+                                else if (!bDoCoul_i)
+                                {
+                                    if (bHaveVdW[type[jj]])
+                                    {
+                                        if(!b_hybrid){
+                                            add_j_to_nblist(vdw,jj,bLR);
+                                        }else{
+                                            add_j_to_nblist(vdw_adress,jj,bLR);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (bHaveVdW[type[jj]])
+                                    {
+                                        if (charge[jj] != 0)
+                                        {
+                                            if(!b_hybrid){
+                                                add_j_to_nblist(vdwc,jj,bLR);
+                                            }else{
+                                                add_j_to_nblist(vdwc_adress,jj,bLR);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if(!b_hybrid){
+                                                add_j_to_nblist(vdw,jj,bLR);
+                                            }else{
+                                                add_j_to_nblist(vdw_adress,jj,bLR);
+                                            }
+
+                                        }
+                                    }
+                                    else if (charge[jj] != 0)
+                                    {
+                                        if(!b_hybrid){
+                                            add_j_to_nblist(coul,jj,bLR);
+                                        }else{
+                                            add_j_to_nblist(coul_adress,jj,bLR);
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                close_i_nblist(vdw);
+                close_i_nblist(coul);
+                close_i_nblist(vdwc);
+                close_i_nblist(vdw);
+                close_i_nblist(coul);
+                close_i_nblist(vdwc);
+                close_i_nblist(vdw_adress);
+                close_i_nblist(coul_adress);
+                close_i_nblist(vdwc_adress);
+            }
+        }
 }
 
 static void 
@@ -2499,14 +2957,18 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         fill_grid(log,NULL,ns->grid,fr->hcg,fr->hcg-1,fr->hcg,fr->cg_cm);
     }
     debug_gmx();
-    
-    if (!fr->ns.bCGlist)
-    {
-        put_in_list = put_in_list_at;
-    }
-    else
-    {
-        put_in_list = put_in_list_cg;
+
+    if (fr->adress_type == eAdressOff){
+        if (!fr->ns.bCGlist)
+        {
+            put_in_list = put_in_list_at;
+        }
+        else
+        {
+            put_in_list = put_in_list_cg;
+        }
+    }else{
+         put_in_list = put_in_list_adress;
     }
 
     /* Do the core! */

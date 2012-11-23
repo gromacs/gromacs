@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  *
  * 
  *                This source code is part of
@@ -8,8 +8,10 @@
  *          GROningen MAchine for Chemical Simulations
  * 
  *                        VERSION 4.0.5
- * Written by Christoph Junghans, Brad Lambeth, and possibly others.
+ * Written by Christoph Junghans, Brad Lambeth, Sebastian Fritsch and others.
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
+ * Copyright (c) 2011 Christoph Junghans, Sebastian Fritsch
+ * Copyright (c) 2012, The GROMACS development team,
  * All rights reserved.
  
  * This program is free software; you can redistribute it and/or
@@ -36,23 +38,19 @@
 #ifndef _nb_generic_adress_h_
 #define _nb_generic_adress_h_
 
+#include "nb_kernel.h"
 #include "types/simple.h"
 #include "typedefs.h"
 
 void
-gmx_nb_generic_adress_kernel(t_nblist *           nlist,
-			 t_forcerec *         fr,
-			 t_mdatoms *          mdatoms,
-			 real *               x,
-			 real *               f,
-			 real *               fshift,
-			 real *               Vc,
-			 real *               Vvdw,
-			 real                 tabscale,  
-			 real *               VFtab,
-			 int *                outeriter,
-			 int *                inneriter,
-                         gmx_bool                 bCG);
+gmx_nb_generic_adress_kernel(t_nblist *                nlist,
+                      rvec *                    xx,
+                      rvec *                    ff,
+                      t_forcerec *              fr,
+                      t_mdatoms *               mdatoms,
+                      nb_kernel_data_t *        kernel_data,
+                      t_nrnb *                  nrnb,
+		      gmx_bool                  bCG);
 
 #endif
 
