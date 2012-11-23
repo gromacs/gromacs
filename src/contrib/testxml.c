@@ -38,7 +38,7 @@
 #include "statutil.h"
 #include "tpxio.h"
 
-int main(int argc,char *argv[])
+int cmain(int argc,char *argv[])
 {
   int        step,natoms;
   real       t,lambda;

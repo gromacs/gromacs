@@ -1,4 +1,4 @@
-file(GLOB GMXCHECK_SOURCES gmxcheck.c tpbcmp.c)
+file(GLOB GMXCHECK_SOURCES gmxcheck.c tpbcmp.c ../main.cpp)
 
 add_executable(gmxcheck ${GMXCHECK_SOURCES})
 gmx_add_man_page(gmxcheck)

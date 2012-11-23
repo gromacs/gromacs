@@ -74,7 +74,7 @@ if(GMX_MPI)
         unset(OPENMPI_EXEC_RETURN)
       endif()
     endif()
-    unset(MPI_INFO_BIN)
+    unset(MPI_INFO_BIN CACHE)
 
     # Execute the mpiname binary with the full path of the compiler wrapper
     # found, otherwise we run the risk of false positives.
@@ -107,7 +107,7 @@ if(GMX_MPI)
        unset(MVAPICH2_EXEC_RETURN)
       endif()
     endif()
-    unset(MPINAME_BIN)
+    unset(MPINAME_BIN CACHE)
 
   else(MPI_FOUND)
     if (CMAKE_VERSION VERSION_LESS "2.8.5")
