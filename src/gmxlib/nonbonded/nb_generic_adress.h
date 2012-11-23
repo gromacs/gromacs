@@ -2,6 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
+ * Copyright (c) 2011 Christoph Junghans, Sebastian Fritsch
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
@@ -37,23 +38,18 @@
 #ifndef _nb_generic_adress_h_
 #define _nb_generic_adress_h_
 
+#include "nb_kernel.h"
 #include "types/simple.h"
 #include "typedefs.h"
 
 void
-gmx_nb_generic_adress_kernel(t_nblist *           nlist,
-			 t_forcerec *         fr,
-			 t_mdatoms *          mdatoms,
-			 real *               x,
-			 real *               f,
-			 real *               fshift,
-			 real *               Vc,
-			 real *               Vvdw,
-			 real                 tabscale,  
-			 real *               VFtab,
-			 int *                outeriter,
-			 int *                inneriter,
-                         gmx_bool                 bCG);
+gmx_nb_generic_adress_kernel(t_nblist *                nlist,
+                      rvec *                    xx,
+                      rvec *                    ff,
+                      t_forcerec *              fr,
+                      t_mdatoms *               mdatoms,
+                      nb_kernel_data_t *        kernel_data,
+                      t_nrnb *                  nrnb);
 
 #endif
 

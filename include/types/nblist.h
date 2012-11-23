@@ -62,7 +62,8 @@ typedef struct
     int             ielecmod;     /* Coulomb modifier (e.g. switch/shift)  */
     int             ivdw;         /* VdW loop type index for kernels       */
     int             ivdwmod;      /* VdW modifier (e.g. switch/shift)      */
-    int             free_energy;  /* Free energy setting for this list     */
+    int             type;         /* Type of interaction, listed in
+				     gmx_nblist_interaction_type           */
 
     int             nri,maxnri;   /* Current/max number of i particles	   */
     int             nrj,maxnrj;   /* Current/max number of j particles	   */
