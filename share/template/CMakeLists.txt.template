@@ -28,9 +28,9 @@ ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
 ########################################################################
 
 if (GMX_DOUBLE)
-  set(LIBGROMACS "libgmx_d")
+  set(LIBGROMACS "libgromacs_d")
 else(GMX_DOUBLE)
-  set(LIBGROMACS "libgmx")
+  set(LIBGROMACS "libgromacs")
 endif(GMX_DOUBLE)
 
 FIND_PACKAGE(GROMACS COMPONENTS ${LIBGROMACS} REQUIRED)
