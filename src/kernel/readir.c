@@ -1150,7 +1150,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->bAdress)
     {
-        warning_error(wi,"AdResS is currently disabled\n");
         if (ir->cutoff_scheme != ecutsGROUP)
         {
             warning_error(wi,"AdresS simulation supports only cutoff-scheme=group");
