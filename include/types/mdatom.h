@@ -75,8 +75,6 @@ typedef struct {
   real          lambda;
   /* The AdResS weighting function */
   real          *wf;
-  gmx_bool          pureex;
-  gmx_bool          purecg;
   unsigned short  *tf_table_index; /* The tf table that will be applied, if thermodyn, force enabled*/
 } t_mdatoms;
 

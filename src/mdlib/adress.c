@@ -227,12 +227,8 @@ update_adress_weights_com(FILE *               fplog,
             }
         }
     }
-
-
-    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
-
-    
 }
+
 void update_adress_weights_atom_per_atom(
                             int                  cg0,
                           int                  cg1,
@@ -290,7 +286,6 @@ void update_adress_weights_atom_per_atom(
         }
 
     }
-    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
 }
 
 void
@@ -417,8 +412,6 @@ update_adress_weights_cog(t_iparams            ip[],
             }
         }
     }
-
-    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
 }
 
 void
@@ -461,42 +454,6 @@ update_adress_weights_atom(int                  cg0,
         for(k=(k0+1); (k<k1); k++)
         {
             wf[k] = wf[k0];
-        }
-    }
-}
-
-void adress_set_kernel_flags(int n_ex, int n_hyb, int n_cg, t_mdatoms * mdatoms){
-
-    /* With domain decomposition we can check weather a cpu calculates only
-     * coarse-grained or explicit interactions. If so we use standard gromacs kernels
-     * on this proc. See also nonbonded.c */
-
-    if (n_hyb ==0 && n_ex == 0){
-     /* all particles on this proc are coarse-grained, use standard gromacs kernels */
-        if (!mdatoms->purecg){
-            mdatoms->purecg = TRUE;
-           if (debug) fprintf (debug, "adress.c: pure cg kernels on this proc\n");
-        }
-    }
-    else
-    {
-        if (mdatoms->purecg){
-         /* now this processor has hybrid particles again, call the hybrid kernels */
-            mdatoms->purecg = FALSE;
-        }
-    }
-
-    if (n_hyb ==0 && n_cg == 0){
-    /* all particles on this proc are atomistic, use standard gromacs kernels */
-        if (!mdatoms->pureex){
-             mdatoms->pureex = TRUE;
-             if (debug) fprintf (debug, "adress.c: pure ex kernels on this proc\n");
-        }
-    }
-    else
-    {
-        if (mdatoms->pureex){
-            mdatoms->pureex = FALSE;
         }
     }
 }
