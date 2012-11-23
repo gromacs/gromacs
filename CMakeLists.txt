@@ -227,14 +227,14 @@ endif()
 if(GMX_OPENMP)
     find_package(OpenMP)
     if(OPENMP_FOUND)
-        #- only set linker flag, if user didn't set them manual
-        #- cmake on windows doesn't support linker flags passed to target_link_libraries
-        #  (cmake treats /openmp as \openmp library file) and no openmp linker flags are needed
+        # CMake on Windows doesn't support linker flags passed to target_link_libraries
+        # (i.e. it treats /openmp as \openmp library file). Also, no OpenMP linker flags are needed.
         if(NOT (WIN32 AND NOT CYGWIN))
             if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP)
                 set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
                 set(OpenMP_SHARED_LINKER_FLAGS "")
             else()
+                # Only set a linker flag if the user didn't set them manually
                 if(NOT DEFINED OpenMP_LINKER_FLAGS)
                     set(OpenMP_LINKER_FLAGS "${OpenMP_C_FLAGS}")
                 endif()
@@ -245,10 +245,8 @@ if(GMX_OPENMP)
         endif()
     else(OPENMP_FOUND)
         message(WARNING
-                "Compiler not supporting OpenMP. This might hurt your performance a lot, "
-                "in particular with GPUs. Try using a different compiler (Intel is good on x86) "
-                "if you can - for now we are proceeding by turning off OpenMP.")
-        set(GMX_OPENMP OFF CACHE STRING "Compiler does not support OpenMP." FORCE)
+                "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
+        set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif(OPENMP_FOUND)
 endif()
 
