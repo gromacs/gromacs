@@ -106,7 +106,7 @@ endif()
 ########################################################################
 # User input options - enable C++ - before any CXX flags are changed   #
 ########################################################################
-option(GMX_GPU  "Enable GPU acceleration" ON)
+option(GMX_GPU  "Enable GPU acceleration" OFF)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 option(GMX_FORCE_CXX "Enable C++ compilation even if not necessary" OFF)
 mark_as_advanced(GMX_FORCE_CXX)
