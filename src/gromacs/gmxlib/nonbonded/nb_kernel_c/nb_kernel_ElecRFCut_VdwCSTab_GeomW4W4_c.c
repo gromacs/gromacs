@@ -280,6 +280,9 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW4W4_VF_c
              * CALCULATE INTERACTIONS *
              **************************/
 
+            if (rsq00<rcutoff2)
+            {
+
             r00              = rsq00*rinv00;
 
             /* Calculate table index by multiplying r with table scale and truncate to integer */
@@ -330,6 +333,8 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+
+            }
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -907,6 +912,9 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW4W4_F_c
              * CALCULATE INTERACTIONS *
              **************************/
 
+            if (rsq00<rcutoff2)
+            {
+
             r00              = rsq00*rinv00;
 
             /* Calculate table index by multiplying r with table scale and truncate to integer */
@@ -947,6 +955,8 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+
+            }
 
             /**************************
              * CALCULATE INTERACTIONS *

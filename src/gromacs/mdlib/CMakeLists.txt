@@ -1,5 +1,5 @@
 
-file(GLOB MDLIB_SOURCES *.c *.cpp nbnxn_kernels/*.c)
+file(GLOB MDLIB_SOURCES nbnxn_kernels/*.c *.c *.cpp)
 if(GMX_FFT_FFTPACK)
 list(APPEND MDLIB_SOURCES ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
 endif()

@@ -46,10 +46,6 @@
 extern "C" {
 #endif
   
-void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
-/* allocate memory for the arrays, set nr to natoms and nres to 0
- * set pdbinfo to NULL or allocate memory for it */  
-
 int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr, char *line);
 /* read a Gromos96 coordinate or trajectory file,                       *
  * returns the number of atoms                                          *

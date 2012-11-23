@@ -666,6 +666,10 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
     if (bMol)
       gmx_rmpbc(gpbc,natoms,box,x[cur]);
 
+    /* calculate the molecules' centers of masses and put them into xa */
+    if (bMol)
+        calc_mol_com(gnx[0],index[0],&top->mols,&top->atoms, x[cur],xa[cur]);
+    
     /* first remove the periodic boundary condition crossings */
     for(i=0;i<curr->ngrp;i++)
     {
@@ -680,10 +684,6 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
                  &top->atoms, com);
     }
 
-    /* calculate the molecules' centers of masses and put them into xa */
-    if (bMol)
-        calc_mol_com(gnx[0],index[0],&top->mols,&top->atoms, x[cur],xa[cur]);
-    
     /* loop over all groups in index file */
     for(i=0; (i<curr->ngrp); i++) 
     {

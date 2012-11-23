@@ -638,8 +638,11 @@ nb_free_energy_evaluate_single(real r2,real sc_r_power,real alpha_coul,real alph
     {
         if((c6[i] > 0) && (c12[i] > 0))
         {
-            sigma6[i]       = c12[i]/c6[i];
-            sigma2[i]       = pow(c12[i]/c6[i],1.0/3.0);
+            /* The c6 & c12 coefficients now contain the constants 6.0 and 12.0, respectively.
+             * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
+             */
+            sigma6[i]       = 0.5*c12[i]/c6[i];
+            sigma2[i]       = pow(0.5*c12[i]/c6[i],1.0/3.0);
             /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
              what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
             if (sigma6[i] < sigma6_min) { /* for disappearing coul and vdw with soft core at the same time */
