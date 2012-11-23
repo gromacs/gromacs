@@ -170,12 +170,10 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     
     if (ir->bQMMM)
       srenew(md->bQM,md->nalloc);
-    if (ir->bAdress)
+    if (ir->bAdress) {
       srenew(md->wf,md->nalloc);
       srenew(md->tf_table_index,md->nalloc);
-
-      md->purecg = FALSE;
-      md->pureex = FALSE;
+    }
   }
 
   alook = gmx_mtop_atomlookup_init(mtop);
