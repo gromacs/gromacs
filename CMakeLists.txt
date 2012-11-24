@@ -226,7 +226,7 @@ if(GMX_OPENMP)
         #- cmake on windows doesn't support linker flags passed to target_link_libraries
         #  (cmake treats /openmp as \openmp library file) and no openmp linker flags are needed
         if(NOT (WIN32 AND NOT CYGWIN))
-            if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP)
+            if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP AND NOT APPLE)
                 set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
                 set(OpenMP_SHARED_LINKER_FLAGS "")
             else()
@@ -1133,8 +1133,9 @@ if(NOT GMX_OPENMP)
     #or because it was only partially detected (e.g. only for C but not C++ compiler)
     unset(OpenMP_C_FLAGS CACHE) 
     unset(OpenMP_CXX_FLAGS CACHE)
-    unset(OpenMP_LINKER_FLAGS CACHE)
-    unset(OpenMP_SHARED_LINKER_FLAGS)
+else()
+    set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
+    set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
 endif()
 ######################################
 # Output compiler and CFLAGS used
@@ -1177,13 +1178,20 @@ set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
 ##################################################################
-# Shared library settings - Darwin uses INSTALL_NAME_DIR instead!
+# Shared library settings
 ##################################################################
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+else()
+    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) #rpath supported for >10.4
+        set(CMAKE_INSTALL_NAME_DIR "@rpath")
+        set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-Wl,-rpath,@executable_path/../lib")
+    else()
+        set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+    endif()
 endif()
 
 #COPYING file: Only necessary for binary distributions.
