@@ -63,6 +63,7 @@
 #include "filenm.h"
 #include "gmxfio.h"
 #include "string2.h"
+#include "copyrite.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
@@ -321,18 +322,8 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
             "Log file opened on %s"
             "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
             timebuf,host,pid,cr->nodeid,cr->nnodes);
-    fprintf(fp,
-            "Built %s by %s\n"
-            "Build os/architecture: %s\n"
-            "Build CPU Vendor: %s  Brand: %s\n"
-            "Build CPU Family: %d  Model: %d  Stepping: %d\n"
-            "Build CPU Features: %s\n"
-            "Compiler: %s\n"
-            "CFLAGS: %s\n\n",
-            BUILD_TIME,BUILD_USER,BUILD_HOST,
-            BUILD_CPU_VENDOR,BUILD_CPU_BRAND,
-            BUILD_CPU_FAMILY,BUILD_CPU_MODEL,BUILD_CPU_STEPPING,
-            BUILD_CPU_FEATURES,BUILD_COMPILER,BUILD_CFLAGS);
+    gmx_print_version_info(fp);
+    fprintf(fp, "\n\n");
 
     fflush(fp);
     debug_gmx();
