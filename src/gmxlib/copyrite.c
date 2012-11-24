@@ -40,6 +40,20 @@
 #include <thread_mpi.h>
 #endif
 
+#ifdef HAVE_LIBMKL
+#include <mkl.h>
+#endif
+#ifdef GMX_GPU
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#endif
+#ifdef GMX_FFT_FFTW3
+#    ifdef GMX_NATIVE_WINDOWS
+#        define FFTW_DLL
+#    endif
+#    include <fftw3.h>
+#endif
+
 /* This file is completely threadsafe - keep it that way! */
 
 #include <string.h>
@@ -54,6 +68,8 @@
 #include "copyrite.h"
 #include "strdb.h"
 #include "futil.h"
+#include "buildinfo.h"
+#include "gmx_cpuid.h"
 
 static void pr_two(FILE *out,int c,int i)
 {
@@ -609,53 +625,115 @@ void please_cite(FILE *fp,const char *key)
 static const char _gmx_ver_string[]="VERSION " VERSION;
 #endif
 
-/* This routine only returns a static (constant) string, so we use a 
- * mutex to initialize it. Since the string is only written to the
- * first time, there is no risk with multiple calls overwriting the
- * output for each other.
- */
 const char *GromacsVersion()
 {
   return _gmx_ver_string;
 }
 
-
 void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Version:          %s\n", _gmx_ver_string);
+#ifdef GMX_GPU
+    int cuda_driver,cuda_runtime;
+#endif
+
+    fprintf(fp, "Gromacs version:    %s\n", _gmx_ver_string);
 #ifdef USE_VERSION_H
-    fprintf(fp, "GIT SHA1 hash:    %s\n", _gmx_full_git_hash);
+    fprintf(fp, "GIT SHA1 hash:      %s\n", _gmx_full_git_hash);
     /* Only print out the branch information if present.
      * The generating script checks whether the branch point actually
      * coincides with the hash reported above, and produces an empty string
      * in such cases. */
     if (_gmx_central_base_hash[0] != 0)
     {
-        fprintf(fp, "Branched from:    %s\n", _gmx_central_base_hash);
+        fprintf(fp, "Branched from:      %s\n", _gmx_central_base_hash);
     }
 #endif
 
 #ifdef GMX_DOUBLE
-    fprintf(fp, "Precision:        double\n");
+    fprintf(fp, "Precision:          double\n");
 #else
-    fprintf(fp, "Precision:        single\n");
+    fprintf(fp, "Precision:          single\n");
 #endif
 
 #ifdef GMX_THREAD_MPI
-    fprintf(fp, "Parallellization: thread_mpi\n");
+    fprintf(fp, "MPI library:        thread_mpi\n");
 #elif defined(GMX_MPI)
-    fprintf(fp, "Parallellization: MPI\n");
+    fprintf(fp, "MPI library:        MPI\n");
 #else
-    fprintf(fp, "Parallellization: none\n");
+    fprintf(fp, "MPI library:        none\n");
+#endif
+#ifdef GMX_OPENMP
+    fprintf(fp, "OpenMP support:     enabled\n");
+#else
+    fprintf(fp, "OpenMP support:     disabled\n");
+#endif
+#ifdef GMX_GPU
+    fprintf(fp, "GPU support:        enabled\n");
+#else
+    fprintf(fp, "GPU support:        disabled\n");
+#endif
+#ifdef GMX_SOFTWARE_INVSQRT
+    fprintf(fp, "Software invsqrt:   enabled\n");
+#else
+    fprintf(fp, "Software invsqrt:   disabled\n");
 #endif
 
+    fprintf(fp, "CPU acceleration:   %s\n", GMX_CPU_ACCELERATION_STRING);
+
 #ifdef GMX_FFT_FFTPACK
-    fprintf(fp, "FFT Library:      fftpack\n");
+    fprintf(fp, "FFT library:        fftpack (built-in)\n");
 #elif defined(GMX_FFT_FFTW3)
-    fprintf(fp, "FFT Library:      fftw3\n");
+#    ifdef GMX_DOUBLE
+    fprintf(fp, "FFT library:        %s\n",fftw_version);
+#    else
+    fprintf(fp, "FFT library:        %s\n",fftwf_version);
+#    endif
 #elif defined(GMX_FFT_MKL)
-    fprintf(fp, "FFT Library:      MKL\n");
+    fprintf(fp, "FFT library:        MKL\n");
 #else
-    fprintf(fp, "FFT Library:      unknown\n");
+    fprintf(fp, "FFT library:        unknown\n");
+#endif
+#ifdef GMX_LARGEFILES
+    fprintf(fp, "Large file support: enabled\n");
+#else
+    fprintf(fp, "Large file support: disabled\n");
+#endif
+#ifdef HAVE_RDTSCP
+    fprintf(fp, "RDTSCP usage:       enabled\n");
+#else
+    fprintf(fp, "RDTSCP usage:       disabled\n");
+#endif
+
+    fprintf(fp, "Built on:           %s\n", BUILD_TIME);
+    fprintf(fp, "Built by:           %s\n", BUILD_USER);
+    fprintf(fp, "Build OS/arch:      %s\n", BUILD_HOST);
+    fprintf(fp, "Build CPU vendor:   %s\n", BUILD_CPU_VENDOR);
+    fprintf(fp, "Build CPU brand:    %s\n", BUILD_CPU_BRAND);
+    fprintf(fp, "Build CPU family:   %d   Model: %d   Stepping: %d\n",
+            BUILD_CPU_FAMILY, BUILD_CPU_MODEL, BUILD_CPU_STEPPING);
+    /* TODO: The below strings can be quite long, so it would be nice to wrap
+     * them. Can wait for later, as the master branch has ready code to do all
+     * that. */
+    fprintf(fp, "Build CPU features: %s\n", BUILD_CPU_FEATURES);
+    fprintf(fp, "C compiler:         %s\n", BUILD_C_COMPILER);
+    fprintf(fp, "C compiler flags:   %s\n", BUILD_CFLAGS);
+    if (BUILD_CXX_COMPILER[0] != '\0')
+    {
+        fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
+        fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
+    }
+#ifdef HAVE_LIBMKL
+    /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
+    fprintf(fp, "Linked with Intel MKL version %s.%s.%s.\n",
+            __INTEL_MKL__,__INTEL_MKL_MINOR__,__INTEL_MKL_UPDATE__);
+#endif
+#ifdef GMX_GPU
+    fprintf(fp, "CUDA compiler:      %s\n",CUDA_NVCC_COMPILER_INFO);
+    cuda_driver = 0;
+    cudaDriverGetVersion(&cuda_driver);
+    cuda_runtime = 0;
+    cudaRuntimeGetVersion(&cuda_runtime);
+    fprintf(fp, "CUDA driver:        %d.%d\n",cuda_driver/1000, cuda_driver%100);
+    fprintf(fp, "CUDA runtime:       %d.%d\n",cuda_runtime/1000, cuda_runtime%100);
 #endif
 }
