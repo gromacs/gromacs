@@ -1,4 +1,5 @@
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmakein ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+configure_file(config.h.cmakein config.h)
+configure_file(buildinfo.h.cmakein buildinfo.h)
 
 include(../cmake/BuildManPages.cmake)
 

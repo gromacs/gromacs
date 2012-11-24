@@ -55,7 +55,7 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 #if(GMX_THREAD_MPI)
 #    add_subdirectory(thread_mpi)
 #endif(GMX_THREAD_MPI)
-#target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
+#target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${THREAD_MPI_LIB})
 
 # apply gcc 4.4.x bug workaround
 if(GMX_USE_GCC44_BUG_WORKAROUND)
@@ -80,7 +80,7 @@ endif()
 
 # NONBONDED_SOURCES is imported from the nonbonded subdirectory.
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${THREAD_MPI_SRC} ${NONBONDED_SOURCES})
-target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
+target_link_libraries(gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${THREAD_LIB} ${OpenMP_SHARED_LINKER_FLAGS})
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
 endif()
