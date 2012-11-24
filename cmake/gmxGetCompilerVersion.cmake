@@ -44,3 +44,34 @@ macro(get_compiler_version)
 
     mark_as_advanced(C_COMPILER_VERSION CXX_COMPILER_VERSION)
 endmacro()
+
+macro(get_compiler_info LANGUAGE BUILD_COMPILER BUILD_FLAGS)
+    execute_process(COMMAND ${CMAKE_${LANGUAGE}_COMPILER} --version
+        RESULT_VARIABLE _exec_result
+        OUTPUT_VARIABLE _compiler_version
+        ERROR_VARIABLE  _compiler_version)
+    # Try executing just the compiler command --version failed
+    if(_exec_result)
+        execute_process(COMMAND ${CMAKE_${LANGUAGE}_COMPILER}
+            RESULT_VARIABLE _exec_result
+            OUTPUT_VARIABLE _compiler_version
+            ERROR_VARIABLE  _compiler_version)
+    endif()
+    if(NOT "${_compiler_version}" STREQUAL "")
+        string(REGEX MATCH "[^\n]+" _compiler_version "${_compiler_version}")
+    endif()
+
+    set(${BUILD_COMPILER}
+        "${CMAKE_${LANGUAGE}_COMPILER} ${CMAKE_${LANGUAGE}_COMPILER_ID} ${_compiler_version}")
+    set(_build_flags "${CMAKE_${LANGUAGE}_FLAGS}")
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(_build_flags "${_build_flags} ${CMAKE_${LANGUAGE}_FLAGS_DEBUG}")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(_build_flags "${_build_flags} ${CMAKE_${LANGUAGE}_FLAGS_RELEASE}")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+        set(_build_flags "${_build_flags} ${CMAKE_${LANGUAGE}_FLAGS_MINSIZEREL}")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        set(_build_flags "${_build_flags} ${CMAKE_${LANGUAGE}_FLAGS_RELWITHDEBINFO}")
+    endif()
+    set(${BUILD_FLAGS} ${_build_flags})
+endmacro()

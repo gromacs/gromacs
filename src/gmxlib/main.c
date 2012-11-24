@@ -64,6 +64,8 @@
 #include "gmxfio.h"
 #include "string2.h"
 
+#include "buildinfo.h"
+
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
@@ -327,12 +329,22 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
             "Build CPU Vendor: %s  Brand: %s\n"
             "Build CPU Family: %d  Model: %d  Stepping: %d\n"
             "Build CPU Features: %s\n"
-            "Compiler: %s\n"
-            "CFLAGS: %s\n\n",
             BUILD_TIME,BUILD_USER,BUILD_HOST,
             BUILD_CPU_VENDOR,BUILD_CPU_BRAND,
             BUILD_CPU_FAMILY,BUILD_CPU_MODEL,BUILD_CPU_STEPPING,
-            BUILD_CPU_FEATURES,BUILD_COMPILER,BUILD_CFLAGS);
+            BUILD_CPU_FEATURES);
+    fprintf(fp,
+            "C compiler: %s\n"
+            "CFLAGS: %s\n",
+            BUILD_C_COMPILER, BUILD_CFLAGS);
+    if (BUILD_CXX_COMPILER[0] != '\0')
+    {
+        fprintf(fp,
+                "C++ compiler: %s\n"
+                "CXXFLAGS: %s\n",
+                BUILD_CXX_COMPILER, BUILD_CXXFLAGS);
+    }
+    fprintf(fp, "\n");
 
     fflush(fp);
     debug_gmx();
