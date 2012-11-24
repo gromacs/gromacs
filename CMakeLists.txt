@@ -1092,31 +1092,14 @@ if(NOT GMX_OPENMP)
     unset(OpenMP_LINKER_FLAGS CACHE)
     unset(OpenMP_SHARED_LINKER_FLAGS)
 endif()
+
 ######################################
 # Output compiler and CFLAGS used
 ######################################
-execute_process(COMMAND ${CMAKE_C_COMPILER} --version RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
-#try executing just the compiler command if that failed...
-if(TMP_RESULT)
-    execute_process(COMMAND ${CMAKE_C_COMPILER} RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
-endif()
-string(LENGTH "${CC_VERSION}" len)
-if(len)
-    string(REGEX MATCH "[^\n]+" CC_VERSION "${CC_VERSION}")
-endif()
-
-set(BUILD_COMPILER "@CMAKE_C_COMPILER@ @CMAKE_C_COMPILER_ID@ @CC_VERSION@")
-set(BUILD_CFLAGS "@CMAKE_C_FLAGS@")
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_DEBUG@")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELEASE@")
-elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_MINSIZEREL@")
-elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELWITHDEBINFO@")
-endif()
-
+get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
+if (CMAKE_CXX_COMPILER_LOADED)
+    get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
+endif ()
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
