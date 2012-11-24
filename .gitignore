@@ -4,7 +4,6 @@
 *.a
 *.exe
 *.lib
-config.h
 *.cache
 log
 Makefile

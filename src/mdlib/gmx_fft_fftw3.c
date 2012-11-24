@@ -20,6 +20,10 @@
 
 #ifdef GMX_FFT_FFTW3 
 
+#ifdef GMX_NATIVE_WINDOWS
+#    define FFTW_DLL
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 
