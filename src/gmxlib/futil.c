@@ -334,11 +334,7 @@ static gmx_bool gmx_is_file(const char *fname)
         {
             int status;
             struct stat st_buf;
-            #ifdef HAVE_LSTAT
-                status = lstat (fname, &st_buf);
-            #else
-                status = stat (fname, &st_buf);
-            #endif
+            status = stat (fname, &st_buf);
             if (status != 0 || !S_ISREG(st_buf.st_mode))
             {
                 return FALSE;
