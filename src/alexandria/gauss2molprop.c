@@ -622,7 +622,7 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
                   {
                       natom++;
                       atomname = gmx_atomprop_element(aps,anumber);
-                      gmx_molprop_calc_add_atom(mpt,calcref,atomname,natom,&atomref);
+                      gmx_molprop_calc_add_atom(mpt,calcref,atomname,atomname,natom,&atomref);
                       if (TRUE == gmx_atomprop_query(aps,epropMass,"",atomname,&mm)) {
                           mass += mm;
                       }

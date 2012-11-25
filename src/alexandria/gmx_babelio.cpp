@@ -108,6 +108,7 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   OpenBabel::OBVectorData *dipole;
   OpenBabel::OBMatrixData *quadrupole,*pol_tensor;
   OpenBabel::OBFreeGrid *esp;
+  OpenBabel::OBElementTable *OBet;
   std::string formula,attr,value,inchi;
   
   t_espv *espv = NULL;
@@ -200,17 +201,22 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
     charge_model = strdup(OBpd->GetValue().c_str());
   else
     charge_model = strdup(unknown);
-    
+  
+  OBet = new OpenBabel::OBElementTable();
+  
   OBai = mol.BeginAtoms();
   atomid = 1;
   for (OBa = mol.BeginAtom(OBai); (NULL != OBa); OBa = mol.NextAtom(OBai)) {
-    gmx_molprop_calc_add_atom(mpt,calcref,OBa->GetType(),atomid,&atomref);
+    gmx_molprop_calc_add_atom(mpt,calcref,
+                              OBet->GetSymbol(OBa->GetAtomicNum()),
+                              OBa->GetType(),atomid,&atomref);
     gmx_molprop_calc_set_atomcoords(mpt,calcref,atomref,unit2string(eg2cPm),
                                     100*OBa->x(),100*OBa->y(),100*OBa->z());
     gmx_molprop_calc_set_atomcharge(mpt,calcref,atomref,charge_model,
                                     "e",OBa->GetPartialCharge());
     atomid++;
   }
+  delete OBet;
   
   OBbi = mol.BeginBonds();
   bondid = 1;

@@ -114,7 +114,7 @@ static void gmx_molprop_csv(const char *fn,int np,gmx_molprop_t mp[],
     }
     for(i=0; (i<np); i++) 
     {
-        char *name;
+        const char *name;
         name = gmx_molprop_get_iupac(mp[i]);
         if (NULL == name)
             name = gmx_molprop_get_molname(mp[i]);

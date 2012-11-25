@@ -341,7 +341,7 @@ int mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     detect_rings(&plist[F_BONDS],atoms->nr,bRing);
     nbonds = plist[F_BONDS].nr;
     print_nnb(&nnb,"NNB");
-    gen_pad(&nnb,atoms,NULL,plist,*excls,NULL,FALSE);
+    gen_pad(&nnb,atoms,TRUE,TRUE,TRUE,nexcl,plist,*excls,NULL,FALSE);
     generate_excls(&nnb,nexcl,*excls);
     done_nnb(&nnb);
     

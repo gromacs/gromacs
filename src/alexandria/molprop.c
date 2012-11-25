@@ -102,7 +102,7 @@ typedef struct
 
 typedef struct 
 {
-    char     *name,*unit;
+    char     *name,*obtype,*unit;
     double   x,y,z;
     int      atomid,nq,nq_c;
     t_charge *q;
@@ -1159,7 +1159,7 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
     const char *tmp,*stmp,*dtmp;
     char **name,*type,*program,*method,*basisset,*catom,*formula;
     int cnumber,charge,multiplicity;
-    char *value,*error,*unit,*reference,*atomname,*coords,*conformation;
+    char *value,*error,*unit,*reference,*atomname,*obtype,*coords,*conformation;
     double mass,x,y,z,q,sq;
     
     gmx_molprop_reset(src);
@@ -1229,9 +1229,9 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
         gmx_molprop_add_calculation(dst,program,method,basisset,
                                     reference,conformation,&dstref);
         merge_props(dst,src,dstref,srcref);
-        while (gmx_molprop_calc_get_atom(src,srcref,&atomname,&atomid,&satomref) == 1) 
+        while (gmx_molprop_calc_get_atom(src,srcref,&atomname,&obtype,&atomid,&satomref) == 1) 
         {
-            gmx_molprop_calc_add_atom(dst,dstref,atomname,atomid,&datomref);
+            gmx_molprop_calc_add_atom(dst,dstref,atomname,obtype,atomid,&datomref);
             if (gmx_molprop_calc_get_atomcoords(src,srcref,satomref,&unit,&x,&y,&z) == 1)
             {
                 gmx_molprop_calc_set_atomcoords(dst,dstref,datomref,unit,x,y,z);
@@ -1300,7 +1300,7 @@ void gmx_molprop_add_calculation(gmx_molprop_t mp,const char *program,const char
 }
 
 void gmx_molprop_calc_add_atom(gmx_molprop_t mp,int calcref,
-                               const char *atomname,int atomid,int *atomref)
+                               const char *atomname,const char *obtype,int atomid,int *atomref)
 {
     t_calc_exp *calc;
     int index,emp;
@@ -1310,6 +1310,7 @@ void gmx_molprop_calc_add_atom(gmx_molprop_t mp,int calcref,
 
     srenew(calc->catom,++calc->natom);
     calc->catom[calc->natom-1].name   = strdup(atomname);
+    calc->catom[calc->natom-1].obtype = strdup(obtype);
     calc->catom[calc->natom-1].atomid = atomid;
     calc->catom[calc->natom-1].x    = 0;
     calc->catom[calc->natom-1].y    = 0;
@@ -1343,8 +1344,8 @@ int gmx_molprop_get_calculation(gmx_molprop_t mp,char **program,
     return 0;
 }
 
-int gmx_molprop_calc_get_atom(gmx_molprop_t mp,int calcref,char **atomname,int *atomid,
-                              int *atomref)
+int gmx_molprop_calc_get_atom(gmx_molprop_t mp,int calcref,char **atomname,
+                              char **obtype,int *atomid,int *atomref)
 {
     t_calc_exp *calc;
     int index,emp;
@@ -1354,6 +1355,7 @@ int gmx_molprop_calc_get_atom(gmx_molprop_t mp,int calcref,char **atomname,int *
     if (calc->natom_c < calc->natom) 
     {
         assign_str(atomname,calc->catom[calc->natom_c].name);
+        assign_str(obtype,calc->catom[calc->natom_c].obtype);
         assign_scal(atomid,calc->catom[calc->natom_c].atomid);
         *atomref = index2ref(calc->natom_c,eMOLPROP_Exp);
         calc->natom_c++;

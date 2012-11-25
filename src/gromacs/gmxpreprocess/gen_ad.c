@@ -636,7 +636,11 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, 
+             gmx_bool bKeepAllGeneratedDihedrals,
+             gmx_bool bRemoveDihedralIfWithImproper,
+             gmx_bool bGenerateHH14Interactions,
+             int nrexcl,
              t_params plist[], t_excls excls[], t_hackblock hb[],
              gmx_bool bAllowMissing)
 {
@@ -812,7 +816,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 		  for(m=0; m<excls[i1].nr; m++)
 		    bExcl = bExcl || excls[i1].e[m]==i2;
 		  if (!bExcl) {
-		    if (rtp[0].bGenerateHH14Interactions ||
+		    if (bGenerateHH14Interactions ||
                         !(is_hydro(atoms,i1) && is_hydro(atoms,i2))) {
 		      if (npai == maxpai) {
 			maxpai += ninc;
@@ -863,8 +867,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
   if (ndih > 0) {
     fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
     clean_dih(dih,&ndih,improper,nimproper,atoms,
-              rtp[0].bKeepAllGeneratedDihedrals,
-              rtp[0].bRemoveDihedralIfWithImproper);
+              bKeepAllGeneratedDihedrals,
+              bRemoveDihedralIfWithImproper);
   }
 
   /* Now we have unique lists of angles and dihedrals 
@@ -876,7 +880,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
   cppar(pai, npai, plist,F_LJ14);
 
   /* Remove all exclusions which are within nrexcl */
-  clean_excls(nnb,rtp[0].nrexcl,excls);
+  clean_excls(nnb,nrexcl,excls);
 
   sfree(ang);
   sfree(dih);

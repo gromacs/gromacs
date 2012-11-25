@@ -286,7 +286,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     matrix     box;
     t_pbc      pbc;
     char       *program,*method,*basisset,*reference,*conformation,*miller,*elem;
-    char       *atomname,*unit,*type;
+    char       *atomname,*obtype,*unit,*type;
     const char *molname;
     double     xx,yy,zz;
     double     *bondorder;
@@ -302,7 +302,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         /* This assumes we have either all atoms or none. A consistency check could be
          * to compare the number of atoms to the formula */
         natom = 0;
-        while (gmx_molprop_calc_get_atom(mp,calcref,&atomname,&atomid,&atomref) == 1) 
+        while (gmx_molprop_calc_get_atom(mp,calcref,&atomname,&obtype,&atomid,&atomref) == 1) 
         {
             srenew(anames,natom+1);
             srenew(x,natom+1);
@@ -634,7 +634,7 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
                     rvec **x)
 {
     char   *program,*method,*basisset,*name,*type,*value;
-    char   *atomname,*unit,*coords,**aa=NULL;
+    char   *atomname,*obtype,*unit,*coords,**aa=NULL;
     const char *molnm;
     char   **ptr,**ptr1,buf[1024],format[1024];
     double *q=NULL,qq,xx,yy,zz;
@@ -660,7 +660,7 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
                 (strcasecmp(basisset,ptr[1]) == 0)) 
             {
                 natom = 0;
-                while (gmx_molprop_calc_get_atom(mp,calcref,&atomname,&atomid,&atomref) == 1) 
+                while (gmx_molprop_calc_get_atom(mp,calcref,&atomname,&obtype,&atomid,&atomref) == 1) 
                 {
                     int myunit;
                     
@@ -1227,7 +1227,8 @@ static int gmx_recv_energy(t_commrec *cr,int src,char **type,char **unit,
 
 void gmx_molprop_send(t_commrec *cr,int dest,gmx_molprop_t mp)
 {
-    char *ptr,*atomname,*reference,*conformation,*type,*unit;
+    const char *ptr;
+    char *atomname,*obtype,*reference,*conformation,*type,*unit;
     char *program,*method,*basisset,*xyz_unit,*V_unit;
     int  natom,espid,atomid,expref,atomref;
     int  ccc=0;
@@ -1340,9 +1341,10 @@ void gmx_molprop_send(t_commrec *cr,int dest,gmx_molprop_t mp)
         }
         gmx_send_int(cr,dest,0);
         
-        while (gmx_molprop_calc_get_atom(mp,expref,&atomname,&atomid,&atomref) == 1)
+        while (gmx_molprop_calc_get_atom(mp,expref,&atomname,&obtype,&atomid,&atomref) == 1)
         {
             gmx_send_str(cr,dest,atomname);
+            gmx_send_str(cr,dest,obtype);
             gmx_send_int(cr,dest,atomid);
             if (gmx_molprop_calc_get_atomcoords(mp,expref,atomref,&unit,
                                                 &x,&y,&z) == 1)
@@ -1375,7 +1377,7 @@ void gmx_molprop_send(t_commrec *cr,int dest,gmx_molprop_t mp)
 gmx_molprop_t gmx_molprop_receive(t_commrec *cr,int src)
 {
     gmx_molprop_t mp = gmx_molprop_init();
-    char   *ptr,*atomname,*type,*unit,*reference,*conformation,*comp;
+    char   *ptr,*atomname,*obtype,*type,*unit,*reference,*conformation,*comp;
     char   *program,*method,*basisset,*xyz_unit,*V_unit;
     int    nexp,kk,natom,expref,atomref,ccc=0,espid,atomid;
     int    ncalc;
@@ -1489,8 +1491,9 @@ gmx_molprop_t gmx_molprop_receive(t_commrec *cr,int src)
         }
         while ((atomname = gmx_recv_str(cr,src)) != NULL)
         {
+            obtype = gmx_recv_str(cr,src);
             atomid = gmx_recv_int(cr,src);
-            gmx_molprop_calc_add_atom(mp,expref,atomname,atomid,&atomref);
+            gmx_molprop_calc_add_atom(mp,expref,atomname,obtype,atomid,&atomref);
             if (NULL != (unit = gmx_recv_str(cr,src)))
             {
                 x = gmx_recv_double(cr,src);

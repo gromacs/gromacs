@@ -48,7 +48,11 @@ extern "C" {
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, 
+             gmx_bool bKeepAllGeneratedDihedrals,
+             gmx_bool bRemoveDihedralIfWithImproper,
+             gmx_bool bGenerateHH14Interactions,
+             int nrexcl,
              t_params plist[], t_excls excls[], t_hackblock hb[],
              gmx_bool bAllowMissing);
 

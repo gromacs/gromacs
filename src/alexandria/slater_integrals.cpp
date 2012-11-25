@@ -245,8 +245,6 @@ static char *my_ftoa(double d)
 
 extern "C" double Coulomb_SS(double r,int i,int j,double xi,double xj)
 {
-  char buf[256];
-  double S;
 #ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 
@@ -287,8 +285,6 @@ extern "C" double Coulomb_SS(double r,int i,int j,double xi,double xj)
 
 extern "C" double Nuclear_SS(double r,int i,double xi)
 {
-  char buf[256];
-  double S;
 #ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 
@@ -316,8 +312,6 @@ extern "C" double Nuclear_SS(double r,int i,double xi)
 
 extern "C" double DCoulomb_SS(double r,int i,int j,double xi,double xj)
 {
-  char buf[256];
-  double S;
 #ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 
@@ -358,8 +352,6 @@ extern "C" double DCoulomb_SS(double r,int i,int j,double xi,double xj)
 
 extern "C" double DNuclear_SS(double r,int i,double xi)
 {
-  char buf[256];
-  double S;
 #ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 

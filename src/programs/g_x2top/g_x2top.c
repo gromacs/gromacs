@@ -512,7 +512,11 @@ int main(int argc, char *argv[])
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,&rtp_header_settings,plist,excls,NULL,TRUE);
+  gen_pad(&nnb,atoms,rtp_header_settings.bKeepAllGeneratedDihedrals,
+          rtp_header_settings.bRemoveDihedralIfWithImproper,
+          rtp_header_settings.bGenerateHH14Interactions,
+          rtp_header_settings.nrexcl,
+          plist,excls,NULL,TRUE);
   done_nnb(&nnb);
 
   if (!bPairs)

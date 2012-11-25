@@ -1502,7 +1502,11 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,restp,plist,excls,hb,bAllowMissing);
+  gen_pad(&nnb,atoms,restp[0].bKeepAllGeneratedDihedrals,
+          restp[0].bRemoveDihedralIfWithImproper,
+          restp[0].bGenerateHH14Interactions,
+          restp[0].nrexcl,
+          plist,excls,hb,bAllowMissing);
   done_nnb(&nnb);
   
     /* Make CMAP */

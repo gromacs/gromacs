@@ -95,7 +95,7 @@ enum {
     exmlBOND, exmlAI, exmlAJ, exmlBONDORDER,
     exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
     exmlCALCULATION, exmlPROGRAM, exmlBASISSET, exmlCONFORMATION,
-    exmlUNIT, exmlATOM, exmlATOMID, exmlX_UNIT, exmlV_UNIT, exmlESPID,
+    exmlUNIT, exmlATOM, exmlATOMID, exmlOBTYPE, exmlX_UNIT, exmlV_UNIT, exmlESPID,
     exmlX, exmlY, exmlZ, exmlV, exmlXX, exmlYY, exmlZZ, 
     exmlXY, exmlXZ, exmlYZ, exmlQ,
     exmlNR 
@@ -112,7 +112,7 @@ static const char *exml_names[exmlNR] = {
     "bond", "ai", "aj", "bondorder",
     "composition", "compname", "catom", "cname", "cnumber",
     "calculation", "program", "basisset", "conformation",
-    "unit", "atom", "atomid", "coord_unit", "potential_unit", "espid",
+    "unit", "atom", "atomid", "obtype", "coord_unit", "potential_unit", "espid",
     "x", "y", "z", "V", "xx", "yy", "zz", "xy", "xz", "yz", "q"
 };
 
@@ -351,9 +351,9 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                                   xbuf[exmlCONFORMATION]);
                     break;
                 case exmlATOM:
-                    if (NN(xbuf[exmlNAME]) && NN(xbuf[exmlATOMID]))
+                    if (NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
                     {
-                        gmx_molprop_calc_add_atom(mpt,expref,xbuf[exmlNAME],
+                        gmx_molprop_calc_add_atom(mpt,expref,xbuf[exmlNAME],xbuf[exmlOBTYPE],
                                                   atoi(xbuf[exmlATOMID]),&atomref);
                         for(tc = tree->children; (NULL != tc); tc = tc->next)
                         {
@@ -580,7 +580,7 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
     xmlNodePtr ptr,child,grandchild,comp,atomptr,baby;
     int    i,ai,aj,bondorder,eMP,atomid,cnumber,expref,calcref,atomref;
     char   *program,*basisset,*method,*name,*type,*unit,*reference;
-    char   *catom,*atomname,*coords,*conformation,*p;
+    char   *catom,*atomname,*obtype,*coords,*conformation,*p;
     const  char   *iupac,*cas,*cid,*inchi,*category,*composition;
     double q,x,y,z,xx,yy,zz,xy,xz,yz,aver,error;
   
@@ -632,10 +632,11 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
 
         add_properties(child,mpt,calcref);
         
-        while (gmx_molprop_calc_get_atom(mpt,calcref,&atomname,&atomid,&atomref) == 1) 
+        while (gmx_molprop_calc_get_atom(mpt,calcref,&atomname,&obtype,&atomid,&atomref) == 1) 
         {
             grandchild = add_xml_child(child,exml_names[exmlATOM]);
             add_xml_char(grandchild,exml_names[exmlNAME],atomname);
+            add_xml_char(grandchild,exml_names[exmlOBTYPE],obtype);
             add_xml_int(grandchild,exml_names[exmlATOMID],atomid);
             
             if (gmx_molprop_calc_get_atomcoords(mpt,calcref,atomref,&unit,&x,&y,&z) == 1) 

@@ -214,10 +214,10 @@ extern int gmx_molprop_get_calculation(gmx_molprop_t mpt,char **program,char **m
 
 /* Returns atomref that can be used to set coordinates and charges */
 extern void gmx_molprop_calc_add_atom(gmx_molprop_t mpt,int calcref,
-				      const char *atomname,int atomid,int *atomref);
+				      const char *atomname,const char *obtype,int atomid,int *atomref);
 
 extern int gmx_molprop_calc_get_atom(gmx_molprop_t mpt,int calcref,
-				     char **atomname,int *atomid,int *atomref);
+				     char **atomname,char **obtype,int *atomid,int *atomref);
 
 extern void gmx_molprop_calc_set_atomcoords(gmx_molprop_t mpt,int calcref,int atomref,
 					    const char *unit,double x,double y,double z);
