@@ -429,7 +429,7 @@ static void list_mtx(const char *fn)
   sfree(full);
 }
 
-int main(int argc,char *argv[])
+int cmain(int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",

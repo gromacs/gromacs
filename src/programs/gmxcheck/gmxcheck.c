@@ -593,7 +593,7 @@ void chk_enx(const char *fn)
   sfree(fr);
 }
 
-int main(int argc,char *argv[])
+int cmain(int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]gmxcheck[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",

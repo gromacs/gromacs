@@ -107,6 +107,7 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
+set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 # Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
@@ -206,15 +207,15 @@ option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cy
 mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 ######################################################################
-# compiler tests
-# these need ot be done early (before further tests).
+# Compiler tests
+# These need to be done early (before further tests).
 #####################################################################
 
-# cmake/Check{C,CXX}CompilerFlag.cmake are lifted from CMake git next
-# branch (proposed for v2.8.9) to be able to detect invalid options
-# with the Intel Compilers.
-# Remove these files from the source tree when a CMake version that
-# includes the features in question becomes required.
+# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
+# are used with permission from CMake v2.8.9 so that GROMACS can detect
+# invalid options with the Intel Compilers.
+# These files should be removed from the source tree when a CMake version that
+# includes the features in question becomes required for building GROMACS.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
@@ -222,14 +223,14 @@ include(CheckCXXCompilerFlag)
 if(GMX_OPENMP)
     find_package(OpenMP)
     if(OPENMP_FOUND)
-        #- only set linker flag, if user didn't set them manual
-        #- cmake on windows doesn't support linker flags passed to target_link_libraries
-        #  (cmake treats /openmp as \openmp library file) and no openmp linker flags are needed
+        # CMake on Windows doesn't support linker flags passed to target_link_libraries
+        # (i.e. it treats /openmp as \openmp library file). Also, no OpenMP linker flags are needed.
         if(NOT (WIN32 AND NOT CYGWIN))
             if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP AND NOT APPLE)
                 set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
                 set(OpenMP_SHARED_LINKER_FLAGS "")
             else()
+                # Only set a linker flag if the user didn't set them manually
                 if(NOT DEFINED OpenMP_LINKER_FLAGS)
                     set(OpenMP_LINKER_FLAGS "${OpenMP_C_FLAGS}")
                 endif()
@@ -240,10 +241,8 @@ if(GMX_OPENMP)
         endif()
     else(OPENMP_FOUND)
         message(WARNING
-                "Compiler not supporting OpenMP. This might hurt your performance a lot, "
-                "in particular with GPUs. Try using a different compiler (Intel is good on x86) "
-                "if you can - for now we are proceeding by turning off OpenMP.")
-        set(GMX_OPENMP OFF CACHE STRING "Compiler does not support OpenMP." FORCE)
+                "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
+        set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif(OPENMP_FOUND)
 endif()
 
@@ -541,15 +540,11 @@ if(GMX_GPU)
         include(ThreadMPI)
     endif()
 
-    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
-    # but it's too cumbersome to check the ld version and the flag should not hurt
-    if(CMAKE_COMPILER_IS_GNUCC)
-        set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
-    endif()
-
-    # annoyingly enough, FindCUDA leaves a few variables behind as non-advanced
-    mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
 endif()
+# Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
+# We need to mark these advanced outside the conditional, otherwise, if the user
+# tuns GMX_GPU=OFF after a failed cmake pass, these variables will be left behind.
+mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)

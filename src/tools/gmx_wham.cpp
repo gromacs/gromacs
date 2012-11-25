@@ -1223,9 +1223,9 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
             if (opt->bCycl)
             {
                 if (ibin<0)
-                    while ( (ibin+=nbins) < 0);
+                    while ( (ibin+=nbins) < 0) ;
                 else if (ibin>=nbins)
-                    while ( (ibin-=nbins) >= nbins);
+                    while ( (ibin-=nbins) >= nbins) ;
             }
             
             if (ibin>=0 && ibin<nbins)
@@ -2096,9 +2096,9 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                     if (opt->bCycl)
                     {
                         if (ibin<0)
-                            while ( (ibin+=bins) < 0);
+                            while ( (ibin+=bins) < 0) ;
                         else if (ibin>=bins)
-                            while ( (ibin-=bins) >= bins);
+                            while ( (ibin-=bins) >= bins) ;
                     }	  
                     if(ibin >= 0 && ibin < bins) 
                     {

@@ -424,6 +424,50 @@ static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],
   }
 }
 
+
+/* Similar to cmp_rvecs, but this routine scales the allowed absolute tolerance
+ * by the RMS of the force components of x1.
+ */
+static void cmp_rvecs_rmstol(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],
+                             real ftol,real abstol)
+{
+    int i,m;
+    double d;
+    double ave_x1,rms_x1;
+    
+    /* It is tricky to compare real values, in particular forces that
+     * are sums of lots of terms where the final value might be close to 0.0.
+     * To get a reference magnitude we calculate the RMS value of each
+     * component in x1, and then set the allowed absolute tolerance to the
+     * relative tolerance times this RMS magnitude.
+     */
+    ave_x1 = 0.0;
+    for(i=0;i<n;i++)
+    {
+        for(m=0;m<DIM;m++)
+        {
+            ave_x1 += x1[i][m];
+        }
+    }
+    ave_x1 /= n*DIM;
+
+    rms_x1 = 0.0;
+    for(i=0; (i<n); i++)
+    {
+        for(m=0;m<DIM;m++)
+        {
+            d       = x1[i][m] - ave_x1;
+            rms_x1 += d*d;
+        }
+    }
+    rms_x1 = sqrt(rms_x1/(DIM*n));
+    /* And now do the actual comparision with a hopefully realistic abstol. */
+    for(i=0; (i<n); i++)
+    {
+        cmp_rvec(fp,title,i,x1[i],x2[i],ftol,abstol*rms_x1);
+    }
+}
+
 static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol, real abstol)
 {
   int i,j;
@@ -754,15 +798,15 @@ static void comp_state(t_state *st1, t_state *st2,
   cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,FALSE,ftol,abstol);
   if (st1->flags & (1<<estSVIR_PREV)) {
     fprintf(stdout,"comparing shake vir_prev\n");
-    cmp_rvecs(stdout,"svir_prev",DIM,st1->svir_prev,st2->svir_prev,FALSE,ftol,abstol);
+    cmp_rvecs_rmstol(stdout,"svir_prev",DIM,st1->svir_prev,st2->svir_prev,ftol,abstol);
   }
   if (st1->flags & (1<<estFVIR_PREV)) {
     fprintf(stdout,"comparing force vir_prev\n");
-    cmp_rvecs(stdout,"fvir_prev",DIM,st1->fvir_prev,st2->fvir_prev,FALSE,ftol,abstol);
+    cmp_rvecs_rmstol(stdout,"fvir_prev",DIM,st1->fvir_prev,st2->fvir_prev,ftol,abstol);
   }
   if (st1->flags & (1<<estPRES_PREV)) {
     fprintf(stdout,"comparing prev_pres\n");
-    cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,FALSE,ftol,abstol);
+    cmp_rvecs_rmstol(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,ftol,abstol);
   }
   cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
   cmp_int(stdout,"nhchainlength",-1,st1->nhchainlength,st2->nhchainlength);
@@ -870,7 +914,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
   if (cmp_bool(fp,"bV",-1,fr1->bV,fr2->bV))
     cmp_rvecs(fp,"v",min(fr1->natoms,fr2->natoms),fr1->v,fr2->v,bRMSD,ftol,abstol);
   if (cmp_bool(fp,"bF",-1,fr1->bF,fr2->bF))
-    cmp_rvecs(fp,"f",min(fr1->natoms,fr2->natoms),fr1->f,fr2->f,bRMSD,ftol,abstol);
+    cmp_rvecs_rmstol(fp,"f",min(fr1->natoms,fr2->natoms),fr1->f,fr2->f,ftol,abstol);
   if (cmp_bool(fp,"bBox",-1,fr1->bBox,fr2->bBox))
     cmp_rvecs(fp,"box",3,fr1->box,fr2->box,FALSE,ftol,abstol);
 }

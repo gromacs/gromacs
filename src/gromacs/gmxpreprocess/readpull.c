@@ -48,7 +48,7 @@
 #include "names.h"
 #include "gmx_fatal.h"
 #include "macros.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "symtab.h"
 #include "readinp.h"
 #include "readir.h"

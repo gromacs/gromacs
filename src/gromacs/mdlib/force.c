@@ -250,7 +250,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	}
 
     where();
-    if (flags & GMX_FORCE_NONBONDED)
+    /* We only do non-bonded calculation with group scheme here, the verlet
+     * calls are done from do_force_cutsVERLET(). */
+    if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
     {
         donb_flags = 0;
         /* Add short-range interactions */
@@ -308,6 +310,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     /* MRS: Eventually, many need to include free energy contribution here! */
 	if (ir->implicit_solvent)
     {
+        wallcycle_sub_start(wcycle, ewcsBONDED);
 		calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
                        ir->gb_algorithm,ir->sa_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
         wallcycle_sub_stop(wcycle, ewcsBONDED);

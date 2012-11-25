@@ -1,6 +1,6 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-file(GLOB PDB2GMX_SOURCES *.c)
+file(GLOB PDB2GMX_SOURCES *.c ../main.cpp)
 
 add_executable(pdb2gmx ${PDB2GMX_SOURCES})
 gmx_add_man_page(pdb2gmx)
