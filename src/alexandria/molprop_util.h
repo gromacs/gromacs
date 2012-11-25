@@ -80,6 +80,9 @@ extern int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
 			   t_symtab *tab,const char *lot,
 			   t_atoms *atoms,const char *q_algorithm,
 			   rvec **x);
+
+extern void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles,
+                          gmx_bool bForceMerge);
 				     				     
 extern gmx_molprop_t *merge_xml(int nfile,char **infiles,char *outf,
 				char *sorted,char *doubles,int *nmolprop,

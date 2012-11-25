@@ -860,6 +860,8 @@ int main(int argc, char *argv[])
       }
   }
   printf("Succesfully read %d molprops from %d Gaussian files.\n",nmp,nfn);
+  gmx_molprop_sort(nmp,mps,empSORT_Molname,NULL,NULL);
+  merge_doubles(&nmp,mps,NULL,TRUE);
   if (nmp > 0)
   {
       gmx_molprops_write(opt2fn("-o",NFILE,fnm),nmp,mps,(int)compress);

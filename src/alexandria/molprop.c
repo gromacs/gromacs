@@ -1252,7 +1252,6 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
         sfree(reference);
     }
 
-  
     ndcomp = 0;
     for(i=0; (i<ddd->ncomposition); i++)
         ndcomp += ddd->composition[i].ncatom;

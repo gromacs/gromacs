@@ -743,8 +743,8 @@ int my_strcmp(const char *a,const char *b)
         return 1;
 }
 
-static void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles,
-                          gmx_bool bForceMerge)
+void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles,
+                   gmx_bool bForceMerge)
 {
     FILE *fp;
     int  i,j,nporig=*np,ndouble=0;
