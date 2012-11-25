@@ -37,6 +37,18 @@ install(FILES CMakeLists.txt.template
         RENAME CMakeLists.txt
         COMPONENT development)
 
+file(GLOB_RECURSE GROMACS_HEADERS ${CMAKE_SOURCE_DIR}/include *.h)
+add_custom_command(OUTPUT gromacs
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include gromacs 
+    DEPENDS ${GROMACS_HEADERS})
+add_custom_target(gromacs_include_links DEPENDS gromacs)
+
+add_executable(template template.c)
+set_source_files_properties(template.c PROPERTIES COMPILE_FLAGS -UHAVE_CONFIG_H)
+target_link_libraries(template gmx)
+set_target_properties(template PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}")
+add_dependencies(template gromacs_include_links)
+
 install(FILES README template.c Makefile.pkg
         DESTINATION ${DATA_INSTALL_DIR}/template
         COMPONENT development)
