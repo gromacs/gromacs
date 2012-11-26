@@ -35,39 +35,51 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_HWINFO_H_
-#define _TMPI_HWINFO_H_
+#ifndef TMPI_VISIBILITY_H_
+#define TMPI_VISIBILITY_H_
 
-/*! \file
-
-  \brief CPU/core/HT count function.
-
+/** \file 
+ *
+ * \brief Visibility macros
+ * 
+ * These macros enable dynamic library visibility support. Either set the 
+ * 'TMPI_USE_VISIBILITY', or set the TMPI_EXPORT to the right export 
+ * statement, when incorporating thread_mpi into a larger project. 
+ *
+ * All exported functions and classes will be tagged by the visibility macro.
+ * 
+ * \sa http://gcc.gnu.org/wiki/Visibility
+ *
 */
 
-/*! \brief Determine number of hardware threads that can be run simultaneously
+#ifdef TMPI_USE_VISIBILITY  /* off by default */
 
-    Returns the total number of cores and SMT threads that can run.
+/* only set if the macro hasn't been set elsewhere */
+#ifndef TMPI_EXPORT
 
-    \returns The maximum number of threads that can run simulataneously.
-         If this number cannot be determined for the current architecture,
-         -1 is returned.
-  */
-TMPI_EXPORT
-int tMPI_Get_hw_nthreads(void);
+/* gcc-like */
+#if defined(__GNUC__)
 
+#define TMPI_EXPORT __attribute__((__visibility__("default")))
 
-/*! \brief Determine the recommended number of hardware threads to run on
-           
+#elif defined _WIN32 || defined __CYGWIN__ || defined WINDOWS
 
-    Returns the total number of cores and SMT threads to run on. This is
-    equal to the number of hardware threads available, or 1 if the number
-    can't be determined, or if there are no atomics for this platform.
+#define TMPI_EXPORT __declspec(dllexport)
 
-    \returns The maximum number of threads to run on.
-  */
-TMPI_EXPORT
-int tMPI_Get_recommended_nthreads(void);
+#else /* no viable visibility */
 
+#define TMPI_EXPORT
 
 #endif
+
+#else /* TMPI_USE_VISIBILITY */
+
+#define TMPI_EXPORT
+
+#endif /* TMPI_USE_VISIBILITY */
+
+#endif /* TMPI_EXPORT */
+
+#endif /* TMPI_VISIBILITY_H_ */
+
 

@@ -269,6 +269,17 @@ int tMPI_Thread_equal(tMPI_Thread_t t1, tMPI_Thread_t t2)
     return pthread_equal(t1->th, t2->th);
 }
 
+
+enum tMPI_Thread_setaffinity_support tMPI_Thread_setaffinity_support(void)
+{
+#ifdef HAVE_PTHREAD_SETAFFINITY
+    return TMPI_SETAFFINITY_SUPPORT_YES;
+#else
+    return TMPI_SETAFFINITY_SUPPORT_NO;
+#endif
+}
+
+
 /* set thread's own affinity to a processor number n */
 int tMPI_Thread_setaffinity_single(tMPI_Thread_t thread, unsigned int nr)
 {

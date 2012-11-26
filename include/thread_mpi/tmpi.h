@@ -60,6 +60,7 @@ files.
    library for this is in C. */
 #include <stddef.h>
 
+#include "visibility.h"
 
 #ifdef __cplusplus
 extern "C" 
@@ -339,6 +340,7 @@ tMPI_Comm tMPI_Get_comm_self(void);
                                 int start_function(int argc, char *argv[]);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Init(int *argc, char ***argv, 
               int (*start_function)(int, char**));
 
@@ -373,6 +375,7 @@ int tMPI_Init(int *argc, char ***argv,
 
     \return  TMPI_FAILURE on failure, TMPI_SUCCESS on succes (after all
              threads have finished if main_thread_returns=true).  */
+TMPI_EXPORT
 int tMPI_Init_fn(int main_thread_returns, int N,
                  tMPI_Affinity_strategy aff_strategy,
                  void (*start_function)(void*), void *arg);
@@ -395,6 +398,7 @@ int tMPI_Init_fn(int main_thread_returns, int N,
     \param[out] nthreads                the number of threads
     
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads);
 
 
@@ -402,6 +406,7 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads);
 /** Waits for all other threads to finish and cleans up 
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Finalize(void);
 
 
@@ -413,6 +418,7 @@ int tMPI_Finalize(void);
     \param[in] errorcode    Error code to exit with
     
     \return Never returns. */
+TMPI_EXPORT
 int tMPI_Abort(tMPI_Comm comm, int errorcode);
 
 /** whether tMPI_Init, but not yet tMPI_Finalize, has been run
@@ -421,6 +427,7 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode);
                          FALSE if not.
     
     \return     always returns TMPI_SUCCESS. */
+TMPI_EXPORT
 int tMPI_Initialized(int *flag);
 
 /** Determine whether tMPI_Finalize has been run.
@@ -429,6 +436,7 @@ int tMPI_Initialized(int *flag);
                             called, FALSE if not.
      
     \return     always returns TMPI_SUCCESS.  */
+TMPI_EXPORT
 int tMPI_Finalized(int *flag);
 /** \} */
 
@@ -448,6 +456,7 @@ int tMPI_Finalized(int *flag);
     \param[out] errhandler      The error handler.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
                            tMPI_Errhandler *errhandler);
 
@@ -456,6 +465,7 @@ int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
     
     \param[in] errhandler       The error handler.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Errhandler_free(tMPI_Errhandler *errhandler);
 
 /** Set the error handler.
@@ -464,8 +474,9 @@ int tMPI_Errhandler_free(tMPI_Errhandler *errhandler);
     \param[in] errhandler   the error handler.
     
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
-
+TMPI_EXPORT
 int tMPI_Comm_set_errhandler(tMPI_Comm comm, tMPI_Errhandler errhandler);
+
 /** get the error handler.
 
     Gets the error handler associated with a comm
@@ -474,7 +485,7 @@ int tMPI_Comm_set_errhandler(tMPI_Comm comm, tMPI_Errhandler errhandler);
     \param[out] errhandler   the error handler.
     
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
-
+TMPI_EXPORT
 int tMPI_Comm_get_errhandler(tMPI_Comm comm, tMPI_Errhandler *errhandler);
 
 /** get the error string associated with an error code. 
@@ -487,6 +498,7 @@ int tMPI_Comm_get_errhandler(tMPI_Comm comm, tMPI_Errhandler *errhandler);
                             never be longer than TMPI_MAX_ERROR_STRING.  
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Error_string(int errorcode, char *string, size_t *resultlen);
 /** \} */
 
@@ -508,16 +520,19 @@ int tMPI_Error_string(int errorcode, char *string, size_t *resultlen);
                             for some reason defines all sizes as int
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Get_processor_name(char *name, int *resultlen);
 
 /** get a time value as a double, in seconds.
 
     \return time value.
     */
+TMPI_EXPORT
 double tMPI_Wtime(void);
 /** get the resolution of tMPI_Wtime as a double, in seconds 
 
     \return time resolution. */
+TMPI_EXPORT
 double tMPI_Wtick(void);
 
 #ifndef DOXYGEN
@@ -547,6 +562,7 @@ int tMPI_This_Threadnr(void);
     \param[in]  group       The group.
     \param[out] size        Size.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Group_size(tMPI_Group group, int *size);
 
 /** Get the rank of a thread in a group 
@@ -555,6 +571,7 @@ int tMPI_Group_size(tMPI_Group group, int *size);
     \param[out] rank        Variable for the rank, or TMPI_UNDEFINED 
                             if not in group.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Group_rank(tMPI_Group group, int *rank);
 
 /** Create a new group as a the collection of threads with given ranks. 
@@ -565,6 +582,7 @@ int tMPI_Group_rank(tMPI_Group group, int *rank);
     \param[out] newgroup    The new group.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup);
 
 /** Get a pointer to the group in the comm. 
@@ -573,12 +591,14 @@ int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup);
     \param[out] group       The comm's group. 
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_group(tMPI_Comm comm, tMPI_Group *group);
 
 /** De-allocate a group 
 
     \param[in] group        The group to de-allocate.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Group_free(tMPI_Group *group);
 /*! \} */
 
@@ -595,6 +615,7 @@ int tMPI_Group_free(tMPI_Group *group);
     \param[in] comm         The comm to query.
     \param[out] size        The comm size.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_size(tMPI_Comm comm, int *size);
 
 /** get the rank in comm of the current process 
@@ -602,6 +623,7 @@ int tMPI_Comm_size(tMPI_Comm comm, int *size);
     \param[in]  comm        The comm to query.
     \param[out] rank        Thread rank in comm.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_rank(tMPI_Comm comm, int *rank);
 
 /** Compare two comms. Returns TMPI_IDENT if the two comms point to
@@ -615,6 +637,7 @@ int tMPI_Comm_rank(tMPI_Comm comm, int *rank);
     \param[out] result       The output result, one of the values
                              described above. 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result);
 
 
@@ -624,6 +647,7 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result);
 
     \param[in] comm         The comm to free.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_free(tMPI_Comm *comm);
 
 /** Create a comm based on group membership.
@@ -636,6 +660,7 @@ int tMPI_Comm_free(tMPI_Comm *comm);
     \param[out] newcomm     The new comm.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_create(tMPI_Comm comm, tMPI_Group group, tMPI_Comm *newcomm);
 
 /** Split up a group into same-colored sub-groups ordered by key.
@@ -656,6 +681,7 @@ int tMPI_Comm_create(tMPI_Comm comm, tMPI_Group group, tMPI_Comm *newcomm);
     \param[in]  key         This thread's key (determines rank).
     \param[out] newcomm     The new comm.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm);
 
 /** Make a duplicate of a comm.
@@ -665,6 +691,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm);
     \param[in] comm         The originating comm.
     \param[in] newcomm      The new comm.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Comm_dup(tMPI_Comm comm, tMPI_Comm *newcomm);
 /*! \} */
 
@@ -684,6 +711,7 @@ int tMPI_Comm_dup(tMPI_Comm comm, tMPI_Comm *newcomm);
     \param[out] status      The type of topology. 
     
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Topo_test(tMPI_Comm comm, int *status);
 
 /** Get the dimensionality of a comm with a topology.
@@ -693,6 +721,7 @@ int tMPI_Topo_test(tMPI_Comm comm, int *status);
     
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 
+TMPI_EXPORT
 int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims);
 /** Get the size and pbc a of a comm with a Cartesian topology has.
 
@@ -705,6 +734,7 @@ int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 
+TMPI_EXPORT
 int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods, 
                   int *coords);
 
@@ -717,6 +747,7 @@ int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
     \param[out] rank        The rank associated with the coordinates.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank);
 
 /** Get coordinates of a process rank in a Cartesian topology.
@@ -728,6 +759,7 @@ int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank);
     \param[out] coords      The coordinates in each dimension.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords);
 
 /** Get optimal rank this process would have in a Cartesian topology. 
@@ -740,6 +772,7 @@ int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords);
     \param[out] newrank     The rank the thread would have given the topology.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods, 
                   int *newrank);
 
@@ -754,6 +787,7 @@ int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
     \param[out] comm_cart   The new comm with Cartesian topology.
    
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods, 
                      int reorder, tMPI_Comm *comm_cart);
 
@@ -768,6 +802,7 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
     \param[out] newcomm     The new split communicator
    
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm);
 
 /*! \} */
@@ -789,6 +824,7 @@ int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm);
     \param[in]  oldtype     The old data type.
     \param[out] newtype     The new data type (still needs to be committed).
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype, 
                         tMPI_Datatype *newtype);
 
@@ -797,6 +833,7 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
 
     \param[in,out] datatype  The new datatype.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Type_commit(tMPI_Datatype *datatype);
 /*! \} */
 
@@ -822,6 +859,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype);
     \param[in]  tag         The message tag. 
     \param[in]  comm        The shared communicator.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest, 
              int tag, tMPI_Comm comm);
 
@@ -835,6 +873,7 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
     \param[in]  comm        The shared communicator.
     \param[out] status      The message status. 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source, 
              int tag, tMPI_Comm comm, tMPI_Status *status);
 
@@ -855,6 +894,7 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
     \param[in]  comm        The shared communicator.
     \param[out] status      The received message status. 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype, 
                  int dest, int sendtag, void *recvbuf, int recvcount, 
                  tMPI_Datatype recvtype, int source, int recvtag, 
@@ -880,6 +920,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     \param[out] request     The request object that can be used in tMPI_Wait(),
                             tMPI_Test, etc.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest, 
               int tag, tMPI_Comm comm, tMPI_Request *request);
 
@@ -898,6 +939,7 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
     \param[out] request     The request object that can be used in tMPI_Wait(),
                             tMPI_Test, etc.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source, 
               int tag, tMPI_Comm comm, tMPI_Request *request);
 
@@ -912,6 +954,7 @@ int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source,
     \param[out]     status  Message status (can be set to TMPI_STATUS_IGNORE).
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status);
 
 /** Wait until a message is transferred.
@@ -920,6 +963,7 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status);
     \param[out]     status  Message status.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Wait(tMPI_Request *request, tMPI_Status *status);
 
 
@@ -934,6 +978,7 @@ int tMPI_Wait(tMPI_Request *request, tMPI_Status *status);
                                         be set to TMPI_STATUSES_IGNORE).
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Waitall(int count, tMPI_Request *array_of_requests, 
                 tMPI_Status *array_of_statuses);
 
@@ -947,6 +992,7 @@ int tMPI_Waitall(int count, tMPI_Request *array_of_requests,
                                         be set to TMPI_STATUSES_IGNORE).
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Testall(int count, tMPI_Request *array_of_requests, int *flag,
                 tMPI_Status *array_of_statuses);
 
@@ -961,6 +1007,7 @@ int tMPI_Testall(int count, tMPI_Request *array_of_requests, int *flag,
                                         associated with completed request.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Waitany(int count, tMPI_Request *array_of_requests, 
                  int *index, tMPI_Status *status);
 
@@ -976,6 +1023,7 @@ int tMPI_Waitany(int count, tMPI_Request *array_of_requests,
                                         associated with completed request.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Testany(int count, tMPI_Request *array_of_requests, 
                  int *index, int *flag, tMPI_Status *status);
 
@@ -992,6 +1040,7 @@ int tMPI_Testany(int count, tMPI_Request *array_of_requests,
                                         be set to TMPI_STATUSES_IGNORE).
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
                   int *outcount, int *array_of_indices,
                   tMPI_Status *array_of_statuses);
@@ -1008,6 +1057,7 @@ int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
                                         be set to TMPI_STATUSES_IGNORE).
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Testsome(int incount, tMPI_Request *array_of_requests,
                  int *outcount, int *array_of_indices,
                  tMPI_Status *array_of_statuses);
@@ -1025,6 +1075,7 @@ int tMPI_Testsome(int incount, tMPI_Request *array_of_requests,
     \param[out] count       The number of items actually received.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count);
 /*! \} */
 
@@ -1042,6 +1093,7 @@ int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count);
     \param[in]  comm    The comm object.
   
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Barrier(tMPI_Comm comm);
 /*! \} */
 
@@ -1066,6 +1118,7 @@ int tMPI_Barrier(tMPI_Comm comm);
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root, 
               tMPI_Comm comm);
 
@@ -1086,6 +1139,7 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype, 
                void* recvbuf, int recvcount, tMPI_Datatype recvtype, int root, 
                tMPI_Comm comm);
@@ -1110,6 +1164,7 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype, 
                 void* recvbuf, int *recvcounts, int *displs, 
                 tMPI_Datatype recvtype, int root, tMPI_Comm comm);
@@ -1132,6 +1187,7 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype, 
                 void* recvbuf, int recvcount, tMPI_Datatype recvtype, int root, 
                 tMPI_Comm comm);
@@ -1156,6 +1212,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs, 
                  tMPI_Datatype sendtype, void* recvbuf, int recvcount, 
                  tMPI_Datatype recvtype, int root, tMPI_Comm comm); 
@@ -1176,6 +1233,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype, 
                   void* recvbuf, int recvcount, tMPI_Datatype recvtype, 
                   tMPI_Comm comm);
@@ -1201,6 +1259,7 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls, 
                   tMPI_Datatype sendtype, void* recvbuf, int *recvcounts, 
                   int *rdispls, tMPI_Datatype recvtype, tMPI_Comm comm);
@@ -1233,6 +1292,7 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     \param[in]  comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Reduce(void* sendbuf, void* recvbuf, int count, 
                tMPI_Datatype datatype, tMPI_Op op, int root, tMPI_Comm comm);
 
@@ -1254,6 +1314,7 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
     \param[in]  comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count, 
                   tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
 
@@ -1279,6 +1340,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     \param[in]      comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count, 
                      tMPI_Datatype datatype, tMPI_Op op, int root, 
                      tMPI_Comm comm);
@@ -1299,6 +1361,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     \param[in]     comm        The communicator.
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
 int tMPI_Scan(void* sendbuf, void* recvbuf, int count, 
               tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
 

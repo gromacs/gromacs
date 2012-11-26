@@ -46,8 +46,9 @@ files.
 
 #include <stdexcept>
 
-#ifdef __cplusplus
+#include "visibility.h"
 
+#ifdef __cplusplus
 
 namespace tMPI
 {
@@ -65,7 +66,7 @@ namespace tMPI
         system_error(error_code ec) ;
 
         /*! \brief Returns the error code */
-        const error_code& code() const 
+        const error_code& code() const
         {
             return ec_;
         }
