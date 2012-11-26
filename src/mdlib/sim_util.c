@@ -1407,7 +1407,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
     
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts),enerd);
+    sum_epot(&(inputrec->opts),&(enerd->grpp),enerd->term);
 }
 
 void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
@@ -1899,7 +1899,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     }
 
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts),enerd);
+    sum_epot(&(inputrec->opts),&(enerd->grpp),enerd->term);
 }
 
 void do_force(FILE *fplog,t_commrec *cr,

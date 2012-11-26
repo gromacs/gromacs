@@ -99,7 +99,7 @@ void calc_bonds_lambda(FILE *fplog,
 			      rvec x[],
 			      t_forcerec *fr,
 			      const t_pbc *pbc,const t_graph *g,
-			      gmx_enerdata_t *enerd,t_nrnb *nrnb,
+                  gmx_grppairener_t *grpp, real *epot,t_nrnb *nrnb,
 			      real *lambda,
 			      const t_mdatoms *md,
 			      t_fcdata *fcd,int *global_atom_index);

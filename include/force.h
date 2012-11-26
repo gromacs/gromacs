@@ -201,13 +201,16 @@ void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd);
 void destroy_enerdata(gmx_enerdata_t *enerd);
 /* Free all memory associated with enerd */
 
+void reset_foreign_enerdata(gmx_enerdata_t *enerd);
+/* Resets only the foreign energy data */
+
 void reset_enerdata(t_grpopts *opts,
 			   t_forcerec *fr,gmx_bool bNS,
 			   gmx_enerdata_t *enerd,
 			   gmx_bool bMaster);
 /* Resets the energy data, if bNS=TRUE also zeros the long-range part */
 
-void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
+void sum_epot(t_grpopts *opts, gmx_grppairener_t *grpp, real *epot);
 /* Locally sum the non-bonded potential energy terms */
 
 GMX_LIBMD_EXPORT
