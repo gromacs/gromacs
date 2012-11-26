@@ -3615,7 +3615,7 @@ static real calc_one_bond(FILE *fplog,int thread,
 static real calc_one_bond_foreign(FILE *fplog,int ftype, const t_idef *idef,
                                   rvec x[], rvec f[], t_forcerec *fr,
                                   const t_pbc *pbc,const t_graph *g,
-                                  gmx_enerdata_t *enerd, t_nrnb *nrnb,
+                                  gmx_grppairener_t *grpp, t_nrnb *nrnb,
                                   real *lambda, real *dvdl,
                                   const t_mdatoms *md,t_fcdata *fcd,
                                   int *global_atom_index, gmx_bool bPrintSepPot)
@@ -3670,7 +3670,7 @@ static real calc_one_bond_foreign(FILE *fplog,int ftype, const t_idef *idef,
                                             idef->iparams,
                                             (const rvec*)x,f,fr->fshift,
                                             pbc,g,lambda,dvdl,
-                                            md,fr,&enerd->grpp,global_atom_index);
+                                            md,fr,grpp,global_atom_index);
                 }
                 if (ind != -1)
                 {
@@ -3824,14 +3824,14 @@ void calc_bonds_lambda(FILE *fplog,
                        rvec x[],
                        t_forcerec *fr,
                        const t_pbc *pbc,const t_graph *g,
-                       gmx_enerdata_t *enerd,t_nrnb *nrnb,
+                       gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                        real *lambda,
                        const t_mdatoms *md,
                        t_fcdata *fcd,
                        int *global_atom_index)
 {
     int    i,ftype,nbonds_np,nbonds,ind,nat;
-    real   v,dr,dr2,*epot;
+    real   v,dr,dr2;
     real   dvdl_dum[efptNR];
     rvec   *f,*fshift_orig;
     const  t_pbc *pbc_null;
@@ -3846,8 +3846,6 @@ void calc_bonds_lambda(FILE *fplog,
         pbc_null = NULL;
     }
 
-    epot = enerd->term;
-
     snew(f,fr->natoms_force);
     /* We want to preserve the fshift array in forcerec */
     fshift_orig = fr->fshift;
@@ -3857,7 +3855,7 @@ void calc_bonds_lambda(FILE *fplog,
     for(ftype=0; (ftype<F_NRE); ftype++) 
     {
         v = calc_one_bond_foreign(fplog,ftype,idef,x, 
-                                  f,fr,pbc_null,g,enerd,nrnb,lambda,dvdl_dum,
+                                  f,fr,pbc_null,g,grpp,nrnb,lambda,dvdl_dum,
                                   md,fcd,global_atom_index,FALSE);
         epot[ftype] += v;
     }
