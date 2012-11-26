@@ -105,7 +105,6 @@ gmx_mm_load_4pair_swizzle_ps(const float * gmx_restrict p1,
                              __m128 * gmx_restrict c6, __m128 * gmx_restrict c12)
 {
     __m128 t1,t2,t3,t4;
-    /* NOTE: This might be faster with _mm_loadu_ps() */
     t1   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)p1);
     t2   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)p2);
     t3   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)p3);
