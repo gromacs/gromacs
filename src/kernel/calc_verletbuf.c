@@ -591,8 +591,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         b  = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
         rc = ir->rcoulomb;
         br = b*rc;
-        md_el = elfac*(2*b*exp(-br*br)/(sqrt(M_PI)*rc) + gmx_erfc(br)/(rc*rc));
-        dd_el = elfac/(rc*rc)*(4*b*(1 + br*br)*exp(-br*br)/sqrt(M_PI) + 2*gmx_erfc(br)/rc);
+        md_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
+        dd_el = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
     }
     else
     {
