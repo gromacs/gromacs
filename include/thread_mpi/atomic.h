@@ -76,6 +76,8 @@ files.
 
 #include <stdio.h>
 
+#include "visibility.h"
+
 #ifdef __cplusplus
 extern "C" 
 {  
@@ -95,7 +97,6 @@ extern "C"
    Some compatible compilers, like icc on linux+mac will take this path, 
    too */
 #if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
-
 
 
 
@@ -346,6 +347,7 @@ static inline int tMPI_Atomic_get(tMPI_Atomic_t &a);
  *
  *  \hideinitializer
  */
+TMPI_EXPORT
 static inline void tMPI_Atomic_set(tMPI_Atomic_t *a, int i)
 {
     /* Mutexes here are necessary to guarantee memory visibility */
@@ -384,6 +386,7 @@ static inline void* tMPI_Atomic_ptr_get(tMPI_Atomic_ptr_t &a);
  *
  *  \hideinitializer
  */
+TMPI_EXPORT
 static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *a, void *p)
 {
     /* Mutexes here are necessary to guarantee memory visibility */
@@ -403,6 +406,7 @@ static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *a, void *p)
  *
  *  \return The new value (after summation).
  */
+TMPI_EXPORT
 static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
     int t;
@@ -430,6 +434,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
  *
  *  \return    The value of the atomic variable before addition.
  */
+TMPI_EXPORT
 static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
     int old_value;
@@ -471,6 +476,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
  * 
  *   \note   The exchange occured if the return value is identical to \a old.
  */
+TMPI_EXPORT
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
 {
     int t=0;
@@ -508,6 +514,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
  * 
  *   \note   The exchange occured if the return value is identical to \a old.
  */
+TMPI_EXPORT
 static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
                                       void *new_val)
 {
@@ -593,6 +600,7 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
  *
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
+TMPI_EXPORT
 static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     if(tMPI_Spinlock_trylock(x) != 0)
@@ -616,6 +624,7 @@ static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
  *
  *  \param x  Spinlock pointer
  */
+TMPI_EXPORT
 static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     tMPI_Spinlock_lock(x);
@@ -639,6 +648,7 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
   \param b  Value to swap 
   \return the original value of a
 */
+TMPI_EXPORT
 static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
     int oldval;
@@ -658,6 +668,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
   \param b  Value to swap 
   \return the original value of a
 */
+TMPI_EXPORT
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *oldval;
