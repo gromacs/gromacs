@@ -170,7 +170,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     t_pbc   pbc;
     real    dvdgb;
     char    buf[22];
-    gmx_enerdata_t ed_lam;
     double  clam_i,vlam_i;
     real    dvdl_dum[efptNR], dvdl, dvdl_nb[efptNR], lam_i[efptNR];
     real    dvdlsum;
@@ -279,34 +278,31 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     &enerd->grpp,box_size,nrnb,
                     lambda,dvdl_nb,-1,-1,donb_flags);
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-    }
 
-    /* If we do foreign lambda and we have soft-core interactions
-     * we have to recalculate the (non-linear) energies contributions.
-     */
-    if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
-    {
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
-
-        for(i=0; i<enerd->n_lambda; i++)
+        /* If we do foreign lambda and we have soft-core interactions
+         * we have to recalculate the (non-linear) energies contributions.
+         */
+        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
         {
-            for (j=0;j<efptNR;j++)
+            wallcycle_sub_start(wcycle, ewcsNONBONDED);
+            for(i=0; i<enerd->n_lambda; i++)
             {
-                lam_i[j] = (i==0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
+                for (j=0;j<efptNR;j++)
+                {
+                    lam_i[j] = (i==0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
+                }
+                reset_foreign_enerdata(enerd);
+                do_nonbonded(cr,fr,x,f,f_longrange,md,excl,
+                             &(enerd->foreign_grpp),box_size,nrnb,
+                             lam_i,dvdl_dum,-1,-1,
+                             donb_flags | GMX_NONBONDED_DO_FOREIGNLAMBDA);
+                sum_epot(&ir->opts,&(enerd->foreign_grpp),enerd->foreign_term);
+                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
-            reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
-            do_nonbonded(cr,fr,x,f,f_longrange,md,excl,
-                         &(ed_lam.grpp), box_size,nrnb,
-                         lam_i,dvdl_dum,-1,-1,
-                         GMX_NONBONDED_DO_FOREIGNLAMBDA | GMX_NONBONDED_DO_SR);
-            sum_epot(&ir->opts,&ed_lam);
-            enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
+            wallcycle_sub_stop(wcycle, ewcsNONBONDED);
         }
-        destroy_enerdata(&ed_lam);
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
+        where();
     }
-    where();
 
 	/* If we are doing GB, calculate bonded forces and apply corrections
 	 * to the solvation forces */
@@ -424,21 +420,18 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             {
                 gmx_incons("The bonded interactions are not sorted for free energy");
             }
-            init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
-
             for(i=0; i<enerd->n_lambda; i++)
             {
-                reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
+                reset_foreign_enerdata(enerd);
                 for (j=0;j<efptNR;j++)
                 {
                     lam_i[j] = (i==0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
-                calc_bonds_lambda(fplog,idef,x,fr,&pbc,graph,&ed_lam,nrnb,lam_i,md,
+                calc_bonds_lambda(fplog,idef,x,fr,&pbc,graph,&(enerd->foreign_grpp),enerd->foreign_term,nrnb,lam_i,md,
                                   fcd,DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                sum_epot(&ir->opts,&ed_lam);
-                enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
+                sum_epot(&ir->opts,&(enerd->foreign_grpp),enerd->foreign_term);
+                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
-            destroy_enerdata(&ed_lam);
         }
         debug_gmx();
         GMX_MPE_LOG(ev_calc_bonds_finish);
@@ -702,6 +695,7 @@ void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd)
     for(i=0; i<F_NRE; i++)
     {
         enerd->term[i] = 0;
+        enerd->foreign_term[i] = 0;
     }
 
 
@@ -716,9 +710,11 @@ void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd)
         fprintf(debug,"Creating %d sized group matrix for energies\n",n2);
     }
     enerd->grpp.nener = n2;
+    enerd->foreign_grpp.nener = n2;
     for(i=0; (i<egNR); i++)
     {
         snew(enerd->grpp.ener[i],n2);
+        snew(enerd->foreign_grpp.ener[i],n2);
     }
 
     if (n_lambda)
@@ -741,6 +737,11 @@ void destroy_enerdata(gmx_enerdata_t *enerd)
         sfree(enerd->grpp.ener[i]);
     }
 
+    for(i=0; (i<egNR); i++)
+    {
+        sfree(enerd->foreign_grpp.ener[i]);
+    }
+
     if (enerd->n_lambda)
     {
         sfree(enerd->enerpart_lambda);
@@ -759,14 +760,9 @@ static real sum_v(int n,real v[])
   return t;
 }
 
-void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
+void sum_epot(t_grpopts *opts, gmx_grppairener_t *grpp, real *epot)
 {
-  gmx_grppairener_t *grpp;
-  real *epot;
   int i;
-
-  grpp = &enerd->grpp;
-  epot = enerd->term;
 
   /* Accumulate energies */
   epot[F_COUL_SR]  = sum_v(grpp->nener,grpp->ener[egCOULSR]);
@@ -887,6 +883,28 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
     }
 }
 
+
+void reset_foreign_enerdata(gmx_enerdata_t *enerd)
+{
+    int  i,j;
+
+    /* First reset all foreign energy components.  Foreign energies always called on
+       neighbor search steps */
+    for(i=0; (i<egNR); i++)
+    {
+        for(j=0; (j<enerd->grpp.nener); j++)
+        {
+            enerd->foreign_grpp.ener[i][j] = 0.0;
+        }
+    }
+
+    /* potential energy components */
+    for(i=0; (i<=F_EPOT); i++)
+    {
+        enerd->foreign_term[i] = 0.0;
+    }
+}
+
 void reset_enerdata(t_grpopts *opts,
                     t_forcerec *fr,gmx_bool bNS,
                     gmx_enerdata_t *enerd,
@@ -931,4 +949,6 @@ void reset_enerdata(t_grpopts *opts,
             enerd->enerpart_lambda[i] = 0.0;
         }
     }
+    /* reset foreign energy data - separate function since we also call it elsewhere */
+    reset_foreign_enerdata(enerd);
 }
