@@ -1763,6 +1763,7 @@ static void init_nb_verlet(FILE *fp,
             {
                 /* Use the same kernel for local and non-local interactions */
                 nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
+                nbv->grp[i].ewald_excl  = nbv->grp[0].ewald_excl;
             }
         }
     }
