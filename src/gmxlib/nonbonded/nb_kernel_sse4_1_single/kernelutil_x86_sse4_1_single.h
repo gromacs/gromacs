@@ -109,10 +109,10 @@ gmx_mm_load_4pair_swizzle_ps(const float * gmx_restrict p1,
 {
     __m128 t1,t2,t3,t4;
     
-    t1   = _mm_castpd_ps(_mm_load_sd((const double *)p1));
-    t2   = _mm_castpd_ps(_mm_load_sd((const double *)p2));
-    t3   = _mm_castpd_ps(_mm_load_sd((const double *)p3));
-    t4   = _mm_castpd_ps(_mm_load_sd((const double *)p4));
+    t1   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)p1);   /* - - c12a  c6a */
+    t2   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)p2);   /* - - c12b  c6b */
+    t3   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)p3);   /* - - c12c  c6c */
+    t4   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)p4);   /* - - c12d  c6d */
     t1   = _mm_unpacklo_ps(t1,t2);
     t2   = _mm_unpacklo_ps(t3,t4);
     *c6  = _mm_movelh_ps(t1,t2);
@@ -129,8 +129,8 @@ gmx_mm_load_shift_and_1rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
 {
     __m128 t1,t2,t3,t4;
     
-    t1   = _mm_castpd_ps(_mm_load_sd((const double *)xyz_shift));
-    t2   = _mm_castpd_ps(_mm_load_sd((const double *)xyz));
+    t1   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)xyz_shift);
+    t2   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)xyz);
     t3   = _mm_load_ss(xyz_shift+2);
     t4   = _mm_load_ss(xyz+2);
     t1   = _mm_add_ps(t1,t2);
@@ -152,7 +152,7 @@ gmx_mm_load_shift_and_3rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
     __m128 tA,tB;
     __m128 t1,t2,t3,t4,t5,t6;
     
-    tA   = _mm_castpd_ps(_mm_load_sd((const double *)xyz_shift));
+    tA   = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)xyz_shift);
     tB   = _mm_load_ss(xyz_shift+2);
 
     t1   = _mm_loadu_ps(xyz);
@@ -538,41 +538,6 @@ gmx_mm_update_iforce_1atom_swizzle_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	_mm_store_ss(fshiftptr,t3);
 	_mm_storeh_pi((__m64 *)(fshiftptr+1),t3);
 }
-
-static gmx_inline void
-gmx_mm_update_iforce_2atom_swizzle_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                                      __m128 fix2, __m128 fiy2, __m128 fiz2,
-                                      float * gmx_restrict fptr,
-                                      float * gmx_restrict fshiftptr)
-{
-	__m128 t1,t2,t4;
-	
-	fix1 = _mm_hadd_ps(fix1,fiy1);
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */
-	fiy2 = _mm_hadd_ps(fiy2,fiy2); /*  -    -   fiz2 fiy2 */
-    
-	_mm_storeu_ps(fptr,   _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
-	t1 = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(fptr+4));
-	_mm_storel_pi((__m64 *)(fptr+4), _mm_add_ps(fiy2,t1));
-	
-	t4 = _mm_load_ss(fshiftptr+2);
-	t4 = _mm_loadh_pi(t4,(__m64 *)(fshiftptr));
-	
-	t1 = _mm_shuffle_ps(fix1,fiy2,_MM_SHUFFLE(0,0,3,2));   /* fiy2  -   fix2 fiz1 */
-	t1 = _mm_shuffle_ps(t1,t1,_MM_SHUFFLE(3,1,0,0));       /* fiy2 fix2  -   fiz1 */
-	t2 = _mm_shuffle_ps(fiy2,fix1,_MM_SHUFFLE(1,0,0,1));   /* fiy1 fix1  -   fiz2 */
-    
-	t1 = _mm_add_ps(t1,t2);
-	t1 = _mm_add_ps(t1,t4); /* y x - z */
-	
-	_mm_store_ss(fshiftptr+2,t1);
-	_mm_storeh_pi((__m64 *)(fshiftptr),t1);
-}
-
-
 
 static gmx_inline void
 gmx_mm_update_iforce_3atom_swizzle_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,

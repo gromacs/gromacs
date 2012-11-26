@@ -223,6 +223,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,
                                                               charge+jnrC+0,charge+jnrD+0);
 
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -283,11 +287,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             fiy1             = _mm_add_ps(fiy1,ty);
             fiz1             = _mm_add_ps(fiz1,tz);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -351,11 +353,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             fiy2             = _mm_add_ps(fiy2,ty);
             fiz2             = _mm_add_ps(fiz2,tz);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -419,13 +419,18 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             fiy3             = _mm_add_ps(fiy3,ty);
             fiz3             = _mm_add_ps(fiz3,tz);
 
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
+            
+            }
+
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
             fjptrC             = f+j_coord_offsetC;
             fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
-            
-            }
+
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 195 flops */
         }
@@ -484,6 +489,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             /* Load parameters for j particles */
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,
                                                               charge+jnrC+0,charge+jnrD+0);
+
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -549,11 +558,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             fiy1             = _mm_add_ps(fiy1,ty);
             fiz1             = _mm_add_ps(fiz1,tz);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -621,11 +628,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             fiy2             = _mm_add_ps(fiy2,ty);
             fiz2             = _mm_add_ps(fiz2,tz);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -693,13 +698,18 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_sse2_single
             fiy3             = _mm_add_ps(fiy3,ty);
             fiz3             = _mm_add_ps(fiz3,tz);
 
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
+            
+            }
+
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
             fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
             fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
-            
-            }
+
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 198 flops */
         }
@@ -913,6 +923,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,
                                                               charge+jnrC+0,charge+jnrD+0);
 
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -968,11 +982,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             fiy1             = _mm_add_ps(fiy1,ty);
             fiz1             = _mm_add_ps(fiz1,tz);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -1031,11 +1043,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             fiy2             = _mm_add_ps(fiy2,ty);
             fiz2             = _mm_add_ps(fiz2,tz);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -1094,13 +1104,18 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             fiy3             = _mm_add_ps(fiy3,ty);
             fiz3             = _mm_add_ps(fiz3,tz);
 
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
+            
+            }
+
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
             fjptrC             = f+j_coord_offsetC;
             fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
-            
-            }
+
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 186 flops */
         }
@@ -1160,6 +1175,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,
                                                               charge+jnrC+0,charge+jnrD+0);
 
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1218,11 +1237,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             fiy1             = _mm_add_ps(fiy1,ty);
             fiz1             = _mm_add_ps(fiz1,tz);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -1284,11 +1301,9 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             fiy2             = _mm_add_ps(fiy2,ty);
             fiz2             = _mm_add_ps(fiz2,tz);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
             
             }
 
@@ -1350,13 +1365,18 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_sse2_single
             fiy3             = _mm_add_ps(fiy3,ty);
             fiz3             = _mm_add_ps(fiz3,tz);
 
+            fjx0             = _mm_add_ps(fjx0,tx);
+            fjy0             = _mm_add_ps(fjy0,ty);
+            fjz0             = _mm_add_ps(fjz0,tz);
+            
+            }
+
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
             fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
             fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
-            
-            }
+
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 189 flops */
         }
