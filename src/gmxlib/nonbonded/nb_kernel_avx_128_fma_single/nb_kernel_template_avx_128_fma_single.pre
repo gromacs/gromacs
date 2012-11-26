@@ -463,7 +463,7 @@ void
             /*     #endfor */
             /* #endif */
 
-            /* #if 'Force' in KERNEL_VF and not 'Particle' in GEOMETRY_J */
+            /* #if 'Force' in KERNEL_VF and not 'Particle' in GEOMETRY_I */
             /*     #for J in PARTICLES_J */
             fjx{J}             = _mm_setzero_ps();
             fjy{J}             = _mm_setzero_ps();
@@ -861,7 +861,7 @@ void
             fiz{I}             = _mm_macc_ps(dz{I}{J},fscal,fiz{I});
             /*             #define INNERFLOPS INNERFLOPS+6 */
 
-            /* #if GEOMETRY_J == 'Particle'             */
+            /* #if GEOMETRY_I == 'Particle'             */
             /*     #if ROUND == 'Loop' */
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -899,7 +899,7 @@ void
             /* #endfor */
             /* ## End of loop over i-j interaction pairs */
 
-            /* #if GEOMETRY_J != 'Particle' */
+            /* #if GEOMETRY_I != 'Particle' */
             /*     #if ROUND == 'Loop' */
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -913,7 +913,9 @@ void
             /*     #endif */
             /* #endif */
 
-            /* #if GEOMETRY_J == 'Water3'               */
+            /* #if 'Water' in GEOMETRY_I and GEOMETRY_J == 'Particle' */
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
+            /* #elif GEOMETRY_J == 'Water3'               */
             gmx_mm_decrement_3rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
                                                    fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2);
             /*     #define INNERFLOPS INNERFLOPS+9      */

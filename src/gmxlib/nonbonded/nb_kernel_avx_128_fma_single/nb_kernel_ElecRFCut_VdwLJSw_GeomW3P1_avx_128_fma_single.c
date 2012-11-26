@@ -233,6 +233,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             vdwjidx0C        = 2*vdwtype[jnrC+0];
             vdwjidx0D        = 2*vdwtype[jnrD+0];
 
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -290,14 +294,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
             fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx00,fscal),
-                                                   _mm_mul_ps(dy00,fscal),
-                                                   _mm_mul_ps(dz00,fscal));
+            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
 
             }
 
@@ -330,14 +329,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
             fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx10,fscal),
-                                                   _mm_mul_ps(dy10,fscal),
-                                                   _mm_mul_ps(dz10,fscal));
+            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
 
             }
 
@@ -370,16 +364,18 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
             fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
 
+            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+
+            }
+
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
             fjptrC             = f+j_coord_offsetC;
             fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx20,fscal),
-                                                   _mm_mul_ps(dy20,fscal),
-                                                   _mm_mul_ps(dz20,fscal));
 
-            }
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 151 flops */
         }
@@ -443,6 +439,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             vdwjidx0C        = 2*vdwtype[jnrC+0];
             vdwjidx0D        = 2*vdwtype[jnrD+0];
 
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -505,14 +505,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
             fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx00,fscal),
-                                                   _mm_mul_ps(dy00,fscal),
-                                                   _mm_mul_ps(dz00,fscal));
+            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
 
             }
 
@@ -548,14 +543,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
             fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx10,fscal),
-                                                   _mm_mul_ps(dy10,fscal),
-                                                   _mm_mul_ps(dz10,fscal));
+            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
 
             }
 
@@ -591,16 +581,18 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
             fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
             fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
 
+            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+
+            }
+
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
             fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
             fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx20,fscal),
-                                                   _mm_mul_ps(dy20,fscal),
-                                                   _mm_mul_ps(dz20,fscal));
 
-            }
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 152 flops */
         }
@@ -824,6 +816,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             vdwjidx0C        = 2*vdwtype[jnrC+0];
             vdwjidx0D        = 2*vdwtype[jnrD+0];
 
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -873,14 +869,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
             fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx00,fscal),
-                                                   _mm_mul_ps(dy00,fscal),
-                                                   _mm_mul_ps(dz00,fscal));
+            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
 
             }
 
@@ -908,14 +899,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
             fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
 
-            fjptrA             = f+j_coord_offsetA;
-            fjptrB             = f+j_coord_offsetB;
-            fjptrC             = f+j_coord_offsetC;
-            fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx10,fscal),
-                                                   _mm_mul_ps(dy10,fscal),
-                                                   _mm_mul_ps(dz10,fscal));
+            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
 
             }
 
@@ -943,16 +929,18 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
             fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
 
+            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+
+            }
+
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
             fjptrC             = f+j_coord_offsetC;
             fjptrD             = f+j_coord_offsetD;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx20,fscal),
-                                                   _mm_mul_ps(dy20,fscal),
-                                                   _mm_mul_ps(dz20,fscal));
 
-            }
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 130 flops */
         }
@@ -1016,6 +1004,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             vdwjidx0C        = 2*vdwtype[jnrC+0];
             vdwjidx0D        = 2*vdwtype[jnrD+0];
 
+            fjx0             = _mm_setzero_ps();
+            fjy0             = _mm_setzero_ps();
+            fjz0             = _mm_setzero_ps();
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1068,14 +1060,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
             fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx00,fscal),
-                                                   _mm_mul_ps(dy00,fscal),
-                                                   _mm_mul_ps(dz00,fscal));
+            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
 
             }
 
@@ -1105,14 +1092,9 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
             fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
 
-            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
-            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
-            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
-            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx10,fscal),
-                                                   _mm_mul_ps(dy10,fscal),
-                                                   _mm_mul_ps(dz10,fscal));
+            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
 
             }
 
@@ -1142,16 +1124,18 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
             fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
             fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
 
+            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
+            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
+            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+
+            }
+
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
             fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
             fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
-                                                   _mm_mul_ps(dx20,fscal),
-                                                   _mm_mul_ps(dy20,fscal),
-                                                   _mm_mul_ps(dz20,fscal));
 
-            }
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
 
             /* Inner loop uses 131 flops */
         }
