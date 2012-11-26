@@ -1,0 +1,7 @@
+Code-Review+2: Erik Lindahl <erik@kth.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Erik Lindahl <erik@kth.se>
+Submitted-at: Mon, 26 Nov 2012 13:44:39 +0100
+Reviewed-on: https://gerrit.gromacs.org/1731
+Project: gromacs
+Branch: refs/heads/release-4-6
