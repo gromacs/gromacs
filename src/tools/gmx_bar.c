@@ -2484,36 +2484,40 @@ int gmx_bar(int argc,char *argv[])
 
         "Input option [TT]-f[tt] expects multiple [TT]dhdl.xvg[tt] files. ",
         "Two types of input files are supported:[BR]",
-        "[TT]*[tt]  Files with more than one [IT]y[it]-value. The files should have columns ",
-        "with dH/d[GRK]lambda[grk] and [GRK]Delta[grk][GRK]lambda[grk]. The [GRK]lambda[grk] values are inferred ",
-        "from the legends: [GRK]lambda[grk] of the simulation from the legend of dH/d[GRK]lambda[grk] ",
-        "and the foreign [GRK]lambda[grk] values from the legends of Delta H",
+        "[TT]*[tt]  Files with more than one [IT]y[it]-value. ",
+        "The files should have columns ",
+        "with dH/d[GRK]lambda[grk] and [GRK]Delta[grk][GRK]lambda[grk]. ",
+        "The [GRK]lambda[grk] values are inferred ",
+        "from the legends: [GRK]lambda[grk] of the simulation from the legend of ",
+        "dH/d[GRK]lambda[grk] and the foreign [GRK]lambda[grk] values from the ",
+        "legends of Delta H",
         "[BR]",
         "[TT]*[tt]  Files with only one [IT]y[it]-value. Using the",
         "[TT]-extp[tt] option for these files, it is assumed",
-        "that the [IT]y[it]-value is dH/d[GRK]lambda[grk] and that the Hamiltonian depends ",
-        "linearly on [GRK]lambda[grk]. The [GRK]lambda[grk] value of the simulation is inferred ",
-        "from the subtitle (if present), otherwise from a number in the",
-        "subdirectory in the file name.[PAR]",
+        "that the [IT]y[it]-value is dH/d[GRK]lambda[grk] and that the ",
+        "Hamiltonian depends linearly on [GRK]lambda[grk]. ",
+        "The [GRK]lambda[grk] value of the simulation is inferred from the ",
+        "subtitle (if present), otherwise from a number in the subdirectory ",
+        "in the file name.[PAR]",
 
-
-        "The [GRK]lambda[grk] of the simulation is parsed from [TT]dhdl.xvg[tt] file's legend ",
-        "containing the string 'dH', the foreign [GRK]lambda[grk] values from the legend ",
-        "containing the capitalized letters 'D' and 'H'. The temperature ",
-        "is parsed from the legend line containing 'T ='.[PAR]",
+        "The [GRK]lambda[grk] of the simulation is parsed from ",
+        "[TT]dhdl.xvg[tt] file's legend containing the string 'dH', the ",
+        "foreign [GRK]lambda[grk] values from the legend containing the ",
+        "capitalized letters 'D' and 'H'. The temperature is parsed from ",
+        "the legend line containing 'T ='.[PAR]",
 
         "The input option [TT]-g[tt] expects multiple [TT].edr[tt] files. ",
-        "These can contain either lists of energy differences (see the",
-        "[TT].mdp[tt] option [TT]separate_dhdl_file[tt]), or a series of histograms",
-        "(see the [TT].mdp[tt] options [TT]dh_hist_size[tt] and [TT]dh_hist_spacing[tt]).",
-        "The temperature and [GRK]lambda[grk] values are automatically deduced from",
-        "the [TT]ener.edr[tt] file.[PAR]"
+        "These can contain either lists of energy differences (see the ",
+        "[TT].mdp[tt] option [TT]separate_dhdl_file[tt]), or a series of ",
+        "histograms (see the [TT].mdp[tt] options [TT]dh_hist_size[tt] and ",
+        "[TT]dh_hist_spacing[tt]).", "The temperature and [GRK]lambda[grk] ",
+        "values are automatically deduced from the [TT]ener.edr[tt] file.[PAR]"
 
         "In addition to the [TT].mdp[tt] option [TT]foreign_lambda[tt], "
         "the energy difference can also be extrapolated from the "
-        "dH/d[GRK]lambda values. This is done with the[TT]-extp[tt] option,"
-        "which assumes that the system's Hamiltonian depends linearly"
-        "on [GRK]lambda, which is not normally the case.[PAR]"
+        "dH/d[GRK]lambda[grk] values. This is done with the[TT]-extp[tt]",
+        "option, which assumes that the system's Hamiltonian depends linearly",
+        "on [GRK]lambda[grk], which is not normally the case.[PAR]"
 
         "The free energy estimates are determined using BAR with bisection, ",
         "with the precision of the output set with [TT]-prec[tt]. ",
@@ -2525,12 +2529,13 @@ int gmx_bar(int argc,char *argv[])
         "over 5 blocks. A range of block numbers for error estimation can ",
         "be provided with the options [TT]-nbmin[tt] and [TT]-nbmax[tt].[PAR]",
 
-        "[TT]g_bar[tt] tries to aggregate samples with the same 'native' and 'foreign'",
-        "[GRK]lambda[grk] values, but always assumes independent samples. [BB]Note[bb] that",
-        "when aggregating energy differences/derivatives with different",
-        "sampling intervals, this is almost certainly not correct. Usually",
-        "subsequent energies are correlated and different time intervals mean",
-        "different degrees of correlation between samples.[PAR]",
+        "[TT]g_bar[tt] tries to aggregate samples with the same 'native' and ",
+        "'foreign' [GRK]lambda[grk] values, but always assumes independent ",
+        "samples. [BB]Note[bb] that when aggregating energy ",
+        "differences/derivatives with different sampling intervals, this is ",
+        "almost certainly not correct. Usually subsequent energies are ",
+        "correlated and different time intervals mean different degrees ",
+        "of correlation between samples.[PAR]",
 
         "The results are split in two parts: the last part contains the final ",
         "results in kJ/mol, together with the error estimate for each part ",
