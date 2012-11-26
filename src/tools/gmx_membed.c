@@ -123,7 +123,7 @@ int gmx_membed(int argc,char *argv[])
 
 /* arguments relevant to OPENMM only*/
 #ifdef GMX_OPENMM
-    gmx_fatal("g_membed not implemented for openmm");
+    gmx_fatal(FARGS,"g_membed not implemented for openmm");
 #endif
 
     t_pargs pa[] = {
