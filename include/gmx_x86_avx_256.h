@@ -82,6 +82,44 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
 }
 #endif
 
+static gmx_inline __m256
+gmx_mm256_unpack128lo_ps(__m256 xmm1, __m256 xmm2)
+{
+    return _mm256_permute2f128_ps(xmm1,xmm2,0x20);
+}
+
+static gmx_inline __m256
+gmx_mm256_unpack128hi_ps(__m256 xmm1, __m256 xmm2)
+{
+    return _mm256_permute2f128_ps(xmm1,xmm2,0x31);
+}
+
+static gmx_inline __m256
+gmx_mm256_set_m128(__m128 hi, __m128 lo)
+{
+    return _mm256_insertf128_ps(_mm256_castps128_ps256(lo), hi, 0x1);
+}
+
+
+static __m256d
+gmx_mm256_unpack128lo_pd(__m256d xmm1, __m256d xmm2)
+{
+    return _mm256_permute2f128_pd(xmm1,xmm2,0x20);
+}
+
+static __m256d
+gmx_mm256_unpack128hi_pd(__m256d xmm1, __m256d xmm2)
+{
+    return _mm256_permute2f128_pd(xmm1,xmm2,0x31);
+}
+
+static __m256d
+gmx_mm256_set_m128d(__m128d hi, __m128d lo)
+{
+    return _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), hi, 0x1);
+}
+
+
 
 
 static void
