@@ -87,6 +87,9 @@
 #if (defined GMX_CPU_ACCELERATION_X86_SSE2 && defined GMX_DOUBLE)
 #    include "nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
+#    include "nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
+#endif
 
 #ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -129,6 +132,9 @@ gmx_nonbonded_setup(FILE *         fplog,
                 /* Double precision */
 #if (defined GMX_CPU_ACCELERATION_X86_SSE2 && defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_sse2_double,kernellist_sse2_double_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_sse4_1_double,kernellist_sse4_1_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
             }
@@ -183,6 +189,10 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
          * a possible single odd-element epilogue.
          */
         { "sse2_double", 1 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
+        /* No padding - see SSE2 double comment */
+        { "sse4_1_double", 1 },
 #endif
         { "c", 1 },
     };
