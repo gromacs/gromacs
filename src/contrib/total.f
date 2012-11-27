@@ -1,3 +1,37 @@
+C
+C This file is part of the GROMACS molecular simulation package.
+C
+C Copyright (c) 2012, by the GROMACS development team, led by
+C David van der Spoel, Berk Hess, Erik Lindahl, and including many
+C others, as listed in the AUTHORS file in the top-level source
+C directory and at http://www.gromacs.org.
+C
+C GROMACS is free software; you can redistribute it and/or
+C modify it under the terms of the GNU Lesser General Public License
+C as published by the Free Software Foundation; either version 2.1
+C of the License, or (at your option) any later version.
+C
+C GROMACS is distributed in the hope that it will be useful,
+C but WITHOUT ANY WARRANTY; without even the implied warranty of
+C MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+C Lesser General Public License for more details.
+C
+C You should have received a copy of the GNU Lesser General Public
+C License along with GROMACS; if not, see
+C http://www.gnu.org/licenses, or write to the Free Software Foundation,
+C Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+C
+C If you want to redistribute modifications to GROMACS, please
+C consider that scientific software is very special. Version
+C control is crucial - bugs must be traceable. We will be happy to
+C consider code for inclusion in the official distribution, but
+C derived work must not be called official GROMACS. Details are found
+C in the README & COPYING files - if they are missing, get the
+C official version at http://www.gromacs.org.
+C
+C To help us fund GROMACS development, we humbly ask that you cite
+C the research papers on the package. Check out http://www.gromacs.org.
+
 C Chemical shift calculation, to read in multiple NMR structures
 C (with protons) and calculate sd for each
 C Will also read Xray structures and add protons
