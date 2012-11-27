@@ -42,11 +42,6 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c
                 PROPERTIES GENERATED true)
 endif()
 
-# The log file output queries Cuda if GPU support is enabled
-if(GMX_GPU)
-set_source_files_properties(copyrite.c PROPERTIES COMPILE_FLAGS "-I${CUDA_TOOLKIT_INCLUDE}")
-endif()
-
 if(NOT GMX_EXTERNAL_BLAS)
   file(GLOB BLAS_SOURCES gmx_blas/*.c)
 endif(NOT GMX_EXTERNAL_BLAS)
@@ -91,6 +86,12 @@ if(USE_VERSION_H)
 endif()
 set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
     COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+# The log file output queries Cuda if GPU support is enabled
+if(GMX_GPU)
+    include_directories(${CUDA_TOOLKIT_INCLUDE})
+endif()
+
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
