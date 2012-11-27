@@ -1,35 +1,40 @@
 C
-C                This source code is part of
-C 
-C                 G   R   O   M   A   C   S
-C 
-C          GROningen MAchine for Chemical Simulations
-C 
-C                        VERSION 3.0
-C 
+C This file is part of the GROMACS molecular simulation package,
+C version 4.6
+C
 C Copyright (c) 1991-2001
 C BIOSON Research Institute, Dept. of Biophysical Chemistry
 C University of Groningen, The Netherlands
-C 
-C This program is free software; you can redistribute it and/or
-C modify it under the terms of the GNU General Public License
-C as published by the Free Software Foundation; either version 2
+C Copyright (c) 2012, by the GROMACS development team, led by
+C David van der Spoel, Berk Hess, Erik Lindahl, and including many
+C others, as listed in the AUTHORS file in the top-level source
+C directory and at http://www.gromacs.org.
+C
+C GROMACS is free software; you can redistribute it and/or
+C modify it under the terms of the GNU Lesser General Public License
+C as published by the Free Software Foundation; either version 2.1
 C of the License, or (at your option) any later version.
-C 
-C If you want to redistribute modifications, please consider that
-C scientific software is very special. Version control is crucial -
-C bugs must be traceable. We will be happy to consider code for
-C inclusion in the official distribution, but derived work must not
-C be called official GROMACS. Details are found in the README & COPYING
-C files - if they are missing, get the official version at www.gromacs.org.
-C 
+C
+C GROMACS is distributed in the hope that it will be useful,
+C but WITHOUT ANY WARRANTY; without even the implied warranty of
+C MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+C Lesser General Public License for more details.
+C
+C You should have received a copy of the GNU Lesser General Public
+C License along with GROMACS; if not, see
+C http://www.gnu.org/licenses, or write to the Free Software Foundation,
+C Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+C
+C If you want to redistribute modifications to GROMACS, please
+C consider that scientific software is very special. Version
+C control is crucial - bugs must be traceable. We will be happy to
+C consider code for inclusion in the official distribution, but
+C derived work must not be called official GROMACS. Details are found
+C in the README & COPYING files - if they are missing, get the
+C official version at http://www.gromacs.org.
+C
 C To help us fund GROMACS development, we humbly ask that you cite
-C the papers on the package - you can find them in the top README file.
-C 
-C Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
-C 
-C And Hey:
-C GROup of MAchos and Cynical Suckers
+C the research papers on the package. Check out http://www.gromacs.org.
 
 C
 C     This code is meant to be called from C routines.

@@ -3,7 +3,7 @@
 # License: MIT License (http://www.opensource.org/licenses/mit-license.php)
 # Original filename preprocess.py, see http://code.google.com/p/preprocess/
 #
-# Modified by Erik Lindahl 2009-2012 <lindahl@gromacs.org>
+# Modified form Copyright (c) by Erik Lindahl 2009-2012 <lindahl@gromacs.org>
 # to enable advanced preprocessing for Gromacs kernels, including
 # preprocessor for-loops and substitution into preprocessor directives
 # as well as program strings.
