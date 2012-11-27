@@ -437,17 +437,6 @@ int tMPI_Init_NUMA(void)
 
     iRet = 0 ;
 
-#if 0   
-    // TODO: debug DISCARD                        
-    printf("primary thread tid=%lu group=%lu mask=0x%I64x group=%lu number=%lu ulThreadIndex=%lu\n",
-        GetCurrentThreadId(),
-        CurrentThreadGroupAffinity.Group,
-        (ULONGLONG)CurrentThreadGroupAffinity.Mask,
-        (ULONG)CurrentProcessorNumber.Group,
-        (ULONG)CurrentProcessorNumber.Number,
-        g_ulThreadIndex);
-#endif
-
 cleanup:
 
     if( iRet != 0 )
@@ -480,7 +469,8 @@ static void tMPI_Init_initers(void)
             InitializeCriticalSection(&barrier_init);
             thread_id_key=TlsAlloc();
 
-            /* fatal errors are handled by the routine by calling tMPI_Fatal_error() */
+            /* fatal errors are handled by the routine by calling 
+               tMPI_Fatal_error() */
             tMPI_Init_NUMA();	
 
             tMPI_Atomic_memory_barrier_rel();
@@ -665,7 +655,7 @@ tMPI_Thread_t tMPI_Thread_self(void)
             return NULL;
         }
         /* if not, create an ID, set it and return it */
-        th=(struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
+        th=(struct tMPI_Thread*)tMPI_Malloc(sizeof(struct tMPI_Thread)*1);
 
         /* to create a handle that can be used outside of the current
            thread, the handle from GetCurrentThread() must first
@@ -690,6 +680,12 @@ int tMPI_Thread_equal(tMPI_Thread_t t1, tMPI_Thread_t t2)
 {
     /* because the thread IDs are unique, we can compare them directly */
     return (t1 == t2);
+}
+
+enum tMPI_Thread_setaffinity_support tMPI_Thread_setaffinity_support(void)
+{
+    /* Windows supports seting of thread affinities */
+    return TMPI_SETAFFINITY_SUPPORT_YES;
 }
 
 int tMPI_Thread_setaffinity_single(tMPI_Thread_t thread, unsigned int nr)
@@ -734,20 +730,22 @@ int tMPI_Thread_setaffinity_single(tMPI_Thread_t thread, unsigned int nr)
             if(func_GetNumaNodeProcessorMaskEx(NumaNodeNumber,
                                                &GroupAffinity))
             {
-                /* set the current thread affinity to prevent it from running on 
-                   other NUMA nodes */
+                /* set the current thread affinity to prevent it from running
+                   on other NUMA nodes */
                 func_SetThreadGroupAffinity(thread->th,
                                             &GroupAffinity,
                                             NULL);
+				return 0;
             }
         }
+        return 1;
     }
     else
     {
         /* No NUMA-style calls. We just do a simpler thing. */
         if ( (func_SetThreadIdealProcessor != NULL) )
         {
-            return func_SetThreadIdealProcessor(thread->th, nr);
+            return (func_SetThreadIdealProcessor(thread->th, nr) == -1);
         }
     }
     return 0;

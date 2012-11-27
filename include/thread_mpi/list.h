@@ -74,18 +74,23 @@ typedef struct tMPI_Stack_element
 
 
 /**  Initialize a stack */
+TMPI_EXPORT
 void tMPI_Stack_init(tMPI_Stack *st);
 
 /**  Deallocates a stack */
+TMPI_EXPORT
 void tMPI_Stack_destroy(tMPI_Stack *st);
 
 /**  Pushes a stack element onto a stack */
+TMPI_EXPORT
 void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el);
 
 /**  Pops a stack element from  a stack */
+TMPI_EXPORT
 tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st);
 
 /**  Detaches entire stack for use by a single thread */
+TMPI_EXPORT
 tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st);
 
 

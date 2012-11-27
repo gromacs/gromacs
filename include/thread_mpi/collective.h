@@ -44,6 +44,7 @@ files.
  * 
 */
 
+#include "visibility.h"
 
 #ifdef __cplusplus
 extern "C" 
@@ -68,6 +69,7 @@ extern "C"
     \param[in] comm         The communicator.
     \returns MPI_SUCCESS on success.
 */
+TMPI_EXPORT
 int tMPI_Once(tMPI_Comm comm,void (*function)(void*), void *param, 
               int *was_first);
 
@@ -87,6 +89,7 @@ int tMPI_Once(tMPI_Comm comm,void (*function)(void*), void *param,
     \param[in] comm         The communicator.
     \returns the return value of the function
 */
+TMPI_EXPORT
 void* tMPI_Once_wait(tMPI_Comm comm,void* (*function)(void*), void *param, 
                      int *was_first);
 
@@ -97,6 +100,7 @@ void* tMPI_Once_wait(tMPI_Comm comm,void* (*function)(void*), void *param,
     \param[in] comm         The communicator
     \param[in] size         The size in bytes to allocate 
 */
+TMPI_EXPORT
 void* tMPI_Shmalloc(tMPI_Comm comm, size_t size);
 
 
@@ -114,34 +118,8 @@ typedef struct
 } tMPI_Reduce_req;
 
 /** Allocate data structure for asynchronous reduce. */
+TMPI_EXPORT
 tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm);
-#if 0
-/** Execute fast a asynchronous reduce over comm.
-
-  Reduces array input with supplied funtion. This function may return before 
-  the input array is ready to be written to again; to check for its completion,
-  use the tMPI_Reduce_wait functions.
-
-  \param[in] function   The function to reduce with (takes three arguments,
-                        a size argument, two input pointers, and an output
-                        pointer (which may be the same as one of the input
-                        arguments, if res==NULL).
-  \param[in] n          A size argument to pass to the function.
-  \param[inout] input   The array of input data.
-  \param[out] res       A temporary results array. May be NULL, in which case
-                        the input data in 'in' gets overwritten.
-*/
-void tMPI_Reduce_async(tMPI_Reduce_req *req, 
-                       void (*function)(int, void*, void*, void *), 
-                       size_t n, void *input, void *res);
-
-
-void tMPI_Reduce_wait(tMPI_Reduce_req *req);
-
-void tMPI_Reduce_wait_results(tMPI_Reduce_req *req, void *res);
-
-#endif
-
 
 #ifdef __cplusplus
 } /* closing extern "C" */

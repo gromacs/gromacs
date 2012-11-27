@@ -38,6 +38,7 @@ files.
 #ifndef TMPI_FASTLOCK_H_
 #define TMPI_FASTLOCK_H_
 
+#include "visibility.h"
 #include "wait.h"
 #include "atomic.h"
 
@@ -67,6 +68,7 @@ struct tMPI_Lock
  *
  *  \param lock     Pointer to the new lock. 
  */
+TMPI_EXPORT
 void tMPI_Lock_init(tMPI_Lock_t *lock);
 
 
@@ -76,24 +78,28 @@ void tMPI_Lock_init(tMPI_Lock_t *lock);
   *
   *  \param lock  Pointer to previously created lock.
   */
+TMPI_EXPORT
 void tMPI_Lock_lock(tMPI_Lock_t *lock);
 
 /** Unlock the lock
   *
   *  \param lock  Pointer to previously created lock.
   */
+TMPI_EXPORT
 void tMPI_Lock_unlock(tMPI_Lock_t *lock);
 
 /** Try to lock the lock but don't block if it is locked.
   *
   *  \param lock  Pointer to previously created lock.
   */
+TMPI_EXPORT
 int tMPI_Lock_trylock(tMPI_Lock_t *lock);
 
 /** Check the status of the lock without affecting its state
   *
   *  \param lock  Pointer to previously created lock.
   */
+TMPI_EXPORT
 int tMPI_Lock_islocked(const tMPI_Lock_t *lock);
 
 
