@@ -34,33 +34,6 @@
 /* Default location of data files */
 #define GMXLIBDIR "@GMXLIBDIR@"
 
-/* Hardware and OS version for build host */
-#define BUILD_HOST "@BUILD_HOST@"
-
-/* CPU information for build host */
-#define BUILD_CPU_VENDOR "@BUILD_CPU_VENDOR@"
-
-#define BUILD_CPU_BRAND "@BUILD_CPU_BRAND@"
-
-#define BUILD_CPU_FAMILY @BUILD_CPU_FAMILY@
-
-#define BUILD_CPU_MODEL @BUILD_CPU_MODEL@
-
-#define BUILD_CPU_STEPPING @BUILD_CPU_STEPPING@
-
-#define BUILD_CPU_FEATURES "@BUILD_CPU_FEATURES@"
-
-/* Compiler and CFLAGS from build */
-#define BUILD_COMPILER "@BUILD_COMPILER@"
-
-#define BUILD_CFLAGS   "@BUILD_CFLAGS@"
-
-/* Date and time for build */
-#define BUILD_TIME "@BUILD_TIME@"
-
-/* User doing build */
-#define BUILD_USER "@BUILD_USER@"
-
 /* Binary suffix for the created binaries */
 #define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
 
@@ -277,9 +250,6 @@
 
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
-
-/* Define to 1 if you have the lstat() function. */
-#cmakedefine HAVE_LSTAT
 
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine HAVE_SIGACTION

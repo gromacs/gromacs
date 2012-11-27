@@ -62,8 +62,10 @@ endif()
 set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
 mark_as_advanced(GMX_INSTALL_PREFIX)
 
+include(gmxBuildTypeReference)
+
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
@@ -250,7 +252,7 @@ endif()
 include(gmxCFlags)
 gmx_c_flags()
 
-include(gmxGetCompilerVersion)
+include(gmxGetCompilerInfo)
 get_compiler_version()
 
 # gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
@@ -387,7 +389,6 @@ check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
-check_function_exists(lstat             HAVE_LSTAT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 check_function_exists(sysconf           HAVE_SYSCONF)
 check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
@@ -513,7 +514,9 @@ if(GMX_GPU)
         message(FATAL_ERROR "
     mdrun supports native GPU acceleration on NVIDIA hardware with compute
     capability >=2.0. This requires the NVIDIA CUDA library, which was not
-    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
+    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR as
+    a CMake option (It does not work as an environment variable).
+    The typical location would be /usr/local/cuda.
 
     CPU or GPU acceleration can be selected at runtime, but if you are
     sure you can not make use of GPU acceleration, disable it by setting
@@ -522,10 +525,11 @@ if(GMX_GPU)
 
     if(NOT GMX_OPENMP)
         message(WARNING "
-    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreding.
+    In order to use GPU acceleration efficiently, mdrun requires OpenMP multithreading.
     Without OpenMP only a single CPU core per GPU can be used which is suboptimal.
     Note that with MPI multiple processes can be forced to use a single GPU, but this
-    typically inefficient.")
+    typically inefficient. Note that you need to set both C and C++ compilers that
+    support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
     endif()
 
     include(gmxManageNvccConfig)
@@ -539,6 +543,9 @@ if(GMX_GPU)
             "Test only the atomic operations of thread-MPI.")
         include(ThreadMPI)
     endif()
+
+    # Version info (semicolon used as line separator) for nvcc.
+    get_nvcc_version_info()
 
 endif()
 # Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
@@ -771,7 +778,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" GROMACS_C_FLAGS)
     endif (NOT GNU_AVX_CFLAG)
     if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
-        message(WARNING "No C AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
+        message(WARNING "No C AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
     endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
 
     GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" GROMACS_CXX_FLAGS)
@@ -779,19 +786,19 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
        GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" GROMACS_CXX_FLAGS)
     endif (NOT GNU_AVX_CXXFLAG)
     if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
-       message(WARNING "No C++ AVX flag found. Consider a newer compiler, or disable AVX for much lower performance.")
+       message(WARNING "No C++ AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
     endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
 
     # Set the FMA4 flags (MSVC doesn't require any)
     if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
         GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" GROMACS_C_FLAGS)
         if (NOT GNU_FMA_CFLAG)
-            message(WARNING "No C FMA4 flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
+            message(WARNING "No C FMA4 flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
         endif(NOT GNU_FMA_CFLAG)
         if (CMAKE_CXX_COMPILER_LOADED)
             GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" GROMACS_CXX_FLAGS)
             if (NOT GNU_FMA_CXXFLAG)
-                message(WARNING "No C++ FMA flag found. Consider a newer compiler, or disable AVX_128_FMA for much lower performance.")
+                message(WARNING "No C++ FMA flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
             endif (NOT GNU_FMA_CXXFLAG)
         endif()
     endif()
@@ -1095,31 +1102,14 @@ else()
     set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
     set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
 endif()
+
 ######################################
 # Output compiler and CFLAGS used
 ######################################
-execute_process(COMMAND ${CMAKE_C_COMPILER} --version RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
-#try executing just the compiler command if that failed...
-if(TMP_RESULT)
-    execute_process(COMMAND ${CMAKE_C_COMPILER} RESULT_VARIABLE TMP_RESULT OUTPUT_VARIABLE CC_VERSION ERROR_VARIABLE CC_VERSION)
-endif()
-string(LENGTH "${CC_VERSION}" len)
-if(len)
-    string(REGEX MATCH "[^\n]+" CC_VERSION "${CC_VERSION}")
-endif()
-
-set(BUILD_COMPILER "@CMAKE_C_COMPILER@ @CMAKE_C_COMPILER_ID@ @CC_VERSION@")
-set(BUILD_CFLAGS "@CMAKE_C_FLAGS@")
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_DEBUG@")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELEASE@")
-elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_MINSIZEREL@")
-elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    set(BUILD_CFLAGS "@BUILD_CFLAGS@ @CMAKE_C_FLAGS_RELWITHDEBINFO@")
-endif()
-
+get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
+if (CMAKE_CXX_COMPILER_LOADED)
+    get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
+endif ()
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
