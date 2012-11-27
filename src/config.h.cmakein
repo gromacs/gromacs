@@ -266,9 +266,6 @@
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
 
-/* Define to 1 if you have the lstat() function. */
-#cmakedefine HAVE_LSTAT
-
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine HAVE_SIGACTION
 
