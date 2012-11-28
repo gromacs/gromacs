@@ -31,7 +31,7 @@ endif()
 # - ON , FALSE: The user requested GPU builds, will require CUDA and will fail
 #               if it is not available.
 # - ON , TRUE : Can't happen (GMX_GPU=ON can only be user-set at this point)
-if(GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
+if(GMX_GPU OR (GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE))
     # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
     if(MSVC)
         find_package(CUDA 4.1)
