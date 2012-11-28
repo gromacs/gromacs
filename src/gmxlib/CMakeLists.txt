@@ -57,7 +57,6 @@ endif()
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.c selection/*.c trajana/*.c statistics/*.c)
 
-
 if(NOT GMX_USE_PLUGINS)
   list(REMOVE_ITEM GMXLIB_SOURCES vmdio.c vmddlopen.c)
 endif()
@@ -74,15 +73,6 @@ if(USE_VERSION_H)
 LIST(APPEND GMXLIB_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/version.c) # auto-generated
 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c 
                 PROPERTIES GENERATED true)
-endif()
-
-# The log file output queries Cuda if GPU support is enabled
-if(GMX_GPU)
-    if(WIN32)
-        include_directories(${CUDA_TOOLKIT_INCLUDE})
-    else()
-        set_source_files_properties(copyrite.c PROPERTIES COMPILE_FLAGS "-I${CUDA_TOOLKIT_INCLUDE}")
-    endif()
 endif()
 
 if(NOT GMX_EXTERNAL_BLAS)
