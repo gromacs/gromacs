@@ -41,6 +41,7 @@ files.
 struct tMPI_Thread
 {
     HANDLE th;            /* the thread handle */
+    DWORD id;             /* the thread ID */
     int started_by_tmpi;  /* whether this thread was started by tmpi */
 };
 
