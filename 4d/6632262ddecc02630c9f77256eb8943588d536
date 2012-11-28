@@ -1,0 +1,7 @@
+Code-Review+2: Berk Hess <hess@kth.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Wed, 28 Nov 2012 11:20:32 +0100
+Reviewed-on: https://gerrit.gromacs.org/1695
+Project: gromacs
+Branch: refs/heads/release-4-6
