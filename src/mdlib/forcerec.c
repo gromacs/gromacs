@@ -1445,7 +1445,8 @@ static void pick_nbnxn_kernel(FILE *fp,
                               const gmx_hw_info_t *hwinfo,
                               gmx_bool use_cpu_acceleration,
                               gmx_bool *bUseGPU,
-                              int *kernel_type)
+                              int *kernel_type,
+                              gmx_bool bDoNonbonded)
 {
     gmx_bool bEmulateGPU, bGPU, bEmulateGPUEnvVarSet;
     char gpu_err_str[STRLEN];
@@ -1462,7 +1463,7 @@ static void pick_nbnxn_kernel(FILE *fp,
      * automatically switch to emulation if non-bonded calculations are
      * turned off via GMX_NO_NONBONDED - this is the simple and elegant
      * way to turn off GPU initialization, data movement, and cleanup. */
-    bEmulateGPU = (bEmulateGPUEnvVarSet || (getenv("GMX_NO_NONBONDED") != NULL && bGPU));
+    bEmulateGPU = (bEmulateGPUEnvVarSet || (!bDoNonbonded && bGPU));
 
     /* Enable GPU mode when GPUs are available or GPU emulation is requested.
      * The latter is useful to assess the performance one can expect by adding
@@ -1498,7 +1499,10 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         *kernel_type = nbk8x8x8_PlainC;
 
-        md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
+        if (bDoNonbonded)
+        {
+            md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
+        }
     }
     else if (bGPU)
     {
@@ -1517,7 +1521,7 @@ static void pick_nbnxn_kernel(FILE *fp,
         }
     }
 
-    if (fp != NULL)
+    if (bDoNonbonded && fp != NULL)
     {
         if (MASTER(cr))
         {
@@ -1731,7 +1735,8 @@ static void init_nb_verlet(FILE *fp,
         {
             pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                               &nbv->bUseGPU,
-                              &nbv->grp[i].kernel_type);
+                              &nbv->grp[i].kernel_type,
+                              fr->bNonbonded);
         }
         else /* non-local */
         {
@@ -1740,7 +1745,8 @@ static void init_nb_verlet(FILE *fp,
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                                   NULL,
-                                  &nbv->grp[i].kernel_type);
+                                  &nbv->grp[i].kernel_type,
+                                  fr->bNonbonded);
 
                 bHybridGPURun = TRUE;
             }
