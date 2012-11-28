@@ -45,13 +45,24 @@
 #define EXCL_FORCES
 #endif
 
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES || defined CALC_COUL_EWALD) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS && !(defined __GNUC__ && (defined CALC_COUL_TAB || (defined CALC_COUL_RF && defined GMX_MM128_HERE)))
 /* Without exclusions and energies we only need to mask the cut-off,
- * this is faster with blendv (only available with SSE4.1 and later).
- * With gcc and PME or RF in 128-bit, blendv is slower;
- * tested with gcc 4.6.2, 4.6.3 and 4.7.1.
+ * this can be faster with blendv (only available with SSE4.1 and later).
  */
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_X86_SSE4_1 && !defined COUNT_PAIRS
+/* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
+ * With gcc this is slower, except for RF on Sandy Bridge.
+ * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
+ */
+#if (defined CALC_COUL_RF || defined CALC_COUL_TAB) && (!defined __GNUC__ || (defined CALC_COUL_RF && defined GMX_X86_AVX_256))
 #define CUTOFF_BLENDV
+#endif
+/* With analytical Ewald we replace cmp+and+and with sub+blendv+blendv.
+ * This is only faster with icc on Sandy Bridge (PS kernel slower than gcc 4.7).
+ * Tested with icc 13.
+ */
+#if defined CALC_COUL_EWALD && defined __INTEL_COMPILER && defined GMX_X86_AVX_256
+#define CUTOFF_BLENDV
+#endif
 #endif
 
         {
@@ -545,10 +556,21 @@
 #endif
 
 #ifdef CALC_COUL_EWALD
+            /* We need to mask (or limit) rsq for the cut-off,
+             * as large distances can cause an overflow in gmx_pmecorrF/V.
+             */
+#ifndef CUTOFF_BLENDV
             brsq_SSE0     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE0,wco_SSE0));
             brsq_SSE1     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE1,wco_SSE1));
             brsq_SSE2     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE2,wco_SSE2));
             brsq_SSE3     = gmx_mul_pr(beta2_SSE,gmx_and_pr(rsq_SSE3,wco_SSE3));
+#else
+            /* Strangely, putting mul on a separate line is slower (icc 13) */
+            brsq_SSE0     = gmx_mul_pr(beta2_SSE,gmx_blendv_pr(rsq_SSE0,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE0)));
+            brsq_SSE1     = gmx_mul_pr(beta2_SSE,gmx_blendv_pr(rsq_SSE1,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE1)));
+            brsq_SSE2     = gmx_mul_pr(beta2_SSE,gmx_blendv_pr(rsq_SSE2,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE2)));
+            brsq_SSE3     = gmx_mul_pr(beta2_SSE,gmx_blendv_pr(rsq_SSE3,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE3)));
+#endif
             ewcorr_SSE0   = gmx_mul_pr(gmx_pmecorrF_pr(brsq_SSE0),beta_SSE);
             ewcorr_SSE1   = gmx_mul_pr(gmx_pmecorrF_pr(brsq_SSE1),beta_SSE);
             ewcorr_SSE2   = gmx_mul_pr(gmx_pmecorrF_pr(brsq_SSE2),beta_SSE);
