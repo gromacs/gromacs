@@ -108,15 +108,9 @@ macro(gmx_gpu_setup)
     # Version info (semicolon used as line separator) for nvcc.
     get_nvcc_version_info()
 
-    # Check whether we can use atomic operations needed for polling wait for GPU
+    # Atomic operations used for polling wait for GPU
     # (to avoid the cudaStreamSynchronize + ECC bug).
-    # With thread-MPI testing atomics has already been carried out, but without
-    # thread-MPI we need to invoke the atomics test independently.
-    if (NOT GMX_THREAD_MPI)
-        set(TEST_TMPI_ATOMICS_ONLY ON CACHE INTERNAL
-            "Test only the atomic operations of thread-MPI.")
-        include(ThreadMPI)
-    endif()
+    # ThreadMPI is now always included. Thus, we don't check for Atomics anymore here.
 
     # no OpenMP is no good!
     if(NOT GMX_OPENMP)
