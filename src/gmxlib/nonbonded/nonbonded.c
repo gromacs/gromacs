@@ -90,6 +90,14 @@
 #if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
 #    include "nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
 #endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
+#    include "nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
+#endif
+
+/* Until the AVX_256 Double kernels are in, we use SSE4.1 for that setup */
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
+#    define GMX_CPU_ACCELERATION_X86_SSE4_1
+#endif
 
 #ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -135,6 +143,9 @@ gmx_nonbonded_setup(FILE *         fplog,
 #endif
 #if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_sse4_1_double,kernellist_sse4_1_double_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_avx_128_fma_double,kernellist_avx_128_fma_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
             }
@@ -193,6 +204,10 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 #if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
         /* No padding - see SSE2 double comment */
         { "sse4_1_double", 1 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
+        /* No padding - see SSE2 double comment */
+        { "avx_128_fma_double", 1 },
 #endif
         { "c", 1 },
     };
