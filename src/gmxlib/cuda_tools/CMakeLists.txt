@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 #
 if(GMX_GPU)
-    file(GLOB CUDA_TOOLS_SOURCES *.cu)
+    file(GLOB CUDA_TOOLS_SOURCES *.cu *.c)
     CUDA_ADD_LIBRARY(cuda_tools STATIC ${CUDA_TOOLS_SOURCES}
             OPTIONS
             RELWITHDEBINFO -g
