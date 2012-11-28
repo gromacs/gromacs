@@ -246,19 +246,26 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    for(i=0; i<fr->nnblists; i++) 
    {
        nbl = &(fr->nblists[i]);
-       init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
                    maxsr,maxlr,ivdw,ivdwmod,ielec,ielecmod,FALSE,igeometry_def);
-       init_nblist(log,&nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
                    maxsr,maxlr,ivdw,ivdwmod,GMX_NBKERNEL_ELEC_NONE,eintmodNONE,FALSE,igeometry_def);
-       init_nblist(log,&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
                    maxsr,maxlr,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod,FALSE,igeometry_def);
-       init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
                    maxsr_wat,maxlr_wat,ivdw,ivdwmod,ielec,ielecmod, FALSE,igeometry_w);
-       init_nblist(log,&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
                    maxsr_wat,maxlr_wat,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod, FALSE,igeometry_w);
-       init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
                    maxsr_wat,maxlr_wat,ivdw,ivdwmod,ielec,ielecmod, FALSE,igeometry_ww);
-       init_nblist(log,&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
                    maxsr_wat,maxlr_wat,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielec,ielecmod, FALSE,igeometry_ww);
 
        /* Did we get the solvent loops so we can use optimized water kernels? */
@@ -287,18 +294,22 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
                ielecmodf = ielecmod;
            }
 
-           init_nblist(log,&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
+           init_nblist(fr->bNonbonded ? log : NULL,
+                       &nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
                        maxsr,maxlr,ivdw,ivdwmod,ielecf,ielecmod,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
-           init_nblist(log,&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
+           init_nblist(fr->bNonbonded ? log : NULL,
+                       &nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
                        maxsr,maxlr,ivdw,ivdwmod,GMX_NBKERNEL_ELEC_NONE,eintmodNONE,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
-           init_nblist(log,&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
+           init_nblist(fr->bNonbonded ? log : NULL,
+                       &nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
                        maxsr,maxlr,GMX_NBKERNEL_VDW_NONE,eintmodNONE,ielecf,ielecmod,TRUE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
        }  
    }
    /* QMMM MM list */
    if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
    {
-       init_nblist(log,&fr->QMMMlist,NULL,
+       init_nblist(fr->bNonbonded ? log : NULL,
+                   &fr->QMMMlist,NULL,
                    maxsr,maxlr,0,0,ielec,ielecmod,FALSE,GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE);
    }
 
