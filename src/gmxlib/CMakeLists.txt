@@ -44,7 +44,11 @@ endif()
 
 # The log file output queries Cuda if GPU support is enabled
 if(GMX_GPU)
-set_source_files_properties(copyrite.c PROPERTIES COMPILE_FLAGS "-I${CUDA_TOOLKIT_INCLUDE}")
+    if(WIN32)
+        include_directories(${CUDA_TOOLKIT_INCLUDE})
+    else()
+        set_source_files_properties(copyrite.c PROPERTIES COMPILE_FLAGS "-I${CUDA_TOOLKIT_INCLUDE}")
+    endif()
 endif()
 
 if(NOT GMX_EXTERNAL_BLAS)
