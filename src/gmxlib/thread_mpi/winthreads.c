@@ -93,9 +93,18 @@ static tMPI_Spinlock_t main_thread_aff_lock=TMPI_SPINLOCK_INITIALIZER;
 static tMPI_Atomic_t main_thread_aff_set={ 0 };
 
 /* mutex for managing  thread IDs */
-/*static tMPI_Spinlock_t thread_id_lock=TMPI_SPINLOCK_INITIALIZER;*/
-static DWORD thread_id_key;
-
+static CRITICAL_SECTION thread_id_list_lock;
+typedef struct 
+{ 
+    DWORD thread_id; /* the thread ID as returned by GetCurrentTreadID() */
+    struct tMPI_Thread* th; /* the associated tMPI thread structure */
+} thread_id_list_t;
+/* the size of the thrread id list */
+static int Nalloc_thread_id_list = 0;
+/* the number of elements in the thread id list */
+static int N_thread_id_list = 0;
+/* the thread ID list */
+static thread_id_list_t *thread_id_list;
 
 
 
@@ -450,6 +459,162 @@ cleanup:
     return 0;
 }
 
+static void tMPI_Thread_id_list_init(void)
+{
+    EnterCriticalSection( &thread_id_list_lock );
+    
+    N_thread_id_list=0; 
+    Nalloc_thread_id_list=4; /* number of initial allocation*/
+    thread_id_list=(thread_id_list_t*)tMPI_Malloc(
+                            sizeof(thread_id_list_t)*
+                            Nalloc_thread_id_list);
+
+    LeaveCriticalSection( &thread_id_list_lock );
+}
+
+
+/* add an entry to the thread ID list, assuming it's locked */
+static void tMPI_Thread_id_list_add_locked(DWORD thread_id, 
+                                             struct tMPI_Thread *th)
+{
+    if (Nalloc_thread_id_list < N_thread_id_list + 1)
+    {
+        thread_id_list_t* new_list;
+        int i;
+
+        /* double the size */
+        Nalloc_thread_id_list*=2; 
+        new_list=(thread_id_list_t*)tMPI_Malloc(
+                            sizeof(thread_id_list_t)*
+                            Nalloc_thread_id_list);
+        /* and copy over all elements */
+        for (i=0;i<N_thread_id_list;i++)
+        {
+            new_list[i] = thread_id_list[i];
+        }
+        /* free the old list */
+        tMPI_Free(thread_id_list);
+        thread_id_list=new_list;
+    }
+    thread_id_list[ N_thread_id_list ].thread_id = thread_id;
+    thread_id_list[ N_thread_id_list ].th = th;
+    N_thread_id_list++;
+
+
+}
+
+
+/* add an entry to the thread ID list */
+static void tMPI_Thread_id_list_add(DWORD thread_id, struct tMPI_Thread *th)
+{
+    EnterCriticalSection( &thread_id_list_lock );
+    tMPI_Thread_id_list_add_locked(thread_id, th);
+    LeaveCriticalSection( &thread_id_list_lock );
+}
+
+/* Remove an entry from the thread_id list, assuming it's locked */
+static void tMPI_Thread_id_list_remove_locked(DWORD thread_id)
+{
+    int i;
+    tmpi_bool found=FALSE;
+
+    /* move the last thread_id_list item to the one we want to remove */
+    for(i=0;i<N_thread_id_list;i++)
+    {
+        if (thread_id_list[i].thread_id == thread_id)
+        {
+            thread_id_list[i] = thread_id_list[N_thread_id_list - 1];
+            found=TRUE;
+            break;
+        }
+    }
+
+    if (found)
+        N_thread_id_list--;
+}
+
+
+/* Remove an entry from the thread_id list */
+static void tMPI_Thread_id_list_remove(DWORD thread_id)
+{
+
+    EnterCriticalSection( &thread_id_list_lock );
+    tMPI_Thread_id_list_remove_locked(thread_id);
+    LeaveCriticalSection( &thread_id_list_lock );
+}
+
+
+
+/* try to find a thread id in the thread id list. Return NULL when there is no
+   such thread id in the list. Assumes the list is locked.*/
+static struct tMPI_Thread *tMPI_Thread_id_list_find_locked(DWORD thread_id)
+{
+    int i;
+    struct tMPI_Thread *ret=NULL;
+
+    /* this is a linear search but it's only O(Nthreads). */
+    for(i=0;i<N_thread_id_list;i++)
+    {
+        if (thread_id_list[i].thread_id == thread_id)
+        {
+            ret=thread_id_list[i].th;
+            break;
+        }
+    }
+
+    return ret;
+}
+
+/* try to find a thread id in the thread id list. Return NULL when there is no
+   such thread id in the list.*/
+static struct tMPI_Thread *tMPI_Thread_id_list_find(DWORD thread_id)
+{
+    struct tMPI_Thread *ret=NULL;
+
+    EnterCriticalSection( &thread_id_list_lock );
+    ret=tMPI_Thread_id_list_find_locked(thread_id);
+
+    LeaveCriticalSection( &thread_id_list_lock );
+    return ret;
+}
+
+/* try to add the running thread to the list. Returns the tMPI_Thrread struct
+   associated with this thread.*/
+static struct tMPI_Thread *tMPI_Thread_id_list_add_self(void)
+{
+    DWORD thread_id;
+    struct tMPI_Thread *th=NULL;
+
+    EnterCriticalSection( &thread_id_list_lock );
+
+    thread_id = GetCurrentThreadId();
+    th=tMPI_Thread_id_list_find_locked(thread_id);
+    if (th == NULL)
+    {
+        /* if not, create an ID, set it and return it */
+        th=(struct tMPI_Thread*)tMPI_Malloc(sizeof(struct tMPI_Thread)*1);
+
+        /* to create a handle that can be used outside of the current
+           thread, the handle from GetCurrentThread() must first
+           be duplicated.. */
+        DuplicateHandle(GetCurrentProcess(), 
+                        GetCurrentThread(), 
+                        GetCurrentProcess(),
+                        &th->th, 
+                        0,
+                        FALSE,
+                        DUPLICATE_SAME_ACCESS);
+
+        /* This causes a small memory leak that is hard to fix. */ 
+        th->started_by_tmpi=0;
+        tMPI_Thread_id_list_add_locked(thread_id, th);
+    }
+    LeaveCriticalSection( &thread_id_list_lock );
+
+    return th;
+}
+
+
 static void tMPI_Init_initers(void)
 {
     int state;
@@ -467,11 +632,13 @@ static void tMPI_Init_initers(void)
             InitializeCriticalSection(&once_init);
             InitializeCriticalSection(&cond_init);
             InitializeCriticalSection(&barrier_init);
-            thread_id_key=TlsAlloc();
+            InitializeCriticalSection(&thread_id_list_lock);
 
             /* fatal errors are handled by the routine by calling 
                tMPI_Fatal_error() */
-            tMPI_Init_NUMA();	
+            tMPI_Init_NUMA();
+
+            tMPI_Thread_id_list_init();
 
             tMPI_Atomic_memory_barrier_rel();
             tMPI_Atomic_set(&init_inited, 1);
@@ -480,6 +647,8 @@ static void tMPI_Init_initers(void)
         tMPI_Spinlock_unlock( &init_init );
     }
 }
+
+
 
 /* TODO: this needs to go away!  (there's another one in pthreads.c)
    fatal errors are thankfully really rare*/
@@ -514,7 +683,6 @@ static DWORD WINAPI tMPI_Win32_thread_starter( LPVOID lpParam )
     struct tMPI_Thread_starter_param *prm=
               (struct tMPI_Thread_starter_param*)lpParam;
 
-    TlsSetValue(thread_id_key, prm->thread);
     (prm->start_routine)(prm->param);
     return 0;
 }
@@ -556,6 +724,9 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
         tMPI_Fatal_error(TMPI_FARGS,"Invalid thread pointer.");
         return EINVAL;
     }
+    /* this must be locked before the thread is created to prevent a race 
+       condition if the thread immediately wants to create its own entry */
+    EnterCriticalSection( &thread_id_list_lock );
     /* just create a plain thread. */
     (*thread)->started_by_tmpi=1;
     (*thread)->th = CreateThread(NULL,
@@ -564,6 +735,7 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
                                  prm,
                                  0, 
                                  &thread_id);
+    (*thread)->id=thread_id;
 
     if((*thread)->th==NULL)
     {
@@ -572,6 +744,8 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
                          GetLastError());
         return -1;
     }
+    tMPI_Thread_id_list_add_locked(thread_id, (*thread));
+    LeaveCriticalSection( &thread_id_list_lock );
 
     /* inherit the thread priority from the parent thread. */
     /* TODO: is there value in setting this, vs. just allowing it to default 
@@ -613,6 +787,7 @@ int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
         }
     }
     CloseHandle(thread->th);
+    tMPI_Thread_id_list_remove(thread->id);
     tMPI_Free(thread);
 
     return 0;
@@ -637,6 +812,7 @@ int tMPI_Thread_cancel(tMPI_Thread_t thread)
                          GetLastError());
         return -1;
     }
+    tMPI_Thread_id_list_remove(thread->id);
     return 0;
 }
 
@@ -646,39 +822,15 @@ tMPI_Thread_t tMPI_Thread_self(void)
     tMPI_Thread_t th;
     tMPI_Init_initers();
 
-    th=(struct tMPI_Thread*)TlsGetValue(thread_id_key);
-    /* check if it is already in our list */
-    if (th == NULL) 
-    {
-        if (GetLastError() != ERROR_SUCCESS ) 
-        {
-            return NULL;
-        }
-        /* if not, create an ID, set it and return it */
-        th=(struct tMPI_Thread*)tMPI_Malloc(sizeof(struct tMPI_Thread)*1);
+    th=tMPI_Thread_id_list_add_self();
 
-        /* to create a handle that can be used outside of the current
-           thread, the handle from GetCurrentThread() must first
-           be duplicated.. */
-        DuplicateHandle(GetCurrentProcess(), 
-                        GetCurrentThread(), 
-                        GetCurrentProcess(),
-                        &th->th, 
-                        0,
-                        FALSE,
-                        DUPLICATE_SAME_ACCESS);
-
-        /* This causes a small memory leak that is hard to fix. */ 
-        th->started_by_tmpi=0;
-        TlsSetValue(thread_id_key, th);
-    }
     return th;
 }
 
 
 int tMPI_Thread_equal(tMPI_Thread_t t1, tMPI_Thread_t t2)
 {
-    /* because the thread IDs are unique, we can compare them directly */
+    /* because the tMPI thread IDs are unique, we can compare them directly */
     return (t1 == t2);
 }
 
