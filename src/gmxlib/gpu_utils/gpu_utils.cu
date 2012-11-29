@@ -145,6 +145,8 @@ static const char * const SupportedGPUs[] = {
   * \param[in]  dev_id      the device ID of the GPU or -1 if the device has already been initialized
   * \param[out] dev_prop    pointer to the structure in which the device properties will be returned
   * \returns                0 if the device looks OK
+  *
+  * TODO: introduce errors codes and handle errors more smoothly.
   */
 static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 {
@@ -217,7 +219,10 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 
     /* try to execute a dummy kernel */
     k_dummy_test<<<1, 512>>>();
-    CU_LAUNCH_ERR_SYNC("dummy test kernel");
+    if (cudaThreadSynchronize() != cudaSuccess)
+    {
+        return -1;
+    }
 
     /* destroy context if we created one */
     if (id != -1)
@@ -681,13 +686,21 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
     int         ndev;
 
     stat = cudaGetDeviceCount(&ndev);
-    CU_RET_ERR(stat, "cudaGetDeviceCount failed");
+    if (stat != cudaSuccess)
+    {
+        return egpuInsane;
+    }
 
     if (dev_id > ndev - 1)
     {
         return egpuNonexistent;
     }
 
+    /* TODO: currently we do not make a distinction between the type of errors
+     * that can appear during sanity checks. This needs to be improved, e.g if
+     * the dummy test kernel fails to execute with a "device busy message" we
+     * should appropriately report that the device is busy instead of insane.
+     */
     if (do_sanity_checks(dev_id, dev_prop) == 0)
     {
         if (is_gmx_supported_gpu(dev_prop))
@@ -714,31 +727,55 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
  *  status.
  *
  *  \param[in] gpu_info    pointer to structure holding GPU information.
+ *  \param[out] err_str    The error message of any CUDA API error that caused
+ *                         the detection to fail (if there was any). The memory
+ *                         the pointer points to should be managed externally.
+ *  \returns               non-zero if the detection encountered a failure, zero otherwise.
  */
-void detect_cuda_gpus(gmx_gpu_info_t *gpu_info)
+int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 {
-    int             i, ndev, checkres;
+    int             i, ndev, checkres, retval;
     cudaError_t     stat;
     cudaDeviceProp  prop;
     cuda_dev_info_t *devs;
 
     assert(gpu_info);
+    assert(err_str);
+
+    ndev    = 0;
+    devs    = NULL;
 
     stat = cudaGetDeviceCount(&ndev);
-    CU_RET_ERR(stat, "cudaGetDeviceCount failed");
-
-    snew(devs, ndev);
-    for (i = 0; i < ndev; i++)
+    if (stat != cudaSuccess)
     {
-        checkres = is_gmx_supported_gpu_id(i, &prop);
+        const char *s;
 
-        devs[i].id   = i;
-        devs[i].prop = prop;
-        devs[i].stat = checkres;
+        /* cudaGetDeviceCount failed which means that there is something
+         * wrong with the machine: driver-runtime mismatch, all GPUs being
+         * busy in exclusive mode, or some other condition which should
+         * result in us issuing a warning a falling back to CPUs. */
+        retval = -1;
+        s = cudaGetErrorString(stat);
+        strncpy(err_str, s, STRLEN*sizeof(err_str[0]));
+    }
+    else
+    {
+        snew(devs, ndev);
+        for (i = 0; i < ndev; i++)
+        {
+            checkres = is_gmx_supported_gpu_id(i, &prop);
+
+            devs[i].id   = i;
+            devs[i].prop = prop;
+            devs[i].stat = checkres;
+        }
+        retval = 0;
     }
 
     gpu_info->ncuda_dev = ndev;
     gpu_info->cuda_dev  = devs;
+
+    return retval;
 }
 
 /*! \brief Select the GPUs compatible with the native GROMACS acceleration.

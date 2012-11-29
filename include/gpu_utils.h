@@ -66,7 +66,7 @@ FUNC_QUALIFIER
 gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name) FUNC_TERM_INT
 
 FUNC_QUALIFIER
-void detect_cuda_gpus(gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
+int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 void pick_compatible_gpus(gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
