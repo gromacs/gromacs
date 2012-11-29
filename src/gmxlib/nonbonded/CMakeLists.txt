@@ -29,9 +29,8 @@ if(GMX_CPU_ACCELERATION STREQUAL "AVX_128_FMA" AND GMX_DOUBLE)
     file(GLOB NONBONDED_AVX_128_FMA_DOUBLE_SOURCES nb_kernel_avx_128_fma_double/*.c)
 endif()
 
-# Temporary work-around until AVX_256_DOUBLE kernels are bug-free: Use SSE4.1 instead
 if(GMX_CPU_ACCELERATION STREQUAL "AVX_256" AND GMX_DOUBLE)
-    file(GLOB NONBONDED_AVX_256_DOUBLE_SOURCES nb_kernel_sse4_1_single/*.c)
+    file(GLOB NONBONDED_AVX_256_DOUBLE_SOURCES nb_kernel_avx_256_double/*.c)
 endif()
 
 # These sources will be used in the parent directory's CMakeLists.txt
