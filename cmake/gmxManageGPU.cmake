@@ -23,27 +23,43 @@ if (GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
     gmx_detect_gpu()
 endif()
 
+# We need to call find_package even when we've already done the detection/setup
+if(GMX_GPU OR GMX_GPU_AUTO)
+    if(GMX_GPU_DETECTION_DONE)
+        set(FIND_CUDA_QUIETLY QUIET)
+    endif()
+
+    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    if(MSVC)
+        set(FIND_CUDA_VERSION_REQUIRED 4.1)
+    else()
+        set(FIND_CUDA_VERSION_REQUIRED 3.2)
+    endif()
+    find_package(CUDA ${FIND_CUDA_VERSION_REQUIRED} ${FIND_CUDA_QUIETLY})
+endif()
+
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:
-# - OFF, FALSE: Will skip this detection.
+# - OFF, FALSE: Will skip this detection/setup.
 # - OFF, TRUE : Will keep GMX_GPU=OFF if no CUDA is detected, but will assemble
 #               a warning message which will be issued at the end of the
 #               configuration if GPU(s) were found in the build system.
 # - ON , FALSE: The user requested GPU builds, will require CUDA and will fail
 #               if it is not available.
 # - ON , TRUE : Can't happen (GMX_GPU=ON can only be user-set at this point)
-if(GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
-    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
-    if(MSVC)
-        find_package(CUDA 4.1)
-    else()
-        find_package(CUDA 3.2)
-    endif()
-
+if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     if (EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
         set(CUDA_FOUND TRUE CACHE INTERNAL "Whether the CUDA toolkit was found" FORCE)
     else()
         set(CUDA_FOUND FALSE CACHE INTERNAL "Whether the CUDA toolkit was found" FORCE)
     endif()
+
+     set(CUDA_NOTFOUND_MESSAGE "
+    mdrun supports native GPU acceleration on NVIDIA hardware with compute
+    capability >=2.0. This requires the NVIDIA CUDA library, which was not
+    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR as
+    a CMake option (It does not work as an environment variable).
+    The typical location would be /usr/local/cuda[-version].
+    Note that CPU or GPU acceleration can be selected at runtime!")
 
     # assemble warning/error message
     if (GMX_DETECT_GPU_AVAILABLE)
@@ -65,18 +81,10 @@ if(GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
     Compute capability information not available, consult the NVIDIA website:
     https://developer.nvidia.com/cuda-gpus
             ")
-    endif()
 
-        set(CUDA_NOTFOUND_MESSAGE "
-    mdrun supports native GPU acceleration on NVIDIA hardware with compute
-    capability >=2.0. This requires the NVIDIA CUDA library, which was not
-    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR as
-    a CMake option (It does not work as an environment variable).
-    The typical location would be /usr/local/cuda[-version].
-    Note that CPU or GPU acceleration can be selected at runtime!
-
-    ${_msg}")
+        set(CUDA_NOTFOUND_MESSAGE "${_msg}${CUDA_NOTFOUND_MESSAGE}")
         unset(_msg)
+    endif()
 
     if (NOT CUDA_FOUND)
         if (GMX_GPU_AUTO)
@@ -99,7 +107,7 @@ endif()
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
 # left behind in the cache.
-mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
+mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_TOOLKIT_ROOT_DIR CUDA_VERBOSE_BUILD)
 
 macro(gmx_gpu_setup)
     # set up nvcc options
