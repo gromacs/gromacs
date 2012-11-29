@@ -93,11 +93,10 @@
 #if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
 #    include "nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
 #endif
-
-/* Until the AVX_256 Double kernels are in, we use SSE4.1 for that setup */
 #if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
-#    define GMX_CPU_ACCELERATION_X86_SSE4_1
+#    include "nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
+
 
 #ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -147,6 +146,9 @@ gmx_nonbonded_setup(FILE *         fplog,
 #if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_avx_128_fma_double,kernellist_avx_128_fma_double_size);
 #endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_avx_256_double,kernellist_avx_256_double_size);
+#endif
                 ; /* empty statement to avoid a completely empty block */
             }
         }
@@ -194,20 +196,23 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
         { "sse2_single", 4 },
 #endif
         /* Double precision */
-#if (defined GMX_CPU_ACCELERATION_X86_SSE2 && defined GMX_DOUBLE)
-        /* Sic. Double precision SSE2 does not require neighbor list padding,
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
+        { "avx_256_double", 4 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
+        /* Sic. Double precision 2-way SIMD does not require neighbor list padding,
          * since the kernels execute a loop unrolled a factor 2, followed by
          * a possible single odd-element epilogue.
          */
+        { "avx_128_fma_double", 1 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE2 && defined GMX_DOUBLE)
+        /* No padding - see comment above */
         { "sse2_double", 1 },
 #endif
 #if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
-        /* No padding - see SSE2 double comment */
+        /* No padding - see comment above */
         { "sse4_1_double", 1 },
-#endif
-#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
-        /* No padding - see SSE2 double comment */
-        { "avx_128_fma_double", 1 },
 #endif
         { "c", 1 },
     };
