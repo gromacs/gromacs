@@ -385,60 +385,60 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 #endif
 }
 
-void gmx_init_intra_counters(t_commrec *cr)
+void gmx_init_intranode_counters(t_commrec *cr)
 {
-    /* counters for PP+PME and PP-only processes on my node */
-    int nnodes, nnodes_pp, id_mynode=-1, id_mynode_group=-1, nproc_mynode, nproc_mynode_pp;
-#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    /* counters for PP+PME and PP-only processes on my physical node */
+    int nrank_world, rank_world;
+    int nrank_intranode, rank_intranode;
+    int nrank_pp_intranode, rank_pp_intranode;
+#ifdef GMX_MPI
     int i, mynum, *num, *num_s, *num_pp, *num_pp_s;
-#endif
 
-    nnodes    = cr->nnodes;
-    nnodes_pp = nnodes - cr->npmenodes;
+    MPI_Comm_size(MPI_COMM_WORLD,&nrank_world);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank_world);
 
-#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    /* Get the node number from the hostname to identify the nodes */
+#if defined GMX_THREAD_MPI
+    /* thread-MPI puts the thread id in the host name */
+    mynum = 0;
+#else
     /* We have MPI and can expect to have different compute nodes */
     mynum = gmx_hostname_num();
+#endif
 
     /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
-    snew(num,   nnodes);
-    snew(num_s, nnodes);
-    snew(num_pp,   nnodes_pp);
-    snew(num_pp_s, nnodes_pp);
+    snew(num,   nrank_world);
+    snew(num_s, nrank_world);
+    snew(num_pp,   nrank_world);
+    snew(num_pp_s, nrank_world);
 
-    num_s[cr->sim_nodeid] = mynum;
-    if (cr->duty & DUTY_PP)
-    {
-        num_pp_s[cr->nodeid] = mynum;
-    }
+    num_s[rank_world]    = mynum;
+    num_pp_s[rank_world] = (cr->duty & DUTY_PP) ? mynum : -1;
 
-    MPI_Allreduce(num_s, num, nnodes, MPI_INT, MPI_SUM, cr->mpi_comm_mysim);
-    MPI_Allreduce(num_pp_s, num_pp, nnodes_pp, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
+    MPI_Allreduce(num_s,    num,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(num_pp_s, num_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-    id_mynode       = 0;
-    id_mynode_group = 0;
-    nproc_mynode    = 0;
-    nproc_mynode_pp = 0;
-    for(i=0; i<nnodes; i++)
+    nrank_intranode    = 0;
+    rank_intranode     = 0;
+    nrank_pp_intranode = 0;
+    rank_pp_intranode  = 0;
+    for(i=0; i<nrank_world; i++)
     {
         if (num[i] == mynum)
         {
-            nproc_mynode++;
-            if (i < cr->sim_nodeid)
+            nrank_intranode++;
+            if (i < rank_world)
             {
-                id_mynode++;
-            }
-            if (i < cr->nodeid)
-            {
-                id_mynode_group++;
+                rank_intranode++;
             }
         }
-    }
-    for(i=0; i<nnodes_pp; i++)
-    {
-        if (num_pp[i] == mynum)
+        if ((cr->duty & DUTY_PP) && num_pp[i] == mynum)
         {
-            nproc_mynode_pp++;
+            nrank_pp_intranode++;
+            if (i < rank_world)
+            {
+                rank_pp_intranode++;
+            }
         }
     }
     sfree(num);
@@ -446,11 +446,11 @@ void gmx_init_intra_counters(t_commrec *cr)
     sfree(num_pp);
     sfree(num_pp_s);
 #else
-    /* Serial or thread-MPI code, we are running within a node */
-    id_mynode       = cr->sim_nodeid;
-    id_mynode_group = cr->nodeid;
-    nproc_mynode    = cr->nnodes;
-    nproc_mynode_pp = cr->nnodes - cr->npmenodes;
+    /* Serial code */
+    nrank_intranode    = cr->nnodes;
+    rank_intranode     = cr->sim_nodeid;
+    nrank_pp_intranode = cr->nnodes - cr->npmenodes;
+    rank_pp_intranode  = cr->nodeid;
 #endif
 
     if (debug)
@@ -464,15 +464,17 @@ void gmx_init_intra_counters(t_commrec *cr)
         {
             sprintf(sbuf, "%s", cr->duty & DUTY_PP ? "PP" : "PME");
         }
-        fprintf(debug, "On %3s node %d: nodeid_intra=%d, nodeid_group_intra=%d, "
-                "nnodes_intra=%d, nnodes_pp_intra=%d\n", sbuf, cr->sim_nodeid,
-                id_mynode, id_mynode_group, nproc_mynode, nproc_mynode_pp);
+        fprintf(debug, "On %3s node %d: nrank_intranode=%d, rank_intranode=%d, "
+                "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",
+                sbuf, cr->sim_nodeid,
+                nrank_intranode, rank_intranode,
+                nrank_pp_intranode, rank_pp_intranode);
     }
 
-    cr->nodeid_intra        = id_mynode;
-    cr->nodeid_group_intra  = id_mynode_group;
-    cr->nnodes_intra        = nproc_mynode;
-    cr->nnodes_pp_intra     = nproc_mynode_pp;
+    cr->nrank_intranode    = nrank_intranode;
+    cr->rank_intranode     = rank_intranode;
+    cr->nrank_pp_intranode = nrank_pp_intranode;
+    cr->rank_pp_intranode  = rank_pp_intranode;
 }
 
 

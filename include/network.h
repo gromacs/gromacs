@@ -73,8 +73,8 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
 GMX_LIBGMX_EXPORT
-void gmx_init_intra_counters(t_commrec *cr);
-/* Initializes intra-node process counts and ID. */
+void gmx_init_intranode_counters(t_commrec *cr);
+/* Initializes intra-physical-node MPI process/thread counts and ID. */
 
 gmx_bool gmx_mpi_initialized(void);
 /* return TRUE when MPI_Init has been called.

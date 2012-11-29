@@ -1504,13 +1504,13 @@ static void pick_nbnxn_kernel(FILE *fp,
         {
             /* Each PP node will use the intra-node id-th device from the
              * list of detected/selected GPUs. */
-            if (!init_gpu(cr->nodeid_group_intra, gpu_err_str, &hwinfo->gpu_info))
+            if (!init_gpu(cr->rank_pp_intranode, gpu_err_str, &hwinfo->gpu_info))
             {
                 /* At this point the init should never fail as we made sure that
                  * we have all the GPUs we need. If it still does, we'll bail. */
                 gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
                           cr->nodeid,
-                          get_gpu_device_id(&hwinfo->gpu_info, cr->nodeid_group_intra),
+                          get_gpu_device_id(&hwinfo->gpu_info, cr->rank_pp_intranode),
                           gpu_err_str);
             }
         }
@@ -1789,7 +1789,7 @@ static void init_nb_verlet(FILE *fp,
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
         nbnxn_cuda_init(fp, &nbv->cu_nbv,
-                        &fr->hwinfo->gpu_info, cr->nodeid_group_intra,
+                        &fr->hwinfo->gpu_info, cr->rank_pp_intranode,
                         (nbv->ngrp > 1) && !bHybridGPURun);
 
         if ((env = getenv("GMX_NB_MIN_CI")) != NULL)

@@ -271,11 +271,11 @@ typedef struct {
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
 
-  /* intra-node stuff */
-  int nodeid_intra;         /* ID over all intra nodes */ 
-  int nodeid_group_intra;   /* ID within my group (separate 0-n IDs for PP/PME-only nodes) */
-  int nnodes_intra;         /* total number of intra nodes */
-  int nnodes_pp_intra;      /* total number of PP intra nodes */
+  /* MPI ranks within a physical node for hardware access */
+  int nrank_intranode;    /* nr of ranks on this physical node */
+  int rank_intranode;     /* our rank on this physical node */
+  int nrank_pp_intranode; /* as nrank_intranode, for particle-particle only */
+  int rank_pp_intranode;  /* as rank_intranode, for particle-particle only */
 
   gmx_nodecomm_t nc;
   
