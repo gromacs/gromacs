@@ -1126,9 +1126,9 @@ add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(scripts)
 
-# issue GPU acceleration/CUDA-related warning or error if GMX_GPU was set
-# Auto and NVIDIA GPUs were detected.
-if (CUDA_NOTFOUND_AUTO AND NOT GMX_GPU_DETECTION_DONE)
+# Issue GPU acceleration/CUDA-related warning or error if GMX_GPU was not
+# explicitly set by the user (i.e implicit auto mode) and GPUs were detected.
+if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
     unset(CUDA_NOTFOUND_AUTO)
     unset(CUDA_NOTFOUND_MESSAGE)
