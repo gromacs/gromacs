@@ -159,7 +159,7 @@ macro(gmx_detect_gpu)
         else()
             set(GMX_DETECT_GPU_AVAILABLE NO)
         endif()
-        set(GMX_DETECT_GPU_AVAILABLE YES CACHE BOOL "Whether any NVIDIA GPU was detected" FORCE)
+        set(GMX_DETECT_GPU_AVAILABLE ${GMX_DETECT_GPU_AVAILABLE} CACHE BOOL "Whether any NVIDIA GPU was detected" FORCE)
 
         set(GMX_DETECT_GPU_COUNT ${GMX_DETECT_GPU_COUNT}
             CACHE STRING "Number of NVIDIA GPUs detected")
