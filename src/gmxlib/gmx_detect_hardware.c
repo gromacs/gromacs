@@ -487,7 +487,23 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
     /* run the detection if the binary was compiled with GPU support */
     if (bGPUBin && getenv("GMX_DISABLE_GPU_DETECTION")==NULL)
     {
-        detect_cuda_gpus(&hwinfo->gpu_info);
+        char detection_error[STRLEN];
+
+        if (detect_cuda_gpus(&hwinfo->gpu_info, detection_error) != 0)
+        {
+            if (detection_error != NULL && detection_error[0] != '\0')
+            {
+                sprintf(sbuf, ":\n      %s\n", detection_error);
+            }
+            else
+            {
+                sprintf(sbuf, ".");
+            }
+            md_print_warn(cr, fplog,
+                          "NOTE: Error occurred during GPU detection%s"
+                          "      Can not use GPU acceleration, will fall back to using CPU kernels.\n",
+                          sbuf);
+        }
     }
 
     if (bForceUseGPU || bTryUseGPU)
