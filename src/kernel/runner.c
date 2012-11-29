@@ -925,19 +925,13 @@ static void set_cpu_affinity(FILE *fplog,
             /* We need to determine a scan of the thread counts in this
              * compute node.
              */
-            int process_index;
+            int rank;
             MPI_Comm comm_intra;
 
-            process_index = cr->nodeid_intra;
-            if (MULTISIM(cr))
-            {
-                /* To simplify the code, we shift process indices by nnodes.
-                 * There might be far less processes, but that doesn't matter.
-                 */
-                process_index += cr->ms->sim*cr->nnodes;
-            }
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),process_index,
-                           &comm_intra);
+            /* Make communicators within physical nodes, keep the rank order */
+            MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),rank,&comm_intra);
+            /* Get a scan of the thread count over the local ranks */
             MPI_Scan(&nthread_local,&thread_id_node,1,MPI_INT,MPI_SUM,comm_intra);
             /* MPI_Scan is inclusive, but here we need exclusive */
             thread_id_node -= nthread_local;
