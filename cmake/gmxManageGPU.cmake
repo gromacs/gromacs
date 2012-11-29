@@ -23,8 +23,18 @@ if (GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
     gmx_detect_gpu()
 endif()
 
+# We need to call find_package even when we've already done the detection/setup
+if(GMX_GPU OR GMX_GPU_AUTO)
+    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    if(MSVC)
+        find_package(CUDA 4.1)
+    else()
+        find_package(CUDA 3.2)
+    endif()
+endif()
+
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:
-# - OFF, FALSE: Will skip this detection.
+# - OFF, FALSE: Will skip this detection/setup.
 # - OFF, TRUE : Will keep GMX_GPU=OFF if no CUDA is detected, but will assemble
 #               a warning message which will be issued at the end of the
 #               configuration if GPU(s) were found in the build system.
@@ -32,13 +42,6 @@ endif()
 #               if it is not available.
 # - ON , TRUE : Can't happen (GMX_GPU=ON can only be user-set at this point)
 if(GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
-    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
-    if(MSVC)
-        find_package(CUDA 4.1)
-    else()
-        find_package(CUDA 3.2)
-    endif()
-
     if (EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
         set(CUDA_FOUND TRUE CACHE INTERNAL "Whether the CUDA toolkit was found" FORCE)
     else()
