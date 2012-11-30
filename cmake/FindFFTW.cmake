@@ -72,7 +72,7 @@ endif()
 
 find_package(PkgConfig)
 if(NOT __pkg_config_checked_PC_${FFTW} OR NOT ${FFTW}_LIBRARY)
-  pkg_check_modules(PC_${FFTW} "${${FFTW}_PKG}")
+  pkg_check_modules(PC_${FFTW} "${${FFTW}_PKG}" QUIET)
 endif(NOT __pkg_config_checked_PC_${FFTW} OR NOT ${FFTW}_LIBRARY)
 
 find_path(${FFTW}_INCLUDE_DIR "fftw3.h" HINTS ${PC_${FFTW}_INCLUDE_DIRS})
