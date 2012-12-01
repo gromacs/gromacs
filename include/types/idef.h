@@ -133,7 +133,6 @@ enum {
   F_ETOT,
   F_ECONSERVED,
   F_TEMP,
-  F_VTEMP,
   F_PDISPCORR,
   F_PRES,
   F_DHDL_CON,

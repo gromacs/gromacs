@@ -227,8 +227,6 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
             md->bEner[i] = FALSE;
         else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
             md->bEner[i] = EI_DYNAMICS(ir->eI);
-        else if (i==F_VTEMP)
-            md->bEner[i] =  (EI_DYNAMICS(ir->eI) && getenv("GMX_VIRIAL_TEMPERATURE"));
         else if (i == F_DISPCORR || i == F_PDISPCORR)
             md->bEner[i] = (ir->eDispCorr != edispcNO);
         else if (i == F_DISRESVIOL)
