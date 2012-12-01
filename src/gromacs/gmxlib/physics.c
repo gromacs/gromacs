@@ -41,29 +41,31 @@ double convert2gmx(double x,int unit)
 {
     switch (unit) 
     {
-    case eg2cAngstrom:
+    case eg2c_Angstrom:
         return x*A2NM;
-    case eg2cNm:
+    case eg2c_nm:
         return x;
-    case eg2cPm:
+    case eg2c_pm:
         return 0.001*x;
-    case eg2cBohr:
+    case eg2c_Bohr:
         return x*BOHR2NM;
-    case eg2cKcal_Mole:
+    case eg2c_kcal_mole:
         return x*CAL2JOULE;
-    case eg2cHartree:
-        return x*ONE_4PI_EPS0/BOHR2NM;
-    case eg2cHartree_e:
-        return x*ONE_4PI_EPS0/BOHR2NM;
-    case eg2cAngstrom3:
-        return x*A2NM*A2NM*A2NM;
-    case eg2cCoulomb:
-        return x/E_CHARGE;
-    case eg2cDebye:
-        return x*DEBYE2ENM;
-    case eg2cElectron:
+    case eg2c_kJ_mole:
         return x;
-    case eg2cBuckingham:
+    case eg2c_Hartree:
+        return x*ONE_4PI_EPS0/BOHR2NM;
+    case eg2c_Hartree_e:
+        return x*ONE_4PI_EPS0/BOHR2NM;
+    case eg2c_Angstrom3:
+        return x*A2NM*A2NM*A2NM;
+    case eg2c_Coulomb:
+        return x/E_CHARGE;
+    case eg2c_Debye:
+        return x*DEBYE2ENM;
+    case eg2c_Electron:
+        return x;
+    case eg2c_Buckingham:
         return x*A2NM*DEBYE2ENM;
     default:
         fprintf(stderr,"Unknown unit %d, not converting.\n",unit);
@@ -75,29 +77,31 @@ double gmx2convert(double x,int unit)
 {
     switch (unit) 
     {
-    case eg2cAngstrom:
+    case eg2c_Angstrom:
         return x/A2NM;
-    case eg2cNm:
+    case eg2c_nm:
         return x;
-    case eg2cPm:
+    case eg2c_pm:
         return 1000*x;
-    case eg2cBohr:
+    case eg2c_Bohr:
         return x/BOHR2NM;
-    case eg2cKcal_Mole:
+    case eg2c_kcal_mole:
         return x/CAL2JOULE;
-    case eg2cHartree:
-        return x/(ONE_4PI_EPS0/BOHR2NM);
-    case eg2cHartree_e:
-        return x/(ONE_4PI_EPS0/BOHR2NM);
-    case eg2cAngstrom3:
-        return x/(A2NM*A2NM*A2NM);
-    case eg2cCoulomb:
-        return x*E_CHARGE;
-    case eg2cDebye:
-        return x/DEBYE2ENM;
-    case eg2cElectron:
+    case eg2c_kJ_mole:
         return x;
-    case eg2cBuckingham:
+    case eg2c_Hartree:
+        return x/(ONE_4PI_EPS0/BOHR2NM);
+    case eg2c_Hartree_e:
+        return x/(ONE_4PI_EPS0/BOHR2NM);
+    case eg2c_Angstrom3:
+        return x/(A2NM*A2NM*A2NM);
+    case eg2c_Coulomb:
+        return x*E_CHARGE;
+    case eg2c_Debye:
+        return x/DEBYE2ENM;
+    case eg2c_Electron:
+        return x;
+    case eg2c_Buckingham:
         return x/(A2NM*DEBYE2ENM);
     default:
         fprintf(stderr,"Unknown unit %d, not converting.\n",unit);
@@ -106,9 +110,9 @@ double gmx2convert(double x,int unit)
 }
 
 /* This has to have the same order as the enums. */
-static const char *eg2c_names[eg2cNR] = {
-    "Angstrom", "Nm", "Pm", "Bohr", "Kcal_Mole", 
-    "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
+static const char *eg2c_names[eg2c_NR] = {
+    "Angstrom", "nm", "pm", "Bohr", "kcal/mol", "kJ/mol",
+    "Hartree", "Hartree/e", "Angstrom3", "Coulomb",
     "Debye", "Electron", "Buckingham" 
 };
 
@@ -116,7 +120,7 @@ int string2unit(char *string)
 {
     int i;
     
-    for(i=0; (i<eg2cNR); i++)
+    for(i=0; (i<eg2c_NR); i++)
         if (gmx_strcasecmp(string,eg2c_names[i]) == 0)
             return i;
     return -1;
@@ -124,7 +128,7 @@ int string2unit(char *string)
 
 const char *unit2string(int unit)
 {
-    if ((unit >= 0) && (unit < eg2cNR))
+    if ((unit >= 0) && (unit < eg2c_NR))
         return eg2c_names[unit];
         
     return NULL;

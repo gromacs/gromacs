@@ -63,11 +63,6 @@ int syn_comp(const void *a,const void *b)
     return strcmp(sa->molname,sb->molname);
 }
 
-static void my_memcallback(void *ptr)
-{
-    ;
-}
-
 #ifdef HAVE_LIBSQLITE3
 static void check_sqlite3(sqlite3 *db,char *extra,int rc)
 {
@@ -99,7 +94,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
     const char *molname,*iupac,*iupac2,*prop,*unit,*ref,*classification;
     char **class_ptr;
     double value,error;
-    int i,cidx,expref,rc,nbind;
+    int i,cidx,expref,rc,nbind,nexp_prop;
     t_synonym *syn=NULL,key,*keyptr;
     int nsyn=0,maxsyn=0;
     
@@ -113,7 +108,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                   sqlite3_open_v2(sqlite_file,&db,SQLITE_OPEN_READONLY,NULL));
     
     /* Now database is open and everything is Hunky Dory */
-    fprintf(stderr,"Opened SQLite3 database %s\n",sqlite_file);
+    printf("Opened SQLite3 database %s\n",sqlite_file);
     
     /* Make renaming table */
     sprintf(sql_str,"SELECT syn.name,mol.iupac FROM molecules as mol,synonyms as syn WHERE syn.molid=mol.molid ORDER by syn.name");
@@ -143,7 +138,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
             check_sqlite3(db,"Stepping",rc);
         }
         else {
-            printf("Done finding rows in synonyms. There are %d synonyms (max %d).\n",nsyn,maxsyn);
+            printf("There are %d synonyms for %d molecules.\n",nsyn,np);
         }
     } while (SQLITE_ROW == rc);
     check_sqlite3(db,"Resetting sqlite3 statement",
@@ -152,16 +147,19 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                   sqlite3_finalize(stmt2));
     
     /* Now present a query statement */
-    sprintf(sql_str,"SELECT mol.iupac,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)))");
-    if (NULL != debug)
-        fprintf(debug,"sql_str = '%s'\n",sql_str);
-    
-    check_sqlite3(db,"Preparing statement",
+    nexp_prop = 0;
+    sprintf(sql_str,"SELECT mol.iupac,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)));");
+    check_sqlite3(db,"Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db,sql_str,1+strlen(sql_str),&stmt,NULL));
+
+    if (NULL != debug)
+        fprintf(debug,"sql_str = '%s'\nvariable = '%s'\n",sql_str,
+                sqlite3_bind_parameter_name(stmt,1));
+
     if (NULL != debug)
     {
         nbind = sqlite3_bind_parameter_count(stmt);
-        fprintf(debug,"%d binding parameter(s) in the statement\n",nbind);
+        fprintf(debug,"%d binding parameter(s) in the statement\n%s\n",nbind,sql_str);
     }
     for(i=0; (i<np); i++) 
     {
@@ -170,7 +168,8 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
         keyptr      = bsearch(&key,syn,nsyn,sizeof(syn[0]),syn_comp);
         if (NULL == keyptr)
         {
-            fprintf(stderr,"Warning: missing iupac for %s. Will be ignored.\n",key.molname);
+            fprintf(stderr,"Warning: missing iupac for %s. Will be ignored.\n",
+                    key.molname);
         }
         else
         {
@@ -182,14 +181,16 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
             iupac = keyptr->iupac;
             if (NULL != iupac)
             {
+                if (NULL != debug)
+                    fprintf(debug,"Going to query for '%s'\n",iupac);
                 check_sqlite3(db,"Binding text",
-                              sqlite3_bind_text(stmt,1,iupac,strlen(iupac)+1,my_memcallback));
+                              sqlite3_bind_text(stmt,1,iupac,-1,SQLITE_STATIC));
                 do 
                 {
                     rc = sqlite3_step(stmt);
                     if (SQLITE_ROW == rc)
                     {
-                        //printf("Found a row\n");
+                        /* printf("Found a row\n"); */
                         cidx   = 0;
                         iupac2 = (char *)sqlite3_column_text(stmt,cidx++);
                         if (strcasecmp(iupac,iupac2) != 0)
@@ -201,6 +202,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                         value  = sqlite3_column_double(stmt,cidx++);
                         error  = sqlite3_column_double(stmt,cidx++);
                         ref    = (char *)sqlite3_column_text(stmt,cidx++);
+                        nexp_prop++;
                         gmx_molprop_add_experiment(mp[i],ref,"minimum",&expref);
                         if (strcasecmp(prop,"Polarizability") == 0)
                             gmx_molprop_add_polar(mp[i],expref,prop,unit,
@@ -243,7 +245,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
     
     check_sqlite3(NULL,"Shutting down sqlite. Sqlite3 code %d.",
                   sqlite3_shutdown());
-                  
+    printf("Extracted %d experimental data points from sql database\n",nexp_prop);
 #else
     fprintf(stderr,"No support for sqlite3 database in this executable.\n");
     fprintf(stderr,"Please rebuild gromacs with cmake flag -DGMX_SQLITE3=ON set.\n");

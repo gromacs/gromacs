@@ -61,7 +61,10 @@ extern void gmx_molprop_stats_table(FILE *fp,int eprop,
 extern void gmx_molprop_composition_table(FILE *fp,int nmol,gmx_molprop_t mp[],
 					  gmx_molselect_t gms,int ims);
 
-extern void gmx_molprop_prop_table(FILE *fp,int eprop,real toler,
+extern void gmx_molprop_category_table(FILE *fp,int np,gmx_molprop_t mp[],
+                                       gmx_molselect_t gms,int ims);
+
+extern void gmx_molprop_prop_table(FILE *fp,int eprop,real rtoler,real atoler,
 				   int np,gmx_molprop_t mp[],int bDS,t_qmcount *qmc,
 				   gmx_bool bPrintAll,gmx_molselect_t gms,int ims);
 				   

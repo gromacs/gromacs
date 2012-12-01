@@ -206,11 +206,13 @@ extern void gmx_molprop_add_bond(gmx_molprop_t mpt,int ai,int aj,int bondorder);
 extern void gmx_molprop_add_calculation(gmx_molprop_t mpt,
 					const char *program,const char *method,
 					const char *basisset,const char *reference,
-					const char *conformation,int *calcref);
+					const char *conformation,const char *datafile,
+                                        int *calcref);
 
 extern int gmx_molprop_get_calculation(gmx_molprop_t mpt,char **program,char **method,
 				       char **basisset,char **reference,
-				       char **conformation,int *calcref);
+				       char **conformation,char **datafile,
+                                       int *calcref);
 
 /* Returns atomref that can be used to set coordinates and charges */
 extern void gmx_molprop_calc_add_atom(gmx_molprop_t mpt,int calcref,

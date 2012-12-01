@@ -138,9 +138,9 @@ extern "C" {
 
   /* The routines below can be used for converting units from or to GROMACS
      internal units. */
-  enum { eg2cAngstrom, eg2cNm, eg2cPm, eg2cBohr, eg2cKcal_Mole, 
-	 eg2cHartree, eg2cHartree_e, eg2cAngstrom3, eg2cCoulomb,
-	 eg2cDebye, eg2cElectron, eg2cBuckingham, eg2cNR };
+  enum { eg2c_Angstrom, eg2c_nm, eg2c_pm, eg2c_Bohr, eg2c_kcal_mole, eg2c_kJ_mole, 
+	 eg2c_Hartree, eg2c_Hartree_e, eg2c_Angstrom3, eg2c_Coulomb,
+	 eg2c_Debye, eg2c_Electron, eg2c_Buckingham, eg2c_NR };
   
   /* Convert value x to GROMACS units. Energy -> Energy, Length -> Length etc. 
      The type of x is deduced from unit, 

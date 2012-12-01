@@ -199,14 +199,14 @@ static int gmx_molprop_add_dhform(gmx_molprop_t mpt,int calcref,
     e0Hartree = eg34+ve-vm;
     eTHartree = eg34-ezpe+etherm+ve-vm-vdh;
     
-    ee = convert2gmx(e0Hartree,eg2cHartree);
-    gmx_molprop_add_energy(mpt,calcref,"DHf(0K)","kJ/mol",ee,0);
+    ee = convert2gmx(e0Hartree,eg2c_Hartree);
+    gmx_molprop_add_energy(mpt,calcref,"DHf(0K)",unit2string(eg2c_kJ_mole),ee,0);
     if (bVerbose)
         printf("natom %d e0Hartree %f eTHartree %f eg34 %f ve %f vm %f vdh %f ezpe %f etherm %f \n",
                ntot,e0Hartree,eTHartree,eg34,ve,vm,vdh,ezpe,etherm);
            
-    ee = convert2gmx(eTHartree,eg2cHartree);
-    gmx_molprop_add_energy(mpt,calcref,"DHf(298.15K)","kJ/mol",ee,0);
+    ee = convert2gmx(eTHartree,eg2c_Hartree);
+    gmx_molprop_add_energy(mpt,calcref,"DHf(298.15K)",unit2string(eg2c_kJ_mole),ee,0);
     
     return 1;
 }
@@ -364,8 +364,8 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
   rvec xatom;
   t_espv *espv=NULL;
   char **ptr2;
-  gmx_bool bThermResults=FALSE;
   real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,atom_ener,temp_corr,ii,deltai;
+  gmx_bool bEtherm = FALSE, bEzpe = FALSE, bTemp = FALSE;
   gmx_bool bPolar, bQuad, bDipole;
   tensor polar,quad;
   rvec dipole;
@@ -415,8 +415,7 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
           status = gau_comp_meth_read_line(strings[i],&temp,&pres);
           if (bVerbose)
               printf("na gau_(): temp %f pres %f\n", temp, pres);
-
-          bThermResults = TRUE;
+          bTemp = TRUE;
       }
       else if (NULL != strstr(strings[i],"Exact polarizability")) 
       {
@@ -441,14 +440,13 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
       else if (NULL != strstr(strings[i],"Zero-point correction=")) 
       {
           ptr = split(' ',strings[i]);
+          bEzpe = TRUE;
           if (NULL != ptr[2]) 
           {
               ezpe = atof(strdup(ptr[2]));
           }
           if (bVerbose)
               printf("na gau_(): ezpe %f \n", ezpe);
-
-          bThermResults = TRUE;
       }
       else if (NULL != strstr(strings[i],"Thermal correction to Enthalpy=")) 
       {
@@ -458,11 +456,9 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
           {
               etherm = atof(strdup(ptr[4]));
           }
-
+          bEtherm = TRUE;
           if (bVerbose)
               printf("na gau_(): etherm %f \n", etherm);
-
-          bThermResults = TRUE;
       }
       else if ((NULL != strstr(strings[i],"G2(0 K)=")) ||
                (NULL != strstr(strings[i],"G3(0 K)=")) ||
@@ -546,7 +542,7 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
       basis = basisset;
   if ((calcref == NOTSET) && (NULL != program) && (NULL != method) && (NULL != basis))
   {
-      gmx_molprop_add_calculation(mpt,program,method,basis,reference,conformation,&calcref);
+      gmx_molprop_add_calculation(mpt,program,method,basis,reference,conformation,fn,&calcref);
       if (bPolar)
           gmx_molprop_add_polar(mpt,calcref,"elec","A^3",polar[XX][XX],polar[YY][YY],polar[ZZ][ZZ],
                                 trace(polar)/3.0,0);
@@ -748,21 +744,24 @@ gmx_molprop_t gmx_molprop_read_log(const char *fn,
           }
           if (bVerbose)
               printf("myener %f\n",myener);
-          if (0 == gmx_molprop_add_dhform(mpt,calcref,gaps,mymeth,temp,myener,ezpe,etherm,bVerbose))
+          if (bEtherm && bEzpe && bTemp)
           {
-              fprintf(stderr,"No support for atomic energies in %s, method %s\n",
-                      gmx_molprop_get_molname(mpt),mymeth);
+              if (0 == gmx_molprop_add_dhform(mpt,calcref,gaps,mymeth,temp,myener,ezpe,etherm,bVerbose))
+              {
+                  fprintf(stderr,"No support for atomic energies in %s, method %s\n",
+                          gmx_molprop_get_molname(mpt),mymeth);
+              }
           }
       }		
       else if (NULL != mp2ener)
       {
-          ee = convert2gmx(atof(mp2ener),eg2cHartree);
-          gmx_molprop_add_energy(mpt,calcref,"MP2","kJ/mol",ee,0);
+          ee = convert2gmx(atof(mp2ener),eg2c_Hartree);
+          gmx_molprop_add_energy(mpt,calcref,"MP2",unit2string(eg2c_kJ_mole),ee,0);
       }
       else if (NULL != hfener)
       {
-          ee = convert2gmx(atof(hfener),eg2cHartree);
-          gmx_molprop_add_energy(mpt,calcref,"HF","kJ/mol",ee,0);
+          ee = convert2gmx(atof(hfener),eg2c_Hartree);
+          gmx_molprop_add_energy(mpt,calcref,"HF",unit2string(eg2c_kJ_mole),ee,0);
       }
             
       return mpt;
@@ -796,6 +795,9 @@ int main(int argc, char *argv[])
   static real th_toler=170,ph_toler=5;
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
+#ifdef HAVE_LIBOPENBABEL2
+  static gmx_bool babel=TRUE;
+#endif
   t_pargs pa[] = {
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose terminal output." },
@@ -805,6 +807,10 @@ int main(int argc, char *argv[])
       "HIDDENMaximum angle to be considered a planar A-B-C/B-C-D torsion" },
     { "-compress", FALSE, etBOOL, {&compress},
       "Compress output XML files" },
+#ifdef HAVE_LIBOPENBABEL2
+    { "-babel", FALSE, etBOOL, {&babel},
+      "Use the OpenBabel engine to process gaussian input files" },
+#endif
     { "-molnm", FALSE, etSTR, {&molnm},
       "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
     { "-iupac", FALSE, etSTR, {&iupac},
@@ -826,7 +832,6 @@ int main(int argc, char *argv[])
   int i,nmp,nfn;
   FILE *fp;
   gau_atomprop_t gaps;
-
   
   CopyRight(stdout,argv[0]);
 
@@ -847,8 +852,12 @@ int main(int argc, char *argv[])
   for(i=0; (i<nfn); i++) 
   {
 #ifdef HAVE_LIBOPENBABEL2
-      mp = gmx_molprop_read_gauss(fns[i],aps,pd,molnm,iupac,conf,basis,gaps,
-                                  th_toler,ph_toler,maxpot,bVerbose);
+      if (babel)
+          mp = gmx_molprop_read_gauss(fns[i],aps,pd,molnm,iupac,conf,basis,gaps,
+                                      th_toler,ph_toler,maxpot,bVerbose);
+      else
+          mp = gmx_molprop_read_log(fns[i],aps,pd,molnm,iupac,conf,basis,gaps,
+                                th_toler,ph_toler,maxpot,bVerbose);
 #else
       mp = gmx_molprop_read_log(fns[i],aps,pd,molnm,iupac,conf,basis,gaps,
                                 th_toler,ph_toler,maxpot,bVerbose);

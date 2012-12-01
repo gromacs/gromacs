@@ -174,10 +174,10 @@ int main(int argc,char *argv[])
     nfiles = opt2fns(&fns,"-f",NFILE,fnm);
     mp = merge_xml(nfiles,fns,NULL,NULL,NULL,&np,ap,pd,TRUE,TRUE,th_toler,ph_toler);
     
-    add_properties(opt2fn_null("-x",NFILE,fnm),np,mp);
-
     gmx_molprop_read_sqlite3(np,mp,opt2fn_null("-db",NFILE,fnm));
         
+    add_properties(opt2fn_null("-x",NFILE,fnm),np,mp);
+
     gmx_molprops_write(opt2fn("-o",NFILE,fnm),np,mp,compress);
   
     thanx(stdout);

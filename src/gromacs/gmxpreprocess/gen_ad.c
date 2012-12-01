@@ -335,7 +335,8 @@ static void clean_dih(t_param *dih, int *ndih,t_param improper[],int nimproper,
     snew(index, *ndih+1);
     if (bKeepAllGeneratedDihedrals)
     {
-        fprintf(stderr,"Keeping all generated dihedrals\n");
+        if (NULL != debug)
+            fprintf(debug,"Keeping all generated dihedrals\n");
         nind = *ndih;
         for(i = 0; i < nind; i++)
         {
@@ -865,7 +866,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms,
   sort_id(nimproper,improper);
  
   if (ndih > 0) {
-    fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
+    if (NULL != debug)
+      fprintf(debug,"Before cleaning: %d dihedrals\n",ndih);
     clean_dih(dih,&ndih,improper,nimproper,atoms,
               bKeepAllGeneratedDihedrals,
               bRemoveDihedralIfWithImproper);

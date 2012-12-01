@@ -94,7 +94,7 @@ enum {
     exmlMETHOD, exmlREFERENCE, exmlTYPE, exmlSOURCE,
     exmlBOND, exmlAI, exmlAJ, exmlBONDORDER,
     exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
-    exmlCALCULATION, exmlPROGRAM, exmlBASISSET, exmlCONFORMATION,
+    exmlCALCULATION, exmlPROGRAM, exmlBASISSET, exmlCONFORMATION, exmlDATAFILE,
     exmlUNIT, exmlATOM, exmlATOMID, exmlOBTYPE, exmlX_UNIT, exmlV_UNIT, exmlESPID,
     exmlX, exmlY, exmlZ, exmlV, exmlXX, exmlYY, exmlZZ, 
     exmlXY, exmlXZ, exmlYZ, exmlQ,
@@ -111,7 +111,7 @@ static const char *exml_names[exmlNR] = {
     "method", "reference", "type", "source",
     "bond", "ai", "aj", "bondorder",
     "composition", "compname", "catom", "cname", "cnumber",
-    "calculation", "program", "basisset", "conformation",
+    "calculation", "program", "basisset", "conformation", "datafile",
     "unit", "atom", "atomid", "obtype", "coord_unit", "potential_unit", "espid",
     "x", "y", "z", "V", "xx", "yy", "zz", "xy", "xz", "yz", "q"
 };
@@ -276,7 +276,8 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                 case exmlPOLARIZABILITY:
                     process_children(tree->children,xbuf);
                     if (NN(xbuf[exmlTYPE])  && NN(xbuf[exmlUNIT]) &&
-                        NN(xbuf[exmlVALUE]) && NN(xbuf[exmlERROR]))
+                        NN(xbuf[exmlVALUE]) && NN(xbuf[exmlERROR]) &&
+                        NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))
                         gmx_molprop_add_polar(mpt,expref,xbuf[exmlTYPE],xbuf[exmlUNIT],
                                               my_atof(xbuf[exmlXX]),my_atof(xbuf[exmlYY]),
                                               my_atof(xbuf[exmlZZ]),
@@ -297,7 +298,8 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                 case exmlDIPOLE: 
                     process_children(tree->children,xbuf);
                     if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                        NN(xbuf[exmlVALUE]) && NN(xbuf[exmlERROR]))
+                        NN(xbuf[exmlVALUE]) && NN(xbuf[exmlERROR]) &&
+                        NN(xbuf[exmlX]) && NN(xbuf[exmlY]) && NN(xbuf[exmlZ]))
                         gmx_molprop_add_dipole(mpt,expref,xbuf[exmlTYPE],xbuf[exmlUNIT],
                                                my_atof(xbuf[exmlX]),my_atof(xbuf[exmlY]),
                                                my_atof(xbuf[exmlZ]),
@@ -306,7 +308,8 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                 case exmlQUADRUPOLE: 
                     process_children(tree->children,xbuf);
                     if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                        NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))
+                        NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]) &&
+                        NN(xbuf[exmlXY]) && NN(xbuf[exmlXZ]) && NN(xbuf[exmlYZ]))
                          gmx_molprop_add_quadrupole(mpt,expref,xbuf[exmlTYPE],xbuf[exmlUNIT],
                                                     my_atof(xbuf[exmlXX]),my_atof(xbuf[exmlYY]),
                                                     my_atof(xbuf[exmlZZ]),my_atof(xbuf[exmlXY]),
@@ -335,20 +338,22 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                     break;
                 case exmlCATOM:
                     if (NN(xbuf[exmlC_NAME]) && NN(xbuf[exmlC_NUMBER]))
-                        gmx_molprop_add_composition_atom(mpt,NULL,xbuf[exmlC_NAME],atoi(xbuf[exmlC_NUMBER]));
+                        gmx_molprop_add_composition_atom(mpt,NULL,xbuf[exmlC_NAME],
+                                                         atoi(xbuf[exmlC_NUMBER]));
                     break;
                 case exmlCALCULATION:
                     if (NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlMETHOD]) && 
                         NN(xbuf[exmlBASISSET]) && NN(xbuf[exmlREFERENCE]) &&
-                        NN(xbuf[exmlCONFORMATION]))
+                        NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]))
                         gmx_molprop_add_calculation(mpt,xbuf[exmlPROGRAM],xbuf[exmlMETHOD],
                                                     xbuf[exmlBASISSET],xbuf[exmlREFERENCE],
-                                                    xbuf[exmlCONFORMATION],&expref);
+                                                    xbuf[exmlCONFORMATION],xbuf[exmlDATAFILE],
+                                                    &expref);
                     else 
-                        gmx_fatal(FARGS,"Trying to add calculation with program %s, method %s, basisset %s and reference %s and conformation %s",
+                        gmx_fatal(FARGS,"Trying to add calculation with program %s, method %s, basisset %s and reference %s conformation %s datafile %s",
                                   xbuf[exmlPROGRAM],xbuf[exmlMETHOD],
                                   xbuf[exmlBASISSET],xbuf[exmlREFERENCE],
-                                  xbuf[exmlCONFORMATION]);
+                                  xbuf[exmlCONFORMATION],xbuf[exmlDATAFILE]);
                     break;
                 case exmlATOM:
                     if (NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
@@ -580,7 +585,7 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
     xmlNodePtr ptr,child,grandchild,comp,atomptr,baby;
     int    i,ai,aj,bondorder,eMP,atomid,cnumber,expref,calcref,atomref;
     char   *program,*basisset,*method,*name,*type,*unit,*reference;
-    char   *catom,*atomname,*obtype,*coords,*conformation,*p;
+    char   *catom,*atomname,*obtype,*coords,*conformation,*datafile,*p;
     const  char   *iupac,*cas,*cid,*inchi,*category,*composition;
     double q,x,y,z,xx,yy,zz,xy,xz,yz,aver,error;
   
@@ -621,7 +626,7 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
     }
     gmx_molprop_reset_experiment(mpt);
     while (gmx_molprop_get_calculation(mpt,&program,&method,&basisset,
-                                       &reference,&conformation,&calcref) == 1) 
+                                       &reference,&conformation,&datafile,&calcref) == 1) 
     {
         child = add_xml_child(ptr,exml_names[exmlCALCULATION]);
         add_xml_char(child,exml_names[exmlPROGRAM],program);
@@ -629,6 +634,7 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
         add_xml_char(child,exml_names[exmlBASISSET],basisset);
         add_xml_char(child,exml_names[exmlREFERENCE],reference);
         add_xml_char(child,exml_names[exmlCONFORMATION],conformation);
+        add_xml_char(child,exml_names[exmlDATAFILE],datafile);
 
         add_properties(child,mpt,calcref);
         
@@ -721,7 +727,8 @@ void gmx_molprops_write(const char *fn,int nmolprop,gmx_molprop_t mpt[],
     /* Add molecule definitions */
     for(i=0; (i<nmolprop); i++)
     {
-        printf("Adding %d/%d %s\n",i+1,nmolprop,gmx_molprop_get_molname(mpt[i]));
+        if (NULL != debug)
+            fprintf(debug,"Adding %d/%d %s\n",i+1,nmolprop,gmx_molprop_get_molname(mpt[i]));
         add_xml_molprop(myroot,mpt[i]);
     }
     xmlSetDocCompressMode(doc,(int)bCompress);

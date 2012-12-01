@@ -583,9 +583,9 @@ static int init_mymol(FILE *fp,t_mymol *mymol,gmx_molprop_t mp,
                     xu = string2unit(xyz_unit);
                     vu = string2unit(V_unit);
                     if (-1 == xu)
-                        xu = eg2cAngstrom;
+                        xu = eg2c_Angstrom;
                     if (-1 == vu)
-                        vu = eg2cHartree_e;
+                        vu = eg2c_Hartree_e;
                     gmx_resp_add_point(mymol->gr,
                                        convert2gmx(x,xu),
                                        convert2gmx(y,xu),

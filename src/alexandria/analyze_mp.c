@@ -70,11 +70,11 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
     char   *atomname,*gt_type,*elem,*miller_equiv,*ref,*neighbor1,*neighbor2;
     const char *comp,*iupac;
     int    alexandria_support,miller_support,bosque_support,ims;
-    char *null = (char *)"0",*empirical = (char *)"empirical",*minimum = (char *)"minimum",*minus = (char *)"-";
+    char *null = (char *)"0",*empirical = (char *)"empirical",*minimum = (char *)"minimum",*minus = (char *)"-", *nofile = (char *)"none";
     const char *program;
     const char *ang3;
     
-    ang3    = unit2string(eg2cAngstrom3);
+    ang3    = unit2string(eg2c_Angstrom3);
     program = ShortProgram();
     if (gmx_poldata_get_bosque(pd,null,null,&bos0) == NULL)
         gmx_fatal(FARGS,"Can not find Bosque polarizability for 0");
@@ -144,7 +144,7 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
             if (alexandria_support == 1) 
             {
                 gmx_molprop_add_calculation(mp[j],program,(char *)"AX",minus,
-                                            (char *)"Maaren2010a",minimum,&calcref);
+                                            (char *)"Maaren2010a",minimum,nofile,&calcref);
                 sig_alexandria = sqrt(sig_alexandria/natom_tot);
                 gmx_molprop_add_polar(mp[j],calcref,empirical,ang3,
                                       0,0,0,spoel,sig_alexandria);
@@ -152,7 +152,7 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
             if (bosque_support == 1) 
             {
                 gmx_molprop_add_calculation(mp[j],program,(char *)"BS",minus,
-                                            (char *)"Bosque2002a",minimum,&calcref);
+                                            (char *)"Bosque2002a",minimum,nofile,&calcref);
                 gmx_molprop_add_polar(mp[j],calcref,empirical,ang3,
                                       0,0,0,bos,0);
             }
@@ -160,11 +160,11 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
             {
                 ahc = 4*sqr(ahc)/Nelec;
                 gmx_molprop_add_calculation(mp[j],program,(char *)"MK",(char *)"ahc",
-                                            (char *)"Miller1990a,Khan",minimum,&calcref);
+                                            (char *)"Miller1990a,Khan",minimum,nofile,&calcref);
                 gmx_molprop_add_polar(mp[j],calcref,empirical,ang3,
                                       0,0,0,ahc,0);
                 gmx_molprop_add_calculation(mp[j],program,(char *)"MK",(char *)"ahp",
-                                            (char *)"Miller1990a,Khan",minimum,&calcref);
+                                            (char *)"Miller1990a,Khan",minimum,nofile,&calcref);
                 gmx_molprop_add_polar(mp[j],calcref,empirical,ang3,
                                       0,0,0,ahp,0);
             }
@@ -261,9 +261,10 @@ static void add_refc(t_refcount *rc,char *ref)
 static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
                                 gmx_poldata_t *pd,gmx_poldata_t pdref,
                                 gmx_bool bCalcPol,int prop,
-                                gmx_atomprop_t ap,int iQM,char *lot,real toler,
+                                gmx_atomprop_t ap,int iQM,char *lot,
+                                real rtoler,real atoler,
                                 char *fc_str,gmx_bool bPrintAll,double outlier,
-                                gmx_bool bStatsTable,
+                                gmx_bool bStatsTable,gmx_bool bCategoryTable,
                                 gmx_bool bPropTable,gmx_bool bCompositionTable,
                                 const char *texfn,
                                 const char *xvgfn,
@@ -339,8 +340,8 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
     }
     if (bPropTable)
     {
-        gmx_molprop_prop_table(fp,prop,toler,np,mp,0,qmc,bPrintAll,gms,imsTrain);
-        gmx_molprop_prop_table(fp,prop,toler,np,mp,0,qmc,bPrintAll,gms,imsTest);
+        gmx_molprop_prop_table(fp,prop,rtoler,atoler,np,mp,0,qmc,bPrintAll,gms,imsTrain);
+        gmx_molprop_prop_table(fp,prop,rtoler,atoler,np,mp,0,qmc,bPrintAll,gms,imsTest);
         if (NULL != selout) 
         {
             gp = fopen(selout,"w");
@@ -364,6 +365,10 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
     {
         gmx_molprop_composition_table(fp,np,mp,gms,imsTrain);
         gmx_molprop_composition_table(fp,np,mp,gms,imsTest);
+    }
+    if (bCategoryTable)
+    {
+        gmx_molprop_category_table(fp,np,mp,gms,imsTrain);
     }
     fclose(fp);
     if (NULL != xvgfn)
@@ -410,15 +415,17 @@ int main(int argc,char *argv[])
     static char *prop[] = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"DHf(298.15K)", NULL };
     static char *fc_str = (char *)"";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
-    static real toler = 0.15,outlier=0;
+    static real rtoler = 0.15,atoler=0,outlier=0;
     static real th_toler=170,ph_toler=5;
     static gmx_bool bMerge = TRUE,bAll = FALSE,bCalcPol=TRUE;
-    static gmx_bool bStatsTable = TRUE,bCompositionTable=FALSE,bPropTable=TRUE;
+    static gmx_bool bStatsTable = TRUE,bCompositionTable=FALSE,bPropTable=TRUE,bCategoryTable=TRUE;
     t_pargs pa[] = {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
-        { "-tol",    FALSE, etREAL, {&toler},
-          "Relative tolerance for printing in bold in tables" },
+        { "-rtol",    FALSE, etREAL, {&rtoler},
+          "Relative tolerance for printing in bold in tables (see next option)" },
+        { "-atol",    FALSE, etREAL, {&atoler},
+          "Absolute tolerance for printing in bold in tables. If non-zero, an absolute tolerance in appropriate units, depending on property, will be used rather than a relative tolerance." },
         { "-merge",  FALSE, etBOOL, {&bMerge},
           "Merge molecule records in the input file and generate atomtype compositions based on the calculated geometry." },
         { "-lot",    FALSE, etSTR,  {&lot},
@@ -429,6 +436,8 @@ int main(int argc,char *argv[])
           "Calculate polarizabilities based on empirical methods" },
         { "-composition", FALSE, etBOOL, {&bCompositionTable},
           "Print a table of composition of the molecules" },
+        { "-category", FALSE, etBOOL, {&bCategoryTable},
+          "Print a table of the molecules that are part of each category" },
         { "-proptable", FALSE, etBOOL, {&bPropTable},
           "Print a table of properties (slect which with the [TT]-prop[tt] flag)." },
         { "-statstable", FALSE, etBOOL, {&bStatsTable},
@@ -516,8 +525,8 @@ int main(int argc,char *argv[])
         gmx_molprop_sort(np,mp,alg,ap,gms);
     }
     gmx_molprop_analyze(np,mp,npdfile,pd,pdref,bCalcPol,
-                        eprop,ap,0,lot,toler,fc_str,bAll,outlier,
-                        bStatsTable,bPropTable,bCompositionTable,
+                        eprop,ap,0,lot,rtoler,atoler,fc_str,bAll,outlier,
+                        bStatsTable,bCategoryTable,bPropTable,bCompositionTable,
                         opt2fn("-t",NFILE,fnm),opt2fn("-c",NFILE,fnm),
                         opt2fn("-his",NFILE,fnm),opt2fn("-atype",NFILE,fnm),oenv,gms,
                         opt2fn_null("-selout",NFILE,fnm));

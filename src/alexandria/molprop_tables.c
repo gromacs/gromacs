@@ -423,6 +423,98 @@ void gmx_molprop_composition_table(FILE *fp,int np,gmx_molprop_t pd[],
     fprintf(fp,"\\hline\n\\end{tabular}\n\\end{sidewaystable}\n");
 }
 
+typedef struct {
+    char *cat;
+    int nmol;
+    char **molec;
+} t_cat_stat;
+
+static void add_cats(int *ncs,t_cat_stat **cs,const char *iupac,const char *mycat)
+{
+    int j,nmol;
+
+    for(j=0; (j<*ncs); j++)
+    {
+        if (strcmp((*cs)[j].cat,mycat) == 0)
+            break;
+    }
+    if (j == *ncs) 
+    {
+        srenew(*cs,++(*ncs));
+        (*cs)[j].cat = strdup(mycat);
+        (*cs)[j].nmol = 0;
+        (*cs)[j].molec = NULL;
+    }
+    nmol = ++(*cs)[j].nmol;
+    srenew((*cs)[j].molec,nmol);
+    (*cs)[j].molec[nmol-1] = strdup(iupac);
+}
+
+static void category_header(FILE *fp,int start,int ims)
+{
+    if (start == 0)
+        decrease_table_number(fp);
+    fprintf(fp,"\\begin{table}[h]\n");
+    fprintf(fp,"\\caption{Molecules that are part of each category used for statistics%s.}\n",
+            (start == 1) ? "" : "(continued)");
+    fprintf(fp,"\\begin{tabularx}{16cm}{lcX}\n");
+    fprintf(fp,"\\hline\n");
+    fprintf(fp,"Category & N & Molecule(s)\\\\\n");
+    fprintf(fp,"\\hline\n");
+}
+
+static void category_footer(FILE *fp)
+{
+    fprintf(fp,"\\hline\n");
+    fprintf(fp,"\\end{tabularx}\n");
+    fprintf(fp,"\\end{table}\n");
+}
+
+void gmx_molprop_category_table(FILE *fp,int np,gmx_molprop_t mp[],
+                                gmx_molselect_t gms,int ims)
+{
+    int i,j,iline,ncs;
+    t_cat_stat *cs=NULL;
+    const char *iupac,*mycat;
+    
+    ncs = 0;
+    for(i=0; (i<np); i++) 
+    {
+        iupac = gmx_molprop_get_iupac(mp[i]);
+        if (ims == gmx_molselect_status(gms,iupac))
+        {
+            while(NULL != (mycat = gmx_molprop_get_category(mp[i]))) 
+            {
+                add_cats(&ncs,&cs,iupac,mycat);
+            }
+        }
+    }
+
+    if (ncs > 0) 
+    {
+        category_header(fp,1,ims);  
+        iline = 0;
+        for(i=0; (i<ncs); i++) 
+        {
+            fprintf(fp,"%s & %d &",cs[i].cat,cs[i].nmol);
+            for(j=0; (j<cs[i].nmol); j++) 
+            {
+                fprintf(fp," %s",cs[i].molec[j]);
+                if (j<cs[i].nmol-1)
+                    fprintf(fp,",");
+            }
+            fprintf(fp,"\\\\\n");
+            iline++;
+            if (iline == 5) 
+            {
+                category_footer(fp);
+                category_header(fp,0,ims);
+            }
+        }
+        category_footer(fp);
+    }
+}
+
 static void atomtype_tab_header(FILE *fp,int caption)
 {
     if (!caption)
@@ -697,19 +789,21 @@ void gmx_molprop_atomtype_table(FILE *fp,gmx_bool bPolar,
 }
                                
 
-static void prop_header(FILE *fp,int caption,const char *property,real toler,
+static void prop_header(FILE *fp,int caption,const char *property,real rtoler,real atoler,
                         t_qmcount *qmc,gmx_bool bSideways,int ims,gmx_bool bPrintConf)
 {
     int  i;
-    int  dtol = gmx_nint(100*toler);
     
     if (!caption)
         decrease_table_number(fp);
     fprintf(fp,"\\begin{%stable}[H]\n",bSideways ? "sideways" : "");
     if (caption) 
     {
-        fprintf(fp,"\\caption{Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %d\\%% off the experimental values are printed in bold, more than %d\\%% off in bold red.}\n\\label{%s}\n",
-                property,ims_names[ims],dtol,dtol*2,ims_names[ims]);
+        fprintf(fp,"\\caption{Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.}\n\\label{%s}\n",
+                property,ims_names[ims],
+                (atoler > 0) ? atoler   : 100*rtoler,(atoler > 0) ? "" : "\%",
+                (atoler > 0) ? 2*atoler : 200*rtoler,(atoler > 0) ? "" : "\%",
+                ims_names[ims]);
     }
     else 
     {
@@ -742,7 +836,32 @@ static void prop_end(FILE *fp,gmx_bool bSideways)
             bSideways ? "sideways" : "");
 }
 
-void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
+static int outside(real vexp,real vcalc,real rtoler,real atoler)
+{
+    real rdv,adv = fabs(vexp-vcalc);
+    if (atoler > 0) 
+    {
+        if (adv > 2*atoler)
+            return 2;
+        else if (adv > atoler)
+            return 1;
+        return 0;
+    }
+    else 
+    {
+        if (vexp == 0)
+            return 0;
+        rdv = adv/vexp;
+        
+        if (rdv > 2*rtoler)
+            return 2;
+        else if (rdv > rtoler)
+            return 1;
+        return 0;
+    }
+}
+
+void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                             int np,gmx_molprop_t mp[],int bDS,
                             t_qmcount *qmc,gmx_bool bPrintAll,
                             gmx_molselect_t gms,int ims)
@@ -759,8 +878,8 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
     int    *found_calc,nprint;
     double *val_exp,*val_calc,*err_exp,*err_calc,dvec[DIM];
     tensor quadrupole;
-    real   ds_fac,tolerb = 2*toler;
-    gmx_bool   bSideways,bOutlier,bPrintConf;
+    real   ds_fac;
+    gmx_bool bSideways,bOutlier,bPrintConf;
   
     bSideways = (qmc->n > 1);
     snew(err_calc,qmc->n);
@@ -789,7 +908,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
     if (nprint <= 0)
         return;
     bPrintConf = (emp == empDIPOLE);
-    prop_header(fp,caption,emp_name[emp],toler,qmc,bSideways,ims,bPrintConf);  
+    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,bSideways,ims,bPrintConf);  
     header  = 1;
     iline   = 0;
     for(i=0; (i<np); i++) 
@@ -925,18 +1044,19 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
                             }
                             if (nexp > 0) 
                             {
-                                if ((fabs(vc - val_exp[ne])) > fabs(val_exp[ne]*tolerb))
-                                {
+                                int oo = outside(val_exp[ne],vc,rtoler,atoler);
+                                switch(oo) {
+                                case 2:
                                     sprintf(mylbuf,"& \\textcolor{Red}{\\bf %s} ",vbuf);
                                     bOutlier = TRUE;
-                                }
-                                else if ((fabs(vc - val_exp[ne])) > fabs(val_exp[ne]*toler)) 
-                                {
+                                    break;
+                                case 1:
                                     sprintf(mylbuf,"& {\\bf %s} ",vbuf);
                                     bOutlier = TRUE;
-                                }
-                                else
+                                    break;
+                                default:
                                     sprintf(mylbuf,"& %s ",vbuf);
+                                }
                             }
                             else
                                 sprintf(mylbuf,"& %s ",vbuf);
@@ -960,7 +1080,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
                 {
                     caption = 0;
                     prop_end(fp,bSideways);
-                    prop_header(fp,caption,emp_name[emp],toler,qmc,bSideways,ims,bPrintConf);
+                    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,bSideways,ims,bPrintConf);
                     header  = 1;
                     iline   = 0;
                 }

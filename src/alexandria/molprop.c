@@ -111,7 +111,7 @@ typedef struct
 typedef struct 
 {
     int              eMP;
-    char             *reference,*conformation;
+    char             *reference,*conformation,*datafile;
     int              nprop[empNR],nprop_c[empNR];
     t_polarizability *polar;
     t_dipole         *dipole;
@@ -579,7 +579,8 @@ static int index2ref(int index,int eMPtype)
 }
 
 static void init_ce(t_calc_exp *ce,const const char *program,const char *method,
-                    const char *basisset,const char *reference,const char *conformation)
+                    const char *basisset,const char *reference,
+                    const char *conformation,const char *datafile)
 {
     int j;
     
@@ -588,6 +589,7 @@ static void init_ce(t_calc_exp *ce,const const char *program,const char *method,
     assign_str(&ce->basisset,basisset);
     assign_str(&ce->reference,reference);
     assign_str(&ce->conformation,conformation);
+    assign_str(&ce->datafile,datafile);
     ce->natom = 0;
     ce->natom_c = 0;
     ce->catom = NULL;
@@ -618,7 +620,7 @@ void gmx_molprop_add_experiment(gmx_molprop_t mp,const char *reference,
     {						    
         srenew(mp->exper,++mp->nexper);
         init_ce(&(mp->exper[mp->nexper-1]),NULL,NULL,NULL,
-                reference,conformation);
+                reference,conformation,NULL);
     }
 }
 
@@ -1159,7 +1161,7 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
     const char *tmp,*stmp,*dtmp;
     char **name,*type,*program,*method,*basisset,*catom,*formula;
     int cnumber,charge,multiplicity;
-    char *value,*error,*unit,*reference,*atomname,*obtype,*coords,*conformation;
+    char *value,*error,*unit,*reference,*atomname,*obtype,*coords,*conformation,*datafile;
     double mass,x,y,z,q,sq;
     
     gmx_molprop_reset(src);
@@ -1224,10 +1226,10 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
     }
 
     while (gmx_molprop_get_calculation(src,&program,&method,
-                                       &basisset,&reference,&conformation,&srcref) == 1) 
+                                       &basisset,&reference,&conformation,&datafile,&srcref) == 1) 
     {
         gmx_molprop_add_calculation(dst,program,method,basisset,
-                                    reference,conformation,&dstref);
+                                    reference,conformation,datafile,&dstref);
         merge_props(dst,src,dstref,srcref);
         while (gmx_molprop_calc_get_atom(src,srcref,&atomname,&obtype,&atomid,&satomref) == 1) 
         {
@@ -1288,13 +1290,13 @@ gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mp)
 
 void gmx_molprop_add_calculation(gmx_molprop_t mp,const char *program,const char *method,
                                  const char *basisset,const char *reference,
-                                 const char *conformation,int *calcref)
+                                 const char *conformation,const char *datafile,int *calcref)
 {
     int j;
     
     srenew(mp->calc,++mp->ncalc);
     init_ce(&(mp->calc[mp->ncalc-1]),program,method,basisset,
-            reference,conformation);
+            reference,conformation,datafile);
     *calcref = index2ref(mp->ncalc-1,eMOLPROP_Calc);
 }
 
@@ -1323,7 +1325,8 @@ void gmx_molprop_calc_add_atom(gmx_molprop_t mp,int calcref,
 
 int gmx_molprop_get_calculation(gmx_molprop_t mp,char **program,
                                 char **method,char **basisset,
-                                char **reference,char **conformation,int *calcref)
+                                char **reference,char **conformation,
+                                char **datafile,int *calcref)
 {
     if (mp->ncalc_c < mp->ncalc) 
     {
@@ -1332,6 +1335,7 @@ int gmx_molprop_get_calculation(gmx_molprop_t mp,char **program,
         assign_str(basisset,mp->calc[mp->ncalc_c].basisset);
         assign_str(reference,mp->calc[mp->ncalc_c].reference);
         assign_str(conformation,mp->calc[mp->ncalc_c].conformation);
+        assign_str(datafile,mp->calc[mp->ncalc_c].datafile);
         *calcref = index2ref(mp->ncalc_c,eMOLPROP_Calc);
         mp->ncalc_c++;
     
