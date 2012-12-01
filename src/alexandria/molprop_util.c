@@ -532,7 +532,8 @@ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
         if (!bSpoel) 
             gmx_molprop_delete_composition(mp[j],"spoel");
     }
-    printf("Generated composition for %d out of %d molecules.\n",nok,ntest);
+    if (ntest > 1)
+        printf("Generated composition for %d out of %d molecules.\n",nok,ntest);
 }
 
 void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap)

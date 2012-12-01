@@ -174,8 +174,9 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
         else
         {
             if ((NULL == key.iupac) || (strcmp(key.iupac,keyptr->iupac) != 0)) {
-                fprintf(stderr,"Warning: incorrect iupac %s for %s - changing to %s\n",
-                        key.iupac,key.molname,keyptr->iupac);
+                if (NULL != debug)
+                    fprintf(debug,"Warning: incorrect iupac %s for %s - changing to %s\n",
+                            key.iupac,key.molname,keyptr->iupac);
                 gmx_molprop_set_iupac(mp[i],keyptr->iupac);
             }
             iupac = keyptr->iupac;

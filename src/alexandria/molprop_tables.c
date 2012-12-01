@@ -452,11 +452,12 @@ static void add_cats(int *ncs,t_cat_stat **cs,const char *iupac,const char *myca
 
 static void category_header(FILE *fp,int start,int ims)
 {
+    fprintf(fp,"\\newpage\n");
     if (start == 0)
         decrease_table_number(fp);
     fprintf(fp,"\\begin{table}[h]\n");
     fprintf(fp,"\\caption{Molecules that are part of each category used for statistics%s.}\n",
-            (start == 1) ? "" : "(continued)");
+            (start == 1) ? "" : " (continued)");
     fprintf(fp,"\\begin{tabularx}{16cm}{lcX}\n");
     fprintf(fp,"\\hline\n");
     fprintf(fp,"Category & N & Molecule(s)\\\\\n");
