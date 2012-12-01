@@ -165,7 +165,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("ETOT",     "Total Energy"     ),
   def_nofc    ("ECONS",    "Conserved En."    ),
   def_nofc    ("TEMP",     "Temperature"      ),
-  def_nofc    ("VTEMP",    "Vir. Temp."       ),
+  def_nofc    ("VTEMP",    "Vir. Temp. (not used)"      ),
   /* Note that pressure names can not be more than 8 char's,
    * because " (bar)" is appended to them.
    */
