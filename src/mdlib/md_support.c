@@ -493,9 +493,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_PDISPCORR] = prescorr;
         enerd->term[F_PRES] += prescorr;
         *pcurr = enerd->term[F_PRES];
-        /* calculate temperature using virial */
-        enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
-
     }    
 }
 
