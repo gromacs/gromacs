@@ -114,7 +114,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
     if (clearF == enbvClearFYes)
     {
-        clear_f(nbat, f);
+        clear_f(nbat, 0, f);
     }
 
     bEner = (force_flags & GMX_FORCE_ENERGY);

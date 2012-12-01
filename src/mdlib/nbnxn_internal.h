@@ -37,7 +37,7 @@
  */
 
 #ifndef _nbnxn_internal_h
-#define _nsnxn_internal_h
+#define _nbnxn_internal_h
 
 #include "typedefs.h"
 #include "domdec.h"
@@ -52,30 +52,6 @@ extern "C" {
 #define NBNXN_SEARCH_SSE
 #endif
 
-
-/* Block size for the non-bonded thread force-buffer reduction,
- * should be a multiple of 2 in case of AVX256.
- */
-#define NBNXN_CELLBLOCK_SIZE       4
-#define NBNXN_CELLBLOCK_SIZE_2LOG  2
-
-/* We currently store the reduction flags as bits in an unsigned int.
- * In most cases this limits the number of flags to 32.
- * The reduction will automatically disable the flagging and do a full
- * reduction when the flags won't fit, but this will lead to very slow
- * reduction. As we anyhow don't expect reasonable performance with
- * more than 32 threads, we put in this hard limit.
- * You can increase this number, but the reduction will be very slow.
- */
-#define NBNXN_CELLBLOCK_MAX_THREADS  32
-
-/* Flags for telling if threads write to force output buffers */
-typedef struct {
-    int ncb;         /* The number of cell blocks                         */
-    gmx_bool bUse;   /* Should we use these flags?                        */
-    unsigned *flag;  /* Bit i is set when thread i writes to a cell-block */
-    int flag_nalloc; /* Allocation size of cxy_flag                       */
-} nbnxn_cellblock_flags;
 
 /* A pair-search grid struct for one domain decomposition zone */
 typedef struct {
@@ -115,8 +91,6 @@ typedef struct {
     float *bb_simple;    /* bb for simple grid converted from super     */
     int   *flags_simple; /* flags for simple grid converted from super  */
     int   nc_nalloc_simple; /* Allocation size for the pointers above   */
-
-    nbnxn_cellblock_flags cellblock_flags; /* Flags for F output buffers */
 
     int  nsubc_tot;      /* Total number of subcell, used for printing  */
 } nbnxn_grid_t;
@@ -212,8 +186,7 @@ typedef struct {
     int  *sort_work;
     int  sort_work_nalloc;
 
-    nbnxn_cellblock_flags gridi_flags; /* Flags for i-grid f buffer     */
-    nbnxn_cellblock_flags gridj_flags; /* Flags for j-grid f buffer     */
+    nbnxn_buffer_flags_t buffer_flags; /* Flags for force buffer access */
 
     int  ndistc;         /* Number of distance checks for flop counting */
 
