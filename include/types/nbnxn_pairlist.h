@@ -168,6 +168,35 @@ typedef struct {
     real *VSc;    /* Temporary SIMD Coulomb group energy storage        */
 } nbnxn_atomdata_output_t;
 
+/* Block size in atoms for the non-bonded thread force-buffer reduction,
+ * should be a multiple of all cell and x86 SIMD sizes (i.e. 2, 4 and 8).
+ * Should be small to reduce the reduction and zeroing cost,
+ * but too small will result in overhead.
+ * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
+ */
+#ifdef GMX_DOUBLE
+#define NBNXN_BUFFERFLAG_SIZE   8
+#else
+#define NBNXN_BUFFERFLAG_SIZE  16
+#endif
+
+/* We currently store the reduction flags as bits in an unsigned int.
+ * In most cases this limits the number of flags to 32.
+ * The reduction will automatically disable the flagging and do a full
+ * reduction when the flags won't fit, but this will lead to very slow
+ * reduction. As we anyhow don't expect reasonable performance with
+ * more than 32 threads, we put in this hard limit.
+ * You can increase this number, but the reduction will be very slow.
+ */
+#define NBNXN_BUFFERFLAG_MAX_THREADS  32
+
+/* Flags for telling if threads write to force output buffers */
+typedef struct {
+    int nflag;       /* The number of flag blocks                         */
+    unsigned *flag;  /* Bit i is set when thread i writes to a cell-block */
+    int flag_nalloc; /* Allocation size of cxy_flag                       */
+} nbnxn_buffer_flags_t;
+
 /* LJ combination rules: geometric, Lorentz-Berthelot, none */
 enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
 
@@ -198,6 +227,8 @@ typedef struct {
     int  nout;       /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;  /* Output data structures               */
     int  nalloc;     /* Allocation size of all arrays (for x/f *x/fstride) */
+    gmx_bool bUseBufferFlags; /* Use the flags or operate on all atoms     */
+    nbnxn_buffer_flags_t buffer_flags; /* Flags for buffer zeroing+reduc.  */
 } nbnxn_atomdata_t;
 
 #ifdef __cplusplus

@@ -1558,23 +1558,21 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     }
 }
 
-static void init_grid_flags(nbnxn_cellblock_flags *flags,
-                            const nbnxn_grid_t *grid)
+static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
+                              int natoms)
 {
-    int cb;
+    int b;
 
-    flags->ncb = (grid->nc + NBNXN_CELLBLOCK_SIZE - 1)/NBNXN_CELLBLOCK_SIZE;
-    if (flags->ncb > flags->flag_nalloc)
+    flags->nflag = (natoms + NBNXN_BUFFERFLAG_SIZE - 1)/NBNXN_BUFFERFLAG_SIZE;
+    if (flags->nflag > flags->flag_nalloc)
     {
-        flags->flag_nalloc = over_alloc_large(flags->ncb);
+        flags->flag_nalloc = over_alloc_large(flags->nflag);
         srenew(flags->flag,flags->flag_nalloc);
     }
-    for(cb=0; cb<flags->ncb; cb++)
+    for(b=0; b<flags->nflag; b++)
     {
-        flags->flag[cb] = 0;
+        flags->flag[b] = 0;
     }
-
-    flags->bUse = TRUE;
 }
 
 /* Sets up a grid and puts the atoms on the grid.
@@ -1671,9 +1669,10 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
         srenew(nbs->a,nbs->a_nalloc);
     }
 
-    if (nc_max*grid->na_sc > nbat->nalloc)
+    /* We need padding up to a multiple of the buffer flag size: simply add */
+    if (nc_max*grid->na_sc + NBNXN_BUFFERFLAG_SIZE > nbat->nalloc)
     {
-        nbnxn_atomdata_realloc(nbat,nc_max*grid->na_sc);
+        nbnxn_atomdata_realloc(nbat,nc_max*grid->na_sc+NBNXN_BUFFERFLAG_SIZE);
     }
 
     calc_cell_indices(nbs,dd_zone,grid,a0,a1,atinfo,x,move,nbat);
@@ -1682,8 +1681,6 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
     {
         nbat->natoms_local = nbat->natoms;
     }
-
-    init_grid_flags(&grid->cellblock_flags,grid);
 
     nbs_cycle_stop(&nbs->cc[enbsCCgrid]);
 }
@@ -2388,10 +2385,10 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     nbl_list->nnbl = gmx_omp_nthreads_get(emntNonbonded);
 
     if (!nbl_list->bCombined &&
-        nbl_list->nnbl > NBNXN_CELLBLOCK_MAX_THREADS)
+        nbl_list->nnbl > NBNXN_BUFFERFLAG_MAX_THREADS)
     {
         gmx_fatal(FARGS,"%d OpenMP threads were requested. Since the non-bonded force buffer reduction is prohibitively slow with more than %d threads, we do not allow this. Use %d or less OpenMP threads.",
-                  nbl_list->nnbl,NBNXN_CELLBLOCK_MAX_THREADS,NBNXN_CELLBLOCK_MAX_THREADS);
+                  nbl_list->nnbl,NBNXN_BUFFERFLAG_MAX_THREADS,NBNXN_BUFFERFLAG_MAX_THREADS);
     }
 
     snew(nbl_list->nbl,nbl_list->nnbl);
@@ -3999,8 +3996,7 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
 }
 
 static int get_ci_block_size(const nbnxn_grid_t *gridi,
-                             gmx_bool bDomDec, int nth,
-                             gmx_bool *bFBufferFlag)
+                             gmx_bool bDomDec, int nth)
 {
     const int ci_block_enum = 5;
     const int ci_block_denom = 11;
@@ -4032,15 +4028,6 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
     if (!bDomDec || ci_block*3*nth > gridi->nc)
     {
         ci_block = (gridi->nc + nth - 1)/nth;
-        /* With non-interleaved blocks it makes sense to flag which
-         * part of the force output thread buffer we access.
-         * We use bit flags, so we have to check if it fits.
-         */
-        *bFBufferFlag = (nth > 1 && nth <= sizeof(unsigned int)*8);
-    }
-    else
-    {
-        *bFBufferFlag = FALSE;
     }
 
     return ci_block;
@@ -4085,7 +4072,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int  c0,c1,cs,cf,cl;
     int  ndistc;
     int  ncpcheck;
-    int  gridj_flag_shift=0,cj_offset=0;
+    int  gridi_flag_shift=0,gridj_flag_shift=0;
     unsigned *gridj_flag=NULL;
     int  ncj_old_i,ncj_old_j;
 
@@ -4106,19 +4093,19 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     if (bFBufferFlag)
     {
-        init_grid_flags(&work->gridi_flags,gridi);
-        init_grid_flags(&work->gridj_flags,gridj);
-
-        /* To flag j-blocks for gridj, we need to convert j-clusters to flag blocks */
+        /* Determine conversion of clusters to flag blocks */
+        gridi_flag_shift = 0;
+        while ((nbl->na_ci<<gridi_flag_shift) < NBNXN_BUFFERFLAG_SIZE)
+        {
+            gridi_flag_shift++;
+        }
         gridj_flag_shift = 0;
-        while ((nbl->na_cj<<gridj_flag_shift) < NBNXN_CELLBLOCK_SIZE*nbl->na_ci)
+        while ((nbl->na_cj<<gridj_flag_shift) < NBNXN_BUFFERFLAG_SIZE)
         {
             gridj_flag_shift++;
         }
-        /* We will subtract the cell offset, which is not a multiple of the block size */
-        cj_offset = ci_to_cj(get_2log(nbl->na_cj),gridj->cell0);
 
-        gridj_flag = work->gridj_flags.flag;
+        gridj_flag = work->buffer_flags.flag;
     }
 
     copy_mat(nbs->box,box);
@@ -4558,8 +4545,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                     {
                                         int cbf,cbl,cb;
 
-                                        cbf = (nbl->cj[ncj_old_j].cj - cj_offset) >> gridj_flag_shift;
-                                        cbl = (nbl->cj[nbl->ncj-1].cj - cj_offset) >> gridj_flag_shift;
+                                        cbf = nbl->cj[ncj_old_j].cj >> gridj_flag_shift;
+                                        cbl = nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift;
                                         for(cb=cbf; cb<=cbl; cb++)
                                         {
                                             gridj_flag[cb] = 1U<<th;
@@ -4609,7 +4596,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
         if (bFBufferFlag && nbl->ncj > ncj_old_i)
         {
-            work->gridi_flags.flag[ci>>NBNXN_CELLBLOCK_SIZE_2LOG] = 1U<<th;
+            work->buffer_flags.flag[(gridi->cell0+ci)>>gridi_flag_shift] = 1U<<th;
         }
     }
 
@@ -4635,82 +4622,73 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     }
 }
 
-static void reduce_cellblock_flags(const nbnxn_search_t nbs,
-                                   int nnbl,
-                                   const nbnxn_grid_t *gridi,
-                                   const nbnxn_grid_t *gridj)
+static void reduce_buffer_flags(const nbnxn_search_t nbs,
+                                int nsrc,
+                                const nbnxn_buffer_flags_t *dest)
 {
-    int nbl,cb;
+    int s,b;
     const unsigned *flag;
 
-    if (gridi->cellblock_flags.bUse)
+    for(s=0; s<nsrc; s++)
     {
-        for(nbl=0; nbl<nnbl; nbl++)
-        {
-            flag = nbs->work[nbl].gridi_flags.flag;
-            
-            for(cb=0; cb<gridi->cellblock_flags.ncb; cb++)
-            {
-                gridi->cellblock_flags.flag[cb] |= flag[cb];
-            }
-        }
-    }
-    if (gridj->cellblock_flags.bUse)
-    {
-        for(nbl=0; nbl<nnbl; nbl++)
-        {
-            flag = nbs->work[nbl].gridj_flags.flag;
+        flag = nbs->work[s].buffer_flags.flag;
 
-            for(cb=0; cb<gridj->cellblock_flags.ncb; cb++)
-            {
-                gridj->cellblock_flags.flag[cb] |= flag[cb];
-            }
+        for(b=0; b<dest->nflag; b++)
+        {
+            dest->flag[b] |= flag[b];
         }
     }
 }
 
-static void print_reduction_cost(const nbnxn_grid_t *grids,int ngrid,int nnbl)
+static void print_reduction_cost(const nbnxn_buffer_flags_t *flags,int nout)
 {
-    int g,c0,c,cb,nbl;
-    const nbnxn_grid_t *grid;
+    int nelem,nkeep,ncopy,nred,b,c,out;
 
-    for(g=0; g<ngrid; g++)
+    nelem = 0;
+    nkeep = 0;
+    ncopy = 0;
+    nred  = 0;
+    for(b=0; b<flags->nflag; b++)
     {
-        grid = &grids[g];
-
-        c0 = 0;
-        if (grid->cellblock_flags.bUse)
+        if (flags->flag[b] == 1)
         {
-            c  = 0;
-            for(cb=0; cb<grid->cellblock_flags.ncb; cb++)
+            /* Only flag 0 is set, no copy of reduction required */
+            nelem++;
+            nkeep++;
+        }
+        else if (flags->flag[b] > 0)
+        {
+            c = 0;
+            for(out=0; out<nout; out++)
             {
-                for(nbl=0; nbl<nnbl; nbl++)
+                if (flags->flag[b] & (1U<<out))
                 {
-                    if (grid->cellblock_flags.flag[cb] == 1)
-                    {
-                        c0++;
-                    }
-                    else if (grid->cellblock_flags.flag[cb] & (1U<<nbl))
-                    {
-                        c++;
-                    }
+                    c++;
                 }
             }
+            nelem += c;
+            if (c == 1)
+            {
+                ncopy++;
+            }
+            else
+            {
+                nred += c;
+            }
         }
-        else
-        {
-            c = nnbl*grid->cellblock_flags.ncb;
-        }
-        fprintf(debug,"nbnxn reduction buffers, grid %d: %d flag %d only buf. 0: %4.2f av. reduction: %4.2f\n",
-                g,nnbl,grid->cellblock_flags.bUse,
-                c0/(double)(grid->cellblock_flags.ncb),
-                c/(double)(grid->cellblock_flags.ncb));
     }
+
+    fprintf(debug,"nbnxn reduction: #flag %d #list %d elem %4.2f, keep %4.2f copy %4.2f red %4.2f\n",
+            flags->nflag,nout,
+            nelem/(double)(flags->nflag),
+            nkeep/(double)(flags->nflag),
+            ncopy/(double)(flags->nflag),
+            nred/(double)(flags->nflag));
 }
 
 /* Make a local or non-local pair-list, depending on iloc */
 void nbnxn_make_pairlist(const nbnxn_search_t nbs,
-                         const nbnxn_atomdata_t *nbat,
+                         nbnxn_atomdata_t *nbat,
                          const t_blocka *excl,
                          real rlist,
                          int min_ci_balanced,
@@ -4726,7 +4704,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     int nnbl;
     nbnxn_pairlist_t **nbl;
     int ci_block;
-    gmx_bool CombineNBLists,bFBufferFlag;
+    gmx_bool CombineNBLists;
     int np_tot,np_noq,np_hlj,nap;
 
     nnbl            = nbl_list->nnbl;
@@ -4736,6 +4714,12 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     if (debug)
     {
         fprintf(debug,"ns making %d nblists\n", nnbl);
+    }
+
+    nbat->bUseBufferFlags = (nbat->nout > 1);
+    if (nbat->bUseBufferFlags && LOCAL_I(iloc))
+    {
+        init_buffer_flags(&nbat->buffer_flags,nbat->natoms);
     }
 
     if (nbl_list->bSimple)
@@ -4821,26 +4805,20 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
             {
                 /* Hybrid list, determine blocking later */
                 ci_block = 0;
-                bFBufferFlag = FALSE;
             }
             else
             {
-                ci_block = get_ci_block_size(gridi,nbs->DomDec,nnbl,
-                                             &bFBufferFlag);
-                if (CombineNBLists)
-                {
-                    bFBufferFlag = FALSE;
-                }
-            }
-            if (debug != NULL)
-            {
-                fprintf(debug,"grid %d %d F buffer flags %d\n",
-                        zi,zj,bFBufferFlag);
+                ci_block = get_ci_block_size(gridi,nbs->DomDec,nnbl);
             }
 
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for(th=0; th<nnbl; th++)
             {
+                if (nbat->bUseBufferFlags && zi == 0 && zj == 0)
+                {
+                    init_buffer_flags(&nbs->work[th].buffer_flags,nbat->natoms);
+                }
+
                 if (CombineNBLists && th > 0)
                 {
                     clear_pairlist(nbl[th]);
@@ -4852,7 +4830,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                                          rlist,
                                          nb_kernel_type,
                                          ci_block,
-                                         bFBufferFlag,
+                                         nbat->bUseBufferFlags,
                                          nsubpair_max,
                                          (LOCAL_I(iloc) || nbs->zones->n <= 2),
                                          min_ci_balanced,
@@ -4893,17 +4871,12 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
                 nbs_cycle_stop(&nbs->cc[enbsCCcombine]);
             }
-
-            if (bFBufferFlag)
-            {
-                reduce_cellblock_flags(nbs,nnbl,gridi,gridj);
-            }
-            else
-            {
-                gridi->cellblock_flags.bUse = FALSE;
-                gridj->cellblock_flags.bUse = FALSE;
-            }
         }
+    }
+
+    if (nbat->bUseBufferFlags)
+    {
+        reduce_buffer_flags(nbs,nnbl,&nbat->buffer_flags);
     }
 
     /*
@@ -4934,17 +4907,20 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
         }
     }
 
-    if (gmx_debug_at)
+    if (debug)
     {
-        if (nbl[0]->bSimple)
+        if (gmx_debug_at)
         {
-            print_nblist_ci_cj(debug,nbl[0]);
-        }
-        else
-        {
-            print_nblist_sci_cj(debug,nbl[0]);
+            if (nbl[0]->bSimple)
+            {
+                print_nblist_ci_cj(debug,nbl[0]);
+            }
+            else
+            {
+                print_nblist_sci_cj(debug,nbl[0]);
+            }
         }
 
-        print_reduction_cost(nbs->grid,nbs->ngrid,nnbl);
+        print_reduction_cost(&nbat->buffer_flags,nnbl);
     }
 }

@@ -658,6 +658,8 @@ void nbnxn_atomdata_init(FILE *fp,
                                    nbat->nenergrp,1<<nbat->neg_2log,
                                    nbat->alloc);
     }
+    nbat->buffer_flags.flag        = NULL;
+    nbat->buffer_flags.flag_nalloc = 0;
 }
 
 static void copy_lj_to_nbat_lj_comb_x4(const real *ljparam_type,
@@ -971,6 +973,18 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
 }
 
 static void
+nbnxn_atomdata_clear_reals(real * gmx_restrict dest,
+                           int i0, int i1)
+{
+    int i;
+
+    for(i=i0; i<i1; i++)
+    {
+        dest[i] = 0;
+    }
+}
+
+static void
 nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
                             real ** gmx_restrict src,
                             int nsrc,
@@ -989,6 +1003,7 @@ nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
 
 static void
 nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
+                                     gmx_bool bDestSet,
                                      real ** gmx_restrict src,
                                      int nsrc,
                                      int i0, int i1)
@@ -997,27 +1012,41 @@ nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
 /* We can use AVX256 here, but not when AVX128 kernels are selected.
  * As this reduction is not faster with AVX256 anyway, we use 128-bit SIMD.
  */
+#ifdef GMX_X86_AVX_256
+#define GMX_MM256_HERE
+#else
 #define GMX_MM128_HERE
+#endif
 #include "gmx_x86_simd_macros.h"
 
     int       i,s;
     gmx_mm_pr dest_SSE,src_SSE;
 
-    if ((i0 & (GMX_X86_SIMD_WIDTH_HERE-1)) ||
-        (i1 & (GMX_X86_SIMD_WIDTH_HERE-1)))
+    if (bDestSet)
     {
-        gmx_incons("bounds not a multiple of GMX_X86_SIMD_WIDTH_HERE in nbnxn_atomdata_reduce_reals_x86_simd");
-    }
-
-    for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
-    {
-        dest_SSE = gmx_load_pr(dest+i);
-        for(s=0; s<nsrc; s++)
+        for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
         {
-            src_SSE  = gmx_load_pr(src[s]+i);
-            dest_SSE = gmx_add_pr(dest_SSE,src_SSE);
+            dest_SSE = gmx_load_pr(dest+i);
+            for(s=0; s<nsrc; s++)
+            {
+                src_SSE  = gmx_load_pr(src[s]+i);
+                dest_SSE = gmx_add_pr(dest_SSE,src_SSE);
+            }
+            gmx_store_pr(dest+i,dest_SSE);
         }
-        gmx_store_pr(dest+i,dest_SSE);
+    }
+    else
+    {
+        for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
+        {
+            dest_SSE = gmx_load_pr(src[0]+i);
+            for(s=1; s<nsrc; s++)
+            {
+                src_SSE  = gmx_load_pr(src[s]+i);
+                dest_SSE = gmx_add_pr(dest_SSE,src_SSE);
+            }
+            gmx_store_pr(dest+i,dest_SSE);
+        }
     }
 
 #undef GMX_MM128_HERE
@@ -1142,7 +1171,6 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
 {
     int a0=0,na=0;
     int nth,th;
-    gmx_bool bStreamingReduce;
 
     nbs_cycle_start(&nbs->cc[enbsCCreducef]);
 
@@ -1164,89 +1192,61 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
 
     nth = gmx_omp_nthreads_get(emntNonbonded);
 
-    /* Using the two-step streaming reduction is probably always faster */
-    bStreamingReduce = (nbat->nout > 1);
-
-    if (bStreamingReduce)
+    if (nbat->nout > 1)
     {
+        if (locality != eatAll)
+        {
+            gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
+        }
+
         /* Reduce the force thread output buffers into buffer 0, before adding
          * them to the, differently ordered, "real" force buffer.
          */
 #pragma omp parallel for num_threads(nth) schedule(static)
         for(th=0; th<nth; th++)
         {
-            int g0,g1,g;
+            const nbnxn_buffer_flags_t *flags;
+            int b0,b1,b;
+            int i0,i1;
+            int nfptr;
+            real *fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
+            int out;
 
-            /* For which grids should we reduce the force output? */
-            g0 = ((locality==eatLocal || locality==eatAll) ? 0 : 1);
-            g1 = (locality==eatLocal ? 1 : nbs->ngrid);
+            flags = &nbat->buffer_flags;
 
-            for(g=g0; g<g1; g++)
+            /* Calculate the cell-block range for our thread */
+            b0 = (flags->nflag* th   )/nth;
+            b1 = (flags->nflag*(th+1))/nth;
+
+            for(b=b0; b<b1; b++)
             {
-                nbnxn_grid_t *grid;
-                int b0,b1,b;
-                int c0,c1,i0,i1;
-                int nfptr;
-                real *fptr[NBNXN_CELLBLOCK_MAX_THREADS];
-                int out;
+                i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+                i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
 
-                grid = &nbs->grid[g];
-
-                /* Calculate the cell-block range for our thread */
-                b0 = (grid->cellblock_flags.ncb* th   )/nth;
-                b1 = (grid->cellblock_flags.ncb*(th+1))/nth;
-
-                if (grid->cellblock_flags.bUse)
+                nfptr = 0;
+                for(out=1; out<nbat->nout; out++)
                 {
-                    for(b=b0; b<b1; b++)
-                    {
-                        c0 = b*NBNXN_CELLBLOCK_SIZE;
-                        c1 = min(c0 + NBNXN_CELLBLOCK_SIZE,grid->nc);
-                        i0 = (grid->cell0 + c0)*grid->na_c*nbat->fstride;
-                        i1 = (grid->cell0 + c1)*grid->na_c*nbat->fstride;
-
-                        nfptr = 0;
-                        for(out=1; out<nbat->nout; out++)
-                        {
-                            if (grid->cellblock_flags.flag[b] & (1U<<out))
-                            {
-                                fptr[nfptr++] = nbat->out[out].f;
-                            }
-                        }
-                        if (nfptr > 0)
-                        {
-#ifdef NBNXN_SEARCH_SSE
-                            nbnxn_atomdata_reduce_reals_x86_simd
-#else
-                            nbnxn_atomdata_reduce_reals
-#endif
-                                                       (nbat->out[0].f,
-                                                        fptr,nfptr,
-                                                        i0,i1);
-                        }
-                    }
-                }
-                else
-                {
-                    c0 = b0*NBNXN_CELLBLOCK_SIZE;
-                    c1 = min(b1*NBNXN_CELLBLOCK_SIZE,grid->nc);
-                    i0 = (grid->cell0 + c0)*grid->na_c*nbat->fstride;
-                    i1 = (grid->cell0 + c1)*grid->na_c*nbat->fstride;
-
-                    nfptr = 0;
-                    for(out=1; out<nbat->nout; out++)
+                    if (flags->flag[b] & (1U<<out))
                     {
                         fptr[nfptr++] = nbat->out[out].f;
                     }
-
+                }
+                if (nfptr > 0)
+                {
 #ifdef NBNXN_SEARCH_SSE
                     nbnxn_atomdata_reduce_reals_x86_simd
 #else
                     nbnxn_atomdata_reduce_reals
 #endif
                                                (nbat->out[0].f,
+                                                flags->flag[b] & (1U<<0),
                                                 fptr,nfptr,
                                                 i0,i1);
+                }
+                else if (!(flags->flag[b] & (1U<<0)))
+                {
+                    nbnxn_atomdata_clear_reals(nbat->out[0].f,
+                                               i0,i1);
                 }
             }
         }
@@ -1257,7 +1257,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
     {
         nbnxn_atomdata_add_nbat_f_to_f_part(nbs,nbat,
                                             nbat->out,
-                                            bStreamingReduce ? 1 : nbat->nout,
+                                            1,
                                             a0+((th+0)*na)/nth,
                                             a0+((th+1)*na)/nth,
                                             f);
