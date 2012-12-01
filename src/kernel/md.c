@@ -1294,6 +1294,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     if (bTrotter)
                     {
+                        m_add(force_vir,shake_vir,total_vir); /* we need the un-dispersion corrected total vir here */
                         trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ2);
                     } 
                     else 
