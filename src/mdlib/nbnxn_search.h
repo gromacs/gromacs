@@ -124,7 +124,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * for the number of equally sized lists is below min_ci_balanced.
  */
 void nbnxn_make_pairlist(const nbnxn_search_t nbs,
-			 const nbnxn_atomdata_t *nbat,
+			 nbnxn_atomdata_t *nbat,
 			 const t_blocka *excl,
 			 real rlist,
 			 int min_ci_balanced,
