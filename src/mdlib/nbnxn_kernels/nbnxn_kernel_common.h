@@ -49,7 +49,7 @@ extern "C" {
 #endif
 
 void
-clear_f(const nbnxn_atomdata_t *nbat,real *f);
+clear_f(const nbnxn_atomdata_t *nbat,int output_index,real *f);
 
 void
 clear_fshift(real *fshift);
