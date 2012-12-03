@@ -154,7 +154,7 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,
   else 
     method = strdup(unknown);
   
-  g98ptr = strrchr(g98,'/');
+  g98ptr = (char *) strrchr(g98,'/');
   if (NULL == g98ptr) 
     g98ptr = (char *)g98;
   else {
