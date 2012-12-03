@@ -109,3 +109,33 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         "${_CUDA_ARCH_STR};-use_fast_math;${CUDA_NVCC_HOST_COMPILER_OPTIONS};${_FPIC_NVCC_FLAG}"
         CACHE STRING "Compiler flags for nvcc." FORCE)
 endif()
+
+
+# Try to execute ${CUDA_NVCC_EXECUTABLE} --version and set the output
+# (or an error string) in the argument variable.
+#
+# returned in argument: CUDA nvcc compiler version string
+#
+macro(get_nvcc_version_info)
+    if(CUDA_NVCC_EXECUTABLE AND NOT CUDA_NVCC_COMPILER_INFO)
+
+        # Get the nvcc version string. This is multi-line, but since it is only 4 lines
+        # and might change in the future it is better to store than trying to parse out
+        # the version from the current format.
+        execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --version
+            RESULT_VARIABLE _nvcc_version_res
+            OUTPUT_VARIABLE _nvcc_version_out
+            ERROR_VARIABLE  _nvcc_version_err
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if (${_nvcc_version_res} EQUAL 0)
+            # Fix multi-line mess: Replace newline with ";" so we can use it in a define
+            string(REPLACE "\n" ";" _nvcc_info_singleline ${_nvcc_version_out})
+            SET(CUDA_NVCC_COMPILER_INFO ${_nvcc_info_singleline}
+                CACHE STRING "CUDA nvcc compiler version string" FORCE)
+        else ()
+            SET(CUDA_NVCC_COMPILER_INFO ""
+                CACHE STRING "CUDA nvcc compiler version string not available" FORCE)
+        endif ()
+    endif ()
+    mark_as_advanced(CUDA_NVCC_COMPILER_INFO)
+endmacro ()

@@ -59,6 +59,7 @@ files.
  */
 
 
+#include "visibility.h"
 
 #ifdef __cplusplus
 extern "C" 
@@ -84,6 +85,7 @@ extern "C"
    
     \return Pointer to allocated memory, or NULL in case of failure
  */
+TMPI_EXPORT
 void *tMPI_Malloc_local(size_t size);
 
 
@@ -96,6 +98,7 @@ void *tMPI_Malloc_local(size_t size);
     
     \return Pointer to allocated memory, or NULL in case of failure
  */
+TMPI_EXPORT
 void *tMPI_Calloc_local(size_t nmemb, size_t size);
 
 
@@ -109,6 +112,7 @@ void *tMPI_Calloc_local(size_t nmemb, size_t size);
     
     \return Pointer to allocated memory, or NULL in case of failure
  */
+TMPI_EXPORT
 void *tMPI_Realloc_local(void *ptr, size_t size); 
 
 
@@ -121,6 +125,7 @@ void *tMPI_Realloc_local(void *ptr, size_t size);
     \return Returns debug info: 0 if the memory was allocated with a NUMA  
             allocator, 1 if it was allocated by another allocator.
  */
+TMPI_EXPORT
 int tMPI_Free_numa(void *ptr);
 
 

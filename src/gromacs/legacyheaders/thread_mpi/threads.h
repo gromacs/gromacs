@@ -69,6 +69,7 @@ files.
 
 #include <stdio.h>
 
+#include "visibility.h"
 #include "atomic.h"
 
 
@@ -231,12 +232,24 @@ enum tMPI_Thread_support
 };
 
 
+/** Thread setaffinity support status enumeration */
+enum tMPI_Thread_setaffinity_support
+{
+    TMPI_SETAFFINITY_SUPPORT_NO = 0,  /*!< Setting thread affinity not
+                                           supported */
+    TMPI_SETAFFINITY_SUPPORT_YES = 1  /*!< Setting thread affinity supported */
+};
+
+
+
+
 /** handle a fatal error.
 
   \param file     source code file name of error.
   \param line     source code line number of error.
   \param message  format string for error message.
 */
+TMPI_EXPORT
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
 /** Convenience macro for the first two arguments to tMPI_Fatal_error(). */
 #define TMPI_FARGS __FILE__,__LINE__
@@ -256,6 +269,7 @@ void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
  * 
  *  \return 1 if threads are supported, 0 if not.
  */
+TMPI_EXPORT
 enum tMPI_Thread_support tMPI_Thread_support(void);
 
 
@@ -267,6 +281,7 @@ enum tMPI_Thread_support tMPI_Thread_support(void);
         If this number cannot be determined for the current architecture,
         0 is returned.
  */
+TMPI_EXPORT
 int tMPI_Thread_get_hw_number(void);
 
 
@@ -282,34 +297,10 @@ int tMPI_Thread_get_hw_number(void);
  *  
  *  \return Status - 0 on success, or an error code.
  */
+TMPI_EXPORT
 int tMPI_Thread_create(tMPI_Thread_t *thread,
                       void* (*start_routine)(void *),
                       void* arg);
-
-/** Create a new thread with processor affinity 
- *
- *  The new thread will call start_routine() with the argument arg.
- * 
- *  The new thread will have processor affinity assigned in a 
- *  round-robin way, starting at processor 1.  The first thread to call 
- *  this function will be assigned to processor 0.
- *
- *  This means that this funtion should ONLY be called when starting a
- *  thread on each processor: in any other case, this will lead to 
- *  imbalances because processors 0 and 1 will be oversubscribed.
- *
- *  Please be careful not to change arg after calling this function.
- * 
- *  \param[out] thread         Pointer to thread ID
- *  \param[in] start_routine   The function to call in the new thread
- *  \param[in] arg             Argument to call with
- *  
- *  \return Status - 0 on success, or an error code.
- */
-int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
-                           void *(*start_routine)(void *),
-                           void *arg);
-
 
 
 
@@ -325,6 +316,7 @@ int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
  *  
  *  \return 0 if the join went ok, or a non-zero error code.
  */
+TMPI_EXPORT
 int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr);
 
 
@@ -336,6 +328,7 @@ int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr);
  *                     join them can read this value if they try.
  *  \return 
  */
+TMPI_EXPORT
 void tMPI_Thread_exit(void *value_ptr);
 
 
@@ -348,6 +341,7 @@ void tMPI_Thread_exit(void *value_ptr);
  *  \param thread     Handle to thread we want to see dead.
  *  \return 0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_cancel(tMPI_Thread_t thread);
 
 
@@ -360,6 +354,7 @@ int tMPI_Thread_cancel(tMPI_Thread_t thread);
   * example assign thread affinities to any thread. 
   *
   * \return A thread ID of the calling thread */
+TMPI_EXPORT
 tMPI_Thread_t tMPI_Thread_self(void);
 
 
@@ -370,7 +365,22 @@ tMPI_Thread_t tMPI_Thread_self(void);
   * \param[in]  t2  Thread ID 2
   * \return non-zero if the thread structs refer to the same thread, 
             0 if the threads are different*/
+TMPI_EXPORT
 int tMPI_Thread_equal(tMPI_Thread_t t1, tMPI_Thread_t t2);
+
+
+/** Check whether this platform supports setting of thread affinity
+  *
+  * This function returns TMPI_SETAFFINITY_SUPPORT_YES if setting thread
+  * affinity is supported by the platform, and TMPI_SETAFFINITY_SUPPORT_NO
+  * if not. If this function returns 0, the function
+  * tMPI_Thread_setaffinity_single will simply return 0 itself, effectively
+  * ignoring the request.
+  *
+  * \return TMPI_SETAFFINITY_SUPPORT_YES if setting affinity is supported,
+            TMPI_SETAFFINITY_SUPPORT_NO otherwise */
+TMPI_EXPORT
+enum tMPI_Thread_setaffinity_support tMPI_Thread_setaffinity_support(void);
 
 
 /** Set thread affinity to a single core
@@ -381,7 +391,9 @@ int tMPI_Thread_equal(tMPI_Thread_t t1, tMPI_Thread_t t2);
   * by tMPI_Thread_get_hw_number().
   *
   * \param[in] thread   Thread ID of the thread to set affinity for
-  * \param[in] nr       Processor number to set affinity to */
+  * \param[in] nr       Processor number to set affinity to
+  * \return zero on success, non-zero on error */
+TMPI_EXPORT
 int tMPI_Thread_setaffinity_single(tMPI_Thread_t thread, unsigned int nr);
 
 
@@ -398,6 +410,7 @@ int tMPI_Thread_setaffinity_single(tMPI_Thread_t thread, unsigned int nr);
  *  \param mtx   Pointer to a mutex opaque type.
  *  \return      0 or an error code.
  */
+TMPI_EXPORT
 int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx);
 
 
@@ -412,6 +425,7 @@ int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx);
 *  \param mtx  Pointer to a mutex variable to get rid of.
 *  \return 0 or a non-zero error code.
 */
+TMPI_EXPORT
 int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx);
 
 
@@ -424,6 +438,7 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx);
 *  \param mtx  Pointer to the mutex to lock
 *  \return 0 or a non-zero error code.
 */
+TMPI_EXPORT
 int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
 
 
@@ -438,6 +453,7 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
  *  \param mtx  Pointer to the mutex to try and lock
  *  \return 0 or a non-zero return error code.
  */
+TMPI_EXPORT
 int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
 
 
@@ -448,6 +464,7 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
  *  \param mtx  Pointer to the mutex to release
  *  \return 0 or a non-zero error code.
  */
+TMPI_EXPORT
 int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx);
 
 
@@ -470,6 +487,7 @@ int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx);
  *  \return status - 0 on sucess or a standard error code.
  *
  */
+TMPI_EXPORT
 int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *));
 
 
@@ -483,6 +501,7 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *));
  *  \param  key  Opaque key type to destroy
  *  \return 0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_key_delete(tMPI_Thread_key_t key);
 
 
@@ -495,6 +514,7 @@ int tMPI_Thread_key_delete(tMPI_Thread_key_t key);
  *  \param key   Thread-specific-storage handle.
  *  \return Pointer-to-void, the value of the data in this thread.
 */
+TMPI_EXPORT
 void * tMPI_Thread_getspecific(tMPI_Thread_key_t key);
 
 
@@ -505,6 +525,7 @@ void * tMPI_Thread_getspecific(tMPI_Thread_key_t key);
  *  \param value   What to set the data to (pointer-to-void).
  *  \return 0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value);
 
 
@@ -525,6 +546,7 @@ int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value);
  *  \param init_routine  Function to call exactly once
  *  \return 0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_once(tMPI_Thread_once_t *once_data, 
                      void (*init_routine)(void));    
 
@@ -541,6 +563,7 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_data,
  *  \param cond  Pointer to previously allocated condition variable
  *  \return      0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond);
 
 
@@ -554,6 +577,7 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond);
  *  \param cond Pointer to condition variable.
  *  \return 0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond);
 
 
@@ -573,6 +597,7 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond);
  *
  *  \return 0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond,
                           tMPI_Thread_mutex_t *mtx);
 
@@ -589,6 +614,7 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond,
  *
  *  \return 0 or a non-zero error message.
  */
+TMPI_EXPORT
 int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond);
 
 
@@ -602,6 +628,7 @@ int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond);
 *
 *  \return 0 or a non-zero error message.
 */
+TMPI_EXPORT
 int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond);
 
 
@@ -622,6 +649,7 @@ int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond);
  *                  will be released after \a count calls to 
  *                  tMPI_Thread_barrier_wait(). 
  */
+TMPI_EXPORT
 int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int count);
 
 
@@ -631,6 +659,7 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int count);
  *  \param barrier  Pointer to previously 
  *                  initialized barrier.
  */
+TMPI_EXPORT
 int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier);
 
 
@@ -645,6 +674,7 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier);
  *
  *  \return The last thread returns -1, all the others 0.
  */
+TMPI_EXPORT
 int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 
 /*! \} */

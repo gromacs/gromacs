@@ -145,7 +145,7 @@ typedef union
 
 
 #ifdef GMX_SOFTWARE_INVSQRT
-static real gmx_invsqrt(real x)
+static real gmx_software_invsqrt(real x)
 {
   const real  half=0.5;
   const real  three=3.0;
@@ -172,11 +172,12 @@ static real gmx_invsqrt(real x)
   return y;                     /* 5  Flops */
 #endif
 }
+#define gmx_invsqrt(x) gmx_software_invsqrt(x)
 #define INVSQRT_DONE 
 #endif /* gmx_invsqrt */
 
 #ifdef GMX_POWERPC_SQRT
-static real gmx_invsqrt(real x)
+static real gmx_powerpc_invsqrt(real x)
 {
   const real  half=0.5;
   const real  three=3.0;
@@ -205,6 +206,7 @@ static real gmx_invsqrt(real x)
   return y;                     /* 5  Flops */
 #endif
 }
+#define gmx_invsqrt(x) gmx_powerpc_invsqrt(x)
 #define INVSQRT_DONE
 #endif /* powerpc_invsqrt */
 

@@ -675,15 +675,16 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
     {
         if(log!=NULL)
         {
-            fprintf(log,"WARNING! Binary not matching hardware - you are likely losing performance.\n\n");
+        fprintf(log,"\nBinary not matching hardware - you might be losing performance.\n"
+                "Acceleration most likely to fit this hardware: %s\n"
+                "Acceleration selected at GROMACS compile time: %s\n\n",
+                gmx_cpuid_acceleration_string[acc],
+                gmx_cpuid_acceleration_string[compiled_acc]);
         }
-        printf("\nWARNING! Binary not matching hardware - you are likely losing performance.\n"
-               "Acceleration most likely to fit this hardware: %s\n"
-               "Acceleration selected at GROMACS compile time: %s\n\n",
-               gmx_cpuid_acceleration_string[acc],
-               gmx_cpuid_acceleration_string[compiled_acc]);
+        printf("Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
+               gmx_cpuid_acceleration_string[compiled_acc],
+               gmx_cpuid_acceleration_string[acc]);
     }
-
     return rc;
 }
 

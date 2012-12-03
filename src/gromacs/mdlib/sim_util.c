@@ -597,7 +597,7 @@ static void do_nb_verlet(t_forcerec *fr,
                          t_nrnb *nrnb,
                          gmx_wallcycle_t wcycle)
 {
-    int     nnbl, kernel_type, sh_e;
+    int     nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char    *env;
     nonbonded_verlet_group_t  *nbvg;
 
@@ -637,6 +637,7 @@ static void do_nb_verlet(t_forcerec *fr,
         case nbk4xN_X86_SIMD128:
             nbnxn_kernel_x86_simd128(&nbvg->nbl_lists,
                                      nbvg->nbat, ic,
+                                     nbvg->ewald_excl,
                                      fr->shift_vec,
                                      flags,
                                      clearF,
@@ -649,6 +650,7 @@ static void do_nb_verlet(t_forcerec *fr,
         case nbk4xN_X86_SIMD256:
             nbnxn_kernel_x86_simd256(&nbvg->nbl_lists,
                                      nbvg->nbat, ic,
+                                     nbvg->ewald_excl,
                                      fr->shift_vec,
                                      flags,
                                      clearF,
@@ -686,16 +688,31 @@ static void do_nb_verlet(t_forcerec *fr,
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
-    /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
-    sh_e = ((flags & GMX_FORCE_ENERGY) ? 1 : 0);
-    inc_nrnb(nrnb,
-             ((EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
-              eNR_NBNXN_LJ_RF : eNR_NBNXN_LJ_TAB) + sh_e,
+    if (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT)
+    {
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
+    }
+    else if (nbvg->ewald_excl == ewaldexclTable)
+    {
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
+    }
+    else
+    {
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
+    }
+    enr_nbnxn_kernel_lj = eNR_NBNXN_LJ;
+    if (flags & GMX_FORCE_ENERGY)
+    {
+        /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
+        enr_nbnxn_kernel_ljc += 1;
+        enr_nbnxn_kernel_lj  += 1;
+    }
+
+    inc_nrnb(nrnb,enr_nbnxn_kernel_ljc,
              nbvg->nbl_lists.natpair_ljq);
-    inc_nrnb(nrnb,eNR_NBNXN_LJ+sh_e,nbvg->nbl_lists.natpair_lj);
-    inc_nrnb(nrnb,
-             ((EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
-              eNR_NBNXN_RF : eNR_NBNXN_TAB)+sh_e,
+    inc_nrnb(nrnb,enr_nbnxn_kernel_lj,
+             nbvg->nbl_lists.natpair_lj);
+    inc_nrnb(nrnb,enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
              nbvg->nbl_lists.natpair_q);
 }
 
@@ -1380,7 +1397,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
     
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts),enerd);
+    sum_epot(&(inputrec->opts),&(enerd->grpp),enerd->term);
 }
 
 void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
@@ -1881,7 +1898,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     }
 
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts),enerd);
+    sum_epot(&(inputrec->opts),&(enerd->grpp),enerd->term);
 }
 
 void do_force(FILE *fplog,t_commrec *cr,

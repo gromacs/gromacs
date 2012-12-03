@@ -58,6 +58,7 @@
 #include "string2.h"
 #include <fcntl.h>
 
+#include "buildinfo.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

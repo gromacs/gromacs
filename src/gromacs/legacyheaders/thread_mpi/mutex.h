@@ -46,6 +46,7 @@ files.
 #ifndef TMPI_MUTEX_H_
 #define TMPI_MUTEX_H_
 
+#include "visibility.h"
 #include "system_error.h"
 #include "threads.h"
 
@@ -70,7 +71,7 @@ namespace tMPI
             count += 1;
         }
     */
-    template <class Mutex> class lock_guard 
+    template <class Mutex> class TMPI_EXPORT lock_guard
     {
     public:
         typedef Mutex mutex_type;
@@ -97,7 +98,7 @@ namespace tMPI
     };
 
     /*! \brief A basic mutex class with C++11 compatibility.  */
-    class mutex
+    class TMPI_EXPORT mutex
     {
     public:
         typedef tMPI_Thread_mutex_t* native_handle_type;

@@ -36,7 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#if defined(HAVE_SCHED_H) && (defined(HAVE_SCHED_GETAFFINITY) || defined(HAVE_SCHED_SETAFFINITY))
+#if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_GETAFFINITY)
 #define _GNU_SOURCE
 #include <sched.h>
 #include <sys/syscall.h>
@@ -86,6 +86,8 @@
 #include "membed.h"
 #include "macros.h"
 #include "gmx_omp.h"
+
+#include "thread_mpi/threads.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -886,11 +888,24 @@ static void set_cpu_affinity(FILE *fplog,
     }
 #endif
 
-#ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP?! */
-#ifdef HAVE_SCHED_SETAFFINITY
+#ifndef __APPLE__
+    /* If the tMPI thread affinity setting is not supported encourage the user
+     * to report it as it's either a bug or an exotic platform which we might
+     * want to support. */
+    if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
+    {
+        md_print_warn(NULL, fplog,
+                      "Can not set thread affinities on the current plarform. On NUMA systems this\n"
+                      "can cause performance degradation. If you think your platform should support\n"
+                      "setting affinities, contact the GROMACS developers.");
+        return;
+    }
+#endif /* __APPLE__ */
+
     if (hw_opt->bThreadPinning)
     {
-        int thread, nthread_local, nthread_node, nthread_hw_max, nphyscore;
+        int nth_affinity_set, thread_id_node, thread_id,
+            nthread_local, nthread_node, nthread_hw_max, nphyscore;
         int offset;
         char *env;
 
@@ -905,7 +920,7 @@ static void set_cpu_affinity(FILE *fplog,
         }
 
         /* map the current process to cores */
-        thread = 0;
+        thread_id_node = 0;
         nthread_node = nthread_local;
 #ifdef GMX_MPI
         if (PAR(cr) || MULTISIM(cr))
@@ -913,13 +928,22 @@ static void set_cpu_affinity(FILE *fplog,
             /* We need to determine a scan of the thread counts in this
              * compute node.
              */
+            int process_index;
             MPI_Comm comm_intra;
 
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->nodeid_intra,
+            process_index = cr->nodeid_intra;
+            if (MULTISIM(cr))
+            {
+                /* To simplify the code, we shift process indices by nnodes.
+                 * There might be far less processes, but that doesn't matter.
+                 */
+                process_index += cr->ms->sim*cr->nnodes;
+            }
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),process_index,
                            &comm_intra);
-            MPI_Scan(&nthread_local,&thread,1,MPI_INT,MPI_SUM,comm_intra);
+            MPI_Scan(&nthread_local,&thread_id_node,1,MPI_INT,MPI_SUM,comm_intra);
             /* MPI_Scan is inclusive, but here we need exclusive */
-            thread -= nthread_local;
+            thread_id_node -= nthread_local;
             /* Get the total number of threads on this physical node */
             MPI_Allreduce(&nthread_local,&nthread_node,1,MPI_INT,MPI_SUM,comm_intra);
             MPI_Comm_free(&comm_intra);
@@ -982,29 +1006,73 @@ static void set_cpu_affinity(FILE *fplog,
             }
         }
 
-        /* set the per-thread affinity */
-#pragma omp parallel firstprivate(thread) num_threads(nthread_local)
+        /* Set the per-thread affinity. In order to be able to check the success
+         * of affinity settings, we will set nth_affinity_set to 1 on threads
+         * where the affinity setting succeded and to 0 where it failed.
+         * Reducing these 0/1 values over the threads will give the total number
+         * of threads on which we succeeded.
+         */
+         nth_affinity_set = 0;
+#pragma omp parallel firstprivate(thread_id_node) num_threads(nthread_local) \
+                     reduction(+:nth_affinity_set)
         {
-            cpu_set_t mask;
-            int core;
+            int      core;
+            gmx_bool setaffinity_ret;
 
-            CPU_ZERO(&mask);
-            thread += gmx_omp_get_thread_num();
+            thread_id       = gmx_omp_get_thread_num();
+            thread_id_node += thread_id;
             if (nphyscore <= 0)
             {
-                core = offset + thread;
+                core = offset + thread_id_node;
             }
             else
             {
                 /* Lock pairs of threads to the same hyperthreaded core */
-                core = offset + thread/2 + (thread % 2)*nphyscore;
+                core = offset + thread_id_node/2 + (thread_id_node % 2)*nphyscore;
             }
-            CPU_SET(core, &mask);
-            sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
+
+            setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+
+            /* store the per-thread success-values of the setaffinity */
+            nth_affinity_set = (setaffinity_ret == 0);
+
+            if (debug)
+            {
+                fprintf(debug, "On node %d, thread %d the affinity setting returned %d\n",
+                        cr->nodeid, gmx_omp_get_thread_num(), setaffinity_ret);
+            }
+        }
+
+        if (nth_affinity_set > nthread_local)
+        {
+            char msg[STRLEN];
+
+            sprintf(msg, "Looks like we have set affinity for more threads than "
+                    "we have (%d > %d)!\n", nth_affinity_set, nthread_local);
+            gmx_incons(msg);
+        }
+        else
+        {
+            /* check if some threads failed to set their affinities */
+            if (nth_affinity_set != nthread_local)
+            {
+                char sbuf[STRLEN];
+                sbuf[0] = '\0';
+#ifdef GMX_MPI
+#ifdef GMX_THREAD_MPI
+                sprintf(sbuf, "In thread-MPI thread #%d", cr->nodeid);
+#else /* GMX_LIB_MPI */
+#endif
+                sprintf(sbuf, "In MPI process #%d", cr->nodeid);
+#endif /* GMX_MPI */
+                md_print_warn(NULL, fplog,
+                              "%s%d/%d thread%s failed to set their affinities. "
+                              "This can cause performance degradation!",
+                              sbuf, nthread_local - nth_affinity_set, nthread_local,
+                              (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+            }
         }
     }
-#endif /* HAVE_SCHED_SETAFFINITY */
-#endif /* GMX_OPENMP */
 }
 
 

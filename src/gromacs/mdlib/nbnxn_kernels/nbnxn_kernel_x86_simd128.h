@@ -46,6 +46,7 @@ void
 nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
                          const nbnxn_atomdata_t     *nbat,
                          const interaction_const_t  *ic,
+                         int                        ewald_excl,
                          rvec                       *shift_vec,
                          int                        force_flags,
                          int                        clearF,

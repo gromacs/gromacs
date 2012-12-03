@@ -1,0 +1,49 @@
+/*! \internal \file
+ * \brief
+ * Build information from the build system.
+ *
+ * Used for log and version output.
+ */
+
+/** Hardware and OS version for build host */
+#define BUILD_HOST              "@BUILD_HOST@"
+
+/** Date and time for build */
+#define BUILD_TIME              "@BUILD_TIME@"
+
+/** User doing build */
+#define BUILD_USER              "@BUILD_USER@"
+
+/** CPU vendor for build host */
+#define BUILD_CPU_VENDOR        "@BUILD_CPU_VENDOR@"
+
+/** CPU brand for build host */
+#define BUILD_CPU_BRAND         "@BUILD_CPU_BRAND@"
+
+/** CPU family for build host */
+#define BUILD_CPU_FAMILY        @BUILD_CPU_FAMILY@
+
+/** CPU model for build host */
+#define BUILD_CPU_MODEL         @BUILD_CPU_MODEL@
+
+/** CPU stepping for build host */
+#define BUILD_CPU_STEPPING      @BUILD_CPU_STEPPING@
+
+/** CPU feature list for build host */
+#define BUILD_CPU_FEATURES      "@BUILD_CPU_FEATURES@"
+
+/** C compiler used to build */
+#define BUILD_C_COMPILER        "@BUILD_C_COMPILER@"
+
+/** C compiler flags used to build */
+#define BUILD_CFLAGS            "@BUILD_CFLAGS@"
+
+/** C++ compiler flags used to build, or empty string if no C++ */
+#define BUILD_CXX_COMPILER      "@BUILD_CXX_COMPILER@"
+
+/** C++ compiler flags used to build */
+#define BUILD_CXXFLAGS          "@BUILD_CXXFLAGS@"
+
+/** CUDA nvcc compiler version information */
+#define CUDA_NVCC_COMPILER_INFO "@CUDA_NVCC_COMPILER_INFO@"
+

@@ -38,6 +38,7 @@ files.
 #ifndef TMPI_BARRIER_H_
 #define TMPI_BARRIER_H_
 
+#include "visibility.h"
 #include "wait.h"
 
 /** Fast (possibly busy-wait-based) barrier type
@@ -76,6 +77,7 @@ struct tMPI_Barrier_t
  *                  will be released after \a count calls to 
  *                  tMPI_Barrier_wait().  
  */
+TMPI_EXPORT
 void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count);
 
 
@@ -90,6 +92,7 @@ void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count);
   *
   *  \return The last thread returns -1, all the others 0.
   */
+TMPI_EXPORT
 int tMPI_Barrier_wait(tMPI_Barrier_t *barrier);
 
 
@@ -103,6 +106,7 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier);
   *
   *  \return the number of threads to synchronize
   */
+TMPI_EXPORT
 int tMPI_Barrier_N(tMPI_Barrier_t *barrier);
 #else
 #define tMPI_Barrier_N(barrier)  ((barrier)->threshold)

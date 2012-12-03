@@ -52,6 +52,7 @@ files.
          If this number cannot be determined for the current architecture,
          -1 is returned.
   */
+TMPI_EXPORT
 int tMPI_Get_hw_nthreads(void);
 
 
@@ -64,6 +65,7 @@ int tMPI_Get_hw_nthreads(void);
 
     \returns The maximum number of threads to run on.
   */
+TMPI_EXPORT
 int tMPI_Get_recommended_nthreads(void);
 
 

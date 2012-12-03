@@ -38,6 +38,7 @@ files.
 #ifndef TMPI_EVENT_H_
 #define TMPI_EVENT_H_
 
+#include "visibility.h"
 #include "wait.h"
 
 /*! \file
@@ -74,11 +75,13 @@ struct tMPI_Event_t
 /*! \brief Initialize the event object.
     
     \param ev The event structure to be intialized. */
+TMPI_EXPORT
 void tMPI_Event_init(tMPI_Event *ev);
 
 /*! \brief Deallocate the internals of the contents of event object.
 
     \param ev The event structure to be destroyed. */
+TMPI_EXPORT
 void tMPI_Event_destroy(tMPI_Event *ev);
 
 /*! \brief Wait for an event to occur. 
@@ -87,12 +90,14 @@ void tMPI_Event_destroy(tMPI_Event *ev);
    \param ev The event structure to wait on.
    \returns  The number of events that have occurred at function
              return time. */
+TMPI_EXPORT
 int tMPI_Event_wait(tMPI_Event *ev);
 
 #ifdef DOXYGEN
 /*! \brief Signal an event, possibly waking an tMPI_Event_wait().
 
     \param ev  The event to signal. */
+TMPI_EXPORT
 void tMPI_Event_signal(tMPI_Event *ev); 
 #else
 #define tMPI_Event_signal(ev) \
@@ -111,6 +116,7 @@ void tMPI_Event_signal(tMPI_Event *ev);
   
   \param ev  The event object.
   \param N   The number of processed events. */
+TMPI_EXPORT
 void tMPI_Event_process(tMPI_Event *ev, int N);
 #else
 #define tMPI_Event_process(ev, N) \
