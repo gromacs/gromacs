@@ -211,7 +211,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   /* A histidine residue exists that requires automated assignment, so
    * doing the analysis of donors and acceptors is worthwhile. */
   fprintf(stderr,
-	  "Analysing hydrogen-bonding network for automated assigment of histidine\n"
+	  "Analysing hydrogen-bonding network for automated assignment of histidine\n"
 	  " protonation.");
 
   snew(donor,natom);

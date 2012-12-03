@@ -937,7 +937,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("DispCorr",    ir->eDispCorr,  edispc_names);
   CTYPE ("Extension of the potential lookup tables beyond the cut-off");
   RTYPE ("table-extension", ir->tabext, 1.0);
-  CTYPE ("Seperate tables between energy group pairs");
+  CTYPE ("Separate tables between energy group pairs");
   STYPE ("energygrp_table", egptable,   NULL);
   CTYPE ("Spacing for the PME/PPPM FFT grid");
   RTYPE ("fourierspacing", opts->fourierspacing,0.12);
