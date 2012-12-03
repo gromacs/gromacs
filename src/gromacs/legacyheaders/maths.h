@@ -65,6 +65,21 @@ extern "C" {
 #define M_1_PI      0.31830988618379067154
 #endif
 
+#ifndef M_FLOAT_1_SQRTPI /* used in CUDA kernels */
+/* 1.0 / sqrt(M_PI) */
+#define M_FLOAT_1_SQRTPI 0.564189583547756f
+#endif
+
+#ifndef M_1_SQRTPI
+/* 1.0 / sqrt(M_PI) */
+#define M_1_SQRTPI 0.564189583547756
+#endif
+
+#ifndef M_2_SQRTPI
+/* 2.0 / sqrt(M_PI) */
+#define M_2_SQRTPI  1.128379167095513
+#endif
+
 int		gmx_nint(real a);
 real    sign(real x,real y);
 

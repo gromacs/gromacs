@@ -72,16 +72,29 @@
 /* Different default (c) and accelerated interaction-specific kernels */
 #include "nb_kernel_c/nb_kernel_c.h"
 
-/* Temporary enabler until we add the AVX kernels */
-#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA) || (defined GMX_CPU_ACCELERATION_X86_AVX_256)
-#    define GMX_CPU_ACCELERATION_X86_SSE4_1
-#endif
-
 #if (defined GMX_CPU_ACCELERATION_X86_SSE2) && !(defined GMX_DOUBLE)
 #    include "nb_kernel_sse2_single/nb_kernel_sse2_single.h"
 #endif
 #if (defined GMX_CPU_ACCELERATION_X86_SSE4_1) && !(defined GMX_DOUBLE)
 #    include "nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA) && !(defined GMX_DOUBLE)
+#    include "nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256) && !(defined GMX_DOUBLE)
+#    include "nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE2 && defined GMX_DOUBLE)
+#    include "nb_kernel_sse2_double/nb_kernel_sse2_double.h"
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
+#    include "nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
+#    include "nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
+#    include "nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
 
 
@@ -110,11 +123,31 @@ gmx_nonbonded_setup(FILE *         fplog,
             if(!(fr!=NULL && fr->use_cpu_acceleration==FALSE))
             {
                 /* Add interaction-specific kernels for different architectures */
+                /* Single precision */
 #if (defined GMX_CPU_ACCELERATION_X86_SSE2) && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_sse2_single,kernellist_sse2_single_size);
 #endif
 #if (defined GMX_CPU_ACCELERATION_X86_SSE4_1) && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_sse4_1_single,kernellist_sse4_1_single_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA) && !(defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_avx_128_fma_single,kernellist_avx_128_fma_single_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256) && !(defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_avx_256_single,kernellist_avx_256_single_size);
+#endif
+                /* Double precision */
+#if (defined GMX_CPU_ACCELERATION_X86_SSE2 && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_sse2_double,kernellist_sse2_double_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_sse4_1_double,kernellist_sse4_1_double_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_avx_128_fma_double,kernellist_avx_128_fma_double_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_avx_256_double,kernellist_avx_256_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
             }
@@ -149,11 +182,37 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     }
     arch_and_padding[] =
     {
+        /* Single precision */
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256) && !(defined GMX_DOUBLE)
+        { "avx_256_single", 8 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA) && !(defined GMX_DOUBLE)
+        { "avx_128_fma_single", 4 },
+#endif
 #if (defined GMX_CPU_ACCELERATION_X86_SSE4_1) && !(defined GMX_DOUBLE)
         { "sse4_1_single", 4 },
 #endif
 #if (defined GMX_CPU_ACCELERATION_X86_SSE2) && !(defined GMX_DOUBLE)
         { "sse2_single", 4 },
+#endif
+        /* Double precision */
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
+        { "avx_256_double", 4 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_AVX_128_FMA && defined GMX_DOUBLE)
+        /* Sic. Double precision 2-way SIMD does not require neighbor list padding,
+         * since the kernels execute a loop unrolled a factor 2, followed by
+         * a possible single odd-element epilogue.
+         */
+        { "avx_128_fma_double", 1 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE2 && defined GMX_DOUBLE)
+        /* No padding - see comment above */
+        { "sse2_double", 1 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_X86_SSE4_1 && defined GMX_DOUBLE)
+        /* No padding - see comment above */
+        { "sse4_1_double", 1 },
 #endif
         { "c", 1 },
     };
@@ -221,9 +280,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
             nl->kernelptr_vf = gmx_nb_generic_kernel;
             nl->kernelptr_f  = gmx_nb_generic_kernel;
             nl->simd_padding_width = 1;
-            if(log)
+            if(debug)
             {
-                fprintf(log,
+                fprintf(debug,
                         "WARNING - Slow generic NB kernel used for neighborlist with\n"
                         "    Elec: '%s', Modifier: '%s'\n"
                         "    Vdw:  '%s', Modifier: '%s'\n"

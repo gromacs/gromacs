@@ -20,6 +20,7 @@ list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})
 
 # gpu utils + cuda tools module
 if(GMX_GPU)
+    # The log file output queries Cuda if GPU support is enabled
     add_subdirectory(cuda_tools)
     add_subdirectory(gpu_utils)   
     set(GMX_GPU_LIBRARIES ${GMX_GPU_LIBRARIES} gpu_utils cuda_tools PARENT_SCOPE)

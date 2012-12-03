@@ -28,6 +28,7 @@
 #include "nb_kernel.h"
 #include "smalloc.h"
 #include "string2.h"
+#include "gmx_fatal.h"
 
 
 /* Static data structures to find kernels */
@@ -161,9 +162,9 @@ nb_kernel_list_findkernel(FILE *              log,
         index = (index+1) % kernel_list_hash_size;
     }
 
-    if(log && kernelinfo_ptr!=NULL)
+    if(debug && kernelinfo_ptr!=NULL)
     {
-        fprintf(log,
+        fprintf(debug,
                 "NB kernel %s() with architecture '%s' used for neighborlist with\n"
                 "    Elec: '%s', Modifier: '%s'\n"
                 "    Vdw:  '%s', Modifier: '%s'\n"

@@ -1401,9 +1401,11 @@ static void init_forcerec_f_threads(t_forcerec *fr,int nenergrp)
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
                                   const gmx_cpuid_t cpuid_info,
-                                  int *kernel_type)
+                                  int *kernel_type,
+                                  int *ewald_excl)
 {
     *kernel_type = nbk4x4_PlainC;
+    *ewald_excl  = ewaldexclTable;
 
 #ifdef GMX_X86_SSE2
     {
@@ -1436,6 +1438,23 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
             gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but GROMACS was built without AVX support");
 #endif
         }
+
+        /* Analytical Ewald exclusion correction is only an option in the
+         * x86 SIMD kernel. This is faster in single precision
+         * on Bulldozer and slightly faster on Sandy Bridge.
+         */
+#if (defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE
+        *ewald_excl = ewaldexclAnalytical;
+#endif
+        if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
+        {
+            *ewald_excl = ewaldexclTable;
+        }
+        if (getenv("GMX_NBNXN_EWALD_ANALYTICAL") != NULL)
+        {
+            *ewald_excl = ewaldexclAnalytical;
+        }
+
     }
 #endif /* GMX_X86_SSE2 */
 }
@@ -1481,24 +1500,37 @@ static void pick_nbnxn_kernel(FILE *fp,
                               const gmx_hw_info_t *hwinfo,
                               gmx_bool use_cpu_acceleration,
                               gmx_bool *bUseGPU,
-                              int *kernel_type)
+                              int *kernel_type,
+                              int *ewald_excl,
+                              gmx_bool bDoNonbonded)
 {
-    gmx_bool bEmulateGPU, bGPU;
+    gmx_bool bEmulateGPU, bGPU, bEmulateGPUEnvVarSet;
     char gpu_err_str[STRLEN];
 
     assert(kernel_type);
 
     *kernel_type = nbkNotSet;
+    *ewald_excl  = ewaldexclTable;
+
+    bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
+
     /* if bUseGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
-    bGPU = (bUseGPU != NULL) && hwinfo->bCanUseGPU;
+    bGPU = ((bUseGPU != NULL) && hwinfo->bCanUseGPU);
 
-    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined or in case if nobonded
-       calculations are turned off via GMX_NO_NONBONDED -- this is the simple way
-       to turn off GPU/CUDA initializations as well.. */
-    bEmulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
-                   (getenv("GMX_NO_NONBONDED") != NULL));
+    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined. We will
+     * automatically switch to emulation if non-bonded calculations are
+     * turned off via GMX_NO_NONBONDED - this is the simple and elegant
+     * way to turn off GPU initialization, data movement, and cleanup. */
+    bEmulateGPU = (bEmulateGPUEnvVarSet || (!bDoNonbonded && bGPU));
 
-    if (bGPU)
+    /* Enable GPU mode when GPUs are available or GPU emulation is requested.
+     * The latter is useful to assess the performance one can expect by adding
+     * GPU(s) to the machine. The conditional below allows this even if mdrun
+     * is compiled without GPU acceleration support.
+     * Note that such a GPU acceleration performance assessment should be
+     * carried out by setting the GMX_EMULATE_GPU and GMX_NO_NONBONDED env. vars
+     * (and freezing the system as otherwise it would explode). */
+    if (bGPU || bEmulateGPUEnvVarSet)
     {
         if (bEmulateGPU)
         {
@@ -1507,10 +1539,10 @@ static void pick_nbnxn_kernel(FILE *fp,
         else
         {
             /* Each PP node will use the intra-node id-th device from the
-             * list of detected/selected GPUs. */ 
+             * list of detected/selected GPUs. */
             if (!init_gpu(cr->nodeid_group_intra, gpu_err_str, &hwinfo->gpu_info))
             {
-                /* At this point the init should never fail as we made sure that 
+                /* At this point the init should never fail as we made sure that
                  * we have all the GPUs we need. If it still does, we'll bail. */
                 gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
                           cr->nodeid,
@@ -1525,7 +1557,10 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         *kernel_type = nbk8x8x8_PlainC;
 
-        md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
+        if (bDoNonbonded)
+        {
+            md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
+        }
     }
     else if (bGPU)
     {
@@ -1536,7 +1571,8 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,kernel_type);
+            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,
+                                  kernel_type,ewald_excl);
         }
         else
         {
@@ -1544,7 +1580,7 @@ static void pick_nbnxn_kernel(FILE *fp,
         }
     }
 
-    if (fp != NULL)
+    if (bDoNonbonded && fp != NULL)
     {
         if (MASTER(cr))
         {
@@ -1758,7 +1794,9 @@ static void init_nb_verlet(FILE *fp,
         {
             pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                               &nbv->bUseGPU,
-                              &nbv->grp[i].kernel_type);
+                              &nbv->grp[i].kernel_type,
+                              &nbv->grp[i].ewald_excl,
+                              fr->bNonbonded);
         }
         else /* non-local */
         {
@@ -1767,7 +1805,9 @@ static void init_nb_verlet(FILE *fp,
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                                   NULL,
-                                  &nbv->grp[i].kernel_type);
+                                  &nbv->grp[i].kernel_type,
+                                  &nbv->grp[i].ewald_excl,
+                                  fr->bNonbonded);
 
                 bHybridGPURun = TRUE;
             }
@@ -1775,6 +1815,7 @@ static void init_nb_verlet(FILE *fp,
             {
                 /* Use the same kernel for local and non-local interactions */
                 nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
+                nbv->grp[i].ewald_excl  = nbv->grp[0].ewald_excl;
             }
         }
     }

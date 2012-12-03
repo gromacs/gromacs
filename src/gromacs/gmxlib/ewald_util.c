@@ -103,14 +103,12 @@ real ewald_LRcorrection(FILE *fplog,
   real    eps,eps2,VV,FF,F,Y,Geps,Heps2,Fp,fijC,r1t;
   real    *VFtab=fr->coulvdwtab;
   int     n0,n1,nnn;
-#else
-  double  isp=0.564189583547756;
 #endif
   gmx_bool    bFreeEnergy = (chargeB != NULL);
   gmx_bool    bMolPBC = fr->bMolPBC;
 
   one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
-  vr0 = ewc*2/sqrt(M_PI);
+  vr0 = ewc*M_2_SQRTPI;
 
   AA         = excl->a;
   Vexcl      = 0;
@@ -237,7 +235,7 @@ real ewald_LRcorrection(FILE *fplog,
 #define	      R_ERF_R_INACC 0.1
 #endif
 	      if (ewcdr > R_ERF_R_INACC) {
-		fscal = rinv2*(vc - 2.0*qqA*ewc*isp*exp(-ewcdr*ewcdr));
+		fscal = rinv2*(vc - qqA*ewc*M_2_SQRTPI*exp(-ewcdr*ewcdr));
 	      } else {
 		/* Use a fourth order series expansion for small ewcdr */
 		fscal = ewc*ewc*qqA*vr0*(2.0/3.0 - 0.4*ewcdr*ewcdr);
@@ -302,7 +300,7 @@ real ewald_LRcorrection(FILE *fplog,
 	      v      = gmx_erf(ewc*dr)*rinv;
 	      vc     = qqL*v;
 	      Vexcl += vc;
-	      fscal  = rinv2*(vc-2.0*qqL*ewc*isp*exp(-ewc*ewc*dr2));
+	      fscal  = rinv2*(vc-qqL*ewc*M_2_SQRTPI*exp(-ewc*ewc*dr2));
 	      svmul(fscal,dx,df);
 	      rvec_inc(f[k],df);
 	      rvec_dec(f[i],df);
@@ -338,7 +336,7 @@ real ewald_LRcorrection(FILE *fplog,
     for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
       if (calc_excl_corr) {
         /* Self-energy correction */
-        Vself[q] = ewc*one_4pi_eps*fr->q2sum[q]/sqrt(M_PI);
+        Vself[q] = ewc*one_4pi_eps*fr->q2sum[q]*M_1_SQRTPI;
       }
       
       /* Apply surface dipole correction:

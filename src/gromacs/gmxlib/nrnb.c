@@ -102,14 +102,18 @@ static const t_nrnb_data nbdata[eNRNB] = {
      */
     { "NxN RF Elec. + VdW [F]",         38 }, /* nbnxn kernel LJ+RF, no ener */
     { "NxN RF Elec. + VdW [V&F]",       54 },
-    { "NxN CSTab Elec. + VdW [F]",      41 }, /* nbnxn kernel LJ+tab, no en */
-    { "NxN CSTab Elec. + VdW [V&F]",    59 },
+    { "NxN QSTab Elec. + VdW [F]",      41 }, /* nbnxn kernel LJ+tab, no en */
+    { "NxN QSTab Elec. + VdW [V&F]",    59 },
+    { "NxN Ewald Elec. + VdW [F]",      66 }, /* nbnxn kernel LJ+Ewald, no en */
+    { "NxN Ewald Elec. + VdW [V&F]",   107 },
     { "NxN VdW [F]",                    33 }, /* nbnxn kernel LJ, no ener */
     { "NxN VdW [V&F]",                  43 },
     { "NxN RF Electrostatics [F]",      31 }, /* nbnxn kernel RF, no ener */
     { "NxN RF Electrostatics [V&F]",    36 },
-    { "NxN CSTab Elec. [F]",            34 }, /* nbnxn kernel tab, no ener */
-    { "NxN CSTab Elec. [V&F]",          41 },
+    { "NxN QSTab Elec. [F]",            34 }, /* nbnxn kernel tab, no ener */
+    { "NxN QSTab Elec. [V&F]",          41 },
+    { "NxN Ewald Elec. [F]",            61 }, /* nbnxn kernel Ewald, no ener */
+    { "NxN Ewald Elec. [V&F]",          84 },
     { "1,4 nonbonded interactions",     90 },
     { "Born radii (Still)",             47 },
     { "Born radii (HCT/OBC)",          183 },
@@ -259,8 +263,8 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 
   if (out)
   {
-      fprintf(out," NB=Group-cutoff nonbonded kernels    NxN=N-by-N tile Verlet kernels\n");
-      fprintf(out," RF=Reaction-Field  VdW=Van der Waals  CSTab=Cubic-spline table\n");
+      fprintf(out," NB=Group-cutoff nonbonded kernels    NxN=N-by-N cluster Verlet kernels\n");
+      fprintf(out," RF=Reaction-Field  VdW=Van der Waals  QSTab=quadratic-spline table\n");
       fprintf(out," W3=SPC/TIP3p  W4=TIP4p (single or pairs)\n");
       fprintf(out," V&F=Potential and force  V=Potential only  F=Force only\n\n");
 

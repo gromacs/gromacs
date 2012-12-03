@@ -4079,7 +4079,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int  c0,c1,cs,cf,cl;
     int  ndistc;
     int  ncpcheck;
-    int  gridj_flag_shift=0,gridj_flag_offset=0;
+    int  gridj_flag_shift=0,cj_offset=0;
     unsigned *gridj_flag=NULL;
     int  ncj_old_i,ncj_old_j;
 
@@ -4103,12 +4103,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         init_grid_flags(&work->gridi_flags,gridi);
         init_grid_flags(&work->gridj_flags,gridj);
 
+        /* To flag j-blocks for gridj, we need to convert j-clusters to flag blocks */
         gridj_flag_shift = 0;
         while ((nbl->na_cj<<gridj_flag_shift) < NBNXN_CELLBLOCK_SIZE*nbl->na_ci)
         {
             gridj_flag_shift++;
         }
-        gridj_flag_offset = gridj->cell0>>NBNXN_CELLBLOCK_SIZE_2LOG;
+        /* We will subtract the cell offset, which is not a multiple of the block size */
+        cj_offset = ci_to_cj(get_2log(nbl->na_cj),gridj->cell0);
 
         gridj_flag = work->gridj_flags.flag;
     }
@@ -4550,8 +4552,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                     {
                                         int cbf,cbl,cb;
 
-                                        cbf = (nbl->cj[ncj_old_j].cj >> gridj_flag_shift) - gridj_flag_offset;
-                                        cbl = (nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift) - gridj_flag_offset;
+                                        cbf = (nbl->cj[ncj_old_j].cj - cj_offset) >> gridj_flag_shift;
+                                        cbl = (nbl->cj[nbl->ncj-1].cj - cj_offset) >> gridj_flag_shift;
                                         for(cb=cbf; cb<=cbl; cb++)
                                         {
                                             gridj_flag[cb] = 1U<<th;

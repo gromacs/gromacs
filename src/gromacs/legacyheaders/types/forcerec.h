@@ -145,6 +145,8 @@ typedef struct {
   int    n_lambda;
   int    fep_state;              /*current fep state -- just for printing */
   double *enerpart_lambda; /* Partial energy for lambda and flambda[] */
+  real foreign_term[F_NRE];    /* alternate array for storing foreign lambda energies */
+  gmx_grppairener_t foreign_grpp;  /* alternate array for storing foreign lambda energies */
 } gmx_enerdata_t;
 /* The idea is that dvdl terms with linear lambda dependence will be added
  * automatically to enerpart_lambda. Terms with non-linear lambda dependence

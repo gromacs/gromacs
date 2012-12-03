@@ -55,10 +55,23 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
+if(GMX_GPU)
+    include_directories(${CUDA_TOOLKIT_INCLUDE})
+endif()
+
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx_version)
 endif ()
+
+if(GMX_BUILD_OWN_FFTW)
+    # This dependency has to be made here rather than the CMakeLists.txt that
+    # does the FFTW build, because of the order in which
+    # add_subdirectory() calls are made in the top-level CMakeLists.txt; the
+    # md library target does not necessarily exist yet. Also enabling and
+    # disabling GMX_BUILD_OWN_FFTW changes dependencies correctly.
+    add_dependencies(libgromacs gmxfftw)
+endif()
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES}

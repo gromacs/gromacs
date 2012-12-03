@@ -74,6 +74,19 @@
 
 #undef CALC_COUL_TAB
 
+/* Analytical Ewald exclusion interaction electrostatics kernels */
+#define CALC_COUL_EWALD
+
+/* Single cut-off: rcoulomb = rvdw */
+#include "nbnxn_kernel_x86_simd_includes.h"
+
+/* Twin cut-off: rcoulomb >= rvdw */
+#define VDW_CUTOFF_CHECK
+#include "nbnxn_kernel_x86_simd_includes.h"
+#undef VDW_CUTOFF_CHECK
+
+#undef CALC_COUL_EWALD
+
 
 typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
                                 const nbnxn_atomdata_t     *nbat,
@@ -91,41 +104,34 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
                                   real                       *f,
                                   real                       *fshift);
 
-enum { coultRF, coultTAB, coultTAB_TWIN, coultNR };
+enum { coultRF, coultTAB, coultTAB_TWIN, coultEWALD, coultEWALD_TWIN, coultNR };
 
-
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_ener
 static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_x86_simd256_rf_comb_geom_ener,
-    nbnxn_kernel_x86_simd256_rf_comb_lb_ener,
-    nbnxn_kernel_x86_simd256_rf_comb_none_ener },
-  { nbnxn_kernel_x86_simd256_tab_comb_geom_ener,
-    nbnxn_kernel_x86_simd256_tab_comb_lb_ener,
-    nbnxn_kernel_x86_simd256_tab_twin_comb_none_ener },
-  { nbnxn_kernel_x86_simd256_tab_twin_comb_geom_ener,
-    nbnxn_kernel_x86_simd256_tab_twin_comb_lb_ener,
-    nbnxn_kernel_x86_simd256_tab_twin_comb_none_ener }  };
+{ { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
+  { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
+  { NBK_FN(tab_twin  ,geom), NBK_FN(tab_twin  ,lb), NBK_FN(tab_twin  ,none) },
+  { NBK_FN(ewald     ,geom), NBK_FN(ewald     ,lb), NBK_FN(ewald     ,none) },
+  { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
+#undef NBK_FN
 
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_energrp
 static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
-{ { nbnxn_kernel_x86_simd256_rf_comb_geom_energrp,
-    nbnxn_kernel_x86_simd256_rf_comb_lb_energrp,
-    nbnxn_kernel_x86_simd256_rf_comb_none_energrp },
-  { nbnxn_kernel_x86_simd256_tab_comb_geom_energrp,
-    nbnxn_kernel_x86_simd256_tab_comb_lb_energrp,
-    nbnxn_kernel_x86_simd256_tab_comb_none_energrp },
-  { nbnxn_kernel_x86_simd256_tab_twin_comb_geom_energrp,
-    nbnxn_kernel_x86_simd256_tab_twin_comb_lb_energrp,
-    nbnxn_kernel_x86_simd256_tab_twin_comb_none_energrp } };
+{ { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
+  { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
+  { NBK_FN(tab_twin  ,geom), NBK_FN(tab_twin  ,lb), NBK_FN(tab_twin  ,none) },
+  { NBK_FN(ewald     ,geom), NBK_FN(ewald     ,lb), NBK_FN(ewald     ,none) },
+  { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
+#undef NBK_FN
 
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_noener
 static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_x86_simd256_rf_comb_geom_noener,
-    nbnxn_kernel_x86_simd256_rf_comb_lb_noener,
-    nbnxn_kernel_x86_simd256_rf_comb_none_noener },
-  { nbnxn_kernel_x86_simd256_tab_comb_geom_noener,
-    nbnxn_kernel_x86_simd256_tab_comb_lb_noener,
-    nbnxn_kernel_x86_simd256_tab_comb_none_noener },
-  { nbnxn_kernel_x86_simd256_tab_twin_comb_geom_noener,
-    nbnxn_kernel_x86_simd256_tab_twin_comb_lb_noener,
-    nbnxn_kernel_x86_simd256_tab_twin_comb_none_noener } };
+{ { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
+  { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
+  { NBK_FN(tab_twin  ,geom), NBK_FN(tab_twin  ,lb), NBK_FN(tab_twin  ,none) },
+  { NBK_FN(ewald     ,geom), NBK_FN(ewald     ,lb), NBK_FN(ewald     ,none) },
+  { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
+#undef NBK_FN
 
 
 static void reduce_group_energies(int ng,int ng_2log,
@@ -174,6 +180,7 @@ void
 nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
                          const nbnxn_atomdata_t     *nbat,
                          const interaction_const_t  *ic,
+                         int                        ewald_excl,
                          rvec                       *shift_vec, 
                          int                        force_flags,
                          int                        clearF,
@@ -196,13 +203,27 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
     }
     else
     {
-        if (ic->rcoulomb == ic->rvdw)
+        if (ewald_excl == ewaldexclTable)
         {
-            coult = coultTAB;
+            if (ic->rcoulomb == ic->rvdw)
+            {
+                coult = coultTAB;
+            }
+            else
+            {
+                coult = coultTAB_TWIN;
+            }
         }
         else
         {
-            coult = coultTAB_TWIN;
+            if (ic->rcoulomb == ic->rvdw)
+            {
+                coult = coultEWALD;
+            }
+            else
+            {
+                coult = coultEWALD_TWIN;
+            }
         }
     }
 
