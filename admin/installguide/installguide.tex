@@ -1,3 +1,15 @@
+% Process from LaTeX via XML to XHTML with
+% latexml --destination installguide.xml --xml installguide.tex
+% latexmlpost --destination installguide.xhtml --format=xhtml installguide.xml
+%
+% Crude hack to remove ugly symbols:
+% sed -e 's/Â§//g' -i installguide.xhtml
+%
+% Strip off header for pasting into the website at
+% http://www.gromacs.org/Documentation/Installation_Instructions:
+%
+% grep -A 99999 "class=\"main\"" installguide.xhtml > installguide_web.xhtml
+
 \documentclass{article}[12pt,a4paper,twoside]
 \usepackage{hyperref}
 % haven't made these work with LaTeXML yet...
@@ -473,9 +485,38 @@ follow these steps to find the solution:
 
 \subsection{Building on Windows}
 
-Need a volunteer to write this section.
+Building on Cygwin/MinGW/etc. works just like Unix. Please see the
+instructions above.
 
-Cygwin works just like Unix.
+Building on Windows using native compilers is rather similar to
+building on Unix, so please start by reading the above. Then, download
+and unpack the GROMACS source archive. The UNIX-standard
+\texttt{.tar.gz} format can be managed on Windows, but you may prefer
+to browse \url{ftp://ftp.gromacs.org/pub/gromacs} to obtain a
+\texttt{.zip} format file, which doesn't need any external tools to
+unzip on recent Windows systems. Make a folder in which to do the
+out-of-source build of \gromacs{}. For example, make it within the
+folder unpacked from the source archive, and call it ``build-cmake''.
+
+Next, you need to open a command shell. If you do this from within
+your IDE (e.g. Microsoft Visual Studio), it will configure the
+environment for you. If you use a normal Windows command shell, then
+you will need to either set up the environment to find your compilers
+and libraries yourself, or run the \texttt{vcvarsall.bat} batch script
+provided by MSVC (just like sourcing a bash script under
+Unix). Presumably Intel's IDE has a similar functionality.
+
+Within that command shell, change to the folder you created above. Run
+\verb+cmake ..+, where the folder you point \cmake{} towards is the
+folder created by the \gromacs{} installer. Resolve issues as
+above. You will probably make your life easier and faster by using the
+new facility to download and install \fftw{} automatically. After the
+initial run of \verb+cmake+, you may wish to use \verb+cmake+,
+\verb+ccmake+ or the GUI version of \cmake{} until your configuration
+is complete.
+
+To compile \gromacs{}, you then use \verb+cmake --build .+ so the
+right tools get used.
 
 \subsection{Building on Cray}
 
@@ -486,12 +527,12 @@ Probably you need to build static libraries only? Volunteer needed.
 \subsubsection{BlueGene/P}
 
 Mark to write later. There is currently no native acceleration on this
-platform, but the default kernels will work.
+platform, but the default plain C kernels will work.
 
 \subsubsection{BlueGene/Q}
 
 Mark to write later. There is currently no native acceleration on this
-platform, but the default kernels will work.
+platform, but the default plain C kernels will work.
 
 \section{Tested platforms}
 
