@@ -1,0 +1,9 @@
+Code-Review+2: Szilárd Páll <pszilard@kth.se>
+Verified+1: Jenkins Buildbot
+Code-Review+1: Martin Hoefling <martin.hoefling@gmx.de>
+Code-Review+1: Carsten Kutzner <ckutzne@mpibpc.mpg.de>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Wed, 05 Dec 2012 20:28:41 +0100
+Reviewed-on: https://gerrit.gromacs.org/1871
+Project: gromacs
+Branch: refs/heads/release-4-6
