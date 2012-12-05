@@ -3890,6 +3890,8 @@ int gmx_hbond(int argc,char *argv[])
     
         fp = xvgropen(opt2fn("-dist",NFILE,fnm),
                       "Hydrogen Bond Distribution",
+		      bDA ?
+		      "Donor - Acceptor Distance (nm)" :
                       "Hydrogen - Acceptor Distance (nm)","",oenv);
         for(i=0; i<nrbin; i++)
             fprintf(fp,"%10g %10g\n",(i+0.5)*rbin,rdist[i]/(rbin*(real)sum));
@@ -3906,7 +3908,7 @@ int gmx_hbond(int argc,char *argv[])
     
         fp = xvgropen(opt2fn("-ang",NFILE,fnm),
                       "Hydrogen Bond Distribution",
-                      "Donor - Hydrogen - Acceptor Angle (\\SO\\N)","",oenv);
+                      "Hydrogen - Donor - Acceptor Angle (\\SO\\N)","",oenv);
         for(i=0; i<nabin; i++)
             fprintf(fp,"%10g %10g\n",(i+0.5)*abin,adist[i]/(abin*(real)sum));
         ffclose(fp);
