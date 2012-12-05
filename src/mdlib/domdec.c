@@ -8448,39 +8448,81 @@ static void set_zones_size(gmx_domdec_t *dd,
 
     for(z=zone_start; z<zone_end; z++)
     {
-        for(i=0; i<DIM; i++)
-        {
-            zones->size[z].bb_x0[i] = zones->size[z].x0[i];
-            zones->size[z].bb_x1[i] = zones->size[z].x1[i];
+        /* Initialization only required to keep the compiler happy */
+        rvec corner_min={0,0,0},corner_max={0,0,0},corner;
+        int  nc,c;
 
-            for(j=i+1; j<ddbox->npbcdim; j++)
+        /* To determine the bounding box for a zone we need to find
+         * the extreme corners of 1, 2 or 4 corners.
+         */
+        if (TRICLINIC(box))
+        {
+            nc = 1 << (ddbox->npbcdim - 1);
+        }
+        else
+        {
+            nc = 1;
+        }
+
+        for(c=0; c<nc; c++)
+        {
+            /* Set up a zone corner at x=0, ignoring trilinic couplings */
+            corner[XX] = 0;
+            if ((c & 1) == 0)
+            {
+                corner[YY] = zones->size[z].x0[YY];
+            }
+            else
+            {
+                corner[YY] = zones->size[z].x1[YY];
+            }
+            if ((c & 2) == 0)
+            {
+                corner[ZZ] = zones->size[z].x0[ZZ];
+            }
+            else
+            {
+                corner[ZZ] = zones->size[z].x1[ZZ];
+            }
+            if (dd->ndim == 1 && box[ZZ][YY] != 0)
             {
                 /* With 1D domain decomposition the cg's are not in
-                 * the triclinic box, but trilinic x-y and rectangular y-z.
+                 * the triclinic box, but triclinic x-y and rectangular y-z.
+                 * Shift y back, so it will later end up at 0.
                  */
-                if (box[j][i] != 0 &&
-                    !(dd->ndim == 1 && i == YY && j == ZZ))
+                corner[YY] -= corner[ZZ]*box[ZZ][YY]/box[ZZ][ZZ];
+            }
+            /* Apply the triclinic couplings */
+            for(i=YY; i<ddbox->npbcdim; i++)
+            {
+                for(j=XX; j<i; j++)
                 {
-                    /* Correct for triclinic offset of the lower corner */
-                    add_tric = zones->size[z].x0[j]*box[j][i]/box[j][j];
-                    zones->size[z].bb_x0[i] += add_tric;
-                    zones->size[z].bb_x1[i] += add_tric;
-
-                    /* Correct for triclinic offset of the upper corner */
-                    size_j = zones->size[z].x1[j] - zones->size[z].x0[j];
-                    add_tric = size_j*box[j][i]/box[j][j];
-
-                    if (box[j][i] < 0)
-                    {
-                        zones->size[z].bb_x0[i] += add_tric;
-                    }
-                    else
-                    {
-                        zones->size[z].bb_x1[i] += add_tric;
-                    }
+                    corner[j] += corner[i]*box[i][j]/box[i][i];
+                }
+            }
+            if (c == 0)
+            {
+                copy_rvec(corner,corner_min);
+                copy_rvec(corner,corner_max);
+            }
+            else
+            {
+                for(i=0; i<DIM; i++)
+                {
+                    corner_min[i] = min(corner_min[i],corner[i]);
+                    corner_max[i] = max(corner_max[i],corner[i]);
                 }
             }
         }
+        /* Copy the extreme cornes without offset along x */
+        for(i=0; i<DIM; i++)
+        {
+            zones->size[z].bb_x0[i] = corner_min[i];
+            zones->size[z].bb_x1[i] = corner_max[i];
+        }
+        /* Add the offset along x */
+        zones->size[z].bb_x0[XX] += zones->size[z].x0[XX];
+        zones->size[z].bb_x1[XX] += zones->size[z].x1[XX];
     }
 
     if (zone_start == 0)
