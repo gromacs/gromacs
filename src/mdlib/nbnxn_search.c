@@ -1381,8 +1381,10 @@ static void calc_column_indices(nbnxn_grid_t *grid,
             if (cell[i] < 0 || cell[i] >= grid->ncx*grid->ncy)
             {
                 gmx_fatal(FARGS,
-                          "grid cell cx %d cy %d out of range (max %d %d)",
-                          cx,cy,grid->ncx,grid->ncy);
+                          "grid cell cx %d cy %d out of range (max %d %d)\n"
+                          "atom %f %f %f, grid->c0 %f %f",
+                          cx,cy,grid->ncx,grid->ncy,
+                          x[i][XX],x[i][YY],x[i][ZZ],grid->c0[XX],grid->c0[YY]);
             }
 #endif
         }
