@@ -174,13 +174,13 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
 
 static void write_corr_xvg(const char *fn,int np,gmx_molprop_t pd[],
                            int emp,t_qmcount *qmc,
-                           int iQM,char *lot,double outlier_frac,
+                           int iQM,char *lot,real rtoler,real atoler,
                            output_env_t oenv,gmx_molselect_t gms)
 {
     FILE   *fp;
     int    i,j,k,n,nout,ims;
     char   lbuf[256];
-    double exp_val,qm_val; 
+    double exp_val,qm_val,diff; 
     
     fp  = xvgropen(fn,"","Exper.","Calc. - Exper.",oenv);
     for(i=0; (i<qmc->n); i++) 
@@ -211,7 +211,10 @@ static void write_corr_xvg(const char *fn,int np,gmx_molprop_t pd[],
                         (mp_get_prop(pd[j],emp,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val) > 0)) 
                     {
                         fprintf(fp,"%8.3f  %8.3f\n",exp_val,qm_val-exp_val);
-                        if (debug && (fabs(qm_val-exp_val)/exp_val > outlier_frac))
+                        diff = fabs(qm_val-exp_val);
+                        if (debug && 
+                            (((atoler > 0) && (diff >= atoler)) ||
+                             ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
                         {
                             fprintf(debug,"OUTLIER: %s Exp: %g, Calc: %g\n",
                                     gmx_molprop_get_iupac(pd[j]),exp_val,qm_val);
@@ -223,8 +226,8 @@ static void write_corr_xvg(const char *fn,int np,gmx_molprop_t pd[],
         }
         fprintf(fp,"&\n");
         if (debug)
-            fprintf(debug,"There were %3d outliers (more than %g%% off) for %s.\n",
-                    nout,100*outlier_frac,qmc->lot[i]);
+            fprintf(debug,"There were %3d outliers for %s.\n",
+                    nout,qmc->lot[i]);
     }
     fclose(fp);
     do_view(oenv,fn,NULL);
@@ -262,8 +265,8 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
                                 gmx_poldata_t *pd,gmx_poldata_t pdref,
                                 gmx_bool bCalcPol,int prop,
                                 gmx_atomprop_t ap,int iQM,char *lot,
-                                real rtoler,real atoler,
-                                char *fc_str,gmx_bool bPrintAll,double outlier,
+                                real rtoler,real atoler,real outlier,
+                                char *fc_str,gmx_bool bPrintAll,
                                 gmx_bool bStatsTable,gmx_bool bCategoryTable,
                                 gmx_bool bPropTable,gmx_bool bCompositionTable,
                                 const char *texfn,
@@ -372,7 +375,7 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
     }
     fclose(fp);
     if (NULL != xvgfn)
-        write_corr_xvg(xvgfn,np,mp,prop,qmc,FALSE,lot,outlier,oenv,gms);
+        write_corr_xvg(xvgfn,np,mp,prop,qmc,FALSE,lot,rtoler,atoler,oenv,gms);
 }
 
 
@@ -415,7 +418,7 @@ int main(int argc,char *argv[])
     static char *prop[] = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"DHf(298.15K)", NULL };
     static char *fc_str = (char *)"";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
-    static real rtoler = 0.15,atoler=0,outlier=0;
+    static real rtoler = 0.15,atoler=0,outlier=1;
     static real th_toler=170,ph_toler=5;
     static gmx_bool bMerge = TRUE,bAll = FALSE,bCalcPol=TRUE;
     static gmx_bool bStatsTable = TRUE,bCompositionTable=FALSE,bPropTable=TRUE,bCategoryTable=TRUE;
@@ -426,6 +429,8 @@ int main(int argc,char *argv[])
           "Relative tolerance for printing in bold in tables (see next option)" },
         { "-atol",    FALSE, etREAL, {&atoler},
           "Absolute tolerance for printing in bold in tables. If non-zero, an absolute tolerance in appropriate units, depending on property, will be used rather than a relative tolerance." },
+        { "-outlier", FALSE, etREAL, {&outlier},
+          "Outlier indicates a level (in units of sigma, one standard deviation). Calculations that deviate more than this level from the experiment are not taken into account when computing statistics. Moreover, the outliers are printed to the standard error. If outlier is 0, no action is taken. " },
         { "-merge",  FALSE, etBOOL, {&bMerge},
           "Merge molecule records in the input file and generate atomtype compositions based on the calculated geometry." },
         { "-lot",    FALSE, etSTR,  {&lot},
@@ -446,10 +451,6 @@ int main(int argc,char *argv[])
           "If bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
           "If dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
-        { "-outlier", FALSE, etREAL, {&outlier},
-          "Outlier indicates a level (in relative units (i.e. (Calc-Exp)/Exp), one standard deviation). Calculations that deviate more than this level from the experiment are not taken into account when computing statistics. Moreover, the outliers are printed to the standard error. If outlier is 0, no action is take." },
-        { "-all",    FALSE, etBOOL, {&bAll},
-          "Print all values, also those for no data have been computed (e.g. strange metals)" },
         { "-fc_str", FALSE, etSTR, {&fc_str},
           "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." }
     };
@@ -525,7 +526,7 @@ int main(int argc,char *argv[])
         gmx_molprop_sort(np,mp,alg,ap,gms);
     }
     gmx_molprop_analyze(np,mp,npdfile,pd,pdref,bCalcPol,
-                        eprop,ap,0,lot,rtoler,atoler,fc_str,bAll,outlier,
+                        eprop,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,
                         bStatsTable,bCategoryTable,bPropTable,bCompositionTable,
                         opt2fn("-t",NFILE,fnm),opt2fn("-c",NFILE,fnm),
                         opt2fn("-his",NFILE,fnm),opt2fn("-atype",NFILE,fnm),oenv,gms,

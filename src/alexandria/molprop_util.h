@@ -67,7 +67,11 @@ extern void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap);
 /* Returns TRUE if the present molecule has the indicated composition */
 extern gmx_bool gmx_molprop_support_composition(gmx_molprop_t mp,char *composition);
 
-extern void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
+#ifdef __cplusplus
+extern "C"
+#endif
+
+ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
                                  gmx_atomprop_t ap,gmx_bool bForceGenComp,
                                  double th_toler,double phi_toler);
 

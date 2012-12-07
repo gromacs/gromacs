@@ -52,7 +52,7 @@ extern char *itoa(int f);
    deviation). Calculations that deviate more than this level from the
    experiment are not taken into account when computing
    statistics. Moreover, the outliers are printed to the standard
-   error. If outlier is 0, no action is take. */
+   error. If outlier is 0, no action is taken. */
 extern void gmx_molprop_stats_table(FILE *fp,int eprop,
 				    int nmol,gmx_molprop_t mp[],int ntot,
 				    t_qmcount *qmc,int iQM,char *lot,

@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include "grompp.h"
 #include "poldata.h"
+#include "molprop.h"
+#include "atomprop.h"
 #include "gmx_statistics.h"
 
 #ifdef __cplusplus
@@ -52,14 +54,13 @@ typedef struct gmx_resp *gmx_resp_t;
 extern int atomicnumber2row(int elem);
 
 extern gmx_resp_t gmx_resp_init(gmx_poldata_t pd,int eqg_model,
-				gmx_bool bAXpRESP,real qfac,real b_hyper,
-				real qtot,
+				gmx_bool bAXpRESP,real qfac,real b_hyper,real qtot,
 				real zmin,real zmax,real delta_z,gmx_bool bZatyp,
 				real watoms,real rDecrZeta,
 				gmx_bool bRandZeta,real penalty_fac,gmx_bool bFitZeta,
 				gmx_bool bEntropy,const char *dzatoms);
 				
-  extern void gmx_resp_statistics(gmx_resp_t gr,int len,char buf[]);
+extern void gmx_resp_statistics(gmx_resp_t gr,int len,char buf[]);
   
 extern void gmx_resp_summary(FILE *gp,gmx_resp_t gr,int *symmetric_atoms);
   
@@ -67,7 +68,7 @@ extern void gmx_resp_update_atomtypes(gmx_resp_t gr,t_atoms *atoms);
 
 extern void gmx_resp_fill_zeta(gmx_resp_t gr,gmx_poldata_t pd);
 
-  extern void gmx_resp_fill_q(gmx_resp_t gr,t_atoms *atoms);
+extern void gmx_resp_fill_q(gmx_resp_t gr,t_atoms *atoms);
 
 extern void gmx_resp_add_atom_coords(gmx_resp_t gr,rvec *x);
 
@@ -77,7 +78,7 @@ extern void gmx_resp_add_atom_info(gmx_resp_t gr,t_atoms *atoms,
 extern void gmx_resp_get_atom_info(gmx_resp_t gr,t_atoms *atoms,
 				   t_symtab *symtab,rvec **x);
 
-extern char *gmx_resp_get_stoichiometry(gmx_resp_t gr);
+extern const char *gmx_resp_get_stoichiometry(gmx_resp_t gr);
 
 extern void gmx_resp_add_atom_symmetry(gmx_resp_t gr,gmx_poldata_t pd,
 				       int *symmetric_atoms);
@@ -91,7 +92,7 @@ extern void gmx_resp_copy_grid(gmx_resp_t dest,gmx_resp_t src);
 
 extern void gmx_resp_calc_rms(gmx_resp_t gr);
 
-  extern double gmx_resp_get_rms(gmx_resp_t gr,real *wtot);
+extern double gmx_resp_get_rms(gmx_resp_t gr,real *wtot);
 
 extern void gmx_resp_pot_lsq(gmx_resp_t gr,gmx_stats_t lsq);
 
@@ -106,16 +107,18 @@ extern void gmx_resp_write_cube(gmx_resp_t gr,const char *fn,char *title);
 extern void gmx_resp_write_rho(gmx_resp_t gr,const char *fn,char *title);
 
 extern void gmx_resp_write_diff_cube(gmx_resp_t grref,gmx_resp_t gr,
-				     const char *cube_fn,
-				     const char *hist_fn,
-				     char *title,output_env_t oenv,
-				     int rho);
+				     const char *cube_fn,const char *hist_fn,
+				     char *title,output_env_t oenv,int rho);
 
-extern void gmx_resp_write_histo(gmx_resp_t gr,const char *fn,char *title,output_env_t oenv);
+extern void gmx_resp_write_histo(gmx_resp_t gr,const char *fn,
+                                 char *title,output_env_t oenv);
 
 extern void gmx_resp_read_log(gmx_resp_t grt,gmx_atomprop_t aps,
 			      gmx_poldata_t pd,const char *fn);
 
+extern void gmx_resp_import_molprop(gmx_resp_t grt,gmx_molprop_t mp,gmx_atomprop_t aps,
+                                    gmx_poldata_t pd,const char *lot);
+  
 extern int  gmx_resp_optimize_charges(FILE *fp,gmx_resp_t grt,int maxiter,
 				      real toler,real *rms);
 
@@ -130,9 +133,9 @@ extern double gmx_resp_get_q(gmx_resp_t grt,int atom,int zz);
 
 extern double gmx_resp_get_zeta(gmx_resp_t grt,int atom,int zz);
 
-  extern void gmx_resp_set_q(gmx_resp_t grt,int atom,int zz,double q);
+extern void gmx_resp_set_q(gmx_resp_t grt,int atom,int zz,double q);
 
-  extern void gmx_resp_set_zeta(gmx_resp_t grt,int atom,int zz,double zeta);
+extern void gmx_resp_set_zeta(gmx_resp_t grt,int atom,int zz,double zeta);
 
 #ifdef __cplusplus
 }

@@ -798,6 +798,22 @@ void gmx_molprop_add_potential(gmx_molprop_t mpt,int ref,
     }
 }
 
+int gmx_molprop_get_npotential(gmx_molprop_t mpt,int ref)
+{
+    int i,eMP;
+    t_calc_exp *ce;
+    
+    i = ref2index(ref,&eMP);
+    if (eMOLPROP_Calc == eMP)
+    {
+        ce = &(mpt->calc[i]);
+
+        return ce->nprop[empPOTENTIAL];
+    }
+    else
+        return 0;
+}
+
 int gmx_molprop_get_potential(gmx_molprop_t mpt,int ref,
                               char **xyz_unit,char **V_unit,
                               int *espid,
@@ -1345,6 +1361,17 @@ int gmx_molprop_get_calculation(gmx_molprop_t mp,char **program,
     mp->ncalc_c = 0;
   
     return 0;
+}
+
+int gmx_molprop_calc_get_natom(gmx_molprop_t mpt,int calcref)
+{
+    t_calc_exp *calc;
+    int index,emp;
+  
+    index = ref2index(calcref,&emp);
+    calc  = &(mpt->calc[index]);
+    
+    return calc->natom;
 }
 
 int gmx_molprop_calc_get_atom(gmx_molprop_t mp,int calcref,char **atomname,

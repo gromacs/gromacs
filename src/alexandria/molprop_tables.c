@@ -505,11 +505,12 @@ void gmx_molprop_category_table(FILE *fp,int np,gmx_molprop_t mp[],
                     fprintf(fp,",");
             }
             fprintf(fp,"\\\\\n");
-            iline++;
-            if (iline == 5) 
+            iline+=cs[i].nmol;
+            if ((iline >= 75)  && (i < ncs -1))
             {
                 category_footer(fp);
                 category_header(fp,0,ims);
+                iline = 0;
             }
         }
         category_footer(fp);

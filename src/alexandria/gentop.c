@@ -75,6 +75,7 @@
 #include "molprop_xml.h"
 #include "poldata.h"
 #include "poldata_xml.h"
+#include "gmx_gauss_io.h"
 
 enum { edihNo, edihOne, edihAll, edihNR };
 
@@ -394,6 +395,8 @@ int main(int argc, char *argv[])
     gentop_qgen_t  qqgen = NULL;
     char qgen_msg[STRLEN];
     gmx_bool   *bRing;
+    gmx_molprop_t *mps=NULL,*mymp=NULL;
+    gau_atomprop_t gaps;
 
     t_filenm fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
@@ -426,13 +429,20 @@ int main(int argc, char *argv[])
     static int  maxiter=25000,maxcycle=1;
     static int  idihtp=1,pdihtp=3,nmol=1;
     static real rDecrZeta = -1;
+    static gmx_bool bBabel=
+#ifdef HAVE_LIBOPENBABEL2
+        TRUE;
+#else
+        FALSE;
+#endif
     static gmx_bool bRemoveDih=FALSE,bQsym=TRUE,bZatype=TRUE,bFitCube=FALSE;
     static gmx_bool bParam=FALSE,bH14=TRUE,bRound=TRUE,bITP,bAddShells=FALSE;
     static gmx_bool bPairs = TRUE, bPBC = TRUE, bResp = FALSE;
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
     static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
     static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE,bUnique=FALSE;
-    static char *molnm = "",*dbname = "", *symm_string = "";
+    static char *molnm = "",*iupac = "",*dbname = "", *symm_string = "",*conf="minimum",*basis="";
+    static int maxpot = 0;
     static const char *cqgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
                                    "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
     static const char *dihopt[] = { NULL, "No", "Single", "All", NULL };
@@ -449,6 +459,10 @@ int main(int argc, char *argv[])
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
+#ifdef HAVE_LIBOPENBABEL2
+        { "-babel", FALSE, etBOOL, {&bBabel},
+          "Use the OpenBabel engine to process gaussian input files" },
+#endif
         { "-nexcl", FALSE, etINT,  {&nexcl},
           "Number of exclusions" },
         { "-H14",    FALSE, etBOOL, {&bH14}, 
@@ -461,6 +475,14 @@ int main(int argc, char *argv[])
           "Output 1-4 interactions (pairs) in topology file" },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
+        { "-iupac",   FALSE, etSTR,  {&iupac},
+          "IUPAC Name of your molecule" },
+        { "-conf",  FALSE, etSTR, {&conf},
+          "Conformation of the molecule" },
+        { "-basis",  FALSE, etSTR, {&basis},
+          "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
+        { "-maxpot", FALSE, etINT, {&maxpot},
+          "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" },
         { "-pbc",    FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
@@ -488,7 +510,7 @@ int main(int argc, char *argv[])
         { "-bhyper", FALSE, etREAL, {&bhyper},
           "Hyperbolic term for the RESP algorithm (AXp only), and with [TT]-axpresp[tt])." },
         { "-entropy", FALSE, etBOOL, {&bEntropy},
-          "Use maximum entropy criterion for optimizing to ESP data rather than good ol' RMS" },
+          "[HIDDEN]Use maximum entropy criterion for optimizing to ESP data rather than good ol' RMS" },
         { "-fitcube", FALSE, etBOOL, {&bFitCube},
           "Fit to the potential in the cube file rather than the log file. This typically gives incorrect results if it converges at all, because points close to the atoms are taken into account on equal footing with points further away." },
         { "-zmin",  FALSE, etREAL, {&zmin},
@@ -622,58 +644,44 @@ int main(int argc, char *argv[])
     snew(atoms,1);
     open_symtab(&symtab);
     reffn  = opt2fn_null("-ref",NFILE,fnm);
+    ePBC = epbcNONE;
+    clear_mat(box);
 
     if (strlen(dbname) > 0) 
     {
-        gmx_molprop_t *mp;
         int np;
     
         mymol.name = strdup(dbname);
         mymol.nr   = 1;
         if (bVerbose)
             printf("Reading molecule database.\n");
-        mp = gmx_molprops_read(opt2fn_null("-mpdb",NFILE,fnm),&np);
+        mps = gmx_molprops_read(opt2fn_null("-mpdb",NFILE,fnm),&np);
         for(i=0; (i<np); i++) 
         {
-            if (strcasecmp(dbname,gmx_molprop_get_molname(mp[i])) == 0)
+            if (strcasecmp(dbname,gmx_molprop_get_molname(mps[i])) == 0)
                 break;
         }
         if (i == np)
             gmx_fatal(FARGS,"Molecule %s not found in database",dbname);
-        if (molprop_2_atoms(mp[i],aps,&symtab,lot,atoms,get_eemtype_name(iModel),
-                            &x) == 0)
-            gmx_fatal(FARGS,"Could not convert molprop to atoms structure");
-        ePBC = epbcNONE;
-        clear_mat(box);
-        put_in_box(atoms->nr,box,x,dbox);
+        mymp = &(mps[i]);
     }
     else if (opt2bSet("-g03",NFILE,fnm))
     {
-        gr = gmx_resp_init(pd,iModel,bAXpRESP,qweight,bhyper,qtotref,
-                           zmin,zmax,delta_z,
-                           bZatype,watoms,rDecrZeta,bRandZeta,pfac,bFitZeta,
-                           bEntropy,dzatoms);
-        gmx_resp_read_log(gr,aps,pd,opt2fn("-g03",NFILE,fnm));
-        
-        gmx_resp_get_atom_info(gr,atoms,&symtab,&x);
-        if ((NULL != reffn) && bFitCube)
-            gmx_resp_read_cube(gr,reffn,TRUE);
-        ePBC = epbcNONE;
-        clear_mat(box);
-        put_in_box(atoms->nr,box,x,dbox);
-        if ((NULL == molnm) || (strlen(molnm) == 0))
-        {
-            char *ptr = gmx_resp_get_stoichiometry(gr);
-            if (NULL == ptr)
-                mymol.name = strdup("BOE");
-            else
-                mymol.name = strdup(ptr);
-        }
-        else
-            mymol.name = strdup(molnm);
-        mymol.nr   = 1;
+        gaps = read_gauss_data();
+        snew(mps,1);
+        mymp = &(mps[0]);
+        mps[0]   = gmx_molprop_read_gauss(opt2fn("-g03",NFILE,fnm),bBabel,aps,pd,molnm,iupac,conf,basis,gaps,
+                                          th_toler,ph_toler,maxpot,bVerbose);
+        done_gauss_data(gaps);
     }
-    else 
+    else if (bBabel) 
+    {
+        snew(mps,1);
+        mymp = &(mps[0]);
+        mps[0]   = gmx_molprop_read_gauss(opt2fn("-f",NFILE,fnm),bBabel,aps,pd,molnm,iupac,conf,basis,NULL,
+                                          th_toler,ph_toler,maxpot,bVerbose);
+    }
+    else
     {
         if ((NULL == molnm) || (strlen(molnm) == 0))
         {
@@ -732,6 +740,39 @@ int main(int argc, char *argv[])
         clean_pdb_names(atoms,&symtab);
         if (bCONECT && (NULL != debug))
             gmx_conect_dump(debug,gc);
+    }
+
+    if (NULL != *mymp)
+    {
+        gr = gmx_resp_init(pd,iModel,bAXpRESP,qweight,bhyper,qtotref,
+                           zmin,zmax,delta_z,
+                           bZatype,watoms,rDecrZeta,bRandZeta,pfac,bFitZeta,
+                           bEntropy,dzatoms);
+        /* gmx_resp_read_log(gr,aps,pd,opt2fn("-g03",NFILE,fnm)); */
+        gmx_resp_import_molprop(gr,*mymp,aps,pd,lot);
+
+        if (molprop_2_atoms(*mymp,aps,&symtab,lot,atoms,
+                            get_eemtype_name(iModel),&x) == 0)
+            gmx_fatal(FARGS,"Could not convert molprop to atoms structure");
+        put_in_box(atoms->nr,box,x,dbox);
+        
+        gmx_resp_get_atom_info(gr,atoms,&symtab,&x);
+        if ((NULL != reffn) && bFitCube)
+            gmx_resp_read_cube(gr,reffn,TRUE);
+        ePBC = epbcNONE;
+        clear_mat(box);
+        put_in_box(atoms->nr,box,x,dbox);
+        if ((NULL == molnm) || (strlen(molnm) == 0))
+        {
+            const char *ptr = gmx_resp_get_stoichiometry(gr);
+            if (NULL == ptr)
+                mymol.name = strdup("BOE");
+            else
+                mymol.name = strdup(ptr);
+        }
+        else
+            mymol.name = strdup(molnm);
+        mymol.nr   = 1;
     }
     set_pbc(&pbc,ePBC,box);
 

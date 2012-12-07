@@ -99,7 +99,7 @@ typedef struct gmx_resp
     int    nparam; /* Total number of parameters */
     gmx_ra *ra;
     char   **dzatoms;
-    char   *stoichiometry;
+    const char   *stoichiometry;
     real   *pot,*pot_calc,*rho;
     rvec   *x,*esp;
 } gmx_resp;
@@ -212,7 +212,7 @@ void gmx_resp_get_atom_info(gmx_resp_t gr,t_atoms *atoms,
                             t_symtab *symtab,rvec **x)
 {
     int   i,j;
-    char  *rnm;
+    const char  *rnm;
     
     init_t_atoms(atoms,gr->natom,TRUE);
     if (NULL == (*x)) 
@@ -235,7 +235,7 @@ void gmx_resp_get_atom_info(gmx_resp_t gr,t_atoms *atoms,
                 sizeof(atoms->atom[i].elem)-1);
         copy_rvec(gr->x[i],(*x)[i]);
     }
-    rnm = (NULL != gr->stoichiometry) ? gr->stoichiometry : (char *)"BOE";
+    rnm = (NULL != gr->stoichiometry) ? gr->stoichiometry : (const char *)"BOE";
     t_atoms_set_resinfo(atoms,0,symtab,rnm,1,' ',1,' ');
     
     atoms->nres = 1;
@@ -908,7 +908,7 @@ static void gmx_resp_warning(const char *fn,int line)
     fprintf(stderr,"         using the second set, starting at line %d\n",line);
 }
 
-char *gmx_resp_get_stoichiometry(gmx_resp_t gr)
+const char *gmx_resp_get_stoichiometry(gmx_resp_t gr)
 {
     return gr->stoichiometry;
 }
@@ -923,8 +923,8 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
     double x,y,z,V;
     int i,k,kk,zz,anumber,natom,nesp,nelprop,charge,nfitpoints=-1;
     gmx_bool bWarnESP=FALSE;
-    gmx_bool bAtomicCenter;
-    gmx_bool bGINC;
+    gmx_bool bAtomicCenter=FALSE;
+    gmx_bool bGINC=FALSE;
     
     nstrings = get_file(fn,&strings);
     natom = 0;
@@ -962,7 +962,7 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
             if (1 == sscanf(strings[i],"%*s%s",sbuf))
             {
                 if (NULL != gr->stoichiometry)
-                    sfree(gr->stoichiometry);
+                    sfree((char *)gr->stoichiometry);
                 gr->stoichiometry = strdup(sbuf);
             }
         }
@@ -1087,6 +1087,75 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
     }
     if (gr->nesp > 0) {
         snew(gr->pot_calc,gr->nesp);
+    }
+}
+
+void gmx_resp_import_molprop(gmx_resp_t gr,gmx_molprop_t mp,gmx_atomprop_t aps,gmx_poldata_t pd,const char *lot)
+{
+    int i,ref,calcref,espid,atomid,atomref,atomnumber;
+    char *method,*basisset,*xyz_unit,*V_unit,*atomname;
+    char buf[STRLEN];
+    double x,y,z,V;
+    
+    gr->stoichiometry = gmx_molprop_get_formula(mp);
+    gr->qsum = gr->qtot = gmx_molprop_get_charge(mp);
+    
+    ref = 0;
+    while (1 == gmx_molprop_get_calculation(mp,NULL,&method,&basisset,NULL,NULL,NULL,&calcref)) 
+    {
+        sprintf(buf,"%s/%s",method,basisset);
+        sfree(method);
+        sfree(basisset);
+        if (strcasecmp(lot,buf) == 0) 
+        {
+            ref = calcref;
+            break;
+        }
+    }
+    if (0 != ref)
+    {
+        /* Atoms first */
+        gr->natom = gmx_molprop_calc_get_natom(mp,ref);
+        
+        snew(gr->x,gr->natom);
+        snew(gr->ra,gr->natom);
+        while(1 == gmx_molprop_calc_get_atom(mp,ref,&atomname,NULL,&atomid,&atomref))
+        {
+            range_check(atomid,1,gr->natom+1);
+            atomnumber = gmx_atomprop_atomnumber(aps,atomname);
+            gmx_ra_init(&gr->ra[atomid-1],atomnumber,-1,atomname,pd,
+                        gr->iModel,gr->dzatoms);
+            if (1 == gmx_molprop_calc_get_atomcoords(mp,ref,atomref,
+                                                     &xyz_unit,&x,&y,&z))
+            {
+                gr->x[atomid-1][XX] = convert2gmx(x,string2unit(xyz_unit));
+                gr->x[atomid-1][YY] = convert2gmx(y,string2unit(xyz_unit));
+                gr->x[atomid-1][ZZ] = convert2gmx(z,string2unit(xyz_unit));
+            }
+        }
+        
+        /* ESP points then */
+        gr->nesp = gmx_molprop_get_npotential(mp,ref);
+        snew(gr->pot,gr->nesp);
+        snew(gr->pot_calc,gr->nesp);
+        snew(gr->esp,gr->nesp);
+        while(1 == gmx_molprop_get_potential(mp,ref,&xyz_unit,&V_unit,
+                                             &espid,&x,&y,&z,&V)) 
+        {
+            range_check(espid,1,gr->nesp+1);
+            gr->esp[espid-1][XX] = convert2gmx(x,string2unit(xyz_unit));
+            gr->esp[espid-1][YY] = convert2gmx(y,string2unit(xyz_unit));
+            gr->esp[espid-1][ZZ] = convert2gmx(z,string2unit(xyz_unit));
+            gr->pot[espid-1]     = convert2gmx(V,string2unit(V_unit));
+            sfree(xyz_unit);
+            sfree(V_unit);
+        }
+    }
+    else 
+    {
+        gr->natom = 0;
+        gr->nesp = 0;
+        fprintf(stderr,"No calculation for %s with LOT %s\n",gmx_molprop_get_molname(mp),lot);
     }
 }
 
