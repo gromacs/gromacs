@@ -528,6 +528,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
              */
 #pragma omp parallel for num_threads(nthreads) schedule(static) ordered
             for(t=0; t<nthreads; t++)
+            {    
 #pragma omp ordered
             {
                 int tsize = ((t+1)*pM[s]*pK[s]/nthreads)-(t*pM[s]*pK[s]/nthreads);
@@ -537,6 +538,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
                 } else {
                     gmx_fft_init_many_1d     ( &plan->p1d[s][t],  C[s], tsize, (flags&FFT5D_NOMEASURE)?GMX_FFT_FLAG_CONSERVATIVE:0 );
                 }
+            }
             }
         }
 
