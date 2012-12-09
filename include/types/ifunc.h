@@ -39,7 +39,8 @@
 
 #ifndef _ifunc_h
 #define _ifunc_h
-#include "visibility.h"
+
+#include "../visibility.h"
 #include "idef.h"
 #include "mdatom.h"
 #include "fcdata.h"
