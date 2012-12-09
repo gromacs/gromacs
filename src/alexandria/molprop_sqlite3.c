@@ -91,7 +91,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
     sqlite3 *db = NULL;
     sqlite3_stmt *stmt=NULL,*stmt2=NULL;
     char sql_str[1024];
-    const char *molname,*iupac,*iupac2,*prop,*unit,*ref,*classification;
+    const char *molname,*iupac,*cas,*iupac2,*cas2,*csid,*csid2,*prop,*unit,*ref,*classification;
     char **class_ptr;
     double value,error;
     int i,cidx,expref,rc,nbind,nexp_prop;
@@ -148,7 +148,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
     
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str,"SELECT mol.iupac,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str,"SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db,"Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db,sql_str,1+strlen(sql_str),&stmt,NULL));
 
@@ -197,6 +197,8 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                         if (strcasecmp(iupac,iupac2) != 0)
                             gmx_fatal(FARGS,"Selected '%s' from database but got '%s'. WTF?!",
                                       iupac,iupac2);
+                        cas    = (char *)sqlite3_column_text(stmt,cidx++);
+                        csid   = (char *)sqlite3_column_text(stmt,cidx++);
                         classification = (char *)sqlite3_column_text(stmt,cidx++);
                         prop   = (char *)sqlite3_column_text(stmt,cidx++);
                         unit   = (char *)sqlite3_column_text(stmt,cidx++);
@@ -221,6 +223,28 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                             {
                                 gmx_molprop_add_category(mp[i],class_ptr[cidx]);
                                 cidx++;
+                            }
+                        }
+                        if (strlen(cas) > 0)
+                        {
+                            if (NULL != (cas2 = gmx_molprop_get_cas(mp[i])))
+                            {
+                                if (strcmp(cas,cas2) != 0)
+                                {
+                                    fprintf(stderr,"cas in molprop %s not the same as database %s for %s\n",cas2,cas,iupac);
+                                    gmx_molprop_set_cas(mp[i],cas);
+                                }
+                            }
+                        }
+                        if (strlen(csid) > 0)
+                        {
+                            if (NULL != (csid2 = gmx_molprop_get_cid(mp[i])))
+                            {
+                                if (strcmp(csid,csid2) != 0)
+                                {
+                                    fprintf(stderr,"csid in molprop %s not the same as database %s for %s\n",csid2,csid,iupac);
+                                    gmx_molprop_set_cid(mp[i],csid);
+                                }
                             }
                         }
                     }

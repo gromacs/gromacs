@@ -200,6 +200,8 @@ extern void gmx_molprop_reset_calculation(gmx_molprop_t mpt);
 
 extern void gmx_molprop_reset(gmx_molprop_t mpt);
 
+extern int gmx_molprop_get_nbond(gmx_molprop_t mpt);
+
 extern int gmx_molprop_get_bond(gmx_molprop_t mpt,int *ai,int *aj,int *bondorder);
 
 extern void gmx_molprop_add_bond(gmx_molprop_t mpt,int ai,int aj,int bondorder);

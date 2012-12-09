@@ -47,6 +47,7 @@
 #include "xvgr.h"
 #include "atomprop.h"
 #include "gpp_atomtype.h"
+#include "toputil.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molprop.h"
@@ -273,13 +274,13 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
 {
     t_atoms    *atoms;
     rvec       *x=NULL;
-    int        i,j,natom=-1,bOK=FALSE;
+    int        i,j,natom;
     int        nexcl=1;
-    char       **anames=NULL,**smnames;
-    int        *nbonds,nbond,bDone=0,calcref,atomref,atomid,ftb;
-    gmx_bool   *bRing;
+    int        *nbonds,nbond,bo,elgc,calcref,atomref,atomid,ftb;
+    gmx_bool   bDone,*bRing;
     t_params   *plist=NULL;
     t_excls    *excls;
+    t_param    b,*nb;
     double     btol=0.2;
     gpp_atomtype_t atype;
     t_symtab   symtab;
@@ -288,6 +289,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     char       *program,*method,*basisset,*reference,*conformation,*miller,*elem;
     char       *atomname,*obtype,*unit,*type;
     const char *molname;
+    real       massval;
     double     xx,yy,zz;
     double     *bondorder;
     gentop_vsite_t gvt;
@@ -295,19 +297,38 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     clear_mat(box);
     set_pbc(&pbc,epbcNONE,box);
     molname = gmx_molprop_get_molname(mp);
+    snew(nb,1);
+    atype = init_atomtype();
+    bDone = FALSE;
     while (!bDone && (gmx_molprop_get_calculation(mp,&program,&method,
                                                   &basisset,&reference,
                                                   &conformation,NULL,&calcref) == 1)) 
     {
         /* This assumes we have either all atoms or none. A consistency check could be
          * to compare the number of atoms to the formula */
-        natom = 0;
+        natom = gmx_molprop_calc_get_natom(mp,calcref);
+        snew(atoms,1);
+        init_t_atoms(atoms,natom,FALSE);
+        snew(x,natom);
+        open_symtab(&symtab);
+        i = 0;
         while (gmx_molprop_calc_get_atom(mp,calcref,&atomname,&obtype,&atomid,&atomref) == 1) 
         {
-            srenew(anames,natom+1);
-            srenew(x,natom+1);
-            anames[natom] = strdup(atomname);
+            atoms->atomname[i] = put_symtab(&symtab,atomname);
+            atoms->atom[i].atomnumber = gmx_atomprop_atomnumber(aps,atomname);
+            if (TRUE == gmx_atomprop_query(aps,epropMass,"",atomname,&massval))
+            {
+                atoms->atom[i].m = massval;
+                atoms->atom[i].mB = atoms->atom[i].m;
+            }
+            
+            atoms->atom[i].type = add_atomtype(atype,&symtab,&(atoms->atom[i]),obtype,nb,
+                                               -1,0,0,0,atoms->atom[i].atomnumber,0,0);
+            
             gmx_molprop_add_composition_atom(mp,"bosque",atomname,1);
+            gmx_molprop_add_composition_atom(mp,"spoel",obtype,1);
+            if ((miller = gmx_poldata_get_miller_equiv(pd,obtype)) != NULL)
+                gmx_molprop_add_composition_atom(mp,"miller",miller,1);
             if (gmx_molprop_calc_get_atomcoords(mp,calcref,atomref,&unit,&xx,&yy,&zz) == 1) 
             {
                 int myunit;
@@ -319,21 +340,22 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
                     if (-1 == myunit)
                         myunit = eg2c_Angstrom; 
                 }
-                x[natom][XX] = convert2gmx(xx,myunit);
-                x[natom][YY] = convert2gmx(yy,myunit);
-                x[natom][ZZ] = convert2gmx(zz,myunit);
+                x[i][XX] = convert2gmx(xx,myunit);
+                x[i][YY] = convert2gmx(yy,myunit);
+                x[i][ZZ] = convert2gmx(zz,myunit);
             }
             else
             {
                 fprintf(stderr,"Can not find coordinates for atom %s%d in %s",
-                        atomname,natom,molname);
+                        atomname,i,molname);
             }
-            natom++;
+            i++;
             sfree(atomname);
+            sfree(obtype);
             if (NULL != unit)
                 sfree(unit);
         }
-        bDone = (natom > 0);
+        bDone = ((natom > 0) && (i == natom));
         if (debug && bDone) 
             fprintf(debug,"LO_COMP: %s %s/%s\n",molname,method,basisset);
         sfree(program);
@@ -344,53 +366,32 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     }
     if (bDone) 
     {
-        snew(atoms,1);
-        open_symtab(&symtab);
-        init_t_atoms(atoms,natom,FALSE);
-        for(i=0; (i<atoms->nr); i++) 
-        {
-            atoms->atomname[i] = put_symtab(&symtab,anames[i]);
-            atoms->atom[i].atomnumber = gmx_atomprop_atomnumber(aps,anames[i]);
-        }
-        snew(nbonds,atoms->nr);
-        snew(smnames,atoms->nr);
+        ftb   = gmx_poldata_get_bond_ftype(pd);
+        nbond = gmx_molprop_get_nbond(mp);
         snew(plist,F_NRE);
-        snew(bRing,atoms->nr);
-        nbond = mk_bonds(pd,atoms,x,NULL,plist,nbonds,bRing,TRUE,TRUE,TRUE,
-                         nexcl,&excls,FALSE,NULL,aps,btol,TRUE);
-        snew(bondorder,nbond);
-        ftb = gmx_poldata_get_bond_ftype(pd);
-        /* Setting the atom types: this depends on the bonding */
-        gvt = gentop_vsite_init(egvtLINEAR);
-        if ((atype = set_atom_type(debug,molname,&symtab,atoms,
-                                   &(plist[ftb]),nbonds,bRing,bondorder,smnames,
-                                   pd,aps,x,&pbc,th_toler,phi_toler,gvt)) != NULL) 
-            bOK = TRUE;
-        sfree(bondorder);
-        gentop_vsite_done(&gvt);
-        if (bOK) 
+        if (nbond > 0) 
         {
-            /* Gather all the atomtypes */
-            gmx_molprop_delete_composition(mp,"spoel");
-            gmx_molprop_add_composition(mp,"spoel");
-
-            for(i=0; (i<natom); i++) 
+            /* Use the bonds stored in molprop */
+            snew(bondorder,nbond);
+            i = 0;
+            while(1 == gmx_molprop_get_bond(mp,&(b.a[0]),&(b.a[1]),&bo))
             {
-                type = get_atomtype_name(atoms->atom[i].type,atype);
-                if (NULL == type)
-                    return elgcNOTOP;
-                gmx_molprop_add_composition_atom(mp,"spoel",type,1);
-                if ((miller = gmx_poldata_get_miller_equiv(pd,smnames[i])) != NULL)
-                    gmx_molprop_add_composition_atom(mp,"miller",miller,1);
-                /*if ((elem  = gmx_atomprop_element(aps,atoms->atom[i].atomnumber)) != NULL)
-                  gmx_molprop_add_composition_atom(mp,"bosque",elem,1);*/
-                sfree(smnames[i]);
+                bondorder[plist[ftb].nr] = bo;
+                add_param_to_list(&(plist[ftb]),&b);
+                i++;
             }
-            if (debug)
-                fprintf(debug,"\n");
-            done_atomtype(atype);
+            bDone = (i == nbond);
         }
-        sfree(smnames);
+        else  
+        {
+            /* Generate bonds ourselves */
+            snew(nbonds,atoms->nr);
+            snew(bRing,atoms->nr);
+            nbond = mk_bonds(pd,atoms,x,NULL,plist,nbonds,bRing,TRUE,TRUE,TRUE,
+                             nexcl,&excls,FALSE,NULL,aps,btol,TRUE);
+            snew(bondorder,nbond);
+        }
+        done_atomtype(atype);
         close_symtab(&symtab);
         free_symtab(&symtab);
     }
@@ -400,9 +401,7 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     *bMiller = gmx_molprop_count_composition_atoms(mp,(char *)"miller",NULL) == natom;
     *bBosque = gmx_molprop_count_composition_atoms(mp,(char *)"bosque",NULL) == natom;
 
-    if (!bDone)
-        return elgcNOATOMS;
-    else if (bOK)
+    if (bDone)
         return elgcOK;
     else
         return elgcNOTOP;
@@ -435,102 +434,27 @@ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
         gmx_molprop_add_composition(mp[j],"miller");
         gmx_molprop_add_composition(mp[j],"bosque");
         
-        elgc = elgcOK;
-        if (bForceGenComp || 
-            (gmx_molprop_count_composition_atoms(mp[j],(char *)"spoel",NULL) == 0)) {
-            elgc = lo_gen_composition(mp[j],pd,ap,&bSpoel,&bMiller,&bBosque,th_toler,phi_toler);
-            if (elgc == elgcOK) 
-            {
-                if (debug) 
-                {
-                    fprintf(debug,"LO_COMP: ");
-                    while(gmx_molprop_get_composition_atom(mp[j],(char *)"spoel",&atomname,&natom) == 1)
-                    {
-                        fprintf(debug," %s:%d",atomname,natom);
-                    }
-                    fprintf(debug,"\n");
-                }
-                nok++;
-            }
-            else if (debug && (elgc == elgcNOTOP))
-                fprintf(debug,"Failed to make composition for %s\n",
-                        gmx_molprop_get_molname(mp[j]));
-            if (elgc != elgcNOATOMS)
-                ntest++;
-        }
-        else
+        elgc = lo_gen_composition(mp[j],pd,ap,&bSpoel,&bMiller,&bBosque,th_toler,phi_toler);
+        if (elgc == elgcOK) 
         {
-            /* Let's use an existing definition of spoel atoms */
-            while (gmx_molprop_get_composition_atom(mp[j],(char *)"spoel",
-                                                    &catom,&cnumber) == 1) {
-                if (miller_equiv)
-                    miller_equiv = NULL;
-                if (1 == gmx_poldata_search_atype(pd,catom,&elem,NULL,NULL,&miller_equiv,
-                                                  NULL,NULL,NULL,NULL)) 
+            if (debug) 
+            {
+                fprintf(debug,"LO_COMP: ");
+                while(gmx_molprop_get_composition_atom(mp[j],(char *)"spoel",&atomname,&natom) == 1)
                 {
-                    (void) gmx_atomprop_query(ap,epropMass,"???",elem,&mm);
-                    mass += mm*cnumber;
-                    /* See if this miller atom exists */
-                    if (gmx_poldata_get_miller(pd,miller_equiv,&atomnumber,
-                                               NULL,NULL,&alexandria_equiv) != NULL) 
-                    {
-                        gmx_molprop_add_composition_atom(mp[j],"miller",
-                                                         miller_equiv,cnumber);
-                    }
-                    else 
-                        bMiller = FALSE;
-                    /* See if this bosque atom exists */
-                    if (gmx_poldata_get_bosque(pd,NULL,elem,NULL) != NULL) 
-                    {
-                        gmx_molprop_add_composition_atom(mp[j],"bosque",
-                                                         elem,cnumber);
-                    }
-                    else 
-                        bBosque = FALSE;
-                    sfree(elem);
-                    sfree(miller_equiv);
+                    fprintf(debug," %s:%d",atomname,natom);
                 }
-                else if (gmx_poldata_get_miller(pd,catom,&atomnumber,
-                                                NULL,NULL,&alexandria_equiv) != NULL) 
-                {
-                    elem = gmx_atomprop_element(ap,atomnumber);
-                    (void) gmx_atomprop_query(ap,epropMass,"???",elem,&mm);
-                    mass += mm*cnumber;
-                    if (alexandria_equiv) 
-                    {
-                        gmx_molprop_replace_composition_atom(mp[j],(char *)"spoel",
-                                                             catom,alexandria_equiv);
-                        gmx_molprop_add_composition_atom(mp[j],(char *)"miller",
-                                                         catom,cnumber);
-                        if (gmx_poldata_get_bosque(pd,NULL,elem,NULL) != NULL) 
-                        {
-                            gmx_molprop_add_composition_atom(mp[j],(char *)"bosque",
-                                                             elem,cnumber);
-                        }
-                        else 
-                            bBosque = FALSE;
-                    }
-                    else
-                        bSpoel = FALSE;
-                    sfree(alexandria_equiv);
-                }
-                else 
-                {
-                    bSpoel = FALSE;
-                    bMiller = FALSE;
-                    bBosque = FALSE;
-                    fprintf(stderr,"Atom %s not found in poldata for molecule %s\n",
-                            catom,gmx_molprop_get_molname(mp[j]));
-                }
+                fprintf(debug,"\n");
             }
-            gmx_molprop_set_mass(mp[j],mass);
+            nok++;
         }
-        if (!bMiller)
-            gmx_molprop_delete_composition(mp[j],"miller");
-        if (!bBosque)
-            gmx_molprop_delete_composition(mp[j],"bosque");
-        if (!bSpoel) 
-            gmx_molprop_delete_composition(mp[j],"spoel");
+        else if (debug && (elgc == elgcNOTOP))
+        {
+            fprintf(debug,"Failed to make composition for %s\n",
+                    gmx_molprop_get_molname(mp[j]));
+        }
+        if (elgc != elgcNOATOMS)
+            ntest++;
     }
     if (ntest > 1)
         printf("Generated composition for %d out of %d molecules.\n",nok,ntest);

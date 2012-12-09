@@ -1116,6 +1116,11 @@ static void merge_props(gmx_molprop_t dst,gmx_molprop_t src,int dstref,int srcre
     }
 }
 
+int gmx_molprop_get_nbond(gmx_molprop_t mpt)
+{
+    return mpt->nbond;
+}
+
 int gmx_molprop_get_bond(gmx_molprop_t mpt,int *ai,int *aj,int *bondorder)
 {
     if (mpt->nbond_c < mpt->nbond)
