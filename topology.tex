@@ -1463,8 +1463,13 @@ in a topology, do the following (in case of {\eg} decane):
     1    2     3     4     3 
     2    3     4     5     3
 \end{verbatim}
-and do not forget to {\em erase the 1-4 interaction} 
-in {\tt [~pairs~]}!
+In the original implementation of the potential for
+alkanes~\cite{Ryckaert78} no 1-4 interactions were used, which means
+that in order to implement that particular force field you need to remove the 1-4
+interactions from the {\tt [~pairs~]} section of your topology. In
+most modern force fields, like OPLS/AA or Amber the rules are
+different, and the Ryckaert-Bellemans potential is used as a cosine
+series in combination with 1-4 interactions.
 
 {\bf {\tt [~position_restraints~]} :} harmonically restrain the selected particles
 to reference positions (\ssecref{positionrestraint}). 
