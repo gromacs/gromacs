@@ -3549,12 +3549,12 @@ static void set_icell_bb_supersub(const float *bb,int ci,
     ia = ci*GPU_NSUBCELL*NNBSBB_B;
     for(i=0; i<GPU_NSUBCELL*NNBSBB_B; i+=NNBSBB_B)
     {
-        bb_ci[BBL_X] = bb[ia+BBL_X] + shx;
-        bb_ci[BBL_Y] = bb[ia+BBL_Y] + shy;
-        bb_ci[BBL_Z] = bb[ia+BBL_Z] + shz;
-        bb_ci[BBU_X] = bb[ia+BBU_X] + shx;
-        bb_ci[BBU_Y] = bb[ia+BBU_Y] + shy;
-        bb_ci[BBU_Z] = bb[ia+BBU_Z] + shz;
+        bb_ci[i+BBL_X] = bb[ia+i+BBL_X] + shx;
+        bb_ci[i+BBL_Y] = bb[ia+i+BBL_Y] + shy;
+        bb_ci[i+BBL_Z] = bb[ia+i+BBL_Z] + shz;
+        bb_ci[i+BBU_X] = bb[ia+i+BBU_X] + shx;
+        bb_ci[i+BBU_Y] = bb[ia+i+BBU_Y] + shy;
+        bb_ci[i+BBU_Z] = bb[ia+i+BBU_Z] + shz;
     }
 #endif
 }
@@ -4923,6 +4923,9 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
             }
         }
 
-        print_reduction_cost(&nbat->buffer_flags,nnbl);
+        if (nbat->bUseBufferFlags)
+        {
+            print_reduction_cost(&nbat->buffer_flags,nnbl);
+        }
     }
 }
