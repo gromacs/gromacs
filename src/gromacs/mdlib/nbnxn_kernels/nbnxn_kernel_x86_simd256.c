@@ -237,7 +237,7 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
 
         if (clearF == enbvClearFYes)
         {
-            clear_f(nbat,out->f);
+            clear_f(nbat,nb,out->f);
         }
 
         if ((force_flags & GMX_FORCE_VIRIAL) && nnbl == 1)

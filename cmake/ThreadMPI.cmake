@@ -15,12 +15,7 @@ MACRO(TEST_TMPI_ATOMICS VARIABLE)
             message(STATUS "Atomics found")
             set(${VARIABLE} TRUE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         else (TEST_ATOMICS)
-            if (TEST_TMPI_ATOMICS_ONLY)
-                message(WARNING "Atomic operations not found for this CPU+compiler combination. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-            else (TEST_TMPI_ATOMICS_ONLY)
-                message(WARNING "Atomic operations not found for this
-            CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-            endif (TEST_TMPI_ATOMICS_ONLY)
+            message(WARNING "Atomic operations not found for this CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
             set(${VARIABLE} FALSE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         endif(TEST_ATOMICS)
     endif(NOT DEFINED TMPI_ATOMICS)
@@ -70,8 +65,6 @@ ENDMACRO(TMPI_GET_SOURCE_LIST)
 
 test_tmpi_atomics(TMPI_ATOMICS)
 
-# do we want to only the atomics of tMPI (with GPU + MPI)
-if(NOT TEST_TMPI_ATOMICS_ONLY)
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
@@ -159,5 +152,3 @@ check_include_files(sys/time.h      HAVE_SYS_TIME_H)
 check_function_exists(sysconf       HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
-
-endif(NOT TEST_TMPI_ATOMICS_ONLY)

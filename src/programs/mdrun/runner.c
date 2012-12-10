@@ -928,18 +928,9 @@ static void set_cpu_affinity(FILE *fplog,
             /* We need to determine a scan of the thread counts in this
              * compute node.
              */
-            int process_index;
             MPI_Comm comm_intra;
 
-            process_index = cr->nodeid_intra;
-            if (MULTISIM(cr))
-            {
-                /* To simplify the code, we shift process indices by nnodes.
-                 * There might be far less processes, but that doesn't matter.
-                 */
-                process_index += cr->ms->sim*cr->nnodes;
-            }
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),process_index,
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->rank_intranode,
                            &comm_intra);
             MPI_Scan(&nthread_local,&thread_id_node,1,MPI_INT,MPI_SUM,comm_intra);
             /* MPI_Scan is inclusive, but here we need exclusive */
@@ -1038,8 +1029,8 @@ static void set_cpu_affinity(FILE *fplog,
 
             if (debug)
             {
-                fprintf(debug, "On node %d, thread %d the affinity setting returned %d\n",
-                        cr->nodeid, gmx_omp_get_thread_num(), setaffinity_ret);
+                fprintf(debug, "On rank %2d, thread %2d, core %2d the affinity setting returned %d\n",
+                        cr->nodeid, gmx_omp_get_thread_num(), core, setaffinity_ret);
             }
         }
 
@@ -1678,8 +1669,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    /* Initialize per-node process ID and counters. */
-    gmx_init_intra_counters(cr);
+    /* Initialize per-physical-node MPI process/thread ID and counters. */
+    gmx_init_intranode_counters(cr);
 
 #ifdef GMX_MPI
     md_print_info(cr,fplog,"Using %d MPI %s\n",

@@ -103,7 +103,6 @@ int get_ebin_space(t_ebin *eb,int nener,const char *enm[],const char *unit)
                     case F_DISRESVIOL: u = unit_length;   break;
                     case F_ORIRESDEV:  u = "obs";         break;
                     case F_TEMP:       u = unit_temp_K;   break;
-                    case F_VTEMP:       u = unit_temp_K;   break;
                     case F_PDISPCORR:
                     case F_PRES:       u = unit_pres_bar; break;
                     }

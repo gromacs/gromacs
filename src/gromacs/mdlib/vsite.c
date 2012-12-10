@@ -1538,7 +1538,14 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
             }
             else
             {
+                int i;
+
                 fshift_t = vsite->tdata[thread].fshift;
+
+                for(i=0; i<SHIFTS; i++)
+                {
+                    clear_rvec(fshift_t[i]);
+                }
             }
 
             spread_vsite_f_thread(vsite,
