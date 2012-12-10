@@ -1411,34 +1411,15 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 
 #ifdef GMX_X86_SSE2
     {
-        /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
-         * On AMD Bulldozer AVX-256 is much slower than AVX-128.
-         */
-        if(gmx_cpuid_feature(cpuid_info, GMX_CPUID_FEATURE_X86_AVX) == 1 &&
-           gmx_cpuid_vendor(cpuid_info) != GMX_CPUID_VENDOR_AMD)
-        {
-#ifdef GMX_X86_AVX_256
-            *kernel_type = nbk4xN_X86_SIMD256;
+        /* With AVX-256 the 2x(N+N) kernels are always faster */
+#ifdef GMX_NBNXN_SIMD_256
+        *kernel_type = nbk4xN_SIMD_2xNN;
 #else
-            *kernel_type = nbk4xN_X86_SIMD128;
+        *kernel_type = nbk4xN_SIMD_4xN;
 #endif
-        }
-        else
+        if (getenv("GMX_NBNXN_SIMD_4XN") != NULL)
         {
-            *kernel_type = nbk4xN_X86_SIMD128;
-        }
-
-        if (getenv("GMX_NBNXN_AVX128") != NULL)
-        {
-            *kernel_type = nbk4xN_X86_SIMD128;
-        }
-        if (getenv("GMX_NBNXN_AVX256") != NULL)
-        {
-#ifdef GMX_X86_AVX_256
-            *kernel_type = nbk4xN_X86_SIMD256;
-#else
-            gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but GROMACS was built without AVX support");
-#endif
+            *kernel_type = nbk4xN_SIMD_4xN;
         }
 
         /* Analytical Ewald exclusion correction is only an option in the
@@ -1548,13 +1529,10 @@ static void pick_nbnxn_kernel(FILE *fp,
 
     if (bDoNonbonded && fp != NULL)
     {
-        if (MASTER(cr))
-        {
-            fprintf(stderr,"Using %s non-bonded kernels\n",
-                    nbk_name[*kernel_type]);
-        }
-        fprintf(fp,"\nUsing %s non-bonded kernels\n\n",
-                nbk_name[*kernel_type]);
+        fprintf(fp,"\nUsing %s %dx%d non-bonded kernels\n\n",
+                nbk_name[*kernel_type],
+                nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
+                nbnxn_kernel_to_cj_size(*kernel_type));
     }
 }
 

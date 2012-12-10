@@ -105,6 +105,14 @@
     i_SSE1 = _mm256_hadd_ps(i_SSE0,i_SSE2);                             \
     o_SSE  = _mm_add_ps(_mm256_castps256_ps128(i_SSE1),_mm256_extractf128_ps(i_SSE1,1)); \
 }
+#define GMX_MM_TRANSPOSE_SUM4H_PR(i_SSE0,i_SSE2,o_SSE)                  \
+{                                                                       \
+    i_SSE0 = _mm256_hadd_ps(i_SSE0,_mm256_setzero_ps());                \
+    i_SSE2 = _mm256_hadd_ps(i_SSE2,_mm256_setzero_ps());                \
+    i_SSE0 = _mm256_hadd_ps(i_SSE0,i_SSE2);                             \
+    i_SSE2 = _mm256_permute_ps(i_SSE0,0b10110001);                      \
+    o_SSE  = _mm_add_ps(_mm256_castps256_ps128(i_SSE0),_mm256_extractf128_ps(i_SSE2,1)); \
+}
 #else
 #define GMX_MM_TRANSPOSE_SUM4_PR(i_SSE0,i_SSE1,i_SSE2,i_SSE3,o_SSE)     \
 {                                                                       \
@@ -217,6 +225,23 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     int p;                                                              \
                                                                         \
     for(p=0; p<UNROLLJ; p++)                                            \
+    {                                                                   \
+        /* Here we load 4 aligned floats, but we need just 2 */         \
+        clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
+    }                                                                   \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0],clj_SSE[1],clj_SSE[2],clj_SSE[3],c6t_SSE[0],c12t_SSE[0]); \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[4],clj_SSE[5],clj_SSE[6],clj_SSE[7],c6t_SSE[1],c12t_SSE[1]); \
+                                                                        \
+    GMX_2_MM_TO_M256(c6t_SSE[0],c6t_SSE[1],c6_SSE);                     \
+    GMX_2_MM_TO_M256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                  \
+}
+
+#define load_lj_pair_params2(nbfp,type,aj,c6_SSE,c12_SSE)                \
+{                                                                       \
+    __m128 clj_SSE[2*UNROLLJ],c6t_SSE[2],c12t_SSE[2];                     \
+    int p;                                                              \
+                                                                        \
+    for(p=0; p<2*UNROLLJ; p++)                                            \
     {                                                                   \
         /* Here we load 4 aligned floats, but we need just 2 */         \
         clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
@@ -474,7 +499,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 /* Add energy register to possibly multiple terms in the energy array.
  * This function is the same for SSE/AVX single/double.
  */
-static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,int *offset_jj)
+static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,const int *offset_jj)
 {
     int jj;
 
@@ -486,9 +511,39 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,int *offset_jj)
     {
         gmx_mm_pr v_SSE;
 
-        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*UNROLLJ);
-        gmx_store_pr(v+offset_jj[jj]+jj*UNROLLJ,gmx_add_pr(v_SSE,e_SSE));
+        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE);
+        gmx_store_pr(v+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE,gmx_add_pr(v_SSE,e_SSE));
     }
 }
+
+#if defined GMX_X86_AVX_256 && GMX_X86_SIMD_WIDTH_HERE == 8
+/* As add_ener_grp above, but for two groups of UNROLLJ/2 stored in
+ * a single SIMD register.
+ */
+static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
+                                       real *v0,real *v1,const int *offset_jj)
+{
+    gmx_mm_hpr e_SSE0,e_SSE1;
+    int jj;
+
+    e_SSE0 = _mm256_extractf128_ps(e_SSE,0);
+    e_SSE1 = _mm256_extractf128_ps(e_SSE,1);
+
+    for(jj=0; jj<(UNROLLJ/2); jj++)
+    {
+        gmx_mm_hpr v_SSE;
+
+        v_SSE = gmx_load_hpr(v0+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE0));
+    }
+    for(jj=0; jj<(UNROLLJ/2); jj++)
+    {
+        gmx_mm_hpr v_SSE;
+
+        v_SSE = gmx_load_hpr(v1+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE1));
+    }
+}
+#endif
 
 #endif /* _nbnxn_kernel_sse_utils_h_ */

@@ -91,11 +91,11 @@
  */
 
 #if !defined GMX_MM128_HERE && !defined GMX_MM256_HERE
-"You should define GMX_MM128_HERE or GMX_MM256_HERE"
+#error "You should define GMX_MM128_HERE or GMX_MM256_HERE"
 #endif
 
 #if defined GMX_MM128_HERE && defined GMX_MM256_HERE
-"You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
+#error "You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
 #endif
 
 #ifdef GMX_MM128_HERE
@@ -234,6 +234,20 @@
 
 #define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_ps
 #define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_ps
+
+#define gmx_loaddh_pr     gmx_mm256_load4_ps
+
+/* Half SIMD-width type */
+#define gmx_mm_hpr  __m128
+
+/* Half SIMD-width macros */
+#define gmx_load_hpr      _mm_load_ps
+#define gmx_load1_hpr(x)  _mm_set1_ps((x)[0])
+#define gmx_store_hpr     _mm_store_ps
+#define gmx_add_hpr       _mm_add_ps
+#define gmx_sub_hpr       _mm_sub_ps
+
+#define gmx_sum4_hpr      gmx_mm256_sum4h_m128
 
 #else
 

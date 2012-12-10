@@ -43,32 +43,32 @@
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_simd_4xn_outer.h"
