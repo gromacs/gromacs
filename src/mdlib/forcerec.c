@@ -1403,41 +1403,43 @@ static void init_forcerec_f_threads(t_forcerec *fr,int nenergrp)
 static void pick_nbnxn_kernel_cpu(FILE *fp,
                                   const t_commrec *cr,
                                   const gmx_cpuid_t cpuid_info,
+                                  const t_inputrec *ir,
                                   int *kernel_type,
                                   int *ewald_excl)
 {
-    *kernel_type = nbk4x4_PlainC;
+    *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_NBNXN_SIMD
     {
-        /* On Intel Sandy-Bridge AVX-256 kernels are always faster.
-         * On AMD Bulldozer AVX-256 is much slower than AVX-128.
-         */
-        if(gmx_cpuid_feature(cpuid_info, GMX_CPUID_FEATURE_X86_AVX) == 1 &&
-           gmx_cpuid_vendor(cpuid_info) != GMX_CPUID_VENDOR_AMD)
-        {
-#ifdef GMX_X86_AVX_256
-            *kernel_type = nbk4xN_X86_SIMD256;
+#ifdef GMX_NBNXN_SIMD_2XNN
+        /* We expect the 2xNN kernels to be faster in most cases */
+        *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #else
-            *kernel_type = nbk4xN_X86_SIMD128;
+        *kernel_type = nbnxnk4xN_SIMD_4xN;
 #endif
-        }
-        else
-        {
-            *kernel_type = nbk4xN_X86_SIMD128;
-        }
 
-        if (getenv("GMX_NBNXN_AVX128") != NULL)
+#if defined GMX_NBNXN_SIMD_2XNN && defined GMX_X86_AVX_256
+        if (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT)
         {
-            *kernel_type = nbk4xN_X86_SIMD128;
+            /* The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
+             * 10% with HT, 50% without HT, but extra zeros interactions
+             * can compensate. As we currently don't detect the actual use
+             * of HT, switch to 4x8 to avoid a potential performance hit.
+             */
+            *kernel_type = nbnxnk4xN_SIMD_4xN;
         }
-        if (getenv("GMX_NBNXN_AVX256") != NULL)
+#endif
+        if (getenv("GMX_NBNXN_SIMD_4XN") != NULL)
         {
-#ifdef GMX_X86_AVX_256
-            *kernel_type = nbk4xN_X86_SIMD256;
+            *kernel_type = nbnxnk4xN_SIMD_4xN;
+        }
+        if (getenv("GMX_NBNXN_SIMD_2XNN") != NULL)
+        {
+#ifdef GMX_NBNXN_SIMD_2XNN
+            *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #else
-            gmx_fatal(FARGS,"You requested AVX-256 nbnxn kernels, but GROMACS was built without AVX support");
+            gmx_fatal(FARGS,"SIMD 2x(N+N) kernels requested, but Gromacs has been compiled without support for these kernels");
 #endif
         }
 
@@ -1466,6 +1468,7 @@ static void pick_nbnxn_kernel(FILE *fp,
                               const gmx_hw_info_t *hwinfo,
                               gmx_bool use_cpu_acceleration,
                               gmx_bool *bUseGPU,
+                              const t_inputrec *ir,
                               int *kernel_type,
                               int *ewald_excl,
                               gmx_bool bDoNonbonded)
@@ -1475,7 +1478,7 @@ static void pick_nbnxn_kernel(FILE *fp,
 
     assert(kernel_type);
 
-    *kernel_type = nbkNotSet;
+    *kernel_type = nbnxnkNotSet;
     *ewald_excl  = ewaldexclTable;
 
     bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
@@ -1521,7 +1524,7 @@ static void pick_nbnxn_kernel(FILE *fp,
 
     if (bEmulateGPU)
     {
-        *kernel_type = nbk8x8x8_PlainC;
+        *kernel_type = nbnxnk8x8x8_PlainC;
 
         if (bDoNonbonded)
         {
@@ -1530,31 +1533,28 @@ static void pick_nbnxn_kernel(FILE *fp,
     }
     else if (bGPU)
     {
-        *kernel_type = nbk8x8x8_CUDA;
+        *kernel_type = nbnxnk8x8x8_CUDA;
     }
 
-    if (*kernel_type == nbkNotSet)
+    if (*kernel_type == nbnxnkNotSet)
     {
         if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,
+            pick_nbnxn_kernel_cpu(fp,cr,hwinfo->cpuid_info,ir,
                                   kernel_type,ewald_excl);
         }
         else
         {
-            *kernel_type = nbk4x4_PlainC;
+            *kernel_type = nbnxnk4x4_PlainC;
         }
     }
 
     if (bDoNonbonded && fp != NULL)
     {
-        if (MASTER(cr))
-        {
-            fprintf(stderr,"Using %s non-bonded kernels\n",
-                    nbk_name[*kernel_type]);
-        }
-        fprintf(fp,"\nUsing %s non-bonded kernels\n\n",
-                nbk_name[*kernel_type]);
+        fprintf(fp,"\nUsing %s %dx%d non-bonded kernels\n\n",
+                nbnxn_kernel_name[*kernel_type],
+                nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
+                nbnxn_kernel_to_cj_size(*kernel_type));
     }
 }
 
@@ -1754,12 +1754,13 @@ static void init_nb_verlet(FILE *fp,
     {
         nbv->grp[i].nbl_lists.nnbl = 0;
         nbv->grp[i].nbat           = NULL;
-        nbv->grp[i].kernel_type    = nbkNotSet;
+        nbv->grp[i].kernel_type    = nbnxnkNotSet;
 
         if (i == 0) /* local */
         {
             pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                               &nbv->bUseGPU,
+                              ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
                               fr->bNonbonded);
@@ -1771,6 +1772,7 @@ static void init_nb_verlet(FILE *fp,
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
                                   NULL,
+                                  ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
                                   fr->bNonbonded);
@@ -1834,7 +1836,7 @@ static void init_nb_verlet(FILE *fp,
 
     for(i=0; i<nbv->ngrp; i++)
     {
-        if (nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
+        if (nbv->grp[0].kernel_type == nbnxnk8x8x8_CUDA)
         {
             nb_alloc = &pmalloc;
             nb_free  = &pfree;
