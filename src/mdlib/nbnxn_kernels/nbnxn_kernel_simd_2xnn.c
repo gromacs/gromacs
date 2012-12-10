@@ -49,18 +49,26 @@
 #include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
 
-#ifdef GMX_X86_AVX_256
+#ifdef GMX_NBNXN_SIMD_2XNN
 
-#include "nbnxn_kernel_x86_simd256.h"
+#include "nbnxn_kernel_simd_2xnn.h"
 
-/* Include all flavors of the 256-bit AVX kernel loops */
+/* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
 
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
+#define GMX_MM128_HERE
+#else
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
 #define GMX_MM256_HERE
+#else
+#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
+#endif
+#endif
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
 
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 
 #undef CALC_COUL_RF
 
@@ -68,11 +76,11 @@
 #define CALC_COUL_TAB
 
 /* Single cut-off: rcoulomb = rvdw */
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 
 /* Twin cut-off: rcoulomb >= rvdw */
 #define VDW_CUTOFF_CHECK
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 #undef VDW_CUTOFF_CHECK
 
 #undef CALC_COUL_TAB
@@ -81,11 +89,11 @@
 #define CALC_COUL_EWALD
 
 /* Single cut-off: rcoulomb = rvdw */
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 
 /* Twin cut-off: rcoulomb >= rvdw */
 #define VDW_CUTOFF_CHECK
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 #undef VDW_CUTOFF_CHECK
 
 #undef CALC_COUL_EWALD
@@ -109,7 +117,7 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
 
 enum { coultRF, coultTAB, coultTAB_TWIN, coultEWALD, coultEWALD_TWIN, coultNR };
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_ener
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_ener
 static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
 { { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
   { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
@@ -118,7 +126,7 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
   { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
 #undef NBK_FN
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_energrp
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_energrp
 static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
 { { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
   { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
@@ -127,7 +135,7 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
   { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
 #undef NBK_FN
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_noener
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_noener
 static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
 { { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
   { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
@@ -141,15 +149,14 @@ static void reduce_group_energies(int ng,int ng_2log,
                                   const real *VSvdw,const real *VSc,
                                   real *Vvdw,real *Vc)
 {
+    const int simd_width   = GMX_X86_SIMD_WIDTH_HERE;
+    const int unrollj_half = GMX_X86_SIMD_WIDTH_HERE/4;
     int ng_p2,i,j,j0,j1,c,s;
-
-#define SIMD_WIDTH       (GMX_X86_SIMD_WIDTH_HERE)
-#define SIMD_WIDTH_HALF  (GMX_X86_SIMD_WIDTH_HERE/2)
 
     ng_p2 = (1<<ng_2log);
 
     /* The size of the x86 SIMD energy group buffer array is:
-     * ng*ng*ng_p2*SIMD_WIDTH_HALF*SIMD_WIDTH
+     * ng*ng*ng_p2*unrollj_half*simd_width
      */
     for(i=0; i<ng; i++)
     {
@@ -163,34 +170,34 @@ static void reduce_group_energies(int ng,int ng_2log,
         {
             for(j0=0; j0<ng; j0++)
             {
-                c = ((i*ng + j1)*ng_p2 + j0)*SIMD_WIDTH_HALF*SIMD_WIDTH;
-                for(s=0; s<SIMD_WIDTH_HALF; s++)
+                c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*simd_width/2;
+                for(s=0; s<unrollj_half; s++)
                 {
                     Vvdw[i*ng+j0] += VSvdw[c+0];
                     Vvdw[i*ng+j1] += VSvdw[c+1];
                     Vc  [i*ng+j0] += VSc  [c+0];
                     Vc  [i*ng+j1] += VSc  [c+1];
-                    c += SIMD_WIDTH + 2;
+                    c += simd_width/2 + 2;
                 }
             }
         }
     }
 }
 
-#endif /* GMX_X86_AVX_256 */
+#endif /* GMX_NBNXN_SIMD_2XNN */
 
 void
-nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
-                         const nbnxn_atomdata_t     *nbat,
-                         const interaction_const_t  *ic,
-                         int                        ewald_excl,
-                         rvec                       *shift_vec, 
-                         int                        force_flags,
-                         int                        clearF,
-                         real                       *fshift,
-                         real                       *Vc,
-                         real                       *Vvdw)
-#ifdef GMX_X86_AVX_256
+nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
+                       const nbnxn_atomdata_t     *nbat,
+                       const interaction_const_t  *ic,
+                       int                        ewald_excl,
+                       rvec                       *shift_vec, 
+                       int                        force_flags,
+                       int                        clearF,
+                       real                       *fshift,
+                       real                       *Vc,
+                       real                       *Vvdw)
+#ifdef GMX_NBNXN_SIMD_2XNN
 {
     int              nnbl;
     nbnxn_pairlist_t **nbl;
@@ -320,6 +327,6 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
 }
 #else
 {
-    gmx_incons("nbnxn_kernel_x86_simd256 called while GROMACS was configured without AVX enabled");
+    gmx_incons("nbnxn_kernel_simd_2xnn called while GROMACS was configured without 2x(N+N) SIMD kernels enabled");
 }
 #endif

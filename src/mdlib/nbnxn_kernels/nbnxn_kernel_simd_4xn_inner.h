@@ -35,8 +35,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* This is the innermost loop contents for the n vs n atom
- * SSE2 single precision kernels.
+/* This is the innermost loop contents for the 4 x N atom SIMD kernel.
+ * This flavor of the kernel calculates interactions of 4 i-atoms
+ * with N j-atoms stored in N wide SIMD registers.
  */
 
 
@@ -150,7 +151,7 @@
             gmx_mm_pr  r_SSE1,rs_SSE1,rf_SSE1,frac_SSE1;
             gmx_mm_pr  r_SSE2,rs_SSE2,rf_SSE2,frac_SSE2;
             gmx_mm_pr  r_SSE3,rs_SSE3,rf_SSE3,frac_SSE3;
-            /* Table index: rs converted to an int */ 
+            /* Table index: rs truncated to an int */
 #if !(defined GMX_MM256_HERE && defined GMX_DOUBLE)
             gmx_epi32  ti_SSE0,ti_SSE1,ti_SSE2,ti_SSE3;
 #else
@@ -333,7 +334,7 @@
             jxSSE         = gmx_load_pr(x+ajx);
             jySSE         = gmx_load_pr(x+ajy);
             jzSSE         = gmx_load_pr(x+ajz);
-            
+
             /* Calculate distance */
             dx_SSE0       = gmx_sub_pr(ix_SSE0,jxSSE);
             dy_SSE0       = gmx_sub_pr(iy_SSE0,jySSE);
@@ -347,7 +348,7 @@
             dx_SSE3       = gmx_sub_pr(ix_SSE3,jxSSE);
             dy_SSE3       = gmx_sub_pr(iy_SSE3,jySSE);
             dz_SSE3       = gmx_sub_pr(iz_SSE3,jzSSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0      = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1      = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);
