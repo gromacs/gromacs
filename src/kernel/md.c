@@ -573,7 +573,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         nstfep = ir->expandedvals->nstexpanded;
     }
-    if (repl_ex_nst > 0 && repl_ex_nst > nstfep)
+    if (repl_ex_nst > 0 && nstfep > repl_ex_nst)
     {
         nstfep = repl_ex_nst;
     }
@@ -1958,7 +1958,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             state->fep_state = lamnew;
             for (i=0;i<efptNR;i++)
             {
-                state->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
+                state_global->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
             }
         }
         /* Remaining runtime */
