@@ -35,6 +35,8 @@
 #ifndef _iteratedconstraints_h
 #define _iteratedconstraints_h
 
+#include "../visibility.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

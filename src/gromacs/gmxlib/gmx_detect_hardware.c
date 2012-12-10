@@ -225,7 +225,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
      * => keep on the GPU support, otherwise turn off (or bail if forced)
      * */
     /* number of PP processes per node */
-    npppn = cr->nnodes_pp_intra;
+    npppn = cr->nrank_pp_intranode;
 
     pernode[0] = '\0';
     th_or_proc_plural[0] = '\0';
@@ -287,7 +287,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                                   ShortProgram(), npppn, npppn > 1 ? "s" : "",
                                   bMaxMpiThreadsSet ? "\n      Also, you can allow more threads to be used by increasing GMX_MAX_MPI_THREADS" : "");
 
-                    if (cr->nodeid_intra == 0)
+                    if (cr->rank_pp_intranode == 0)
                     {
                         limit_num_gpus_used(hwinfo, npppn);
                         ngpu = hwinfo->gpu_info.ncuda_dev_use;
@@ -319,7 +319,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                                   th_or_proc, th_or_proc_plural, pernode, gpu_plural,
                                   th_or_proc, npppn, gpu_plural, pernode);
 
-                    if (bMPI || (btMPI && cr->nodeid_intra == 0))
+                    if (bMPI || (btMPI && cr->rank_pp_intranode == 0))
                     {
                         limit_num_gpus_used(hwinfo, npppn);
                         ngpu = hwinfo->gpu_info.ncuda_dev_use;
@@ -333,7 +333,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                      * level, since the hardware setup and MPI process count
                      * might be differ over physical nodes.
                      */
-                    if (cr->nodeid_intra == 0)
+                    if (cr->rank_pp_intranode == 0)
                     {
                         gmx_fatal(FARGS,
                                   "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
@@ -352,7 +352,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
             }
         }
 
-        if (hwinfo->gpu_info.bUserSet && (cr->nodeid_intra == 0))
+        if (hwinfo->gpu_info.bUserSet && (cr->rank_pp_intranode == 0))
         {
             int i, j, same_count;
             gmx_bool bSomeSame, bAllDifferent;

@@ -43,12 +43,18 @@ extern "C" {
 }
 #endif
 
+/* Clear the force buffer f. Either the whole buffer or only the parts
+ * used by the current thread when nbat->bUseBufferFlags is set.
+ * In the latter case output_index is the task/thread list/buffer index.
+ */
 void
-clear_f(const nbnxn_atomdata_t *nbat,real *f);
+clear_f(const nbnxn_atomdata_t *nbat,int output_index,real *f);
 
+/* Clear the shift forces */
 void
 clear_fshift(real *fshift);
 
+/* Reduce the collected energy terms over the pair-lists/threads */
 void
 reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
                            int                        nlist,

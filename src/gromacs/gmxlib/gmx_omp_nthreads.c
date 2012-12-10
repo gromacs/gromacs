@@ -233,8 +233,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     bOMP = FALSE;
 #endif /* GMX_OPENMP */
 
-    /* number of processes per node */
-    nppn = cr->nnodes_intra;
+    /* number of MPI processes/threads per physical node */
+    nppn = cr->nrank_intranode;
 
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
               (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
@@ -404,7 +404,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
     /* detect and warn about oversubscription
      * TODO: enable this for separate PME nodes as well! */
-    if (!bSepPME && cr->nodeid_intra == 0)
+    if (!bSepPME && cr->rank_pp_intranode == 0)
     {
         char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
 

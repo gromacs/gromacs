@@ -165,7 +165,9 @@ mark_as_advanced(GMX_FAHCORE)
 # decide on GPU settings based on user-settings and GPU/CUDA detection
 include(gmxManageGPU)
 
+# TODO: move OpenMM to contrib
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
+mark_as_advanced(GMX_OPENMM)
 
 include(gmxDetectAcceleration)
 if(NOT DEFINED GMX_CPU_ACCELERATION)
@@ -701,7 +703,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
         GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" GROMACS_C_FLAGS)
     endif(NOT GNU_SSE4_CFLAG)
     if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
-        message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
+        message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
         # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
         # intrinsics when SSE2 support is enabled, so we try that instead.
         GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
@@ -712,7 +714,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
        GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" GROMACS_CXX_FLAGS)
     endif(NOT GNU_SSE4_CXXFLAG)
     if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
-        message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or disable SSE4.1 for slightly lower performance.")
+        message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
         # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
         # intrinsics when SSE2 support is enabled, so we try that instead.
         GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
@@ -1130,9 +1132,9 @@ add_subdirectory(share)
 add_subdirectory(src)
 add_subdirectory(scripts)
 
-# issue GPU acceleration/CUDA-related warning or error if GMX_GPU was set
-# Auto and NVIDIA GPUs were detected.
-if (CUDA_NOTFOUND_AUTO AND NOT GMX_GPU_DETECTION_DONE)
+# Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
+# Don't bother the user after the first configure pass.
+if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
     unset(CUDA_NOTFOUND_AUTO)
     unset(CUDA_NOTFOUND_MESSAGE)

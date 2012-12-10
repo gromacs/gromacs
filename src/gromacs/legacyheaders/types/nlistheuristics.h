@@ -35,6 +35,8 @@
 #ifndef _nlistheuristics_h
 #define _nlistheuristics_h
 
+#include "../visibility.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
