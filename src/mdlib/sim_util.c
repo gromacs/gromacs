@@ -93,8 +93,8 @@
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
-#include "nbnxn_kernels/nbnxn_kernel_x86_simd128.h"
-#include "nbnxn_kernels/nbnxn_kernel_x86_simd256.h"
+#include "nbnxn_kernels/nbnxn_kernel_simd_4xn.h"
+#include "nbnxn_kernels/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
 #ifdef GMX_LIB_MPI
@@ -620,13 +620,13 @@ static void do_nb_verlet(t_forcerec *fr,
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    if (nbvg->kernel_type != nbk8x8x8_CUDA)
+    if (nbvg->kernel_type != nbnxnk8x8x8_CUDA)
     {
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
     switch (nbvg->kernel_type)
     {
-        case nbk4x4_PlainC:
+        case nbnxnk4x4_PlainC:
             nbnxn_kernel_ref(&nbvg->nbl_lists,
                              nbvg->nbat, ic,
                              fr->shift_vec,
@@ -639,38 +639,38 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egLJSR]);
             break;
         
-        case nbk4xN_X86_SIMD128:
-            nbnxn_kernel_x86_simd128(&nbvg->nbl_lists,
-                                     nbvg->nbat, ic,
-                                     nbvg->ewald_excl,
-                                     fr->shift_vec,
-                                     flags,
-                                     clearF,
-                                     fr->fshift[0],
-                                     enerd->grpp.ener[egCOULSR],
-                                     fr->bBHAM ?
-                                     enerd->grpp.ener[egBHAMSR] :
-                                     enerd->grpp.ener[egLJSR]);
+        case nbnxnk4xN_SIMD_4xN:
+            nbnxn_kernel_simd_4xn(&nbvg->nbl_lists,
+                                  nbvg->nbat, ic,
+                                  nbvg->ewald_excl,
+                                  fr->shift_vec,
+                                  flags,
+                                  clearF,
+                                  fr->fshift[0],
+                                  enerd->grpp.ener[egCOULSR],
+                                  fr->bBHAM ?
+                                  enerd->grpp.ener[egBHAMSR] :
+                                  enerd->grpp.ener[egLJSR]);
             break;
-        case nbk4xN_X86_SIMD256:
-            nbnxn_kernel_x86_simd256(&nbvg->nbl_lists,
-                                     nbvg->nbat, ic,
-                                     nbvg->ewald_excl,
-                                     fr->shift_vec,
-                                     flags,
-                                     clearF,
-                                     fr->fshift[0],
-                                     enerd->grpp.ener[egCOULSR],
-                                     fr->bBHAM ?
-                                     enerd->grpp.ener[egBHAMSR] :
-                                     enerd->grpp.ener[egLJSR]);
+        case nbnxnk4xN_SIMD_2xNN:
+            nbnxn_kernel_simd_2xnn(&nbvg->nbl_lists,
+                                   nbvg->nbat, ic,
+                                   nbvg->ewald_excl,
+                                   fr->shift_vec,
+                                   flags,
+                                   clearF,
+                                   fr->fshift[0],
+                                   enerd->grpp.ener[egCOULSR],
+                                   fr->bBHAM ?
+                                   enerd->grpp.ener[egBHAMSR] :
+                                   enerd->grpp.ener[egLJSR]);
             break;
 
-        case nbk8x8x8_CUDA:
+        case nbnxnk8x8x8_CUDA:
             nbnxn_cuda_launch_kernel(fr->nbv->cu_nbv, nbvg->nbat, flags, ilocality);
             break;
 
-        case nbk8x8x8_PlainC:
+        case nbnxnk8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],
                                  nbvg->nbat, ic,
                                  fr->shift_vec,
@@ -688,7 +688,7 @@ static void do_nb_verlet(t_forcerec *fr,
             gmx_incons("Invalid nonbonded kernel type passed!");
 
     }
-    if (nbvg->kernel_type != nbk8x8x8_CUDA)
+    if (nbvg->kernel_type != nbnxnk8x8x8_CUDA)
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -785,7 +785,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
     bUseGPU       = fr->nbv->bUseGPU;
-    bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbk8x8x8_PlainC);
+    bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbnxnk8x8x8_PlainC);
 
     if (bStateChanged)
     {
@@ -1000,7 +1000,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);
 
-            if (nbv->grp[eintNonlocal].kernel_type == nbk8x8x8_CUDA)
+            if (nbv->grp[eintNonlocal].kernel_type == nbnxnk8x8x8_CUDA)
             {
                 /* initialize non-local pair-list on the GPU */
                 nbnxn_cuda_init_pairlist(nbv->cu_nbv,
