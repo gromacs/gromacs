@@ -128,6 +128,16 @@ gmx_mm256_set_m128(__m128 hi, __m128 lo)
 }
 
 
+static gmx_inline __m256
+gmx_mm256_load4_ps(float const * p)
+{
+    __m128 a;
+
+    a = _mm_load_ps(p);
+    return _mm256_insertf128_ps(_mm256_castps128_ps256(a), a, 0x1);
+}
+
+
 static __m256d
 gmx_mm256_unpack128lo_pd(__m256d xmm1, __m256d xmm2)
 {
@@ -147,6 +157,13 @@ gmx_mm256_set_m128d(__m128d hi, __m128d lo)
 }
 
 
+static __m128 gmx_mm256_sum4h_m128(__m256 x, __m256 y)
+{
+    __m256 sum;
+
+    sum = _mm256_add_ps(x,y);
+    return _mm_add_ps(_mm256_castps256_ps128(sum),_mm256_extractf128_ps(sum,0x1));
+}
 
 
 static void

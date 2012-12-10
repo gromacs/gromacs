@@ -96,28 +96,27 @@ typedef struct {
 } nbnxn_grid_t;
 
 #ifdef NBNXN_SEARCH_SSE
-#define GMX_MM128_HERE
-#include "gmx_x86_simd_macros.h"
-typedef struct nbnxn_x_ci_x86_simd128 {
-    /* The i-cluster coordinates for simple search */
-    gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
-    gmx_mm_pr ix_SSE1,iy_SSE1,iz_SSE1;
-    gmx_mm_pr ix_SSE2,iy_SSE2,iz_SSE2;
-    gmx_mm_pr ix_SSE3,iy_SSE3,iz_SSE3;
-} nbnxn_x_ci_x86_simd128_t;
-#undef GMX_MM128_HERE
-#ifdef GMX_X86_AVX_256
+#ifdef GMX_NBNXN_SIMD_256
 #define GMX_MM256_HERE
+#else
+#define GMX_MM128_HERE
+#endif
 #include "gmx_x86_simd_macros.h"
-typedef struct nbnxn_x_ci_x86_simd256 {
+
+typedef struct nbnxn_x_ci_simd_4xn {
     /* The i-cluster coordinates for simple search */
     gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
     gmx_mm_pr ix_SSE1,iy_SSE1,iz_SSE1;
     gmx_mm_pr ix_SSE2,iy_SSE2,iz_SSE2;
     gmx_mm_pr ix_SSE3,iy_SSE3,iz_SSE3;
-} nbnxn_x_ci_x86_simd256_t;
-#undef GMX_MM256_HERE
-#endif
+} nbnxn_x_ci_simd_4xn_t;
+
+typedef struct nbnxn_x_ci_simd_2xnn {
+    /* The i-cluster coordinates for simple search */
+    gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
+    gmx_mm_pr ix_SSE2,iy_SSE2,iz_SSE2;
+} nbnxn_x_ci_simd_2xnn_t;
+
 #endif
 
 /* Working data for the actual i-supercell during pair search */
@@ -127,10 +126,8 @@ typedef struct nbnxn_list_work {
     float *bb_ci;      /* The bounding boxes, pbc shifted, for each cluster */
     real  *x_ci;       /* The coordinates, pbc shifted, for each atom       */
 #ifdef NBNXN_SEARCH_SSE
-    nbnxn_x_ci_x86_simd128_t *x_ci_x86_simd128;
-#ifdef GMX_X86_AVX_256
-    nbnxn_x_ci_x86_simd256_t *x_ci_x86_simd256;
-#endif
+    nbnxn_x_ci_simd_4xn_t *x_ci_simd_4xn;
+    nbnxn_x_ci_simd_2xnn_t *x_ci_simd_2xnn;
 #endif
     int  cj_ind;       /* The current cj_ind index for the current list     */
     int  cj4_init;     /* The first unitialized cj4 block                   */
@@ -156,15 +153,16 @@ gmx_icell_set_x_t(int ci,
 
 static gmx_icell_set_x_t icell_set_x_simple;
 #ifdef NBNXN_SEARCH_SSE
-static gmx_icell_set_x_t icell_set_x_simple_x86_simd128;
-#ifdef GMX_X86_AVX_256
-static gmx_icell_set_x_t icell_set_x_simple_x86_simd256;
-#endif
+static gmx_icell_set_x_t icell_set_x_simple_simd_4xn;
+static gmx_icell_set_x_t icell_set_x_simple_simd_2xnn;
 #endif
 static gmx_icell_set_x_t icell_set_x_supersub;
 #ifdef NBNXN_SEARCH_SSE
 static gmx_icell_set_x_t icell_set_x_supersub_sse8;
 #endif
+
+#undef GMX_MM128_HERE
+#undef GMX_MM256_HERE
 
 /* Local cycle count struct for profiling */
 typedef struct {

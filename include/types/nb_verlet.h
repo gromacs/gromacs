@@ -46,11 +46,16 @@
 extern "C" {
 #endif
 
+#ifdef GMX_X86_AVX_256
+/* Uncomment this define to use AVX-128 kernels with AVX-256 acceleration */
+#define GMX_NBNXN_SIMD_256
+#endif
+
 /*! Nonbonded NxN kernel types: plain C, SSE/AVX, GPU CUDA, GPU emulation, etc */
 enum { nbkNotSet = 0, 
        nbk4x4_PlainC, 
-       nbk4xN_X86_SIMD128,
-       nbk4xN_X86_SIMD256,
+       nbk4xN_SIMD_4xN,
+       nbk4xN_SIMD_2xNN,
        nbk8x8x8_CUDA,
        nbk8x8x8_PlainC };
 
@@ -61,31 +66,38 @@ enum { nbkNotSet = 0,
  */
 static const char *nbk_name[] =
   { "not set", "plain C 4x4",
-#if !(defined GMX_X86_AVX_256 || defined GMX_X86_AVX128_FMA || defined __AVX__)
+#if !(defined GMX_X86_SSE2)
+    "not available", "not available",
+#else
+#if !(defined GMX_NBNXN_SIMD_256)
+#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
 #ifndef GMX_X86_SSE4_1
 #ifndef GMX_DOUBLE
-    "SSE2 4x4",
+    "SSE2 4x4", "not available",
 #else
-    "SSE2 4x2",
+    "SSE2 4x2", "not available",
 #endif
 #else
 #ifndef GMX_DOUBLE
-    "SSE4.1 4x4",
+    "SSE4.1 4x4", "not available",
 #else
-    "SSE4.1 4x2",
+    "SSE4.1 4x2", "not available",
 #endif
 #endif
 #else
 #ifndef GMX_DOUBLE
-    "AVX-128 4x4",
+    "AVX-128 4x4", "not available",
 #else
-    "AVX-128 4x2",
+    "AVX-128 4x2", "not available",
 #endif
 #endif
+#else
 #ifndef GMX_DOUBLE
-    "AVX-256 4x8",
+    "AVX-256 4x8",  "AVX-256 4x4",
 #else
-    "AVX-256 4x4",
+    "AVX-256 4x4", "not available",
+#endif
+#endif
 #endif
     "CUDA 8x8x8", "plain C 8x8x8" };
 
@@ -119,9 +131,9 @@ typedef struct {
 
 /* non-bonded data structure with Verlet-type cut-off */
 typedef struct {
-    nbnxn_search_t           nbs;   /* n vs n atom pair searching data          */
-    int                      ngrp;  /* number of interaction groups             */
-    nonbonded_verlet_group_t grp[2];/* local and non-local interaction group    */
+    nbnxn_search_t           nbs;   /* n vs n atom pair searching data       */
+    int                      ngrp;  /* number of interaction groups          */
+    nonbonded_verlet_group_t grp[2];/* local and non-local interaction group */
 
     gmx_bool         bUseGPU;          /* TRUE when GPU acceleration is used */
     nbnxn_cuda_ptr_t cu_nbv;           /* pointer to CUDA nb verlet data     */
