@@ -189,6 +189,7 @@ extern int gmx_molprop_get_quadrupole(gmx_molprop_t mpt,int ref,
 
 extern void gmx_molprop_add_category(gmx_molprop_t mpt,const char *category);
 
+extern int gmx_molprop_get_ncategory(gmx_molprop_t mpt);
 /* Returns one category at a time. If NULL, you got them all previously. */
 extern const char *gmx_molprop_get_category(gmx_molprop_t mpt);
 

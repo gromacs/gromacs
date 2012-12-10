@@ -1052,6 +1052,11 @@ void gmx_molprop_reset_composition(gmx_molprop_t mp)
     mp->ncomp_c = 0;
 }
 
+int gmx_molprop_get_ncategory(gmx_molprop_t mpt)
+{
+    return mpt->ncategory;
+}
+
 const char *gmx_molprop_get_category(gmx_molprop_t mp)
 {
     int i;

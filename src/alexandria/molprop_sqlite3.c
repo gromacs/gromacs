@@ -231,7 +231,8 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                             {
                                 if (strcmp(cas,cas2) != 0)
                                 {
-                                    fprintf(stderr,"cas in molprop %s not the same as database %s for %s\n",cas2,cas,iupac);
+                                    if (strlen(cas2) > 0) 
+                                        fprintf(stderr,"cas in molprop %s not the same as database %s for %s\n",cas2,cas,iupac);
                                     gmx_molprop_set_cas(mp[i],cas);
                                 }
                             }
@@ -242,7 +243,8 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                             {
                                 if (strcmp(csid,csid2) != 0)
                                 {
-                                    fprintf(stderr,"csid in molprop %s not the same as database %s for %s\n",csid2,csid,iupac);
+                                    if (strlen(csid2) > 0)
+                                        fprintf(stderr,"csid in molprop %s not the same as database %s for %s\n",csid2,csid,iupac);
                                     gmx_molprop_set_cid(mp[i],csid);
                                 }
                             }

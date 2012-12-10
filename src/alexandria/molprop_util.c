@@ -1161,7 +1161,7 @@ void gmx_molprop_send(t_commrec *cr,int dest,gmx_molprop_t mp)
     char *program,*method,*basisset,*xyz_unit,*V_unit;
     int  natom,espid,atomid,expref,atomref;
     int  ccc=0;
-    int  ncalc;
+    int  ncalc,ai,aj,bondorder;
     double x,y,z,V,xx,yy,zz,xy,xz,yz,aver,value,error,q;
     
     gmx_molprop_reset(mp);
@@ -1176,6 +1176,16 @@ void gmx_molprop_send(t_commrec *cr,int dest,gmx_molprop_t mp)
     gmx_send_str(cr,dest,gmx_molprop_get_cas(mp));
     gmx_send_str(cr,dest,gmx_molprop_get_cid(mp));
     gmx_send_str(cr,dest,gmx_molprop_get_inchi(mp));
+
+    /* Bonds */
+    while (1 == gmx_molprop_get_bond(mp,&ai,&aj,&bondorder))
+    {   
+        gmx_send_int(cr,dest,1);
+        gmx_send_int(cr,dest,ai);
+        gmx_send_int(cr,dest,aj);
+        gmx_send_int(cr,dest,bondorder);
+    }
+    gmx_send_int(cr,dest,0);
 
     /* Composition */
     while ((ptr = gmx_molprop_get_composition(mp)) != NULL) 
@@ -1310,7 +1320,7 @@ gmx_molprop_t gmx_molprop_receive(t_commrec *cr,int src)
     char   *ptr,*atomname,*obtype,*type,*unit,*reference,*conformation,*datafile,*comp;
     char   *program,*method,*basisset,*xyz_unit,*V_unit;
     int    nexp,kk,natom,expref,atomref,ccc=0,espid,atomid;
-    int    ncalc;
+    int    ncalc,ai,aj,bondorder;
     double x,y,z,V,xx,yy,zz,xy,xz,yz,aver,error,q;
     
 #ifdef GMX_MPI
@@ -1325,6 +1335,15 @@ gmx_molprop_t gmx_molprop_receive(t_commrec *cr,int src)
     gmx_molprop_set_cid(mp,gmx_recv_str(cr,src));
     gmx_molprop_set_inchi(mp,gmx_recv_str(cr,src));
 
+    /* Bonds */
+    while (gmx_recv_int(cr,src) == 1)
+    {   
+        ai = gmx_recv_int(cr,src);
+        aj = gmx_recv_int(cr,src);
+        bondorder = gmx_recv_int(cr,src);
+        gmx_molprop_add_bond(mp,ai,aj,bondorder);
+    }
+    
     /* Composition */
     while ((ptr = gmx_recv_str(cr,src)) != NULL) 
     {
