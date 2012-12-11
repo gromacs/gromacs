@@ -4327,9 +4327,9 @@ int gmx_pme_do(gmx_pme_t pme,
         }
 
         /* Here we start a large thread parallel region */
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+	//#pragma omp parallel num_threads(pme->nthread) private(thread)
         {
-            thread=gmx_omp_get_thread_num();
+            thread=0;//gmx_omp_get_thread_num();
             if (flags & GMX_PME_SOLVE)
             {
                 int loop_count;
@@ -4341,6 +4341,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     GMX_MPE_LOG(ev_gmxfft3d_start);
                     wallcycle_start(wcycle,ewcPME_FFT);
                 }
+	    	
                 gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_REAL_TO_COMPLEX,
                                            fftgrid,cfftgrid,thread,wcycle);
                 if (thread == 0)
@@ -4357,11 +4358,17 @@ int gmx_pme_do(gmx_pme_t pme,
                     GMX_MPE_LOG(ev_solve_pme_start);
                     wallcycle_start(wcycle,ewcPME_SOLVE);
                 }
+#pragma omp parallel num_threads(pme->nthread) private(thread)
+		{
+		thread=gmx_omp_get_thread_num();
+
                 loop_count =
                     solve_pme_yzx(pme,cfftgrid,ewaldcoeff,
                                   box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                   bCalcEnerVir,
                                   pme->nthread,thread);
+		}
+		thread=0;
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle,ewcPME_SOLVE);
@@ -4400,7 +4407,12 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle,ewcPME_SPREADGATHER);
                 }
 
+		//TODO: not sure it is worth creating a parallel region just for copy
+#pragma omp parallel num_threads(pme->nthread) private(thread)
+		{
+                thread=gmx_omp_get_thread_num();
                 copy_fftgrid_to_pmegrid(pme,fftgrid,grid,pme->nthread,thread);
+                }
             }
         }
         /* End of thread parallel section.
