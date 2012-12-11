@@ -65,7 +65,7 @@
 /* TODO: Do we still need this? Are we still planning ot use fftw + OpenMP? */
 #define FFT5D_THREADS
 /* requires fftw compiled with openmp */
-/* #define FFT5D_FFTW_THREADS (now set by cmake) */
+#define FFT5D_FFTW_THREADS /* put back in cmake */
 #endif
 
 #include "fft5d.h"
@@ -425,7 +425,10 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
      * that the execute of the 3d plan is in a master/serial block (since it contains it own parallel region)
      * and that the 3d plan is faster than the 1d plan.
      */
-    if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1)) && nthreads==1) {  /*don't do 3d plan in parallel or if in_place requested */
+    if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1)))
+    {
+#pragma omp master
+    {  /*don't do 3d plan in parallel or if in_place requested */
             int fftwflags=FFTW_DESTROY_INPUT;
             FFTW(iodim) dims[3];
             int inNG=NG,outMG=MG,outKG=KG;
@@ -487,6 +490,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
             }
 #ifdef FFT5D_THREADS
 #ifdef FFT5D_FFTW_THREADS
+	    FFTW(init_threads)();
             FFTW(plan_with_nthreads)(nthreads);
 #endif
 #endif
@@ -513,6 +517,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 #endif
             FFTW_UNLOCK;
     }
+    }
+#pragma omp barrier
     if (!plan->p3d) {  /* for decomposition and if 3d plan did not work */
 #endif /* GMX_FFT_FFTW3 */
         for (s=0;s<3;s++) {
@@ -875,7 +881,8 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
 #ifdef GMX_FFT_FFTW3 
     if (plan->p3d)
     {
-        if (thread == 0)
+#pragma omp barrier
+#pragma omp master
         {
 #ifdef NOGMX
             if (times!=0)
@@ -891,6 +898,7 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
             }
 #endif
         }
+#pragma omp barrier
         return;
     }
 #endif
