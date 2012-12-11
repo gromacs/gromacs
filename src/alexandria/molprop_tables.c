@@ -64,10 +64,23 @@
 
 typedef struct 
 {
+    char *cat;
+    int count;
+    real rms;
+} t_catli;
+
+static int comp_catli(const void *a,const void *b)
+{
+    t_catli *ca = (t_catli *)a;
+    t_catli *cb = (t_catli *)b;
+    
+    return strcmp(ca->cat,cb->cat);
+}
+
+typedef struct 
+{
     int ncat;
-    char **cat;
-    int  *count;
-    real *rms;
+    t_catli *catli;
 } t_cats;
 
 static void add_cat(t_cats *cats,const char *catname)
@@ -75,18 +88,18 @@ static void add_cat(t_cats *cats,const char *catname)
     int i;
   
     for(i=0; (i<cats->ncat); i++) 
-        if (strcasecmp(catname,cats->cat[i]) == 0) 
+        if (strcasecmp(catname,cats->catli[i].cat) == 0) 
         {
-            cats->count[i]++;
+            cats->catli[i].count++;
             break;
         }
     if (i == cats->ncat) 
     {
         cats->ncat++;
-        srenew(cats->cat,cats->ncat);
-        srenew(cats->count,cats->ncat);
-        cats->cat[cats->ncat-1] = strdup(catname);
-        cats->count[cats->ncat-1] = 1;
+        srenew(cats->catli,cats->ncat);
+        cats->catli[cats->ncat-1].cat = strdup(catname);
+        cats->catli[cats->ncat-1].count = 1;
+        cats->catli[cats->ncat-1].rms = 0;
     }
 }
 
@@ -201,10 +214,11 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
             }
         }
     }
+    qsort(cats->catli,cats->ncat,sizeof(cats->catli[0]),comp_catli);
     line = 0;
     for(i=0; (i<cats->ncat); i++) 
     {
-        fprintf(fp," %s (%d) ",cats->cat[i],cats->count[i]);
+        fprintf(fp," %s (%d) ",cats->catli[i].cat,cats->catli[i].count);
         for(k=0; (k<qmc->n); k++) 
         {
             sprintf(lbuf,"%s/%s",qmc->method[k],qmc->basis[k]);
@@ -214,7 +228,7 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
                 if ((gmx_molselect_status(gms,gmx_molprop_get_iupac(pd[j])) == ims) &&
                     (gmx_molprop_support_composition(pd[j],SPOEL)))
                 {
-                    if (gmx_molprop_search_category(pd[j],cats->cat[i]) == 1)
+                    if (gmx_molprop_search_category(pd[j],cats->catli[i].cat) == 1)
                     {
                         /*for(m=0; (m<qmc->nconf); m++) 
                           {*/
@@ -226,7 +240,7 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
                                 {
                                     if (debug)
                                         fprintf(debug,"%s %s k = %d j = %d - TAB4\n",
-                                                gmx_molprop_get_molname(pd[j]),cats->cat[i],k,j);
+                                                gmx_molprop_get_molname(pd[j]),cats->catli[i].cat,k,j);
                                     gmx_stats_add_point(lsq,exp_val,qm_val,0,0);
                                 }
                             }
@@ -429,6 +443,14 @@ typedef struct {
     char **molec;
 } t_cat_stat;
 
+static int comp_cats(const void *a,const void *b)
+{
+    t_cat_stat *ca = (t_cat_stat *)a;
+    t_cat_stat *cb = (t_cat_stat *)b;
+    
+    return strcmp(ca->cat,cb->cat);
+}
+
 static void add_cats(int *ncs,t_cat_stat **cs,const char *iupac,const char *mycat)
 {
     int j,nmol;
@@ -455,7 +477,7 @@ static void category_header(FILE *fp,int start,int ims)
     fprintf(fp,"\\newpage\n");
     if (start == 0)
         decrease_table_number(fp);
-    fprintf(fp,"\\begin{table}[h]\n");
+    fprintf(fp,"\\begin{table}[H]\n");
     fprintf(fp,"\\caption{Molecules that are part of each category used for statistics%s.}\n",
             (start == 1) ? "" : " (continued)");
     fprintf(fp,"\\begin{tabularx}{16cm}{lcX}\n");
@@ -474,7 +496,7 @@ static void category_footer(FILE *fp)
 void gmx_molprop_category_table(FILE *fp,int np,gmx_molprop_t mp[],
                                 gmx_molselect_t gms,int ims)
 {
-    int i,j,iline,ncs;
+    int i,j,iline,ncs,prmax=50;
     t_cat_stat *cs=NULL;
     const char *iupac,*mycat;
     
@@ -490,9 +512,10 @@ void gmx_molprop_category_table(FILE *fp,int np,gmx_molprop_t mp[],
             }
         }
     }
-
+    
     if (ncs > 0) 
     {
+        qsort(cs,ncs,sizeof(cs[0]),comp_cats);
         category_header(fp,1,ims);  
         iline = 0;
         for(i=0; (i<ncs); i++) 
@@ -501,17 +524,23 @@ void gmx_molprop_category_table(FILE *fp,int np,gmx_molprop_t mp[],
             for(j=0; (j<cs[i].nmol); j++) 
             {
                 fprintf(fp," %s",cs[i].molec[j]);
+                iline++;
                 if (j<cs[i].nmol-1)
-                    fprintf(fp,",");
+                {
+                    if (iline >= prmax)
+                    {
+                        fprintf(fp,"\\\\\n");
+                        category_footer(fp);
+                        category_header(fp,0,ims);
+                        fprintf(fp,"%s & (ctd) &",cs[i].cat);
+                        iline = 0;
+                    }
+                    else 
+                        fprintf(fp,",");
+                }
             }
-            fprintf(fp,"\\\\\n");
-            iline+=cs[i].nmol;
-            if ((iline >= 75)  && (i < ncs -1))
-            {
-                category_footer(fp);
-                category_header(fp,0,ims);
-                iline = 0;
-            }
+            if (iline != 0)
+                fprintf(fp,"\\\\\n");
         }
         category_footer(fp);
     }

@@ -215,7 +215,7 @@ void gmx_molprop_read_sqlite3(int np,gmx_molprop_t mp[],const char *sqlite_file)
                                                    0,0,0,value,error);
                         else if (strcasecmp(prop,"DHf(298.15K)") == 0)
                             gmx_molprop_add_energy(mp[i],expref,prop,unit,value,error);
-                        if (strlen(classification) > 0)
+                        if (0 && (strlen(classification) > 0))
                         {
                             class_ptr = split(';',classification);
                             cidx = 0;

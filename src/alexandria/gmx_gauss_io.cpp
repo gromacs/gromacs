@@ -162,8 +162,7 @@ static gmx_molprop_t gmx_molprop_read_babel(const char *g98,
     OpenBabel::OBConversion *conv;
     OpenBabel::OBAtom *OBa,*OBa1,*OBa2;
     OpenBabel::OBBond *OBb;
-    OpenBabel::OBPairData *OBpd;
-    OpenBabel::OBGenericData *OBdhf;
+    OpenBabel::OBPairData *OBpd,*OBdhf;
     OpenBabel::OBVectorData *dipole;
     OpenBabel::OBMatrixData *quadrupole,*pol_tensor;
     OpenBabel::OBFreeGrid *esp;
@@ -196,7 +195,7 @@ static gmx_molprop_t gmx_molprop_read_babel(const char *g98,
     {
         vector<string> vs;
         string ss;
-        const char *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond" };
+        const char *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", "Trans_double_bond" };
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
         char *dup,*ptr;
         unsigned int i,j;
@@ -297,7 +296,7 @@ static gmx_molprop_t gmx_molprop_read_babel(const char *g98,
     
     for(k=0; (k<2); k++) 
     {
-        OBdhf = mol.GetData(etypes[k]);
+        OBdhf = (OpenBabel::OBPairData *)mol.GetData(etypes[k]);
         if (NULL != OBdhf)
         {
             value = OBdhf->GetValue();
