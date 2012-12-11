@@ -122,7 +122,7 @@ static OpenBabel::OBConversion *read_babel(const char *g98,OpenBabel::OBMol *mol
   
     // Try to set input format to G98 file if it is not clear from the extension,
     // that means, this code will equally well read sdf, pdb etc.
-    ptr = strrchr(g98,'.');
+    ptr = (char *)strrchr(g98,'.');
     if ((NULL != ptr) && (strlen(ptr) >= 2))
         ptr++;
     else
