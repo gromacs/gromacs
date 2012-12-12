@@ -432,8 +432,15 @@ enum gmx_nbkernel_vdw
     GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
     GMX_NBKERNEL_VDW_NR
 };
-
-
+/* Types of interactions inside the neighborlist
+ */
+enum gmx_nblist_interaction_type
+{
+  GMX_NBLIST_INTERACTION_STANDARD,
+  GMX_NBLIST_INTERACTION_FREE_ENERGY,
+  GMX_NBLIST_INTERACTION_ADRESS,
+  GMX_NBLIST_INTERACTION_NR
+};
 
 #ifdef __cplusplus
 }

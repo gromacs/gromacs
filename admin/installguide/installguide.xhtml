@@ -67,7 +67,7 @@
     <h2 class="title section-title"> 1. Building GROMACS</h2>
   <div class="para" id="S1.p1">
     <p class="p">These instructions pertain to building GROMACS 4.6 beta releases
-and newer. For installations instructions for old GROMACSversions,
+and newer. For installations instructions for old GROMACS versions,
 see here
 <a href="http://www.gromacs.org/Documentation/Installation_Instructions_4.5" title="" class="ref url"><span style="" class="text typewriter">http://www.gromacs.org/Documentation/Installation_Instructions_4.5</span></a>.</p>
   </div>
@@ -206,7 +206,8 @@ management system provides a suitable version, or visit
 <a href="http://www.cmake.org/cmake/help/install.html" title="" class="ref url"><span style="" class="text typewriter">http://www.cmake.org/cmake/help/install.html</span></a> for pre-compiled
 binaries, source code and installation instructions. The GROMACS
 team recommends you install the most recent version of CMake you
-can.</p>
+can.
+</p>
   </div>
 
     </div>
@@ -622,7 +623,8 @@ building on, and what went wrong.</p>
 
   <div class="para" id="S3.SS9.p3">
     <p class="p">If you have a multi-core or multi-CPU machine with <span style="" class="text typewriter">N</span>
-processors, then using</p>
+processors, then using
+</p>
   <pre class="verbatim">
 $ make -j N
 </pre>
@@ -638,8 +640,7 @@ $ make -j N
 directory given in <span style="" class="text typewriter">GMX_INSTALL_PREFIX</span>. If this is an system
 directory, then you will need permission to write there, and you
 should use super-user privileges only for <span style="" class="text typewriter">make install</span> and
-not the whole procedure.
-</p>
+not the whole procedure.</p>
   </div>
 
     </div>
@@ -747,11 +748,47 @@ information as you think could possibly help.</p>
     <div class="subsection" id="S4.SS1">
     <h3 class="title subsection-title"> 4.1. Building on Windows</h3>
   <div class="para" id="S4.SS1.p1">
-    <p class="p">Need a volunteer to write this section.</p>
+    <p class="p">Building on Cygwin/MinGW/etc. works just like Unix. Please see the
+instructions above.</p>
   </div>
 
   <div class="para" id="S4.SS1.p2">
-    <p class="p">Cygwin works just like Unix.</p>
+    <p class="p">Building on Windows using native compilers is rather similar to
+building on Unix, so please start by reading the above. Then, download
+and unpack the GROMACS source archive. The UNIX-standard
+<span style="" class="text typewriter">.tar.gz</span> format can be managed on Windows, but you may prefer
+to browse <a href="ftp://ftp.gromacs.org/pub/gromacs" title="" class="ref url"><span style="" class="text typewriter">ftp://ftp.gromacs.org/pub/gromacs</span></a> to obtain a
+<span style="" class="text typewriter">.zip</span> format file, which doesn't need any external tools to
+unzip on recent Windows systems. Make a folder in which to do the
+out-of-source build of GROMACS. For example, make it within the
+folder unpacked from the source archive, and call it “build-cmake”.
+</p>
+  </div>
+
+  <div class="para" id="S4.SS1.p3">
+    <p class="p">Next, you need to open a command shell. If you do this from within
+your IDE (e.g. Microsoft Visual Studio), it will configure the
+environment for you. If you use a normal Windows command shell, then
+you will need to either set up the environment to find your compilers
+and libraries yourself, or run the <span style="" class="text typewriter">vcvarsall.bat</span> batch script
+provided by MSVC (just like sourcing a bash script under
+Unix). Presumably Intel's IDE has a similar functionality.</p>
+  </div>
+
+  <div class="para" id="S4.SS1.p4">
+    <p class="p">Within that command shell, change to the folder you created above. Run
+<code class="verbatim">cmake ..</code>, where the folder you point CMake towards is the
+folder created by the GROMACS installer. Resolve issues as
+above. You will probably make your life easier and faster by using the
+new facility to download and install FFTW automatically. After the
+initial run of <code class="verbatim">cmake</code>, you may wish to use <code class="verbatim">cmake</code>,
+<code class="verbatim">ccmake</code> or the GUI version of CMake until your configuration
+is complete.</p>
+  </div>
+
+  <div class="para" id="S4.SS1.p5">
+    <p class="p">To compile GROMACS, you then use <code class="verbatim">cmake --build .</code> so the
+right tools get used.</p>
   </div>
 
     </div>
@@ -770,7 +807,7 @@ information as you think could possibly help.</p>
     <h4 class="title subsubsection-title"> 4.3.1. BlueGene/P</h4>
   <div class="para" id="S4.SS3.SSS1.p1">
     <p class="p">Mark to write later. There is currently no native acceleration on this
-platform, but the default kernels will work.</p>
+platform, but the default plain C kernels will work.</p>
   </div>
 
     </div>
@@ -779,7 +816,7 @@ platform, but the default kernels will work.</p>
     <h4 class="title subsubsection-title"> 4.3.2. BlueGene/Q</h4>
   <div class="para" id="S4.SS3.SSS2.p1">
     <p class="p">Mark to write later. There is currently no native acceleration on this
-platform, but the default kernels will work.</p>
+platform, but the default plain C kernels will work.</p>
   </div>
 
     </div>
@@ -805,7 +842,8 @@ repository is tested on … We test irregularly on…</p>
 
   <div class="para" id="S5.p3">
     <p class="p">Later we might set up the ability for users to contribute test results
-to Jenkins.</p>
+to Jenkins.
+</p>
   </div>
 
     </div>

@@ -240,7 +240,14 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     vdw_mod  = eintmod_names[nl->ivdwmod];
     geom     = gmx_nblist_geometry_names[nl->igeometry];
 
-    if(nl->free_energy)
+    if(nl->type==GMX_NBLIST_INTERACTION_ADRESS){
+        nl->kernelptr_vf = gmx_nb_generic_adress_kernel;
+        nl->kernelptr_f = gmx_nb_generic_adress_kernel;
+        nl->simd_padding_width = 1;
+        return;
+    }
+
+    if(nl->type==GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {
         nl->kernelptr_vf = gmx_nb_free_energy_kernel;
         nl->kernelptr_f  = gmx_nb_free_energy_kernel;
@@ -393,7 +400,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                         kernelptr = (nb_kernel_t *)nlist[i].kernelptr_f;
                     }
 
-                    if(nlist[i].free_energy==0 && (flags & GMX_NONBONDED_DO_FOREIGNLAMBDA))
+                    if(nlist[i].type!=GMX_NBLIST_INTERACTION_FREE_ENERGY && (flags & GMX_NONBONDED_DO_FOREIGNLAMBDA))
                     {
                         /* We don't need the non-perturbed interactions */
                         continue;

@@ -1,5 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
+ * Copyright (c) 2011 Christoph Junghans, Sebastian Fritsch
  * 
  *                This source code is part of
  * 
@@ -36,23 +37,18 @@
 #ifndef _nb_generic_adress_h_
 #define _nb_generic_adress_h_
 
+#include "nb_kernel.h"
 #include "types/simple.h"
 #include "typedefs.h"
 
 void
-gmx_nb_generic_adress_kernel(t_nblist *           nlist,
-			 t_forcerec *         fr,
-			 t_mdatoms *          mdatoms,
-			 real *               x,
-			 real *               f,
-			 real *               fshift,
-			 real *               Vc,
-			 real *               Vvdw,
-			 real                 tabscale,  
-			 real *               VFtab,
-			 int *                outeriter,
-			 int *                inneriter,
-                         gmx_bool                 bCG);
+gmx_nb_generic_adress_kernel(t_nblist *                nlist,
+                      rvec *                    xx,
+                      rvec *                    ff,
+                      t_forcerec *              fr,
+                      t_mdatoms *               mdatoms,
+                      nb_kernel_data_t *        kernel_data,
+                      t_nrnb *                  nrnb);
 
 #endif
 

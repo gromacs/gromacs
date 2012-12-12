@@ -125,7 +125,6 @@ static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
             break;
         case F_PRES:    
         case F_PDISPCORR:
-        case F_VTEMP:
             if (bPres)
             {
                 ato[to++] = afrom[from++];

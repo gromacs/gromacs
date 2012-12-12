@@ -3003,8 +3003,9 @@ int gmx_hbond(int argc,char *argv[])
 {
     const char *desc[] = {
         "[TT]g_hbond[tt] computes and analyzes hydrogen bonds. Hydrogen bonds are",
-        "determined based on cutoffs for the angle Acceptor - Donor - Hydrogen",
-        "(zero is extended) and the distance Hydrogen - Acceptor.",
+        "determined based on cutoffs for the angle Hydrogen - Donor - Acceptor",
+        "(zero is extended) and the distance Donor - Acceptor",
+        "(or Hydrogen - Acceptor using [TT]-noda[tt]).",
         "OH and NH groups are regarded as donors, O is an acceptor always,",
         "N is an acceptor by default, but this can be switched using",
         "[TT]-nitacc[tt]. Dummy hydrogen atoms are assumed to be connected",
@@ -3082,7 +3083,7 @@ int gmx_hbond(int argc,char *argv[])
     /* options */
     t_pargs pa [] = {
         { "-a",    FALSE,  etREAL, {&acut},
-          "Cutoff angle (degrees, Acceptor - Donor - Hydrogen)" },
+          "Cutoff angle (degrees, Hydrogen - Donor - Acceptor)" },
         { "-r",    FALSE,  etREAL, {&rcut},
           "Cutoff radius (nm, X - Acceptor, see next option)" },
         { "-da",   FALSE,  etBOOL, {&bDA},
@@ -3886,6 +3887,8 @@ int gmx_hbond(int argc,char *argv[])
     
         fp = xvgropen(opt2fn("-dist",NFILE,fnm),
                       "Hydrogen Bond Distribution",
+                      bDA ?
+                      "Donor - Acceptor Distance (nm)" :
                       "Hydrogen - Acceptor Distance (nm)","",oenv);
         for(i=0; i<nrbin; i++)
             fprintf(fp,"%10g %10g\n",(i+0.5)*rbin,rdist[i]/(rbin*(real)sum));
@@ -3902,7 +3905,7 @@ int gmx_hbond(int argc,char *argv[])
     
         fp = xvgropen(opt2fn("-ang",NFILE,fnm),
                       "Hydrogen Bond Distribution",
-                      "Donor - Hydrogen - Acceptor Angle (\\SO\\N)","",oenv);
+                      "Hydrogen - Donor - Acceptor Angle (\\SO\\N)","",oenv);
         for(i=0; i<nabin; i++)
             fprintf(fp,"%10g %10g\n",(i+0.5)*abin,adist[i]/(abin*(real)sum));
         ffclose(fp);
