@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "types/commrec.h"
+#include "../utility/gmx_header_config.h"
 
 #ifdef __cplusplus
 extern "C" {
