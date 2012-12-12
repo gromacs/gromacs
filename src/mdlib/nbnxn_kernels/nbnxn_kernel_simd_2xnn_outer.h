@@ -36,12 +36,12 @@
  */
 
 /* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file */
-#include "gmx_x86_simd_macros.h"
+#include "gmx_simd_macros.h"
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    (GMX_X86_SIMD_WIDTH_HERE/2)
+#define UNROLLJ    (GMX_SIMD_WIDTH_HERE/2)
 
 #if defined GMX_MM128_HERE || defined GMX_DOUBLE
 #define STRIDE     4

@@ -45,10 +45,10 @@
 #error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
 #endif
 #endif
-#include "gmx_x86_simd_macros.h"
+#include "gmx_simd_macros.h"
 
-#if GMX_X86_SIMD_WIDTH_HERE >= 2*NBNXN_CPU_CLUSTER_I_SIZE
-#define STRIDE_S  (GMX_X86_SIMD_WIDTH_HERE/2)
+#if GMX_SIMD_WIDTH_HERE >= 2*NBNXN_CPU_CLUSTER_I_SIZE
+#define STRIDE_S  (GMX_SIMD_WIDTH_HERE/2)
 #else
 #define STRIDE_S  NBNXN_CPU_CLUSTER_I_SIZE
 #endif
@@ -181,7 +181,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
-            *ndistc += 2*GMX_X86_SIMD_WIDTH_HERE;
+            *ndistc += 2*GMX_SIMD_WIDTH_HERE;
         }
         if (!InRange)
         {
@@ -235,7 +235,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
-            *ndistc += 2*GMX_X86_SIMD_WIDTH_HERE;
+            *ndistc += 2*GMX_SIMD_WIDTH_HERE;
         }
         if (!InRange)
         {

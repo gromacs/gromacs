@@ -105,7 +105,7 @@ typedef struct {
 #error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
 #endif
 #endif
-#include "gmx_x86_simd_macros.h"
+#include "gmx_simd_macros.h"
 
 typedef struct nbnxn_x_ci_simd_4xn {
     /* The i-cluster coordinates for simple search */

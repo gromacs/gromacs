@@ -35,13 +35,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/* The macros in this file are intended to be used for writing
+ * architecture independent SIMD intrinsics code.
+ * To support a new architecture, adding macros here should be (nearly)
+ * all that is needed.
+ */
+
 /* Undefine all defines used below so we can include this file multiple times
  * with different settings from the same source file.
  */
 
 /* NOTE: floor and blend are NOT available with SSE2 only acceleration */
 
-#undef GMX_X86_SIMD_WIDTH_HERE
+#undef GMX_SIMD_WIDTH_HERE
 
 #undef gmx_epi32
 
@@ -106,7 +112,7 @@
 
 #include "gmx_x86_simd_single.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  4
+#define GMX_SIMD_WIDTH_HERE  4
 
 #define gmx_mm_pr  __m128
 
@@ -147,7 +153,7 @@
 
 #include "gmx_x86_simd_double.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  2
+#define GMX_SIMD_WIDTH_HERE  2
 
 #define gmx_mm_pr  __m128d
 
@@ -196,7 +202,7 @@
 
 #include "gmx_x86_simd_single.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  8
+#define GMX_SIMD_WIDTH_HERE  8
 
 #define gmx_mm_pr  __m256
 
@@ -256,7 +262,7 @@
 
 #include "gmx_x86_simd_double.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  4
+#define GMX_SIMD_WIDTH_HERE  4
 
 #define gmx_mm_pr  __m256d
 
