@@ -511,12 +511,12 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,const int *offset_jj)
     {
         gmx_mm_pr v_SSE;
 
-        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE);
-        gmx_store_pr(v+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE,gmx_add_pr(v_SSE,e_SSE));
+        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
+        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE,gmx_add_pr(v_SSE,e_SSE));
     }
 }
 
-#if defined GMX_X86_AVX_256 && GMX_X86_SIMD_WIDTH_HERE == 8
+#if defined GMX_X86_AVX_256 && GMX_SIMD_WIDTH_HERE == 8
 /* As add_ener_grp above, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
@@ -533,15 +533,15 @@ static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
     {
         gmx_mm_hpr v_SSE;
 
-        v_SSE = gmx_load_hpr(v0+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2);
-        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE0));
+        v_SSE = gmx_load_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE0));
     }
     for(jj=0; jj<(UNROLLJ/2); jj++)
     {
         gmx_mm_hpr v_SSE;
 
-        v_SSE = gmx_load_hpr(v1+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2);
-        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_X86_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE1));
+        v_SSE = gmx_load_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE1));
     }
 }
 #endif
