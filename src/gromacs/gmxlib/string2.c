@@ -39,6 +39,10 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_CRAY_XT3
+#undef HAVE_PWD_H
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>

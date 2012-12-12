@@ -113,6 +113,8 @@
 #include "gmx_fatal.h"
 #include "physics.h"
 
+#include "../utility/gmx_header_config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #elif 0

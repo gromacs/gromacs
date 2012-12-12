@@ -35,6 +35,7 @@
 #ifndef GMX_SIMD_MATH_AVX_128_FMA_SINGLE_H
 #define GMX_SIMD_MATH_AVX_128_FMA_SINGLE_H
 
+#include "../utility/gmx_header_config.h"
 #include <immintrin.h> /* AVX */
 #ifdef HAVE_X86INTRIN_H
 #include <x86intrin.h> /* FMA */
