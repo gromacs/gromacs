@@ -1042,14 +1042,14 @@ nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
 #else
 #define GMX_MM128_HERE
 #endif
-#include "gmx_x86_simd_macros.h"
+#include "gmx_simd_macros.h"
 
     int       i,s;
     gmx_mm_pr dest_SSE,src_SSE;
 
     if (bDestSet)
     {
-        for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
+        for(i=i0; i<i1; i+=GMX_SIMD_WIDTH_HERE)
         {
             dest_SSE = gmx_load_pr(dest+i);
             for(s=0; s<nsrc; s++)
@@ -1062,7 +1062,7 @@ nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
     }
     else
     {
-        for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
+        for(i=i0; i<i1; i+=GMX_SIMD_WIDTH_HERE)
         {
             dest_SSE = gmx_load_pr(src[0]+i);
             for(s=1; s<nsrc; s++)

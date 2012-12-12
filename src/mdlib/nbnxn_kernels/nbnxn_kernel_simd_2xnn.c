@@ -147,8 +147,8 @@ static void reduce_group_energies(int ng,int ng_2log,
 {
     int ng_p2,i,j,j0,j1,c,s;
 
-#define SIMD_WIDTH    (GMX_X86_SIMD_WIDTH_HERE)
-#define UNROLLJ_HALF  (GMX_X86_SIMD_WIDTH_HERE/4)
+#define SIMD_WIDTH    (GMX_SIMD_WIDTH_HERE)
+#define UNROLLJ_HALF  (GMX_SIMD_WIDTH_HERE/4)
 
     ng_p2 = (1<<ng_2log);
 
