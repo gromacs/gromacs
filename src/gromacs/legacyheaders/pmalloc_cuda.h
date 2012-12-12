@@ -36,6 +36,8 @@
 #ifndef PMALLOC_CUDA_H
 #define PMALLOC_CUDA_H
 
+#include "../utility/gmx_header_config.h"
+
 #ifdef GMX_GPU
 #define FUNC_TERM ;
 #else

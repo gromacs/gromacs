@@ -36,7 +36,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gromacs/utility/gmx_header_config.h"
 
 #ifdef GMX_CRAY_XT3
 #undef HAVE_PWD_H

@@ -23,6 +23,8 @@
 
 /* This file includes the highest possible level of x86 (math) acceleration */
 
+#include "../utility/gmx_header_config.h"
+
 #ifdef GMX_X86_AVX_256
 #include "gmx_x86_avx_256.h"
 #include "gmx_math_x86_avx_256_double.h"

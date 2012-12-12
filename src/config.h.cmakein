@@ -70,9 +70,6 @@
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
 
-/* Enable special hacks for Cray XT3 */
-#cmakedefine GMX_CRAY_XT3
-
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
 #cmakedefine GMX_DISABLE_FFTW_MEASURE
 
@@ -91,18 +88,6 @@
 /* Use AMD core math library */
 #cmakedefine GMX_FFT_ACML
 
-/* SSE2 instructions available */
-#cmakedefine GMX_X86_SSE2
-
-/* SSE4.1 instructions available */
-#cmakedefine GMX_X86_SSE4_1
-
-/* AVX 128-bit FMA instructions available */
-#cmakedefine GMX_X86_AVX_128_FMA
-
-/* AVX 256-bit instructions available */
-#cmakedefine GMX_X86_AVX_256
-
 /* SSE2 was selected as CPU acceleration level */
 #cmakedefine GMX_CPU_ACCELERATION_X86_SSE2
 
@@ -120,9 +105,6 @@
 
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN 
-
-/* Use our own instead of system XDR libraries */
-#cmakedefine GMX_INTERNAL_XDR
 
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
@@ -155,15 +137,6 @@
 /* Use (modified) Mopac 7 for QM-MM calculations */
 #cmakedefine GMX_QMMM_MOPAC
 
-/* Use the GROMACS software 1/sqrt(x) */
-#cmakedefine GMX_SOFTWARE_INVSQRT
-
-/* Use the PowerPC hardware 1/sqrt(x) */
-#cmakedefine GMX_POWERPC_INVSQRT
-
-/* Use sub-counters */
-#cmakedefine GMX_CYCLE_SUBCOUNTERS
-
 /* Compile with plugin support */
 #cmakedefine GMX_USE_PLUGINS
 
@@ -179,9 +152,6 @@
 /* Define when thread-MPI atomic operations are available */
 #cmakedefine TMPI_ATOMICS
 
-/* Define for busy wait option  */
-#cmakedefine TMPI_WAIT_FOR_NO_ONE
-
 /* Define for copy buffer option */
 #cmakedefine TMPI_COPY_BUFFER
 
@@ -196,15 +166,6 @@
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
-
-/* Use GPU native acceleration */
-#cmakedefine GMX_GPU
-
-/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
-#cmakedefine HAVE_FSEEKO
-
-/* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
-#cmakedefine HAVE__FSEEKI64
 
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
@@ -254,18 +215,6 @@
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine HAVE_SIGACTION
 
-/* Define to 1 if you have the rsqrt() function. */
-#cmakedefine HAVE_RSQRT
-
-/* Define to 1 if you have the rsqrtf() function. */
-#cmakedefine HAVE_RSQRTF
-
-/* Define to 1 if you have the sqrtf() function. */
-#cmakedefine HAVE_SQRTF
-
-/* Define to 1 if yo have the <unistd.h> header file. */
-#cmakedefine HAVE_UNISTD_H
-
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H
 
@@ -277,15 +226,6 @@
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
-
-/* Define to 1 if you have the <x86intrin.h> header file */
-#cmakedefine HAVE_X86INTRIN_H
-
-/* Define to 1 if you have the <intrin.h> header file */
-#cmakedefine HAVE_INTRIN_H
-
-/* Define to 1 if you have the <sched.h> header */
-#cmakedefine HAVE_SCHED_H
 
 /* Define to 1 if you have the POSIX <regex.h> header file. */
 #cmakedefine HAVE_POSIX_REGEX
@@ -322,9 +262,6 @@
 
 /* The size of long long int, as computed by sizeof. */
 #cmakedefine SIZEOF_LONG_LONG_INT @SIZEOF_LONG_LONG_INT@
-
-/* The size of off_t, as computed by sizeof. */
-#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
 
 /* The size of void*, as computed by sizeof. */
 #cmakedefine SIZEOF_VOIDP @SIZEOF_VOIDP@

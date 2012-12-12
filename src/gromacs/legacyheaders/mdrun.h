@@ -54,6 +54,7 @@
 #include "types/membedt.h"
 #include "types/globsig.h"
 
+#include "../utility/gmx_header_config.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi/threads.h"

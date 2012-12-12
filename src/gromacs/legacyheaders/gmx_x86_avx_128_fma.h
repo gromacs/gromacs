@@ -21,7 +21,7 @@
 #ifndef _gmx_x86_avx_128_fma_h_
 #define _gmx_x86_avx_128_fma_h_
 
-
+#include "../utility/gmx_header_config.h"
 #include <immintrin.h>
 #ifdef HAVE_X86INTRIN_H
 #include <x86intrin.h> /* FMA */

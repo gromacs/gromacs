@@ -22,3 +22,66 @@
 
 /** Define if we have sufficient C++11 support */
 #cmakedefine GMX_CXX11
+
+/** Use our own instead of system XDR libraries */
+#cmakedefine GMX_INTERNAL_XDR
+
+/** Use the GROMACS software 1/sqrt(x) */
+#cmakedefine GMX_SOFTWARE_INVSQRT
+
+/** Use the PowerPC hardware 1/sqrt(x) */
+#cmakedefine GMX_POWERPC_INVSQRT
+
+/** Use sub-counters */
+#cmakedefine GMX_CYCLE_SUBCOUNTERS
+
+/** Enable special hacks for Cray XT3 */
+#cmakedefine GMX_CRAY_XT3
+
+/** Use GPU native acceleration */
+#cmakedefine GMX_GPU
+
+/** SSE2 instructions available */
+#cmakedefine GMX_X86_SSE2
+
+/** SSE4.1 instructions available */
+#cmakedefine GMX_X86_SSE4_1
+
+/** AVX 128-bit FMA instructions available */
+#cmakedefine GMX_X86_AVX_128_FMA
+
+/** AVX 256-bit instructions available */
+#cmakedefine GMX_X86_AVX_256
+
+/** Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+#cmakedefine HAVE_FSEEKO
+
+/** Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
+#cmakedefine HAVE__FSEEKI64
+
+/** The size of off_t, as computed by sizeof. */
+#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+
+/** Define for busy wait option  */
+#cmakedefine TMPI_WAIT_FOR_NO_ONE
+
+/** Define to 1 if you have the rsqrt() function. */
+#cmakedefine HAVE_RSQRT
+
+/** Define to 1 if you have the rsqrtf() function. */
+#cmakedefine HAVE_RSQRTF
+
+/** Define to 1 if you have the sqrtf() function. */
+#cmakedefine HAVE_SQRTF
+
+/** Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/** Define to 1 if you have the <x86intrin.h> header file */
+#cmakedefine HAVE_X86INTRIN_H
+
+/** Define to 1 if you have the <intrin.h> header file */
+#cmakedefine HAVE_INTRIN_H
+
+/** Define for sched.h (this is for thread_mpi) */
+#cmakedefine HAVE_SCHED_H

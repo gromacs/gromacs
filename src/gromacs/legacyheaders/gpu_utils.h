@@ -38,6 +38,7 @@
 
 #include "types/simple.h"
 #include "types/hw_info.h"
+#include "../utility/gmx_header_config.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM_INT ;
