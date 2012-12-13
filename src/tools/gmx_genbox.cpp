@@ -1,3 +1,4 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- */
 /*
  * 
  *                This source code is part of
@@ -60,6 +61,7 @@
 #include "pdbio.h"
 #include "pbc.h"
 #include "gmx_ana.h"
+#include "xvgr.h"
 
 #ifdef DEBUG
 void print_stat(rvec *x,int natoms,matrix box)
@@ -132,7 +134,6 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
   /* copy each residue from *atoms to a molecule in *molecule */
   moltypes=NULL;
   nrmoltypes=0;
-  atnr=0;
   for (i=0; i<atoms->nr; i++) {
     if ( (i==0) || (atoms->atom[i].resind != atoms->atom[i-1].resind) ) {
       /* see if this was a molecule type we haven't had yet: */
@@ -282,10 +283,46 @@ void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
   }
 }
 
+/* This is a (maybe) slow workaround to avoid the neighbor searching in addconf.c, which
+ * leaks memory (May 2012). The function could be deleted as soon as the momory leaks
+ * in addconf.c are fixed.
+ * However, when inserting a small molecule in a system containing not too many atoms,
+ * allPairsDistOk is probably even faster than addconf.c
+ */
+static gmx_bool
+allPairsDistOk(t_atoms *atoms, rvec *x, real *r,
+               int ePBC, matrix box,
+               t_atoms *atoms_insrt, rvec *x_n,real *r_insrt)
+{
+    int i,j;
+    rvec dx;
+    real n2,r2;
+    t_pbc pbc;
+
+    set_pbc(&pbc,ePBC,box);
+    for (i=0; i<atoms->nr; i++)
+    {
+        for (j=0; j<atoms_insrt->nr; j++)
+        {
+            pbc_dx(&pbc,x[i],x_n[j],dx);
+            n2 = norm2(dx);
+            r2 = sqr(r[i]+r_insrt[j]);
+            if (n2<r2)
+                return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+/* enum for random rotations of inserted solutes */
+enum {en_rot, en_rotXYZ, en_rotZ, en_rotNone, en_NR};
+
 static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
-			 t_atoms *atoms,rvec **x,real **r,int ePBC,matrix box,
-			 gmx_atomprop_t aps,real r_distance,real rshell,
-                         const output_env_t oenv)
+                         t_atoms *atoms,rvec **x,real **r,int ePBC,matrix box,
+                         gmx_atomprop_t aps,real r_distance,real rshell,
+                         const output_env_t oenv,
+                         const char* posfn, const rvec deltaR,int enum_rot,
+                         gmx_bool bCheckAllPairDist)
 {
   t_pbc   pbc;
   static  char    *title_insrt;
@@ -294,11 +331,12 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
   real    *r_insrt;
   int     ePBC_insrt;
   matrix  box_insrt;
-  int     i,mol,onr;
-  real    alfa,beta,gamma;
+  int     i,mol,onr,ncol;
+  real    alfa=0.,beta=0.,gamma=0.;
   rvec    offset_x;
   int     trial;
-   
+  double  **rpos;
+
   set_pbc(&pbc,ePBC,box);
   
   /* read number of atoms of insert molecules */
@@ -321,41 +359,88 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
 		&ePBC_insrt,box_insrt);
   fprintf(stderr,"%s\nContaining %d atoms in %d residue\n",
 	  title_insrt,atoms_insrt.nr,atoms_insrt.nres);
-  srenew(atoms_insrt.resinfo,atoms_insrt.nres);  
-    
+  srenew(atoms_insrt.resinfo,atoms_insrt.nres);
+
   /* initialise van der waals arrays of insert molecules */
   mk_vdw(&atoms_insrt,r_insrt,aps,r_distance);
+
+  /* With -ip, take nmol_insrt from file posfn */
+  if (posfn != NULL)
+  {
+      nmol_insrt=read_xvg(posfn,&rpos,&ncol);
+      if (ncol != 3)
+          gmx_fatal(FARGS,"Expected 3 columns (x/y/z coordinates) in file %s\n",ncol,posfn);
+      fprintf(stderr,"Read %d positions from file %s\n\n",nmol_insrt,posfn);
+  }
 
   srenew(atoms->resinfo,(atoms->nres+nmol_insrt*atoms_insrt.nres));
   srenew(atoms->atomname,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(atoms->atom,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(*x,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(*r,(atoms->nr+atoms_insrt.nr*nmol_insrt));
-  
+
   trial=mol=0;
   while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt)) {
     fprintf(stderr,"\rTry %d",trial++);
     for (i=0;(i<atoms_insrt.nr);i++) {
       copy_rvec(x_insrt[i],x_n[i]);
     }
-    alfa=2*M_PI*rando(&seed);
-    beta=2*M_PI*rando(&seed);
-    gamma=2*M_PI*rando(&seed);
-    rotate_conf(atoms_insrt.nr,x_n,NULL,alfa,beta,gamma);
-    offset_x[XX]=box[XX][XX]*rando(&seed);
-    offset_x[YY]=box[YY][YY]*rando(&seed);
-    offset_x[ZZ]=box[ZZ][ZZ]*rando(&seed);
-    gen_box(0,atoms_insrt.nr,x_n,box_insrt,offset_x,TRUE);
-    if (!in_box(&pbc,x_n[0]) || !in_box(&pbc,x_n[atoms_insrt.nr-1]))
-      continue;
+    switch (enum_rot)
+    {
+    case en_rotXYZ:
+        alfa=2*M_PI*rando(&seed);
+        beta=2*M_PI*rando(&seed);
+        gamma=2*M_PI*rando(&seed);
+        break;
+    case en_rotZ:
+        alfa=beta=0.;
+        gamma=2*M_PI*rando(&seed);
+        break;
+    case en_rotNone:
+        alfa=beta=gamma=0.;
+        break;
+    }
+    if (enum_rot==en_rotXYZ || (enum_rot==en_rotZ))
+    {
+        rotate_conf(atoms_insrt.nr,x_n,NULL,alfa,beta,gamma);
+    }
+    if (posfn==NULL)
+    {
+        /* insert at random positions */
+        offset_x[XX]=box[XX][XX]*rando(&seed);
+        offset_x[YY]=box[YY][YY]*rando(&seed);
+        offset_x[ZZ]=box[ZZ][ZZ]*rando(&seed);
+        gen_box(0,atoms_insrt.nr,x_n,box_insrt,offset_x,TRUE);
+        if (!in_box(&pbc,x_n[0]) || !in_box(&pbc,x_n[atoms_insrt.nr-1]))
+            continue;
+    }
+    else
+    {
+        /* Insert at positions taken from option -ip file */
+        offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2*rando(&seed)-1);
+        offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2*rando(&seed)-1);
+        offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2*rando(&seed)-1);
+        for (i=0; i<atoms_insrt.nr; i++)
+            rvec_inc(x_n[i], offset_x);
+    }
+
     onr=atoms->nr;
-    
+
+    /* This is a (maybe) slow workaround to avoid too many calls of add_conf, which
+     * leaks memory (status May 2012). If the momory leaks in add_conf() are fixed,
+     * this check could be removed. Note, however, that allPairsDistOk is probably
+     * even faster than add_conf() when inserting a small molecule into a moderately
+     * small system.
+     */
+    if (bCheckAllPairDist && !allPairsDistOk(atoms,*x,*r,ePBC,box,&atoms_insrt,x_n,r_insrt))
+        continue;
+
     add_conf(atoms,x,NULL,r,FALSE,ePBC,box,TRUE,
 	     &atoms_insrt,x_n,NULL,r_insrt,FALSE,rshell,0,oenv);
-    
+
     if (atoms->nr==(atoms_insrt.nr+onr)) {
       mol++;
-      fprintf(stderr," success (now %d atoms)!",atoms->nr);
+      fprintf(stderr," success (now %d atoms)!\n",atoms->nr);
     }
   }
   srenew(atoms->resinfo,  atoms->nres);
@@ -367,8 +452,8 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
   fprintf(stderr,"\n");
   /* print number of molecules added */
   fprintf(stderr,"Added %d molecules (out of %d requested) of %s\n",
-	  mol,nmol_insrt,*atoms_insrt.resinfo[0].name); 
-    
+	  mol,nmol_insrt,*atoms_insrt.resinfo[0].name);
+
   return title_insrt;
 }
 
@@ -565,9 +650,9 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 	}
       } else if (bMolecules) {
 	/* check if this is a line with solvent molecules */
-	sscanf(buf,"%s",buf2);
+    sscanf(buf,"%4095s",buf2);
 	if (strcmp(buf2,"SOL")==0) {
-	  sscanf(buf,"%*s %d",&i);
+      sscanf(buf,"%*4095s %20d",&i);
 	  nsol-=i;
 	  if (nsol<0) {
 	    bSkip=TRUE;
@@ -601,11 +686,11 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 int gmx_genbox(int argc,char *argv[])
 {
   const char *desc[] = {
-    "[TT]genbox[tt] can do one of 3 things:[PAR]",
-    
+    "[TT]genbox[tt] can do one of 4 things:[PAR]",
+
     "1) Generate a box of solvent. Specify [TT]-cs[tt] and [TT]-box[tt]. Or specify [TT]-cs[tt] and",
     "[TT]-cp[tt] with a structure file with a box, but without atoms.[PAR]",
-    
+
     "2) Solvate a solute configuration, e.g. a protein, in a bath of solvent ",
     "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
     "The box specified in the solute coordinate file ([TT]-cp[tt]) is used,",
@@ -622,7 +707,7 @@ int gmx_genbox(int argc,char *argv[])
     "Note that this option will also influence the distances between",
     "solvent molecules if they contain atoms that are not in the database.",
     "[PAR]",
-    
+
     "3) Insert a number ([TT]-nmol[tt]) of extra molecules ([TT]-ci[tt]) ",
     "at random positions.",
     "The program iterates until [TT]nmol[tt] molecules",
@@ -631,7 +716,19 @@ int gmx_genbox(int argc,char *argv[])
     "solvent molecules. When no appropriately-sized ",
     "holes (holes that can hold an extra molecule) are available, the ",
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
-    "Increase [TT]-try[tt] if you have several small holes to fill.[PAR]",
+    "Increase [TT]-try[tt] if you have several small holes to fill.",
+    "Option [TT]-rot[tt] defines if the molecules are randomly oriented.",
+    "[PAR]",
+
+    "4) Insert a number of molecules ([TT]-ci[tt]) at positions defined in",
+    "positions.dat ([TT]-ip[tt]). positions.dat should have 3 columns (x/y/z),",
+    "that give the displacements compared to the input molecule position ([TT]-ci[tt]).",
+    "Hence, if positions.dat should contain the absolut positions, the molecule ",
+    "must be centered to 0/0/0 before using genbox (use, e.g., editconf -center).",
+    "Comments in positions.dat starting with # are ignored. Option [TT]-dr[tt]",
+    "defines the maximally allowed displacements during insertial trials.",
+    "[TT]-try[tt] and [TT]-rot[tt] work as in mode (3) (see above)",
+    "[PAR]",
 
     "If you need to do more than one of the above operations, it can be",
     "best to call [TT]genbox[tt] separately for each operation, so that",
@@ -655,7 +752,7 @@ int gmx_genbox(int argc,char *argv[])
     "solvent molecules and leaves out the rest that would have fitted",
     "into the box. This can create a void that can cause problems later.",
     "Choose your volume wisely.[PAR]",
-    
+
     "The program can optionally rotate the solute molecule to align the",
     "longest molecule axis along a box edge. This way the amount of solvent",
     "molecules necessary is reduced.",
@@ -663,12 +760,12 @@ int gmx_genbox(int argc,char *argv[])
     "short simulations, as e.g. an alpha-helical peptide in solution can ",
     "rotate over 90 degrees, within 500 ps. In general it is therefore ",
     "better to make a more or less cubic box.[PAR]",
-    
+
     "Setting [TT]-shell[tt] larger than zero will place a layer of water of",
     "the specified thickness (nm) around the solute. Hint: it is a good",
     "idea to put the protein in the center of a box first (using [TT]editconf[tt]).",
     "[PAR]",
-    
+
     "Finally, [TT]genbox[tt] will optionally remove lines from your topology file in ",
     "which a number of solvent molecules is already added, and adds a ",
     "line with the total number of solvent molecules in your coordinate file."
@@ -676,6 +773,8 @@ int gmx_genbox(int argc,char *argv[])
 
   const char *bugs[] = {
     "Molecules must be whole in the initial configurations.",
+    "Many repeated neighbor searchings with -ci blows up the allocated memory. "
+    "Option -allpair avoids this using all-to-all distance checks (slow for large systems)"
   };
   
   /* parameter data */
@@ -692,7 +791,6 @@ int gmx_genbox(int argc,char *argv[])
   rvec    *x,*v=NULL;
   int     ePBC=-1;
   matrix  box;
-  t_pbc   pbc;
     
   /* other data types */
   int  atoms_added,residues_added;
@@ -701,25 +799,27 @@ int gmx_genbox(int argc,char *argv[])
     { efSTX, "-cp", "protein", ffOPTRD },
     { efSTX, "-cs", "spc216",  ffLIBOPTRD},
     { efSTX, "-ci", "insert",  ffOPTRD},
+    { efDAT, "-ip", "positions",  ffOPTRD},
     { efSTO, NULL,  NULL,      ffWRITE},
     { efTOP, NULL,  NULL,      ffOPTRW},
   };
 #define NFILE asize(fnm)
   
-  static int nmol_ins=0,nmol_try=10,seed=1997;
+  static int nmol_ins=0,nmol_try=10,seed=1997,enum_rot;
   static real r_distance=0.105,r_shell=0;
-  static rvec new_box={0.0,0.0,0.0};
-  static gmx_bool bReadV=FALSE;
+  static rvec new_box={0.0,0.0,0.0}, deltaR={0.0,0.0,0.0};
+  static gmx_bool bReadV=FALSE,bCheckAllPairDist=FALSE;
   static int  max_sol = 0;
   output_env_t oenv;
+  const char *enum_rot_string[]={NULL,"xyz","z","none",NULL};
   t_pargs pa[] = {
-    { "-box",    FALSE, etRVEC, {new_box},   
+    { "-box",    FALSE, etRVEC, {new_box},
       "Box size" },
-    { "-nmol",   FALSE, etINT , {&nmol_ins},  
+    { "-nmol",   FALSE, etINT , {&nmol_ins},
       "Number of extra molecules to insert" },
-    { "-try",    FALSE, etINT , {&nmol_try},  
+    { "-try",    FALSE, etINT , {&nmol_try},
       "Try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
-    { "-seed",   FALSE, etINT , {&seed},      
+    { "-seed",   FALSE, etINT , {&seed},
       "Random generator seed"},
     { "-vdwd",   FALSE, etREAL, {&r_distance},
       "Default van der Waals distance"},
@@ -728,27 +828,28 @@ int gmx_genbox(int argc,char *argv[])
     { "-maxsol", FALSE, etINT,  {&max_sol},
       "Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
     { "-vel",    FALSE, etBOOL, {&bReadV},
-      "Keep velocities from input solute and solvent" }
+      "Keep velocities from input solute and solvent" },
+    { "-dr",    FALSE, etRVEC, {deltaR},
+      "Allowed displacement in x/y/z from positions in [TT]-ip[tt] file" },
+    { "-rot", FALSE,  etENUM, {enum_rot_string},
+      "rotate inserted molecules randomly" },
+    { "-allpair",    FALSE, etBOOL, {&bCheckAllPairDist},
+      "Avoid momory leaks during neighbor searching with option -ci. May be slow for large systems." },
   };
 
   parse_common_args(&argc,argv, PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs,&oenv);
   
-  bInsert   = opt2bSet("-ci",NFILE,fnm) && (nmol_ins > 0);
+  bInsert   = opt2bSet("-ci",NFILE,fnm) && ((nmol_ins > 0) || opt2bSet("-ip",NFILE,fnm));
   bSol      = opt2bSet("-cs",NFILE,fnm);
   bProt     = opt2bSet("-cp",NFILE,fnm);
   bBox      = opt2parg_bSet("-box",asize(pa),pa);
+  enum_rot  = nenum(enum_rot_string);
      
   /* check input */
-  if (bInsert && nmol_ins<=0)
+  if (bInsert && (nmol_ins<=0 && !opt2bSet("-ip",NFILE,fnm)))
     gmx_fatal(FARGS,"When specifying inserted molecules (-ci), "
-		"-nmol must be larger than 0");
-  if (!bInsert && nmol_ins > 0)
-  {
-    gmx_fatal(FARGS,
-              "You tried to insert molecules with -nmol, but did not supply "
-              "a molecule to insert with -ci.");
-  }
+		"-nmol must be larger than 0 or positions must be given with -ip");
   if (!bProt && !bBox)
     gmx_fatal(FARGS,"When no solute (-cp) is specified, "
 		"a box size (-box) must be specified");
@@ -766,7 +867,7 @@ int gmx_genbox(int argc,char *argv[])
       fprintf(stderr,"Note: no atoms in %s\n",conf_prot);
       bProt = FALSE;
     }
-  } 
+  }
   if (!bProt) {
     atoms.nr=0;
     atoms.nres=0;
@@ -784,25 +885,26 @@ int gmx_genbox(int argc,char *argv[])
     box[YY][YY]=new_box[YY];
     box[ZZ][ZZ]=new_box[ZZ];
   }
-  if (det(box) == 0) 
+  if (det(box) == 0)
     gmx_fatal(FARGS,"Undefined solute box.\nCreate one with editconf "
 		"or give explicit -box command line option");
-  
+
   /* add nmol_ins molecules of atoms_ins 
-     in random orientation at random place */
-  if (bInsert) 
+     in random orientation at random place */  
+  if (bInsert)
     title_ins = insert_mols(opt2fn("-ci",NFILE,fnm),nmol_ins,nmol_try,seed,
-			    &atoms,&x,&r,ePBC,box,aps,r_distance,r_shell,
-                            oenv);
+                            &atoms,&x,&r,ePBC,box,aps,r_distance,r_shell,
+                            oenv,opt2fn_null("-ip",NFILE,fnm),deltaR,enum_rot,
+                            bCheckAllPairDist);
   else
     title_ins = strdup("Generated by genbox");
-  
+
   /* add solvent */
   if (bSol)
     add_solv(opt2fn("-cs",NFILE,fnm),&atoms,&x,v?&v:NULL,&r,ePBC,box,
 	     aps,r_distance,&atoms_added,&residues_added,r_shell,max_sol,
              oenv);
-	     
+
   /* write new configuration 1 to file confout */
   confout = ftp2fn(efSTO,NFILE,fnm);
   fprintf(stderr,"Writing generated configuration to %s\n",confout);
@@ -812,15 +914,17 @@ int gmx_genbox(int argc,char *argv[])
     fprintf(stderr,"%s\n",title);  
   } else 
     write_sto_conf(confout,title_ins,&atoms,x,v,ePBC,box);
-  
+
+  sfree(title_ins);
+
   /* print size of generated configuration */
   fprintf(stderr,"\nOutput configuration contains %d atoms in %d residues\n",
 	  atoms.nr,atoms.nres);
   update_top(&atoms,box,NFILE,fnm,aps);
-	  
+
   gmx_atomprop_destroy(aps);
-  
+
   thanx(stderr);
-  
+
   return 0;
 }
