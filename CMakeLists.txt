@@ -698,22 +698,22 @@ if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
     # nothing to do
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
 
-    GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" GROMACS_C_FLAGS)
+    GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" ACCELERATION_C_FLAGS)
     if(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
     endif(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
 
     if (CMAKE_CXX_COMPILER_LOADED)
-        GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" GROMACS_CXX_FLAGS)
+        GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" ACCELERATION_CXX_FLAGS)
         if(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
-            GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+            GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" ACCELERATION_CXX_FLAGS)
         endif(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
     endif()
 
     # We dont warn for lacking SSE2 flag support, since that is probably standard today.
 
     # Only test the include after we have tried to add the correct flag for SSE2 support
-    check_include_file(emmintrin.h  HAVE_EMMINTRIN_H ${GROMACS_C_FLAGS})
+    check_include_file(emmintrin.h  HAVE_EMMINTRIN_H ${ACCELERATION_C_FLAGS})
 
     if(NOT HAVE_EMMINTRIN_H)
         message(FATAL_ERROR "Cannot find emmintrin.h, which is required for SSE2 intrinsics support.")
@@ -728,36 +728,36 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
 
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
 
-    GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" GROMACS_C_FLAGS)
+    GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" ACCELERATION_C_FLAGS)
     if (NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" GROMACS_C_FLAGS)
+        GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" ACCELERATION_C_FLAGS)
     endif(NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
         message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
         # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
         # intrinsics when SSE2 support is enabled, so we try that instead.
 	if (GMX_NATIVE_WINDOWS)
-            GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+            GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
         endif()
     endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
 
     if (CMAKE_CXX_COMPILER_LOADED)
         GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" GROMACS_CXX_FLAG)
         if (NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
-            GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" GROMACS_CXX_FLAGS)
+            GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" ACCELERATION_CXX_FLAGS)
         endif(NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
         if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG) 
             message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
             # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
             # intrinsics when SSE2 support is enabled, so we try that instead.
             if (GMX_NATIVE_WINDOWS)
-                GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+                GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" ACCELERATION_CXX_FLAGS)
             endif()
         endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
     endif()
 
     # This must come after we have added the -msse4.1 flag on some platforms.
-    check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${GROMACS_C_FLAGS})
+    check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${ACCELERATION_C_FLAGS})
 
     if(NOT HAVE_SMMINTRIN_H)
         message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
@@ -775,18 +775,18 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
 
     # Set the AVX compiler flag for both these choices!
 
-    GMX_TEST_CFLAG(GNU_AVX_CFLAG "-mavx" GROMACS_C_FLAGS)
+    GMX_TEST_CFLAG(GNU_AVX_CFLAG "-mavx" ACCELERATION_C_FLAGS)
     if (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" GROMACS_C_FLAGS)
+        GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" ACCELERATION_C_FLAGS)
     endif (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
         message(WARNING "No C AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
     endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
 
     if (CMAKE_CXX_COMPILER_LOADED)
-        GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" GROMACS_CXX_FLAGS)
+        GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" ACCELERATION_CXX_FLAGS)
         if (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
-            GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" GROMACS_CXX_FLAGS)
+            GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" ACCELERATION_CXX_FLAGS)
         endif (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
         if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
             message(WARNING "No C++ AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
@@ -795,24 +795,24 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
 
     # Set the FMA4 flags (MSVC doesn't require any)
     if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
-        GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" GROMACS_C_FLAGS)
+        GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" ACCELERATION_C_FLAGS)
         if (NOT GNU_FMA_CFLAG)
             message(WARNING "No C FMA4 flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
         endif(NOT GNU_FMA_CFLAG)
-        GMX_TEST_CFLAG(GNU_XOP_CFLAG "-mxop" GROMACS_C_FLAGS)
+        GMX_TEST_CFLAG(GNU_XOP_CFLAG "-mxop" ACCELERATION_C_FLAGS)
         # No big deal if we do not have xop, so no point yelling warnings about it.
         if (CMAKE_CXX_COMPILER_LOADED)
-            GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" GROMACS_CXX_FLAGS)
+            GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" ACCELERATION_CXX_FLAGS)
             if (NOT GNU_FMA_CXXFLAG)
                 message(WARNING "No C++ FMA flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
             endif (NOT GNU_FMA_CXXFLAG)
-            GMX_TEST_CXXFLAG(GNU_XOP_CXXFLAG "-mxop" GROMACS_CXX_FLAGS)
+            GMX_TEST_CXXFLAG(GNU_XOP_CXXFLAG "-mxop" ACCELERATION_CXX_FLAGS)
             # No big deal if we do not have xop, so no point yelling warnings about it.
         endif()
     endif()
 
     # Only test the header after we have tried to add the flag for AVX support
-    check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${GROMACS_C_FLAGS})
+    check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${ACCELERATION_C_FLAGS})
 
     if(NOT HAVE_IMMINTRIN_H)
         message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
@@ -821,15 +821,15 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
     if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
         try_compile(TEST_AVX ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestAVX.c"
-            COMPILE_DEFINITIONS "${GROMACS_C_FLAGS}")
+            COMPILE_DEFINITIONS "${ACCELERATION_C_FLAGS}")
         if(NOT TEST_AVX)
             message(FATAL_ERROR "Cannot compile AVX intrinsics. Consider switching compiler.")
         endif()
     endif()
 
     # GCC requires x86intrin.h for FMA support. MSVC 2010 requires intrin.h for FMA support.
-    check_include_file(x86intrin.h HAVE_X86INTRIN_H ${GROMACS_C_FLAGS})
-    check_include_file(intrin.h HAVE_INTRIN_H ${GROMACS_C_FLAGS})
+    check_include_file(x86intrin.h HAVE_X86INTRIN_H ${ACCELERATION_C_FLAGS})
+    check_include_file(intrin.h HAVE_INTRIN_H ${ACCELERATION_C_FLAGS})
 
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
@@ -1052,19 +1052,19 @@ endif(GMX_FAHCORE)
 if (NOT DEFINED GROMACS_C_FLAGS_SET)
     set(GROMACS_C_FLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
         FORCE)
-    set(CMAKE_C_FLAGS "${GROMACS_C_FLAGS} ${CMAKE_C_FLAGS}" CACHE STRING 
+    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}" CACHE STRING
         "Flags used by the compiler during all build types" FORCE)
     if (CMAKE_CXX_COMPILER_LOADED)
-        set(CMAKE_CXX_FLAGS "${GROMACS_CXX_FLAGS} ${CMAKE_CXX_FLAGS}" CACHE STRING 
+        set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}" CACHE STRING
             "Flags used by the compiler during all build types" FORCE)
     endif()
     set(CMAKE_EXE_LINKER_FLAGS 
-        "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
+        "${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
         CACHE STRING "Linker flags for creating executables" FORCE) 
     set(CMAKE_SHARED_LINKER_FLAGS 
-        "${GROMACS_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}" 
+        "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}"
         CACHE STRING "Linker flags for creating shared libraries" FORCE) 
-endif (NOT DEFINED GROMACS_C_FLAGS_SET)
+endif()
 
 if(NOT GMX_OPENMP)
     #Unset all OpenMP flags in case OpenMP was disabled either by the user
