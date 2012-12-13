@@ -29,5 +29,6 @@ class QmmmGaussian
                  const t_forcerec *fr,
                  const t_mdatoms *md)
   {
+    return 0;
   }
-}
+};

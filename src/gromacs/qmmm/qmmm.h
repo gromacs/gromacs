@@ -39,6 +39,9 @@
 #ifndef GMX_QMMM_QMMM_H
 #define GMX_QMMM_QMMM_H
 
+#include "network.h"
+#include "typedefs.h"
+
 namespace gmx
 {
 
