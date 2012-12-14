@@ -33,27 +33,65 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 #
 
-# Test C flags FLAGS, and set VARIABLE to true if the work. Also add the
-# flags to CFLAGSVAR.
-MACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
-    IF(NOT DEFINED ${VARIABLE})
-        CHECK_C_COMPILER_FLAG("${FLAGS}" ${VARIABLE})
-    ENDIF(NOT DEFINED ${VARIABLE})
-    IF (${VARIABLE})
-        SET (${CFLAGSVAR} "${FLAGS} ${${CFLAGSVAR}}")
-    ENDIF (${VARIABLE})
-ENDMACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
+# Test C flags FLAGS, and set cache VARIABLE for the flags if they
+# work. Also add the flags to CFLAGSVAR (which should not be
+# cached). Previous values in VARIABLE (from earlier iterations or the
+# user) are preserved.
+macro(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
+    # Run the test only if we don't know whether the flags might work.
+    if(NOT DEFINED ${VARIABLE})
+        check_c_compiler_flag("${FLAGS}" _testresult)
+        if(_testresult)
+            # If the test was conducted and successful, preserve the
+            # result of the test in the cache.
+            SET(${VARIABLE} ${FLAGS} CACHE STRING "" FORCE)
+        endif()
+    endif()
 
-# Test C++ flags FLAGS, and set VARIABLE to true if the work. Also add the
-# flags to CXXFLAGSVAR.
-MACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
-    IF(NOT DEFINED ${VARIABLE} AND CMAKE_CXX_COMPILER_LOADED)
-        CHECK_CXX_COMPILER_FLAG("${FLAGS}" ${VARIABLE})
-    ENDIF(NOT DEFINED ${VARIABLE} AND CMAKE_CXX_COMPILER_LOADED)
-    IF (${VARIABLE})
-        SET (${CXXFLAGSVAR} "${FLAGS} ${${CXXFLAGSVAR}}")
-    ENDIF (${VARIABLE})
-ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
+    # At this point, if ${VARIABLE} exists, it contains flags that
+    # CMake has tested or the user has provided, and which will stay
+    # in the cache. (Though if the user didn't specify a variable type
+    # on the command line, they might not see it in ccmake.)
+    if(${VARIABLE})
+        # Users do not need to know about test results
+        mark_as_advanced(${VARIABLE})
+        # Add the flags to an (uncached) list of flags to be used in
+        # this iteration of CMake
+        set(${CFLAGSVAR} "${${VARIABLE}} ${${CFLAGSVAR}}")
+    endif(${VARIABLE})
+    # If ${VARIABLE} does not exist, the calling routine should handle
+    # communicating back to the user.
+endmacro()
+
+# Test C++ flags FLAGS, and set cache VARIABLE for the flags if they
+# work. Also add the flags to CXXFLAGSVAR (which should not be
+# cached). Previous values in VARIABLE (from earlier iterations or the
+# user) are preserved.
+macro(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
+    # Run the test only if we don't know whether the flags might work.
+    if(NOT DEFINED ${VARIABLE})
+        check_cxx_compiler_flag("${FLAGS}" _testresult)
+        if(_testresult)
+            # If the test was conducted and successful, preserve the
+            # result of the test in the cache.
+            SET(${VARIABLE} ${FLAGS} CACHE STRING "" FORCE)
+        endif()
+    endif()
+
+    # At this point, if ${VARIABLE} exists, it contains flags that
+    # CMake has tested or the user has provided, and which will stay
+    # in the cache. (Though if the user didn't specify a variable type
+    # on the command line, they might not see it in ccmake.)
+    if(${VARIABLE})
+        # Users do not need to know about test results
+        mark_as_advanced(${VARIABLE})
+        # Add the flags to an (uncached) list of flags to be used in
+        # this iteration of CMake
+        set(${CXXFLAGSVAR} "${${VARIABLE}} ${${CXXFLAGSVAR}}")
+    endif(${VARIABLE})
+    # If ${VARIABLE} does not exist, the calling routine should handle
+    # communicating back to the user.
+endmacro()
 
 
 # This is the actual exported function to be called 
@@ -64,6 +102,12 @@ MACRO(gmx_c_flags)
 
     # First, set up general compiler optimization flags for different
     # compilers and build types (Release and Debug)
+
+    # Note that caching the results of tests is worthwhile, because
+    # the only dependency they should have is the compiler, and that
+    # cannot change. Caching combinations of test results leads to
+    # problems with consistency, currency and brevity, so we rebuild
+    # that on the fly as needed.
 
     # gcc
     if(CMAKE_COMPILER_IS_GNUCC)
@@ -199,40 +243,6 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CXXFLAGS)
     endif()
 
-    # now actually set the flags:
-    # C
-    if ( NOT DEFINED GMXCFLAGS_SET AND NOT DEFINED ENV{CFLAGS} )
-        set(GMXCFLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
-            FORCE)
-        
-        set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}" 
-            CACHE STRING "Flags used by the compiler during all build types." 
-            FORCE)
-        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}" 
-            CACHE STRING "Flags used by the compiler during release builds." 
-            FORCE)
-        set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}" 
-            CACHE STRING "Flags used by the compiler during debug builds." 
-            FORCE)
-    endif()
-
-    # C++
-    if ( NOT DEFINED GMXCXXFLAGS_SET AND NOT DEFINED ENV{CXXFLAGS} AND CMAKE_CXX_COMPILER_LOADED)
-        set(GMXCXXFLAGS_SET true CACHE INTERNAL "Whether to reset the C++ flags" 
-            FORCE)
-        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}" 
-            CACHE STRING "Flags used by the compiler during all build types." 
-            FORCE)
-        set(CMAKE_CXX_FLAGS_RELEASE 
-            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}" 
-            CACHE STRING "Flags used by the compiler during release builds." 
-            FORCE)
-        set(CMAKE_CXX_FLAGS_DEBUG 
-            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}" 
-            CACHE STRING "Flags used by the compiler during debug builds." 
-            FORCE)
-    endif()
-
     # Now process nonbonded accelerated kernels settings
 
     string(TOUPPER ${GMX_CPU_ACCELERATION} ${GMX_CPU_ACCELERATION})
@@ -240,26 +250,26 @@ MACRO(gmx_c_flags)
         # nothing to do
     elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
 
-        GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" ACCELERATION_C_FLAGS)
-        if(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
-            GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
-        endif(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
-
-        if (CMAKE_CXX_COMPILER_LOADED)
-            GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" ACCELERATION_CXX_FLAGS)
-            if(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
-                GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" ACCELERATION_CXX_FLAGS)
-            endif(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
+        GMX_TEST_CFLAG(ACCELERATION_SSE2_C_FLAGS "-msse2" ACCELERATION_C_FLAGS)
+        if(NOT ACCELERATION_SSE2_C_FLAGS AND GMX_NATIVE_WINDOWS)
+            GMX_TEST_CFLAG(ACCELERATION_SSE2_C_FLAGS "/arch:SSE2" ACCELERATION_C_FLAGS)
         endif()
 
-        # We dont warn for lacking SSE2 flag support, since that is probably standard today.
+        if (CMAKE_CXX_COMPILER_LOADED)
+            GMX_TEST_CXXFLAG(ACCELERATION_SSE2_CXX_FLAGS "-msse2" ACCELERATION_CXX_FLAGS)
+            if(NOT ACCELERATION_SSE2_CXX_FLAGS AND GMX_NATIVE_WINDOWS)
+                GMX_TEST_CXXFLAG(ACCELERATION_SSE2_CXX_FLAGS "/arch:SSE2" ACCELERATION_CXX_FLAGS)
+            endif()
+        endif()
+
+        # We don't warn for lacking SSE2 flag support, since that is probably standard today.
 
         # Only test the include after we have tried to add the correct flag for SSE2 support
-        check_include_file(emmintrin.h  HAVE_EMMINTRIN_H ${ACCELERATION_C_FLAGS})
+        check_include_file(emmintrin.h  HAVE_EMMINTRIN_H ${ACCELERATION_SSE2_C_FLAGS})
 
         if(NOT HAVE_EMMINTRIN_H)
             message(FATAL_ERROR "Cannot find emmintrin.h, which is required for SSE2 intrinsics support.")
-        endif(NOT HAVE_EMMINTRIN_H)
+        endif()
 
         set(GMX_CPU_ACCELERATION_X86_SSE2 1)
         # The user should not be able to set this orthogonally to the acceleration
@@ -270,40 +280,48 @@ MACRO(gmx_c_flags)
 
     elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
 
-        GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" ACCELERATION_C_FLAGS)
-        if (NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
-            GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" ACCELERATION_C_FLAGS)
-        endif(NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
-        if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
-            message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
-            # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
-            # intrinsics when SSE2 support is enabled, so we try that instead.
-	    if (GMX_NATIVE_WINDOWS)
-                GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
+        GMX_TEST_CFLAG(ACCELERATION_SSE4.1_C_FLAGS "-msse4.1" ACCELERATION_C_FLAGS)
+        if (NOT ACCELERATION_SSE4.1_C_FLAGS AND GMX_NATIVE_WINDOWS)
+            GMX_TEST_CFLAG(ACCELERATION_SSE4.1_C_FLAGS "/arch:SSE4.1" ACCELERATION_C_FLAGS)
+        endif()
+        if (NOT ACCELERATION_SSE4.1_C_FLAGS)
+	    if(MSVC)
+                # Not surprising if we end up here! MSVC current does
+                # not support the SSE4.1 flag. However, it appears to
+                # accept SSE4.1 intrinsics when SSE2 support is
+                # enabled, so we try that instead.
+                message(WARNING "No C SSE4.1 flag found, but MSVC seems to let GROMACS generate SSE4.1 code if the SSE2 compiler flag is used, so we'll try that.")
+                GMX_TEST_CFLAG(ACCELERATION_SSE4.1_C_FLAGS "/arch:SSE2" ACCELERATION_C_FLAGS)
+            else()
+                message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
             endif()
-        endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
+        endif()
 
         if (CMAKE_CXX_COMPILER_LOADED)
-            GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" GROMACS_CXX_FLAG)
-            if (NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
-                GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" ACCELERATION_CXX_FLAGS)
-            endif(NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
-            if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
-                message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
-                # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
-                # intrinsics when SSE2 support is enabled, so we try that instead.
-                if (GMX_NATIVE_WINDOWS)
-                    GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" ACCELERATION_CXX_FLAGS)
+            GMX_TEST_CXXFLAG(ACCELERATION_SSE4.1_CXX_FLAGS "-msse4.1" ACCELERATION_CXX_FLAGS)
+            if (NOT ACCELERATION_SSE4.1_CXX_FLAGS AND GMX_NATIVE_WINDOWS)
+                GMX_TEST_CXXFLAG(ACCELERATION_SSE4.1_CXX_FLAGS "/arch:SSE4.1" ACCELERATION_CXX_FLAGS)
+            endif()
+            if (NOT ACCELERATION_SSE4.1_CXX_FLAGS)
+	        if(MSVC)
+                    # Not surprising if we end up here! MSVC current does
+                    # not support the SSE4.1 flag. However, it appears to
+                    # accept SSE4.1 intrinsics when SSE2 support is
+                    # enabled, so we try that instead.
+                    message(WARNING "No C++ SSE4.1 flag found, but MSVC seems to let GROMACS generate SSE4.1 code if the SSE2 compiler flag is used, so we'll try that.")
+                    GMX_TEST_CXXFLAG(ACCELERATION_SSE4.1_CXX_FLAGS "/arch:SSE2" ACCELERATION_CXX_FLAGS)
+                else()
+                    message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
                 endif()
-            endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
+            endif()
         endif()
 
         # This must come after we have added the -msse4.1 flag on some platforms.
-        check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${ACCELERATION_C_FLAGS})
+        check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${ACCELERATION_SSE4.1_C_FLAGS})
 
         if(NOT HAVE_SMMINTRIN_H)
             message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
-        endif(NOT HAVE_SMMINTRIN_H)
+        endif()
 
         set(GMX_CPU_ACCELERATION_X86_SSE4_1 1)
         # The user should not be able to set this orthogonally to the acceleration
@@ -317,44 +335,46 @@ MACRO(gmx_c_flags)
 
         # Set the AVX compiler flag for both these choices!
 
-        GMX_TEST_CFLAG(GNU_AVX_CFLAG "-mavx" ACCELERATION_C_FLAGS)
-        if (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
-            GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" ACCELERATION_C_FLAGS)
-        endif (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
-        if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
+        GMX_TEST_CFLAG(ACCELERATION_AVX_C_FLAGS "-mavx" ACCELERATION_C_FLAGS)
+        if(NOT ACCELERATION_AVX_C_FLAGS AND GMX_NATIVE_WINDOWS)
+            GMX_TEST_CFLAG(ACCELERATION_AVX_C_FLAGS "/arch:AVX" ACCELERATION_C_FLAGS)
+        endif()
+        if(NOT ACCELERATION_AVX_C_FLAGS)
             message(WARNING "No C AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
-        endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
+        endif()
 
         if (CMAKE_CXX_COMPILER_LOADED)
-            GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" ACCELERATION_CXX_FLAGS)
-            if (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
-                GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" ACCELERATION_CXX_FLAGS)
-            endif (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
-            if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+            GMX_TEST_CXXFLAG(ACCELERATION_AVX_COMMON_CXX_FLAGS "-mavx" ACCELERATION_CXX_FLAGS)
+            if(NOT ACCELERATION_AVX_COMMON_CXX_FLAGS AND GMX_NATIVE_WINDOWS)
+                GMX_TEST_CXXFLAG(ACCELERATION_AVX_COMMON_CXX_FLAGS "/arch:AVX" ACCELERATION_CXX_FLAGS)
+            endif()
+            if(NOT ACCELERATION_AVX_COMMON_CXX_FLAGS)
                 message(WARNING "No C++ AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
-            endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
+            endif()
         endif()
 
         # Set the FMA4 flags (MSVC doesn't require any)
         if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
-            GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" ACCELERATION_C_FLAGS)
-            if (NOT GNU_FMA_CFLAG)
+            GMX_TEST_CFLAG(ACCELERATION_AVX_128_FMA_C_FLAGS "-mfma4" ACCELERATION_C_FLAGS)
+            if (NOT ACCELERATION_AVX_128_FMA_C_FLAGS)
                 message(WARNING "No C FMA4 flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
-            endif(NOT GNU_FMA_CFLAG)
-            GMX_TEST_CFLAG(GNU_XOP_CFLAG "-mxop" ACCELERATION_C_FLAGS)
+            endif()
+
+            GMX_TEST_CFLAG(ACCELERATION_AVX_128_XOP_C_FLAGS "-mxop" ACCELERATION_C_FLAGS)
             # No big deal if we do not have xop, so no point yelling warnings about it.
+
             if (CMAKE_CXX_COMPILER_LOADED)
-                GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" ACCELERATION_CXX_FLAGS)
-                if (NOT GNU_FMA_CXXFLAG)
-                    message(WARNING "No C++ FMA flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
-                endif (NOT GNU_FMA_CXXFLAG)
-                GMX_TEST_CXXFLAG(GNU_XOP_CXXFLAG "-mxop" ACCELERATION_CXX_FLAGS)
-                # No big deal if we do not have xop, so no point yelling warnings about it.
+                GMX_TEST_CXXFLAG(ACCELERATION_AVX_128_FMA_CXX_FLAGS "-mfma4" ACCELERATION_CXX_FLAGS)
+                if (NOT ACCELERATION_AVX_128_FMA_CXX_FLAGS)
+                    message(WARNING "No C++ FMA4 flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
+                endif()
+
+                GMX_TEST_CXXFLAG(ACCELERATION_AVX_128_XOP_CXX_FLAGS "-mxop" ACCELERATION_CXX_FLAGS)
             endif()
         endif()
 
         # Only test the header after we have tried to add the flag for AVX support
-        check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${ACCELERATION_C_FLAGS})
+        check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${ACCELERATION_AVX_C_FLAGS})
 
         if(NOT HAVE_IMMINTRIN_H)
             message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
@@ -363,15 +383,15 @@ MACRO(gmx_c_flags)
         if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
             try_compile(TEST_AVX ${CMAKE_BINARY_DIR}
                 "${CMAKE_SOURCE_DIR}/cmake/TestAVX.c"
-                COMPILE_DEFINITIONS "${ACCELERATION_C_FLAGS}")
+                COMPILE_DEFINITIONS "${ACCELERATION_AVX_C_FLAGS}")
             if(NOT TEST_AVX)
                 message(FATAL_ERROR "Cannot compile AVX intrinsics. Consider switching compiler.")
             endif()
         endif()
 
         # GCC requires x86intrin.h for FMA support. MSVC 2010 requires intrin.h for FMA support.
-        check_include_file(x86intrin.h HAVE_X86INTRIN_H ${ACCELERATION_C_FLAGS})
-        check_include_file(intrin.h HAVE_INTRIN_H ${ACCELERATION_C_FLAGS})
+        check_include_file(x86intrin.h HAVE_X86INTRIN_H ${ACCELERATION_AVX_C_FLAGS})
+        check_include_file(intrin.h HAVE_INTRIN_H ${ACCELERATION_AVX_C_FLAGS})
 
         # The user should not be able to set this orthogonally to the acceleration
         set(GMX_X86_SSE4_1 1)

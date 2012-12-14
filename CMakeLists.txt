@@ -221,6 +221,7 @@ mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 # These need to be done early (before further tests).
 #####################################################################
 
+include(CheckIncludeFile)
 include(CheckIncludeFiles)
 
 # The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
@@ -861,22 +862,30 @@ endif(GMX_FAHCORE)
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
-if (NOT DEFINED GROMACS_C_FLAGS_SET)
-    set(GROMACS_C_FLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
+
+# Construct compiler flags that should be used for every source
+# file. The result should *not* be cached, but rather be rebuilt on
+# every iteration *from* cached variables. This way, the user has a
+# chance to over-ride any component at any time, nobody needs to pay
+# attention to which iteration it is, and there are no uselessly
+# repetitious compiler flags created (or to prevent).
+set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}")
+set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}")
+
+if (CMAKE_CXX_COMPILER_LOADED)
+    set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_RELEASE
+        "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}"
+        CACHE STRING "Flags used by the compiler during release builds."
         FORCE)
-    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}" CACHE STRING
-        "Flags used by the compiler during all build types" FORCE)
-    if (CMAKE_CXX_COMPILER_LOADED)
-        set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}" CACHE STRING
-            "Flags used by the compiler during all build types" FORCE)
-    endif()
-    set(CMAKE_EXE_LINKER_FLAGS 
-        "${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
-        CACHE STRING "Linker flags for creating executables" FORCE) 
-    set(CMAKE_SHARED_LINKER_FLAGS 
-        "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}"
-        CACHE STRING "Linker flags for creating shared libraries" FORCE) 
+    set(CMAKE_CXX_FLAGS_DEBUG
+        "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}"
+        CACHE STRING "Flags used by the compiler during debug builds."
+        FORCE)
 endif()
+set(CMAKE_EXE_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
+set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 
 if(NOT GMX_OPENMP)
     #Unset all OpenMP flags in case OpenMP was disabled either by the user
