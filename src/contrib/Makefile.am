@@ -15,7 +15,7 @@ EXTRA_DIST              = README
 
 EXTRA_PROGRAMS 	=  	copyrgt 	\
 			hrefify 	\
-			addquote 	compnl	\
+			compnl	\
 			gen_table	ehole   g_sdf\
 			do_multiprot
 
