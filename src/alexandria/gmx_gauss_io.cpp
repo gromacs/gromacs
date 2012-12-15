@@ -41,6 +41,7 @@
 #include "smalloc.h"
 #include "strdb.h" 
 #include "futil.h"
+#include "symtab.h"
 #include "poldata.h"
 #include "atomprop.h"
 #include "molprop.h"
@@ -149,6 +150,26 @@ static OpenBabel::OBConversion *read_babel(const char *g98,OpenBabel::OBMol *mol
     return NULL;
 }
 
+void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
+{
+    OpenBabel::OBTypeTable obt;
+    std::string src,dst;
+    int i;
+    
+    if (NULL == forcefield)
+        return;
+    obt.SetFromType("INT");
+    if (obt.SetToType(forcefield))
+    {
+        for(i=0; (i<atoms->nr); i++) {
+            src.assign(*(atoms->atomtype[i]));
+            obt.Translate(src,dst);
+            atoms->atomtype[i] = put_symtab(tab,dst.c_str());
+            atoms->atomtypeB[i] = atoms->atomtype[i];
+        }
+    }
+}
+
 static gmx_molprop_t gmx_molprop_read_babel(const char *g98,
                                             gmx_atomprop_t aps,gmx_poldata_t pd,
                                             char *molnm,char *iupac,char *conformation,
@@ -156,7 +177,7 @@ static gmx_molprop_t gmx_molprop_read_babel(const char *g98,
                                             int maxpot,gmx_bool bVerbose)
 {
     /* Read a gaussian log file */
-    OpenBabel::OBMol mol;
+    OpenBabel::OBMol mol,mol2;
     OpenBabel::OBAtomIterator OBai;
     OpenBabel::OBBondIterator OBbi;
     OpenBabel::OBConversion *conv;
@@ -203,7 +224,8 @@ static gmx_molprop_t gmx_molprop_read_babel(const char *g98,
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
-        ss = conv->WriteString(&mol,false);
+        mol2 = mol;
+        ss = conv->WriteString(&mol2,false);
         if (OpenBabel::tokenize(vs,ss))
         {
             for(i=0; (i<vs.size()); i++)
@@ -1165,3 +1187,10 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,gmx_bool bBabel,
 
     return mp;
 }
+
+#ifndef HAVE_LIBOPENBABEL2
+void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
+{
+}
+#endif
+

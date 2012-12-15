@@ -23,3 +23,7 @@ gmx_molprop_t gmx_molprop_read_gauss(const char *g98,gmx_bool bBabel,
                                      real th_toler,real ph_toler,
                                      int maxpot,gmx_bool bVerbose);
 
+#ifdef __cplusplus
+extern "C"
+#endif
+void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield);

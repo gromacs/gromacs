@@ -63,6 +63,7 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "gmx_simple_comm.h"
+#include "gmx_gauss_io.h"
 
 const char *immsg(int imm)  
 { 
@@ -391,6 +392,8 @@ static int init_mymol(FILE *fp,t_mymol *mymol,gmx_molprop_t mp,
         if (molprop_2_atoms(mp,aps,&(mymol->symtab),lot,mymol->atoms,
                             (const char *)"ESP",&(mymol->x)) == 0)
             imm = immMolpropConv;
+        translate_atomtypes(mymol->atoms,&(mymol->symtab),
+                            gmx_poldata_get_force_field(pd));
     }
     if (immOK == imm)
     {
