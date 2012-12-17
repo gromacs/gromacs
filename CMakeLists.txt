@@ -224,7 +224,7 @@ if(NOT DEFINED GMX_CPU_ACCELERATION)
 endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
-    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
+    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -852,12 +852,6 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         endif()
     endif()
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "FORTRAN")
-
-#    Fortran is temporarily disabled while we push in nbNxN kernels.
-#    We need to fake it a bit here to avoid jenkins build errors!
-#    add_definitions(-DGMX_FORTRAN)
-
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_CPU_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
     if (NOT ACCELERATION_QUIETLY)
@@ -885,46 +879,9 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "POWER6")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
 else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
 endif(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
 set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
-
-if(GMX_FORTRAN OR GMX_POWER6)
-    if (GMX_THREAD_MPI)
-        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with thread-MPI and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
-    endif(GMX_THREAD_MPI)
-    enable_language(Fortran)
-    include(FortranCInterface)
-    discover_fortran_mangling(prefix isupper suffix extra_under_score found)
-    if(extra_under_score)
-        set(extrasuffix "_")
-    endif(extra_under_score)
-    if(prefix)
-      set(prefix "${prefix} ##")
-    endif(prefix)
-    if(suffix)
-      set(suffix "## ${suffix}")
-      if(extrasuffix)
-	set(extrasuffix "${suffix}${extrasuffix}")
-      endif(extrasuffix)
-    else(suffix)
-      if(extrasuffix)
-	# Don't know if this is needed, but it can't hurt
-	set(extrasuffix "## ${extrasuffix}")
-      endif(extrasuffix)
-    endif(suffix)
-
-    if(isupper)
-        set(F77_FUNCDEF   "${prefix} NAME ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} NAME ${extrasuffix}")
-    else(isupper)
-        set(F77_FUNCDEF   "${prefix} name ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} name ${extrasuffix}")
-    endif(isupper)
-else(GMX_FORTRAN OR GMX_POWER6)
-        set(F77_FUNCDEF   "name ## _")
-        set(F77_FUNCDEF_  "name ## _")
-endif(GMX_FORTRAN OR GMX_POWER6)
 
 # Process QM/MM Settings
 string(TOUPPER ${GMX_QMMM_PROGRAM} ${GMX_QMMM_PROGRAM})
