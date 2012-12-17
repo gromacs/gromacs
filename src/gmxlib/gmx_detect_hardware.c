@@ -63,6 +63,9 @@
  * ridiculous number. */
 static unsigned int max_gpu_ids_user = 64;
 
+static const char* invalid_gpuid_hint =
+    "A delimiter-free sequence of valid numeric IDs of available GPUs is expected.";
+
 /* FW decl. */
 void limit_num_gpus_used(gmx_hw_info_t *hwinfo, int count);
 
@@ -173,7 +176,8 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
     {
         if (idstr[i] < '0' || idstr[i] > '9')
         {
-            gmx_fatal(FARGS, "Invalid character in GPU ID string: '%c'\n", idstr[i]);
+            gmx_fatal(FARGS, "Invalid character in GPU ID string: '%c'\n%s\n",
+                      invalid_gpuid_hint, idstr[i]);
         }
         idlist[i] = idstr[i] - '0';
     }
@@ -492,10 +496,15 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
     bGPUBin      = FALSE;
 #endif
 
-    /* Bail if binary is not compiled with GPU on */
+    /* Bail if binary is not compiled with GPU acceleration, but this is either
+     * explicitly (-nb gpu) or implicitly (gpu ID passed) requested. */
     if (bForceUseGPU && !bGPUBin)
     {
-        gmx_fatal_collective(FARGS, cr, NULL, "GPU acceleration requested, but %s was compiled without GPU support!", ShortProgram());
+        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!", ShortProgram());
+    }
+    if (gpu_id == NULL && !bGPUBin)
+    {
+        gmx_fatal(FARGS, "GPU ID string set, but %s was compiled without GPU support!", ShortProgram());
     }
 
     /* run the detection if the binary was compiled with GPU support */
@@ -545,7 +554,7 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
 
             if (nid == 0)
             {
-                gmx_fatal(FARGS, "Empty GPU ID string passed\n");
+                gmx_fatal(FARGS, "Empty GPU ID string encountered.\n%s\n", invalid_gpuid_hint);
             }
 
             res = check_select_cuda_gpus(checkres, &hwinfo->gpu_info, gpuid, nid);
