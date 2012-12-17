@@ -237,10 +237,11 @@ void CopyRight(FILE *out,const char *szProgram)
    * name of a file. Otherwise, we won't be able to find the library dir.
    */
 #define NCR (int)asize(CopyrightText)
+/* TODO: Is this exception still needed? */
 #ifdef GMX_FAHCORE
 #define NGPL 0 /*FAH has an exception permission from GPL to allow digital signatures in Gromacs*/
 #else
-#define NGPL (int)asize(GPLText)
+#define NGPL (int)asize(LGPLText)
 #endif
 
   char buf[256],tmpstr[1024];
@@ -271,7 +272,7 @@ void CopyRight(FILE *out,const char *szProgram)
   for(i=0; (i<NCR); i++) 
     sp_print(out,CopyrightText[i]);
   for(i=0; (i<NGPL); i++)
-    sp_print(out,GPLText[i]);
+    sp_print(out,LGPLText[i]);
 
   fprintf(out,"\n");
 
