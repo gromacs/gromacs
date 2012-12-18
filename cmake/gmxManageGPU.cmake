@@ -33,14 +33,21 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 #
 # If the user did not set GMX_GPU we'll consider this option to be
-# in "auto" mode meaning that we will:
+# in "auto" mode meaning that on suitable systems we will:
 # - search for CUDA and set GMX_GPU=ON we find it
 # - check whether GPUs are present
 # - if CUDA is not found but GPUs were detected issue a warning
+
 if (NOT DEFINED GMX_GPU)
-    set(GMX_GPU_AUTO TRUE CACHE INTERNAL "GPU acceleration will be selected automatically")
+    if(GMX_X86)
+        set(GMX_GPU_AUTO TRUE CACHE INTERNAL "GPU acceleration will be selected automatically")
+        option(GMX_GPU "Enable GPU acceleration" OFF)
+    else()
+        # Don't even show GPU variables in cache
+        set(GMX_GPU_AUTO FALSE CACHE INTERNAL "GPU acceleration not supported on this system")
+        set(GMX_GPU OFF)
+    endif()
 endif()
-option(GMX_GPU "Enable GPU acceleration" OFF)
 
 if(GMX_GPU AND GMX_DOUBLE)
     message(FATAL_ERROR "GPU acceleration is not available in double precision!")
