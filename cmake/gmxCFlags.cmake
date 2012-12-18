@@ -163,7 +163,11 @@ MACRO(gmx_c_flags)
 
     # xlc
     if (CMAKE_C_COMPILER_ID MATCHES "XL")
-        GMX_TEST_CFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CFLAGS)
+        if(${CMAKE_SYSTEM_NAME} MATCHES BlueGeneQ)
+            GMX_TEST_CFLAG(CFLAGS_OPT "-qarch=qp -qtune=qp" GMXC_CFLAGS)
+        else()
+            GMX_TEST_CFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CFLAGS)
+        endif()
         GMX_TEST_CFLAG(CFLAGS_LANG "-qlanglvl=extc99" GMXC_CFLAGS)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
