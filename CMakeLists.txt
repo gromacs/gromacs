@@ -483,6 +483,19 @@ include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
 
+if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD")
+    # Maybe Solaris should be here? Patch this if you know!
+    SET(SHARED_LIBS_DEFAULT ON)
+elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
+    # Support for shared libs on native Windows is a bit new. Its
+    # default might change later if/when we sort things out. Also,
+    # Cray should go here. What variable value can detect it?
+    SET(SHARED_LIBS_DEFAULT OFF)
+else()
+    message(STATUS "Defaulting to building static libraries")
+    SET(SHARED_LIBS_DEFAULT OFF)
+endif()
+
 # Management of GROMACS options for specific toolchains should go
 # here. Because the initial settings for some of the main options have
 # already happened, but things like library detection and MPI compiler
@@ -507,7 +520,7 @@ endif()
 
 # By now, all tool chains should have spoken up if they care about
 # the setting of SHARED_LIBS_DEFAULT.
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
 
 ########################################################################
 #Process MPI settings
@@ -524,7 +537,6 @@ if(UNIX AND GMX_PREFER_STATIC_LIBS)
 endif()
 
 IF( WIN32 AND NOT CYGWIN)
-  SET(SHARED_LIBS_DEFAULT OFF) #becuase shared libs on Windows is still new - turning it off by default
   if (NOT BUILD_SHARED_LIBS)
       option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
       if(NOT GMX_PREFER_STATIC_LIBS)
@@ -556,8 +568,6 @@ IF( WIN32 AND NOT CYGWIN)
     endif()
   ENDIF()
 ENDIF()
-
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI)" ${SHARED_LIBS_DEFAULT})
 
 option(GMX_GSL "Add support for gsl" OFF)
 if (GMX_GSL)
