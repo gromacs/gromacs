@@ -171,14 +171,18 @@ mark_as_advanced(GMX_FAHCORE)
 include(gmxDetectAcceleration)
 if(NOT DEFINED GMX_CPU_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
-        set(GMX_SUGGESTED_CPU_ACCELERATION "None")
+        if("${CMAKE_SYSTEM_NAME}" MATCHES "BlueGeneQ")
+            set(GMX_SUGGESTED_CPU_ACCELERATION "IBM_QPX")
+        else()
+            set(GMX_SUGGESTED_CPU_ACCELERATION "None")
+        endif()
     else(CMAKE_CROSSCOMPILING)
         gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
     endif(CMAKE_CROSSCOMPILING)
 endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
-    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
+    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -486,6 +490,9 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 # GROMACS defaults or user settings will make sense. Also, any
 # toolchain-related reasons for choosing whether to detect various
 # things can be sorted out now, before the detection takes place.
+if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
+    include(gmxManageBlueGene)
+endif()
 
 if(UNIX AND GMX_PREFER_STATIC_LIBS AND SHARED_LIBS_DEFAULT)
     if(BUILD_SHARED_LIBS)
@@ -864,29 +871,36 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
     # parameter of the mask for maskload/maskstore arguments. Check if this is present, since we can work around it.
     gmx_test_avx_gcc_maskload_bug(${ACCELERATION_C_FLAGS} GMX_X86_AVX_GCC_MASKLOAD_BUG)
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
-# GMX_CPU_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
-    if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Configuring for BlueGene")
+else(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
+    # Used on BlueGene/Q
+    if (CMAKE_C_COMPILER_ID MATCHES "XL")
+        GMX_TEST_CFLAG(XLC_BLUEGENEQ_CFLAG "-qarch=qp -qtune=qp" ACCELERATION_C_FLAGS)
+        try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
+            "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c"
+            COMPILE_DEFINITIONS "${ACCELERATION_C_FLAGS}")
+        if(NOT TEST_QPX)
+            message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics.")
+        endif()
     endif()
-    set(GMX_BLUEGENE 1)
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
-        set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
-    endif (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
-    set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
-    set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
-# Access to /etc/passwd is not available on the back end of BlueGene,
-# despite being detected by CMake. This can cause linker warnings
-# about harmless things in src/gmxlib/string2.h.
-    set(HAVE_PWD_H OFF)
-# The automatic testing for endianness does not work for the BlueGene cross-compiler
-    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
-    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "XL" AND CMAKE_CXX_COMPILER_LOADED)
+        GMX_TEST_CXXFLAG(XLC_BLUEGENEQ_CXXFLAG "-qarch=qp -qtune=qp" ACCELERATION_CXX_FLAGS)
+        try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
+            "cmake/TestQPX.c"
+            COMPILE_DEFINITIONS "${ACCELERATION_CXX_FLAGS")
+        if(NOT TEST_QPX)
+            message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics.")
+        endif()
+    endif()
+
+    if (TEST_QPX)
+        message(WARNING "IBM QPX acceleration was selected and could be compiled, but the accelerated kernels are not yet available.")
+        set(GMX_CPU_ACCELERATION_IBM_QPX 1)
+    else()
+        message(FATAL_ERROR "Cannot compile IBM QPX intrinsics without the XL compiler. If you are compiling for BlueGene/Q, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=BlueGeneQ-static-XL-C' to set up the tool chain.")
+    endif()
+
 else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX")
 endif(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
 set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
