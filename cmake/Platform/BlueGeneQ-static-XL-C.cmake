@@ -17,7 +17,7 @@
 include(BlueGeneQ-static)
 __BlueGeneQ_set_static_flags(XL C)
 
-set(CMAKE_SYSTEM_NAME BlueGeneQ-static CACHE STRING "Cross-compiling for BlueGene/Q" FORCE)
+set(CMAKE_SYSTEM_NAME BlueGeneQ-static)
 # xl.ndebug is appropriate for production calculations. For debugging,
 # use xl to add back error checks and assertions
 set(CMAKE_C_COMPILER /bgsys/drivers/ppcfloor/comm/xl.ndebug/bin/mpicc)

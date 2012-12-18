@@ -67,9 +67,6 @@
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
 
-/* Use assembly intrinsics kernels for BlueGene */
-#cmakedefine GMX_BLUEGENE
-
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
 
@@ -120,6 +117,9 @@
 
 /* AVX 256-bit was selected as CPU acceleration level */
 #cmakedefine GMX_CPU_ACCELERATION_X86_AVX_256
+
+/* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
+#cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
 
 /* String for CPU acceleration choice (for writing to log files and stdout) */
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
