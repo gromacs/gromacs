@@ -166,7 +166,11 @@ if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
 endif()
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-SET(SHARED_LIBS_DEFAULT ON)
+if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
+    SET(SHARED_LIBS_DEFAULT OFF)
+else()
+    SET(SHARED_LIBS_DEFAULT ON)
+endif()
 
 ########################################################################
 # Fix stupid flags on Windows
