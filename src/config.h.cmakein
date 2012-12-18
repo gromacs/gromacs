@@ -67,7 +67,7 @@
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
 
-/* Use assembly intrinsics kernels for BlueGene */
+/* True if target hardware is BlueGene */
 #cmakedefine GMX_BLUEGENE
 
 /* Work around broken calloc() */
