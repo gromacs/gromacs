@@ -40,6 +40,10 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 set(CPACK_COMPONENT_GROUP_TOOLS_DESCRIPTION "All GROMACS executable tools")
 set(CPACK_COMPONENT_GROUP_MDRUN_DESCRIPTION "GROMACS executable for running simulations")
 
+# CMake modules/macros are in a subdirectory to keep this file cleaner
+# This needs to be set before project() in order to pick up toolchain files
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
+
 project(Gromacs C)
 include(Dart)
 mark_as_advanced(DART_ROOT)
@@ -80,9 +84,6 @@ endif()
 # The #define GMX_API_VERSION in version.h is set to this value to
 # provide backward compatibility of software written against the Gromacs API.
 set(API_VERSION ${NUM_VERSION})
-
-# Cmake modules/macros are in a subdirectory to keep this file cleaner
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
 set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
