@@ -283,7 +283,7 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
   }
 }
 
-void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
+void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,real lambda,
 		   const output_env_t oenv,gmx_bool bStart)
 {
   t_mdatoms *md;
@@ -292,21 +292,16 @@ void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
   t_pbc     pbc;
   int       ndim,g,m;
   double    t_start,tinvrate;
-  real      lambda=0;
   rvec      init;
   dvec      dr,dev;
 
-  /* need to pass in the correct masses if free energy is on*/
-  if (ir->efep)
-  {
-      lambda = ir->fepvals->all_lambda[efptMASS][ir->fepvals->init_fep_state];
-  }
   init_pull(NULL,ir,0,NULL,mtop,NULL,oenv,lambda,FALSE,0); 
   md = init_mdatoms(NULL,mtop,ir->efep);
   atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
   if (ir->efep)
-    update_mdatoms(md,ir->fepvals->init_lambda);
-  
+  {
+    update_mdatoms(md,lambda);
+  }
   pull = ir->pull;
   if (pull->eGeom == epullgPOS)
     ndim = 3;
