@@ -103,7 +103,7 @@ gmx_ctime_r(const time_t *clock,char *buf, int n);
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 14;
+static const int cpt_version = 15;
 
 
 const char *est_names[estNR]=
@@ -313,6 +313,39 @@ static void do_cpt_double_err(XDR *xd,const char *desc,double *f,FILE *list)
     if (list)
     {
         fprintf(list,"%s = %f\n",desc,*f);
+    }
+}
+
+static void do_cpt_real_err(XDR *xd,const char *desc,real *f)
+{
+    bool_t res=0;
+
+#ifdef GMX_DOUBLE
+    res = xdr_double(xd,f);
+#else
+    res = xdr_float(xd,f);
+#endif
+    if (res == 0)
+    {
+        cp_error();
+    }
+}
+
+static void do_cpt_n_rvecs_err(XDR *xd,const char *desc,int n, rvec f[],FILE *list)
+{
+    int i,j;
+
+    for (i=0; i<n; i++)
+    {
+        for (j=0; j<DIM; j++)
+        {
+            do_cpt_real_err(xd, desc, &f[i][j]);
+        }
+    }
+
+    if (list)
+    {
+        pr_rvecs(list,0,desc,f,n);
     }
 }
 
@@ -771,6 +804,7 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
                           int *natoms,int *ngtc, int *nnhpres, int *nhchainlength,
                           int *nlambda, int *flags_state,
                           int *flags_eks,int *flags_enh, int *flags_dfh,
+                          int *nED,
                           FILE *list)
 {
     bool_t res=0;
@@ -908,6 +942,15 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
         do_cpt_int_err(xd,"df history flags",flags_dfh,list);
     } else {
         *flags_dfh = 0;
+    }
+
+    if (*file_version >= 15)
+    {
+        do_cpt_int_err(xd,"ED data sets",nED,list);
+    }
+    else
+    {
+        *nED = 0;
     }
 }
 
@@ -1179,6 +1222,71 @@ static int do_cpt_df_hist(XDR *xd,gmx_bool bRead,int fflags,df_history_t *dfhist
     return ret;
 }
 
+
+/* This function stores the last whole configuration of the reference and
+ * average structure in the .cpt file
+ */
+static int do_cpt_EDstate(XDR *xd,gmx_bool bRead,
+        edsamstate_t *EDstate, FILE *list)
+{
+    int i,j;
+    int ret=0;
+    char buf[STRLEN];
+
+
+    EDstate->bFromCpt = bRead;
+
+    if (EDstate->nED <= 0)
+    {
+        return ret;
+    }
+
+    /* When reading, init_edsam has not been called yet,
+     * so we have to allocate memory first. */
+    if (bRead)
+    {
+        snew(EDstate->nref    , EDstate->nED);
+        snew(EDstate->old_sref, EDstate->nED);
+        snew(EDstate->nav     , EDstate->nED);
+        snew(EDstate->old_sav , EDstate->nED);
+    }
+
+    /* Read/write the last whole conformation of SREF and SAV for each ED dataset (usually only one) */
+    for (i=0; i< EDstate->nED; i++)
+    {
+        /* Reference structure SREF */
+        sprintf(buf, "ED%d # of atoms in reference structure", i+1);
+        do_cpt_int_err(xd, buf, &EDstate->nref[i],list);
+        sprintf(buf, "ED%d x_ref", i+1);
+        if (bRead)
+        {
+            snew(EDstate->old_sref[i], EDstate->nref[i]);
+            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref[i], list);
+        }
+        else
+        {
+            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref_p[i], list);
+        }
+
+        /* Average structure SAV */
+        sprintf(buf, "ED%d # of atoms in average structure", i+1);
+        do_cpt_int_err(xd, buf, &EDstate->nav[i] ,list);
+        sprintf(buf, "ED%d x_av", i+1);
+        if (bRead)
+        {
+            snew(EDstate->old_sav[i], EDstate->nav[i]);
+            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav[i], list);
+        }
+        else
+        {
+            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav_p[i], list);
+        }
+    }
+
+    return ret;
+}
+
+
 static int do_cpt_files(XDR *xd, gmx_bool bRead, 
                         gmx_file_position_t **p_outputfiles, int *nfiles, 
                         FILE *list, int file_version)
@@ -1418,6 +1526,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
                   &state->natoms,&state->ngtc,&state->nnhpres,
                   &state->nhchainlength,&(state->dfhist.nlambda),&state->flags,&flags_eks,&flags_enh,&flags_dfh,
+                  &state->edsamstate.nED,
                   NULL);
     
     sfree(version);
@@ -1430,6 +1539,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
        (do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)||
        (do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)  ||
        (do_cpt_df_hist(gmx_fio_getxdr(fp),FALSE,flags_dfh,&state->dfhist,NULL) < 0)  ||
+       (do_cpt_EDstate(gmx_fio_getxdr(fp),FALSE,&state->edsamstate,NULL) < 0)      ||
        (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,
                      file_version) < 0))
     {
@@ -1673,7 +1783,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                   &eIntegrator_f,simulation_part,step,t,
                   &nppnodes_f,dd_nc_f,&npmenodes_f,
                   &natoms,&ngtc,&nnhpres,&nhchainlength,&nlambda,
-                  &fflags,&flags_eks,&flags_enh,&flags_dfh,NULL);
+                  &fflags,&flags_eks,&flags_enh,&flags_dfh,
+                  &state->edsamstate.nED,NULL);
 
     if (bAppendOutputFiles &&
         file_version >= 13 && double_prec != GMX_CPT_BUILD_DP)
@@ -1857,6 +1968,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp),TRUE,
                           flags_enh,&state->enerhist,NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp),TRUE,&state->edsamstate,NULL);
     if (ret)
     {
         cp_error();
@@ -2098,7 +2215,8 @@ static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
                   &version,&btime,&buser,&bhost,&double_prec,&fprog,&ftime,
                   &eIntegrator,simulation_part,step,t,&nppnodes,dd_nc,&npme,
                   &state->natoms,&state->ngtc,&state->nnhpres,&state->nhchainlength,
-                  &(state->dfhist.nlambda),&state->flags,&flags_eks,&flags_enh,&flags_dfh,NULL);
+                  &(state->dfhist.nlambda),&state->flags,&flags_eks,&flags_enh,&flags_dfh,
+                  &state->edsamstate.nED,NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
     if (ret)
@@ -2119,6 +2237,12 @@ static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
     }
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp),TRUE,
                           flags_dfh,&state->dfhist,NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp),TRUE,&state->edsamstate,NULL);
     if (ret)
     {
         cp_error();
@@ -2234,7 +2358,7 @@ void list_checkpoint(const char *fn,FILE *out)
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,dd_nc,&npme,
                   &state.natoms,&state.ngtc,&state.nnhpres,&state.nhchainlength,
                   &(state.dfhist.nlambda),&state.flags,
-                  &flags_eks,&flags_enh,&flags_dfh,out);
+                  &flags_eks,&flags_enh,&flags_dfh,&state.edsamstate.nED,out);
     ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
     if (ret)
     {
@@ -2255,6 +2379,12 @@ void list_checkpoint(const char *fn,FILE *out)
         ret = do_cpt_df_hist(gmx_fio_getxdr(fp),TRUE,
                              flags_dfh,&state.dfhist,out);
     }
+
+    if (ret == 0)
+    {
+        ret = do_cpt_EDstate(gmx_fio_getxdr(fp),TRUE,&state.edsamstate,out);
+    }
+
     if (ret == 0)
     {
 		do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,out,file_version);
