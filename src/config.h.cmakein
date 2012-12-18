@@ -80,7 +80,7 @@
 /* True if target hardware is x86 */
 #cmakedefine GMX_X86
 
-/* Use assembly intrinsics kernels for BlueGene */
+/* True if target hardware is BlueGene */
 #cmakedefine GMX_BLUEGENE
 
 /* Power6 acceleration */

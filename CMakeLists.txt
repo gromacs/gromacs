@@ -871,36 +871,18 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "FORTRAN")
 #    We need to fake it a bit here to avoid jenkins build errors!
 #    add_definitions(-DGMX_FORTRAN)
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
-# GMX_CPU_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
-    if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Configuring for BlueGene")
-    endif()
-    set(GMX_BLUEGENE 1)
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
-        set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
-    endif (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
-    set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
-    set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on BlueGene" FORCE)
-    set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
-# Access to /etc/passwd is not available on the back end of BlueGene,
-# despite being detected by CMake. This can cause linker warnings
-# about harmless things in src/gmxlib/string2.h.
-    set(HAVE_PWD_H OFF)
-# The automatic testing for endianness does not work for the BlueGene cross-compiler
-    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
-    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
 else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, Power6")
 endif(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
 set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
+
+if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
+    include(gmxManageBlueGene)
+endif()
 
 if(GMX_FORTRAN OR GMX_POWER6)
     if (GMX_THREAD_MPI)
