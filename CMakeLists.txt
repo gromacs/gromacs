@@ -157,7 +157,18 @@ if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
 endif()
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-SET(SHARED_LIBS_DEFAULT ON)
+if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD")
+    # Maybe Solaris should be here? Patch this if you know!
+    SET(SHARED_LIBS_DEFAULT ON)
+elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
+    # Someone who knows how the Windows build works should fix up how
+    # it re-manages BUILD_SHARED_LIBS and SHARED_LIBS_DEFAULT.
+    # Also, Cray should go here. What variable value can detect it?
+    SET(SHARED_LIBS_DEFAULT OFF)
+else()
+    message(STATUS "Defaulting to building static libraries")
+    SET(SHARED_LIBS_DEFAULT OFF)
+endif()
 
 ########################################################################
 # Fix stupid flags on Windows
