@@ -138,9 +138,11 @@ typedef struct gmx_edx
                                    * with respect to the collective
                                    * anrs[0...nr-1] array                     */
     rvec          *x;             /* positions for this structure             */
-    rvec          *x_old;         /* used to keep track of the shift vectors
-                                     such that the ED molecule can always be
-                                     made whole in the parallel case          */
+    rvec          *x_old;         /* Last positions which have the correct PBC
+                                     representation of the ED group. In
+                                     combination with keeping track of the
+                                     shift vectors, the ED group can always
+                                     be made whole                            */
     real          *m;             /* masses                                   */
     real          mtot;           /* total mass (only used in sref)           */
     real          *sqrtm;         /* sqrt of the masses used for mass-
@@ -186,7 +188,6 @@ typedef struct gmx_edsam
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
     gmx_bool      bFirst;
-    gmx_bool      bStartFromCpt;
 } t_gmx_edsam;
 
 
@@ -962,7 +963,7 @@ extern void do_flood(
 
 /* Called by init_edi, configure some flooding related variables and structures,
  * print headers to output files */
-static void init_flood(t_edpar *edi, gmx_edsam_t ed, real dt, t_commrec *cr)
+static void init_flood(t_edpar *edi, gmx_edsam_t ed, real dt, t_commrec *cr, gmx_bool bPrintheader)
 {
     int i;
 
@@ -991,9 +992,13 @@ static void init_flood(t_edpar *edi, gmx_edsam_t ed, real dt, t_commrec *cr)
                         edi->flood.vecs.ieig[i], edi->flood.vecs.fproj[i]);
             }
         }
-        fprintf(ed->edo,"FL_HEADER: Flooding of matrix %d is switched on! The flooding output will have the following format:\n",
-                edi->flood.flood_id);
-        fprintf(ed->edo,"FL_HEADER: Step     Efl          Vfl       deltaF\n");
+
+        if (bPrintheader)
+        {
+            fprintf(ed->edo,"FL_HEADER: Flooding of matrix %d is switched on! The flooding output will have the following format:\n",
+                    edi->flood.flood_id);
+            fprintf(ed->edo,"FL_HEADER: Step     Efl          Vfl       deltaF\n");
+        }
     }
 }
 
@@ -1060,7 +1065,6 @@ gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec
         fprintf(stderr,"ED sampling will be performed!\n");
         ed->edonam = ftp2fn(efEDO,nfile,fnm);
         ed->edo    = gmx_fio_fopen(ed->edonam,(Flags & MD_APPENDFILES)? "a+" : "w+");
-        ed->bStartFromCpt = Flags & MD_STARTFROMCPT;
     }
     return ed;
 }
@@ -1597,7 +1601,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
 /* Read in the edi input file. Note that it may contain several ED data sets which were
  * achieved by concatenating multiple edi files. The standard case would be a single ED
  * data set, though. */
-static void read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms, t_commrec *cr)
+static int read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms, t_commrec *cr)
 {
     FILE    *in;
     t_edpar *curr_edi,*last_edi;
@@ -1641,6 +1645,8 @@ static void read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms, t_commre
 
     /* Close the .edi file again */
     gmx_fio_fclose(in);
+
+    return edi_nr;
 }
 
 
@@ -2140,19 +2146,112 @@ static void copyEvecReference(t_eigvec* floodvecs)
 }
 
 
+/* Call on MASTER only. Check whether the essential dynamics / flooding
+ * datasets of the checkpoint file are consistent with the provided .edi file. */
+static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamstate_t *edsamstate)
+{
+    t_edpar *edi = NULL;    /* points to a single edi data set */
+    int i, edinum;
+
+    if (!edsamstate->bFromCpt)
+    {
+        gmx_fatal(FARGS, "This routine should only be called when reading from checkpoint.");
+    }
+
+    edi=ed->edpar;
+    edinum = 0;
+    while(edi != NULL)
+    {
+        /* Check number of atoms in the reference and average structures */
+        if (edsamstate->nref[edinum] != edi->sref.nr)
+        {
+            gmx_fatal(FARGS, "The number of reference structure atoms in ED dataset #%d is\n"
+                             "not the same in .cpt (NREF=%d) and .edi (NREF=%d) files!\n",
+                    edinum+1, edsamstate->nref[edinum], edi->sref.nr);
+        }
+        if (edsamstate->nav[edinum] != edi->sav.nr)
+        {
+            gmx_fatal(FARGS, "The number of average structure atoms in ED dataset #%d is\n"
+                             "not the same in .cpt (NREF=%d) and .edi (NREF=%d) files!\n",
+                    edinum+1, edsamstate->nav[edinum], edi->sav.nr);
+        }
+        edi=edi->next_edi;
+        edinum++;
+    }
+
+    if (edinum != edsamstate->nED)
+        gmx_fatal(FARGS, "The number of essential dynamics / flooding datasets is not consistent.\n"
+                         "There are %d ED datasets in .cpt file, but %d in .edi file!\n"
+                         "Are you shure this is the correct .edi file?\n", edsamstate->nED, edinum);
+
+}
+
+
+/* The edsamstate struct stores the information we need to make the ED group
+ * whole again after restarts from a checkpoint file. Here we do the following:
+ * a) If we did not start from .cpt, we prepare the struct for proper .cpt writing,
+ * b) if we did start from .cpt, we copy over the last whole structures from .cpt,
+ * c) in any case, for subsequent checkpoint writing, we set the pointers in
+ * edsamstate to the x_old arrays, which contain the correct PBC representation of
+ * all ED structures at the last time step. */
+static void init_edsamstate(gmx_edsam_t ed, edsamstate_t *EDstate)
+{
+    int     i, nr_edi;
+    t_edpar *edi;
+
+
+    snew(EDstate->old_sref_p, EDstate->nED);
+    snew(EDstate->old_sav_p , EDstate->nED);
+
+    /* If we did not read in a .cpt file, these arrays are not yet allocated */
+    if (!EDstate->bFromCpt)
+    {
+        snew(EDstate->nref, EDstate->nED);
+        snew(EDstate->nav , EDstate->nED);
+    }
+
+    /* Loop over all ED/flooding data sets (usually only one, though) */
+    edi = ed->edpar;
+    for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+    {
+        /* We always need the last reference and average positions such that
+         * in the next time step we can make the ED group whole again
+         * if the atoms do not have the correct PBC representation */
+        if (EDstate->bFromCpt)
+        {
+            /* Copy the last whole positions of reference and average group from .cpt */
+            for (i=0; i<edi->sref.nr; i++)
+                copy_rvec(EDstate->old_sref[nr_edi-1][i], edi->sref.x_old[i]);
+            for (i=0; i<edi->sav.nr ; i++)
+                copy_rvec(EDstate->old_sav [nr_edi-1][i], edi->sav.x_old [i]);
+        }
+        else
+        {
+            EDstate->nref[nr_edi-1] = edi->sref.nr;
+            EDstate->nav [nr_edi-1] = edi->sav.nr;
+        }
+
+        /* For subsequent checkpoint writing, set the edsamstate pointers to the edi arrays: */
+        EDstate->old_sref_p[nr_edi-1] = edi->sref.x_old;
+        EDstate->old_sav_p [nr_edi-1] = edi->sav.x_old ;
+
+        edi = edi->next_edi;
+    }
+}
+
+
 void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                 t_inputrec  *ir,     /* input record                       */
                 t_commrec   *cr,     /* communication record               */
                 gmx_edsam_t ed,      /* contains all ED data               */
                 rvec        x[],     /* positions of the whole MD system   */
-                matrix      box)     /* the box                            */
+                matrix      box,     /* the box                            */
+                edsamstate_t *EDstate)
 {
     t_edpar *edi = NULL;    /* points to a single edi data set */
-    int     numedis=0;      /* keep track of the number of ED data sets in edi file */
     int     i,nr_edi,avindex;
     rvec    *x_pbc  = NULL; /* positions of the whole MD system with pbc removed  */
-    rvec    *xfit   = NULL; /* the positions which will be fitted to the reference structure  */
-    rvec    *xstart = NULL; /* the positions which are subject to ED sampling */
+    rvec    *xfit=NULL, *xstart=NULL; /* dummy arrays to determine initial RMSDs  */
     rvec    fit_transvec;   /* translation ... */
     matrix  fit_rotmat;     /* ... and rotation from fit to reference structure */
 
@@ -2175,7 +2274,13 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
     {
         snew(ed->edpar,1);
         /* Read the whole edi file at once: */
-        read_edi_file(ed,ed->edpar,mtop->natoms,cr);
+        EDstate->nED = read_edi_file(ed,ed->edpar,mtop->natoms,cr);
+
+        /* Make shure the checkpoint was produced in a run using this .edi file */
+        if (EDstate->bFromCpt)
+            crosscheck_edi_file_vs_checkpoint(ed, EDstate);
+
+        init_edsamstate(ed, EDstate);
 
         /* Initialization for every ED/flooding dataset. Flooding uses one edi dataset per
          * flooding vector, Essential dynamics can be applied to more than one structure
@@ -2187,10 +2292,9 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             init_edi(mtop,ir,cr,ed,edi);
 
             /* Init flooding parameters if needed */
-            init_flood(edi,ed,ir->delta_t,cr);
+            init_flood(edi,ed,ir->delta_t,cr,!EDstate->bFromCpt);
 
             edi=edi->next_edi;
-            numedis++;
         }
     }
 
@@ -2209,32 +2313,30 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
         edi=ed->edpar;
 
         /* Loop over all ED/flooding data sets (usually only one, though) */
-        for (nr_edi = 1; nr_edi <= numedis; nr_edi++)
+        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
         {
-            /* We use srenew to allocate memory since the size of the buffers
-             * is likely to change with every ED dataset */
+            /* Extract the start reference and average positions. When starting
+             * from .cpt, these have already been read into sref.x_old
+             * in init_edsamstate() */
+            if (!EDstate->bFromCpt)
+            {
+                /* If this is the first run (i.e. no checkpoint present) we assume
+                 * that the starting positions give us the correct PBC representation */
+                for (i=0; i < edi->sref.nr; i++)
+                    copy_rvec(x_pbc[edi->sref.anrs[i]], edi->sref.x_old[i]);
+
+                for (i=0; i < edi->sav.nr; i++)
+                    copy_rvec(x_pbc[edi->sav.anrs[i]], edi->sav.x_old[i]);
+            }
+
+            /* Now we have the PBC-correct start positions of the reference and
+               average structure. We copy that over to dummy arrays on which we
+               can apply fitting to print out the RMSD. We srenew the memory since
+               the size of the buffers is likely different for every ED dataset */
             srenew(xfit  , edi->sref.nr );
             srenew(xstart, edi->sav.nr  );
-
-            /* Extract the positions of the atoms to which will be fitted */
-            for (i=0; i < edi->sref.nr; i++)
-            {
-                copy_rvec(x_pbc[edi->sref.anrs[i]], xfit[i]);
-
-                /* Save the sref positions such that in the next time step we can make the ED group whole
-                 * in case any of the atoms do not have the correct PBC representation */
-                copy_rvec(xfit[i], edi->sref.x_old[i]);
-            }
-
-            /* Extract the positions of the atoms subject to ED sampling */
-            for (i=0; i < edi->sav.nr; i++)
-            {
-                copy_rvec(x_pbc[edi->sav.anrs[i]], xstart[i]);
-
-                /* Save the sav positions such that in the next time step we can make the ED group whole
-                 * in case any of the atoms do not have the correct PBC representation */
-                copy_rvec(xstart[i], edi->sav.x_old[i]);
-            }
+            copy_rvecn(edi->sref.x_old, xfit, 0, edi->sref.nr);
+            copy_rvecn(edi->sav.x_old, xstart, 0, edi->sav.nr);
 
             /* Make the fit to the REFERENCE structure, get translation and rotation */
             fit_to_reference(xfit, fit_transvec, fit_rotmat, edi);
@@ -2342,7 +2444,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             {
                 for (i=0; i<edi->flood.vecs.neig; i++)
                 {
-                    fprintf(stdout, "ED: EV %d flooding potential center: %11.4e", i, edi->flood.vecs.refproj[i]);
+                    fprintf(stdout, "ED: EV %d flooding potential center: %11.4e", edi->flood.vecs.ieig[i], edi->flood.vecs.refproj[i]);
                     if (edi->flood.bHarmonic)
                         fprintf(stdout, " (adding %11.4e/timestep)", edi->flood.vecs.refprojslope[i]);
                     fprintf(stdout, "\n");
@@ -2354,7 +2456,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             rad_project(edi, xstart, &edi->vecs.linfix, cr);
 
             /* Output to file, set the step to -1 so that write_edo knows it was called from init_edsam */
-            if (ed->edo && !(ed->bStartFromCpt))
+            if (ed->edo && !(EDstate->bFromCpt))
                 write_edo(nr_edi, edi, ed, -1, 0);
 
             /* Prepare for the next edi data set: */
@@ -2370,9 +2472,9 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
     if (PAR(cr))
     {
         /* First let everybody know how many ED data sets to expect */
-        gmx_bcast(sizeof(numedis), &numedis, cr);
+        gmx_bcast(sizeof(EDstate->nED), &EDstate->nED, cr);
         /* Broadcast the essential dynamics / flooding data to all nodes */
-        broadcast_ed_data(cr, ed, numedis);
+        broadcast_ed_data(cr, ed, EDstate->nED);
     }
     else
     {
@@ -2381,7 +2483,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
 
         /* Loop over all ED data sets (usually only one, though) */
         edi=ed->edpar;
-        for (nr_edi = 1; nr_edi <= numedis; nr_edi++)
+        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
         {
             edi->sref.anrs_loc = edi->sref.anrs;
             edi->sav.anrs_loc  = edi->sav.anrs;
@@ -2416,7 +2518,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
     /* Allocate space for ED buffer variables */
     /* Again, loop over ED data sets */
     edi=ed->edpar;
-    for (nr_edi = 1; nr_edi <= numedis; nr_edi++)
+    for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
     {
         /* Allocate space for ED buffer */
         snew(edi->buf, 1);

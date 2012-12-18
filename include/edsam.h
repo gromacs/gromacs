@@ -54,7 +54,7 @@ gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec
 /* Sets the ED input/output filenames, opens output (.edo) file */
 
 void init_edsam(gmx_mtop_t *mtop,t_inputrec *ir,t_commrec *cr,
-                       gmx_edsam_t ed, rvec x[], matrix box);
+                       gmx_edsam_t ed, rvec x[], matrix box, edsamstate_t *edsamstate);
 /* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle 
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
 

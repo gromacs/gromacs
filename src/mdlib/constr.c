@@ -1254,7 +1254,7 @@ gmx_constr_t init_constraints(FILE *fplog,
     constr->ed = ed;
     if (ed != NULL) 
     {
-        init_edsam(mtop,ir,cr,ed,state->x,state->box);
+        init_edsam(mtop,ir,cr,ed,state->x,state->box,&state->edsamstate);
     }
     
     constr->warn_mtop = mtop;
