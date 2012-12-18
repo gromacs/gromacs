@@ -10,8 +10,13 @@ gau_atomprop_t read_gauss_data(void);
 #ifdef __cplusplus
 extern "C"
 #endif
-
 void done_gauss_data(gau_atomprop_t gaps);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,
+                           char *desc,double temp,double *value);
 
 #ifdef __cplusplus
 extern "C"

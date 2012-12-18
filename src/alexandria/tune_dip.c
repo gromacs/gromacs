@@ -282,26 +282,26 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
             while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
                 gmx_mtop_atomloop_all_names(aloop,&atomnm,&resnr,&resnm);
                 for(k=0; (k<nlsqt); k++) 
-                    if (strcmp(atomtypes[k],*(mol[i].atoms->atomtype[j])) == 0)
+                    if (strcmp(atomtypes[k],*(mol[i].topology->atoms.atomtype[j])) == 0)
                         break;
                 if (k == nlsqt) 
                 {
                     srenew(lsqt,++nlsqt);
                     srenew(atomtypes,nlsqt);
-                    atomtypes[k] = strdup(*(mol[i].atoms->atomtype[j]));
+                    atomtypes[k] = strdup(*(mol[i].topology->atoms.atomtype[j]));
                     lsqt[k] = gmx_stats_init();
                 }
                 qq = atom->q;
                 fprintf(fp,"%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
                         atomnm,j+1,
-                        *(mol[i].atoms->atomtype[j]),qq,mol[i].qESP[j],
+                        *(mol[i].topology->atoms.atomtype[j]),qq,mol[i].qESP[j],
                         mol[i].x[j][XX],mol[i].x[j][YY],mol[i].x[j][ZZ],
                         fabs(qq-mol[i].qESP[j]) > q_toler ? "ZZZ" : "");
                 gmx_stats_add_point(lsqt[k],mol[i].qESP[j],atom->q,0,0);
                 gmx_stats_add_point(lsq_q,mol[i].qESP[j],atom->q,0,0);
                 j++;
             }
-            gmx_assert(j,mol[i].atoms->nr);
+            gmx_assert(j,mol[i].topology->atoms.nr);
             fprintf(fp,"\n");
             n++;
         }
@@ -443,7 +443,7 @@ static void mymol_calc_multipoles(t_mymol *mol,int iModel,gmx_bool bGaussianBug)
         
         i++;
     }
-    gmx_assert(i,mol->atoms->nr);
+    gmx_assert(i,mol->topology->atoms.nr);
     copy_rvec(mu,mol->mu_calc);
     mol->dip_calc = norm(mu);
 }
@@ -543,13 +543,13 @@ static void calc_moldip_deviation(t_moldip *md)
             
             if (NULL == mymol->qgen)
                 mymol->qgen =
-                    gentop_qgen_init(md->pd,mymol->atoms,md->atomprop,
+                    gentop_qgen_init(md->pd,&(mymol->topology->atoms),md->atomprop,
                                      mymol->x,md->iModel,md->hfac,
                                      mymol->qtotal,md->epsr);
             /*if (strcmp(mymol->molname,"1-butene") == 0)
               fprintf(stderr,"Ready for %s\n",mymol->molname);*/
             eQ = generate_charges_sm(debug,mymol->qgen,
-                                     md->pd,mymol->atoms,
+                                     md->pd,&(mymol->topology->atoms),
                                      mymol->x,1e-4,100,md->atomprop,
                                      md->hfac,
                                      &(mymol->chieq));
@@ -563,10 +563,10 @@ static void calc_moldip_deviation(t_moldip *md)
                 aloop = gmx_mtop_atomloop_all_init(&mymol->mtop);
                 j = 0;
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
-                    atom->q = mymol->atoms->atom[j].q;
+                    atom->q = mymol->topology->atoms.atom[j].q;
                     j++;
                 }
-                gmx_assert(j,mymol->atoms->nr);
+                gmx_assert(j,mymol->topology->atoms.nr);
             }
             
             /* Now optimize the shell positions */
@@ -594,13 +594,13 @@ static void calc_moldip_deviation(t_moldip *md)
             {
                 /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),md->pd);*/
                 gmx_resp_fill_zeta(mymol->gr,md->pd);
-                gmx_resp_fill_q(mymol->gr,mymol->atoms);
+                gmx_resp_fill_q(mymol->gr,&(mymol->topology->atoms));
                 gmx_resp_calc_pot(mymol->gr);
             }
             qtot = 0;
-            for(j=0; (j<mymol->atoms->nr); j++) {
-                atomnr = mymol->atoms->atom[j].atomnumber;
-                qq     = mymol->atoms->atom[j].q;
+            for(j=0; (j<mymol->topology->atoms.nr); j++) {
+                atomnr = mymol->topology->atoms.atom[j].atomnumber;
+                qq     = mymol->topology->atoms.atom[j].q;
                 qtot  += qq;
                 if (((qq < 0) && (atomnr == 1)) || 
                     ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) || 

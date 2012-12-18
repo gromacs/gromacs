@@ -538,8 +538,8 @@ void done_gauss_data(gau_atomprop_t gaps)
     fprintf(stderr,"Please clean up your gau_atomprop_t\n");
 }
 
-static int gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,
-                                  char *desc,double temp,double *value)
+int gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,
+                           char *desc,double temp,double *value)
 {
     int i,found;
     double ttol = 0.01; /* K */

@@ -274,8 +274,8 @@ static void get_dissociation_energy(FILE *fplog,opt_param_t *opt)
         for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
             ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
             aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
-            aai = *mymol->atoms->atomtype[ai];
-            aaj = *mymol->atoms->atomtype[aj];
+            aai = *mymol->topology->atoms.atomtype[ai];
+            aaj = *mymol->topology->atoms.atomtype[aj];
             if ((gt = gmx_poldata_search_bond(opt->md->pd,aai,aaj,
                                               NULL,NULL,NULL,NULL,NULL)) != 0) {
                 gti = opt->inv_gt[ebtsBONDS][gt-1];
@@ -603,9 +603,9 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                 for(i=0; (i<mymol->ltop->idef.il[ft].nr); i+=interaction_function[ft].nratoms+1) {
                     tp = mymol->ltop->idef.il[ft].iatoms[i];
                     ai = mymol->ltop->idef.il[ft].iatoms[i+1];
-                    aai = *mymol->atoms->atomtype[ai];
+                    aai = *mymol->topology->atoms.atomtype[ai];
                     aj = mymol->ltop->idef.il[ft].iatoms[i+2];
-                    aaj = *mymol->atoms->atomtype[aj];
+                    aaj = *mymol->topology->atoms.atomtype[aj];
                     switch (bt) {
                     case ebtsBONDS:
                         gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,
@@ -613,16 +613,16 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                         break;
                     case ebtsANGLES:
                         ak = mymol->ltop->idef.il[ft].iatoms[i+3];
-                        aak = *mymol->atoms->atomtype[ak];
+                        aak = *mymol->topology->atoms.atomtype[ak];
                         gt = gmx_poldata_search_angle(pd,aai,aaj,aak,NULL,
                                                       NULL,NULL,&params);
                         break;
                     case ebtsPDIHS:
                     case ebtsIDIHS:
                         ak = mymol->ltop->idef.il[ft].iatoms[i+3];
-                        aak = *mymol->atoms->atomtype[ak];
+                        aak = *mymol->topology->atoms.atomtype[ak];
                         al = mymol->ltop->idef.il[ft].iatoms[i+4];
-                        aal = *mymol->atoms->atomtype[al];
+                        aal = *mymol->topology->atoms.atomtype[al];
                         gt = gmx_poldata_search_dihedral(pd,(bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
                                                          aai,aaj,aak,aal,
                                                          NULL,NULL,NULL,&params);
@@ -666,16 +666,19 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
     double value;
     
     lu = string2unit(gmx_poldata_get_length_unit(pd));
-    if (bOpt[ebtsBONDS]) {
+    if (bOpt[ebtsBONDS]) 
+    {
         ftb = gmx_poldata_get_bond_ftype(pd);
-        for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
+        for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) 
+        {
             tp = mymol->ltop->idef.il[ftb].iatoms[i];
             ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
             aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
-            aai = *mymol->atoms->atomtype[ai];
-            aaj = *mymol->atoms->atomtype[aj];
+            aai = *mymol->topology->atoms.atomtype[ai];
+            aaj = *mymol->topology->atoms.atomtype[aj];
             /* Here unfortunately we need a case statement for the types */
-            if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) {
+            if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) 
+            {
                 mymol->mtop.ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
                   
                 ptr = split(' ',params);
@@ -703,9 +706,9 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             ai = mymol->ltop->idef.il[fta].iatoms[i+1];
             aj = mymol->ltop->idef.il[fta].iatoms[i+2];
             ak = mymol->ltop->idef.il[fta].iatoms[i+3];
-            aai = *mymol->atoms->atomtype[ai];
-            aaj = *mymol->atoms->atomtype[aj];
-            aak = *mymol->atoms->atomtype[ak];
+            aai = *mymol->topology->atoms.atomtype[ai];
+            aaj = *mymol->topology->atoms.atomtype[aj];
+            aak = *mymol->topology->atoms.atomtype[ak];
             if ((gt = gmx_poldata_search_angle(pd,aai,aaj,aak,&value,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].harmonic.rA = 
                     mymol->mtop.ffparams.iparams[tp].harmonic.rB = value;
@@ -733,10 +736,10 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aj = mymol->ltop->idef.il[ftd].iatoms[i+2];
             ak = mymol->ltop->idef.il[ftd].iatoms[i+3];
             al = mymol->ltop->idef.il[ftd].iatoms[i+4];
-            aai = *mymol->atoms->atomtype[ai];
-            aaj = *mymol->atoms->atomtype[aj];
-            aak = *mymol->atoms->atomtype[ak];
-            aal = *mymol->atoms->atomtype[al];
+            aai = *mymol->topology->atoms.atomtype[ai];
+            aaj = *mymol->topology->atoms.atomtype[aj];
+            aak = *mymol->topology->atoms.atomtype[ak];
+            aal = *mymol->topology->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdPDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].pdihs.phiA = value;
@@ -769,10 +772,10 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             aj = mymol->ltop->idef.il[ftd].iatoms[i+2];
             ak = mymol->ltop->idef.il[ftd].iatoms[i+3];
             al = mymol->ltop->idef.il[ftd].iatoms[i+4];
-            aai = *mymol->atoms->atomtype[ai];
-            aaj = *mymol->atoms->atomtype[aj];
-            aak = *mymol->atoms->atomtype[ak];
-            aal = *mymol->atoms->atomtype[al];
+            aai = *mymol->topology->atoms.atomtype[ai];
+            aaj = *mymol->topology->atoms.atomtype[aj];
+            aak = *mymol->topology->atoms.atomtype[ak];
+            aal = *mymol->topology->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdIDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
                 mymol->mtop.ffparams.iparams[tp].harmonic.rA = 
@@ -1164,8 +1167,8 @@ static void print_moldip_mols(FILE *fp,t_moldip *md,
     for(i=0; (i<md->nmol); i++) {
         fprintf(fp,"%-30s  %d\n",md->mymol[i].molname,md->mymol[i].natom);
         for(j=0; (j<md->mymol[i].natom); j++) {
-            fprintf(fp,"  %-5s  %-5s  q = %10g",*(md->mymol[i].atoms->atomname[j]),
-                    md->mymol[i].smnames[j],md->mymol[i].atoms->atom[j].q);
+            fprintf(fp,"  %-5s  %-5s  q = %10g",*(md->mymol[i].topology->atoms.atomname[j]),
+                    md->mymol[i].smnames[j],md->mymol[i].topology->atoms.atom[j].q);
             if (bForce) 
             {
                 fprintf(fp,"  %8.3f  %8.3f  %8.3f",

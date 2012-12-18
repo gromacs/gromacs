@@ -70,20 +70,21 @@ extern gmx_bool gmx_molprop_support_composition(gmx_molprop_t mp,char *compositi
 #ifdef __cplusplus
 extern "C"
 #endif
-
- void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
-                                 gmx_atomprop_t ap,gmx_bool bForceGenComp,
-                                 double th_toler,double phi_toler);
+void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
+			  gmx_atomprop_t ap,gmx_bool bForceGenComp,
+			  double th_toler,double phi_toler);
 
 extern gmx_molprop_t atoms_2_molprop(char *molname,t_atoms*atoms,char **smnames,
 				     gmx_atomprop_t ap,gmx_poldata_t pd,gmx_bool bForce,
 				     double th_toler,double ph_toler);
 
 /* Return number of atoms, 0 means failure */
-extern int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
-			   t_symtab *tab,const char *lot,
-			   t_atoms *atoms,const char *q_algorithm,
-			   rvec **x);
+extern int molprop_2_topology(gmx_molprop_t mp,gmx_atomprop_t ap,
+                              gmx_poldata_t pd,
+                              t_symtab *tab,const char *lot,
+                              t_topology *top,const char *q_algorithm,
+                              rvec **x,t_params plist[F_NRE],
+			      int nexcl,t_excls **excls);
 
 extern void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles,
                           gmx_bool bForceMerge);

@@ -490,7 +490,7 @@ int main(int argc,char *argv[])
                 lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
                 TRUE,TRUE,TRUE,watoms,FALSE);
                         
-#define ATP(ii) get_atomtype_name(md->mymol[i].atoms->atom[ii].type,md->mymol[i].atype)
+#define ATP(ii) get_atomtype_name(md->mymol[i].topology->atoms.atom[ii].type,md->mymol[i].atype)
     ftb = gmx_poldata_get_bond_ftype(md->pd);
     fta = gmx_poldata_get_angle_ftype(md->pd);
     ftd = gmx_poldata_get_dihedral_ftype(md->pd,egdPDIHS);

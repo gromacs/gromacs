@@ -35,12 +35,12 @@ typedef struct {
     gmx_localtop_t *ltop;
     gpp_atomtype_t atype;
     t_symtab       symtab;
-    t_excls        *excls;
     t_inputrec     ir;
     gmx_shellfc_t  shell;
     gmx_enerdata_t enerd;
     t_mdatoms      *md;
-    t_atoms        *atoms;
+    t_topology     *topology;
+    t_excls        *excls;
     char           **smnames;
     t_forcerec     *fr;
     gmx_vsite_t    *vs;

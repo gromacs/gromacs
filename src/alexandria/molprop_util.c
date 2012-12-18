@@ -47,7 +47,9 @@
 #include "xvgr.h"
 #include "atomprop.h"
 #include "gpp_atomtype.h"
+#include "gpp_nextnb.h"
 #include "toputil.h"
+#include "gen_ad.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molprop.h"
@@ -57,6 +59,7 @@
 #include "gentop_vsite.h"
 #include "gentop_core.h"
 #include "gentop_comm.h"
+#include "gmx_gauss_io.h"
 //#include "molselect.h"
 
 int get_val(gmx_molprop_t mp,int expref,char *type,int emp,
@@ -554,10 +557,10 @@ gmx_molprop_t atoms_2_molprop(char *molname,t_atoms *atoms,char **smnames,
     return mp;  
 }
 
-int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
-                    t_symtab *tab,const char *lot,
-                    t_atoms *atoms,const char *q_algorithm,
-                    rvec **x)
+static int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
+                           t_symtab *tab,const char *lot,
+                           t_atoms *atoms,const char *q_algorithm,
+                           rvec **x)
 {
     char   *program,*method,*basisset,*name,*type,*value;
     char   *atomname,*obtype,*unit,*coords,**aa=NULL;
@@ -642,6 +645,56 @@ int molprop_2_atoms(gmx_molprop_t mp,gmx_atomprop_t ap,
                 molnm,lot,natom);
     return natom;
 }
+
+int molprop_2_topology(gmx_molprop_t mp,gmx_atomprop_t ap,
+                       gmx_poldata_t pd,
+                       t_symtab *tab,const char *lot,
+                       t_topology *top,const char *q_algorithm,
+                       rvec **x,t_params plist[F_NRE],
+                       int nexcl,t_excls **excls)
+{
+    int i,natom,nbond,bo,ftb;
+    t_param b;
+    t_nextnb nnb;
+        
+    /* Get atoms */
+    natom = gmx_molprop_get_natom(mp);
+    if (natom != molprop_2_atoms(mp,ap,tab,lot,&(top->atoms),q_algorithm,x))
+        return 0;
+        
+    /* Get bonds */
+    nbond = gmx_molprop_get_nbond(mp);
+    /* Store bonds in harmonic potential list first, update type later */
+    ftb = F_BONDS;
+    if (nbond > 0) 
+    {
+        /* Use the bonds stored in molprop */
+        i = 0;
+        while(1 == gmx_molprop_get_bond(mp,&(b.a[0]),&(b.a[1]),&bo))
+        {
+            add_param_to_list(&(plist[ftb]),&b);
+            i++;
+        }
+        if (i != nbond)
+            return 0;
+    }
+    else
+        return 0;
+    
+    /* Make Angles and Dihedrals */
+    snew((*excls),natom);
+    init_nnb(&nnb,natom,nexcl+2);
+    gen_nnb(&nnb,plist);
+    //detect_rings(&plist[F_BONDS],atoms->nr,bRing);
+    //nbonds = plist[F_BONDS].nr;
+    print_nnb(&nnb,"NNB");
+    gen_pad(&nnb,&top->atoms,TRUE,TRUE,TRUE,nexcl,plist,*excls,NULL,FALSE);
+    generate_excls(&nnb,nexcl,*excls);
+    done_nnb(&nnb);
+
+    return natom;
+}
+
 
 static void gmx_molprop_dump(gmx_molprop_t mp,int i,FILE *fp)
 {
