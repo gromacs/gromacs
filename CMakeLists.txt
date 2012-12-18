@@ -156,10 +156,11 @@ if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
 endif()
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
+SET(SHARED_LIBS_DEFAULT ON)
+
 ########################################################################
 # Fix stupid flags on Windows
 ########################################################################
-SET(SHARED_LIBS_DEFAULT ON) 
 IF( WIN32 AND NOT CYGWIN)
   if (NOT BUILD_SHARED_LIBS)
     option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
