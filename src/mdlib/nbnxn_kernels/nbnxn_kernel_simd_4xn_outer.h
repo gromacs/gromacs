@@ -36,12 +36,12 @@
  */
 
 /* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file */
-#include "gmx_x86_simd_macros.h"
+#include "gmx_simd_macros.h"
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    GMX_X86_SIMD_WIDTH_HERE
+#define UNROLLJ    GMX_SIMD_WIDTH_HERE
 
 #if defined GMX_MM128_HERE || defined GMX_DOUBLE
 #define STRIDE     4
@@ -74,7 +74,7 @@
 
 #define SIMD_MASK_ALL   0xffffffff
 
-#include "nbnxn_kernel_x86_simd_utils.h"
+#include "nbnxn_kernel_simd_utils.h"
 
 /* All functionality defines are set here, except for:
  * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
@@ -91,51 +91,49 @@
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
 
-#define NBK_FUNC_NAME_C_LJC(b,s,c,ljc,e) b##_##s##_##c##_comb_##ljc##_##e
+/* The NBK_FUNC_NAME... macros below generate the whole zoo of kernels names
+ * with all combinations off electrostatics (coul), LJ combination rules (ljc)
+ * and energy calculations (ene), depending on the defines set.
+ */
+
+#define NBK_FUNC_NAME_C_LJC(base,coul,ljc,ene) base##_##coul##_comb_##ljc##_##ene
 
 #if defined LJ_COMB_GEOM
-#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,geom,e)
+#define NBK_FUNC_NAME_C(base,coul,ene) NBK_FUNC_NAME_C_LJC(base,coul,geom,ene)
 #else
 #if defined LJ_COMB_LB
-#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,lb,e)
+#define NBK_FUNC_NAME_C(base,coul,ene) NBK_FUNC_NAME_C_LJC(base,coul,lb,ene)
 #else
-#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,none,e)
+#define NBK_FUNC_NAME_C(base,coul,ene) NBK_FUNC_NAME_C_LJC(base,coul,none,ene)
 #endif
 #endif
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,rf,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,rf,ene)
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,tab,ene)
 #else
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab_twin,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,tab_twin,ene)
 #endif
 #endif
 #ifdef CALC_COUL_EWALD
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,ewald,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,ewald,ene)
 #else
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,ewald_twin,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,ewald_twin,ene)
 #endif
-#endif
-
-#ifdef GMX_MM128_HERE
-#define NBK_FUNC_NAME_S128_OR_S256(b,e) NBK_FUNC_NAME(b,x86_simd128,e)
-#endif
-#ifdef GMX_MM256_HERE
-#define NBK_FUNC_NAME_S128_OR_S256(b,e) NBK_FUNC_NAME(b,x86_simd256,e)
 #endif
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,noener)
+NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,ener)
+NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,ener)
 #else
-NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
+NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
@@ -571,7 +569,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
         }
 #endif
 
-		/* Load i atom data */
+        /* Load i atom data */
         sciy             = scix + STRIDE;
         sciz             = sciy + STRIDE;
         ix_SSE0          = gmx_add_pr(gmx_load1_pr(x+scix)  ,shX_SSE);
@@ -661,13 +659,13 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for(; (cjind<cjind1); cjind++)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
             }
 #undef HALF_LJ
 #undef CALC_COULOMB
@@ -678,13 +676,13 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for(; (cjind<cjind1); cjind++)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
             }
 #undef CALC_COULOMB
         }
@@ -693,13 +691,13 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for(; (cjind<cjind1); cjind++)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
             }
         }
 #undef CALC_LJ

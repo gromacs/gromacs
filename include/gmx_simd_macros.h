@@ -35,13 +35,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/* The macros in this file are intended to be used for writing
+ * architecture independent SIMD intrinsics code.
+ * To support a new architecture, adding macros here should be (nearly)
+ * all that is needed.
+ */
+
 /* Undefine all defines used below so we can include this file multiple times
  * with different settings from the same source file.
  */
 
 /* NOTE: floor and blend are NOT available with SSE2 only acceleration */
 
-#undef GMX_X86_SIMD_WIDTH_HERE
+#undef GMX_SIMD_WIDTH_HERE
 
 #undef gmx_epi32
 
@@ -91,11 +97,11 @@
  */
 
 #if !defined GMX_MM128_HERE && !defined GMX_MM256_HERE
-"You should define GMX_MM128_HERE or GMX_MM256_HERE"
+#error "You should define GMX_MM128_HERE or GMX_MM256_HERE"
 #endif
 
 #if defined GMX_MM128_HERE && defined GMX_MM256_HERE
-"You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
+#error "You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
 #endif
 
 #ifdef GMX_MM128_HERE
@@ -106,7 +112,7 @@
 
 #include "gmx_x86_simd_single.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  4
+#define GMX_SIMD_WIDTH_HERE  4
 
 #define gmx_mm_pr  __m128
 
@@ -147,7 +153,7 @@
 
 #include "gmx_x86_simd_double.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  2
+#define GMX_SIMD_WIDTH_HERE  2
 
 #define gmx_mm_pr  __m128d
 
@@ -196,7 +202,7 @@
 
 #include "gmx_x86_simd_single.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  8
+#define GMX_SIMD_WIDTH_HERE  8
 
 #define gmx_mm_pr  __m256
 
@@ -235,11 +241,28 @@
 #define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_ps
 #define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_ps
 
+#define gmx_loaddh_pr     gmx_mm256_load4_ps
+
+/* Half SIMD-width type */
+#define gmx_mm_hpr  __m128
+
+/* Half SIMD-width macros */
+#define gmx_load_hpr      _mm_load_ps
+#define gmx_load1_hpr(x)  _mm_set1_ps((x)[0])
+#define gmx_store_hpr     _mm_store_ps
+#define gmx_add_hpr       _mm_add_ps
+#define gmx_sub_hpr       _mm_sub_ps
+
+#define gmx_sum4_hpr      gmx_mm256_sum4h_m128
+
+/* Conversion between half and full SIMD-width */
+#define gmx_2hpr_to_pr    gmx_mm256_set_m128
+
 #else
 
 #include "gmx_x86_simd_double.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  4
+#define GMX_SIMD_WIDTH_HERE  4
 
 #define gmx_mm_pr  __m256d
 

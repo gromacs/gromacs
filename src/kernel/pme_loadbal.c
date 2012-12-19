@@ -624,7 +624,8 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     ic->ewaldcoeff = set->ewaldcoeff;
 
     bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
-    if (pme_lb->cutoff_scheme == ecutsVERLET && nbv->grp[0].kernel_type == nbk8x8x8_CUDA)
+    if (pme_lb->cutoff_scheme == ecutsVERLET &&
+        nbv->grp[0].kernel_type == nbnxnk8x8x8_CUDA)
     {
         nbnxn_cuda_pme_loadbal_update_param(nbv->cu_nbv,ic);
     }

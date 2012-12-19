@@ -2,8 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
+ * Copyright (c) 2001-2009, The GROMACS Development Team
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
@@ -35,30 +34,41 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _nbnxn_kernel_x86_simd256_h
-#define _nbnxn_kernel_x86_simd256_h
 
-#include "typedefs.h"
+/* This files includes all x86 SIMD kernel flavors.
+ * Only the Electrostatics type and optionally the VdW cut-off check
+ * need to be set before including this file.
+ */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* Include the force+energy kernels */
+#define CALC_ENERGIES
+#define LJ_COMB_GEOM
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef LJ_COMB_GEOM
+#define LJ_COMB_LB
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef LJ_COMB_LB
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef CALC_ENERGIES
 
-/* Wrapper call for the non-bonded cluster vs cluster kernels */
-void
-nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
-                         const nbnxn_atomdata_t     *nbat,
-                         const interaction_const_t  *ic,
-                         int                        ewald_excl,
-                         rvec                       *shift_vec,
-                         int                        force_flags,
-                         int                        clearF,
-                         real                       *fshift,
-                         real                       *Vc,
-                         real                       *Vvdw);
+/* Include the force+energygroups kernels */
+#define CALC_ENERGIES
+#define ENERGY_GROUPS
+#define LJ_COMB_GEOM
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef LJ_COMB_GEOM
+#define LJ_COMB_LB
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef LJ_COMB_LB
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef ENERGY_GROUPS
+#undef CALC_ENERGIES
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+/* Include the force only kernels */
+#define LJ_COMB_GEOM
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef LJ_COMB_GEOM
+#define LJ_COMB_LB
+#include "nbnxn_kernel_simd_2xnn_outer.h"
+#undef LJ_COMB_LB
+#include "nbnxn_kernel_simd_2xnn_outer.h"

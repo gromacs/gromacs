@@ -36,40 +36,37 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file.
- * gmx_sse_or_avh.h should be included before including this file.
- */
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
+#define GMX_MM128_HERE
+#else
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
+#define GMX_MM256_HERE
+#else
+#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
+#endif
+#endif
+#include "gmx_simd_macros.h"
+
+#if GMX_SIMD_WIDTH_HERE >= NBNXN_CPU_CLUSTER_I_SIZE
+#define STRIDE_S  (GMX_SIMD_WIDTH_HERE)
+#else
+#define STRIDE_S  NBNXN_CPU_CLUSTER_I_SIZE
+#endif
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
-#ifdef GMX_MM128_HERE
-static void icell_set_x_x86_simd128
-#else
-#ifdef GMX_MM256_HERE
-static void icell_set_x_x86_simd256
-#else
-"error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
-#endif
-#endif
-                                   (int ci,
-                                    real shx,real shy,real shz,
-                                    int na_c,
-                                    int stride,const real *x,
-                                    nbnxn_list_work_t *work)
+static gmx_inline void
+icell_set_x_simd_4xn(int ci,
+                     real shx,real shy,real shz,
+                     int na_c,
+                     int stride,const real *x,
+                     nbnxn_list_work_t *work)
 {
     int  ia;
-#ifdef GMX_MM128_HERE
-    nbnxn_x_ci_x86_simd128_t *x_ci;
+    nbnxn_x_ci_simd_4xn_t *x_ci;
 
-    x_ci = work->x_ci_x86_simd128;
+    x_ci = work->x_ci_simd_4xn;
 
-    ia = X_IND_CI_S128(ci);
-#else
-    nbnxn_x_ci_x86_simd256_t *x_ci;
-
-    x_ci = work->x_ci_x86_simd256;
-
-    ia = X_IND_CI_S256(ci);
-#endif
+    ia = X_IND_CI_SIMD_4XN(ci);
 
     x_ci->ix_SSE0 = gmx_set1_pr(x[ia + 0*STRIDE_S    ] + shx);
     x_ci->iy_SSE0 = gmx_set1_pr(x[ia + 1*STRIDE_S    ] + shy);
@@ -85,34 +82,21 @@ static void icell_set_x_x86_simd256
     x_ci->iz_SSE3 = gmx_set1_pr(x[ia + 2*STRIDE_S + 3] + shz);
 }
 
-/* SSE or AVX code for making a pair list of cell ci vs cell cjf-cjl
+/* SIMD code for making a pair list of cell ci vs cell cjf-cjl
  * for coordinates in packed format.
  * Checks bouding box distances and possibly atom pair distances.
  * This is an accelerated version of make_cluster_list_simple.
  */
-#ifdef GMX_MM128_HERE
-static void make_cluster_list_x86_simd128
-#else
-#ifdef GMX_MM256_HERE
-static void make_cluster_list_x86_simd256
-#else
-"error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
-#endif
-#endif
-                                         (const nbnxn_grid_t *gridj,
-                                          nbnxn_pairlist_t *nbl,
-                                          int ci,int cjf,int cjl,
-                                          gmx_bool remove_sub_diag,
-                                          const real *x_j,
-                                          real rl2,float rbb2,
-                                          int *ndistc)
+static gmx_inline void
+make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
+                           nbnxn_pairlist_t *nbl,
+                           int ci,int cjf,int cjl,
+                           gmx_bool remove_sub_diag,
+                           const real *x_j,
+                           real rl2,float rbb2,
+                           int *ndistc)
 {
-#ifdef GMX_MM128_HERE
-    const nbnxn_x_ci_x86_simd128_t *work;
-#else
-    const nbnxn_x_ci_x86_simd256_t *work;
-#endif
-
+    const nbnxn_x_ci_simd_4xn_t *work;
     const float *bb_ci;
 
     gmx_mm_pr  jx_SSE,jy_SSE,jz_SSE;
@@ -139,17 +123,10 @@ static void make_cluster_list_x86_simd256
     float      d2;
     int        xind_f,xind_l,cj;
 
-#ifdef GMX_MM128_HERE
-    cjf = CI_TO_CJ_S128(cjf);
-    cjl = CI_TO_CJ_S128(cjl+1) - 1;
+    cjf = CI_TO_CJ_SIMD_4XN(cjf);
+    cjl = CI_TO_CJ_SIMD_4XN(cjl+1) - 1;
 
-    work = nbl->work->x_ci_x86_simd128;
-#else
-    cjf = CI_TO_CJ_S256(cjf);
-    cjl = CI_TO_CJ_S256(cjl+1) - 1;
-
-    work = nbl->work->x_ci_x86_simd256;
-#endif
+    work = nbl->work->x_ci_simd_4xn;
 
     bb_ci = nbl->work->bb_ci;
 
@@ -172,11 +149,8 @@ static void make_cluster_list_x86_simd256
         }
         else if (d2 < rl2)
         {
-#ifdef GMX_MM128_HERE
-            xind_f  = X_IND_CJ_S128(CI_TO_CJ_S128(gridj->cell0) + cjf);
-#else
-            xind_f  = X_IND_CJ_S256(CI_TO_CJ_S256(gridj->cell0) + cjf);
-#endif
+            xind_f  = X_IND_CJ_SIMD_4XN(CI_TO_CJ_SIMD_4XN(gridj->cell0) + cjf);
+
             jx_SSE  = gmx_load_pr(x_j+xind_f+0*STRIDE_S);
             jy_SSE  = gmx_load_pr(x_j+xind_f+1*STRIDE_S);
             jz_SSE  = gmx_load_pr(x_j+xind_f+2*STRIDE_S);
@@ -213,7 +187,7 @@ static void make_cluster_list_x86_simd256
             
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
-            *ndistc += 4*GMX_X86_SIMD_WIDTH_HERE;
+            *ndistc += 4*GMX_SIMD_WIDTH_HERE;
         }
         if (!InRange)
         {
@@ -242,11 +216,8 @@ static void make_cluster_list_x86_simd256
         }
         else if (d2 < rl2)
         {
-#ifdef GMX_MM128_HERE
-            xind_l  = X_IND_CJ_S128(CI_TO_CJ_S128(gridj->cell0) + cjl);
-#else
-            xind_l  = X_IND_CJ_S256(CI_TO_CJ_S256(gridj->cell0) + cjl);
-#endif
+            xind_l  = X_IND_CJ_SIMD_4XN(CI_TO_CJ_SIMD_4XN(gridj->cell0) + cjl);
+
             jx_SSE  = gmx_load_pr(x_j+xind_l+0*STRIDE_S);
             jy_SSE  = gmx_load_pr(x_j+xind_l+1*STRIDE_S);
             jz_SSE  = gmx_load_pr(x_j+xind_l+2*STRIDE_S);
@@ -282,7 +253,7 @@ static void make_cluster_list_x86_simd256
             
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
-            *ndistc += 4*GMX_X86_SIMD_WIDTH_HERE;
+            *ndistc += 4*GMX_SIMD_WIDTH_HERE;
         }
         if (!InRange)
         {
@@ -295,16 +266,15 @@ static void make_cluster_list_x86_simd256
         for(cj=cjf; cj<=cjl; cj++)
         {
             /* Store cj and the interaction mask */
-#ifdef GMX_MM128_HERE
-            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_S128(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd128(remove_sub_diag,ci,cj);
-#else
-            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_S256(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd256(remove_sub_diag,ci,cj);
-#endif
+            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_4XN(gridj->cell0) + cj;
+            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_4xn(remove_sub_diag,ci,cj);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */
         nbl->ci[nbl->nci].cj_ind_end = nbl->ncj;
     }
 }
+
+#undef STRIDE_S
+#undef GMX_MM128_HERE
+#undef GMX_MM256_HERE

@@ -35,8 +35,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _nbnxn_kernel_x86_simd128_h
-#define _nbnxn_kernel_x86_simd128_h
+#ifndef _nbnxn_kernel_simd_4xn_h
+#define _nbnxn_kernel_simd_4xn_h
 
 #include "typedefs.h"
 
@@ -44,18 +44,20 @@
 extern "C" {
 #endif
 
-/* Wrapper call for the non-bonded cluster vs cluster kernels */
+/* Wrapper call for the non-bonded cluster vs cluster kernels.
+ * These kernels determine 4xN cluster interactions for SIMD width N.
+ */
 void
-nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
-                         const nbnxn_atomdata_t     *nbat,
-                         const interaction_const_t  *ic,
-                         int                        ewald_excl,
-                         rvec                       *shift_vec,
-                         int                        force_flags,
-                         int                        clearF,
-                         real                       *fshift,
-                         real                       *Vc,
-                         real                       *Vvdw);
+nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t       *nbl_list,
+                      const nbnxn_atomdata_t     *nbat,
+                      const interaction_const_t  *ic,
+                      int                        ewald_excl,
+                      rvec                       *shift_vec,
+                      int                        force_flags,
+                      int                        clearF,
+                      real                       *fshift,
+                      real                       *Vc,
+                      real                       *Vvdw);
 
 #ifdef __cplusplus
 }

@@ -78,17 +78,14 @@ void verletbuf_get_list_setup(gmx_bool bGPU,
     }
     else
     {
-#ifndef GMX_X86_SSE2
+#ifndef GMX_NBNXN_SIMD
         list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
 #else
-        int simd_width;
-
-#ifdef GMX_X86_AVX_256
-        simd_width = 256;
-#else
-        simd_width = 128;
+        list_setup->cluster_size_j = GMX_NBNXN_SIMD_BITWIDTH/(sizeof(real)*8);
+#ifdef GMX_NBNXN_SIMD_2XNN
+        /* We assume the smallest cluster size to be on the safe side */
+        list_setup->cluster_size_j /= 2;
 #endif
-        list_setup->cluster_size_j = simd_width/(sizeof(real)*8);
 #endif
     }
 }
