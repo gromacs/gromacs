@@ -453,6 +453,9 @@
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 
+/* Disable gromacs quotes */
+#cmakedefine GMX_NO_QUOTES  
+
 #ifdef GMX_FAHCORE
 #define FULLINDIRECT 1
 #define USE_FAH_XDR  1
