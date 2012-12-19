@@ -148,7 +148,8 @@ mark_as_advanced(GMX_OPENMM)
 option(GMX_FORCE_CXX "Enable C++ compilation even if not necessary" OFF)
 mark_as_advanced(GMX_FORCE_CXX)
 
-option(GMX_NO_QUOTES "Disable Gromacs cool quotes" OFF)
+option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
+mark_as_advanced(GMX_COOL_QUOTES)
 
 if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
     enable_language(CXX)
@@ -1051,6 +1052,7 @@ if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
+  set(GMX_COOL_QUOTES OFF CACHE BOOL "Enable Gromacs cool quotes" FORCE)
 endif(GMX_FAHCORE)
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #

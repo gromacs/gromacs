@@ -126,11 +126,11 @@ gmx_bool be_cool(void)
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
-#if defined(GMX_FAHCORE) || defined(GMX_NO_QUOTES)
+#ifdef GMX_COOL_QUOTES
+  return (getenv("GMX_NO_QUOTES") == NULL);
+#else
   /*be uncool*/
   return FALSE;
-#else
-  return (getenv("GMX_NO_QUOTES") == NULL);
 #endif
 }
 

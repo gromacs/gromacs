@@ -454,7 +454,7 @@
 #cmakedefine GMX_FAHCORE   
 
 /* Disable gromacs quotes */
-#cmakedefine GMX_NO_QUOTES
+#cmakedefine GMX_COOL_QUOTES
 
 #ifdef GMX_FAHCORE
 #define FULLINDIRECT 1
