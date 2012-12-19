@@ -111,7 +111,11 @@ else(GMX_FAHCORE)
 list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess md ${OpenMP_LINKER_FLAGS})
 
 set(GMX_KERNEL_PROGRAMS
-    grompp tpbconv pdb2gmx g_protonate g_luck gmxdump g_x2top gmxcheck)
+    grompp tpbconv pdb2gmx g_protonate gmxdump g_x2top gmxcheck)
+if (NOT GMX_NO_QUOTES)
+  set(GMX_KERNEL_PROGRAMS ${GMX_KERNEL_PROGRAMS} g_luck)
+endif (NOT GMX_NO_QUOTES)
+
 
 foreach(PROGRAM ${GMX_KERNEL_PROGRAMS})
     add_executable(${PROGRAM} ${PROGRAM}.c main.c)
