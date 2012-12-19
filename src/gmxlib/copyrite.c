@@ -126,7 +126,7 @@ gmx_bool be_cool(void)
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
-#ifdef GMX_FAHCORE
+#if defined(GMX_FAHCORE) || defined(GMX_NO_QUOTES)
   /*be uncool*/
   return FALSE;
 #else
