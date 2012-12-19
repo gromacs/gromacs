@@ -531,12 +531,48 @@ Probably you need to build static libraries only? Volunteer needed.
 \subsubsection{BlueGene/P}
 
 Mark to write later. There is currently no native acceleration on this
-platform, but the default plain C kernels will work.
+platform, but the default plain C kernels will work. There will be
+accelerated Verlet kernels in 4.6 release.
 
 \subsubsection{BlueGene/Q}
 
-Mark to write later. There is currently no native acceleration on this
-platform, but the default plain C kernels will work.
+There is currently no native acceleration on this platform, but the
+default plain C kernels will work.
+
+Only static linking with XL compilers is supported by \gromacs{}. Dynamic
+linking would be supported by the architecture and \gromacs{}, but has no
+advantages other than disk space, and is generally discouraged on
+BlueGene for performance reasons.
+
+Computation on BlueGene floating-point units is always done in
+double-precision. However, single-precision builds of \gromacs{} are
+still normal and encouraged. The BlueGene hardware automatically
+converts values stored in single precision in memory to double
+precision in registers for computation, converts the results back to
+single precision correctly, and does so for no additional cost. As
+with other platforms, doing the whole computation in double precision
+normally shows no improvement in accuracy and costs twice as much time
+moving memory around.
+
+You need to arrange for FFTW to be installed correctly, following the
+above instructions.
+
+mpicc is used for compiling and linking. This can make it awkward to
+attempt to use IBM's optimized BLAS/LAPACK called ESSL. Since mdrun is
+the only part of \gromacs{} that should normally run on the compute
+nodes, and there is nearly no need for linear algebra support for
+mdrun, it is recommended to use the \gromacs{} built-in linear algebra
+routines.
+
+cmake .. -DCMAKE_TOOLCHAIN_FILE=BlueGeneQ-static-XL-C -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix
+make mdrun
+make install-mdrun
+
+It is possible to configure and make the remaining \gromacs{} tools
+with the compute node toolchain, but as none of those tools are
+\mpi{}-aware, this would not normally be useful. Instead, these should
+be planned to run on the login node, and a seperate \gromacs{}
+installation performed for that using the login node's toolchain.
 
 \section{Tested platforms}
 
