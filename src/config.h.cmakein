@@ -62,16 +62,6 @@
 /* Turn off all water neighborlist optimization - not used right now */
 #cmakedefine DISABLE_WATER_NLIST
 
-/* Fortran support */
-#cmakedefine GMX_FORTRAN
-
-/* Define to a macro mangling the given C identifier (in lower and upper
-   case), which must not contain underscores, for linking with Fortran. */
-#define F77_FUNC(name,NAME)     @F77_FUNCDEF@
-
-/* As F77_FUNC, but for C identifiers containing underscores. */
-#define F77_FUNC_(name,NAME)    @F77_FUNCDEF_@
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
@@ -79,9 +69,6 @@
 
 /* Use assembly intrinsics kernels for BlueGene */
 #cmakedefine GMX_BLUEGENE
-
-/* Power6 acceleration */
-#cmakedefine GMX_POWER6
 
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
