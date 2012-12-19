@@ -143,6 +143,13 @@ endif()
 # User input options - enable C++ - before any CXX flags are changed   #
 ########################################################################
 
+# Are we configuring for x86 hardware?
+if(${CMAKE_SYSTEM_NAME} MATCHES Darwin|Linux|Windows)
+    # Is there a way to tell if we're on Darwin on PowerPC? Basically,
+    # CMake does no hardware detection, so we are on our own here.
+    set(GMX_X86 TRUE CACHE STRING "Configure for x86 hardware")
+endif()
+
 # decide on GPU settings based on user-settings and GPU/CUDA detection
 include(gmxManageGPU)
 
@@ -214,17 +221,22 @@ mark_as_advanced(GMX_POWERPC_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
-include(gmxDetectAcceleration)
-if(NOT DEFINED GMX_CPU_ACCELERATION)
-    if(CMAKE_CROSSCOMPILING)
-        set(GMX_SUGGESTED_CPU_ACCELERATION "None")
-    else(CMAKE_CROSSCOMPILING)
-        gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
-    endif(CMAKE_CROSSCOMPILING)
-endif(NOT DEFINED GMX_CPU_ACCELERATION)
+if(GMX_X86)
+    include(gmxDetectAcceleration)
+    if(NOT DEFINED GMX_CPU_ACCELERATION)
+        if(CMAKE_CROSSCOMPILING)
+            set(GMX_SUGGESTED_CPU_ACCELERATION "None")
+        else(CMAKE_CROSSCOMPILING)
+            gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
+        endif(CMAKE_CROSSCOMPILING)
+    endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
-set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
-    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
+    set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
+        CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
+else()
+    # No need to cache this variable on this hardware
+    set(GMX_CPU_ACCELERATION "NONE")
+endif()
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")

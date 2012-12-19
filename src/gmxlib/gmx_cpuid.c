@@ -209,11 +209,6 @@ compiled_acc = GMX_CPUID_ACCELERATION_NONE;
 #endif
 
 
-/* Currently CPUID is only supported (1) if we can use an instruction on MSVC, or (2)
- * if the compiler handles GNU-style inline assembly.
- */
-#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
-
 /* Execute CPUID on x86 class CPUs. level sets function to exec, and the
  * contents of register output is returned. See Intel/AMD docs for details.
  *
@@ -229,6 +224,11 @@ execute_x86cpuid(unsigned int   level,
                  unsigned int * ecx,
                  unsigned int * edx)
 {
+/* Currently CPUID is only supported (1) if we can use an instruction on MSVC, or (2)
+ * if the compiler handles GNU-style inline assembly.
+ */
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+
     int rc = 0;
 
 #if (defined _MSC_VER)
@@ -282,8 +282,8 @@ execute_x86cpuid(unsigned int   level,
     rc = -1;
 #endif
     return rc;
-}
 #endif /* architecture is x86 */
+}
 
 
 /* Identify CPU features common to Intel & AMD - mainly brand string,

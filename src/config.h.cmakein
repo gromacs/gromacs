@@ -77,6 +77,9 @@
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
 
+/* True if target hardware is x86 */
+#cmakedefine GMX_X86
+
 /* Use assembly intrinsics kernels for BlueGene */
 #cmakedefine GMX_BLUEGENE
 

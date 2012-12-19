@@ -470,12 +470,14 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
 
     assert(hwinfo);
 
+#ifdef GMX_X86
     /* detect CPUID info; no fuss, we don't detect system-wide
      * -- sloppy, but that's it for now */
     if (gmx_cpuid_init(&hwinfo->cpuid_info) != 0)
     {
         gmx_fatal_collective(FARGS, cr, NULL, "CPUID detection failed!");
     }
+#endif
 
     /* detect number of hardware threads */
     hwinfo->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
