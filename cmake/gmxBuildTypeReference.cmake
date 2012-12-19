@@ -45,7 +45,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_CPU_ACCELERATION "None" CACHE STRING "Disabled for regressiontests reference builds" FORCE)
     set(GMX_FFT_LIBRARY "fftpack" CACHE STRING "Use fftpack for regressiontests reference builds" FORCE)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
-    set(GMX_THREAD_MPI OFF OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
+    set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
 
     # C_COMPILER_VERSION is not defined automatically for CMake below 2.8.8,
     # so we call the GROMACS work-around for that
