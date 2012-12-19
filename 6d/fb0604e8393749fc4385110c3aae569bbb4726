@@ -1,0 +1,8 @@
+Code-Review+2: Szilárd Páll <pszilard@kth.se>
+Verified+1: Jenkins Buildbot
+Code-Review+1: Martin Hoefling <martin.hoefling@gmx.de>
+Submitted-by: Szilárd Páll <pszilard@kth.se>
+Submitted-at: Tue, 18 Dec 2012 15:43:31 +0100
+Reviewed-on: https://gerrit.gromacs.org/1900
+Project: gromacs
+Branch: refs/heads/release-4-6
