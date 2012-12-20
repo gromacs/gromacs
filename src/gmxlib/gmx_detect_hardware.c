@@ -177,7 +177,7 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
         if (idstr[i] < '0' || idstr[i] > '9')
         {
             gmx_fatal(FARGS, "Invalid character in GPU ID string: '%c'\n%s\n",
-                      invalid_gpuid_hint, idstr[i]);
+                      idstr[i], invalid_gpuid_hint);
         }
         idlist[i] = idstr[i] - '0';
     }
