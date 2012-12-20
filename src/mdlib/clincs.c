@@ -228,23 +228,44 @@ static void lincs_update_atoms_noind(int ncons,const int *bla,
     int  b,i,j;
     real mvb,im1,im2,tmp0,tmp1,tmp2;
 
-    for(b=0; b<ncons; b++)
+    if (invmass != NULL)
     {
-        i = bla[2*b];
-        j = bla[2*b+1];
-        mvb = prefac*fac[b];
-        im1 = invmass[i];
-        im2 = invmass[j];
-        tmp0 = r[b][0]*mvb;
-        tmp1 = r[b][1]*mvb;
-        tmp2 = r[b][2]*mvb;
-        x[i][0] -= tmp0*im1;
-        x[i][1] -= tmp1*im1;
-        x[i][2] -= tmp2*im1;
-        x[j][0] += tmp0*im2;
-        x[j][1] += tmp1*im2;
-        x[j][2] += tmp2*im2;
-    } /* 16 ncons flops */
+        for(b=0; b<ncons; b++)
+        {
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            im1 = invmass[i];
+            im2 = invmass[j];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0*im1;
+            x[i][1] -= tmp1*im1;
+            x[i][2] -= tmp2*im1;
+            x[j][0] += tmp0*im2;
+            x[j][1] += tmp1*im2;
+            x[j][2] += tmp2*im2;
+        } /* 16 ncons flops */
+    }
+    else
+    {
+        for(b=0; b<ncons; b++)
+        {
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0;
+            x[i][1] -= tmp1;
+            x[i][2] -= tmp2;
+            x[j][0] += tmp0;
+            x[j][1] += tmp1;
+            x[j][2] += tmp2;
+        }
+    }        
 }
 
 static void lincs_update_atoms_ind(int ncons,const int *ind,const int *bla,
@@ -256,24 +277,46 @@ static void lincs_update_atoms_ind(int ncons,const int *ind,const int *bla,
     int  bi,b,i,j;
     real mvb,im1,im2,tmp0,tmp1,tmp2;
 
-    for(bi=0; bi<ncons; bi++)
+    if (invmass != NULL)
     {
-        b = ind[bi];
-        i = bla[2*b];
-        j = bla[2*b+1];
-        mvb = prefac*fac[b];
-        im1 = invmass[i];
-        im2 = invmass[j];
-        tmp0 = r[b][0]*mvb;
-        tmp1 = r[b][1]*mvb;
-        tmp2 = r[b][2]*mvb;
-        x[i][0] -= tmp0*im1;
-        x[i][1] -= tmp1*im1;
-        x[i][2] -= tmp2*im1;
-        x[j][0] += tmp0*im2;
-        x[j][1] += tmp1*im2;
-        x[j][2] += tmp2*im2;
-    } /* 16 ncons flops */
+        for(bi=0; bi<ncons; bi++)
+        {
+            b = ind[bi];
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            im1 = invmass[i];
+            im2 = invmass[j];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0*im1;
+            x[i][1] -= tmp1*im1;
+            x[i][2] -= tmp2*im1;
+            x[j][0] += tmp0*im2;
+            x[j][1] += tmp1*im2;
+            x[j][2] += tmp2*im2;
+        } /* 16 ncons flops */
+    }
+    else
+    {
+        for(bi=0; bi<ncons; bi++)
+        {
+            b = ind[bi];
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0;
+            x[i][1] -= tmp1;
+            x[i][2] -= tmp2;
+            x[j][0] += tmp0;
+            x[j][1] += tmp1;
+            x[j][2] += tmp2;
+        } /* 16 ncons flops */
+    }
 }
 
 static void lincs_update_atoms(struct gmx_lincsdata *li,int th,
@@ -407,35 +450,24 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
         }
     }
 
-    if (econq != econqForce)
+    /* We multiply sol by blc, so we can use lincs_update_atoms for OpenMP */
+    for(b=b0; b<b1; b++)
     {
-        lincs_update_atoms(lincsd,th,1.0,sol,r,invmass,fp);
+        sol[b] *= blc[b];
     }
-    else
+
+    /* When constraining forces, we should not use mass weighting,
+     * so we pass invmass=NULL, which results in the use of 1 for all atoms.
+     */
+    lincs_update_atoms(lincsd,th,1.0,sol,r,
+                       (econq != econqForce) ? invmass : NULL,fp);
+
+    if (dvdlambda != NULL)
     {
+#pragma omp barrier
         for(b=b0; b<b1; b++)
         {
-            i = bla[2*b];
-            j = bla[2*b+1];
-            mvb = blc[b]*sol[b];
-            tmp0 = r[b][0]*mvb;
-            tmp1 = r[b][1]*mvb;
-            tmp2 = r[b][2]*mvb;
-            fp[i][0] -= tmp0;
-            fp[i][1] -= tmp1;
-            fp[i][2] -= tmp2;
-            fp[j][0] += tmp0;
-            fp[j][1] += tmp1;
-            fp[j][2] += tmp2;
-        }
-
-        if (dvdlambda != NULL)
-        {
-#pragma omp barrier
-            for(b=b0; b<b1; b++)
-            {
-                *dvdlambda -= blc[b]*sol[b]*lincsd->ddist[b];
-            }
+            *dvdlambda -= sol[b]*lincsd->ddist[b];
         }
         /* 10 ncons flops */
     }
@@ -449,7 +481,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
          */
         for(b=b0; b<b1; b++)
         {
-            mvb = lincsd->bllen[b]*blc[b]*sol[b];
+            mvb = lincsd->bllen[b]*sol[b];
             for(i=0; i<DIM; i++)
             {
                 tmp1 = mvb*r[b][i];
