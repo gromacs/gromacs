@@ -32,6 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmx_cpuid.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -57,7 +59,6 @@
 
 
 
-#include "gmx_cpuid.h"
 
 
 /* Global constant character strings corresponding to our enumerated types */
