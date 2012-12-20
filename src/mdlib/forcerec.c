@@ -1166,7 +1166,7 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
     nbl->table_elec.formatsize = nbl->table_elec_vdw.formatsize;
     nbl->table_elec.ninteractions = 1;
     nbl->table_elec.stride = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
-    snew_aligned(nbl->table_elec.data,nbl->table_elec.stride*(nbl->table_elec.n+1),16);
+    snew_aligned(nbl->table_elec.data,nbl->table_elec.stride*(nbl->table_elec.n+1),32);
 
     nbl->table_vdw.interaction = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
     nbl->table_vdw.format = nbl->table_elec_vdw.format;
@@ -1177,7 +1177,7 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
     nbl->table_vdw.formatsize = nbl->table_elec_vdw.formatsize;
     nbl->table_vdw.ninteractions = 2;
     nbl->table_vdw.stride = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
-    snew_aligned(nbl->table_vdw.data,nbl->table_vdw.stride*(nbl->table_vdw.n+1),16);
+    snew_aligned(nbl->table_vdw.data,nbl->table_vdw.stride*(nbl->table_vdw.n+1),32);
 
     for(i=0; i<=nbl->table_elec_vdw.n; i++)
     {
@@ -1615,9 +1615,9 @@ static void init_ewald_f_table(interaction_const_t *ic,
     sfree_aligned(ic->tabq_coul_V);
 
     /* Create the original table data in FDV0 */
-    snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
-    snew_aligned(ic->tabq_coul_F,ic->tabq_size,16);
-    snew_aligned(ic->tabq_coul_V,ic->tabq_size,16);
+    snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,32);
+    snew_aligned(ic->tabq_coul_F,ic->tabq_size,32);
+    snew_aligned(ic->tabq_coul_V,ic->tabq_size,32);
     table_spline3_fill_ewald_lr(ic->tabq_coul_F,ic->tabq_coul_V,ic->tabq_coul_FDV0,
                                 ic->tabq_size,1/ic->tabq_scale,ic->ewaldcoeff);
 }
@@ -1652,9 +1652,9 @@ void init_interaction_const(FILE *fp,
     snew(ic, 1);
 
     /* Just allocate something so we can free it */
-    snew_aligned(ic->tabq_coul_FDV0,16,16);
-    snew_aligned(ic->tabq_coul_F,16,16);
-    snew_aligned(ic->tabq_coul_V,16,16);
+    snew_aligned(ic->tabq_coul_FDV0,16,32);
+    snew_aligned(ic->tabq_coul_F,16,32);
+    snew_aligned(ic->tabq_coul_V,16,32);
 
     ic->rlist       = fr->rlist;
     ic->rlistlong   = fr->rlistlong;
