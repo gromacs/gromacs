@@ -1,31 +1,44 @@
 /*
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
+ * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS Development Team
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- * Gromacs is a library for molecular simulation and trajectory analysis,
- * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
- * a full list of developers and information, check out http://www.gromacs.org
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
- * later version.
- * As a special exception, you may use this file as part of a free software
- * library without restriction.  Specifically, if other files instantiate
- * templates or use macros or inline functions from this file, or you compile
- * this file and link it with other files to produce an executable, this
- * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * In plain-speak: do not worry about classes/macros/templates either - only
- * changes to the library have to be LGPL, not an application linking with it.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
- * To help fund GROMACS development, we humbly ask that you cite
- * the papers people have written on it - you can find them on the website!
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/* The macros in this file are intended to be used for writing
+ * architecture independent SIMD intrinsics code.
+ * To support a new architecture, adding macros here should be (nearly)
+ * all that is needed.
  */
 
 /* Undefine all defines used below so we can include this file multiple times
@@ -34,7 +47,7 @@
 
 /* NOTE: floor and blend are NOT available with SSE2 only acceleration */
 
-#undef GMX_X86_SIMD_WIDTH_HERE
+#undef GMX_SIMD_WIDTH_HERE
 
 #undef gmx_epi32
 
@@ -84,11 +97,11 @@
  */
 
 #if !defined GMX_MM128_HERE && !defined GMX_MM256_HERE
-"You should define GMX_MM128_HERE or GMX_MM256_HERE"
+#error "You should define GMX_MM128_HERE or GMX_MM256_HERE"
 #endif
 
 #if defined GMX_MM128_HERE && defined GMX_MM256_HERE
-"You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
+#error "You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
 #endif
 
 #ifdef GMX_MM128_HERE
@@ -99,7 +112,7 @@
 
 #include "gmx_x86_simd_single.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  4
+#define GMX_SIMD_WIDTH_HERE  4
 
 #define gmx_mm_pr  __m128
 
@@ -140,7 +153,7 @@
 
 #include "gmx_x86_simd_double.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  2
+#define GMX_SIMD_WIDTH_HERE  2
 
 #define gmx_mm_pr  __m128d
 
@@ -189,7 +202,7 @@
 
 #include "gmx_x86_simd_single.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  8
+#define GMX_SIMD_WIDTH_HERE  8
 
 #define gmx_mm_pr  __m256
 
@@ -228,11 +241,28 @@
 #define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_ps
 #define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_ps
 
+#define gmx_loaddh_pr     gmx_mm256_load4_ps
+
+/* Half SIMD-width type */
+#define gmx_mm_hpr  __m128
+
+/* Half SIMD-width macros */
+#define gmx_load_hpr      _mm_load_ps
+#define gmx_load1_hpr(x)  _mm_set1_ps((x)[0])
+#define gmx_store_hpr     _mm_store_ps
+#define gmx_add_hpr       _mm_add_ps
+#define gmx_sub_hpr       _mm_sub_ps
+
+#define gmx_sum4_hpr      gmx_mm256_sum4h_m128
+
+/* Conversion between half and full SIMD-width */
+#define gmx_2hpr_to_pr    gmx_mm256_set_m128
+
 #else
 
 #include "gmx_x86_simd_double.h"
 
-#define GMX_X86_SIMD_WIDTH_HERE  4
+#define GMX_SIMD_WIDTH_HERE  4
 
 #define gmx_mm_pr  __m256d
 

@@ -1,37 +1,43 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- * Gromacs is a library for molecular simulation and trajectory analysis,
- * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
- * a full list of developers and information, check out http://www.gromacs.org
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
- * later version.
- * As a special exception, you may use this file as part of a free software
- * library without restriction.  Specifically, if other files instantiate
- * templates or use macros or inline functions from this file, or you compile
- * this file and link it with other files to produce an executable, this
- * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * In plain-speak: do not worry about classes/macros/templates either - only
- * changes to the library have to be LGPL, not an application linking with it.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
- * To help fund GROMACS development, we humbly ask that you cite
- * the papers people have written on it - you can find them on the website!
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* This is the innermost loop contents for the n vs n atom
- * SSE2 single precision kernels.
+/* This is the innermost loop contents for the 4 x N atom SIMD kernel.
+ * This flavor of the kernel calculates interactions of 4 i-atoms
+ * with N j-atoms stored in N wide SIMD registers.
  */
 
 
@@ -145,7 +151,7 @@
             gmx_mm_pr  r_SSE1,rs_SSE1,rf_SSE1,frac_SSE1;
             gmx_mm_pr  r_SSE2,rs_SSE2,rf_SSE2,frac_SSE2;
             gmx_mm_pr  r_SSE3,rs_SSE3,rf_SSE3,frac_SSE3;
-            /* Table index: rs converted to an int */ 
+            /* Table index: rs truncated to an int */
 #if !(defined GMX_MM256_HERE && defined GMX_DOUBLE)
             gmx_epi32  ti_SSE0,ti_SSE1,ti_SSE2,ti_SSE3;
 #else
@@ -328,7 +334,7 @@
             jxSSE         = gmx_load_pr(x+ajx);
             jySSE         = gmx_load_pr(x+ajy);
             jzSSE         = gmx_load_pr(x+ajz);
-            
+
             /* Calculate distance */
             dx_SSE0       = gmx_sub_pr(ix_SSE0,jxSSE);
             dy_SSE0       = gmx_sub_pr(iy_SSE0,jySSE);
@@ -342,7 +348,7 @@
             dx_SSE3       = gmx_sub_pr(ix_SSE3,jxSSE);
             dy_SSE3       = gmx_sub_pr(iy_SSE3,jySSE);
             dz_SSE3       = gmx_sub_pr(iz_SSE3,jzSSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0      = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1      = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);

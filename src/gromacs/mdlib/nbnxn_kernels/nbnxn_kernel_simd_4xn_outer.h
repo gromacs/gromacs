@@ -1,42 +1,47 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- * Gromacs is a library for molecular simulation and trajectory analysis,
- * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
- * a full list of developers and information, check out http://www.gromacs.org
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
  *
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option) any
- * later version.
- * As a special exception, you may use this file as part of a free software
- * library without restriction.  Specifically, if other files instantiate
- * templates or use macros or inline functions from this file, or you compile
- * this file and link it with other files to produce an executable, this
- * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * In plain-speak: do not worry about classes/macros/templates either - only
- * changes to the library have to be LGPL, not an application linking with it.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
- * To help fund GROMACS development, we humbly ask that you cite
- * the papers people have written on it - you can find them on the website!
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 /* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file */
-#include "gmx_x86_simd_macros.h"
+#include "gmx_simd_macros.h"
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    GMX_X86_SIMD_WIDTH_HERE
+#define UNROLLJ    GMX_SIMD_WIDTH_HERE
 
 #if defined GMX_MM128_HERE || defined GMX_DOUBLE
 #define STRIDE     4
@@ -69,7 +74,7 @@
 
 #define SIMD_MASK_ALL   0xffffffff
 
-#include "nbnxn_kernel_x86_simd_utils.h"
+#include "nbnxn_kernel_simd_utils.h"
 
 /* All functionality defines are set here, except for:
  * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
@@ -86,51 +91,49 @@
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
 
-#define NBK_FUNC_NAME_C_LJC(b,s,c,ljc,e) b##_##s##_##c##_comb_##ljc##_##e
+/* The NBK_FUNC_NAME... macros below generate the whole zoo of kernels names
+ * with all combinations off electrostatics (coul), LJ combination rules (ljc)
+ * and energy calculations (ene), depending on the defines set.
+ */
+
+#define NBK_FUNC_NAME_C_LJC(base,coul,ljc,ene) base##_##coul##_comb_##ljc##_##ene
 
 #if defined LJ_COMB_GEOM
-#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,geom,e)
+#define NBK_FUNC_NAME_C(base,coul,ene) NBK_FUNC_NAME_C_LJC(base,coul,geom,ene)
 #else
 #if defined LJ_COMB_LB
-#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,lb,e)
+#define NBK_FUNC_NAME_C(base,coul,ene) NBK_FUNC_NAME_C_LJC(base,coul,lb,ene)
 #else
-#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,none,e)
+#define NBK_FUNC_NAME_C(base,coul,ene) NBK_FUNC_NAME_C_LJC(base,coul,none,ene)
 #endif
 #endif
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,rf,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,rf,ene)
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,tab,ene)
 #else
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab_twin,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,tab_twin,ene)
 #endif
 #endif
 #ifdef CALC_COUL_EWALD
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,ewald,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,ewald,ene)
 #else
-#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,ewald_twin,e)
+#define NBK_FUNC_NAME(base,ene) NBK_FUNC_NAME_C(base,ewald_twin,ene)
 #endif
-#endif
-
-#ifdef GMX_MM128_HERE
-#define NBK_FUNC_NAME_S128_OR_S256(b,e) NBK_FUNC_NAME(b,x86_simd128,e)
-#endif
-#ifdef GMX_MM256_HERE
-#define NBK_FUNC_NAME_S128_OR_S256(b,e) NBK_FUNC_NAME(b,x86_simd256,e)
 #endif
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,noener)
+NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,ener)
+NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,ener)
 #else
-NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
+NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
@@ -566,7 +569,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
         }
 #endif
 
-		/* Load i atom data */
+        /* Load i atom data */
         sciy             = scix + STRIDE;
         sciz             = sciy + STRIDE;
         ix_SSE0          = gmx_add_pr(gmx_load1_pr(x+scix)  ,shX_SSE);
@@ -656,13 +659,13 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for(; (cjind<cjind1); cjind++)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
             }
 #undef HALF_LJ
 #undef CALC_COULOMB
@@ -673,13 +676,13 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for(; (cjind<cjind1); cjind++)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
             }
 #undef CALC_COULOMB
         }
@@ -688,13 +691,13 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for(; (cjind<cjind1); cjind++)
             {
-#include "nbnxn_kernel_x86_simd_inner.h"
+#include "nbnxn_kernel_simd_4xn_inner.h"
             }
         }
 #undef CALC_LJ

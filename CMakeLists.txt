@@ -179,7 +179,7 @@ if(NOT DEFINED GMX_CPU_ACCELERATION)
 endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
-    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Power6, Fortran")
+    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -280,6 +280,10 @@ include(gmxDetectClang30)
 gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
 if(COMPILER_IS_CLANG_3_0)
     message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
+endif()
+
+if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
+    message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
 endif()
 
 ########################################################################
@@ -671,14 +675,14 @@ if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
 
     GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" GROMACS_C_FLAGS)
-    if(NOT GNU_SSE2_CFLAG)
+    if(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
         GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
-    endif(NOT GNU_SSE2_CFLAG)
+    endif(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
 
     GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" GROMACS_CXX_FLAGS)
-    if(NOT GNU_SSE2_CXXFLAG)
+    if(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
         GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
-    endif(NOT GNU_SSE2_CXXFLAG)
+    endif(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
 
     # We dont warn for lacking SSE2 flag support, since that is probably standard today.
 
@@ -699,25 +703,29 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
 
     GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" GROMACS_C_FLAGS)
-    if (NOT GNU_SSE4_CFLAG)
+    if (NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
         GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" GROMACS_C_FLAGS)
-    endif(NOT GNU_SSE4_CFLAG)
+    endif(NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
         message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
         # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
         # intrinsics when SSE2 support is enabled, so we try that instead.
-        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+	if (GMX_NATIVE_WINDOWS)
+            GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" GROMACS_C_FLAGS)
+        endif()
     endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
 
     GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" GROMACS_CXX_FLAG)
-    if (NOT GNU_SSE4_CXXFLAG)
+    if (NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
        GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" GROMACS_CXX_FLAGS)
-    endif(NOT GNU_SSE4_CXXFLAG)
+    endif(NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
         message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
         # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
         # intrinsics when SSE2 support is enabled, so we try that instead.
-        GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+        if (GMX_NATIVE_WINDOWS)
+            GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" GROMACS_CXX_FLAGS)
+        endif()
     endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
 
     # This must come after we have added the -msse4.1 flag on some platforms.
@@ -740,17 +748,17 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
     # Set the AVX compiler flag for both these choices!
 
     GMX_TEST_CFLAG(GNU_AVX_CFLAG "-mavx" GROMACS_C_FLAGS)
-    if (NOT GNU_AVX_CFLAG)
+    if (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
         GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" GROMACS_C_FLAGS)
-    endif (NOT GNU_AVX_CFLAG)
+    endif (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
         message(WARNING "No C AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
     endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
 
     GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" GROMACS_CXX_FLAGS)
-    if (NOT GNU_AVX_CXXFLAG)
+    if (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
        GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" GROMACS_CXX_FLAGS)
-    endif (NOT GNU_AVX_CXXFLAG)
+    endif (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
        message(WARNING "No C++ AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
     endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
@@ -813,12 +821,6 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         endif()
     endif()
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "FORTRAN")
-
-#    Fortran is temporarily disabled while we push in nbNxN kernels.
-#    We need to fake it a bit here to avoid jenkins build errors!
-#    add_definitions(-DGMX_FORTRAN)
-
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_CPU_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
     if (NOT ACCELERATION_QUIETLY)
@@ -846,47 +848,9 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "POWER6")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
 else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, Fortran, BlueGene, Power6")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
 endif(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
 set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
-
-if(GMX_FORTRAN OR GMX_POWER6)
-    if (GMX_THREAD_MPI)
-        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with thread-MPI and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
-    endif(GMX_THREAD_MPI)
-    enable_language(Fortran)
-    include(FortranCInterface)
-    discover_fortran_mangling(prefix isupper suffix extra_under_score found)
-    if(extra_under_score)
-        set(extrasuffix "_")
-    endif(extra_under_score)
-    if(prefix)
-      set(prefix "${prefix} ##")
-    endif(prefix)
-    if(suffix)
-      set(suffix "## ${suffix}")
-      if(extrasuffix)
-	set(extrasuffix "${suffix}${extrasuffix}")
-      endif(extrasuffix)
-    else(suffix)
-      if(extrasuffix)
-	# Don't know if this is needed, but it can't hurt
-	set(extrasuffix "## ${extrasuffix}")
-      endif(extrasuffix)
-    endif(suffix)
-
-    if(isupper)
-        set(F77_FUNCDEF   "${prefix} NAME ${suffix}")
-        # The underscored versions are not currently used.
-        #set(F77_FUNCDEF_  "${prefix} NAME ${extrasuffix}")
-    else(isupper)
-        set(F77_FUNCDEF   "${prefix} name ${suffix}")
-        #set(F77_FUNCDEF_  "${prefix} name ${extrasuffix}")
-    endif(isupper)
-else(GMX_FORTRAN OR GMX_POWER6)
-        set(F77_FUNCDEF   "name ## _")
-        #set(F77_FUNCDEF_  "name ## _")
-endif(GMX_FORTRAN OR GMX_POWER6)
 
 # Process QM/MM Settings
 string(TOUPPER ${GMX_QMMM_PROGRAM} ${GMX_QMMM_PROGRAM})

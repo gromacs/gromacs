@@ -88,6 +88,7 @@ typedef struct gmx_lincsdata {
     int  *triangle;   /* the list of triangle constraints */
     int  *tri_bits;   /* the bits tell if the matrix element should be used */
     int  ncc_triangle;/* the number of constraint connections in triangles */
+    gmx_bool bCommIter; /* communicate before each LINCS interation */
     real *blmf;       /* matrix of mass factors for constraint connections */
     real *blmf1;      /* as blmf, but with all masses 1 */
     real *bllen;      /* the reference bond length */
@@ -225,23 +226,44 @@ static void lincs_update_atoms_noind(int ncons,const int *bla,
     int  b,i,j;
     real mvb,im1,im2,tmp0,tmp1,tmp2;
 
-    for(b=0; b<ncons; b++)
+    if (invmass != NULL)
     {
-        i = bla[2*b];
-        j = bla[2*b+1];
-        mvb = prefac*fac[b];
-        im1 = invmass[i];
-        im2 = invmass[j];
-        tmp0 = r[b][0]*mvb;
-        tmp1 = r[b][1]*mvb;
-        tmp2 = r[b][2]*mvb;
-        x[i][0] -= tmp0*im1;
-        x[i][1] -= tmp1*im1;
-        x[i][2] -= tmp2*im1;
-        x[j][0] += tmp0*im2;
-        x[j][1] += tmp1*im2;
-        x[j][2] += tmp2*im2;
-    } /* 16 ncons flops */
+        for(b=0; b<ncons; b++)
+        {
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            im1 = invmass[i];
+            im2 = invmass[j];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0*im1;
+            x[i][1] -= tmp1*im1;
+            x[i][2] -= tmp2*im1;
+            x[j][0] += tmp0*im2;
+            x[j][1] += tmp1*im2;
+            x[j][2] += tmp2*im2;
+        } /* 16 ncons flops */
+    }
+    else
+    {
+        for(b=0; b<ncons; b++)
+        {
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0;
+            x[i][1] -= tmp1;
+            x[i][2] -= tmp2;
+            x[j][0] += tmp0;
+            x[j][1] += tmp1;
+            x[j][2] += tmp2;
+        }
+    }        
 }
 
 static void lincs_update_atoms_ind(int ncons,const int *ind,const int *bla,
@@ -253,24 +275,46 @@ static void lincs_update_atoms_ind(int ncons,const int *ind,const int *bla,
     int  bi,b,i,j;
     real mvb,im1,im2,tmp0,tmp1,tmp2;
 
-    for(bi=0; bi<ncons; bi++)
+    if (invmass != NULL)
     {
-        b = ind[bi];
-        i = bla[2*b];
-        j = bla[2*b+1];
-        mvb = prefac*fac[b];
-        im1 = invmass[i];
-        im2 = invmass[j];
-        tmp0 = r[b][0]*mvb;
-        tmp1 = r[b][1]*mvb;
-        tmp2 = r[b][2]*mvb;
-        x[i][0] -= tmp0*im1;
-        x[i][1] -= tmp1*im1;
-        x[i][2] -= tmp2*im1;
-        x[j][0] += tmp0*im2;
-        x[j][1] += tmp1*im2;
-        x[j][2] += tmp2*im2;
-    } /* 16 ncons flops */
+        for(bi=0; bi<ncons; bi++)
+        {
+            b = ind[bi];
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            im1 = invmass[i];
+            im2 = invmass[j];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0*im1;
+            x[i][1] -= tmp1*im1;
+            x[i][2] -= tmp2*im1;
+            x[j][0] += tmp0*im2;
+            x[j][1] += tmp1*im2;
+            x[j][2] += tmp2*im2;
+        } /* 16 ncons flops */
+    }
+    else
+    {
+        for(bi=0; bi<ncons; bi++)
+        {
+            b = ind[bi];
+            i = bla[2*b];
+            j = bla[2*b+1];
+            mvb = prefac*fac[b];
+            tmp0 = r[b][0]*mvb;
+            tmp1 = r[b][1]*mvb;
+            tmp2 = r[b][2]*mvb;
+            x[i][0] -= tmp0;
+            x[i][1] -= tmp1;
+            x[i][2] -= tmp2;
+            x[j][0] += tmp0;
+            x[j][1] += tmp1;
+            x[j][2] += tmp2;
+        } /* 16 ncons flops */
+    }
 }
 
 static void lincs_update_atoms(struct gmx_lincsdata *li,int th,
@@ -404,35 +448,24 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
         }
     }
 
-    if (econq != econqForce)
+    /* We multiply sol by blc, so we can use lincs_update_atoms for OpenMP */
+    for(b=b0; b<b1; b++)
     {
-        lincs_update_atoms(lincsd,th,1.0,sol,r,invmass,fp);
+        sol[b] *= blc[b];
     }
-    else
+
+    /* When constraining forces, we should not use mass weighting,
+     * so we pass invmass=NULL, which results in the use of 1 for all atoms.
+     */
+    lincs_update_atoms(lincsd,th,1.0,sol,r,
+                       (econq != econqForce) ? invmass : NULL,fp);
+
+    if (dvdlambda != NULL)
     {
+#pragma omp barrier
         for(b=b0; b<b1; b++)
         {
-            i = bla[2*b];
-            j = bla[2*b+1];
-            mvb = blc[b]*sol[b];
-            tmp0 = r[b][0]*mvb;
-            tmp1 = r[b][1]*mvb;
-            tmp2 = r[b][2]*mvb;
-            fp[i][0] -= tmp0;
-            fp[i][1] -= tmp1;
-            fp[i][2] -= tmp2;
-            fp[j][0] += tmp0;
-            fp[j][1] += tmp1;
-            fp[j][2] += tmp2;
-        }
-
-        if (dvdlambda != NULL)
-        {
-#pragma omp barrier
-            for(b=b0; b<b1; b++)
-            {
-                *dvdlambda -= blc[b]*sol[b]*lincsd->ddist[b];
-            }
+            *dvdlambda -= sol[b]*lincsd->ddist[b];
         }
         /* 10 ncons flops */
     }
@@ -446,7 +479,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
          */
         for(b=b0; b<b1; b++)
         {
-            mvb = lincsd->bllen[b]*blc[b]*sol[b];
+            mvb = lincsd->bllen[b]*sol[b];
             for(i=0; i<DIM; i++)
             {
                 tmp1 = mvb*r[b][i];
@@ -587,7 +620,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
 	
     for(iter=0; iter<lincsd->nIter; iter++)
     {
-        if ((DOMAINDECOMP(cr) && cr->dd->constraints) ||
+        if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints) ||
             PARTDECOMP(cr))
         {
 #pragma omp barrier
@@ -848,6 +881,37 @@ static int count_triangle_constraints(t_ilist *ilist,t_blocka *at2con)
     return ncon_triangle;
 }
 
+static gmx_bool more_than_two_sequential_constraints(const t_ilist *ilist,
+                                                     const t_blocka *at2con)
+{
+    t_iatom  *ia1,*ia2,*iap;
+    int      ncon1,ncon_tot,c;
+    int      a1,a2;
+    gmx_bool bMoreThanTwoSequentialConstraints;
+
+    ncon1    = ilist[F_CONSTR].nr/3;
+    ncon_tot = ncon1 + ilist[F_CONSTRNC].nr/3;
+
+    ia1 = ilist[F_CONSTR].iatoms;
+    ia2 = ilist[F_CONSTRNC].iatoms;
+
+    bMoreThanTwoSequentialConstraints = FALSE;
+    for(c=0; c<ncon_tot && !bMoreThanTwoSequentialConstraints; c++)
+    {
+        iap = constr_iatomptr(ncon1,ia1,ia2,c);
+        a1 = iap[1];
+        a2 = iap[2];
+        /* Check if this constraint has constraints connected at both atoms */
+        if (at2con->index[a1+1] - at2con->index[a1] > 1 &&
+            at2con->index[a2+1] - at2con->index[a2] > 1)
+        {
+            bMoreThanTwoSequentialConstraints = TRUE;
+        }
+    }
+
+    return bMoreThanTwoSequentialConstraints;
+}
+
 static int int_comp(const void *a,const void *b)
 {
     return (*(int *)a) - (*(int *)b);
@@ -874,7 +938,11 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
         gmx_mtop_ftype_count(mtop,F_CONSTRNC);
     li->ncg_flex = nflexcon_global;
     
+    li->nIter  = nIter;
+    li->nOrder = nProjOrder;
+
     li->ncg_triangle = 0;
+    li->bCommIter = FALSE;
     for(mb=0; mb<mtop->nmolblock; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
@@ -882,10 +950,23 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
             mtop->molblock[mb].nmol*
             count_triangle_constraints(molt->ilist,
                                        &at2con[mtop->molblock[mb].type]);
+        if (bPLINCS && li->bCommIter == FALSE)
+        {
+            /* Check if we need to communicate not only before LINCS,
+             * but also before each iteration.
+             * The check for only two sequential constraints is only
+             * useful for the common case of H-bond only constraints.
+             * With more effort we could also make it useful for small
+             * molecules with nr. sequential constraints <= nOrder-1.
+             */
+            li->bCommIter = (li->nOrder < 1 || more_than_two_sequential_constraints(molt->ilist,&at2con[mtop->molblock[mb].type]));
+        }
     }
-    
-    li->nIter  = nIter;
-    li->nOrder = nProjOrder;
+    if (debug && bPLINCS)
+    {
+        fprintf(debug,"PLINCS communication before each iteration: %d\n",
+                li->bCommIter);
+    }
 
     /* LINCS can run on any number of threads.
      * Currently the number is fixed for the whole simulation,

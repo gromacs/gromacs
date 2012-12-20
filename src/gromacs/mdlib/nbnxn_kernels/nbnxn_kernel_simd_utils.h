@@ -1,33 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS Development Team
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- * Gromacs is a library for molecular simulation and trajectory analysis,
- * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
- * a full list of developers and information, check out http://www.gromacs.org
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
- * later version.
- * As a special exception, you may use this file as part of a free software
- * library without restriction.  Specifically, if other files instantiate
- * templates or use macros or inline functions from this file, or you compile
- * this file and link it with other files to produce an executable, this
- * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * In plain-speak: do not worry about classes/macros/templates either - only
- * changes to the library have to be LGPL, not an application linking with it.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
- * To help fund GROMACS development, we humbly ask that you cite
- * the papers people have written on it - you can find them on the website!
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifndef _nbnxn_kernel_sse_utils_h_
 #define _nbnxn_kernel_sse_utils_h_
@@ -99,6 +104,14 @@
     i_SSE2 = _mm256_hadd_ps(i_SSE2,i_SSE3);                             \
     i_SSE1 = _mm256_hadd_ps(i_SSE0,i_SSE2);                             \
     o_SSE  = _mm_add_ps(_mm256_castps256_ps128(i_SSE1),_mm256_extractf128_ps(i_SSE1,1)); \
+}
+#define GMX_MM_TRANSPOSE_SUM4H_PR(i_SSE0,i_SSE2,o_SSE)                  \
+{                                                                       \
+    i_SSE0 = _mm256_hadd_ps(i_SSE0,_mm256_setzero_ps());                \
+    i_SSE2 = _mm256_hadd_ps(i_SSE2,_mm256_setzero_ps());                \
+    i_SSE0 = _mm256_hadd_ps(i_SSE0,i_SSE2);                             \
+    i_SSE2 = _mm256_permute_ps(i_SSE0,0b10110001);                      \
+    o_SSE  = _mm_add_ps(_mm256_castps256_ps128(i_SSE0),_mm256_extractf128_ps(i_SSE2,1)); \
 }
 #else
 #define GMX_MM_TRANSPOSE_SUM4_PR(i_SSE0,i_SSE1,i_SSE2,i_SSE3,o_SSE)     \
@@ -212,6 +225,23 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     int p;                                                              \
                                                                         \
     for(p=0; p<UNROLLJ; p++)                                            \
+    {                                                                   \
+        /* Here we load 4 aligned floats, but we need just 2 */         \
+        clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
+    }                                                                   \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0],clj_SSE[1],clj_SSE[2],clj_SSE[3],c6t_SSE[0],c12t_SSE[0]); \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[4],clj_SSE[5],clj_SSE[6],clj_SSE[7],c6t_SSE[1],c12t_SSE[1]); \
+                                                                        \
+    GMX_2_MM_TO_M256(c6t_SSE[0],c6t_SSE[1],c6_SSE);                     \
+    GMX_2_MM_TO_M256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                  \
+}
+
+#define load_lj_pair_params2(nbfp,type,aj,c6_SSE,c12_SSE)                \
+{                                                                       \
+    __m128 clj_SSE[2*UNROLLJ],c6t_SSE[2],c12t_SSE[2];                     \
+    int p;                                                              \
+                                                                        \
+    for(p=0; p<2*UNROLLJ; p++)                                            \
     {                                                                   \
         /* Here we load 4 aligned floats, but we need just 2 */         \
         clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
@@ -469,7 +499,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 /* Add energy register to possibly multiple terms in the energy array.
  * This function is the same for SSE/AVX single/double.
  */
-static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,int *offset_jj)
+static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,const int *offset_jj)
 {
     int jj;
 
@@ -481,9 +511,39 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,int *offset_jj)
     {
         gmx_mm_pr v_SSE;
 
-        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*UNROLLJ);
-        gmx_store_pr(v+offset_jj[jj]+jj*UNROLLJ,gmx_add_pr(v_SSE,e_SSE));
+        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
+        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE,gmx_add_pr(v_SSE,e_SSE));
     }
 }
+
+#if defined GMX_X86_AVX_256 && GMX_SIMD_WIDTH_HERE == 8
+/* As add_ener_grp above, but for two groups of UNROLLJ/2 stored in
+ * a single SIMD register.
+ */
+static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
+                                       real *v0,real *v1,const int *offset_jj)
+{
+    gmx_mm_hpr e_SSE0,e_SSE1;
+    int jj;
+
+    e_SSE0 = _mm256_extractf128_ps(e_SSE,0);
+    e_SSE1 = _mm256_extractf128_ps(e_SSE,1);
+
+    for(jj=0; jj<(UNROLLJ/2); jj++)
+    {
+        gmx_mm_hpr v_SSE;
+
+        v_SSE = gmx_load_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE0));
+    }
+    for(jj=0; jj<(UNROLLJ/2); jj++)
+    {
+        gmx_mm_hpr v_SSE;
+
+        v_SSE = gmx_load_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2,gmx_add_hpr(v_SSE,e_SSE1));
+    }
+}
+#endif
 
 #endif /* _nbnxn_kernel_sse_utils_h_ */

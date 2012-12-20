@@ -128,7 +128,7 @@ extern void make_pull_groups(t_pull *pull,char **pgnames,
 			     t_blocka *grps,char **gnames);
 /* Process the pull parameters after reading the index groups */
 
-extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
+extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box, real lambda,
 			  const output_env_t oenv, gmx_bool bStart);
 /* Prints the initial pull group distances in x.
  * If bStart adds the distance to the initial reference location.

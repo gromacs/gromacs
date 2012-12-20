@@ -145,8 +145,8 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
     ma((void **)&out->Vvdw,out->nV*sizeof(*out->Vvdw));
     ma((void **)&out->Vc  ,out->nV*sizeof(*out->Vc  ));
 
-    if (nb_kernel_type == nbk4xN_X86_SIMD128 ||
-        nb_kernel_type == nbk4xN_X86_SIMD256)
+    if (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
+        nb_kernel_type == nbnxnk4xN_SIMD_2xNN)
     {
         cj_size = nbnxn_kernel_to_cj_size(nb_kernel_type);
         out->nVS = nenergrp*nenergrp*stride*(cj_size>>1)*cj_size;
@@ -592,17 +592,25 @@ void nbnxn_atomdata_init(FILE *fp,
     nbat->lj_comb = NULL;
     if (simple)
     {
+        int pack_x;
+
         switch (nb_kernel_type)
         {
-        case nbk4xN_X86_SIMD128:
-            nbat->XFormat = nbatX4;
-            break;
-        case nbk4xN_X86_SIMD256:
-#ifndef GMX_DOUBLE
-            nbat->XFormat = nbatX8;
-#else
-            nbat->XFormat = nbatX4;
-#endif
+        case nbnxnk4xN_SIMD_4xN:
+        case nbnxnk4xN_SIMD_2xNN:
+            pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
+                         nbnxn_kernel_to_cj_size(nb_kernel_type));
+            switch (pack_x)
+            {
+                case 4:
+                    nbat->XFormat = nbatX4;
+                    break;
+                case 8:
+                    nbat->XFormat = nbatX8;
+                    break;
+                default:
+                    gmx_incons("Unsupported packing width");
+            }
             break;
         default:
             nbat->XFormat = nbatXYZ;
@@ -1028,14 +1036,14 @@ nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
 #else
 #define GMX_MM128_HERE
 #endif
-#include "gmx_x86_simd_macros.h"
+#include "gmx_simd_macros.h"
 
     int       i,s;
     gmx_mm_pr dest_SSE,src_SSE;
 
     if (bDestSet)
     {
-        for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
+        for(i=i0; i<i1; i+=GMX_SIMD_WIDTH_HERE)
         {
             dest_SSE = gmx_load_pr(dest+i);
             for(s=0; s<nsrc; s++)
@@ -1048,7 +1056,7 @@ nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
     }
     else
     {
-        for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
+        for(i=i0; i<i1; i+=GMX_SIMD_WIDTH_HERE)
         {
             dest_SSE = gmx_load_pr(src[0]+i);
             for(s=1; s<nsrc; s++)

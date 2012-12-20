@@ -1,36 +1,39 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -46,18 +49,26 @@
 #include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
 
-#ifdef GMX_X86_AVX_256
+#ifdef GMX_NBNXN_SIMD_2XNN
 
-#include "nbnxn_kernel_x86_simd256.h"
+#include "nbnxn_kernel_simd_2xnn.h"
 
-/* Include all flavors of the 256-bit AVX kernel loops */
+/* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
 
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
+#define GMX_MM128_HERE
+#else
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
 #define GMX_MM256_HERE
+#else
+#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
+#endif
+#endif
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
 
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 
 #undef CALC_COUL_RF
 
@@ -65,11 +76,11 @@
 #define CALC_COUL_TAB
 
 /* Single cut-off: rcoulomb = rvdw */
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 
 /* Twin cut-off: rcoulomb >= rvdw */
 #define VDW_CUTOFF_CHECK
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 #undef VDW_CUTOFF_CHECK
 
 #undef CALC_COUL_TAB
@@ -78,11 +89,11 @@
 #define CALC_COUL_EWALD
 
 /* Single cut-off: rcoulomb = rvdw */
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 
 /* Twin cut-off: rcoulomb >= rvdw */
 #define VDW_CUTOFF_CHECK
-#include "nbnxn_kernel_x86_simd_includes.h"
+#include "nbnxn_kernel_simd_2xnn_includes.h"
 #undef VDW_CUTOFF_CHECK
 
 #undef CALC_COUL_EWALD
@@ -106,7 +117,7 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
 
 enum { coultRF, coultTAB, coultTAB_TWIN, coultEWALD, coultEWALD_TWIN, coultNR };
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_ener
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_ener
 static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
 { { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
   { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
@@ -115,7 +126,7 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
   { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
 #undef NBK_FN
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_energrp
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_energrp
 static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
 { { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
   { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
@@ -124,7 +135,7 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
   { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
 #undef NBK_FN
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_x86_simd256_##elec##_comb_##ljcomb##_noener
+#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_noener
 static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
 { { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
   { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
@@ -138,15 +149,14 @@ static void reduce_group_energies(int ng,int ng_2log,
                                   const real *VSvdw,const real *VSc,
                                   real *Vvdw,real *Vc)
 {
+    const int simd_width   = GMX_SIMD_WIDTH_HERE;
+    const int unrollj_half = GMX_SIMD_WIDTH_HERE/4;
     int ng_p2,i,j,j0,j1,c,s;
-
-#define SIMD_WIDTH       (GMX_X86_SIMD_WIDTH_HERE)
-#define SIMD_WIDTH_HALF  (GMX_X86_SIMD_WIDTH_HERE/2)
 
     ng_p2 = (1<<ng_2log);
 
     /* The size of the x86 SIMD energy group buffer array is:
-     * ng*ng*ng_p2*SIMD_WIDTH_HALF*SIMD_WIDTH
+     * ng*ng*ng_p2*unrollj_half*simd_width
      */
     for(i=0; i<ng; i++)
     {
@@ -160,34 +170,34 @@ static void reduce_group_energies(int ng,int ng_2log,
         {
             for(j0=0; j0<ng; j0++)
             {
-                c = ((i*ng + j1)*ng_p2 + j0)*SIMD_WIDTH_HALF*SIMD_WIDTH;
-                for(s=0; s<SIMD_WIDTH_HALF; s++)
+                c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*simd_width/2;
+                for(s=0; s<unrollj_half; s++)
                 {
                     Vvdw[i*ng+j0] += VSvdw[c+0];
                     Vvdw[i*ng+j1] += VSvdw[c+1];
                     Vc  [i*ng+j0] += VSc  [c+0];
                     Vc  [i*ng+j1] += VSc  [c+1];
-                    c += SIMD_WIDTH + 2;
+                    c += simd_width/2 + 2;
                 }
             }
         }
     }
 }
 
-#endif /* GMX_X86_AVX_256 */
+#endif /* GMX_NBNXN_SIMD_2XNN */
 
 void
-nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
-                         const nbnxn_atomdata_t     *nbat,
-                         const interaction_const_t  *ic,
-                         int                        ewald_excl,
-                         rvec                       *shift_vec, 
-                         int                        force_flags,
-                         int                        clearF,
-                         real                       *fshift,
-                         real                       *Vc,
-                         real                       *Vvdw)
-#ifdef GMX_X86_AVX_256
+nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
+                       const nbnxn_atomdata_t     *nbat,
+                       const interaction_const_t  *ic,
+                       int                        ewald_excl,
+                       rvec                       *shift_vec, 
+                       int                        force_flags,
+                       int                        clearF,
+                       real                       *fshift,
+                       real                       *Vc,
+                       real                       *Vvdw)
+#ifdef GMX_NBNXN_SIMD_2XNN
 {
     int              nnbl;
     nbnxn_pairlist_t **nbl;
@@ -317,6 +327,6 @@ nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
 }
 #else
 {
-    gmx_incons("nbnxn_kernel_x86_simd256 called while GROMACS was configured without AVX enabled");
+    gmx_incons("nbnxn_kernel_simd_2xnn called while GROMACS was configured without 2x(N+N) SIMD kernels enabled");
 }
 #endif

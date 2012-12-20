@@ -43,13 +43,66 @@
 extern "C" {
 #endif
 
-/*! Nonbonded NxN kernel types: plain C, SSE/AVX, GPU CUDA, GPU emulation, etc */
-enum { nbkNotSet = 0, 
-       nbk4x4_PlainC, 
-       nbk4xN_X86_SIMD128,
-       nbk4xN_X86_SIMD256,
-       nbk8x8x8_CUDA,
-       nbk8x8x8_PlainC };
+#ifdef GMX_X86_SSE2
+/* Use SIMD accelerated nbnxn search and kernels */
+#define GMX_NBNXN_SIMD
+
+#ifdef GMX_X86_AVX_256
+/* Comment out this define to use AVX-128 kernels with AVX-256 acceleration */
+#define GMX_NBNXN_SIMD_BITWIDTH  256
+#else
+#define GMX_NBNXN_SIMD_BITWIDTH  128
+#endif
+
+/* The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
+ * Currently the 2xNN SIMD kernels only make sense and are only implemented
+ * with AVX-256 in single precision using a 4x4 cluster setup instead of 4x8.
+ */
+#define GMX_NBNXN_SIMD_4XN
+#if GMX_NBNXN_SIMD_BITWIDTH == 256 && !defined GMX_DOUBLE
+#define GMX_NBNXN_SIMD_2XNN
+#endif
+
+#endif
+
+
+/*! Nonbonded NxN kernel types: plain C, CPU SIMD, GPU CUDA, GPU emulation */
+typedef enum
+{
+    nbnxnkNotSet = 0, 
+    nbnxnk4x4_PlainC, 
+    nbnxnk4xN_SIMD_4xN,
+    nbnxnk4xN_SIMD_2xNN,
+    nbnxnk8x8x8_CUDA,
+    nbnxnk8x8x8_PlainC,
+    nbnxnkNR
+} nbnxn_kernel_type;
+
+/* Note that _mm_... intrinsics can be converted to either SSE or AVX
+ * depending on compiler flags.
+ * For gcc we check for __AVX__
+ * At least a check for icc should be added (if there is a macro)
+ */
+static const char *nbnxn_kernel_name[nbnxnkNR] =
+  { "not set", "plain C",
+#if !(defined GMX_X86_SSE2)
+    "not available", "not available",
+#else
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
+#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
+#ifndef GMX_X86_SSE4_1
+    "SSE2", "SSE2",
+#else
+    "SSE4.1", "SSE4.1",
+#endif
+#else
+    "AVX-128", "AVX-128",
+#endif
+#else
+    "AVX-256",  "AVX-256",
+#endif
+#endif
+    "CUDA", "plain C" };
 
 enum { ewaldexclTable, ewaldexclAnalytical };
 
@@ -81,9 +134,9 @@ typedef struct {
 
 /* non-bonded data structure with Verlet-type cut-off */
 typedef struct {
-    nbnxn_search_t           nbs;   /* n vs n atom pair searching data          */
-    int                      ngrp;  /* number of interaction groups             */
-    nonbonded_verlet_group_t grp[2];/* local and non-local interaction group    */
+    nbnxn_search_t           nbs;   /* n vs n atom pair searching data       */
+    int                      ngrp;  /* number of interaction groups          */
+    nonbonded_verlet_group_t grp[2];/* local and non-local interaction group */
 
     gmx_bool         bUseGPU;          /* TRUE when GPU acceleration is used */
     nbnxn_cuda_ptr_t cu_nbv;           /* pointer to CUDA nb verlet data     */

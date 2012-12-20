@@ -1689,8 +1689,35 @@ int cmain (int argc, char *argv[])
                             &(ir->nkx),&(ir->nky),&(ir->nkz));
   }
 
+  /* MRS: eventually figure out better logic for initializing the fep
+   values that makes declaring the lambda and declaring the state not
+   potentially conflict if not handled correctly. */
+  if (ir->efep != efepNO)
+  {
+      state.fep_state = ir->fepvals->init_fep_state;
+      for (i=0;i<efptNR;i++)
+      {
+          /* init_lambda trumps state definitions*/
+          if (ir->fepvals->init_lambda >= 0)
+          {
+              state.lambda[i] = ir->fepvals->init_lambda;
+          }
+          else
+          {
+              if (ir->fepvals->all_lambda[i] == NULL)
+              {
+                  gmx_fatal(FARGS,"Values of lambda not set for a free energy calculation!");
+              }
+              else
+              {
+                  state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
+              }
+          }
+      }
+  }
+
   if (ir->ePull != epullNO)
-    set_pull_init(ir,sys,state.x,state.box,oenv,opts->pull_start);
+      set_pull_init(ir,sys,state.x,state.box,state.lambda[efptMASS],oenv,opts->pull_start);
   
   if (ir->bRot)
   {
@@ -1733,33 +1760,6 @@ int cmain (int argc, char *argv[])
         }
     }
 	
-  /* MRS: eventually figure out better logic for initializing the fep
-   values that makes declaring the lambda and declaring the state not
-   potentially conflict if not handled correctly. */
-  if (ir->efep != efepNO)
-  {
-      state.fep_state = ir->fepvals->init_fep_state;
-      for (i=0;i<efptNR;i++)
-      {
-          /* init_lambda trumps state definitions*/
-          if (ir->fepvals->init_lambda >= 0)
-          {
-              state.lambda[i] = ir->fepvals->init_lambda;
-          }
-          else
-          {
-              if (ir->fepvals->all_lambda[i] == NULL)
-              {
-                  gmx_fatal(FARGS,"Values of lambda not set for a free energy calculation!");
-              }
-              else
-              {
-                  state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
-              }
-          }
-      }
-  }
-
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
