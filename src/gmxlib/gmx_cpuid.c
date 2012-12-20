@@ -283,7 +283,6 @@ execute_x86cpuid(unsigned int   level,
 #endif
     return rc;
 }
-#endif /* architecture is x86 */
 
 
 /* Identify CPU features common to Intel & AMD - mainly brand string,
@@ -465,6 +464,9 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
     }
     return 0;
 }
+#endif /* architecture is x86 */
+
+
 
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
@@ -480,6 +482,7 @@ cpuid_check_vendor(void)
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
 
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
     execute_x86cpuid(0x0,0,&eax,&ebx,&ecx,&edx);
 
     memcpy(vendorstring,&ebx,4);
@@ -495,7 +498,10 @@ cpuid_check_vendor(void)
             vendor = i;
         }
     }
-
+#else
+    vendor = GMX_CPUID_VENDOR_UNKNOWN;
+#endif
+    
     return vendor;
 }
 
@@ -521,12 +527,14 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 
     switch(cpuid->vendor)
     {
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
         case GMX_CPUID_VENDOR_INTEL:
             cpuid_check_intel_x86(cpuid);
             break;
         case GMX_CPUID_VENDOR_AMD:
             cpuid_check_amd_x86(cpuid);
             break;
+#endif
         default:
             /* Could not find vendor */
             strncpy(cpuid->brand,"Unknown CPU brand",GMX_CPUID_BRAND_MAXLEN);
