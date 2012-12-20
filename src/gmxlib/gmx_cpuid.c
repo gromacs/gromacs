@@ -54,11 +54,16 @@
 #include <unistd.h>
 #endif
 
-
-
-
 #include "gmx_cpuid.h"
 
+
+
+/* For convenience, and to enable configure-time invocation, we keep all architectures
+ * in a single file, but to avoid repeated ifdefs we set the overall architecture here.
+ */
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+#    define GMX_CPUID_X86
+#endif
 
 /* Global constant character strings corresponding to our enumerated types */
 const char *
@@ -209,10 +214,7 @@ compiled_acc = GMX_CPUID_ACCELERATION_NONE;
 #endif
 
 
-/* Currently CPUID is only supported (1) if we can use an instruction on MSVC, or (2)
- * if the compiler handles GNU-style inline assembly.
- */
-#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+#ifdef GMX_CPUID_X86
 
 /* Execute CPUID on x86 class CPUs. level sets function to exec, and the
  * contents of register output is returned. See Intel/AMD docs for details.
@@ -230,6 +232,10 @@ execute_x86cpuid(unsigned int   level,
                  unsigned int * edx)
 {
     int rc = 0;
+
+    /* Currently CPUID is only supported (1) if we can use an instruction on MSVC, or (2)
+     * if the compiler handles GNU-style inline assembly.
+     */
 
 #if (defined _MSC_VER)
     int CPUInfo[4];
@@ -283,7 +289,6 @@ execute_x86cpuid(unsigned int   level,
 #endif
     return rc;
 }
-#endif /* architecture is x86 */
 
 
 /* Identify CPU features common to Intel & AMD - mainly brand string,
@@ -465,6 +470,9 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
     }
     return 0;
 }
+#endif /* GMX_CPUID_X86 */
+
+
 
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
@@ -480,6 +488,7 @@ cpuid_check_vendor(void)
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
 
+#ifdef GMX_CPUID_X86
     execute_x86cpuid(0x0,0,&eax,&ebx,&ecx,&edx);
 
     memcpy(vendorstring,&ebx,4);
@@ -495,7 +504,10 @@ cpuid_check_vendor(void)
             vendor = i;
         }
     }
-
+#else
+    vendor = GMX_CPUID_VENDOR_UNKNOWN;
+#endif
+    
     return vendor;
 }
 
@@ -521,12 +533,14 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 
     switch(cpuid->vendor)
     {
+#ifdef GMX_CPUID_X86
         case GMX_CPUID_VENDOR_INTEL:
             cpuid_check_intel_x86(cpuid);
             break;
         case GMX_CPUID_VENDOR_AMD:
             cpuid_check_amd_x86(cpuid);
             break;
+#endif
         default:
             /* Could not find vendor */
             strncpy(cpuid->brand,"Unknown CPU brand",GMX_CPUID_BRAND_MAXLEN);
