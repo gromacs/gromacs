@@ -106,6 +106,9 @@
 /* AVX 256-bit instructions available */
 #cmakedefine GMX_X86_AVX_256
 
+/* GCC bug in AVX maskload/maskstore arguments - worked around internally */
+#cmakedefine GMX_X86_AVX_GCC_MASKLOAD_BUG
+
 /* SSE2 was selected as CPU acceleration level */
 #cmakedefine GMX_CPU_ACCELERATION_X86_SSE2
 
