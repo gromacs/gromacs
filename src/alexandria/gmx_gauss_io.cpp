@@ -535,7 +535,16 @@ gau_atomprop_t read_gauss_data()
 
 void done_gauss_data(gau_atomprop_t gaps)
 {
-    fprintf(stderr,"Please clean up your gau_atomprop_t\n");
+    int j;
+    for(j=0; (j<gaps->ngap); j++) 
+    {
+        sfree(gaps->gap[j].element);
+        sfree(gaps->gap[j].method);
+        sfree(gaps->gap[j].desc);
+    }
+    sfree(gaps->gap);
+    gaps->gap = NULL;
+    gaps->ngap = 0;
 }
 
 int gau_atomprop_get_value(gau_atomprop_t gaps,char *element,char *method,
@@ -804,7 +813,7 @@ static gmx_molprop_t gmx_molprop_read_log(const char *fn,
         {
             status = gau_comp_meth_read_line(strings[i],&temp,&pres);
             if (bVerbose)
-                printf("na gau_(): temp %f pres %f\n", temp, pres);
+                printf("na gau_(): temp %f pres %f status = %d\n",temp,pres,status);
             bTemp = TRUE;
         }
         else if (NULL != strstr(strings[i],"Exact polarizability")) 
@@ -825,7 +834,8 @@ static gmx_molprop_t gmx_molprop_read_log(const char *fn,
         {
             status = gau_comp_meth_read_line(strings[i],&ezpe2,&etherm2);
             if (bVerbose)
-                printf("na gau_(): ezpe2 %f etherm2 %f \n", ezpe2,etherm2);
+                printf("na gau_(): ezpe2 %f etherm2 %f status=%d\n",
+                       ezpe2,etherm2,status);
         }
         else if (NULL != strstr(strings[i],"Zero-point correction=")) 
         {
@@ -857,7 +867,8 @@ static gmx_molprop_t gmx_molprop_read_log(const char *fn,
         {
             status = gau_comp_meth_read_line(strings[i],&comp_0K,&comp_energy);
             if (bVerbose)
-                printf("na gau_(): comp_0K %f comp_energy %f\n", comp_0K,comp_energy);
+                printf("na gau_(): comp_0K %f comp_energy %f status=%d\n",
+                       comp_0K,comp_energy,status);
         }
         else if ((NULL != strstr(strings[i],"G2 Enthalpy=")) ||
                  (NULL != strstr(strings[i],"G3 Enthalpy=")) ||
@@ -866,8 +877,8 @@ static gmx_molprop_t gmx_molprop_read_log(const char *fn,
         {
             status = gau_comp_meth_read_line(strings[i],&comp_enthalpy,&comp_free_energy);
             if (bVerbose)
-                printf("na gau_(): comp_enthalpy %f comp_free_energy %f\n", 
-                       comp_enthalpy, comp_free_energy);
+                printf("na gau_(): comp_enthalpy %f comp_free_energy %f status=%d\n", 
+                       comp_enthalpy,comp_free_energy,status);
         }
         else if (NULL != strstr(strings[i],"GINC")) 
         {

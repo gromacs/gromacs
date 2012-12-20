@@ -79,6 +79,17 @@ typedef struct {
 
 extern const char *immsg(int imm);
 
+extern void mv_plists(gmx_poldata_t pd,t_params plist[],gmx_bool bForward);
+
+extern int mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
+                    gmx_conect gc,t_params plist[],int nbond[],
+                    gmx_bool bRing[],
+                    gmx_bool bH14,gmx_bool bAllDihedrals,
+                    gmx_bool bRemoveDoubleDihedrals,
+                    int nexcl,t_excls **excls,
+                    gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
+                    gmx_bool bMovePlists);
+		     
 extern t_moldip *init_moldip(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
                              int  iModel,real rDecrZeta,real epsr,
                              real J0_0,real Chi0_0,real w_0,

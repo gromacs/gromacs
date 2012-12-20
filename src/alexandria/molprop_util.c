@@ -275,88 +275,38 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
                               gmx_bool *bSpoel,gmx_bool *bMiller,gmx_bool *bBosque,
                               double th_toler,double phi_toler)
 {
-    t_atoms    *atoms;
-    rvec       *x=NULL;
     int        i,j,natom;
-    int        nexcl=1;
-    int        *nbonds,nbond,bo,elgc,calcref,atomref,atomid,ftb;
-    gmx_bool   bDone,*bRing;
-    t_params   *plist=NULL;
-    t_excls    *excls;
-    t_param    b,*nb;
+    int        nbond,bo,elgc,calcref,atomref,atomid,ftb;
+    gmx_bool   bDone;
+    t_param    b;
     double     btol=0.2;
-    gpp_atomtype_t atype;
-    t_symtab   symtab;
-    matrix     box;
-    t_pbc      pbc;
     char       *program,*method,*basisset,*reference,*conformation,*miller,*elem;
     char       *atomname,*obtype,*unit,*type;
     const char *molname;
     real       massval;
-    double     xx,yy,zz;
-    double     *bondorder;
-    gentop_vsite_t gvt;
     
-    clear_mat(box);
-    set_pbc(&pbc,epbcNONE,box);
     molname = gmx_molprop_get_molname(mp);
-    snew(nb,1);
-    atype = init_atomtype();
     bDone = FALSE;
     while (!bDone && (gmx_molprop_get_calculation(mp,&program,&method,
                                                   &basisset,&reference,
                                                   &conformation,NULL,&calcref) == 1)) 
     {
-        /* This assumes we have either all atoms or none. A consistency check could be
+        /* This assumes we have either all atoms or none. 
+         * A consistency check could be
          * to compare the number of atoms to the formula */
         natom = gmx_molprop_calc_get_natom(mp,calcref);
-        snew(atoms,1);
-        init_t_atoms(atoms,natom,FALSE);
-        snew(x,natom);
-        open_symtab(&symtab);
         i = 0;
-        while (gmx_molprop_calc_get_atom(mp,calcref,&atomname,&obtype,&atomid,&atomref) == 1) 
+        while (gmx_molprop_calc_get_atom(mp,calcref,&atomname,&obtype,
+                                         &atomid,&atomref) == 1) 
         {
-            atoms->atomname[i] = put_symtab(&symtab,atomname);
-            atoms->atom[i].atomnumber = gmx_atomprop_atomnumber(aps,atomname);
-            if (TRUE == gmx_atomprop_query(aps,epropMass,"",atomname,&massval))
-            {
-                atoms->atom[i].m = massval;
-                atoms->atom[i].mB = atoms->atom[i].m;
-            }
-            
-            atoms->atom[i].type = add_atomtype(atype,&symtab,&(atoms->atom[i]),obtype,nb,
-                                               -1,0,0,0,atoms->atom[i].atomnumber,0,0);
-            
             gmx_molprop_add_composition_atom(mp,"bosque",atomname,1);
             gmx_molprop_add_composition_atom(mp,"spoel",obtype,1);
             if ((miller = gmx_poldata_get_miller_equiv(pd,obtype)) != NULL)
                 gmx_molprop_add_composition_atom(mp,"miller",miller,1);
-            if (gmx_molprop_calc_get_atomcoords(mp,calcref,atomref,&unit,&xx,&yy,&zz) == 1) 
-            {
-                int myunit;
-                if (NULL == unit)
-                    myunit = eg2c_Angstrom;
-                else
-                {
-                    myunit = string2unit(unit);
-                    if (-1 == myunit)
-                        myunit = eg2c_Angstrom; 
-                }
-                x[i][XX] = convert2gmx(xx,myunit);
-                x[i][YY] = convert2gmx(yy,myunit);
-                x[i][ZZ] = convert2gmx(zz,myunit);
-            }
-            else
-            {
-                fprintf(stderr,"Can not find coordinates for atom %s%d in %s",
-                        atomname,i,molname);
-            }
+            
             i++;
             sfree(atomname);
             sfree(obtype);
-            if (NULL != unit)
-                sfree(unit);
         }
         bDone = ((natom > 0) && (i == natom));
         if (debug && bDone) 
@@ -366,37 +316,6 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         sfree(method);
         sfree(reference);
         sfree(conformation);
-    }
-    if (bDone) 
-    {
-        ftb   = gmx_poldata_get_bond_ftype(pd);
-        nbond = gmx_molprop_get_nbond(mp);
-        snew(plist,F_NRE);
-        if (nbond > 0) 
-        {
-            /* Use the bonds stored in molprop */
-            snew(bondorder,nbond);
-            i = 0;
-            while(1 == gmx_molprop_get_bond(mp,&(b.a[0]),&(b.a[1]),&bo))
-            {
-                bondorder[plist[ftb].nr] = bo;
-                add_param_to_list(&(plist[ftb]),&b);
-                i++;
-            }
-            bDone = (i == nbond);
-        }
-        else  
-        {
-            /* Generate bonds ourselves */
-            snew(nbonds,atoms->nr);
-            snew(bRing,atoms->nr);
-            nbond = mk_bonds(pd,atoms,x,NULL,plist,nbonds,bRing,TRUE,TRUE,TRUE,
-                             nexcl,&excls,FALSE,NULL,aps,btol,TRUE);
-            snew(bondorder,nbond);
-        }
-        done_atomtype(atype);
-        close_symtab(&symtab);
-        free_symtab(&symtab);
     }
     gmx_molprop_reset_calculation(mp);
     
@@ -666,12 +585,15 @@ int molprop_2_topology(gmx_molprop_t mp,gmx_atomprop_t ap,
     nbond = gmx_molprop_get_nbond(mp);
     /* Store bonds in harmonic potential list first, update type later */
     ftb = F_BONDS;
+    memset(&b,0,sizeof(b));
     if (nbond > 0) 
     {
         /* Use the bonds stored in molprop */
         i = 0;
         while(1 == gmx_molprop_get_bond(mp,&(b.a[0]),&(b.a[1]),&bo))
         {
+            b.a[0]--;
+            b.a[1]--;
             add_param_to_list(&(plist[ftb]),&b);
             i++;
         }

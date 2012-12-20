@@ -152,6 +152,8 @@ int main(int argc, char *argv[])
           mps[nmp-1] = mp;
       }
   }
+  done_gauss_data(gaps);
+  
   printf("Succesfully read %d molprops from %d Gaussian files.\n",nmp,nfn);
   gmx_molprop_sort(nmp,mps,empSORT_Molname,NULL,NULL);
   merge_doubles(&nmp,mps,NULL,TRUE);
