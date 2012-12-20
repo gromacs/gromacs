@@ -206,6 +206,19 @@ static int gmx_mm_check_and_reset_overflow(void)
     return sse_overflow;
 }
 
+/* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
+#ifdef GMX_X86_AVX_GCC_MASKLOAD_BUG
+#    define gmx_mm_maskload_ps(mem,mask)       _mm_maskload_ps((mem),_mm_castsi128_ps(mask))
+#    define gmx_mm_maskstore_ps(mem,mask,x)    _mm_maskstore_ps((mem),_mm_castsi128_ps(mask),(x))
+#    define gmx_mm256_maskload_ps(mem,mask)    _mm256_maskload_ps((mem),_mm256_castsi256_ps(mask))
+#    define gmx_mm256_maskstore_ps(mem,mask,x) _mm256_maskstore_ps((mem),_mm256_castsi256_ps(mask),(x))
+#else
+#    define gmx_mm_maskload_ps(mem,mask)       _mm_maskload_ps((mem),(mask))
+#    define gmx_mm_maskstore_ps(mem,mask,x)    _mm_maskstore_ps((mem),(mask),(x))
+#    define gmx_mm256_maskload_ps(mem,mask)    _mm256_maskload_ps((mem),(mask))
+#    define gmx_mm256_maskstore_ps(mem,mask,x) _mm256_maskstore_ps((mem),(mask),(x))
+#endif
+
 
 
 #endif /* _gmx_x86_avx_128_fma_h_ */
