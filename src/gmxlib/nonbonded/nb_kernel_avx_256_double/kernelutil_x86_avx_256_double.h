@@ -77,7 +77,7 @@ gmx_mm256_load_4real_swizzle_pd(const double * gmx_restrict ptrA, const double *
 
     t1 = _mm_unpacklo_pd(_mm_load_sd(ptrA),_mm_load_sd(ptrB));
     t2 = _mm_unpacklo_pd(_mm_load_sd(ptrC),_mm_load_sd(ptrD));
-    return gmx_mm256_set_m128(t2,t1);
+    return gmx_mm256_set_m128d(t2,t1);
 }
 
 
@@ -201,8 +201,8 @@ gmx_mm256_load_4pair_swizzle_pd(const double * gmx_restrict p1, const double * g
 {
     __m256d t1,t2;
 
-    t1   = gmx_mm256_set_m128(_mm_loadu_pd(p3),_mm_loadu_pd(p1)); /* c12c  c6c | c12a  c6a */
-    t2   = gmx_mm256_set_m128(_mm_loadu_pd(p4),_mm_loadu_pd(p2)); /* c12d  c6d | c12b  c6b */
+    t1   = gmx_mm256_set_m128d(_mm_loadu_pd(p3),_mm_loadu_pd(p1)); /* c12c  c6c | c12a  c6a */
+    t2   = gmx_mm256_set_m128d(_mm_loadu_pd(p4),_mm_loadu_pd(p2)); /* c12d  c6d | c12b  c6b */
 
     *c6  = _mm256_unpacklo_pd(t1,t2); /* c6d c6c | c6b c6a */
     *c12 = _mm256_unpackhi_pd(t1,t2); /* c12d c12c | c12b c12a */
@@ -230,9 +230,9 @@ gmx_mm256_load_shift_and_1rvec_broadcast_pd(const double * gmx_restrict xyz_shif
     ty  = _mm_shuffle_pd(mem_xy,mem_xy,_MM_SHUFFLE2(1,1));
     tz  = _mm_shuffle_pd(mem_z,mem_z,_MM_SHUFFLE2(0,0));
 
-    *x1 = gmx_mm256_set_m128(tx,tx);
-    *y1 = gmx_mm256_set_m128(ty,ty);
-    *z1 = gmx_mm256_set_m128(tz,tz);
+    *x1 = gmx_mm256_set_m128d(tx,tx);
+    *y1 = gmx_mm256_set_m128d(ty,ty);
+    *z1 = gmx_mm256_set_m128d(tz,tz);
 }
 
 
@@ -265,21 +265,21 @@ gmx_mm256_load_shift_and_3rvec_broadcast_pd(const double * gmx_restrict xyz_shif
     tx   = _mm_shuffle_pd(t1,t1,_MM_SHUFFLE2(0,0));
     ty   = _mm_shuffle_pd(t1,t1,_MM_SHUFFLE2(1,1));
     tz   = _mm_shuffle_pd(t2,t2,_MM_SHUFFLE2(0,0));
-    *x1 = gmx_mm256_set_m128(tx,tx);
-    *y1 = gmx_mm256_set_m128(ty,ty);
-    *z1 = gmx_mm256_set_m128(tz,tz);
+    *x1 = gmx_mm256_set_m128d(tx,tx);
+    *y1 = gmx_mm256_set_m128d(ty,ty);
+    *z1 = gmx_mm256_set_m128d(tz,tz);
     tx   = _mm_shuffle_pd(t2,t2,_MM_SHUFFLE2(1,1));
     ty   = _mm_shuffle_pd(t3,t3,_MM_SHUFFLE2(0,0));
     tz   = _mm_shuffle_pd(t3,t3,_MM_SHUFFLE2(1,1));
-    *x2 = gmx_mm256_set_m128(tx,tx);
-    *y2 = gmx_mm256_set_m128(ty,ty);
-    *z2 = gmx_mm256_set_m128(tz,tz);
+    *x2 = gmx_mm256_set_m128d(tx,tx);
+    *y2 = gmx_mm256_set_m128d(ty,ty);
+    *z2 = gmx_mm256_set_m128d(tz,tz);
     tx   = _mm_shuffle_pd(t4,t4,_MM_SHUFFLE2(0,0));
     ty   = _mm_shuffle_pd(t4,t4,_MM_SHUFFLE2(1,1));
     tz   = _mm_shuffle_pd(t5,t5,_MM_SHUFFLE2(0,0));
-    *x3 = gmx_mm256_set_m128(tx,tx);
-    *y3 = gmx_mm256_set_m128(ty,ty);
-    *z3 = gmx_mm256_set_m128(tz,tz);
+    *x3 = gmx_mm256_set_m128d(tx,tx);
+    *y3 = gmx_mm256_set_m128d(ty,ty);
+    *z3 = gmx_mm256_set_m128d(tz,tz);
 }
 
 
@@ -315,27 +315,27 @@ gmx_mm256_load_shift_and_4rvec_broadcast_pd(const double * gmx_restrict xyz_shif
     tx   = _mm_shuffle_pd(t1,t1,_MM_SHUFFLE2(0,0));
     ty   = _mm_shuffle_pd(t1,t1,_MM_SHUFFLE2(1,1));
     tz   = _mm_shuffle_pd(t2,t2,_MM_SHUFFLE2(0,0));
-    *x1 = gmx_mm256_set_m128(tx,tx);
-    *y1 = gmx_mm256_set_m128(ty,ty);
-    *z1 = gmx_mm256_set_m128(tz,tz);
+    *x1 = gmx_mm256_set_m128d(tx,tx);
+    *y1 = gmx_mm256_set_m128d(ty,ty);
+    *z1 = gmx_mm256_set_m128d(tz,tz);
     tx   = _mm_shuffle_pd(t2,t2,_MM_SHUFFLE2(1,1));
     ty   = _mm_shuffle_pd(t3,t3,_MM_SHUFFLE2(0,0));
     tz   = _mm_shuffle_pd(t3,t3,_MM_SHUFFLE2(1,1));
-    *x2 = gmx_mm256_set_m128(tx,tx);
-    *y2 = gmx_mm256_set_m128(ty,ty);
-    *z2 = gmx_mm256_set_m128(tz,tz);
+    *x2 = gmx_mm256_set_m128d(tx,tx);
+    *y2 = gmx_mm256_set_m128d(ty,ty);
+    *z2 = gmx_mm256_set_m128d(tz,tz);
     tx   = _mm_shuffle_pd(t4,t4,_MM_SHUFFLE2(0,0));
     ty   = _mm_shuffle_pd(t4,t4,_MM_SHUFFLE2(1,1));
     tz   = _mm_shuffle_pd(t5,t5,_MM_SHUFFLE2(0,0));
-    *x3 = gmx_mm256_set_m128(tx,tx);
-    *y3 = gmx_mm256_set_m128(ty,ty);
-    *z3 = gmx_mm256_set_m128(tz,tz);
+    *x3 = gmx_mm256_set_m128d(tx,tx);
+    *y3 = gmx_mm256_set_m128d(ty,ty);
+    *z3 = gmx_mm256_set_m128d(tz,tz);
     tx   = _mm_shuffle_pd(t5,t5,_MM_SHUFFLE2(1,1));
     ty   = _mm_shuffle_pd(t6,t6,_MM_SHUFFLE2(0,0));
     tz   = _mm_shuffle_pd(t6,t6,_MM_SHUFFLE2(1,1));
-    *x4 = gmx_mm256_set_m128(tx,tx);
-    *y4 = gmx_mm256_set_m128(ty,ty);
-    *z4 = gmx_mm256_set_m128(tz,tz);
+    *x4 = gmx_mm256_set_m128d(tx,tx);
+    *y4 = gmx_mm256_set_m128d(ty,ty);
+    *z4 = gmx_mm256_set_m128d(tz,tz);
 }
 
 
@@ -1333,7 +1333,7 @@ gmx_mm256_update_iforce_1atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz
     tA   = _mm_add_pd(_mm256_castpd256_pd128(fix1),_mm256_extractf128_pd(fix1,0x1));
     tB   = _mm_add_pd(_mm256_castpd256_pd128(fiz1),_mm256_extractf128_pd(fiz1,0x1));
 
-    fix1 = gmx_mm256_set_m128(tB,tA); /* 0 fiz fiy fix */
+    fix1 = gmx_mm256_set_m128d(tB,tA); /* 0 fiz fiy fix */
 
     t1   = _mm256_loadu_pd(fptr);
     t2   = _mm256_loadu_pd(fshiftptr);
@@ -1363,7 +1363,7 @@ gmx_mm256_update_iforce_2atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz
     tB   = _mm_add_pd(_mm256_castpd256_pd128(fiz1),_mm256_extractf128_pd(fiz1,0x1)); /* fix2 fiz1 */
     tC   = _mm_add_pd(_mm256_castpd256_pd128(fiy2),_mm256_extractf128_pd(fiy2,0x1)); /* fiz2 fiy2 */
     
-    t1   = gmx_mm256_set_m128(tB,tA); /* fix2 fiz1 | fiy1 fix1 */
+    t1   = gmx_mm256_set_m128d(tB,tA); /* fix2 fiz1 | fiy1 fix1 */
 
     t2   = _mm256_loadu_pd(fptr);
     tD   = _mm_loadu_pd(fptr+4);
