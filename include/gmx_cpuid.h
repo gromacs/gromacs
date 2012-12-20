@@ -34,7 +34,11 @@
  */
 #ifndef GMX_CPUID_H_
 #define GMX_CPUID_H_
+
+#include <stdio.h>
+
 #include "visibility.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
