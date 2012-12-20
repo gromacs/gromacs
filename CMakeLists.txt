@@ -153,6 +153,8 @@ mark_as_advanced(GMX_OPENMM)
 option(GMX_FORCE_CXX "Enable C++ compilation even if not necessary" OFF)
 mark_as_advanced(GMX_FORCE_CXX)
 
+option(GMX_NO_QUOTES "Disable Gromacs cool quotes" OFF)
+
 if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
     enable_language(CXX)
 endif()
