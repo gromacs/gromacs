@@ -1567,15 +1567,14 @@ static void check_input(
 /* Returns TRUE when "opt" is needed at launch time */
 static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 {
-    /* Apart from the input .tpr we need all options that were set
+    /* Apart from the input .tpr and the error log we need all options that were set
      * on the command line and that do not start with -b */
-    if (0 == strncmp(opt,"-b", 2) || 0 == strncmp(opt,"-s", 2))
+    if (0 == strncmp(opt,"-b", 2) || 0 == strncmp(opt,"-s", 2) || 0 == strncmp(opt,"-err", 4))
+    {
         return FALSE;
+    }
 
-    if (bSet)
-        return TRUE;
-    else
-        return FALSE;
+    return bSet;
 }
 
 
