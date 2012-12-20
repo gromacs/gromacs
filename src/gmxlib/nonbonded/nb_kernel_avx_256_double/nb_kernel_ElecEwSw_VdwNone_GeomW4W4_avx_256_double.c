@@ -901,7 +901,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_avx_256_double
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_pd(mask,val) to clear dummy entries.
              */
-            tmpmask0 = gmx_mm_castsi128_pd(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
+            tmpmask0 = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
 
             tmpmask1 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(3,3,2,2));
             tmpmask0 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(1,1,0,0));
@@ -2431,7 +2431,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_F_avx_256_double
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_pd(mask,val) to clear dummy entries.
              */
-            tmpmask0 = gmx_mm_castsi128_pd(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
+            tmpmask0 = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
 
             tmpmask1 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(3,3,2,2));
             tmpmask0 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(1,1,0,0));
