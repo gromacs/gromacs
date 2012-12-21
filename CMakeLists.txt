@@ -40,11 +40,6 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 set(CPACK_COMPONENT_GROUP_TOOLS_DESCRIPTION "All GROMACS executable tools")
 set(CPACK_COMPONENT_GROUP_MDRUN_DESCRIPTION "GROMACS executable for running simulations")
 
-# override bugs on OS X where Cmake picks gcc (GNU) for C instead of system default cc (Clang).
-if(APPLE)
-    set(CMAKE_C_COMPILER_INIT "cc")
-endif(APPLE)
-
 project(Gromacs C)
 include(Dart)
 mark_as_advanced(DART_ROOT)
