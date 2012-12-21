@@ -189,6 +189,9 @@ IF( WIN32 AND NOT CYGWIN)
 
   #Workaround for cmake bug 13174. Replace deprecated options.
   IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
+    if(BUILD_SHARED_LIBS)
+        STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+    endif()
     STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
   ENDIF()
@@ -283,7 +286,7 @@ if(GMX_OPENMP)
         if(NOT (WIN32 AND NOT CYGWIN))
             if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP)
                 set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
-                set(OpenMP_SHARED_LINKER_FLAGS "")
+                set(OpenMP_SHARED_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
             else()
                 # Only set a linker flag if the user didn't set them manually
                 if(NOT DEFINED OpenMP_LINKER_FLAGS)
