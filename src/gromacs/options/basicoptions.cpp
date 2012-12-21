@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -418,6 +418,26 @@ StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
 {
 }
 
+StringOptionStorage &StringOptionInfo::option()
+{
+    return static_cast<StringOptionStorage &>(OptionInfo::option());
+}
+
+const StringOptionStorage &StringOptionInfo::option() const
+{
+    return static_cast<const StringOptionStorage &>(OptionInfo::option());
+}
+
+bool StringOptionInfo::isEnumerated() const
+{
+    return !allowedValues().empty();
+}
+
+const std::vector<std::string> &StringOptionInfo::allowedValues() const
+{
+    return option().allowedValues();
+}
+
 /********************************************************************
  * StringOption
  */
@@ -425,25 +445,6 @@ StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
 AbstractOptionStoragePointer StringOption::createStorage() const
 {
     return AbstractOptionStoragePointer(new StringOptionStorage(*this));
-}
-
-std::string StringOption::createDescription() const
-{
-    std::string value(MyBase::createDescription());
-
-    if (enumValues_ != NULL)
-    {
-        value.append(": ");
-        for (int i = 0; enumValues_[i] != NULL; ++i)
-        {
-            value.append(enumValues_[i]);
-            if (enumValues_[i + 1] != NULL)
-            {
-                value.append(enumValues_[i + 2] != NULL ? ", " : ", or ");
-            }
-        }
-    }
-    return value;
 }
 
 } // namespace gmx

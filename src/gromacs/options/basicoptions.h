@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -271,7 +271,6 @@ class StringOption : public OptionTemplate<std::string, StringOption>
     private:
         //! Creates a StringOptionStorage object.
         virtual AbstractOptionStoragePointer createStorage() const;
-        virtual std::string createDescription() const;
 
         const char *const      *enumValues_;
         int                     defaultEnumIndex_;
@@ -347,6 +346,24 @@ class StringOptionInfo : public OptionInfo
     public:
         //! Creates an option info object for the given option.
         explicit StringOptionInfo(StringOptionStorage *option);
+
+        /*! \brief
+         * Whether this option accepts an enumerated set of values.
+         *
+         * Returns true if StringOption::enumValues() was used when creating
+         * this option.
+         */
+        bool isEnumerated() const;
+        /*! \brief
+         * Returns the set of allowed values for this option.
+         *
+         * Returns an empty vector if isEnumerated() returns false.
+         */
+        const std::vector<std::string> &allowedValues() const;
+
+    private:
+        StringOptionStorage &option();
+        const StringOptionStorage &option() const;
 };
 
 /*!\}*/

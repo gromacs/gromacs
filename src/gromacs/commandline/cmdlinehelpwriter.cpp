@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -399,6 +399,7 @@ void OptionsConsoleFormatter::formatOption(
     {
         genericOptionFormatter_.setColumnFirstLineOffset(1, 1);
     }
+
     // TODO: Better handling of multiple long values
     std::string values;
     for (int i = 0; i < option.valueCount(); ++i)
@@ -410,11 +411,28 @@ void OptionsConsoleFormatter::formatOption(
         values.append(option.formatValue(i));
     }
     genericOptionFormatter_.addColumnLine(2, values);
+
     std::string             description(context.substituteMarkup(option.description()));
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
     if (doubleOption != NULL && doubleOption->isTime())
     {
         description = replaceAll(description, "%t", common_.timeUnit);
+    }
+    const StringOptionInfo *stringOption = option.toType<StringOptionInfo>();
+    if (stringOption != NULL && stringOption->isEnumerated())
+    {
+        const std::vector<std::string> &allowedValues
+            = stringOption->allowedValues();
+        description.append(": ");
+        for (size_t i = 0; i < allowedValues.size(); ++i)
+        {
+            if (i > 0)
+            {
+                description.append(i + 1 < allowedValues.size()
+                                   ? ", " : ", or ");
+            }
+            description.append(allowedValues[i]);
+        }
     }
     genericOptionFormatter_.addColumnLine(3, description);
     if (values.length() > 6U)

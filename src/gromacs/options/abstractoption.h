@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -121,20 +121,6 @@ class AbstractOption
          * Should only be called by Options::addOption().
          */
         virtual AbstractOptionStoragePointer createStorage() const = 0;
-
-        /*! \brief
-         * Creates the description string for the option.
-         *
-         * \returns Description string for the option.
-         *
-         * This function is virtual to allow derived classes to customize the
-         * description programmatically, e.g., by adding the list of allowed
-         * values.
-         * The default implementation simply returns the user-provided
-         * description.
-         */
-        virtual std::string createDescription() const
-        { return descr_ ? descr_ : ""; }
 
         //! Sets the description for the option.
         void setDescription(const char *descr) { descr_ = descr; }
