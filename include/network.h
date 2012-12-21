@@ -129,6 +129,7 @@ GMX_LIBGMX_EXPORT
 void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of floats */
 
+GMX_LIBGMX_EXPORT
 void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
 
