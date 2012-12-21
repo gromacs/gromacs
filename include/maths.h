@@ -121,6 +121,7 @@ real    sign(real x,real y);
 real    cuberoot (real a);
 GMX_LIBGMX_EXPORT
 double  gmx_erfd(double x);
+GMX_LIBGMX_EXPORT
 double  gmx_erfcd(double x);
 GMX_LIBGMX_EXPORT
 float   gmx_erff(float x);
