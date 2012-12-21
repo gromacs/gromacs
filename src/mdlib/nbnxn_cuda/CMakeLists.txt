@@ -39,4 +39,7 @@ if(GMX_GPU)
             OPTIONS
             RELWITHDEBINFO -g
             DEBUG -g -D_DEBUG_=1)
+    #Because this is a static library linked into the (potential) shared library
+    #it should have the export of the shared library.
+    SET_TARGET_PROPERTIES(nbnxn_cuda PROPERTIES DEFINE_SYMBOL "md_EXPORTS" )
 endif()

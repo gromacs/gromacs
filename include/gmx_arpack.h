@@ -106,6 +106,7 @@ extern "C" {
  *                 and 3 that no shifts could be applied. Negative numbers
  *                 correspond to errors in the arguments provided.
  */
+GMX_LIBGMX_EXPORT
 void
 F77_FUNC(dsaupd,DSAUPD)(int *     ido, 
                         const char *    bmat, 
@@ -165,6 +166,7 @@ F77_FUNC(dsaupd,DSAUPD)(int *     ido,
  *  \param lworkl  Provide the same argument as you did to dsaupd()
  *  \param info    Provide the same argument as you did to dsaupd()
  */
+GMX_LIBGMX_EXPORT
 void
 F77_FUNC(dseupd,DSEUPD)(int *     rvec, 
                         const char *    howmny, 
