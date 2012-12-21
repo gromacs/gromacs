@@ -43,12 +43,22 @@ add_custom_command(OUTPUT gromacs
     DEPENDS ${GROMACS_HEADERS})
 add_custom_target(gromacs_include_links DEPENDS gromacs)
 
-add_executable(template template.c)
-remove_definitions( -DHAVE_CONFIG_H )
-add_definitions("${PKG_CFLAGS}")
-target_link_libraries(template gmx)
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-add_dependencies(template gromacs_include_links)
+option(GMX_BUILD_TEMPLATE "Build gromacs template program" ON)
+# GMX_PREFER_STATIC_OPENMP=yes is a special case to build binaries
+# to distribute and as the template is not installed it can be
+# ignored. 
+# The template is build in a user-like environment, hence we use
+# flags from PKG_CFLAGS. Again GMX_PREFER_STATIC_OPENMP=yes would
+# need special link flags (OpenMP_LINKER_FLAGS), which are not
+# very user-like.
+if (GMX_BUILD_TEMPLATE AND NOT GMX_PREFER_STATIC_OPENMP)
+    add_executable(template template.c)
+    remove_definitions( -DHAVE_CONFIG_H )
+    add_definitions("${PKG_CFLAGS}")
+    target_link_libraries(template gmx)
+    include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+    add_dependencies(template gromacs_include_links)
+endif()
 
 install(FILES README template.c Makefile.pkg
         DESTINATION ${DATA_INSTALL_DIR}/template
