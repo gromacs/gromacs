@@ -283,7 +283,7 @@ if(GMX_OPENMP)
         if(NOT (WIN32 AND NOT CYGWIN))
             if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP)
                 set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
-                set(OpenMP_SHARED_LINKER_FLAGS "")
+                set(OpenMP_SHARED_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
             else()
                 # Only set a linker flag if the user didn't set them manually
                 if(NOT DEFINED OpenMP_LINKER_FLAGS)

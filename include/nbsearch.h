@@ -62,6 +62,7 @@ struct gmx_ana_pos_t;
 typedef struct gmx_ana_nbsearch_t gmx_ana_nbsearch_t;
 
 /** Create a new neighborhood search data structure. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_nbsearch_create(gmx_ana_nbsearch_t **d, real cutoff, int maxn);
 /** Free memory allocated for neighborhood search. */
@@ -72,6 +73,7 @@ gmx_ana_nbsearch_free(gmx_ana_nbsearch_t *d);
 int
 gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, rvec x[]);
 /** Initializes neighborhood search for a frame using \c gmx_ana_pos_t.  */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc,
                           struct gmx_ana_pos_t *p);
@@ -89,6 +91,7 @@ gmx_ana_nbsearch_pos_is_within(gmx_ana_nbsearch_t *d,
 real
 gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, rvec x);
 /** Calculates the minimun distance from the reference points. */
+GMX_LIBGMX_EXPORT
 real
 gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d,
                              struct gmx_ana_pos_t *p, int i);
