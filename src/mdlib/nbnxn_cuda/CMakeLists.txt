@@ -39,4 +39,7 @@ if(GMX_GPU)
             OPTIONS
             RELWITHDEBINFO -g
             DEBUG -g -D_DEBUG_=1)
+    #Because this is a static library linked into the (potential) shared library
+    #it should have the export of the shared library.
+    SET_TARGET_PROPERTIES(gpu_utils DEFINE_SYMBOL "gmx_EXPORTS" )
 endif()

@@ -55,5 +55,8 @@ CUDA_ADD_LIBRARY(gpu_utils STATIC ${GPU_UTILS_SOURCES}
                  OPTIONS ${_os_def}
                  RELWITHDEBINFO -g
                  DEBUG -g -D_DEBUG_=1 )
+#Because this is a static library linked into the (potential) shared library
+#it should have the export of the shared library.
+SET_TARGET_PROPERTIES(gpu_utils DEFINE_SYMBOL "gmx_EXPORTS" )
 
 CUDA_BUILD_CLEAN_TARGET()
