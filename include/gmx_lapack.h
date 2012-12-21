@@ -396,6 +396,7 @@ void
 F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *  a, int *lda, double *d, 
 	double *e, double *tau, double *work, int *lwork, int *info);
 
+GMX_LIBGMX_EXPORT
 void
 F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	double *a, int *lda, double *vl, double *vu, int *
