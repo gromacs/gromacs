@@ -196,6 +196,7 @@ gmx_ana_traj_free(gmx_ana_traj_t *d);
 int
 gmx_ana_add_flags(gmx_ana_traj_t *d, unsigned long flags);
 /** Sets the number of reference groups required. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_set_nrefgrps(gmx_ana_traj_t *d, int nrefgrps);
 /** Sets the number of analysis groups required. */
@@ -250,6 +251,7 @@ GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_nanagrps(gmx_ana_traj_t *d, int *nanagrps);
 /** Gets the selection object for a reference selection. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_refsel(gmx_ana_traj_t *d, int i, gmx_ana_selection_t **sel);
 /** Gets the selection object for a reference selection. */

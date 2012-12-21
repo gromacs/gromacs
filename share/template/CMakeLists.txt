@@ -46,7 +46,7 @@ add_custom_target(gromacs_include_links DEPENDS gromacs)
 add_executable(template template.c)
 remove_definitions( -DHAVE_CONFIG_H )
 add_definitions("${PKG_CFLAGS}")
-target_link_libraries(template gmx)
+target_link_libraries(template gmx ${OpenMP_LINKER_FLAGS})
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 add_dependencies(template gromacs_include_links)
 
