@@ -1,0 +1,9 @@
+Code-Review+2: Christoph Junghans <junghans@votca.org>
+Code-Review+1: Szilárd Páll <pszilard@kth.se>
+Verified+1: Szilárd Páll <pszilard@kth.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Christoph Junghans <junghans@votca.org>
+Submitted-at: Fri, 21 Dec 2012 18:40:22 +0100
+Reviewed-on: https://gerrit.gromacs.org/1943
+Project: gromacs
+Branch: refs/heads/release-4-6
