@@ -53,7 +53,7 @@ FILE* debug;
 #include "gmxcomplex.h"
 #include "gmx_fft.h"
 
-#ifndef GMX_LIB_MPI
+#ifndef GMX_MPI
 double MPI_Wtime();
 #endif
 
