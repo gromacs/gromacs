@@ -1153,8 +1153,13 @@ ADD_CUSTOM_TARGET(uninstall
 
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
+#gmxtests target builds all required for running gmtest
+add_custom_target(gmxtests DEPENDS grompp mdrun pdb2gmx gmxcheck editconf)
 IF(BUILD_TESTING)
-	enable_testing()
-	add_subdirectory(tests)
+    enable_testing()
+    add_subdirectory(tests)
+    #check target builds all to run tests and the runs tests
+    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
+        DEPENDS gmxtests)
 ENDIF()
 
