@@ -32,5 +32,113 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 #
-enable_testing()
-add_test(TestExec_mdrun-h ../src/kernel/mdrun -h)
+set(REGRESSIONTEST_PATH "" CACHE PATH "Directory containing regressiontests")
+mark_as_advanced(REGRESSIONTEST_PATH)
+option(REGRESSIONTEST_DOWNLOAD
+    "Automatically download regressiontests. Tests can be run with ctest." no)
+if(REGRESSIONTEST_DOWNLOAD)
+    if("${PROJECT_VERSION}" MATCHES "-dev")
+        set(REGRESSIONTEST_VERSION master)
+    else()
+        set(REGRESSIONTEST_VERSION ${PROJECT_VERSION})
+    endif()
+    set(REGRESSIONTEST_URL
+        https://github.com/gromacs/regressiontests/archive/${REGRESSIONTEST_VERSION}.tar.gz)
+    set(REGRESSIONTEST_FILE "${CMAKE_CURRENT_BINARY_DIR}/regressiontests.tgz")
+    file(DOWNLOAD ${REGRESSIONTEST_URL} "${REGRESSIONTEST_FILE}" SHOW_PROGRESS STATUS status LOG log)
+    list(GET status 0 status_code)
+    list(GET status 1 status_string)
+    
+    if(NOT status_code EQUAL 0)
+        message(FATAL_ERROR "error: downloading '${REGRESSIONTEST_URL}' failed
+status_code: ${status_code}
+status_string: ${status_string}
+log: ${log}")
+    endif()
+
+    set(REGRESSIONTEST_PATH
+        "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
+        CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+    file(REMOVE_RECURSE "${REGRESSIONTEST_PATH}") #delete potential prior folder
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${REGRESSIONTEST_FILE}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+    set(REGRESSIONTEST_DOWNLOAD OFF CACHE BOOL "Tests already downloaded. Set to yes to download again" FORCE)
+endif()
+
+if(REGRESSIONTEST_PATH AND (GMX_BLUEGENE OR CMAKE_CROSSCOMPILING))x
+    #Bluegene requires us to compile both front-end and back-end binaries. So it is currently impossible to test a single build.
+    message(WARNING "With cross-compiling running regressiontests from build system is not supported. Please run gmxtest.pl directly.")
+    set(REGRESSIONTEST_PATH OFF CACHE BOOL "With cross-compiling running regressiontests from build system is not supported.")
+endif()
+
+if(REGRESSIONTEST_PATH)
+    if(NOT EXISTS ${REGRESSIONTEST_PATH}/gmxtest.pl)
+        message(FATAL_ERROR
+            "REGRESSIONTEST_PATH invalid. The path needs to contain gmxtest.pl.")
+    endif()
+    if(GMX_DOUBLE)
+        list(APPEND ARGS -double)
+    endif()
+    if(GMX_LIB_MPI AND NOT MPIEXEC) #autodetection failed or CC=mpicc was used
+        message(WARNING
+            "Please set MPIEXEC. Otherwise mpirun is assumed for runnings tests.")
+    endif()
+    if(GMX_LIB_MPI)
+        set(GMX_TEST_NUMBER_PROCS 8 CACHE STRING "Number of processors used for testing")
+        mark_as_advanced(GMX_TEST_NUMBER_PROCS)
+        list(APPEND ARGS -np ${GMX_TEST_NUMBER_PROCS})
+        if(MPIEXEC)
+            list(APPEND ARGS -mpirun ${MPIEXEC})
+        endif()
+        #We should use MPIEXEC_NUMPROC_FLAG but gmxtest.pl doesn't let us pass it
+    endif()
+    if(GMX_BINARY_SUFFIX)
+        list(APPEND ARGS -suffix ${GMX_BINARY_SUFFIX})
+    endif()
+    #crosscompile is only used to disable checking whether binaries work
+    #given that we know they are there and that mdrun might not be exectuable
+    #(e.g. Cray) we enable it.
+    list(APPEND ARGS -crosscompile)
+
+    set(REGRESSIONTEST_EXTRA_ARGS "" CACHE STRING 
+        "Extra arguments passed to gmxtest")
+    mark_as_advanced(REGRESSIONTEST_EXTRA_ARGS)
+    list(APPEND ARGS ${REGRESSIONTEST_EXTRA_ARGS})
+
+    list(APPEND ARGS -noverbose -nosuffix)
+
+    if(GMX_NATIVE_WINDOWS)
+        set(PATH_SEPARATOR "\\;")
+        #replacing \ with / shouldn't be neccessary. But otherwise "..\bin\;c:\.."
+        #gets turned into "...\bin\\c:\.." don't know why and don't have a better
+        #workaround. This workaround doesn't hurt.
+        string(REPLACE "\\" "/" PATH "$ENV{PATH}")
+        #protect ; (don't treat as list)
+        string(REPLACE ";" "\\;" PATH "${PATH}")
+    else()
+        set(PATH_SEPARATOR ":")
+        set(PATH "$ENV{PATH}")
+    endif()
+
+    foreach(FOLDER kernel tools gmxlib mdlib) #lib folders might be needed for
+        #e.g. DLLs. For GMX paths native ("\") is needed for GMXLIB detection
+        file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/src/${FOLDER}" DIR)
+        set(PATH "${DIR}${PATH_SEPARATOR}${PATH}")
+    endforeach()
+
+    find_program(PERL_EXECUTABLE NAMES "perl")
+    mark_as_advanced(PERL_EXECUTABLE)
+
+    if (NOT PERL_EXECUTABLE)
+        message(FATAL_ERROR "Perl not found. Install perl, set PERL_EXECUTABLE to the perl location, or unset REGRESSIONTEST_PATH to disable testing.")
+    endif()
+
+    #currently not testing tools because they don't contain any useful tests
+    foreach(subtest simple complex kernel freeenergy pdb2gmx)
+        add_test(NAME regressiontests/${subtest}
+            #windows requires the command to be perl and not the script
+            COMMAND perl "${REGRESSIONTEST_PATH}/gmxtest.pl" ${subtest} ${ARGS})
+        set_tests_properties(regressiontests/${subtest} PROPERTIES
+            ENVIRONMENT "PATH=${PATH}")
+    endforeach()
+endif()
