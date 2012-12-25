@@ -997,6 +997,18 @@ endif()
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
 
+if (NOT HAVE_MKL AND NOT ACCELERATE_FRAMEWORK AND (GMX_EXTERNAL_LAPACK OR GMX_EXTERNAL_BLAS) )
+  enable_language(Fortran OPTIONAL)
+  if(CMAKE_Fortran_COMPILER_WORKS)
+    include(FortranCInterface)
+    FortranCInterface_HEADER(src/fortran_mangling.h)
+    set(GMX_USE_FORTRAN ON)
+  else()
+    message(WARNING "No Fortran compiler found, assuming default name mangling")
+    set(CMAKE_Fortran_COMPILER)
+  endif()
+endif()
+
 set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
 
 if(GMX_LOAD_PLUGINS)
