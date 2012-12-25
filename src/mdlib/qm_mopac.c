@@ -71,12 +71,6 @@
 
 
 /* mopac interface routines */
-
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
-#endif
-
-
 void 
 F77_FUNC(domldt,DOMLDT)(int *nrqmat, int labels[], char keywords[]);
 

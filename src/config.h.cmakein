@@ -462,6 +462,15 @@
 #include "swindirect.h"
 #endif
 
+#cmakedefine GMX_USE_FORTRAN
+#ifdef GMX_USE_FORTRAN
+#define F77_FUNC FortranCInterface_GLOBAL
+#include "fortran_mangling.h"
+#else
+/* default name mangling maybe wrong on exotic plattforms */
+#define F77_FUNC(name,NAME) name ## _
+#endif
+
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 
