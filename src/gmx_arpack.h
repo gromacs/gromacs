@@ -57,10 +57,6 @@ extern "C" {
  * have been made thread-safe by using extra workspace arrays.
  */
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
-#endif
-
 
 /*! \brief Implicitly Restarted Arnoldi Iteration, double precision.
  *
