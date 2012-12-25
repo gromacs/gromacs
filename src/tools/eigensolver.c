@@ -47,10 +47,6 @@
 #include "sparsematrix.h"
 #include "eigensolver.h"
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
-#endif
-
 #include "gmx_lapack.h"
 #include "gmx_arpack.h"
 
