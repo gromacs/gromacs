@@ -74,11 +74,6 @@ extern "C" {
 }
 #endif
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
-#endif
-
-
 /* Double precision versions */
 double
 F77_FUNC(dasum,DASUM)(int *n, double *dx, int *incx);

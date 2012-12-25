@@ -462,6 +462,9 @@
 #include "swindirect.h"
 #endif
 
+/* default name mangling maybe wrong on exotic plattforms */
+#define F77_FUNC(name,NAME) name ## _
+
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 
