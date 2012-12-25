@@ -82,12 +82,6 @@ extern "C" {
 #undef toupper
 #endif
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
-#endif
-
-
-
 /* Double precision */
 
 void

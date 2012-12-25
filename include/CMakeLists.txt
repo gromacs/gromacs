@@ -53,4 +53,5 @@ install(DIRECTORY . DESTINATION ${INCL_INSTALL_DIR}/gromacs
   PATTERN "cmake*" EXCLUDE
   PATTERN "*~" EXCLUDE
   PATTERN "*.cmakein" EXCLUDE
+  REGEX "gmx_(arpack|blas|lapack).h$" EXCLUDE
 )

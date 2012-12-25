@@ -72,13 +72,6 @@
 #include "gmx_arpack.h"
 
 
-/* Default Fortran name mangling */
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
-#endif
-
-
-
 static void 
 F77_FUNC(dstqrb,DSTQRB)(int *      n, 
                         double *   d__, 
