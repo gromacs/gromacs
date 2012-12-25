@@ -39,7 +39,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dsymv,DSYMV)(const char *uplo,
+FortranCInterface_GLOBAL(dsymv,DSYMV)(const char *uplo,
        int *n__,
        double *alpha__,
        double *a,

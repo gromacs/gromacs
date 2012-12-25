@@ -41,7 +41,7 @@
 
 
 void
-F77_FUNC(slagtf,SLAGTF)(int *n, 
+FortranCInterface_GLOBAL(slagtf,SLAGTF)(int *n, 
 	float *a, 
 	float *lambda, 
 	float *b, 

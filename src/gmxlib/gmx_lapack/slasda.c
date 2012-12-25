@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(slasda,SLASDA)(int *icompq, 
+FortranCInterface_GLOBAL(slasda,SLASDA)(int *icompq, 
 	int *smlsiz, 
 	int *n, 
 	int *sqre, 
@@ -120,11 +120,11 @@ F77_FUNC(slasda,SLASDA)(int *icompq,
 
     if (*n <= *smlsiz) {
 	if (*icompq == 0) {
-	    F77_FUNC(slasdq,SLASDQ)("U", sqre, n, &c__0, &c__0, &c__0, &d__[1], &e[1], &vt[
+	    FortranCInterface_GLOBAL(slasdq,SLASDQ)("U", sqre, n, &c__0, &c__0, &c__0, &d__[1], &e[1], &vt[
 		    vt_offset], ldu, &u[u_offset], ldu, &u[u_offset], ldu, &
 		    work[1], info);
 	} else {
-	    F77_FUNC(slasdq,SLASDQ)("U", sqre, n, &m, n, &c__0, &d__[1], &e[1], &vt[vt_offset]
+	    FortranCInterface_GLOBAL(slasdq,SLASDQ)("U", sqre, n, &m, n, &c__0, &d__[1], &e[1], &vt[vt_offset]
 		    , ldu, &u[u_offset], ldu, &u[u_offset], ldu, &work[1], 
 		    info);
 	}
@@ -146,7 +146,7 @@ F77_FUNC(slasda,SLASDA)(int *icompq,
     nwork1 = vl + m;
     nwork2 = nwork1 + smlszp * smlszp;
 
-    F77_FUNC(slasdt,SLASDT)(n, &nlvl, &nd, &iwork[inode], &iwork[ndiml], &iwork[ndimr], 
+    FortranCInterface_GLOBAL(slasdt,SLASDT)(n, &nlvl, &nd, &iwork[inode], &iwork[ndiml], &iwork[ndimr], 
 	    smlsiz);
 
     ndb1 = (nd + 1) / 2;
@@ -164,22 +164,22 @@ F77_FUNC(slasda,SLASDA)(int *icompq,
 	vli = vl + nlf - 1;
 	sqrei = 1;
 	if (*icompq == 0) {
-	    F77_FUNC(slaset,SLASET)("A", &nlp1, &nlp1, &zero, &one, &work[nwork1], &smlszp);
-	    F77_FUNC(slasdq,SLASDQ)("U", &sqrei, &nl, &nlp1, &nru, &ncc, &d__[nlf], &e[nlf], &
+	    FortranCInterface_GLOBAL(slaset,SLASET)("A", &nlp1, &nlp1, &zero, &one, &work[nwork1], &smlszp);
+	    FortranCInterface_GLOBAL(slasdq,SLASDQ)("U", &sqrei, &nl, &nlp1, &nru, &ncc, &d__[nlf], &e[nlf], &
 		    work[nwork1], &smlszp, &work[nwork2], &nl, &work[nwork2], 
 		    &nl, &work[nwork2], info);
 	    itemp = nwork1 + nl * smlszp;
-	    F77_FUNC(scopy,SCOPY)(&nlp1, &work[nwork1], &c__1, &work[vfi], &c__1);
-	    F77_FUNC(scopy,SCOPY)(&nlp1, &work[itemp], &c__1, &work[vli], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nlp1, &work[nwork1], &c__1, &work[vfi], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nlp1, &work[itemp], &c__1, &work[vli], &c__1);
 	} else {
-	    F77_FUNC(slaset,SLASET)("A", &nl, &nl, &zero, &one, &u[nlf + u_dim1], ldu);
-	    F77_FUNC(slaset,SLASET)("A", &nlp1, &nlp1, &zero, &one, &vt[nlf + vt_dim1], 
+	    FortranCInterface_GLOBAL(slaset,SLASET)("A", &nl, &nl, &zero, &one, &u[nlf + u_dim1], ldu);
+	    FortranCInterface_GLOBAL(slaset,SLASET)("A", &nlp1, &nlp1, &zero, &one, &vt[nlf + vt_dim1], 
 		    ldu);
-	    F77_FUNC(slasdq,SLASDQ)("U", &sqrei, &nl, &nlp1, &nl, &ncc, &d__[nlf], &e[nlf], &
+	    FortranCInterface_GLOBAL(slasdq,SLASDQ)("U", &sqrei, &nl, &nlp1, &nl, &ncc, &d__[nlf], &e[nlf], &
 		    vt[nlf + vt_dim1], ldu, &u[nlf + u_dim1], ldu, &u[nlf + 
 		    u_dim1], ldu, &work[nwork1], info);
-	    F77_FUNC(scopy,SCOPY)(&nlp1, &vt[nlf + vt_dim1], &c__1, &work[vfi], &c__1);
-	    F77_FUNC(scopy,SCOPY)(&nlp1, &vt[nlf + nlp1 * vt_dim1], &c__1, &work[vli], &c__1)
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nlp1, &vt[nlf + vt_dim1], &c__1, &work[vfi], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nlp1, &vt[nlf + nlp1 * vt_dim1], &c__1, &work[vli], &c__1)
 		    ;
 	}
 	if (*info != 0) {
@@ -199,22 +199,22 @@ F77_FUNC(slasda,SLASDA)(int *icompq,
 	vli += nlp1;
 	nrp1 = nr + sqrei;
 	if (*icompq == 0) {
-	    F77_FUNC(slaset,SLASET)("A", &nrp1, &nrp1, &zero, &one, &work[nwork1], &smlszp);
-	    F77_FUNC(slasdq,SLASDQ)("U", &sqrei, &nr, &nrp1, &nru, &ncc, &d__[nrf], &e[nrf], &
+	    FortranCInterface_GLOBAL(slaset,SLASET)("A", &nrp1, &nrp1, &zero, &one, &work[nwork1], &smlszp);
+	    FortranCInterface_GLOBAL(slasdq,SLASDQ)("U", &sqrei, &nr, &nrp1, &nru, &ncc, &d__[nrf], &e[nrf], &
 		    work[nwork1], &smlszp, &work[nwork2], &nr, &work[nwork2], 
 		    &nr, &work[nwork2], info);
 	    itemp = nwork1 + (nrp1 - 1) * smlszp;
-	    F77_FUNC(scopy,SCOPY)(&nrp1, &work[nwork1], &c__1, &work[vfi], &c__1);
-	    F77_FUNC(scopy,SCOPY)(&nrp1, &work[itemp], &c__1, &work[vli], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nrp1, &work[nwork1], &c__1, &work[vfi], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nrp1, &work[itemp], &c__1, &work[vli], &c__1);
 	} else {
-	    F77_FUNC(slaset,SLASET)("A", &nr, &nr, &zero, &one, &u[nrf + u_dim1], ldu);
-	    F77_FUNC(slaset,SLASET)("A", &nrp1, &nrp1, &zero, &one, &vt[nrf + vt_dim1], 
+	    FortranCInterface_GLOBAL(slaset,SLASET)("A", &nr, &nr, &zero, &one, &u[nrf + u_dim1], ldu);
+	    FortranCInterface_GLOBAL(slaset,SLASET)("A", &nrp1, &nrp1, &zero, &one, &vt[nrf + vt_dim1], 
 		    ldu);
-	    F77_FUNC(slasdq,SLASDQ)("U", &sqrei, &nr, &nrp1, &nr, &ncc, &d__[nrf], &e[nrf], &
+	    FortranCInterface_GLOBAL(slasdq,SLASDQ)("U", &sqrei, &nr, &nrp1, &nr, &ncc, &d__[nrf], &e[nrf], &
 		    vt[nrf + vt_dim1], ldu, &u[nrf + u_dim1], ldu, &u[nrf + 
 		    u_dim1], ldu, &work[nwork1], info);
-	    F77_FUNC(scopy,SCOPY)(&nrp1, &vt[nrf + vt_dim1], &c__1, &work[vfi], &c__1);
-	    F77_FUNC(scopy,SCOPY)(&nrp1, &vt[nrf + nrp1 * vt_dim1], &c__1, &work[vli], &c__1)
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nrp1, &vt[nrf + vt_dim1], &c__1, &work[vfi], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&nrp1, &vt[nrf + nrp1 * vt_dim1], &c__1, &work[vli], &c__1)
 		    ;
 	}
 	if (*info != 0) {
@@ -258,7 +258,7 @@ F77_FUNC(slasda,SLASDA)(int *icompq,
 	    alpha = d__[ic];
 	    beta = e[ic];
 	    if (*icompq == 0) {
-		F77_FUNC(slasd6,SLASD6)(icompq, &nl, &nr, &sqrei, &d__[nlf], &work[vfi], &
+		FortranCInterface_GLOBAL(slasd6,SLASD6)(icompq, &nl, &nr, &sqrei, &d__[nlf], &work[vfi], &
 			work[vli], &alpha, &beta, &iwork[idxqi], &perm[
 			perm_offset], &givptr[1], &givcol[givcol_offset], 
 			ldgcol, &givnum[givnum_offset], ldu, &poles[
@@ -267,7 +267,7 @@ F77_FUNC(slasda,SLASDA)(int *icompq,
 			 &iwork[iwk], info);
 	    } else {
 		--j;
-		F77_FUNC(slasd6,SLASD6)(icompq, &nl, &nr, &sqrei, &d__[nlf], &work[vfi], &
+		FortranCInterface_GLOBAL(slasd6,SLASD6)(icompq, &nl, &nr, &sqrei, &d__[nlf], &work[vfi], &
 			work[vli], &alpha, &beta, &iwork[idxqi], &perm[nlf + 
 			lvl * perm_dim1], &givptr[j], &givcol[nlf + lvl2 * 
 			givcol_dim1], ldgcol, &givnum[nlf + lvl2 * 

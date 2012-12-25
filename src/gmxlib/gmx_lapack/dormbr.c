@@ -36,7 +36,7 @@
 #include "lapack_limits.h"
 
 void 
-F77_FUNC(dormbr,DORMBR)(const char *vect, 
+FortranCInterface_GLOBAL(dormbr,DORMBR)(const char *vect, 
 	const char *side, 
 	const char *trans, 
 	int *m, 
@@ -105,7 +105,7 @@ F77_FUNC(dormbr,DORMBR)(const char *vect,
 
 	if (nq >= *k) {
 
-	    F77_FUNC(dormqr,DORMQR)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+	    FortranCInterface_GLOBAL(dormqr,DORMQR)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
 		    c_offset], ldc, &work[1], lwork, &iinfo);
 	} else if (nq > 1) {
 
@@ -121,7 +121,7 @@ F77_FUNC(dormbr,DORMBR)(const char *vect,
 		i2 = 2;
 	    }
 	    i__1 = nq - 1;
-	    F77_FUNC(dormqr,DORMQR)(side, trans, &mi, &ni, &i__1, &a[a_dim1 + 2], lda, &tau[1]
+	    FortranCInterface_GLOBAL(dormqr,DORMQR)(side, trans, &mi, &ni, &i__1, &a[a_dim1 + 2], lda, &tau[1]
 		    , &c__[i1 + i2 * c_dim1], ldc, &work[1], lwork, &iinfo);
 	}
     } else {
@@ -133,7 +133,7 @@ F77_FUNC(dormbr,DORMBR)(const char *vect,
 	}
 	if (nq > *k) {
 
-	    F77_FUNC(dormlq,DORMLQ)(side, transt, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+	    FortranCInterface_GLOBAL(dormlq,DORMLQ)(side, transt, m, n, k, &a[a_offset], lda, &tau[1], &c__[
 		    c_offset], ldc, &work[1], lwork, &iinfo);
 	} else if (nq > 1) {
 
@@ -149,7 +149,7 @@ F77_FUNC(dormbr,DORMBR)(const char *vect,
 		i2 = 2;
 	    }
 	    i__1 = nq - 1;
-	    F77_FUNC(dormlq,DORMLQ)(side, transt, &mi, &ni, &i__1, &a[(a_dim1 << 1) + 1], lda,
+	    FortranCInterface_GLOBAL(dormlq,DORMLQ)(side, transt, &mi, &ni, &i__1, &a[(a_dim1 << 1) + 1], lda,
 		     &tau[1], &c__[i1 + i2 * c_dim1], ldc, &work[1], lwork, &
 		    iinfo);
 	}

@@ -43,7 +43,7 @@
 #endif
 
 void 
-F77_FUNC(slasq2,SLASQ2)(int *n, 
+FortranCInterface_GLOBAL(slasq2,SLASQ2)(int *n, 
                         float *z__, 
                         int *info)
 {
@@ -162,7 +162,7 @@ F77_FUNC(slasq2,SLASQ2)(int *n,
 	for (k = 2; k <= i__1; ++k) {
 	    z__[k] = z__[(k << 1) - 1];
 	}
-	F77_FUNC(slasrt,SLASRT)("D", n, &z__[1], &iinfo);
+	FortranCInterface_GLOBAL(slasrt,SLASRT)("D", n, &z__[1], &iinfo);
 	z__[(*n << 1) - 1] = d__;
 	return;
     }
@@ -369,7 +369,7 @@ L100:
 		goto L150;
 	    }
 
-	    F77_FUNC(slasq3,SLASQ3)(&i0, &n0, &z__[1], &pp, &dmin__, &sigma, &desig, &qmax, &
+	    FortranCInterface_GLOBAL(slasq3,SLASQ3)(&i0, &n0, &z__[1], &pp, &dmin__, &sigma, &desig, &qmax, &
 		    nfail, &iter, &ndiv, &ieee);
 
 	    pp = 1 - pp;
@@ -424,7 +424,7 @@ L170:
 	z__[k] = z__[(k << 2) - 3];
     }
 
-    F77_FUNC(slasrt,SLASRT)("D", n, &z__[1], &iinfo);
+    FortranCInterface_GLOBAL(slasrt,SLASRT)("D", n, &z__[1], &iinfo);
 
     e = 0.;
     for (k = *n; k >= 1; --k) {

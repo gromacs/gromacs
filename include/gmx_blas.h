@@ -74,144 +74,144 @@ extern "C" {
 }
 #endif
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
+#ifndef FortranCInterface_GLOBAL
+#define FortranCInterface_GLOBAL(name,NAME) name ## _
 #endif
 
 
 /* Double precision versions */
 double
-F77_FUNC(dasum,DASUM)(int *n, double *dx, int *incx);
+FortranCInterface_GLOBAL(dasum,DASUM)(int *n, double *dx, int *incx);
 
 void
-F77_FUNC(daxpy,DAXPY)(int *n, double *da, double *dx, int *incx, double *dy, int *incy);
+FortranCInterface_GLOBAL(daxpy,DAXPY)(int *n, double *da, double *dx, int *incx, double *dy, int *incy);
 
 void
-F77_FUNC(dcopy,DCOPY)(int *n, double *dx, int *incx, double *dy, int *incy);
+FortranCInterface_GLOBAL(dcopy,DCOPY)(int *n, double *dx, int *incx, double *dy, int *incy);
 
 double
-F77_FUNC(ddot,DDOT)(int *n, double *dx, int *incx, double *dy, int *incy);
+FortranCInterface_GLOBAL(ddot,DDOT)(int *n, double *dx, int *incx, double *dy, int *incy);
 
 void
-F77_FUNC(dgemm,DGEMM)(const char *transa, const char *transb, int *m, int *n, int *k, 
+FortranCInterface_GLOBAL(dgemm,DGEMM)(const char *transa, const char *transb, int *m, int *n, int *k, 
        double *alpha, double *a, int *lda, double *b, int *ldb, 
        double *beta, double *c, int *ldc);
 
 void
-F77_FUNC(dgemv,DGEMV)(const char *trans, int *m, int *n, double *alpha, double *a, int *lda,
+FortranCInterface_GLOBAL(dgemv,DGEMV)(const char *trans, int *m, int *n, double *alpha, double *a, int *lda,
        double *x, int *incx, double *beta, double *y, int *incy);
 
 void
-F77_FUNC(dger,DGER)(int *m, int *n, double *alpha, double *x, int *incx, 
+FortranCInterface_GLOBAL(dger,DGER)(int *m, int *n, double *alpha, double *x, int *incx, 
       double *y, int *incy, double *a, int *lda);
 
 double
-F77_FUNC(dnrm2,DNRM2)(int  *n, double *x, int *incx);
+FortranCInterface_GLOBAL(dnrm2,DNRM2)(int  *n, double *x, int *incx);
 
 void
-F77_FUNC(drot,DROT)(int *n, double *dx, int *incx, 
+FortranCInterface_GLOBAL(drot,DROT)(int *n, double *dx, int *incx, 
       double *dy, int *incy, double *c, double *s);
 
 void 
-F77_FUNC(dscal,DSCAL)(int *n, double *fact, double *dx, int *incx);
+FortranCInterface_GLOBAL(dscal,DSCAL)(int *n, double *fact, double *dx, int *incx);
 
 void
-F77_FUNC(dswap,DSWAP)(int *n, double *dx, int *incx, double *dy, int *incy);
+FortranCInterface_GLOBAL(dswap,DSWAP)(int *n, double *dx, int *incx, double *dy, int *incy);
 
 void
-F77_FUNC(dsymv,DSYMV)(const char *uplo, int *n, double *alpha, double *a, int *lda,
+FortranCInterface_GLOBAL(dsymv,DSYMV)(const char *uplo, int *n, double *alpha, double *a, int *lda,
        double *x, int *incx, double *beta, double *y, int *incy);
 
 void
-F77_FUNC(dsyr2,DSYR2)(const char *uplo, int *n, double *alpha, double *x, int *incx,
+FortranCInterface_GLOBAL(dsyr2,DSYR2)(const char *uplo, int *n, double *alpha, double *x, int *incx,
        double *y, int *incy, double *a, int *lda);
 
 void
-F77_FUNC(dsyr2k,DSYR2K)(const char *uplo, const char *trans, int *n, int *k, double *alpha, double *a,
+FortranCInterface_GLOBAL(dsyr2k,DSYR2K)(const char *uplo, const char *trans, int *n, int *k, double *alpha, double *a,
         int *lda, double *b, int *ldb, double *beta, double *c, int *ldc);
 
 void 
-F77_FUNC(dtrmm,DTRMM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n, 
+FortranCInterface_GLOBAL(dtrmm,DTRMM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n, 
        double *alpha, double *a, int *lda, double *b, int *ldb);
 
 void 
-F77_FUNC(dtrmv,DTRMV)(const char *uplo, const char *trans, const char *diag, int *n, 
+FortranCInterface_GLOBAL(dtrmv,DTRMV)(const char *uplo, const char *trans, const char *diag, int *n, 
        double *a, int *lda, double *x, int *incx);
 
 void
-F77_FUNC(dtrsm,DTRSM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n,
+FortranCInterface_GLOBAL(dtrsm,DTRSM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n,
        double *alpha, double *a,int *lda, double *b, int *ldb);
 
 int
-F77_FUNC(idamax,IDAMAX)(int *n, double *dx, int *incx);
+FortranCInterface_GLOBAL(idamax,IDAMAX)(int *n, double *dx, int *incx);
 
 
 
 /* Single precision versions */
 float
-F77_FUNC(sasum,SASUM)(int *n, float *dx, int *incx);
+FortranCInterface_GLOBAL(sasum,SASUM)(int *n, float *dx, int *incx);
 
 void
-F77_FUNC(saxpy,SAXPY)(int *n, float *da, float *dx, int *incx, float *dy, int *incy);
+FortranCInterface_GLOBAL(saxpy,SAXPY)(int *n, float *da, float *dx, int *incx, float *dy, int *incy);
 
 void
-F77_FUNC(scopy,SCOPY)(int *n, float *dx, int *incx, float *dy, int *incy);
+FortranCInterface_GLOBAL(scopy,SCOPY)(int *n, float *dx, int *incx, float *dy, int *incy);
 
 float
-F77_FUNC(sdot,SDOT)(int *n, float *dx, int *incx, float *dy, int *incy);
+FortranCInterface_GLOBAL(sdot,SDOT)(int *n, float *dx, int *incx, float *dy, int *incy);
 
 void
-F77_FUNC(sgemm,SGEMM)(const char *transa, const char *transb, int *m, int *n, int *k, 
+FortranCInterface_GLOBAL(sgemm,SGEMM)(const char *transa, const char *transb, int *m, int *n, int *k, 
        float *alpha, float *a, int *lda, float *b, int *ldb, 
        float *beta, float *c, int *ldc);
 
 void
-F77_FUNC(sgemv,SGEMV)(const char *trans, int *m, int *n, float *alpha, float *a, int *lda,
+FortranCInterface_GLOBAL(sgemv,SGEMV)(const char *trans, int *m, int *n, float *alpha, float *a, int *lda,
        float *x, int *incx, float *beta, float *y, int *incy);
 
 void
-F77_FUNC(sger,SGER)(int *m, int *n, float *alpha, float *x, int *incx, 
+FortranCInterface_GLOBAL(sger,SGER)(int *m, int *n, float *alpha, float *x, int *incx, 
       float *y, int *incy, float *a, int *lda);
 
 float
-F77_FUNC(snrm2,SNRM2)(int  *n, float *x, int *incx);
+FortranCInterface_GLOBAL(snrm2,SNRM2)(int  *n, float *x, int *incx);
 
 void
-F77_FUNC(srot,SROT)(int *n, float *dx, int *incx, 
+FortranCInterface_GLOBAL(srot,SROT)(int *n, float *dx, int *incx, 
       float *dy, int *incy, float *c, float *s);
 
 void 
-F77_FUNC(sscal,SSCAL)(int *n, float *fact, float *dx, int *incx);
+FortranCInterface_GLOBAL(sscal,SSCAL)(int *n, float *fact, float *dx, int *incx);
 
 void
-F77_FUNC(sswap,SSWAP)(int *n, float *dx, int *incx, float *dy, int *incy);
+FortranCInterface_GLOBAL(sswap,SSWAP)(int *n, float *dx, int *incx, float *dy, int *incy);
 
 void
-F77_FUNC(ssymv,SSYMV)(const char *uplo, int *n, float *alpha, float *a, int *lda,
+FortranCInterface_GLOBAL(ssymv,SSYMV)(const char *uplo, int *n, float *alpha, float *a, int *lda,
        float *x, int *incx, float *beta, float *y, int *incy);
 
 void
-F77_FUNC(ssyr2,SSYR2)(const char *uplo, int *n, float *alpha, float *x, int *incx,
+FortranCInterface_GLOBAL(ssyr2,SSYR2)(const char *uplo, int *n, float *alpha, float *x, int *incx,
        float *y, int *incy, float *a, int *lda);
 
 void
-F77_FUNC(ssyr2k,SSYR2K)(const char *uplo, const char *trans, int *n, int *k, float *alpha, float *a,
+FortranCInterface_GLOBAL(ssyr2k,SSYR2K)(const char *uplo, const char *trans, int *n, int *k, float *alpha, float *a,
         int *lda, float *b, int *ldb, float *beta, float *c, int *ldc);
 
 void 
-F77_FUNC(strmm,STRMM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n, 
+FortranCInterface_GLOBAL(strmm,STRMM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n, 
        float *alpha, float *a, int *lda, float *b, int *ldb);
 
 void 
-F77_FUNC(strmv,STRMV)(const char *uplo, const char *trans, const char *diag, int *n, 
+FortranCInterface_GLOBAL(strmv,STRMV)(const char *uplo, const char *trans, const char *diag, int *n, 
        float *a, int *lda, float *x, int *incx);
 
 void
-F77_FUNC(strsm,STRSM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n,
+FortranCInterface_GLOBAL(strsm,STRSM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n,
        float *alpha, float *a,int *lda, float *b, int *ldb);
 
 int
-F77_FUNC(isamax,ISAMAX)(int *n, float *dx, int *incx);
+FortranCInterface_GLOBAL(isamax,ISAMAX)(int *n, float *dx, int *incx);
 
 
 #ifdef __cplusplus

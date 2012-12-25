@@ -37,7 +37,7 @@
 
 
 void
-F77_FUNC(dormtr,DORMTR)(const char *side, 
+FortranCInterface_GLOBAL(dormtr,DORMTR)(const char *side, 
 	const char *uplo,
 	const char *trans, 
 	int *m, 
@@ -110,7 +110,7 @@ F77_FUNC(dormtr,DORMTR)(const char *side,
 
     if (upper) {
 	i__2 = nq - 1;
-	F77_FUNC(dormql,DORMQL)(side, trans, &mi, &ni, &i__2, &a[(a_dim1 << 1) + 1], lda, &
+	FortranCInterface_GLOBAL(dormql,DORMQL)(side, trans, &mi, &ni, &i__2, &a[(a_dim1 << 1) + 1], lda, &
 		tau[1], &c__[c_offset], ldc, &work[1], lwork, &iinfo);
     } else {
 	if (left) {
@@ -121,7 +121,7 @@ F77_FUNC(dormtr,DORMTR)(const char *side,
 	    i2 = 2;
 	}
 	i__2 = nq - 1;
-	F77_FUNC(dormqr,DORMQR)(side, trans, &mi, &ni, &i__2, &a[a_dim1 + 2], lda, &tau[1], &
+	FortranCInterface_GLOBAL(dormqr,DORMQR)(side, trans, &mi, &ni, &i__2, &a[a_dim1 + 2], lda, &tau[1], &
 		c__[i1 + i2 * c_dim1], ldc, &work[1], lwork, &iinfo);
     }
     work[1] = (double) lwkopt;

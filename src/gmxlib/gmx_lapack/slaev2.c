@@ -39,7 +39,7 @@
 
 
 void
-F77_FUNC(slaev2,SLAEV2)(float *   a, 
+FortranCInterface_GLOBAL(slaev2,SLAEV2)(float *   a, 
 	float *   b, 
 	float *   c__, 
 	float *   rt1, 

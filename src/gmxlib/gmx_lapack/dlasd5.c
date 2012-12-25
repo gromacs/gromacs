@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(dlasd5,DLASD5)(int *i__, 
+FortranCInterface_GLOBAL(dlasd5,DLASD5)(int *i__, 
 	double *d__, 
 	double *z__, 
 	double *delta, 

@@ -35,7 +35,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dcopy,DCOPY)(int *n__,
+FortranCInterface_GLOBAL(dcopy,DCOPY)(int *n__,
                       double *dx,
                       int *incx__,
                       double *dy,

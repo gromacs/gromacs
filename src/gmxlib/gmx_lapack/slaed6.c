@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(slaed6,SLAED6)(int *kniter, 
+FortranCInterface_GLOBAL(slaed6,SLAED6)(int *kniter, 
                         int *orgati, 
                         float *rho, 
                         float *d__,

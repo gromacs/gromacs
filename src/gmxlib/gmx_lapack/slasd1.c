@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(slasd1,SLASD1)(int *nl, 
+FortranCInterface_GLOBAL(slasd1,SLASD1)(int *nl, 
 	int *nr, 
 	int *sqre, 
 	float *d__, 
@@ -117,27 +117,27 @@ F77_FUNC(slasd1,SLASD1)(int *nl,
 	    orgnrm = fabs(d__[i__]);
 	}
     }
-    F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &orgnrm, &one, &n, &c__1, &d__[1], &n, info);
+    FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &orgnrm, &one, &n, &c__1, &d__[1], &n, info);
     *alpha /= orgnrm;
     *beta /= orgnrm;
 
-    F77_FUNC(slasd2,SLASD2)(nl, nr, sqre, &k, &d__[1], &work[iz], alpha, beta, &u[u_offset], 
+    FortranCInterface_GLOBAL(slasd2,SLASD2)(nl, nr, sqre, &k, &d__[1], &work[iz], alpha, beta, &u[u_offset], 
 	    ldu, &vt[vt_offset], ldvt, &work[isigma], &work[iu2], &ldu2, &
 	    work[ivt2], &ldvt2, &iwork[idxp], &iwork[idx], &iwork[idxc], &
 	    idxq[1], &iwork[coltyp], info);
 
     ldq = k;
-    F77_FUNC(slasd3,SLASD3)(nl, nr, sqre, &k, &d__[1], &work[iq], &ldq, &work[isigma], &u[
+    FortranCInterface_GLOBAL(slasd3,SLASD3)(nl, nr, sqre, &k, &d__[1], &work[iq], &ldq, &work[isigma], &u[
 	    u_offset], ldu, &work[iu2], &ldu2, &vt[vt_offset], ldvt, &work[
 	    ivt2], &ldvt2, &iwork[idxc], &iwork[coltyp], &work[iz], info);
     if (*info != 0) {
 	return;
     }
-    F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &one, &orgnrm, &n, &c__1, &d__[1], &n, info);
+    FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &one, &orgnrm, &n, &c__1, &d__[1], &n, info);
 
     n1 = k;
     n2 = n - k;
-    F77_FUNC(slamrg,SLAMRG)(&n1, &n2, &d__[1], &c__1, &c_n1, &idxq[1]);
+    FortranCInterface_GLOBAL(slamrg,SLAMRG)(&n1, &n2, &d__[1], &c__1, &c_n1, &idxq[1]);
 
     return;
 

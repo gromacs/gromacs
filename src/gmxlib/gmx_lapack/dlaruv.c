@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(dlaruv,DLARUV)(int *iseed, int *n, double *x)
+FortranCInterface_GLOBAL(dlaruv,DLARUV)(int *iseed, int *n, double *x)
 {
   const int
     mm[512] = {

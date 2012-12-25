@@ -41,7 +41,7 @@
 
 
 void
-F77_FUNC(slascl,SLASCL)(const char *type,
+FortranCInterface_GLOBAL(slascl,SLASCL)(const char *type,
                         int *kl,
                         int *ku,
                         float *cfrom,

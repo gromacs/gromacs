@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(slartg,SLARTG)(float *f,
+FortranCInterface_GLOBAL(slartg,SLARTG)(float *f,
 	float *g,
 	float *cs,
 	float *sn,

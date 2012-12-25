@@ -74,19 +74,19 @@
 /* mopac interface routines */
 
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
+#ifndef FortranCInterface_GLOBAL
+#define FortranCInterface_GLOBAL(name,NAME) name ## _
 #endif
 
 
 void 
-F77_FUNC(inigms,IMIGMS)(void);
+FortranCInterface_GLOBAL(inigms,IMIGMS)(void);
 
 void 
-F77_FUNC(endgms,ENDGMS)(void);
+FortranCInterface_GLOBAL(endgms,ENDGMS)(void);
 
 void 
-F77_FUNC(grads,GRADS)(int *nrqmat,real *qmcrd,int *nrmmat, real *mmchrg, 
+FortranCInterface_GLOBAL(grads,GRADS)(int *nrqmat,real *qmcrd,int *nrmmat, real *mmchrg, 
                       real *mmcrd, real *qmgrad,real *mmgrad, real *energy);
 
 
@@ -166,7 +166,7 @@ void init_gamess(t_commrec *cr,t_QMrec *qm, t_MMrec *mm){
       fclose(out);
     }
     gmx_barrier(cr);
-    F77_FUNC(inigms,IMIGMS)();
+    FortranCInterface_GLOBAL(inigms,IMIGMS)();
   }
   else{ /* normal serial run */
     
@@ -218,7 +218,7 @@ void init_gamess(t_commrec *cr,t_QMrec *qm, t_MMrec *mm){
       fprintf(out,"END\nBASIS %s\nRUNTYPE SADDLE\nSCFTYPE %s\n",
 	      eQMbasis_names[qm->QMbasis],
 	      eQMmethod_names[qm->QMmethod]); /* see enum.h */
-    F77_FUNC(inigms,IMIGMS)();
+    FortranCInterface_GLOBAL(inigms,IMIGMS)();
   }  
 }
 
@@ -264,7 +264,7 @@ real call_gamess(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
 	    qmcrd[i+2]);
   }
 
-  F77_FUNC(grads,GRADS)(&qm->nrQMatoms,qmcrd,&mm->nrMMatoms,mm->MMcharges,
+  FortranCInterface_GLOBAL(grads,GRADS)(&qm->nrQMatoms,qmcrd,&mm->nrMMatoms,mm->MMcharges,
                         mmcrd,qmgrad,mmgrad,&energy);
 
   for(i=0;i<qm->nrQMatoms;i++){

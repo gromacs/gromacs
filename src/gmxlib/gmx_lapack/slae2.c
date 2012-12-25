@@ -37,7 +37,7 @@
 
 
 void
-F77_FUNC(slae2,SLAE2)(float *a, 
+FortranCInterface_GLOBAL(slae2,SLAE2)(float *a, 
        float *b,
        float *c__, 
        float *rt1, 

@@ -40,7 +40,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dgemm,DGEMM)(const char *transa,
+FortranCInterface_GLOBAL(dgemm,DGEMM)(const char *transa,
                       const char *transb,
                       int *m__,
                       int *n__,

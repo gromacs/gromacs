@@ -40,7 +40,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(ssteqr,SSTEQR)(const char *    compz, 
+FortranCInterface_GLOBAL(ssteqr,SSTEQR)(const char *    compz, 
                         int *     n, 
                         float *  d__, 
                         float *  e, 
@@ -128,7 +128,7 @@ F77_FUNC(ssteqr,SSTEQR)(const char *    compz,
     ssfmin = sqrt(safmin) / eps2;
 
     if (icompz == 2) {
-	F77_FUNC(slaset,SLASET)("Full", n, n, &c_b9, &c_b10, &z__[z_offset], ldz);
+	FortranCInterface_GLOBAL(slaset,SLASET)("Full", n, n, &c_b9, &c_b10, &z__[z_offset], ldz);
     }
 
     nmaxit = *n * 30;
@@ -170,7 +170,7 @@ L30:
     }
 
     i__1 = lend - l + 1;
-    anorm = F77_FUNC(slanst,SLANST)("I", &i__1, &d__[l], &e[l]);
+    anorm = FortranCInterface_GLOBAL(slanst,SLANST)("I", &i__1, &d__[l], &e[l]);
     iscale = 0;
     if (fabs(anorm)<GMX_FLOAT_MIN) {
 	goto L10;
@@ -178,18 +178,18 @@ L30:
     if (anorm > ssfmax) {
 	iscale = 1;
 	i__1 = lend - l + 1;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &d__[l], n, 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &d__[l], n, 
 		info);
 	i__1 = lend - l;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &e[l], n, 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &e[l], n, 
 		info);
     } else if (anorm < ssfmin) {
 	iscale = 2;
 	i__1 = lend - l + 1;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &d__[l], n, 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &d__[l], n, 
 		info);
 	i__1 = lend - l;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &e[l], n, 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &e[l], n, 
 		info);
     }
 
@@ -226,13 +226,13 @@ L60:
 
 	if (m == l + 1) {
 	    if (icompz > 0) {
-		F77_FUNC(slaev2,SLAEV2)(&d__[l], &e[l], &d__[l + 1], &rt1, &rt2, &c__, &s);
+		FortranCInterface_GLOBAL(slaev2,SLAEV2)(&d__[l], &e[l], &d__[l + 1], &rt1, &rt2, &c__, &s);
 		work[l] = c__;
 		work[*n - 1 + l] = s;
-		F77_FUNC(slasr,SLASR)("R", "V", "B", n, &c__2, &work[l], &work[*n - 1 + l], &
+		FortranCInterface_GLOBAL(slasr,SLASR)("R", "V", "B", n, &c__2, &work[l], &work[*n - 1 + l], &
 			z__[l * z_dim1 + 1], ldz);
 	    } else {
-		F77_FUNC(slae2,SLAE2)(&d__[l], &e[l], &d__[l + 1], &rt1, &rt2);
+		FortranCInterface_GLOBAL(slae2,SLAE2)(&d__[l], &e[l], &d__[l + 1], &rt1, &rt2);
 	    }
 	    d__[l] = rt1;
 	    d__[l + 1] = rt2;
@@ -250,7 +250,7 @@ L60:
 	++jtot;
 
 	g = (d__[l + 1] - p) / (e[l] * 2.);
-	r__ = F77_FUNC(slapy2,SLAPY2)(&g, &c_b10);
+	r__ = FortranCInterface_GLOBAL(slapy2,SLAPY2)(&g, &c_b10);
 	g = d__[m] - p + e[l] / (g + ( (g>0) ? r__ : -r__ ) );
 
 	s = 1.;
@@ -262,7 +262,7 @@ L60:
 	for (i__ = mm1; i__ >= i__1; --i__) {
 	    f = s * e[i__];
 	    b = c__ * e[i__];
-	    F77_FUNC(slartg,SLARTG)(&g, &f, &c__, &s, &r__);
+	    FortranCInterface_GLOBAL(slartg,SLARTG)(&g, &f, &c__, &s, &r__);
 	    if (i__ != m - 1) {
 		e[i__ + 1] = r__;
 	    }
@@ -280,7 +280,7 @@ L60:
 
 	if (icompz > 0) {
 	    mm = m - l + 1;
-	    F77_FUNC(slasr,SLASR)("R", "V", "B", n, &mm, &work[l], &work[*n - 1 + l], &z__[l 
+	    FortranCInterface_GLOBAL(slasr,SLASR)("R", "V", "B", n, &mm, &work[l], &work[*n - 1 + l], &z__[l 
 		    * z_dim1 + 1], ldz);
 	}
 
@@ -324,14 +324,14 @@ L110:
 	}
 	if (m == l - 1) {
 	    if (icompz > 0) {
-		F77_FUNC(slaev2,SLAEV2)(&d__[l - 1], &e[l - 1], &d__[l], &rt1, &rt2, &c__, &s)
+		FortranCInterface_GLOBAL(slaev2,SLAEV2)(&d__[l - 1], &e[l - 1], &d__[l], &rt1, &rt2, &c__, &s)
 			;
 		work[m] = c__;
 		work[*n - 1 + m] = s;
-		F77_FUNC(slasr,SLASR)("R", "V", "F", n, &c__2, &work[m], &work[*n - 1 + m], &
+		FortranCInterface_GLOBAL(slasr,SLASR)("R", "V", "F", n, &c__2, &work[m], &work[*n - 1 + m], &
 			z__[(l - 1) * z_dim1 + 1], ldz);
 	    } else {
-		F77_FUNC(slae2,SLAE2)(&d__[l - 1], &e[l - 1], &d__[l], &rt1, &rt2);
+		FortranCInterface_GLOBAL(slae2,SLAE2)(&d__[l - 1], &e[l - 1], &d__[l], &rt1, &rt2);
 	    }
 	    d__[l - 1] = rt1;
 	    d__[l] = rt2;
@@ -349,7 +349,7 @@ L110:
 	++jtot;
 
 	g = (d__[l - 1] - p) / (e[l - 1] * 2.);
-	r__ = F77_FUNC(slapy2,SLAPY2)(&g, &c_b10);
+	r__ = FortranCInterface_GLOBAL(slapy2,SLAPY2)(&g, &c_b10);
 	g = d__[m] - p + e[l - 1] / (g + ( (g>0) ? r__ : -r__ ));
 
 	s = 1.;
@@ -361,7 +361,7 @@ L110:
 	for (i__ = m; i__ <= i__1; ++i__) {
 	    f = s * e[i__];
 	    b = c__ * e[i__];
-	    F77_FUNC(slartg,SLARTG)(&g, &f, &c__, &s, &r__);
+	    FortranCInterface_GLOBAL(slartg,SLARTG)(&g, &f, &c__, &s, &r__);
 	    if (i__ != m) {
 		e[i__ - 1] = r__;
 	    }
@@ -379,7 +379,7 @@ L110:
 
 	if (icompz > 0) {
 	    mm = l - m + 1;
-	    F77_FUNC(slasr,SLASR)("R", "V", "F", n, &mm, &work[m], &work[*n - 1 + m], &z__[m 
+	    FortranCInterface_GLOBAL(slasr,SLASR)("R", "V", "F", n, &mm, &work[m], &work[*n - 1 + m], &z__[m 
 		    * z_dim1 + 1], ldz);
 	}
 
@@ -401,17 +401,17 @@ L130:
 L140:
     if (iscale == 1) {
 	i__1 = lendsv - lsv + 1;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &ssfmax, &anorm, &i__1, &c__1, &d__[lsv], 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &ssfmax, &anorm, &i__1, &c__1, &d__[lsv], 
 		n, info);
 	i__1 = lendsv - lsv;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &ssfmax, &anorm, &i__1, &c__1, &e[lsv], n, 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &ssfmax, &anorm, &i__1, &c__1, &e[lsv], n, 
 		info);
     } else if (iscale == 2) {
 	i__1 = lendsv - lsv + 1;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &ssfmin, &anorm, &i__1, &c__1, &d__[lsv], 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &ssfmin, &anorm, &i__1, &c__1, &d__[lsv], 
 		n, info);
 	i__1 = lendsv - lsv;
-	F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &ssfmin, &anorm, &i__1, &c__1, &e[lsv], n, 
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &ssfmin, &anorm, &i__1, &c__1, &e[lsv], n, 
 		info);
     }
 
@@ -429,7 +429,7 @@ L140:
 L160:
     if (icompz == 0) {
 
-	F77_FUNC(slasrt,SLASRT)("I", n, &d__[1], info);
+	FortranCInterface_GLOBAL(slasrt,SLASRT)("I", n, &d__[1], info);
 
     } else {
 
@@ -448,7 +448,7 @@ L160:
 	    if (k != i__) {
 		d__[k] = d__[i__];
 		d__[i__] = p;
-		F77_FUNC(sswap,SSWAP)(n, &z__[i__ * z_dim1 + 1], &c__1, &z__[k * z_dim1 + 1],
+		FortranCInterface_GLOBAL(sswap,SSWAP)(n, &z__[i__ * z_dim1 + 1], &c__1, &z__[k * z_dim1 + 1],
 			 &c__1);
 	    }
 	}

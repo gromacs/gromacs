@@ -39,7 +39,7 @@
 
 
 void
-F77_FUNC(slamrg,SLAMRG)(int *n1,
+FortranCInterface_GLOBAL(slamrg,SLAMRG)(int *n1,
                         int *n2,
                         float *a,
                         int *dtrd1,

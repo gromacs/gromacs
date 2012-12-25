@@ -37,7 +37,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(dlassq,DLASSQ)(int *n,
+FortranCInterface_GLOBAL(dlassq,DLASSQ)(int *n,
                         double *x,
                         int *incx,
                         double *scale,

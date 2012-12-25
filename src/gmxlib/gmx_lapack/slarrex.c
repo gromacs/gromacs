@@ -44,7 +44,7 @@
 
 
 void
-F77_FUNC(slarrex,SLARREX)(const char *range,
+FortranCInterface_GLOBAL(slarrex,SLARREX)(const char *range,
 	 int *n, 
 	 float *vl, 
 	 float *vu, 
@@ -223,9 +223,9 @@ L60:
 	    }
 	}
 
-	F77_FUNC(scopy,SCOPY)(&in, &work[1], &c__1, &d__[ibegin], &c__1);
+	FortranCInterface_GLOBAL(scopy,SCOPY)(&in, &work[1], &c__1, &d__[ibegin], &c__1);
 	i__2 = in - 1;
-	F77_FUNC(scopy,SCOPY)(&i__2, &work[in + 1], &c__1, &e[ibegin], &c__1);
+	FortranCInterface_GLOBAL(scopy,SCOPY)(&i__2, &work[in + 1], &c__1, &e[ibegin], &c__1);
 	i__2 = in - 1;
 	for (i__ = 1; i__ <= i__2; ++i__) {
 	    work[in * 3 + i__] = work[i__] * work[in + i__];
@@ -243,7 +243,7 @@ L60:
 	    work[in * 3] = (gu - gl) / 2.;
 	}
 	rtol = eps * 4.;
-	F77_FUNC(slarrbx,SLARRBX)(&in, &d__[ibegin], &e[ibegin], &work[in * 3 + 1], &work[(in <<
+	FortranCInterface_GLOBAL(slarrbx,SLARRBX)(&in, &d__[ibegin], &e[ibegin], &work[in * 3 + 1], &work[(in <<
 		 2) + 1], &cnt, &cnt, &rtol, &rtol, &c__0, &work[1], &work[in 
 		+ 1], &work[(in << 1) + 1], &work[in * 5 + 1], &iwork[1], &
 		iinfo);
@@ -279,9 +279,9 @@ L100:
 	}
 
 	sigma += tau;
-	F77_FUNC(scopy,SCOPY)(&in, &work[1], &c__1, &d__[ibegin], &c__1);
+	FortranCInterface_GLOBAL(scopy,SCOPY)(&in, &work[1], &c__1, &d__[ibegin], &c__1);
 	i__2 = in - 1;
-	F77_FUNC(scopy,SCOPY)(&i__2, &work[in + 1], &c__1, &e[ibegin], &c__1);
+	FortranCInterface_GLOBAL(scopy,SCOPY)(&i__2, &work[in + 1], &c__1, &e[ibegin], &c__1);
 	e[iend] = sigma;
 	tmp = (float) in * 4. * eps * (fabs(sigma) + fabs(tau));
 	i__2 = iend;
@@ -299,7 +299,7 @@ L100:
 	}
 	work[(in << 1) - 1] = fabs(d__[iend]);
 
-	F77_FUNC(slasq2,SLASQ2)(&in, &work[1], info);
+	FortranCInterface_GLOBAL(slasq2,SLASQ2)(&in, &work[1], info);
 	if (*info != 0) {
 	    return;
 	}
@@ -368,7 +368,7 @@ L170:
 		iwork[i__] = i__;
 		iwork[*n + i__] = iblock[i__];
 	    }
-	    F77_FUNC(slasrt2,SLASRT2)("I", n, &work[1], &iwork[1], &iinfo);
+	    FortranCInterface_GLOBAL(slasrt2,SLASRT2)("I", n, &work[1], &iwork[1], &iinfo);
 	    i__1 = *m;
 	    for (i__ = 1; i__ <= i__1; ++i__) {
 		itmp = iwork[*il + i__ - 1];
@@ -380,7 +380,7 @@ L170:
 		iwork[*n + i__] = iwork[*il + i__ - 1];
 		iwork[i__] = i__;
 	    }
-	    F77_FUNC(ilasrt2,ILASRT2)("I", m, &iblock[1], &iwork[1], &iinfo);
+	    FortranCInterface_GLOBAL(ilasrt2,ILASRT2)("I", m, &iblock[1], &iwork[1], &iinfo);
 	    j = 1;
 	    itmp = iblock[j];
 	    cnt = iwork[*n + iwork[j]];
@@ -399,7 +399,7 @@ L170:
 			till = i__ - 1;
 		    }
 		    i__2 = till - j + 1;
-		    F77_FUNC(slasrt,SLASRT)("I", &i__2, &w[j], &iinfo);
+		    FortranCInterface_GLOBAL(slasrt,SLASRT)("I", &i__2, &w[j], &iinfo);
 		    cnt = cnt - ibegin + 1;
 		    i__2 = till;
 		    for (k = j; k <= i__2; ++k) {

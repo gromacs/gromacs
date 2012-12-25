@@ -41,7 +41,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(slarf,SLARF)(const char *side,
+FortranCInterface_GLOBAL(slarf,SLARF)(const char *side,
        int *m,
        int *n,
        float *v,
@@ -60,13 +60,13 @@ F77_FUNC(slarf,SLARF)(const char *side,
 
   if(ch=='L') {
     if(fabs(*tau)>GMX_FLOAT_MIN) {
-      F77_FUNC(sgemv,SGEMV)("T",m,n,&one,c,ldc,v,incv,&zero,work,&i1);
-      F77_FUNC(sger,SGER)(m,n,&minustau,v,incv,work,&i1,c,ldc);
+      FortranCInterface_GLOBAL(sgemv,SGEMV)("T",m,n,&one,c,ldc,v,incv,&zero,work,&i1);
+      FortranCInterface_GLOBAL(sger,SGER)(m,n,&minustau,v,incv,work,&i1,c,ldc);
     }
   } else {
     if(fabs(*tau)>GMX_FLOAT_MIN) {
-      F77_FUNC(sgemv,SGEMV)("N",m,n,&one,c,ldc,v,incv,&zero,work,&i1);
-      F77_FUNC(sger,SGER)(m,n,&minustau,work,&i1,v,incv,c,ldc);
+      FortranCInterface_GLOBAL(sgemv,SGEMV)("N",m,n,&one,c,ldc,v,incv,&zero,work,&i1);
+      FortranCInterface_GLOBAL(sger,SGER)(m,n,&minustau,work,&i1,v,incv,c,ldc);
     }
   }
   return;

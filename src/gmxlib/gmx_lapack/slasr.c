@@ -38,7 +38,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(slasr,SLASR)(const char *side, 
+FortranCInterface_GLOBAL(slasr,SLASR)(const char *side, 
        const char *pivot, 
        const char *direct, 
        int *m,

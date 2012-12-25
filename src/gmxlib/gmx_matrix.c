@@ -140,14 +140,14 @@ int matrix_invert(FILE *fp,int n,double **a)
     snew(work,lwork);
     m = lda   = n;
     info  = 0;
-    F77_FUNC(dgetrf,DGETRF)(&n,&m,a[0],&lda,ipiv,&info);
+    FortranCInterface_GLOBAL(dgetrf,DGETRF)(&n,&m,a[0],&lda,ipiv,&info);
 #ifdef DEBUG_MATRIX
     if (fp)
         dump_matrix(fp,"after dgetrf",n,a);
 #endif
     if (info != 0)
         return info;
-    F77_FUNC(dgetri,DGETRI)(&n,a[0],&lda,ipiv,work,&lwork,&info);
+    FortranCInterface_GLOBAL(dgetri,DGETRI)(&n,a[0],&lda,ipiv,work,&lwork,&info);
 #ifdef DEBUG_MATRIX
     if (fp)
         dump_matrix(fp,"after dgetri",n,a);

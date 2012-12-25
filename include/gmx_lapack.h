@@ -82,8 +82,8 @@ extern "C" {
 #undef toupper
 #endif
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
+#ifndef FortranCInterface_GLOBAL
+#define FortranCInterface_GLOBAL(name,NAME) name ## _
 #endif
 
 
@@ -91,396 +91,396 @@ extern "C" {
 /* Double precision */
 
 void
-F77_FUNC(dbdsdc,DBDSDC)(const char *uplo, const char *compq, int *n, double *d, double *e, double *u, 
+FortranCInterface_GLOBAL(dbdsdc,DBDSDC)(const char *uplo, const char *compq, int *n, double *d, double *e, double *u, 
 	int *ldu, double *vt, int *ldvt, double *q, int *iq, double *work, 
 	int *iwork, int *info);
 
 void
-F77_FUNC(dgetf2,DGETF2)(int *m, int *n, double *a, int *lda, int *ipiv, int *info);
+FortranCInterface_GLOBAL(dgetf2,DGETF2)(int *m, int *n, double *a, int *lda, int *ipiv, int *info);
 
 void
-F77_FUNC(dlamrg,DLAMRG)(int *n1, int *n2, double *a, int *dtrd1, int *dtrd2, int *index);
+FortranCInterface_GLOBAL(dlamrg,DLAMRG)(int *n1, int *n2, double *a, int *dtrd1, int *dtrd2, int *index);
 
 void
-F77_FUNC(dlarnv,DLARNV)(int *idist, int *iseed, int *n, double *x);
+FortranCInterface_GLOBAL(dlarnv,DLARNV)(int *idist, int *iseed, int *n, double *x);
 
 void 
-F77_FUNC(dlasd0,DLASD0)(int *n, int *sqre, double *d, double *e, double *u, 
+FortranCInterface_GLOBAL(dlasd0,DLASD0)(int *n, int *sqre, double *d, double *e, double *u, 
 	int *ldu, double *vt, int *ldvt, int *smlsiz, int *iwork, 
 	double *work, int *info);
 
 void 
-F77_FUNC(dlasda,DLASDA)(int *icompq, int *smlsiz, int *n, int *sqre, double *d, double *e, 
+FortranCInterface_GLOBAL(dlasda,DLASDA)(int *icompq, int *smlsiz, int *n, int *sqre, double *d, double *e, 
 	double *u, int *ldu, double *vt, int *k, double *difl, double *difr, 
 	double *z, double *poles, int *givptr, int *givcol, int *ldgcol, 
 	int *perm, double *givnum, double *c, double *s, 
 	double *work, int *iwork, int *info);
 
 void 
-F77_FUNC(dlasq6,DLASQ6)(int *i0, int *n0, double *z, int *pp, double *dmin, double *dmin1, 
+FortranCInterface_GLOBAL(dlasq6,DLASQ6)(int *i0, int *n0, double *z, int *pp, double *dmin, double *dmin1, 
 	double *dmin2, double *dn, double *dnm1, double *dnm2);
 
 void
-F77_FUNC(dorgl2,DORGL2)(int *m,	int *n,	int *k,	double *a, int *lda, 
+FortranCInterface_GLOBAL(dorgl2,DORGL2)(int *m,	int *n,	int *k,	double *a, int *lda, 
 	double *tau, double *work, int *info);
 
 void
-F77_FUNC(dbdsqr,DBDSQR)(const char *uplo, int *n, int *ncvt, int *nru, int *ncc, double *d, 
+FortranCInterface_GLOBAL(dbdsqr,DBDSQR)(const char *uplo, int *n, int *ncvt, int *nru, int *ncc, double *d, 
 	double *e, double *vt, int *ldvt, double *u, int *ldu,
 	double *c, int *ldc, double *work, int *info);
 
 void
-F77_FUNC(dgetrf,DGETRF)(int *m,	int *n,	double *a, int *lda, int *ipiv, int *info);
+FortranCInterface_GLOBAL(dgetrf,DGETRF)(int *m,	int *n,	double *a, int *lda, int *ipiv, int *info);
 
 void
-F77_FUNC(dgetri,DGETRI)(int *n,	double *a, int *lda, int *ipiv, double *work, 
+FortranCInterface_GLOBAL(dgetri,DGETRI)(int *n,	double *a, int *lda, int *ipiv, double *work, 
 	int *lwork, int *info);
 
 void
-F77_FUNC(dgetrs,DGETRS)(const char *trans, int *n, int *nrhs,	double *a, int *lda, int *ipiv,
+FortranCInterface_GLOBAL(dgetrs,DGETRS)(const char *trans, int *n, int *nrhs,	double *a, int *lda, int *ipiv,
 	double *b, int *ldb, int *info);
 
 void
-F77_FUNC(dtrtri,DTRTRI)(const char *uplo, const char *diag, int *n, double *a, int *lda, int *info);
+FortranCInterface_GLOBAL(dtrtri,DTRTRI)(const char *uplo, const char *diag, int *n, double *a, int *lda, int *info);
 
 void
-F77_FUNC(dtrti2,DTRTI2)(const char *uplo, const char *diag, int *n, double *a, int *lda, int *info);
+FortranCInterface_GLOBAL(dtrti2,DTRTI2)(const char *uplo, const char *diag, int *n, double *a, int *lda, int *info);
 
 double
-F77_FUNC(dlange,DLANGE)(const char *norm, int *m, int *n, double *a, int *lda, double *work);
+FortranCInterface_GLOBAL(dlange,DLANGE)(const char *norm, int *m, int *n, double *a, int *lda, double *work);
 
 void
-F77_FUNC(dlarrbx,DLARRBX)(int *n, double *d, double *l, double *ld, double *lld, int *ifirst,
+FortranCInterface_GLOBAL(dlarrbx,DLARRBX)(int *n, double *d, double *l, double *ld, double *lld, int *ifirst,
 	 int *ilast, double *rtol1, double *rtol2, int *offset, double *w,
 	 double *wgap, double *werr, double *work, int *iwork, int *info);
 
 void 
-F77_FUNC(dlasd1,DLASD1)(int *nl, int *nr, int *sqre, double *d, double *alpha, double *beta, 
+FortranCInterface_GLOBAL(dlasd1,DLASD1)(int *nl, int *nr, int *sqre, double *d, double *alpha, double *beta, 
 	double *u, int *ldu, double *vt, int *ldvt, int *idxq, int *iwork, 
 	double *work, int *info);
 
 void
-F77_FUNC(dlasdq,DLASDQ)(const char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
+FortranCInterface_GLOBAL(dlasdq,DLASDQ)(const char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
 	double *d, double *e, double *vt, int *ldvt, double *u, int *ldu, 
 	double *c, int *ldc, double *work, int *info);
 
 void 
-F77_FUNC(dlasr,DLASR)(const char *side, const char *pivot, const char *direct, int *m, int *n, double *c, 
+FortranCInterface_GLOBAL(dlasr,DLASR)(const char *side, const char *pivot, const char *direct, int *m, int *n, double *c, 
        double *s, double *a, int *lda);
 
 void 
-F77_FUNC(dorglq,DORGLQ)(int *m, int *n, int *k, double *a, int *lda, 
+FortranCInterface_GLOBAL(dorglq,DORGLQ)(int *m, int *n, int *k, double *a, int *lda, 
 	double *tau, double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dormtr,DORMTR)(const char *side, const char *uplo, const char *trans, int *m, int *n, double *a, 
+FortranCInterface_GLOBAL(dormtr,DORMTR)(const char *side, const char *uplo, const char *trans, int *m, int *n, double *a, 
 	int *lda, double *tau, double *c, int *ldc,
 	double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dgebd2,DGEBD2)(int *m, int *n, double *a, int *lda, double *d, double *e,
+FortranCInterface_GLOBAL(dgebd2,DGEBD2)(int *m, int *n, double *a, int *lda, double *d, double *e,
 	double *tauq, double *taup, double *work, int *info);
 
 void 
-F77_FUNC(dlabrd,DLABRD)(int *m, int *n, int *nb, double *a, int *lda, double *d,
+FortranCInterface_GLOBAL(dlabrd,DLABRD)(int *m, int *n, int *nb, double *a, int *lda, double *d,
 	double *e, double *tauq, double *taup, double *x,
 	int *ldx, double *y, int *ldy);
 
 double
-F77_FUNC(dlanst,DLANST)(const char *norm, int *n, double *d, double *e);
+FortranCInterface_GLOBAL(dlanst,DLANST)(const char *norm, int *n, double *d, double *e);
 
 double
-F77_FUNC(dlansy,DLANSY)(const char *norm, const char *uplo, int *n, double *a, int *lda, double *work);
+FortranCInterface_GLOBAL(dlansy,DLANSY)(const char *norm, const char *uplo, int *n, double *a, int *lda, double *work);
 
 void
-F77_FUNC(dlarrex,DLARREX)(const char *range, int *n, double *vl, double *vu, int *il, int *iu,
+FortranCInterface_GLOBAL(dlarrex,DLARREX)(const char *range, int *n, double *vl, double *vu, int *il, int *iu,
 	 double *d, double *e, double *tol, int *nsplit, 
 	 int *isplit, int *m, double *w, int *iblock, int *indexw,
 	 double *gersch, double *work, int *iwork, int *info);
 
 void 
-F77_FUNC(dlasd2,DLASD2)(int *nl, int *nr, int *sqre, int *k, double *d, double *z, 
+FortranCInterface_GLOBAL(dlasd2,DLASD2)(int *nl, int *nr, int *sqre, int *k, double *d, double *z, 
 	double *alpha, double *beta, double *u, int *ldu, double *vt, 
 	int *ldvt, double *dsigma, double *u2, int *ldu2, double *vt2, 
 	int *ldvt2, int *idxp, int *idx, int *idxc, 
 	int *idxq, int *coltyp, int *info);
 
 void
-F77_FUNC(dlasdt,DLASDT)(int *n, int *lvl, int *nd, int *inode, int *ndiml, 
+FortranCInterface_GLOBAL(dlasdt,DLASDT)(int *n, int *lvl, int *nd, int *inode, int *ndiml, 
 	int *ndimr, int *msub);
 
 void 
-F77_FUNC(dlasrt,DLASRT)(const char *id, int *n, double *d, int *info);
+FortranCInterface_GLOBAL(dlasrt,DLASRT)(const char *id, int *n, double *d, int *info);
 
 void
-F77_FUNC(dlasrt2,DLASRT2)(const char *id, int *n, double *d, int *key, int *info);
+FortranCInterface_GLOBAL(dlasrt2,DLASRT2)(const char *id, int *n, double *d, int *key, int *info);
 
 void
-F77_FUNC(ilasrt2,ILASRT2)(const char *id, int *n, int *d, int *key, int *info);
+FortranCInterface_GLOBAL(ilasrt2,ILASRT2)(const char *id, int *n, int *d, int *key, int *info);
 
 void 
-F77_FUNC(dorgqr,DORGQR)(int *m, int *n, int *k, double *a, int *lda, double *tau, 
+FortranCInterface_GLOBAL(dorgqr,DORGQR)(int *m, int *n, int *k, double *a, int *lda, double *tau, 
 	double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dstebz,DSTEBZ)(const char *range, const char *order, int *n, double *vl, double *vu, 
+FortranCInterface_GLOBAL(dstebz,DSTEBZ)(const char *range, const char *order, int *n, double *vl, double *vu, 
 	int *il, int *iu, double *abstol, double *d, double *e, 
 	int *m, int *nsplit, double *w, int *iblock, int *isplit, 
 	double *work, int *iwork, int *info);
 
 void
-F77_FUNC(dsteqr,DSTEQR)(const char *compz, int *n, double *d__, double *e, 
+FortranCInterface_GLOBAL(dsteqr,DSTEQR)(const char *compz, int *n, double *d__, double *e, 
         double *z__,  int *ldz, double *work, int *info);
 
 void
-F77_FUNC(dgebrd,DGEBRD)(int *m, int *n, double *a, int *lda, double *d, double *e,
+FortranCInterface_GLOBAL(dgebrd,DGEBRD)(int *m, int *n, double *a, int *lda, double *d, double *e,
 	double *tauq, double *taup, double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dlacpy,DLACPY)(const char *uplo, int *m, int *n, double *a, int *lda, double *b, int *ldb);
+FortranCInterface_GLOBAL(dlacpy,DLACPY)(const char *uplo, int *m, int *n, double *a, int *lda, double *b, int *ldb);
 
 double
-F77_FUNC(dlapy2,DLAPY2)(double * x, double * y);
+FortranCInterface_GLOBAL(dlapy2,DLAPY2)(double * x, double * y);
 
 
 void
-F77_FUNC(dlarrfx,DLARRFX)(int *n, double *d, double *l, double *ld, double *lld, int *ifirst,
+FortranCInterface_GLOBAL(dlarrfx,DLARRFX)(int *n, double *d, double *l, double *ld, double *lld, int *ifirst,
         int *ilast, double *w, double *sigma, double *dplus, double *lplus,
         double *work, int *info);
 
 void 
-F77_FUNC(dlasd3,DLASD3)(int *nl, int *nr, int *sqre, int *k, double *d, double *q, int *ldq, 
+FortranCInterface_GLOBAL(dlasd3,DLASD3)(int *nl, int *nr, int *sqre, int *k, double *d, double *q, int *ldq, 
 	double *dsigma, double *u, int *ldu, double *u2, int *ldu2, 
 	double *vt, int *ldvt, double *vt2, int *ldvt2, int *idxc, 
 	int *ctot, double *z, int *info);
 
 void
-F77_FUNC(dlaset,DLASET)(const char *uplo, int *m, int *n, double *alpha, 
+FortranCInterface_GLOBAL(dlaset,DLASET)(const char *uplo, int *m, int *n, double *alpha, 
 	double *beta, double *a, int *lda);
 
 void
-F77_FUNC(dlassq,DLASSQ)(int *n, double *x, int *incx, double *scale, double *sumsq);
+FortranCInterface_GLOBAL(dlassq,DLASSQ)(int *n, double *x, int *incx, double *scale, double *sumsq);
 
 void
-F77_FUNC(dorm2l,DORM2L)(const char *side, const char *trans, int *m, int *n, int *k, double *a, int *lda, 
+FortranCInterface_GLOBAL(dorm2l,DORM2L)(const char *side, const char *trans, int *m, int *n, int *k, double *a, int *lda, 
 	double *tau, double *c, int *ldc, double *work, int *info);
 
 void
-F77_FUNC(dstegr,DSTEGR)(const char *jobz, const char *range, int *n, double *d, double *e, double *vl, 
+FortranCInterface_GLOBAL(dstegr,DSTEGR)(const char *jobz, const char *range, int *n, double *d, double *e, double *vl, 
 	double *vu, int *il, int *iu, double *abstol, int *m, double *w, 
 	double *z, int *ldz, int *isuppz, double *work, 
 	int *lwork, int *iwork,	int *liwork, int *info);
 
 void
-F77_FUNC(ssteqr,SSTEQR)(const char *compz, int *n, float *d__, float *e, 
+FortranCInterface_GLOBAL(ssteqr,SSTEQR)(const char *compz, int *n, float *d__, float *e, 
         float *z__,  int *ldz, float *work, int *info);
 
 void
-F77_FUNC(dgelq2,DGELQ2)(int *m, int *n, double *a, int *lda, double *tau, double *work, int *info);
+FortranCInterface_GLOBAL(dgelq2,DGELQ2)(int *m, int *n, double *a, int *lda, double *tau, double *work, int *info);
 
 void
-F77_FUNC(dlae2,DLAE2)(double *a, double *b, double *c, double *rt1, double *rt2);
+FortranCInterface_GLOBAL(dlae2,DLAE2)(double *a, double *b, double *c, double *rt1, double *rt2);
 
 void
-F77_FUNC(dlaev2,DLAEV2)(double *a, double *b, double *c, double *rt1, double *rt2,
+FortranCInterface_GLOBAL(dlaev2,DLAEV2)(double *a, double *b, double *c, double *rt1, double *rt2,
 	double *cs1, double *cs2);
 
 void
-F77_FUNC(dlar1vx,DLAR1VX)(int *n, int *b1, int *bn, double *sigma, double *d, double *l, double *ld, 
+FortranCInterface_GLOBAL(dlar1vx,DLAR1VX)(int *n, int *b1, int *bn, double *sigma, double *d, double *l, double *ld, 
                           double *lld, double *eval, double *gersch, double *z, double *ztz, double *mingma, 
                           int *r, int *isuppz, double *work);
 
 void
-F77_FUNC(dlarrvx,DLARRVX)(int *n, double *d, double *l, int *isplit, int *m, double *w, 
+FortranCInterface_GLOBAL(dlarrvx,DLARRVX)(int *n, double *d, double *l, int *isplit, int *m, double *w, 
 	 int *iblock, int *indexw, double *gersch, double *tol, double *z, int *ldz, 
 	 int *isuppz, double *work, int *iwork, int *info);
 
 void 
-F77_FUNC(dlasd4,DLASD4)(int *n, int *i, double *d, double *z, double *delta, 
+FortranCInterface_GLOBAL(dlasd4,DLASD4)(int *n, int *i, double *d, double *z, double *delta, 
 	double *rho, double *sigma, double *work, int *info);
 
 void
-F77_FUNC(dlasq1,DLASQ1)(int *n,	double *d, double *e, double *work, int *info);
+FortranCInterface_GLOBAL(dlasq1,DLASQ1)(int *n,	double *d, double *e, double *work, int *info);
 
 
 void 
-F77_FUNC(dlasv2,DLASV2)(double *f, double *g, double *h, double *ssmin, double *ssmax, 
+FortranCInterface_GLOBAL(dlasv2,DLASV2)(double *f, double *g, double *h, double *ssmin, double *ssmax, 
 	double *snr, double *csr, double *snl, double *csl);
 
 void 
-F77_FUNC(dorm2r,DORM2R)(const char *side, const char *trans, int *m, int *n, int *k, double *a, 
+FortranCInterface_GLOBAL(dorm2r,DORM2R)(const char *side, const char *trans, int *m, int *n, int *k, double *a, 
 	int *lda, double *tau, double *c, int *ldc, double *work, int *info);
 
 void
-F77_FUNC(dstein,DSTEIN)(int *n, double *d, double *e, int *m, double *w, int *iblock, int *isplit, 
+FortranCInterface_GLOBAL(dstein,DSTEIN)(int *n, double *d, double *e, int *m, double *w, int *iblock, int *isplit, 
 	double *z, int *ldz, double *work, int *iwork, int *ifail, int *info);
 
 void
-F77_FUNC(dgelqf,DGELQF)(int *m,	int *n, double *a, int *lda, double *tau,
+FortranCInterface_GLOBAL(dgelqf,DGELQF)(int *m,	int *n, double *a, int *lda, double *tau,
 	double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dlaebz,DLAEBZ)(int *ijob, int *nitmax, int *n, int *mmax, int *minp, int *nbmin,
+FortranCInterface_GLOBAL(dlaebz,DLAEBZ)(int *ijob, int *nitmax, int *n, int *mmax, int *minp, int *nbmin,
 	double *abstol, double *reltol, double *pivmin, double *d, double *e,
 	double *e2, int *nval, double *ab, double *c, int *mout, int *nab,
 	double *work, int *iwork, int *info);
 
 void
-F77_FUNC(dlarf,DLARF)(const char *side, int *m, int *n, double *v, int *incv, double *tau,
+FortranCInterface_GLOBAL(dlarf,DLARF)(const char *side, int *m, int *n, double *v, int *incv, double *tau,
        double *c, int *ldc, double *work);
 
 void
-F77_FUNC(dlartg,DLARTG)(double *f, double *g, double *cs, double *sn, double *r);
+FortranCInterface_GLOBAL(dlartg,DLARTG)(double *f, double *g, double *cs, double *sn, double *r);
 
 void 
-F77_FUNC(dlasd5,DLASD5)(int *i, double *d, double *z, double *delta, 
+FortranCInterface_GLOBAL(dlasd5,DLASD5)(int *i, double *d, double *z, double *delta, 
 	double *rho, double *dsigma, double *work);
 
 void 
-F77_FUNC(dlasq2,DLASQ2)(int *n, double *z, int *info);
+FortranCInterface_GLOBAL(dlasq2,DLASQ2)(int *n, double *z, int *info);
 
 void 
-F77_FUNC(dlasq3,DLASQ3)(int *i0, int *n0, double *z, int *pp, double *dmin, 
+FortranCInterface_GLOBAL(dlasq3,DLASQ3)(int *i0, int *n0, double *z, int *pp, double *dmin, 
 	double *sigma, double *desig, double *qmax, int *nfail, 
 	int *iter, int *ndiv, int *ieee);
 
 void
-F77_FUNC(dlaswp,DLASWP)(int *n,	double *a, int *lda, int *k1, int *k2, int *ipiv, int *incx);
+FortranCInterface_GLOBAL(dlaswp,DLASWP)(int *n,	double *a, int *lda, int *k1, int *k2, int *ipiv, int *incx);
 
 void 
-F77_FUNC(dormbr,DORMBR)(const char *vect, const char *side, const char *trans, int *m, int *n, int *k, 
+FortranCInterface_GLOBAL(dormbr,DORMBR)(const char *vect, const char *side, const char *trans, int *m, int *n, int *k, 
 	double *a, int *lda, double *tau, double *c, int *ldc, double *work,
 	int *lwork, int *info);
 
 void
-F77_FUNC(dsterf,DSTERF)(int *n, double *d, double *e, int *info);
+FortranCInterface_GLOBAL(dsterf,DSTERF)(int *n, double *d, double *e, int *info);
 
 void
-F77_FUNC(dgeqr2,DGEQR2)(int *m,	int *n,	double *a, int *lda, double *tau, 
+FortranCInterface_GLOBAL(dgeqr2,DGEQR2)(int *m,	int *n,	double *a, int *lda, double *tau, 
 	double *work, int *info);
 
 void 
-F77_FUNC(dlaed6,DLAED6)(int *kniter, int *orgati, double *rho, double *d, 
+FortranCInterface_GLOBAL(dlaed6,DLAED6)(int *kniter, int *orgati, double *rho, double *d, 
 	double *z, double *finit, double *tau, int *info);
 
 void 
-F77_FUNC(dlarfb,DLARFB)(const char *side, const char *trans, const char *direct, const char *storev, int *m, int *n, 
+FortranCInterface_GLOBAL(dlarfb,DLARFB)(const char *side, const char *trans, const char *direct, const char *storev, int *m, int *n, 
 	int *k, double *v, int *ldv, double *t, int *ldt, double *c,
 	int *ldc, double *work, int *ldwork);
 
 void
-F77_FUNC(dlaruv,DLARUV)(int *iseed, int *n, double *x);
+FortranCInterface_GLOBAL(dlaruv,DLARUV)(int *iseed, int *n, double *x);
 
 void 
-F77_FUNC(dlasd6,DLASD6)(int *icompq, int *nl, int *nr, int *sqre, double *d, double *vf, 
+FortranCInterface_GLOBAL(dlasd6,DLASD6)(int *icompq, int *nl, int *nr, int *sqre, double *d, double *vf, 
 	double *vl, double *alpha, double *beta, int *idxq, int *perm, 
 	int *givptr, int *givcol, int *ldgcol, double *givnum, int *ldgnum, 
 	double *poles, double *difl, double *difr, double *z, int *k, 
 	double *c, double *s, double *work, int *iwork, int *info);
 
 void
-F77_FUNC(dlatrd,DLATRD)(const char *uplo, int *n, int *nb, double *a, int *lda, double *e, 
+FortranCInterface_GLOBAL(dlatrd,DLATRD)(const char *uplo, int *n, int *nb, double *a, int *lda, double *e, 
 	double * tau, double *w, int *ldw);
 
 void
-F77_FUNC(dorml2,DORML2)(const char *side, const char *trans, int *m, int *n, int *k, double *a,
+FortranCInterface_GLOBAL(dorml2,DORML2)(const char *side, const char *trans, int *m, int *n, int *k, double *a,
 	int *lda, double *tau, double *c, int *ldc, double *work, int *info);
 
 void
-F77_FUNC(dstevr,DSTEVR)(const char *jobz, const char *range, int *n, double *d, double *e, double *vl, 
+FortranCInterface_GLOBAL(dstevr,DSTEVR)(const char *jobz, const char *range, int *n, double *d, double *e, double *vl, 
 	double *vu, int *il, int *iu, double *abstol, int *m, double *w, 
 	double *z, int *ldz, int *isuppz, double *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *  a, int *lda, double *d, 
+FortranCInterface_GLOBAL(dsytrd,DSYTRD)(const char *uplo, int *n, double *  a, int *lda, double *d, 
 	double *e, double *tau, double *work, int *lwork, int *info);
 
 GMX_LIBGMX_EXPORT
 void
-F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
+FortranCInterface_GLOBAL(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	double *a, int *lda, double *vl, double *vu, int *
 	il, int *iu, double *abstol, int *m, double *w, 
 	double *z__, int *ldz, int *isuppz, double *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(dormql,DORMQL)(const char *side, const char *trans, int *m, int *n, 
+FortranCInterface_GLOBAL(dormql,DORMQL)(const char *side, const char *trans, int *m, int *n, 
 	int *k, double *a, int *lda, double *tau, double *
 	c, int *ldc, double *work, int *lwork, int *info);
 
 void 
-F77_FUNC(dormqr,DORMQR)(const char *side, const char *trans, int *m, int *n, int *k, double *a, 
+FortranCInterface_GLOBAL(dormqr,DORMQR)(const char *side, const char *trans, int *m, int *n, int *k, double *a, 
         int *lda, double *tau, double *c, int *ldc, 
         double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dorgbr,DORGBR)(const char *vect, int *m, int *n, int *k, double *a, int *lda,
+FortranCInterface_GLOBAL(dorgbr,DORGBR)(const char *vect, int *m, int *n, int *k, double *a, int *lda,
 	double *tau, double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dlasq5,DLASQ5)(int *i0, int *n0, double *z, int *pp, double *tau, double *dmin, 
+FortranCInterface_GLOBAL(dlasq5,DLASQ5)(int *i0, int *n0, double *z, int *pp, double *tau, double *dmin, 
 	double *dmin1, double *dmin2, double *dn, double *dnm1, 
 	double *dnm2, int *ieee);
 
 void 
-F77_FUNC(dlasd8,DLASD8)(int *icompq, int *k, double *d, double *z, double *vf, double *vl, 
+FortranCInterface_GLOBAL(dlasd8,DLASD8)(int *icompq, int *k, double *d, double *z, double *vf, double *vl, 
 	double *difl, double *difr, int *lddifr, double *dsigma, 
 	double *work, int *info);
 
 void
-F77_FUNC(dlascl,DLASCL)(const char *type, int *kl, int *ku, double *cfrom, double *cto, int *m, 
+FortranCInterface_GLOBAL(dlascl,DLASCL)(const char *type, int *kl, int *ku, double *cfrom, double *cto, int *m, 
 	int *n, double *a, int *lda, int *info);
 
 void 
-F77_FUNC(dlarft,DLARFT)(const char *direct, const char *storev, int *n, int *k, double *v, 
+FortranCInterface_GLOBAL(dlarft,DLARFT)(const char *direct, const char *storev, int *n, int *k, double *v, 
 	int *ldv, double *tau, double *t, int *ldt);
 
 void
-F77_FUNC(dlagts,DLAGTS)(int *job, int *n, double *a, double *b, double *c, double *d, 
+FortranCInterface_GLOBAL(dlagts,DLAGTS)(int *job, int *n, double *a, double *b, double *c, double *d, 
 	int *in, double *y, double *tol, int *info);
 
 void 
-F77_FUNC(dgesdd,DGESDD)(const char *jobz, int *m, int *n, double *a, int *lda, double *s, double *u, 
+FortranCInterface_GLOBAL(dgesdd,DGESDD)(const char *jobz, int *m, int *n, double *a, int *lda, double *s, double *u, 
 	int *ldu, double *vt, int *ldvt, double *work, int *lwork, 
 	int *iwork, int *info);
 
 void
-F77_FUNC(dsytd2,DSYTD2)(const char *uplo, int *n, double *a, int *lda, double *d, 
+FortranCInterface_GLOBAL(dsytd2,DSYTD2)(const char *uplo, int *n, double *a, int *lda, double *d, 
 	double *e, double *tau, int *info);
 
 void 
-F77_FUNC(dormlq,DORMLQ)(const char *side, const char *trans, int *m, int *n, int *k, double *a, int *lda, 
+FortranCInterface_GLOBAL(dormlq,DORMLQ)(const char *side, const char *trans, int *m, int *n, int *k, double *a, int *lda, 
 	double *tau, double *c, int *ldc, double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dorg2r,DORG2R)(int *m, int *n,	int *k,	double *a, int *lda, double *tau,
+FortranCInterface_GLOBAL(dorg2r,DORG2R)(int *m, int *n,	int *k,	double *a, int *lda, double *tau,
 	double *work, int *info);
 
 void 
-F77_FUNC(dlasq4,DLASQ4)(int *i0, int *n0, double *z, int *pp, int *n0in, double *dmin, 
+FortranCInterface_GLOBAL(dlasq4,DLASQ4)(int *i0, int *n0, double *z, int *pp, int *n0in, double *dmin, 
 	double *dmin1, double *dmin2, double *dn, double *dn1, 
 	double *dn2, double *tau, int *ttype);
 
 void 
-F77_FUNC(dlasd7,DLASD7)(int *icompq, int *nl, int *nr, int *sqre, int *k, double *d, double *z,
+FortranCInterface_GLOBAL(dlasd7,DLASD7)(int *icompq, int *nl, int *nr, int *sqre, int *k, double *d, double *z,
 	double *zw, double *vf, double *vfw, double *vl, double *vlw,
 	double *alpha, double *beta, double *dsigma, int *idx, int *idxp,
 	int *idxq, int *perm, int *givptr, int *givcol, int *ldgcol, 
 	double *givnum, int *ldgnum, double *c, double *s, int *info);
 
 void
-F77_FUNC(dlas2,DLAS2)(double *f, double *g, double *h, double *ssmin, double *ssmax);
+FortranCInterface_GLOBAL(dlas2,DLAS2)(double *f, double *g, double *h, double *ssmin, double *ssmax);
 
 void
-F77_FUNC(dlarfg,DLARFG)(int *n, double *alpha, double *x, int *incx, double *tau);
+FortranCInterface_GLOBAL(dlarfg,DLARFG)(int *n, double *alpha, double *x, int *incx, double *tau);
 
 void
-F77_FUNC(dlagtf,DLAGTF)(int *n, double *a, double *lambda, double *b, double *c, 
+FortranCInterface_GLOBAL(dlagtf,DLAGTF)(int *n, double *a, double *lambda, double *b, double *c, 
 	double *tol, double *d, int *in, int *info);
 
 void 
-F77_FUNC(dgeqrf,DGEQRF)(int *m, int *n, double *a, int *lda, double *tau,
+FortranCInterface_GLOBAL(dgeqrf,DGEQRF)(int *m, int *n, double *a, int *lda, double *tau,
 	double *work, int *lwork, int *info);
 
 
@@ -488,384 +488,384 @@ F77_FUNC(dgeqrf,DGEQRF)(int *m, int *n, double *a, int *lda, double *tau,
 /* Single precision */
 
 void
-F77_FUNC(sbdsdc,SBDSDC)(const char *uplo, const char *compq, int *n, float *d, float *e, float *u, 
+FortranCInterface_GLOBAL(sbdsdc,SBDSDC)(const char *uplo, const char *compq, int *n, float *d, float *e, float *u, 
 	int *ldu, float *vt, int *ldvt, float *q, int *iq, float *work, 
 	int *iwork, int *info);
 
 void
-F77_FUNC(sgetf2,SGETF2)(int *m, int *n, float *a, int *lda, int *ipiv, int *info);
+FortranCInterface_GLOBAL(sgetf2,SGETF2)(int *m, int *n, float *a, int *lda, int *ipiv, int *info);
 
 void
-F77_FUNC(slamrg,SLAMRG)(int *n1, int *n2, float *a, int *dtrd1, int *dtrd2, int *index);
+FortranCInterface_GLOBAL(slamrg,SLAMRG)(int *n1, int *n2, float *a, int *dtrd1, int *dtrd2, int *index);
 
 void
-F77_FUNC(slarnv,SLARNV)(int *idist, int *iseed, int *n, float *x);
+FortranCInterface_GLOBAL(slarnv,SLARNV)(int *idist, int *iseed, int *n, float *x);
 
 void 
-F77_FUNC(slasd0,SLASD0)(int *n, int *sqre, float *d, float *e, float *u, 
+FortranCInterface_GLOBAL(slasd0,SLASD0)(int *n, int *sqre, float *d, float *e, float *u, 
 	int *ldu, float *vt, int *ldvt, int *smlsiz, int *iwork, 
 	float *work, int *info);
 
 void 
-F77_FUNC(slasda,SLASDA)(int *icompq, int *smlsiz, int *n, int *sqre, float *d, float *e, 
+FortranCInterface_GLOBAL(slasda,SLASDA)(int *icompq, int *smlsiz, int *n, int *sqre, float *d, float *e, 
 	float *u, int *ldu, float *vt, int *k, float *difl, float *difr, 
 	float *z, float *poles, int *givptr, int *givcol, int *ldgcol, 
 	int *perm, float *givnum, float *c, float *s, 
 	float *work, int *iwork, int *info);
 
 void 
-F77_FUNC(slasq6,SLASQ6)(int *i0, int *n0, float *z, int *pp, float *dmin, float *dmin1, 
+FortranCInterface_GLOBAL(slasq6,SLASQ6)(int *i0, int *n0, float *z, int *pp, float *dmin, float *dmin1, 
 	float *dmin2, float *dn, float *dnm1, float *dnm2);
 
 void
-F77_FUNC(sorgl2,SORGL2)(int *m,	int *n,	int *k,	float *a, int *lda, 
+FortranCInterface_GLOBAL(sorgl2,SORGL2)(int *m,	int *n,	int *k,	float *a, int *lda, 
 	float *tau, float *work, int *info);
 
 void
-F77_FUNC(sbdsqr,SBDSQR)(const char *uplo, int *n, int *ncvt, int *nru, int *ncc, float *d, 
+FortranCInterface_GLOBAL(sbdsqr,SBDSQR)(const char *uplo, int *n, int *ncvt, int *nru, int *ncc, float *d, 
 	float *e, float *vt, int *ldvt, float *u, int *ldu,
 	float *c, int *ldc, float *work, int *info);
 
 void
-F77_FUNC(sgetrf,SGETRF)(int *m,	int *n,	float *a, int *lda, int *ipiv, int *info);
+FortranCInterface_GLOBAL(sgetrf,SGETRF)(int *m,	int *n,	float *a, int *lda, int *ipiv, int *info);
 
 void
-F77_FUNC(sgetri,SGETRI)(int *n,	float *a, int *lda, int *ipiv, float *work, 
+FortranCInterface_GLOBAL(sgetri,SGETRI)(int *n,	float *a, int *lda, int *ipiv, float *work, 
 	int *lwork, int *info);
 
 void
-F77_FUNC(sgetrs,SGETRS)(const char *trans, int *n, int *nrhs,	float *a, int *lda, int *ipiv,
+FortranCInterface_GLOBAL(sgetrs,SGETRS)(const char *trans, int *n, int *nrhs,	float *a, int *lda, int *ipiv,
 	float *b, int *ldb, int *info);
 
 void
-F77_FUNC(strtri,STRTRI)(const char *uplo, const char *diag, int *n, float *a, int *lda, int *info);
+FortranCInterface_GLOBAL(strtri,STRTRI)(const char *uplo, const char *diag, int *n, float *a, int *lda, int *info);
 
 void
-F77_FUNC(strti2,STRTI2)(const char *uplo, const char *diag, int *n, float *a, int *lda, int *info);
+FortranCInterface_GLOBAL(strti2,STRTI2)(const char *uplo, const char *diag, int *n, float *a, int *lda, int *info);
 
 float
-F77_FUNC(slange,SLANGE)(const char *norm, int *m, int *n, float *a, int *lda, float *work);
+FortranCInterface_GLOBAL(slange,SLANGE)(const char *norm, int *m, int *n, float *a, int *lda, float *work);
 
 void
-F77_FUNC(slarrbx,SLARRBX)(int *n, float *d, float *l, float *ld, float *lld, int *ifirst,
+FortranCInterface_GLOBAL(slarrbx,SLARRBX)(int *n, float *d, float *l, float *ld, float *lld, int *ifirst,
 	 int *ilast, float *rtol1, float *rtol2, int *offset, float *w,
 	 float *wgap, float *werr, float *work, int *iwork, int *info);
 
 void 
-F77_FUNC(slasd1,SLASD1)(int *nl, int *nr, int *sqre, float *d, float *alpha, float *beta, 
+FortranCInterface_GLOBAL(slasd1,SLASD1)(int *nl, int *nr, int *sqre, float *d, float *alpha, float *beta, 
 	float *u, int *ldu, float *vt, int *ldvt, int *idxq, int *iwork, 
 	float *work, int *info);
 
 void
-F77_FUNC(slasdq,SLASDQ)(const char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
+FortranCInterface_GLOBAL(slasdq,SLASDQ)(const char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
 	float *d, float *e, float *vt, int *ldvt, float *u, int *ldu, 
 	float *c, int *ldc, float *work, int *info);
 
 void 
-F77_FUNC(slasr,SLASR)(const char *side, const char *pivot, const char *direct, int *m, int *n, float *c, 
+FortranCInterface_GLOBAL(slasr,SLASR)(const char *side, const char *pivot, const char *direct, int *m, int *n, float *c, 
        float *s, float *a, int *lda);
 
 void 
-F77_FUNC(sorglq,SORGLQ)(int *m, int *n, int *k, float *a, int *lda, 
+FortranCInterface_GLOBAL(sorglq,SORGLQ)(int *m, int *n, int *k, float *a, int *lda, 
 	float *tau, float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sormtr,SORMTR)(const char *side, const char *uplo, const char *trans, int *m, int *n, float *a, 
+FortranCInterface_GLOBAL(sormtr,SORMTR)(const char *side, const char *uplo, const char *trans, int *m, int *n, float *a, 
 	int *lda, float *tau, float *c, int *ldc,
 	float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sgebd2,SGEBD2)(int *m, int *n, float *a, int *lda, float *d, float *e,
+FortranCInterface_GLOBAL(sgebd2,SGEBD2)(int *m, int *n, float *a, int *lda, float *d, float *e,
 	float *tauq, float *taup, float *work, int *info);
 
 void 
-F77_FUNC(slabrd,SLABRD)(int *m, int *n, int *nb, float *a, int *lda, float *d,
+FortranCInterface_GLOBAL(slabrd,SLABRD)(int *m, int *n, int *nb, float *a, int *lda, float *d,
 	float *e, float *tauq, float *taup, float *x,
 	int *ldx, float *y, int *ldy);
 
 float
-F77_FUNC(slanst,SLANST)(const char *norm, int *n, float *d, float *e);
+FortranCInterface_GLOBAL(slanst,SLANST)(const char *norm, int *n, float *d, float *e);
 
 float
-F77_FUNC(slansy,SLANSY)(const char *norm, const char *uplo, int *n, float *a, int *lda, float *work);
+FortranCInterface_GLOBAL(slansy,SLANSY)(const char *norm, const char *uplo, int *n, float *a, int *lda, float *work);
 
 void
-F77_FUNC(slarrex,SLARREX)(const char *range, int *n, float *vl, float *vu, int *il, int *iu,
+FortranCInterface_GLOBAL(slarrex,SLARREX)(const char *range, int *n, float *vl, float *vu, int *il, int *iu,
 	 float *d, float *e, float *tol, int *nsplit, 
 	 int *isplit, int *m, float *w, int *iblock, int *indexw,
 	 float *gersch, float *work, int *iwork, int *info);
 
 void 
-F77_FUNC(slasd2,SLASD2)(int *nl, int *nr, int *sqre, int *k, float *d, float *z, 
+FortranCInterface_GLOBAL(slasd2,SLASD2)(int *nl, int *nr, int *sqre, int *k, float *d, float *z, 
 	float *alpha, float *beta, float *u, int *ldu, float *vt, 
 	int *ldvt, float *dsigma, float *u2, int *ldu2, float *vt2, 
 	int *ldvt2, int *idxp, int *idx, int *idxc, 
 	int *idxq, int *coltyp, int *info);
 
 void
-F77_FUNC(slasdt,SLASDT)(int *n, int *lvl, int *nd, int *inode, int *ndiml, 
+FortranCInterface_GLOBAL(slasdt,SLASDT)(int *n, int *lvl, int *nd, int *inode, int *ndiml, 
 	int *ndimr, int *msub);
 
 void 
-F77_FUNC(slasrt,SLASRT)(const char *id, int *n, float *d, int *info);
+FortranCInterface_GLOBAL(slasrt,SLASRT)(const char *id, int *n, float *d, int *info);
 
 void
-F77_FUNC(slasrt2,SLASRT2)(const char *id, int *n, float *d, int *key, int *info);
+FortranCInterface_GLOBAL(slasrt2,SLASRT2)(const char *id, int *n, float *d, int *key, int *info);
 
 void 
-F77_FUNC(sorgqr,SORGQR)(int *m, int *n, int *k, float *a, int *lda, float *tau, 
+FortranCInterface_GLOBAL(sorgqr,SORGQR)(int *m, int *n, int *k, float *a, int *lda, float *tau, 
 	float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sstebz,SSTEBZ)(const char *range, const char *order, int *n, float *vl, float *vu, 
+FortranCInterface_GLOBAL(sstebz,SSTEBZ)(const char *range, const char *order, int *n, float *vl, float *vu, 
 	int *il, int *iu, float *abstol, float *d, float *e, 
 	int *m, int *nsplit, float *w, int *iblock, int *isplit, 
 	float *work, int *iwork, int *info);
 
 void
-F77_FUNC(sgebrd,SGEBRD)(int *m, int *n, float *a, int *lda, float *d, float *e,
+FortranCInterface_GLOBAL(sgebrd,SGEBRD)(int *m, int *n, float *a, int *lda, float *d, float *e,
 	float *tauq, float *taup, float *work, int *lwork, int *info);
 
 void
-F77_FUNC(slacpy,SLACPY)(const char *uplo, int *m, int *n, float *a, int *lda, float *b, int *ldb);
+FortranCInterface_GLOBAL(slacpy,SLACPY)(const char *uplo, int *m, int *n, float *a, int *lda, float *b, int *ldb);
 
 float
-F77_FUNC(slapy2,SLAPY2)(float * x, float * y);
+FortranCInterface_GLOBAL(slapy2,SLAPY2)(float * x, float * y);
 
 void
-F77_FUNC(slarrfx,SLARRFX)(int *n, float *d, float *l, float *ld, float *lld, int *ifirst,
+FortranCInterface_GLOBAL(slarrfx,SLARRFX)(int *n, float *d, float *l, float *ld, float *lld, int *ifirst,
         int *ilast, float *w, float *sigma, float *dplus, float *lplus,
         float *work, int *info);
 
 void 
-F77_FUNC(slasd3,SLASD3)(int *nl, int *nr, int *sqre, int *k, float *d, float *q, int *ldq, 
+FortranCInterface_GLOBAL(slasd3,SLASD3)(int *nl, int *nr, int *sqre, int *k, float *d, float *q, int *ldq, 
 	float *dsigma, float *u, int *ldu, float *u2, int *ldu2, 
 	float *vt, int *ldvt, float *vt2, int *ldvt2, int *idxc, 
 	int *ctot, float *z, int *info);
 
 void
-F77_FUNC(slaset,SLASET)(const char *uplo, int *m, int *n, float *alpha, 
+FortranCInterface_GLOBAL(slaset,SLASET)(const char *uplo, int *m, int *n, float *alpha, 
 	float *beta, float *a, int *lda);
 
 void
-F77_FUNC(slassq,SLASSQ)(int *n, float *x, int *incx, float *scale, float *sumsq);
+FortranCInterface_GLOBAL(slassq,SLASSQ)(int *n, float *x, int *incx, float *scale, float *sumsq);
 
 void
-F77_FUNC(sorm2l,SORM2L)(const char *side, const char *trans, int *m, int *n, int *k, float *a, int *lda, 
+FortranCInterface_GLOBAL(sorm2l,SORM2L)(const char *side, const char *trans, int *m, int *n, int *k, float *a, int *lda, 
 	float *tau, float *c, int *ldc, float *work, int *info);
 
 void
-F77_FUNC(sstegr,SSTEGR)(const char *jobz, const char *range, int *n, float *d, float *e, float *vl, 
+FortranCInterface_GLOBAL(sstegr,SSTEGR)(const char *jobz, const char *range, int *n, float *d, float *e, float *vl, 
 	float *vu, int *il, int *iu, float *abstol, int *m, float *w, 
 	float *z, int *ldz, int *isuppz, float *work, 
 	int *lwork, int *iwork,	int *liwork, int *info);
 
 void
-F77_FUNC(sgelq2,SGELQ2)(int *m, int *n, float *a, int *lda, float *tau, float *work, int *info);
+FortranCInterface_GLOBAL(sgelq2,SGELQ2)(int *m, int *n, float *a, int *lda, float *tau, float *work, int *info);
 
 void
-F77_FUNC(slae2,SLAE2)(float *a, float *b, float *c, float *rt1, float *rt2);
+FortranCInterface_GLOBAL(slae2,SLAE2)(float *a, float *b, float *c, float *rt1, float *rt2);
 
 void
-F77_FUNC(slaev2,SLAEV2)(float *a, float *b, float *c, float *rt1, float *rt2,
+FortranCInterface_GLOBAL(slaev2,SLAEV2)(float *a, float *b, float *c, float *rt1, float *rt2,
         float *cs1, float *cs2);
 
 void
-F77_FUNC(slar1vx,SLAR1VX)(int *n, int *b1, int *bn, float *sigma, float *d, float *l, float *ld, 
+FortranCInterface_GLOBAL(slar1vx,SLAR1VX)(int *n, int *b1, int *bn, float *sigma, float *d, float *l, float *ld, 
 	float *lld, float *eval, float *gersch, float *z, float *ztz, float *mingma, 
 	int *r, int *isuppz, float *work);
 
 void
-F77_FUNC(slarrvx,SLARRVX)(int *n, float *d, float *l, int *isplit, int *m, float *w, 
+FortranCInterface_GLOBAL(slarrvx,SLARRVX)(int *n, float *d, float *l, int *isplit, int *m, float *w, 
 	 int *iblock, int *indexw, float *gersch, float *tol, float *z, int *ldz, 
 	 int *isuppz, float *work, int *iwork, int *info);
 
 void 
-F77_FUNC(slasd4,SLASD4)(int *n, int *i, float *d, float *z, float *delta, 
+FortranCInterface_GLOBAL(slasd4,SLASD4)(int *n, int *i, float *d, float *z, float *delta, 
 	float *rho, float *sigma, float *work, int *info);
 
 void
-F77_FUNC(slasq1,SLASQ1)(int *n,	float *d, float *e, float *work, int *info);
+FortranCInterface_GLOBAL(slasq1,SLASQ1)(int *n,	float *d, float *e, float *work, int *info);
 
 
 void 
-F77_FUNC(slasv2,SLASV2)(float *f, float *g, float *h, float *ssmin, float *ssmax, 
+FortranCInterface_GLOBAL(slasv2,SLASV2)(float *f, float *g, float *h, float *ssmin, float *ssmax, 
 	float *snr, float *csr, float *snl, float *csl);
 
 void 
-F77_FUNC(sorm2r,SORM2R)(const char *side, const char *trans, int *m, int *n, int *k, float *a, 
+FortranCInterface_GLOBAL(sorm2r,SORM2R)(const char *side, const char *trans, int *m, int *n, int *k, float *a, 
 	int *lda, float *tau, float *c, int *ldc, float *work, int *info);
 
 void
-F77_FUNC(sstein,SSTEIN)(int *n, float *d, float *e, int *m, float *w, int *iblock, int *isplit, 
+FortranCInterface_GLOBAL(sstein,SSTEIN)(int *n, float *d, float *e, int *m, float *w, int *iblock, int *isplit, 
 	float *z, int *ldz, float *work, int *iwork, int *ifail, int *info);
 
 void
-F77_FUNC(sgelqf,SGELQF)(int *m,	int *n, float *a, int *lda, float *tau,
+FortranCInterface_GLOBAL(sgelqf,SGELQF)(int *m,	int *n, float *a, int *lda, float *tau,
 	float *work, int *lwork, int *info);
 
 void
-F77_FUNC(slaebz,SLAEBZ)(int *ijob, int *nitmax, int *n, int *mmax, int *minp, int *nbmin,
+FortranCInterface_GLOBAL(slaebz,SLAEBZ)(int *ijob, int *nitmax, int *n, int *mmax, int *minp, int *nbmin,
 	float *abstol, float *reltol, float *pivmin, float *d, float *e,
 	float *e2, int *nval, float *ab, float *c, int *mout, int *nab,
 	float *work, int *iwork, int *info);
 
 void
-F77_FUNC(slarf,SLARF)(const char *side, int *m, int *n, float *v, int *incv, float *tau,
+FortranCInterface_GLOBAL(slarf,SLARF)(const char *side, int *m, int *n, float *v, int *incv, float *tau,
        float *c, int *ldc, float *work);
 
 void
-F77_FUNC(slartg,SLARTG)(float *f, float *g, float *cs, float *sn, float *r);
+FortranCInterface_GLOBAL(slartg,SLARTG)(float *f, float *g, float *cs, float *sn, float *r);
 
 void 
-F77_FUNC(slasd5,SLASD5)(int *i, float *d, float *z, float *delta, 
+FortranCInterface_GLOBAL(slasd5,SLASD5)(int *i, float *d, float *z, float *delta, 
 	float *rho, float *dsigma, float *work);
 
 void 
-F77_FUNC(slasq2,SLASQ2)(int *n, float *z, int *info);
+FortranCInterface_GLOBAL(slasq2,SLASQ2)(int *n, float *z, int *info);
 
 void 
-F77_FUNC(slasq3,SLASQ3)(int *i0, int *n0, float *z, int *pp, float *dmin, 
+FortranCInterface_GLOBAL(slasq3,SLASQ3)(int *i0, int *n0, float *z, int *pp, float *dmin, 
 	float *sigma, float *desig, float *qmax, int *nfail, 
 	int *iter, int *ndiv, int *ieee);
 
 void
-F77_FUNC(slaswp,SLASWP)(int *n,	float *a, int *lda, int *k1, int *k2, int *ipiv, int *incx);
+FortranCInterface_GLOBAL(slaswp,SLASWP)(int *n,	float *a, int *lda, int *k1, int *k2, int *ipiv, int *incx);
 
 void 
-F77_FUNC(sormbr,SORMBR)(const char *vect, const char *side, const char *trans, int *m, int *n, int *k, 
+FortranCInterface_GLOBAL(sormbr,SORMBR)(const char *vect, const char *side, const char *trans, int *m, int *n, int *k, 
 	float *a, int *lda, float *tau, float *c, int *ldc, float *work,
 	int *lwork, int *info);
 
 void
-F77_FUNC(ssterf,SSTERF)(int *n, float *d, float *e, int *info);
+FortranCInterface_GLOBAL(ssterf,SSTERF)(int *n, float *d, float *e, int *info);
 
 void
-F77_FUNC(sgeqr2,SGEQR2)(int *m,	int *n,	float *a, int *lda, float *tau, 
+FortranCInterface_GLOBAL(sgeqr2,SGEQR2)(int *m,	int *n,	float *a, int *lda, float *tau, 
 	float *work, int *info);
 
 void 
-F77_FUNC(slaed6,SLAED6)(int *kniter, int *orgati, float *rho, float *d, 
+FortranCInterface_GLOBAL(slaed6,SLAED6)(int *kniter, int *orgati, float *rho, float *d, 
 	float *z, float *finit, float *tau, int *info);
 
 void 
-F77_FUNC(slarfb,SLARFB)(const char *side, const char *trans, const char *direct, const char *storev, int *m, int *n, 
+FortranCInterface_GLOBAL(slarfb,SLARFB)(const char *side, const char *trans, const char *direct, const char *storev, int *m, int *n, 
 	int *k, float *v, int *ldv, float *t, int *ldt, float *c,
 	int *ldc, float *work, int *ldwork);
 
 void
-F77_FUNC(slaruv,SLARUV)(int *iseed, int *n, float *x);
+FortranCInterface_GLOBAL(slaruv,SLARUV)(int *iseed, int *n, float *x);
 
 void 
-F77_FUNC(slasd6,SLASD6)(int *icompq, int *nl, int *nr, int *sqre, float *d, float *vf, 
+FortranCInterface_GLOBAL(slasd6,SLASD6)(int *icompq, int *nl, int *nr, int *sqre, float *d, float *vf, 
 	float *vl, float *alpha, float *beta, int *idxq, int *perm, 
 	int *givptr, int *givcol, int *ldgcol, float *givnum, int *ldgnum, 
 	float *poles, float *difl, float *difr, float *z, int *k, 
 	float *c, float *s, float *work, int *iwork, int *info);
 
 void
-F77_FUNC(slatrd,SLATRD)(const char *uplo, int *n, int *nb, float *a, int *lda, float *e, 
+FortranCInterface_GLOBAL(slatrd,SLATRD)(const char *uplo, int *n, int *nb, float *a, int *lda, float *e, 
 	float * tau, float *w, int *ldw);
 
 void
-F77_FUNC(sorml2,SORML2)(const char *side, const char *trans, int *m, int *n, int *k, float *a,
+FortranCInterface_GLOBAL(sorml2,SORML2)(const char *side, const char *trans, int *m, int *n, int *k, float *a,
 	int *lda, float *tau, float *c, int *ldc, float *work, int *info);
 
 void
-F77_FUNC(sstevr,SSTEVR)(const char *jobz, const char *range, int *n, float *d, float *e, float *vl, 
+FortranCInterface_GLOBAL(sstevr,SSTEVR)(const char *jobz, const char *range, int *n, float *d, float *e, float *vl, 
 	float *vu, int *il, int *iu, float *abstol, int *m, float *w, 
 	float *z, int *ldz, int *isuppz, float *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(ssytrd,SSYTRD)(const char *uplo, int *n, float *  a, int *lda, float *d, 
+FortranCInterface_GLOBAL(ssytrd,SSYTRD)(const char *uplo, int *n, float *  a, int *lda, float *d, 
 	float *e, float *tau, float *work, int *lwork, int *info);
 
 GMX_LIBGMX_EXPORT
 void
-F77_FUNC(ssyevr,SSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
+FortranCInterface_GLOBAL(ssyevr,SSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	float *a, int *lda, float *vl, float *vu, int *
 	il, int *iu, float *abstol, int *m, float *w, 
 	float *z__, int *ldz, int *isuppz, float *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n, 
+FortranCInterface_GLOBAL(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n, 
 	int *k, float *a, int *lda, float *tau, float *
 	c, int *ldc, float *work, int *lwork, int *info);
 
 void 
-F77_FUNC(sormqr,SORMQR)(const char *side, const char *trans, int *m, int *n, int *k, float *a, 
+FortranCInterface_GLOBAL(sormqr,SORMQR)(const char *side, const char *trans, int *m, int *n, int *k, float *a, 
         int *lda, float *tau, float *c, int *ldc, 
         float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sorgbr,SORGBR)(const char *vect, int *m, int *n, int *k, float *a, int *lda,
+FortranCInterface_GLOBAL(sorgbr,SORGBR)(const char *vect, int *m, int *n, int *k, float *a, int *lda,
 	float *tau, float *work, int *lwork, int *info);
 
 void
-F77_FUNC(slasq5,SLASQ5)(int *i0, int *n0, float *z, int *pp, float *tau, float *dmin, 
+FortranCInterface_GLOBAL(slasq5,SLASQ5)(int *i0, int *n0, float *z, int *pp, float *tau, float *dmin, 
 	float *dmin1, float *dmin2, float *dn, float *dnm1, 
 	float *dnm2, int *ieee);
 
 void 
-F77_FUNC(slasd8,SLASD8)(int *icompq, int *k, float *d, float *z, float *vf, float *vl, 
+FortranCInterface_GLOBAL(slasd8,SLASD8)(int *icompq, int *k, float *d, float *z, float *vf, float *vl, 
 	float *difl, float *difr, int *lddifr, float *dsigma, 
 	float *work, int *info);
 
 void
-F77_FUNC(slascl,SLASCL)(const char *type, int *kl, int *ku, float *cfrom, float *cto, int *m, 
+FortranCInterface_GLOBAL(slascl,SLASCL)(const char *type, int *kl, int *ku, float *cfrom, float *cto, int *m, 
 	int *n, float *a, int *lda, int *info);
 
 void 
-F77_FUNC(slarft,SLARFT)(const char *direct, const char *storev, int *n, int *k, float *v, 
+FortranCInterface_GLOBAL(slarft,SLARFT)(const char *direct, const char *storev, int *n, int *k, float *v, 
 	int *ldv, float *tau, float *t, int *ldt);
 
 void
-F77_FUNC(slagts,SLAGTS)(int *job, int *n, float *a, float *b, float *c, float *d, 
+FortranCInterface_GLOBAL(slagts,SLAGTS)(int *job, int *n, float *a, float *b, float *c, float *d, 
 	int *in, float *y, float *tol, int *info);
 
 void 
-F77_FUNC(sgesdd,SGESDD)(const char *jobz, int *m, int *n, float *a, int *lda, float *s, float *u, 
+FortranCInterface_GLOBAL(sgesdd,SGESDD)(const char *jobz, int *m, int *n, float *a, int *lda, float *s, float *u, 
 	int *ldu, float *vt, int *ldvt, float *work, int *lwork, 
 	int *iwork, int *info);
 
 void
-F77_FUNC(ssytd2,SSYTD2)(const char *uplo, int *n, float *a, int *lda, float *d, 
+FortranCInterface_GLOBAL(ssytd2,SSYTD2)(const char *uplo, int *n, float *a, int *lda, float *d, 
 	float *e, float *tau, int *info);
 
 void 
-F77_FUNC(sormlq,SORMLQ)(const char *side, const char *trans, int *m, int *n, int *k, float *a, int *lda, 
+FortranCInterface_GLOBAL(sormlq,SORMLQ)(const char *side, const char *trans, int *m, int *n, int *k, float *a, int *lda, 
 	float *tau, float *c, int *ldc, float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sorg2r,SORG2R)(int *m, int *n,	int *k,	float *a, int *lda, float *tau,
+FortranCInterface_GLOBAL(sorg2r,SORG2R)(int *m, int *n,	int *k,	float *a, int *lda, float *tau,
 	float *work, int *info);
 
 void 
-F77_FUNC(slasq4,SLASQ4)(int *i0, int *n0, float *z, int *pp, int *n0in, float *dmin, 
+FortranCInterface_GLOBAL(slasq4,SLASQ4)(int *i0, int *n0, float *z, int *pp, int *n0in, float *dmin, 
 	float *dmin1, float *dmin2, float *dn, float *dn1, 
 	float *dn2, float *tau, int *ttype);
 
 void 
-F77_FUNC(slasd7,SLASD7)(int *icompq, int *nl, int *nr, int *sqre, int *k, float *d, float *z,
+FortranCInterface_GLOBAL(slasd7,SLASD7)(int *icompq, int *nl, int *nr, int *sqre, int *k, float *d, float *z,
 	float *zw, float *vf, float *vfw, float *vl, float *vlw,
 	float *alpha, float *beta, float *dsigma, int *idx, int *idxp,
 	int *idxq, int *perm, int *givptr, int *givcol, int *ldgcol, 
 	float *givnum, int *ldgnum, float *c, float *s, int *info);
 
 void
-F77_FUNC(slas2,SLAS2)(float *f, float *g, float *h, float *ssmin, float *ssmax);
+FortranCInterface_GLOBAL(slas2,SLAS2)(float *f, float *g, float *h, float *ssmin, float *ssmax);
 
 void
-F77_FUNC(slarfg,SLARFG)(int *n, float *alpha, float *x, int *incx, float *tau);
+FortranCInterface_GLOBAL(slarfg,SLARFG)(int *n, float *alpha, float *x, int *incx, float *tau);
 
 void
-F77_FUNC(slagtf,SLAGTF)(int *n, float *a, float *lambda, float *b, float *c, 
+FortranCInterface_GLOBAL(slagtf,SLAGTF)(int *n, float *a, float *lambda, float *b, float *c, 
 	float *tol, float *d, int *in, int *info);
 
 void 
-F77_FUNC(sgeqrf,SGEQRF)(int *m, int *n, float *a, int *lda, float *tau,
+FortranCInterface_GLOBAL(sgeqrf,SGEQRF)(int *m, int *n, float *a, int *lda, float *tau,
 	float *work, int *lwork, int *info);
 
 

@@ -57,8 +57,8 @@ extern "C" {
  * have been made thread-safe by using extra workspace arrays.
  */
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
+#ifndef FortranCInterface_GLOBAL
+#define FortranCInterface_GLOBAL(name,NAME) name ## _
 #endif
 
 
@@ -108,7 +108,7 @@ extern "C" {
  */
 GMX_LIBGMX_EXPORT
 void
-F77_FUNC(dsaupd,DSAUPD)(int *     ido, 
+FortranCInterface_GLOBAL(dsaupd,DSAUPD)(int *     ido, 
                         const char *    bmat, 
                         int *     n, 
                         const char *	  which, 
@@ -168,7 +168,7 @@ F77_FUNC(dsaupd,DSAUPD)(int *     ido,
  */
 GMX_LIBGMX_EXPORT
 void
-F77_FUNC(dseupd,DSEUPD)(int *     rvec, 
+FortranCInterface_GLOBAL(dseupd,DSEUPD)(int *     rvec, 
                         const char *    howmny, 
                         int *     select, 
                         double *  d, 
@@ -241,7 +241,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
  */
 GMX_LIBGMX_EXPORT
 void 
-F77_FUNC(ssaupd,SSAUPD)(int *     ido, 
+FortranCInterface_GLOBAL(ssaupd,SSAUPD)(int *     ido, 
                         const char *    bmat, 
                         int *     n, 
                         const char *    which, 
@@ -303,7 +303,7 @@ F77_FUNC(ssaupd,SSAUPD)(int *     ido,
  */
 GMX_LIBGMX_EXPORT
 void
-F77_FUNC(sseupd,SSEUPD)(int *     rvec, 
+FortranCInterface_GLOBAL(sseupd,SSEUPD)(int *     rvec, 
                         const char *    howmny, 
                         int *     select, 
                         float *   d, 

@@ -39,7 +39,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dger,DGER)(int *m__,
+FortranCInterface_GLOBAL(dger,DGER)(int *m__,
                     int *n__,
                     double *alpha__,
                     double *x,

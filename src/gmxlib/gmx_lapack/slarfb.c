@@ -37,7 +37,7 @@
 
 
 void 
-F77_FUNC(slarfb,SLARFB)(const char *side, 
+FortranCInterface_GLOBAL(slarfb,SLARFB)(const char *side, 
 	const char *trans, 
 	const char *direct, 
 	const char *storev, 
@@ -91,31 +91,31 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(n, &c__[j + c_dim1], ldc, &work[j * work_dim1 + 1],
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(n, &c__[j + c_dim1], ldc, &work[j * work_dim1 + 1],
 			     &c__1);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", n, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", n, k, &one,
 			 &v[v_offset], ldv, &work[work_offset], ldwork);
 		if (*m > *k) {
 
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("Transpose", "No transpose", n, k, &i__1, &one, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("Transpose", "No transpose", n, k, &i__1, &one, &
 			    c__[*k + 1 + c_dim1], ldc, &v[*k + 1 + v_dim1], 
 			    ldv, &one, &work[work_offset], ldwork);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", transt, "Non-unit", n, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", transt, "Non-unit", n, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 
 		if (*m > *k) {
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "Transpose", &i__1, n, k, &minusone, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "Transpose", &i__1, n, k, &minusone, &
 			    v[*k + 1 + v_dim1], ldv, &work[work_offset], 
 			    ldwork, &one, &c__[*k + 1 + c_dim1], ldc);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", n, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", n, k, &one, &
 			v[v_offset], ldv, &work[work_offset], ldwork);
 
 		i__1 = *k;
@@ -130,32 +130,32 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(m, &c__[j * c_dim1 + 1], &c__1, &work[j * 
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(m, &c__[j * c_dim1 + 1], &c__1, &work[j * 
 			    work_dim1 + 1], &c__1);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", m, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", m, k, &one,
 			 &v[v_offset], ldv, &work[work_offset], ldwork);
 		if (*n > *k) {
 
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "No transpose", m, k, &i__1, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "No transpose", m, k, &i__1, &
 			    one, &c__[(*k + 1) * c_dim1 + 1], ldc, &v[*k + 
 			    1 + v_dim1], ldv, &one, &work[work_offset], 
 			    ldwork);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", trans, "Non-unit", m, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", trans, "Non-unit", m, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 
 		if (*n > *k) {
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "Transpose", m, &i__1, k, &minusone, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "Transpose", m, &i__1, k, &minusone, &
 			    work[work_offset], ldwork, &v[*k + 1 + v_dim1], 
 			    ldv, &one, &c__[(*k + 1) * c_dim1 + 1], ldc);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", m, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", m, k, &one, &
 			v[v_offset], ldv, &work[work_offset], ldwork);
 
 		i__1 = *k;
@@ -172,33 +172,33 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 	  if (*side=='l' || *side=='L') {
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(n, &c__[*m - *k + j + c_dim1], ldc, &work[j * 
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(n, &c__[*m - *k + j + c_dim1], ldc, &work[j * 
 			    work_dim1 + 1], &c__1);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", n, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", n, k, &one,
 			 &v[*m - *k + 1 + v_dim1], ldv, &work[work_offset], 
 			ldwork);
 		if (*m > *k) {
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("Transpose", "No transpose", n, k, &i__1, &one, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("Transpose", "No transpose", n, k, &i__1, &one, &
 			    c__[c_offset], ldc, &v[v_offset], ldv, &one, &
 			    work[work_offset], ldwork);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", transt, "Non-unit", n, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", transt, "Non-unit", n, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 
 		if (*m > *k) {
 
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "Transpose", &i__1, n, k, &minusone, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "Transpose", &i__1, n, k, &minusone, &
 			    v[v_offset], ldv, &work[work_offset], ldwork, &
 			    one, &c__[c_offset], ldc)
 			    ;
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", n, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", n, k, &one, &
 			v[*m - *k + 1 + v_dim1], ldv, &work[work_offset], 
 			ldwork);
 
@@ -214,29 +214,29 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 	    } else if (*side=='r' || *side=='R') {
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(m, &c__[(*n - *k + j) * c_dim1 + 1], &c__1, &work[
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(m, &c__[(*n - *k + j) * c_dim1 + 1], &c__1, &work[
 			    j * work_dim1 + 1], &c__1);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", m, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", m, k, &one,
 			 &v[*n - *k + 1 + v_dim1], ldv, &work[work_offset], 
 			ldwork);
 		if (*n > *k) {
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "No transpose", m, k, &i__1, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "No transpose", m, k, &i__1, &
 			    one, &c__[c_offset], ldc, &v[v_offset], ldv, &
 			    one, &work[work_offset], ldwork);
 		}
-		F77_FUNC(strmm,STRMM)("Right", "Lower", trans, "Non-unit", m, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", trans, "Non-unit", m, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 		if (*n > *k) {
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "Transpose", m, &i__1, k, &minusone, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "Transpose", m, &i__1, k, &minusone, &
 			    work[work_offset], ldwork, &v[v_offset], ldv, &
 			    one, &c__[c_offset], ldc)
 			    ;
 		}
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", m, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", m, k, &one, &
 			v[*n - *k + 1 + v_dim1], ldv, &work[work_offset], 
 			ldwork);
 		i__1 = *k;
@@ -255,29 +255,29 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 	  if (*side=='l' || *side=='L') {
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(n, &c__[j + c_dim1], ldc, &work[j * work_dim1 + 1],
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(n, &c__[j + c_dim1], ldc, &work[j * work_dim1 + 1],
 			     &c__1);
 		}
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", n, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", n, k, &one, &
 			v[v_offset], ldv, &work[work_offset], ldwork);
 		if (*m > *k) {
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("Transpose", "Transpose", n, k, &i__1, &one, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("Transpose", "Transpose", n, k, &i__1, &one, &
 			    c__[*k + 1 + c_dim1], ldc, &v[(*k + 1) * v_dim1 + 
 			    1], ldv, &one, &work[work_offset], ldwork);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", transt, "Non-unit", n, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", transt, "Non-unit", n, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 		if (*m > *k) {
 
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("Transpose", "Transpose", &i__1, n, k, &minusone, &v[(
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("Transpose", "Transpose", &i__1, n, k, &minusone, &v[(
 			    *k + 1) * v_dim1 + 1], ldv, &work[work_offset], 
 			    ldwork, &one, &c__[*k + 1 + c_dim1], ldc);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", n, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", n, k, &one,
 			 &v[v_offset], ldv, &work[work_offset], ldwork);
 
 		i__1 = *k;
@@ -292,33 +292,33 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(m, &c__[j * c_dim1 + 1], &c__1, &work[j * 
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(m, &c__[j * c_dim1 + 1], &c__1, &work[j * 
 			    work_dim1 + 1], &c__1);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", m, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "Transpose", "Unit", m, k, &one, &
 			v[v_offset], ldv, &work[work_offset], ldwork);
 		if (*n > *k) {
 
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "Transpose", m, k, &i__1, &one, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "Transpose", m, k, &i__1, &one, &
 			    c__[(*k + 1) * c_dim1 + 1], ldc, &v[(*k + 1) * 
 			    v_dim1 + 1], ldv, &one, &work[work_offset], 
 			    ldwork);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Upper", trans, "Non-unit", m, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", trans, "Non-unit", m, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 
 		if (*n > *k) {
 
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "No transpose", m, &i__1, k, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "No transpose", m, &i__1, k, &
 			    minusone, &work[work_offset], ldwork, &v[(*k + 1) * 
 			    v_dim1 + 1], ldv, &one, &c__[(*k + 1) * c_dim1 
 			    + 1], ldc);
 		}
-		F77_FUNC(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", m, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Upper", "No transpose", "Unit", m, k, &one,
 			 &v[v_offset], ldv, &work[work_offset], ldwork);
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
@@ -336,33 +336,33 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(n, &c__[*m - *k + j + c_dim1], ldc, &work[j * 
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(n, &c__[*m - *k + j + c_dim1], ldc, &work[j * 
 			    work_dim1 + 1], &c__1);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", n, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", n, k, &one, &
 			v[(*m - *k + 1) * v_dim1 + 1], ldv, &work[work_offset]
 			, ldwork);
 		if (*m > *k) {
 
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("Transpose", "Transpose", n, k, &i__1, &one, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("Transpose", "Transpose", n, k, &i__1, &one, &
 			    c__[c_offset], ldc, &v[v_offset], ldv, &one, &
 			    work[work_offset], ldwork);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", transt, "Non-unit", n, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", transt, "Non-unit", n, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 
 		if (*m > *k) {
 
 		    i__1 = *m - *k;
-		    F77_FUNC(sgemm,SGEMM)("Transpose", "Transpose", &i__1, n, k, &minusone, &v[
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("Transpose", "Transpose", &i__1, n, k, &minusone, &v[
 			    v_offset], ldv, &work[work_offset], ldwork, &
 			    one, &c__[c_offset], ldc);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", n, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", n, k, &one,
 			 &v[(*m - *k + 1) * v_dim1 + 1], ldv, &work[
 			work_offset], ldwork);
 
@@ -379,33 +379,33 @@ F77_FUNC(slarfb,SLARFB)(const char *side,
 
 		i__1 = *k;
 		for (j = 1; j <= i__1; ++j) {
-		    F77_FUNC(scopy,SCOPY)(m, &c__[(*n - *k + j) * c_dim1 + 1], &c__1, &work[
+		    FortranCInterface_GLOBAL(scopy,SCOPY)(m, &c__[(*n - *k + j) * c_dim1 + 1], &c__1, &work[
 			    j * work_dim1 + 1], &c__1);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", m, k, &one, &
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "Transpose", "Unit", m, k, &one, &
 			v[(*n - *k + 1) * v_dim1 + 1], ldv, &work[work_offset]
 			, ldwork);
 		if (*n > *k) {
 
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "Transpose", m, k, &i__1, &one, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "Transpose", m, k, &i__1, &one, &
 			    c__[c_offset], ldc, &v[v_offset], ldv, &one, &
 			    work[work_offset], ldwork);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", trans, "Non-unit", m, k, &one, &t[
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", trans, "Non-unit", m, k, &one, &t[
 			t_offset], ldt, &work[work_offset], ldwork);
 
 		if (*n > *k) {
 
 		    i__1 = *n - *k;
-		    F77_FUNC(sgemm,SGEMM)("No transpose", "No transpose", m, &i__1, k, &
+		    FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "No transpose", m, &i__1, k, &
 			    minusone, &work[work_offset], ldwork, &v[v_offset], 
 			    ldv, &one, &c__[c_offset], ldc);
 		}
 
-		F77_FUNC(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", m, k, &one,
+		FortranCInterface_GLOBAL(strmm,STRMM)("Right", "Lower", "No transpose", "Unit", m, k, &one,
 			 &v[(*n - *k + 1) * v_dim1 + 1], ldv, &work[
 			work_offset], ldwork);
 

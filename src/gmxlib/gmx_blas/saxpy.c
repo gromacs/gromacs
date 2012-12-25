@@ -36,7 +36,7 @@
 
 
 void
-F77_FUNC(saxpy,SAXPY)(int   *   n_arg,
+FortranCInterface_GLOBAL(saxpy,SAXPY)(int   *   n_arg,
                       float *   da_arg,
                       float *   dx,
                       int *      incx_arg,

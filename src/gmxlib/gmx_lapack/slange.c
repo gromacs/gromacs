@@ -38,7 +38,7 @@
 
 
 float
-F77_FUNC(slange,SLANGE)(const char *norm,
+FortranCInterface_GLOBAL(slange,SLANGE)(const char *norm,
 	int *m,
 	int *n,
 	float *a,
@@ -93,7 +93,7 @@ F77_FUNC(slange,SLANGE)(const char *norm,
     sum   = 1.0;
     i = 1;
     for(j=0;j<*n;j++) 
-      F77_FUNC(slassq,SLASSQ)(m,&(a[j*(*lda)+0]),&i,&scale,&sum);
+      FortranCInterface_GLOBAL(slassq,SLASSQ)(m,&(a[j*(*lda)+0]),&i,&scale,&sum);
     val = scale*sqrt(sum);
     break;
 

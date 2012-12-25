@@ -37,7 +37,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(dlasd6,DLASD6)(int *icompq, 
+FortranCInterface_GLOBAL(dlasd6,DLASD6)(int *icompq, 
 	int *nl, 
 	int *nr, 
 	int *sqre, 
@@ -119,29 +119,29 @@ F77_FUNC(dlasd6,DLASD6)(int *icompq,
 	if (d__1 > orgnrm)
 	    orgnrm = d__1;
     }
-    F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &orgnrm, &one, &n, &c__1, &d__[1], &n, info);
+    FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &orgnrm, &one, &n, &c__1, &d__[1], &n, info);
     *alpha /= orgnrm;
     *beta /= orgnrm;
 
-    F77_FUNC(dlasd7,DLASD7)(icompq, nl, nr, sqre, k, &d__[1], &z__[1], &work[iw], &vf[1], &
+    FortranCInterface_GLOBAL(dlasd7,DLASD7)(icompq, nl, nr, sqre, k, &d__[1], &z__[1], &work[iw], &vf[1], &
 	    work[ivfw], &vl[1], &work[ivlw], alpha, beta, &work[isigma], &
 	    iwork[idx], &iwork[idxp], &idxq[1], &perm[1], givptr, &givcol[
 	    givcol_offset], ldgcol, &givnum[givnum_offset], ldgnum, c__, s, 
 	    info);
 
-    F77_FUNC(dlasd8,DLASD8)(icompq, k, &d__[1], &z__[1], &vf[1], &vl[1], &difl[1], &difr[1], 
+    FortranCInterface_GLOBAL(dlasd8,DLASD8)(icompq, k, &d__[1], &z__[1], &vf[1], &vl[1], &difl[1], &difr[1], 
 	    ldgnum, &work[isigma], &work[iw], info);
 
     if (*icompq == 1) {
-	F77_FUNC(dcopy,DCOPY)(k, &d__[1], &c__1, &poles[poles_dim1 + 1], &c__1);
-	F77_FUNC(dcopy,DCOPY)(k, &work[isigma], &c__1, &poles[(poles_dim1 << 1) + 1], &c__1);
+	FortranCInterface_GLOBAL(dcopy,DCOPY)(k, &d__[1], &c__1, &poles[poles_dim1 + 1], &c__1);
+	FortranCInterface_GLOBAL(dcopy,DCOPY)(k, &work[isigma], &c__1, &poles[(poles_dim1 << 1) + 1], &c__1);
     }
 
-    F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &one, &orgnrm, &n, &c__1, &d__[1], &n, info);
+    FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &one, &orgnrm, &n, &c__1, &d__[1], &n, info);
 
     n1 = *k;
     n2 = n - *k;
-    F77_FUNC(dlamrg,DLAMRG)(&n1, &n2, &d__[1], &c__1, &c_n1, &idxq[1]);
+    FortranCInterface_GLOBAL(dlamrg,DLAMRG)(&n1, &n2, &d__[1], &c__1, &c_n1, &idxq[1]);
 
     return;
 

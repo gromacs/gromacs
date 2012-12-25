@@ -114,7 +114,7 @@ static void xdr_fortran_unlock(void)
 static int xdropen(XDR *xdrs, const char *filename, const char *type);
 static int xdrclose(XDR *xdrs);
 
-typedef void (* F77_FUNC(xdrfproc,XDRFPROC))(int *, void *, int *);
+typedef void (* FortranCInterface_GLOBAL(xdrfproc,XDRFPROC))(int *, void *, int *);
 
 int ftocstr(char *ds, int dl, char *ss, int sl)
     /* dst, src ptrs */
@@ -152,7 +152,7 @@ int ctofstr(char *ds, int dl, char *ss)
 }
 
 void
-F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
+FortranCInterface_GLOBAL(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
 {
         xdr_fortran_lock();
 	*ret = xdr_bool(xdridptr[*xdrid], pb);
@@ -161,7 +161,7 @@ F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret)
 }
 
 void
-F77_FUNC(xdrfchar,XDRFCHAR)(int *xdrid, char *cp, int *ret)
+FortranCInterface_GLOBAL(xdrfchar,XDRFCHAR)(int *xdrid, char *cp, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_char(xdridptr[*xdrid], cp);
@@ -170,7 +170,7 @@ F77_FUNC(xdrfchar,XDRFCHAR)(int *xdrid, char *cp, int *ret)
 }
 
 void
-F77_FUNC(xdrfdouble,XDRFDOUBLE)(int *xdrid, double *dp, int *ret)
+FortranCInterface_GLOBAL(xdrfdouble,XDRFDOUBLE)(int *xdrid, double *dp, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_double(xdridptr[*xdrid], dp);
@@ -179,7 +179,7 @@ F77_FUNC(xdrfdouble,XDRFDOUBLE)(int *xdrid, double *dp, int *ret)
 }
 
 void
-F77_FUNC(xdrffloat,XDRFFLOAT)(int *xdrid, float *fp, int *ret)
+FortranCInterface_GLOBAL(xdrffloat,XDRFFLOAT)(int *xdrid, float *fp, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_float(xdridptr[*xdrid], fp);
@@ -188,7 +188,7 @@ F77_FUNC(xdrffloat,XDRFFLOAT)(int *xdrid, float *fp, int *ret)
 }
 
 void
-F77_FUNC(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
+FortranCInterface_GLOBAL(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_int(xdridptr[*xdrid], ip);
@@ -197,7 +197,7 @@ F77_FUNC(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
 }
 
 void
-F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
+FortranCInterface_GLOBAL(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_short(xdridptr[*xdrid], sp);
@@ -206,7 +206,7 @@ F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 }
 
 void
-F77_FUNC(xdrfuchar,XDRFUCHAR)(int *xdrid, unsigned char *ucp, int *ret)
+FortranCInterface_GLOBAL(xdrfuchar,XDRFUCHAR)(int *xdrid, unsigned char *ucp, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_u_char(xdridptr[*xdrid], (u_char *)ucp);
@@ -216,7 +216,7 @@ F77_FUNC(xdrfuchar,XDRFUCHAR)(int *xdrid, unsigned char *ucp, int *ret)
 
 
 void
-F77_FUNC(xdrfushort,XDRFUSHORT)(int *xdrid, unsigned short *usp, int *ret)
+FortranCInterface_GLOBAL(xdrfushort,XDRFUSHORT)(int *xdrid, unsigned short *usp, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_u_short(xdridptr[*xdrid], (unsigned short *)usp);
@@ -225,7 +225,7 @@ F77_FUNC(xdrfushort,XDRFUSHORT)(int *xdrid, unsigned short *usp, int *ret)
 }
 
 void 
-F77_FUNC(xdrf3dfcoord,XDRF3DFCOORD)(int *xdrid, float *fp, int *size, float *precision, int *ret)
+FortranCInterface_GLOBAL(xdrf3dfcoord,XDRF3DFCOORD)(int *xdrid, float *fp, int *size, float *precision, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr3dfcoord(xdridptr[*xdrid], fp, size, precision);
@@ -233,7 +233,7 @@ F77_FUNC(xdrf3dfcoord,XDRF3DFCOORD)(int *xdrid, float *fp, int *size, float *pre
 }
 
 void
-F77_FUNC(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
+FortranCInterface_GLOBAL(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
 				int *maxsize, int *ret, int sp_len)
 {
 	char *tsp;
@@ -258,7 +258,7 @@ F77_FUNC(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
 }
 
 void
-F77_FUNC(xdrfwrapstring,XDRFWRAPSTRING)(int *xdrid, char *sp_ptr,
+FortranCInterface_GLOBAL(xdrfwrapstring,XDRFWRAPSTRING)(int *xdrid, char *sp_ptr,
 					int *ret, int sp_len)
 {
 	char *tsp;
@@ -286,7 +286,7 @@ F77_FUNC(xdrfwrapstring,XDRFWRAPSTRING)(int *xdrid, char *sp_ptr,
 }
 
 void
-F77_FUNC(xdrfopaque,XDRFOPAQUE)(int *xdrid, caddr_t *cp, int *ccnt, int *ret)
+FortranCInterface_GLOBAL(xdrfopaque,XDRFOPAQUE)(int *xdrid, caddr_t *cp, int *ccnt, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_opaque(xdridptr[*xdrid], (caddr_t)*cp, (u_int)*ccnt);
@@ -295,7 +295,7 @@ F77_FUNC(xdrfopaque,XDRFOPAQUE)(int *xdrid, caddr_t *cp, int *ccnt, int *ret)
 }
 
 void
-F77_FUNC(xdrfsetpos,XDRFSETPOS)(int *xdrid, int *pos, int *ret)
+FortranCInterface_GLOBAL(xdrfsetpos,XDRFSETPOS)(int *xdrid, int *pos, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdr_setpos(xdridptr[*xdrid], (u_int) *pos);
@@ -304,7 +304,7 @@ F77_FUNC(xdrfsetpos,XDRFSETPOS)(int *xdrid, int *pos, int *ret)
 
 
 void
-F77_FUNC(xdrf,XDRF)(int *xdrid, int *pos)
+FortranCInterface_GLOBAL(xdrf,XDRF)(int *xdrid, int *pos)
 {
         xdr_fortran_lock();
 	*pos = xdr_getpos(xdridptr[*xdrid]);
@@ -312,7 +312,7 @@ F77_FUNC(xdrf,XDRF)(int *xdrid, int *pos)
 }
 
 void
-F77_FUNC(xdrfvector,XDRFVECTOR)(int *xdrid, char *cp, int *size, F77_FUNC(xdrfproc,XDRFPROC) elproc, int *ret) 
+FortranCInterface_GLOBAL(xdrfvector,XDRFVECTOR)(int *xdrid, char *cp, int *size, FortranCInterface_GLOBAL(xdrfproc,XDRFPROC) elproc, int *ret) 
 {
 	int lcnt;
 	cnt = 0;
@@ -325,7 +325,7 @@ F77_FUNC(xdrfvector,XDRFVECTOR)(int *xdrid, char *cp, int *size, F77_FUNC(xdrfpr
 
 
 void
-F77_FUNC(xdrfclose,XDRFCLOSE)(int *xdrid, int *ret)
+FortranCInterface_GLOBAL(xdrfclose,XDRFCLOSE)(int *xdrid, int *ret)
 {
         xdr_fortran_lock();
 	*ret = xdrclose(xdridptr[*xdrid]);
@@ -334,7 +334,7 @@ F77_FUNC(xdrfclose,XDRFCLOSE)(int *xdrid, int *ret)
 }
 
 void
-F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
+FortranCInterface_GLOBAL(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
 			    int *ret, int fp_len, int mode_len)
 {
 	char fname[512];

@@ -48,21 +48,21 @@ struct gmx_invsqrtdata
   unsigned int    fracttab[4096]; /*!< Mantissa lookup table    */
 };
 
-#ifndef F77_FUNC
+#ifndef FortranCInterface_GLOBAL
 /*! \brief Macro for Fortran name-mangling
  *
  * Use Fortran name mangling from autoconf macros if defined, 
  * or lowercase+underscore by default. Since there is no easy way to convert
  * between lower and upper case in macros, you should call fortran routines
- * as F77_FUNC(routine,ROUTINE)(param1,param2,...)
+ * as FortranCInterface_GLOBAL(routine,ROUTINE)(param1,param2,...)
  */
-#define F77_FUNC(name,NAME) name ## _
+#define FortranCInterface_GLOBAL(name,NAME) name ## _
 #endif
 
 
 
 struct gmx_invsqrtdata 
-F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA) = 
+FortranCInterface_GLOBAL(gmxinvsqrtdata,GMXINVSQRTDATA) = 
 { 
     /* data for exponent table - 256 floats */
     { 
@@ -654,9 +654,9 @@ F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA) =
 
 /* Pointer to exponential table */
 const unsigned int *
-gmx_invsqrt_exptab   = F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA).exptab;
+gmx_invsqrt_exptab   = FortranCInterface_GLOBAL(gmxinvsqrtdata,GMXINVSQRTDATA).exptab;
 
 /* Pointer to fraction table */
 const unsigned int *
-gmx_invsqrt_fracttab = F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA).fracttab;
+gmx_invsqrt_fracttab = FortranCInterface_GLOBAL(gmxinvsqrtdata,GMXINVSQRTDATA).fracttab;
 

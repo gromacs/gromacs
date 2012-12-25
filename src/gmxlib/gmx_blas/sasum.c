@@ -36,7 +36,7 @@
 #include "gmx_blas.h"
 
 float
-F77_FUNC(sasum,SASUM)(int *n__, 
+FortranCInterface_GLOBAL(sasum,SASUM)(int *n__, 
        float *dx, 
        int *incx__)
 {

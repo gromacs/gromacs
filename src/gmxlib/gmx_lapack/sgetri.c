@@ -37,7 +37,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(sgetri,SGETRI)(int *n, 
+FortranCInterface_GLOBAL(sgetri,SGETRI)(int *n, 
 	float *a, 
 	int *lda, 
 	int *ipiv, 
@@ -84,7 +84,7 @@ F77_FUNC(sgetri,SGETRI)(int *n,
 	return;
     }
 
-    F77_FUNC(strtri,STRTRI)("Upper", "Non-unit", n, &a[a_offset], lda, info);
+    FortranCInterface_GLOBAL(strtri,STRTRI)("Upper", "Non-unit", n, &a[a_offset], lda, info);
     if (*info > 0) {
 	return;
     }
@@ -114,7 +114,7 @@ F77_FUNC(sgetri,SGETRI)(int *n,
 
 	    if (j < *n) {
 		i__1 = *n - j;
-		F77_FUNC(sgemv,SGEMV)("No transpose", n, &i__1, &c_b20, &a[(j + 1) * a_dim1 
+		FortranCInterface_GLOBAL(sgemv,SGEMV)("No transpose", n, &i__1, &c_b20, &a[(j + 1) * a_dim1 
 			+ 1], lda, &work[j + 1], &c__1, &c_b22, &a[j * a_dim1 
 			+ 1], &c__1);
 	    }
@@ -138,11 +138,11 @@ F77_FUNC(sgetri,SGETRI)(int *n,
 
 	    if (j + jb <= *n) {
 		i__2 = *n - j - jb + 1;
-		F77_FUNC(sgemm,SGEMM)("No transpose", "No transpose", n, &jb, &i__2, &c_b20, 
+		FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose", "No transpose", n, &jb, &i__2, &c_b20, 
 			&a[(j + jb) * a_dim1 + 1], lda, &work[j + jb], &
 			ldwork, &c_b22, &a[j * a_dim1 + 1], lda);
 	    }
-	    F77_FUNC(strsm,STRSM)("Right", "Lower", "No transpose", "Unit", n, &jb, &c_b22, &
+	    FortranCInterface_GLOBAL(strsm,STRSM)("Right", "Lower", "No transpose", "Unit", n, &jb, &c_b22, &
 		    work[j], &ldwork, &a[j * a_dim1 + 1], lda);
 	}
     }
@@ -150,7 +150,7 @@ F77_FUNC(sgetri,SGETRI)(int *n,
     for (j = *n - 1; j >= 1; --j) {
 	jp = ipiv[j];
 	if (jp != j) {
-	    F77_FUNC(sswap,SSWAP)(n, &a[j * a_dim1 + 1], &c__1, &a[jp * a_dim1 + 1], &c__1);
+	    FortranCInterface_GLOBAL(sswap,SSWAP)(n, &a[j * a_dim1 + 1], &c__1, &a[jp * a_dim1 + 1], &c__1);
 	}
     }
 

@@ -36,7 +36,7 @@
 #include "lapack_limits.h"
 
 void 
-F77_FUNC(dormqr,DORMQR)(const char *side, 
+FortranCInterface_GLOBAL(dormqr,DORMQR)(const char *side, 
 	const char *trans, 
 	int *m, 
 	int *n, 
@@ -115,7 +115,7 @@ F77_FUNC(dormqr,DORMQR)(const char *side,
 
     if (nb < nbmin || nb >= *k) {
 
-	F77_FUNC(dorm2r,DORM2R)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+	FortranCInterface_GLOBAL(dorm2r,DORM2R)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
 		c_offset], ldc, &work[1], &iinfo);
     } else {
 
@@ -144,7 +144,7 @@ F77_FUNC(dormqr,DORMQR)(const char *side,
 	    ib = (i__4<i__5) ? i__4 : i__5;
 
 	    i__4 = nq - i__ + 1;
-	    F77_FUNC(dlarft,DLARFT)("Forward", "Columnwise", &i__4, &ib, &a[i__ + i__ * 
+	    FortranCInterface_GLOBAL(dlarft,DLARFT)("Forward", "Columnwise", &i__4, &ib, &a[i__ + i__ * 
 		    a_dim1], lda, &tau[i__], t, &ldt);
 	    if (left) {
 
@@ -155,7 +155,7 @@ F77_FUNC(dormqr,DORMQR)(const char *side,
 		jc = i__;
 	    }
 
-	    F77_FUNC(dlarfb,DLARFB)(side, trans, "Forward", "Columnwise", &mi, &ni, &ib, &a[
+	    FortranCInterface_GLOBAL(dlarfb,DLARFB)(side, trans, "Forward", "Columnwise", &mi, &ni, &ib, &a[
 		    i__ + i__ * a_dim1], lda, t, &ldt, &c__[ic + jc * 
 		    c_dim1], ldc, &work[1], &ldwork);
 	}

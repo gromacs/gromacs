@@ -38,7 +38,7 @@
 #include "gmx_blas.h"
 
 void 
-F77_FUNC(dtrmv,DTRMV)(const char *uplo, 
+FortranCInterface_GLOBAL(dtrmv,DTRMV)(const char *uplo, 
        const char *trans,
        const char *diag, 
        int *n__, 

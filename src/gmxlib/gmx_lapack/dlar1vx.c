@@ -39,7 +39,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
-void F77_FUNC(dlar1vx,DLAR1VX)(int *n, 
+void FortranCInterface_GLOBAL(dlar1vx,DLAR1VX)(int *n, 
 	      int *b1, 
 	      int *bn,
 	      double *sigma, 

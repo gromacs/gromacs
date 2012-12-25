@@ -39,7 +39,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(slarft,SLARFT)(const char *direct, 
+FortranCInterface_GLOBAL(slarft,SLARFT)(const char *direct, 
 	const char *storev, 
 	int *n, 
 	int *k, 
@@ -89,7 +89,7 @@ F77_FUNC(slarft,SLARFT)(const char *direct,
 		    i__2 = *n - i__ + 1;
 		    i__3 = i__ - 1;
 		    d__1 = -tau[i__];
-		    F77_FUNC(sgemv,SGEMV)("Transpose", &i__2, &i__3, &d__1, &v[i__ + v_dim1],
+		    FortranCInterface_GLOBAL(sgemv,SGEMV)("Transpose", &i__2, &i__3, &d__1, &v[i__ + v_dim1],
 			     ldv, &v[i__ + i__ * v_dim1], &c__1, &zero, &t[
 			    i__ * t_dim1 + 1], &c__1);
 		} else {
@@ -97,7 +97,7 @@ F77_FUNC(slarft,SLARFT)(const char *direct,
 		    i__2 = i__ - 1;
 		    i__3 = *n - i__ + 1;
 		    d__1 = -tau[i__];
-		    F77_FUNC(sgemv,SGEMV)("No transpose", &i__2, &i__3, &d__1, &v[i__ * 
+		    FortranCInterface_GLOBAL(sgemv,SGEMV)("No transpose", &i__2, &i__3, &d__1, &v[i__ * 
 			    v_dim1 + 1], ldv, &v[i__ + i__ * v_dim1], ldv, &
 			    zero, &t[i__ * t_dim1 + 1], &c__1);
 		}
@@ -105,7 +105,7 @@ F77_FUNC(slarft,SLARFT)(const char *direct,
 
 
 		i__2 = i__ - 1;
-		F77_FUNC(strmv,STRMV)("Upper", "No transpose", "Non-unit", &i__2, &t[
+		FortranCInterface_GLOBAL(strmv,STRMV)("Upper", "No transpose", "Non-unit", &i__2, &t[
 			t_offset], ldt, &t[i__ * t_dim1 + 1], &c__1);
 		t[i__ + i__ * t_dim1] = tau[i__];
 	    }
@@ -128,7 +128,7 @@ F77_FUNC(slarft,SLARFT)(const char *direct,
 			i__1 = *n - *k + i__;
 			i__2 = *k - i__;
 			d__1 = -tau[i__];
-			F77_FUNC(sgemv,SGEMV)("Transpose", &i__1, &i__2, &d__1, &v[(i__ + 1) 
+			FortranCInterface_GLOBAL(sgemv,SGEMV)("Transpose", &i__1, &i__2, &d__1, &v[(i__ + 1) 
 				* v_dim1 + 1], ldv, &v[i__ * v_dim1 + 1], &
 				c__1, &zero, &t[i__ + 1 + i__ * t_dim1], &
 				c__1);
@@ -140,14 +140,14 @@ F77_FUNC(slarft,SLARFT)(const char *direct,
 			i__1 = *k - i__;
 			i__2 = *n - *k + i__;
 			d__1 = -tau[i__];
-			F77_FUNC(sgemv,SGEMV)("No transpose", &i__1, &i__2, &d__1, &v[i__ + 
+			FortranCInterface_GLOBAL(sgemv,SGEMV)("No transpose", &i__1, &i__2, &d__1, &v[i__ + 
 				1 + v_dim1], ldv, &v[i__ + v_dim1], ldv, &
 				zero, &t[i__ + 1 + i__ * t_dim1], &c__1);
 			v[i__ + (*n - *k + i__) * v_dim1] = vii;
 		    }
 
 		    i__1 = *k - i__;
-		    F77_FUNC(strmv,STRMV)("Lower", "No transpose", "Non-unit", &i__1, &t[i__ 
+		    FortranCInterface_GLOBAL(strmv,STRMV)("Lower", "No transpose", "Non-unit", &i__1, &t[i__ 
 			    + 1 + (i__ + 1) * t_dim1], ldt, &t[i__ + 1 + i__ *
 			     t_dim1], &c__1)
 			    ;

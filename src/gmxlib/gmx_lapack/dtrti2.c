@@ -37,7 +37,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dtrti2,DTRTI2)(const char *uplo,
+FortranCInterface_GLOBAL(dtrti2,DTRTI2)(const char *uplo,
 	const char *diag, 
 	int *n, 
 	double *a,
@@ -77,10 +77,10 @@ F77_FUNC(dtrti2,DTRTI2)(const char *uplo,
 	    }
 
 	    i__2 = j - 1;
-	    F77_FUNC(dtrmv,DTRMV)("Upper", "No transpose", diag, &i__2, &a[a_offset], lda, &
+	    FortranCInterface_GLOBAL(dtrmv,DTRMV)("Upper", "No transpose", diag, &i__2, &a[a_offset], lda, &
 		    a[j * a_dim1 + 1], &c__1);
 	    i__2 = j - 1;
-	    F77_FUNC(dscal,DSCAL)(&i__2, &ajj, &a[j * a_dim1 + 1], &c__1);
+	    FortranCInterface_GLOBAL(dscal,DSCAL)(&i__2, &ajj, &a[j * a_dim1 + 1], &c__1);
 	}
     } else {
 
@@ -94,10 +94,10 @@ F77_FUNC(dtrti2,DTRTI2)(const char *uplo,
 	    if (j < *n) {
 
 		i__1 = *n - j;
-		F77_FUNC(dtrmv,DTRMV)("Lower", "No transpose", diag, &i__1, &a[j + 1 + (j + 
+		FortranCInterface_GLOBAL(dtrmv,DTRMV)("Lower", "No transpose", diag, &i__1, &a[j + 1 + (j + 
 			1) * a_dim1], lda, &a[j + 1 + j * a_dim1], &c__1);
 		i__1 = *n - j;
-		F77_FUNC(dscal,DSCAL)(&i__1, &ajj, &a[j + 1 + j * a_dim1], &c__1);
+		FortranCInterface_GLOBAL(dscal,DSCAL)(&i__1, &ajj, &a[j + 1 + j * a_dim1], &c__1);
 	    }
 	}
     }

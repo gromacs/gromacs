@@ -35,7 +35,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(dlasrt,DLASRT)(const char *id, 
+FortranCInterface_GLOBAL(dlasrt,DLASRT)(const char *id, 
 	int *n, 
 	double *d__, 
 	int *info)

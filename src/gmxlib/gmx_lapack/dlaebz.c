@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(dlaebz,DLAEBZ)(int *ijob,
+FortranCInterface_GLOBAL(dlaebz,DLAEBZ)(int *ijob,
 	int *nitmax,
 	int *n, 
 	int *mmax,

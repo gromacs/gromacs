@@ -40,7 +40,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(slasq1,SLASQ1)(int *n,
+FortranCInterface_GLOBAL(slasq1,SLASQ1)(int *n,
 	float *d,
 	float *e,
 	float *work,
@@ -71,7 +71,7 @@ F77_FUNC(slasq1,SLASQ1)(int *n,
   d[*n-1] = fabs(d[*n-1]);
   
   if(fabs(sigmx)<GMX_FLOAT_MIN) {
-    F77_FUNC(slasrt,SLASRT)("D",n,d,&iinfo);
+    FortranCInterface_GLOBAL(slasrt,SLASRT)("D",n,d,&iinfo);
     return;
   }
 
@@ -87,13 +87,13 @@ F77_FUNC(slasq1,SLASQ1)(int *n,
   scale = sqrt(eps/safemin);
   i = 1;
   j = 2;
-  F77_FUNC(scopy,SCOPY)(n,d,&i,work,&j);
+  FortranCInterface_GLOBAL(scopy,SCOPY)(n,d,&i,work,&j);
   k = *n-1;
-  F77_FUNC(scopy,SCOPY)(&k,e,&i,work+1,&j);
+  FortranCInterface_GLOBAL(scopy,SCOPY)(&k,e,&i,work+1,&j);
   i = 0;
   j = 2*(*n)-1;
   k = 1;
-  F77_FUNC(slascl,SLASCL)("G",&i,&i,&sigmx,&scale,&j,&k,work,&j,&iinfo);
+  FortranCInterface_GLOBAL(slascl,SLASCL)("G",&i,&i,&sigmx,&scale,&j,&k,work,&j,&iinfo);
 
 
   /* Compute q and e elements */
@@ -102,14 +102,14 @@ F77_FUNC(slasq1,SLASQ1)(int *n,
 
   work[2*(*n)-1] = 0.0;
 
-  F77_FUNC(slasq2,SLASQ2)(n,work,info);
+  FortranCInterface_GLOBAL(slasq2,SLASQ2)(n,work,info);
 
   j = 0;
   k = 1;
   if(*info==0) {
     for(i=0;i<*n;i++)
       d[i]=sqrt(work[i]);
-    F77_FUNC(slascl,SLASCL)("G",&j,&j,&scale,&sigmx,n,&k,d,n,&iinfo);
+    FortranCInterface_GLOBAL(slascl,SLASCL)("G",&j,&j,&scale,&sigmx,n,&k,d,n,&iinfo);
   }
   return;
 }

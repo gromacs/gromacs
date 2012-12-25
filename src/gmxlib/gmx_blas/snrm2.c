@@ -39,7 +39,7 @@
 #include "gmx_blas.h"
 
 float
-F77_FUNC(snrm2,SNRM2)(int  *     n__,
+FortranCInterface_GLOBAL(snrm2,SNRM2)(int  *     n__,
                       float *    x,
                       int    *    incx__)
 {

@@ -38,7 +38,7 @@
 
 
 void
-F77_FUNC(dgebrd,DGEBRD)(int *m, 
+FortranCInterface_GLOBAL(dgebrd,DGEBRD)(int *m, 
 	int *n, 
 	double *a, 
 	int *lda, 
@@ -110,18 +110,18 @@ F77_FUNC(dgebrd,DGEBRD)(int *m,
 
 	i_3 = *m - i_ + 1;
 	i_4 = *n - i_ + 1;
-	F77_FUNC(dlabrd,DLABRD)(&i_3, &i_4, &nb, &a[i_ + i_ * a_dim1], lda, &d__[i_], 
+	FortranCInterface_GLOBAL(dlabrd,DLABRD)(&i_3, &i_4, &nb, &a[i_ + i_ * a_dim1], lda, &d__[i_], 
 		&e[i_], &tauq[i_], &taup[i_], &work[1], &ldwrkx, 
 		&work[ldwrkx * nb + 1], &ldwrky);
 
 	i_3 = *m - i_ - nb + 1;
 	i_4 = *n - i_ - nb + 1;
-	F77_FUNC(dgemm,DGEMM)("N", "T", &i_3, &i_4, &nb, &minusone, 
+	FortranCInterface_GLOBAL(dgemm,DGEMM)("N", "T", &i_3, &i_4, &nb, &minusone, 
 	       &a[i_ + nb + i_ * a_dim1], lda, &work[ldwrkx * nb + nb + 1],
 	       &ldwrky, &one, &a[i_ + nb + (i_ + nb) * a_dim1], lda);
 	i_3 = *m - i_ - nb + 1;
 	i_4 = *n - i_ - nb + 1;
-	F77_FUNC(dgemm,DGEMM)("N", "N", &i_3, &i_4, &nb, &minusone, &work[nb + 1], &ldwrkx,
+	FortranCInterface_GLOBAL(dgemm,DGEMM)("N", "N", &i_3, &i_4, &nb, &minusone, &work[nb + 1], &ldwrkx,
 	       &a[i_ + (i_ + nb) * a_dim1], lda, &one, 
 	       &a[i_ + nb + (i_ + nb) * a_dim1], lda);
 
@@ -142,7 +142,7 @@ F77_FUNC(dgebrd,DGEBRD)(int *m,
 
     i_2 = *m - i_ + 1;
     i_1 = *n - i_ + 1;
-    F77_FUNC(dgebd2,DGEBD2)(&i_2, &i_1, &a[i_ + i_ * a_dim1], lda, &d__[i_], &e[i_], &
+    FortranCInterface_GLOBAL(dgebd2,DGEBD2)(&i_2, &i_1, &a[i_ + i_ * a_dim1], lda, &d__[i_], &e[i_], &
 	    tauq[i_], &taup[i_], &work[1], &iinfo);
     work[1] = ws;
     return;

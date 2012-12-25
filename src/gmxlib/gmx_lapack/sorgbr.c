@@ -36,7 +36,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(sorgbr,SORGBR)(const char *vect,
+FortranCInterface_GLOBAL(sorgbr,SORGBR)(const char *vect,
 	int *m,
 	int *n,
 	int *k,
@@ -64,7 +64,7 @@ F77_FUNC(sorgbr,SORGBR)(const char *vect,
 
   if(wantq) {
     if(*m>=*k)
-      F77_FUNC(sorgqr,SORGQR)(m,n,k,a,lda,tau,work,lwork,&iinfo);
+      FortranCInterface_GLOBAL(sorgqr,SORGQR)(m,n,k,a,lda,tau,work,lwork,&iinfo);
     else {
       for(j=*m;j>=2;j--) {
 	a[(j-1)*(*lda)+0] = 0.0;
@@ -76,12 +76,12 @@ F77_FUNC(sorgbr,SORGBR)(const char *vect,
 	a[i-1] = 0.0;
       if(*m>1) {
 	i1 = *m-1;
-	F77_FUNC(sorgqr,SORGQR)(&i1,&i1,&i1,&(a[*lda+1]),lda,tau,work,lwork,&iinfo);
+	FortranCInterface_GLOBAL(sorgqr,SORGQR)(&i1,&i1,&i1,&(a[*lda+1]),lda,tau,work,lwork,&iinfo);
       }
     }
   } else {
     if(*k<*n)
-      F77_FUNC(sorglq,SORGLQ)(m,n,k,a,lda,tau,work,lwork,&iinfo);
+      FortranCInterface_GLOBAL(sorglq,SORGLQ)(m,n,k,a,lda,tau,work,lwork,&iinfo);
     else {
       a[0] = 1.0;
       for(i=2;i<=*m;i++)
@@ -93,7 +93,7 @@ F77_FUNC(sorgbr,SORGBR)(const char *vect,
       }
       if(*n>1) {
 	i1 = *n-1;
-	F77_FUNC(sorglq,SORGLQ)(&i1,&i1,&i1,&(a[*lda+1]),lda,tau,work,lwork,&iinfo);
+	FortranCInterface_GLOBAL(sorglq,SORGLQ)(&i1,&i1,&i1,&(a[*lda+1]),lda,tau,work,lwork,&iinfo);
       }
     }
   }

@@ -35,7 +35,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(srot,SROT)(int *n__,
+FortranCInterface_GLOBAL(srot,SROT)(int *n__,
                     float *dx,
                     int *incx__,
                     float *dy,

@@ -41,7 +41,7 @@
 
 
 void
-F77_FUNC(dlagtf,DLAGTF)(int *n, 
+FortranCInterface_GLOBAL(dlagtf,DLAGTF)(int *n, 
 	double *a, 
 	double *lambda, 
 	double *b, 

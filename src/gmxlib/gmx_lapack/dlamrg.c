@@ -39,7 +39,7 @@
 
 
 void
-F77_FUNC(dlamrg,DLAMRG)(int *n1,
+FortranCInterface_GLOBAL(dlamrg,DLAMRG)(int *n1,
                         int *n2,
                         double *a,
                         int *dtrd1,

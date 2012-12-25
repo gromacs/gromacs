@@ -38,7 +38,7 @@
 #include <types/simple.h>
 
 double
-F77_FUNC(dlapy2,DLAPY2)(double * x, double * y)
+FortranCInterface_GLOBAL(dlapy2,DLAPY2)(double * x, double * y)
 {
   double xabs,yabs;
   double w,z;

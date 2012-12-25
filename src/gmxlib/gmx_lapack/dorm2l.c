@@ -35,7 +35,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(dorm2l,DORM2L)(const char *side, 
+FortranCInterface_GLOBAL(dorm2l,DORM2L)(const char *side, 
 	const char *trans, 
 	int *m, 
 	int *n, 
@@ -113,7 +113,7 @@ F77_FUNC(dorm2l,DORM2L)(const char *side,
 
 	aii = a[nq - *k + i__ + i__ * a_dim1];
 	a[nq - *k + i__ + i__ * a_dim1] = 1.;
-	F77_FUNC(dlarf,DLARF)(side, &mi, &ni, &a[i__ * a_dim1 + 1], &c__1, &tau[i__], &c__[
+	FortranCInterface_GLOBAL(dlarf,DLARF)(side, &mi, &ni, &a[i__ * a_dim1 + 1], &c__1, &tau[i__], &c__[
 		c_offset], ldc, &work[1]);
 	a[nq - *k + i__ + i__ * a_dim1] = aii;
     }

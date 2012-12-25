@@ -40,7 +40,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(dtrtri,DTRTRI)(const char *uplo,
+FortranCInterface_GLOBAL(dtrtri,DTRTRI)(const char *uplo,
 	const char *diag, 
 	int *n,
 	double *a, 
@@ -85,7 +85,7 @@ F77_FUNC(dtrtri,DTRTRI)(const char *uplo,
     nb = DTRTRI_BLOCKSIZE;
     if (nb <= 1 || nb >= *n) {
 
-	F77_FUNC(dtrti2,DTRTI2)(uplo, diag, n, &a[a_offset], lda, info);
+	FortranCInterface_GLOBAL(dtrti2,DTRTI2)(uplo, diag, n, &a[a_offset], lda, info);
     } else {
 
 	if (upper) {
@@ -97,14 +97,14 @@ F77_FUNC(dtrtri,DTRTRI)(const char *uplo,
 		jb = (i__4<i__5) ? i__4 : i__5;
 
 		i__4 = j - 1;
-		F77_FUNC(dtrmm,DTRMM)("Left", "Upper", "No transpose", diag, &i__4, &jb, &
+		FortranCInterface_GLOBAL(dtrmm,DTRMM)("Left", "Upper", "No transpose", diag, &i__4, &jb, &
 			c_b18, &a[a_offset], lda, &a[j * a_dim1 + 1], lda);
 		i__4 = j - 1;
-		F77_FUNC(dtrsm,DTRSM)("Right", "Upper", "No transpose", diag, &i__4, &jb, &
+		FortranCInterface_GLOBAL(dtrsm,DTRSM)("Right", "Upper", "No transpose", diag, &i__4, &jb, &
 			c_b22, &a[j + j * a_dim1], lda, &a[j * a_dim1 + 1], 
 			lda);
 
-		F77_FUNC(dtrti2,DTRTI2)("Upper", diag, &jb, &a[j + j * a_dim1], lda, info);
+		FortranCInterface_GLOBAL(dtrti2,DTRTI2)("Upper", diag, &jb, &a[j + j * a_dim1], lda, info);
 	    }
 	} else {
 
@@ -116,16 +116,16 @@ F77_FUNC(dtrtri,DTRTRI)(const char *uplo,
 		if (j + jb <= *n) {
 
 		    i__1 = *n - j - jb + 1;
-		    F77_FUNC(dtrmm,DTRMM)("Left", "Lower", "No transpose", diag, &i__1, &jb, 
+		    FortranCInterface_GLOBAL(dtrmm,DTRMM)("Left", "Lower", "No transpose", diag, &i__1, &jb, 
 			    &c_b18, &a[j + jb + (j + jb) * a_dim1], lda, &a[j 
 			    + jb + j * a_dim1], lda);
 		    i__1 = *n - j - jb + 1;
-		    F77_FUNC(dtrsm,DTRSM)("Right", "Lower", "No transpose", diag, &i__1, &jb,
+		    FortranCInterface_GLOBAL(dtrsm,DTRSM)("Right", "Lower", "No transpose", diag, &i__1, &jb,
 			     &c_b22, &a[j + j * a_dim1], lda, &a[j + jb + j * 
 			    a_dim1], lda);
 		}
 
-		F77_FUNC(dtrti2,DTRTI2)("Lower", diag, &jb, &a[j + j * a_dim1], lda, info);
+		FortranCInterface_GLOBAL(dtrti2,DTRTI2)("Lower", diag, &jb, &a[j + j * a_dim1], lda, info);
 	    }
 	}
     }

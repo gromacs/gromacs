@@ -42,7 +42,7 @@
 
 
 void
-F77_FUNC(slarrfx,SLARRFX)(int *n, 
+FortranCInterface_GLOBAL(slarrfx,SLARRFX)(int *n, 
 	float *d__, 
 	float *l, 
 	float *ld, 
@@ -114,9 +114,9 @@ L30:
     }
     if (dmax2 < dmax1) {
 	*sigma = tmp;
-	F77_FUNC(scopy,SCOPY)(n, &work[1], &i1, &dplus[1], &i1);
+	FortranCInterface_GLOBAL(scopy,SCOPY)(n, &work[1], &i1, &dplus[1], &i1);
 	i__1 = *n - 1;
-	F77_FUNC(scopy,SCOPY)(&i__1, &work[*n + 1], &i1, &lplus[1], &i1);
+	FortranCInterface_GLOBAL(scopy,SCOPY)(&i__1, &work[*n + 1], &i1, &lplus[1], &i1);
     }
 
     return;

@@ -37,7 +37,7 @@
 
 
 void 
-F77_FUNC(sorgqr,SORGQR)(int *m, 
+FortranCInterface_GLOBAL(sorgqr,SORGQR)(int *m, 
 	int *n, 
 	int *k, 
 	float *a, 
@@ -127,7 +127,7 @@ F77_FUNC(sorgqr,SORGQR)(int *m,
 	i__1 = *m - kk;
 	i__2 = *n - kk;
 	i__3 = *k - kk;
-	F77_FUNC(sorg2r,SORG2R)(&i__1, &i__2, &i__3, &a[kk + 1 + (kk + 1) * a_dim1], lda, &
+	FortranCInterface_GLOBAL(sorg2r,SORG2R)(&i__1, &i__2, &i__3, &a[kk + 1 + (kk + 1) * a_dim1], lda, &
 		tau[kk + 1], &work[1], &iinfo);
     }
 
@@ -140,19 +140,19 @@ F77_FUNC(sorgqr,SORGQR)(int *m,
 	    if (i__ + ib <= *n) {
 
 		i__2 = *m - i__ + 1;
-		F77_FUNC(slarft,SLARFT)("Forward", "Columnwise", &i__2, &ib, &a[i__ + i__ * 
+		FortranCInterface_GLOBAL(slarft,SLARFT)("Forward", "Columnwise", &i__2, &ib, &a[i__ + i__ * 
 			a_dim1], lda, &tau[i__], &work[1], &ldwork);
 
 		i__2 = *m - i__ + 1;
 		i__3 = *n - i__ - ib + 1;
-		F77_FUNC(slarfb,SLARFB)("Left", "No transpose", "Forward", "Columnwise", &
+		FortranCInterface_GLOBAL(slarfb,SLARFB)("Left", "No transpose", "Forward", "Columnwise", &
 			i__2, &i__3, &ib, &a[i__ + i__ * a_dim1], lda, &work[
 			1], &ldwork, &a[i__ + (i__ + ib) * a_dim1], lda, &
 			work[ib + 1], &ldwork);
 	    }
 
 	    i__2 = *m - i__ + 1;
-	    F77_FUNC(sorg2r,SORG2R)(&i__2, &ib, &ib, &a[i__ + i__ * a_dim1], lda, &tau[i__], &
+	    FortranCInterface_GLOBAL(sorg2r,SORG2R)(&i__2, &ib, &ib, &a[i__ + i__ * a_dim1], lda, &tau[i__], &
 		    work[1], &iinfo);
 
 	    i__2 = i__ + ib - 1;

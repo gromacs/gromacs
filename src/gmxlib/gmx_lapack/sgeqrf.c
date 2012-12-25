@@ -36,7 +36,7 @@
 #include "lapack_limits.h"
 
 void 
-F77_FUNC(sgeqrf,SGEQRF)(int *m, 
+FortranCInterface_GLOBAL(sgeqrf,SGEQRF)(int *m, 
 	int *n, 
 	float *a, 
 	int *lda, 
@@ -97,17 +97,17 @@ F77_FUNC(sgeqrf,SGEQRF)(int *m,
 	    ib = (i__3 < nb) ? i__3 : nb;
 
 	    i__3 = *m - i__ + 1;
-	    F77_FUNC(sgeqr2,SGEQR2)(&i__3, &ib, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[
+	    FortranCInterface_GLOBAL(sgeqr2,SGEQR2)(&i__3, &ib, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[
 		    1], &iinfo);
 	    if (i__ + ib <= *n) {
 
 		i__3 = *m - i__ + 1;
-		F77_FUNC(slarft,SLARFT)("Forward", "Columnwise", &i__3, &ib, &a[i__ + i__ * 
+		FortranCInterface_GLOBAL(slarft,SLARFT)("Forward", "Columnwise", &i__3, &ib, &a[i__ + i__ * 
 			a_dim1], lda, &tau[i__], &work[1], &ldwork);
 
 		i__3 = *m - i__ + 1;
 		i__4 = *n - i__ - ib + 1;
-		F77_FUNC(slarfb,SLARFB)("Left", "Transpose", "Forward", "Columnwise", &i__3, &
+		FortranCInterface_GLOBAL(slarfb,SLARFB)("Left", "Transpose", "Forward", "Columnwise", &i__3, &
 			i__4, &ib, &a[i__ + i__ * a_dim1], lda, &work[1], &
 			ldwork, &a[i__ + (i__ + ib) * a_dim1], lda, &work[ib 
 			+ 1], &ldwork);
@@ -120,7 +120,7 @@ F77_FUNC(sgeqrf,SGEQRF)(int *m,
     if (i__ <= k) {
 	i__2 = *m - i__ + 1;
 	i__1 = *n - i__ + 1;
-	F77_FUNC(sgeqr2,SGEQR2)(&i__2, &i__1, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[1]
+	FortranCInterface_GLOBAL(sgeqr2,SGEQR2)(&i__2, &i__1, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[1]
 		, &iinfo);
     }
 

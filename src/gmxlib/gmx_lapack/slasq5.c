@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(slasq5,SLASQ5)(int *i0, 
+FortranCInterface_GLOBAL(slasq5,SLASQ5)(int *i0, 
 	int *n0,
 	float *z__, 
 	int *pp, 

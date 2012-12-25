@@ -41,7 +41,7 @@
 
 
 void
-F77_FUNC(dlascl,DLASCL)(const char *type,
+FortranCInterface_GLOBAL(dlascl,DLASCL)(const char *type,
                         int *kl,
                         int *ku,
                         double *cfrom,

@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(sstebz,SSTEBZ)(const char *range, 
+FortranCInterface_GLOBAL(sstebz,SSTEBZ)(const char *range, 
                         const char *order,
                         int *n,
                         float *vl, 
@@ -240,7 +240,7 @@ F77_FUNC(sstebz,SSTEBZ)(const char *range,
 	iwork[5] = *il - 1;
 	iwork[6] = *iu;
 
-	F77_FUNC(slaebz,SLAEBZ)(&c__3, &itmax, n, &c__2, &c__2, &nb, &atoli, &rtoli, &pivmin, 
+	FortranCInterface_GLOBAL(slaebz,SLAEBZ)(&c__3, &itmax, n, &c__2, &c__2, &nb, &atoli, &rtoli, &pivmin, 
 		&d__[1], &e[1], &work[1], &iwork[5], &work[*n + 1], &work[*n 
 		+ 5], &iout, &iwork[1], &w[1], &iblock[1], &iinfo);
 
@@ -370,7 +370,7 @@ F77_FUNC(sstebz,SSTEBZ)(const char *range,
 
 	    work[*n + 1] = gl;
 	    work[*n + in + 1] = gu;
-	    F77_FUNC(slaebz,SLAEBZ)(&c__1, &c__0, &in, &in, &c__1, &nb, &atoli, &rtoli, &
+	    FortranCInterface_GLOBAL(slaebz,SLAEBZ)(&c__1, &c__0, &in, &in, &c__1, &nb, &atoli, &rtoli, &
 		    pivmin, &d__[ibegin], &e[ibegin], &work[ibegin], idumma, &
 		    work[*n + 1], &work[*n + (in << 1) + 1], &im, &iwork[1], &
 		    w[*m + 1], &iblock[*m + 1], &iinfo);
@@ -381,7 +381,7 @@ F77_FUNC(sstebz,SSTEBZ)(const char *range,
 
 	    itmax = (int) ((log(gu - gl + pivmin) - log(pivmin)) / log(2.)
 		    ) + 2;
-	    F77_FUNC(slaebz,SLAEBZ)(&c__2, &itmax, &in, &in, &c__1, &nb, &atoli, &rtoli, &
+	    FortranCInterface_GLOBAL(slaebz,SLAEBZ)(&c__2, &itmax, &in, &in, &c__1, &nb, &atoli, &rtoli, &
 		    pivmin, &d__[ibegin], &e[ibegin], &work[ibegin], idumma, &
 		    work[*n + 1], &work[*n + (in << 1) + 1], &iout, &iwork[1],
 		     &w[*m + 1], &iblock[*m + 1], &iinfo);

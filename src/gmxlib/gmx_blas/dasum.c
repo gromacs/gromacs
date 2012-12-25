@@ -36,7 +36,7 @@
 #include "gmx_blas.h"
 
 double
-F77_FUNC(dasum,DASUM)(int *n__, 
+FortranCInterface_GLOBAL(dasum,DASUM)(int *n__, 
                       double *dx, 
                       int *incx__)
 {

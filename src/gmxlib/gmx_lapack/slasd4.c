@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void 
-F77_FUNC(slasd4,SLASD4)(int *n, 
+FortranCInterface_GLOBAL(slasd4,SLASD4)(int *n, 
 	int *i__, 
 	float *d__, 
 	float *z__, 
@@ -87,7 +87,7 @@ F77_FUNC(slasd4,SLASD4)(int *n,
 	return;
     }
     if (*n == 2) {
-	F77_FUNC(slasd5,SLASD5)(i__, &d__[1], &z__[1], &delta[1], rho, sigma, &work[1]);
+	FortranCInterface_GLOBAL(slasd5,SLASD5)(i__, &d__[1], &z__[1], &delta[1], rho, sigma, &work[1]);
 	return;
     }
 
@@ -492,7 +492,7 @@ F77_FUNC(slasd4,SLASD4)(int *n,
 	    dd[0] = dtiim;
 	    dd[1] = delta[ii] * work[ii];
 	    dd[2] = dtiip;
-	    F77_FUNC(slaed6,SLAED6)(&niter, &orgati, &c__, dd, zz, &w, &eta, info);
+	    FortranCInterface_GLOBAL(slaed6,SLAED6)(&niter, &orgati, &c__, dd, zz, &w, &eta, info);
 	    if (*info != 0) {
 		goto L240;
 	    }
@@ -663,7 +663,7 @@ F77_FUNC(slasd4,SLASD4)(int *n,
 		dd[0] = dtiim;
 		dd[1] = delta[ii] * work[ii];
 		dd[2] = dtiip;
-		F77_FUNC(slaed6,SLAED6)(&niter, &orgati, &c__, dd, zz, &w, &eta, info);
+		FortranCInterface_GLOBAL(slaed6,SLAED6)(&niter, &orgati, &c__, dd, zz, &w, &eta, info);
 		if (*info != 0) {
 		    goto L240;
 		}

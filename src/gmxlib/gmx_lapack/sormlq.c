@@ -37,7 +37,7 @@
 
 
 void 
-F77_FUNC(sormlq,SORMLQ)(const char *side, 
+FortranCInterface_GLOBAL(sormlq,SORMLQ)(const char *side, 
 	const char *trans,
 	int *m, 
 	int *n, 
@@ -122,7 +122,7 @@ F77_FUNC(sormlq,SORMLQ)(const char *side,
     if (nb < nbmin || nb >= *k) {
 
 
-	F77_FUNC(sorml2,SORML2)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+	FortranCInterface_GLOBAL(sorml2,SORML2)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
 		c_offset], ldc, &work[1], &iinfo);
     } else {
 
@@ -157,7 +157,7 @@ F77_FUNC(sormlq,SORMLQ)(const char *side,
 	    ib = (i__4<i__5) ? i__4 : i__5;
 
 	    i__4 = nq - i__ + 1;
-	    F77_FUNC(slarft,SLARFT)("Forward", "Rowwise", &i__4, &ib, &a[i__ + i__ * a_dim1], 
+	    FortranCInterface_GLOBAL(slarft,SLARFT)("Forward", "Rowwise", &i__4, &ib, &a[i__ + i__ * a_dim1], 
 		    lda, &tau[i__], t, &ldt);
 	    if (left) {
 
@@ -169,7 +169,7 @@ F77_FUNC(sormlq,SORMLQ)(const char *side,
 		jc = i__;
 	    }
 
-	    F77_FUNC(slarfb,SLARFB)(side, transt, "Forward", "Rowwise", &mi, &ni, &ib, &a[i__ 
+	    FortranCInterface_GLOBAL(slarfb,SLARFB)(side, transt, "Forward", "Rowwise", &mi, &ni, &ib, &a[i__ 
 		    + i__ * a_dim1], lda, t, &ldt, &c__[ic + jc * c_dim1], 
 		    ldc, &work[1], &ldwork);
 	}

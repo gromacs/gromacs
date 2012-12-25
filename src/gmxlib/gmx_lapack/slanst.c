@@ -38,7 +38,7 @@
 
 
 float
-F77_FUNC(slanst,SLANST)(const char *norm,
+FortranCInterface_GLOBAL(slanst,SLANST)(const char *norm,
 	int *n,
 	float *d,
 	float *e)
@@ -92,10 +92,10 @@ F77_FUNC(slanst,SLANST)(const char *norm,
     i = *n-1;
     j = 1;
     if(*n>1) {
-      F77_FUNC(slassq,SLASSQ)(&i,e,&j,&scale,&sum);
+      FortranCInterface_GLOBAL(slassq,SLASSQ)(&i,e,&j,&scale,&sum);
       sum *= 2;
     }
-    F77_FUNC(slassq,SLASSQ)(n,d,&j,&scale,&sum);
+    FortranCInterface_GLOBAL(slassq,SLASSQ)(n,d,&j,&scale,&sum);
     val = scale * sqrt(sum);
     break;
     

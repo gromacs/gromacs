@@ -37,7 +37,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(sgetrf,SGETRF)(int *m,
+FortranCInterface_GLOBAL(sgetrf,SGETRF)(int *m,
 	int *n,
 	float *a,
 	int *lda,
@@ -60,7 +60,7 @@ F77_FUNC(sgetrf,SGETRF)(int *m,
   if(DGETRF_BLOCKSIZE>=mindim) {
 
     /* unblocked code */
-    F77_FUNC(sgetf2,SGETF2)(m,n,a,lda,ipiv,info);
+    FortranCInterface_GLOBAL(sgetf2,SGETF2)(m,n,a,lda,ipiv,info);
 
   } else {
 
@@ -70,7 +70,7 @@ F77_FUNC(sgetrf,SGETRF)(int *m,
       jb = ( DGETRF_BLOCKSIZE < (mindim-j+1)) ? DGETRF_BLOCKSIZE : (mindim-j+1);
       /* factor diag. and subdiag blocks and test for singularity */
       k = *m-j+1;
-      F77_FUNC(sgetf2,SGETF2)(&k,&jb,&(a[(j-1)*(*lda)+(j-1)]),lda,&(ipiv[j-1]),&iinfo);
+      FortranCInterface_GLOBAL(sgetf2,SGETF2)(&k,&jb,&(a[(j-1)*(*lda)+(j-1)]),lda,&(ipiv[j-1]),&iinfo);
       
       if(*info==0 && iinfo>0)
 	*info = iinfo + j - 1;
@@ -84,23 +84,23 @@ F77_FUNC(sgetrf,SGETRF)(int *m,
       k = j - 1;
       i = j + jb - 1;
       l = 1;
-      F77_FUNC(slaswp,SLASWP)(&k,a,lda,&j,&i,ipiv,&l);
+      FortranCInterface_GLOBAL(slaswp,SLASWP)(&k,a,lda,&j,&i,ipiv,&l);
       if((j+jb)<=*n) {
 	/* Apply to cols. j+jb through n */
 	k = *n-j-jb+1;
 	i = j+jb-1;
 	l = 1;
-	F77_FUNC(slaswp,SLASWP)(&k,&(a[(j+jb-1)*(*lda)+0]),lda,&j,&i,ipiv,&l);
+	FortranCInterface_GLOBAL(slaswp,SLASWP)(&k,&(a[(j+jb-1)*(*lda)+0]),lda,&j,&i,ipiv,&l);
 	/* Compute block row of U */
 	k = *n-j-jb+1;
-	F77_FUNC(strsm,STRSM)("Left","Lower","No transpose","Unit",&jb,&k,&one,
+	FortranCInterface_GLOBAL(strsm,STRSM)("Left","Lower","No transpose","Unit",&jb,&k,&one,
 	       &(a[(j-1)*(*lda)+(j-1)]),lda,&(a[(j+jb-1)*(*lda)+(j-1)]),lda);
 
 	if((j+jb)<=*m) {
 	  /* Update trailing submatrix */
 	  k = *m-j-jb+1;
 	  i = *n-j-jb+1;
-	  F77_FUNC(sgemm,SGEMM)("No transpose","No transpose",&k,&i,&jb,&minusone,
+	  FortranCInterface_GLOBAL(sgemm,SGEMM)("No transpose","No transpose",&k,&i,&jb,&minusone,
 		 &(a[(j-1)*(*lda)+(j+jb-1)]),lda,
 		 &(a[(j+jb-1)*(*lda)+(j-1)]),lda,&one,
 		 &(a[(j+jb-1)*(*lda)+(j+jb-1)]),lda);

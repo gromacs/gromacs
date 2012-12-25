@@ -35,7 +35,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(drot,DROT)(int *n__,
+FortranCInterface_GLOBAL(drot,DROT)(int *n__,
       double *dx,
       int *incx__,
       double *dy,

@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void 
-F77_FUNC(slasq6,SLASQ6)(int *i0, 
+FortranCInterface_GLOBAL(slasq6,SLASQ6)(int *i0, 
 	int *n0, 
 	float *z__, 
 	int *pp, 

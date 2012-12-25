@@ -41,7 +41,7 @@
 
 
 void
-F77_FUNC(dlarfg,DLARFG)(int   *n,
+FortranCInterface_GLOBAL(dlarfg,DLARFG)(int   *n,
                         double *alpha,
                         double *x,
                         int    *incx,
@@ -58,13 +58,13 @@ F77_FUNC(dlarfg,DLARFG)(int   *n,
 
   ti1 = *n-1;
 
-  xnorm = F77_FUNC(dnrm2,DNRM2)(&ti1,x,incx);
+  xnorm = FortranCInterface_GLOBAL(dnrm2,DNRM2)(&ti1,x,incx);
 
   if(fabs(xnorm)<GMX_DOUBLE_MIN) {
     *tau = 0.0;
   } else {
 
-    t = F77_FUNC(dlapy2,DLAPY2)(alpha,&xnorm);
+    t = FortranCInterface_GLOBAL(dlapy2,DLAPY2)(alpha,&xnorm);
 
     if(*alpha<0)
       beta = t;
@@ -84,15 +84,15 @@ F77_FUNC(dlarfg,DLARFG)(int   *n,
       while(fabs(beta)<safmin) {
 	knt++;
 	ti1 = *n-1;
-	F77_FUNC(dscal,DSCAL)(&ti1,&rsafmn,x,incx);
+	FortranCInterface_GLOBAL(dscal,DSCAL)(&ti1,&rsafmn,x,incx);
 	beta *= rsafmn;
 	*alpha *= rsafmn;
       }
       
       /* safmin <= beta <= 1 now */
       ti1 = *n-1;
-      xnorm = F77_FUNC(dnrm2,DNRM2)(&ti1,x,incx);
-      t = F77_FUNC(dlapy2,DLAPY2)(alpha,&xnorm);
+      xnorm = FortranCInterface_GLOBAL(dnrm2,DNRM2)(&ti1,x,incx);
+      t = FortranCInterface_GLOBAL(dlapy2,DLAPY2)(alpha,&xnorm);
       
       if(*alpha<0)
 	beta = t;
@@ -103,7 +103,7 @@ F77_FUNC(dlarfg,DLARFG)(int   *n,
 
       ti1= *n-1;
       t = 1.0/(*alpha-beta);
-      F77_FUNC(dscal,DSCAL)(&ti1,&t,x,incx);
+      FortranCInterface_GLOBAL(dscal,DSCAL)(&ti1,&t,x,incx);
    
       *alpha = beta;
       for(j=0;j<knt;j++)
@@ -112,7 +112,7 @@ F77_FUNC(dlarfg,DLARFG)(int   *n,
       *tau = (beta-*alpha)/beta;
       ti1= *n-1;
       t = 1.0/(*alpha-beta);
-      F77_FUNC(dscal,DSCAL)(&ti1,&t,x,incx);
+      FortranCInterface_GLOBAL(dscal,DSCAL)(&ti1,&t,x,incx);
       *alpha = beta;
     }
   }

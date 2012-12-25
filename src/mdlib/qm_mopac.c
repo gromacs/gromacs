@@ -72,16 +72,16 @@
 
 /* mopac interface routines */
 
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
+#ifndef FortranCInterface_GLOBAL
+#define FortranCInterface_GLOBAL(name,NAME) name ## _
 #endif
 
 
 void 
-F77_FUNC(domldt,DOMLDT)(int *nrqmat, int labels[], char keywords[]);
+FortranCInterface_GLOBAL(domldt,DOMLDT)(int *nrqmat, int labels[], char keywords[]);
 
 void 
-F77_FUNC(domop,DOMOP)(int *nrqmat,double qmcrd[],int *nrmmat,
+FortranCInterface_GLOBAL(domop,DOMOP)(int *nrqmat,double qmcrd[],int *nrmmat,
                       double mmchrg[],double mmcrd[],double qmgrad[],
                       double mmgrad[], double *energy,double qmcharges[]);
 
@@ -110,7 +110,7 @@ void init_mopac(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 	    qm->QMcharge,
 	    eQMmethod_names[qm->QMmethod],
 	    qm->CASorbitals,qm->CASelectrons/2);
-  F77_FUNC(domldt,DOMLDT)(&qm->nrQMatoms,qm->atomicnumberQM,keywords);
+  FortranCInterface_GLOBAL(domldt,DOMLDT)(&qm->nrQMatoms,qm->atomicnumberQM,keywords);
   fprintf(stderr,"keywords are: %s\n",keywords);
   free(keywords);
   
@@ -152,7 +152,7 @@ real call_mopac(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
      */
       
     snew(qmchrg,qm->nrQMatoms);    
-    F77_FUNC(domop,DOMOP)(&qm->nrQMatoms,qmcrd,&mm->nrMMatoms,
+    FortranCInterface_GLOBAL(domop,DOMOP)(&qm->nrQMatoms,qmcrd,&mm->nrMMatoms,
 	   mmchrg,mmcrd,qmgrad,mmgrad,&energy,qmchrg);
     /* add the gradients to the f[] array, and also to the fshift[].
      * the mopac gradients are in kCal/angstrom.
@@ -210,7 +210,7 @@ real call_mopac_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
      */
     snew(qmchrg,qm->nrQMatoms);    
 
-    F77_FUNC(domop,DOMOP)(&qm->nrQMatoms,qmcrd,&mm->nrMMatoms,
+    FortranCInterface_GLOBAL(domop,DOMOP)(&qm->nrQMatoms,qmcrd,&mm->nrMMatoms,
 	   mmchrg,mmcrd,qmgrad,mmgrad,&energy,qmchrg);
     /* add the gradients to the f[] array, and also to the fshift[].
      * the mopac gradients are in kCal/angstrom.

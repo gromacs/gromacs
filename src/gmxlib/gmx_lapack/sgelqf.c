@@ -39,7 +39,7 @@
 
 
 void
-F77_FUNC(sgelqf,SGELQF)(int *m,
+FortranCInterface_GLOBAL(sgelqf,SGELQF)(int *m,
 	int *n, 
 	float *a, 
 	int *lda, 
@@ -99,17 +99,17 @@ F77_FUNC(sgelqf,SGELQF)(int *m,
 	    ib = (i__3 < nb) ? i__3 : nb;
 
 	    i__3 = *n - i__ + 1;
-	    F77_FUNC(sgelq2,SGELQ2)(&ib, &i__3, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[
+	    FortranCInterface_GLOBAL(sgelq2,SGELQ2)(&ib, &i__3, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[
 		    1], &iinfo);
 	    if (i__ + ib <= *m) {
 
 		i__3 = *n - i__ + 1;
-		F77_FUNC(slarft,SLARFT)("Forward", "Rowwise", &i__3, &ib, &a[i__ + i__ * 
+		FortranCInterface_GLOBAL(slarft,SLARFT)("Forward", "Rowwise", &i__3, &ib, &a[i__ + i__ * 
 			a_dim1], lda, &tau[i__], &work[1], &ldwork);
 
 		i__3 = *m - i__ - ib + 1;
 		i__4 = *n - i__ + 1;
-		F77_FUNC(slarfb,SLARFB)("Right", "No transpose", "Forward", "Rowwise", &i__3, 
+		FortranCInterface_GLOBAL(slarfb,SLARFB)("Right", "No transpose", "Forward", "Rowwise", &i__3, 
 			&i__4, &ib, &a[i__ + i__ * a_dim1], lda, &work[1], &
 			ldwork, &a[i__ + ib + i__ * a_dim1], lda, &work[ib + 
 			1], &ldwork);
@@ -122,7 +122,7 @@ F77_FUNC(sgelqf,SGELQF)(int *m,
     if (i__ <= k) {
 	i__2 = *m - i__ + 1;
 	i__1 = *n - i__ + 1;
-	F77_FUNC(sgelq2,SGELQ2)(&i__2, &i__1, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[1]
+	FortranCInterface_GLOBAL(sgelq2,SGELQ2)(&i__2, &i__1, &a[i__ + i__ * a_dim1], lda, &tau[i__], &work[1]
 		, &iinfo);
     }
 

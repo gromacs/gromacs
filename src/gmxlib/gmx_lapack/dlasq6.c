@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void 
-F77_FUNC(dlasq6,DLASQ6)(int *i0, 
+FortranCInterface_GLOBAL(dlasq6,DLASQ6)(int *i0, 
 	int *n0, 
 	double *z__, 
 	int *pp, 

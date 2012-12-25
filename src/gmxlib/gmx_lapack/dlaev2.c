@@ -39,7 +39,7 @@
 
 
 void
-F77_FUNC(dlaev2,DLAEV2)(double *   a, 
+FortranCInterface_GLOBAL(dlaev2,DLAEV2)(double *   a, 
 	double *   b, 
 	double *   c__, 
 	double *   rt1, 

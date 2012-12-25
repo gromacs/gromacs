@@ -40,7 +40,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(dstegr,DSTEGR)(const char *jobz, 
+FortranCInterface_GLOBAL(dstegr,DSTEGR)(const char *jobz, 
 	const char *range, 
 	int *n, 
 	double *d__, 
@@ -166,16 +166,16 @@ F77_FUNC(dstegr,DSTEGR)(const char *jobz,
     d__1 = sqrt(bignum), d__2 = 1. / sqrt(sqrt(safmin));
     rmax = (d__1<d__2) ? d__1 : d__2;
     scale = 1.;
-    tnrm = F77_FUNC(dlanst,DLANST)("M", n, &d__[1], &e[1]);
+    tnrm = FortranCInterface_GLOBAL(dlanst,DLANST)("M", n, &d__[1], &e[1]);
     if (tnrm > 0. && tnrm < rmin) {
 	scale = rmin / tnrm;
     } else if (tnrm > rmax) {
 	scale = rmax / tnrm;
     }
     if ( fabs(scale-1.0)>GMX_DOUBLE_EPS) {
-	F77_FUNC(dscal,DSCAL)(n, &scale, &d__[1], &c__1);
+	FortranCInterface_GLOBAL(dscal,DSCAL)(n, &scale, &d__[1], &c__1);
 	i__1 = *n - 1;
-	F77_FUNC(dscal,DSCAL)(&i__1, &scale, &e[1], &c__1);
+	FortranCInterface_GLOBAL(dscal,DSCAL)(&i__1, &scale, &e[1], &c__1);
 	tnrm *= scale;
     }
     indgrs = 1;
@@ -187,7 +187,7 @@ F77_FUNC(dstegr,DSTEGR)(const char *jobz,
     iindwk = *n * 3 + 1;
 
     thresh = eps * tnrm;
-    F77_FUNC(dlarrex,DLARREX)(range, n, vl, vu, il, iu, &d__[1], &e[1], &thresh, &nsplit, &
+    FortranCInterface_GLOBAL(dlarrex,DLARREX)(range, n, vl, vu, il, iu, &d__[1], &e[1], &thresh, &nsplit, &
 	    iwork[iinspl], m, &w[1], &iwork[iindbl], &iwork[iindw], &work[
 	    indgrs], &work[indwrk], &iwork[iindwk], &iinfo);
     
@@ -199,7 +199,7 @@ F77_FUNC(dstegr,DSTEGR)(const char *jobz,
     if (wantz) {
 	d__1 = *abstol, d__2 = (double) (*n) * eps;
 	tol = (d__1>d__2) ? d__1 : d__2;
-	F77_FUNC(dlarrvx,DLARRVX)(n, &d__[1], &e[1], &iwork[iinspl], m, &w[1], &iwork[iindbl], &
+	FortranCInterface_GLOBAL(dlarrvx,DLARRVX)(n, &d__[1], &e[1], &iwork[iinspl], m, &w[1], &iwork[iindbl], &
 		iwork[iindw], &work[indgrs], &tol, &z__[z_offset], ldz, &
 		isuppz[1], &work[indwrk], &iwork[iindwk], &iinfo);
 	if (iinfo != 0) {
@@ -216,7 +216,7 @@ F77_FUNC(dstegr,DSTEGR)(const char *jobz,
 
     if (fabs(scale-1.0)>GMX_DOUBLE_EPS) {
 	d__1 = 1. / scale;
-	F77_FUNC(dscal,DSCAL)(m, &d__1, &w[1], &c__1);
+	FortranCInterface_GLOBAL(dscal,DSCAL)(m, &d__1, &w[1], &c__1);
     }
     if (nsplit > 1) {
 	i__1 = *m - 1;
@@ -234,7 +234,7 @@ F77_FUNC(dstegr,DSTEGR)(const char *jobz,
 		w[i__] = w[j];
 		w[j] = tmp;
 		if (wantz) {
-		    F77_FUNC(dswap,DSWAP)(n, &z__[i__ * z_dim1 + 1], &c__1, &z__[j * z_dim1 
+		    FortranCInterface_GLOBAL(dswap,DSWAP)(n, &z__[i__ * z_dim1 + 1], &c__1, &z__[j * z_dim1 
 			    + 1], &c__1);
 		    itmp = isuppz[(i__ << 1) - 1];
 		    isuppz[(i__ << 1) - 1] = isuppz[(j << 1) - 1];

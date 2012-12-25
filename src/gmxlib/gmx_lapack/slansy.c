@@ -38,7 +38,7 @@
 #include "gmx_lapack.h"
 
 float 
-F77_FUNC(slansy,SLANSY)(const char *norm, const char *uplo, int *n, float *a, int 
+FortranCInterface_GLOBAL(slansy,SLANSY)(const char *norm, const char *uplo, int *n, float *a, int 
 	*lda, float *work)
 {
     /* System generated locals */
@@ -128,18 +128,18 @@ F77_FUNC(slansy,SLANSY)(const char *norm, const char *uplo, int *n, float *a, in
 	    i__1 = *n;
 	    for (j = 2; j <= i__1; ++j) {
 		i__2 = j - 1;
-		F77_FUNC(slassq,SLASSQ)(&i__2, &a[j * a_dim1 + 1], &c__1, &scale, &sum);
+		FortranCInterface_GLOBAL(slassq,SLASSQ)(&i__2, &a[j * a_dim1 + 1], &c__1, &scale, &sum);
 	    }
 	} else {
 	    i__1 = *n - 1;
 	    for (j = 1; j <= i__1; ++j) {
 		i__2 = *n - j;
-		F77_FUNC(slassq,SLASSQ)(&i__2, &a[j + 1 + j * a_dim1], &c__1, &scale, &sum);
+		FortranCInterface_GLOBAL(slassq,SLASSQ)(&i__2, &a[j + 1 + j * a_dim1], &c__1, &scale, &sum);
 	    }
 	}
 	sum *= 2;
 	i__1 = *lda + 1;
-	F77_FUNC(slassq,SLASSQ)(n, &a[a_offset], &i__1, &scale, &sum);
+	FortranCInterface_GLOBAL(slassq,SLASSQ)(n, &a[a_offset], &i__1, &scale, &sum);
 	value = scale * sqrt(sum);
     }
 

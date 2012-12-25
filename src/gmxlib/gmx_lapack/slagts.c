@@ -40,7 +40,7 @@
 
 
 void
-F77_FUNC(slagts,SLAGTS)(int *job, 
+FortranCInterface_GLOBAL(slagts,SLAGTS)(int *job, 
 	int *n, 
 	float *a, 
 	float *b, 

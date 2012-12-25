@@ -38,7 +38,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(sger,SGER)(int *m__,
+FortranCInterface_GLOBAL(sger,SGER)(int *m__,
                     int *n__,
                     float *alpha__,
                     float *x,

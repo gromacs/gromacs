@@ -40,7 +40,7 @@
 #include "lapack_limits.h"
 
 void 
-F77_FUNC(dlasd7,DLASD7)(int *icompq, 
+FortranCInterface_GLOBAL(dlasd7,DLASD7)(int *icompq, 
 	int *nl, 
 	int *nr, 
 	int *sqre, 
@@ -140,7 +140,7 @@ F77_FUNC(dlasd7,DLASD7)(int *icompq,
 	vlw[i__] = vl[idxq[i__]];
     }
 
-    F77_FUNC(dlamrg,DLAMRG)(nl, nr, &dsigma[2], &c__1, &c__1, &idx[2]);
+    FortranCInterface_GLOBAL(dlamrg,DLAMRG)(nl, nr, &dsigma[2], &c__1, &c__1, &idx[2]);
 
     i__1 = n;
     for (i__ = 2; i__ <= i__1; ++i__) {
@@ -193,7 +193,7 @@ L80:
 	    *s = z__[jprev];
 	    *c__ = z__[j];
 
-	    tau = F77_FUNC(dlapy2,DLAPY2)(c__, s);
+	    tau = FortranCInterface_GLOBAL(dlapy2,DLAPY2)(c__, s);
 	    z__[j] = tau;
 	    z__[jprev] = 0.;
 	    *c__ /= tau;
@@ -215,8 +215,8 @@ L80:
 		givnum[*givptr + (givnum_dim1 << 1)] = *c__;
 		givnum[*givptr + givnum_dim1] = *s;
 	    }
-	    F77_FUNC(drot,DROT)(&c__1, &vf[jprev], &c__1, &vf[j], &c__1, c__, s);
-	    F77_FUNC(drot,DROT)(&c__1, &vl[jprev], &c__1, &vl[j], &c__1, c__, s);
+	    FortranCInterface_GLOBAL(drot,DROT)(&c__1, &vf[jprev], &c__1, &vf[j], &c__1, c__, s);
+	    FortranCInterface_GLOBAL(drot,DROT)(&c__1, &vl[jprev], &c__1, &vl[j], &c__1, c__, s);
 	    --k2;
 	    idxp[k2] = jprev;
 	    jprev = j;
@@ -256,7 +256,7 @@ L100:
 	}
     }
     i__1 = n - *k;
-    F77_FUNC(dcopy,DCOPY)(&i__1, &dsigma[*k + 1], &c__1, &d__[*k + 1], &c__1);
+    FortranCInterface_GLOBAL(dcopy,DCOPY)(&i__1, &dsigma[*k + 1], &c__1, &d__[*k + 1], &c__1);
 
     dsigma[1] = 0.;
     hlftol = tol / 2.;
@@ -264,7 +264,7 @@ L100:
 	dsigma[2] = hlftol;
     }
     if (m > n) {
-	z__[1] = F77_FUNC(dlapy2,DLAPY2)(&z1, &z__[m]);
+	z__[1] = FortranCInterface_GLOBAL(dlapy2,DLAPY2)(&z1, &z__[m]);
 	if (z__[1] <= tol) {
 	    *c__ = 1.;
 	    *s = 0.;
@@ -273,8 +273,8 @@ L100:
 	    *c__ = z1 / z__[1];
 	    *s = -z__[m] / z__[1];
 	}
-	F77_FUNC(drot,DROT)(&c__1, &vf[m], &c__1, &vf[1], &c__1, c__, s);
-	F77_FUNC(drot,DROT)(&c__1, &vl[m], &c__1, &vl[1], &c__1, c__, s);
+	FortranCInterface_GLOBAL(drot,DROT)(&c__1, &vf[m], &c__1, &vf[1], &c__1, c__, s);
+	FortranCInterface_GLOBAL(drot,DROT)(&c__1, &vl[m], &c__1, &vl[1], &c__1, c__, s);
     } else {
 	if (fabs(z1) <= tol) {
 	    z__[1] = tol;
@@ -284,11 +284,11 @@ L100:
     }
 
     i__1 = *k - 1;
-    F77_FUNC(dcopy,DCOPY)(&i__1, &zw[2], &c__1, &z__[2], &c__1);
+    FortranCInterface_GLOBAL(dcopy,DCOPY)(&i__1, &zw[2], &c__1, &z__[2], &c__1);
     i__1 = n - 1;
-    F77_FUNC(dcopy,DCOPY)(&i__1, &vfw[2], &c__1, &vf[2], &c__1);
+    FortranCInterface_GLOBAL(dcopy,DCOPY)(&i__1, &vfw[2], &c__1, &vf[2], &c__1);
     i__1 = n - 1;
-    F77_FUNC(dcopy,DCOPY)(&i__1, &vlw[2], &c__1, &vl[2], &c__1);
+    FortranCInterface_GLOBAL(dcopy,DCOPY)(&i__1, &vlw[2], &c__1, &vl[2], &c__1);
 
     return;
 

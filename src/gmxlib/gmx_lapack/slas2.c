@@ -38,7 +38,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(slas2,SLAS2)(float *f,
+FortranCInterface_GLOBAL(slas2,SLAS2)(float *f,
        float *g,
        float *h,
        float *ssmin,

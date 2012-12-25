@@ -36,7 +36,7 @@
 
 
 float
-F77_FUNC(sdot,SDOT)(int *n_arg,
+FortranCInterface_GLOBAL(sdot,SDOT)(int *n_arg,
                     float *dx,
                     int *incx_arg,
                     float *dy,

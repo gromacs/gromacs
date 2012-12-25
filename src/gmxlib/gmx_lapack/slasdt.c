@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(slasdt,SLASDT)(int *n,
+FortranCInterface_GLOBAL(slasdt,SLASDT)(int *n,
 	int *lvl,
 	int *nd,
 	int *inode,

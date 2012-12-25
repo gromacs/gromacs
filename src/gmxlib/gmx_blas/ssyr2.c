@@ -39,7 +39,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
+FortranCInterface_GLOBAL(ssyr2,SSYR2)(const char *    uplo,
                       int *     n__,
                       float *  alpha__,
                       float *  x,

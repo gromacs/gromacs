@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(dgetrs,DGETRS)(const char *trans, 
+FortranCInterface_GLOBAL(dgetrs,DGETRS)(const char *trans, 
 	int *n, 
 	int *nrhs, 
 	double *a, 
@@ -67,19 +67,19 @@ F77_FUNC(dgetrs,DGETRS)(const char *trans,
 	return;
 
     if (notran) {
-	F77_FUNC(dlaswp,DLASWP)(nrhs, &b[b_offset], ldb, &c__1, n, &ipiv[1], &c__1);
-	F77_FUNC(dtrsm,DTRSM)("Left", "Lower", "No transpose", "Unit", n, nrhs, &one, 
+	FortranCInterface_GLOBAL(dlaswp,DLASWP)(nrhs, &b[b_offset], ldb, &c__1, n, &ipiv[1], &c__1);
+	FortranCInterface_GLOBAL(dtrsm,DTRSM)("Left", "Lower", "No transpose", "Unit", n, nrhs, &one, 
 	       &a[a_offset], lda, &b[b_offset], ldb);
 
-	F77_FUNC(dtrsm,DTRSM)("Left", "Upper", "No transpose", "Non-unit", n, nrhs, &one, 
+	FortranCInterface_GLOBAL(dtrsm,DTRSM)("Left", "Upper", "No transpose", "Non-unit", n, nrhs, &one, 
 	       &a[a_offset], lda, &b[b_offset], ldb);
     } else {
-	F77_FUNC(dtrsm,DTRSM)("Left", "Upper", "Transpose", "Non-unit", n, nrhs, &one, 
+	FortranCInterface_GLOBAL(dtrsm,DTRSM)("Left", "Upper", "Transpose", "Non-unit", n, nrhs, &one, 
 	       &a[a_offset], lda, &b[b_offset], ldb);
-	F77_FUNC(dtrsm,DTRSM)("Left", "Lower", "Transpose", "Unit", n, nrhs, &one, 
+	FortranCInterface_GLOBAL(dtrsm,DTRSM)("Left", "Lower", "Transpose", "Unit", n, nrhs, &one, 
 	       &a[a_offset], lda, &b[b_offset], ldb);
 
-	F77_FUNC(dlaswp,DLASWP)(nrhs, &b[b_offset], ldb, &c__1, n, &ipiv[1], &c_n1);
+	FortranCInterface_GLOBAL(dlaswp,DLASWP)(nrhs, &b[b_offset], ldb, &c__1, n, &ipiv[1], &c_n1);
     }
 
     return;

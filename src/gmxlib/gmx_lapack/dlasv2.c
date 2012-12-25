@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void 
-F77_FUNC(dlasv2,DLASV2)(double *f, 
+FortranCInterface_GLOBAL(dlasv2,DLASV2)(double *f, 
                         double *g, 
                         double *h__, 
                         double *ssmin, 

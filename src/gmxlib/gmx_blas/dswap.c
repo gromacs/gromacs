@@ -35,7 +35,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dswap,DSWAP)(int *n__,
+FortranCInterface_GLOBAL(dswap,DSWAP)(int *n__,
                       double *dx,
                       int *incx__,
                       double *dy,

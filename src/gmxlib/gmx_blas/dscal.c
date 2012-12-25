@@ -35,7 +35,7 @@
 #include "gmx_blas.h"
 
 void 
-F77_FUNC(dscal,DSCAL)(int  *    n__,
+FortranCInterface_GLOBAL(dscal,DSCAL)(int  *    n__,
                       double *   fact__,
                       double *   dx,
                       int    *   incx__)

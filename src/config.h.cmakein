@@ -462,6 +462,11 @@
 #include "swindirect.h"
 #endif
 
+#cmakedefine GMX_USE_FORTRAN
+#ifdef GMX_USE_FORTRAN
+#include <fortran_mangling.h>
+#endif
+
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 

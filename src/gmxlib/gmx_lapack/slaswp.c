@@ -36,7 +36,7 @@
 
 /* LAPACK */
 void
-F77_FUNC(slaswp,SLASWP)(int *n,
+FortranCInterface_GLOBAL(slaswp,SLASWP)(int *n,
 	float *a,
 	int *lda,
 	int *k1,

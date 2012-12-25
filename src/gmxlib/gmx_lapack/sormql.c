@@ -36,7 +36,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n, 
+FortranCInterface_GLOBAL(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n, 
 	int *k, float *a, int *lda, float *tau, float *
 	c__, int *ldc, float *work, int *lwork, int *info)
 {
@@ -105,7 +105,7 @@ F77_FUNC(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n,
 
     if (nb < nbmin || nb >= *k) {
 
-	F77_FUNC(sorm2l,SORM2L)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+	FortranCInterface_GLOBAL(sorm2l,SORM2L)(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
 		c_offset], ldc, &work[1], &iinfo);
     } else {
 
@@ -132,7 +132,7 @@ F77_FUNC(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n,
 	    ib = (i__4<i__5) ? i__4 : i__5;
 
 	    i__4 = nq - *k + i__ + ib - 1;
-	    F77_FUNC(slarft,SLARFT)("Backward", "Columnwise", &i__4, &ib, &a[i__ * a_dim1 + 1]
+	    FortranCInterface_GLOBAL(slarft,SLARFT)("Backward", "Columnwise", &i__4, &ib, &a[i__ * a_dim1 + 1]
 		    , lda, &tau[i__], t, &c__65);
 	    if (left) {
 
@@ -142,7 +142,7 @@ F77_FUNC(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n,
 		ni = *n - *k + i__ + ib - 1;
 	    }
 
-	    F77_FUNC(slarfb,SLARFB)(side, trans, "Backward", "Columnwise", &mi, &ni, &ib, &a[
+	    FortranCInterface_GLOBAL(slarfb,SLARFB)(side, trans, "Backward", "Columnwise", &mi, &ni, &ib, &a[
 		    i__ * a_dim1 + 1], lda, t, &c__65, &c__[c_offset], ldc, &
 		    work[1], &ldwork);
 	}

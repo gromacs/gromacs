@@ -36,7 +36,7 @@
 
 
 void
-F77_FUNC(daxpy,DAXPY)(int   *   n_arg,
+FortranCInterface_GLOBAL(daxpy,DAXPY)(int   *   n_arg,
                       double *   da_arg,
                       double *   dx,
                       int *      incx_arg,

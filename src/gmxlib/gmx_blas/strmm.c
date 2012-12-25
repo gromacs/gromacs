@@ -38,7 +38,7 @@
 #include "gmx_blas.h"
 
 void 
-F77_FUNC(strmm,STRMM)(const char *side, 
+FortranCInterface_GLOBAL(strmm,STRMM)(const char *side, 
                       const char *uplo, 
                       const char *transa, 
                       const char *diag, 

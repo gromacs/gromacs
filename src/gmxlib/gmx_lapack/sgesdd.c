@@ -41,7 +41,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(sgesdd,SGESDD)(const char *jobz, 
+FortranCInterface_GLOBAL(sgesdd,SGESDD)(const char *jobz, 
                         int *m, 
                         int *n, 
                         float *a, 
@@ -203,14 +203,14 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
     bignum = 1. / smlnum;
 
 
-    anrm = F77_FUNC(slange,SLANGE)("M", m, n, &a[a_offset], lda, dum);
+    anrm = FortranCInterface_GLOBAL(slange,SLANGE)("M", m, n, &a[a_offset], lda, dum);
     iscl = 0;
     if (anrm > 0. && anrm < smlnum) {
 	iscl = 1;
-	F77_FUNC(slascl,SLASCL)("G",&c__0,&c__0,&anrm,&smlnum,m,n,&a[a_offset],lda,&ierr);
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G",&c__0,&c__0,&anrm,&smlnum,m,n,&a[a_offset],lda,&ierr);
     } else if (anrm > bignum) {
 	iscl = 1;
-	F77_FUNC(slascl,SLASCL)("G",&c__0,&c__0,&anrm,&bignum,m,n,&a[a_offset],lda,&ierr);
+	FortranCInterface_GLOBAL(slascl,SLASCL)("G",&c__0,&c__0,&anrm,&bignum,m,n,&a[a_offset],lda,&ierr);
     }
 
     if (*m >= *n) {
@@ -222,12 +222,12 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itau + *n;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgeqrf,SGEQRF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
+		FortranCInterface_GLOBAL(sgeqrf,SGEQRF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
 			i__1, &ierr);
 
 		i__1 = *n - 1;
 		i__2 = *n - 1;
-		F77_FUNC(slaset,SLASET)("L", &i__1, &i__2, &zero, &zero, &a[a_dim1 + 2], 
+		FortranCInterface_GLOBAL(slaset,SLASET)("L", &i__1, &i__2, &zero, &zero, &a[a_dim1 + 2], 
 			lda);
 		ie = 1;
 		itauq = ie + *n;
@@ -235,11 +235,11 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itaup + *n;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgebrd,SGEBRD)(n, n, &a[a_offset], lda, &s[1], &work[ie], &work[
+		FortranCInterface_GLOBAL(sgebrd,SGEBRD)(n, n, &a[a_offset], lda, &s[1], &work[ie], &work[
 			itauq], &work[itaup], &work[nwork], &i__1, &ierr);
 		nwork = ie + *n;
 
-		F77_FUNC(sbdsdc,SBDSDC)("U", "N", n, &s[1], &work[ie], dum, &c__1, dum, &c__1,
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("U", "N", n, &s[1], &work[ie], dum, &c__1, dum, &c__1,
 			 dum, idum, &work[nwork], &iwork[1], info);
 
 	    } else {
@@ -250,17 +250,17 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itau + *n;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgeqrf,SGEQRF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
+		FortranCInterface_GLOBAL(sgeqrf,SGEQRF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
 			i__1, &ierr);
-		F77_FUNC(slacpy,SLACPY)("L", m, n, &a[a_offset], lda, &u[u_offset], ldu);
+		FortranCInterface_GLOBAL(slacpy,SLACPY)("L", m, n, &a[a_offset], lda, &u[u_offset], ldu);
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sorgqr,SORGQR)(m, m, n, &u[u_offset], ldu, &work[itau], &work[nwork],
+		FortranCInterface_GLOBAL(sorgqr,SORGQR)(m, m, n, &u[u_offset], ldu, &work[itau], &work[nwork],
 			 &i__1, &ierr);
 
 		i__1 = *n - 1;
 		i__2 = *n - 1;
-		F77_FUNC(slaset,SLASET)("L", &i__1, &i__2, &zero, &zero, &a[a_dim1 + 2], 
+		FortranCInterface_GLOBAL(slaset,SLASET)("L", &i__1, &i__2, &zero, &zero, &a[a_dim1 + 2], 
 			lda);
 		ie = itau;
 		itauq = ie + *n;
@@ -268,26 +268,26 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itaup + *n;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgebrd,SGEBRD)(n, n, &a[a_offset], lda, &s[1], &work[ie], &work[
+		FortranCInterface_GLOBAL(sgebrd,SGEBRD)(n, n, &a[a_offset], lda, &s[1], &work[ie], &work[
 			itauq], &work[itaup], &work[nwork], &i__1, &ierr);
 
-		F77_FUNC(sbdsdc,SBDSDC)("U", "I", n, &s[1], &work[ie], &work[iu], n, &vt[
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("U", "I", n, &s[1], &work[ie], &work[iu], n, &vt[
 			vt_offset], ldvt, dum, idum, &work[nwork], &iwork[1], 
 			info);
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("Q", "L", "N", n, n, n, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("Q", "L", "N", n, n, n, &a[a_offset], lda, &work[
 			itauq], &work[iu], &ldwrku, &work[nwork], &i__1, &
 			ierr);
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("P", "R", "T", n, n, n, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("P", "R", "T", n, n, n, &a[a_offset], lda, &work[
 			itaup], &vt[vt_offset], ldvt, &work[nwork], &i__1, &
 			ierr);
 
-		F77_FUNC(sgemm,SGEMM)("N", "N", m, n, n, &one, &u[u_offset], ldu, &work[iu]
+		FortranCInterface_GLOBAL(sgemm,SGEMM)("N", "N", m, n, n, &one, &u[u_offset], ldu, &work[iu]
 			, &ldwrku, &zero, &a[a_offset], lda);
 
-		F77_FUNC(slacpy,SLACPY)("F", m, n, &a[a_offset], lda, &u[u_offset], ldu);
+		FortranCInterface_GLOBAL(slacpy,SLACPY)("F", m, n, &a[a_offset], lda, &u[u_offset], ldu);
 
 	    }
 
@@ -298,29 +298,29 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 	    nwork = itaup + *n;
 
 	    i__1 = *lwork - nwork + 1;
-	    F77_FUNC(sgebrd,SGEBRD)(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[itauq], &
+	    FortranCInterface_GLOBAL(sgebrd,SGEBRD)(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[itauq], &
 		    work[itaup], &work[nwork], &i__1, &ierr);
 	    if (wntqn) {
 
-		F77_FUNC(sbdsdc,SBDSDC)("U", "N", n, &s[1], &work[ie], dum, &c__1, dum, &c__1,
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("U", "N", n, &s[1], &work[ie], dum, &c__1, dum, &c__1,
 			 dum, idum, &work[nwork], &iwork[1], info);
 	    } else {
 
-		F77_FUNC(slaset,SLASET)("F", m, m, &zero, &zero, &u[u_offset], ldu);
-		F77_FUNC(sbdsdc,SBDSDC)("U", "I", n, &s[1], &work[ie], &u[u_offset], ldu, &vt[
+		FortranCInterface_GLOBAL(slaset,SLASET)("F", m, m, &zero, &zero, &u[u_offset], ldu);
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("U", "I", n, &s[1], &work[ie], &u[u_offset], ldu, &vt[
 			vt_offset], ldvt, dum, idum, &work[nwork], &iwork[1], 
 			info);
 
 		i__1 = *m - *n;
 		i__2 = *m - *n;
-		F77_FUNC(slaset,SLASET)("F", &i__1, &i__2, &zero, &one, &u[*n + 1 + (*n + 
+		FortranCInterface_GLOBAL(slaset,SLASET)("F", &i__1, &i__2, &zero, &one, &u[*n + 1 + (*n + 
 			1) * u_dim1], ldu);
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("Q", "L", "N", m, m, n, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("Q", "L", "N", m, m, n, &a[a_offset], lda, &work[
 			itauq], &u[u_offset], ldu, &work[nwork], &i__1, &ierr);
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("P", "R", "T", n, n, m, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("P", "R", "T", n, n, m, &a[a_offset], lda, &work[
 			itaup], &vt[vt_offset],ldvt,&work[nwork],&i__1,&ierr);
 	    }
 
@@ -336,12 +336,12 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itau + *m;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgelqf,SGELQF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
+		FortranCInterface_GLOBAL(sgelqf,SGELQF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
 			i__1, &ierr);
 
 		i__1 = *m - 1;
 		i__2 = *m - 1;
-		F77_FUNC(slaset,SLASET)("U", &i__1, &i__2, &zero, &zero, &a[(a_dim1*2) + 
+		FortranCInterface_GLOBAL(slaset,SLASET)("U", &i__1, &i__2, &zero, &zero, &a[(a_dim1*2) + 
 			1], lda);
 		ie = 1;
 		itauq = ie + *m;
@@ -349,11 +349,11 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itaup + *m;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgebrd,SGEBRD)(m, m, &a[a_offset], lda, &s[1], &work[ie], &work[
+		FortranCInterface_GLOBAL(sgebrd,SGEBRD)(m, m, &a[a_offset], lda, &s[1], &work[ie], &work[
 			itauq], &work[itaup], &work[nwork], &i__1, &ierr);
 		nwork = ie + *m;
 
-		F77_FUNC(sbdsdc,SBDSDC)("U", "N", m, &s[1], &work[ie], dum, &c__1, dum, &c__1,
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("U", "N", m, &s[1], &work[ie], dum, &c__1, dum, &c__1,
 			 dum, idum, &work[nwork], &iwork[1], info);
 
 	    } else {
@@ -365,17 +365,17 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itau + *m;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgelqf,SGELQF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
+		FortranCInterface_GLOBAL(sgelqf,SGELQF)(m, n, &a[a_offset], lda, &work[itau], &work[nwork], &
 			i__1, &ierr);
-		F77_FUNC(slacpy,SLACPY)("U", m, n, &a[a_offset], lda, &vt[vt_offset], ldvt);
+		FortranCInterface_GLOBAL(slacpy,SLACPY)("U", m, n, &a[a_offset], lda, &vt[vt_offset], ldvt);
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sorglq,SORGLQ)(n, n, m, &vt[vt_offset], ldvt, &work[itau], &work[
+		FortranCInterface_GLOBAL(sorglq,SORGLQ)(n, n, m, &vt[vt_offset], ldvt, &work[itau], &work[
 			nwork], &i__1, &ierr);
 
 		i__1 = *m - 1;
 		i__2 = *m - 1;
-		F77_FUNC(slaset,SLASET)("U", &i__1, &i__2, &zero, &zero, &a[(a_dim1*2) + 
+		FortranCInterface_GLOBAL(slaset,SLASET)("U", &i__1, &i__2, &zero, &zero, &a[(a_dim1*2) + 
 			1], lda);
 		ie = itau;
 		itauq = ie + *m;
@@ -383,25 +383,25 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 		nwork = itaup + *m;
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sgebrd,SGEBRD)(m, m, &a[a_offset], lda, &s[1], &work[ie], &work[
+		FortranCInterface_GLOBAL(sgebrd,SGEBRD)(m, m, &a[a_offset], lda, &s[1], &work[ie], &work[
 			itauq], &work[itaup], &work[nwork], &i__1, &ierr);
 
-		F77_FUNC(sbdsdc,SBDSDC)("U", "I", m, &s[1], &work[ie], &u[u_offset], ldu, &
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("U", "I", m, &s[1], &work[ie], &u[u_offset], ldu, &
 			work[ivt], &ldwkvt, dum, idum, &work[nwork], &iwork[1]
 			, info);
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("Q", "L", "N", m, m, m, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("Q", "L", "N", m, m, m, &a[a_offset], lda, &work[
 			itauq], &u[u_offset], ldu, &work[nwork], &i__1, &ierr);
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("P", "R", "T", m, m, m, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("P", "R", "T", m, m, m, &a[a_offset], lda, &work[
 			itaup], &work[ivt], &ldwkvt, &work[nwork], &i__1, &
 			ierr);
 
-		F77_FUNC(sgemm,SGEMM)("N", "N", m, n, m, &one, &work[ivt], &ldwkvt, &vt[
+		FortranCInterface_GLOBAL(sgemm,SGEMM)("N", "N", m, n, m, &one, &work[ivt], &ldwkvt, &vt[
 			vt_offset], ldvt, &zero, &a[a_offset], lda);
 
-		F77_FUNC(slacpy,SLACPY)("F", m, n, &a[a_offset], lda, &vt[vt_offset], ldvt);
+		FortranCInterface_GLOBAL(slacpy,SLACPY)("F", m, n, &a[a_offset], lda, &vt[vt_offset], ldvt);
 
 	    }
 
@@ -413,28 +413,28 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 	    nwork = itaup + *m;
 
 	    i__1 = *lwork - nwork + 1;
-	    F77_FUNC(sgebrd,SGEBRD)(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[itauq], &
+	    FortranCInterface_GLOBAL(sgebrd,SGEBRD)(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[itauq], &
 		    work[itaup], &work[nwork], &i__1, &ierr);
 	    if (wntqn) {
 
-		F77_FUNC(sbdsdc,SBDSDC)("L", "N", m, &s[1], &work[ie], dum, &c__1, dum, &c__1,
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("L", "N", m, &s[1], &work[ie], dum, &c__1, dum, &c__1,
 			 dum, idum, &work[nwork], &iwork[1], info);
 	    } else {
-		F77_FUNC(slaset,SLASET)("F", n, n, &zero, &zero, &vt[vt_offset], ldvt);
-		F77_FUNC(sbdsdc,SBDSDC)("L", "I", m, &s[1], &work[ie], &u[u_offset], ldu, &vt[
+		FortranCInterface_GLOBAL(slaset,SLASET)("F", n, n, &zero, &zero, &vt[vt_offset], ldvt);
+		FortranCInterface_GLOBAL(sbdsdc,SBDSDC)("L", "I", m, &s[1], &work[ie], &u[u_offset], ldu, &vt[
 			vt_offset], ldvt, dum, idum, &work[nwork], &iwork[1], 
 			info);
 
 		i__1 = *n - *m;
 		i__2 = *n - *m;
-		F77_FUNC(slaset,SLASET)("F", &i__1, &i__2, &zero, &one, &vt[*m + 1 + (*m + 
+		FortranCInterface_GLOBAL(slaset,SLASET)("F", &i__1, &i__2, &zero, &one, &vt[*m + 1 + (*m + 
 			1) * vt_dim1], ldvt);
 
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("Q", "L", "N", m, m, n, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("Q", "L", "N", m, m, n, &a[a_offset], lda, &work[
 			itauq], &u[u_offset], ldu, &work[nwork], &i__1, &ierr);
 		i__1 = *lwork - nwork + 1;
-		F77_FUNC(sormbr,SORMBR)("P", "R", "T", n, n, m, &a[a_offset], lda, &work[
+		FortranCInterface_GLOBAL(sormbr,SORMBR)("P", "R", "T", n, n, m, &a[a_offset], lda, &work[
 			itaup], &vt[vt_offset], ldvt, &work[nwork], &i__1, &
 			ierr);
 	    }
@@ -445,11 +445,11 @@ F77_FUNC(sgesdd,SGESDD)(const char *jobz,
 
     if (iscl == 1) {
 	if (anrm > bignum) {
-	    F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &bignum, &anrm, &minmn, &c__1, &s[1], &
+	    FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &bignum, &anrm, &minmn, &c__1, &s[1], &
 		    minmn, &ierr);
 	}
 	if (anrm < smlnum) {
-	    F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &smlnum, &anrm, &minmn, &c__1, &s[1], &
+	    FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &smlnum, &anrm, &minmn, &c__1, &s[1], &
 		    minmn, &ierr);
 	}
     }

@@ -37,7 +37,7 @@
 
 
 void
-F77_FUNC(slaset,SLASET)(const char *uplo,
+FortranCInterface_GLOBAL(slaset,SLASET)(const char *uplo,
 	int *m,
 	int *n,
 	float *alpha,

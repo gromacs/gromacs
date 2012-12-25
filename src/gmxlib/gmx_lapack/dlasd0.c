@@ -35,7 +35,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(dlasd0,DLASD0)(int *n, 
+FortranCInterface_GLOBAL(dlasd0,DLASD0)(int *n, 
 	int *sqre, 
 	double *d__, 
 	double *e, 
@@ -93,7 +93,7 @@ F77_FUNC(dlasd0,DLASD0)(int *n,
     }
 
     if (*n <= *smlsiz) {
-	F77_FUNC(dlasdq,DLASDQ)("U", sqre, n, &m, n, &c__0, &d__[1], &e[1], &vt[vt_offset], 
+	FortranCInterface_GLOBAL(dlasdq,DLASDQ)("U", sqre, n, &m, n, &c__0, &d__[1], &e[1], &vt[vt_offset], 
 		ldvt, &u[u_offset], ldu, &u[u_offset], ldu, &work[1], info);
 	return;
     }
@@ -103,7 +103,7 @@ F77_FUNC(dlasd0,DLASD0)(int *n,
     ndimr = ndiml + *n;
     idxq = ndimr + *n;
     iwk = idxq + *n;
-    F77_FUNC(dlasdt,DLASDT)(n, &nlvl, &nd, &iwork[inode], &iwork[ndiml], &iwork[ndimr], 
+    FortranCInterface_GLOBAL(dlasdt,DLASDT)(n, &nlvl, &nd, &iwork[inode], &iwork[ndiml], &iwork[ndimr], 
 	    smlsiz);
 
     ndb1 = (nd + 1) / 2;
@@ -120,7 +120,7 @@ F77_FUNC(dlasd0,DLASD0)(int *n,
 	nlf = ic - nl;
 	nrf = ic + 1;
 	sqrei = 1;
-	F77_FUNC(dlasdq,DLASDQ)("U", &sqrei, &nl, &nlp1, &nl, &ncc, &d__[nlf], &e[nlf], &vt[
+	FortranCInterface_GLOBAL(dlasdq,DLASDQ)("U", &sqrei, &nl, &nlp1, &nl, &ncc, &d__[nlf], &e[nlf], &vt[
 		nlf + nlf * vt_dim1], ldvt, &u[nlf + nlf * u_dim1], ldu, &u[
 		nlf + nlf * u_dim1], ldu, &work[1], info);
 	if (*info != 0) {
@@ -137,7 +137,7 @@ F77_FUNC(dlasd0,DLASD0)(int *n,
 	    sqrei = 1;
 	}
 	nrp1 = nr + sqrei;
-	F77_FUNC(dlasdq,DLASDQ)("U", &sqrei, &nr, &nrp1, &nr, &ncc, &d__[nrf], &e[nrf], &vt[
+	FortranCInterface_GLOBAL(dlasdq,DLASDQ)("U", &sqrei, &nr, &nrp1, &nr, &ncc, &d__[nrf], &e[nrf], &vt[
 		nrf + nrf * vt_dim1], ldvt, &u[nrf + nrf * u_dim1], ldu, &u[
 		nrf + nrf * u_dim1], ldu, &work[1], info);
 	if (*info != 0) {
@@ -175,7 +175,7 @@ F77_FUNC(dlasd0,DLASD0)(int *n,
 	    idxqc = idxq + nlf - 1;
 	    alpha = d__[ic];
 	    beta = e[ic];
-	    F77_FUNC(dlasd1,DLASD1)(&nl, &nr, &sqrei, &d__[nlf], &alpha, &beta, &u[nlf + nlf *
+	    FortranCInterface_GLOBAL(dlasd1,DLASD1)(&nl, &nr, &sqrei, &d__[nlf], &alpha, &beta, &u[nlf + nlf *
 		     u_dim1], ldu, &vt[nlf + nlf * vt_dim1], ldvt, &iwork[
 		    idxqc], &iwork[iwk], &work[1], info);
 	    if (*info != 0) {

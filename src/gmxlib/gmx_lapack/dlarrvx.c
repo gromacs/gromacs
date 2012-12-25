@@ -42,7 +42,7 @@
 
 
 void
-F77_FUNC(dlarrvx,DLARRVX)(int *n, 
+FortranCInterface_GLOBAL(dlarrvx,DLARRVX)(int *n, 
 	double *d__, 
 	double *l, 
 	int *isplit,
@@ -128,7 +128,7 @@ F77_FUNC(dlarrvx,DLARRVX)(int *n,
     for (i__ = 1; i__ <= i__1; ++i__) {
 	iwork[i__] = 0;
     }
-    F77_FUNC(dlaset,DLASET)("Full", n, m, &c_b5, &c_b5, &z__[z_offset], ldz);
+    FortranCInterface_GLOBAL(dlaset,DLASET)("Full", n, m, &c_b5, &c_b5, &z__[z_offset], ldz);
     mgstol = eps * 100.;
 
     ibegin = 1;
@@ -163,7 +163,7 @@ L171:
 	d__1 = .001, d__2 = 1. / (double) in;
 	reltol = (d__1<d__2) ? d__1 : d__2;
 	im = wend - wbegin + 1;
-	F77_FUNC(dcopy,DCOPY)(&im, &w[wbegin], &c__1, &work[1], &c__1);
+	FortranCInterface_GLOBAL(dcopy,DCOPY)(&im, &w[wbegin], &c__1, &work[1], &c__1);
 	i__2 = im - 1;
 	for (i__ = 1; i__ <= i__2; ++i__) {
 	    work[inderr + i__] = eps * fabs(work[i__]);
@@ -200,12 +200,12 @@ L40:
 		oldlst = iwork[j];
 		if (ndepth > 0) {
 		    j = wbegin + oldfst - 1;
-		    F77_FUNC(dcopy,DCOPY)(&in, &z__[ibegin + j * z_dim1], &c__1, &d__[ibegin]
+		    FortranCInterface_GLOBAL(dcopy,DCOPY)(&in, &z__[ibegin + j * z_dim1], &c__1, &d__[ibegin]
 			    , &c__1);
 		    i__3 = in - 1;
-		    F77_FUNC(dcopy,DCOPY)(&i__3, &z__[ibegin + (j + 1) * z_dim1], &c__1, &l[
+		    FortranCInterface_GLOBAL(dcopy,DCOPY)(&i__3, &z__[ibegin + (j + 1) * z_dim1], &c__1, &l[
 			    ibegin], &c__1);
-		    F77_FUNC(dlaset,DLASET)("Full", &in, &c__2, &c_b5, &c_b5, &z__[ibegin + j 
+		    FortranCInterface_GLOBAL(dlaset,DLASET)("Full", &in, &c__2, &c_b5, &c_b5, &z__[ibegin + j 
 			    * z_dim1], ldz);
 		}
 		k = ibegin;
@@ -222,7 +222,7 @@ L40:
 		    q = indexw[wbegin - 1 + oldlst];
 		    d__1 = eps * 4.;
 		    i__3 = p - oldfst;
-		    F77_FUNC(dlarrbx,DLARRBX)(&in, &d__[ibegin], &l[ibegin], &work[indld + 1], &
+		    FortranCInterface_GLOBAL(dlarrbx,DLARRBX)(&in, &d__[ibegin], &l[ibegin], &work[indld + 1], &
 			    work[indlld + 1], &p, &q, &reltol, &d__1, &i__3, &
 			    work[1], &work[indgap + 1], &work[inderr + 1], &
 			    work[indwrk + in], &iwork[iindwk], &iinfo);
@@ -248,7 +248,7 @@ L40:
 		    nomgs = newsiz == 1 || newsiz > 1 || minrgp < mgstol;
 		    if (newsiz > 1 && nomgs) {
 
-			F77_FUNC(dlarrfx,DLARRFX)(&in, &d__[ibegin], &l[ibegin], &work[indld + 
+			FortranCInterface_GLOBAL(dlarrfx,DLARRFX)(&in, &d__[ibegin], &l[ibegin], &work[indld + 
 				1], &work[indlld + 1], &newfrs, &newlst, &
 				work[1], &sigma, &z__[ibegin + newftt * 
 				z_dim1], &z__[ibegin + (newftt + 1) * z_dim1],
@@ -288,7 +288,7 @@ L40:
 				    isuppz[(oldien + k) * 2] = in;
 				}
 				temp[0] = in;
-				F77_FUNC(dstein,DSTEIN)(&in, &work[indwrk], &work[indld + 1], 
+				FortranCInterface_GLOBAL(dstein,DSTEIN)(&in, &work[indwrk], &work[indld + 1], 
 					&newsiz, &work[newfrs], &iwork[iindwk]
 					, temp, &z__[ibegin + newftt * z_dim1]
 					, ldz, &work[indwrk + in], &iwork[
@@ -308,7 +308,7 @@ L40:
 L90:
 			    lambda = work[k];
 
-			    F77_FUNC(dlar1vx,DLAR1VX)(&in, &c__1, &in, &lambda, &d__[ibegin], &
+			    FortranCInterface_GLOBAL(dlar1vx,DLAR1VX)(&in, &c__1, &in, &lambda, &d__[ibegin], &
 				    l[ibegin], &work[indld + 1], &work[indlld 
 				    + 1], &w[wbegin + k - 1], &gersch[(oldien 
 				    << 1) + 1], &z__[ibegin + ktot * z_dim1], 
@@ -342,7 +342,7 @@ L90:
 			    zfrom = isuppz[(ktot << 1) - 1];
 			    zto = isuppz[ktot * 2];
 			    i__5 = zto - zfrom + 1;
-			    F77_FUNC(dscal,DSCAL)(&i__5, &nrminv, &z__[ibegin + zfrom - 1 + 
+			    FortranCInterface_GLOBAL(dscal,DSCAL)(&i__5, &nrminv, &z__[ibegin + zfrom - 1 + 
 				    ktot * z_dim1], &c__1);
 			    ++ktot;
 			}
@@ -354,16 +354,16 @@ L90:
 			    for (p = newftt + 1; p <= i__4; ++p) {
 				i__5 = p - 1;
 				for (q = newftt; q <= i__5; ++q) {
-				    tmp = -F77_FUNC(ddot,DDOT)(&in, &z__[ibegin + p * 
+				    tmp = -FortranCInterface_GLOBAL(ddot,DDOT)(&in, &z__[ibegin + p * 
 					    z_dim1], &c__1, &z__[ibegin + q * 
 					    z_dim1], &c__1);
-				    F77_FUNC(daxpy,DAXPY)(&in, &tmp, &z__[ibegin + q * 
+				    FortranCInterface_GLOBAL(daxpy,DAXPY)(&in, &tmp, &z__[ibegin + q * 
 					    z_dim1], &c__1, &z__[ibegin + p * 
 					    z_dim1], &c__1);
 				}
-				tmp = 1. / F77_FUNC(dnrm2,DNRM2)(&in, &z__[ibegin + p * 
+				tmp = 1. / FortranCInterface_GLOBAL(dnrm2,DNRM2)(&in, &z__[ibegin + p * 
 					z_dim1], &c__1);
-				F77_FUNC(dscal,DSCAL)(&in, &tmp, &z__[ibegin + p * z_dim1], &
+				FortranCInterface_GLOBAL(dscal,DSCAL)(&in, &tmp, &z__[ibegin + p * z_dim1], &
 					c__1);
 				i__5 = itmp1, i__6 = isuppz[(p << 1) - 1];
 				itmp1 = (i__5<i__6) ? i__5 : i__6;

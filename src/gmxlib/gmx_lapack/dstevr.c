@@ -45,7 +45,7 @@
  * case this is just a wrapper to dstegr.
  */
 void
-F77_FUNC(dstevr,DSTEVR)(const char *jobz, 
+FortranCInterface_GLOBAL(dstevr,DSTEVR)(const char *jobz, 
 	const char *range,
 	int *n,
 	double *d,
@@ -66,7 +66,7 @@ F77_FUNC(dstevr,DSTEVR)(const char *jobz,
 	int *liwork, 
 	int *info)
 {
-  F77_FUNC(dstegr,DSTEGR)(jobz, range, n, d, e, vl, vu, il, iu, abstol, m, w,
+  FortranCInterface_GLOBAL(dstegr,DSTEGR)(jobz, range, n, d, e, vl, vu, il, iu, abstol, m, w,
 	  z, ldz, isuppz, work, lwork, iwork, liwork, info);
   
 

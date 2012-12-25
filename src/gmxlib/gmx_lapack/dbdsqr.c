@@ -41,7 +41,7 @@
 #include <types/simple.h>
 
 void 
-F77_FUNC(dbdsqr,DBDSQR)(const char *uplo,
+FortranCInterface_GLOBAL(dbdsqr,DBDSQR)(const char *uplo,
                         int *n,
                         int *ncvt,
                         int *nru, 
@@ -143,7 +143,7 @@ F77_FUNC(dbdsqr,DBDSQR)(const char *uplo,
     rotate = *ncvt > 0 || *nru > 0 || *ncc > 0;
 
     if (! rotate) {
-	F77_FUNC(dlasq1,DLASQ1)(n, &d__[1], &e[1], &work[1], info);
+	FortranCInterface_GLOBAL(dlasq1,DLASQ1)(n, &d__[1], &e[1], &work[1], info);
 	return;
     }
 
@@ -158,7 +158,7 @@ F77_FUNC(dbdsqr,DBDSQR)(const char *uplo,
     if (lower) {
 	i__1 = *n - 1;
 	for (i__ = 1; i__ <= i__1; ++i__) {
-	    F77_FUNC(dlartg,DLARTG)(&d__[i__], &e[i__], &cs, &sn, &r__);
+	    FortranCInterface_GLOBAL(dlartg,DLARTG)(&d__[i__], &e[i__], &cs, &sn, &r__);
 	    d__[i__] = r__;
 	    e[i__] = sn * d__[i__ + 1];
 	    d__[i__ + 1] = cs * d__[i__ + 1];
@@ -167,11 +167,11 @@ F77_FUNC(dbdsqr,DBDSQR)(const char *uplo,
 	}
 
 	if (*nru > 0) {
-	    F77_FUNC(dlasr,DLASR)("R", "V", "F", nru, n, &work[1], &work[*n], &u[u_offset], 
+	    FortranCInterface_GLOBAL(dlasr,DLASR)("R", "V", "F", nru, n, &work[1], &work[*n], &u[u_offset], 
 		    ldu);
 	}
 	if (*ncc > 0) {
-	    F77_FUNC(dlasr,DLASR)("L", "V", "F", n, ncc, &work[1], &work[*n], &c__[c_offset],
+	    FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "F", n, ncc, &work[1], &work[*n], &c__[c_offset],
 		     ldc);
 	}
     }
@@ -261,21 +261,21 @@ L80:
 L90:
     ++ll;
     if (ll == m - 1) {
-	F77_FUNC(dlasv2,DLASV2)(&d__[m - 1], &e[m - 1], &d__[m], &sigmn, &sigmx, &sinr, &cosr,
+	FortranCInterface_GLOBAL(dlasv2,DLASV2)(&d__[m - 1], &e[m - 1], &d__[m], &sigmn, &sigmx, &sinr, &cosr,
 		 &sinl, &cosl);
 	d__[m - 1] = sigmx;
 	e[m - 1] = 0.f;
 	d__[m] = sigmn;
 	if (*ncvt > 0) {
-	    F77_FUNC(drot,DROT)(ncvt, &vt[m - 1 + vt_dim1], ldvt, &vt[m + vt_dim1], ldvt, &
+	    FortranCInterface_GLOBAL(drot,DROT)(ncvt, &vt[m - 1 + vt_dim1], ldvt, &vt[m + vt_dim1], ldvt, &
 		    cosr, &sinr);
 	}
 	if (*nru > 0) {
-	    F77_FUNC(drot,DROT)(nru, &u[(m - 1) * u_dim1 + 1], &c__1, &u[m * u_dim1 + 1], &
+	    FortranCInterface_GLOBAL(drot,DROT)(nru, &u[(m - 1) * u_dim1 + 1], &c__1, &u[m * u_dim1 + 1], &
 		    c__1, &cosl, &sinl);
 	}
 	if (*ncc > 0) {
-	    F77_FUNC(drot,DROT)(ncc, &c__[m - 1 + c_dim1], ldc, &c__[m + c_dim1], ldc, &
+	    FortranCInterface_GLOBAL(drot,DROT)(ncc, &c__[m - 1 + c_dim1], ldc, &c__[m + c_dim1], ldc, &
 		    cosl, &sinl);
 	}
 	m += -2;
@@ -341,10 +341,10 @@ L90:
     } else {
 	if (idir == 1) {
 	    sll = (r__1 = d__[ll], fabs(r__1));
-	    F77_FUNC(dlas2,DLAS2)(&d__[m - 1], &e[m - 1], &d__[m], &shift, &r__);
+	    FortranCInterface_GLOBAL(dlas2,DLAS2)(&d__[m - 1], &e[m - 1], &d__[m], &shift, &r__);
 	} else {
 	    sll = (r__1 = d__[m], fabs(r__1));
-	    F77_FUNC(dlas2,DLAS2)(&d__[ll], &e[ll], &d__[ll + 1], &shift, &r__);
+	    FortranCInterface_GLOBAL(dlas2,DLAS2)(&d__[ll], &e[ll], &d__[ll + 1], &shift, &r__);
 	}
 	if (sll > 0.f) {
 	    r__1 = shift / sll;
@@ -361,13 +361,13 @@ L90:
 	    i__1 = m - 1;
 	    for (i__ = ll; i__ <= i__1; ++i__) {
 		r__1 = d__[i__] * cs;
-		F77_FUNC(dlartg,DLARTG)(&r__1, &e[i__], &cs, &sn, &r__);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&r__1, &e[i__], &cs, &sn, &r__);
 		if (i__ > ll) {
 		    e[i__ - 1] = oldsn * r__;
 		}
 		r__1 = oldcs * r__;
 		r__2 = d__[i__ + 1] * sn;
-		F77_FUNC(dlartg,DLARTG)(&r__1, &r__2, &oldcs, &oldsn, &d__[i__]);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&r__1, &r__2, &oldcs, &oldsn, &d__[i__]);
 		work[i__ - ll + 1] = cs;
 		work[i__ - ll + 1 + nm1] = sn;
 		work[i__ - ll + 1 + nm12] = oldcs;
@@ -378,17 +378,17 @@ L90:
 	    e[m - 1] = h__ * oldsn;
 	    if (*ncvt > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "F", &i__1, ncvt, &work[1], &work[*n], &vt[
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "F", &i__1, ncvt, &work[1], &work[*n], &vt[
 			ll + vt_dim1], ldvt);
 	    }
 	    if (*nru > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("R", "V", "F", nru, &i__1, &work[nm12 + 1], &work[nm13 
+		FortranCInterface_GLOBAL(dlasr,DLASR)("R", "V", "F", nru, &i__1, &work[nm12 + 1], &work[nm13 
 			+ 1], &u[ll * u_dim1 + 1], ldu);
 	    }
 	    if (*ncc > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "F", &i__1, ncc, &work[nm12 + 1], &work[nm13 
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "F", &i__1, ncc, &work[nm12 + 1], &work[nm13 
 			+ 1], &c__[ll + c_dim1], ldc);
 	    }
 	    if ((r__1 = e[m - 1], fabs(r__1)) <= thresh) {
@@ -400,13 +400,13 @@ L90:
 	    i__1 = ll + 1;
 	    for (i__ = m; i__ >= i__1; --i__) {
 		r__1 = d__[i__] * cs;
-		F77_FUNC(dlartg,DLARTG)(&r__1, &e[i__ - 1], &cs, &sn, &r__);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&r__1, &e[i__ - 1], &cs, &sn, &r__);
 		if (i__ < m) {
 		    e[i__] = oldsn * r__;
 		}
 		r__1 = oldcs * r__;
 		r__2 = d__[i__ - 1] * sn;
-		F77_FUNC(dlartg,DLARTG)(&r__1, &r__2, &oldcs, &oldsn, &d__[i__]);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&r__1, &r__2, &oldcs, &oldsn, &d__[i__]);
 		work[i__ - ll] = cs;
 		work[i__ - ll + nm1] = -sn;
 		work[i__ - ll + nm12] = oldcs;
@@ -417,17 +417,17 @@ L90:
 	    e[ll] = h__ * oldsn;
 	    if (*ncvt > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "B", &i__1, ncvt, &work[nm12 + 1], &work[
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "B", &i__1, ncvt, &work[nm12 + 1], &work[
 			nm13 + 1], &vt[ll + vt_dim1], ldvt);
 	    }
 	    if (*nru > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("R", "V", "B", nru, &i__1, &work[1], &work[*n], &u[ll *
+		FortranCInterface_GLOBAL(dlasr,DLASR)("R", "V", "B", nru, &i__1, &work[1], &work[*n], &u[ll *
 			 u_dim1 + 1], ldu);
 	    }
 	    if (*ncc > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "B", &i__1, ncc, &work[1], &work[*n], &c__[
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "B", &i__1, ncc, &work[1], &work[*n], &c__[
 			ll + c_dim1], ldc);
 	    }
 	    if ((r__1 = e[ll], fabs(r__1)) <= thresh) {
@@ -441,7 +441,7 @@ L90:
 	    g = e[ll];
 	    i__1 = m - 1;
 	    for (i__ = ll; i__ <= i__1; ++i__) {
-		F77_FUNC(dlartg,DLARTG)(&f, &g, &cosr, &sinr, &r__);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&f, &g, &cosr, &sinr, &r__);
 		if (i__ > ll) {
 		    e[i__ - 1] = r__;
 		}
@@ -449,7 +449,7 @@ L90:
 		e[i__] = cosr * e[i__] - sinr * d__[i__];
 		g = sinr * d__[i__ + 1];
 		d__[i__ + 1] = cosr * d__[i__ + 1];
-		F77_FUNC(dlartg,DLARTG)(&f, &g, &cosl, &sinl, &r__);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&f, &g, &cosl, &sinl, &r__);
 		d__[i__] = r__;
 		f = cosl * e[i__] + sinl * d__[i__ + 1];
 		d__[i__ + 1] = cosl * d__[i__ + 1] - sinl * e[i__];
@@ -466,17 +466,17 @@ L90:
 
 	    if (*ncvt > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "F", &i__1, ncvt, &work[1], &work[*n], &vt[
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "F", &i__1, ncvt, &work[1], &work[*n], &vt[
 			ll + vt_dim1], ldvt);
 	    }
 	    if (*nru > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("R", "V", "F", nru, &i__1, &work[nm12 + 1], &work[nm13 
+		FortranCInterface_GLOBAL(dlasr,DLASR)("R", "V", "F", nru, &i__1, &work[nm12 + 1], &work[nm13 
 			+ 1], &u[ll * u_dim1 + 1], ldu);
 	    }
 	    if (*ncc > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "F", &i__1, ncc, &work[nm12 + 1], &work[nm13 
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "F", &i__1, ncc, &work[nm12 + 1], &work[nm13 
 			+ 1], &c__[ll + c_dim1], ldc);
 	    }
 	    if ((r__1 = e[m - 1], fabs(r__1)) <= thresh) {
@@ -488,7 +488,7 @@ L90:
 	    g = e[m - 1];
 	    i__1 = ll + 1;
 	    for (i__ = m; i__ >= i__1; --i__) {
-		F77_FUNC(dlartg,DLARTG)(&f, &g, &cosr, &sinr, &r__);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&f, &g, &cosr, &sinr, &r__);
 		if (i__ < m) {
 		    e[i__] = r__;
 		}
@@ -496,7 +496,7 @@ L90:
 		e[i__ - 1] = cosr * e[i__ - 1] - sinr * d__[i__];
 		g = sinr * d__[i__ - 1];
 		d__[i__ - 1] = cosr * d__[i__ - 1];
-		F77_FUNC(dlartg,DLARTG)(&f, &g, &cosl, &sinl, &r__);
+		FortranCInterface_GLOBAL(dlartg,DLARTG)(&f, &g, &cosl, &sinl, &r__);
 		d__[i__] = r__;
 		f = cosl * e[i__ - 1] + sinl * d__[i__ - 1];
 		d__[i__ - 1] = cosl * d__[i__ - 1] - sinl * e[i__ - 1];
@@ -516,17 +516,17 @@ L90:
 	    }
 	    if (*ncvt > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "B", &i__1, ncvt, &work[nm12 + 1], &work[
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "B", &i__1, ncvt, &work[nm12 + 1], &work[
 			nm13 + 1], &vt[ll + vt_dim1], ldvt);
 	    }
 	    if (*nru > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("R", "V", "B", nru, &i__1, &work[1], &work[*n], &u[ll *
+		FortranCInterface_GLOBAL(dlasr,DLASR)("R", "V", "B", nru, &i__1, &work[1], &work[*n], &u[ll *
 			 u_dim1 + 1], ldu);
 	    }
 	    if (*ncc > 0) {
 		i__1 = m - ll + 1;
-		F77_FUNC(dlasr,DLASR)("L", "V", "B", &i__1, ncc, &work[1], &work[*n], &c__[
+		FortranCInterface_GLOBAL(dlasr,DLASR)("L", "V", "B", &i__1, ncc, &work[1], &work[*n], &c__[
 			ll + c_dim1], ldc);
 	    }
 	}
@@ -541,7 +541,7 @@ L160:
 	    d__[i__] = -d__[i__];
 
 	    if (*ncvt > 0) {
-		F77_FUNC(dscal,DSCAL)(ncvt, &c_b72, &vt[i__ + vt_dim1], ldvt);
+		FortranCInterface_GLOBAL(dscal,DSCAL)(ncvt, &c_b72, &vt[i__ + vt_dim1], ldvt);
 	    }
 	}
     }
@@ -562,15 +562,15 @@ L160:
 	    d__[isub] = d__[*n + 1 - i__];
 	    d__[*n + 1 - i__] = smin;
 	    if (*ncvt > 0) {
-		F77_FUNC(dswap,DSWAP)(ncvt, &vt[isub + vt_dim1], ldvt, &vt[*n + 1 - i__ + 
+		FortranCInterface_GLOBAL(dswap,DSWAP)(ncvt, &vt[isub + vt_dim1], ldvt, &vt[*n + 1 - i__ + 
 			vt_dim1], ldvt);
 	    }
 	    if (*nru > 0) {
-		F77_FUNC(dswap,DSWAP)(nru, &u[isub * u_dim1 + 1], &c__1, &u[(*n + 1 - i__) * 
+		FortranCInterface_GLOBAL(dswap,DSWAP)(nru, &u[isub * u_dim1 + 1], &c__1, &u[(*n + 1 - i__) * 
 			u_dim1 + 1], &c__1);
 	    }
 	    if (*ncc > 0) {
-		F77_FUNC(dswap,DSWAP)(ncc, &c__[isub + c_dim1], ldc, &c__[*n + 1 - i__ + 
+		FortranCInterface_GLOBAL(dswap,DSWAP)(ncc, &c__[isub + c_dim1], ldc, &c__[*n + 1 - i__ + 
 			c_dim1], ldc);
 	    }
 	}

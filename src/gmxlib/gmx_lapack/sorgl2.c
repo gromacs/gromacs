@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(sorgl2,SORGL2)(int *m,
+FortranCInterface_GLOBAL(sorgl2,SORGL2)(int *m,
                         int *n, 
                         int *k, 
                         float *a, 
@@ -94,12 +94,12 @@ F77_FUNC(sorgl2,SORGL2)(int *m,
 		a[i__ + i__ * a_dim1] = 1.0;
 		i__1 = *m - i__;
 		i__2 = *n - i__ + 1;
-		F77_FUNC(slarf,SLARF)("R", &i__1, &i__2, &a[i__ + i__ * a_dim1], lda, 
+		FortranCInterface_GLOBAL(slarf,SLARF)("R", &i__1, &i__2, &a[i__ + i__ * a_dim1], lda, 
                &tau[i__], &a[i__ + 1 + i__ * a_dim1], lda, &work[1]);
 	    }
 	    i__1 = *n - i__;
 	    r__1 = -tau[i__];
-	    F77_FUNC(sscal,SSCAL)(&i__1, &r__1, &a[i__ + (i__ + 1) * a_dim1], lda);
+	    FortranCInterface_GLOBAL(sscal,SSCAL)(&i__1, &r__1, &a[i__ + (i__ + 1) * a_dim1], lda);
 	}
 	a[i__ + i__ * a_dim1] = 1.0 - tau[i__];
 	i__1 = i__ - 1;

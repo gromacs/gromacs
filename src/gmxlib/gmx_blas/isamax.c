@@ -36,7 +36,7 @@
 #include "gmx_blas.h"
 
 int
-F77_FUNC(isamax,ISAMAX)(int *n__,
+FortranCInterface_GLOBAL(isamax,ISAMAX)(int *n__,
        float *dx,
        int *incx__)
 {

@@ -38,7 +38,7 @@
 #include <types/simple.h>
 
 float
-F77_FUNC(slapy2,SLAPY2)(float * x, float * y)
+FortranCInterface_GLOBAL(slapy2,SLAPY2)(float * x, float * y)
 {
   float xabs,yabs;
   float w,z;

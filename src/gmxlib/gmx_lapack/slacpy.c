@@ -37,7 +37,7 @@
 
 /* LAPACK */
 void
-F77_FUNC(slacpy,SLACPY)(const char *uplo,
+FortranCInterface_GLOBAL(slacpy,SLACPY)(const char *uplo,
 	int *m,
 	int *n,
 	float *a,

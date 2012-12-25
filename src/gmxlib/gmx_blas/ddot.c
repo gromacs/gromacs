@@ -35,7 +35,7 @@
 #include "gmx_blas.h"
 
 double
-F77_FUNC(ddot,DDOT)(int *n_arg,
+FortranCInterface_GLOBAL(ddot,DDOT)(int *n_arg,
                     double *dx,
                     int *incx_arg,
                     double *dy,

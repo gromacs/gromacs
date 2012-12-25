@@ -40,7 +40,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(sstein,SSTEIN)(int *n, 
+FortranCInterface_GLOBAL(sstein,SSTEIN)(int *n, 
 	float *d__, 
 	float *e, 
 	int *m, 
@@ -195,16 +195,16 @@ F77_FUNC(sstein,SSTEIN)(int *n,
 	    its = 0;
 	    nrmchk = 0;
 
-	    F77_FUNC(slarnv,SLARNV)(&c__2, iseed, &blksiz, &work[indrv1 + 1]);
+	    FortranCInterface_GLOBAL(slarnv,SLARNV)(&c__2, iseed, &blksiz, &work[indrv1 + 1]);
 
-	    F77_FUNC(scopy,SCOPY)(&blksiz, &d__[b1], &c__1, &work[indrv4 + 1], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&blksiz, &d__[b1], &c__1, &work[indrv4 + 1], &c__1);
 	    i__3 = blksiz - 1;
-	    F77_FUNC(scopy,SCOPY)(&i__3, &e[b1], &c__1, &work[indrv2 + 2], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&i__3, &e[b1], &c__1, &work[indrv2 + 2], &c__1);
 	    i__3 = blksiz - 1;
-	    F77_FUNC(scopy,SCOPY)(&i__3, &e[b1], &c__1, &work[indrv3 + 1], &c__1);
+	    FortranCInterface_GLOBAL(scopy,SCOPY)(&i__3, &e[b1], &c__1, &work[indrv3 + 1], &c__1);
 
 	    tol = 0.;
-	    F77_FUNC(slagtf,SLAGTF)(&blksiz, &work[indrv4 + 1], &xj, &work[indrv2 + 2], &work[
+	    FortranCInterface_GLOBAL(slagtf,SLAGTF)(&blksiz, &work[indrv4 + 1], &xj, &work[indrv2 + 2], &work[
 		    indrv3 + 1], &tol, &work[indrv5 + 1], &iwork[1], &iinfo);
 
 L70:
@@ -215,11 +215,11 @@ L70:
 
 	    d__2 = eps;
 	    d__3 = fabs(work[indrv4 + blksiz]);
-	    scl = blksiz * onenrm * ((d__2>d__3) ? d__2 : d__3) / F77_FUNC(sasum,SASUM)(&blksiz, &work[
+	    scl = blksiz * onenrm * ((d__2>d__3) ? d__2 : d__3) / FortranCInterface_GLOBAL(sasum,SASUM)(&blksiz, &work[
 		    indrv1 + 1], &c__1);
-	    F77_FUNC(sscal,SSCAL)(&blksiz, &scl, &work[indrv1 + 1], &c__1);
+	    FortranCInterface_GLOBAL(sscal,SSCAL)(&blksiz, &scl, &work[indrv1 + 1], &c__1);
 
-	    F77_FUNC(slagts,SLAGTS)(&c_n1, &blksiz, &work[indrv4 + 1], &work[indrv2 + 2], &
+	    FortranCInterface_GLOBAL(slagts,SLAGTS)(&c_n1, &blksiz, &work[indrv4 + 1], &work[indrv2 + 2], &
 		    work[indrv3 + 1], &work[indrv5 + 1], &iwork[1], &work[
 		    indrv1 + 1], &tol, &iinfo);
 
@@ -232,15 +232,15 @@ L70:
 	    if (gpind != j) {
 		i__3 = j - 1;
 		for (i__ = gpind; i__ <= i__3; ++i__) {
-		    ztr = -F77_FUNC(sdot,SDOT)(&blksiz, &work[indrv1 + 1], &c__1, &z__[b1 + 
+		    ztr = -FortranCInterface_GLOBAL(sdot,SDOT)(&blksiz, &work[indrv1 + 1], &c__1, &z__[b1 + 
 			    i__ * z_dim1], &c__1);
-		    F77_FUNC(saxpy,SAXPY)(&blksiz, &ztr, &z__[b1 + i__ * z_dim1], &c__1, &
+		    FortranCInterface_GLOBAL(saxpy,SAXPY)(&blksiz, &ztr, &z__[b1 + i__ * z_dim1], &c__1, &
 			    work[indrv1 + 1], &c__1);
 		}
 	    }
 
 L90:
-	    jmax = F77_FUNC(isamax,ISAMAX)(&blksiz, &work[indrv1 + 1], &c__1);
+	    jmax = FortranCInterface_GLOBAL(isamax,ISAMAX)(&blksiz, &work[indrv1 + 1], &c__1);
 	    nrm = fabs(work[indrv1 + jmax]);
 
 	    if (nrm < dtpcrt) {
@@ -258,12 +258,12 @@ L100:
 	    ifail[*info] = j;
 
 L110:
-	    scl = 1. / F77_FUNC(snrm2,SNRM2)(&blksiz, &work[indrv1 + 1], &c__1);
-	    jmax = F77_FUNC(isamax,ISAMAX)(&blksiz, &work[indrv1 + 1], &c__1);
+	    scl = 1. / FortranCInterface_GLOBAL(snrm2,SNRM2)(&blksiz, &work[indrv1 + 1], &c__1);
+	    jmax = FortranCInterface_GLOBAL(isamax,ISAMAX)(&blksiz, &work[indrv1 + 1], &c__1);
 	    if (work[indrv1 + jmax] < 0.) {
 		scl = -scl;
 	    }
-	    F77_FUNC(sscal,SSCAL)(&blksiz, &scl, &work[indrv1 + 1], &c__1);
+	    FortranCInterface_GLOBAL(sscal,SSCAL)(&blksiz, &scl, &work[indrv1 + 1], &c__1);
 L120:
 	    i__3 = *n;
 	    for (i__ = 1; i__ <= i__3; ++i__) {

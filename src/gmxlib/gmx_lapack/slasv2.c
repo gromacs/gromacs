@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void 
-F77_FUNC(slasv2,SLASV2)(float *f, 
+FortranCInterface_GLOBAL(slasv2,SLASV2)(float *f, 
                         float *g, 
                         float *h__, 
                         float *ssmin, 

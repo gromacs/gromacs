@@ -37,7 +37,7 @@
 
 
 void
-F77_FUNC(dlae2,DLAE2)(double *a, 
+FortranCInterface_GLOBAL(dlae2,DLAE2)(double *a, 
        double *b,
        double *c__, 
        double *rt1, 

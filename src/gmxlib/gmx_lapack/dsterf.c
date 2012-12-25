@@ -39,7 +39,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(dsterf,DSTERF)(int *n, 
+FortranCInterface_GLOBAL(dsterf,DSTERF)(int *n, 
 	double *d__, 
 	double *e, 
 	int *info)
@@ -97,7 +97,7 @@ F77_FUNC(dsterf,DSTERF)(int *n,
 
 L10:
     if (l1 > *n) {
-      F77_FUNC(dlasrt,DLASRT)("I", n, &d__[1], info);
+      FortranCInterface_GLOBAL(dlasrt,DLASRT)("I", n, &d__[1], info);
       return;
     }
     if (l1 > 1) {
@@ -124,23 +124,23 @@ L30:
     }
 
     i__1 = lend - l + 1;
-    anorm = F77_FUNC(dlanst,DLANST)("I", &i__1, &d__[l], &e[l]);
+    anorm = FortranCInterface_GLOBAL(dlanst,DLANST)("I", &i__1, &d__[l], &e[l]);
     iscale = 0;
     if (anorm > ssfmax) {
 	iscale = 1;
 	i__1 = lend - l + 1;
-	F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &d__[l], n, 
+	FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &d__[l], n, 
 		info);
 	i__1 = lend - l;
-	F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &e[l], n, 
+	FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmax, &i__1, &c__1, &e[l], n, 
 		info);
     } else if (anorm < ssfmin) {
 	iscale = 2;
 	i__1 = lend - l + 1;
-	F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &d__[l], n, 
+	FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &d__[l], n, 
 		info);
 	i__1 = lend - l;
-	F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &e[l], n, 
+	FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &anorm, &ssfmin, &i__1, &c__1, &e[l], n, 
 		info);
     }
 
@@ -178,7 +178,7 @@ L70:
 	}
 	if (m == l + 1) {
 	    rte = sqrt(e[l]);
-	    F77_FUNC(dlae2,DLAE2)(&d__[l], &rte, &d__[l + 1], &rt1, &rt2);
+	    FortranCInterface_GLOBAL(dlae2,DLAE2)(&d__[l], &rte, &d__[l + 1], &rt1, &rt2);
 	    d__[l] = rt1;
 	    d__[l + 1] = rt2;
 	    e[l] = 0.;
@@ -196,7 +196,7 @@ L70:
 
 	rte = sqrt(e[l]);
 	sigma = (d__[l + 1] - p) / (rte * 2.);
-	r__ = F77_FUNC(dlapy2,DLAPY2)(&sigma, &c_b32);
+	r__ = FortranCInterface_GLOBAL(dlapy2,DLAPY2)(&sigma, &c_b32);
 	sigma = p - rte / (sigma + ( (sigma>0) ? r__ : -r__));
 
 	c__ = 1.;
@@ -260,7 +260,7 @@ L120:
 
 	if (m == l - 1) {
 	    rte = sqrt(e[l - 1]);
-	    F77_FUNC(dlae2,DLAE2)(&d__[l], &rte, &d__[l - 1], &rt1, &rt2);
+	    FortranCInterface_GLOBAL(dlae2,DLAE2)(&d__[l], &rte, &d__[l - 1], &rt1, &rt2);
 	    d__[l] = rt1;
 	    d__[l - 1] = rt2;
 	    e[l - 1] = 0.;
@@ -278,7 +278,7 @@ L120:
 
 	rte = sqrt(e[l - 1]);
 	sigma = (d__[l - 1] - p) / (rte * 2.);
-	r__ = F77_FUNC(dlapy2,DLAPY2)(&sigma, &c_b32);
+	r__ = FortranCInterface_GLOBAL(dlapy2,DLAPY2)(&sigma, &c_b32);
 	sigma = p - rte / (sigma + ( (sigma>0) ? r__ : -r__));
 
 	c__ = 1.;
@@ -325,12 +325,12 @@ L140:
 L150:
     if (iscale == 1) {
 	i__1 = lendsv - lsv + 1;
-	F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &ssfmax, &anorm, &i__1, &c__1, &d__[lsv], 
+	FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &ssfmax, &anorm, &i__1, &c__1, &d__[lsv], 
 		n, info);
     }
     if (iscale == 2) {
 	i__1 = lendsv - lsv + 1;
-	F77_FUNC(dlascl,DLASCL)("G", &c__0, &c__0, &ssfmin, &anorm, &i__1, &c__1, &d__[lsv], 
+	FortranCInterface_GLOBAL(dlascl,DLASCL)("G", &c__0, &c__0, &ssfmin, &anorm, &i__1, &c__1, &d__[lsv], 
 		n, info);
     }
 

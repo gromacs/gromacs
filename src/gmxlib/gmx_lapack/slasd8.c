@@ -37,7 +37,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(slasd8,SLASD8)(int *icompq, 
+FortranCInterface_GLOBAL(slasd8,SLASD8)(int *icompq, 
 	int *k, 
 	float *d__, 
      	float *z__, 
@@ -108,15 +108,15 @@ F77_FUNC(slasd8,SLASD8)(int *icompq,
     iwk2i = iwk2 - 1;
     iwk3i = iwk3 - 1;
 
-    rho = F77_FUNC(snrm2,SNRM2)(k, &z__[1], &c__1);
-    F77_FUNC(slascl,SLASCL)("G", &c__0, &c__0, &rho, &one, k, &c__1, &z__[1], k, info);
+    rho = FortranCInterface_GLOBAL(snrm2,SNRM2)(k, &z__[1], &c__1);
+    FortranCInterface_GLOBAL(slascl,SLASCL)("G", &c__0, &c__0, &rho, &one, k, &c__1, &z__[1], k, info);
     rho *= rho;
 
-    F77_FUNC(slaset,SLASET)("A", k, &c__1, &one, &one, &work[iwk3], k);
+    FortranCInterface_GLOBAL(slaset,SLASET)("A", k, &c__1, &one, &one, &work[iwk3], k);
 
     i__1 = *k;
     for (j = 1; j <= i__1; ++j) {
-	F77_FUNC(slasd4,SLASD4)(k, &j, &dsigma[1], &z__[1], &work[iwk1], &rho, &d__[j], &work[
+	FortranCInterface_GLOBAL(slasd4,SLASD4)(k, &j, &dsigma[1], &z__[1], &work[iwk1], &rho, &d__[j], &work[
 		iwk2], info);
 
 	if (*info != 0) {
@@ -171,16 +171,16 @@ F77_FUNC(slasd8,SLASD8)(int *icompq,
 	  t1 = (*p1) + (*p2) - difrj;
 	    work[i__] = z__[i__] / t1 / (dsigma[i__] + dj);
 	}
-	temp = F77_FUNC(snrm2,SNRM2)(k, &work[1], &c__1);
-	work[iwk2i + j] = F77_FUNC(sdot,SDOT)(k, &work[1], &c__1, &vf[1], &c__1) / temp;
-	work[iwk3i + j] = F77_FUNC(sdot,SDOT)(k, &work[1], &c__1, &vl[1], &c__1) / temp;
+	temp = FortranCInterface_GLOBAL(snrm2,SNRM2)(k, &work[1], &c__1);
+	work[iwk2i + j] = FortranCInterface_GLOBAL(sdot,SDOT)(k, &work[1], &c__1, &vf[1], &c__1) / temp;
+	work[iwk3i + j] = FortranCInterface_GLOBAL(sdot,SDOT)(k, &work[1], &c__1, &vl[1], &c__1) / temp;
 	if (*icompq == 1) {
 	    difr[j + (difr_dim1 << 1)] = temp;
 	}
     }
 
-    F77_FUNC(scopy,SCOPY)(k, &work[iwk2], &c__1, &vf[1], &c__1);
-    F77_FUNC(scopy,SCOPY)(k, &work[iwk3], &c__1, &vl[1], &c__1);
+    FortranCInterface_GLOBAL(scopy,SCOPY)(k, &work[iwk2], &c__1, &vf[1], &c__1);
+    FortranCInterface_GLOBAL(scopy,SCOPY)(k, &work[iwk3], &c__1, &vl[1], &c__1);
 
     return;
 

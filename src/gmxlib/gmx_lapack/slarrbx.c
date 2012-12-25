@@ -40,7 +40,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(slarrbx,SLARRBX)(int *n, 
+FortranCInterface_GLOBAL(slarrbx,SLARRBX)(int *n, 
 	 float *d__, 
 	 float *l, 
 	 float *ld, 

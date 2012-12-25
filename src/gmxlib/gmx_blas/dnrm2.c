@@ -38,7 +38,7 @@
 #include "gmx_blas.h"
 
 double
-F77_FUNC(dnrm2,DNRM2)(int  *     n__,
+FortranCInterface_GLOBAL(dnrm2,DNRM2)(int  *     n__,
                       double *    x,
                       int    *    incx__)
 {

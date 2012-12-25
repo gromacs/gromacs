@@ -36,7 +36,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(slarnv,SLARNV)(int *idist, 
+FortranCInterface_GLOBAL(slarnv,SLARNV)(int *idist, 
 	int *iseed, 
 	int *n, 
 	float *x)
@@ -60,7 +60,7 @@ F77_FUNC(slarnv,SLARNV)(int *idist,
 	    il2 = il;
 	}
 
-	F77_FUNC(slaruv,SLARUV)(&iseed[1], &il2, u);
+	FortranCInterface_GLOBAL(slaruv,SLARUV)(&iseed[1], &il2, u);
 
 	if (*idist == 1) {
 

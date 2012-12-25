@@ -39,7 +39,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
+FortranCInterface_GLOBAL(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	double *a, int *lda, double *vl, double *vu, int *
 	il, int *iu, double *abstol, int *m, double *w, 
 	double *z__, int *ldz, int *isuppz, double *work, 
@@ -225,7 +225,7 @@ F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, i
     abstll = *abstol;
     vll = *vl;
     vuu = *vu;
-    anrm = F77_FUNC(dlansy,DLANSY)("M", uplo, n, &a[a_offset], lda, &work[1]);
+    anrm = FortranCInterface_GLOBAL(dlansy,DLANSY)("M", uplo, n, &a[a_offset], lda, &work[1]);
     if (anrm > 0. && anrm < rmin) {
 	iscale = 1;
 	sigma = rmin / anrm;
@@ -238,12 +238,12 @@ F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, i
 	    i__1 = *n;
 	    for (j = 1; j <= i__1; ++j) {
 		i__2 = *n - j + 1;
-		F77_FUNC(dscal,DSCAL)(&i__2, &sigma, &a[j + j * a_dim1], &c__1);
+		FortranCInterface_GLOBAL(dscal,DSCAL)(&i__2, &sigma, &a[j + j * a_dim1], &c__1);
 	    }
 	} else {
 	    i__1 = *n;
 	    for (j = 1; j <= i__1; ++j) {
-		F77_FUNC(dscal,DSCAL)(&j, &sigma, &a[j * a_dim1 + 1], &c__1);
+		FortranCInterface_GLOBAL(dscal,DSCAL)(&j, &sigma, &a[j * a_dim1 + 1], &c__1);
 
 	    }
 	}
@@ -264,20 +264,20 @@ F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, i
     indifl = inddd + *n;
     indwk = indifl + *n;
     llwork = *lwork - indwk + 1;
-    F77_FUNC(dsytrd,DSYTRD)(uplo, n, &a[a_offset], lda, &work[indd], &work[inde], &work[
+    FortranCInterface_GLOBAL(dsytrd,DSYTRD)(uplo, n, &a[a_offset], lda, &work[indd], &work[inde], &work[
 	    indtau], &work[indwk], &llwork, &iinfo);
 
     i__1 = *n - 1;
-    F77_FUNC(dcopy,DCOPY)(&i__1, &work[inde], &c__1, &work[indee], &c__1);
-    F77_FUNC(dcopy,DCOPY)(n, &work[indd], &c__1, &work[inddd], &c__1);
+    FortranCInterface_GLOBAL(dcopy,DCOPY)(&i__1, &work[inde], &c__1, &work[indee], &c__1);
+    FortranCInterface_GLOBAL(dcopy,DCOPY)(n, &work[indd], &c__1, &work[inddd], &c__1);
 
-    F77_FUNC(dstegr,DSTEGR)(jobz, range, n, &work[inddd], &work[indee], vl, vu, il, iu, 
+    FortranCInterface_GLOBAL(dstegr,DSTEGR)(jobz, range, n, &work[inddd], &work[indee], vl, vu, il, iu, 
 	    abstol, m, &w[1], &z__[z_offset], ldz, &isuppz[1], 
 	    &work[indwk], lwork, &iwork[1], liwork, info);
     if (wantz && *info == 0) {
       indwkn = inde;
       llwrkn = *lwork - indwkn + 1;
-      F77_FUNC(dormtr,DORMTR)("L", uplo, "N", n, m, &a[a_offset], lda, &work[indtau]
+      FortranCInterface_GLOBAL(dormtr,DORMTR)("L", uplo, "N", n, m, &a[a_offset], lda, &work[indtau]
 	      , &z__[z_offset], ldz, &work[indwkn], &llwrkn, &iinfo);
     }
 
@@ -291,7 +291,7 @@ F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, i
 	    imax = *info - 1;
 	}
 	d__1 = 1. / sigma;
-	F77_FUNC(dscal,DSCAL)(&imax, &d__1, &w[1], &c__1);
+	FortranCInterface_GLOBAL(dscal,DSCAL)(&imax, &d__1, &w[1], &c__1);
     }
 
     if (wantz) {
@@ -314,7 +314,7 @@ F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, i
 		iwork[indibl + i__ - 1] = iwork[indibl + j - 1];
 		w[j] = tmp1;
 		iwork[indibl + j - 1] = itmp1;
-		F77_FUNC(dswap,DSWAP)(n, &z__[i__ * z_dim1 + 1], &c__1, &z__[j * z_dim1 + 1],
+		FortranCInterface_GLOBAL(dswap,DSWAP)(n, &z__[i__ * z_dim1 + 1], &c__1, &z__[j * z_dim1 + 1],
 			 &c__1);
 	    }
 	}

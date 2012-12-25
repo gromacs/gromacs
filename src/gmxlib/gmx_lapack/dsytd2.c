@@ -41,7 +41,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(dsytd2,DSYTD2)(const char *    uplo,
+FortranCInterface_GLOBAL(dsytd2,DSYTD2)(const char *    uplo,
 	int *     n,
 	double *  a,
 	int *     lda,
@@ -65,21 +65,21 @@ F77_FUNC(dsytd2,DSYTD2)(const char *    uplo,
     for(i=*n-1;i>=1;i--) {
 
       ti1 = 1;
-      F77_FUNC(dlarfg,DLARFG)(&i,&(a[i*(*lda)+(i-1)]),&(a[i*(*lda)+0]),&ti1,&taui);
+      FortranCInterface_GLOBAL(dlarfg,DLARFG)(&i,&(a[i*(*lda)+(i-1)]),&(a[i*(*lda)+0]),&ti1,&taui);
       e[i-1] = a[i*(*lda) + (i-1)];
       if(fabs(taui)>GMX_DOUBLE_MIN) {
 	a[i*(*lda)+(i-1)] = 1.0;
       
 	ti1 = 1;
-	F77_FUNC(dsymv,DSYMV)("U",&i,&taui,a,lda,&(a[i*(*lda)+0]),&ti1,&zero,tau,&ti1);
+	FortranCInterface_GLOBAL(dsymv,DSYMV)("U",&i,&taui,a,lda,&(a[i*(*lda)+0]),&ti1,&zero,tau,&ti1);
 
-	tmp = F77_FUNC(ddot,DDOT)(&i,tau,&ti1,&(a[i*(*lda)+0]),&ti1);
+	tmp = FortranCInterface_GLOBAL(ddot,DDOT)(&i,tau,&ti1,&(a[i*(*lda)+0]),&ti1);
 
 	alpha = -0.5*taui*tmp;
 
-	F77_FUNC(daxpy,DAXPY)(&i,&alpha,&(a[i*(*lda)+0]),&ti1,tau,&ti1);
+	FortranCInterface_GLOBAL(daxpy,DAXPY)(&i,&alpha,&(a[i*(*lda)+0]),&ti1,tau,&ti1);
 
-	F77_FUNC(dsyr2,DSYR2)("U",&i,&minusone,&(a[i*(*lda)+0]),&ti1,tau,&ti1,a,lda);
+	FortranCInterface_GLOBAL(dsyr2,DSYR2)("U",&i,&minusone,&(a[i*(*lda)+0]),&ti1,tau,&ti1,a,lda);
 
 	a[i*(*lda)+(i-1)] = e[i-1]; 
 
@@ -97,7 +97,7 @@ F77_FUNC(dsytd2,DSYTD2)(const char *    uplo,
       ti1 = *n - i;
       ti2 = ( *n < i+2) ? *n : i+2;
       ti3 = 1;
-      F77_FUNC(dlarfg,DLARFG)(&ti1,&(a[(i-1)*(*lda)+(i)]),&(a[(i-1)*(*lda)+ti2-1]),&ti3,&taui);
+      FortranCInterface_GLOBAL(dlarfg,DLARFG)(&ti1,&(a[(i-1)*(*lda)+(i)]),&(a[(i-1)*(*lda)+ti2-1]),&ti3,&taui);
 
       e[i-1] = a[(i-1)*(*lda) + (i)];
 
@@ -106,16 +106,16 @@ F77_FUNC(dsytd2,DSYTD2)(const char *    uplo,
       
 	ti1 = *n - i;
 	ti2 = 1;
-	F77_FUNC(dsymv,DSYMV)(uplo,&ti1,&taui,&(a[i*(*lda)+i]),lda,&(a[(i-1)*(*lda)+i]),
+	FortranCInterface_GLOBAL(dsymv,DSYMV)(uplo,&ti1,&taui,&(a[i*(*lda)+i]),lda,&(a[(i-1)*(*lda)+i]),
 	       &ti2,&zero,&(tau[i-1]),&ti2);
 	
-	tmp = F77_FUNC(ddot,DDOT)(&ti1,&(tau[i-1]),&ti2,&(a[(i-1)*(*lda)+i]),&ti2);
+	tmp = FortranCInterface_GLOBAL(ddot,DDOT)(&ti1,&(tau[i-1]),&ti2,&(a[(i-1)*(*lda)+i]),&ti2);
 
 	alpha = -0.5*taui*tmp;
 
-	F77_FUNC(daxpy,DAXPY)(&ti1,&alpha,&(a[(i-1)*(*lda)+i]),&ti2,&(tau[i-1]),&ti2);
+	FortranCInterface_GLOBAL(daxpy,DAXPY)(&ti1,&alpha,&(a[(i-1)*(*lda)+i]),&ti2,&(tau[i-1]),&ti2);
 
-	F77_FUNC(dsyr2,DSYR2)(uplo,&ti1,&minusone,&(a[(i-1)*(*lda)+i]),&ti2,&(tau[i-1]),&ti2,
+	FortranCInterface_GLOBAL(dsyr2,DSYR2)(uplo,&ti1,&minusone,&(a[(i-1)*(*lda)+i]),&ti2,&(tau[i-1]),&ti2,
 	       &(a[(i)*(*lda)+i]),lda);
 
 	a[(i-1)*(*lda)+(i)] = e[i-1]; 

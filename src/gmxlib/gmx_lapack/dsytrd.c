@@ -37,7 +37,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *a, int *
+FortranCInterface_GLOBAL(dsytrd,DSYTRD)(const char *uplo, int *n, double *a, int *
 	lda, double *d__, double *e, double *tau, double *
 	work, int *lwork, int *info)
 {
@@ -128,11 +128,11 @@ F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *a, int *
 		i__2) {
 
 	    i__3 = i__ + nb - 1;
-	    F77_FUNC(dlatrd,DLATRD)(uplo, &i__3, &nb, &a[a_offset], lda, &e[1], &tau[1], &
+	    FortranCInterface_GLOBAL(dlatrd,DLATRD)(uplo, &i__3, &nb, &a[a_offset], lda, &e[1], &tau[1], &
 		    work[1], &ldwork);
 
 	    i__3 = i__ - 1;
-	    F77_FUNC(dsyr2k,DSYR2K)(uplo, "No transpose", &i__3, &nb, &c_b22, &a[i__ * a_dim1 
+	    FortranCInterface_GLOBAL(dsyr2k,DSYR2K)(uplo, "No transpose", &i__3, &nb, &c_b22, &a[i__ * a_dim1 
 		    + 1], lda, &work[1], &ldwork, &c_b23, &a[a_offset], lda);
 
 	    i__3 = i__ + nb - 1;
@@ -144,7 +144,7 @@ F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *a, int *
 
 	}
 
-	F77_FUNC(dsytd2,DSYTD2)(uplo, &kk, &a[a_offset], lda, &d__[1], &e[1], &tau[1], &iinfo);
+	FortranCInterface_GLOBAL(dsytd2,DSYTD2)(uplo, &kk, &a[a_offset], lda, &d__[1], &e[1], &tau[1], &iinfo);
     } else {
 
 	i__2 = *n - nx;
@@ -153,11 +153,11 @@ F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *a, int *
 
 
 	    i__3 = *n - i__ + 1;
-	    F77_FUNC(dlatrd,DLATRD)(uplo, &i__3, &nb, &a[i__ + i__ * a_dim1], lda, &e[i__], &
+	    FortranCInterface_GLOBAL(dlatrd,DLATRD)(uplo, &i__3, &nb, &a[i__ + i__ * a_dim1], lda, &e[i__], &
 		    tau[i__], &work[1], &ldwork);
 
 	    i__3 = *n - i__ - nb + 1;
-	    F77_FUNC(dsyr2k,DSYR2K)(uplo, "No transpose", &i__3, &nb, &c_b22, &a[i__ + nb + 
+	    FortranCInterface_GLOBAL(dsyr2k,DSYR2K)(uplo, "No transpose", &i__3, &nb, &c_b22, &a[i__ + nb + 
 		    i__ * a_dim1], lda, &work[nb + 1], &ldwork, &c_b23, &a[
 		    i__ + nb + (i__ + nb) * a_dim1], lda);
 
@@ -173,7 +173,7 @@ F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *a, int *
 
 
 	i__1 = *n - i__ + 1;
-	F77_FUNC(dsytd2,DSYTD2)(uplo, &i__1, &a[i__ + i__ * a_dim1], lda, &d__[i__], &e[i__], 
+	FortranCInterface_GLOBAL(dsytd2,DSYTD2)(uplo, &i__1, &a[i__ + i__ * a_dim1], lda, &d__[i__], &e[i__], 
 		&tau[i__], &iinfo);
     }
 

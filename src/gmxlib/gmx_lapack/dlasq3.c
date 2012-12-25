@@ -39,7 +39,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dlasq3,DLASQ3)(int *i0, 
+FortranCInterface_GLOBAL(dlasq3,DLASQ3)(int *i0, 
                         int *n0, 
                         double *z__, 
                         int *pp, 
@@ -177,12 +177,12 @@ L50:
     }
 
 
-    F77_FUNC(dlasq4,DLASQ4)(i0, n0, &z__[1], pp, &n0in, dmin__, &dmin1, &dmin2, &dn, &dn1, &
+    FortranCInterface_GLOBAL(dlasq4,DLASQ4)(i0, n0, &z__[1], pp, &n0in, dmin__, &dmin1, &dmin2, &dn, &dn1, &
 	    dn2, &tau, &ttype);
 
 L70:
 
-    F77_FUNC(dlasq5,DLASQ5)(i0, n0, &z__[1], pp, &tau, dmin__, &dmin1, &dmin2, &dn, &dn1, &
+    FortranCInterface_GLOBAL(dlasq5,DLASQ5)(i0, n0, &z__[1], pp, &tau, dmin__, &dmin1, &dmin2, &dn, &dn1, &
 	    dn2, ieee);
 
     *ndiv += *n0 - *i0 + 2;
@@ -221,7 +221,7 @@ L70:
     }
 
 L80:
-    F77_FUNC(dlasq6,DLASQ6)(i0, n0, &z__[1], pp, dmin__, &dmin1, &dmin2, &dn, &dn1, &dn2);
+    FortranCInterface_GLOBAL(dlasq6,DLASQ6)(i0, n0, &z__[1], pp, dmin__, &dmin1, &dmin2, &dn, &dn1, &dn2);
     *ndiv += *n0 - *i0 + 2;
     ++(*iter);
     tau = 0.;
