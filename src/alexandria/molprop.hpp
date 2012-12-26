@@ -186,7 +186,6 @@ namespace gmx
     std::vector<MolecularDipPolar> _polar,_dipole;
     std::vector<MolecularEnergy> _energy;
     std::vector<MolecularQuadrupole> _quadrupole;
-    std::vector<ElectrostaticPotential> _potential;
   public:
     Experiment(std::string reference,std::string conformation) 
     { 
@@ -199,13 +198,16 @@ namespace gmx
       _conformation.assign(conformation);
     };
     ~Experiment() {};
-    AddPolar(const char *type,const char *unit,
-             double xx,double yy,double zz,
-             double aver,double error) { _polar.push_back(type,unit,xx,yy,zz,aver,error); }
+    void AddPolar(const char *type,const char *unit,
+                  double xx,double yy,double zz,
+                  double aver,double error) { _polar.push_back(type,unit,xx,yy,zz,aver,error); }
+    void AddEnergy(const char *type,const char *unit,
+                   double value,double error) { _energy.push_back(type,unit,value,error); };
     /* Iterator ? */
-    int getPolar(char **type,char **unit,
-                 double *xx,double *yy,double *zz,
-                 double *aver,double *error);
+    int GetPolar(char **type,char **unit,
+                 double *xx,double *yy,double *zz,double *aver,double *error);
+    int GetEnergy(char **type,char **unit,
+                  double *value,double *error);
   };
   
   class Calculation : Experiment
@@ -214,10 +216,21 @@ namespace gmx
     std::string _program,_method,_basisset,_datafile;
     int _catom_index;
     std::vector<CalcAtom> _catom;
+    std::vector<ElectrostaticPotential> _potential;
   public:
     Calculation() {};
     ~Calculation() {};
     CalcAtom GetAtom();
+
+    void AddPotential(const char *xyzUnit,const char *VUnit,int espid,
+                      double x,double y,double z,
+                      double V) { _potential.push_back(xyzUnit,VUnit,espid,x,y,z,V); };
+    int GetNPotential() { return _potential.size(); };
+
+    /* Iterator! */
+    int getPotential(char **xyzUnit,char **VUnit,int *espid,
+                     double *x,double *y,double *z,
+                     double *V);
   };
 
   class MolProp {
@@ -286,7 +299,9 @@ namespace gmx
     void AddCategory(std::string category) { _category.push_back(category); }
     int NCategory() { return _category.size(); }
     
-    /* Returns one category at a time. If NULL, you got them all previously. */
+    /* Returns one category at a time. If NULL, you got them all previously.
+     * Implement with iterators.
+     */
     const char *GetCategory();
     std::string GetCategory();
     void ResetCategory() { _category_index = 0; }
@@ -303,40 +318,14 @@ namespace gmx
     int GetBond(int *ai,int *aj,int *bondorder) { if(_bond_index < _bonds.size()) { _bonds[_bond_index].Get(ai,aj,*bondorder); _bond_index++; return 1 } else { _bond_index=0; return 0; } };
     void AddBond(int ai,int aj,int bondorder) { _bonds.push_back(ai,aj,bondorder); }
 
-    
     Experiment AddExperiment(const char *reference,const char *conformation) { _exper.push_back(reference,conformation); return _exper.back(); };
 
     /* Replace by iterator ? */
     int GetExperiment(char **reference,char **conformation);
     void ResetExperiment() {};
 
-/* Polarizabilities. Ref is either exp or calc ref. from addExper,
-   addCalc, getExper or getCalc. */	    
-extern void 
-/* Energies. Ref is either exp or calc ref. from addExper,
-   addCalc, getExper or getCalc. */	    
-extern void addEnergy(int ref,
-				   const char *type,const char *unit,
-				   double value,double error);
-
-extern int getEnergy(int ref,
-				  char **type,char **unit,
-				  double *value,double *error);
 
 /* Potential. Ref is a calc ref. from addCalc, or getCalc. */	    
-extern void addPotential(int ref,
-				      const char *xyzUnit,const char *VUnit,
-				      int espid,
-				      double x,double y,double z,
-				      double V);
-
-extern int getNpotential(int ref);
-
-extern int getPotential(int ref,
-				     char **xyzUnit,char **VUnit,
-				     int *espid,
-				     double *x,double *y,double *z,
-				     double *V);
 
 /* Dipoles. Ref is either exp or calc ref. from addExper,
    addCalc, getExper or getCalc. */	    

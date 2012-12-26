@@ -141,6 +141,8 @@ typedef struct gmx_molprop
     t_mpbond      *bond;
 } gmx_molprop;
 
+#define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
+#define assign_scal(dst,src) if (NULL != dst) *dst = src
 
 gmx_molprop_t gmx_molprop_init()
 {

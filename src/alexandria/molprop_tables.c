@@ -179,10 +179,10 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
                              t_qmcount *qmc,int iQM,char *lot,
                              double outlier,gmx_molselect_t gms,int ims)
 {
-    int    i,line,j,k,m,ns,N,nprint;
+    int    i,line,j,k,m,ns,N,nprint,nqmres,nexpres;
     double exp_val,qm_val;
     real   rms,R,error,a,da,b,db,chi2;
-    char   *qm_err,*qm_ref,lbuf[256];
+    char   *qm_err,*qm_ref,lbuf[256],tmp[32],catbuf[STRLEN];
     const char   *cname;
     t_cats *cats;
     gmx_stats_t lsq,*lsqtot;
@@ -218,7 +218,9 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
     line = 0;
     for(i=0; (i<cats->ncat); i++) 
     {
-        fprintf(fp," %s (%d) ",cats->catli[i].cat,cats->catli[i].count);
+        sprintf(catbuf," %s (%d) ",cats->catli[i].cat,cats->catli[i].count);
+        nqmres = 0;
+        nexpres = 0;
         for(k=0; (k<qmc->n); k++) 
         {
             sprintf(lbuf,"%s/%s",qmc->method[k],qmc->basis[k]);
@@ -235,6 +237,7 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
                             if (mp_get_prop(pd[j],emp,iqmExp,NULL,
                                             NULL/*qmc->conf[m]*/,NULL,&exp_val) > 0)
                             {
+                                nexpres = 1;
                                 if (mp_get_prop(pd[j],emp,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
                                                 qmc->type[k],&qm_val) > 0)
                                 {
@@ -252,15 +255,26 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
             if (outlier > 0)
                 gmx_stats_remove_outliers(lsq,outlier);
             if (gmx_stats_get_rmsd(lsq,&rms) == estatsOK)
-                fprintf(fp,"& %8.2f",rms);
+            { 
+                sprintf(tmp,"& %8.2f",rms);
+                strncat(catbuf,tmp,STRLEN-1);
+                nqmres++;
+            }
             else
-                fprintf(fp,"& -");
+            {
+                strncat(catbuf,"& -",STRLEN-1);
+            }
+            
             if (gmx_stats_done(lsq) == estatsOK)
                 sfree(lsq);
         }
-        fprintf(fp,"\\\\\n");
-        line++;
-        if ((line % 20) == 0)
+        if ((nqmres > 0) && (nexpres > 0))
+        {
+            strncat(catbuf,"\\\\\n",STRLEN-1);
+            fprintf(fp,"%s",catbuf);
+            line++;
+        }
+        if (line == 20)
         {
             stats_footer(fp,bSideways);
             stats_header(fp,emp,0,bSideways,qmc,ims);
@@ -997,8 +1011,6 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
             }
             for(ne=0; (ne < (nexp > 1 ? nexp : 1)); ne++)
             {
-                if (0 == ne)
-                    iprint++;
 
                 if (nexp <= 1) 
                 {
@@ -1024,8 +1036,10 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                     else 
                         found_calc[j] = 0;
                 }
-                if (bPrintAll || (ncalc > 0))
+                if ((bPrintAll || (nexp > 0))  && (ncalc > 0))
                 {
+                    if (0 == ne)
+                        iprint++;
                     myline[0] = '\0';
                     if ((ne == 0))
                     {

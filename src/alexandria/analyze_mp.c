@@ -437,6 +437,8 @@ int main(int argc,char *argv[])
           "Indicate the method and level of theory that were used together with experimental data in refining polarizabilities. If empty, is is assumed that only experimental data were used." },
         { "-prop",   FALSE, etENUM, {prop},
           "Property to print" },
+        { "-all",    FALSE, etBOOL, {&bAll},
+          "Print calculated results for properties even if no experimental data is available to compare to" },
         { "-calcpol", FALSE, etBOOL, {&bCalcPol},
           "Calculate polarizabilities based on empirical methods" },
         { "-composition", FALSE, etBOOL, {&bCompositionTable},
