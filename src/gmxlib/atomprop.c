@@ -158,8 +158,6 @@ static void add_prop(aprop_t *ap,gmx_residuetype_t restype,
 	ap->bAvail[i] = FALSE;
       }
     }
-    upstring(atomnm);
-    upstring(resnm);
     ap->atomnm[ap->nprop] = strdup(atomnm);
     ap->resnm[ap->nprop]  = strdup(resnm);
     j = ap->nprop;
@@ -319,9 +317,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
   else { 
     strncpy(atomname,atomnm,MAXQ-1);
   }
-  upstring(atomname);
   strncpy(resname,resnm,MAXQ-1);
-  upstring(resname);
   
   j = get_prop_index(&(ap->prop[eprop]),ap->restype,resname,
 		     atomname,&bExact);
