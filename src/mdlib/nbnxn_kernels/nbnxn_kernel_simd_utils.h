@@ -118,7 +118,7 @@
     in0 = _mm256_hadd_ps(in0,_mm256_setzero_ps());                      \
     in2 = _mm256_hadd_ps(in2,_mm256_setzero_ps());                      \
     in0 = _mm256_hadd_ps(in0,in2);                                      \
-    in2 = _mm256_permute_ps(in0,0b10110001);                            \
+    in2 = _mm256_permute_ps(in0,_MM_SHUFFLE(2,3,0,1));                  \
     out = _mm_add_ps(_mm256_castps256_ps128(in0),_mm256_extractf128_ps(in2,1)); \
 }
 #else
