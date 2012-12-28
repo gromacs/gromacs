@@ -99,44 +99,84 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
 }
 #endif
 
-#if GMX_EMULATE_AMD_FMA
-/* Wrapper routines so we can do test builds on non-FMA or non-AMD hardware */
-static __m128
-_mm_macc_ps(__m128 a, __m128 b, __m128 c)
+/* Gromacs wrapper defines to enable FMA instructions using either
+ * - AMD FMA4
+ * - Intel FMA3 (different intrinsics names)
+ * - Emulated FMA for debugging
+ */
+#ifdef __FMA4__
+#    define gmx_mm_fmadd_ps(_a,_b,_c)   _mm_macc_ps(_a,_b,_c)
+#    define gmx_mm_fmsub_ps(_a,_b,_c)   _mm_msub_ps(_a,_b,_c)
+#    define gmx_mm_fnmadd_ps(_a,_b,_c)  _mm_nmacc_ps(_a,_b,_c)
+#    define gmx_mm_fnmsub_ps(_a,_b,_c)  _mm_nmsub_ps(_a,_b,_c)
+#    define gmx_mm_fmadd_ss(_a,_b,_c)   _mm_macc_ss(_a,_b,_c)
+#    define gmx_mm_fmsub_ss(_a,_b,_c)   _mm_msub_ss(_a,_b,_c)
+#    define gmx_mm_fnmadd_ss(_a,_b,_c)  _mm_nmacc_ss(_a,_b,_c)
+#    define gmx_mm_fnmsub_ss(_a,_b,_c)  _mm_nmsub_ss(_a,_b,_c)
+#    define gmx_mm_fmadd_pd(_a,_b,_c)   _mm_macc_pd(_a,_b,_c)
+#    define gmx_mm_fmsub_pd(_a,_b,_c)   _mm_msub_pd(_a,_b,_c)
+#    define gmx_mm_fnmadd_pd(_a,_b,_c)  _mm_nmacc_pd(_a,_b,_c)
+#    define gmx_mm_fnmsub_pd(_a,_b,_c)  _mm_nmsub_pd(_a,_b,_c)
+#    define gmx_mm_fmadd_sd(_a,_b,_c)   _mm_macc_sd(_a,_b,_c)
+#    define gmx_mm_fmsub_sd(_a,_b,_c)   _mm_msub_sd(_a,_b,_c)
+#    define gmx_mm_fnmadd_sd(_a,_b,_c)  _mm_nmacc_sd(_a,_b,_c)
+#    define gmx_mm_fnmsub_sd(_a,_b,_c)  _mm_nmsub_sd(_a,_b,_c)
+#elif defined(__INTEL_COMPILER)
+#    define gmx_mm_fmadd_ps(_a,_b,_c)   _mm_fmadd_ps(_a,_b,_c)
+#    define gmx_mm_fmsub_ps(_a,_b,_c)   _mm_fmsub_ps(_a,_b,_c)
+#    define gmx_mm_fnmadd_ps(_a,_b,_c)  _mm_fnmadd_ps(_a,_b,_c)
+#    define gmx_mm_fnmsub_ps(_a,_b,_c)  _mm_fnmsub_ps(_a,_b,_c)
+#    define gmx_mm_fmadd_ss(_a,_b,_c)   _mm_fmadd_ss(_a,_b,_c)
+#    define gmx_mm_fmsub_ss(_a,_b,_c)   _mm_fmsub_ss(_a,_b,_c)
+#    define gmx_mm_fnmadd_ss(_a,_b,_c)  _mm_fnmadd_ss(_a,_b,_c)
+#    define gmx_mm_fnmsub_ss(_a,_b,_c)  _mm_fnmsub_ss(_a,_b,_c)
+#    define gmx_mm_fmadd_pd(_a,_b,_c)   _mm_fmadd_pd(_a,_b,_c)
+#    define gmx_mm_fmsub_pd(_a,_b,_c)   _mm_fmsub_pd(_a,_b,_c)
+#    define gmx_mm_fnmadd_pd(_a,_b,_c)  _mm_fnmadd_pd(_a,_b,_c)
+#    define gmx_mm_fnmsub_pd(_a,_b,_c)  _mm_fnmsub_pd(_a,_b,_c)
+#    define gmx_mm_fmadd_sd(_a,_b,_c)   _mm_fmadd_sd(_a,_b,_c)
+#    define gmx_mm_fmsub_sd(_a,_b,_c)   _mm_fmsub_sd(_a,_b,_c)
+#    define gmx_mm_fnmadd_sd(_a,_b,_c)  _mm_fnmadd_sd(_a,_b,_c)
+#    define gmx_mm_fnmsub_sd(_a,_b,_c)  _mm_fnmsub_sd(_a,_b,_c)
+#elif defined GMX_EMULATE_FMA
+#    define gmx_mm_fmadd_ps(_a,_b,_c)   _mm_add_ps(_c,_mm_mul_ps(_a,_b))
+#    define gmx_mm_fmsub_ps(_a,_b,_c)   _mm_sub_ps(_mm_mul_ps(_a,_b),_c)
+#    define gmx_mm_fnmadd_ps(_a,_b,_c)  _mm_sub_ps(_c,_mm_mul_ps(_a,_b))
+#    define gmx_mm_fmadd_ss(_a,_b,_c)   _mm_add_ss(_c,_mm_mul_ss(_a,_b))
+#    define gmx_mm_fmsub_ss(_a,_b,_c)   _mm_sub_ss(_mm_mul_ss(_a,_b),_c)
+#    define gmx_mm_fnmadd_ss(_a,_b,_c)  _mm_sub_ss(_c,_mm_mul_ss(_a,_b))
+#    define gmx_mm_fmadd_pd(_a,_b,_c)   _mm_add_pd(_c,_mm_mul_pd(_a,_b))
+#    define gmx_mm_fmsub_pd(_a,_b,_c)   _mm_sub_pd(_mm_mul_pd(_a,_b),_c)
+#    define gmx_mm_fnmadd_pd(_a,_b,_c)  _mm_sub_pd(_c,_mm_mul_pd(_a,_b))
+#    define gmx_mm_fmadd_sd(_a,_b,_c)   _mm_add_sd(_c,_mm_mul_sd(_a,_b))
+#    define gmx_mm_fmsub_sd(_a,_b,_c)   _mm_sub_sd(_mm_mul_sd(_a,_b),_c)
+#    define gmx_mm_fnmadd_sd(_a,_b,_c)  _mm_sub_sd(_c,_mm_mul_sd(_a,_b))
+static gmx_inline __m128
+gmx_mm_fnmsub_ps( __m128 a, __m128 b, __m128 c)
 {
-    return _mm_add_ps(c,_mm_mul_ps(a,b));
+    __m128  signbit  = gmx_mm_castsi128_ps(_mm_set1_epi32(0x80000000));
+    return _mm_sub_ps(_mm_xor_ps(_mm_mul_ps(a,b),signbit),c);
 }
+static gmx_inline __m128
+gmx_mm_fnmsub_ss( __m128 a, __m128 b, __m128 c)
+{
+    __m128  signbit  = gmx_mm_castsi128_ps(_mm_set1_epi32(0x80000000));
+    return _mm_sub_ss(_mm_xor_ss(_mm_mul_ss(a,b),signbit),c);
+}
+static gmx_inline __m128d
+gmx_mm_fnmsub_pd( __m128d a, __m128d b, __m128d c)
+{
+    __m128d signbit   = gmx_mm_castsi128_pd( _mm_set_epi32(0x80000000,0x00000000,0x80000000,0x00000000) );
+    return _mm_sub_pd(_mm_xor_pd(_mm_mul_pd(a,b),signbit),c);
+}
+static gmx_inline __m128d
+gmx_mm_fnmsub_sd( __m128d a, __m128d b, __m128d c)
+{
+    __m128d signbit   = gmx_mm_castsi128_pd( _mm_set_epi32(0x80000000,0x00000000,0x80000000,0x00000000) );
+    return _mm_sub_sd(_mm_xor_sd(_mm_mul_sd(a,b),signbit),c);
+}
+#endif
 
-static __m128
-_mm_nmacc_ps(__m128 a, __m128 b, __m128 c)
-{
-    return _mm_sub_ps(c,_mm_mul_ps(a,b));
-}
-
-static __m128
-_mm_msub_ps(__m128 a, __m128 b, __m128 c)
-{
-    return _mm_sub_ps(_mm_mul_ps(a,b),c);
-}
-
-static __m128d
-_mm_macc_pd(__m128d a, __m128d b, __m128d c)
-{
-    return _mm_add_pd(c,_mm_mul_pd(a,b));
-}
-
-static __m128d
-_mm_nmacc_pd(__m128d a, __m128d b, __m128d c)
-{
-    return _mm_sub_pd(c,_mm_mul_pd(a,b));
-}
-
-static __m128d
-_mm_msub_pd(__m128d a, __m128d b, __m128d c)
-{
-    return _mm_sub_pd(_mm_mul_pd(a,b),c);
-}
-#endif /* AMD FMA emulation support */
 
 static void
 gmx_mm_printxmm_ps(const char *s,__m128 xmm)

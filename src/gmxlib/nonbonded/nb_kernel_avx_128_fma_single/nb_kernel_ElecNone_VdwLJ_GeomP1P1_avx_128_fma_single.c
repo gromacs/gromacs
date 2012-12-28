@@ -205,7 +205,7 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_ps(c6_00,rinvsix);
             vvdw12           = _mm_mul_ps(c12_00,_mm_mul_ps(rinvsix,rinvsix));
-            vvdw             = _mm_msub_ps(vvdw12,one_twelfth,_mm_mul_ps(vvdw6,one_sixth));
+            vvdw             = gmx_mm_fmsub_ps(vvdw12,one_twelfth,_mm_mul_ps(vvdw6,one_sixth));
             fvdw             = _mm_mul_ps(_mm_sub_ps(vvdw12,vvdw6),rinvsq00);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -214,9 +214,9 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single
             fscal            = fvdw;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -289,7 +289,7 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_ps(c6_00,rinvsix);
             vvdw12           = _mm_mul_ps(c12_00,_mm_mul_ps(rinvsix,rinvsix));
-            vvdw             = _mm_msub_ps(vvdw12,one_twelfth,_mm_mul_ps(vvdw6,one_sixth));
+            vvdw             = gmx_mm_fmsub_ps(vvdw12,one_twelfth,_mm_mul_ps(vvdw6,one_sixth));
             fvdw             = _mm_mul_ps(_mm_sub_ps(vvdw12,vvdw6),rinvsq00);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -301,9 +301,9 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
@@ -490,14 +490,14 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_128_fma_single
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
-            fvdw             = _mm_mul_ps(_mm_msub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
+            fvdw             = _mm_mul_ps(gmx_mm_fmsub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
 
             fscal            = fvdw;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -568,16 +568,16 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_128_fma_single
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
-            fvdw             = _mm_mul_ps(_mm_msub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
+            fvdw             = _mm_mul_ps(gmx_mm_fmsub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
 
             fscal            = fvdw;
 
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;

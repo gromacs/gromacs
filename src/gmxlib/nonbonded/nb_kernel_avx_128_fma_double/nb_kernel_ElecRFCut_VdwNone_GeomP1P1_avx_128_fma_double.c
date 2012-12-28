@@ -187,8 +187,8 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_VF_avx_128_fma_double
             qq00             = _mm_mul_pd(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            velec            = _mm_mul_pd(qq00,_mm_sub_pd(_mm_macc_pd(krf,rsq00,rinv00),crf));
-            felec            = _mm_mul_pd(qq00,_mm_msub_pd(rinv00,rinvsq00,krf2));
+            velec            = _mm_mul_pd(qq00,_mm_sub_pd(gmx_mm_fmadd_pd(krf,rsq00,rinv00),crf));
+            felec            = _mm_mul_pd(qq00,gmx_mm_fmsub_pd(rinv00,rinvsq00,krf2));
 
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
 
@@ -201,9 +201,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_VF_avx_128_fma_double
             fscal            = _mm_and_pd(fscal,cutoff_mask);
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_2ptr_swizzle_pd(f+j_coord_offsetA,f+j_coord_offsetB,
                                                    _mm_mul_pd(dx00,fscal),
@@ -251,8 +251,8 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_VF_avx_128_fma_double
             qq00             = _mm_mul_pd(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            velec            = _mm_mul_pd(qq00,_mm_sub_pd(_mm_macc_pd(krf,rsq00,rinv00),crf));
-            felec            = _mm_mul_pd(qq00,_mm_msub_pd(rinv00,rinvsq00,krf2));
+            velec            = _mm_mul_pd(qq00,_mm_sub_pd(gmx_mm_fmadd_pd(krf,rsq00,rinv00),crf));
+            felec            = _mm_mul_pd(qq00,gmx_mm_fmsub_pd(rinv00,rinvsq00,krf2));
 
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
 
@@ -268,9 +268,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_VF_avx_128_fma_double
             fscal            = _mm_unpacklo_pd(fscal,_mm_setzero_pd());
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_1ptr_swizzle_pd(f+j_coord_offsetA,
                                                    _mm_mul_pd(dx00,fscal),
@@ -439,7 +439,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_F_avx_128_fma_double
             qq00             = _mm_mul_pd(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            felec            = _mm_mul_pd(qq00,_mm_msub_pd(rinv00,rinvsq00,krf2));
+            felec            = _mm_mul_pd(qq00,gmx_mm_fmsub_pd(rinv00,rinvsq00,krf2));
 
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
 
@@ -448,9 +448,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_F_avx_128_fma_double
             fscal            = _mm_and_pd(fscal,cutoff_mask);
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_2ptr_swizzle_pd(f+j_coord_offsetA,f+j_coord_offsetB,
                                                    _mm_mul_pd(dx00,fscal),
@@ -498,7 +498,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_F_avx_128_fma_double
             qq00             = _mm_mul_pd(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            felec            = _mm_mul_pd(qq00,_mm_msub_pd(rinv00,rinvsq00,krf2));
+            felec            = _mm_mul_pd(qq00,gmx_mm_fmsub_pd(rinv00,rinvsq00,krf2));
 
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
 
@@ -509,9 +509,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_F_avx_128_fma_double
             fscal            = _mm_unpacklo_pd(fscal,_mm_setzero_pd());
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_1ptr_swizzle_pd(f+j_coord_offsetA,
                                                    _mm_mul_pd(dx00,fscal),
