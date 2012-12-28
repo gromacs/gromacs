@@ -66,7 +66,14 @@ if(GMX_BUILD_OWN_FFTW)
     # disabling GMX_BUILD_OWN_FFTW changes dependencies correctly.
     add_dependencies(md gmxfftw)
 endif()
-set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+option(GMX_PREFIX_LIBMD "Change install name of libmd to libgmxmd to avoid collision with BSD's/Martin Hinner's libmd, which is used in X11 and zfs" OFF)
+mark_as_advanced(GMX_PREFIX_LIBMD)
+if (GMX_PREFIX_LIBMD)
+  set(MD_PREFIX "gmx")
+else()
+  set(MD_PREFIX)
+endif()
+set_target_properties(md PROPERTIES OUTPUT_NAME "${MD_PREFIX}md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
     COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 install(TARGETS md DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
@@ -74,5 +81,5 @@ install(TARGETS md DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libmd.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libmd.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libmd.pc
         DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
-        RENAME "libmd${GMX_LIBS_SUFFIX}.pc"
+        RENAME "lib${MD_PREFIX}md${GMX_LIBS_SUFFIX}.pc"
         COMPONENT development)
