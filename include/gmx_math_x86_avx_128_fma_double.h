@@ -35,6 +35,14 @@
 #ifndef _gmx_math_x86_avx_128_fma_double_h_
 #define _gmx_math_x86_avx_128_fma_double_h_
 
+#include <immintrin.h> /* AVX */
+#ifdef HAVE_X86INTRIN_H
+#include <x86intrin.h> /* FMA */
+#endif
+#ifdef HAVE_INTRIN_H
+#include <intrin.h> /* FMA MSVC */
+#endif
+
 #include <math.h>
 
 #include "gmx_x86_avx_128_fma.h"

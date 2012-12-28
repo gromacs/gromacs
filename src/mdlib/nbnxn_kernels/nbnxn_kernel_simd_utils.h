@@ -110,7 +110,7 @@
     i_SSE0 = _mm256_hadd_ps(i_SSE0,_mm256_setzero_ps());                \
     i_SSE2 = _mm256_hadd_ps(i_SSE2,_mm256_setzero_ps());                \
     i_SSE0 = _mm256_hadd_ps(i_SSE0,i_SSE2);                             \
-    i_SSE2 = _mm256_permute_ps(i_SSE0,0b10110001);                      \
+    i_SSE2 = _mm256_permute_ps(i_SSE0,_MM_SHUFFLE(2,3,0,1));            \
     o_SSE  = _mm_add_ps(_mm256_castps256_ps128(i_SSE0),_mm256_extractf128_ps(i_SSE2,1)); \
 }
 #else
