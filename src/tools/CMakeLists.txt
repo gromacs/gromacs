@@ -43,7 +43,7 @@ add_library(gmxana
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      
             gmx_bundle.c    gmx_chi.c       gmx_cluster.c   gmx_confrms.c   
             gmx_covar.c     gmx_current.c   
-            gmx_density.c   gmx_densmap.c   gmx_dih.c       
+            gmx_density.c   gmx_densmap.c       
             gmx_dielectric.c        
             gmx_kinetics.c  gmx_spatial.c   gmx_tune_pme.c
             gmx_dipoles.c   gmx_disre.c     gmx_dist.c      gmx_dyndom.c    
@@ -82,7 +82,7 @@ set(GMX_TOOLS_PROGRAMS
     make_ndx mk_angndx trjcat trjconv trjorder g_wheel 
     xpm2ps genion g_anadock make_edi g_analyze g_anaeig
     g_angle g_bond g_bundle g_chi g_cluster g_confrms g_covar
-    g_current g_density g_densmap g_dih g_dielectric
+    g_current g_density g_densmap g_dielectric
     g_helixorient g_principal g_dipoles g_disre g_dist
     g_dyndom g_enemat g_energy g_lie g_filter g_gyrate
     g_h2order g_hbond g_helix g_mindist g_msd g_morph g_nmeig
