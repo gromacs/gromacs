@@ -333,10 +333,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv00);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv00);
             velec            = _mm_mul_ps(qq00,velec);
 
             /* CUBIC SPLINE TABLE DISPERSION */
@@ -345,10 +345,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            VV               = _mm_macc_ps(vfeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            VV               = gmx_mm_fmadd_ps(vfeps,Fp,Y);
             vvdw6            = _mm_mul_ps(c6_00,VV);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw6            = _mm_mul_ps(c6_00,FF);
 
             /* CUBIC SPLINE TABLE REPULSION */
@@ -358,10 +358,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            VV               = _mm_macc_ps(vfeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            VV               = gmx_mm_fmadd_ps(vfeps,Fp,Y);
             vvdw12           = _mm_mul_ps(c12_00,VV);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw12           = _mm_mul_ps(c12_00,FF);
             vvdw             = _mm_add_ps(vvdw12,vvdw6);
             fvdw             = _mm_xor_ps(signbit,_mm_mul_ps(_mm_add_ps(fvdw6,fvdw12),_mm_mul_ps(vftabscale,rinv00)));
@@ -373,13 +373,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_add_ps(felec,fvdw);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
-            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx00,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy00,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz00,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -393,10 +393,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq01);
             rinv3            = _mm_mul_ps(rinvsq01,rinv01);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq01,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv01);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv01);
             velec            = _mm_mul_ps(qq01,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -405,13 +405,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx01,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy01,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz01,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx01,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy01,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz01,fscal,fiz0);
 
-            fjx1             = _mm_macc_ps(dx01,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy01,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz01,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx01,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy01,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz01,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -425,10 +425,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq02);
             rinv3            = _mm_mul_ps(rinvsq02,rinv02);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq02,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv02);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv02);
             velec            = _mm_mul_ps(qq02,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -437,13 +437,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx02,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy02,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz02,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx02,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy02,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz02,fscal,fiz0);
 
-            fjx2             = _mm_macc_ps(dx02,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy02,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz02,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx02,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy02,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz02,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -457,10 +457,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv10);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv10);
             velec            = _mm_mul_ps(qq10,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -469,13 +469,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx10,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx10,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy10,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz10,fscal,fiz1);
 
-            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx10,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy10,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz10,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -489,10 +489,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq11);
             rinv3            = _mm_mul_ps(rinvsq11,rinv11);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq11,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv11);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv11);
             velec            = _mm_mul_ps(qq11,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -501,13 +501,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx11,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy11,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz11,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx11,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy11,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz11,fscal,fiz1);
 
-            fjx1             = _mm_macc_ps(dx11,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy11,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz11,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx11,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy11,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz11,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -521,10 +521,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq12);
             rinv3            = _mm_mul_ps(rinvsq12,rinv12);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq12,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv12);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv12);
             velec            = _mm_mul_ps(qq12,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -533,13 +533,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx12,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy12,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz12,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx12,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy12,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz12,fscal,fiz1);
 
-            fjx2             = _mm_macc_ps(dx12,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy12,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz12,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx12,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy12,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz12,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -553,10 +553,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv20);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv20);
             velec            = _mm_mul_ps(qq20,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -565,13 +565,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx20,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx20,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy20,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz20,fscal,fiz2);
 
-            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx20,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy20,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz20,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -585,10 +585,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq21);
             rinv3            = _mm_mul_ps(rinvsq21,rinv21);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq21,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv21);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv21);
             velec            = _mm_mul_ps(qq21,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -597,13 +597,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx21,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy21,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz21,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx21,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy21,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz21,fscal,fiz2);
 
-            fjx1             = _mm_macc_ps(dx21,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy21,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz21,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx21,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy21,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz21,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -617,10 +617,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq22);
             rinv3            = _mm_mul_ps(rinvsq22,rinv22);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq22,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv22);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv22);
             velec            = _mm_mul_ps(qq22,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -629,13 +629,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx22,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy22,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz22,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx22,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy22,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz22,fscal,fiz2);
 
-            fjx2             = _mm_macc_ps(dx22,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy22,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz22,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx22,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy22,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz22,fscal,fjz2);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -769,10 +769,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv00);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv00);
             velec            = _mm_mul_ps(qq00,velec);
 
             /* CUBIC SPLINE TABLE DISPERSION */
@@ -781,10 +781,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            VV               = _mm_macc_ps(vfeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            VV               = gmx_mm_fmadd_ps(vfeps,Fp,Y);
             vvdw6            = _mm_mul_ps(c6_00,VV);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw6            = _mm_mul_ps(c6_00,FF);
 
             /* CUBIC SPLINE TABLE REPULSION */
@@ -794,10 +794,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            VV               = _mm_macc_ps(vfeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            VV               = gmx_mm_fmadd_ps(vfeps,Fp,Y);
             vvdw12           = _mm_mul_ps(c12_00,VV);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw12           = _mm_mul_ps(c12_00,FF);
             vvdw             = _mm_add_ps(vvdw12,vvdw6);
             fvdw             = _mm_xor_ps(signbit,_mm_mul_ps(_mm_add_ps(fvdw6,fvdw12),_mm_mul_ps(vftabscale,rinv00)));
@@ -813,13 +813,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
-            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx00,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy00,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz00,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -834,10 +834,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq01);
             rinv3            = _mm_mul_ps(rinvsq01,rinv01);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq01,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv01);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv01);
             velec            = _mm_mul_ps(qq01,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -849,13 +849,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx01,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy01,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz01,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx01,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy01,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz01,fscal,fiz0);
 
-            fjx1             = _mm_macc_ps(dx01,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy01,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz01,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx01,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy01,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz01,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -870,10 +870,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq02);
             rinv3            = _mm_mul_ps(rinvsq02,rinv02);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq02,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv02);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv02);
             velec            = _mm_mul_ps(qq02,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -885,13 +885,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx02,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy02,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz02,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx02,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy02,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz02,fscal,fiz0);
 
-            fjx2             = _mm_macc_ps(dx02,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy02,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz02,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx02,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy02,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz02,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -906,10 +906,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv10);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv10);
             velec            = _mm_mul_ps(qq10,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -921,13 +921,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx10,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx10,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy10,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz10,fscal,fiz1);
 
-            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx10,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy10,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz10,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -942,10 +942,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq11);
             rinv3            = _mm_mul_ps(rinvsq11,rinv11);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq11,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv11);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv11);
             velec            = _mm_mul_ps(qq11,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -957,13 +957,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx11,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy11,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz11,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx11,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy11,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz11,fscal,fiz1);
 
-            fjx1             = _mm_macc_ps(dx11,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy11,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz11,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx11,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy11,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz11,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -978,10 +978,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq12);
             rinv3            = _mm_mul_ps(rinvsq12,rinv12);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq12,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv12);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv12);
             velec            = _mm_mul_ps(qq12,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -993,13 +993,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx12,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy12,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz12,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx12,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy12,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz12,fscal,fiz1);
 
-            fjx2             = _mm_macc_ps(dx12,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy12,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz12,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx12,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy12,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz12,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1014,10 +1014,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv20);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv20);
             velec            = _mm_mul_ps(qq20,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -1029,13 +1029,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx20,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx20,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy20,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz20,fscal,fiz2);
 
-            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx20,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy20,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz20,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1050,10 +1050,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq21);
             rinv3            = _mm_mul_ps(rinvsq21,rinv21);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq21,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv21);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv21);
             velec            = _mm_mul_ps(qq21,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -1065,13 +1065,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx21,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy21,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz21,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx21,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy21,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz21,fscal,fiz2);
 
-            fjx1             = _mm_macc_ps(dx21,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy21,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz21,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx21,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy21,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz21,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1086,10 +1086,10 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq22);
             rinv3            = _mm_mul_ps(rinvsq22,rinv22);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq22,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv22);
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv22);
             velec            = _mm_mul_ps(qq22,velec);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -1101,13 +1101,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx22,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy22,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz22,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx22,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy22,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz22,fscal,fiz2);
 
-            fjx2             = _mm_macc_ps(dx22,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy22,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz22,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx22,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy22,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz22,fscal,fjz2);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
@@ -1423,7 +1423,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
 
             /* CUBIC SPLINE TABLE DISPERSION */
@@ -1432,8 +1432,8 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw6            = _mm_mul_ps(c6_00,FF);
 
             /* CUBIC SPLINE TABLE REPULSION */
@@ -1443,21 +1443,21 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw12           = _mm_mul_ps(c12_00,FF);
             fvdw             = _mm_xor_ps(signbit,_mm_mul_ps(_mm_add_ps(fvdw6,fvdw12),_mm_mul_ps(vftabscale,rinv00)));
 
             fscal            = _mm_add_ps(felec,fvdw);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
-            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx00,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy00,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz00,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1471,19 +1471,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq01);
             rinv3            = _mm_mul_ps(rinvsq01,rinv01);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq01,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx01,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy01,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz01,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx01,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy01,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz01,fscal,fiz0);
 
-            fjx1             = _mm_macc_ps(dx01,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy01,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz01,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx01,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy01,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz01,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1497,19 +1497,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq02);
             rinv3            = _mm_mul_ps(rinvsq02,rinv02);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq02,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx02,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy02,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz02,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx02,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy02,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz02,fscal,fiz0);
 
-            fjx2             = _mm_macc_ps(dx02,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy02,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz02,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx02,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy02,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz02,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1523,19 +1523,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx10,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx10,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy10,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz10,fscal,fiz1);
 
-            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx10,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy10,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz10,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1549,19 +1549,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq11);
             rinv3            = _mm_mul_ps(rinvsq11,rinv11);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq11,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx11,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy11,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz11,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx11,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy11,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz11,fscal,fiz1);
 
-            fjx1             = _mm_macc_ps(dx11,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy11,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz11,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx11,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy11,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz11,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1575,19 +1575,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq12);
             rinv3            = _mm_mul_ps(rinvsq12,rinv12);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq12,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx12,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy12,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz12,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx12,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy12,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz12,fscal,fiz1);
 
-            fjx2             = _mm_macc_ps(dx12,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy12,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz12,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx12,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy12,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz12,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1601,19 +1601,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx20,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx20,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy20,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz20,fscal,fiz2);
 
-            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx20,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy20,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz20,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1627,19 +1627,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq21);
             rinv3            = _mm_mul_ps(rinvsq21,rinv21);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq21,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx21,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy21,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz21,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx21,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy21,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz21,fscal,fiz2);
 
-            fjx1             = _mm_macc_ps(dx21,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy21,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz21,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx21,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy21,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz21,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1653,19 +1653,19 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq22);
             rinv3            = _mm_mul_ps(rinvsq22,rinv22);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq22,felec);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx22,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy22,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz22,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx22,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy22,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz22,fscal,fiz2);
 
-            fjx2             = _mm_macc_ps(dx22,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy22,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz22,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx22,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy22,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz22,fscal,fjz2);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -1799,7 +1799,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
 
             /* CUBIC SPLINE TABLE DISPERSION */
@@ -1808,8 +1808,8 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw6            = _mm_mul_ps(c6_00,FF);
 
             /* CUBIC SPLINE TABLE REPULSION */
@@ -1819,8 +1819,8 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw12           = _mm_mul_ps(c12_00,FF);
             fvdw             = _mm_xor_ps(signbit,_mm_mul_ps(_mm_add_ps(fvdw6,fvdw12),_mm_mul_ps(vftabscale,rinv00)));
 
@@ -1829,13 +1829,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
-            fjx0             = _mm_macc_ps(dx00,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy00,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz00,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx00,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy00,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz00,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1850,7 +1850,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq01);
             rinv3            = _mm_mul_ps(rinvsq01,rinv01);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq01,felec);
 
             fscal            = felec;
@@ -1858,13 +1858,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx01,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy01,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz01,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx01,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy01,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz01,fscal,fiz0);
 
-            fjx1             = _mm_macc_ps(dx01,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy01,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz01,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx01,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy01,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz01,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1879,7 +1879,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq02);
             rinv3            = _mm_mul_ps(rinvsq02,rinv02);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq02,felec);
 
             fscal            = felec;
@@ -1887,13 +1887,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx02,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy02,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz02,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx02,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy02,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz02,fscal,fiz0);
 
-            fjx2             = _mm_macc_ps(dx02,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy02,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz02,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx02,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy02,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz02,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1908,7 +1908,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
 
             fscal            = felec;
@@ -1916,13 +1916,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx10,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy10,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz10,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx10,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy10,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz10,fscal,fiz1);
 
-            fjx0             = _mm_macc_ps(dx10,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy10,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz10,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx10,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy10,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz10,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1937,7 +1937,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq11);
             rinv3            = _mm_mul_ps(rinvsq11,rinv11);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq11,felec);
 
             fscal            = felec;
@@ -1945,13 +1945,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx11,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy11,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz11,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx11,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy11,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz11,fscal,fiz1);
 
-            fjx1             = _mm_macc_ps(dx11,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy11,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz11,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx11,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy11,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz11,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1966,7 +1966,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq12);
             rinv3            = _mm_mul_ps(rinvsq12,rinv12);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq12,felec);
 
             fscal            = felec;
@@ -1974,13 +1974,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix1             = _mm_macc_ps(dx12,fscal,fix1);
-            fiy1             = _mm_macc_ps(dy12,fscal,fiy1);
-            fiz1             = _mm_macc_ps(dz12,fscal,fiz1);
+            fix1             = gmx_mm_fmadd_ps(dx12,fscal,fix1);
+            fiy1             = gmx_mm_fmadd_ps(dy12,fscal,fiy1);
+            fiz1             = gmx_mm_fmadd_ps(dz12,fscal,fiz1);
 
-            fjx2             = _mm_macc_ps(dx12,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy12,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz12,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx12,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy12,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz12,fscal,fjz2);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1995,7 +1995,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
 
             fscal            = felec;
@@ -2003,13 +2003,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx20,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy20,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz20,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx20,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy20,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz20,fscal,fiz2);
 
-            fjx0             = _mm_macc_ps(dx20,fscal,fjx0);
-            fjy0             = _mm_macc_ps(dy20,fscal,fjy0);
-            fjz0             = _mm_macc_ps(dz20,fscal,fjz0);
+            fjx0             = gmx_mm_fmadd_ps(dx20,fscal,fjx0);
+            fjy0             = gmx_mm_fmadd_ps(dy20,fscal,fjy0);
+            fjz0             = gmx_mm_fmadd_ps(dz20,fscal,fjz0);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -2024,7 +2024,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq21);
             rinv3            = _mm_mul_ps(rinvsq21,rinv21);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq21,felec);
 
             fscal            = felec;
@@ -2032,13 +2032,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx21,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy21,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz21,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx21,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy21,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz21,fscal,fiz2);
 
-            fjx1             = _mm_macc_ps(dx21,fscal,fjx1);
-            fjy1             = _mm_macc_ps(dy21,fscal,fjy1);
-            fjz1             = _mm_macc_ps(dz21,fscal,fjz1);
+            fjx1             = gmx_mm_fmadd_ps(dx21,fscal,fjx1);
+            fjy1             = gmx_mm_fmadd_ps(dy21,fscal,fjy1);
+            fjz1             = gmx_mm_fmadd_ps(dz21,fscal,fjz1);
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -2053,7 +2053,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq22);
             rinv3            = _mm_mul_ps(rinvsq22,rinv22);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq22,felec);
 
             fscal            = felec;
@@ -2061,13 +2061,13 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix2             = _mm_macc_ps(dx22,fscal,fix2);
-            fiy2             = _mm_macc_ps(dy22,fscal,fiy2);
-            fiz2             = _mm_macc_ps(dz22,fscal,fiz2);
+            fix2             = gmx_mm_fmadd_ps(dx22,fscal,fix2);
+            fiy2             = gmx_mm_fmadd_ps(dy22,fscal,fiy2);
+            fiz2             = gmx_mm_fmadd_ps(dz22,fscal,fiz2);
 
-            fjx2             = _mm_macc_ps(dx22,fscal,fjx2);
-            fjy2             = _mm_macc_ps(dy22,fscal,fjy2);
-            fjz2             = _mm_macc_ps(dz22,fscal,fjz2);
+            fjx2             = gmx_mm_fmadd_ps(dx22,fscal,fjx2);
+            fjy2             = gmx_mm_fmadd_ps(dy22,fscal,fjy2);
+            fjz2             = gmx_mm_fmadd_ps(dz22,fscal,fjz2);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;

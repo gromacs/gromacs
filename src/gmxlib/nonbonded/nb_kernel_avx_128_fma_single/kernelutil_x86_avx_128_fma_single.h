@@ -46,7 +46,7 @@ gmx_mm_any_lt(__m128 a, __m128 b)
 static gmx_inline __m128
 gmx_mm_calc_rsq_ps(__m128 dx, __m128 dy, __m128 dz)
 {
-    return _mm_macc_ps(dx,dx,_mm_macc_ps(dy,dy,_mm_mul_ps(dz,dz)));
+    return gmx_mm_fmadd_ps(dx,dx,gmx_mm_fmadd_ps(dy,dy,_mm_mul_ps(dz,dz)));
 }
 
 /* Load a single value from 1-4 places, merge into xmm register */

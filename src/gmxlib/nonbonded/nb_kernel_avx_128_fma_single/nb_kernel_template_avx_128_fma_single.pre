@@ -587,11 +587,11 @@ void
 
             /* REACTION-FIELD ELECTROSTATICS */
             /*             #if 'Potential' in KERNEL_VF */
-            velec            = _mm_mul_ps(qq{I}{J},_mm_sub_ps(_mm_macc_ps(krf,rsq{I}{J},rinv{I}{J}),crf));
+            velec            = _mm_mul_ps(qq{I}{J},_mm_sub_ps(gmx_mm_fmadd_ps(krf,rsq{I}{J},rinv{I}{J}),crf));
             /*                 #define INNERFLOPS INNERFLOPS+4 */
             /*             #endif */
             /*             #if 'Force' in KERNEL_VF */
-            felec            = _mm_mul_ps(qq{I}{J},_mm_msub_ps(rinv{I}{J},rinvsq{I}{J},krf2));
+            felec            = _mm_mul_ps(qq{I}{J},gmx_mm_fmsub_ps(rinv{I}{J},rinvsq{I}{J},krf2));
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
 
@@ -620,16 +620,16 @@ void
             G                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,2) );
             H                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(gbeps,_mm_macc_ps(gbeps,H,G),F);
-            VV               = _mm_macc_ps(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(gbeps,gmx_mm_fmadd_ps(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_ps(gbeps,Fp,Y);
             vgb              = _mm_mul_ps(gbqqfactor,VV);
             /*             #define INNERFLOPS INNERFLOPS+10 */
 
             /*             #if 'Force' in KERNEL_VF */
             twogbeps         = _mm_add_ps(gbeps,gbeps);
-            FF               = _mm_macc_ps(_mm_macc_ps(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_ps(gmx_mm_fmadd_ps(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
-            dvdatmp          = _mm_mul_ps(minushalf,_mm_macc_ps(fgb,r{I}{J},vgb));
+            dvdatmp          = _mm_mul_ps(minushalf,gmx_mm_fmadd_ps(fgb,r{I}{J},vgb));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
             /*                 #if ROUND == 'Loop' */
             fjptrA           = dvda+jnrA;
@@ -649,7 +649,7 @@ void
             velec            = _mm_mul_ps(qq{I}{J},rinv{I}{J});
             /*                 #define INNERFLOPS INNERFLOPS+1 */
             /*             #if 'Force' in KERNEL_VF */
-            felec            = _mm_mul_ps(_mm_msub_ps(velec,rinv{I}{J},fgb),rinv{I}{J});
+            felec            = _mm_mul_ps(gmx_mm_fmsub_ps(velec,rinv{I}{J},fgb),rinv{I}{J});
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
 
@@ -661,15 +661,15 @@ void
             /*             #if 'Force' in KERNEL_VF */
             rinv3            = _mm_mul_ps(rinvsq{I}{J},rinv{I}{J});
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq{I}{J},felec);
             /*             #endif */
             /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_ELEC=='PotentialSwitch' */
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
             /*                 #if KERNEL_MOD_ELEC=='PotentialShift' */
-            velec            = _mm_nmacc_ps(pmecorrV,beta,_mm_sub_ps(rinv{I}{J},sh_ewald));
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,_mm_sub_ps(rinv{I}{J},sh_ewald));
             /*                 #else */
-            velec            = _mm_nmacc_ps(pmecorrV,beta,rinv{I}{J});
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,rinv{I}{J});
             /*                 #endif */
             velec            = _mm_mul_ps(qq{I}{J},velec);
             /*             #endif */
@@ -682,15 +682,15 @@ void
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
             /*             #define INNERFLOPS INNERFLOPS+4 */
             /*             #if 'Potential' in KERNEL_VF */
-            VV               = _mm_macc_ps(vfeps,Fp,Y);
+            VV               = gmx_mm_fmadd_ps(vfeps,Fp,Y);
             velec            = _mm_mul_ps(qq{I}{J},VV);
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
             /*             #if 'Force' in KERNEL_VF */
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             felec            = _mm_xor_ps(signbit,_mm_mul_ps(_mm_mul_ps(qq{I}{J},FF),_mm_mul_ps(vftabscale,rinv{I}{J})));
             /*                 #define INNERFLOPS INNERFLOPS+7 */
             /*             #endif */
@@ -712,11 +712,11 @@ void
             vvdw12           = _mm_mul_ps(c12_{I}{J},_mm_mul_ps(rinvsix,rinvsix));
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*                 #if KERNEL_MOD_VDW=='PotentialShift' */
-            vvdw             = _mm_msub_ps(_mm_nmacc_ps(c12_{I}{J},_mm_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
-                                          _mm_mul_ps( _mm_nmacc_ps(c6_{I}{J},sh_vdw_invrcut6,vvdw6),one_sixth));
+            vvdw             = gmx_mm_fmsub_ps(gmx_mm_fnmadd_ps(c12_{I}{J},_mm_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
+                                          _mm_mul_ps( gmx_mm_fnmadd_ps(c6_{I}{J},sh_vdw_invrcut6,vvdw6),one_sixth));
             /*                     #define INNERFLOPS INNERFLOPS+8 */
             /*                 #else */
-            vvdw             = _mm_msub_ps(vvdw12,one_twelfth,_mm_mul_ps(vvdw6,one_sixth));
+            vvdw             = gmx_mm_fmsub_ps(vvdw12,one_twelfth,_mm_mul_ps(vvdw6,one_sixth));
             /*                     #define INNERFLOPS INNERFLOPS+3 */
             /*                 #endif */
             /*                 ## Check for force inside potential check, i.e. this means we already did the potential part */
@@ -726,7 +726,7 @@ void
             /*                 #endif */
             /*             #elif KERNEL_VF=='Force' */
             /*                 ## Force-only LennardJones makes it possible to save 1 flop (they do add up...) */
-            fvdw             = _mm_mul_ps(_mm_msub_ps(c12_{I}{J},rinvsix,c6_{I}{J}),_mm_mul_ps(rinvsix,rinvsq{I}{J}));
+            fvdw             = _mm_mul_ps(gmx_mm_fmsub_ps(c12_{I}{J},rinvsix,c6_{I}{J}),_mm_mul_ps(rinvsix,rinvsq{I}{J}));
             /*                 #define INNERFLOPS INNERFLOPS+4 */
             /*             #endif */
 
@@ -741,15 +741,15 @@ void
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
             /*             #define INNERFLOPS INNERFLOPS+4 */
             /*             #if 'Potential' in KERNEL_VF */
-            VV               = _mm_macc_ps(vfeps,Fp,Y);
+            VV               = gmx_mm_fmadd_ps(vfeps,Fp,Y);
             vvdw6            = _mm_mul_ps(c6_{I}{J},VV);
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
             /*             #if 'Force' in KERNEL_VF */
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw6            = _mm_mul_ps(c6_{I}{J},FF);
             /*                 #define INNERFLOPS INNERFLOPS+4 */
             /*             #endif */
@@ -761,15 +761,15 @@ void
             G                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,2) );
             H                = _mm_load_ps( vftab + _mm_extract_epi32(vfitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(vfeps,_mm_macc_ps(H,vfeps,G),F);
+            Fp               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(H,vfeps,G),F);
             /*             #define INNERFLOPS INNERFLOPS+4 */
             /*             #if 'Potential' in KERNEL_VF */
-            VV               = _mm_macc_ps(vfeps,Fp,Y);
+            VV               = gmx_mm_fmadd_ps(vfeps,Fp,Y);
             vvdw12           = _mm_mul_ps(c12_{I}{J},VV);
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
             /*             #if 'Force' in KERNEL_VF */
-            FF               = _mm_macc_ps(vfeps,_mm_macc_ps(twovfeps,H,G),Fp);
+            FF               = gmx_mm_fmadd_ps(vfeps,gmx_mm_fmadd_ps(twovfeps,H,G),Fp);
             fvdw12           = _mm_mul_ps(c12_{I}{J},FF);
             /*                 #define INNERFLOPS INNERFLOPS+5 */
             /*             #endif */
@@ -790,11 +790,11 @@ void
             d                = _mm_sub_ps(r{I}{J},rswitch);
             d                = _mm_max_ps(d,_mm_setzero_ps());
             d2               = _mm_mul_ps(d,d);
-            sw               = _mm_add_ps(one,_mm_mul_ps(d2,_mm_mul_ps(d,_mm_macc_ps(d,_mm_macc_ps(d,swV5,swV4),swV3))));
+            sw               = _mm_add_ps(one,_mm_mul_ps(d2,_mm_mul_ps(d,gmx_mm_fmadd_ps(d,gmx_mm_fmadd_ps(d,swV5,swV4),swV3))));
             /*         #define INNERFLOPS INNERFLOPS+10 */
 
             /*         #if 'Force' in KERNEL_VF */
-            dsw              = _mm_mul_ps(d2,_mm_macc_ps(d,_mm_macc_ps(d,swF4,swF3),swF2));
+            dsw              = _mm_mul_ps(d2,gmx_mm_fmadd_ps(d,gmx_mm_fmadd_ps(d,swF4,swF3),swF2));
             /*             #define INNERFLOPS INNERFLOPS+5 */
             /*         #endif */
 
@@ -802,11 +802,11 @@ void
             /*         #if 'Force' in KERNEL_VF */
             /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
             /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
-            felec            = _mm_msub_ps( felec,sw , _mm_mul_ps(rinv{I}{J},_mm_mul_ps(velec,dsw)) );
+            felec            = gmx_mm_fmsub_ps( felec,sw , _mm_mul_ps(rinv{I}{J},_mm_mul_ps(velec,dsw)) );
             /*                 #define INNERFLOPS INNERFLOPS+4 */
             /*             #endif */
             /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
-            fvdw             = _mm_msub_ps( fvdw,sw , _mm_mul_ps(rinv{I}{J},_mm_mul_ps(vvdw,dsw)) );
+            fvdw             = gmx_mm_fmsub_ps( fvdw,sw , _mm_mul_ps(rinv{I}{J},_mm_mul_ps(vvdw,dsw)) );
             /*                 #define INNERFLOPS INNERFLOPS+4 */
             /*             #endif */
             /*         #endif */
@@ -890,9 +890,9 @@ void
             /* #define INNERFLOPS INNERFLOPS+3      */
 
              /* Update vectorial force */
-            fix{I}             = _mm_macc_ps(dx{I}{J},fscal,fix{I});
-            fiy{I}             = _mm_macc_ps(dy{I}{J},fscal,fiy{I});
-            fiz{I}             = _mm_macc_ps(dz{I}{J},fscal,fiz{I});
+            fix{I}             = gmx_mm_fmadd_ps(dx{I}{J},fscal,fix{I});
+            fiy{I}             = gmx_mm_fmadd_ps(dy{I}{J},fscal,fiy{I});
+            fiz{I}             = gmx_mm_fmadd_ps(dz{I}{J},fscal,fiz{I});
             /*             #define INNERFLOPS INNERFLOPS+6 */
 
             /* #if GEOMETRY_I == 'Particle'             */
@@ -913,9 +913,9 @@ void
                                                    _mm_mul_ps(dz{I}{J},fscal));
             /*     #define INNERFLOPS INNERFLOPS+3      */
             /* #else                                    */
-            fjx{J}             = _mm_macc_ps(dx{I}{J},fscal,fjx{J});
-            fjy{J}             = _mm_macc_ps(dy{I}{J},fscal,fjy{J});
-            fjz{J}             = _mm_macc_ps(dz{I}{J},fscal,fjz{J});
+            fjx{J}             = gmx_mm_fmadd_ps(dx{I}{J},fscal,fjx{J});
+            fjy{J}             = gmx_mm_fmadd_ps(dy{I}{J},fscal,fjy{J});
+            fjz{J}             = gmx_mm_fmadd_ps(dz{I}{J},fscal,fjz{J});
             /*     #define INNERFLOPS INNERFLOPS+3      */
             /* #endif                                   */
 

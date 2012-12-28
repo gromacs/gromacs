@@ -242,10 +242,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,_mm_sub_ps(rinv00,sh_ewald));
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,_mm_sub_ps(rinv00,sh_ewald));
             velec            = _mm_mul_ps(qq00,velec);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
@@ -253,8 +253,8 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_avx_128_fma_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_ps(c6_00,rinvsix);
             vvdw12           = _mm_mul_ps(c12_00,_mm_mul_ps(rinvsix,rinvsix));
-            vvdw             = _mm_msub_ps(_mm_nmacc_ps(c12_00,_mm_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
-                                          _mm_mul_ps( _mm_nmacc_ps(c6_00,sh_vdw_invrcut6,vvdw6),one_sixth));
+            vvdw             = gmx_mm_fmsub_ps(gmx_mm_fnmadd_ps(c12_00,_mm_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
+                                          _mm_mul_ps( gmx_mm_fnmadd_ps(c6_00,sh_vdw_invrcut6,vvdw6),one_sixth));
             fvdw             = _mm_mul_ps(_mm_sub_ps(vvdw12,vvdw6),rinvsq00);
 
             cutoff_mask      = _mm_cmplt_ps(rsq00,rcutoff2);
@@ -270,9 +270,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_avx_128_fma_single
             fscal            = _mm_and_ps(fscal,cutoff_mask);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -359,10 +359,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
             pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
-            velec            = _mm_nmacc_ps(pmecorrV,beta,_mm_sub_ps(rinv00,sh_ewald));
+            velec            = gmx_mm_fnmadd_ps(pmecorrV,beta,_mm_sub_ps(rinv00,sh_ewald));
             velec            = _mm_mul_ps(qq00,velec);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
@@ -370,8 +370,8 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_avx_128_fma_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_ps(c6_00,rinvsix);
             vvdw12           = _mm_mul_ps(c12_00,_mm_mul_ps(rinvsix,rinvsix));
-            vvdw             = _mm_msub_ps(_mm_nmacc_ps(c12_00,_mm_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
-                                          _mm_mul_ps( _mm_nmacc_ps(c6_00,sh_vdw_invrcut6,vvdw6),one_sixth));
+            vvdw             = gmx_mm_fmsub_ps(gmx_mm_fnmadd_ps(c12_00,_mm_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
+                                          _mm_mul_ps( gmx_mm_fnmadd_ps(c6_00,sh_vdw_invrcut6,vvdw6),one_sixth));
             fvdw             = _mm_mul_ps(_mm_sub_ps(vvdw12,vvdw6),rinvsq00);
 
             cutoff_mask      = _mm_cmplt_ps(rsq00,rcutoff2);
@@ -391,9 +391,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
@@ -621,13 +621,13 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
-            fvdw             = _mm_mul_ps(_mm_msub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
+            fvdw             = _mm_mul_ps(gmx_mm_fmsub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
 
             cutoff_mask      = _mm_cmplt_ps(rsq00,rcutoff2);
 
@@ -636,9 +636,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_avx_128_fma_single
             fscal            = _mm_and_ps(fscal,cutoff_mask);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -725,13 +725,13 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_avx_128_fma_single
             zeta2            = _mm_mul_ps(beta2,rsq00);
             rinv3            = _mm_mul_ps(rinvsq00,rinv00);
             pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
-            felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
+            felec            = gmx_mm_fmadd_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq00,felec);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
-            fvdw             = _mm_mul_ps(_mm_msub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
+            fvdw             = _mm_mul_ps(gmx_mm_fmsub_ps(c12_00,rinvsix,c6_00),_mm_mul_ps(rinvsix,rinvsq00));
 
             cutoff_mask      = _mm_cmplt_ps(rsq00,rcutoff2);
 
@@ -742,9 +742,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
