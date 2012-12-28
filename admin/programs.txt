@@ -87,7 +87,6 @@ END
 HEAD|Analyzing bonded interactions
 g_angle|calculates distributions and correlations for angles and dihedrals
 g_bond|calculates bond length distributions
-g_dih|analyzes dihedral transitions
 mk_angndx|generates index files for g_angle
 END
 

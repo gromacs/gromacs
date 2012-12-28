@@ -110,10 +110,6 @@ gmx_dielectric(int argc,char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int 
-gmx_dih(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
 gmx_dipoles(int argc,char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
