@@ -733,11 +733,12 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
         GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" ACCELERATION_C_FLAGS)
     endif(NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
-        message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
         # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
-        # intrinsics when SSE2 support is enabled, so we try that instead.
+        # intrinsics when SSE2 support is enabled, so we try that instead first.
 	if (GMX_NATIVE_WINDOWS)
             GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
+        else()
+            message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance")
         endif()
     endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
 
