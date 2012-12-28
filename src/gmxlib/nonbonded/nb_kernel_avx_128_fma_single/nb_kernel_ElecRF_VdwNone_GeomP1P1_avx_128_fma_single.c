@@ -195,8 +195,8 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_VF_avx_128_fma_single
             qq00             = _mm_mul_ps(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            velec            = _mm_mul_ps(qq00,_mm_sub_ps(_mm_macc_ps(krf,rsq00,rinv00),crf));
-            felec            = _mm_mul_ps(qq00,_mm_msub_ps(rinv00,rinvsq00,krf2));
+            velec            = _mm_mul_ps(qq00,_mm_sub_ps(gmx_mm_fmadd_ps(krf,rsq00,rinv00),crf));
+            felec            = _mm_mul_ps(qq00,gmx_mm_fmsub_ps(rinv00,rinvsq00,krf2));
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
             velecsum         = _mm_add_ps(velecsum,velec);
@@ -204,9 +204,9 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -271,8 +271,8 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_VF_avx_128_fma_single
             qq00             = _mm_mul_ps(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            velec            = _mm_mul_ps(qq00,_mm_sub_ps(_mm_macc_ps(krf,rsq00,rinv00),crf));
-            felec            = _mm_mul_ps(qq00,_mm_msub_ps(rinv00,rinvsq00,krf2));
+            velec            = _mm_mul_ps(qq00,_mm_sub_ps(gmx_mm_fmadd_ps(krf,rsq00,rinv00),crf));
+            felec            = _mm_mul_ps(qq00,gmx_mm_fmsub_ps(rinv00,rinvsq00,krf2));
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
             velec            = _mm_andnot_ps(dummy_mask,velec);
@@ -283,9 +283,9 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
@@ -464,14 +464,14 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_F_avx_128_fma_single
             qq00             = _mm_mul_ps(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            felec            = _mm_mul_ps(qq00,_mm_msub_ps(rinv00,rinvsq00,krf2));
+            felec            = _mm_mul_ps(qq00,gmx_mm_fmsub_ps(rinv00,rinvsq00,krf2));
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -536,16 +536,16 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_F_avx_128_fma_single
             qq00             = _mm_mul_ps(iq0,jq0);
 
             /* REACTION-FIELD ELECTROSTATICS */
-            felec            = _mm_mul_ps(qq00,_mm_msub_ps(rinv00,rinvsq00,krf2));
+            felec            = _mm_mul_ps(qq00,gmx_mm_fmsub_ps(rinv00,rinvsq00,krf2));
 
             fscal            = felec;
 
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;

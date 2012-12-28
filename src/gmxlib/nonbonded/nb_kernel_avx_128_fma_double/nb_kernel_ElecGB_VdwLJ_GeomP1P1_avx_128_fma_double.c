@@ -233,25 +233,25 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_128_fma_double
             G                = _mm_load_pd( gbtab + _mm_extract_epi32(gbitab,0) +2);
             H                = _mm_load_pd( gbtab + _mm_extract_epi32(gbitab,1) +2);
             GMX_MM_TRANSPOSE2_PD(G,H);
-            Fp               = _mm_macc_pd(gbeps,_mm_macc_pd(gbeps,H,G),F);
-            VV               = _mm_macc_pd(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_pd(gbeps,gmx_mm_fmadd_pd(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_pd(gbeps,Fp,Y);
             vgb              = _mm_mul_pd(gbqqfactor,VV);
 
             twogbeps         = _mm_add_pd(gbeps,gbeps);
-            FF               = _mm_macc_pd(_mm_macc_pd(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_pd(gmx_mm_fmadd_pd(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_pd(gbqqfactor,_mm_mul_pd(FF,gbscale));
-            dvdatmp          = _mm_mul_pd(minushalf,_mm_macc_pd(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_pd(minushalf,gmx_mm_fmadd_pd(fgb,r00,vgb));
             dvdasum          = _mm_add_pd(dvdasum,dvdatmp);
             gmx_mm_increment_2real_swizzle_pd(dvda+jnrA,dvda+jnrB,_mm_mul_pd(dvdatmp,_mm_mul_pd(isaj0,isaj0)));
             velec            = _mm_mul_pd(qq00,rinv00);
-            felec            = _mm_mul_pd(_mm_msub_pd(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_pd(gmx_mm_fmsub_pd(velec,rinv00,fgb),rinv00);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_pd(c6_00,rinvsix);
             vvdw12           = _mm_mul_pd(c12_00,_mm_mul_pd(rinvsix,rinvsix));
-            vvdw             = _mm_msub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
+            vvdw             = gmx_mm_fmsub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
             fvdw             = _mm_mul_pd(_mm_sub_pd(vvdw12,vvdw6),rinvsq00);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -262,9 +262,9 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_128_fma_double
             fscal            = _mm_add_pd(felec,fvdw);
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_2ptr_swizzle_pd(f+j_coord_offsetA,f+j_coord_offsetB,
                                                    _mm_mul_pd(dx00,fscal),
@@ -334,25 +334,25 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_128_fma_double
             G                = _mm_load_pd( gbtab + _mm_extract_epi32(gbitab,0) +2);
             H                = _mm_setzero_pd();
             GMX_MM_TRANSPOSE2_PD(G,H);
-            Fp               = _mm_macc_pd(gbeps,_mm_macc_pd(gbeps,H,G),F);
-            VV               = _mm_macc_pd(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_pd(gbeps,gmx_mm_fmadd_pd(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_pd(gbeps,Fp,Y);
             vgb              = _mm_mul_pd(gbqqfactor,VV);
 
             twogbeps         = _mm_add_pd(gbeps,gbeps);
-            FF               = _mm_macc_pd(_mm_macc_pd(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_pd(gmx_mm_fmadd_pd(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_pd(gbqqfactor,_mm_mul_pd(FF,gbscale));
-            dvdatmp          = _mm_mul_pd(minushalf,_mm_macc_pd(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_pd(minushalf,gmx_mm_fmadd_pd(fgb,r00,vgb));
             dvdasum          = _mm_add_pd(dvdasum,dvdatmp);
             gmx_mm_increment_1real_pd(dvda+jnrA,_mm_mul_pd(dvdatmp,_mm_mul_pd(isaj0,isaj0)));
             velec            = _mm_mul_pd(qq00,rinv00);
-            felec            = _mm_mul_pd(_mm_msub_pd(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_pd(gmx_mm_fmsub_pd(velec,rinv00,fgb),rinv00);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_pd(c6_00,rinvsix);
             vvdw12           = _mm_mul_pd(c12_00,_mm_mul_pd(rinvsix,rinvsix));
-            vvdw             = _mm_msub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
+            vvdw             = gmx_mm_fmsub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
             fvdw             = _mm_mul_pd(_mm_sub_pd(vvdw12,vvdw6),rinvsq00);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
@@ -368,9 +368,9 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_128_fma_double
             fscal            = _mm_unpacklo_pd(fscal,_mm_setzero_pd());
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_1ptr_swizzle_pd(f+j_coord_offsetA,
                                                    _mm_mul_pd(dx00,fscal),
@@ -586,30 +586,30 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_avx_128_fma_double
             G                = _mm_load_pd( gbtab + _mm_extract_epi32(gbitab,0) +2);
             H                = _mm_load_pd( gbtab + _mm_extract_epi32(gbitab,1) +2);
             GMX_MM_TRANSPOSE2_PD(G,H);
-            Fp               = _mm_macc_pd(gbeps,_mm_macc_pd(gbeps,H,G),F);
-            VV               = _mm_macc_pd(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_pd(gbeps,gmx_mm_fmadd_pd(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_pd(gbeps,Fp,Y);
             vgb              = _mm_mul_pd(gbqqfactor,VV);
 
             twogbeps         = _mm_add_pd(gbeps,gbeps);
-            FF               = _mm_macc_pd(_mm_macc_pd(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_pd(gmx_mm_fmadd_pd(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_pd(gbqqfactor,_mm_mul_pd(FF,gbscale));
-            dvdatmp          = _mm_mul_pd(minushalf,_mm_macc_pd(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_pd(minushalf,gmx_mm_fmadd_pd(fgb,r00,vgb));
             dvdasum          = _mm_add_pd(dvdasum,dvdatmp);
             gmx_mm_increment_2real_swizzle_pd(dvda+jnrA,dvda+jnrB,_mm_mul_pd(dvdatmp,_mm_mul_pd(isaj0,isaj0)));
             velec            = _mm_mul_pd(qq00,rinv00);
-            felec            = _mm_mul_pd(_mm_msub_pd(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_pd(gmx_mm_fmsub_pd(velec,rinv00,fgb),rinv00);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
-            fvdw             = _mm_mul_pd(_mm_msub_pd(c12_00,rinvsix,c6_00),_mm_mul_pd(rinvsix,rinvsq00));
+            fvdw             = _mm_mul_pd(gmx_mm_fmsub_pd(c12_00,rinvsix,c6_00),_mm_mul_pd(rinvsix,rinvsq00));
 
             fscal            = _mm_add_pd(felec,fvdw);
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_2ptr_swizzle_pd(f+j_coord_offsetA,f+j_coord_offsetB,
                                                    _mm_mul_pd(dx00,fscal),
@@ -679,32 +679,32 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_avx_128_fma_double
             G                = _mm_load_pd( gbtab + _mm_extract_epi32(gbitab,0) +2);
             H                = _mm_setzero_pd();
             GMX_MM_TRANSPOSE2_PD(G,H);
-            Fp               = _mm_macc_pd(gbeps,_mm_macc_pd(gbeps,H,G),F);
-            VV               = _mm_macc_pd(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_pd(gbeps,gmx_mm_fmadd_pd(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_pd(gbeps,Fp,Y);
             vgb              = _mm_mul_pd(gbqqfactor,VV);
 
             twogbeps         = _mm_add_pd(gbeps,gbeps);
-            FF               = _mm_macc_pd(_mm_macc_pd(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_pd(gmx_mm_fmadd_pd(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_pd(gbqqfactor,_mm_mul_pd(FF,gbscale));
-            dvdatmp          = _mm_mul_pd(minushalf,_mm_macc_pd(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_pd(minushalf,gmx_mm_fmadd_pd(fgb,r00,vgb));
             dvdasum          = _mm_add_pd(dvdasum,dvdatmp);
             gmx_mm_increment_1real_pd(dvda+jnrA,_mm_mul_pd(dvdatmp,_mm_mul_pd(isaj0,isaj0)));
             velec            = _mm_mul_pd(qq00,rinv00);
-            felec            = _mm_mul_pd(_mm_msub_pd(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_pd(gmx_mm_fmsub_pd(velec,rinv00,fgb),rinv00);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
-            fvdw             = _mm_mul_pd(_mm_msub_pd(c12_00,rinvsix,c6_00),_mm_mul_pd(rinvsix,rinvsq00));
+            fvdw             = _mm_mul_pd(gmx_mm_fmsub_pd(c12_00,rinvsix,c6_00),_mm_mul_pd(rinvsix,rinvsq00));
 
             fscal            = _mm_add_pd(felec,fvdw);
 
             fscal            = _mm_unpacklo_pd(fscal,_mm_setzero_pd());
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_1ptr_swizzle_pd(f+j_coord_offsetA,
                                                    _mm_mul_pd(dx00,fscal),

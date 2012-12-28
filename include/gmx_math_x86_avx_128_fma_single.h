@@ -70,7 +70,7 @@ gmx_mm_invsqrt_ps(__m128 x)
 
     __m128 lu = _mm_rsqrt_ps(x);
 
-    return _mm_macc_ps(_mm_nmacc_ps(x,_mm_mul_ps(lu,lu),one),_mm_mul_ps(lu,half),lu);
+    return gmx_mm_fmadd_ps(gmx_mm_fnmadd_ps(x,_mm_mul_ps(lu,lu),one),_mm_mul_ps(lu,half),lu);
 }
 
 /* sqrt(x) - Do NOT use this (but rather invsqrt) if you actually need 1.0/sqrt(x) */
@@ -96,7 +96,7 @@ gmx_mm_inv_ps(__m128 x)
 
     __m128 lu = _mm_rcp_ps(x);
 
-    return _mm_mul_ps(lu,_mm_nmacc_ps(lu,x,two));
+    return _mm_mul_ps(lu,gmx_mm_fnmadd_ps(lu,x,two));
 }
 
 static gmx_inline __m128
@@ -161,10 +161,10 @@ gmx_mm_log_ps(__m128 x)
     pD    = _mm_add_ps(x,CD_1);
     pE    = _mm_add_ps(x,CE_1);
 
-    pB    = _mm_macc_ps(x,pB,CB_0);
-    pC    = _mm_macc_ps(x,pC,CC_0);
-    pD    = _mm_macc_ps(x,pD,CD_0);
-    pE    = _mm_macc_ps(x,pE,CE_0);
+    pB    = gmx_mm_fmadd_ps(x,pB,CB_0);
+    pC    = gmx_mm_fmadd_ps(x,pC,CC_0);
+    pD    = gmx_mm_fmadd_ps(x,pD,CD_0);
+    pE    = gmx_mm_fmadd_ps(x,pE,CE_0);
 
     pA    = _mm_mul_ps(pA,pB);
     pC    = _mm_mul_ps(pC,pD);
@@ -173,11 +173,11 @@ gmx_mm_log_ps(__m128 x)
     y     = _mm_mul_ps(pA,pE);
 
     fexp  = _mm_cvtepi32_ps(iexp);
-    y     = _mm_macc_ps(fexp,corr1,y);
-    y     = _mm_nmacc_ps(half,x2,y);
+    y     = gmx_mm_fmadd_ps(fexp,corr1,y);
+    y     = gmx_mm_fnmadd_ps(half,x2,y);
 
     x2    = _mm_add_ps(x,y);
-    x2    = _mm_macc_ps(fexp,corr2,x2);
+    x2    = gmx_mm_fmadd_ps(fexp,corr2,x2);
 
     return x2;
 }
@@ -232,12 +232,12 @@ gmx_mm_exp2_ps(__m128 x)
     x         = _mm_sub_ps(x,intpart);
     x2        = _mm_mul_ps(x,x);
 
-    p0        = _mm_macc_ps(CA6,x2,CA4);
-    p1        = _mm_macc_ps(CA5,x2,CA3);
-    p0        = _mm_macc_ps(p0,x2,CA2);
-    p1        = _mm_macc_ps(p1,x2,CA1);
-    p0        = _mm_macc_ps(p0,x2,CA0);
-    p0        = _mm_macc_ps(p1,x,p0);
+    p0        = gmx_mm_fmadd_ps(CA6,x2,CA4);
+    p1        = gmx_mm_fmadd_ps(CA5,x2,CA3);
+    p0        = gmx_mm_fmadd_ps(p0,x2,CA2);
+    p1        = gmx_mm_fmadd_ps(p1,x2,CA1);
+    p0        = gmx_mm_fmadd_ps(p0,x2,CA0);
+    p0        = gmx_mm_fmadd_ps(p1,x,p0);
     x         = _mm_mul_ps(p0,fexppart);
 
     return  x;
@@ -289,17 +289,17 @@ gmx_mm_exp_ps(__m128 x)
     fexppart  = _mm_and_ps(valuemask,gmx_mm_castsi128_ps(iexppart));
 
     /* Extended precision arithmetics */
-    x         = _mm_nmacc_ps(invargscale0,intpart,x);
-    x         = _mm_nmacc_ps(invargscale1,intpart,x);
+    x         = gmx_mm_fnmadd_ps(invargscale0,intpart,x);
+    x         = gmx_mm_fnmadd_ps(invargscale1,intpart,x);
 
     x2        = _mm_mul_ps(x,x);
 
-    p1        = _mm_macc_ps(CC5,x2,CC3);
-    p0        = _mm_macc_ps(CC4,x2,CC2);
-    p1        = _mm_macc_ps(p1,x2,CC1);
-    p0        = _mm_macc_ps(p0,x2,CC0);
-    p0        = _mm_macc_ps(p1,x,p0);
-    p0        = _mm_macc_ps(p0,x2,one);
+    p1        = gmx_mm_fmadd_ps(CC5,x2,CC3);
+    p0        = gmx_mm_fmadd_ps(CC4,x2,CC2);
+    p1        = gmx_mm_fmadd_ps(p1,x2,CC1);
+    p0        = gmx_mm_fmadd_ps(p0,x2,CC0);
+    p0        = gmx_mm_fmadd_ps(p1,x,p0);
+    p0        = gmx_mm_fmadd_ps(p0,x2,one);
 
     x         = _mm_add_ps(x,p0);
 
@@ -366,12 +366,12 @@ gmx_mm_erf_ps(__m128 x)
     x2     = _mm_mul_ps(x,x);
     x4     = _mm_mul_ps(x2,x2);
 
-    pA0  = _mm_macc_ps(CA6,x4,CA4);
-    pA1  = _mm_macc_ps(CA5,x4,CA3);
-    pA0  = _mm_macc_ps(pA0,x4,CA2);
-    pA1  = _mm_macc_ps(pA1,x4,CA1);
+    pA0  = gmx_mm_fmadd_ps(CA6,x4,CA4);
+    pA1  = gmx_mm_fmadd_ps(CA5,x4,CA3);
+    pA0  = gmx_mm_fmadd_ps(pA0,x4,CA2);
+    pA1  = gmx_mm_fmadd_ps(pA1,x4,CA1);
     pA0  = _mm_mul_ps(pA0,x4);
-    pA0  = _mm_macc_ps(pA1,x2,pA0);
+    pA0  = gmx_mm_fmadd_ps(pA1,x2,pA0);
     /* Constant term must come last for precision reasons */
     pA0  = _mm_add_ps(pA0,CA0);
 
@@ -399,35 +399,35 @@ gmx_mm_erf_ps(__m128 x)
     z       = _mm_and_ps(y,sieve);
     q       = _mm_mul_ps( _mm_sub_ps(z,y) , _mm_add_ps(z,y) );
 
-    corr    = _mm_macc_ps(CD4,q,CD3);
-    corr    = _mm_macc_ps(corr,q,CD2);
-    corr    = _mm_macc_ps(corr,q,one);
-    corr    = _mm_macc_ps(corr,q,one);
+    corr    = gmx_mm_fmadd_ps(CD4,q,CD3);
+    corr    = gmx_mm_fmadd_ps(corr,q,CD2);
+    corr    = gmx_mm_fmadd_ps(corr,q,one);
+    corr    = gmx_mm_fmadd_ps(corr,q,one);
 
     expmx2  = gmx_mm_exp_ps( _mm_or_ps( signbit , _mm_mul_ps(z,z) ) );
     expmx2  = _mm_mul_ps(expmx2,corr);
 
-    pB1  = _mm_macc_ps(CB9,w2,CB7);
-    pB0  = _mm_macc_ps(CB8,w2,CB6);
-    pB1  = _mm_macc_ps(pB1,w2,CB5);
-    pB0  = _mm_macc_ps(pB0,w2,CB4);
-    pB1  = _mm_macc_ps(pB1,w2,CB3);
-    pB0  = _mm_macc_ps(pB0,w2,CB2);
-    pB1  = _mm_macc_ps(pB1,w2,CB1);
-    pB0  = _mm_macc_ps(pB0,w2,CB0);
-    pB0  = _mm_macc_ps(pB1,w,pB0);
+    pB1  = gmx_mm_fmadd_ps(CB9,w2,CB7);
+    pB0  = gmx_mm_fmadd_ps(CB8,w2,CB6);
+    pB1  = gmx_mm_fmadd_ps(pB1,w2,CB5);
+    pB0  = gmx_mm_fmadd_ps(pB0,w2,CB4);
+    pB1  = gmx_mm_fmadd_ps(pB1,w2,CB3);
+    pB0  = gmx_mm_fmadd_ps(pB0,w2,CB2);
+    pB1  = gmx_mm_fmadd_ps(pB1,w2,CB1);
+    pB0  = gmx_mm_fmadd_ps(pB0,w2,CB0);
+    pB0  = gmx_mm_fmadd_ps(pB1,w,pB0);
 
-    pC0  = _mm_macc_ps(CC10,t2,CC8);
-    pC1  = _mm_macc_ps(CC9,t2,CC7);
-    pC0  = _mm_macc_ps(pC0,t2,CC6);
-    pC1  = _mm_macc_ps(pC1,t2,CC5);
-    pC0  = _mm_macc_ps(pC0,t2,CC4);
-    pC1  = _mm_macc_ps(pC1,t2,CC3);
-    pC0  = _mm_macc_ps(pC0,t2,CC2);
-    pC1  = _mm_macc_ps(pC1,t2,CC1);
+    pC0  = gmx_mm_fmadd_ps(CC10,t2,CC8);
+    pC1  = gmx_mm_fmadd_ps(CC9,t2,CC7);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC6);
+    pC1  = gmx_mm_fmadd_ps(pC1,t2,CC5);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC4);
+    pC1  = gmx_mm_fmadd_ps(pC1,t2,CC3);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC2);
+    pC1  = gmx_mm_fmadd_ps(pC1,t2,CC1);
 
-    pC0  = _mm_macc_ps(pC0,t2,CC0);
-    pC0  = _mm_macc_ps(pC1,t,pC0);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC0);
+    pC0  = gmx_mm_fmadd_ps(pC1,t,pC0);
     pC0  = _mm_mul_ps(pC0,t);
 
     /* SELECT pB0 or pC0 for erfc() */
@@ -505,12 +505,12 @@ gmx_mm_erfc_ps(__m128 x)
     x2     = _mm_mul_ps(x,x);
     x4     = _mm_mul_ps(x2,x2);
 
-    pA0  = _mm_macc_ps(CA6,x4,CA4);
-    pA1  = _mm_macc_ps(CA5,x4,CA3);
-    pA0  = _mm_macc_ps(pA0,x4,CA2);
-    pA1  = _mm_macc_ps(pA1,x4,CA1);
+    pA0  = gmx_mm_fmadd_ps(CA6,x4,CA4);
+    pA1  = gmx_mm_fmadd_ps(CA5,x4,CA3);
+    pA0  = gmx_mm_fmadd_ps(pA0,x4,CA2);
+    pA1  = gmx_mm_fmadd_ps(pA1,x4,CA1);
     pA1  = _mm_mul_ps(pA1,x2);
-    pA0  = _mm_macc_ps(pA0,x4,pA1);
+    pA0  = gmx_mm_fmadd_ps(pA0,x4,pA1);
     /* Constant term must come last for precision reasons */
     pA0  = _mm_add_ps(pA0,CA0);
 
@@ -537,35 +537,35 @@ gmx_mm_erfc_ps(__m128 x)
     z       = _mm_and_ps(y,sieve);
     q       = _mm_mul_ps( _mm_sub_ps(z,y) , _mm_add_ps(z,y) );
 
-    corr    = _mm_macc_ps(CD4,q,CD3);
-    corr    = _mm_macc_ps(corr,q,CD2);
-    corr    = _mm_macc_ps(corr,q,one);
-    corr    = _mm_macc_ps(corr,q,one);
+    corr    = gmx_mm_fmadd_ps(CD4,q,CD3);
+    corr    = gmx_mm_fmadd_ps(corr,q,CD2);
+    corr    = gmx_mm_fmadd_ps(corr,q,one);
+    corr    = gmx_mm_fmadd_ps(corr,q,one);
 
     expmx2  = gmx_mm_exp_ps( _mm_or_ps( signbit , _mm_mul_ps(z,z) ) );
     expmx2  = _mm_mul_ps(expmx2,corr);
 
-    pB1  = _mm_macc_ps(CB9,w2,CB7);
-    pB0  = _mm_macc_ps(CB8,w2,CB6);
-    pB1  = _mm_macc_ps(pB1,w2,CB5);
-    pB0  = _mm_macc_ps(pB0,w2,CB4);
-    pB1  = _mm_macc_ps(pB1,w2,CB3);
-    pB0  = _mm_macc_ps(pB0,w2,CB2);
-    pB1  = _mm_macc_ps(pB1,w2,CB1);
-    pB0  = _mm_macc_ps(pB0,w2,CB0);
-    pB0  = _mm_macc_ps(pB1,w,pB0);
+    pB1  = gmx_mm_fmadd_ps(CB9,w2,CB7);
+    pB0  = gmx_mm_fmadd_ps(CB8,w2,CB6);
+    pB1  = gmx_mm_fmadd_ps(pB1,w2,CB5);
+    pB0  = gmx_mm_fmadd_ps(pB0,w2,CB4);
+    pB1  = gmx_mm_fmadd_ps(pB1,w2,CB3);
+    pB0  = gmx_mm_fmadd_ps(pB0,w2,CB2);
+    pB1  = gmx_mm_fmadd_ps(pB1,w2,CB1);
+    pB0  = gmx_mm_fmadd_ps(pB0,w2,CB0);
+    pB0  = gmx_mm_fmadd_ps(pB1,w,pB0);
 
-    pC0  = _mm_macc_ps(CC10,t2,CC8);
-    pC1  = _mm_macc_ps(CC9,t2,CC7);
-    pC0  = _mm_macc_ps(pC0,t2,CC6);
-    pC1  = _mm_macc_ps(pC1,t2,CC5);
-    pC0  = _mm_macc_ps(pC0,t2,CC4);
-    pC1  = _mm_macc_ps(pC1,t2,CC3);
-    pC0  = _mm_macc_ps(pC0,t2,CC2);
-    pC1  = _mm_macc_ps(pC1,t2,CC1);
+    pC0  = gmx_mm_fmadd_ps(CC10,t2,CC8);
+    pC1  = gmx_mm_fmadd_ps(CC9,t2,CC7);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC6);
+    pC1  = gmx_mm_fmadd_ps(pC1,t2,CC5);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC4);
+    pC1  = gmx_mm_fmadd_ps(pC1,t2,CC3);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC2);
+    pC1  = gmx_mm_fmadd_ps(pC1,t2,CC1);
 
-    pC0  = _mm_macc_ps(pC0,t2,CC0);
-    pC0  = _mm_macc_ps(pC1,t,pC0);
+    pC0  = gmx_mm_fmadd_ps(pC0,t2,CC0);
+    pC0  = gmx_mm_fmadd_ps(pC1,t,pC0);
     pC0  = _mm_mul_ps(pC0,t);
 
     /* SELECT pB0 or pC0 for erfc() */
@@ -675,19 +675,19 @@ gmx_mm_pmecorrF_ps(__m128 z2)
     
     z4             = _mm_mul_ps(z2,z2);
     
-    polyFD0        = _mm_macc_ps(FD4,z4,FD2);
-    polyFD1        = _mm_macc_ps(FD3,z4,FD1);
-    polyFD0        = _mm_macc_ps(polyFD0,z4,FD0);
-    polyFD0        = _mm_macc_ps(polyFD1,z2,polyFD0);
+    polyFD0        = gmx_mm_fmadd_ps(FD4,z4,FD2);
+    polyFD1        = gmx_mm_fmadd_ps(FD3,z4,FD1);
+    polyFD0        = gmx_mm_fmadd_ps(polyFD0,z4,FD0);
+    polyFD0        = gmx_mm_fmadd_ps(polyFD1,z2,polyFD0);
     
     polyFD0        = gmx_mm_inv_ps(polyFD0);
     
-    polyFN0        = _mm_macc_ps(FN6,z4,FN4);
-    polyFN1        = _mm_macc_ps(FN5,z4,FN3);
-    polyFN0        = _mm_macc_ps(polyFN0,z4,FN2);
-    polyFN1        = _mm_macc_ps(polyFN1,z4,FN1);
-    polyFN0        = _mm_macc_ps(polyFN0,z4,FN0);
-    polyFN0        = _mm_macc_ps(polyFN1,z2,polyFN0);
+    polyFN0        = gmx_mm_fmadd_ps(FN6,z4,FN4);
+    polyFN1        = gmx_mm_fmadd_ps(FN5,z4,FN3);
+    polyFN0        = gmx_mm_fmadd_ps(polyFN0,z4,FN2);
+    polyFN1        = gmx_mm_fmadd_ps(polyFN1,z4,FN1);
+    polyFN0        = gmx_mm_fmadd_ps(polyFN0,z4,FN0);
+    polyFN0        = gmx_mm_fmadd_ps(polyFN1,z2,polyFN0);
     
     return   _mm_mul_ps(polyFN0,polyFD0);
 }
@@ -744,18 +744,18 @@ gmx_mm_pmecorrV_ps(__m128 z2)
     
     z4             = _mm_mul_ps(z2,z2);
     
-    polyVD1        = _mm_macc_ps(VD3,z4,VD1);
-    polyVD0        = _mm_macc_ps(VD2,z4,VD0);
-    polyVD0        = _mm_macc_ps(polyVD1,z2,polyVD0);
+    polyVD1        = gmx_mm_fmadd_ps(VD3,z4,VD1);
+    polyVD0        = gmx_mm_fmadd_ps(VD2,z4,VD0);
+    polyVD0        = gmx_mm_fmadd_ps(polyVD1,z2,polyVD0);
     
     polyVD0        = gmx_mm_inv_ps(polyVD0);
     
-    polyVN0        = _mm_macc_ps(VN6,z4,VN4);
-    polyVN1        = _mm_macc_ps(VN5,z4,VN3);    
-    polyVN0        = _mm_macc_ps(polyVN0,z4,VN2);
-    polyVN1        = _mm_macc_ps(polyVN1,z4,VN1);
-    polyVN0        = _mm_macc_ps(polyVN0,z4,VN0);
-    polyVN0        = _mm_macc_ps(polyVN1,z2,polyVN0);
+    polyVN0        = gmx_mm_fmadd_ps(VN6,z4,VN4);
+    polyVN1        = gmx_mm_fmadd_ps(VN5,z4,VN3);    
+    polyVN0        = gmx_mm_fmadd_ps(polyVN0,z4,VN2);
+    polyVN1        = gmx_mm_fmadd_ps(polyVN1,z4,VN1);
+    polyVN0        = gmx_mm_fmadd_ps(polyVN0,z4,VN0);
+    polyVN0        = gmx_mm_fmadd_ps(polyVN1,z2,polyVN0);
     
     return   _mm_mul_ps(polyVN0,polyVD0);
 }
@@ -806,20 +806,20 @@ gmx_mm_sincos_ps(__m128 x,
     offset_cos = _mm_add_epi32(iz,ione);
 
     /* Extended precision arithmethic to achieve full precision */
-    y               = _mm_nmacc_ps(z,CA1,x);
-    y               = _mm_nmacc_ps(z,CA2,y);
-    y               = _mm_nmacc_ps(z,CA3,y);
+    y               = gmx_mm_fnmadd_ps(z,CA1,x);
+    y               = gmx_mm_fnmadd_ps(z,CA2,y);
+    y               = gmx_mm_fnmadd_ps(z,CA3,y);
 
     y2              = _mm_mul_ps(y,y);
 
-    tmp1            = _mm_macc_ps(CC0,y2,CC1);
-    tmp2            = _mm_macc_ps(CS0,y2,CS1);
-    tmp1            = _mm_macc_ps(tmp1,y2,CC2);
-    tmp2            = _mm_macc_ps(tmp2,y2,CS2);
+    tmp1            = gmx_mm_fmadd_ps(CC0,y2,CC1);
+    tmp2            = gmx_mm_fmadd_ps(CS0,y2,CS1);
+    tmp1            = gmx_mm_fmadd_ps(tmp1,y2,CC2);
+    tmp2            = gmx_mm_fmadd_ps(tmp2,y2,CS2);
 
-    tmp1            = _mm_macc_ps(tmp1,y2,one);
+    tmp1            = gmx_mm_fmadd_ps(tmp1,y2,one);
 
-    tmp2            = _mm_macc_ps(tmp2,_mm_mul_ps(y,y2),y);
+    tmp2            = gmx_mm_fmadd_ps(tmp2,_mm_mul_ps(y,y2),y);
 
     mask_sin        = gmx_mm_castsi128_ps(_mm_cmpeq_epi32( _mm_and_si128(offset_sin,ione), izero));
     mask_cos        = gmx_mm_castsi128_ps(_mm_cmpeq_epi32( _mm_and_si128(offset_cos,ione), izero));
@@ -917,15 +917,15 @@ gmx_mm_asin_ps(__m128 x)
 
     z2    = _mm_mul_ps(z,z);
 
-    pA    = _mm_macc_ps(CC5,z2,CC3);
-    pB    = _mm_macc_ps(CC4,z2,CC2);
+    pA    = gmx_mm_fmadd_ps(CC5,z2,CC3);
+    pB    = gmx_mm_fmadd_ps(CC4,z2,CC2);
 
-    pA    = _mm_macc_ps(pA,z2,CC1);
+    pA    = gmx_mm_fmadd_ps(pA,z2,CC1);
     pA    = _mm_mul_ps(pA,z);
 
-    z     = _mm_macc_ps(pB,z2,pA);
+    z     = gmx_mm_fmadd_ps(pB,z2,pA);
 
-    z     = _mm_macc_ps(z,q,q);
+    z     = gmx_mm_fmadd_ps(z,q,q);
 
     q2    = _mm_sub_ps(halfpi,z);
     q2    = _mm_sub_ps(q2,z);
@@ -1016,13 +1016,13 @@ gmx_mm_atan_ps(__m128 x)
     x2    = _mm_mul_ps(x,x);
     x4    = _mm_mul_ps(x2,x2);
 
-    sum1  = _mm_macc_ps(CC9,x4,CC5);
-    sum2  = _mm_macc_ps(CC7,x4,CC3);
+    sum1  = gmx_mm_fmadd_ps(CC9,x4,CC5);
+    sum2  = gmx_mm_fmadd_ps(CC7,x4,CC3);
     sum1  = _mm_mul_ps(sum1,x4);
-    sum1  = _mm_macc_ps(sum2,x2,sum1);
+    sum1  = gmx_mm_fmadd_ps(sum2,x2,sum1);
 
     sum1  = _mm_sub_ps(sum1,mone);
-    y     = _mm_macc_ps(sum1,x,y);
+    y     = gmx_mm_fmadd_ps(sum1,x,y);
 
     y     = _mm_xor_ps(y,sign);
 

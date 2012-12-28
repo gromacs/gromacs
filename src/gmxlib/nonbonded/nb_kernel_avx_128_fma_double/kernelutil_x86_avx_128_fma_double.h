@@ -42,7 +42,7 @@ gmx_mm_any_lt(__m128d a, __m128d b)
 static gmx_inline __m128d
 gmx_mm_calc_rsq_pd(__m128d dx, __m128d dy, __m128d dz)
 {
-    return _mm_macc_pd(dx,dx,_mm_macc_pd(dy,dy,_mm_mul_pd(dz,dz)));
+    return gmx_mm_fmadd_pd(dx,dx,gmx_mm_fmadd_pd(dy,dy,_mm_mul_pd(dz,dz)));
 }
 
 /* Normal sum of four ymm registers */

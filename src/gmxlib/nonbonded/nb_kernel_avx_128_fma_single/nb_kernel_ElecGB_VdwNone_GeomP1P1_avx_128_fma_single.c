@@ -232,14 +232,14 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             G                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,2) );
             H                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(gbeps,_mm_macc_ps(gbeps,H,G),F);
-            VV               = _mm_macc_ps(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(gbeps,gmx_mm_fmadd_ps(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_ps(gbeps,Fp,Y);
             vgb              = _mm_mul_ps(gbqqfactor,VV);
 
             twogbeps         = _mm_add_ps(gbeps,gbeps);
-            FF               = _mm_macc_ps(_mm_macc_ps(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_ps(gmx_mm_fmadd_ps(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
-            dvdatmp          = _mm_mul_ps(minushalf,_mm_macc_ps(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_ps(minushalf,gmx_mm_fmadd_ps(fgb,r00,vgb));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
             fjptrA           = dvda+jnrA;
             fjptrB           = dvda+jnrB;
@@ -247,7 +247,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             fjptrD           = dvda+jnrD;
             gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
-            felec            = _mm_mul_ps(_mm_msub_ps(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_ps(gmx_mm_fmsub_ps(velec,rinv00,fgb),rinv00);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
             velecsum         = _mm_add_ps(velecsum,velec);
@@ -256,9 +256,9 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -347,14 +347,14 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             G                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,2) );
             H                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(gbeps,_mm_macc_ps(gbeps,H,G),F);
-            VV               = _mm_macc_ps(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(gbeps,gmx_mm_fmadd_ps(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_ps(gbeps,Fp,Y);
             vgb              = _mm_mul_ps(gbqqfactor,VV);
 
             twogbeps         = _mm_add_ps(gbeps,gbeps);
-            FF               = _mm_macc_ps(_mm_macc_ps(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_ps(gmx_mm_fmadd_ps(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
-            dvdatmp          = _mm_mul_ps(minushalf,_mm_macc_ps(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_ps(minushalf,gmx_mm_fmadd_ps(fgb,r00,vgb));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
             /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
             fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
@@ -363,7 +363,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             fjptrD             = (jnrlistD>=0) ? dvda+jnrD : scratch;
             gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
-            felec            = _mm_mul_ps(_mm_msub_ps(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_ps(gmx_mm_fmsub_ps(velec,rinv00,fgb),rinv00);
 
             /* Update potential sum for this i atom from the interaction with this j atom. */
             velec            = _mm_andnot_ps(dummy_mask,velec);
@@ -376,9 +376,9 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
@@ -597,14 +597,14 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_128_fma_single
             G                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,2) );
             H                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(gbeps,_mm_macc_ps(gbeps,H,G),F);
-            VV               = _mm_macc_ps(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(gbeps,gmx_mm_fmadd_ps(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_ps(gbeps,Fp,Y);
             vgb              = _mm_mul_ps(gbqqfactor,VV);
 
             twogbeps         = _mm_add_ps(gbeps,gbeps);
-            FF               = _mm_macc_ps(_mm_macc_ps(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_ps(gmx_mm_fmadd_ps(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
-            dvdatmp          = _mm_mul_ps(minushalf,_mm_macc_ps(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_ps(minushalf,gmx_mm_fmadd_ps(fgb,r00,vgb));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
             fjptrA           = dvda+jnrA;
             fjptrB           = dvda+jnrB;
@@ -612,14 +612,14 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_128_fma_single
             fjptrD           = dvda+jnrD;
             gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
-            felec            = _mm_mul_ps(_mm_msub_ps(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_ps(gmx_mm_fmsub_ps(velec,rinv00,fgb),rinv00);
 
             fscal            = felec;
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = f+j_coord_offsetA;
             fjptrB             = f+j_coord_offsetB;
@@ -708,14 +708,14 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_128_fma_single
             G                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,2) );
             H                = _mm_load_ps( gbtab + _mm_extract_epi32(gbitab,3) );
             _MM_TRANSPOSE4_PS(Y,F,G,H);
-            Fp               = _mm_macc_ps(gbeps,_mm_macc_ps(gbeps,H,G),F);
-            VV               = _mm_macc_ps(gbeps,Fp,Y);
+            Fp               = gmx_mm_fmadd_ps(gbeps,gmx_mm_fmadd_ps(gbeps,H,G),F);
+            VV               = gmx_mm_fmadd_ps(gbeps,Fp,Y);
             vgb              = _mm_mul_ps(gbqqfactor,VV);
 
             twogbeps         = _mm_add_ps(gbeps,gbeps);
-            FF               = _mm_macc_ps(_mm_macc_ps(twogbeps,H,G),gbeps,Fp);
+            FF               = gmx_mm_fmadd_ps(gmx_mm_fmadd_ps(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
-            dvdatmp          = _mm_mul_ps(minushalf,_mm_macc_ps(fgb,r00,vgb));
+            dvdatmp          = _mm_mul_ps(minushalf,gmx_mm_fmadd_ps(fgb,r00,vgb));
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
             /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
             fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
@@ -724,16 +724,16 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_128_fma_single
             fjptrD             = (jnrlistD>=0) ? dvda+jnrD : scratch;
             gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj0,isaj0)));
             velec            = _mm_mul_ps(qq00,rinv00);
-            felec            = _mm_mul_ps(_mm_msub_ps(velec,rinv00,fgb),rinv00);
+            felec            = _mm_mul_ps(gmx_mm_fmsub_ps(velec,rinv00,fgb),rinv00);
 
             fscal            = felec;
 
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
 
              /* Update vectorial force */
-            fix0             = _mm_macc_ps(dx00,fscal,fix0);
-            fiy0             = _mm_macc_ps(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_ps(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_ps(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_ps(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_ps(dz00,fscal,fiz0);
 
             fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
             fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;

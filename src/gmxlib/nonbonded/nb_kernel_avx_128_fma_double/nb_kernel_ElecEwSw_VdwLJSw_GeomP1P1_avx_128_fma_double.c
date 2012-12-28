@@ -240,8 +240,8 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
             ewtabV           = _mm_load_sd( ewtab + _mm_extract_epi32(ewitab,0) +2);
             ewtabFn          = _mm_load_sd( ewtab + _mm_extract_epi32(ewitab,1) +2);
             GMX_MM_TRANSPOSE2_PD(ewtabV,ewtabFn);
-            felec            = _mm_macc_pd(eweps,ewtabD,ewtabF);
-            velec            = _mm_nmacc_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
+            felec            = gmx_mm_fmadd_pd(eweps,ewtabD,ewtabF);
+            velec            = gmx_mm_fnmadd_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
             velec            = _mm_mul_pd(qq00,_mm_sub_pd(rinv00,velec));
             felec            = _mm_mul_pd(_mm_mul_pd(qq00,rinv00),_mm_sub_pd(rinvsq00,felec));
 
@@ -250,20 +250,20 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_pd(c6_00,rinvsix);
             vvdw12           = _mm_mul_pd(c12_00,_mm_mul_pd(rinvsix,rinvsix));
-            vvdw             = _mm_msub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
+            vvdw             = gmx_mm_fmsub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
             fvdw             = _mm_mul_pd(_mm_sub_pd(vvdw12,vvdw6),rinvsq00);
 
             d                = _mm_sub_pd(r00,rswitch);
             d                = _mm_max_pd(d,_mm_setzero_pd());
             d2               = _mm_mul_pd(d,d);
-            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,_mm_macc_pd(d,_mm_macc_pd(d,swV5,swV4),swV3))));
+            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swV5,swV4),swV3))));
 
-            dsw              = _mm_mul_pd(d2,_mm_macc_pd(d,_mm_macc_pd(d,swF4,swF3),swF2));
+            dsw              = _mm_mul_pd(d2,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swF4,swF3),swF2));
 
             /* Evaluate switch function */
             /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
-            felec            = _mm_msub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
-            fvdw             = _mm_msub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
+            felec            = gmx_mm_fmsub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
+            fvdw             = gmx_mm_fmsub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
             velec            = _mm_mul_pd(velec,sw);
             vvdw             = _mm_mul_pd(vvdw,sw);
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
@@ -279,9 +279,9 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
             fscal            = _mm_and_pd(fscal,cutoff_mask);
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_2ptr_swizzle_pd(f+j_coord_offsetA,f+j_coord_offsetB,
                                                    _mm_mul_pd(dx00,fscal),
@@ -350,8 +350,8 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
             ewtabV           = _mm_load_sd( ewtab + _mm_extract_epi32(ewitab,0) +2);
             ewtabFn          = _mm_setzero_pd();
             GMX_MM_TRANSPOSE2_PD(ewtabV,ewtabFn);
-            felec            = _mm_macc_pd(eweps,ewtabD,ewtabF);
-            velec            = _mm_nmacc_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
+            felec            = gmx_mm_fmadd_pd(eweps,ewtabD,ewtabF);
+            velec            = gmx_mm_fnmadd_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
             velec            = _mm_mul_pd(qq00,_mm_sub_pd(rinv00,velec));
             felec            = _mm_mul_pd(_mm_mul_pd(qq00,rinv00),_mm_sub_pd(rinvsq00,felec));
 
@@ -360,20 +360,20 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_pd(c6_00,rinvsix);
             vvdw12           = _mm_mul_pd(c12_00,_mm_mul_pd(rinvsix,rinvsix));
-            vvdw             = _mm_msub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
+            vvdw             = gmx_mm_fmsub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
             fvdw             = _mm_mul_pd(_mm_sub_pd(vvdw12,vvdw6),rinvsq00);
 
             d                = _mm_sub_pd(r00,rswitch);
             d                = _mm_max_pd(d,_mm_setzero_pd());
             d2               = _mm_mul_pd(d,d);
-            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,_mm_macc_pd(d,_mm_macc_pd(d,swV5,swV4),swV3))));
+            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swV5,swV4),swV3))));
 
-            dsw              = _mm_mul_pd(d2,_mm_macc_pd(d,_mm_macc_pd(d,swF4,swF3),swF2));
+            dsw              = _mm_mul_pd(d2,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swF4,swF3),swF2));
 
             /* Evaluate switch function */
             /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
-            felec            = _mm_msub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
-            fvdw             = _mm_msub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
+            felec            = gmx_mm_fmsub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
+            fvdw             = gmx_mm_fmsub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
             velec            = _mm_mul_pd(velec,sw);
             vvdw             = _mm_mul_pd(vvdw,sw);
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
@@ -393,9 +393,9 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
             fscal            = _mm_unpacklo_pd(fscal,_mm_setzero_pd());
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_1ptr_swizzle_pd(f+j_coord_offsetA,
                                                    _mm_mul_pd(dx00,fscal),
@@ -617,8 +617,8 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
             ewtabV           = _mm_load_sd( ewtab + _mm_extract_epi32(ewitab,0) +2);
             ewtabFn          = _mm_load_sd( ewtab + _mm_extract_epi32(ewitab,1) +2);
             GMX_MM_TRANSPOSE2_PD(ewtabV,ewtabFn);
-            felec            = _mm_macc_pd(eweps,ewtabD,ewtabF);
-            velec            = _mm_nmacc_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
+            felec            = gmx_mm_fmadd_pd(eweps,ewtabD,ewtabF);
+            velec            = gmx_mm_fnmadd_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
             velec            = _mm_mul_pd(qq00,_mm_sub_pd(rinv00,velec));
             felec            = _mm_mul_pd(_mm_mul_pd(qq00,rinv00),_mm_sub_pd(rinvsq00,felec));
 
@@ -627,20 +627,20 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_pd(c6_00,rinvsix);
             vvdw12           = _mm_mul_pd(c12_00,_mm_mul_pd(rinvsix,rinvsix));
-            vvdw             = _mm_msub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
+            vvdw             = gmx_mm_fmsub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
             fvdw             = _mm_mul_pd(_mm_sub_pd(vvdw12,vvdw6),rinvsq00);
 
             d                = _mm_sub_pd(r00,rswitch);
             d                = _mm_max_pd(d,_mm_setzero_pd());
             d2               = _mm_mul_pd(d,d);
-            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,_mm_macc_pd(d,_mm_macc_pd(d,swV5,swV4),swV3))));
+            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swV5,swV4),swV3))));
 
-            dsw              = _mm_mul_pd(d2,_mm_macc_pd(d,_mm_macc_pd(d,swF4,swF3),swF2));
+            dsw              = _mm_mul_pd(d2,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swF4,swF3),swF2));
 
             /* Evaluate switch function */
             /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
-            felec            = _mm_msub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
-            fvdw             = _mm_msub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
+            felec            = gmx_mm_fmsub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
+            fvdw             = gmx_mm_fmsub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
 
             fscal            = _mm_add_pd(felec,fvdw);
@@ -648,9 +648,9 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
             fscal            = _mm_and_pd(fscal,cutoff_mask);
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_2ptr_swizzle_pd(f+j_coord_offsetA,f+j_coord_offsetB,
                                                    _mm_mul_pd(dx00,fscal),
@@ -719,8 +719,8 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
             ewtabV           = _mm_load_sd( ewtab + _mm_extract_epi32(ewitab,0) +2);
             ewtabFn          = _mm_setzero_pd();
             GMX_MM_TRANSPOSE2_PD(ewtabV,ewtabFn);
-            felec            = _mm_macc_pd(eweps,ewtabD,ewtabF);
-            velec            = _mm_nmacc_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
+            felec            = gmx_mm_fmadd_pd(eweps,ewtabD,ewtabF);
+            velec            = gmx_mm_fnmadd_pd(_mm_mul_pd(ewtabhalfspace,eweps) ,_mm_add_pd(ewtabF,felec), ewtabV);
             velec            = _mm_mul_pd(qq00,_mm_sub_pd(rinv00,velec));
             felec            = _mm_mul_pd(_mm_mul_pd(qq00,rinv00),_mm_sub_pd(rinvsq00,felec));
 
@@ -729,20 +729,20 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             vvdw6            = _mm_mul_pd(c6_00,rinvsix);
             vvdw12           = _mm_mul_pd(c12_00,_mm_mul_pd(rinvsix,rinvsix));
-            vvdw             = _mm_msub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
+            vvdw             = gmx_mm_fmsub_pd( vvdw12,one_twelfth, _mm_mul_pd(vvdw6,one_sixth) );
             fvdw             = _mm_mul_pd(_mm_sub_pd(vvdw12,vvdw6),rinvsq00);
 
             d                = _mm_sub_pd(r00,rswitch);
             d                = _mm_max_pd(d,_mm_setzero_pd());
             d2               = _mm_mul_pd(d,d);
-            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,_mm_macc_pd(d,_mm_macc_pd(d,swV5,swV4),swV3))));
+            sw               = _mm_add_pd(one,_mm_mul_pd(d2,_mm_mul_pd(d,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swV5,swV4),swV3))));
 
-            dsw              = _mm_mul_pd(d2,_mm_macc_pd(d,_mm_macc_pd(d,swF4,swF3),swF2));
+            dsw              = _mm_mul_pd(d2,gmx_mm_fmadd_pd(d,gmx_mm_fmadd_pd(d,swF4,swF3),swF2));
 
             /* Evaluate switch function */
             /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
-            felec            = _mm_msub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
-            fvdw             = _mm_msub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
+            felec            = gmx_mm_fmsub_pd( felec,sw , _mm_mul_pd(rinv00,_mm_mul_pd(velec,dsw)) );
+            fvdw             = gmx_mm_fmsub_pd( fvdw,sw , _mm_mul_pd(rinv00,_mm_mul_pd(vvdw,dsw)) );
             cutoff_mask      = _mm_cmplt_pd(rsq00,rcutoff2);
 
             fscal            = _mm_add_pd(felec,fvdw);
@@ -752,9 +752,9 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
             fscal            = _mm_unpacklo_pd(fscal,_mm_setzero_pd());
 
             /* Update vectorial force */
-            fix0             = _mm_macc_pd(dx00,fscal,fix0);
-            fiy0             = _mm_macc_pd(dy00,fscal,fiy0);
-            fiz0             = _mm_macc_pd(dz00,fscal,fiz0);
+            fix0             = gmx_mm_fmadd_pd(dx00,fscal,fix0);
+            fiy0             = gmx_mm_fmadd_pd(dy00,fscal,fiy0);
+            fiz0             = gmx_mm_fmadd_pd(dz00,fscal,fiz0);
             
             gmx_mm_decrement_1rvec_1ptr_swizzle_pd(f+j_coord_offsetA,
                                                    _mm_mul_pd(dx00,fscal),
