@@ -610,8 +610,57 @@ gmx_mm256_decrement_1rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_maskstore_ps(ptrD,mask,t8);
 }
 
-
-
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD, \
+                                                  x1,y1,z1,x2,y2,z2,x3,y3,z3) \
+{\
+    __m256 _t1,_t2,_t3,_t4,_t5,_t6;\
+    __m128 _tA,_tB,_tC,_tD;\
+\
+    _t1         = _mm256_loadu_ps(ptrA);\
+    _t2         = _mm256_loadu_ps(ptrB);\
+    _t3         = _mm256_loadu_ps(ptrC);\
+    _t4         = _mm256_loadu_ps(ptrD);\
+    _tA         = _mm_load_ss(ptrA+8);\
+    _tB         = _mm_load_ss(ptrB+8);\
+    _tC         = _mm_load_ss(ptrC+8);\
+    _tD         = _mm_load_ss(ptrD+8);\
+    _t5         = _mm256_unpacklo_ps(x1,y1);\
+    x1          = _mm256_unpackhi_ps(x1,y1);\
+    y1          = _mm256_unpacklo_ps(z1,x2);\
+    z1          = _mm256_unpackhi_ps(z1,x2);\
+    x2          = _mm256_unpacklo_ps(y2,z2);\
+    y2          = _mm256_unpackhi_ps(y2,z2);\
+    _t6         = _mm256_unpacklo_ps(x3,y3);\
+    x3          = _mm256_unpackhi_ps(x3,y3);\
+    _t5         = _mm256_insertf128_ps(_t5, _mm256_castps256_ps128(x2), 0x1);\
+    x1          = _mm256_insertf128_ps(x1, _mm256_castps256_ps128(y2), 0x1);\
+    y1          = _mm256_insertf128_ps(y1, _mm256_castps256_ps128(_t6), 0x1);\
+    z1          = _mm256_insertf128_ps(z1, _mm256_castps256_ps128(x3), 0x1);\
+    z2          = _mm256_shuffle_ps(_t5,y1,_MM_SHUFFLE(1,0,1,0));\
+    _t5         = _mm256_shuffle_ps(_t5,y1,_MM_SHUFFLE(3,2,3,2));\
+    y1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(1,0,1,0));\
+    x1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_sub_ps(_t1,z2);\
+    _t2         = _mm256_sub_ps(_t2,_t5);\
+    _t3         = _mm256_sub_ps(_t3,y1);\
+    _t4         = _mm256_sub_ps(_t4,x1);\
+    _tA         = _mm_sub_ss(_tA, _mm256_castps256_ps128(z3));\
+    _tB         = _mm_sub_ss(_tB, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(1,1,1,1)));\
+    _tC         = _mm_sub_ss(_tC, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(2,2,2,2)));\
+    _tD         = _mm_sub_ss(_tD, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(3,3,3,3)));\
+    _mm256_storeu_ps(ptrA,_t1);\
+    _mm256_storeu_ps(ptrB,_t2);\
+    _mm256_storeu_ps(ptrC,_t3);\
+    _mm256_storeu_ps(ptrD,_t4);\
+    _mm_store_ss(ptrA+8,_tA);\
+    _mm_store_ss(ptrB+8,_tB);\
+    _mm_store_ss(ptrC+8,_tC);\
+    _mm_store_ss(ptrD+8,_tD);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
                                           float * gmx_restrict ptrC, float * gmx_restrict ptrD,
@@ -621,7 +670,7 @@ gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
 {
     __m256 t1,t2,t3,t4,t5,t6;
     __m128 tA,tB,tC,tD;
-
+    
     t1          = _mm256_loadu_ps(ptrA);
     t2          = _mm256_loadu_ps(ptrB);
     t3          = _mm256_loadu_ps(ptrC);
@@ -630,38 +679,38 @@ gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tB          = _mm_load_ss(ptrB+8);
     tC          = _mm_load_ss(ptrC+8);
     tD          = _mm_load_ss(ptrD+8);
-
+    
     t5          = _mm256_unpacklo_ps(x1,y1); /* - - - - | y1b x1b y1a x1a */
     x1          = _mm256_unpackhi_ps(x1,y1); /* - - - - | y1d x1d y1c x1c */
     y1          = _mm256_unpacklo_ps(z1,x2); /* - - - - | x2b z1b x2a z1a */
     z1          = _mm256_unpackhi_ps(z1,x2); /* - - - - | x2d z1d x2c z1c */
-
+    
     x2          = _mm256_unpacklo_ps(y2,z2); /* - - - - | z2b y2b z2a y2a */
     y2          = _mm256_unpackhi_ps(y2,z2); /* - - - - | z2d y2d z2c y2c */
     t6          = _mm256_unpacklo_ps(x3,y3); /* - - - - | y3b x3b y3a x3a */
     x3          = _mm256_unpackhi_ps(x3,y3); /* - - - - | y3d x3d y3c x3c */
-
+    
     t5          = _mm256_insertf128_ps(t5, _mm256_castps256_ps128(x2), 0x1); /* z2b y2b z2a y2a | y1b x1b y1a x1a */
     x1          = _mm256_insertf128_ps(x1, _mm256_castps256_ps128(y2), 0x1); /* z2d y2d z2c y2c | y1d x1d y1c x1c */
-
+    
     y1          = _mm256_insertf128_ps(y1, _mm256_castps256_ps128(t6), 0x1); /* y3b x3b y3a x3a | x2b z1b x2a z1a */
     z1          = _mm256_insertf128_ps(z1, _mm256_castps256_ps128(x3), 0x1); /* y3d x3d y3c x3c | x2d z1d x2c z1c */
-
+    
     z2          = _mm256_shuffle_ps(t5,y1,_MM_SHUFFLE(1,0,1,0)); /* y3a x3a z2a y2a | x2a z1a y1a x1a */
     t5          = _mm256_shuffle_ps(t5,y1,_MM_SHUFFLE(3,2,3,2)); /* y3b x3b z2b y2b | x2b z1b y1b x1b */
     y1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(1,0,1,0)); /* y3c x3c z2c y2c | x2c z1c y1c x1c */
     x1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(3,2,3,2)); /* y3d x3d z2d y2d | x2d z1d y1d x1d */
-
+    
     t1          = _mm256_sub_ps(t1,z2);
     t2          = _mm256_sub_ps(t2,t5);
     t3          = _mm256_sub_ps(t3,y1);
     t4          = _mm256_sub_ps(t4,x1);
-
+    
     tA          = _mm_sub_ss(tA, _mm256_castps256_ps128(z3));
     tB          = _mm_sub_ss(tB, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(1,1,1,1)));
     tC          = _mm_sub_ss(tC, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(2,2,2,2)));
     tD          = _mm_sub_ss(tD, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(3,3,3,3)));
-
+    
     /* Here we store a full 256-bit value and a separate 32-bit one; no overlap can happen */
     _mm256_storeu_ps(ptrA,t1);
     _mm256_storeu_ps(ptrB,t2);
@@ -672,8 +721,69 @@ gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_store_ss(ptrC+8,tC);
     _mm_store_ss(ptrD+8,tD);
 }
+#endif
 
 
+
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD, \
+                                                  x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4) \
+{\
+    __m256 _t1,_t2,_t3,_t4,_t5;\
+    __m128 _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH;\
+\
+    _t1         = _mm256_loadu_ps(ptrA);\
+    _t2         = _mm256_loadu_ps(ptrB);\
+    _t3         = _mm256_loadu_ps(ptrC);\
+    _t4         = _mm256_loadu_ps(ptrD);\
+    _tA         = _mm_loadu_ps(ptrA+8);\
+    _tB         = _mm_loadu_ps(ptrB+8);\
+    _tC         = _mm_loadu_ps(ptrC+8);\
+    _tD         = _mm_loadu_ps(ptrD+8);\
+    _t5         = _mm256_unpacklo_ps(x1,y1);\
+    x1          = _mm256_unpackhi_ps(x1,y1);\
+    y1          = _mm256_unpacklo_ps(z1,x2);\
+    z1          = _mm256_unpackhi_ps(z1,x2);\
+    x2          = _mm256_unpacklo_ps(y2,z2);\
+    y2          = _mm256_unpackhi_ps(y2,z2);\
+    z2          = _mm256_unpacklo_ps(x3,y3);\
+    x3          = _mm256_unpackhi_ps(x3,y3);\
+    y3          = _mm256_unpacklo_ps(z3,x4);\
+    z3          = _mm256_unpackhi_ps(z3,x4);\
+    x4          = _mm256_unpacklo_ps(y4,z4);\
+    y4          = _mm256_unpackhi_ps(y4,z4);\
+    x2          = _mm256_insertf128_ps(_t5, _mm256_castps256_ps128(x2), 0x1);\
+    x1          = _mm256_insertf128_ps(x1, _mm256_castps256_ps128(y2), 0x1);\
+    y1          = _mm256_insertf128_ps(y1, _mm256_castps256_ps128(z2), 0x1);\
+    z1          = _mm256_insertf128_ps(z1, _mm256_castps256_ps128(x3), 0x1);\
+    z2          = _mm256_shuffle_ps(x2,y1,_MM_SHUFFLE(1,0,1,0));\
+    _t5         = _mm256_shuffle_ps(x2,y1,_MM_SHUFFLE(3,2,3,2));\
+    y1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(1,0,1,0));\
+    x1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(3,2,3,2));\
+    _tE         = _mm_shuffle_ps(_mm256_castps256_ps128(y3),_mm256_castps256_ps128(x4),_MM_SHUFFLE(1,0,1,0));\
+    _tF         = _mm_shuffle_ps(_mm256_castps256_ps128(y3),_mm256_castps256_ps128(x4),_MM_SHUFFLE(3,2,3,2));\
+    _tG         = _mm_shuffle_ps(_mm256_castps256_ps128(z3),_mm256_castps256_ps128(y4),_MM_SHUFFLE(1,0,1,0));\
+    _tH         = _mm_shuffle_ps(_mm256_castps256_ps128(z3),_mm256_castps256_ps128(y4),_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_sub_ps(_t1,z2);\
+    _t2         = _mm256_sub_ps(_t2,_t5);\
+    _t3         = _mm256_sub_ps(_t3,y1);\
+    _t4         = _mm256_sub_ps(_t4,x1);\
+    _tA         = _mm_sub_ps(_tA,_tE);\
+    _tB         = _mm_sub_ps(_tB,_tF);\
+    _tC         = _mm_sub_ps(_tC,_tG);\
+    _tD         = _mm_sub_ps(_tD,_tH);\
+    _mm256_storeu_ps(ptrA,_t1);\
+    _mm256_storeu_ps(ptrB,_t2);\
+    _mm256_storeu_ps(ptrC,_t3);\
+    _mm256_storeu_ps(ptrD,_t4);\
+    _mm_storeu_ps(ptrA+8,_tA);\
+    _mm_storeu_ps(ptrB+8,_tB);\
+    _mm_storeu_ps(ptrC+8,_tC);\
+    _mm_storeu_ps(ptrD+8,_tD);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
                                           float * gmx_restrict ptrC, float * gmx_restrict ptrD,
@@ -684,7 +794,7 @@ gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
 {
     __m256 t1,t2,t3,t4,t5;
     __m128 tA,tB,tC,tD,tE,tF,tG,tH;
-
+    
     t1          = _mm256_loadu_ps(ptrA);
     t2          = _mm256_loadu_ps(ptrB);
     t3          = _mm256_loadu_ps(ptrC);
@@ -693,48 +803,48 @@ gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tB          = _mm_loadu_ps(ptrB+8);
     tC          = _mm_loadu_ps(ptrC+8);
     tD          = _mm_loadu_ps(ptrD+8);
-
+    
     t5          = _mm256_unpacklo_ps(x1,y1); /* - - - - | y1b x1b y1a x1a */
     x1          = _mm256_unpackhi_ps(x1,y1); /* - - - - | y1d x1d y1c x1c */
     y1          = _mm256_unpacklo_ps(z1,x2); /* - - - - | x2b z1b x2a z1a */
     z1          = _mm256_unpackhi_ps(z1,x2); /* - - - - | x2d z1d x2c z1c */
-
+    
     x2          = _mm256_unpacklo_ps(y2,z2); /* - - - - | z2b y2b z2a y2a */
     y2          = _mm256_unpackhi_ps(y2,z2); /* - - - - | z2d y2d z2c y2c */
     z2          = _mm256_unpacklo_ps(x3,y3); /* - - - - | y3b x3b y3a x3a */
     x3          = _mm256_unpackhi_ps(x3,y3); /* - - - - | y3d x3d y3c x3c */
-
+    
     y3          = _mm256_unpacklo_ps(z3,x4); /* - - - - | x4b z3b x4a z3a */
     z3          = _mm256_unpackhi_ps(z3,x4); /* - - - - | x4d z3d x4c z3c */
     x4          = _mm256_unpacklo_ps(y4,z4); /* - - - - | z4b y4b z4a y4a */
     y4          = _mm256_unpackhi_ps(y4,z4); /* - - - - | z4d y4d z4c y4c */
-
+    
     x2          = _mm256_insertf128_ps(t5, _mm256_castps256_ps128(x2), 0x1); /* z2b y2b z2a y2a | y1b x1b y1a x1a */
     x1          = _mm256_insertf128_ps(x1, _mm256_castps256_ps128(y2), 0x1); /* z2d y2d z2c y2c | y1d x1d y1c x1c */
     y1          = _mm256_insertf128_ps(y1, _mm256_castps256_ps128(z2), 0x1); /* y3b x3b y3a x3a | x2b z1b x2a z1a */
     z1          = _mm256_insertf128_ps(z1, _mm256_castps256_ps128(x3), 0x1); /* y3d x3d y3c x3c | x2d z1d x2c z1c */
-
+    
     z2          = _mm256_shuffle_ps(x2,y1,_MM_SHUFFLE(1,0,1,0)); /* y3a x3a z2a y2a | x2a z1a y1a x1a */
     t5          = _mm256_shuffle_ps(x2,y1,_MM_SHUFFLE(3,2,3,2)); /* y3b x3b z2b y2b | x2b z1b y1b x1b */
     y1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(1,0,1,0)); /* y3c x3c z2c y2c | x2c z1c y1c x1c */
     x1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(3,2,3,2)); /* y3d x3d z2d y2d | x2d z1d y1d x1d */
-
+    
     tE          = _mm_shuffle_ps(_mm256_castps256_ps128(y3),_mm256_castps256_ps128(x4),_MM_SHUFFLE(1,0,1,0)); /* z4a y4a x4a z3a */
     tF          = _mm_shuffle_ps(_mm256_castps256_ps128(y3),_mm256_castps256_ps128(x4),_MM_SHUFFLE(3,2,3,2)); /* z4b y4b x4b z3b */
-
+    
     tG          = _mm_shuffle_ps(_mm256_castps256_ps128(z3),_mm256_castps256_ps128(y4),_MM_SHUFFLE(1,0,1,0)); /* z4c y4c x4c z3c */
     tH          = _mm_shuffle_ps(_mm256_castps256_ps128(z3),_mm256_castps256_ps128(y4),_MM_SHUFFLE(3,2,3,2)); /* z4d y4d x4d z3d */
-
+    
     t1          = _mm256_sub_ps(t1,z2);
     t2          = _mm256_sub_ps(t2,t5);
     t3          = _mm256_sub_ps(t3,y1);
     t4          = _mm256_sub_ps(t4,x1);
-
+    
     tA          = _mm_sub_ps(tA,tE);
     tB          = _mm_sub_ps(tB,tF);
     tC          = _mm_sub_ps(tC,tG);
     tD          = _mm_sub_ps(tD,tH);
-
+    
     /* Here we store a full 256-bit value and a separate 128-bit one; no overlap can happen */
     _mm256_storeu_ps(ptrA,t1);
     _mm256_storeu_ps(ptrB,t2);
@@ -745,7 +855,7 @@ gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_storeu_ps(ptrC+8,tC);
     _mm_storeu_ps(ptrD+8,tD);
 }
-
+#endif
 
 
 static gmx_inline void
@@ -791,6 +901,83 @@ gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
 
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD,ptrE,ptrF,ptrG,ptrH,_x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3) \
+{ \
+    __m256 _t1,_t2,_t3,_t4,_t5,_t6,_t7,_t8,_t9,_t10,_t11,_t12;\
+    __m256 _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH,_tI,_tJ,_tK,_tL;\
+\
+    _tA         = _mm256_loadu_ps(ptrA);\
+    _tB         = _mm256_loadu_ps(ptrB);\
+    _tC         = _mm256_loadu_ps(ptrC);\
+    _tD         = _mm256_loadu_ps(ptrD);\
+    _tE         = _mm256_loadu_ps(ptrE);\
+    _tF         = _mm256_loadu_ps(ptrF);\
+    _tG         = _mm256_loadu_ps(ptrG);\
+    _tH         = _mm256_loadu_ps(ptrH);\
+    _t1         = _mm256_unpacklo_ps(_x1,_y1);\
+    _t2         = _mm256_unpackhi_ps(_x1,_y1);\
+    _t3         = _mm256_unpacklo_ps(_z1,_x2);\
+    _t4         = _mm256_unpackhi_ps(_z1,_x2);\
+    _t5         = _mm256_unpacklo_ps(_y2,_z2);\
+    _t6         = _mm256_unpackhi_ps(_y2,_z2);\
+    _t7         = _mm256_unpacklo_ps(_x3,_y3);\
+    _t8         = _mm256_unpackhi_ps(_x3,_y3);\
+    _t9         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(1,0,1,0));\
+    _t10        = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(3,2,3,2));\
+    _t11        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(1,0,1,0));\
+    _t12        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(1,0,1,0));\
+    _t2         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(3,2,3,2));\
+    _t3         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(1,0,1,0));\
+    _t4         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(3,2,3,2));\
+    _t5         = gmx_mm256_unpack128lo_ps(_t9,_t1);\
+    _t6         = gmx_mm256_unpack128hi_ps(_t9,_t1);\
+    _t7         = gmx_mm256_unpack128lo_ps(_t10,_t2);\
+    _t8         = gmx_mm256_unpack128hi_ps(_t10,_t2);\
+    _t1         = gmx_mm256_unpack128lo_ps(_t11,_t3);\
+    _t2         = gmx_mm256_unpack128hi_ps(_t11,_t3);\
+    _t9         = gmx_mm256_unpack128lo_ps(_t12,_t4);\
+    _t10        = gmx_mm256_unpack128hi_ps(_t12,_t4);\
+    _tA         = _mm256_sub_ps(_tA,_t5);\
+    _tB         = _mm256_sub_ps(_tB,_t7);\
+    _tC         = _mm256_sub_ps(_tC,_t1);\
+    _tD         = _mm256_sub_ps(_tD,_t9);\
+    _tE         = _mm256_sub_ps(_tE,_t6);\
+    _tF         = _mm256_sub_ps(_tF,_t8);\
+    _tG         = _mm256_sub_ps(_tG,_t2);\
+    _tH         = _mm256_sub_ps(_tH,_t10);\
+    _mm256_storeu_ps(ptrA,_tA);\
+    _mm256_storeu_ps(ptrB,_tB);\
+    _mm256_storeu_ps(ptrC,_tC);\
+    _mm256_storeu_ps(ptrD,_tD);\
+    _mm256_storeu_ps(ptrE,_tE);\
+    _mm256_storeu_ps(ptrF,_tF);\
+    _mm256_storeu_ps(ptrG,_tG);\
+    _mm256_storeu_ps(ptrH,_tH);\
+    _tI         = gmx_mm256_set_m128(_mm_load_ss(ptrE+8),_mm_load_ss(ptrA+8));\
+    _tJ         = gmx_mm256_set_m128(_mm_load_ss(ptrF+8),_mm_load_ss(ptrB+8));\
+    _tK         = gmx_mm256_set_m128(_mm_load_ss(ptrG+8),_mm_load_ss(ptrC+8));\
+    _tL         = gmx_mm256_set_m128(_mm_load_ss(ptrH+8),_mm_load_ss(ptrD+8));\
+    _tI         = _mm256_unpacklo_ps(_tI,_tK);\
+    _tJ         = _mm256_unpacklo_ps(_tJ,_tL);\
+    _tI         = _mm256_unpacklo_ps(_tI,_tJ);\
+    _tI         = _mm256_sub_ps(_tI,_z3);\
+    _tJ         = _mm256_permute_ps(_tI,_MM_SHUFFLE(1,1,1,1));\
+    _tK         = _mm256_permute_ps(_tI,_MM_SHUFFLE(2,2,2,2));\
+    _tL         = _mm256_permute_ps(_tI,_MM_SHUFFLE(3,3,3,3));\
+    _mm_store_ss(ptrA+8,_mm256_castps256_ps128(_tI));\
+    _mm_store_ss(ptrB+8,_mm256_castps256_ps128(_tJ));\
+    _mm_store_ss(ptrC+8,_mm256_castps256_ps128(_tK));\
+    _mm_store_ss(ptrD+8,_mm256_castps256_ps128(_tL));\
+    _mm_store_ss(ptrE+8,_mm256_extractf128_ps(_tI,0x1));\
+    _mm_store_ss(ptrF+8,_mm256_extractf128_ps(_tJ,0x1));\
+    _mm_store_ss(ptrG+8,_mm256_extractf128_ps(_tK,0x1));\
+    _mm_store_ss(ptrH+8,_mm256_extractf128_ps(_tL,0x1));\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
                                           float * gmx_restrict ptrC, float * gmx_restrict ptrD,
@@ -803,7 +990,7 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     __m256 t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12;
     __m256 tA,tB,tC,tD,tE,tF,tG,tH;
     __m256 tI,tJ,tK,tL;
-
+    
     tA          = _mm256_loadu_ps(ptrA);
     tB          = _mm256_loadu_ps(ptrB);
     tC          = _mm256_loadu_ps(ptrC);
@@ -812,27 +999,27 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tF          = _mm256_loadu_ps(ptrF);
     tG          = _mm256_loadu_ps(ptrG);
     tH          = _mm256_loadu_ps(ptrH);
-
+    
     t1          = _mm256_unpacklo_ps(x1,y1); /* y1f x1f y1e x1e | y1b x1b y1a x1a */
     t2          = _mm256_unpackhi_ps(x1,y1); /* y1h x1h y1g x1g | y1d x1d y1c x1c */
     t3          = _mm256_unpacklo_ps(z1,x2); /* x2f z1f x2e z1e | x2b z1b x2a z1a */
     t4          = _mm256_unpackhi_ps(z1,x2); /* x2h z1h x2g z1g | x2d z1d x2c z1c */
-
+    
     t5          = _mm256_unpacklo_ps(y2,z2); /* z2f y2f z2e y2e | z2b y2b z2a y2a */
     t6          = _mm256_unpackhi_ps(y2,z2); /* z2h y2h z2g y2g | z2d y2d z2c y2c */
     t7          = _mm256_unpacklo_ps(x3,y3); /* y3f x3f y3e x3e | y3b x3b y3a x3a */
     t8          = _mm256_unpackhi_ps(x3,y3); /* y3h x3h y3g x3g | y3d x3d y3c x3c */
-
+    
     t9          = _mm256_shuffle_ps(t1,t3,_MM_SHUFFLE(1,0,1,0)); /* x2e z1e y1e x1e | x2a z1a y1a x1a */
     t10         = _mm256_shuffle_ps(t1,t3,_MM_SHUFFLE(3,2,3,2)); /* x2f z1f y1f x1f | x2b z1b y1b x1b */
     t11         = _mm256_shuffle_ps(t2,t4,_MM_SHUFFLE(1,0,1,0)); /* x2g z1g y1g x1g | x2c z1c y1c x1c */
     t12         = _mm256_shuffle_ps(t2,t4,_MM_SHUFFLE(3,2,3,2)); /* x2h z1h y1h x1h | x2d z1d y1d x1d */
-
+    
     t1          = _mm256_shuffle_ps(t5,t7,_MM_SHUFFLE(1,0,1,0)); /* y3e x3e z2e y2e | y3a x3a z2a y2a */
     t2          = _mm256_shuffle_ps(t5,t7,_MM_SHUFFLE(3,2,3,2)); /* y3f x3f z2f y2f | y3b x3b z2b y2b */
     t3          = _mm256_shuffle_ps(t6,t8,_MM_SHUFFLE(1,0,1,0)); /* y3g x3g z2g y2g | y3c x3c z2c y2c */
     t4          = _mm256_shuffle_ps(t6,t8,_MM_SHUFFLE(3,2,3,2)); /* y3h x3h z2h y2h | y3d x3d z2d y2d */
-
+    
     t5          = gmx_mm256_unpack128lo_ps(t9,t1);  /* y3a x3a z2a y2a | x2a z1a y1a x1a */
     t6          = gmx_mm256_unpack128hi_ps(t9,t1);  /* y3e x3e z2e y2e | x2e z1e y1e x1e */
     t7          = gmx_mm256_unpack128lo_ps(t10,t2); /* y3b x3b z2b y2b | x2b z1b y1b x1b */
@@ -841,7 +1028,7 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     t2          = gmx_mm256_unpack128hi_ps(t11,t3); /* y3g x3g z2g y2g | x2g z1g y1g x1g */
     t9          = gmx_mm256_unpack128lo_ps(t12,t4); /* y3d x3d z2d y2d | x2d z1d y1d x1d */
     t10         = gmx_mm256_unpack128hi_ps(t12,t4); /* y3h x3h z2h y2h | x2h z1h y1h x1h */
-
+    
     tA          = _mm256_sub_ps(tA,t5);
     tB          = _mm256_sub_ps(tB,t7);
     tC          = _mm256_sub_ps(tC,t1);
@@ -850,7 +1037,7 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tF          = _mm256_sub_ps(tF,t8);
     tG          = _mm256_sub_ps(tG,t2);
     tH          = _mm256_sub_ps(tH,t10);
-
+    
     _mm256_storeu_ps(ptrA,tA);
     _mm256_storeu_ps(ptrB,tB);
     _mm256_storeu_ps(ptrC,tC);
@@ -868,12 +1055,12 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tI          = _mm256_unpacklo_ps(tI,tK);  /*  -  - zG zE |  -  - zC zA */
     tJ          = _mm256_unpacklo_ps(tJ,tL);  /*  -  - zH zF |  -  - zD zB */
     tI          = _mm256_unpacklo_ps(tI,tJ);  /* zH zG zF zE | zD zC zB zA */
-
+    
     tI          = _mm256_sub_ps(tI,z3);
     tJ          = _mm256_permute_ps(tI,_MM_SHUFFLE(1,1,1,1));
     tK          = _mm256_permute_ps(tI,_MM_SHUFFLE(2,2,2,2));
     tL          = _mm256_permute_ps(tI,_MM_SHUFFLE(3,3,3,3));
-
+    
     _mm_store_ss(ptrA+8,_mm256_castps256_ps128(tI));
     _mm_store_ss(ptrB+8,_mm256_castps256_ps128(tJ));
     _mm_store_ss(ptrC+8,_mm256_castps256_ps128(tK));
@@ -883,8 +1070,93 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_store_ss(ptrG+8,_mm256_extractf128_ps(tK,0x1));
     _mm_store_ss(ptrH+8,_mm256_extractf128_ps(tL,0x1));
 }
+#endif
 
 
+
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD,ptrE,ptrF,ptrG,ptrH, \
+                                                  _x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3,_x4,_y4,_z4) \
+{\
+    __m256 _t1,_t2,_t3,_t4,_t5,_t6,_t7,_t8,_t9,_t10,_t11,_t12;\
+    __m256 _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH,_tI,_tJ,_tK,_tL;\
+\
+    _tA         = _mm256_loadu_ps(ptrA);\
+    _tB         = _mm256_loadu_ps(ptrB);\
+    _tC         = _mm256_loadu_ps(ptrC);\
+    _tD         = _mm256_loadu_ps(ptrD);\
+    _tE         = _mm256_loadu_ps(ptrE);\
+    _tF         = _mm256_loadu_ps(ptrF);\
+    _tG         = _mm256_loadu_ps(ptrG);\
+    _tH         = _mm256_loadu_ps(ptrH);\
+    _t1         = _mm256_unpacklo_ps(_x1,_y1);\
+    _t2         = _mm256_unpackhi_ps(_x1,_y1);\
+    _t3         = _mm256_unpacklo_ps(_z1,_x2);\
+    _t4         = _mm256_unpackhi_ps(_z1,_x2);\
+    _t5         = _mm256_unpacklo_ps(_y2,_z2);\
+    _t6         = _mm256_unpackhi_ps(_y2,_z2);\
+    _t7         = _mm256_unpacklo_ps(_x3,_y3);\
+    _t8         = _mm256_unpackhi_ps(_x3,_y3);\
+    _t9         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(1,0,1,0));\
+    _t10        = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(3,2,3,2));\
+    _t11        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(1,0,1,0));\
+    _t12        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(1,0,1,0));\
+    _t2         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(3,2,3,2));\
+    _t3         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(1,0,1,0));\
+    _t4         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(3,2,3,2));\
+    _t5         = gmx_mm256_unpack128lo_ps(_t9,_t1);\
+    _t6         = gmx_mm256_unpack128hi_ps(_t9,_t1);\
+    _t7         = gmx_mm256_unpack128lo_ps(_t10,_t2);\
+    _t8         = gmx_mm256_unpack128hi_ps(_t10,_t2);\
+    _t1         = gmx_mm256_unpack128lo_ps(_t11,_t3);\
+    _t2         = gmx_mm256_unpack128hi_ps(_t11,_t3);\
+    _t9         = gmx_mm256_unpack128lo_ps(_t12,_t4);\
+    _t10        = gmx_mm256_unpack128hi_ps(_t12,_t4);\
+    _tA         = _mm256_sub_ps(_tA,_t5);\
+    _tB         = _mm256_sub_ps(_tB,_t7);\
+    _tC         = _mm256_sub_ps(_tC,_t1);\
+    _tD         = _mm256_sub_ps(_tD,_t9);\
+    _tE         = _mm256_sub_ps(_tE,_t6);\
+    _tF         = _mm256_sub_ps(_tF,_t8);\
+    _tG         = _mm256_sub_ps(_tG,_t2);\
+    _tH         = _mm256_sub_ps(_tH,_t10);\
+    _mm256_storeu_ps(ptrA,_tA);\
+    _mm256_storeu_ps(ptrB,_tB);\
+    _mm256_storeu_ps(ptrC,_tC);\
+    _mm256_storeu_ps(ptrD,_tD);\
+    _mm256_storeu_ps(ptrE,_tE);\
+    _mm256_storeu_ps(ptrF,_tF);\
+    _mm256_storeu_ps(ptrG,_tG);\
+    _mm256_storeu_ps(ptrH,_tH);\
+    _tI         = gmx_mm256_set_m128(_mm_loadu_ps(ptrE+8),_mm_loadu_ps(ptrA+8));\
+    _tJ         = gmx_mm256_set_m128(_mm_loadu_ps(ptrF+8),_mm_loadu_ps(ptrB+8));\
+    _tK         = gmx_mm256_set_m128(_mm_loadu_ps(ptrG+8),_mm_loadu_ps(ptrC+8));\
+    _tL         = gmx_mm256_set_m128(_mm_loadu_ps(ptrH+8),_mm_loadu_ps(ptrD+8));\
+    _t1         = _mm256_unpacklo_ps(_z3,_x4);\
+    _t2         = _mm256_unpackhi_ps(_z3,_x4);\
+    _t3         = _mm256_unpacklo_ps(_y4,_z4);\
+    _t4         = _mm256_unpackhi_ps(_y4,_z4);\
+    _t5         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(1,0,1,0));\
+    _t6         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(3,2,3,2));\
+    _t7         = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(1,0,1,0));\
+    _t8         = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(3,2,3,2));\
+    _tI         = _mm256_sub_ps(_tI,_t5);\
+    _tJ         = _mm256_sub_ps(_tJ,_t6);\
+    _tK         = _mm256_sub_ps(_tK,_t7);\
+    _tL         = _mm256_sub_ps(_tL,_t8);\
+    _mm_storeu_ps(ptrA+8,_mm256_castps256_ps128(_tI));\
+    _mm_storeu_ps(ptrB+8,_mm256_castps256_ps128(_tJ));\
+    _mm_storeu_ps(ptrC+8,_mm256_castps256_ps128(_tK));\
+    _mm_storeu_ps(ptrD+8,_mm256_castps256_ps128(_tL));\
+    _mm_storeu_ps(ptrE+8,_mm256_extractf128_ps(_tI,0x1));\
+    _mm_storeu_ps(ptrF+8,_mm256_extractf128_ps(_tJ,0x1));\
+    _mm_storeu_ps(ptrG+8,_mm256_extractf128_ps(_tK,0x1));\
+    _mm_storeu_ps(ptrH+8,_mm256_extractf128_ps(_tL,0x1));\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
                                           float * gmx_restrict ptrC, float * gmx_restrict ptrD,
@@ -898,7 +1170,7 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     __m256 t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12;
     __m256 tA,tB,tC,tD,tE,tF,tG,tH;
     __m256 tI,tJ,tK,tL;
-
+    
     tA          = _mm256_loadu_ps(ptrA);
     tB          = _mm256_loadu_ps(ptrB);
     tC          = _mm256_loadu_ps(ptrC);
@@ -907,27 +1179,27 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tF          = _mm256_loadu_ps(ptrF);
     tG          = _mm256_loadu_ps(ptrG);
     tH          = _mm256_loadu_ps(ptrH);
-
+    
     t1          = _mm256_unpacklo_ps(x1,y1); /* y1f x1f y1e x1e | y1b x1b y1a x1a */
     t2          = _mm256_unpackhi_ps(x1,y1); /* y1h x1h y1g x1g | y1d x1d y1c x1c */
     t3          = _mm256_unpacklo_ps(z1,x2); /* x2f z1f x2e z1e | x2b z1b x2a z1a */
     t4          = _mm256_unpackhi_ps(z1,x2); /* x2h z1h x2g z1g | x2d z1d x2c z1c */
-
+    
     t5          = _mm256_unpacklo_ps(y2,z2); /* z2f y2f z2e y2e | z2b y2b z2a y2a */
     t6          = _mm256_unpackhi_ps(y2,z2); /* z2h y2h z2g y2g | z2d y2d z2c y2c */
     t7          = _mm256_unpacklo_ps(x3,y3); /* y3f x3f y3e x3e | y3b x3b y3a x3a */
     t8          = _mm256_unpackhi_ps(x3,y3); /* y3h x3h y3g x3g | y3d x3d y3c x3c */
-
+    
     t9          = _mm256_shuffle_ps(t1,t3,_MM_SHUFFLE(1,0,1,0)); /* x2e z1e y1e x1e | x2a z1a y1a x1a */
     t10         = _mm256_shuffle_ps(t1,t3,_MM_SHUFFLE(3,2,3,2)); /* x2f z1f y1f x1f | x2b z1b y1b x1b */
     t11         = _mm256_shuffle_ps(t2,t4,_MM_SHUFFLE(1,0,1,0)); /* x2g z1g y1g x1g | x2c z1c y1c x1c */
     t12         = _mm256_shuffle_ps(t2,t4,_MM_SHUFFLE(3,2,3,2)); /* x2h z1h y1h x1h | x2d z1d y1d x1d */
-
+    
     t1          = _mm256_shuffle_ps(t5,t7,_MM_SHUFFLE(1,0,1,0)); /* y3e x3e z2e y2e | y3a x3a z2a y2a */
     t2          = _mm256_shuffle_ps(t5,t7,_MM_SHUFFLE(3,2,3,2)); /* y3f x3f z2f y2f | y3b x3b z2b y2b */
     t3          = _mm256_shuffle_ps(t6,t8,_MM_SHUFFLE(1,0,1,0)); /* y3g x3g z2g y2g | y3c x3c z2c y2c */
     t4          = _mm256_shuffle_ps(t6,t8,_MM_SHUFFLE(3,2,3,2)); /* y3h x3h z2h y2h | y3d x3d z2d y2d */
-
+    
     t5          = gmx_mm256_unpack128lo_ps(t9,t1);  /* y3a x3a z2a y2a | x2a z1a y1a x1a */
     t6          = gmx_mm256_unpack128hi_ps(t9,t1);  /* y3e x3e z2e y2e | x2e z1e y1e x1e */
     t7          = gmx_mm256_unpack128lo_ps(t10,t2); /* y3b x3b z2b y2b | x2b z1b y1b x1b */
@@ -936,7 +1208,7 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     t2          = gmx_mm256_unpack128hi_ps(t11,t3); /* y3g x3g z2g y2g | x2g z1g y1g x1g */
     t9          = gmx_mm256_unpack128lo_ps(t12,t4); /* y3d x3d z2d y2d | x2d z1d y1d x1d */
     t10         = gmx_mm256_unpack128hi_ps(t12,t4); /* y3h x3h z2h y2h | x2h z1h y1h x1h */
-
+    
     tA          = _mm256_sub_ps(tA,t5);
     tB          = _mm256_sub_ps(tB,t7);
     tC          = _mm256_sub_ps(tC,t1);
@@ -945,7 +1217,7 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tF          = _mm256_sub_ps(tF,t8);
     tG          = _mm256_sub_ps(tG,t2);
     tH          = _mm256_sub_ps(tH,t10);
-
+    
     _mm256_storeu_ps(ptrA,tA);
     _mm256_storeu_ps(ptrB,tB);
     _mm256_storeu_ps(ptrC,tC);
@@ -954,7 +1226,7 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm256_storeu_ps(ptrF,tF);
     _mm256_storeu_ps(ptrG,tG);
     _mm256_storeu_ps(ptrH,tH);
-
+    
     tI          = gmx_mm256_set_m128(_mm_loadu_ps(ptrE+8),_mm_loadu_ps(ptrA+8));
     tJ          = gmx_mm256_set_m128(_mm_loadu_ps(ptrF+8),_mm_loadu_ps(ptrB+8));
     tK          = gmx_mm256_set_m128(_mm_loadu_ps(ptrG+8),_mm_loadu_ps(ptrC+8));
@@ -964,17 +1236,17 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     t2          = _mm256_unpackhi_ps(z3,x4); /* x4h z3h x4g z3g | x4d z3d x4c z3c */
     t3          = _mm256_unpacklo_ps(y4,z4); /* z4f y4f z4e y4e | z4b y4b z4a y4a */
     t4          = _mm256_unpackhi_ps(y4,z4); /* z4h y4h z4g y4g | z4d y4d z4c y4c */
-
+    
     t5          = _mm256_shuffle_ps(t1,t3,_MM_SHUFFLE(1,0,1,0)); /* z4e y4e x4e z3e | z4a y4a x4a z3a */
     t6          = _mm256_shuffle_ps(t1,t3,_MM_SHUFFLE(3,2,3,2)); /* z4f y4f x4f z3f | z4b y4b x4b z3b */
     t7          = _mm256_shuffle_ps(t2,t4,_MM_SHUFFLE(1,0,1,0)); /* z4g y4g x4g z3g | z4c y4c x4c z3c */
     t8          = _mm256_shuffle_ps(t2,t4,_MM_SHUFFLE(3,2,3,2)); /* z4h y4h x4h z3h | z4d y4d x4d z3d */
-
+    
     tI          = _mm256_sub_ps(tI,t5);
     tJ          = _mm256_sub_ps(tJ,t6);
     tK          = _mm256_sub_ps(tK,t7);
     tL          = _mm256_sub_ps(tL,t8);
-
+    
     _mm_storeu_ps(ptrA+8,_mm256_castps256_ps128(tI));
     _mm_storeu_ps(ptrB+8,_mm256_castps256_ps128(tJ));
     _mm_storeu_ps(ptrC+8,_mm256_castps256_ps128(tK));
@@ -984,7 +1256,7 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_storeu_ps(ptrG+8,_mm256_extractf128_ps(tK,0x1));
     _mm_storeu_ps(ptrH+8,_mm256_extractf128_ps(tL,0x1));
 }
-
+#endif
 
 
 static gmx_inline void
@@ -1015,6 +1287,47 @@ gmx_mm256_update_iforce_1atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
     _mm_storeh_pi((__m64 *)(fshiftptr+1),t3);
 }
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_update_iforce_3atom_swizzle_ps(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3, \
+                                                 fptr,fshiftptr) \
+{ \
+    __m256 _t1,_t2,_t3;\
+    __m128 _tA,_tB,_tC;\
+\
+    fix1 = _mm256_hadd_ps(fix1,fiy1);\
+    fiz1 = _mm256_hadd_ps(fiz1,fix2);\
+    fiy2 = _mm256_hadd_ps(fiy2,fiz2);\
+    fix3 = _mm256_hadd_ps(fix3,fiy3);\
+    fiz3 = _mm256_hadd_ps(fiz3,_mm256_setzero_ps());\
+    fix1 = _mm256_hadd_ps(fix1,fiz1);\
+    fiy2 = _mm256_hadd_ps(fiy2,fix3);\
+    fiz3 = _mm256_hadd_ps(fiz3,_mm256_setzero_ps());\
+\
+    _t1  = gmx_mm256_unpack128lo_ps(fix1,fiy2);\
+    _t2  = gmx_mm256_unpack128hi_ps(fix1,fiy2);\
+    _t1  = _mm256_add_ps(_t1,_t2);\
+    _tA  = _mm_add_ps(_mm256_castps256_ps128(fiz3),_mm256_extractf128_ps(fiz3,0x1));\
+    _t3  = _mm256_loadu_ps(fptr);\
+    _t3  = _mm256_add_ps(_t3,_t1);\
+    _mm256_storeu_ps(fptr,_t3);\
+    _tB  = _mm_load_ss(fptr+8);\
+    _tB  = _mm_add_ss(_tB,_tA);\
+    _mm_store_ss(fptr+8,_tB);\
+\
+    _tB  = _mm256_extractf128_ps(_t1,0x1);\
+    _tC  = _mm_shuffle_ps(_mm256_castps256_ps128(_t1),_tB,_MM_SHUFFLE(1,0,3,3));\
+    _tB  = _mm_shuffle_ps(_tB,_tA,_MM_SHUFFLE(1,0,3,2));\
+    _tC  = _mm_permute_ps(_tC,_MM_SHUFFLE(3,3,2,0));\
+    _tB  = _mm_add_ps(_tB,_mm256_castps256_ps128(_t1));\
+    _tA  = _mm_add_ps(_tB,_tC);\
+    _tA  = _mm_blend_ps(_mm_setzero_ps(),_tA,0x7);\
+    _tC  = _mm_loadu_ps(fshiftptr);\
+    _tC  = _mm_add_ps(_tC,_tA);\
+    _mm_storeu_ps(fshiftptr,_tC);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_update_iforce_3atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
                                          __m256 fix2, __m256 fiy2, __m256 fiz2,
@@ -1024,48 +1337,94 @@ gmx_mm256_update_iforce_3atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
 {
     __m256 t1,t2,t3;
     __m128 tA,tB,tC;
-
+    
     fix1 = _mm256_hadd_ps(fix1,fiy1);                /*  Y1g+Y1h Y1e+Y1f X1g+X1h X1e+X1f | Y1c+Y1d Y1a+Y1b X1c+X1d X1a+X1b */
     fiz1 = _mm256_hadd_ps(fiz1,fix2);                /*  X2g+X2h X2e+X2f Z1g+Z1h Z1e+Z1f | X2c+X2d X2a+X2b Z1c+Z1d Z1a+Z1b */
     fiy2 = _mm256_hadd_ps(fiy2,fiz2);                /*  Z2g+Z2h Z2e+Z2f Y2g+Y2h Y2e+Y2f | Z2c+Z2d Z2a+Z2b Y2c+Y2d Y2a+Y2b */
     fix3 = _mm256_hadd_ps(fix3,fiy3);                /*  Y3g+Y3h Y3e+Y3f X3g+X3h X3e+X3f | Y3c+Y3d Y3a+Y3b X3c+X3d X3a+X3b */
     fiz3 = _mm256_hadd_ps(fiz3,_mm256_setzero_ps()); /*  0       0       Z3g+Z3h Z3e+Z3f | 0       0       Z3c+Z3d Z3a+Z3b */
-
+    
     fix1 = _mm256_hadd_ps(fix1,fiz1);                /*  X2e-h   Z1e-h   Y1e-h   X1e-h   | X2a-d   Z1a-d   Y1a-d   X1a-d   */
     fiy2 = _mm256_hadd_ps(fiy2,fix3);                /*  Y3e-h   X3e-h   Z2e-h   Y2e-h   | Y3a-d   X3a-d   Z2a-d   Y2a-d   */
     fiz3 = _mm256_hadd_ps(fiz3,_mm256_setzero_ps()); /*  0       0       0       Z3e-h   | 0       0       0       Z3a-d   */
-
+    
     /* Add across the two lanes by swapping and adding back */
     t1   = gmx_mm256_unpack128lo_ps(fix1,fiy2); /*  Y3a-d   X3a-d   Z2a-d   Y2a-d | X2a-d   Z1a-d   Y1a-d   X1a-d */
     t2   = gmx_mm256_unpack128hi_ps(fix1,fiy2); /*  Y3e-h   X3e-h   Z2e-h   Y2e-h | X2e-h   Z1e-h   Y1e-h   X1e-h */
     t1   = _mm256_add_ps(t1,t2); /* y3 x3 z2 y2 | x2 z1 y1 x1 */
-
+    
     tA   = _mm_add_ps(_mm256_castps256_ps128(fiz3),_mm256_extractf128_ps(fiz3,0x1));  /* 0 0 0 z3 */
-
+    
     t3   = _mm256_loadu_ps(fptr);
     t3   = _mm256_add_ps(t3,t1);
     _mm256_storeu_ps(fptr,t3);
     tB   = _mm_load_ss(fptr+8);
     tB   = _mm_add_ss(tB,tA);
     _mm_store_ss(fptr+8,tB);
-
+    
     /* Add up shift force */
     tB   = _mm256_extractf128_ps(t1,0x1); /* y3 x3 z2 y2 */
     tC   = _mm_shuffle_ps(_mm256_castps256_ps128(t1),tB,_MM_SHUFFLE(1,0,3,3)); /* z2 y2 x2 x2 */
     tB   = _mm_shuffle_ps(tB,tA,_MM_SHUFFLE(1,0,3,2)); /* 0 z3 y3 x3 */
     tC   = _mm_permute_ps(tC,_MM_SHUFFLE(3,3,2,0)); /*  - z2 y2 x2 */
-
+    
     tB   = _mm_add_ps(tB,_mm256_castps256_ps128(t1));
     tA   = _mm_add_ps(tB,tC); /*  - z y x */
     
     tA   = _mm_blend_ps(_mm_setzero_ps(),tA,0x7); /* 0 z y x */
-
+    
     tC   = _mm_loadu_ps(fshiftptr);
     tC   = _mm_add_ps(tC,tA);
     _mm_storeu_ps(fshiftptr,tC);
 }
+#endif
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_update_iforce_4atom_swizzle_ps(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3,fix4,fiy4,fiz4, \
+                                                fptr,fshiftptr) \
+{ \
+    __m256 _t1,_t2,_t3; \
+    __m128 _tA,_tB,_tC; \
+\
+    fix1 = _mm256_hadd_ps(fix1,fiy1);\
+    fiz1 = _mm256_hadd_ps(fiz1,fix2);\
+    fiy2 = _mm256_hadd_ps(fiy2,fiz2);\
+    fix3 = _mm256_hadd_ps(fix3,fiy3);\
+    fiz3 = _mm256_hadd_ps(fiz3,fix4);\
+    fiy4 = _mm256_hadd_ps(fiy4,fiz4);\
+\
+    fix1 = _mm256_hadd_ps(fix1,fiz1);\
+    fiy2 = _mm256_hadd_ps(fiy2,fix3);\
+    fiz3 = _mm256_hadd_ps(fiz3,fiy4);\
+\
+    _t1  = gmx_mm256_unpack128lo_ps(fix1,fiy2);\
+    _t2  = gmx_mm256_unpack128hi_ps(fix1,fiy2);\
+    _t1  = _mm256_add_ps(_t1,_t2);\
+    _tA  = _mm_add_ps(_mm256_castps256_ps128(fiz3),_mm256_extractf128_ps(fiz3,0x1));\
+    _t3  = _mm256_loadu_ps(fptr);\
+    _t3  = _mm256_add_ps(_t3,_t1);\
+    _mm256_storeu_ps(fptr,_t3);\
+    _tB  = _mm_loadu_ps(fptr+8);\
+    _tB  = _mm_add_ps(_tB,_tA);\
+    _mm_storeu_ps(fptr+8,_tB);\
+\
+    _tB  = _mm256_extractf128_ps(_t1,0x1);\
+    _tC  = _mm_shuffle_ps(_mm256_castps256_ps128(_t1),_tB,_MM_SHUFFLE(1,0,3,3));\
+    _tB  = _mm_shuffle_ps(_tB,_tA,_MM_SHUFFLE(1,0,3,2));\
+    _tC  = _mm_permute_ps(_tC,_MM_SHUFFLE(3,3,2,0));\
+    _tA  = _mm_permute_ps(_tA,_MM_SHUFFLE(0,3,2,1));\
+    _tB  = _mm_add_ps(_tB,_mm256_castps256_ps128(_t1));\
+    _tA  = _mm_add_ps(_tA,_tC);\
+    _tA  = _mm_add_ps(_tA,_tB);\
+    _tA  = _mm_blend_ps(_mm_setzero_ps(),_tA,0x7);\
+    _tC  = _mm_loadu_ps(fshiftptr);\
+    _tC  = _mm_add_ps(_tC,_tA);\
+    _mm_storeu_ps(fshiftptr,_tC);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_update_iforce_4atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
                                          __m256 fix2, __m256 fiy2, __m256 fiz2,
@@ -1076,50 +1435,51 @@ gmx_mm256_update_iforce_4atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
 {
     __m256 t1,t2,t3;
     __m128 tA,tB,tC;
-
+    
     fix1 = _mm256_hadd_ps(fix1,fiy1);                /*  Y1g+Y1h Y1e+Y1f X1g+X1h X1e+X1f | Y1c+Y1d Y1a+Y1b X1c+X1d X1a+X1b */
     fiz1 = _mm256_hadd_ps(fiz1,fix2);                /*  X2g+X2h X2e+X2f Z1g+Z1h Z1e+Z1f | X2c+X2d X2a+X2b Z1c+Z1d Z1a+Z1b */
     fiy2 = _mm256_hadd_ps(fiy2,fiz2);                /*  Z2g+Z2h Z2e+Z2f Y2g+Y2h Y2e+Y2f | Z2c+Z2d Z2a+Z2b Y2c+Y2d Y2a+Y2b */
     fix3 = _mm256_hadd_ps(fix3,fiy3);                /*  Y3g+Y3h Y3e+Y3f X3g+X3h X3e+X3f | Y3c+Y3d Y3a+Y3b X3c+X3d X3a+X3b */
     fiz3 = _mm256_hadd_ps(fiz3,fix4);                /*  X4g+X4h X4e+X4f Z3g+Z3h Z3e+Z3f | X4c+X4d X4a+X4b Z3c+Z3d Z3a+Z3b */
     fiy4 = _mm256_hadd_ps(fiy4,fiz4);                /*  Z4g+Z4h Z4e+Z4f Y4g+Y4h Y4e+Y4f | Z4c+Z4d Z4a+Z4b Y4c+Y4d Y4a+Y4b */
-
+    
     fix1 = _mm256_hadd_ps(fix1,fiz1);                /*  X2e-h   Z1e-h   Y1e-h   X1e-h   | X2a-d   Z1a-d   Y1a-d   X1a-d   */
     fiy2 = _mm256_hadd_ps(fiy2,fix3);                /*  Y3e-h   X3e-h   Z2e-h   Y2e-h   | Y3a-d   X3a-d   Z2a-d   Y2a-d   */
     fiz3 = _mm256_hadd_ps(fiz3,fiy4);                /*  Z4e-h   Y4e-h   X4e-h   Z3e-h   | Z4a-d   Y4a-d   X4a-d   Z3a-d   */
-
+    
     /* Add across the two lanes by swapping and adding back */
     t1   = gmx_mm256_unpack128lo_ps(fix1,fiy2); /*  Y3a-d   X3a-d   Z2a-d   Y2a-d | X2a-d   Z1a-d   Y1a-d   X1a-d */
     t2   = gmx_mm256_unpack128hi_ps(fix1,fiy2); /*  Y3e-h   X3e-h   Z2e-h   Y2e-h | X2e-h   Z1e-h   Y1e-h   X1e-h */
     t1   = _mm256_add_ps(t1,t2); /* y3 x3 z2 y2 | x2 z1 y1 x1 */
-
+    
     tA   = _mm_add_ps(_mm256_castps256_ps128(fiz3),_mm256_extractf128_ps(fiz3,0x1));  /* z4 y4 x4 z3 */
-
+    
     t3   = _mm256_loadu_ps(fptr);
     t3   = _mm256_add_ps(t3,t1);
     _mm256_storeu_ps(fptr,t3);
-
+    
     tB   = _mm_loadu_ps(fptr+8);
     tB   = _mm_add_ps(tB,tA);
     _mm_storeu_ps(fptr+8,tB);
-
+    
     /* Add up shift force */
     tB   = _mm256_extractf128_ps(t1,0x1); /* y3 x3 z2 y2 */
     tC   = _mm_shuffle_ps(_mm256_castps256_ps128(t1),tB,_MM_SHUFFLE(1,0,3,3)); /* z2 y2 x2 x2 */
     tB   = _mm_shuffle_ps(tB,tA,_MM_SHUFFLE(1,0,3,2)); /* 0 z3 y3 x3 */
     tC   = _mm_permute_ps(tC,_MM_SHUFFLE(3,3,2,0)); /*  - z2 y2 x2 */
     tA   = _mm_permute_ps(tA,_MM_SHUFFLE(0,3,2,1)); /* - z4 y4 x4 */
-
+    
     tB   = _mm_add_ps(tB,_mm256_castps256_ps128(t1));
     tA   = _mm_add_ps(tA,tC);
     tA   = _mm_add_ps(tA,tB);
-
+    
     tA   = _mm_blend_ps(_mm_setzero_ps(),tA,0x7); /* 0 z y x */
-
+    
     tC   = _mm_loadu_ps(fshiftptr);
     tC   = _mm_add_ps(tC,tA);
     _mm_storeu_ps(fshiftptr,tC);
 }
+#endif
 
 
 
@@ -1150,28 +1510,6 @@ gmx_mm256_update_2pot_ps(__m256 pot1, float * gmx_restrict ptrA,
     t2   = _mm_permute_ps(t1,_MM_SHUFFLE(1,1,1,1));
     _mm_store_ss(ptrA,_mm_add_ss(_mm_load_ss(ptrA),t1));
     _mm_store_ss(ptrB,_mm_add_ss(_mm_load_ss(ptrB),t2));
-}
-
-
-static gmx_inline void
-gmx_mm256_update_4pot_ps(__m256 pot1, float * gmx_restrict ptrA,
-                         __m256 pot2, float * gmx_restrict ptrB,
-                         __m256 pot3, float * gmx_restrict ptrC,
-                         __m256 pot4, float * gmx_restrict ptrD)
-{
-    __m128 t1,t2,t3,t4;
-
-    pot1 = _mm256_hadd_ps(pot1,pot2);
-    pot3 = _mm256_hadd_ps(pot3,pot4);
-    pot1 = _mm256_hadd_ps(pot1,pot3);
-    t1   = _mm_add_ps(_mm256_castps256_ps128(pot1),_mm256_extractf128_ps(pot1,0x1));
-    t2   = _mm_permute_ps(t1,_MM_SHUFFLE(1,1,1,1));
-    t3   = _mm_permute_ps(t1,_MM_SHUFFLE(2,2,2,2));
-    t4   = _mm_permute_ps(t1,_MM_SHUFFLE(3,3,3,3));
-    _mm_store_ss(ptrA,_mm_add_ss(_mm_load_ss(ptrA),t1));
-    _mm_store_ss(ptrB,_mm_add_ss(_mm_load_ss(ptrB),t2));
-    _mm_store_ss(ptrC,_mm_add_ss(_mm_load_ss(ptrC),t3));
-    _mm_store_ss(ptrD,_mm_add_ss(_mm_load_ss(ptrD),t4));
 }
 
 

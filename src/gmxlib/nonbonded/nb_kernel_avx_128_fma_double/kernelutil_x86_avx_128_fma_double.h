@@ -383,96 +383,6 @@ gmx_mm_load_4rvec_2ptr_swizzle_pd(const double * gmx_restrict ptrA, const double
 
 /* Routines to decrement rvec in memory, typically use for j particle force updates */
 static void
-gmx_mm_decrement_1rvec_1ptr_noswizzle_pd(double * gmx_restrict ptrA,
-                                         __m128d xy, __m128d z)
-{
-    __m128d t1,t2;
-    
-    t1 = _mm_loadu_pd(ptrA);
-    t2 = _mm_load_sd(ptrA+2);
-    
-    t1 = _mm_sub_pd(t1,xy);
-    t2 = _mm_sub_sd(t2,z);
-    
-    _mm_storeu_pd(ptrA,t1);
-    _mm_store_sd(ptrA+2,t2);
-}
-
-
-static void
-gmx_mm_decrement_3rvec_1ptr_noswizzle_pd(double * gmx_restrict ptrA,
-                                         __m128d xy1, __m128d z1,
-                                         __m128d xy2, __m128d z2,
-                                         __m128d xy3, __m128d z3)
-{
-    __m128d t1,t2;
-    __m128d tA,tB,tC,tD,tE;
-    
-    tA   = _mm_loadu_pd(ptrA);
-    tB   = _mm_loadu_pd(ptrA+2);
-    tC   = _mm_loadu_pd(ptrA+4);
-    tD   = _mm_loadu_pd(ptrA+6);
-    tE   = _mm_load_sd(ptrA+8);
-    
-    /* xy1: y1 x1 */
-    t1   = _mm_shuffle_pd(z1,xy2,_MM_SHUFFLE2(0,1)); /* x2 z1 */
-    t2   = _mm_shuffle_pd(xy2,z2,_MM_SHUFFLE2(0,1)); /* z2 y2 */
-    /* xy3: y3 x3 */
-    
-    tA   = _mm_sub_pd(tA,xy1);
-    tB   = _mm_sub_pd(tB,t1);
-    tC   = _mm_sub_pd(tC,t2);
-    tD   = _mm_sub_pd(tD,xy3);
-    tE   = _mm_sub_sd(tE,z3);
-    
-    _mm_storeu_pd(ptrA,tA);
-    _mm_storeu_pd(ptrA+2,tB);
-    _mm_storeu_pd(ptrA+4,tC);
-    _mm_storeu_pd(ptrA+6,tD);
-    _mm_store_sd(ptrA+8,tE);
-}
-
-static void
-gmx_mm_decrement_4rvec_1ptr_noswizzle_pd(double * gmx_restrict ptrA,
-                                         __m128d xy1, __m128d z1,
-                                         __m128d xy2, __m128d z2,
-                                         __m128d xy3, __m128d z3,
-                                         __m128d xy4, __m128d z4)
-{
-    __m128d t1,t2,t3,t4;
-    __m128d tA,tB,tC,tD,tE,tF;
-    
-    tA   = _mm_loadu_pd(ptrA);
-    tB   = _mm_loadu_pd(ptrA+2);
-    tC   = _mm_loadu_pd(ptrA+4);
-    tD   = _mm_loadu_pd(ptrA+6);
-    tE   = _mm_loadu_pd(ptrA+8);
-    tF   = _mm_loadu_pd(ptrA+10);
-    
-    /* xy1: y1 x1 */
-    t1   = _mm_shuffle_pd(z1,xy2,_MM_SHUFFLE2(0,0)); /* x2 z1 */
-    t2   = _mm_shuffle_pd(xy2,z2,_MM_SHUFFLE2(0,1)); /* z2 y2 */
-    /* xy3: y3 x3 */
-    t3   = _mm_shuffle_pd(z3,xy4,_MM_SHUFFLE2(0,0)); /* x4 z3 */
-    t4   = _mm_shuffle_pd(xy4,z4,_MM_SHUFFLE2(0,1)); /* z4 y4 */
-    
-    tA   = _mm_sub_pd(tA,xy1);
-    tB   = _mm_sub_pd(tB,t1);
-    tC   = _mm_sub_pd(tC,t2);
-    tD   = _mm_sub_pd(tD,xy3);
-    tE   = _mm_sub_pd(tE,t3);
-    tF   = _mm_sub_pd(tF,t4);
-    
-    _mm_storeu_pd(ptrA,tA);
-    _mm_storeu_pd(ptrA+2,tB);
-    _mm_storeu_pd(ptrA+4,tC);
-    _mm_storeu_pd(ptrA+6,tD);
-    _mm_storeu_pd(ptrA+8,tE);
-    _mm_storeu_pd(ptrA+10,tF);
-}
-
-
-static void
 gmx_mm_decrement_1rvec_1ptr_swizzle_pd(double * gmx_restrict ptrA,
                                        __m128d x1, __m128d y1, __m128d z1)
 {
@@ -491,6 +401,33 @@ gmx_mm_decrement_1rvec_1ptr_swizzle_pd(double * gmx_restrict ptrA,
 }
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm_decrement_3rvec_1ptr_swizzle_pd(ptrA,_x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3) \
+{\
+__m128d _t1,_t2,_t3,_t4,_t5;\
+_t1          = _mm_loadu_pd(ptrA);\
+_t2          = _mm_loadu_pd(ptrA+2);\
+_t3          = _mm_loadu_pd(ptrA+4);\
+_t4          = _mm_loadu_pd(ptrA+6);\
+_t5          = _mm_load_sd(ptrA+8);\
+_x1          = _mm_unpacklo_pd(_x1,_y1);\
+_z1          = _mm_unpacklo_pd(_z1,_x2);\
+_y2          = _mm_unpacklo_pd(_y2,_z2);\
+_x3          = _mm_unpacklo_pd(_x3,_y3);\
+_t1          = _mm_sub_pd(_t1,_x1);\
+_t2          = _mm_sub_pd(_t2,_z1);\
+_t3          = _mm_sub_pd(_t3,_y2);\
+_t4          = _mm_sub_pd(_t4,_x3);\
+_t5          = _mm_sub_sd(_t5,_z3);\
+_mm_storeu_pd(ptrA,_t1);\
+_mm_storeu_pd(ptrA+2,_t2);\
+_mm_storeu_pd(ptrA+4,_t3);\
+_mm_storeu_pd(ptrA+6,_t4);\
+_mm_store_sd(ptrA+8,_t5);\
+}
+#else
+/* Real function for sane compilers */
 static void
 gmx_mm_decrement_3rvec_1ptr_swizzle_pd(double * gmx_restrict ptrA,
                                        __m128d x1, __m128d y1, __m128d z1,
@@ -522,8 +459,35 @@ gmx_mm_decrement_3rvec_1ptr_swizzle_pd(double * gmx_restrict ptrA,
     _mm_storeu_pd(ptrA+6,t4);
     _mm_store_sd(ptrA+8,t5);
 }
+#endif
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm_decrement_4rvec_1ptr_swizzle_pd(ptrA,_x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3,_x4,_y4,_z4) \
+{\
+__m128d _t1,_t2,_t3,_t4,_t5,_t6;\
+_t1          = _mm_loadu_pd(ptrA);\
+_t2          = _mm_loadu_pd(ptrA+2);\
+_t3          = _mm_loadu_pd(ptrA+4);\
+_t4          = _mm_loadu_pd(ptrA+6);\
+_t5          = _mm_loadu_pd(ptrA+8);\
+_t6          = _mm_loadu_pd(ptrA+10);\
+_x1          = _mm_unpacklo_pd(_x1,_y1);\
+_z1          = _mm_unpacklo_pd(_z1,_x2);\
+_y2          = _mm_unpacklo_pd(_y2,_z2);\
+_x3          = _mm_unpacklo_pd(_x3,_y3);\
+_z3          = _mm_unpacklo_pd(_z3,_x4);\
+_y4          = _mm_unpacklo_pd(_y4,_z4);\
+_mm_storeu_pd(ptrA,    _mm_sub_pd( _t1,_x1 ));\
+_mm_storeu_pd(ptrA+2,  _mm_sub_pd( _t2,_z1 ));\
+_mm_storeu_pd(ptrA+4,  _mm_sub_pd( _t3,_y2 ));\
+_mm_storeu_pd(ptrA+6,  _mm_sub_pd( _t4,_x3 ));\
+_mm_storeu_pd(ptrA+8,  _mm_sub_pd( _t5,_z3 ));\
+_mm_storeu_pd(ptrA+10, _mm_sub_pd( _t6,_y4 ));\
+}
+#else
+/* Real function for sane compilers */
 static void
 gmx_mm_decrement_4rvec_1ptr_swizzle_pd(double * gmx_restrict ptrA,
                                        __m128d x1, __m128d y1, __m128d z1,
@@ -554,6 +518,8 @@ gmx_mm_decrement_4rvec_1ptr_swizzle_pd(double * gmx_restrict ptrA,
     _mm_storeu_pd(ptrA+8,  _mm_sub_pd( t5,z3 ));
     _mm_storeu_pd(ptrA+10, _mm_sub_pd( t6,y4 ));
 }
+#endif
+
 
 static void
 gmx_mm_decrement_1rvec_2ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
@@ -583,6 +549,54 @@ gmx_mm_decrement_1rvec_2ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_
 }
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm_decrement_3rvec_2ptr_swizzle_pd(ptrA,ptrB,_x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3) \
+{\
+__m128d _t1,_t2,_t3,_t4,_t5,_t6,_t7,_t8,_t9,_t10;\
+__m128d _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH,_tI;\
+_t1          = _mm_loadu_pd(ptrA);\
+_t2          = _mm_loadu_pd(ptrA+2);\
+_t3          = _mm_loadu_pd(ptrA+4);\
+_t4          = _mm_loadu_pd(ptrA+6);\
+_t5          = _mm_load_sd(ptrA+8);\
+_t6          = _mm_loadu_pd(ptrB);\
+_t7          = _mm_loadu_pd(ptrB+2);\
+_t8          = _mm_loadu_pd(ptrB+4);\
+_t9          = _mm_loadu_pd(ptrB+6);\
+_t10         = _mm_load_sd(ptrB+8);\
+_tA          = _mm_unpacklo_pd(_x1,_y1);\
+_tB          = _mm_unpackhi_pd(_x1,_y1);\
+_tC          = _mm_unpacklo_pd(_z1,_x2);\
+_tD          = _mm_unpackhi_pd(_z1,_x2);\
+_tE          = _mm_unpacklo_pd(_y2,_z2);\
+_tF          = _mm_unpackhi_pd(_y2,_z2);\
+_tG          = _mm_unpacklo_pd(_x3,_y3);\
+_tH          = _mm_unpackhi_pd(_x3,_y3);\
+_tI          = _mm_unpackhi_pd(_z3,_z3);\
+_t1          = _mm_sub_pd(_t1,_tA);\
+_t2          = _mm_sub_pd(_t2,_tC);\
+_t3          = _mm_sub_pd(_t3,_tE);\
+_t4          = _mm_sub_pd(_t4,_tG);\
+_t5          = _mm_sub_sd(_t5,_z3);\
+_t6          = _mm_sub_pd(_t6,_tB);\
+_t7          = _mm_sub_pd(_t7,_tD);\
+_t8          = _mm_sub_pd(_t8,_tF);\
+_t9          = _mm_sub_pd(_t9,_tH);\
+_t10         = _mm_sub_sd(_t10,_tI);\
+_mm_storeu_pd(ptrA,_t1);\
+_mm_storeu_pd(ptrA+2,_t2);\
+_mm_storeu_pd(ptrA+4,_t3);\
+_mm_storeu_pd(ptrA+6,_t4);\
+_mm_store_sd(ptrA+8,_t5);\
+_mm_storeu_pd(ptrB,_t6);\
+_mm_storeu_pd(ptrB+2,_t7);\
+_mm_storeu_pd(ptrB+4,_t8);\
+_mm_storeu_pd(ptrB+6,_t9);\
+_mm_store_sd(ptrB+8,_t10);\
+}
+#else
+/* Real function for sane compilers */
 static void
 gmx_mm_decrement_3rvec_2ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
                                        __m128d x1, __m128d y1, __m128d z1,
@@ -636,8 +650,66 @@ gmx_mm_decrement_3rvec_2ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_
     _mm_storeu_pd(ptrB+6,t9);
     _mm_store_sd(ptrB+8,t10);
 }
+#endif
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm_decrement_4rvec_2ptr_swizzle_pd(ptrA,ptrB,_x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3,_x4,_y4,_z4) \
+{\
+__m128d _t1,_t2,_t3,_t4,_t5,_t6,_t7,_t8,_t9,_t10,_t11,_t12;\
+__m128d _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH,_tI,_tJ,_tK,_tL;\
+_t1          = _mm_loadu_pd(ptrA);\
+_t2          = _mm_loadu_pd(ptrA+2);\
+_t3          = _mm_loadu_pd(ptrA+4);\
+_t4          = _mm_loadu_pd(ptrA+6);\
+_t5          = _mm_loadu_pd(ptrA+8);\
+_t6          = _mm_loadu_pd(ptrA+10);\
+_t7          = _mm_loadu_pd(ptrB);\
+_t8          = _mm_loadu_pd(ptrB+2);\
+_t9          = _mm_loadu_pd(ptrB+4);\
+_t10         = _mm_loadu_pd(ptrB+6);\
+_t11         = _mm_loadu_pd(ptrB+8);\
+_t12         = _mm_loadu_pd(ptrB+10);\
+_tA          = _mm_unpacklo_pd(_x1,_y1);\
+_tB          = _mm_unpackhi_pd(_x1,_y1);\
+_tC          = _mm_unpacklo_pd(_z1,_x2);\
+_tD          = _mm_unpackhi_pd(_z1,_x2);\
+_tE          = _mm_unpacklo_pd(_y2,_z2);\
+_tF          = _mm_unpackhi_pd(_y2,_z2);\
+_tG          = _mm_unpacklo_pd(_x3,_y3);\
+_tH          = _mm_unpackhi_pd(_x3,_y3);\
+_tI          = _mm_unpacklo_pd(_z3,_x4);\
+_tJ          = _mm_unpackhi_pd(_z3,_x4);\
+_tK          = _mm_unpacklo_pd(_y4,_z4);\
+_tL          = _mm_unpackhi_pd(_y4,_z4);\
+_t1          = _mm_sub_pd(_t1,_tA);\
+_t2          = _mm_sub_pd(_t2,_tC);\
+_t3          = _mm_sub_pd(_t3,_tE);\
+_t4          = _mm_sub_pd(_t4,_tG);\
+_t5          = _mm_sub_pd(_t5,_tI);\
+_t6          = _mm_sub_pd(_t6,_tK);\
+_t7          = _mm_sub_pd(_t7,_tB);\
+_t8          = _mm_sub_pd(_t8,_tD);\
+_t9          = _mm_sub_pd(_t9,_tF);\
+_t10         = _mm_sub_pd(_t10,_tH);\
+_t11         = _mm_sub_pd(_t11,_tJ);\
+_t12         = _mm_sub_pd(_t12,_tL);\
+_mm_storeu_pd(ptrA,  _t1);\
+_mm_storeu_pd(ptrA+2,_t2);\
+_mm_storeu_pd(ptrA+4,_t3);\
+_mm_storeu_pd(ptrA+6,_t4);\
+_mm_storeu_pd(ptrA+8,_t5);\
+_mm_storeu_pd(ptrA+10,_t6);\
+_mm_storeu_pd(ptrB,  _t7);\
+_mm_storeu_pd(ptrB+2,_t8);\
+_mm_storeu_pd(ptrB+4,_t9);\
+_mm_storeu_pd(ptrB+6,_t10);\
+_mm_storeu_pd(ptrB+8,_t11);\
+_mm_storeu_pd(ptrB+10,_t12);\
+}
+#else
+/* Real function for sane compilers */
 static void
 gmx_mm_decrement_4rvec_2ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
                                        __m128d x1, __m128d y1, __m128d z1,
@@ -701,7 +773,7 @@ gmx_mm_decrement_4rvec_2ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_
     _mm_storeu_pd(ptrB+8,t11);
     _mm_storeu_pd(ptrB+10,t12);
 }
-
+#endif
 
 
 static gmx_inline void
@@ -719,6 +791,33 @@ gmx_mm_update_iforce_1atom_swizzle_pd(__m128d fix1, __m128d fiy1, __m128d fiz1,
     _mm_store_sd( fshiftptr+2, _mm_add_sd( _mm_load_sd(fshiftptr+2), fiz1 ));
 }
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm_update_iforce_3atom_swizzle_pd(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3, \
+fptr,fshiftptr) \
+{\
+__m128d _t1,_t2;\
+fix1 = _mm_hadd_pd(fix1,fiy1);\
+fiz1 = _mm_hadd_pd(fiz1,fix2);\
+fiy2 = _mm_hadd_pd(fiy2,fiz2);\
+fix3 = _mm_hadd_pd(fix3,fiy3);\
+fiz3 = _mm_hadd_pd(fiz3,fiz3);\
+_mm_storeu_pd( fptr, _mm_add_pd( _mm_loadu_pd(fptr), fix1 ));\
+_mm_storeu_pd( fptr+2, _mm_add_pd( _mm_loadu_pd(fptr+2), fiz1 ));\
+_mm_storeu_pd( fptr+4, _mm_add_pd( _mm_loadu_pd(fptr+4), fiy2 ));\
+_mm_storeu_pd( fptr+6, _mm_add_pd( _mm_loadu_pd(fptr+6), fix3 ));\
+_mm_store_sd( fptr+8, _mm_add_sd( _mm_load_sd(fptr+8), fiz3 ));\
+fix1 = _mm_add_pd(fix1,fix3);\
+_t1   = _mm_shuffle_pd(fiz1,fiy2,_MM_SHUFFLE2(0,1));\
+fix1 = _mm_add_pd(fix1,_t1);\
+_t2   = _mm_shuffle_pd(fiy2,fiy2,_MM_SHUFFLE2(1,1));\
+fiz1 = _mm_add_sd(fiz1,fiz3);\
+fiz1 = _mm_add_sd(fiz1,_t2);\
+_mm_storeu_pd( fshiftptr, _mm_add_pd( _mm_loadu_pd(fshiftptr), fix1 ));\
+_mm_store_sd( fshiftptr+2, _mm_add_sd( _mm_load_sd(fshiftptr+2), fiz1 ));\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm_update_iforce_3atom_swizzle_pd(__m128d fix1, __m128d fiy1, __m128d fiz1,
                                       __m128d fix2, __m128d fiy2, __m128d fiz2,
@@ -751,8 +850,39 @@ gmx_mm_update_iforce_3atom_swizzle_pd(__m128d fix1, __m128d fiy1, __m128d fiz1,
     _mm_storeu_pd( fshiftptr, _mm_add_pd( _mm_loadu_pd(fshiftptr), fix1 ));
     _mm_store_sd( fshiftptr+2, _mm_add_sd( _mm_load_sd(fshiftptr+2), fiz1 ));
 }
+#endif
 
-
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm_update_iforce_4atom_swizzle_pd(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3,fix4,fiy4,fiz4, \
+fptr,fshiftptr) \
+{\
+__m128d _t1,_t2;\
+fix1 = _mm_hadd_pd(fix1,fiy1);\
+fiz1 = _mm_hadd_pd(fiz1,fix2);\
+fiy2 = _mm_hadd_pd(fiy2,fiz2);\
+fix3 = _mm_hadd_pd(fix3,fiy3);\
+fiz3 = _mm_hadd_pd(fiz3,fix4);\
+fiy4 = _mm_hadd_pd(fiy4,fiz4);\
+_mm_storeu_pd( fptr, _mm_add_pd( _mm_loadu_pd(fptr),       fix1 ));\
+_mm_storeu_pd( fptr+2, _mm_add_pd( _mm_loadu_pd(fptr+2),   fiz1 ));\
+_mm_storeu_pd( fptr+4, _mm_add_pd( _mm_loadu_pd(fptr+4),   fiy2 ));\
+_mm_storeu_pd( fptr+6, _mm_add_pd( _mm_loadu_pd(fptr+6),   fix3 ));\
+_mm_storeu_pd( fptr+8, _mm_add_pd( _mm_loadu_pd(fptr+8),   fiz3 ));\
+_mm_storeu_pd( fptr+10, _mm_add_pd( _mm_loadu_pd(fptr+10), fiy4 ));\
+_t1 = _mm_shuffle_pd(fiz1,fiy2,_MM_SHUFFLE2(0,1));\
+fix1 = _mm_add_pd(fix1,_t1);\
+_t2 = _mm_shuffle_pd(fiz3,fiy4,_MM_SHUFFLE2(0,1));\
+fix3 = _mm_add_pd(fix3,_t2);\
+fix1 = _mm_add_pd(fix1,fix3);\
+fiz1 = _mm_add_sd(fiz1, _mm_unpackhi_pd(fiy2,fiy2));\
+fiz3 = _mm_add_sd(fiz3, _mm_unpackhi_pd(fiy4,fiy4));\
+fiz1 = _mm_add_sd(fiz1,fiz3);\
+_mm_storeu_pd( fshiftptr, _mm_add_pd( _mm_loadu_pd(fshiftptr), fix1 ));\
+_mm_store_sd( fshiftptr+2, _mm_add_sd( _mm_load_sd(fshiftptr+2), fiz1 ));\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm_update_iforce_4atom_swizzle_pd(__m128d fix1, __m128d fiy1, __m128d fiz1,
                                       __m128d fix2, __m128d fiy2, __m128d fiz2,
@@ -790,7 +920,7 @@ gmx_mm_update_iforce_4atom_swizzle_pd(__m128d fix1, __m128d fiy1, __m128d fiz1,
     _mm_storeu_pd( fshiftptr, _mm_add_pd( _mm_loadu_pd(fshiftptr), fix1 ));
     _mm_store_sd( fshiftptr+2, _mm_add_sd( _mm_load_sd(fshiftptr+2), fiz1 ));
 }
-
+#endif
 
 
 static gmx_inline void
