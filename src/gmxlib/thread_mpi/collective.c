@@ -331,7 +331,7 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
                     /* We tried again, and this time there was a copied buffer. 
                        We use that, and indicate that we're not reading from the
                        regular buf. This case should be pretty rare.  */
-                    tMPI_Atomic_fetch_add(&(cev->met[rank].buf_readcount),-1);
+                    tMPI_Atomic_add_return(&(cev->met[rank].buf_readcount),-1);
                     tMPI_Atomic_memory_barrier_acq();
                     srcbuf=try_again_srcbuf;
                 }
@@ -354,7 +354,7 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
         {
             /* we decrement the read count; potentially releasing the buffer. */
             tMPI_Atomic_memory_barrier_rel();
-            tMPI_Atomic_fetch_add( &(cev->met[rank].buf_readcount), -1);
+            tMPI_Atomic_add_return( &(cev->met[rank].buf_readcount), -1);
         }
 #endif
     }
@@ -481,7 +481,7 @@ void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
     else
     {
         /* wait until everybody else is done copying the original buffer. 
-           We use fetch_add because we want to be sure of coherency.
+           We use atomic add-return because we want to be sure of coherency.
            This wait is bound to be very short (otherwise it wouldn't 
            be double-buffering) so we always spin here. */
         /*tMPI_Atomic_memory_barrier_rel();*/
@@ -490,7 +490,7 @@ void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
                                     -100000))
 #endif
 #if 0
-        while (tMPI_Atomic_fetch_add( &(cev->met[myrank].buf_readcount), 0) 
+        while (tMPI_Atomic_add_return( &(cev->met[myrank].buf_readcount), 0) 
                != 0)
 #endif
 #if 1
