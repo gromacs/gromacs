@@ -1,0 +1,8 @@
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Code-Review+1: Erik Lindahl <erik@kth.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Sun, 30 Dec 2012 21:32:58 +0100
+Reviewed-on: https://gerrit.gromacs.org/1971
+Project: gromacs
+Branch: refs/heads/release-4-5-patches
