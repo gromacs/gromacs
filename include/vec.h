@@ -183,40 +183,6 @@ static real gmx_software_invsqrt(real x)
 #define INVSQRT_DONE 
 #endif /* gmx_invsqrt */
 
-#ifdef GMX_POWERPC_SQRT
-static real gmx_powerpc_invsqrt(real x)
-{
-  const real  half=0.5;
-  const real  three=3.0;
-  t_convert   result,bit_pattern;
-  unsigned int exp,fract;
-  real        lu;
-  real        y;
-#ifdef GMX_DOUBLE
-  real        y2;
-#endif
-
-  lu = __frsqrte((double)x);
-
-  y=(half*lu*(three-((x*lu)*lu)));
-
-#if (GMX_POWERPC_SQRT==2)
-  /* Extra iteration required */
-  y=(half*y*(three-((x*y)*y)));
-#endif
-
-#ifdef GMX_DOUBLE
-  y2=(half*y*(three-((x*y)*y)));
-
-  return y2;                    /* 10 Flops */
-#else
-  return y;                     /* 5  Flops */
-#endif
-}
-#define gmx_invsqrt(x) gmx_powerpc_invsqrt(x)
-#define INVSQRT_DONE
-#endif /* powerpc_invsqrt */
-
 #ifndef INVSQRT_DONE
 #    ifdef GMX_DOUBLE
 #        ifdef HAVE_RSQRT
