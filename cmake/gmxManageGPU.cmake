@@ -59,7 +59,7 @@ endif()
 
 # We need to call find_package even when we've already done the detection/setup
 if(GMX_GPU OR GMX_GPU_AUTO)
-    if(NOT GMX_GPU AND GMX_GPU_AUTO AND GMX_GPU_DETECTION_DONE)
+    if(NOT GMX_GPU AND NOT GMX_DETECT_GPU_AVAILABLE)
         # Stay quiet when detection has occured and found no GPU.
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
@@ -141,7 +141,7 @@ endif()
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
 # left behind in the cache.
-mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
+mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD CUDA_TOOLKIT_ROOT_DIR)
 
 macro(gmx_gpu_setup)
     # set up nvcc options
