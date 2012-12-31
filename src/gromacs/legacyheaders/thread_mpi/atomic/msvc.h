@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -38,7 +38,7 @@ files.
 
 /* Microsoft Visual C on x86, define taken from FFTW who got it from Morten Nissov */
 
-/* we need this for all the data types. We use WIN32_LEAN_AND_MEAN to avoid 
+/* we need this for all the data types. We use WIN32_LEAN_AND_MEAN to avoid
       polluting the global namespace. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -54,12 +54,12 @@ files.
 
 typedef struct tMPI_Atomic
 {
-        LONG volatile      value; /*!< Volatile, to avoid compiler aliasing */
+    LONG volatile      value; /*!< Volatile, to avoid compiler aliasing */
 } tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-        void* volatile      value; /*!< Volatile, to avoid compiler aliasing */
+    void* volatile      value; /*!< Volatile, to avoid compiler aliasing */
 } tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
@@ -73,11 +73,11 @@ typedef struct tMPI_Spinlock
 #define TMPI_HAVE_SWAP
 
 
-#define tMPI_Atomic_get(a)  ((a)->value) 
+#define tMPI_Atomic_get(a)  ((a)->value)
 #define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
 
-#define tMPI_Atomic_ptr_get(a)    ((a)->value) 
+#define tMPI_Atomic_ptr_get(a)    ((a)->value)
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
@@ -129,7 +129,7 @@ static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *   x)
 
 static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
-    while(tMPI_Spinlock_islocked(x))
+    while (tMPI_Spinlock_islocked(x))
     {
         /*Sleep(0);*/
     }

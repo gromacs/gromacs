@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -43,8 +43,8 @@ files.
 /** Fast (possibly busy-wait-based) barrier type
  *
  *  This barrier has the same functionality as the standard
- *  tMPI_Thread_barrier_t, but since it is based on spinlocks that yield 
- *  to the scheduler in case of waiting, it provides faster synchronization 
+ *  tMPI_Thread_barrier_t, but since it is based on spinlocks that yield
+ *  to the scheduler in case of waiting, it provides faster synchronization
  *  at the cost of busy-waiting, while still behaving relatively nicely
  *  to other processes/threads. This is therefore the preferred type of
  *  barrier for when waits are expected to be reasonably short.
@@ -52,7 +52,7 @@ files.
  *  Variables of this type should be initialized by calling
  *  tMPI_Barrier_init() to set the number of threads
  *  that should be synchronized.
- * 
+ *
  * \see
  * - tMPI_Barrier_init
  * - tMPI_Barrier_wait
@@ -73,8 +73,8 @@ struct tMPI_Barrier_t
  *  \param barrier  Pointer to _spinlock_ barrier. Note that this is not
  *                  the same datatype as the full, thread based, barrier.
  *  \param count    Number of threads to synchronize. All threads
- *                  will be released after \a count calls to 
- *                  tMPI_Barrier_wait().  
+ *                  will be released after \a count calls to
+ *                  tMPI_Barrier_wait().
  */
 void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count);
 
@@ -95,10 +95,10 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier);
 
 #ifdef DOXYGEN
 /** Get the number of threads to synchronize for a barrier
-  * 
-  *  This function returns the total number of threads the barrier 
+  *
+  *  This function returns the total number of threads the barrier
   *  synchronizes.
-  *    
+  *
   *  \param barrier  Pointer to barrier.
   *
   *  \return the number of threads to synchronize

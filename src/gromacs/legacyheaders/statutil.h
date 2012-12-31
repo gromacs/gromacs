@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -59,7 +59,7 @@ enum { TBEGIN, TEND, TDELTA, TNR };
 
 gmx_bool bTimeSet(int tcontrol);
 
-real rTimeValue(int tcontrol); 
+real rTimeValue(int tcontrol);
 
 void setTimeValue(int tcontrol,real value);
 
@@ -70,22 +70,22 @@ typedef struct t_trxstatus t_trxstatus;
 
 /* I/O function types */
 
-  
-/* LEGACY FUNCTIONS 
+
+/* LEGACY FUNCTIONS
 
    The program names, command lines, etc. are now also set in the output_env
    structure. That is now the preferred location, but the functions here
    are still available as legacy functions. Because they all act on inherently
    global informaion, their existence in a multi-threaded environment is not
    a real problem. */
-    
+
 /* Return the name of the program */
 const char *command_line(void);
 
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
- */    
+ */
 const char *Program(void);
 void set_program_name(const char *argvzero);
 /* Id. without leading directory */
@@ -115,7 +115,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
 int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
-/* Write a frame to a TRX file. 
+/* Write a frame to a TRX file.
  * Only entries for which the gmx_boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
  * omitted for certain trajectory formats.
@@ -128,9 +128,9 @@ int write_trx(t_trxstatus *status,int nind,const atom_id *ind,t_atoms *atoms,
               int step,real time,matrix box,rvec x[],rvec *v,
               gmx_conect gc);
 /* Write an indexed frame to a TRX file.
- * v can be NULL. 
+ * v can be NULL.
  * atoms can be NULL for file types which don't need atom names.
- */ 
+ */
 
 void close_trx(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
@@ -197,31 +197,31 @@ int check_times(real t);
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 int read_first_frame(const output_env_t oenv,t_trxstatus **status,
-                            const char *fn, t_trxframe *fr,int flags);
-  /* Read the first frame which is in accordance with flags, which are
-   * defined further up in this file. 
-   * Returns natoms when succeeded, 0 otherwise.
-   * Memory will be allocated for flagged entries.
-   * The flags are copied to fr for subsequent calls to read_next_frame.
-   * Returns TRUE when succeeded, FALSE otherwise.
-   */
+                     const char *fn, t_trxframe *fr,int flags);
+/* Read the first frame which is in accordance with flags, which are
+ * defined further up in this file.
+ * Returns natoms when succeeded, 0 otherwise.
+ * Memory will be allocated for flagged entries.
+ * The flags are copied to fr for subsequent calls to read_next_frame.
+ * Returns TRUE when succeeded, FALSE otherwise.
+ */
 
 gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
-                            t_trxframe *fr);
-  /* Reads the next frame which is in accordance with fr->flags.
-   * Returns TRUE when succeeded, FALSE otherwise.
-   */
+                         t_trxframe *fr);
+/* Reads the next frame which is in accordance with fr->flags.
+ * Returns TRUE when succeeded, FALSE otherwise.
+ */
 
 int read_first_x(const output_env_t oenv,t_trxstatus **status,
-                        const char *fn, real *t,rvec **x,matrix box);
-/* These routines read first coordinates and box, and allocates 
+                 const char *fn, real *t,rvec **x,matrix box);
+/* These routines read first coordinates and box, and allocates
  * memory for the coordinates, for a trajectory file.
  * The routine returns the number of atoms, or 0 when something is wrong.
  * The integer in status should be passed to calls of read_next_x
  */
 
 gmx_bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
-                        int natoms, rvec x[],matrix box);
+                     int natoms, rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
@@ -241,7 +241,7 @@ t_topology *read_top(const char *fn,int *ePBC);
  */
 
 /*****************************************************
- *         Some command line parsing routines 
+ *         Some command line parsing routines
  *****************************************************/
 
 #define PCA_CAN_VIEW       (1<<5)
@@ -292,21 +292,21 @@ void vscan(int argc,char *argv[],int *i,rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
 int nenum(const char *const enumc[]);
-/* returns ordinal number of selected enum from args 
+/* returns ordinal number of selected enum from args
  * depends on enumc[0] pointing to one of the other elements
- * array must be terminated by a NULL pointer 
+ * array must be terminated by a NULL pointer
  */
 
 void parse_common_args(int *argc,char *argv[],unsigned long Flags,
-                              int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-                              int ndesc,const char **desc,
-                              int nbugs,const char **bugs, 
-                              output_env_t *oenv);
+                       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
+                       int ndesc,const char **desc,
+                       int nbugs,const char **bugs,
+                       output_env_t *oenv);
 /* Get arguments from the arg-list. The arguments extracted
  * are removed from the list. If manual is NULL a default message is displayed
  * when errors are encountered. The Flags argument, when non-0 enables
  * some input checks. Using this routine also means that the arguments
- * -b and -e will be used for begin and end time, whether this is 
+ * -b and -e will be used for begin and end time, whether this is
  * appropriate or not!
  */
 

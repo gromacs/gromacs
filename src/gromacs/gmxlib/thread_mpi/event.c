@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -62,18 +62,18 @@ void tMPI_Event_destroy(tMPI_Event *ev)
     ev->last_sync=0;
 }
 
-int tMPI_Event_wait(tMPI_Event *ev) 
+int tMPI_Event_wait(tMPI_Event *ev)
 {
     int ret;
-    /* for most OSes yielding waits result in much better performance 
-       (by an order of magnitude) than using the OS-provided wait functions 
+    /* for most OSes yielding waits result in much better performance
+       (by an order of magnitude) than using the OS-provided wait functions
        such as pthread_cond_wait(). That's why we do a busy-wait loop here.*/
-    while( (tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync)) <= 0 )
-    { 
+    while ( (tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync)) <= 0 )
+    {
         TMPI_YIELD_WAIT(ev);
     }
-    tMPI_Atomic_memory_barrier_acq(); 
-    ret=tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync); 
+    tMPI_Atomic_memory_barrier_acq();
+    ret=tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync);
     return ret;
 }
 

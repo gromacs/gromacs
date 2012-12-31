@@ -63,7 +63,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     int i;
 
     dh->ndhmax=ndhmax+2;
-    for(i=0;i<2;i++)
+    for (i=0; i<2; i++)
     {
         dh->bin[i]=NULL;
     }
@@ -82,7 +82,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
         dh->nhist=2; /* energies and derivatives histogram */
         dh->dx=dx;
         dh->nbins=nbins;
-        for(i=0;i<dh->nhist;i++)
+        for (i=0; i<dh->nhist; i++)
         {
             snew(dh->bin[i], dh->nbins);
         }
@@ -118,16 +118,20 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
     f=invert ? -1 : 1;
 
     /* first find min and max */
-    for(i=0;i<dh->ndh;i++)
+    for (i=0; i<dh->ndh; i++)
     {
         if (f*dh->dh[i] < min_dh)
+        {
             min_dh=f*dh->dh[i];
+        }
         if (f*dh->dh[i] > max_dh)
+        {
             max_dh=f*dh->dh[i];
+        }
     }
 
     /* reset the histogram */
-    for(i=0;i<dh->nbins;i++)
+    for (i=0; i<dh->nbins; i++)
     {
         dh->bin[hi][i]=0;
     }
@@ -145,7 +149,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
     max_dh_hist=(dh->x0[hi] + dh->nbins + 1)*dx;
 
     /* and fill the histogram*/
-    for(i=0;i<dh->ndh;i++)
+    for (i=0; i<dh->ndh; i++)
     {
         unsigned int bin;
 
@@ -178,7 +182,9 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
        histogram width. This can then be used as an indication that
        all the data was binned. */
     if (dh->maxbin[hi] < dh->nbins-1)
+    {
         dh->maxbin[hi] += 1;
+    }
 }
 
 
@@ -214,11 +220,11 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         if (dh->ndh > 0)
         {
             blk->sub[2].nr=dh->ndh;
-/* For F@H for now. */
+            /* For F@H for now. */
 #undef GMX_DOUBLE
 #ifndef GMX_DOUBLE
             blk->sub[2].type=xdr_datatype_float;
-            for(i=0;i<dh->ndh;i++)
+            for (i=0; i<dh->ndh; i++)
             {
                 dh->dhf[i] = (float)dh->dh[i];
             }
@@ -251,7 +257,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         {
             gmx_bool prev_complete=FALSE;
             /* Make the histogram(s) */
-            for(i=0;i<dh->nhist;i++)
+            for (i=0; i<dh->nhist; i++)
             {
                 if (!prev_complete)
                 {
@@ -262,9 +268,13 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
                     /* check whether this histogram contains all data: if the
                        last bin is 0, it does */
                     if (dh->bin[i][dh->nbins-1] == 0)
+                    {
                         prev_complete=TRUE;
+                    }
                     if (!dh->derivative)
+                    {
                         prev_complete=TRUE;
+                    }
                 }
             }
             dh->written=TRUE;
@@ -286,15 +296,17 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         /* subblock 2: the starting point(s) as a long integer */
         dh->subblock_l[0]=nhist_written;
         dh->subblock_l[1]=dh->derivative ? 1 : 0;
-        for(i=0;i<nhist_written;i++)
+        for (i=0; i<nhist_written; i++)
+        {
             dh->subblock_l[2+i]=dh->x0[i];
+        }
 
         blk->sub[1].nr=nhist_written+2;
         blk->sub[1].type=xdr_datatype_large_int;
         blk->sub[1].lval=dh->subblock_l;
 
         /* subblock 3 + 4 : the histogram data */
-        for(i=0;i<nhist_written;i++)
+        for (i=0; i<nhist_written; i++)
         {
             blk->sub[i+2].nr=dh->maxbin[i]+1; /* it's +1 because size=index+1
                                                  in C */
@@ -324,17 +336,19 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
     dhc->ndh = 0;
 
     /* include one more for the specification of the state, by lambda or fep_state, store as double for now*/
-    if (ir->expandedvals->elamstats > elamstatsNO) {
+    if (ir->expandedvals->elamstats > elamstatsNO)
+    {
         dhc->ndh +=1;
     }
 
     /* whether to print energies */
-    if (ir->fepvals->bPrintEnergy) {
+    if (ir->fepvals->bPrintEnergy)
+    {
         dhc->ndh += 1;
     }
 
     /* add the dhdl's */
-    for (i=0;i<efptNR;i++)
+    for (i=0; i<efptNR; i++)
     {
         if (ir->fepvals->separate_dvdl[i])
         {
@@ -345,12 +359,13 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
     /* add the lambdas */
     dhc->ndh += ir->fepvals->n_lambda;
 
-    if (ir->epc > epcNO) {
+    if (ir->epc > epcNO)
+    {
         dhc->ndh += 1;  /* include pressure-volume work */
     }
 
     snew(dhc->dh, dhc->ndh);
-    for(i=0;i<dhc->ndh;i++)
+    for (i=0; i<dhc->ndh; i++)
     {
         mde_delta_h_init(dhc->dh+i, ir->fepvals->dh_hist_size,
                          ir->fepvals->dh_hist_spacing, ndhmax);
@@ -390,12 +405,12 @@ void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
         mde_delta_h_add_dh(dhc->dh+n,energy,time);
         n++;
     }
-    for (i=0;i<ndhdl;i++)
+    for (i=0; i<ndhdl; i++)
     {
         mde_delta_h_add_dh(dhc->dh+n, dhdl[i], time);
         n++;
     }
-    for (i=0;i<nlambda;i++)
+    for (i=0; i<nlambda; i++)
     {
         mde_delta_h_add_dh(dhc->dh+n, foreign_dU[i], time);
         n++;
@@ -433,7 +448,7 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
     blk->sub[0].type=xdr_datatype_double;
     blk->sub[0].dval=dhc->subblock_d;
 
-    for(i=0;i<dhc->ndh;i++)
+    for (i=0; i<dhc->ndh; i++)
     {
         nblock++;
         add_blocks_enxframe(fr, nblock);
@@ -447,7 +462,7 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
 void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc)
 {
     int i;
-    for(i=0;i<dhc->ndh;i++)
+    for (i=0; i<dhc->ndh; i++)
     {
         if (dhc->dh[i].written)
         {
@@ -473,9 +488,11 @@ void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
     else
     {
         if (enerhist->dht->nndh != dhc->ndh)
+        {
             gmx_incons("energy history number of delta_h histograms != inputrec's number");
+        }
     }
-    for(i=0;i<dhc->ndh;i++)
+    for (i=0; i<dhc->ndh; i++)
     {
         enerhist->dht->dh[i] = dhc->dh[i].dh;
         enerhist->dht->ndh[i] = dhc->dh[i].ndh;
@@ -494,25 +511,35 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
     unsigned int j;
 
     if (dhc && !enerhist->dht)
+    {
         gmx_incons("No delta_h histograms in energy history");
+    }
     if (enerhist->dht->nndh != dhc->ndh)
+    {
         gmx_incons("energy history number of delta_h histograms != inputrec's number");
+    }
 
-    for(i=0;i<enerhist->dht->nndh;i++)
+    for (i=0; i<enerhist->dht->nndh; i++)
     {
         dhc->dh[i].ndh=enerhist->dht->ndh[i];
-        for(j=0;j<dhc->dh[i].ndh;j++)
+        for (j=0; j<dhc->dh[i].ndh; j++)
         {
             dhc->dh[i].dh[j] = enerhist->dht->dh[i][j];
         }
     }
     dhc->start_time=enerhist->dht->start_time;
     if (enerhist->dht->start_lambda_set)
+    {
         dhc->start_lambda=enerhist->dht->start_lambda;
+    }
     if (dhc->dh[0].ndh > 0)
+    {
         dhc->start_time_set=TRUE;
+    }
     else
+    {
         dhc->start_time_set=FALSE;
+    }
 }
 
 

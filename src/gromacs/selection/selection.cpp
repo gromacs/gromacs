@@ -137,8 +137,8 @@ SelectionData::initializeMassesAndCharges(const t_topology *top)
         {
             mass = 0.0;
             for (int i = rawPositions_.m.mapb.index[b];
-                     i < rawPositions_.m.mapb.index[b+1];
-                     ++i)
+                 i < rawPositions_.m.mapb.index[b+1];
+                 ++i)
             {
                 int index = rawPositions_.g->index[i];
                 mass   += top->atoms.atom[index].m;
@@ -238,17 +238,25 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     {
         int n = p.m.mapb.nr;
         if (nmaxind >= 0 && n > nmaxind)
+        {
             n = nmaxind;
+        }
         for (int i = 0; i <= n; ++i)
+        {
             fprintf(fp, " %d", p.m.mapb.index[i]);
+        }
         if (n < p.m.mapb.nr)
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 
     int n = posCount();
     if (nmaxind >= 0 && n > nmaxind)
+    {
         n = nmaxind;
+    }
     fprintf(fp, "    RefId:");
     if (!p.m.refid)
     {
@@ -257,9 +265,13 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     else
     {
         for (int i = 0; i < n; ++i)
+        {
             fprintf(fp, " %d", p.m.refid[i]);
+        }
         if (n < posCount())
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 
@@ -271,9 +283,13 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     else
     {
         for (int i = 0; i < n; ++i)
+        {
             fprintf(fp, " %d", p.m.mapid[i]);
+        }
         if (n < posCount())
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 }

@@ -271,14 +271,16 @@ static bool
 is_surface_covered(t_methoddata_insolidangle *surf, rvec x);
 
 /** Parameters for the \p insolidangle selection method. */
-static gmx_ana_selparam_t smparams_insolidangle[] = {
+static gmx_ana_selparam_t smparams_insolidangle[] =
+{
     {"center", {POS_VALUE,   1, {NULL}}, NULL, SPAR_DYNAMIC},
     {"span",   {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
     {"cutoff", {REAL_VALUE,  1, {NULL}}, NULL, SPAR_OPTIONAL},
 };
 
 /** Help text for the \p insolidangle selection method. */
-static const char *help_insolidangle[] = {
+static const char *help_insolidangle[] =
+{
     "SELECTING ATOMS IN A SOLID ANGLE[PAR]",
 
     "[TT]insolidangle center POS span POS_EXPR [cutoff REAL][tt][PAR]",
@@ -297,7 +299,8 @@ static const char *help_insolidangle[] = {
 };
 
 /** \internal Selection method data for the \p insolidangle method. */
-gmx_ana_selmethod_t sm_insolidangle = {
+gmx_ana_selmethod_t sm_insolidangle =
+{
     "insolidangle", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_insolidangle), smparams_insolidangle,
     &init_data_insolidangle,
@@ -308,13 +311,15 @@ gmx_ana_selmethod_t sm_insolidangle = {
     &init_frame_insolidangle,
     NULL,
     &evaluate_insolidangle,
-    {"insolidangle center POS span POS_EXPR [cutoff REAL]",
-     asize(help_insolidangle), help_insolidangle},
+    {
+        "insolidangle center POS span POS_EXPR [cutoff REAL]",
+        asize(help_insolidangle), help_insolidangle
+    },
 };
 
 /*!
  * \param[in]     npar  Not used (should be 3).
- * \param[in,out] param Method parameters (should point to 
+ * \param[in,out] param Method parameters (should point to
  *   \ref smparams_insolidangle).
  * \returns Pointer to the allocated data (\ref t_methoddata_insolidangle).
  *
@@ -642,7 +647,7 @@ find_surface_bin(t_methoddata_insolidangle *surf, rvec x)
 {
     real theta, phi;
     int  tbin, pbin;
-    
+
     theta = acos(x[ZZ]);
     phi = atan2(x[YY], x[XX]);
     tbin = static_cast<int>(floor(theta / surf->tbinsize));
@@ -668,7 +673,7 @@ clear_surface_points(t_methoddata_insolidangle *surf)
     surf->nbins = 0;
     for (i = 0; i < surf->ntbins; ++i)
     {
-        c = static_cast<int>(min(sin(surf->tbinsize*i), 
+        c = static_cast<int>(min(sin(surf->tbinsize*i),
                                  sin(surf->tbinsize*(i+1)))
                              * M_2PI / surf->targetbinsize) + 1;
         if (c <= 0)
@@ -721,9 +726,12 @@ add_surface_point(t_methoddata_insolidangle *surf, int tbin, int pbin, rvec x)
     bin = surf->tbin[tbin].p[pbin].bin;
     /* Return if bin is already completely covered */
     if (surf->bin[bin].n == -1)
+    {
         return;
+    }
     /* Allocate more space if necessary */
-    if (surf->bin[bin].n == surf->bin[bin].n_alloc) {
+    if (surf->bin[bin].n == surf->bin[bin].n_alloc)
+    {
         surf->bin[bin].n_alloc += 10;
         srenew(surf->bin[bin].x, surf->bin[bin].n_alloc);
     }
@@ -893,8 +901,8 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
              * such that the case above catches this instead of falling through
              * here. */
             pdelta2 = 2*asin(sqrt(
-                    (sqr(sin(surf->angcut/2)) - sqr(sin((theta2-theta)/2))) /
-                    (sin(theta) * sin(theta2))));
+                                 (sqr(sin(surf->angcut/2)) - sqr(sin((theta2-theta)/2))) /
+                                 (sin(theta) * sin(theta2))));
         }
         /* Update the bin */
         if (tmax >= theta1 && tmax <= theta2)

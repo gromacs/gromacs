@@ -79,7 +79,8 @@ CommandLineParserTest::CommandLineParserTest()
 
 TEST_F(CommandLineParserTest, HandlesSingleValues)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
     };
     CommandLine args(CommandLine::create(cmdline));
@@ -95,7 +96,8 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
 
 TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "test", "-mvi", "1", "-2", "-mvd", "-2.7"
     };
     CommandLine args(CommandLine::create(cmdline));

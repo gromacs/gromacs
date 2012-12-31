@@ -53,72 +53,72 @@
 extern "C" {
 #endif
 
-/*! Initializes the data structures related to CUDA nonbonded calculations. */
-FUNC_QUALIFIER
-void nbnxn_cuda_init(FILE *fplog,
-                     nbnxn_cuda_ptr_t *p_cu_nb,
-                     gmx_gpu_info_t *gpu_info, int my_gpu_index,
-                     /* true of both local and non-local are don on GPU */
-                     gmx_bool bLocalAndNonlocal) FUNC_TERM
+    /*! Initializes the data structures related to CUDA nonbonded calculations. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_init(FILE *fplog,
+                         nbnxn_cuda_ptr_t *p_cu_nb,
+                         gmx_gpu_info_t *gpu_info, int my_gpu_index,
+                         /* true of both local and non-local are don on GPU */
+                         gmx_bool bLocalAndNonlocal) FUNC_TERM
 
-/*! Initializes simulation constant data. */
-FUNC_QUALIFIER
-void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t p_cu_nb,
-                           const interaction_const_t *ic,
-                           const nonbonded_verlet_t *nbv) FUNC_TERM
+    /*! Initializes simulation constant data. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t p_cu_nb,
+                               const interaction_const_t *ic,
+                               const nonbonded_verlet_t *nbv) FUNC_TERM
 
-/*! Initializes pair-list data for GPU, called at every pair search step. */
-FUNC_QUALIFIER
-void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
-                              const nbnxn_pairlist_t *h_nblist,
-                              int iloc) FUNC_TERM
+    /*! Initializes pair-list data for GPU, called at every pair search step. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
+                                  const nbnxn_pairlist_t *h_nblist,
+                                  int iloc) FUNC_TERM
 
-/*! Initializes atom-data on the GPU, called at every pair search step. */
-FUNC_QUALIFIER
-void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
-                              const nbnxn_atomdata_t *atomdata) FUNC_TERM
+    /*! Initializes atom-data on the GPU, called at every pair search step. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
+                                  const nbnxn_atomdata_t *atomdata) FUNC_TERM
 
-/*! \brief Update parameters during PP-PME load balancing. */
-FUNC_QUALIFIER
-void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
-                                         const interaction_const_t *ic) FUNC_TERM
+    /*! \brief Update parameters during PP-PME load balancing. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
+                                             const interaction_const_t *ic) FUNC_TERM
 
-/*! Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
-FUNC_QUALIFIER
-void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
-                                const nbnxn_atomdata_t *nbatom) FUNC_TERM
+    /*! Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
+                                    const nbnxn_atomdata_t *nbatom) FUNC_TERM
 
-/*! Clears GPU outputs: nonbonded force, shift force and energy. */
-FUNC_QUALIFIER
-void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb,
-                              int flags) FUNC_TERM
+    /*! Clears GPU outputs: nonbonded force, shift force and energy. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb,
+                                  int flags) FUNC_TERM
 
-/*! Frees all GPU resources used for the nonbonded calculations. */
-FUNC_QUALIFIER
-void nbnxn_cuda_free(FILE *fplog,
-                     nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
+    /*! Frees all GPU resources used for the nonbonded calculations. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_free(FILE *fplog,
+                         nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
 
-/*! Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
-FUNC_QUALIFIER
-wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
+    /*! Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
+    FUNC_QUALIFIER
+    wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
 #ifdef GMX_GPU
-;
+    ;
 #else
-{ return NULL; }
+    { return NULL; }
 #endif
 
-/*! Resets nonbonded GPU timings. */
-FUNC_QUALIFIER
-void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
+    /*! Resets nonbonded GPU timings. */
+    FUNC_QUALIFIER
+    void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
 
-/*! Calculates the minimum size of proximity lists to improve SM load balance 
-    with CUDA non-bonded kernels. */
-FUNC_QUALIFIER
-int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
+    /*! Calculates the minimum size of proximity lists to improve SM load balance
+        with CUDA non-bonded kernels. */
+    FUNC_QUALIFIER
+    int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
 #ifdef GMX_GPU
-;
+    ;
 #else
-{ return -1; }
+    { return -1; }
 #endif
 
 #ifdef __cplusplus

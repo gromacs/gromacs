@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -68,10 +68,10 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
+    tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype, 
+    tMPI_Trace_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype,
                      root, comm);
 #endif
 
@@ -87,7 +87,7 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     if (myrank==root)
     {
         /* first set up the data */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype, 
+        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype,
                         count*datatype->size, buffer, comm->grp.N-1, synct, -1);
         /* and wait until everybody is done copying */
         tMPI_Wait_for_others(cev, myrank);
@@ -97,11 +97,11 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
         size_t bufsize=count*datatype->size;
         /* wait until root becomes available */
         tMPI_Wait_for_data(cur, cev, myrank);
-        tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
+        tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize,
                        buffer, &ret);
     }
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur, TMPIFN_Bcast); 
+    tMPI_Profile_count_stop(cur, TMPIFN_Bcast);
 #endif
     return ret;
 }

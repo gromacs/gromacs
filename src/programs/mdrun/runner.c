@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -105,7 +105,8 @@
 #include "gpu_utils.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
-typedef struct { 
+typedef struct
+{
     gmx_integrator_t *func;
 } gmx_intp_t;
 
@@ -161,13 +162,13 @@ struct mdrunner_arglist
 };
 
 
-/* The function used for spawning threads. Extracts the mdrunner() 
+/* The function used for spawning threads. Extracts the mdrunner()
    arguments from its one argument and calls mdrunner(), after making
    a commrec. */
 static void mdrunner_start_fn(void *arg)
 {
     struct mdrunner_arglist *mda=(struct mdrunner_arglist*)arg;
-    struct mdrunner_arglist mc=*mda; /* copy the arg list to make sure 
+    struct mdrunner_arglist mc=*mda; /* copy the arg list to make sure
                                         that it's thread-local. This doesn't
                                         copy pointed-to items, of course,
                                         but those are all const. */
@@ -184,33 +185,33 @@ static void mdrunner_start_fn(void *arg)
         fplog=mc.fplog;
     }
 
-    mda->ret=mdrunner(mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv, 
-                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
+    mda->ret=mdrunner(mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
+                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
-                      mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
+                      mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
                       mc.nbpu_opt,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce, 
+                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
                       mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
 }
 
-/* called by mdrunner() to start a specific number of threads (including 
+/* called by mdrunner() to start a specific number of threads (including
    the main thread) for thread-parallel runs. This in turn calls mdrunner()
-   for each thread. 
+   for each thread.
    All options besides nthreads are the same as for mdrunner(). */
-static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt, 
-              FILE *fplog,t_commrec *cr,int nfile, 
-              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-              gmx_bool bCompact, int nstglobalcomm,
-              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-              const char *dddlb_opt,real dlb_scale,
-              const char *ddcsx,const char *ddcsy,const char *ddcsz,
-              const char *nbpu_opt,
-              int nsteps_cmdline, int nstepout,int resetstep,
-              int nmultisim,int repl_ex_nst,int repl_ex_nex, int repl_ex_seed,
-              real pforce,real cpt_period, real max_hours, 
-              const char *deviceOptions, unsigned long Flags)
+static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
+                                         FILE *fplog,t_commrec *cr,int nfile,
+                                         const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+                                         gmx_bool bCompact, int nstglobalcomm,
+                                         ivec ddxyz,int dd_node_order,real rdd,real rconstr,
+                                         const char *dddlb_opt,real dlb_scale,
+                                         const char *ddcsx,const char *ddcsy,const char *ddcsz,
+                                         const char *nbpu_opt,
+                                         int nsteps_cmdline, int nstepout,int resetstep,
+                                         int nmultisim,int repl_ex_nst,int repl_ex_nex, int repl_ex_seed,
+                                         real pforce,real cpt_period, real max_hours,
+                                         const char *deviceOptions, unsigned long Flags)
 {
     int ret;
     struct mdrunner_arglist *mda;
@@ -264,13 +265,15 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 
     fprintf(stderr, "Starting %d tMPI threads\n",hw_opt->nthreads_tmpi);
     fflush(stderr);
-    /* now spawn new threads that start mdrunner_start_fn(), while 
+    /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns */
     ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi,
                      (hw_opt->bThreadPinning ? TMPI_AFFINITY_ALL_CORES : TMPI_AFFINITY_NONE),
                      mdrunner_start_fn, (void*)(mda) );
     if (ret!=TMPI_SUCCESS)
+    {
         return NULL;
+    }
 
     /* make a new comm_rec to reflect the new situation */
     crn=init_par_threads(cr);
@@ -374,7 +377,7 @@ static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
 
     nthreads_hw = hwinfo->nthreads_hw_avail;
 
-    /* How many total (#tMPI*#OpenMP) threads can we start? */ 
+    /* How many total (#tMPI*#OpenMP) threads can we start? */
     if (hw_opt->nthreads_tot > 0)
     {
         nthreads_tot_max = hw_opt->nthreads_tot;
@@ -503,7 +506,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     char buf[STRLEN];
 
     /* Number of + nstlist alternative values to try when switching  */
-    const int nstl[]={ 20, 25, 40, 50 };
+    const int nstl[]= { 20, 25, 40, 50 };
 #define NNSTL  sizeof(nstl)/sizeof(nstl[0])
 
     env = getenv(NSTLIST_ENVVAR);
@@ -983,7 +986,7 @@ static void set_cpu_affinity(FILE *fplog,
         }
 
         /* set the per-thread affinity */
-#pragma omp parallel firstprivate(thread) num_threads(nthread_local)
+        #pragma omp parallel firstprivate(thread) num_threads(nthread_local)
         {
             cpu_set_t mask;
             int core;
@@ -1107,7 +1110,7 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
                 hw_opt->nthreads_omp,
                 hw_opt->nthreads_omp_pme,
                 hw_opt->gpu_id!=NULL ? hw_opt->gpu_id : "");
-                
+
     }
 }
 
@@ -1145,7 +1148,8 @@ static void override_nsteps_cmdline(FILE *fplog,
 /* Data structure set by SIMMASTER which needs to be passed to all nodes
  * before the other nodes have read the tpx file and called gmx_detect_hardware.
  */
-typedef struct {
+typedef struct
+{
     int cutoff_scheme; /* The cutoff scheme from inputrec_t */
     gmx_bool bUseGPU;       /* Use GPU or GPU emulation          */
 } master_inf_t;
@@ -1168,7 +1172,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     t_inputrec *inputrec;
     t_state    *state=NULL;
     matrix     box;
-    gmx_ddbox_t ddbox={0};
+    gmx_ddbox_t ddbox= {0};
     int        npme_major,npme_minor;
     real       tmpr1,tmpr2;
     t_nrnb     *nrnb;
@@ -1189,19 +1193,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int        rc;
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
-    t_commrec   *cr_old=cr; 
+    t_commrec   *cr_old=cr;
     int         nthreads_pme=1;
     int         nthreads_pp=1;
     gmx_membed_t membed=NULL;
     gmx_hw_info_t *hwinfo=NULL;
-    master_inf_t minf={-1,FALSE};
+    master_inf_t minf= {-1,FALSE};
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
     snew(inputrec,1);
     snew(mtop,1);
-    
-    if (Flags & MD_APPENDFILES) 
+
+    if (Flags & MD_APPENDFILES)
     {
         fplog = NULL;
     }
@@ -1210,7 +1214,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
 
     snew(state,1);
-    if (SIMMASTER(cr)) 
+    if (SIMMASTER(cr))
     {
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
@@ -1314,14 +1318,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (hw_opt->nthreads_tmpi > 1)
         {
             /* now start the threads. */
-            cr=mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm, 
-                                      oenv, bVerbose, bCompact, nstglobalcomm, 
-                                      ddxyz, dd_node_order, rdd, rconstr, 
+            cr=mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
+                                      oenv, bVerbose, bCompact, nstglobalcomm,
+                                      ddxyz, dd_node_order, rdd, rconstr,
                                       dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                       nbpu_opt,
-                                      nsteps_cmdline, nstepout, resetstep, nmultisim, 
+                                      nsteps_cmdline, nstepout, resetstep, nmultisim,
                                       repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
-                                      cpt_period, max_hours, deviceOptions, 
+                                      cpt_period, max_hours, deviceOptions,
                                       Flags);
             /* the main thread continues here with a new cr. We don't deallocate
                the old cr because other threads may still be reading it. */
@@ -1383,7 +1387,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* TODO: perhaps it's better to propagate within a node instead? */
         snew(hwinfo, 1);
         gmx_detect_hardware(fplog, hwinfo, cr,
-                                 bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
+                            bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
     }
 
     /* Now do the affinity check with MPI/no-MPI (done earlier with thread-MPI). */
@@ -1418,7 +1422,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 #endif
                   , ShortProgram()
-            );
+                 );
     }
 
     if ((Flags & MD_RERUN) &&
@@ -1509,19 +1513,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
     }
 
-    if (opt2bSet("-cpi",nfile,fnm)) 
+    if (opt2bSet("-cpi",nfile,fnm))
     {
         /* Check if checkpoint file exists before doing continuation.
          * This way we can use identical input options for the first and subsequent runs...
          */
-        if( gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr) )
+        if ( gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr) )
         {
             load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
                             (Flags & MD_APPENDFILES),
                             (Flags & MD_APPENDFILESSET));
-            
+
             if (bReadRNG)
             {
                 Flags |= MD_READ_RNG;
@@ -1540,21 +1544,21 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          */
         || (!MASTER(cr) && (Flags & MD_SEPPOT))
 #endif
-        )
+       )
     {
         gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
-                             Flags,&fplog);
+                     Flags,&fplog);
     }
 
     /* override nsteps with value from cmdline */
     override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
 
-    if (SIMMASTER(cr)) 
+    if (SIMMASTER(cr))
     {
         copy_mat(state->box,box);
     }
 
-    if (PAR(cr)) 
+    if (PAR(cr))
     {
         gmx_bcast(sizeof(box),box,cr);
     }
@@ -1593,7 +1597,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             npme_major = cr->nnodes;
         }
-        
+
         if (inputrec->ePBC == epbcSCREW)
         {
             gmx_fatal(FARGS,
@@ -1621,7 +1625,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #else
                   cr->nnodes==1 ? "process" : "processes"
 #endif
-                  );
+                 );
 #endif
 
     gmx_omp_nthreads_init(fplog, cr,
@@ -1634,7 +1638,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi, minf.bUseGPU);
 
     /* getting number of PP/PME threads
-       PME: env variable should be read only on one node to make sure it is 
+       PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
     /* TODO nthreads_pp is only used for pinning threads.
@@ -1647,7 +1651,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (PAR(cr))
     {
-        /* Master synchronizes its value of reset_counters with all nodes 
+        /* Master synchronizes its value of reset_counters with all nodes
          * including PME only nodes */
         reset_counters = wcycle_get_reset_counters(wcycle);
         gmx_bcast_sim(sizeof(reset_counters),&reset_counters,cr);
@@ -1686,11 +1690,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
           "nofile","nofile","nofile","nofile",FALSE,pforce);
-          */        
+          */
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 
         /* Initialize QM-MM */
-        if(fr->bQMMM)
+        if (fr->bQMMM)
         {
             init_QMMMrec(cr,box,mtop,inputrec,fr);
         }
@@ -1775,7 +1779,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             status = gmx_pme_init(pmedata,cr,npme_major,npme_minor,inputrec,
                                   mtop ? mtop->natoms : 0,nChargePerturbed,
                                   (Flags & MD_REPRODUCIBLE),nthreads_pme);
-            if (status != 0) 
+            if (status != 0)
             {
                 gmx_fatal(FARGS,"Error %d initializing PME",status);
             }
@@ -1788,7 +1792,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         ||
         integrator[inputrec->eI].func == do_md_openmm
 #endif
-        )
+       )
     {
         /* Turn on signal handling on all nodes */
         /*
@@ -1806,12 +1810,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv, inputrec->fepvals->init_lambda,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
-        
+
         if (inputrec->bRot)
         {
-           /* Initialize enforced rotation code */
-           init_rot(fplog,inputrec,nfile,fnm,cr,state->x,box,mtop,oenv,
-                    bVerbose,Flags);
+            /* Initialize enforced rotation code */
+            init_rot(fplog,inputrec,nfile,fnm,cr,state->x,box,mtop,oenv,
+                     bVerbose,Flags);
         }
 
         constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
@@ -1845,14 +1849,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             finish_pull(fplog,inputrec->pull);
         }
-        
+
         if (inputrec->bRot)
         {
             finish_rot(fplog,inputrec->rot);
         }
 
-    } 
-    else 
+    }
+    else
     {
         /* do PME only */
         gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE,inputrec);
@@ -1860,7 +1864,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
     {
-        /* Some timing stats */  
+        /* Some timing stats */
         if (SIMMASTER(cr))
         {
             if (runtime.proc == 0)
@@ -1877,13 +1881,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     wallcycle_stop(wcycle,ewcRUN);
 
     /* Finish up, write some stuff
-     * if rerunMD, don't write last frame again 
+     * if rerunMD, don't write last frame again
      */
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
                fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU ?
-                 nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
-               nthreads_pp, 
+               nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
+               nthreads_pp,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
     if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->bUseGPU)
@@ -1912,20 +1916,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_hardware_info_free(hwinfo);
     }
 
-    /* Does what it says */  
+    /* Does what it says */
     print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);
 
     /* Close logfile already here if we were appending to it */
     if (MASTER(cr) && (Flags & MD_APPENDFILES))
     {
         gmx_log_close(fplog);
-    }	
+    }
 
     rc=(int)gmx_get_stop_condition();
 
 #ifdef GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they
-       exit this function, but the master thread needs to be told to 
+       exit this function, but the master thread needs to be told to
        wait for that. */
     if (PAR(cr) && MASTER(cr))
     {

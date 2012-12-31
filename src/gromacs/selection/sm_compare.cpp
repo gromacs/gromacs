@@ -108,20 +108,30 @@ evaluate_compare(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for comparison expression evaluation. */
-static gmx_ana_selparam_t smparams_compare[] = {
-    {"int1",  {INT_VALUE,  -1, {NULL}}, NULL,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"real1", {REAL_VALUE, -1, {NULL}}, NULL,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
+static gmx_ana_selparam_t smparams_compare[] =
+{
+    {
+        "int1",  {INT_VALUE,  -1, {NULL}}, NULL,
+        SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL
+    },
+    {
+        "real1", {REAL_VALUE, -1, {NULL}}, NULL,
+        SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL
+    },
     {"op",    {STR_VALUE,   1, {NULL}}, NULL, 0},
-    {"int2",  {INT_VALUE,  -1, {NULL}}, NULL,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"real2", {REAL_VALUE, -1, {NULL}}, NULL,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
+    {
+        "int2",  {INT_VALUE,  -1, {NULL}}, NULL,
+        SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL
+    },
+    {
+        "real2", {REAL_VALUE, -1, {NULL}}, NULL,
+        SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL
+    },
 };
 
 /** \internal Selection method data for comparison expression evaluation. */
-gmx_ana_selmethod_t sm_compare = {
+gmx_ana_selmethod_t sm_compare =
+{
     "cmp", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_compare), smparams_compare,
     &init_data_compare,
@@ -167,7 +177,7 @@ comparison_type(char *str)
  * \returns   Pointer to a string that corresponds to \p cmpt.
  *
  * The return value points to a string constant and should not be \p free'd.
- * 
+ *
  * The function returns NULL if \p cmpt is not one of the valid values.
  */
 static const char *

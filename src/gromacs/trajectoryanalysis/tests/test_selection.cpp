@@ -96,17 +96,18 @@ void
 SelectionTester::initOptions(Options *options,
                              TrajectoryAnalysisSettings * /*settings*/)
 {
-    static const char *const desc[] = {
+    static const char *const desc[] =
+    {
         "This is a test program for selections."
     };
 
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(SelectionOption("select").storeVector(&selections_)
-                           .required().multiValue()
-                           .description("Selections to test"));
+                       .required().multiValue()
+                       .description("Selections to test"));
     options->addOption(IntegerOption("pmax").store(&nmaxind_)
-                           .description("Maximum number of indices to print in lists (-1 = print all)"));
+                       .description("Maximum number of indices to print in lists (-1 = print all)"));
 }
 
 void

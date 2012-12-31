@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -36,7 +36,7 @@ files.
 */
 
 
-/* the profiling functions. Many of these are macros, so they're inlined 
+/* the profiling functions. Many of these are macros, so they're inlined
    forcibly. Profiling is turned on by defining TMPI_PROFILE, but the most
    useful parts depend on the cycle counter, which currently only works for
    x86, x86_64 and ia64. */
@@ -46,7 +46,7 @@ files.
 
 struct tmpi_thread;
 
-enum tmpi_functions 
+enum tmpi_functions
 {
     TMPIFN_Send=0, /* first the point-to-point comm functions */
     TMPIFN_Recv,
@@ -88,21 +88,21 @@ enum tmpi_wait_functions
     TMPIWAIT_Barrier, /* collective recv wait */
     TMPIWAIT_Reduce, /* collective (all)reduce wait */
 
-    TMPIWAIT_N 
+    TMPIWAIT_N
 };
 
 
 /* thread-specific profiling data structure */
-struct tmpi_profile 
+struct tmpi_profile
 {
     unsigned long int mpifn_calls[TMPIFN_Nfunctions]; /* array of counters */
 
     unsigned long int buffered_p2p_xfers; /* number of buffered p2p transfers */
     unsigned long int total_p2p_xfers; /* total number of p2p transfers */
 
-    unsigned long int buffered_coll_xfers; /* number of buffered collective 
+    unsigned long int buffered_coll_xfers; /* number of buffered collective
                                               transfers */
-    unsigned long int total_coll_xfers; /* total number of collective 
+    unsigned long int total_coll_xfers; /* total number of collective
                                            transfers */
 
 #ifdef TMPI_CYCLE_COUNT
@@ -111,13 +111,13 @@ struct tmpi_profile
     tmpi_cycles_t wait_cycles[TMPIWAIT_N]; /* the wait cycles */
 
     tmpi_cycles_t global_start,global_stop; /* timing start and stop times */
-    tmpi_cycles_t mpifn_start; /* individual timing start times for profiling 
-                                  function call times.  This can be here 
+    tmpi_cycles_t mpifn_start; /* individual timing start times for profiling
+                                  function call times.  This can be here
                                   because tmpi_profile is thread-specific. */
     enum tmpi_functions fn; /* the function being cycle-counted */
 
 
-    tmpi_cycles_t wait_start; /* individual timing start times for profiling 
+    tmpi_cycles_t wait_start; /* individual timing start times for profiling
                                  wait times. */
 
     double totals;            /* totals counter for reporting end results */
@@ -180,7 +180,7 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
 }
 
 /* stop waiting cycle count */
-/*void tMPI_Profile_wait_stop(struct tmpi_thread *th, 
+/*void tMPI_Profile_wait_stop(struct tmpi_thread *th,
                             enum tmpi_wait_functions fn);*/
 #define tMPI_Profile_wait_stop(th, fn)\
 { \
@@ -201,7 +201,7 @@ void tMPI_Profile_count_coll_xfer(struct tmpi_thread *th);*/
 #define tMPI_Profile_count_buffered_p2p_xfer(th) \
 { \
     (th->profile.buffered_p2p_xfers)++; \
-} 
+}
 
 #define tMPI_Profile_count_p2p_xfer(th) \
 { \

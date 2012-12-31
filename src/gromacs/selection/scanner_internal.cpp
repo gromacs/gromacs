@@ -90,7 +90,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     if (bBoolNo)
     {
         GMX_RELEASE_ASSERT(param->name != NULL,
-                "bBoolNo should only be set for a parameters with a name");
+                           "bBoolNo should only be set for a parameters with a name");
         snew(yylval->str, strlen(param->name) + 3);
         yylval->str[0] = 'n';
         yylval->str[1] = 'o';
@@ -282,8 +282,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (symtype == gmx::SelectionParserSymbol::ReservedSymbol)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString(
-                        "Mismatch between tokenizer and reserved symbol table (for '%s')",
-                        symbol->name().c_str())));
+                                         "Mismatch between tokenizer and reserved symbol table (for '%s')",
+                                         symbol->name().c_str())));
     }
     /* For variable symbols, return the type of the variable value */
     if (symtype == gmx::SelectionParserSymbol::VariableSymbol)

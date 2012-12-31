@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -38,16 +38,16 @@
 #endif
 
 
-struct gmx_invsqrtdata 
+struct gmx_invsqrtdata
 {
-  unsigned int    exptab[256];    /*!< Exponential lookup table */
-  unsigned int    fracttab[4096]; /*!< Mantissa lookup table    */
+    unsigned int    exptab[256];    /*!< Exponential lookup table */
+    unsigned int    fracttab[4096]; /*!< Mantissa lookup table    */
 };
 
 #ifndef F77_FUNC
 /*! \brief Macro for Fortran name-mangling
  *
- * Use Fortran name mangling from autoconf macros if defined, 
+ * Use Fortran name mangling from autoconf macros if defined,
  * or lowercase+underscore by default. Since there is no easy way to convert
  * between lower and upper case in macros, you should call fortran routines
  * as F77_FUNC(routine,ROUTINE)(param1,param2,...)
@@ -57,11 +57,11 @@ struct gmx_invsqrtdata
 
 
 
-struct gmx_invsqrtdata 
-F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA) = 
-{ 
+struct gmx_invsqrtdata
+F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA) =
+{
     /* data for exponent table - 256 floats */
-    { 
+    {
         0x5f000000,0x5e800000,0x5e800000,0x5e000000,
         0x5e000000,0x5d800000,0x5d800000,0x5d000000,
         0x5d000000,0x5c800000,0x5c800000,0x5c000000,
@@ -125,7 +125,7 @@ F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA) =
         0x23000000,0x22800000,0x22800000,0x22000000,
         0x22000000,0x21800000,0x21800000,0x21000000,
         0x21000000,0x20800000,0x20800000,0x20000000,
-        0x20000000,0x1f800000,0x1f800000,0x1f000000 
+        0x20000000,0x1f800000,0x1f800000,0x1f000000
     } ,
     /* data for fraction table - 4096 floats */
     {
@@ -640,7 +640,7 @@ F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA) =
         0x35bb09,0x35b550,0x35af98,0x35a9e0,0x35a429,0x359e72,0x3598bb,0x359306,
         0x358d50,0x35879c,0x3581e8,0x357c34,0x357681,0x3570ce,0x356b1c,0x35656b,
         0x355fba,0x355a09,0x355459,0x354eaa,0x3548fb,0x35434d,0x353d9f,0x3537f2,
-        0x353245,0x352c99,0x3526ee,0x352143,0x351b98,0x3515ee,0x351045,0x350a9c  
+        0x353245,0x352c99,0x3526ee,0x352143,0x351b98,0x3515ee,0x351045,0x350a9c
     }
 };
 

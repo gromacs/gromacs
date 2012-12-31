@@ -1,35 +1,35 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- 
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -70,7 +70,7 @@ struct output_env
     int debug_level; /* the debug level */
 };
 
-/* The source code in this file should be thread-safe. 
+/* The source code in this file should be thread-safe.
       Please keep it that way. */
 
 /******************************************************************
@@ -82,11 +82,13 @@ struct output_env
 /* read only time names */
 /* These must correspond to the time units type time_unit_t in oenv.h */
 static const real timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
-static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
-static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
-                                        "\\mus", "ms", "s" };
-static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",  
-                                        "ms", "s", NULL };
+static const real timeinvfactors[] = { 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
+static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us",
+                                        "\\mus", "ms", "s"
+                                      };
+static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",
+                                         "ms", "s", NULL
+                                       };
 
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
@@ -143,10 +145,10 @@ const char *output_env_get_time_label(const output_env_t oenv)
 {
     char *label;
     snew(label, 20);
-    
-    sprintf(label,"Time (%s)",time_units_str[oenv->time_unit] ? 
+
+    sprintf(label,"Time (%s)",time_units_str[oenv->time_unit] ?
             time_units_str[oenv->time_unit]: "ps");
-    
+
     return label;
 }
 
@@ -154,10 +156,10 @@ const char *output_env_get_xvgr_tlabel(const output_env_t oenv)
 {
     char *label;
     snew(label, 20);
-    
+
     sprintf(label,"Time (%s)", time_units_xvgr[oenv->time_unit] ?
             time_units_xvgr[oenv->time_unit] : "ps");
-    
+
     return label;
 }
 
@@ -180,10 +182,12 @@ void output_env_conv_times(const output_env_t oenv, int n, real *time)
 {
     int i;
     double fact=timefactors[oenv->time_unit];
-    
+
     if (fact!=1.)
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
+        {
             time[i] *= fact;
+        }
 }
 
 gmx_bool output_env_get_view(const output_env_t oenv)

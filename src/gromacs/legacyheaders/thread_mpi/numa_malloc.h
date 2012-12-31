@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -40,15 +40,15 @@ files.
 #define TMPI_NUMA_MALLOC_H_
 
 /*! \file
-  
+
     \brief NUMA aware memory allocators.
-  
-    This file provides a NUMA aware version of malloc() and friends to 
-    force local allocation, preventing expensive 'remote' memory access. 
-  
+
+    This file provides a NUMA aware version of malloc() and friends to
+    force local allocation, preventing expensive 'remote' memory access.
+
     Note that memory allocated with tMPI_Malloc_local(), etc. MUST be
     freed with tMPI_Free_numa().
-   
+
     Currently this is only implemented on Windows. Check for the presence
     of these functions with
     \code
@@ -61,8 +61,8 @@ files.
 
 
 #ifdef __cplusplus
-extern "C" 
-{  
+extern "C"
+{
 #endif
 #if 0
 } /* Avoids screwing up auto-indentation */
@@ -76,49 +76,49 @@ extern "C"
 #endif
 
 
-/*! \brief Allocate local memory by size in bytes. 
-  
+/*! \brief Allocate local memory by size in bytes.
+
     \see malloc()
-  
+
     \param[in] size  = size in units of sizeof() of the memory to be allocated
-   
+
     \return Pointer to allocated memory, or NULL in case of failure
  */
 void *tMPI_Malloc_local(size_t size);
 
 
-/*! \brief Allocate local memory by array and element size. 
-  
+/*! \brief Allocate local memory by array and element size.
+
     \see calloc()
-  
+
     \param[in] nmemb  = number of array members
     \param[in] size  = size in units of sizeof() of a single array element
-    
+
     \return Pointer to allocated memory, or NULL in case of failure
  */
 void *tMPI_Calloc_local(size_t nmemb, size_t size);
 
 
-/*! \brief Re-allocate to local memory. 
-  
+/*! \brief Re-allocate to local memory.
+
     \see realloc()
-  
-    \param[in] ptr   = input pointer of originally allocated memory (can 
+
+    \param[in] ptr   = input pointer of originally allocated memory (can
                         be allocated with NUMA or non-NUMA malloc())
-    \param[in] size  = new size in units of sizeof(). 
-    
+    \param[in] size  = new size in units of sizeof().
+
     \return Pointer to allocated memory, or NULL in case of failure
  */
-void *tMPI_Realloc_local(void *ptr, size_t size); 
+void *tMPI_Realloc_local(void *ptr, size_t size);
 
 
 /*! \brief Free memory allocate with any of the NUMA-aware allocators
-  
+
     \see calloc()
-  
+
     \param[in] ptr = pointer to block of memory allocated with a NUMA allocator
-    
-    \return Returns debug info: 0 if the memory was allocated with a NUMA  
+
+    \return Returns debug info: 0 if the memory was allocated with a NUMA
             allocator, 1 if it was allocated by another allocator.
  */
 int tMPI_Free_numa(void *ptr);

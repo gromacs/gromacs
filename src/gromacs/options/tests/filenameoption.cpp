@@ -59,7 +59,7 @@ TEST(FileNameOptionTest, AddsMissingExtension)
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
-                            .filetype(gmx::eftTrajectory).outputFile()));
+                        .filetype(gmx::eftTrajectory).outputFile()));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -78,8 +78,8 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value).required()
-                            .filetype(gmx::eftGenericData).outputFile()
-                            .defaultBasename("testfile")));
+                        .filetype(gmx::eftGenericData).outputFile()
+                        .defaultBasename("testfile")));
     EXPECT_EQ("testfile.dat", value);
 
     gmx::OptionsAssigner assigner(&options);
@@ -96,8 +96,8 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
-                            .filetype(gmx::eftIndex).outputFile()
-                            .defaultBasename("testfile")));
+                        .filetype(gmx::eftIndex).outputFile()
+                        .defaultBasename("testfile")));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);
@@ -116,7 +116,7 @@ TEST(FileNameOptionTest, AddsMissingExtensionBasedOnExistingFile)
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
-                            .filetype(gmx::eftTrajectory).inputFile()));
+                        .filetype(gmx::eftTrajectory).inputFile()));
     TestFileManager tempFiles;
     std::string filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");

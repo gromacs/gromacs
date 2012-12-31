@@ -1,12 +1,12 @@
 /*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
@@ -64,9 +64,9 @@ static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
                            gmx_bool bDim[],const char *sffmt)
 {
     int i,ii,d;
-  
+
     fprintf(fp," %g",time);
-    for(i=0; i<n; i++)
+    for (i=0; i<n; i++)
     {
         if (index != NULL)
         {
@@ -76,7 +76,7 @@ static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
         {
             ii = i;
         }
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             if (bDim[d])
             {
@@ -99,19 +99,19 @@ static void average_data(rvec x[],rvec xav[],real *mass,
     rvec tmp;
     double sum[DIM],mtot;
 
-    for(g=0; g<ngrps; g++)
+    for (g=0; g<ngrps; g++)
     {
         clear_dvec(sum);
         clear_rvec(xav[g]);
         mtot = 0;
-        for(i=0; i<isize[g]; i++)
+        for (i=0; i<isize[g]; i++)
         {
             ind = index[g][i];
             if (mass != NULL)
             {
                 m = mass[ind];
                 svmul(m,x[ind],tmp);
-                for(d=0; d<DIM; d++)
+                for (d=0; d<DIM; d++)
                 {
                     sum[d] += tmp[d];
                 }
@@ -119,7 +119,7 @@ static void average_data(rvec x[],rvec xav[],real *mass,
             }
             else
             {
-                for(d=0; d<DIM; d++)
+                for (d=0; d<DIM; d++)
                 {
                     sum[d] += x[ind][d];
                 }
@@ -127,7 +127,7 @@ static void average_data(rvec x[],rvec xav[],real *mass,
         }
         if (mass != NULL)
         {
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 xav[g][d] = sum[d]/mtot;
             }
@@ -135,20 +135,20 @@ static void average_data(rvec x[],rvec xav[],real *mass,
         else
         {
             /* mass=NULL, so these are forces: sum only (do not average) */
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 xav[g][d] = sum[d];
             }
         }
     }
 }
-  
+
 static void print_data(FILE *fp,real time,rvec x[],real *mass,gmx_bool bCom,
                        int ngrps,int isize[],atom_id **index,gmx_bool bDim[],
                        const char *sffmt)
 {
     static rvec *xav=NULL;
-  
+
     if (bCom)
     {
         if (xav==NULL)
@@ -186,7 +186,7 @@ static void write_trx_x(t_trxstatus *status,t_trxframe *fr,real *mass,gmx_bool b
             /* Note that atom and residue names will be the ones
              * of the first atom in each group.
              */
-            for(i=0; i<ngrps; i++)
+            for (i=0; i<ngrps; i++)
             {
                 atoms->atom[i]     = fr->atoms->atom[index[i][0]];
                 atoms->atomname[i] = fr->atoms->atomname[index[i][0]];
@@ -212,7 +212,7 @@ static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
     char **leg;
     const char *dimtxt[] = { " X", " Y", " Z", "" };
     int n,i,j,d;
-  
+
     if (bCom)
     {
         n = ngrps;
@@ -224,9 +224,9 @@ static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
 
     snew(leg,4*n);
     j=0;
-    for(i=0; i<n; i++)
+    for (i=0; i<n; i++)
     {
-        for(d=0; d<=DIM; d++)
+        for (d=0; d<=DIM; d++)
         {
             if (bDim[d])
             {
@@ -249,7 +249,7 @@ static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
     }
     xvgr_legend(fp,j,(const char**)leg,oenv);
 
-    for(i=0; i<j; i++)
+    for (i=0; i<j; i++)
     {
         sfree(leg[i]);
     }
@@ -268,12 +268,12 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
     if (TCM == NULL)
     {
         snew(TCM,DIM);
-        for(i=0; i<DIM; i++)
+        for (i=0; i<DIM; i++)
         {
             snew(TCM[i],DIM);
         }
         snew(L,DIM);
-        for(i=0; i<DIM; i++)
+        for (i=0; i<DIM; i++)
         {
             snew(L[i],DIM);
         }
@@ -283,13 +283,13 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
     clear_dvec(vcm);
     clear_dvec(acm);
     tm=0.0;
-    for(i=0; i<isize; i++)
+    for (i=0; i<isize; i++)
     {
         j = index[i];
         m0 = mass[j];
         tm += m0;
         cprod(x[j],v[j],a0);
-        for(m=0; (m<DIM); m++)
+        for (m=0; (m<DIM); m++)
         {
             xcm[m] += m0*x[j][m]; /* c.o.m. position */
             vcm[m] += m0*v[j][m]; /* c.o.m. velocity */
@@ -297,19 +297,19 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
         }
     }
     dcprod(xcm,vcm,b0);
-    for(m=0; (m<DIM); m++)
+    for (m=0; (m<DIM); m++)
     {
         xcm[m] /= tm;
         vcm[m] /= tm;
         acm[m] -= b0[m]/tm;
-  }
+    }
 
     lxx=lxy=lxz=lyy=lyz=lzz=0.0;
-    for(i=0; i<isize; i++)
+    for (i=0; i<isize; i++)
     {
         j = index[i];
         m0 = mass[j];
-        for(m=0; m<DIM; m++)
+        for (m=0; m<DIM; m++)
         {
             dx[m] = x[j][m] - xcm[m];
         }
@@ -320,7 +320,7 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
         lyz += dx[YY]*dx[ZZ]*m0;
         lzz += dx[ZZ]*dx[ZZ]*m0;
     }
-  
+
     L[XX][XX] =  lyy + lzz;
     L[YY][XX] = -lxy;
     L[ZZ][XX] = -lxz;
@@ -336,9 +336,9 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
     /* Compute omega (hoeksnelheid) */
     clear_rvec(ocm);
     ekrot = 0;
-    for(m=0; m<DIM; m++)
+    for (m=0; m<DIM; m++)
     {
-        for(n=0; n<DIM; n++)
+        for (n=0; n<DIM; n++)
         {
             ocm[m] += TCM[m][n]*acm[n];
         }
@@ -353,13 +353,13 @@ static real ektrans(rvec v[],real mass[],int isize,atom_id index[])
     dvec   mvcom;
     double mtot;
     int    i,j,d;
-  
+
     clear_dvec(mvcom);
     mtot = 0;
-    for(i=0; i<isize; i++)
+    for (i=0; i<isize; i++)
     {
         j = index[i];
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             mvcom[d] += mass[j]*v[j][d];
         }
@@ -375,7 +375,7 @@ static real temp(rvec v[],real mass[],int isize,atom_id index[])
     int  i,j;
 
     ekin2 = 0;
-    for(i=0; i<isize; i++)
+    for (i=0; i<isize; i++)
     {
         j = index[i];
         ekin2 += mass[j]*norm2(v[j]);
@@ -389,24 +389,24 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
     rvec hbox;
     int d,i,m;
 
-    for(d=0; d<DIM; d++)
+    for (d=0; d<DIM; d++)
     {
         hbox[d] = 0.5*box[d][d];
     }
-    for(i=0; i<natoms; i++)
+    for (i=0; i<natoms; i++)
     {
-        for(m=DIM-1; m>=0; m--)
+        for (m=DIM-1; m>=0; m--)
         {
             while (x[i][m]-xp[i][m] <= -hbox[m])
             {
-                for(d=0; d<=m; d++)
+                for (d=0; d<=m; d++)
                 {
                     x[i][d] += box[m][d];
                 }
             }
             while (x[i][m]-xp[i][m] > hbox[m])
             {
-                for(d=0; d<=m; d++)
+                for (d=0; d<=m; d++)
                 {
                     x[i][d] -= box[m][d];
                 }
@@ -419,12 +419,12 @@ static void write_pdb_bfac(const char *fname,const char *xname,
                            const char *title,t_atoms *atoms,int ePBC,matrix box,
                            int isize,atom_id *index,int nfr_x,rvec *x,
                            int nfr_v,rvec *sum,
-                           gmx_bool bDim[],real scale_factor, 
+                           gmx_bool bDim[],real scale_factor,
                            const output_env_t oenv)
 {
     FILE    *fp;
     real    max,len2,scale;
-    atom_id maxi; 
+    atom_id maxi;
     int     i,m,onedim;
     gmx_bool    bOne;
 
@@ -441,7 +441,7 @@ static void write_pdb_bfac(const char *fname,const char *xname,
         if (!bDim[DIM])
         {
             m = 0;
-            for(i=0; i<DIM; i++)
+            for (i=0; i<DIM; i++)
             {
                 if (bDim[i])
                 {
@@ -455,13 +455,13 @@ static void write_pdb_bfac(const char *fname,const char *xname,
             }
         }
         scale = 1.0/nfr_v;
-        for(i=0; i<isize; i++)
+        for (i=0; i<isize; i++)
         {
             svmul(scale,sum[index[i]],sum[index[i]]);
         }
-        
+
         fp=xvgropen(xname,title,"Atom","",oenv);
-        for(i=0; i<isize; i++)
+        for (i=0; i<isize; i++)
         {
             fprintf(fp,"%-5d  %10.3f  %10.3f  %10.3f\n",1+i,
                     sum[index[i]][XX],sum[index[i]][YY],sum[index[i]][ZZ]);
@@ -469,10 +469,10 @@ static void write_pdb_bfac(const char *fname,const char *xname,
         ffclose(fp);
         max  = 0;
         maxi = 0;
-        for(i=0; i<isize; i++)
+        for (i=0; i<isize; i++)
         {
             len2 = 0;
-            for(m=0; m<DIM; m++)
+            for (m=0; m<DIM; m++)
             {
                 if (bDim[m] || bDim[DIM])
                 {
@@ -500,22 +500,22 @@ static void write_pdb_bfac(const char *fname,const char *xname,
                 scale = 10.0/sqrt(max);
             }
         }
-        
+
         printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
                title,sqrt(max),maxi+1,*(atoms->atomname[maxi]),
                *(atoms->resinfo[atoms->atom[maxi].resind].name),
                atoms->resinfo[atoms->atom[maxi].resind].nr);
-        
+
         if (atoms->pdbinfo == NULL)
         {
             snew(atoms->pdbinfo,atoms->nr);
         }
         if (onedim == -1)
         {
-            for(i=0; i<isize; i++)
+            for (i=0; i<isize; i++)
             {
                 len2 = 0;
-                for(m=0; m<DIM; m++)
+                for (m=0; m<DIM; m++)
                 {
                     if (bDim[m] || bDim[DIM])
                     {
@@ -527,7 +527,7 @@ static void write_pdb_bfac(const char *fname,const char *xname,
         }
         else
         {
-            for(i=0; i<isize; i++)
+            for (i=0; i<isize; i++)
             {
                 atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim]*scale;
             }
@@ -541,11 +541,11 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
 {
     int  i,m,in,nnn;
     real vn,vnmax;
-  
+
     if (*histo == NULL)
     {
         vnmax = 0;
-        for(i=0; (i<gnx); i++)
+        for (i=0; (i<gnx); i++)
         {
             vn = norm(v[index[i]]);
             vnmax = max(vn,vnmax);
@@ -554,7 +554,7 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
         *nhisto = 1+(vnmax/binwidth);
         snew(*histo,*nhisto);
     }
-    for(i=0; (i<gnx); i++)
+    for (i=0; (i<gnx); i++)
     {
         vn = norm(v[index[i]]);
         in = vn/binwidth;
@@ -562,9 +562,9 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
         {
             nnn = in+100;
             fprintf(stderr,"Extending histogram from %d to %d\n",*nhisto,nnn);
-            
+
             srenew(*histo,nnn);
-            for(m=*nhisto; (m<nnn); m++)
+            for (m=*nhisto; (m<nnn); m++)
             {
                 (*histo)[m] = 0;
             }
@@ -579,10 +579,10 @@ static void print_histo(const char *fn,int nhisto,int histo[],real binwidth,
 {
     FILE *fp;
     int i;
-  
+
     fp = xvgropen(fn,"Velocity distribution","V (nm/ps)","arbitrary units",
                   oenv);
-    for(i=0; (i<nhisto); i++)
+    for (i=0; (i<nhisto); i++)
     {
         fprintf(fp,"%10.3e  %10d\n",i*binwidth,histo[i]);
     }
@@ -591,7 +591,8 @@ static void print_histo(const char *fn,int nhisto,int histo[],real binwidth,
 
 int gmx_traj(int argc,char *argv[])
 {
-    const char *desc[] = {
+    const char *desc[] =
+    {
         "[TT]g_traj[tt] plots coordinates, velocities, forces and/or the box.",
         "With [TT]-com[tt] the coordinates, velocities and forces are",
         "calculated for the center of mass of each group.",
@@ -603,7 +604,7 @@ int gmx_traj(int argc,char *argv[])
         "No corrections are made for constrained degrees of freedom!",
         "This implies [TT]-com[tt].[PAR]",
         "Options [TT]-ekt[tt] and [TT]-ekr[tt] plot the translational and",
-        "rotational kinetic energy of each group,", 
+        "rotational kinetic energy of each group,",
         "provided velocities are present in the trajectory file.",
         "This implies [TT]-com[tt].[PAR]",
         "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
@@ -626,33 +627,60 @@ int gmx_traj(int argc,char *argv[])
     static gmx_bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE,bFP=FALSE;
     static int  ngroups=1;
     static real ctime=-1,scale=0,binwidth=1;
-    t_pargs pa[] = {
-        { "-com", FALSE, etBOOL, {&bCom},
-          "Plot data for the com of each group" },
-        { "-pbc", FALSE, etBOOL, {&bPBC},
-          "Make molecules whole for COM" },
-        { "-mol", FALSE, etBOOL, {&bMol},
-          "Index contains molecule numbers iso atom numbers" },
-        { "-nojump", FALSE, etBOOL, {&bNoJump},
-          "Remove jumps of atoms across the box" },
-        { "-x", FALSE, etBOOL, {&bX},
-          "Plot X-component" },
-        { "-y", FALSE, etBOOL, {&bY},
-          "Plot Y-component" },
-        { "-z", FALSE, etBOOL, {&bZ},
-          "Plot Z-component" },
-        { "-ng",       FALSE, etINT, {&ngroups},
-          "Number of groups to consider" },
-        { "-len", FALSE, etBOOL, {&bNorm},
-          "Plot vector length" },
-        { "-fp", FALSE, etBOOL, {&bFP},
-          "Full precision output" },
-        { "-bin", FALSE, etREAL, {&binwidth},
-          "Binwidth for velocity histogram (nm/ps)" },
-        { "-ctime", FALSE, etREAL, {&ctime},
-          "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
-        { "-scale", FALSE, etREAL, {&scale},
-          "Scale factor for [TT].pdb[tt] output, 0 is autoscale" }
+    t_pargs pa[] =
+    {
+        {
+            "-com", FALSE, etBOOL, {&bCom},
+            "Plot data for the com of each group"
+        },
+        {
+            "-pbc", FALSE, etBOOL, {&bPBC},
+            "Make molecules whole for COM"
+        },
+        {
+            "-mol", FALSE, etBOOL, {&bMol},
+            "Index contains molecule numbers iso atom numbers"
+        },
+        {
+            "-nojump", FALSE, etBOOL, {&bNoJump},
+            "Remove jumps of atoms across the box"
+        },
+        {
+            "-x", FALSE, etBOOL, {&bX},
+            "Plot X-component"
+        },
+        {
+            "-y", FALSE, etBOOL, {&bY},
+            "Plot Y-component"
+        },
+        {
+            "-z", FALSE, etBOOL, {&bZ},
+            "Plot Z-component"
+        },
+        {
+            "-ng",       FALSE, etINT, {&ngroups},
+            "Number of groups to consider"
+        },
+        {
+            "-len", FALSE, etBOOL, {&bNorm},
+            "Plot vector length"
+        },
+        {
+            "-fp", FALSE, etBOOL, {&bFP},
+            "Full precision output"
+        },
+        {
+            "-bin", FALSE, etREAL, {&binwidth},
+            "Binwidth for velocity histogram (nm/ps)"
+        },
+        {
+            "-ctime", FALSE, etREAL, {&ctime},
+            "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x"
+        },
+        {
+            "-scale", FALSE, etREAL, {&scale},
+            "Scale factor for [TT].pdb[tt] output, 0 is autoscale"
+        }
     };
     FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL;
     FILE       *outekt=NULL,*outekr=NULL;
@@ -682,7 +710,8 @@ int gmx_traj(int argc,char *argv[])
     const char *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
     output_env_t oenv;
 
-    t_filenm fnm[] = {
+    t_filenm fnm[] =
+    {
         { efTRX, "-f", NULL, ffREAD },
         { efTPS, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD },
@@ -712,7 +741,7 @@ int gmx_traj(int argc,char *argv[])
         fprintf(stderr,"Interpreting indexfile entries as molecules.\n"
                 "Using center of mass.\n");
     }
-  
+
     bOX  = opt2bSet("-ox",NFILE,fnm);
     bOXT = opt2bSet("-oxt",NFILE,fnm);
     bOV  = opt2bSet("-ov",NFILE,fnm);
@@ -743,7 +772,7 @@ int gmx_traj(int argc,char *argv[])
         sffmt = "\t%g";
     }
     sprintf(sffmt6,"%s%s%s%s%s%s",sffmt,sffmt,sffmt,sffmt,sffmt,sffmt);
-    
+
     bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,
                          &xtop,NULL,topbox,
                          bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
@@ -770,7 +799,7 @@ int gmx_traj(int argc,char *argv[])
     snew(isize0,ngroups);
     snew(index0,ngroups);
     get_index(&(top.atoms),indexfn,ngroups,isize0,index0,grpname);
-  
+
     if (bMol)
     {
         mols=&(top.mols);
@@ -787,7 +816,7 @@ int gmx_traj(int argc,char *argv[])
             }
             isize[i] = atndx[index0[0][i]+1] - atndx[index0[0][i]];
             snew(index[i],isize[i]);
-            for(j=0; j<isize[i]; j++)
+            for (j=0; j<isize[i]; j++)
             {
                 index[i][j] = atndx[index0[0][i]] + j;
             }
@@ -801,7 +830,7 @@ int gmx_traj(int argc,char *argv[])
     if (bCom)
     {
         snew(mass,top.atoms.nr);
-        for(i=0; i<top.atoms.nr; i++)
+        for (i=0; i<top.atoms.nr; i++)
         {
             mass[i] = top.atoms.atom[i].m;
         }
@@ -831,9 +860,10 @@ int gmx_traj(int argc,char *argv[])
         outv = xvgropen(opt2fn("-ov",NFILE,fnm),
                         bCom ? "Center of mass velocity" : "Velocity",
                         output_env_get_xvgr_tlabel(oenv),"Velocity (nm/ps)",oenv);
-        make_legend(outv,ngroups,isize0[0],index0[0],grpname,bCom,bMol,bDim,oenv); 
+        make_legend(outv,ngroups,isize0[0],index0[0],grpname,bCom,bMol,bDim,oenv);
     }
-    if (bOF) {
+    if (bOF)
+    {
         flags = flags | TRX_READ_F;
         outf = xvgropen(opt2fn("-of",NFILE,fnm),"Force",
                         output_env_get_xvgr_tlabel(oenv),"Force (kJ mol\\S-1\\N nm\\S-1\\N)",
@@ -844,7 +874,7 @@ int gmx_traj(int argc,char *argv[])
     {
         outb = xvgropen(opt2fn("-ob",NFILE,fnm),"Box vector elements",
                         output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
-        
+
         xvgr_legend(outb,6,box_leg,oenv);
     }
     if (bOT)
@@ -920,7 +950,7 @@ int gmx_traj(int argc,char *argv[])
     {
         gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
     }
-  
+
     do
     {
         time = output_env_conv_time(oenv,fr.time);
@@ -931,16 +961,16 @@ int gmx_traj(int argc,char *argv[])
             {
                 remove_jump(fr.box,fr.natoms,xp,fr.x);
             }
-            else 
+            else
             {
                 snew(xp,fr.natoms);
             }
-            for(i=0; i<fr.natoms; i++)
+            for (i=0; i<fr.natoms; i++)
             {
                 copy_rvec(fr.x[i],xp[i]);
             }
         }
-    
+
         if (fr.bX && bCom && bPBC)
         {
             gmx_rmpbc_trxfr(gpbc,&fr);
@@ -950,7 +980,7 @@ int gmx_traj(int argc,char *argv[])
         {
             update_histo(isize[0],index[0],fr.v,&nvhisto,&vhisto,binwidth);
         }
-      
+
         if (bOX && fr.bX)
         {
             print_data(outx,time,fr.x,mass,bCom,ngroups,isize,index,bDim,sffmt);
@@ -984,7 +1014,7 @@ int gmx_traj(int argc,char *argv[])
         if (bOT && fr.bV)
         {
             fprintf(outt," %g",time);
-            for(i=0; i<ngroups; i++)
+            for (i=0; i<ngroups; i++)
             {
                 fprintf(outt,sffmt,temp(fr.v,mass,isize[i],index[i]));
             }
@@ -993,7 +1023,7 @@ int gmx_traj(int argc,char *argv[])
         if (bEKT && fr.bV)
         {
             fprintf(outekt," %g",time);
-            for(i=0; i<ngroups; i++)
+            for (i=0; i<ngroups; i++)
             {
                 fprintf(outekt,sffmt,ektrans(fr.v,mass,isize[i],index[i]));
             }
@@ -1002,7 +1032,7 @@ int gmx_traj(int argc,char *argv[])
         if (bEKR && fr.bX && fr.bV)
         {
             fprintf(outekr," %g",time);
-            for(i=0; i<ngroups; i++)
+            for (i=0; i<ngroups; i++)
             {
                 fprintf(outekr,sffmt,ekrot(fr.x,fr.v,mass,isize[i],index[i]));
             }
@@ -1012,7 +1042,7 @@ int gmx_traj(int argc,char *argv[])
             (ctime < 0 || (fr.time >= ctime*0.999999 &&
                            fr.time <= ctime*1.000001)))
         {
-            for(i=0; i<fr.natoms; i++)
+            for (i=0; i<fr.natoms; i++)
             {
                 rvec_inc(sumx[i],fr.x[i]);
             }
@@ -1020,7 +1050,7 @@ int gmx_traj(int argc,char *argv[])
         }
         if (bCV && fr.bV)
         {
-            for(i=0; i<fr.natoms; i++)
+            for (i=0; i<fr.natoms; i++)
             {
                 rvec_inc(sumv[i],fr.v[i]);
             }
@@ -1028,37 +1058,38 @@ int gmx_traj(int argc,char *argv[])
         }
         if (bCF && fr.bF)
         {
-            for(i=0; i<fr.natoms; i++)
+            for (i=0; i<fr.natoms; i++)
             {
                 rvec_inc(sumf[i],fr.f[i]);
             }
             nr_ffr++;
         }
-        
-    } while(read_next_frame(oenv,status,&fr));
-    
+
+    }
+    while (read_next_frame(oenv,status,&fr));
+
     if (gpbc != NULL)
     {
         gmx_rmpbc_done(gpbc);
     }
-    
+
     /* clean up a bit */
     close_trj(status);
-    
-    if (bOX) ffclose(outx);
-    if (bOXT) close_trx(status_out);
-    if (bOV) ffclose(outv);
-    if (bOF) ffclose(outf);
-    if (bOB) ffclose(outb);
-    if (bOT) ffclose(outt);
-    if (bEKT) ffclose(outekt);
-    if (bEKR) ffclose(outekr);
-    
+
+    if (bOX) { ffclose(outx); }
+    if (bOXT) { close_trx(status_out); }
+    if (bOV) { ffclose(outv); }
+    if (bOF) { ffclose(outf); }
+    if (bOB) { ffclose(outb); }
+    if (bOT) { ffclose(outt); }
+    if (bEKT) { ffclose(outekt); }
+    if (bEKR) { ffclose(outekr); }
+
     if (bVD)
     {
         print_histo(opt2fn("-vd",NFILE,fnm),nvhisto,vhisto,binwidth,oenv);
     }
-    
+
     if (bCV || bCF)
     {
         if (nr_xfr > 1)
@@ -1068,7 +1099,7 @@ int gmx_traj(int argc,char *argv[])
                 fprintf(stderr,"\nWARNING: More than one frame was used for option -cv or -cf\n"
                         "If atoms jump across the box you should use the -nojump or -ctime option\n\n");
             }
-            for(i=0; i<isize[0]; i++)
+            for (i=0; i<isize[0]; i++)
             {
                 svmul(1.0/nr_xfr,sumx[index[0][i]],sumx[index[0][i]]);
             }
@@ -1095,8 +1126,8 @@ int gmx_traj(int argc,char *argv[])
 
     /* view it */
     view_all(oenv,NFILE, fnm);
-  
+
     thanx(stderr);
-  
+
     return 0;
 }

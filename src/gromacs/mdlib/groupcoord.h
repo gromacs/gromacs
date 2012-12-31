@@ -1,34 +1,34 @@
 /*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- 
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -37,12 +37,12 @@
  *
  *  @brief Assemble atom positions for comparison with a reference set.
  *
- *  This file contains functions to assemble the positions of a subset of the 
+ *  This file contains functions to assemble the positions of a subset of the
  *  atoms and to do operations on it like determining the center of mass, or
  *  doing translations and rotations. These functions are useful when
  *  a subset of the positions needs to be compared to some set of reference
  *  positions, as e.g. done for essential dynamics.
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -56,10 +56,10 @@
 
 /*! \brief Select local atoms of a group.
 *
-* Selects the indices of local atoms of a group and stores them in anrs_loc[0..nr_loc]. 
-* If you need the positions of the group's atoms on all nodes, provide a coll_ind[0..nr] 
-* array and pass it on to communicate_group_positions. Thus the collective array 
-* will always have the same atom order (ascending indices). 
+* Selects the indices of local atoms of a group and stores them in anrs_loc[0..nr_loc].
+* If you need the positions of the group's atoms on all nodes, provide a coll_ind[0..nr]
+* array and pass it on to communicate_group_positions. Thus the collective array
+* will always have the same atom order (ascending indices).
 *
 *  \param[in]     ga2la      Global to local atom index conversion data.
 *  \param[in]     nr         The total number of atoms that the group contains.
@@ -79,13 +79,13 @@ extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
 
 
 /*! \brief Assemble local positions into a collective array present on all nodes.
- * 
- * Communicate the positions of the group's atoms such that every node has all of 
+ *
+ * Communicate the positions of the group's atoms such that every node has all of
  * them. Unless running on huge number of cores, this is not a big performance impact
- * as long as the collective subset [0..nr] is kept small. The atom indices are 
+ * as long as the collective subset [0..nr] is kept small. The atom indices are
  * retrieved from anrs_loc[0..nr_loc]. If you call the routine for the serial case,
  * provide an array coll_ind[i] = i for i in 1..nr.
- * 
+ *
  * \param[in]     cr           Pointer to MPI communication data.
  * \param[out]    xcoll        Collective array of positions, idential on all nodes
  *                             after this routine has been called.
@@ -120,43 +120,43 @@ extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts
 
 
 /*! \brief Calculates the center of the positions x locally.
- * 
+ *
  * Calculates the center of mass (if masses are given in the weight array) or
  * the geometrical center (if NULL is passed as weight).
- * 
+ *
  * \param[in]   x            Positions.
  * \param[in]   weight       Can be NULL or an array of weights. If masses are
  *                           given as weights, the COM is calculated.
  * \param[in]   nr           Number of positions and weights if present.
  * \param[out]  center       The (weighted) center of the positions.
- * 
+ *
  */
 extern void get_center(rvec x[], real weight[], const int nr, rvec center);
 
 
 /*! \brief Calculates the sum of the positions x locally.
- * 
- * Calculates the (weighted) sum of position vectors and returns the sum of 
- * weights, which is needed when local contributions shall be summed to a 
+ *
+ * Calculates the (weighted) sum of position vectors and returns the sum of
+ * weights, which is needed when local contributions shall be summed to a
  * global weighted center.
- * 
+ *
  * \param[in]   x            Array of positions.
  * \param[in]   weight       Can be NULL or an array of weights.
  * \param[in]   nr           Number of positions and weights if present.
  * \param[out]  dsumvec      The (weighted) sum of the positions.
  * \return Sum of weights.
- * 
+ *
  */
 extern double get_sum_of_positions(rvec x[], real weight[], const int nr, dvec dsumvec);
 
 
-/*! \brief Calculates the global center of all local arrays x. 
- * 
+/*! \brief Calculates the global center of all local arrays x.
+ *
  * Get the center from local positions [0..nr_loc], this involves communication.
  * Not that the positions must already have the correct PBC representation. Use
- * this routine if no collective coordinates are assembled from which the center 
+ * this routine if no collective coordinates are assembled from which the center
  * could be calculated without communication.
- * 
+ *
  * \param[in]   cr           Pointer to MPI communication data.
  * \param[in]   x_loc        Array of local positions [0..nr_loc].
  * \param[in]   weight_loc   Array of local weights, these are the masses if the
@@ -173,25 +173,25 @@ extern void get_center_comm(t_commrec *cr, rvec x_loc[], real weight_loc[],
 
 
 /*! \brief Translate positions.
- * 
+ *
  * Add a translation vector to the positions x.
- * 
+ *
  * \param[in,out] x          Array of positions.
  * \param[in]     nr         Number of entries in the position array.
  * \param[in]     transvec   Translation vector to be added to all positions.
- * 
+ *
  */
 extern void translate_x(rvec x[], const int nr, const rvec transvec);
 
 
 /*! \brief Rotate positions.
- * 
+ *
  * Rotate the positions with the rotation matrix.
- * 
+ *
  * \param[in,out] x          Array of positions.
  * \param[in]     nr         Number of entries in the position array.
  * \param[in]     rmat       Rotation matrix to operate on all positions.
- * 
+ *
  */
 extern void rotate_x(rvec x[], const int nr, matrix rmat);
 

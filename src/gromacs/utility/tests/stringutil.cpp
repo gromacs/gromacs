@@ -119,7 +119,8 @@ typedef gmx::test::StringTestBase ConcatenateStringsTest;
 
 TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
 {
-    static const char * const strings[] = {
+    static const char * const strings[] =
+    {
         "First string",
         "Second string ",
         "Third string\n",

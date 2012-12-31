@@ -1,11 +1,11 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
@@ -66,7 +66,8 @@
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
 #define CM2D  SPEED_OF_LIGHT*1.0e+24    /* Coulomb meter to Debye */
 
-typedef struct {
+typedef struct
+{
     int  nelem;
     real spacing,radius;
     real *elem;
@@ -81,32 +82,41 @@ static t_gkrbin *mk_gkrbin(real radius,real rcmax,gmx_bool bPhi,int ndegrees)
     t_gkrbin *gb;
     char *ptr;
     int  i;
-  
+
     snew(gb,1);
-  
-    if ((ptr = getenv("GKRWIDTH")) != NULL) {
+
+    if ((ptr = getenv("GKRWIDTH")) != NULL)
+    {
         double bw;
 
         sscanf(ptr,"%lf",&bw);
-        gb->spacing = bw; 
+        gb->spacing = bw;
     }
     else
-        gb->spacing = 0.01; /* nm */
+    {
+        gb->spacing = 0.01;    /* nm */
+    }
     gb->nelem   = 1 + radius/gb->spacing;
     if (rcmax == 0)
+    {
         gb->nx = gb->nelem;
+    }
     else
+    {
         gb->nx = 1 + rcmax/gb->spacing;
+    }
     gb->radius  = radius;
     snew(gb->elem,gb->nelem);
     snew(gb->count,gb->nelem);
-  
+
     snew(gb->cmap,gb->nx);
     gb->ny = max(2,ndegrees);
-    for(i=0; (i<gb->nx); i++)
+    for (i=0; (i<gb->nx); i++)
+    {
         snew(gb->cmap[i],gb->ny);
+    }
     gb->bPhi = bPhi;
-      
+
     return gb;
 }
 
@@ -122,20 +132,28 @@ static void add2gkr(t_gkrbin *gb,real r,real cosa,real phi)
 {
     int  cy,index = gmx_nint(r/gb->spacing);
     real alpha;
-  
-    if (index < gb->nelem) {
+
+    if (index < gb->nelem)
+    {
         gb->elem[index]  += cosa;
         gb->count[index] ++;
     }
-    if (index < gb->nx) {
+    if (index < gb->nx)
+    {
         alpha = acos(cosa);
         if (gb->bPhi)
+        {
             cy = (M_PI+phi)*gb->ny/(2*M_PI);
+        }
         else
-            cy = (alpha*gb->ny)/M_PI;/*((1+cosa)*0.5*(gb->ny));*/
+        {
+            cy = (alpha*gb->ny)/M_PI;    /*((1+cosa)*0.5*(gb->ny));*/
+        }
         cy = min(gb->ny-1,max(0,cy));
         if (debug)
+        {
             fprintf(debug,"CY: %10f  %5d\n",alpha,cy);
+        }
         gb->cmap[index][cy] += 1;
     }
 }
@@ -143,9 +161,9 @@ static void add2gkr(t_gkrbin *gb,real r,real cosa,real phi)
 static void rvec2sprvec(rvec dipcart,rvec dipsp)
 {
     clear_rvec(dipsp);
-    dipsp[0] = sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]+dipcart[ZZ]*dipcart[ZZ]); /* R */ 
-    dipsp[1] = atan2(dipcart[YY],dipcart[XX]);  /* Theta */ 
-    dipsp[2] = atan2(sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]),dipcart[ZZ]);       /* Phi */ 
+    dipsp[0] = sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]+dipcart[ZZ]*dipcart[ZZ]); /* R */
+    dipsp[1] = atan2(dipcart[YY],dipcart[XX]);  /* Theta */
+    dipsp[2] = atan2(sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]),dipcart[ZZ]);       /* Phi */
 }
 
 
@@ -159,26 +177,36 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
     real   qtot,q,r2,cosa,rr,phi;
     rvec   dx;
     t_pbc  pbc;
-  
-    for(n=0; (n<ncos); n++) {
+
+    for (n=0; (n<ncos); n++)
+    {
         if (!xcm[n])
+        {
             snew(xcm[n],ngrp[n]);
-        for(i=0; (i<ngrp[n]); i++) {
+        }
+        for (i=0; (i<ngrp[n]); i++)
+        {
             /* Calculate center of mass of molecule */
             gi = molindex[n][i];
             j0 = mindex[gi];
-      
+
             if (nAtom[n] > 0)
+            {
                 copy_rvec(x[j0+nAtom[n]-1],xcm[n][i]);
-            else {
+            }
+            else
+            {
                 j1 = mindex[gi+1];
                 clear_rvec(xcm[n][i]);
                 qtot = 0;
-                for(j=j0; j<j1; j++) {
+                for (j=j0; j<j1; j++)
+                {
                     q = fabs(atom[j].q);
                     qtot += q;
-                    for(k=0; k<DIM; k++)
+                    for (k=0; k<DIM; k++)
+                    {
                         xcm[n][i][k] += q*x[j][k];
+                    }
                 }
                 svmul(1/qtot,xcm[n][i],xcm[n][i]);
             }
@@ -187,22 +215,26 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
     set_pbc(&pbc,ePBC,box);
     grp0 = 0;
     grp1 = ncos-1;
-    for(i=0; i<ngrp[grp0]; i++) {
+    for (i=0; i<ngrp[grp0]; i++)
+    {
         gi = molindex[grp0][i];
         j0 = (ncos == 2) ? 0 : i+1;
-        for(j=j0; j<ngrp[grp1]; j++) {
+        for (j=j0; j<ngrp[grp1]; j++)
+        {
             gj   = molindex[grp1][j];
-            if ((iprod(mu[gi],mu[gi]) > 0) && (iprod(mu[gj],mu[gj]) > 0)) {
+            if ((iprod(mu[gi],mu[gi]) > 0) && (iprod(mu[gj],mu[gj]) > 0))
+            {
                 /* Compute distance between molecules including PBC */
                 pbc_dx(&pbc,xcm[grp0][i],xcm[grp1][j],dx);
                 rr = norm(dx);
-	
-                if (gb->bPhi) {
+
+                if (gb->bPhi)
+                {
                     rvec xi,xj,xk,xl;
                     rvec r_ij,r_kj,r_kl,mm,nn;
                     real sign;
                     int  t1,t2,t3;
-	  
+
                     copy_rvec(xcm[grp0][i],xj);
                     copy_rvec(xcm[grp1][j],xk);
                     rvec_add(xj,mu[gi],xi);
@@ -212,18 +244,20 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
                                     &sign,&t1,&t2,&t3);
                     cosa = cos(phi);
                 }
-                else {
+                else
+                {
                     cosa = cos_angle(mu[gi],mu[gj]);
                     phi = 0;
                 }
-                if (debug || (cosa != cosa))  {
+                if (debug || (cosa != cosa))
+                {
                     fprintf(debug ? debug : stderr,
                             "mu[%d] = %5.2f %5.2f %5.2f |mi| = %5.2f, mu[%d] = %5.2f %5.2f %5.2f |mj| = %5.2f rr = %5.2f cosa = %5.2f\n",
                             gi,mu[gi][XX],mu[gi][YY],mu[gi][ZZ],norm(mu[gi]),
                             gj,mu[gj][XX],mu[gj][YY],mu[gj][ZZ],norm(mu[gj]),
                             rr,cosa);
                 }
-	
+
                 add2gkr(gb,rr,cosa,phi);
             }
         }
@@ -234,18 +268,22 @@ static real normalize_cmap(t_gkrbin *gb)
 {
     int    i,j;
     double hi,vol;
-  
+
     hi = 0;
-    for(i=0; (i<gb->nx); i++) {
+    for (i=0; (i<gb->nx); i++)
+    {
         vol = 4*M_PI*sqr(gb->spacing*i)*gb->spacing;
-        for(j=0; (j<gb->ny); j++) {
+        for (j=0; (j<gb->ny); j++)
+        {
             gb->cmap[i][j] /= vol;
             hi = max(hi,gb->cmap[i][j]);
         }
     }
     if (hi <= 0)
+    {
         gmx_fatal(FARGS,"No data in the cmap");
-    return hi;  
+    }
+    return hi;
 }
 
 static void print_cmap(const char *cmap,t_gkrbin *gb,int *nlevels)
@@ -253,21 +291,28 @@ static void print_cmap(const char *cmap,t_gkrbin *gb,int *nlevels)
     FILE   *out;
     int    i,j;
     real   hi;
-  
+
     real   *xaxis,*yaxis;
     t_rgb  rlo = { 1, 1, 1 };
     t_rgb  rhi = { 0, 0, 0 };
-  
+
     hi = normalize_cmap(gb);
     snew(xaxis,gb->nx+1);
-    for(i=0; (i<gb->nx+1); i++)
+    for (i=0; (i<gb->nx+1); i++)
+    {
         xaxis[i] = i*gb->spacing;
+    }
     snew(yaxis,gb->ny);
-    for(j=0; (j<gb->ny); j++) {
+    for (j=0; (j<gb->ny); j++)
+    {
         if (gb->bPhi)
+        {
             yaxis[j] = (360.0*j)/(gb->ny-1.0)-180;
+        }
         else
+        {
             yaxis[j] = (180.0*j)/(gb->ny-1.0);
+        }
         /*2.0*j/(gb->ny-1.0)-1.0;*/
     }
     out = ffopen(cmap,"w");
@@ -296,21 +341,24 @@ static void print_gkrbin(const char *fn,t_gkrbin *gb,
     int    i,j,n,last;
     real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav,ener;
     double fac;
-    
+
     fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)",oenv);
     xvgr_legend(fp,asize(leg),leg,oenv);
-  
+
     Gkr = 1;  /* Self-dipole inproduct = 1 */
     rho = ngrp/volume;
-  
-    if (debug) {
+
+    if (debug)
+    {
         fprintf(debug,"Number density is %g molecules / nm^3\n",rho);
         fprintf(debug,"ngrp = %d, nframes = %d\n",ngrp,nframes);
     }
-  
+
     last = gb->nelem-1;
-    while(last>1 && gb->elem[last-1]==0)
+    while (last>1 && gb->elem[last-1]==0)
+    {
         last--;
+    }
 
     /* Divide by dipole squared, by number of frames, by number of origins.
      * Multiply by 2 because we only take half the matrix of interactions
@@ -319,16 +367,17 @@ static void print_gkrbin(const char *fn,t_gkrbin *gb,
     fac  = 2.0/((double) ngrp * (double) nframes);
 
     x0 = 0;
-    for(i=0; i<last; i++) {
+    for (i=0; i<last; i++)
+    {
         /* Centre of the coordinate in the spherical layer */
         x1    = x0+gb->spacing;
-    
+
         /* Volume of the layer */
         vol_s = (4.0/3.0)*M_PI*(x1*x1*x1-x0*x0*x0);
-    
+
         /* gOO */
         gOO   = gb->count[i]*fac/(rho*vol_s);
-    
+
         /* Dipole correlation hOO, normalized by the relative number density, like
          * in a Radial distribution function.
          */
@@ -336,14 +385,18 @@ static void print_gkrbin(const char *fn,t_gkrbin *gb,
         hOO  = 3.0*ggg/(rho*vol_s);
         Gkr += ggg;
         if (gb->count[i])
+        {
             cosav = gb->elem[i]/gb->count[i];
+        }
         else
+        {
             cosav = 0;
+        }
         ener = -0.5*cosav*ONE_4PI_EPS0/(x1*x1*x1);
-    
+
         fprintf(fp,"%10.5e %12.5e %12.5e %12.5e %12.5e  %12.5e\n",
                 x1,Gkr,cosav,hOO,gOO,ener);
-    
+
         /* Swap x0 and x1 */
         x0 = x1;
     }
@@ -358,18 +411,23 @@ gmx_bool read_mu_from_enx(ener_file_t fmu,int Vol,ivec iMu,rvec mu,real *vol,
     char     buf[22];
 
     bCont = do_enx(fmu,fr);
-    if (fr->nre != nre) 
+    if (fr->nre != nre)
         fprintf(stderr,"Something strange: expected %d entries in energy file at step %s\n(time %g) but found %d entries\n",
                 nre,gmx_step_str(fr->step,buf),fr->t,fr->nre);
-  
-    if (bCont) {
+
+    if (bCont)
+    {
         if (Vol != -1)          /* we've got Volume in the energy file */
+        {
             *vol = fr->ener[Vol].e;
+        }
         for (i=0; i<DIM; i++)
+        {
             mu[i] = fr->ener[iMu[i]].e;
+        }
         *t = fr->t;
     }
-  
+
     return bCont;
 }
 
@@ -379,22 +437,29 @@ static void neutralize_mols(int n,int *index,t_block *mols,t_atom *atom)
     int  ncharged,m,a0,a1,a;
 
     ncharged = 0;
-    for(m=0; m<n; m++) {
+    for (m=0; m<n; m++)
+    {
         a0 = mols->index[index[m]];
         a1 = mols->index[index[m]+1];
         mtot = 0;
         qtot = 0;
-        for(a=a0; a<a1; a++) {
+        for (a=a0; a<a1; a++)
+        {
             mtot += atom[a].m;
             qtot += atom[a].q;
         }
         /* This check is only for the count print */
         if (fabs(qtot) > 0.01)
+        {
             ncharged++;
-        if (mtot > 0) {
+        }
+        if (mtot > 0)
+        {
             /* Remove the net charge at the center of mass */
-            for(a=a0; a<a1; a++)
+            for (a=a0; a<a1; a++)
+            {
                 atom[a].q -= qtot*atom[a].m/mtot;
+            }
         }
     }
 
@@ -407,12 +472,15 @@ static void mol_dip(int k0,int k1,rvec x[],t_atom atom[],rvec mu)
 {
     int  k,m;
     real q;
-  
+
     clear_rvec(mu);
-    for(k=k0; (k<k1); k++) {
+    for (k=k0; (k<k1); k++)
+    {
         q  = e2d(atom[k].q);
-        for(m=0; (m<DIM); m++) 
+        for (m=0; (m<DIM); m++)
+        {
             mu[m] += q*x[k][m];
+        }
     }
 }
 
@@ -428,7 +496,8 @@ static void mol_quad(int k0,int k1,rvec x[],t_atom atom[],rvec quad)
 
     snew(inten,DIM);
     snew(ev,DIM);
-    for(i=0; (i<DIM); i++) {
+    for (i=0; (i<DIM); i++)
+    {
         snew(inten[i],DIM);
         snew(ev[i],DIM);
         dd[i]=0.0;
@@ -437,11 +506,14 @@ static void mol_quad(int k0,int k1,rvec x[],t_atom atom[],rvec quad)
     /* Compute center of mass */
     clear_rvec(com);
     masstot = 0.0;
-    for(k=k0; (k<k1); k++) {
+    for (k=k0; (k<k1); k++)
+    {
         mass     = atom[k].m;
         masstot += mass;
-        for(i=0; (i<DIM); i++)
+        for (i=0; (i<DIM); i++)
+        {
             com[i] += mass*x[k][i];
+        }
     }
     svmul((1.0/masstot),com,com);
 
@@ -452,30 +524,36 @@ static void mol_quad(int k0,int k1,rvec x[],t_atom atom[],rvec quad)
 
 #define delta(a,b) (( a == b ) ? 1.0 : 0.0)
 
-    for(m=0; (m<DIM); m++) 
-        for(n=0; (n<DIM); n++)
+    for (m=0; (m<DIM); m++)
+        for (n=0; (n<DIM); n++)
+        {
             inten[m][n] = 0;
-    for(k=k0; (k<k1); k++) {       /* loop over atoms in a molecule */
+        }
+    for (k=k0; (k<k1); k++)        /* loop over atoms in a molecule */
+    {
         q  = (atom[k].q)*100.0;
         rvec_sub(x[k],com,r);
         r2 = iprod(r,r);
-        for(m=0; (m<DIM); m++)
-            for(n=0; (n<DIM); n++)
+        for (m=0; (m<DIM); m++)
+            for (n=0; (n<DIM); n++)
+            {
                 inten[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m,n))*EANG2CM*CM2D;
+            }
     }
     if (debug)
-        for(i=0; (i<DIM); i++) 
+        for (i=0; (i<DIM); i++)
             fprintf(debug,"Q[%d] = %8.3f  %8.3f  %8.3f\n",
                     i,inten[i][XX],inten[i][YY],inten[i][ZZ]);
-  
+
     /* We've got the quadrupole tensor, now diagonalize the sucker */
     jacobi(inten,3,dd,ev,&niter);
 
-    if (debug) {
-        for(i=0; (i<DIM); i++) 
+    if (debug)
+    {
+        for (i=0; (i<DIM); i++)
             fprintf(debug,"ev[%d] = %8.3f  %8.3f  %8.3f\n",
                     i,ev[i][XX],ev[i][YY],ev[i][ZZ]);
-        for(i=0; (i<DIM); i++) 
+        for (i=0; (i<DIM); i++)
             fprintf(debug,"Q'[%d] = %8.3f  %8.3f  %8.3f\n",
                     i,inten[i][XX],inten[i][YY],inten[i][ZZ]);
     }
@@ -496,17 +574,21 @@ static void mol_quad(int k0,int k1,rvec x[],t_atom atom[],rvec quad)
     SWAP(1);
     SWAP(0);
 
-    for(m=0; (m<DIM); m++) {
+    for (m=0; (m<DIM); m++)
+    {
         quad[0]=dd[2];  /* yy */
         quad[1]=dd[0];  /* zz */
         quad[2]=dd[1];  /* xx */
     }
 
     if (debug)
+    {
         pr_rvec(debug,0,"Quadrupole",quad,DIM,TRUE);
+    }
 
     /* clean-up */
-    for(i=0; (i<DIM); i++) {
+    for (i=0; (i<DIM); i++)
+    {
         sfree(inten[i]);
         sfree(ev[i]);
     }
@@ -516,7 +598,7 @@ static void mol_quad(int k0,int k1,rvec x[],t_atom atom[],rvec quad)
 
 /*
  * Calculates epsilon according to M. Neumann, Mol. Phys. 50, 841 (1983)
- */ 
+ */
 real calc_eps(double M_diff,double volume,double epsRF,double temp)
 {
     double eps,A,teller,noemer;
@@ -524,11 +606,14 @@ real calc_eps(double M_diff,double volume,double epsRF,double temp)
     double fac=1.112650021e-59;       /* converts Debye^2 to C^2 m^2 */
 
     A = M_diff*fac/(3*eps_0*volume*NANO*NANO*NANO*BOLTZMANN*temp);
- 
-    if (epsRF == 0.0) {
+
+    if (epsRF == 0.0)
+    {
         teller = 1 + A;
-        noemer = 1; 
-    } else { 
+        noemer = 1;
+    }
+    else
+    {
         teller = 1 + (A*2*epsRF/(2*epsRF+1));
         noemer = 1 - (A/(2*epsRF+1));
     }
@@ -543,9 +628,11 @@ static void update_slab_dipoles(int k0,int k1,rvec x[],rvec mu,
 {
     int k;
     real xdim=0;
-  
-    for(k=k0; (k<k1); k++) 
+
+    for (k=k0; (k<k1); k++)
+    {
         xdim += x[k][idim];
+    }
     xdim /= (k1-k0);
     k = ((int)(xdim*nslice/box[idim][idim] + nslice)) % nslice;
     rvec_inc(slab_dipole[k],mu);
@@ -559,18 +646,20 @@ static void dump_slab_dipoles(const char *fn,int idim,int nslice,
     char buf[STRLEN];
     int  i;
     real mutot;
-    const char *leg_dim[4] = { 
+    const char *leg_dim[4] =
+    {
         "\\f{12}m\\f{4}\\sX\\N",
         "\\f{12}m\\f{4}\\sY\\N",
         "\\f{12}m\\f{4}\\sZ\\N",
         "\\f{12}m\\f{4}\\stot\\N"
     };
-  
+
     sprintf(buf,"Box-%c (nm)",'X'+idim);
     fp = xvgropen(fn,"Average dipole moment per slab",buf,"\\f{12}m\\f{4} (D)",
                   oenv);
-    xvgr_legend(fp,DIM,leg_dim,oenv); 
-    for(i=0; (i<nslice); i++) {
+    xvgr_legend(fp,DIM,leg_dim,oenv);
+    for (i=0; (i<nslice); i++)
+    {
         mutot = norm(slab_dipole[i])/nframes;
         fprintf(fp,"%10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
                 ((i+0.5)*box[idim][idim])/nslice,
@@ -582,7 +671,7 @@ static void dump_slab_dipoles(const char *fn,int idim,int nslice,
     ffclose(fp);
     do_view(oenv,fn,"-autoscale xy -nxy");
 }
-			    
+
 static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,gmx_bool bPairs)
 {
     int    i,j,k;
@@ -590,16 +679,16 @@ static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,gmx_bool bPairs)
     rvec   xxx = { 1, 0, 0 };
     rvec   yyy = { 0, 1, 0 };
     rvec   zzz = { 0, 0, 1 };
-  
+
     d=0;
     ddc1 = ddc2 = ddc3 = 0;
-    for(i=k=0; (i<n); i++) 
+    for (i=k=0; (i<n); i++)
     {
         ddc1 += fabs(cos_angle(dip[i],xxx));
         ddc2 += fabs(cos_angle(dip[i],yyy));
         ddc3 += fabs(cos_angle(dip[i],zzz));
-        if (bPairs) 
-            for(j=i+1; (j<n); j++,k++) 
+        if (bPairs)
+            for (j=i+1; (j<n); j++,k++)
             {
                 dc  = cos_angle(dip[i],dip[j]);
                 d  += fabs(dc);
@@ -632,27 +721,31 @@ static void do_dip(t_topology *top,int ePBC,real volume,
                    const char *axtitle, const char *slabfn,
                    const output_env_t oenv)
 {
-    const char *leg_mtot[] = { 
-        "M\\sx \\N", 
+    const char *leg_mtot[] =
+    {
+        "M\\sx \\N",
         "M\\sy \\N",
         "M\\sz \\N",
         "|M\\stot \\N|"
     };
 #define NLEGMTOT asize(leg_mtot)
-    const char *leg_eps[] = { 
+    const char *leg_eps[] =
+    {
         "epsilon",
         "G\\sk",
         "g\\sk"
     };
 #define NLEGEPS asize(leg_eps)
-    const char *leg_aver[] = { 
-        "< |M|\\S2\\N >", 
+    const char *leg_aver[] =
+    {
+        "< |M|\\S2\\N >",
         "< |M| >\\S2\\N",
         "< |M|\\S2\\N > - < |M| >\\S2\\N",
         "< |M| >\\S2\\N / < |M|\\S2\\N >"
     };
 #define NLEGAVER asize(leg_aver)
-    const char *leg_cosaver[] = {
+    const char *leg_cosaver[] =
+    {
         "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
         "RMSD cos",
         "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
@@ -660,7 +753,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
     };
 #define NLEGCOSAVER asize(leg_cosaver)
-    const char *leg_adip[] = {
+    const char *leg_adip[] =
+    {
         "<mu>",
         "Std. Dev.",
         "Error"
@@ -696,54 +790,68 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     gmx_rmpbc_t gpbc=NULL;
 
     gnx_tot = gnx[0];
-    if (ncos > 1) {
+    if (ncos > 1)
+    {
         gnx_tot += gnx[1];
     }
 
     vol_aver = 0.0;
-      
+
     iVol=-1;
-    if (bMU) 
+    if (bMU)
     {
         fmu = open_enx(mufn,"r");
         do_enxnms(fmu,&nre,&enm);
 
         /* Determine the indexes of the energy grps we need */
-        for (i=0; (i<nre); i++) {
+        for (i=0; (i<nre); i++)
+        {
             if (strstr(enm[i].name,"Volume"))
+            {
                 iVol=i;
+            }
             else if (strstr(enm[i].name,"Mu-X"))
+            {
                 iMu[XX]=i;
+            }
             else if (strstr(enm[i].name,"Mu-Y"))
+            {
                 iMu[YY]=i;
+            }
             else if (strstr(enm[i].name,"Mu-Z"))
+            {
                 iMu[ZZ]=i;
+            }
         }
     }
-    else 
+    else
     {
         atom = top->atoms.atom;
         mols = &(top->mols);
     }
-  
-    if ((iVol == -1) && bMU)
-        printf("Using Volume from topology: %g nm^3\n",volume);
 
-    /* Correlation stuff */ 
+    if ((iVol == -1) && bMU)
+    {
+        printf("Using Volume from topology: %g nm^3\n",volume);
+    }
+
+    /* Correlation stuff */
     bCorr  = (corrtype[0] != 'n');
     bTotal = (corrtype[0] == 't');
-    if (bCorr) 
+    if (bCorr)
     {
-        if (bTotal) 
+        if (bTotal)
         {
             snew(muall,1);
             snew(muall[0],nframes*DIM);
         }
-        else 
+        else
         {
             snew(muall,gnx[0]);
-            for(i=0; (i<gnx[0]); i++)
+            for (i=0; (i<gnx[0]); i++)
+            {
                 snew(muall[i],nframes*DIM);
+            }
         }
     }
 
@@ -751,14 +859,18 @@ static void do_dip(t_topology *top,int ePBC,real volume,
      * dipole moment.
      */
     if (!bMU)
+    {
         snew(dipole,gnx_tot);
+    }
 
     /* Statistics */
     snew(Qlsq,DIM);
-    for(i=0; (i<DIM); i++) 
+    for (i=0; (i<DIM); i++)
+    {
         Qlsq[i] = gmx_stats_init();
+    }
     mulsq = gmx_stats_init();
-  
+
     /* Open all the files */
     outmtot = xvgropen(out_mtot,
                        "Total dipole moment of the simulation box vs. time",
@@ -767,42 +879,48 @@ static void do_dip(t_topology *top,int ePBC,real volume,
                        "Time (ps)","",oenv);
     outaver = xvgropen(out_aver,"Total dipole moment",
                        "Time (ps)","D",oenv);
-    if (bSlab) 
+    if (bSlab)
     {
         idim = axtitle[0] - 'X';
         if ((idim < 0) || (idim >= DIM))
+        {
             idim = axtitle[0] - 'x';
+        }
         if ((idim < 0) || (idim >= DIM))
+        {
             bSlab = FALSE;
+        }
         if (nslices < 2)
+        {
             bSlab = FALSE;
+        }
         fprintf(stderr,"axtitle = %s, nslices = %d, idim = %d\n",
                 axtitle,nslices,idim);
-        if (bSlab) 
+        if (bSlab)
         {
             snew(slab_dipoles,nslices);
             fprintf(stderr,"Doing slab analysis\n");
         }
     }
-  
-    if (fnadip) 
+
+    if (fnadip)
     {
         adip = xvgropen(fnadip, "Average molecular dipole","Dipole (D)","",oenv);
         xvgr_legend(adip,NLEGADIP,leg_adip, oenv);
-  
+
     }
-    if (cosaver) 
+    if (cosaver)
     {
         caver = xvgropen(cosaver,bPairs ? "Average pair orientation" :
                          "Average absolute dipole orientation","Time (ps)","",oenv);
         xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[1]),
                     oenv);
     }
-    
-    if (fndip3d) 
+
+    if (fndip3d)
     {
         snew(dipsp,gnx_tot);
-  
+
         /* we need a dummy file for gnuplot */
         dip3d = (FILE *)ffopen("dummy.dat","w");
         fprintf(dip3d,"%f %f %f", 0.0,0.0,0.0);
@@ -813,124 +931,145 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         fprintf(dip3d,"# which is part of G R O M A C S:\n");
         fprintf(dip3d,"#\n");
     }
-  
+
     /* Write legends to all the files */
     xvgr_legend(outmtot,NLEGMTOT,leg_mtot,oenv);
     xvgr_legend(outaver,NLEGAVER,leg_aver,oenv);
-  
+
     if (bMU && (mu_aver == -1))
+    {
         xvgr_legend(outeps,NLEGEPS-2,leg_eps,oenv);
+    }
     else
+    {
         xvgr_legend(outeps,NLEGEPS,leg_eps,oenv);
-    
+    }
+
     snew(fr,1);
     clear_rvec(mu_t);
     teller = 0;
     /* Read the first frame from energy or traj file */
     if (bMU)
-        do 
+        do
         {
             bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr);
-            if (bCont) 
-            {  
+            if (bCont)
+            {
                 timecheck=check_times(t);
                 if (timecheck < 0)
+                {
                     teller++;
+                }
                 if ((teller % 10) == 0)
+                {
                     fprintf(stderr,"\r Skipping Frame %6d, time: %8.3f", teller, t);
+                }
             }
-            else 
+            else
             {
                 printf("End of %s reached\n",mufn);
                 break;
             }
-        } while (bCont && (timecheck < 0));
+        }
+        while (bCont && (timecheck < 0));
     else
+    {
         natom  = read_first_x(oenv,&status,fn,&t,&x,box);
-  
+    }
+
     /* Calculate spacing for dipole bin (simple histogram) */
     ndipbin = 1+(mu_max/0.01);
     snew(dipole_bin, ndipbin);
     epsilon    = 0.0;
     mu_ave     = 0.0;
-    for(m=0; (m<DIM); m++) 
+    for (m=0; (m<DIM); m++)
     {
         M[m] = M2[m] = M4[m] = 0.0;
     }
-  
-    if (bGkr) 
+
+    if (bGkr)
     {
         /* Use 0.7 iso 0.5 to account for pressure scaling */
         /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
         rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
 
-        gkrbin = mk_gkrbin(rcut,rcmax,bPhi,ndegrees); 
+        gkrbin = mk_gkrbin(rcut,rcmax,bPhi,ndegrees);
     }
     gpbc = gmx_rmpbc_init(&top->idef,ePBC,natom,box);
 
     /* Start while loop over frames */
     t1 = t0 = t;
     teller = 0;
-    do 
+    do
     {
-        if (bCorr && (teller >= nframes)) 
+        if (bCorr && (teller >= nframes))
         {
             nframes += 1000;
-            if (bTotal) 
+            if (bTotal)
             {
                 srenew(muall[0],nframes*DIM);
             }
-            else 
+            else
             {
-                for(i=0; (i<gnx_tot); i++)
+                for (i=0; (i<gnx_tot); i++)
+                {
                     srenew(muall[i],nframes*DIM);
+                }
             }
         }
         t1 = t;
 
         muframelsq = gmx_stats_init();
-    
+
         /* Initialise */
-        for(m=0; (m<DIM); m++) 
+        for (m=0; (m<DIM); m++)
+        {
             M_av2[m] = 0;
-            
-        if (bMU) 
+        }
+
+        if (bMU)
         {
             /* Copy rvec into double precision local variable */
-            for(m=0; (m<DIM); m++)
+            for (m=0; (m<DIM); m++)
+            {
                 M_av[m]  = mu_t[m];
+            }
         }
-        else 
+        else
         {
             /* Initialise */
-            for(m=0; (m<DIM); m++) 
-                M_av[m] = 0;
-                
-            gmx_rmpbc(gpbc,natom,box,x);
-      
-            /* Begin loop of all molecules in frame */
-            for(n=0; (n<ncos); n++) 
+            for (m=0; (m<DIM); m++)
             {
-                for(i=0; (i<gnx[n]); i++) 
+                M_av[m] = 0;
+            }
+
+            gmx_rmpbc(gpbc,natom,box,x);
+
+            /* Begin loop of all molecules in frame */
+            for (n=0; (n<ncos); n++)
+            {
+                for (i=0; (i<gnx[n]); i++)
                 {
                     int gi,ind0,ind1;
-	  
+
                     ind0  = mols->index[molindex[n][i]];
                     ind1  = mols->index[molindex[n][i]+1];
-	  
+
                     mol_dip(ind0,ind1,x,atom,dipole[i]);
                     gmx_stats_add_point(mulsq,0,norm(dipole[i]),0,0);
                     gmx_stats_add_point(muframelsq,0,norm(dipole[i]),0,0);
-                    if (bSlab) 
+                    if (bSlab)
                         update_slab_dipoles(ind0,ind1,x,
                                             dipole[i],idim,nslices,slab_dipoles,box);
-                    if (bQuad) 
+                    if (bQuad)
                     {
                         mol_quad(ind0,ind1,x,atom,quad);
-                        for(m=0; (m<DIM); m++)
+                        for (m=0; (m<DIM); m++)
+                        {
                             gmx_stats_add_point(Qlsq[m],0,quad[m],0,0);
+                        }
                     }
-                    if (bCorr && !bTotal) 
+                    if (bCorr && !bTotal)
                     {
                         tel3=DIM*teller;
                         muall[i][tel3+XX] = dipole[i][XX];
@@ -938,76 +1077,84 @@ static void do_dip(t_topology *top,int ePBC,real volume,
                         muall[i][tel3+ZZ] = dipole[i][ZZ];
                     }
                     mu_mol = 0.0;
-                    for(m=0; (m<DIM); m++) 
+                    for (m=0; (m<DIM); m++)
                     {
                         M_av[m]  += dipole[i][m];               /* M per frame */
                         mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
                     }
                     mu_mol = sqrt(mu_mol);
-	  
+
                     mu_ave += mu_mol;                         /* calc. the average mu */
-	  
+
                     /* Update the dipole distribution */
                     ibin = (int)(ndipbin*mu_mol/mu_max + 0.5);
                     if (ibin < ndipbin)
+                    {
                         dipole_bin[ibin]++;
-	  
-                    if (fndip3d) 
+                    }
+
+                    if (fndip3d)
                     {
                         rvec2sprvec(dipole[i],dipsp[i]);
-	    
-                        if (dipsp[i][YY] > -M_PI && dipsp[i][YY] < -0.5*M_PI) {
-                            if (dipsp[i][ZZ] < 0.5 * M_PI) 
+
+                        if (dipsp[i][YY] > -M_PI && dipsp[i][YY] < -0.5*M_PI)
+                        {
+                            if (dipsp[i][ZZ] < 0.5 * M_PI)
                             {
                                 ncolour = 1;
-                            } 
-                            else 
+                            }
+                            else
                             {
                                 ncolour = 2;
                             }
                         }
-                        else if (dipsp[i][YY] > -0.5*M_PI && dipsp[i][YY] < 0.0*M_PI) 
+                        else if (dipsp[i][YY] > -0.5*M_PI && dipsp[i][YY] < 0.0*M_PI)
                         {
-                            if (dipsp[i][ZZ] < 0.5 * M_PI) 
+                            if (dipsp[i][ZZ] < 0.5 * M_PI)
                             {
                                 ncolour = 3;
-                            } 
-                            else 
+                            }
+                            else
                             {
                                 ncolour = 4;
-                            }       
-                        }else if (dipsp[i][YY] > 0.0 && dipsp[i][YY] < 0.5*M_PI) {
-                            if (dipsp[i][ZZ] < 0.5 * M_PI) {
-                                ncolour = 5;
-                            } else {
-                                ncolour = 6;
-                            }      
+                            }
                         }
-                        else if (dipsp[i][YY] > 0.5*M_PI && dipsp[i][YY] < M_PI) 
+                        else if (dipsp[i][YY] > 0.0 && dipsp[i][YY] < 0.5*M_PI)
                         {
-                            if (dipsp[i][ZZ] < 0.5 * M_PI) 
+                            if (dipsp[i][ZZ] < 0.5 * M_PI)
+                            {
+                                ncolour = 5;
+                            }
+                            else
+                            {
+                                ncolour = 6;
+                            }
+                        }
+                        else if (dipsp[i][YY] > 0.5*M_PI && dipsp[i][YY] < M_PI)
+                        {
+                            if (dipsp[i][ZZ] < 0.5 * M_PI)
                             {
                                 ncolour = 7;
-                            } 
-                            else 
+                            }
+                            else
                             {
                                 ncolour = 8;
                             }
                         }
                         if (dip3d)
-                            fprintf(dip3d,"set arrow %d from %f, %f, %f to %f, %f, %f lt %d  # %d %d\n", 
+                            fprintf(dip3d,"set arrow %d from %f, %f, %f to %f, %f, %f lt %d  # %d %d\n",
                                     i+1,
                                     x[ind0][XX],
                                     x[ind0][YY],
                                     x[ind0][ZZ],
-                                    x[ind0][XX]+dipole[i][XX]/25, 
-                                    x[ind0][YY]+dipole[i][YY]/25, 
-                                    x[ind0][ZZ]+dipole[i][ZZ]/25, 
+                                    x[ind0][XX]+dipole[i][XX]/25,
+                                    x[ind0][YY]+dipole[i][YY]/25,
+                                    x[ind0][ZZ]+dipole[i][ZZ]/25,
                                     ncolour, ind0, i);
                     }
                 } /* End loop of all molecules in frame */
-	
-                if (dip3d) 
+
+                if (dip3d)
                 {
                     fprintf(dip3d,"set title \"t = %4.3f\"\n",t);
                     fprintf(dip3d,"set xrange [0.0:%4.2f]\n",box[XX][XX]);
@@ -1019,30 +1166,32 @@ static void do_dip(t_topology *top,int ePBC,real volume,
             }
         }
         /* Compute square of total dipole */
-        for(m=0; (m<DIM); m++)
+        for (m=0; (m<DIM); m++)
+        {
             M_av2[m] = M_av[m]*M_av[m];
-    
-        if (cosaver) 
+        }
+
+        if (cosaver)
         {
             compute_avercos(gnx_tot,dipole,&dd,dipaxis,bPairs);
             rms_cos = sqrt(sqr(dipaxis[XX]-0.5)+
                            sqr(dipaxis[YY]-0.5)+
                            sqr(dipaxis[ZZ]-0.5));
-            if (bPairs) 
+            if (bPairs)
                 fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
                         t,dd,rms_cos,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
             else
                 fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
                         t,rms_cos,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
         }
-    
-        if (bGkr) 
+
+        if (bGkr)
         {
             do_gkr(gkrbin,ncos,gnx,molindex,mols->index,x,dipole,ePBC,box,
                    atom,gkatom);
         }
-    
-        if (bTotal) 
+
+        if (bTotal)
         {
             tel3 = DIM*teller;
             muall[0][tel3+XX] = M_av[XX];
@@ -1050,7 +1199,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
             muall[0][tel3+ZZ] = M_av[ZZ];
         }
 
-        /* Write to file the total dipole moment of the box, and its components 
+        /* Write to file the total dipole moment of the box, and its components
          * for this frame.
          */
         if ((skip == 0) || ((teller % skip) == 0))
@@ -1058,7 +1207,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
                     t,M_av[XX],M_av[YY],M_av[ZZ],
                     sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
 
-        for(m=0; (m<DIM); m++) 
+        for (m=0; (m<DIM); m++)
         {
             M[m]  += M_av[m];
             M2[m] += M_av2[m];
@@ -1066,7 +1215,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         }
         /* Increment loop counter */
         teller++;
-    
+
         /* Calculate for output the running averages */
         invtel  = 1.0/teller;
         M2_ave  = (M2[XX]+M2[YY]+M2[ZZ])*invtel;
@@ -1075,25 +1224,29 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 
         /* Compute volume from box in traj, else we use the one from above */
         if (!bMU)
+        {
             volume  = det(box);
+        }
         vol_aver += volume;
-    
+
         epsilon = calc_eps(M_diff,(vol_aver/teller),epsilonRF,temp);
 
         /* Calculate running average for dipole */
-        if (mu_ave != 0) 
-            mu_aver = (mu_ave/gnx_tot)*invtel;
-    
-        if ((skip == 0) || ((teller % skip) == 0)) 
+        if (mu_ave != 0)
         {
-            /* Write to file < |M|^2 >, |< M >|^2. And the difference between 
+            mu_aver = (mu_ave/gnx_tot)*invtel;
+        }
+
+        if ((skip == 0) || ((teller % skip) == 0))
+        {
+            /* Write to file < |M|^2 >, |< M >|^2. And the difference between
              * the two. Here M is sum mu_i. Further write the finite system
              * Kirkwood G factor and epsilon.
              */
             fprintf(outaver,"%10g  %10.3e %10.3e %10.3e %10.3e\n",
                     t,M2_ave,M_ave2,M_diff,M_ave2/M2_ave);
-      
-            if (fnadip) 
+
+            if (fnadip)
             {
                 real aver;
                 gmx_stats_get_average(muframelsq,&aver);
@@ -1101,49 +1254,65 @@ static void do_dip(t_topology *top,int ePBC,real volume,
             }
             /*if (dipole)
               printf("%f %f\n", norm(dipole[0]), norm(dipole[1]));
-            */      
-            if (!bMU || (mu_aver != -1)) 
+            */
+            if (!bMU || (mu_aver != -1))
             {
                 /* Finite system Kirkwood G-factor */
                 Gk = M_diff/(gnx_tot*mu_aver*mu_aver);
                 /* Infinite system Kirkwood G-factor */
-                if (epsilonRF == 0.0) 
+                if (epsilonRF == 0.0)
+                {
                     g_k = ((2*epsilon+1)*Gk/(3*epsilon));
-                else 
+                }
+                else
                     g_k = ((2*epsilonRF+epsilon)*(2*epsilon+1)*
                            Gk/(3*epsilon*(2*epsilonRF+1)));
-	
+
                 fprintf(outeps,"%10g  %10.3e %10.3e %10.3e\n",t,epsilon,Gk,g_k);
 
             }
-            else 
+            else
+            {
                 fprintf(outeps,"%10g  %12.8e\n",t,epsilon);
+            }
         }
         gmx_stats_done(muframelsq);
-    
+
         if (bMU)
-            bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr); 
+        {
+            bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr);
+        }
         else
+        {
             bCont = read_next_x(oenv,status,&t,natom,x,box);
+        }
         timecheck=check_times(t);
-    } while (bCont && (timecheck == 0) );
-  
+    }
+    while (bCont && (timecheck == 0) );
+
     gmx_rmpbc_done(gpbc);
 
     if (!bMU)
+    {
         close_trj(status);
-    
+    }
+
     ffclose(outmtot);
     ffclose(outaver);
     ffclose(outeps);
 
     if (fnadip)
+    {
         ffclose(adip);
+    }
 
     if (cosaver)
+    {
         ffclose(caver);
+    }
 
-    if (dip3d) {
+    if (dip3d)
+    {
         fprintf(dip3d,"set xrange [0.0:%4.2f]\n",box[XX][XX]);
         fprintf(dip3d,"set yrange [0.0:%4.2f]\n",box[YY][YY]);
         fprintf(dip3d,"set zrange [0.0:%4.2f]\n\n",box[ZZ][ZZ]);
@@ -1152,26 +1321,31 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         ffclose(dip3d);
     }
 
-    if (bSlab) {
+    if (bSlab)
+    {
         dump_slab_dipoles(slabfn,idim,nslices,slab_dipoles,box,teller,oenv);
         sfree(slab_dipoles);
     }
-  
+
     vol_aver /= teller;
     printf("Average volume over run is %g\n",vol_aver);
-    if (bGkr) {
+    if (bGkr)
+    {
         print_gkrbin(gkrfn,gkrbin,gnx[0],teller,vol_aver,oenv);
         print_cmap(cmap,gkrbin,nlevels);
     }
-    /* Autocorrelation function */  
-    if (bCorr) {
-        if (teller < 2) {
+    /* Autocorrelation function */
+    if (bCorr)
+    {
+        if (teller < 2)
+        {
             printf("Not enough frames for autocorrelation\n");
         }
-        else {
+        else
+        {
             dt=(t1 - t0)/(teller-1);
             printf("t0 %g, t %g, teller %d\n", t0,t,teller);
-      
+
             mode = eacVector;
 
             if (bTotal)
@@ -1183,7 +1357,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
                             mode,strcmp(corrtype,"molsep"));
         }
     }
-    if (!bMU) {
+    if (!bMU)
+    {
         real aver,sigma,error,lsq;
 
         gmx_stats_get_ase(mulsq,&aver,&sigma,&error);
@@ -1191,12 +1366,15 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         printf("---------------------\n");
         printf("Average  = %8.4f  Std. Dev. = %8.4f  Error = %8.4f\n",
                aver,sigma,error);
-        if (bQuad) {
+        if (bQuad)
+        {
             rvec a,s,e;
             int mm;
-            for(m=0; (m<DIM); m++)
+            for (m=0; (m<DIM); m++)
+            {
                 gmx_stats_get_ase(mulsq,&(a[m]),&(s[m]),&(e[m]));
-    
+            }
+
             printf("\nQuadrupole moment (Debye-Ang)\n");
             printf("-----------------------------\n");
             printf("Averages  = %8.4f  %8.4f  %8.4f\n",a[XX],a[YY],a[ZZ]);
@@ -1218,25 +1396,29 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     printf(" Total |< M >|^2 = %g Debye^2\n\n", M_ave2);
 
     printf(" < |M|^2 > - |< M >|^2 = %g Debye^2\n\n", M_diff);
-  
-    if (!bMU || (mu_aver != -1)) {
+
+    if (!bMU || (mu_aver != -1))
+    {
         printf("Finite system Kirkwood g factor G_k = %g\n", Gk);
         printf("Infinite system Kirkwood g factor g_k = %g\n\n", g_k);
     }
     printf("Epsilon = %g\n", epsilon);
 
-    if (!bMU) {
+    if (!bMU)
+    {
         /* Write to file the dipole moment distibution during the simulation.
          */
         outdd=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","",oenv);
-        for(i=0; (i<ndipbin); i++)
+        for (i=0; (i<ndipbin); i++)
             fprintf(outdd,"%10g  %10f\n",
                     (i*mu_max)/ndipbin,dipole_bin[i]/(double)teller);
         ffclose(outdd);
         sfree(dipole_bin);
     }
-    if (bGkr) 
+    if (bGkr)
+    {
         done_gkrbin(&gkrbin);
+    }
 }
 
 void dipole_atom2molindex(int *n,int *index,t_block *mols)
@@ -1245,15 +1427,23 @@ void dipole_atom2molindex(int *n,int *index,t_block *mols)
 
     nmol = 0;
     i=0;
-    while (i < *n) {
+    while (i < *n)
+    {
         m=0;
-        while(m < mols->nr && index[i] != mols->index[m])
+        while (m < mols->nr && index[i] != mols->index[m])
+        {
             m++;
+        }
         if (m == mols->nr)
+        {
             gmx_fatal(FARGS,"index[%d]=%d does not correspond to the first atom of a molecule",i+1,index[i]+1);
-        for(j=mols->index[m]; j<mols->index[m+1]; j++) {
+        }
+        for (j=mols->index[m]; j<mols->index[m+1]; j++)
+        {
             if (i >= *n || index[i] != j)
+            {
                 gmx_fatal(FARGS,"The index group is not a set of whole molecules");
+            }
             i++;
         }
         /* Modify the index in place */
@@ -1265,7 +1455,8 @@ void dipole_atom2molindex(int *n,int *index,t_block *mols)
 }
 int gmx_dipoles(int argc,char *argv[])
 {
-    const char *desc[] = {
+    const char *desc[] =
+    {
         "[TT]g_dipoles[tt] computes the total dipole plus fluctuations of a simulation",
         "system. From this you can compute e.g. the dielectric constant for",
         "low-dielectric media.",
@@ -1305,52 +1496,86 @@ int gmx_dipoles(int argc,char *argv[])
     real mu_max=5, mu_aver=-1,rcmax=0;
     real epsilonRF=0.0, temp=300;
     gmx_bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
-    const char *corrtype[]={NULL, "none", "mol", "molsep", "total", NULL};
+    const char *corrtype[]= {NULL, "none", "mol", "molsep", "total", NULL};
     const char *axtitle="Z";
     int  nslices = 10;      /* nr of slices defined       */
     int  skip=0,nFA=0,nFB=0,ncos=1;
     int  nlevels=20,ndegrees=90;
     output_env_t oenv;
-    t_pargs pa[] = {
-        { "-mu",       FALSE, etREAL, {&mu_aver},
-          "dipole of a single molecule (in Debye)" },
-        { "-mumax",    FALSE, etREAL, {&mu_max},
-          "max dipole in Debye (for histogram)" },
-        { "-epsilonRF",FALSE, etREAL, {&epsilonRF},
-          "[GRK]epsilon[grk] of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
-        { "-skip",     FALSE, etINT, {&skip},
-          "Skip steps in the output (but not in the computations)" },
-        { "-temp",     FALSE, etREAL, {&temp},
-          "Average temperature of the simulation (needed for dielectric constant calculation)" },
-        { "-corr",     FALSE, etENUM, {corrtype},
-          "Correlation function to calculate" },
-        { "-pairs",    FALSE, etBOOL, {&bPairs},
-          "Calculate [MAG][COS][GRK]theta[grk][cos][mag] between all pairs of molecules. May be slow" },
-        { "-ncos",     FALSE, etINT, {&ncos},
-          "Must be 1 or 2. Determines whether the [CHEVRON][COS][GRK]theta[grk][cos][chevron] is computed between all molecules in one group, or between molecules in two different groups. This turns on the [TT]-g[tt] flag." },
-        { "-axis",     FALSE, etSTR, {&axtitle}, 
-          "Take the normal on the computational box in direction X, Y or Z." },
-        { "-sl",       FALSE, etINT, {&nslices},
-          "Divide the box into this number of slices." },
-        { "-gkratom",  FALSE, etINT, {&nFA},
-          "Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors" },
-        { "-gkratom2", FALSE, etINT, {&nFB},
-          "Same as previous option in case ncos = 2, i.e. dipole interaction between two groups of molecules" },
-        { "-rcmax",    FALSE, etREAL, {&rcmax},
-          "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterion based on the box length will be used." },
-        { "-phi",      FALSE, etBOOL, {&bPhi},
-          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [TT].xpm[tt] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
-        { "-nlevels",  FALSE, etINT, {&nlevels},
-          "Number of colors in the cmap output" },
-        { "-ndegrees", FALSE, etINT, {&ndegrees},
-          "Number of divisions on the [IT]y[it]-axis in the cmap output (for 180 degrees)" }
+    t_pargs pa[] =
+    {
+        {
+            "-mu",       FALSE, etREAL, {&mu_aver},
+            "dipole of a single molecule (in Debye)"
+        },
+        {
+            "-mumax",    FALSE, etREAL, {&mu_max},
+            "max dipole in Debye (for histogram)"
+        },
+        {
+            "-epsilonRF",FALSE, etREAL, {&epsilonRF},
+            "[GRK]epsilon[grk] of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)"
+        },
+        {
+            "-skip",     FALSE, etINT, {&skip},
+            "Skip steps in the output (but not in the computations)"
+        },
+        {
+            "-temp",     FALSE, etREAL, {&temp},
+            "Average temperature of the simulation (needed for dielectric constant calculation)"
+        },
+        {
+            "-corr",     FALSE, etENUM, {corrtype},
+            "Correlation function to calculate"
+        },
+        {
+            "-pairs",    FALSE, etBOOL, {&bPairs},
+            "Calculate [MAG][COS][GRK]theta[grk][cos][mag] between all pairs of molecules. May be slow"
+        },
+        {
+            "-ncos",     FALSE, etINT, {&ncos},
+            "Must be 1 or 2. Determines whether the [CHEVRON][COS][GRK]theta[grk][cos][chevron] is computed between all molecules in one group, or between molecules in two different groups. This turns on the [TT]-g[tt] flag."
+        },
+        {
+            "-axis",     FALSE, etSTR, {&axtitle},
+            "Take the normal on the computational box in direction X, Y or Z."
+        },
+        {
+            "-sl",       FALSE, etINT, {&nslices},
+            "Divide the box into this number of slices."
+        },
+        {
+            "-gkratom",  FALSE, etINT, {&nFA},
+            "Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors"
+        },
+        {
+            "-gkratom2", FALSE, etINT, {&nFB},
+            "Same as previous option in case ncos = 2, i.e. dipole interaction between two groups of molecules"
+        },
+        {
+            "-rcmax",    FALSE, etREAL, {&rcmax},
+            "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterion based on the box length will be used."
+        },
+        {
+            "-phi",      FALSE, etBOOL, {&bPhi},
+            "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [TT].xpm[tt] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted."
+        },
+        {
+            "-nlevels",  FALSE, etINT, {&nlevels},
+            "Number of colors in the cmap output"
+        },
+        {
+            "-ndegrees", FALSE, etINT, {&ndegrees},
+            "Number of divisions on the [IT]y[it]-axis in the cmap output (for 180 degrees)"
+        }
     };
     int          *gnx;
     int          nFF[2];
     atom_id      **grpindex;
     char         **grpname=NULL;
-    gmx_bool     bCorr,bQuad,bGkr,bMU,bSlab;  
-    t_filenm fnm[] = {
+    gmx_bool     bCorr,bQuad,bGkr,bMU,bSlab;
+    t_filenm fnm[] =
+    {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
         { efTPX, NULL, NULL,           ffREAD },
@@ -1375,42 +1600,52 @@ int gmx_dipoles(int argc,char *argv[])
     int     ePBC;
     int     k,natoms;
     matrix  box;
-  
+
     CopyRight(stderr,argv[0]);
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs,pa);
     parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
                       NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
 
-    printf("Using %g as mu_max and %g as the dipole moment.\n", 
+    printf("Using %g as mu_max and %g as the dipole moment.\n",
            mu_max,mu_aver);
     if (epsilonRF == 0.0)
+    {
         printf("WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
+    }
 
     bMU   = opt2bSet("-en",NFILE,fnm);
     if (bMU)
+    {
         gmx_fatal(FARGS,"Due to new ways of treating molecules in GROMACS the total dipole in the energy file may be incorrect, because molecules can be split over periodic boundary conditions before computing the dipole. Please use your trajectory file.");
+    }
     bQuad = opt2bSet("-q",NFILE,fnm);
     bGkr  = opt2bSet("-g",NFILE,fnm);
-    if (opt2parg_bSet("-ncos",asize(pa),pa)) {
-        if ((ncos != 1) && (ncos != 2)) 
+    if (opt2parg_bSet("-ncos",asize(pa),pa))
+    {
+        if ((ncos != 1) && (ncos != 2))
+        {
             gmx_fatal(FARGS,"ncos has to be either 1 or 2");
+        }
         bGkr = TRUE;
     }
     bSlab = (opt2bSet("-slab",NFILE,fnm) || opt2parg_bSet("-sl",asize(pa),pa) ||
              opt2parg_bSet("-axis",asize(pa),pa));
-    if (bMU) {
+    if (bMU)
+    {
         bAverCorr = TRUE;
-        if (bQuad) {
+        if (bQuad)
+        {
             printf("WARNING: Can not determine quadrupoles from energy file\n");
             bQuad = FALSE;
         }
-        if (bGkr) {
+        if (bGkr)
+        {
             printf("WARNING: Can not determine Gk(r) from energy file\n");
             bGkr  = FALSE;
             ncos = 1;
         }
-        if (mu_aver == -1) 
+        if (mu_aver == -1)
             printf("WARNING: Can not calculate Gk and gk, since you did\n"
                    "         not enter a valid dipole for the molecules\n");
     }
@@ -1418,13 +1653,13 @@ int gmx_dipoles(int argc,char *argv[])
     snew(top,1);
     ePBC = read_tpx_top(ftp2fn(efTPX,NFILE,fnm),NULL,box,
                         &natoms,NULL,NULL,NULL,top);
-  
+
     snew(gnx,ncos);
     snew(grpname,ncos);
     snew(grpindex,ncos);
     get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
               ncos,gnx,grpindex,grpname);
-    for(k=0; (k<ncos); k++) 
+    for (k=0; (k<ncos); k++)
     {
         dipole_atom2molindex(&gnx[k],grpindex[k],&(top->mols));
         neutralize_mols(gnx[k],grpindex[k],&(top->mols),top->atoms.atom);
@@ -1446,7 +1681,7 @@ int gmx_dipoles(int argc,char *argv[])
            bMU,     opt2fn("-en",NFILE,fnm),
            gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFF,skip,
            bSlab,nslices,axtitle,opt2fn("-slab",NFILE,fnm),oenv);
-  
+
     do_view(oenv,opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
     do_view(oenv,opt2fn("-eps",NFILE,fnm),"-autoscale xy -nxy");
     do_view(oenv,opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
@@ -1454,6 +1689,6 @@ int gmx_dipoles(int argc,char *argv[])
     do_view(oenv,opt2fn("-c",NFILE,fnm),"-autoscale xy");
 
     thanx(stderr);
-  
+
     return 0;
 }

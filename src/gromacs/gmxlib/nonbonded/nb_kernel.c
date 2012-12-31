@@ -79,11 +79,11 @@ nb_kernel_list_hash_init(void)
     kernel_list_hash_size   = kernel_list_size*5;
     snew(kernel_list_hash,kernel_list_hash_size);
 
-    for(i=0;i<kernel_list_hash_size;i++)
+    for (i=0; i<kernel_list_hash_size; i++)
     {
         kernel_list_hash[i] = -1;
     }
-    for(i=0;i<kernel_list_size;i++)
+    for (i=0; i<kernel_list_size; i++)
     {
         index=nb_kernel_hash_func(kernel_list[i].architecture,
                                   kernel_list[i].electrostatics,
@@ -95,7 +95,7 @@ nb_kernel_list_hash_init(void)
                                   kernel_list[i].vf) % kernel_list_hash_size;
 
         /* Check for collisions and advance if necessary */
-        while( kernel_list_hash[index] != -1 )
+        while ( kernel_list_hash[index] != -1 )
         {
             index = (index+1) % kernel_list_hash_size;
         }
@@ -129,7 +129,7 @@ nb_kernel_list_findkernel(FILE *              log,
     unsigned int        index;
     nb_kernel_info_t *  kernelinfo_ptr;
 
-    if(kernel_list_hash_size==0)
+    if (kernel_list_hash_size==0)
     {
         return NULL;
     }
@@ -144,16 +144,16 @@ nb_kernel_list_findkernel(FILE *              log,
                               vf) % kernel_list_hash_size;
 
     kernelinfo_ptr = NULL;
-    while( (i=kernel_list_hash[index]) != -1)
+    while ( (i=kernel_list_hash[index]) != -1)
     {
-        if(!gmx_strcasecmp_min(kernel_list[i].architecture,arch) &&
-           !gmx_strcasecmp_min(kernel_list[i].electrostatics,electrostatics) &&
-           !gmx_strcasecmp_min(kernel_list[i].electrostatics_modifier,electrostatics_modifier) &&
-           !gmx_strcasecmp_min(kernel_list[i].vdw,vdw) &&
-           !gmx_strcasecmp_min(kernel_list[i].vdw_modifier,vdw_modifier) &&
-           !gmx_strcasecmp_min(kernel_list[i].geometry,geometry) &&
-           !gmx_strcasecmp_min(kernel_list[i].other,other) &&
-           !gmx_strcasecmp_min(kernel_list[i].vf,vf))
+        if (!gmx_strcasecmp_min(kernel_list[i].architecture,arch) &&
+            !gmx_strcasecmp_min(kernel_list[i].electrostatics,electrostatics) &&
+            !gmx_strcasecmp_min(kernel_list[i].electrostatics_modifier,electrostatics_modifier) &&
+            !gmx_strcasecmp_min(kernel_list[i].vdw,vdw) &&
+            !gmx_strcasecmp_min(kernel_list[i].vdw_modifier,vdw_modifier) &&
+            !gmx_strcasecmp_min(kernel_list[i].geometry,geometry) &&
+            !gmx_strcasecmp_min(kernel_list[i].other,other) &&
+            !gmx_strcasecmp_min(kernel_list[i].vf,vf))
         {
             kernelinfo_ptr = kernel_list+i;
             break;
@@ -161,7 +161,7 @@ nb_kernel_list_findkernel(FILE *              log,
         index = (index+1) % kernel_list_hash_size;
     }
 
-    if(log && kernelinfo_ptr!=NULL)
+    if (log && kernelinfo_ptr!=NULL)
     {
         fprintf(log,
                 "NB kernel %s() with architecture '%s' used for neighborlist with\n"

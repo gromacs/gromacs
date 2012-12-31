@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -62,7 +62,7 @@ files.
 /* and in Windows, we do SwitchToThread() alternated with Sleep(0). This
    is apparently recommende practice (SwitchToThread() alone just gives
    up the slice for threads on the current core, and Sleep(0) alone could
-   lead to starvation. This mixed approach actually gives better real-world 
+   lead to starvation. This mixed approach actually gives better real-world
    performance in the test program.*/
 /* the data associated with waiting. */
 #define TMPI_YIELD_WAIT_DATA  int yield_wait_counter;
@@ -87,9 +87,9 @@ files.
 #else /* !TMPI_WAIT_FOR_NO_ONE */
 
 /* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA 
+#define TMPI_YIELD_WAIT_DATA
 /* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data) 
+#define TMPI_YIELD_WAIT_DATA_INIT(data)
 
 /* the waiting macro */
 #define TMPI_YIELD_WAIT(data)  tMPI_Atomic_memory_barrier()

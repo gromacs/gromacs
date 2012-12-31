@@ -10,16 +10,16 @@
  * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
  * a full list of developers and information, check out http://www.gromacs.org
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option) any
  * later version.
  * As a special exception, you may use this file as part of a free software
  * library without restriction.  Specifically, if other files instantiate
  * templates or use macros or inline functions from this file, or you compile
  * this file and link it with other files to produce an executable, this
  * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * the GNU Lesser General Public License.
  *
  * In plain-speak: do not worry about classes/macros/templates either - only
  * changes to the library have to be LGPL, not an application linking with it.
@@ -60,7 +60,7 @@
 
 
 
-typedef struct 
+typedef struct
 {
     int *      jindex_gb;
     int **     prologue_mask_gb;
@@ -73,17 +73,17 @@ typedef struct
     real *     y_align;
     real *     z_align;
     real *     fx_align;
-	real *     fy_align;
-	real *     fz_align;	    
-} 
+    real *     fy_align;
+    real *     fz_align;
+}
 gmx_allvsallgb2_data_t;
 
 
-static int 
+static int
 calc_maxoffset(int i,int natoms)
 {
     int maxoffset;
-    
+
     if ((natoms % 2) == 1)
     {
         /* Odd number of atoms, easy */
@@ -127,7 +127,7 @@ calc_maxoffset(int i,int natoms)
             maxoffset=natoms/2-1;
         }
     }
-    
+
     return maxoffset;
 }
 
@@ -150,10 +150,10 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
     int firstinteraction;
     int ibase;
     int  *pi;
-    
+
     /* This routine can appear to be a bit complex, but it is mostly book-keeping.
      * To enable the fast all-vs-all kernel we need to be able to stream through all coordinates
-     * whether they should interact or not. 
+     * whether they should interact or not.
      *
      * To avoid looping over the exclusions, we create a simple mask that is 1 if the interaction
      * should be present, otherwise 0. Since exclusions typically only occur when i & j are close,
@@ -161,122 +161,122 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
      * which we need to check exclusions, and the end point.
      * This way we only have to allocate a short exclusion mask per i atom.
      */
-    
+
     ni0 = (start/UNROLLI)*UNROLLI;
     ni1 = ((end+UNROLLI-1)/UNROLLI)*UNROLLI;
-    
+
     /* Set the interaction mask to only enable the i atoms we want to include */
     snew(pi,natoms+UNROLLI+2*SIMD_WIDTH);
     aadata->imask = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
-    for(i=0;i<natoms+UNROLLI;i++)
+    for (i=0; i<natoms+UNROLLI; i++)
     {
         aadata->imask[i] = (i>=start && i<end) ? 0xFFFFFFFF : 0;
     }
-    
+
     /* Allocate memory for our modified jindex array */
     snew(aadata->jindex_gb,4*(natoms+UNROLLI));
-    for(i=0;i<4*(natoms+UNROLLI);i++)
+    for (i=0; i<4*(natoms+UNROLLI); i++)
     {
         aadata->jindex_gb[i] = 0;
     }
-    
+
     /* Create the exclusion masks for the prologue part */
-	snew(aadata->prologue_mask_gb,natoms+UNROLLI); /* list of pointers */
-	
+    snew(aadata->prologue_mask_gb,natoms+UNROLLI); /* list of pointers */
+
     /* First zero everything to avoid uninitialized data */
-    for(i=0;i<natoms+UNROLLI;i++)
+    for (i=0; i<natoms+UNROLLI; i++)
     {
         aadata->prologue_mask_gb[i] = NULL;
     }
-    
+
     /* Calculate the largest exclusion range we need for each UNROLLI-tuplet of i atoms. */
-    for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
-	{
+    for (ibase=ni0; ibase<ni1; ibase+=UNROLLI)
+    {
         max_excl_offset = -1;
-        
+
         /* First find maxoffset for the next 4 atoms (or fewer if we are close to end) */
         imax = ((ibase+UNROLLI) < end) ? (ibase+UNROLLI) : end;
-        
+
         /* Which atom is the first we (might) interact with? */
         imin = natoms; /* Guaranteed to be overwritten by one of 'firstinteraction' */
-        for(i=ibase;i<imax;i++)
+        for (i=ibase; i<imax; i++)
         {
             /* Before exclusions, which atom is the first we (might) interact with? */
             firstinteraction = i+1;
             max_offset = calc_maxoffset(i,natoms);
 
-            if(!bInclude12)
+            if (!bInclude12)
             {
-                for(j=0;j<ilist[F_GB12].nr;j+=3)
+                for (j=0; j<ilist[F_GB12].nr; j+=3)
                 {
                     a1 = ilist[F_GB12].iatoms[j+1];
                     a2 = ilist[F_GB12].iatoms[j+2];
 
-                    if(a1==i)
+                    if (a1==i)
                     {
                         k = a2;
                     }
-                    else if(a2==i)
+                    else if (a2==i)
                     {
                         k = a1;
                     }
-                    else 
+                    else
                     {
                         continue;
                     }
 
-                    if(k==firstinteraction)
+                    if (k==firstinteraction)
                     {
                         firstinteraction++;
                     }
                 }
             }
-            if(!bInclude13)
+            if (!bInclude13)
             {
-                for(j=0;j<ilist[F_GB13].nr;j+=3)
+                for (j=0; j<ilist[F_GB13].nr; j+=3)
                 {
                     a1 = ilist[F_GB13].iatoms[j+1];
                     a2 = ilist[F_GB13].iatoms[j+2];
-                    
-                    if(a1==i)
+
+                    if (a1==i)
                     {
                         k = a2;
                     }
-                    else if(a2==i)
+                    else if (a2==i)
                     {
                         k = a1;
                     }
-                    else 
+                    else
                     {
                         continue;
                     }
-                    
-                    if(k==firstinteraction)
+
+                    if (k==firstinteraction)
                     {
                         firstinteraction++;
                     }
                 }
             }
-            if(!bInclude14)
+            if (!bInclude14)
             {
-                for(j=0;j<ilist[F_GB14].nr;j+=3)
+                for (j=0; j<ilist[F_GB14].nr; j+=3)
                 {
                     a1 = ilist[F_GB14].iatoms[j+1];
                     a2 = ilist[F_GB14].iatoms[j+2];
-                    if(a1==i)
+                    if (a1==i)
                     {
                         k = a2;
                     }
-                    else if(a2==i)
+                    else if (a2==i)
                     {
                         k = a1;
                     }
-                    else 
+                    else
                     {
                         continue;
                     }
-                    
-                    if(k==firstinteraction)
+
+                    if (k==firstinteraction)
                     {
                         firstinteraction++;
                     }
@@ -287,121 +287,121 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
         /* round down to j unrolling factor */
         imin = (imin/UNROLLJ)*UNROLLJ;
 
-        for(i=ibase;i<imax;i++)
+        for (i=ibase; i<imax; i++)
         {
             max_offset = calc_maxoffset(i,natoms);
-            
-            if(!bInclude12)
+
+            if (!bInclude12)
             {
-                for(j=0;j<ilist[F_GB12].nr;j+=3)
+                for (j=0; j<ilist[F_GB12].nr; j+=3)
                 {
                     a1 = ilist[F_GB12].iatoms[j+1];
                     a2 = ilist[F_GB12].iatoms[j+2];
-                    
-                    if(a1==i)
+
+                    if (a1==i)
                     {
                         k = a2;
                     }
-                    else if(a2==i)
+                    else if (a2==i)
                     {
                         k = a1;
                     }
-                    else 
+                    else
                     {
                         continue;
                     }
-                    
-                    if(k<imin)
+
+                    if (k<imin)
                     {
                         k += natoms;
                     }
-                    
-                    if(k>i+max_offset)
+
+                    if (k>i+max_offset)
                     {
                         continue;
                     }
-                    
+
                     k = k - imin;
-                    
-                    if( k+natoms <= max_offset )
+
+                    if ( k+natoms <= max_offset )
                     {
                         k+=natoms;
                     }
                     max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
                 }
             }
-            if(!bInclude13)
+            if (!bInclude13)
             {
-                for(j=0;j<ilist[F_GB13].nr;j+=3)
+                for (j=0; j<ilist[F_GB13].nr; j+=3)
                 {
                     a1 = ilist[F_GB13].iatoms[j+1];
                     a2 = ilist[F_GB13].iatoms[j+2];
-                    
-                    if(a1==i)
+
+                    if (a1==i)
                     {
                         k = a2;
                     }
-                    else if(a2==i)
+                    else if (a2==i)
                     {
                         k = a1;
                     }
-                    else 
+                    else
                     {
                         continue;
                     }
-                    
-                    if(k<imin)
+
+                    if (k<imin)
                     {
                         k += natoms;
                     }
-                    
-                    if(k>i+max_offset)
+
+                    if (k>i+max_offset)
                     {
                         continue;
                     }
-                    
+
                     k = k - imin;
-                    
-                    if( k+natoms <= max_offset )
+
+                    if ( k+natoms <= max_offset )
                     {
                         k+=natoms;
                     }
                     max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
                 }
             }
-            if(!bInclude14)
+            if (!bInclude14)
             {
-                for(j=0;j<ilist[F_GB14].nr;j+=3)
+                for (j=0; j<ilist[F_GB14].nr; j+=3)
                 {
                     a1 = ilist[F_GB14].iatoms[j+1];
                     a2 = ilist[F_GB14].iatoms[j+2];
 
-                    if(a1==i)
+                    if (a1==i)
                     {
                         k = a2;
                     }
-                    else if(a2==i)
+                    else if (a2==i)
                     {
                         k = a1;
                     }
-                    else 
+                    else
                     {
                         continue;
                     }
-                    
-                    if(k<imin)
+
+                    if (k<imin)
                     {
                         k += natoms;
                     }
-                    
-                    if(k>i+max_offset)
+
+                    if (k>i+max_offset)
                     {
                         continue;
                     }
-                    
+
                     k = k - imin;
-                    
-                    if( k+natoms <= max_offset )
+
+                    if ( k+natoms <= max_offset )
                     {
                         k+=natoms;
                     }
@@ -414,35 +414,35 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
         max_excl_offset++;
         /* round up to j unrolling factor */
         max_excl_offset = (max_excl_offset/UNROLLJ+1)*UNROLLJ;
-        
+
         /* Set all the prologue masks length to this value (even for i>end) */
-        for(i=ibase;i<ibase+UNROLLI;i++)
+        for (i=ibase; i<ibase+UNROLLI; i++)
         {
             aadata->jindex_gb[4*i]   = imin;
             aadata->jindex_gb[4*i+1] = imin+max_excl_offset;
-        }        
+        }
     }
-     
+
     /* Now the hard part, loop over it all again to calculate the actual contents of the prologue masks */
-    for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
-    {      
-        for(i=ibase;i<ibase+UNROLLI;i++)
+    for (ibase=ni0; ibase<ni1; ibase+=UNROLLI)
+    {
+        for (i=ibase; i<ibase+UNROLLI; i++)
         {
             nj = aadata->jindex_gb[4*i+1] - aadata->jindex_gb[4*i];
             imin = aadata->jindex_gb[4*i];
-            
+
             /* Allocate aligned memory */
             snew(pi,nj+2*SIMD_WIDTH);
             aadata->prologue_mask_gb[i] = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
-            
+
             max_offset = calc_maxoffset(i,natoms);
-            
+
             /* Include interactions i+1 <= j < i+maxoffset */
-            for(k=0;k<nj;k++)
+            for (k=0; k<nj; k++)
             {
                 j = imin + k;
-                
-                if( (j>i) && (j<=i+max_offset) )
+
+                if ( (j>i) && (j<=i+max_offset) )
                 {
                     aadata->prologue_mask_gb[i][k] = 0xFFFFFFFF;
                 }
@@ -451,120 +451,120 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                     aadata->prologue_mask_gb[i][k] = 0;
                 }
             }
-            
+
             /* Clear out the explicit exclusions */
-            if(i<end)
+            if (i<end)
             {
-                if(!bInclude12)
+                if (!bInclude12)
                 {
-                    for(j=0;j<ilist[F_GB12].nr;j+=3)
+                    for (j=0; j<ilist[F_GB12].nr; j+=3)
                     {
                         a1 = ilist[F_GB12].iatoms[j+1];
                         a2 = ilist[F_GB12].iatoms[j+2];
-                        
-                        if(a1==i)
+
+                        if (a1==i)
                         {
                             k = a2;
                         }
-                        else if(a2==i)
+                        else if (a2==i)
                         {
                             k = a1;
                         }
-                        else 
+                        else
                         {
                             continue;
                         }
-                        
-                        if(k>i+max_offset)
+
+                        if (k>i+max_offset)
                         {
                             continue;
                         }
                         k = k-i;
-                        
-                        if( k+natoms <= max_offset )
+
+                        if ( k+natoms <= max_offset )
                         {
                             k+=natoms;
                         }
-                        
+
                         k = k+i-imin;
-                        if(k>=0)
-                        {                        
+                        if (k>=0)
+                        {
                             aadata->prologue_mask_gb[i][k] = 0;
                         }
                     }
                 }
-                if(!bInclude13)
+                if (!bInclude13)
                 {
-                    for(j=0;j<ilist[F_GB13].nr;j+=3)
+                    for (j=0; j<ilist[F_GB13].nr; j+=3)
                     {
                         a1 = ilist[F_GB13].iatoms[j+1];
                         a2 = ilist[F_GB13].iatoms[j+2];
- 
-                        if(a1==i)
+
+                        if (a1==i)
                         {
                             k = a2;
                         }
-                        else if(a2==i)
+                        else if (a2==i)
                         {
                             k = a1;
                         }
-                        else 
+                        else
                         {
                             continue;
                         }
-                        
-                        if(k>i+max_offset)
+
+                        if (k>i+max_offset)
                         {
                             continue;
                         }
                         k = k-i;
-                        
-                        if( k+natoms <= max_offset )
+
+                        if ( k+natoms <= max_offset )
                         {
                             k+=natoms;
                         }
-                        
+
                         k = k+i-imin;
-                        if(k>=0)
-                        {                        
+                        if (k>=0)
+                        {
                             aadata->prologue_mask_gb[i][k] = 0;
                         }
                     }
                 }
-                if(!bInclude14)
+                if (!bInclude14)
                 {
-                    for(j=0;j<ilist[F_GB14].nr;j+=3)
+                    for (j=0; j<ilist[F_GB14].nr; j+=3)
                     {
                         a1 = ilist[F_GB14].iatoms[j+1];
                         a2 = ilist[F_GB14].iatoms[j+2];
 
-                        if(a1==i)
+                        if (a1==i)
                         {
                             k = a2;
                         }
-                        else if(a2==i)
+                        else if (a2==i)
                         {
                             k = a1;
                         }
-                        else 
+                        else
                         {
                             continue;
                         }
-                        
-                        if(k>i+max_offset)
+
+                        if (k>i+max_offset)
                         {
                             continue;
                         }
                         k = k-i;
-                        
-                        if( k+natoms <= max_offset )
+
+                        if ( k+natoms <= max_offset )
                         {
                             k+=natoms;
                         }
-                        
+
                         k = k+i-imin;
-                        if(k>=0)
-                        {                        
+                        if (k>=0)
+                        {
                             aadata->prologue_mask_gb[i][k] = 0;
                         }
                     }
@@ -572,34 +572,34 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
             }
         }
     }
-    
+
     /* Construct the epilogue mask - this just contains the check for maxoffset */
     snew(aadata->epilogue_mask,natoms+UNROLLI);
-    
+
     /* First zero everything to avoid uninitialized data */
-    for(i=0;i<natoms+UNROLLI;i++)
+    for (i=0; i<natoms+UNROLLI; i++)
     {
         aadata->jindex_gb[4*i+2]    = aadata->jindex_gb[4*i+1];
         aadata->jindex_gb[4*i+3]    = aadata->jindex_gb[4*i+1];
         aadata->epilogue_mask[i] = NULL;
     }
-    
-    for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
-    {      
+
+    for (ibase=ni0; ibase<ni1; ibase+=UNROLLI)
+    {
         /* Find the lowest index for which we need to use the epilogue */
         imin = ibase;
         max_offset = calc_maxoffset(imin,natoms);
 
         imin = imin + 1 + max_offset;
-        
+
         /* Find largest index for which we need to use the epilogue */
         imax = ibase + UNROLLI-1;
-        imax = (imax < end) ? imax : end; 
-        
+        imax = (imax < end) ? imax : end;
+
         max_offset = calc_maxoffset(imax,natoms);
         imax = imax + 1 + max_offset + UNROLLJ - 1;
-        
-        for(i=ibase;i<ibase+UNROLLI;i++)
+
+        for (i=ibase; i<ibase+UNROLLI; i++)
         {
             /* Start of epilogue - round down to j tile limit */
             aadata->jindex_gb[4*i+2] = (imin/UNROLLJ)*UNROLLJ;
@@ -611,23 +611,23 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
             aadata->jindex_gb[4*i+3] = (aadata->jindex_gb[4*i+2] > aadata->jindex_gb[4*i+3]) ? aadata->jindex_gb[4*i+2] : aadata->jindex_gb[4*i+3];
         }
     }
-    
+
     /* And fill it with data... */
-    
-    for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
+
+    for (ibase=ni0; ibase<ni1; ibase+=UNROLLI)
     {
-        for(i=ibase;i<ibase+UNROLLI;i++)
+        for (i=ibase; i<ibase+UNROLLI; i++)
         {
-            
+
             nj = aadata->jindex_gb[4*i+3] - aadata->jindex_gb[4*i+2];
-            
+
             /* Allocate aligned memory */
             snew(pi,nj+2*SIMD_WIDTH);
             aadata->epilogue_mask[i] = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
-            
+
             max_offset = calc_maxoffset(i,natoms);
-            
-            for(k=0;k<nj;k++)
+
+            for (k=0; k<nj; k++)
             {
                 j = aadata->jindex_gb[4*i+2] + k;
                 aadata->epilogue_mask[i][k] = (j <= i+max_offset) ? 0xFFFFFFFF : 0;
@@ -648,68 +648,68 @@ genborn_allvsall_setup(gmx_allvsallgb2_data_t **  p_aadata,
                        gmx_bool                       bInclude13,
                        gmx_bool                       bInclude14)
 {
-	int i,j,idx;
+    int i,j,idx;
     int natoms;
-	gmx_allvsallgb2_data_t *aadata;
+    gmx_allvsallgb2_data_t *aadata;
     real *p;
-    
+
     natoms = mdatoms->nr;
-    
-	snew(aadata,1);
-	*p_aadata = aadata;
-    
-	snew(p,2*natoms+2*SIMD_WIDTH);
-	aadata->x_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-	snew(p,2*natoms+2*SIMD_WIDTH);
-	aadata->y_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-	snew(p,2*natoms+2*SIMD_WIDTH);
-	aadata->z_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-	snew(p,2*natoms+2*SIMD_WIDTH);
-	aadata->fx_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-	snew(p,2*natoms+2*SIMD_WIDTH);
-	aadata->fy_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-	snew(p,2*natoms+2*SIMD_WIDTH);
-	aadata->fz_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
+
+    snew(aadata,1);
+    *p_aadata = aadata;
+
+    snew(p,2*natoms+2*SIMD_WIDTH);
+    aadata->x_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
+    snew(p,2*natoms+2*SIMD_WIDTH);
+    aadata->y_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
+    snew(p,2*natoms+2*SIMD_WIDTH);
+    aadata->z_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
+    snew(p,2*natoms+2*SIMD_WIDTH);
+    aadata->fx_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
+    snew(p,2*natoms+2*SIMD_WIDTH);
+    aadata->fy_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
+    snew(p,2*natoms+2*SIMD_WIDTH);
+    aadata->fz_align = (real *) (((size_t) p + 16) & (~((size_t) 15)));
 
     snew(p,2*natoms+UNROLLJ+SIMD_WIDTH);
     aadata->gb_radius = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-        
+
     snew(p,2*natoms+UNROLLJ+SIMD_WIDTH);
     aadata->workparam = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-    
+
     snew(p,2*natoms+UNROLLJ+SIMD_WIDTH);
     aadata->work = (real *) (((size_t) p + 16) & (~((size_t) 15)));
-    
-    for(i=0;i<mdatoms->nr;i++)
+
+    for (i=0; i<mdatoms->nr; i++)
     {
         aadata->gb_radius[i] = top->atomtypes.gb_radius[mdatoms->typeA[i]] - radius_offset;
-        if(gb_algorithm==egbSTILL)
+        if (gb_algorithm==egbSTILL)
         {
             aadata->workparam[i] = born->vsolv[i];
         }
-        else if(gb_algorithm==egbOBC)
+        else if (gb_algorithm==egbOBC)
         {
             aadata->workparam[i] = born->param[i];
         }
         aadata->work[i]      = 0.0;
     }
-    for(i=0;i<mdatoms->nr;i++)
+    for (i=0; i<mdatoms->nr; i++)
     {
-        aadata->gb_radius[natoms+i] = aadata->gb_radius[i]; 
+        aadata->gb_radius[natoms+i] = aadata->gb_radius[i];
         aadata->workparam[natoms+i] = aadata->workparam[i];
         aadata->work[natoms+i]      = aadata->work[i];
     }
-    
-    for(i=0;i<2*natoms+SIMD_WIDTH;i++)
-	{
-		aadata->x_align[i] = 0.0;
-		aadata->y_align[i] = 0.0;
-		aadata->z_align[i] = 0.0;
-		aadata->fx_align[i] = 0.0;
-		aadata->fy_align[i] = 0.0;
-		aadata->fz_align[i] = 0.0;
-	}
-    
+
+    for (i=0; i<2*natoms+SIMD_WIDTH; i++)
+    {
+        aadata->x_align[i] = 0.0;
+        aadata->y_align[i] = 0.0;
+        aadata->z_align[i] = 0.0;
+        aadata->fx_align[i] = 0.0;
+        aadata->fy_align[i] = 0.0;
+        aadata->fz_align[i] = 0.0;
+    }
+
     setup_gb_exclusions_and_indices(aadata,top->idef.il,mdatoms->start,mdatoms->start+mdatoms->homenr,mdatoms->nr,
                                     bInclude12,bInclude13,bInclude14);
 }
@@ -724,11 +724,11 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
                                               t_commrec *            cr,
                                               void *                 paadata)
 {
-	gmx_allvsallgb2_data_t *aadata;
-	int        natoms;
-	int        ni0,ni1;
-	int        nj0,nj1,nj2,nj3;
-	int        i,j,k,n;
+    gmx_allvsallgb2_data_t *aadata;
+    int        natoms;
+    int        ni0,ni1;
+    int        nj0,nj1,nj2,nj3;
+    int        i,j,k,n;
     int *      mask;
     int *      pmask0;
     int *      pmask1;
@@ -757,7 +757,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
     real *     z_align;
     int *      jindex;
     real *     dadx;
-    
+
     __m128     ix_SSE0,iy_SSE0,iz_SSE0;
     __m128     ix_SSE1,iy_SSE1,iz_SSE1;
     __m128     ix_SSE2,iy_SSE2,iz_SSE2;
@@ -798,33 +798,33 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
     __m128     icf4_SSE3,icf6_SSE3;
     __m128     half_SSE,one_SSE,two_SSE,four_SSE;
     __m128     still_p4_SSE,still_p5inv_SSE,still_pip5_SSE;
-    
+
     natoms              = mdatoms->nr;
-	ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
-	ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
+    ni1                 = mdatoms->start+mdatoms->homenr;
 
     n = 0;
-    
+
     aadata = *((gmx_allvsallgb2_data_t **)paadata);
 
-    
-	if(aadata==NULL)
-	{
-		genborn_allvsall_setup(&aadata,top,born,mdatoms,0.0,
+
+    if (aadata==NULL)
+    {
+        genborn_allvsall_setup(&aadata,top,born,mdatoms,0.0,
                                egbSTILL,FALSE,FALSE,TRUE);
         *((gmx_allvsallgb2_data_t **)paadata) = aadata;
-	}
-        
+    }
+
     x_align = aadata->x_align;
-	y_align = aadata->y_align;
-	z_align = aadata->z_align;
+    y_align = aadata->y_align;
+    z_align = aadata->z_align;
 
     gb_radius = aadata->gb_radius;
     vsolv     = aadata->workparam;
     work      = aadata->work;
     jindex    = aadata->jindex_gb;
     dadx      = fr->dadx;
-    
+
     still_p4_SSE    = _mm_set1_ps(STILL_P4);
     still_p5inv_SSE = _mm_set1_ps(STILL_P5INV);
     still_pip5_SSE  = _mm_set1_ps(STILL_PIP5);
@@ -832,41 +832,41 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
     one_SSE         = _mm_set1_ps(1.0);
     two_SSE         = _mm_set1_ps(2.0);
     four_SSE        = _mm_set1_ps(4.0);
-    
+
     /* This will be summed, so it has to extend to natoms + buffer */
-    for(i=0;i<natoms+1+natoms/2;i++)
+    for (i=0; i<natoms+1+natoms/2; i++)
     {
         work[i] = 0;
     }
-    
-	for(i=ni0;i<ni1+1+natoms/2;i++)
-	{
-        k = i%natoms;
-		x_align[i]  = x[3*k];
-		y_align[i]  = x[3*k+1];
-		z_align[i]  = x[3*k+2];
-        work[i]     = 0;
-    }        
-    
-    
-	for(i=ni0; i<ni1; i+=UNROLLI)
-	{
-		/* We assume shifts are NOT used for all-vs-all interactions */
 
-		/* Load i atom data */
-		ix_SSE0          = _mm_load1_ps(x_align+i);
-		iy_SSE0          = _mm_load1_ps(y_align+i);
-		iz_SSE0          = _mm_load1_ps(z_align+i);
-		ix_SSE1          = _mm_load1_ps(x_align+i+1);
-		iy_SSE1          = _mm_load1_ps(y_align+i+1);
-		iz_SSE1          = _mm_load1_ps(z_align+i+1);
-		ix_SSE2          = _mm_load1_ps(x_align+i+2);
-		iy_SSE2          = _mm_load1_ps(y_align+i+2);
-		iz_SSE2          = _mm_load1_ps(z_align+i+2);
-		ix_SSE3          = _mm_load1_ps(x_align+i+3);
-		iy_SSE3          = _mm_load1_ps(y_align+i+3);
-		iz_SSE3          = _mm_load1_ps(z_align+i+3);
-        
+    for (i=ni0; i<ni1+1+natoms/2; i++)
+    {
+        k = i%natoms;
+        x_align[i]  = x[3*k];
+        y_align[i]  = x[3*k+1];
+        z_align[i]  = x[3*k+2];
+        work[i]     = 0;
+    }
+
+
+    for (i=ni0; i<ni1; i+=UNROLLI)
+    {
+        /* We assume shifts are NOT used for all-vs-all interactions */
+
+        /* Load i atom data */
+        ix_SSE0          = _mm_load1_ps(x_align+i);
+        iy_SSE0          = _mm_load1_ps(y_align+i);
+        iz_SSE0          = _mm_load1_ps(z_align+i);
+        ix_SSE1          = _mm_load1_ps(x_align+i+1);
+        iy_SSE1          = _mm_load1_ps(y_align+i+1);
+        iz_SSE1          = _mm_load1_ps(z_align+i+1);
+        ix_SSE2          = _mm_load1_ps(x_align+i+2);
+        iy_SSE2          = _mm_load1_ps(y_align+i+2);
+        iz_SSE2          = _mm_load1_ps(z_align+i+2);
+        ix_SSE3          = _mm_load1_ps(x_align+i+3);
+        iy_SSE3          = _mm_load1_ps(y_align+i+3);
+        iz_SSE3          = _mm_load1_ps(z_align+i+3);
+
         gpi_SSE0         = _mm_setzero_ps();
         gpi_SSE1         = _mm_setzero_ps();
         gpi_SSE2         = _mm_setzero_ps();
@@ -876,35 +876,35 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
         rai_SSE1         = _mm_load1_ps(gb_radius+i+1);
         rai_SSE2         = _mm_load1_ps(gb_radius+i+2);
         rai_SSE3         = _mm_load1_ps(gb_radius+i+3);
-        
+
         prod_ai_SSE0     = _mm_set1_ps(STILL_P4*vsolv[i]);
         prod_ai_SSE1     = _mm_set1_ps(STILL_P4*vsolv[i+1]);
         prod_ai_SSE2     = _mm_set1_ps(STILL_P4*vsolv[i+2]);
         prod_ai_SSE3     = _mm_set1_ps(STILL_P4*vsolv[i+3]);
-        
-		/* Load limits for loop over neighbors */
-		nj0              = jindex[4*i];
-		nj1              = jindex[4*i+1];
-		nj2              = jindex[4*i+2];
-		nj3              = jindex[4*i+3];
-                        
+
+        /* Load limits for loop over neighbors */
+        nj0              = jindex[4*i];
+        nj1              = jindex[4*i+1];
+        nj2              = jindex[4*i+2];
+        nj3              = jindex[4*i+3];
+
         pmask0           = aadata->prologue_mask_gb[i];
         pmask1           = aadata->prologue_mask_gb[i+1];
         pmask2           = aadata->prologue_mask_gb[i+2];
         pmask3           = aadata->prologue_mask_gb[i+3];
-        emask0           = aadata->epilogue_mask[i]; 
-        emask1           = aadata->epilogue_mask[i+1]; 
-        emask2           = aadata->epilogue_mask[i+2]; 
-        emask3           = aadata->epilogue_mask[i+3]; 
+        emask0           = aadata->epilogue_mask[i];
+        emask1           = aadata->epilogue_mask[i+1];
+        emask2           = aadata->epilogue_mask[i+2];
+        emask3           = aadata->epilogue_mask[i+3];
 
         imask_SSE0        = _mm_load1_ps((real *)(aadata->imask+i));
         imask_SSE1        = _mm_load1_ps((real *)(aadata->imask+i+1));
         imask_SSE2        = _mm_load1_ps((real *)(aadata->imask+i+2));
         imask_SSE3        = _mm_load1_ps((real *)(aadata->imask+i+3));
-        
+
         /* Prologue part, including exclusion mask */
-        for(j=nj0; j<nj1; j+=UNROLLJ)
-        {          
+        for (j=nj0; j<nj1; j+=UNROLLJ)
+        {
             jmask_SSE0 = _mm_load_ps((real *)pmask0);
             jmask_SSE1 = _mm_load_ps((real *)pmask1);
             jmask_SSE2 = _mm_load_ps((real *)pmask2);
@@ -913,12 +913,12 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             pmask1 += UNROLLJ;
             pmask2 += UNROLLJ;
             pmask3 += UNROLLJ;
-            
+
             /* load j atom coordinates */
             jx_SSE            = _mm_load_ps(x_align+j);
             jy_SSE            = _mm_load_ps(y_align+j);
             jz_SSE            = _mm_load_ps(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(ix_SSE0,jx_SSE);
             dy_SSE0            = _mm_sub_ps(iy_SSE0,jy_SSE);
@@ -932,31 +932,31 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             dx_SSE3            = _mm_sub_ps(ix_SSE3,jx_SSE);
             dy_SSE3            = _mm_sub_ps(iy_SSE3,jy_SSE);
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
             jmask_SSE1         = _mm_and_ps(jmask_SSE1,imask_SSE1);
             jmask_SSE2         = _mm_and_ps(jmask_SSE2,imask_SSE2);
             jmask_SSE3         = _mm_and_ps(jmask_SSE3,imask_SSE3);
-            
+
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
             rinv_SSE1          = gmx_mm_invsqrt_ps(rsq_SSE1);
             rinv_SSE2          = gmx_mm_invsqrt_ps(rsq_SSE2);
             rinv_SSE3          = gmx_mm_invsqrt_ps(rsq_SSE3);
-            
+
             /* Apply mask */
             rinv_SSE0          = _mm_and_ps(rinv_SSE0,jmask_SSE0);
             rinv_SSE1          = _mm_and_ps(rinv_SSE1,jmask_SSE1);
             rinv_SSE2          = _mm_and_ps(rinv_SSE2,jmask_SSE2);
             rinv_SSE3          = _mm_and_ps(rinv_SSE3,jmask_SSE3);
-            
+
             irsq_SSE0          = _mm_mul_ps(rinv_SSE0,rinv_SSE0);
             irsq_SSE1          = _mm_mul_ps(rinv_SSE1,rinv_SSE1);
             irsq_SSE2          = _mm_mul_ps(rinv_SSE2,rinv_SSE2);
@@ -969,15 +969,15 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             idr6_SSE1          = _mm_mul_ps(idr4_SSE1,irsq_SSE1);
             idr6_SSE2          = _mm_mul_ps(idr4_SSE2,irsq_SSE2);
             idr6_SSE3          = _mm_mul_ps(idr4_SSE3,irsq_SSE3);
-            
+
             raj_SSE            = _mm_load_ps(gb_radius+j);
             vaj_SSE            = _mm_load_ps(vsolv+j);
-            
+
             rvdw_SSE0          = _mm_add_ps(rai_SSE0,raj_SSE);
             rvdw_SSE1          = _mm_add_ps(rai_SSE1,raj_SSE);
             rvdw_SSE2          = _mm_add_ps(rai_SSE2,raj_SSE);
             rvdw_SSE3          = _mm_add_ps(rai_SSE3,raj_SSE);
-            
+
             ratio_SSE0         = _mm_mul_ps(rsq_SSE0, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE0,rvdw_SSE0)));
             ratio_SSE1         = _mm_mul_ps(rsq_SSE1, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE1,rvdw_SSE1)));
             ratio_SSE2         = _mm_mul_ps(rsq_SSE2, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE2,rvdw_SSE2)));
@@ -991,10 +991,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             theta_SSE1         = _mm_mul_ps(ratio_SSE1,still_pip5_SSE);
             theta_SSE2         = _mm_mul_ps(ratio_SSE2,still_pip5_SSE);
             theta_SSE3         = _mm_mul_ps(ratio_SSE3,still_pip5_SSE);
-            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);            
-            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);            
-            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);            
-            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);            
+            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);
+            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);
+            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);
+            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);
             term_SSE0          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE0));
             term_SSE1          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE1));
             term_SSE2          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE2));
@@ -1024,10 +1024,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
 
             _mm_store_ps(work+j , _mm_add_ps(_mm_load_ps(work+j),
                                              gmx_mm_sum4_ps(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
-                                                         _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
-                                                         _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
-                                                         _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
-            
+                                                            _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
+                                                            _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
+                                                            _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
+
             gpi_SSE0           = _mm_add_ps(gpi_SSE0, _mm_mul_ps(prod_SSE,icf4_SSE0));
             gpi_SSE1           = _mm_add_ps(gpi_SSE1, _mm_mul_ps(prod_SSE,icf4_SSE1));
             gpi_SSE2           = _mm_add_ps(gpi_SSE2, _mm_mul_ps(prod_SSE,icf4_SSE2));
@@ -1041,8 +1041,8 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE2));
             dadx+=4;
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE3));
-            dadx+=4;            
-            
+            dadx+=4;
+
             _mm_store_ps(dadx,_mm_mul_ps(prod_ai_SSE0,icf6_SSE0));
             dadx+=4;
             _mm_store_ps(dadx,_mm_mul_ps(prod_ai_SSE1,icf6_SSE1));
@@ -1052,15 +1052,15 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             _mm_store_ps(dadx,_mm_mul_ps(prod_ai_SSE3,icf6_SSE3));
             dadx+=4;
         }
-                                 
+
         /* Main part, no exclusions */
-        for(j=nj1; j<nj2; j+=UNROLLJ)
-        {               
+        for (j=nj1; j<nj2; j+=UNROLLJ)
+        {
             /* load j atom coordinates */
             jx_SSE            = _mm_load_ps(x_align+j);
             jy_SSE            = _mm_load_ps(y_align+j);
             jz_SSE            = _mm_load_ps(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(ix_SSE0,jx_SSE);
             dy_SSE0            = _mm_sub_ps(iy_SSE0,jy_SSE);
@@ -1074,25 +1074,25 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             dx_SSE3            = _mm_sub_ps(ix_SSE3,jx_SSE);
             dy_SSE3            = _mm_sub_ps(iy_SSE3,jy_SSE);
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
             rinv_SSE1          = gmx_mm_invsqrt_ps(rsq_SSE1);
             rinv_SSE2          = gmx_mm_invsqrt_ps(rsq_SSE2);
             rinv_SSE3          = gmx_mm_invsqrt_ps(rsq_SSE3);
-            
+
             /* Apply mask */
             rinv_SSE0          = _mm_and_ps(rinv_SSE0,imask_SSE0);
             rinv_SSE1          = _mm_and_ps(rinv_SSE1,imask_SSE1);
             rinv_SSE2          = _mm_and_ps(rinv_SSE2,imask_SSE2);
             rinv_SSE3          = _mm_and_ps(rinv_SSE3,imask_SSE3);
-            
+
             irsq_SSE0          = _mm_mul_ps(rinv_SSE0,rinv_SSE0);
             irsq_SSE1          = _mm_mul_ps(rinv_SSE1,rinv_SSE1);
             irsq_SSE2          = _mm_mul_ps(rinv_SSE2,rinv_SSE2);
@@ -1105,20 +1105,20 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             idr6_SSE1          = _mm_mul_ps(idr4_SSE1,irsq_SSE1);
             idr6_SSE2          = _mm_mul_ps(idr4_SSE2,irsq_SSE2);
             idr6_SSE3          = _mm_mul_ps(idr4_SSE3,irsq_SSE3);
-            
+
             raj_SSE            = _mm_load_ps(gb_radius+j);
-            
+
             rvdw_SSE0          = _mm_add_ps(rai_SSE0,raj_SSE);
             rvdw_SSE1          = _mm_add_ps(rai_SSE1,raj_SSE);
             rvdw_SSE2          = _mm_add_ps(rai_SSE2,raj_SSE);
             rvdw_SSE3          = _mm_add_ps(rai_SSE3,raj_SSE);
             vaj_SSE            = _mm_load_ps(vsolv+j);
-            
+
             ratio_SSE0         = _mm_mul_ps(rsq_SSE0, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE0,rvdw_SSE0)));
             ratio_SSE1         = _mm_mul_ps(rsq_SSE1, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE1,rvdw_SSE1)));
             ratio_SSE2         = _mm_mul_ps(rsq_SSE2, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE2,rvdw_SSE2)));
             ratio_SSE3         = _mm_mul_ps(rsq_SSE3, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE3,rvdw_SSE3)));
-            
+
             ratio_SSE0         = _mm_min_ps(ratio_SSE0,still_p5inv_SSE);
             ratio_SSE1         = _mm_min_ps(ratio_SSE1,still_p5inv_SSE);
             ratio_SSE2         = _mm_min_ps(ratio_SSE2,still_p5inv_SSE);
@@ -1127,10 +1127,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             theta_SSE1         = _mm_mul_ps(ratio_SSE1,still_pip5_SSE);
             theta_SSE2         = _mm_mul_ps(ratio_SSE2,still_pip5_SSE);
             theta_SSE3         = _mm_mul_ps(ratio_SSE3,still_pip5_SSE);
-            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);            
-            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);            
-            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);            
-            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);            
+            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);
+            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);
+            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);
+            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);
             term_SSE0          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE0));
             term_SSE1          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE1));
             term_SSE2          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE2));
@@ -1147,7 +1147,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(sinq_SSE2,theta_SSE2));
             dccf_SSE3          = _mm_mul_ps(_mm_mul_ps(two_SSE,term_SSE3),
                                             _mm_mul_ps(sinq_SSE3,theta_SSE3));
-            
+
             prod_SSE           = _mm_mul_ps(still_p4_SSE,vaj_SSE );
             icf4_SSE0          = _mm_mul_ps(ccf_SSE0,idr4_SSE0);
             icf4_SSE1          = _mm_mul_ps(ccf_SSE1,idr4_SSE1);
@@ -1157,18 +1157,18 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             icf6_SSE1          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE1),dccf_SSE1), idr6_SSE1);
             icf6_SSE2          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE2),dccf_SSE2), idr6_SSE2);
             icf6_SSE3          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE3),dccf_SSE3), idr6_SSE3);
-            
+
             _mm_store_ps(work+j , _mm_add_ps(_mm_load_ps(work+j),
                                              gmx_mm_sum4_ps(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
-                                                         _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
-                                                         _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
-                                                         _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
-            
+                                                            _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
+                                                            _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
+                                                            _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
+
             gpi_SSE0           = _mm_add_ps(gpi_SSE0, _mm_mul_ps(prod_SSE,icf4_SSE0));
             gpi_SSE1           = _mm_add_ps(gpi_SSE1, _mm_mul_ps(prod_SSE,icf4_SSE1));
             gpi_SSE2           = _mm_add_ps(gpi_SSE2, _mm_mul_ps(prod_SSE,icf4_SSE2));
             gpi_SSE3           = _mm_add_ps(gpi_SSE3, _mm_mul_ps(prod_SSE,icf4_SSE3));
-            
+
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE0));
             dadx+=4;
@@ -1177,8 +1177,8 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE2));
             dadx+=4;
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE3));
-            dadx+=4;            
-            
+            dadx+=4;
+
             _mm_store_ps(dadx,_mm_mul_ps(prod_ai_SSE0,icf6_SSE0));
             dadx+=4;
             _mm_store_ps(dadx,_mm_mul_ps(prod_ai_SSE1,icf6_SSE1));
@@ -1189,8 +1189,8 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             dadx+=4;
         }
         /* Epilogue part, including exclusion mask */
-        for(j=nj2; j<nj3; j+=UNROLLJ)
-        {                     
+        for (j=nj2; j<nj3; j+=UNROLLJ)
+        {
             jmask_SSE0 = _mm_load_ps((real *)emask0);
             jmask_SSE1 = _mm_load_ps((real *)emask1);
             jmask_SSE2 = _mm_load_ps((real *)emask2);
@@ -1199,12 +1199,12 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             emask1 += UNROLLJ;
             emask2 += UNROLLJ;
             emask3 += UNROLLJ;
-            
+
             /* load j atom coordinates */
             jx_SSE            = _mm_load_ps(x_align+j);
             jy_SSE            = _mm_load_ps(y_align+j);
             jz_SSE            = _mm_load_ps(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(ix_SSE0,jx_SSE);
             dy_SSE0            = _mm_sub_ps(iy_SSE0,jy_SSE);
@@ -1218,31 +1218,31 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             dx_SSE3            = _mm_sub_ps(ix_SSE3,jx_SSE);
             dy_SSE3            = _mm_sub_ps(iy_SSE3,jy_SSE);
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
             jmask_SSE1         = _mm_and_ps(jmask_SSE1,imask_SSE1);
             jmask_SSE2         = _mm_and_ps(jmask_SSE2,imask_SSE2);
             jmask_SSE3         = _mm_and_ps(jmask_SSE3,imask_SSE3);
-            
+
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
             rinv_SSE1          = gmx_mm_invsqrt_ps(rsq_SSE1);
             rinv_SSE2          = gmx_mm_invsqrt_ps(rsq_SSE2);
             rinv_SSE3          = gmx_mm_invsqrt_ps(rsq_SSE3);
-            
+
             /* Apply mask */
             rinv_SSE0          = _mm_and_ps(rinv_SSE0,jmask_SSE0);
             rinv_SSE1          = _mm_and_ps(rinv_SSE1,jmask_SSE1);
             rinv_SSE2          = _mm_and_ps(rinv_SSE2,jmask_SSE2);
             rinv_SSE3          = _mm_and_ps(rinv_SSE3,jmask_SSE3);
-            
+
             irsq_SSE0          = _mm_mul_ps(rinv_SSE0,rinv_SSE0);
             irsq_SSE1          = _mm_mul_ps(rinv_SSE1,rinv_SSE1);
             irsq_SSE2          = _mm_mul_ps(rinv_SSE2,rinv_SSE2);
@@ -1255,20 +1255,20 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             idr6_SSE1          = _mm_mul_ps(idr4_SSE1,irsq_SSE1);
             idr6_SSE2          = _mm_mul_ps(idr4_SSE2,irsq_SSE2);
             idr6_SSE3          = _mm_mul_ps(idr4_SSE3,irsq_SSE3);
-            
+
             raj_SSE            = _mm_load_ps(gb_radius+j);
             vaj_SSE            = _mm_load_ps(vsolv+j);
-            
+
             rvdw_SSE0          = _mm_add_ps(rai_SSE0,raj_SSE);
             rvdw_SSE1          = _mm_add_ps(rai_SSE1,raj_SSE);
             rvdw_SSE2          = _mm_add_ps(rai_SSE2,raj_SSE);
             rvdw_SSE3          = _mm_add_ps(rai_SSE3,raj_SSE);
-            
+
             ratio_SSE0         = _mm_mul_ps(rsq_SSE0, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE0,rvdw_SSE0)));
             ratio_SSE1         = _mm_mul_ps(rsq_SSE1, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE1,rvdw_SSE1)));
             ratio_SSE2         = _mm_mul_ps(rsq_SSE2, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE2,rvdw_SSE2)));
             ratio_SSE3         = _mm_mul_ps(rsq_SSE3, gmx_mm_inv_ps( _mm_mul_ps(rvdw_SSE3,rvdw_SSE3)));
-            
+
             ratio_SSE0         = _mm_min_ps(ratio_SSE0,still_p5inv_SSE);
             ratio_SSE1         = _mm_min_ps(ratio_SSE1,still_p5inv_SSE);
             ratio_SSE2         = _mm_min_ps(ratio_SSE2,still_p5inv_SSE);
@@ -1277,10 +1277,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             theta_SSE1         = _mm_mul_ps(ratio_SSE1,still_pip5_SSE);
             theta_SSE2         = _mm_mul_ps(ratio_SSE2,still_pip5_SSE);
             theta_SSE3         = _mm_mul_ps(ratio_SSE3,still_pip5_SSE);
-            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);            
-            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);            
-            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);            
-            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);            
+            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);
+            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);
+            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);
+            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);
             term_SSE0          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE0));
             term_SSE1          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE1));
             term_SSE2          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE2));
@@ -1297,7 +1297,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(sinq_SSE2,theta_SSE2));
             dccf_SSE3          = _mm_mul_ps(_mm_mul_ps(two_SSE,term_SSE3),
                                             _mm_mul_ps(sinq_SSE3,theta_SSE3));
-            
+
             prod_SSE           = _mm_mul_ps(still_p4_SSE,vaj_SSE);
             icf4_SSE0          = _mm_mul_ps(ccf_SSE0,idr4_SSE0);
             icf4_SSE1          = _mm_mul_ps(ccf_SSE1,idr4_SSE1);
@@ -1307,18 +1307,18 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             icf6_SSE1          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE1),dccf_SSE1), idr6_SSE1);
             icf6_SSE2          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE2),dccf_SSE2), idr6_SSE2);
             icf6_SSE3          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE3),dccf_SSE3), idr6_SSE3);
-            
+
             _mm_store_ps(work+j , _mm_add_ps(_mm_load_ps(work+j),
                                              gmx_mm_sum4_ps(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
-                                                         _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
-                                                         _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
-                                                         _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
-            
+                                                            _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
+                                                            _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
+                                                            _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
+
             gpi_SSE0           = _mm_add_ps(gpi_SSE0, _mm_mul_ps(prod_SSE,icf4_SSE0));
             gpi_SSE1           = _mm_add_ps(gpi_SSE1, _mm_mul_ps(prod_SSE,icf4_SSE1));
             gpi_SSE2           = _mm_add_ps(gpi_SSE2, _mm_mul_ps(prod_SSE,icf4_SSE2));
             gpi_SSE3           = _mm_add_ps(gpi_SSE3, _mm_mul_ps(prod_SSE,icf4_SSE3));
-              
+
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE0));
             dadx+=4;
@@ -1327,8 +1327,8 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE2));
             dadx+=4;
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE3));
-            dadx+=4;            
-            
+            dadx+=4;
+
             _mm_store_ps(dadx,_mm_mul_ps(prod_ai_SSE0,icf6_SSE0));
             dadx+=4;
             _mm_store_ps(dadx,_mm_mul_ps(prod_ai_SSE1,icf6_SSE1));
@@ -1343,39 +1343,39 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
         gpi_SSE2 = _mm_add_ps(gpi_SSE2,gpi_SSE3);
         gpi_SSE0 = _mm_add_ps(gpi_SSE0,gpi_SSE2);
         _mm_store_ps(work+i, _mm_add_ps(gpi_SSE0, _mm_load_ps(work+i)));
-	}    
-    
+    }
+
     /* In case we have written anything beyond natoms, move it back.
      * Never mind that we leave stuff above natoms; that will not
      * be accessed later in the routine.
      * In principle this should be a move rather than sum, but this
      * way we dont have to worry about even/odd offsets...
      */
-    for(i=natoms;i<ni1+1+natoms/2;i++)
+    for (i=natoms; i<ni1+1+natoms/2; i++)
     {
         work[i-natoms] += work[i];
     }
-    
+
     /* Parallel summations */
-	if(PARTDECOMP(cr))
-	{
-		gmx_sum(natoms,work,cr);
-	}
-	
+    if (PARTDECOMP(cr))
+    {
+        gmx_sum(natoms,work,cr);
+    }
+
     factor  = 0.5 * ONE_4PI_EPS0;
-	/* Calculate the radii - should we do all atoms, or just our local ones? */
-	for(i=0;i<natoms;i++)
-	{
-		if(born->use[i] != 0)
-		{
-			gpi  = born->gpol[i]+work[i];
-			gpi2 = gpi * gpi;
-			born->bRad[i]   = factor*gmx_invsqrt(gpi2);
-			fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
-		}
-	}
-	
-	return 0;
+    /* Calculate the radii - should we do all atoms, or just our local ones? */
+    for (i=0; i<natoms; i++)
+    {
+        if (born->use[i] != 0)
+        {
+            gpi  = born->gpol[i]+work[i];
+            gpi2 = gpi * gpi;
+            born->bRad[i]   = factor*gmx_invsqrt(gpi2);
+            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+        }
+    }
+
+    return 0;
 }
 
 
@@ -1390,11 +1390,11 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                                 t_commrec *            cr,
                                                 void *                 paadata)
 {
-	gmx_allvsallgb2_data_t *aadata;
-	int        natoms;
-	int        ni0,ni1;
-	int        nj0,nj1,nj2,nj3;
-	int        i,j,k,n;
+    gmx_allvsallgb2_data_t *aadata;
+    int        natoms;
+    int        ni0,ni1;
+    int        nj0,nj1,nj2,nj3;
+    int        i,j,k,n;
     int *      mask;
     int *      pmask0;
     int *      pmask1;
@@ -1486,33 +1486,33 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
     __m128     dlij_SSE2,diff2_SSE2,logterm_SSE2;
     __m128     dlij_SSE3,diff2_SSE3,logterm_SSE3;
     __m128     doffset_SSE;
-    
+
     natoms              = mdatoms->nr;
-	ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
-	ni1                 = mdatoms->start+mdatoms->homenr;
-    
+    ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
+    ni1                 = mdatoms->start+mdatoms->homenr;
+
     n = 0;
-    
+
     aadata = *((gmx_allvsallgb2_data_t **)paadata);
-    
-    
-	if(aadata==NULL)
-	{
-		genborn_allvsall_setup(&aadata,top,born,mdatoms,born->gb_doffset,
+
+
+    if (aadata==NULL)
+    {
+        genborn_allvsall_setup(&aadata,top,born,mdatoms,born->gb_doffset,
                                egbOBC,TRUE,TRUE,TRUE);
         *((gmx_allvsallgb2_data_t **)paadata) = aadata;
-	}
-    
+    }
+
     x_align = aadata->x_align;
-	y_align = aadata->y_align;
-	z_align = aadata->z_align;
-    
+    y_align = aadata->y_align;
+    z_align = aadata->z_align;
+
     gb_radius = aadata->gb_radius;
     work      = aadata->work;
     jindex    = aadata->jindex_gb;
     dadx      = fr->dadx;
     obc_param = aadata->workparam;
-    
+
     oneeighth_SSE   = _mm_set1_ps(0.125);
     onefourth_SSE   = _mm_set1_ps(0.25);
     half_SSE        = _mm_set1_ps(0.5);
@@ -1520,45 +1520,45 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
     two_SSE         = _mm_set1_ps(2.0);
     four_SSE        = _mm_set1_ps(4.0);
     doffset_SSE     = _mm_set1_ps(born->gb_doffset);
-    
-    for(i=0;i<natoms;i++)
-	{
-		x_align[i]  = x[3*i];
-		y_align[i]  = x[3*i+1];
-		z_align[i]  = x[3*i+2];
-	}
-    
+
+    for (i=0; i<natoms; i++)
+    {
+        x_align[i]  = x[3*i];
+        y_align[i]  = x[3*i+1];
+        z_align[i]  = x[3*i+2];
+    }
+
     /* Copy again */
-	for(i=0;i<natoms/2+1;i++)
-	{
-		x_align[natoms+i]  = x_align[i];
-		y_align[natoms+i]  = y_align[i];
-		z_align[natoms+i]  = z_align[i];
-    }        
-    
-    for(i=0;i<natoms+natoms/2+1;i++)
+    for (i=0; i<natoms/2+1; i++)
+    {
+        x_align[natoms+i]  = x_align[i];
+        y_align[natoms+i]  = y_align[i];
+        z_align[natoms+i]  = z_align[i];
+    }
+
+    for (i=0; i<natoms+natoms/2+1; i++)
     {
         work[i] = 0;
     }
-        
-	for(i=ni0; i<ni1; i+= UNROLLI)
-	{
-		/* We assume shifts are NOT used for all-vs-all interactions */
-        
-		/* Load i atom data */
-		ix_SSE0          = _mm_load1_ps(x_align+i);
-		iy_SSE0          = _mm_load1_ps(y_align+i);
-		iz_SSE0          = _mm_load1_ps(z_align+i);
-		ix_SSE1          = _mm_load1_ps(x_align+i+1);
-		iy_SSE1          = _mm_load1_ps(y_align+i+1);
-		iz_SSE1          = _mm_load1_ps(z_align+i+1);
-		ix_SSE2          = _mm_load1_ps(x_align+i+2);
-		iy_SSE2          = _mm_load1_ps(y_align+i+2);
-		iz_SSE2          = _mm_load1_ps(z_align+i+2);
-		ix_SSE3          = _mm_load1_ps(x_align+i+3);
-		iy_SSE3          = _mm_load1_ps(y_align+i+3);
-		iz_SSE3          = _mm_load1_ps(z_align+i+3);
-        
+
+    for (i=ni0; i<ni1; i+= UNROLLI)
+    {
+        /* We assume shifts are NOT used for all-vs-all interactions */
+
+        /* Load i atom data */
+        ix_SSE0          = _mm_load1_ps(x_align+i);
+        iy_SSE0          = _mm_load1_ps(y_align+i);
+        iz_SSE0          = _mm_load1_ps(z_align+i);
+        ix_SSE1          = _mm_load1_ps(x_align+i+1);
+        iy_SSE1          = _mm_load1_ps(y_align+i+1);
+        iz_SSE1          = _mm_load1_ps(z_align+i+1);
+        ix_SSE2          = _mm_load1_ps(x_align+i+2);
+        iy_SSE2          = _mm_load1_ps(y_align+i+2);
+        iz_SSE2          = _mm_load1_ps(z_align+i+2);
+        ix_SSE3          = _mm_load1_ps(x_align+i+3);
+        iy_SSE3          = _mm_load1_ps(y_align+i+3);
+        iz_SSE3          = _mm_load1_ps(z_align+i+3);
+
         rai_SSE0         = _mm_load1_ps(gb_radius+i);
         rai_SSE1         = _mm_load1_ps(gb_radius+i+1);
         rai_SSE2         = _mm_load1_ps(gb_radius+i+2);
@@ -1567,7 +1567,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
         rai_inv_SSE1     = gmx_mm_inv_ps(rai_SSE1);
         rai_inv_SSE2     = gmx_mm_inv_ps(rai_SSE2);
         rai_inv_SSE3     = gmx_mm_inv_ps(rai_SSE3);
-        
+
         sk_ai_SSE0       = _mm_load1_ps(obc_param+i);
         sk_ai_SSE1       = _mm_load1_ps(obc_param+i+1);
         sk_ai_SSE2       = _mm_load1_ps(obc_param+i+2);
@@ -1576,35 +1576,35 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
         sk2_ai_SSE1      = _mm_mul_ps(sk_ai_SSE1,sk_ai_SSE1);
         sk2_ai_SSE2      = _mm_mul_ps(sk_ai_SSE2,sk_ai_SSE2);
         sk2_ai_SSE3      = _mm_mul_ps(sk_ai_SSE3,sk_ai_SSE3);
-        
+
         sum_ai_SSE0      = _mm_setzero_ps();
         sum_ai_SSE1      = _mm_setzero_ps();
         sum_ai_SSE2      = _mm_setzero_ps();
         sum_ai_SSE3      = _mm_setzero_ps();
-        
-		/* Load limits for loop over neighbors */
-		nj0              = jindex[4*i];
-		nj1              = jindex[4*i+1];
-		nj2              = jindex[4*i+2];
-		nj3              = jindex[4*i+3];
-        
+
+        /* Load limits for loop over neighbors */
+        nj0              = jindex[4*i];
+        nj1              = jindex[4*i+1];
+        nj2              = jindex[4*i+2];
+        nj3              = jindex[4*i+3];
+
         pmask0           = aadata->prologue_mask_gb[i];
         pmask1           = aadata->prologue_mask_gb[i+1];
         pmask2           = aadata->prologue_mask_gb[i+2];
         pmask3           = aadata->prologue_mask_gb[i+3];
-        emask0           = aadata->epilogue_mask[i]; 
-        emask1           = aadata->epilogue_mask[i+1]; 
-        emask2           = aadata->epilogue_mask[i+2]; 
-        emask3           = aadata->epilogue_mask[i+3]; 
-        
+        emask0           = aadata->epilogue_mask[i];
+        emask1           = aadata->epilogue_mask[i+1];
+        emask2           = aadata->epilogue_mask[i+2];
+        emask3           = aadata->epilogue_mask[i+3];
+
         imask_SSE0        = _mm_load1_ps((real *)(aadata->imask+i));
         imask_SSE1        = _mm_load1_ps((real *)(aadata->imask+i+1));
         imask_SSE2        = _mm_load1_ps((real *)(aadata->imask+i+2));
         imask_SSE3        = _mm_load1_ps((real *)(aadata->imask+i+3));
-        
+
         /* Prologue part, including exclusion mask */
-        for(j=nj0; j<nj1; j+=UNROLLJ)
-        {          
+        for (j=nj0; j<nj1; j+=UNROLLJ)
+        {
             jmask_SSE0 = _mm_load_ps((real *)pmask0);
             jmask_SSE1 = _mm_load_ps((real *)pmask1);
             jmask_SSE2 = _mm_load_ps((real *)pmask2);
@@ -1613,12 +1613,12 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             pmask1 += UNROLLJ;
             pmask2 += UNROLLJ;
             pmask3 += UNROLLJ;
-            
+
             /* load j atom coordinates */
             jx_SSE            = _mm_load_ps(x_align+j);
             jy_SSE            = _mm_load_ps(y_align+j);
             jz_SSE            = _mm_load_ps(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(ix_SSE0,jx_SSE);
             dy_SSE0            = _mm_sub_ps(iy_SSE0,jy_SSE);
@@ -1632,31 +1632,31 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dx_SSE3            = _mm_sub_ps(ix_SSE3,jx_SSE);
             dy_SSE3            = _mm_sub_ps(iy_SSE3,jy_SSE);
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
             jmask_SSE1         = _mm_and_ps(jmask_SSE1,imask_SSE1);
             jmask_SSE2         = _mm_and_ps(jmask_SSE2,imask_SSE2);
             jmask_SSE3         = _mm_and_ps(jmask_SSE3,imask_SSE3);
-            
+
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
             rinv_SSE1          = gmx_mm_invsqrt_ps(rsq_SSE1);
             rinv_SSE2          = gmx_mm_invsqrt_ps(rsq_SSE2);
             rinv_SSE3          = gmx_mm_invsqrt_ps(rsq_SSE3);
-            
+
             /* Apply mask */
             rinv_SSE0          = _mm_and_ps(rinv_SSE0,jmask_SSE0);
             rinv_SSE1          = _mm_and_ps(rinv_SSE1,jmask_SSE1);
             rinv_SSE2          = _mm_and_ps(rinv_SSE2,jmask_SSE2);
             rinv_SSE3          = _mm_and_ps(rinv_SSE3,jmask_SSE3);
-            
+
             dr_SSE0            = _mm_mul_ps(rsq_SSE0,rinv_SSE0);
             dr_SSE1            = _mm_mul_ps(rsq_SSE1,rinv_SSE1);
             dr_SSE2            = _mm_mul_ps(rsq_SSE2,rinv_SSE2);
@@ -1665,7 +1665,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             sk_aj_SSE          = _mm_load_ps(obc_param+j);
             raj_SSE            = _mm_load_ps(gb_radius+j);
             raj_inv_SSE        = gmx_mm_inv_ps(raj_SSE);
-            
+
             /* Evaluate influence of atom aj -> ai */
             t1_SSE0            = _mm_add_ps(dr_SSE0,sk_aj_SSE);
             t1_SSE1            = _mm_add_ps(dr_SSE1,sk_aj_SSE);
@@ -1702,18 +1702,18 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             uij_SSE2           = gmx_mm_inv_ps(t1_SSE2);
             uij_SSE3           = gmx_mm_inv_ps(t1_SSE3);
             lij_SSE0           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE0,gmx_mm_inv_ps(t2_SSE0)),
-                                           _mm_andnot_ps(obc_mask2_SSE0,rai_inv_SSE0));
+                                              _mm_andnot_ps(obc_mask2_SSE0,rai_inv_SSE0));
             lij_SSE1           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE1,gmx_mm_inv_ps(t2_SSE1)),
-                                           _mm_andnot_ps(obc_mask2_SSE1,rai_inv_SSE1));
+                                              _mm_andnot_ps(obc_mask2_SSE1,rai_inv_SSE1));
             lij_SSE2           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE2,gmx_mm_inv_ps(t2_SSE2)),
-                                           _mm_andnot_ps(obc_mask2_SSE2,rai_inv_SSE2));
+                                              _mm_andnot_ps(obc_mask2_SSE2,rai_inv_SSE2));
             lij_SSE3           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE3,gmx_mm_inv_ps(t2_SSE3)),
-                                           _mm_andnot_ps(obc_mask2_SSE3,rai_inv_SSE3));
+                                              _mm_andnot_ps(obc_mask2_SSE3,rai_inv_SSE3));
             dlij_SSE0          = _mm_and_ps(one_SSE,obc_mask2_SSE0);
             dlij_SSE1          = _mm_and_ps(one_SSE,obc_mask2_SSE1);
             dlij_SSE2          = _mm_and_ps(one_SSE,obc_mask2_SSE2);
             dlij_SSE3          = _mm_and_ps(one_SSE,obc_mask2_SSE3);
-            
+
             uij2_SSE0          = _mm_mul_ps(uij_SSE0, uij_SSE0);
             uij2_SSE1          = _mm_mul_ps(uij_SSE1, uij_SSE1);
             uij2_SSE2          = _mm_mul_ps(uij_SSE2, uij_SSE2);
@@ -1730,7 +1730,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             lij3_SSE1          = _mm_mul_ps(lij2_SSE1,lij_SSE1);
             lij3_SSE2          = _mm_mul_ps(lij2_SSE2,lij_SSE2);
             lij3_SSE3          = _mm_mul_ps(lij2_SSE3,lij_SSE3);
-            
+
             diff2_SSE0         = _mm_sub_ps(uij2_SSE0,lij2_SSE0);
             diff2_SSE1         = _mm_sub_ps(uij2_SSE1,lij2_SSE1);
             diff2_SSE2         = _mm_sub_ps(uij2_SSE2,lij2_SSE2);
@@ -1748,7 +1748,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             prod_SSE1          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE1);
             prod_SSE2          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE2);
             prod_SSE3          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE3);
-            
+
             logterm_SSE0       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE0,lij_inv_SSE0));
             logterm_SSE1       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE1,lij_inv_SSE1));
             logterm_SSE2       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE2,lij_inv_SSE2));
@@ -1770,7 +1770,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t2_SSE3            = _mm_mul_ps(diff2_SSE3,
                                             _mm_sub_ps(_mm_mul_ps(onefourth_SSE,dr_SSE3),
                                                        prod_SSE3));
-            
+
             t3_SSE0            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE0,logterm_SSE0));
             t3_SSE1            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE1,logterm_SSE1));
             t3_SSE2            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE2,logterm_SSE2));
@@ -1791,12 +1791,12 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE1            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE1,t4_SSE1));
             t1_SSE2            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE2,t4_SSE2));
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
-            
+
             sum_ai_SSE0        = _mm_add_ps(sum_ai_SSE0,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             sum_ai_SSE1        = _mm_add_ps(sum_ai_SSE1,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
             sum_ai_SSE2        = _mm_add_ps(sum_ai_SSE2,_mm_and_ps(t1_SSE2,obc_mask1_SSE2));
             sum_ai_SSE3        = _mm_add_ps(sum_ai_SSE3,_mm_and_ps(t1_SSE3,obc_mask1_SSE3));
-            
+
             t1_SSE0            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE0),
                                             _mm_mul_ps(prod_SSE0,lij3_SSE0));
             t1_SSE1            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE1),
@@ -1870,7 +1870,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE3,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
                                                                   _mm_mul_ps(sk2_rinv_SSE3,rinv_SSE3))));
-            
+
             t1_SSE0            = _mm_mul_ps(rinv_SSE0,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE0,t1_SSE0),
                                                        _mm_add_ps(t2_SSE0,t3_SSE0)));
@@ -1883,7 +1883,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(rinv_SSE3,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE3,t1_SSE3),
                                                        _mm_add_ps(t2_SSE3,t3_SSE3)));
-            
+
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
@@ -1892,7 +1892,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE3,obc_mask1_SSE3));
             dadx += 4;
-            
+
             /* Evaluate influence of atom ai -> aj */
             t1_SSE0            = _mm_add_ps(dr_SSE0,sk_ai_SSE0);
             t1_SSE1            = _mm_add_ps(dr_SSE1,sk_ai_SSE1);
@@ -1906,7 +1906,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t3_SSE1            = _mm_sub_ps(sk_ai_SSE1,dr_SSE1);
             t3_SSE2            = _mm_sub_ps(sk_ai_SSE2,dr_SSE2);
             t3_SSE3            = _mm_sub_ps(sk_ai_SSE3,dr_SSE3);
-            
+
             obc_mask1_SSE0     = _mm_cmplt_ps(raj_SSE, t1_SSE0);
             obc_mask1_SSE1     = _mm_cmplt_ps(raj_SSE, t1_SSE1);
             obc_mask1_SSE2     = _mm_cmplt_ps(raj_SSE, t1_SSE2);
@@ -1923,24 +1923,24 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             obc_mask1_SSE1     = _mm_and_ps(obc_mask1_SSE1,jmask_SSE1);
             obc_mask1_SSE2     = _mm_and_ps(obc_mask1_SSE2,jmask_SSE2);
             obc_mask1_SSE3     = _mm_and_ps(obc_mask1_SSE3,jmask_SSE3);
-            
+
             uij_SSE0           = gmx_mm_inv_ps(t1_SSE0);
             uij_SSE1           = gmx_mm_inv_ps(t1_SSE1);
             uij_SSE2           = gmx_mm_inv_ps(t1_SSE2);
             uij_SSE3           = gmx_mm_inv_ps(t1_SSE3);
             lij_SSE0           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE0,gmx_mm_inv_ps(t2_SSE0)),
-                                           _mm_andnot_ps(obc_mask2_SSE0,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE0,raj_inv_SSE));
             lij_SSE1           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE1,gmx_mm_inv_ps(t2_SSE1)),
-                                           _mm_andnot_ps(obc_mask2_SSE1,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE1,raj_inv_SSE));
             lij_SSE2           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE2,gmx_mm_inv_ps(t2_SSE2)),
-                                           _mm_andnot_ps(obc_mask2_SSE2,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE2,raj_inv_SSE));
             lij_SSE3           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE3,gmx_mm_inv_ps(t2_SSE3)),
-                                           _mm_andnot_ps(obc_mask2_SSE3,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE3,raj_inv_SSE));
             dlij_SSE0          = _mm_and_ps(one_SSE,obc_mask2_SSE0);
             dlij_SSE1          = _mm_and_ps(one_SSE,obc_mask2_SSE1);
             dlij_SSE2          = _mm_and_ps(one_SSE,obc_mask2_SSE2);
             dlij_SSE3          = _mm_and_ps(one_SSE,obc_mask2_SSE3);
-            
+
             uij2_SSE0          = _mm_mul_ps(uij_SSE0, uij_SSE0);
             uij2_SSE1          = _mm_mul_ps(uij_SSE1, uij_SSE1);
             uij2_SSE2          = _mm_mul_ps(uij_SSE2, uij_SSE2);
@@ -1957,7 +1957,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             lij3_SSE1          = _mm_mul_ps(lij2_SSE1,lij_SSE1);
             lij3_SSE2          = _mm_mul_ps(lij2_SSE2,lij_SSE2);
             lij3_SSE3          = _mm_mul_ps(lij2_SSE3,lij_SSE3);
-            
+
             diff2_SSE0         = _mm_sub_ps(uij2_SSE0,lij2_SSE0);
             diff2_SSE1         = _mm_sub_ps(uij2_SSE1,lij2_SSE1);
             diff2_SSE2         = _mm_sub_ps(uij2_SSE2,lij2_SSE2);
@@ -1974,7 +1974,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             prod_SSE1          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE1);
             prod_SSE2          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE2);
             prod_SSE3          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE3);
-            
+
             logterm_SSE0       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE0,lij_inv_SSE0));
             logterm_SSE1       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE1,lij_inv_SSE1));
             logterm_SSE2       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE2,lij_inv_SSE2));
@@ -2015,13 +2015,13 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE1            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE1,t4_SSE1));
             t1_SSE2            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE2,t4_SSE2));
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
-            
+
             _mm_store_ps(work+j, _mm_add_ps(_mm_load_ps(work+j),
                                             gmx_mm_sum4_ps(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
-                                                        _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
-                                                        _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
-                                                        _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
-            
+                                                           _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
+                                                           _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
+                                                           _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
+
             t1_SSE0            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE0),
                                             _mm_mul_ps(prod_SSE0,lij3_SSE0));
             t1_SSE1            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE1),
@@ -2070,7 +2070,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t2_SSE3            = _mm_sub_ps(t2_SSE3,
                                             _mm_add_ps(_mm_mul_ps(half_SSE,uij2_SSE3),
                                                        _mm_mul_ps(prod_SSE3,uij3_SSE3)));
-            
+
             t3_SSE0            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE0),
                                             _mm_mul_ps(rinv_SSE0,rinv_SSE0));
             t3_SSE1            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE1),
@@ -2079,7 +2079,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(rinv_SSE2,rinv_SSE2));
             t3_SSE3            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE3),
                                             _mm_mul_ps(rinv_SSE3,rinv_SSE3));
-            
+
             t3_SSE0            = _mm_sub_ps(t3_SSE0,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE0,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
@@ -2096,8 +2096,8 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE3,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
                                                                   _mm_mul_ps(sk2_rinv_SSE3,rinv_SSE3))));
-            
-            
+
+
             t1_SSE0            = _mm_mul_ps(rinv_SSE0,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE0,t1_SSE0),
                                                        _mm_add_ps(t2_SSE0,t3_SSE0)));
@@ -2119,17 +2119,17 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE3,obc_mask1_SSE3));
             dadx += 4;
-            
+
         }
-        
+
         /* Main part, no exclusions */
-        for(j=nj1; j<nj2; j+=UNROLLJ)
-        {                      
+        for (j=nj1; j<nj2; j+=UNROLLJ)
+        {
             /* load j atom coordinates */
             jx_SSE            = _mm_load_ps(x_align+j);
             jy_SSE            = _mm_load_ps(y_align+j);
             jz_SSE            = _mm_load_ps(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(ix_SSE0,jx_SSE);
             dy_SSE0            = _mm_sub_ps(iy_SSE0,jy_SSE);
@@ -2143,35 +2143,35 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dx_SSE3            = _mm_sub_ps(ix_SSE3,jx_SSE);
             dy_SSE3            = _mm_sub_ps(iy_SSE3,jy_SSE);
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
             rinv_SSE1          = gmx_mm_invsqrt_ps(rsq_SSE1);
             rinv_SSE2          = gmx_mm_invsqrt_ps(rsq_SSE2);
             rinv_SSE3          = gmx_mm_invsqrt_ps(rsq_SSE3);
-            
+
             /* Apply mask */
             rinv_SSE0          = _mm_and_ps(rinv_SSE0,imask_SSE0);
             rinv_SSE1          = _mm_and_ps(rinv_SSE1,imask_SSE1);
             rinv_SSE2          = _mm_and_ps(rinv_SSE2,imask_SSE2);
             rinv_SSE3          = _mm_and_ps(rinv_SSE3,imask_SSE3);
-            
+
             dr_SSE0            = _mm_mul_ps(rsq_SSE0,rinv_SSE0);
             dr_SSE1            = _mm_mul_ps(rsq_SSE1,rinv_SSE1);
             dr_SSE2            = _mm_mul_ps(rsq_SSE2,rinv_SSE2);
             dr_SSE3            = _mm_mul_ps(rsq_SSE3,rinv_SSE3);
-            
+
             sk_aj_SSE          = _mm_load_ps(obc_param+j);
             raj_SSE            = _mm_load_ps(gb_radius+j);
 
             raj_inv_SSE        = gmx_mm_inv_ps(raj_SSE);
-            
+
             /* Evaluate influence of atom aj -> ai */
             t1_SSE0            = _mm_add_ps(dr_SSE0,sk_aj_SSE);
             t1_SSE1            = _mm_add_ps(dr_SSE1,sk_aj_SSE);
@@ -2185,7 +2185,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t3_SSE1            = _mm_sub_ps(sk_aj_SSE,dr_SSE1);
             t3_SSE2            = _mm_sub_ps(sk_aj_SSE,dr_SSE2);
             t3_SSE3            = _mm_sub_ps(sk_aj_SSE,dr_SSE3);
-            
+
             obc_mask1_SSE0     = _mm_cmplt_ps(rai_SSE0, t1_SSE0);
             obc_mask1_SSE1     = _mm_cmplt_ps(rai_SSE1, t1_SSE1);
             obc_mask1_SSE2     = _mm_cmplt_ps(rai_SSE2, t1_SSE2);
@@ -2202,24 +2202,24 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             obc_mask1_SSE1     = _mm_and_ps(obc_mask1_SSE1,imask_SSE1);
             obc_mask1_SSE2     = _mm_and_ps(obc_mask1_SSE2,imask_SSE2);
             obc_mask1_SSE3     = _mm_and_ps(obc_mask1_SSE3,imask_SSE3);
-            
+
             uij_SSE0           = gmx_mm_inv_ps(t1_SSE0);
             uij_SSE1           = gmx_mm_inv_ps(t1_SSE1);
             uij_SSE2           = gmx_mm_inv_ps(t1_SSE2);
             uij_SSE3           = gmx_mm_inv_ps(t1_SSE3);
             lij_SSE0           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE0,gmx_mm_inv_ps(t2_SSE0)),
-                                           _mm_andnot_ps(obc_mask2_SSE0,rai_inv_SSE0));
+                                              _mm_andnot_ps(obc_mask2_SSE0,rai_inv_SSE0));
             lij_SSE1           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE1,gmx_mm_inv_ps(t2_SSE1)),
-                                           _mm_andnot_ps(obc_mask2_SSE1,rai_inv_SSE1));
+                                              _mm_andnot_ps(obc_mask2_SSE1,rai_inv_SSE1));
             lij_SSE2           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE2,gmx_mm_inv_ps(t2_SSE2)),
-                                           _mm_andnot_ps(obc_mask2_SSE2,rai_inv_SSE2));
+                                              _mm_andnot_ps(obc_mask2_SSE2,rai_inv_SSE2));
             lij_SSE3           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE3,gmx_mm_inv_ps(t2_SSE3)),
-                                           _mm_andnot_ps(obc_mask2_SSE3,rai_inv_SSE3));
+                                              _mm_andnot_ps(obc_mask2_SSE3,rai_inv_SSE3));
             dlij_SSE0          = _mm_and_ps(one_SSE,obc_mask2_SSE0);
             dlij_SSE1          = _mm_and_ps(one_SSE,obc_mask2_SSE1);
             dlij_SSE2          = _mm_and_ps(one_SSE,obc_mask2_SSE2);
             dlij_SSE3          = _mm_and_ps(one_SSE,obc_mask2_SSE3);
-            
+
             uij2_SSE0          = _mm_mul_ps(uij_SSE0, uij_SSE0);
             uij2_SSE1          = _mm_mul_ps(uij_SSE1, uij_SSE1);
             uij2_SSE2          = _mm_mul_ps(uij_SSE2, uij_SSE2);
@@ -2236,7 +2236,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             lij3_SSE1          = _mm_mul_ps(lij2_SSE1,lij_SSE1);
             lij3_SSE2          = _mm_mul_ps(lij2_SSE2,lij_SSE2);
             lij3_SSE3          = _mm_mul_ps(lij2_SSE3,lij_SSE3);
-            
+
             diff2_SSE0         = _mm_sub_ps(uij2_SSE0,lij2_SSE0);
             diff2_SSE1         = _mm_sub_ps(uij2_SSE1,lij2_SSE1);
             diff2_SSE2         = _mm_sub_ps(uij2_SSE2,lij2_SSE2);
@@ -2254,12 +2254,12 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             prod_SSE1          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE1);
             prod_SSE2          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE2);
             prod_SSE3          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE3);
-            
+
             logterm_SSE0       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE0,lij_inv_SSE0));
             logterm_SSE1       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE1,lij_inv_SSE1));
             logterm_SSE2       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE2,lij_inv_SSE2));
             logterm_SSE3       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE3,lij_inv_SSE3));
-            
+
             t1_SSE0            = _mm_sub_ps(lij_SSE0,uij_SSE0);
             t1_SSE1            = _mm_sub_ps(lij_SSE1,uij_SSE1);
             t1_SSE2            = _mm_sub_ps(lij_SSE2,uij_SSE2);
@@ -2276,7 +2276,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t2_SSE3            = _mm_mul_ps(diff2_SSE3,
                                             _mm_sub_ps(_mm_mul_ps(onefourth_SSE,dr_SSE3),
                                                        prod_SSE3));
-            
+
             t3_SSE0            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE0,logterm_SSE0));
             t3_SSE1            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE1,logterm_SSE1));
             t3_SSE2            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE2,logterm_SSE2));
@@ -2297,12 +2297,12 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE1            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE1,t4_SSE1));
             t1_SSE2            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE2,t4_SSE2));
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
-            
+
             sum_ai_SSE0        = _mm_add_ps(sum_ai_SSE0,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             sum_ai_SSE1        = _mm_add_ps(sum_ai_SSE1,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
             sum_ai_SSE2        = _mm_add_ps(sum_ai_SSE2,_mm_and_ps(t1_SSE2,obc_mask1_SSE2));
             sum_ai_SSE3        = _mm_add_ps(sum_ai_SSE3,_mm_and_ps(t1_SSE3,obc_mask1_SSE3));
-            
+
             t1_SSE0            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE0),
                                             _mm_mul_ps(prod_SSE0,lij3_SSE0));
             t1_SSE1            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE1),
@@ -2327,7 +2327,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(onefourth_SSE,
                                                        _mm_add_ps(_mm_mul_ps(lij_SSE3,rinv_SSE3),
                                                                   _mm_mul_ps(lij3_SSE3,dr_SSE3))));
-            
+
             t2_SSE0            = _mm_mul_ps(onefourth_SSE,
                                             _mm_add_ps(_mm_mul_ps(uij_SSE0,rinv_SSE0),
                                                        _mm_mul_ps(uij3_SSE0,dr_SSE0)));
@@ -2376,7 +2376,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE3,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
                                                                   _mm_mul_ps(sk2_rinv_SSE3,rinv_SSE3))));
-            
+
             t1_SSE0            = _mm_mul_ps(rinv_SSE0,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE0,t1_SSE0),
                                                        _mm_add_ps(t2_SSE0,t3_SSE0)));
@@ -2389,7 +2389,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(rinv_SSE3,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE3,t1_SSE3),
                                                        _mm_add_ps(t2_SSE3,t3_SSE3)));
-            
+
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
@@ -2398,7 +2398,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE3,obc_mask1_SSE3));
             dadx += 4;
-            
+
             /* Evaluate influence of atom ai -> aj */
             t1_SSE0            = _mm_add_ps(dr_SSE0,sk_ai_SSE0);
             t1_SSE1            = _mm_add_ps(dr_SSE1,sk_ai_SSE1);
@@ -2412,7 +2412,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t3_SSE1            = _mm_sub_ps(sk_ai_SSE1,dr_SSE1);
             t3_SSE2            = _mm_sub_ps(sk_ai_SSE2,dr_SSE2);
             t3_SSE3            = _mm_sub_ps(sk_ai_SSE3,dr_SSE3);
-            
+
             obc_mask1_SSE0     = _mm_cmplt_ps(raj_SSE, t1_SSE0);
             obc_mask1_SSE1     = _mm_cmplt_ps(raj_SSE, t1_SSE1);
             obc_mask1_SSE2     = _mm_cmplt_ps(raj_SSE, t1_SSE2);
@@ -2429,24 +2429,24 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             obc_mask1_SSE1     = _mm_and_ps(obc_mask1_SSE1,imask_SSE1);
             obc_mask1_SSE2     = _mm_and_ps(obc_mask1_SSE2,imask_SSE2);
             obc_mask1_SSE3     = _mm_and_ps(obc_mask1_SSE3,imask_SSE3);
-            
+
             uij_SSE0           = gmx_mm_inv_ps(t1_SSE0);
             uij_SSE1           = gmx_mm_inv_ps(t1_SSE1);
             uij_SSE2           = gmx_mm_inv_ps(t1_SSE2);
             uij_SSE3           = gmx_mm_inv_ps(t1_SSE3);
             lij_SSE0           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE0,gmx_mm_inv_ps(t2_SSE0)),
-                                           _mm_andnot_ps(obc_mask2_SSE0,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE0,raj_inv_SSE));
             lij_SSE1           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE1,gmx_mm_inv_ps(t2_SSE1)),
-                                           _mm_andnot_ps(obc_mask2_SSE1,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE1,raj_inv_SSE));
             lij_SSE2           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE2,gmx_mm_inv_ps(t2_SSE2)),
-                                           _mm_andnot_ps(obc_mask2_SSE2,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE2,raj_inv_SSE));
             lij_SSE3           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE3,gmx_mm_inv_ps(t2_SSE3)),
-                                           _mm_andnot_ps(obc_mask2_SSE3,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE3,raj_inv_SSE));
             dlij_SSE0          = _mm_and_ps(one_SSE,obc_mask2_SSE0);
             dlij_SSE1          = _mm_and_ps(one_SSE,obc_mask2_SSE1);
             dlij_SSE2          = _mm_and_ps(one_SSE,obc_mask2_SSE2);
             dlij_SSE3          = _mm_and_ps(one_SSE,obc_mask2_SSE3);
-            
+
             uij2_SSE0          = _mm_mul_ps(uij_SSE0, uij_SSE0);
             uij2_SSE1          = _mm_mul_ps(uij_SSE1, uij_SSE1);
             uij2_SSE2          = _mm_mul_ps(uij_SSE2, uij_SSE2);
@@ -2463,7 +2463,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             lij3_SSE1          = _mm_mul_ps(lij2_SSE1,lij_SSE1);
             lij3_SSE2          = _mm_mul_ps(lij2_SSE2,lij_SSE2);
             lij3_SSE3          = _mm_mul_ps(lij2_SSE3,lij_SSE3);
-            
+
             diff2_SSE0         = _mm_sub_ps(uij2_SSE0,lij2_SSE0);
             diff2_SSE1         = _mm_sub_ps(uij2_SSE1,lij2_SSE1);
             diff2_SSE2         = _mm_sub_ps(uij2_SSE2,lij2_SSE2);
@@ -2480,7 +2480,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             prod_SSE1          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE1);
             prod_SSE2          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE2);
             prod_SSE3          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE3);
-            
+
             logterm_SSE0       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE0,lij_inv_SSE0));
             logterm_SSE1       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE1,lij_inv_SSE1));
             logterm_SSE2       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE2,lij_inv_SSE2));
@@ -2521,13 +2521,13 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE1            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE1,t4_SSE1));
             t1_SSE2            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE2,t4_SSE2));
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
-            
+
             _mm_store_ps(work+j, _mm_add_ps(_mm_load_ps(work+j),
                                             gmx_mm_sum4_ps(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
-                                                        _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
-                                                        _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
-                                                        _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
-            
+                                                           _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
+                                                           _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
+                                                           _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
+
             t1_SSE0            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE0),
                                             _mm_mul_ps(prod_SSE0,lij3_SSE0));
             t1_SSE1            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE1),
@@ -2576,7 +2576,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t2_SSE3            = _mm_sub_ps(t2_SSE3,
                                             _mm_add_ps(_mm_mul_ps(half_SSE,uij2_SSE3),
                                                        _mm_mul_ps(prod_SSE3,uij3_SSE3)));
-            
+
             t3_SSE0            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE0),
                                             _mm_mul_ps(rinv_SSE0,rinv_SSE0));
             t3_SSE1            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE1),
@@ -2585,7 +2585,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(rinv_SSE2,rinv_SSE2));
             t3_SSE3            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE3),
                                             _mm_mul_ps(rinv_SSE3,rinv_SSE3));
-            
+
             t3_SSE0            = _mm_sub_ps(t3_SSE0,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE0,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
@@ -2602,7 +2602,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE3,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
                                                                   _mm_mul_ps(sk2_rinv_SSE3,rinv_SSE3))));
-            
+
             t1_SSE0            = _mm_mul_ps(rinv_SSE0,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE0,t1_SSE0),
                                                        _mm_add_ps(t2_SSE0,t3_SSE0)));
@@ -2615,7 +2615,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(rinv_SSE3,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE3,t1_SSE3),
                                                        _mm_add_ps(t2_SSE3,t3_SSE3)));
-            
+
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
@@ -2627,8 +2627,8 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
         }
 
         /* Epilogue part, including exclusion mask */
-        for(j=nj2; j<nj3; j+=UNROLLJ)
-        {                      
+        for (j=nj2; j<nj3; j+=UNROLLJ)
+        {
             jmask_SSE0 = _mm_load_ps((real *)emask0);
             jmask_SSE1 = _mm_load_ps((real *)emask1);
             jmask_SSE2 = _mm_load_ps((real *)emask2);
@@ -2637,12 +2637,12 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             emask1 += UNROLLJ;
             emask2 += UNROLLJ;
             emask3 += UNROLLJ;
-            
+
             /* load j atom coordinates */
             jx_SSE            = _mm_load_ps(x_align+j);
             jy_SSE            = _mm_load_ps(y_align+j);
             jz_SSE            = _mm_load_ps(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(ix_SSE0,jx_SSE);
             dy_SSE0            = _mm_sub_ps(iy_SSE0,jy_SSE);
@@ -2656,41 +2656,41 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dx_SSE3            = _mm_sub_ps(ix_SSE3,jx_SSE);
             dy_SSE3            = _mm_sub_ps(iy_SSE3,jy_SSE);
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
             jmask_SSE1         = _mm_and_ps(jmask_SSE1,imask_SSE1);
             jmask_SSE2         = _mm_and_ps(jmask_SSE2,imask_SSE2);
             jmask_SSE3         = _mm_and_ps(jmask_SSE3,imask_SSE3);
-            
+
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
             rinv_SSE1          = gmx_mm_invsqrt_ps(rsq_SSE1);
             rinv_SSE2          = gmx_mm_invsqrt_ps(rsq_SSE2);
             rinv_SSE3          = gmx_mm_invsqrt_ps(rsq_SSE3);
-            
+
             /* Apply mask */
             rinv_SSE0          = _mm_and_ps(rinv_SSE0,jmask_SSE0);
             rinv_SSE1          = _mm_and_ps(rinv_SSE1,jmask_SSE1);
             rinv_SSE2          = _mm_and_ps(rinv_SSE2,jmask_SSE2);
             rinv_SSE3          = _mm_and_ps(rinv_SSE3,jmask_SSE3);
-            
+
             dr_SSE0            = _mm_mul_ps(rsq_SSE0,rinv_SSE0);
             dr_SSE1            = _mm_mul_ps(rsq_SSE1,rinv_SSE1);
             dr_SSE2            = _mm_mul_ps(rsq_SSE2,rinv_SSE2);
             dr_SSE3            = _mm_mul_ps(rsq_SSE3,rinv_SSE3);
-            
+
             sk_aj_SSE          = _mm_load_ps(obc_param+j);
             raj_SSE            = _mm_load_ps(gb_radius+j);
 
             raj_inv_SSE        = gmx_mm_inv_ps(raj_SSE);
-            
+
             /* Evaluate influence of atom aj -> ai */
             t1_SSE0            = _mm_add_ps(dr_SSE0,sk_aj_SSE);
             t1_SSE1            = _mm_add_ps(dr_SSE1,sk_aj_SSE);
@@ -2704,7 +2704,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t3_SSE1            = _mm_sub_ps(sk_aj_SSE,dr_SSE1);
             t3_SSE2            = _mm_sub_ps(sk_aj_SSE,dr_SSE2);
             t3_SSE3            = _mm_sub_ps(sk_aj_SSE,dr_SSE3);
-            
+
             obc_mask1_SSE0     = _mm_cmplt_ps(rai_SSE0, t1_SSE0);
             obc_mask1_SSE1     = _mm_cmplt_ps(rai_SSE1, t1_SSE1);
             obc_mask1_SSE2     = _mm_cmplt_ps(rai_SSE2, t1_SSE2);
@@ -2721,24 +2721,24 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             obc_mask1_SSE1     = _mm_and_ps(obc_mask1_SSE1,jmask_SSE1);
             obc_mask1_SSE2     = _mm_and_ps(obc_mask1_SSE2,jmask_SSE2);
             obc_mask1_SSE3     = _mm_and_ps(obc_mask1_SSE3,jmask_SSE3);
-            
+
             uij_SSE0           = gmx_mm_inv_ps(t1_SSE0);
             uij_SSE1           = gmx_mm_inv_ps(t1_SSE1);
             uij_SSE2           = gmx_mm_inv_ps(t1_SSE2);
             uij_SSE3           = gmx_mm_inv_ps(t1_SSE3);
             lij_SSE0           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE0,gmx_mm_inv_ps(t2_SSE0)),
-                                           _mm_andnot_ps(obc_mask2_SSE0,rai_inv_SSE0));
+                                              _mm_andnot_ps(obc_mask2_SSE0,rai_inv_SSE0));
             lij_SSE1           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE1,gmx_mm_inv_ps(t2_SSE1)),
-                                           _mm_andnot_ps(obc_mask2_SSE1,rai_inv_SSE1));
+                                              _mm_andnot_ps(obc_mask2_SSE1,rai_inv_SSE1));
             lij_SSE2           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE2,gmx_mm_inv_ps(t2_SSE2)),
-                                           _mm_andnot_ps(obc_mask2_SSE2,rai_inv_SSE2));
+                                              _mm_andnot_ps(obc_mask2_SSE2,rai_inv_SSE2));
             lij_SSE3           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE3,gmx_mm_inv_ps(t2_SSE3)),
-                                           _mm_andnot_ps(obc_mask2_SSE3,rai_inv_SSE3));
+                                              _mm_andnot_ps(obc_mask2_SSE3,rai_inv_SSE3));
             dlij_SSE0          = _mm_and_ps(one_SSE,obc_mask2_SSE0);
             dlij_SSE1          = _mm_and_ps(one_SSE,obc_mask2_SSE1);
             dlij_SSE2          = _mm_and_ps(one_SSE,obc_mask2_SSE2);
             dlij_SSE3          = _mm_and_ps(one_SSE,obc_mask2_SSE3);
-            
+
             uij2_SSE0          = _mm_mul_ps(uij_SSE0, uij_SSE0);
             uij2_SSE1          = _mm_mul_ps(uij_SSE1, uij_SSE1);
             uij2_SSE2          = _mm_mul_ps(uij_SSE2, uij_SSE2);
@@ -2755,7 +2755,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             lij3_SSE1          = _mm_mul_ps(lij2_SSE1,lij_SSE1);
             lij3_SSE2          = _mm_mul_ps(lij2_SSE2,lij_SSE2);
             lij3_SSE3          = _mm_mul_ps(lij2_SSE3,lij_SSE3);
-            
+
             diff2_SSE0         = _mm_sub_ps(uij2_SSE0,lij2_SSE0);
             diff2_SSE1         = _mm_sub_ps(uij2_SSE1,lij2_SSE1);
             diff2_SSE2         = _mm_sub_ps(uij2_SSE2,lij2_SSE2);
@@ -2773,12 +2773,12 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             prod_SSE1          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE1);
             prod_SSE2          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE2);
             prod_SSE3          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE3);
-            
+
             logterm_SSE0       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE0,lij_inv_SSE0));
             logterm_SSE1       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE1,lij_inv_SSE1));
             logterm_SSE2       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE2,lij_inv_SSE2));
             logterm_SSE3       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE3,lij_inv_SSE3));
-            
+
             t1_SSE0            = _mm_sub_ps(lij_SSE0,uij_SSE0);
             t1_SSE1            = _mm_sub_ps(lij_SSE1,uij_SSE1);
             t1_SSE2            = _mm_sub_ps(lij_SSE2,uij_SSE2);
@@ -2795,7 +2795,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t2_SSE3            = _mm_mul_ps(diff2_SSE3,
                                             _mm_sub_ps(_mm_mul_ps(onefourth_SSE,dr_SSE3),
                                                        prod_SSE3));
-            
+
             t3_SSE0            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE0,logterm_SSE0));
             t3_SSE1            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE1,logterm_SSE1));
             t3_SSE2            = _mm_mul_ps(half_SSE,_mm_mul_ps(rinv_SSE2,logterm_SSE2));
@@ -2816,12 +2816,12 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE1            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE1,t4_SSE1));
             t1_SSE2            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE2,t4_SSE2));
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
-            
+
             sum_ai_SSE0        = _mm_add_ps(sum_ai_SSE0,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             sum_ai_SSE1        = _mm_add_ps(sum_ai_SSE1,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
             sum_ai_SSE2        = _mm_add_ps(sum_ai_SSE2,_mm_and_ps(t1_SSE2,obc_mask1_SSE2));
             sum_ai_SSE3        = _mm_add_ps(sum_ai_SSE3,_mm_and_ps(t1_SSE3,obc_mask1_SSE3));
-            
+
             t1_SSE0            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE0),
                                             _mm_mul_ps(prod_SSE0,lij3_SSE0));
             t1_SSE1            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE1),
@@ -2846,7 +2846,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(onefourth_SSE,
                                                        _mm_add_ps(_mm_mul_ps(lij_SSE3,rinv_SSE3),
                                                                   _mm_mul_ps(lij3_SSE3,dr_SSE3))));
-            
+
             t2_SSE0            = _mm_mul_ps(onefourth_SSE,
                                             _mm_add_ps(_mm_mul_ps(uij_SSE0,rinv_SSE0),
                                                        _mm_mul_ps(uij3_SSE0,dr_SSE0)));
@@ -2895,7 +2895,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE3,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
                                                                   _mm_mul_ps(sk2_rinv_SSE3,rinv_SSE3))));
-            
+
             t1_SSE0            = _mm_mul_ps(rinv_SSE0,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE0,t1_SSE0),
                                                        _mm_add_ps(t2_SSE0,t3_SSE0)));
@@ -2908,7 +2908,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(rinv_SSE3,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE3,t1_SSE3),
                                                        _mm_add_ps(t2_SSE3,t3_SSE3)));
-            
+
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
@@ -2917,7 +2917,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE3,obc_mask1_SSE3));
             dadx += 4;
-            
+
             /* Evaluate influence of atom ai -> aj */
             t1_SSE0            = _mm_add_ps(dr_SSE0,sk_ai_SSE0);
             t1_SSE1            = _mm_add_ps(dr_SSE1,sk_ai_SSE1);
@@ -2931,7 +2931,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t3_SSE1            = _mm_sub_ps(sk_ai_SSE1,dr_SSE1);
             t3_SSE2            = _mm_sub_ps(sk_ai_SSE2,dr_SSE2);
             t3_SSE3            = _mm_sub_ps(sk_ai_SSE3,dr_SSE3);
-            
+
             obc_mask1_SSE0     = _mm_cmplt_ps(raj_SSE, t1_SSE0);
             obc_mask1_SSE1     = _mm_cmplt_ps(raj_SSE, t1_SSE1);
             obc_mask1_SSE2     = _mm_cmplt_ps(raj_SSE, t1_SSE2);
@@ -2948,24 +2948,24 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             obc_mask1_SSE1     = _mm_and_ps(obc_mask1_SSE1,jmask_SSE1);
             obc_mask1_SSE2     = _mm_and_ps(obc_mask1_SSE2,jmask_SSE2);
             obc_mask1_SSE3     = _mm_and_ps(obc_mask1_SSE3,jmask_SSE3);
-            
+
             uij_SSE0           = gmx_mm_inv_ps(t1_SSE0);
             uij_SSE1           = gmx_mm_inv_ps(t1_SSE1);
             uij_SSE2           = gmx_mm_inv_ps(t1_SSE2);
             uij_SSE3           = gmx_mm_inv_ps(t1_SSE3);
             lij_SSE0           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE0,gmx_mm_inv_ps(t2_SSE0)),
-                                           _mm_andnot_ps(obc_mask2_SSE0,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE0,raj_inv_SSE));
             lij_SSE1           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE1,gmx_mm_inv_ps(t2_SSE1)),
-                                           _mm_andnot_ps(obc_mask2_SSE1,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE1,raj_inv_SSE));
             lij_SSE2           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE2,gmx_mm_inv_ps(t2_SSE2)),
-                                           _mm_andnot_ps(obc_mask2_SSE2,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE2,raj_inv_SSE));
             lij_SSE3           = _mm_or_ps(   _mm_and_ps(obc_mask2_SSE3,gmx_mm_inv_ps(t2_SSE3)),
-                                           _mm_andnot_ps(obc_mask2_SSE3,raj_inv_SSE));
+                                              _mm_andnot_ps(obc_mask2_SSE3,raj_inv_SSE));
             dlij_SSE0          = _mm_and_ps(one_SSE,obc_mask2_SSE0);
             dlij_SSE1          = _mm_and_ps(one_SSE,obc_mask2_SSE1);
             dlij_SSE2          = _mm_and_ps(one_SSE,obc_mask2_SSE2);
             dlij_SSE3          = _mm_and_ps(one_SSE,obc_mask2_SSE3);
-            
+
             uij2_SSE0          = _mm_mul_ps(uij_SSE0, uij_SSE0);
             uij2_SSE1          = _mm_mul_ps(uij_SSE1, uij_SSE1);
             uij2_SSE2          = _mm_mul_ps(uij_SSE2, uij_SSE2);
@@ -2982,7 +2982,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             lij3_SSE1          = _mm_mul_ps(lij2_SSE1,lij_SSE1);
             lij3_SSE2          = _mm_mul_ps(lij2_SSE2,lij_SSE2);
             lij3_SSE3          = _mm_mul_ps(lij2_SSE3,lij_SSE3);
-            
+
             diff2_SSE0         = _mm_sub_ps(uij2_SSE0,lij2_SSE0);
             diff2_SSE1         = _mm_sub_ps(uij2_SSE1,lij2_SSE1);
             diff2_SSE2         = _mm_sub_ps(uij2_SSE2,lij2_SSE2);
@@ -2999,7 +2999,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             prod_SSE1          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE1);
             prod_SSE2          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE2);
             prod_SSE3          = _mm_mul_ps(onefourth_SSE,sk2_rinv_SSE3);
-            
+
             logterm_SSE0       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE0,lij_inv_SSE0));
             logterm_SSE1       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE1,lij_inv_SSE1));
             logterm_SSE2       = gmx_mm_log_ps(_mm_mul_ps(uij_SSE2,lij_inv_SSE2));
@@ -3040,13 +3040,13 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE1            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE1,t4_SSE1));
             t1_SSE2            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE2,t4_SSE2));
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
-            
+
             _mm_store_ps(work+j, _mm_add_ps(_mm_load_ps(work+j),
                                             gmx_mm_sum4_ps(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
-                                                        _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
-                                                        _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
-                                                        _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
-            
+                                                           _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
+                                                           _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
+                                                           _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
+
             t1_SSE0            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE0),
                                             _mm_mul_ps(prod_SSE0,lij3_SSE0));
             t1_SSE1            = _mm_add_ps(_mm_mul_ps(half_SSE,lij2_SSE1),
@@ -3095,7 +3095,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t2_SSE3            = _mm_sub_ps(t2_SSE3,
                                             _mm_add_ps(_mm_mul_ps(half_SSE,uij2_SSE3),
                                                        _mm_mul_ps(prod_SSE3,uij3_SSE3)));
-            
+
             t3_SSE0            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE0),
                                             _mm_mul_ps(rinv_SSE0,rinv_SSE0));
             t3_SSE1            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE1),
@@ -3104,7 +3104,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(rinv_SSE2,rinv_SSE2));
             t3_SSE3            = _mm_mul_ps(_mm_mul_ps(onefourth_SSE,logterm_SSE3),
                                             _mm_mul_ps(rinv_SSE3,rinv_SSE3));
-            
+
             t3_SSE0            = _mm_sub_ps(t3_SSE0,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE0,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
@@ -3121,8 +3121,8 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
                                             _mm_mul_ps(_mm_mul_ps(diff2_SSE3,oneeighth_SSE),
                                                        _mm_add_ps(one_SSE,
                                                                   _mm_mul_ps(sk2_rinv_SSE3,rinv_SSE3))));
-            
-            
+
+
             t1_SSE0            = _mm_mul_ps(rinv_SSE0,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE0,t1_SSE0),
                                                        _mm_add_ps(t2_SSE0,t3_SSE0)));
@@ -3135,7 +3135,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(rinv_SSE3,
                                             _mm_add_ps(_mm_mul_ps(dlij_SSE3,t1_SSE3),
                                                        _mm_add_ps(t2_SSE3,t3_SSE3)));
-            
+
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE0,obc_mask1_SSE0));
             dadx += 4;
             _mm_store_ps(dadx,_mm_and_ps(t1_SSE1,obc_mask1_SSE1));
@@ -3150,70 +3150,70 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
         sum_ai_SSE2 = _mm_add_ps(sum_ai_SSE2,sum_ai_SSE3);
         sum_ai_SSE0 = _mm_add_ps(sum_ai_SSE0,sum_ai_SSE2);
         _mm_store_ps(work+i, _mm_add_ps(sum_ai_SSE0, _mm_load_ps(work+i)));
-	}    
-    
-    
-    for(i=0;i<natoms/2+1;i++)
+    }
+
+
+    for (i=0; i<natoms/2+1; i++)
     {
         work[i] += work[natoms+i];
     }
-    
+
     /* Parallel summations */
-    
-	if(PARTDECOMP(cr))
-	{
-		gmx_sum(natoms,work, cr);
-	}
-	
-    if(gb_algorithm==egbHCT)
+
+    if (PARTDECOMP(cr))
+    {
+        gmx_sum(natoms,work, cr);
+    }
+
+    if (gb_algorithm==egbHCT)
     {
         /* HCT */
-        for(i=0;i<natoms;i++)
+        for (i=0; i<natoms; i++)
         {
-            if(born->use[i] != 0)
+            if (born->use[i] != 0)
             {
-                rai     = top->atomtypes.gb_radius[mdatoms->typeA[i]]-born->gb_doffset; 
+                rai     = top->atomtypes.gb_radius[mdatoms->typeA[i]]-born->gb_doffset;
                 sum_ai  = 1.0/rai - work[i];
                 min_rad = rai + born->gb_doffset;
-                rad     = 1.0/sum_ai; 
-                
+                rad     = 1.0/sum_ai;
+
                 born->bRad[i]   = rad > min_rad ? rad : min_rad;
                 fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
             }
         }
-        
+
     }
     else
     {
         /* OBC */
-        
-    	/* Calculate the radii */
-        for(i=0;i<natoms;i++)
+
+        /* Calculate the radii */
+        for (i=0; i<natoms; i++)
         {
-            
-            if(born->use[i] != 0)
+
+            if (born->use[i] != 0)
             {
                 rai        = top->atomtypes.gb_radius[mdatoms->typeA[i]];
                 rai_inv2   = 1.0/rai;
-                rai        = rai-born->gb_doffset; 
+                rai        = rai-born->gb_doffset;
                 rai_inv    = 1.0/rai;
                 sum_ai     = rai * work[i];
                 sum_ai2    = sum_ai  * sum_ai;
                 sum_ai3    = sum_ai2 * sum_ai;
-                
+
                 tsum    = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
                 born->bRad[i] = rai_inv - tsum*rai_inv2;
                 born->bRad[i] = 1.0 / born->bRad[i];
-                
+
                 fr->invsqrta[i]=gmx_invsqrt(born->bRad[i]);
-                
+
                 tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
                 born->drobc[i] = (1.0-tsum*tsum)*tchain*rai_inv2;
             }
         }
     }
-	
-	return 0;
+
+    return 0;
 }
 
 
@@ -3232,11 +3232,11 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
                                             int                    gb_algorithm,
                                             void *                 paadata)
 {
-	gmx_allvsallgb2_data_t *aadata;
-	int        natoms;
-	int        ni0,ni1;
-	int        nj0,nj1,nj2,nj3;
-	int        i,j,k,n;
+    gmx_allvsallgb2_data_t *aadata;
+    int        natoms;
+    int        ni0,ni1;
+    int        nj0,nj1,nj2,nj3;
+    int        i,j,k,n;
     int        idx;
     int *      mask;
     int *      pmask0;
@@ -3258,7 +3258,7 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
     real *     fy_align;
     real *     fz_align;
     real       tmpsum[4];
-    
+
     __m128     jmask_SSE0,jmask_SSE1,jmask_SSE2,jmask_SSE3;
     __m128     ix_SSE0,iy_SSE0,iz_SSE0;
     __m128     ix_SSE1,iy_SSE1,iz_SSE1;
@@ -3284,114 +3284,114 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
     __m128     tx_SSE2,ty_SSE2,tz_SSE2;
     __m128     tx_SSE3,ty_SSE3,tz_SSE3;
     __m128     t1,t2;
-    
+
     natoms              = mdatoms->nr;
-	ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
-	ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
+    ni1                 = mdatoms->start+mdatoms->homenr;
     dadx                = fr->dadx;
-    
+
     aadata = (gmx_allvsallgb2_data_t *)paadata;
 
     x_align = aadata->x_align;
-	y_align = aadata->y_align;
-	z_align = aadata->z_align;
+    y_align = aadata->y_align;
+    z_align = aadata->z_align;
     fx_align = aadata->fx_align;
-	fy_align = aadata->fy_align;
-	fz_align = aadata->fz_align;
-    
+    fy_align = aadata->fy_align;
+    fz_align = aadata->fz_align;
+
     jindex    = aadata->jindex_gb;
     dadx      = fr->dadx;
 
     n = 0;
     rb = aadata->work;
-    
-	/* Loop to get the proper form for the Born radius term */
-	if(gb_algorithm==egbSTILL) 
-	{
-		for(i=0;i<natoms;i++)
-		{
-			rbi   = born->bRad[i];
-			rb[i] = (2 * rbi * rbi * fr->dvda[i])/ONE_4PI_EPS0;
-		}
-	}
-	else if(gb_algorithm==egbHCT) 
-	{
-		for(i=0;i<natoms;i++)
-		{
-			rbi   = born->bRad[i];
-			rb[i] = rbi * rbi * fr->dvda[i];
-		}
-	}
-	else if(gb_algorithm==egbOBC) 
-	{
-		for(idx=0;idx<natoms;idx++)
-		{
-			rbi   = born->bRad[idx];
-			rb[idx] = rbi * rbi * born->drobc[idx] * fr->dvda[idx];
-		}
-	}
-    
-    for(i=0;i<2*natoms;i++)
-	{
-		fx_align[i]       = 0;
-		fy_align[i]       = 0;
-		fz_align[i]       = 0;
-    }        
-    
-    
-    for(i=0;i<natoms;i++)
+
+    /* Loop to get the proper form for the Born radius term */
+    if (gb_algorithm==egbSTILL)
+    {
+        for (i=0; i<natoms; i++)
+        {
+            rbi   = born->bRad[i];
+            rb[i] = (2 * rbi * rbi * fr->dvda[i])/ONE_4PI_EPS0;
+        }
+    }
+    else if (gb_algorithm==egbHCT)
+    {
+        for (i=0; i<natoms; i++)
+        {
+            rbi   = born->bRad[i];
+            rb[i] = rbi * rbi * fr->dvda[i];
+        }
+    }
+    else if (gb_algorithm==egbOBC)
+    {
+        for (idx=0; idx<natoms; idx++)
+        {
+            rbi   = born->bRad[idx];
+            rb[idx] = rbi * rbi * born->drobc[idx] * fr->dvda[idx];
+        }
+    }
+
+    for (i=0; i<2*natoms; i++)
+    {
+        fx_align[i]       = 0;
+        fy_align[i]       = 0;
+        fz_align[i]       = 0;
+    }
+
+
+    for (i=0; i<natoms; i++)
     {
         rb[i+natoms]=rb[i];
     }
 
-    for(i=ni0; i<ni1; i+=UNROLLI)
-	{
-		/* We assume shifts are NOT used for all-vs-all interactions */
-		
-		/* Load i atom data */
-		ix_SSE0          = _mm_load1_ps(x_align+i);
-		iy_SSE0          = _mm_load1_ps(y_align+i);
-		iz_SSE0          = _mm_load1_ps(z_align+i);
-		ix_SSE1          = _mm_load1_ps(x_align+i+1);
-		iy_SSE1          = _mm_load1_ps(y_align+i+1);
-		iz_SSE1          = _mm_load1_ps(z_align+i+1);
-		ix_SSE2          = _mm_load1_ps(x_align+i+2);
-		iy_SSE2          = _mm_load1_ps(y_align+i+2);
-		iz_SSE2          = _mm_load1_ps(z_align+i+2);
-		ix_SSE3          = _mm_load1_ps(x_align+i+3);
-		iy_SSE3          = _mm_load1_ps(y_align+i+3);
-		iz_SSE3          = _mm_load1_ps(z_align+i+3);
-        
-		fix_SSE0         = _mm_setzero_ps();
-		fiy_SSE0         = _mm_setzero_ps();
-		fiz_SSE0         = _mm_setzero_ps();
-		fix_SSE1         = _mm_setzero_ps();
-		fiy_SSE1         = _mm_setzero_ps();
-		fiz_SSE1         = _mm_setzero_ps();
-		fix_SSE2         = _mm_setzero_ps();
-		fiy_SSE2         = _mm_setzero_ps();
-		fiz_SSE2         = _mm_setzero_ps();
-		fix_SSE3         = _mm_setzero_ps();
-		fiy_SSE3         = _mm_setzero_ps();
-		fiz_SSE3         = _mm_setzero_ps();
-        
+    for (i=ni0; i<ni1; i+=UNROLLI)
+    {
+        /* We assume shifts are NOT used for all-vs-all interactions */
+
+        /* Load i atom data */
+        ix_SSE0          = _mm_load1_ps(x_align+i);
+        iy_SSE0          = _mm_load1_ps(y_align+i);
+        iz_SSE0          = _mm_load1_ps(z_align+i);
+        ix_SSE1          = _mm_load1_ps(x_align+i+1);
+        iy_SSE1          = _mm_load1_ps(y_align+i+1);
+        iz_SSE1          = _mm_load1_ps(z_align+i+1);
+        ix_SSE2          = _mm_load1_ps(x_align+i+2);
+        iy_SSE2          = _mm_load1_ps(y_align+i+2);
+        iz_SSE2          = _mm_load1_ps(z_align+i+2);
+        ix_SSE3          = _mm_load1_ps(x_align+i+3);
+        iy_SSE3          = _mm_load1_ps(y_align+i+3);
+        iz_SSE3          = _mm_load1_ps(z_align+i+3);
+
+        fix_SSE0         = _mm_setzero_ps();
+        fiy_SSE0         = _mm_setzero_ps();
+        fiz_SSE0         = _mm_setzero_ps();
+        fix_SSE1         = _mm_setzero_ps();
+        fiy_SSE1         = _mm_setzero_ps();
+        fiz_SSE1         = _mm_setzero_ps();
+        fix_SSE2         = _mm_setzero_ps();
+        fiy_SSE2         = _mm_setzero_ps();
+        fiz_SSE2         = _mm_setzero_ps();
+        fix_SSE3         = _mm_setzero_ps();
+        fiy_SSE3         = _mm_setzero_ps();
+        fiz_SSE3         = _mm_setzero_ps();
+
         rbai_SSE0        = _mm_load1_ps(rb+i);
         rbai_SSE1        = _mm_load1_ps(rb+i+1);
         rbai_SSE2        = _mm_load1_ps(rb+i+2);
         rbai_SSE3        = _mm_load1_ps(rb+i+3);
-        
-		/* Load limits for loop over neighbors */
-		nj0              = jindex[4*i];
-		nj3              = jindex[4*i+3];
+
+        /* Load limits for loop over neighbors */
+        nj0              = jindex[4*i];
+        nj3              = jindex[4*i+3];
 
         /* No masks necessary, since the stored chain rule derivatives will be zero in those cases! */
-        for(j=nj0; j<nj3; j+=UNROLLJ)
-        {          
+        for (j=nj0; j<nj3; j+=UNROLLJ)
+        {
             /* load j atom coordinates */
             jx_SSE           = _mm_load_ps(x_align+j);
             jy_SSE           = _mm_load_ps(y_align+j);
             jz_SSE           = _mm_load_ps(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0          = _mm_sub_ps(ix_SSE0,jx_SSE);
             dy_SSE0          = _mm_sub_ps(iy_SSE0,jy_SSE);
@@ -3405,10 +3405,10 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             dx_SSE3          = _mm_sub_ps(ix_SSE3,jx_SSE);
             dy_SSE3          = _mm_sub_ps(iy_SSE3,jy_SSE);
             dz_SSE3          = _mm_sub_ps(iz_SSE3,jz_SSE);
-            
+
             rbaj_SSE         = _mm_load_ps(rb+j);
-            
-            fgb_SSE0         = _mm_mul_ps(rbai_SSE0,_mm_load_ps(dadx));            
+
+            fgb_SSE0         = _mm_mul_ps(rbai_SSE0,_mm_load_ps(dadx));
             dadx += 4;
             fgb_SSE1         = _mm_mul_ps(rbai_SSE1,_mm_load_ps(dadx));
             dadx += 4;
@@ -3416,7 +3416,7 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             dadx += 4;
             fgb_SSE3         = _mm_mul_ps(rbai_SSE3,_mm_load_ps(dadx));
             dadx += 4;
-                        
+
             fgb_ai_SSE0      = _mm_mul_ps(rbaj_SSE,_mm_load_ps(dadx));
             dadx +=4;
             fgb_ai_SSE1      = _mm_mul_ps(rbaj_SSE,_mm_load_ps(dadx));
@@ -3425,13 +3425,13 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             dadx +=4;
             fgb_ai_SSE3      = _mm_mul_ps(rbaj_SSE,_mm_load_ps(dadx));
             dadx +=4;
-            
+
             /* Total force between ai and aj is the sum of ai->aj and aj->ai */
             fgb_SSE0         = _mm_add_ps(fgb_SSE0,fgb_ai_SSE0);
             fgb_SSE1         = _mm_add_ps(fgb_SSE1,fgb_ai_SSE1);
             fgb_SSE2         = _mm_add_ps(fgb_SSE2,fgb_ai_SSE2);
             fgb_SSE3         = _mm_add_ps(fgb_SSE3,fgb_ai_SSE3);
-                            
+
             /* Calculate temporary vectorial force */
             tx_SSE0            = _mm_mul_ps(fgb_SSE0,dx_SSE0);
             ty_SSE0            = _mm_mul_ps(fgb_SSE0,dy_SSE0);
@@ -3445,7 +3445,7 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             tx_SSE3            = _mm_mul_ps(fgb_SSE3,dx_SSE3);
             ty_SSE3            = _mm_mul_ps(fgb_SSE3,dy_SSE3);
             tz_SSE3            = _mm_mul_ps(fgb_SSE3,dz_SSE3);
-            
+
             /* Increment i atom force */
             fix_SSE0          = _mm_add_ps(fix_SSE0,tx_SSE0);
             fiy_SSE0          = _mm_add_ps(fiy_SSE0,ty_SSE0);
@@ -3459,7 +3459,7 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             fix_SSE3          = _mm_add_ps(fix_SSE3,tx_SSE3);
             fiy_SSE3          = _mm_add_ps(fiy_SSE3,ty_SSE3);
             fiz_SSE3          = _mm_add_ps(fiz_SSE3,tz_SSE3);
-            
+
             /* Decrement j atom force */
             _mm_store_ps(fx_align+j,
                          _mm_sub_ps( _mm_load_ps(fx_align+j) , gmx_mm_sum4_ps(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3) ));
@@ -3468,34 +3468,34 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             _mm_store_ps(fz_align+j,
                          _mm_sub_ps( _mm_load_ps(fz_align+j) , gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
         }
-		/* Add i forces to mem and shifted force list */
+        /* Add i forces to mem and shifted force list */
         _MM_TRANSPOSE4_PS(fix_SSE0,fix_SSE1,fix_SSE2,fix_SSE3);
         fix_SSE0 = _mm_add_ps(fix_SSE0,fix_SSE1);
         fix_SSE2 = _mm_add_ps(fix_SSE2,fix_SSE3);
         fix_SSE0 = _mm_add_ps(fix_SSE0,fix_SSE2);
         _mm_store_ps(fx_align+i, _mm_add_ps(fix_SSE0, _mm_load_ps(fx_align+i)));
-        
+
         _MM_TRANSPOSE4_PS(fiy_SSE0,fiy_SSE1,fiy_SSE2,fiy_SSE3);
         fiy_SSE0 = _mm_add_ps(fiy_SSE0,fiy_SSE1);
         fiy_SSE2 = _mm_add_ps(fiy_SSE2,fiy_SSE3);
         fiy_SSE0 = _mm_add_ps(fiy_SSE0,fiy_SSE2);
         _mm_store_ps(fy_align+i, _mm_add_ps(fiy_SSE0, _mm_load_ps(fy_align+i)));
-        
+
         _MM_TRANSPOSE4_PS(fiz_SSE0,fiz_SSE1,fiz_SSE2,fiz_SSE3);
         fiz_SSE0 = _mm_add_ps(fiz_SSE0,fiz_SSE1);
         fiz_SSE2 = _mm_add_ps(fiz_SSE2,fiz_SSE3);
         fiz_SSE0 = _mm_add_ps(fiz_SSE0,fiz_SSE2);
-        _mm_store_ps(fz_align+i, _mm_add_ps(fiz_SSE0, _mm_load_ps(fz_align+i)));		
-	}    
-	
-    for(i=0;i<natoms;i++)
-	{
-		f[3*i]       += fx_align[i] + fx_align[natoms+i];
-		f[3*i+1]     += fy_align[i] + fy_align[natoms+i];
-		f[3*i+2]     += fz_align[i] + fz_align[natoms+i];
+        _mm_store_ps(fz_align+i, _mm_add_ps(fiz_SSE0, _mm_load_ps(fz_align+i)));
     }
-    
-	return 0;
+
+    for (i=0; i<natoms; i++)
+    {
+        f[3*i]       += fx_align[i] + fx_align[natoms+i];
+        f[3*i+1]     += fy_align[i] + fy_align[natoms+i];
+        f[3*i+2]     += fz_align[i] + fz_align[natoms+i];
+    }
+
+    return 0;
 }
 
 #else

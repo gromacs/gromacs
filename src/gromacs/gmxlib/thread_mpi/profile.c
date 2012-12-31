@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -72,7 +72,7 @@ int tMPI_Profile_started=0;
 
 
 /* this must match the tmpi_functions enum: */
-const char *tmpi_function_names[] = 
+const char *tmpi_function_names[] =
 {
     "Send",
     "Recv",
@@ -104,7 +104,7 @@ const char *tmpi_function_names[] =
 
 
 /* this must match the tmpi_wait_functions enum: */
-const char *tmpi_waitfn_names[] = 
+const char *tmpi_waitfn_names[] =
 {
     "P2p",
     "P2p signal",
@@ -125,16 +125,16 @@ void tMPI_Profile_init(struct tmpi_profile *prof)
     int i;
 
     /* reset counters */
-    for(i=0;i<TMPIFN_Nfunctions;i++)
+    for (i=0; i<TMPIFN_Nfunctions; i++)
     {
         prof->mpifn_calls[i]=0;
     }
 #ifdef TMPI_CYCLE_COUNT
-    for(i=0;i<TMPIFN_Nfunctions;i++)
+    for (i=0; i<TMPIFN_Nfunctions; i++)
     {
         prof->mpifn_cycles[i]=0;
     }
-    for(i=0;i<TMPIWAIT_N;i++)
+    for (i=0; i<TMPIWAIT_N; i++)
     {
         prof->wait_cycles[i]=0;
     }
@@ -175,7 +175,7 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
     printf("\nTMPI PROFILE:\n");
     printf("%11s", " ");
     len+=11;
-    for(j=0;j<Nthreads;j++)
+    for (j=0; j<Nthreads; j++)
     {
         char thrn[128];
         snprintf(thrn, sizeof(thrn), "Thread %d", j);
@@ -186,16 +186,18 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
     len+=11;
 
     /* print line */
-    for(i=0;i<len;i++)
+    for (i=0; i<len; i++)
+    {
         printf("-");
+    }
     printf("\n");
 
-    for(i=0;i<TMPIFN_Nfunctions;i++)
+    for (i=0; i<TMPIFN_Nfunctions; i++)
     {
         long unsigned int total=0;
 
         printf("%11s", tmpi_function_names[i]);
-        for(j=0;j<Nthreads;j++)
+        for (j=0; j<Nthreads; j++)
         {
             long unsigned int count=threads[j].profile.mpifn_calls[i];
 
@@ -210,7 +212,7 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
         long unsigned int tot_buf=0;
         long unsigned int tot_count=0;
         printf("%11s", "P2p");
-        for(j=0;j<Nthreads;j++)
+        for (j=0; j<Nthreads; j++)
         {
             long unsigned int buf=threads[j].profile.buffered_p2p_xfers;
             long unsigned int count=threads[j].profile.total_p2p_xfers;
@@ -225,7 +227,7 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
         tot_buf=0;
         tot_count=0;
         printf("%11s", "Collective");
-        for(j=0;j<Nthreads;j++)
+        for (j=0; j<Nthreads; j++)
         {
             long unsigned int buf=threads[j].profile.buffered_coll_xfers;
             long unsigned int count=threads[j].profile.total_coll_xfers;
@@ -241,17 +243,19 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
 
 #ifdef TMPI_CYCLE_COUNT
     printf("\nCall times as fraction of total run time:\n");
-    for(j=0;j<Nthreads;j++)
+    for (j=0; j<Nthreads; j++)
+    {
         threads[j].profile.totals=0.;
-    for(i=0;i<TMPIFN_Nfunctions;i++)
+    }
+    for (i=0; i<TMPIFN_Nfunctions; i++)
     {
         double tot_time=0.;
         double tot_diff=0.;
 
         printf("%11s", tmpi_function_names[i]);
-        for(j=0;j<Nthreads;j++)
+        for (j=0; j<Nthreads; j++)
         {
-            double time=(double)(threads[j].profile.global_stop - 
+            double time=(double)(threads[j].profile.global_stop -
                                  threads[j].profile.global_start );
             double diff=((double)threads[j].profile.mpifn_cycles[i]);
             tot_time += time;
@@ -266,33 +270,35 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
         double tot_diff=0.;
 
         printf("%11s", "Total");
-        for(j=0;j<Nthreads;j++)
+        for (j=0; j<Nthreads; j++)
         {
-            double time=(double)(threads[j].profile.global_stop - 
+            double time=(double)(threads[j].profile.global_stop -
                                  threads[j].profile.global_start );
             double diff=threads[j].profile.totals;
 
             tot_time += time;
             tot_diff += diff;
             printf(" %10.5f", diff/time );
-        } 
+        }
         printf(" %10.5f\n", tot_diff/tot_time);
     }
 
 
     printf("\nWait times as fraction of total run time:\n");
-    for(j=0;j<Nthreads;j++)
+    for (j=0; j<Nthreads; j++)
+    {
         threads[j].profile.totals=0.;
+    }
 
-    for(i=0;i<TMPIWAIT_N;i++)
+    for (i=0; i<TMPIWAIT_N; i++)
     {
         double tot_time=0.;
         double tot_diff=0.;
 
         printf("%11s", tmpi_waitfn_names[i]);
-        for(j=0;j<Nthreads;j++)
+        for (j=0; j<Nthreads; j++)
         {
-            double time=(double)(threads[j].profile.global_stop - 
+            double time=(double)(threads[j].profile.global_stop -
                                  threads[j].profile.global_start );
             double diff=((double)threads[j].profile.wait_cycles[i]);
             tot_time += time;
@@ -308,22 +314,24 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
         double tot_diff=0.;
 
         printf("%11s", "Total");
-        for(j=0;j<Nthreads;j++)
+        for (j=0; j<Nthreads; j++)
         {
-            double time=(double)(threads[j].profile.global_stop - 
+            double time=(double)(threads[j].profile.global_stop -
                                  threads[j].profile.global_start );
             double diff=threads[j].profile.totals;
 
             tot_time += time;
             tot_diff += diff;
             printf(" %10.5f", diff/time );
-        } 
+        }
         printf(" %10.5f\n", tot_diff/tot_time);
     }
 #endif
     /* print line */
-    for(i=0;i<len;i++)
+    for (i=0; i<len; i++)
+    {
         printf("-");
+    }
     printf("\n");
 
     /* here we make use of the fact that this is how we calculate tMPI_Wtime */

@@ -1,19 +1,19 @@
 /* A Bison parser, made by GNU Bison 2.5.  */
 
 /* Bison interface for Yacc-like parsers in C
-   
+
       Copyright (C) 1984, 1989-1990, 2000-2011 Free Software Foundation, Inc.
-   
+
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -26,7 +26,7 @@
    special exception, which will cause the skeleton and the resulting
    Bison output files to be licensed under the GNU General Public
    License without this special exception.
-   
+
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
@@ -46,43 +46,44 @@
 /* Tokens.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-   /* Put the tokens into the symbol table, so that GDB and other debuggers
-      know about them.  */
-   enum yytokentype {
-     INVALID = 258,
-     HELP = 259,
-     HELP_TOPIC = 260,
-     TOK_INT = 261,
-     TOK_REAL = 262,
-     STR = 263,
-     IDENTIFIER = 264,
-     CMD_SEP = 265,
-     GROUP = 266,
-     TO = 267,
-     VARIABLE_NUMERIC = 268,
-     VARIABLE_GROUP = 269,
-     VARIABLE_POS = 270,
-     KEYWORD_NUMERIC = 271,
-     KEYWORD_STR = 272,
-     KEYWORD_POS = 273,
-     KEYWORD_GROUP = 274,
-     METHOD_NUMERIC = 275,
-     METHOD_GROUP = 276,
-     METHOD_POS = 277,
-     MODIFIER = 278,
-     EMPTY_POSMOD = 279,
-     PARAM = 280,
-     END_OF_METHOD = 281,
-     OF = 282,
-     CMP_OP = 283,
-     PARAM_REDUCT = 284,
-     XOR = 285,
-     OR = 286,
-     AND = 287,
-     NOT = 288,
-     UNARY_NEG = 289,
-     NUM_REDUCT = 290
-   };
+/* Put the tokens into the symbol table, so that GDB and other debuggers
+   know about them.  */
+enum yytokentype
+{
+    INVALID = 258,
+    HELP = 259,
+    HELP_TOPIC = 260,
+    TOK_INT = 261,
+    TOK_REAL = 262,
+    STR = 263,
+    IDENTIFIER = 264,
+    CMD_SEP = 265,
+    GROUP = 266,
+    TO = 267,
+    VARIABLE_NUMERIC = 268,
+    VARIABLE_GROUP = 269,
+    VARIABLE_POS = 270,
+    KEYWORD_NUMERIC = 271,
+    KEYWORD_STR = 272,
+    KEYWORD_POS = 273,
+    KEYWORD_GROUP = 274,
+    METHOD_NUMERIC = 275,
+    METHOD_GROUP = 276,
+    METHOD_POS = 277,
+    MODIFIER = 278,
+    EMPTY_POSMOD = 279,
+    PARAM = 280,
+    END_OF_METHOD = 281,
+    OF = 282,
+    CMP_OP = 283,
+    PARAM_REDUCT = 284,
+    XOR = 285,
+    OR = 286,
+    AND = 287,
+    NOT = 288,
+    UNARY_NEG = 289,
+    NUM_REDUCT = 290
+};
 #endif
 
 
@@ -91,7 +92,7 @@
 typedef union YYSTYPE
 {
 
-/* Line 2068 of yacc.c  */
+    /* Line 2068 of yacc.c  */
 #line 72 "parser.y"
 
     int                         i;
@@ -109,7 +110,7 @@ typedef union YYSTYPE
 
 
 
-/* Line 2068 of yacc.c  */
+    /* Line 2068 of yacc.c  */
 #line 114 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1

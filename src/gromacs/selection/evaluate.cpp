@@ -118,7 +118,7 @@ class MempoolSelelemReserver
         void reserve(const SelectionTreeElementPointer &sel, int count)
         {
             GMX_RELEASE_ASSERT(!sel_,
-                    "Can only reserve one element with one instance");
+                               "Can only reserve one element with one instance");
             sel->mempoolReserve(count);
             sel_ = sel;
         }
@@ -254,35 +254,65 @@ void
 _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc)
 {
     if (!evalfunc)
+    {
         fprintf(fp, "none");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_root)
+    {
         fprintf(fp, "root");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_static)
+    {
         fprintf(fp, "static");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr_simple)
+    {
         fprintf(fp, "subexpr_simple");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr_staticeval)
+    {
         fprintf(fp, "subexpr_staticeval");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr)
+    {
         fprintf(fp, "subexpr");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexprref_simple)
+    {
         fprintf(fp, "ref_simple");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexprref)
+    {
         fprintf(fp, "ref");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_method)
+    {
         fprintf(fp, "method");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_modifier)
+    {
         fprintf(fp, "mod");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_not)
+    {
         fprintf(fp, "not");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_and)
+    {
         fprintf(fp, "and");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_or)
+    {
         fprintf(fp, "or");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_arithmetic)
+    {
         fprintf(fp, "arithmetic");
+    }
     else
+    {
         fprintf(fp, "%p", (void*)(evalfunc));
+    }
 }
 
 /*!
@@ -955,7 +985,7 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data,
     {
         sel->flags &= ~SEL_INITFRAME;
         sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
-                                            sel->u.expr.mdata);
+                                       sel->u.expr.mdata);
     }
     GMX_RELEASE_ASSERT(sel->child != NULL,
                        "Modifier element with a value must have a child");
@@ -980,7 +1010,7 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data,
  * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates the child element (there should be only one) in the group
- * \p g, and then sets the value of \p sel to the complement of the 
+ * \p g, and then sets the value of \p sel to the complement of the
  * child value.
  *
  * This function is used as gmx::SelectionTreeElement::evaluate for

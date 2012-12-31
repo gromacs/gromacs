@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
@@ -44,14 +44,15 @@ extern "C" {
 /* Hack to make automatic indenting work */
 #endif
 
-/* simulation conditions to transmit. Keep in mind that they are 
+/* simulation conditions to transmit. Keep in mind that they are
    transmitted to other nodes through an MPI_Reduce after
-   casting them to a real (so the signals can be sent together with other 
-   data). This means that the only meaningful values are positive, 
+   casting them to a real (so the signals can be sent together with other
+   data). This means that the only meaningful values are positive,
    negative or zero. */
 enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 
-typedef struct {
+typedef struct
+{
     int nstms;       /* The frequency for intersimulation communication */
     int sig[eglsNR]; /* The signal set by one process in do_md */
     int set[eglsNR]; /* The communicated signal, equal for all processes */

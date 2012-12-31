@@ -625,7 +625,7 @@ TestReferenceChecker TestReferenceData::rootChecker()
     }
     xmlNodePtr rootNode = xmlDocGetRootElement(impl_->refDoc_);
     return TestReferenceChecker(
-            new TestReferenceChecker::Impl("", rootNode, isWriteMode()));
+               new TestReferenceChecker::Impl("", rootNode, isWriteMode()));
 }
 
 
@@ -675,7 +675,7 @@ bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
     if (bFound != bPresent)
     {
         ADD_FAILURE() << "Mismatch while checking reference data item'"
-                          << impl_->appendPath(id) << "'\n"
+                      << impl_->appendPath(id) << "'\n"
                       << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
                       << "  Actual: " << (bFound ? "it is present." : "it is absent.");
     }
@@ -702,7 +702,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
         return TestReferenceChecker(new Impl(isWriteMode()));
     }
     return TestReferenceChecker(
-            new Impl(impl_->appendPath(id), newNode, isWriteMode()));
+               new Impl(impl_->appendPath(id), newNode, isWriteMode()));
 }
 
 

@@ -60,7 +60,8 @@
 #include "readir.h"
 
 /* information about scaling center */
-typedef struct {
+typedef struct
+{
     rvec    xmin;         /* smallest coordinates of all embedded molecules */
     rvec    xmax;         /* largest coordinates of all embedded molecules */
     rvec    *geom_cent;   /* scaling center of each independent molecule to embed */
@@ -71,7 +72,8 @@ typedef struct {
 } pos_ins_t;
 
 /* variables needed in do_md */
-struct membed {
+struct membed
+{
     int   it_xy;          /* number of iterations (steps) used to grow something in the xy-plane */
     int   it_z;           /* same, but for z */
     real  xy_step;        /* stepsize used during resize in xy-plane */
@@ -82,7 +84,8 @@ struct membed {
 };
 
 /* membrane related variables */
-typedef struct {
+typedef struct
+{
     char      *name;     /* name of index group to embed molecule into (usually membrane) */
     t_block   mem_at;    /* list all atoms in membrane */
     int       nmol;      /* number of membrane molecules overlapping with the molecule to embed */
@@ -95,7 +98,8 @@ typedef struct {
 
 /* Lists all molecules in the membrane that overlap with the molecule to be embedded. *
  * These will then be removed from the system */
-typedef struct {
+typedef struct
+{
     int  nr;      /* number of molecules to remove */
     int  *mol;    /* list of molecule ids to remove */
     int  *block;  /* id of the molblock that the molecule to remove is part of */
@@ -112,7 +116,7 @@ static int get_mol_id(int at, gmx_mtop_t  *mtop, int *type, int *block)
 
     alook = gmx_mtop_atomlookup_settle_init(mtop);
     gmx_mtop_atomnr_to_molblock_ind(alook,at,block,&mol_id,&atnr_mol);
-    for(i=0;i<*block;i++)
+    for (i=0; i<*block; i++)
     {
         mol_id += mtop->molblock[i].nmol;
     }
@@ -129,10 +133,10 @@ static int get_molblock(int mol_id,int nmblock,gmx_molblock_t *mblock)
     int i;
     int nmol=0;
 
-    for(i=0;i<nmblock;i++)
+    for (i=0; i<nmblock; i++)
     {
         nmol+=mblock[i].nmol;
-        if(mol_id<nmol)
+        if (mol_id<nmol)
         {
             return i;
         }
@@ -166,19 +170,19 @@ static int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 
     nr=0;
     snew(tlist->index,at->nr);
-    for (i=0;i<at->nr;i++)
+    for (i=0; i<at->nr; i++)
     {
         bNEW=TRUE;
         mol_id = get_mol_id(at->index[i],mtop,&type,&block);
-        for(j=0;j<nr;j++)
+        for (j=0; j<nr; j++)
         {
-            if(tlist->index[j]==type)
+            if (tlist->index[j]==type)
             {
                 bNEW=FALSE;
             }
         }
 
-        if(bNEW==TRUE)
+        if (bNEW==TRUE)
         {
             tlist->index[nr]=type;
             nr++;
@@ -199,11 +203,11 @@ static void check_types(t_block *ins_at,t_block *rest_at,gmx_mtop_t *mtop)
     ins_mtype->nr  = get_mtype_list(ins_at , mtop, ins_mtype );
     rest_mtype->nr = get_mtype_list(rest_at, mtop, rest_mtype);
 
-    for(i=0;i<ins_mtype->nr;i++)
+    for (i=0; i<ins_mtype->nr; i++)
     {
-        for(j=0;j<rest_mtype->nr;j++)
+        for (j=0; j<rest_mtype->nr; j++)
         {
-            if(ins_mtype->index[i]==rest_mtype->index[j])
+            if (ins_mtype->index[i]==rest_mtype->index[j])
             {
                 gmx_fatal(FARGS,"Moleculetype %s is found both in the group to insert and the rest of the system.\n"
                           "1. Your *.ndx and *.top do not match\n"
@@ -265,20 +269,20 @@ static int init_ins_at(t_block *ins_at,t_block *rest_at,t_state *state, pos_ins_
     ymin=ymax=state->x[ins_at->index[0]][YY];
     zmin=zmax=state->x[ins_at->index[0]][ZZ];
 
-    for(i=0;i<state->natoms;i++)
+    for (i=0; i<state->natoms; i++)
     {
         gid = groups->grpnr[egcFREEZE][i];
-        if(groups->grps[egcFREEZE].nm_ind[gid]==ins_grp_id)
+        if (groups->grps[egcFREEZE].nm_ind[gid]==ins_grp_id)
         {
             x=state->x[i][XX];
-            if (x<xmin)                xmin=x;
-            if (x>xmax)                xmax=x;
+            if (x<xmin) { xmin=x; }
+            if (x>xmax) { xmax=x; }
             y=state->x[i][YY];
-            if (y<ymin)                ymin=y;
-            if (y>ymax)                ymax=y;
+            if (y<ymin) { ymin=y; }
+            if (y>ymax) { ymax=y; }
             z=state->x[i][ZZ];
-            if (z<zmin)                zmin=z;
-            if (z>zmax)                zmax=z;
+            if (z<zmin) { zmin=z; }
+            if (z>zmax) { zmax=z; }
         }
         else
         {
@@ -290,7 +294,7 @@ static int init_ins_at(t_block *ins_at,t_block *rest_at,t_state *state, pos_ins_
     rest_at->nr=c;
     srenew(rest_at->index,c);
 
-    if(xy_max>fac_inp_size)
+    if (xy_max>fac_inp_size)
     {
         pos_ins->xmin[XX]=xmin-((xmax-xmin)*xy_max-(xmax-xmin))/2;
         pos_ins->xmin[YY]=ymin-((ymax-ymin)*xy_max-(ymax-ymin))/2;
@@ -307,7 +311,7 @@ static int init_ins_at(t_block *ins_at,t_block *rest_at,t_state *state, pos_ins_
         pos_ins->xmax[YY]=ymax;
     }
 
-    if( (zmax-zmin) < min_memthick )
+    if ( (zmax-zmin) < min_memthick )
     {
         pos_ins->xmin[ZZ]=zmin+(zmax-zmin)/2.0-0.5*min_memthick;
         pos_ins->xmax[ZZ]=zmin+(zmax-zmin)/2.0+0.5*min_memthick;
@@ -334,9 +338,9 @@ static real est_prot_area(pos_ins_t *pos_ins,rvec *r,t_block *ins_at, mem_t *mem
     memmin=mem_p->zmin+0.1*(mem_p->zmax-mem_p->zmin);
     memmax=mem_p->zmax-0.1*(mem_p->zmax-mem_p->zmin);
 
-    for(x=pos_ins->xmin[XX];x<pos_ins->xmax[XX];x+=dx)
+    for (x=pos_ins->xmin[XX]; x<pos_ins->xmax[XX]; x+=dx)
     {
-        for(y=pos_ins->xmin[YY];y<pos_ins->xmax[YY];y+=dy)
+        for (y=pos_ins->xmin[YY]; y<pos_ins->xmax[YY]; y+=dy)
         {
             c=0;
             add=0.0;
@@ -350,7 +354,8 @@ static real est_prot_area(pos_ins_t *pos_ins,rvec *r,t_block *ins_at, mem_t *mem
                     add=1.0;
                 }
                 c++;
-            } while ( (c<ins_at->nr) && (add<0.5) );
+            }
+            while ( (c<ins_at->nr) && (add<0.5) );
             area+=add;
         }
     }
@@ -373,36 +378,36 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     snew(mol_id,mem_a->nr);
     zmin=pos_ins->xmax[ZZ];
     zmax=pos_ins->xmin[ZZ];
-    for(i=0;i<mem_a->nr;i++)
+    for (i=0; i<mem_a->nr; i++)
     {
         at=mem_a->index[i];
-        if( (r[at][XX]>pos_ins->xmin[XX]) && (r[at][XX]<pos_ins->xmax[XX]) &&
-            (r[at][YY]>pos_ins->xmin[YY]) && (r[at][YY]<pos_ins->xmax[YY]) &&
-            (r[at][ZZ]>pos_ins->xmin[ZZ]) && (r[at][ZZ]<pos_ins->xmax[ZZ]) )
+        if ( (r[at][XX]>pos_ins->xmin[XX]) && (r[at][XX]<pos_ins->xmax[XX]) &&
+             (r[at][YY]>pos_ins->xmin[YY]) && (r[at][YY]<pos_ins->xmax[YY]) &&
+             (r[at][ZZ]>pos_ins->xmin[ZZ]) && (r[at][ZZ]<pos_ins->xmax[ZZ]) )
         {
             mol = get_mol_id(at,mtop,&type,&block);
             bNew=TRUE;
-            for(j=0;j<nmol;j++)
+            for (j=0; j<nmol; j++)
             {
-                if(mol == mol_id[j])
+                if (mol == mol_id[j])
                 {
                     bNew=FALSE;
                 }
             }
 
-            if(bNew)
+            if (bNew)
             {
                 mol_id[nmol]=mol;
                 nmol++;
             }
 
             z=r[at][ZZ];
-            if(z<zmin)
+            if (z<zmin)
             {
                 zmin=z;
             }
 
-            if(z>zmax)
+            if (z>zmax)
             {
                 zmax=z;
             }
@@ -415,7 +420,7 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     srenew(mol_id,nmol);
     mem_p->mol_id=mol_id;
 
-    if((zmax-zmin)>(box[ZZ][ZZ]-0.5))
+    if ((zmax-zmin)>(box[ZZ][ZZ]-0.5))
     {
         gmx_fatal(FARGS,"Something is wrong with your membrane. Max and min z values are %f and %f.\n"
                   "Maybe your membrane is not centered in the box, but located at the box edge in the z-direction,\n"
@@ -443,7 +448,7 @@ static void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *me
     int idxsum=0;
 
     /*sanity check*/
-    for (i=0;i<pos_ins->pieces;i++)
+    for (i=0; i<pos_ins->pieces; i++)
     {
         idxsum+=pos_ins->nidx[i];
     }
@@ -454,20 +459,20 @@ static void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *me
     }
 
     snew(pos_ins->geom_cent,pos_ins->pieces);
-    for (i=0;i<pos_ins->pieces;i++)
+    for (i=0; i<pos_ins->pieces; i++)
     {
         c=0;
         outsidesum=0;
-        for(j=0;j<DIM;j++)
+        for (j=0; j<DIM; j++)
         {
             pos_ins->geom_cent[i][j]=0;
         }
 
-        for (j=0;j<pos_ins->nidx[i];j++)
+        for (j=0; j<pos_ins->nidx[i]; j++)
         {
             at=pos_ins->subindex[i][j];
             copy_rvec(r[at],r_ins[gctr]);
-            if( (r_ins[gctr][ZZ]<mem_p->zmax) && (r_ins[gctr][ZZ]>mem_p->zmin) )
+            if ( (r_ins[gctr][ZZ]<mem_p->zmax) && (r_ins[gctr][ZZ]>mem_p->zmin) )
             {
                 rvec_inc(pos_ins->geom_cent[i],r_ins[gctr]);
                 c++;
@@ -499,12 +504,12 @@ static void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *me
 static void resize(rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 {
     int i,j,k,at,c=0;
-    for (k=0;k<pos_ins->pieces;k++)
+    for (k=0; k<pos_ins->pieces; k++)
     {
-        for(i=0;i<pos_ins->nidx[k];i++)
+        for (i=0; i<pos_ins->nidx[k]; i++)
         {
             at=pos_ins->subindex[k][i];
-            for(j=0;j<DIM;j++)
+            for (j=0; j<DIM; j++)
             {
                 r[at][j]=pos_ins->geom_cent[k][j]+fac[j]*(r_ins[c][j]-pos_ins->geom_cent[k][j]);
             }
@@ -533,42 +538,42 @@ static int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, g
     snew(rm_p->block,mtop->mols.nr);
     nrm=nupper=0;
     nlower=low_up_rm;
-    for(i=0;i<ins_at->nr;i++)
+    for (i=0; i<ins_at->nr; i++)
     {
         at=ins_at->index[i];
-        for(j=0;j<rest_at->nr;j++)
+        for (j=0; j<rest_at->nr; j++)
         {
             at2=rest_at->index[j];
             pbc_dx(pbc,r[at],r[at2],dr);
 
-            if(norm2(dr)<r_min_rad)
+            if (norm2(dr)<r_min_rad)
             {
                 mol_id = get_mol_id(at2,mtop,&type,&block);
                 bRM=TRUE;
-                for(l=0;l<nrm;l++)
+                for (l=0; l<nrm; l++)
                 {
-                    if(rm_p->mol[l]==mol_id)
+                    if (rm_p->mol[l]==mol_id)
                     {
                         bRM=FALSE;
                     }
                 }
 
-                if(bRM)
+                if (bRM)
                 {
                     rm_p->mol[nrm]=mol_id;
                     rm_p->block[nrm]=block;
                     nrm++;
                     z_lip=0.0;
-                    for(l=0;l<mem_p->nmol;l++)
+                    for (l=0; l<mem_p->nmol; l++)
                     {
-                        if(mol_id==mem_p->mol_id[l])
+                        if (mol_id==mem_p->mol_id[l])
                         {
-                            for(k=mtop->mols.index[mol_id];k<mtop->mols.index[mol_id+1];k++)
+                            for (k=mtop->mols.index[mol_id]; k<mtop->mols.index[mol_id+1]; k++)
                             {
                                 z_lip+=r[k][ZZ];
                             }
                             z_lip/=mtop->molblock[block].natoms_mol;
-                            if(z_lip<mem_p->zmed)
+                            if (z_lip<mem_p->zmed)
                             {
                                 nlower++;
                             }
@@ -584,11 +589,11 @@ static int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, g
     }
 
     /*make sure equal number of lipids from upper and lower layer are removed */
-    if( (nupper!=nlower) && (!bALLOW_ASYMMETRY) )
+    if ( (nupper!=nlower) && (!bALLOW_ASYMMETRY) )
     {
         snew(dist,mem_p->nmol);
         snew(order,mem_p->nmol);
-        for(i=0;i<mem_p->nmol;i++)
+        for (i=0; i<mem_p->nmol; i++)
         {
             at = mtop->mols.index[mem_p->mol_id[i]];
             pbc_dx(pbc,r[at],pos_ins->geom_cent[0],dr);
@@ -596,7 +601,7 @@ static int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, g
             {
                 /*minimum dr value*/
                 min_norm=norm2(dr);
-                for (k=1;k<pos_ins->pieces;k++)
+                for (k=1; k<pos_ins->pieces; k++)
                 {
                     pbc_dx(pbc,r[at],pos_ins->geom_cent[k],dr_tmp);
                     if (norm2(dr_tmp) < min_norm)
@@ -617,28 +622,28 @@ static int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, g
         }
 
         i=0;
-        while(nupper!=nlower)
+        while (nupper!=nlower)
         {
             mol_id=mem_p->mol_id[order[i]];
             block=get_molblock(mol_id,mtop->nmolblock,mtop->molblock);
             bRM=TRUE;
-            for(l=0;l<nrm;l++)
+            for (l=0; l<nrm; l++)
             {
-                if(rm_p->mol[l]==mol_id)
+                if (rm_p->mol[l]==mol_id)
                 {
                     bRM=FALSE;
                 }
             }
 
-            if(bRM)
+            if (bRM)
             {
                 z_lip=0;
-                for(k=mtop->mols.index[mol_id];k<mtop->mols.index[mol_id+1];k++)
+                for (k=mtop->mols.index[mol_id]; k<mtop->mols.index[mol_id+1]; k++)
                 {
                     z_lip+=r[k][ZZ];
                 }
                 z_lip/=mtop->molblock[block].natoms_mol;
-                if(nupper>nlower && z_lip<mem_p->zmed)
+                if (nupper>nlower && z_lip<mem_p->zmed)
                 {
                     rm_p->mol[nrm]=mol_id;
                     rm_p->block[nrm]=block;
@@ -655,7 +660,7 @@ static int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, g
             }
             i++;
 
-            if(i>mem_p->nmol)
+            if (i>mem_p->nmol)
             {
                 gmx_fatal(FARGS,"Trying to remove more lipid molecules than there are in the membrane");
             }
@@ -684,13 +689,13 @@ static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
 
     snew(list,state->natoms);
     n=0;
-    for(i=0;i<rm_p->nr;i++)
+    for (i=0; i<rm_p->nr; i++)
     {
         mol_id=rm_p->mol[i];
         at=mtop->mols.index[mol_id];
         block =rm_p->block[i];
         mtop->molblock[block].nmol--;
-        for(j=0;j<mtop->molblock[block].natoms_mol;j++)
+        for (j=0; j<mtop->molblock[block].natoms_mol; j++)
         {
             list[n]=at+j;
             n++;
@@ -701,10 +706,10 @@ static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
     mtop->mols.nr-=rm_p->nr;
     mtop->mols.nalloc_index-=rm_p->nr;
     snew(new_mols,mtop->mols.nr);
-    for(i=0;i<mtop->mols.nr+rm_p->nr;i++)
+    for (i=0; i<mtop->mols.nr+rm_p->nr; i++)
     {
         j=0;
-        if(mtop->mols.index[i]!=-1)
+        if (mtop->mols.index[i]!=-1)
         {
             new_mols[j]=mtop->mols.index[i];
             j++;
@@ -718,9 +723,9 @@ static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
     snew(x_tmp,state->nalloc);
     snew(v_tmp,state->nalloc);
 
-    for(i=0;i<egcNR;i++)
+    for (i=0; i<egcNR; i++)
     {
-        if(groups->grpnr[i]!=NULL)
+        if (groups->grpnr[i]!=NULL)
         {
             groups->ngrpnr[i]=state->natoms;
             snew(new_egrp[i],state->natoms);
@@ -728,30 +733,30 @@ static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
     }
 
     rm=0;
-    for (i=0;i<state->natoms+n;i++)
+    for (i=0; i<state->natoms+n; i++)
     {
         bRM=FALSE;
-        for(j=0;j<n;j++)
+        for (j=0; j<n; j++)
         {
-            if(i==list[j])
+            if (i==list[j])
             {
                 bRM=TRUE;
                 rm++;
             }
         }
 
-        if(!bRM)
+        if (!bRM)
         {
-            for(j=0;j<egcNR;j++)
+            for (j=0; j<egcNR; j++)
             {
-                if(groups->grpnr[j]!=NULL)
+                if (groups->grpnr[j]!=NULL)
                 {
                     new_egrp[j][i-rm]=groups->grpnr[j][i];
                 }
             }
             copy_rvec(state->x[i],x_tmp[i-rm]);
             copy_rvec(state->v[i],v_tmp[i-rm]);
-            for(j=0;j<ins_at->nr;j++)
+            for (j=0; j<ins_at->nr; j++)
             {
                 if (i==ins_at->index[j])
                 {
@@ -759,9 +764,9 @@ static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
                 }
             }
 
-            for(j=0;j<pos_ins->pieces;j++)
+            for (j=0; j<pos_ins->pieces; j++)
             {
-                for(k=0;k<pos_ins->nidx[j];k++)
+                for (k=0; k<pos_ins->nidx[j]; k++)
                 {
                     if (i==pos_ins->subindex[j][k])
                     {
@@ -776,9 +781,9 @@ static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
     sfree(state->v);
     state->v=v_tmp;
 
-    for(i=0;i<egcNR;i++)
+    for (i=0; i<egcNR; i++)
     {
-        if(groups->grpnr[i]!=NULL)
+        if (groups->grpnr[i]!=NULL)
         {
             sfree(groups->grpnr[i]);
             groups->grpnr[i]=new_egrp[i];
@@ -787,9 +792,9 @@ static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
 
     /* remove empty molblocks */
     RMmolblock=0;
-    for (i=0;i<mtop->nmolblock;i++)
+    for (i=0; i<mtop->nmolblock; i++)
     {
-        if(mtop->molblock[i].nmol==0)
+        if (mtop->molblock[i].nmol==0)
         {
             RMmolblock++;
         }
@@ -814,28 +819,28 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 
 
     snew(bRM,mtop->nmoltype);
-    for (i=0;i<mtop->nmoltype;i++)
+    for (i=0; i<mtop->nmoltype; i++)
     {
         bRM[i]=TRUE;
     }
 
-    for (i=0;i<mtop->nmolblock;i++)
+    for (i=0; i<mtop->nmolblock; i++)
     {
         /*loop over molecule blocks*/
         type        =mtop->molblock[i].type;
         natom        =mtop->molblock[i].natoms_mol;
         nmol        =mtop->molblock[i].nmol;
 
-        for(j=0;j<natom*nmol && bRM[type]==TRUE;j++)
+        for (j=0; j<natom*nmol && bRM[type]==TRUE; j++)
         {
             /*loop over atoms in the block*/
             at=j+atom1; /*atom index = block index + offset*/
             bINS=FALSE;
 
-            for (m=0;(m<ins_at->nr) && (bINS==FALSE);m++)
+            for (m=0; (m<ins_at->nr) && (bINS==FALSE); m++)
             {
                 /*loop over atoms in insertion index group to determine if we're inserting one*/
-                if(at==ins_at->index[m])
+                if (at==ins_at->index[m])
                 {
                     bINS=TRUE;
                 }
@@ -843,22 +848,22 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
             bRM[type]=bINS;
         }
         atom1+=natom*nmol; /*update offset*/
-        if(bRM[type])
+        if (bRM[type])
         {
             rm_at+=natom*nmol; /*increment bonded removal counter by # atoms in block*/
         }
     }
 
-    for(i=0;i<mtop->nmoltype;i++)
+    for (i=0; i<mtop->nmoltype; i++)
     {
-        if(bRM[i])
+        if (bRM[i])
         {
-            for(j=0;j<F_LJ;j++)
+            for (j=0; j<F_LJ; j++)
             {
                 mtop->moltype[i].ilist[j].nr=0;
             }
 
-            for(j=F_POSRES;j<=F_VSITEN;j++)
+            for (j=F_POSRES; j<=F_VSITEN; j++)
             {
                 mtop->moltype[i].ilist[j].nr=0;
             }
@@ -882,16 +887,16 @@ static void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *m
     fpout = ffopen(TEMP_FILENM,"w");
 
     snew(nmol_rm,mtop->nmoltype);
-    for(i=0;i<rm_p->nr;i++)
+    for (i=0; i<rm_p->nr; i++)
     {
         nmol_rm[rm_p->block[i]]++;
     }
 
     line=0;
-    while(fgets(buf,STRLEN,fpin))
+    while (fgets(buf,STRLEN,fpin))
     {
         line++;
-        if(buf[0]!=';')
+        if (buf[0]!=';')
         {
             strcpy(buf2,buf);
             if ((temp=strchr(buf2,'\n')) != NULL)
@@ -921,7 +926,7 @@ static void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *m
             }
             else if (bMolecules==1)
             {
-                for(i=0;i<mtop->nmolblock;i++)
+                for (i=0; i<mtop->nmolblock; i++)
                 {
                     nmol=mtop->molblock[i].nmol;
                     sprintf(buf,"%-15s %5d\n",*(mtop->moltype[mtop->molblock[i].type].name),nmol);
@@ -955,7 +960,7 @@ static void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *m
 void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
 {
     /* Set new positions for the group to embed */
-    if(step_rel<=membed->it_xy)
+    if (step_rel<=membed->it_xy)
     {
         membed->fac[0]+=membed->xy_step;
         membed->fac[1]+=membed->xy_step;
@@ -968,7 +973,7 @@ void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
 }
 
 gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
-                 t_inputrec *inputrec, t_state *state, t_commrec *cr,real *cpt)
+                         t_inputrec *inputrec, t_state *state, t_commrec *cr,real *cpt)
 {
     char                    *ins,**gnames;
     int                     i,rm_bonded_at,fr_id,fr_i=0,tmp_id,warn=0;
@@ -1014,7 +1019,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
     snew(ins_at,1);
     snew(pos_ins,1);
 
-    if(MASTER(cr))
+    if (MASTER(cr))
     {
         /* get input data out membed file */
         membed_input = opt2fn("-membed",nfile,fnm);
@@ -1025,15 +1030,15 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         if (tpr_version<membed_version)
         {
             gmx_fatal(FARGS,"Version of *.tpr file to old (%d). "
-                            "Rerun grompp with GROMACS version 4.0.3 or newer.\n",tpr_version);
+                      "Rerun grompp with GROMACS version 4.0.3 or newer.\n",tpr_version);
         }
 
-        if( !EI_DYNAMICS(inputrec->eI) )
+        if ( !EI_DYNAMICS(inputrec->eI) )
         {
             gmx_input("Change integrator to a dynamics integrator in mdp file (e.g. md or sd).");
         }
 
-        if(PAR(cr))
+        if (PAR(cr))
         {
             gmx_input("Sorry, parallel g_membed is not yet fully functional.");
         }
@@ -1042,10 +1047,10 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         gmx_input("Sorry, g_membed does not work with openmm.");
 #endif
 
-        if(*cpt>=0)
+        if (*cpt>=0)
         {
             fprintf(stderr,"\nSetting -cpt to -1, because embedding cannot be restarted from cpt-files.\n");
-             *cpt=-1;
+            *cpt=-1;
         }
         groups=&(mtop->groups);
         snew(gnames,groups->ngrpname);
@@ -1080,51 +1085,51 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             pos_ins->subindex[0]=ins_at->index;
         }
 
-        if(probe_rad<min_probe_rad)
+        if (probe_rad<min_probe_rad)
         {
             warn++;
             fprintf(stderr,"\nWarning %d:\nA probe radius (-rad) smaller than 0.2 nm can result "
-                           "in overlap between waters and the group to embed, which will result "
-                           "in Lincs errors etc.\n\n",warn);
+                    "in overlap between waters and the group to embed, which will result "
+                    "in Lincs errors etc.\n\n",warn);
         }
 
-        if(xy_fac<min_xy_init)
+        if (xy_fac<min_xy_init)
         {
             warn++;
             fprintf(stderr,"\nWarning %d:\nThe initial size of %s is probably too smal.\n\n",warn,ins);
         }
 
-        if(it_xy<min_it_xy)
+        if (it_xy<min_it_xy)
         {
             warn++;
             fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d)"
-                           " is probably too small.\nIncrease -nxy or.\n\n",warn,ins,it_xy);
+                    " is probably too small.\nIncrease -nxy or.\n\n",warn,ins,it_xy);
         }
 
-        if( (it_z<min_it_z) && ( z_fac<0.99999999 || z_fac>1.0000001) )
+        if ( (it_z<min_it_z) && ( z_fac<0.99999999 || z_fac>1.0000001) )
         {
             warn++;
             fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d)"
-                           " is probably too small.\nIncrease -nz or maxwarn.\n\n",warn,ins,it_z);
+                    " is probably too small.\nIncrease -nz or maxwarn.\n\n",warn,ins,it_z);
         }
 
-        if(it_xy+it_z>inputrec->nsteps)
+        if (it_xy+it_z>inputrec->nsteps)
         {
             warn++;
             fprintf(stderr,"\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the "
-                           "number of steps in the tpr.\n\n",warn);
+                    "number of steps in the tpr.\n\n",warn);
         }
 
         fr_id=-1;
-        if( inputrec->opts.ngfrz==1)
+        if ( inputrec->opts.ngfrz==1)
         {
             gmx_fatal(FARGS,"You did not specify \"%s\" as a freezegroup.",ins);
         }
 
-        for(i=0;i<inputrec->opts.ngfrz;i++)
+        for (i=0; i<inputrec->opts.ngfrz; i++)
         {
             tmp_id = mtop->groups.grps[egcFREEZE].nm_ind[i];
-            if(ins_grp_id==tmp_id)
+            if (ins_grp_id==tmp_id)
             {
                 fr_id=tmp_id;
                 fr_i=i;
@@ -1136,9 +1141,9 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             gmx_fatal(FARGS,"\"%s\" not as freezegroup defined in the mdp-file.",ins);
         }
 
-        for(i=0;i<DIM;i++)
+        for (i=0; i<DIM; i++)
         {
-            if( inputrec->opts.nFreeze[fr_i][i] != 1)
+            if ( inputrec->opts.nFreeze[fr_i][i] != 1)
             {
                 gmx_fatal(FARGS,"freeze dimensions for %s are not Y Y Y\n",ins);
             }
@@ -1150,9 +1155,9 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             gmx_input("No energy groups defined. This is necessary for energy exclusion in the freeze group");
         }
 
-        for(i=0;i<ng;i++)
+        for (i=0; i<ng; i++)
         {
-            for(j=0;j<ng;j++)
+            for (j=0; j<ng; j++)
             {
                 if (inputrec->opts.egp_flags[ng*i+j] == EGP_EXCL)
                 {
@@ -1168,7 +1173,8 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             }
         }
 
-        if (!bExcl) {
+        if (!bExcl)
+        {
             gmx_input("No energy exclusion groups defined. This is necessary for energy exclusion in "
                       "the freeze group");
         }
@@ -1191,7 +1197,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
                     "compressibility in the mdp-file or use no pressure coupling at all.\n\n",warn);
         }
 
-        if(warn>maxwarn)
+        if (warn>maxwarn)
         {
             gmx_fatal(FARGS,"Too many warnings.\n");
         }
@@ -1230,20 +1236,20 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
                              probe_rad,low_up_rm,bALLOW_ASYMMETRY);
         lip_rm -= low_up_rm;
 
-        if(fplog)
+        if (fplog)
         {
-            for(i=0;i<rm_p->nr;i++)
+            for (i=0; i<rm_p->nr; i++)
             {
                 fprintf(fplog,"rm mol %d\n",rm_p->mol[i]);
             }
         }
 
-        for(i=0;i<mtop->nmolblock;i++)
+        for (i=0; i<mtop->nmolblock; i++)
         {
             ntype=0;
-            for(j=0;j<rm_p->nr;j++)
+            for (j=0; j<rm_p->nr; j++)
             {
-                if(rm_p->block[j]==i)
+                if (rm_p->block[j]==i)
                 {
                     ntype++;
                 }
@@ -1251,12 +1257,12 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             printf("Will remove %d %s molecules\n",ntype,*(mtop->moltype[mtop->molblock[i].type].name));
         }
 
-        if(lip_rm>max_lip_rm)
+        if (lip_rm>max_lip_rm)
         {
             warn++;
             fprintf(stderr,"\nWarning %d:\nTrying to remove a larger lipid area than the estimated "
-                           "protein area\nTry making the -xyinit resize factor smaller or increase "
-                           "maxwarn.\n\n",warn);
+                    "protein area\nTry making the -xyinit resize factor smaller or increase "
+                    "maxwarn.\n\n",warn);
         }
 
         /*remove all lipids and waters overlapping and update all important structures*/
@@ -1270,10 +1276,10 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
                     "molecule type as atoms that are not to be embedded.\n",rm_bonded_at,ins_at->nr);
         }
 
-        if(warn>maxwarn)
+        if (warn>maxwarn)
         {
             gmx_fatal(FARGS,"Too many warnings.\nIf you are sure these warnings are harmless, "
-                            "you can increase -maxwarn");
+                      "you can increase -maxwarn");
         }
 
         if (ftp2bSet(efTOP,nfile,fnm))

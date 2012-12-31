@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -42,10 +42,10 @@ void dd_sendrecv_int(const gmx_domdec_t *dd,
 #ifdef GMX_MPI
     int rank_s,rank_r;
     MPI_Status stat;
-    
+
     rank_s = dd->neighbor[ddimind][direction==dddirForward ? 0 : 1];
     rank_r = dd->neighbor[ddimind][direction==dddirForward ? 1 : 0];
-    
+
     if (n_s && n_r)
     {
         MPI_Sendrecv(buf_s,n_s*sizeof(int),MPI_BYTE,rank_s,0,
@@ -62,7 +62,7 @@ void dd_sendrecv_int(const gmx_domdec_t *dd,
         MPI_Recv(    buf_r,n_r*sizeof(int),MPI_BYTE,rank_r,0,
                      dd->mpi_comm_all,&stat);
     }
-    
+
 #endif
 }
 
@@ -74,10 +74,10 @@ void dd_sendrecv_real(const gmx_domdec_t *dd,
 #ifdef GMX_MPI
     int rank_s,rank_r;
     MPI_Status stat;
-    
+
     rank_s = dd->neighbor[ddimind][direction==dddirForward ? 0 : 1];
     rank_r = dd->neighbor[ddimind][direction==dddirForward ? 1 : 0];
-    
+
     if (n_s && n_r)
     {
         MPI_Sendrecv(buf_s,n_s*sizeof(real),MPI_BYTE,rank_s,0,
@@ -94,7 +94,7 @@ void dd_sendrecv_real(const gmx_domdec_t *dd,
         MPI_Recv(    buf_r,n_r*sizeof(real),MPI_BYTE,rank_r,0,
                      dd->mpi_comm_all,&stat);
     }
-    
+
 #endif
 }
 
@@ -106,10 +106,10 @@ void dd_sendrecv_rvec(const gmx_domdec_t *dd,
 #ifdef GMX_MPI
     int rank_s,rank_r;
     MPI_Status stat;
-    
+
     rank_s = dd->neighbor[ddimind][direction==dddirForward ? 0 : 1];
     rank_r = dd->neighbor[ddimind][direction==dddirForward ? 1 : 0];
-    
+
     if (n_s && n_r)
     {
         MPI_Sendrecv(buf_s[0],n_s*sizeof(rvec),MPI_BYTE,rank_s,0,
@@ -120,12 +120,13 @@ void dd_sendrecv_rvec(const gmx_domdec_t *dd,
     {
         MPI_Send(    buf_s[0],n_s*sizeof(rvec),MPI_BYTE,rank_s,0,
                      dd->mpi_comm_all);
-    } else if (n_r)
+    }
+    else if (n_r)
     {
         MPI_Recv(    buf_r[0],n_r*sizeof(rvec),MPI_BYTE,rank_r,0,
                      dd->mpi_comm_all,&stat);
     }
-    
+
 #endif
 }
 
@@ -140,10 +141,10 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
     int rank_fw,rank_bw,nreq;
     MPI_Request req[4];
     MPI_Status  stat[4];
-    
+
     rank_fw = dd->neighbor[ddimind][0];
     rank_bw = dd->neighbor[ddimind][1];
-    
+
     if (!dd->bSendRecv2)
     {
         /* Try to send and receive in two directions simultaneously.
@@ -211,8 +212,8 @@ void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data)
     if (nbytes > 0)
     {
 #endif
-    MPI_Bcast(data,nbytes,MPI_BYTE,
-              DDMASTERRANK(dd),dd->mpi_comm_all);
+        MPI_Bcast(data,nbytes,MPI_BYTE,
+                  DDMASTERRANK(dd),dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
     }
 #endif
@@ -230,8 +231,8 @@ void dd_bcastc(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
     if (nbytes > 0)
     {
 #endif
-    MPI_Bcast(dest,nbytes,MPI_BYTE,
-              DDMASTERRANK(dd),dd->mpi_comm_all);
+        MPI_Bcast(dest,nbytes,MPI_BYTE,
+                  DDMASTERRANK(dd),dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
     }
 #endif

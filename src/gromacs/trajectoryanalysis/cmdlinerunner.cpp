@@ -88,7 +88,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
-        TrajectoryAnalysisModule *module)
+    TrajectoryAnalysisModule *module)
     : module_(module), debugLevel_(0), bPrintCopyright_(true)
 {
 }
@@ -101,9 +101,9 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 
 void
 TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
-        const Options &options,
-        const TrajectoryAnalysisSettings &settings,
-        const TrajectoryAnalysisRunnerCommon &common)
+    const Options &options,
+    const TrajectoryAnalysisSettings &settings,
+    const TrajectoryAnalysisRunnerCommon &common)
 {
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
@@ -111,20 +111,20 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
         HelpWriterContext context(&File::standardError(),
                                   eHelpOutputFormat_Console);
         CommandLineHelpWriter(options)
-            .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
-            .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
-            .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-            .writeHelp(context);
+        .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
+        .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
+        .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
+        .writeHelp(context);
     }
 }
 
 
 bool
 TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
-        TrajectoryAnalysisSettings *settings,
-        TrajectoryAnalysisRunnerCommon *common,
-        SelectionCollection *selections,
-        int *argc, char *argv[])
+    TrajectoryAnalysisSettings *settings,
+    TrajectoryAnalysisRunnerCommon *common,
+    SelectionCollection *selections,
+    int *argc, char *argv[])
 {
     Options options(NULL, NULL);
     Options moduleOptions(module_->name(), module_->description());
@@ -179,7 +179,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
  */
 
 TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
-        TrajectoryAnalysisModule *module)
+    TrajectoryAnalysisModule *module)
     : impl_(new Impl(module))
 {
 }
@@ -241,7 +241,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     int nframes = 0;
     AnalysisDataParallelOptions dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
-            module->startFrames(dataOptions, selections));
+        module->startFrames(dataOptions, selections));
     do
     {
         common.initFrame();
@@ -310,9 +310,9 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
     setManagerForSelectionOptions(&options, &seloptManager);
 
     CommandLineHelpWriter(options)
-        .setShowDescriptions(true)
-        .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-        .writeHelp(context);
+    .setShowDescriptions(true)
+    .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
+    .writeHelp(context);
 }
 
 } // namespace gmx

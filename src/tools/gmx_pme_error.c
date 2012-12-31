@@ -2,31 +2,31 @@
  *                This source code is part of
  *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- 
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -56,12 +56,14 @@
 #define   snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
 /* #define TAKETIME */
 /* #define DEBUG  */
-enum {
-  ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
+enum
+{
+    ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
 /* Enum for situations that can occur during log file parsing */
-enum {
+enum
+{
     eParselogOK,
     eParselogNotFound,
     eParselogNoPerfData,
@@ -99,15 +101,15 @@ typedef struct
     int  *nkx, *nky, *nkz;      /* Number of k vectors in each spatial dimension      */
     real *fourier_sp;           /* Fourierspacing                                     */
     real *ewald_rtol;           /* Real space tolerance for Ewald, determines         */
-                                /* the real/reciprocal space relative weight          */
+    /* the real/reciprocal space relative weight          */
     real *ewald_beta;           /* Splitting parameter [1/nm]                         */
     real fracself;              /* fraction of particles for SI error                 */
     real q2all;                 /* sum ( q ^2 )                                       */
     real q2allnr;               /* nr of charges                                      */
     int  *pme_order;            /* Interpolation order for PME (bsplines)             */
     char **fn_out;              /* Name of the output tpr file                        */
-    real *e_dir;                /* Direct space part of PME error with these settings */ 
-    real *e_rec;                /* Reciprocal space part of PME error                 */ 
+    real *e_dir;                /* Direct space part of PME error with these settings */
+    real *e_rec;                /* Reciprocal space part of PME error                 */
     gmx_bool bTUNE;                 /* flag for tuning */
 } t_inputinfo;
 
@@ -116,16 +118,20 @@ typedef struct
 static gmx_bool is_charge(real charge)
 {
     if (charge*charge > GMX_REAL_EPS)
+    {
         return TRUE;
-    else 
+    }
+    else
+    {
         return FALSE;
+    }
 }
 
 
 /* calculate charge density */
 static void calc_q2all(
-        gmx_mtop_t *mtop,   /* molecular topology */
-        real *q2all, real *q2allnr)
+    gmx_mtop_t *mtop,   /* molecular topology */
+    real *q2all, real *q2allnr)
 {
     int imol,iatom;  /* indices for loops */
     real q2_all=0;   /* Sum of squared charges */
@@ -135,9 +141,9 @@ static void calc_q2all(
     real qi,q2_mol;
     gmx_moltype_t *molecule;
     gmx_molblock_t *molblock;
-    
+
 #ifdef DEBUG
-        fprintf(stderr, "\nCharge density:\n");
+    fprintf(stderr, "\nCharge density:\n");
 #endif
     q2_all = 0.0;  /* total q squared */
     nrq_all = 0;   /* total number of charges in the system */
@@ -154,14 +160,14 @@ static void calc_q2all(
             if (is_charge(qi))
             {
                 q2_mol += qi*qi;
-                nrq_mol++;                
+                nrq_mol++;
             }
         }
         /* Multiply with the number of molecules present of this type and add */
         q2_all  += q2_mol*molblock->nmol;
         nrq_all += nrq_mol*molblock->nmol;
 #ifdef DEBUG
-        fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n", 
+        fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n",
                 imol,molblock->natoms_mol,q2_mol,nrq_mol,molblock->nmol,q2_all,nrq_all);
 #endif
     }
@@ -175,20 +181,20 @@ static void calc_q2all(
 
 /* Estimate the direct space part error of the SPME Ewald sum */
 static real estimate_direct(
-        t_inputinfo *info
-        )
+    t_inputinfo *info
+)
 {
     real e_dir=0;    /* Error estimate */
     real beta=0;     /* Splitting parameter (1/nm) */
     real r_coulomb=0;  /* Cut-off in direct space */
-    
+
 
     beta      = info->ewald_beta[0];
     r_coulomb = info->rcoulomb[0];
-                     
+
     e_dir  = 2.0 * info->q2all * gmx_invsqrt( info->q2allnr  *  r_coulomb * info->volume );
     e_dir *= exp (-beta*beta*r_coulomb*r_coulomb);
-    
+
     return ONE_4PI_EPS0*e_dir;
 }
 
@@ -197,9 +203,9 @@ static real estimate_direct(
 /* the following 4 functions determine polynomials required for the reciprocal error estimate */
 
 static inline real eps_poly1(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+    real m,          /* grid coordinate in certain direction */
+    real K,          /* grid size in corresponding direction */
+    real n)          /* spline interpolation order of the SPME */
 {
     int i;
     real nom=0;  /* nominator */
@@ -207,22 +213,24 @@ static inline real eps_poly1(
     real tmp=0;
 
     if ( m == 0.0 )
+    {
         return 0.0 ;
+    }
 
-    for(i=-SUMORDER ; i<0 ; i++)
+    for (i=-SUMORDER ; i<0 ; i++)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+=pow( tmp , -n );
     }
 
-    for(i=SUMORDER ; i>0 ; i--)
+    for (i=SUMORDER ; i>0 ; i--)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+=pow( tmp , -n );
     }
-    
+
     tmp=m / K;
     tmp*=2.0*M_PI;
     denom=pow( tmp , -n )+nom;
@@ -232,47 +240,49 @@ static inline real eps_poly1(
 }
 
 static inline real eps_poly2(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+    real m,          /* grid coordinate in certain direction */
+    real K,          /* grid size in corresponding direction */
+    real n)          /* spline interpolation order of the SPME */
 {
     int i;
     real nom=0;  /* nominator */
     real denom=0; /* denominator */
     real tmp=0;
-    
+
     if ( m == 0.0 )
+    {
         return 0.0 ;
-    
-    for(i=-SUMORDER ; i<0 ; i++)
+    }
+
+    for (i=-SUMORDER ; i<0 ; i++)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+=pow( tmp , -2.0*n );
     }
 
-    for(i=SUMORDER ; i>0 ; i--)
+    for (i=SUMORDER ; i>0 ; i--)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+=pow( tmp , -2.0*n );
     }
-    
-    for(i=-SUMORDER ; i<SUMORDER+1 ; i++)
+
+    for (i=-SUMORDER ; i<SUMORDER+1 ; i++)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         denom+=pow( tmp , -n );
     }
     tmp=eps_poly1(m,K,n);
-    return nom / denom / denom + tmp*tmp ; 
+    return nom / denom / denom + tmp*tmp ;
 
 }
 
 static inline real eps_poly3(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+    real m,          /* grid coordinate in certain direction */
+    real K,          /* grid size in corresponding direction */
+    real n)          /* spline interpolation order of the SPME */
 {
     int i;
     real nom=0;  /* nominator */
@@ -280,23 +290,25 @@ static inline real eps_poly3(
     real tmp=0;
 
     if ( m == 0.0 )
+    {
         return 0.0 ;
+    }
 
-    for(i=-SUMORDER ; i<0 ; i++)
+    for (i=-SUMORDER ; i<0 ; i++)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+= i * pow( tmp , -2.0*n );
     }
 
-    for(i=SUMORDER ; i>0 ; i--)
+    for (i=SUMORDER ; i>0 ; i--)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+= i * pow( tmp , -2.0*n );
     }
-    
-    for(i=-SUMORDER ; i<SUMORDER+1 ; i++)
+
+    for (i=-SUMORDER ; i<SUMORDER+1 ; i++)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
@@ -308,9 +320,9 @@ static inline real eps_poly3(
 }
 
 static inline real eps_poly4(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+    real m,          /* grid coordinate in certain direction */
+    real K,          /* grid size in corresponding direction */
+    real n)          /* spline interpolation order of the SPME */
 {
     int i;
     real nom=0;  /* nominator */
@@ -318,23 +330,25 @@ static inline real eps_poly4(
     real tmp=0;
 
     if ( m == 0.0 )
+    {
         return 0.0 ;
+    }
 
-    for(i=-SUMORDER ; i<0 ; i++)
+    for (i=-SUMORDER ; i<0 ; i++)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+= i * i * pow( tmp , -2.0*n );
     }
 
-    for(i=SUMORDER ; i>0 ; i--)
+    for (i=SUMORDER ; i>0 ; i--)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
         nom+= i * i * pow( tmp , -2.0*n );
     }
-    
-    for(i=-SUMORDER ; i<SUMORDER+1 ; i++)
+
+    for (i=-SUMORDER ; i<SUMORDER+1 ; i++)
     {
         tmp=m / K + i;
         tmp*=2.0*M_PI;
@@ -346,51 +360,53 @@ static inline real eps_poly4(
 }
 
 static inline real eps_self(
-        real m,        /* grid coordinate in certain direction */
-        real K,        /* grid size in corresponding direction */
-        rvec rboxv,   /* reciprocal box vector */
-        real n,        /* spline interpolation order of the SPME */
-        rvec x)       /* coordinate of charge */
+    real m,        /* grid coordinate in certain direction */
+    real K,        /* grid size in corresponding direction */
+    rvec rboxv,   /* reciprocal box vector */
+    real n,        /* spline interpolation order of the SPME */
+    rvec x)       /* coordinate of charge */
 {
-    int i; 
+    int i;
     real tmp=0; /* temporary variables for computations */
     real tmp1=0; /* temporary variables for computations */
     real tmp2=0; /* temporary variables for computations */
     real rcoord=0; /* coordinate in certain reciprocal space direction */
     real nom=0; /* nominator */
     real denom=0; /* denominator */
-    
-    
+
+
     if ( m == 0.0 )
+    {
         return 0.0 ;
+    }
 
     rcoord=iprod(rboxv,x);
-    
-	 	     
-    for(i=-SUMORDER;i<0;i++)
+
+
+    for (i=-SUMORDER; i<0; i++)
     {
         tmp=-sin(2.0 * M_PI * i * K * rcoord);
-        tmp1=2.0 * M_PI * m / K + 2.0 * M_PI * i; 
+        tmp1=2.0 * M_PI * m / K + 2.0 * M_PI * i;
         tmp2=pow(tmp1,-1.0*n);
         nom+=tmp * tmp2 * i;
         denom+=tmp2;
     }
 
-    for(i=SUMORDER;i>0;i--)
+    for (i=SUMORDER; i>0; i--)
     {
         tmp=-sin(2.0 * M_PI * i * K * rcoord);
-        tmp1=2.0 * M_PI * m / K + 2.0 * M_PI * i; 
+        tmp1=2.0 * M_PI * m / K + 2.0 * M_PI * i;
         tmp2=pow(tmp1,-1.0*n);
         nom+=tmp * tmp2 * i;
         denom+=tmp2;
     }
 
-   
+
     tmp=2.0 * M_PI * m / K;
     tmp1=pow(tmp,-1.0*n);
     denom+=tmp1;
 
-   return 2.0 * M_PI * nom / denom * K  ;
+    return 2.0 * M_PI * nom / denom * K  ;
 
 }
 
@@ -400,34 +416,34 @@ static inline real eps_self(
 
 static void calc_recipbox(matrix box,matrix recipbox)
 {
-  /* Save some time by assuming upper right part is zero */
+    /* Save some time by assuming upper right part is zero */
 
-  real tmp=1.0/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
+    real tmp=1.0/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
 
-  recipbox[XX][XX]=box[YY][YY]*box[ZZ][ZZ]*tmp;
-  recipbox[XX][YY]=0;
-  recipbox[XX][ZZ]=0;
-  recipbox[YY][XX]=-box[YY][XX]*box[ZZ][ZZ]*tmp;
-  recipbox[YY][YY]=box[XX][XX]*box[ZZ][ZZ]*tmp;
-  recipbox[YY][ZZ]=0;
-  recipbox[ZZ][XX]=(box[YY][XX]*box[ZZ][YY]-box[YY][YY]*box[ZZ][XX])*tmp;
-  recipbox[ZZ][YY]=-box[ZZ][YY]*box[XX][XX]*tmp;
-  recipbox[ZZ][ZZ]=box[XX][XX]*box[YY][YY]*tmp;
+    recipbox[XX][XX]=box[YY][YY]*box[ZZ][ZZ]*tmp;
+    recipbox[XX][YY]=0;
+    recipbox[XX][ZZ]=0;
+    recipbox[YY][XX]=-box[YY][XX]*box[ZZ][ZZ]*tmp;
+    recipbox[YY][YY]=box[XX][XX]*box[ZZ][ZZ]*tmp;
+    recipbox[YY][ZZ]=0;
+    recipbox[ZZ][XX]=(box[YY][XX]*box[ZZ][YY]-box[YY][YY]*box[ZZ][XX])*tmp;
+    recipbox[ZZ][YY]=-box[ZZ][YY]*box[XX][XX]*tmp;
+    recipbox[ZZ][ZZ]=box[XX][XX]*box[YY][YY]*tmp;
 }
 
 
 /* Estimate the reciprocal space part error of the SPME Ewald sum. */
 static real estimate_reciprocal(
-        t_inputinfo *info, 
-        rvec x[],           /* array of particles */
-        real q[],           /* array of charges */
-        int nr,             /* number of charges = size of the charge array */
-        FILE *fp_out,
-        gmx_bool bVerbose,
-        unsigned int seed,  /* The seed for the random number generator */
-        int *nsamples,      /* Return the number of samples used if Monte Carlo
+    t_inputinfo *info,
+    rvec x[],           /* array of particles */
+    real q[],           /* array of charges */
+    int nr,             /* number of charges = size of the charge array */
+    FILE *fp_out,
+    gmx_bool bVerbose,
+    unsigned int seed,  /* The seed for the random number generator */
+    int *nsamples,      /* Return the number of samples used if Monte Carlo
                              * algorithm is used for self energy error estimate */
-        t_commrec *cr)
+    t_commrec *cr)
 {
     real e_rec=0;   /* reciprocal error estimate */
     real e_rec1=0;  /* Error estimate term 1*/
@@ -450,7 +466,7 @@ static real estimate_reciprocal(
     real tmp1=0;
     real tmp2=0;
     gmx_bool bFraction;
-    
+
     /* Random number generator */
     gmx_rng_t rng=NULL;
     int *numbers=NULL;
@@ -474,11 +490,11 @@ static real estimate_reciprocal(
     clear_rvec(tmpvec);
     clear_rvec(tmpvec2);
 
-    for(i=0;i<nr;i++)
+    for (i=0; i<nr; i++)
     {
         q2_all += q[i]*q[i];
     }
-    
+
     /* Calculate indices for work distribution */
     startglobal=-info->nkx[0]/2;
     stopglobal = info->nkx[0]/2;
@@ -489,7 +505,9 @@ static real estimate_reciprocal(
         startlocal = startglobal + x_per_core*cr->nodeid;
         stoplocal = startlocal + x_per_core -1;
         if (stoplocal > stopglobal)
-             stoplocal = stopglobal;
+        {
+            stoplocal = stopglobal;
+        }
     }
     else
     {
@@ -497,121 +515,130 @@ static real estimate_reciprocal(
         stoplocal  = stopglobal;
         x_per_core = xtot;
     }
-/*     
-#ifdef GMX_LIB_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-*/
+    /*
+    #ifdef GMX_LIB_MPI
+        MPI_Barrier(MPI_COMM_WORLD);
+    #endif
+    */
 
 #ifdef GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
+    {
         t0 = MPI_Wtime();
+    }
 #endif
 #endif
-    
-    if (MASTER(cr)){
-                         
+
+    if (MASTER(cr))
+    {
+
         fprintf(stderr, "Calculating reciprocal error part 1 ...");
-        
+
     }
 
-    for(nx=startlocal; nx<=stoplocal; nx++)
-    {   
+    for (nx=startlocal; nx<=stoplocal; nx++)
+    {
         svmul(nx,info->recipbox[XX],gridpx);
-        for(ny=-info->nky[0]/2; ny<info->nky[0]/2+1; ny++)
+        for (ny=-info->nky[0]/2; ny<info->nky[0]/2+1; ny++)
         {
             svmul(ny,info->recipbox[YY],tmpvec);
             rvec_add(gridpx,tmpvec,gridpxy);
-            for(nz=-info->nkz[0]/2; nz<info->nkz[0]/2+1; nz++)
+            for (nz=-info->nkz[0]/2; nz<info->nkz[0]/2+1; nz++)
             {
                 if (  0 == nx &&  0 == ny &&  0 == nz )
+                {
                     continue;
+                }
                 svmul(nz,info->recipbox[ZZ],tmpvec);
                 rvec_add(gridpxy,tmpvec,gridp);
                 tmp=norm2(gridp);
                 coeff=exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] ) ;
                 coeff/= 2.0 * M_PI * info->volume * tmp;
                 coeff2=tmp ;
-                
-                
+
+
                 tmp=eps_poly2(nx,info->nkx[0],info->pme_order[0]);
                 tmp+=eps_poly2(ny,info->nkx[0],info->pme_order[0]);
                 tmp+=eps_poly2(nz,info->nkx[0],info->pme_order[0]);
-                
+
                 tmp1=eps_poly1(nx,info->nkx[0],info->pme_order[0]);
                 tmp2=eps_poly1(ny,info->nky[0],info->pme_order[0]);
-                
+
                 tmp+=2.0 * tmp1 * tmp2;
-                
+
                 tmp1=eps_poly1(nz,info->nkz[0],info->pme_order[0]);
                 tmp2=eps_poly1(ny,info->nky[0],info->pme_order[0]);
-                
+
                 tmp+=2.0 * tmp1 * tmp2;
-                
+
                 tmp1=eps_poly1(nz,info->nkz[0],info->pme_order[0]);
                 tmp2=eps_poly1(nx,info->nkx[0],info->pme_order[0]);
-                
+
                 tmp+=2.0 * tmp1 * tmp2;
-                
+
                 tmp1=eps_poly1(nx,info->nkx[0],info->pme_order[0]);
                 tmp1+=eps_poly1(ny,info->nky[0],info->pme_order[0]);
                 tmp1+=eps_poly1(nz,info->nkz[0],info->pme_order[0]);
-                
+
                 tmp+= tmp1 * tmp1;
-                
+
                 e_rec1+= 32.0 * M_PI * M_PI * coeff * coeff * coeff2 * tmp  * q2_all * q2_all / nr ;
 
                 tmp1=eps_poly3(nx,info->nkx[0],info->pme_order[0]);
                 tmp1*=info->nkx[0];
                 tmp2=iprod(gridp,info->recipbox[XX]);
-                
+
                 tmp=tmp1*tmp2;
-                
+
                 tmp1=eps_poly3(ny,info->nky[0],info->pme_order[0]);
                 tmp1*=info->nky[0];
                 tmp2=iprod(gridp,info->recipbox[YY]);
-                
+
                 tmp+=tmp1*tmp2;
-                
+
                 tmp1=eps_poly3(nz,info->nkz[0],info->pme_order[0]);
                 tmp1*=info->nkz[0];
                 tmp2=iprod(gridp,info->recipbox[ZZ]);
-                
+
                 tmp+=tmp1*tmp2;
-                
+
                 tmp*=4.0 * M_PI;
-                
+
                 tmp1=eps_poly4(nx,info->nkx[0],info->pme_order[0]);
                 tmp1*=norm2(info->recipbox[XX]);
                 tmp1*=info->nkx[0] * info->nkx[0];
-                
+
                 tmp+=tmp1;
-                
+
                 tmp1=eps_poly4(ny,info->nky[0],info->pme_order[0]);
                 tmp1*=norm2(info->recipbox[YY]);
                 tmp1*=info->nky[0] * info->nky[0];
-                
+
                 tmp+=tmp1;
-                
+
                 tmp1=eps_poly4(nz,info->nkz[0],info->pme_order[0]);
                 tmp1*=norm2(info->recipbox[ZZ]);
                 tmp1*=info->nkz[0] * info->nkz[0];
-                
+
                 tmp+=tmp1;
-                
+
                 e_rec2+= 4.0 * coeff * coeff * tmp * q2_all * q2_all / nr ;
-                
+
             }
         }
         if (MASTER(cr))
+        {
             fprintf(stderr, "\rCalculating reciprocal error part 1 ... %3.0f%%", 100.0*(nx-startlocal+1)/(x_per_core));
-        
+        }
+
     }
 
     if (MASTER(cr))
+    {
         fprintf(stderr, "\n");
-    
+    }
+
     /* Use just a fraction of all charges to estimate the self energy error term? */
     bFraction =  (info->fracself > 0.0) && (info->fracself < 1.0);
 
@@ -657,7 +684,9 @@ static real estimate_reciprocal(
             fprintf(stdout, "Using %d sample%s to approximate the self interaction error term",
                     xtot, xtot==1?"":"s");
             if (PAR(cr))
+            {
                 fprintf(stdout, " (%d sample%s per node)", x_per_core, x_per_core==1?"":"s");
+            }
             fprintf(stdout, ".\n");
         }
     }
@@ -665,7 +694,7 @@ static real estimate_reciprocal(
     /* Return the number of positions used for the Monte Carlo algorithm */
     *nsamples = xtot;
 
-    for(i=startlocal;i<stoplocal;i++)
+    for (i=startlocal; i<stoplocal; i++)
     {
         e_rec3x=0;
         e_rec3y=0;
@@ -683,19 +712,21 @@ static real estimate_reciprocal(
         }
 
         /* for(nx=startlocal; nx<=stoplocal; nx++)*/
-        for(nx=-info->nkx[0]/2; nx<info->nkx[0]/2+1; nx++) 
-        {   
+        for (nx=-info->nkx[0]/2; nx<info->nkx[0]/2+1; nx++)
+        {
             svmul(nx,info->recipbox[XX],gridpx);
-            for(ny=-info->nky[0]/2; ny<info->nky[0]/2+1; ny++)
+            for (ny=-info->nky[0]/2; ny<info->nky[0]/2+1; ny++)
             {
                 svmul(ny,info->recipbox[YY],tmpvec);
                 rvec_add(gridpx,tmpvec,gridpxy);
-                for(nz=-info->nkz[0]/2; nz<info->nkz[0]/2+1; nz++)
+                for (nz=-info->nkz[0]/2; nz<info->nkz[0]/2+1; nz++)
                 {
-                    
+
                     if (  0 == nx && 0 == ny && 0 == nz)
+                    {
                         continue;
-                    
+                    }
+
                     svmul(nz,info->recipbox[ZZ],tmpvec);
                     rvec_add(gridpxy,tmpvec,gridp);
                     tmp=norm2(gridp);
@@ -719,7 +750,8 @@ static real estimate_reciprocal(
         rvec_inc(tmpvec2,tmpvec);
 
         e_rec3 += q[ci]*q[ci]*q[ci]*q[ci]*norm2(tmpvec2) / ( xtot * M_PI * info->volume * M_PI * info->volume);
-        if (MASTER(cr)){
+        if (MASTER(cr))
+        {
             fprintf(stderr, "\rCalculating reciprocal error part 2 ... %3.0f%%",
                     100.0*(i+1)/stoplocal);
 
@@ -727,7 +759,9 @@ static real estimate_reciprocal(
     }
 
     if (MASTER(cr))
+    {
         fprintf(stderr, "\n");
+    }
 
 #ifdef GMX_LIB_MPI
 #ifdef TAKETIME
@@ -738,11 +772,11 @@ static real estimate_reciprocal(
     }
 #endif
 #endif
-   
+
 #ifdef DEBUG
     if (PAR(cr))
     {
-        fprintf(stderr, "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n", 
+        fprintf(stderr, "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n",
                 cr->nodeid, startlocal, stoplocal, e_rec3);
     }
 #endif
@@ -753,14 +787,14 @@ static real estimate_reciprocal(
         gmx_sum(1,&e_rec2,cr);
         gmx_sum(1,&e_rec3,cr);
     }
-    
+
     /* e_rec1*=8.0 * q2_all / info->volume / info->volume / nr ;
        e_rec2*=  q2_all / M_PI / M_PI / info->volume / info->volume / nr ;
-       e_rec3/= M_PI * M_PI * info->volume * info->volume * nr ; 
+       e_rec3/= M_PI * M_PI * info->volume * info->volume * nr ;
      */
     e_rec=sqrt(e_rec1+e_rec2+e_rec3);
-    
-    
+
+
     return ONE_4PI_EPS0 * e_rec;
 }
 
@@ -793,8 +827,8 @@ static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_
     int nq; /* number of charged particles */
     gmx_mtop_atomloop_all_t aloop;
     t_atom *atom;
-    
-    
+
+
     if (MASTER(cr))
     {
         snew(*q, mtop->natoms);
@@ -828,7 +862,7 @@ static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_
         nblock_bc(cr,nq,*x);
         nblock_bc(cr,nq,*q);
     }
-    
+
     return nq;
 }
 
@@ -839,29 +873,37 @@ static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *st
 {
     read_tpx_state(fn_sim_tpr,ir,state,NULL,mtop);
 
-    /* The values of the original tpr input file are save in the first 
+    /* The values of the original tpr input file are save in the first
      * place [0] of the arrays */
     info->orig_sim_steps = ir->nsteps;
     info->pme_order[0]   = ir->pme_order;
     info->rcoulomb[0]    = ir->rcoulomb;
-    info->rvdw[0]        = ir->rvdw;        
+    info->rvdw[0]        = ir->rvdw;
     info->nkx[0]         = ir->nkx;
     info->nky[0]         = ir->nky;
     info->nkz[0]         = ir->nkz;
     info->ewald_rtol[0]  = ir->ewald_rtol;
     info->fracself       = fracself;
     if (user_beta > 0)
+    {
         info->ewald_beta[0] = user_beta;
+    }
     else
+    {
         info->ewald_beta[0]  = calc_ewaldcoeff(info->rcoulomb[0],info->ewald_rtol[0]);
+    }
 
     /* Check if PME was chosen */
     if (EEL_PME(ir->coulombtype) == FALSE)
+    {
         gmx_fatal(FARGS, "Can only do optimizations for simulations with PME");
-    
+    }
+
     /* Check if rcoulomb == rlist, which is necessary for PME */
     if (!(ir->rcoulomb == ir->rlist))
+    {
         gmx_fatal(FARGS, "PME requires rcoulomb (%f) to be equal to rlist (%f).", ir->rcoulomb, ir->rlist);
+    }
 }
 
 
@@ -889,9 +931,9 @@ static void bcast_info(t_inputinfo *info, t_commrec *cr)
  * a) a homogeneous distribution of the charges
  * b) a total charge of zero.
  */
-static void estimate_PME_error(t_inputinfo *info, t_state *state, 
-        gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
-        t_commrec *cr)
+static void estimate_PME_error(t_inputinfo *info, t_state *state,
+                               gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
+                               t_commrec *cr)
 {
     rvec *x=NULL; /* The coordinates */
     real *q=NULL; /* The charges     */
@@ -905,9 +947,11 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
     int nsamples; /* The number of samples used for the calculation of the
                    * self-energy error term */
     int i=0;
-    
+
     if (MASTER(cr))
-        fprintf(fp_out, "\n--- PME ERROR ESTIMATE ---\n");    
+    {
+        fprintf(fp_out, "\n--- PME ERROR ESTIMATE ---\n");
+    }
 
     /* Prepare an x and q array with only the charged atoms */
     ncharges = prepare_x_q(&q, &x, mtop, state->x, cr);
@@ -922,14 +966,16 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
         fprintf(fp_out, "Ewald_rtol              : %g\n", info->ewald_rtol[0]);
         fprintf(fp_out, "Ewald parameter beta    : %g\n", info->ewald_beta[0]);
         fprintf(fp_out, "Interpolation order     : %d\n", info->pme_order[0]);
-        fprintf(fp_out, "Fourier grid (nx,ny,nz) : %d x %d x %d\n", 
+        fprintf(fp_out, "Fourier grid (nx,ny,nz) : %d x %d x %d\n",
                 info->nkx[0],info->nky[0],info->nkz[0]);
         fflush(fp_out);
-        
+
     }
 
     if (PAR(cr))
+    {
         bcast_info(info, cr);
+    }
 
 
     /* Calculate direct space error */
@@ -940,8 +986,10 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
                                          seed, &nsamples, cr);
 
     if (PAR(cr))
+    {
         bcast_info(info, cr);
-    
+    }
+
     if (MASTER(cr))
     {
         fprintf(fp_out, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
@@ -956,30 +1004,38 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
 
     if (info->bTUNE)
     {
-        if(MASTER(cr))
+        if (MASTER(cr))
+        {
             fprintf(stderr,"Starting tuning ...\n");
+        }
         edir=info->e_dir[0];
         erec=info->e_rec[0];
         derr0=edir-erec;
         beta0=info->ewald_beta[0];
         if (derr>0.0)
+        {
             info->ewald_beta[0]+=0.1;
+        }
         else
+        {
             info->ewald_beta[0]-=0.1;
+        }
         info->e_dir[0] = estimate_direct(info);
         info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose,
                                              seed, &nsamples, cr);
 
         if (PAR(cr))
+        {
             bcast_info(info, cr);
-    
-        
+        }
+
+
         edir=info->e_dir[0];
         erec=info->e_rec[0];
         derr=edir-erec;
         while ( fabs(derr/min(erec,edir)) > 1e-4)
         {
-    
+
             beta=info->ewald_beta[0];
             beta-=derr*(info->ewald_beta[0]-beta0)/(derr-derr0);
             beta0=info->ewald_beta[0];
@@ -991,12 +1047,14 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
                                                  seed, &nsamples, cr);
 
             if (PAR(cr))
+            {
                 bcast_info(info, cr);
-            
+            }
+
             edir=info->e_dir[0];
             erec=info->e_rec[0];
             derr=edir-erec;
-            
+
             if (MASTER(cr))
             {
                 i++;
@@ -1020,8 +1078,8 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
             fprintf(fp_out, "Ewald_rtol              : %g\n", info->ewald_rtol[0]);
             fprintf(fp_out, "Ewald parameter beta    : %g\n", info->ewald_beta[0]);
             fflush(fp_out);
-            
-        }   
+
+        }
 
     }
 
@@ -1030,15 +1088,16 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
 
 int gmx_pme_error(int argc,char *argv[])
 {
-    const char *desc[] = {
-            "[TT]g_pme_error[tt] estimates the error of the electrostatic forces",
-            "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
-            "the splitting parameter such that the error is equally",
-            "distributed over the real and reciprocal space part.",
-            "The part of the error that stems from self interaction of the particles "
-            "is computationally demanding. However, a good a approximation is to",
-            "just use a fraction of the particles for this term which can be",
-            "indicated by the flag [TT]-self[tt].[PAR]",
+    const char *desc[] =
+    {
+        "[TT]g_pme_error[tt] estimates the error of the electrostatic forces",
+        "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
+        "the splitting parameter such that the error is equally",
+        "distributed over the real and reciprocal space part.",
+        "The part of the error that stems from self interaction of the particles "
+        "is computationally demanding. However, a good a approximation is to",
+        "just use a fraction of the particles for this term which can be",
+        "indicated by the flag [TT]-self[tt].[PAR]",
     };
 
     real        fs=0.0;             /* 0 indicates: not set by the user */
@@ -1056,55 +1115,71 @@ int gmx_pme_error(int argc,char *argv[])
     int         seed=0;
 
 
-    static t_filenm fnm[] = {
-      { efTPX, "-s",     NULL,    ffREAD },
-      { efOUT, "-o",    "error",  ffWRITE },
-      { efTPX, "-so",   "tuned",  ffOPTWR }
+    static t_filenm fnm[] =
+    {
+        { efTPX, "-s",     NULL,    ffREAD },
+        { efOUT, "-o",    "error",  ffWRITE },
+        { efTPX, "-so",   "tuned",  ffOPTWR }
     };
 
     output_env_t oenv=NULL;
 
-    t_pargs pa[] = {
-        { "-beta",     FALSE, etREAL, {&user_beta},
-            "If positive, overwrite ewald_beta from [TT].tpr[tt] file with this value" },
-        { "-tune",     FALSE, etBOOL, {&bTUNE},
-            "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
-        { "-self",     FALSE, etREAL, {&fracself},
-            "If between 0.0 and 1.0, determine self interaction error from just this fraction of the charged particles" },
-        { "-seed",     FALSE, etINT,  {&seed},
-          "Random number seed used for Monte Carlo algorithm when [TT]-self[tt] is set to a value between 0.0 and 1.0" },
-        { "-v",        FALSE, etBOOL, {&bVerbose},
-            "Be loud and noisy" }
+    t_pargs pa[] =
+    {
+        {
+            "-beta",     FALSE, etREAL, {&user_beta},
+            "If positive, overwrite ewald_beta from [TT].tpr[tt] file with this value"
+        },
+        {
+            "-tune",     FALSE, etBOOL, {&bTUNE},
+            "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space"
+        },
+        {
+            "-self",     FALSE, etREAL, {&fracself},
+            "If between 0.0 and 1.0, determine self interaction error from just this fraction of the charged particles"
+        },
+        {
+            "-seed",     FALSE, etINT,  {&seed},
+            "Random number seed used for Monte Carlo algorithm when [TT]-self[tt] is set to a value between 0.0 and 1.0"
+        },
+        {
+            "-v",        FALSE, etBOOL, {&bVerbose},
+            "Be loud and noisy"
+        }
     };
 
-    
+
 #define NFILE asize(fnm)
-    
+
     cr = init_par(&argc,&argv);
-    
+
 #ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
     if (MASTER(cr))
-      CopyRight(stderr,argv[0]);
-    
+    {
+        CopyRight(stderr,argv[0]);
+    }
+
     PCA_Flags = PCA_NOEXIT_ON_ARGS;
     PCA_Flags |= (MASTER(cr) ? 0 : PCA_QUIET);
-    
+
     parse_common_args(&argc,argv,PCA_Flags,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,
-                      0,NULL,&oenv);        
+                      0,NULL,&oenv);
 
     if (!bTUNE)
+    {
         bTUNE = opt2bSet("-so",NFILE,fnm);
+    }
 
     info.n_entries = 1;
-    
+
     /* Allocate memory for the inputinfo struct: */
     create_info(&info);
     info.fourier_sp[0] = fs;
-    
+
     /* Read in the tpr file and open logfile for reading */
     if (MASTER(cr))
     {
@@ -1113,7 +1188,7 @@ int gmx_pme_error(int argc,char *argv[])
 
         fp=fopen(opt2fn("-o",NFILE,fnm),"w");
     }
-    
+
     /* Check consistency if the user provided fourierspacing */
     if (fs > 0 && MASTER(cr))
     {
@@ -1123,10 +1198,10 @@ int gmx_pme_error(int argc,char *argv[])
         info.nkz[0] = 0;
         calc_grid(stdout,state.box,info.fourier_sp[0],&(info.nkx[0]),&(info.nky[0]),&(info.nkz[0]));
         if ( (ir->nkx != info.nkx[0]) || (ir->nky != info.nky[0]) || (ir->nkz != info.nkz[0]) )
-            gmx_fatal(FARGS, "Wrong fourierspacing %f nm, input file grid = %d x %d x %d, computed grid = %d x %d x %d", 
+            gmx_fatal(FARGS, "Wrong fourierspacing %f nm, input file grid = %d x %d x %d, computed grid = %d x %d x %d",
                       fs,ir->nkx,ir->nky,ir->nkz,info.nkx[0],info.nky[0],info.nkz[0]);
     }
-    
+
     /* Estimate (S)PME force error */
 
     /* Determine the volume of the simulation box */
@@ -1136,14 +1211,16 @@ int gmx_pme_error(int argc,char *argv[])
         calc_recipbox(state.box,info.recipbox);
         info.natoms = mtop.natoms;
         info.bTUNE  = bTUNE;
-    }   
+    }
 
     if (PAR(cr))
+    {
         bcast_info(&info, cr);
-    
+    }
+
     /* Get an error estimate of the input tpr file and do some tuning if requested */
     estimate_PME_error(&info, &state, &mtop, fp, bVerbose, seed, cr);
-    
+
     if (MASTER(cr))
     {
         /* Write out optimized tpr file if requested */
@@ -1155,8 +1232,8 @@ int gmx_pme_error(int argc,char *argv[])
         please_cite(fp,"Wang2010");
         fclose(fp);
     }
-    
+
     gmx_finalize_par();
-    
+
     return 0;
 }

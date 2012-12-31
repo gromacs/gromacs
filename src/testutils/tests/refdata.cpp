@@ -215,7 +215,8 @@ TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
     using gmx::test::TestReferenceChecker;
     const int seq[5] = { -1, 3, 5, 2, 4 };
 
-    EXPECT_NONFATAL_FAILURE({
+    EXPECT_NONFATAL_FAILURE(
+    {
         TestReferenceData data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkInteger(1, "int");

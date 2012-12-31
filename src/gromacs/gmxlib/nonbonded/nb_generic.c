@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -118,7 +118,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     rvdw2               = rvdw*rvdw;
     sh_invrc6           = fr->ic->sh_invrc6;
 
-    if(fr->coulomb_modifier==eintmodPOTSWITCH)
+    if (fr->coulomb_modifier==eintmodPOTSWITCH)
     {
         d               = fr->rcoulomb-fr->rcoulomb_switch;
         elec_swV3       = -10.0/(d*d*d);
@@ -133,7 +133,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         /* Avoid warnings from stupid compilers (looking at you, Clang!) */
         elec_swV3 = elec_swV4 = elec_swV5 = elec_swF2 = elec_swF3 = elec_swF4 = 0.0;
     }
-    if(fr->vdw_modifier==eintmodPOTSWITCH)
+    if (fr->vdw_modifier==eintmodPOTSWITCH)
     {
         d               = fr->rvdw-fr->rvdw_switch;
         vdw_swV3        = -10.0/(d*d*d);
@@ -153,7 +153,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     bExactVdwCutoff     = (fr->vdw_modifier!=eintmodNONE);
     bExactCutoff        = bExactElecCutoff || bExactVdwCutoff;
 
-    if(bExactCutoff)
+    if (bExactCutoff)
     {
         rcutoff  = ( fr->rcoulomb > fr->rvdw ) ? fr->rcoulomb : fr->rvdw;
         rcutoff2 = rcutoff*rcutoff;
@@ -180,51 +180,51 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     vdwparam            = fr->nbfp;
     ntype               = fr->ntype;
 
-    for(n=0; (n<nlist->nri); n++)
+    for (n=0; (n<nlist->nri); n++)
     {
         is3              = 3*nlist->shift[n];
-        shX              = shiftvec[is3];  
+        shX              = shiftvec[is3];
         shY              = shiftvec[is3+1];
         shZ              = shiftvec[is3+2];
-        nj0              = nlist->jindex[n];      
-        nj1              = nlist->jindex[n+1];    
-        ii               = nlist->iinr[n];        
-        ii3              = 3*ii;           
+        nj0              = nlist->jindex[n];
+        nj1              = nlist->jindex[n+1];
+        ii               = nlist->iinr[n];
+        ii3              = 3*ii;
         ix               = shX + x[ii3+0];
         iy               = shY + x[ii3+1];
         iz               = shZ + x[ii3+2];
         iq               = facel*charge[ii];
         nti              = nvdwparam*ntype*type[ii];
-        vctot            = 0;              
+        vctot            = 0;
         vvdwtot          = 0;
         fix              = 0;
         fiy              = 0;
-        fiz              = 0;              
-        
-        for(k=nj0; (k<nj1); k++)
+        fiz              = 0;
+
+        for (k=nj0; (k<nj1); k++)
         {
-            jnr              = nlist->jjnr[k];        
-            j3               = 3*jnr;          
-            jx               = x[j3+0];      
-            jy               = x[j3+1];      
-            jz               = x[j3+2];      
-            dx               = ix - jx;      
-            dy               = iy - jy;      
-            dz               = iz - jz;      
+            jnr              = nlist->jjnr[k];
+            j3               = 3*jnr;
+            jx               = x[j3+0];
+            jy               = x[j3+1];
+            jz               = x[j3+2];
+            dx               = ix - jx;
+            dy               = iy - jy;
+            dz               = iz - jz;
             rsq              = dx*dx+dy*dy+dz*dz;
             rinv             = gmx_invsqrt(rsq);
-            rinvsq           = rinv*rinv;  
+            rinvsq           = rinv*rinv;
             felec            = 0;
             fvdw             = 0;
             velec            = 0;
             vvdw             = 0;
 
-            if(bExactCutoff && rsq>rcutoff2)
+            if (bExactCutoff && rsq>rcutoff2)
             {
                 continue;
             }
 
-            if(ielec==GMX_NBKERNEL_ELEC_CUBICSPLINETABLE || ivdw==GMX_NBKERNEL_VDW_CUBICSPLINETABLE)
+            if (ielec==GMX_NBKERNEL_ELEC_CUBICSPLINETABLE || ivdw==GMX_NBKERNEL_VDW_CUBICSPLINETABLE)
             {
                 r                = rsq*rinv;
                 rt               = r*tabscale;
@@ -235,11 +235,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             }
 
             /* Coulomb interaction. ielec==0 means no interaction */
-            if(ielec!=GMX_NBKERNEL_ELEC_NONE)
+            if (ielec!=GMX_NBKERNEL_ELEC_NONE)
             {
                 qq               = iq*charge[jnr];
 
-                switch(ielec)
+                switch (ielec)
                 {
                     case GMX_NBKERNEL_ELEC_NONE:
                         break;
@@ -289,7 +289,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for ielec=%d.\n",ielec);
                         break;
                 }
-                if(fr->coulomb_modifier==eintmodPOTSWITCH)
+                if (fr->coulomb_modifier==eintmodPOTSWITCH)
                 {
                     d                = rsq*rinv-fr->rcoulomb_switch;
                     d                = (d>0.0) ? d : 0.0;
@@ -304,7 +304,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                     /* Once we have used velec to update felec we can modify velec too */
                     velec           *= sw;
                 }
-                if(bExactElecCutoff)
+                if (bExactElecCutoff)
                 {
                     felec            = (rsq<=rcoulomb2) ? felec : 0.0;
                     velec            = (rsq<=rcoulomb2) ? velec : 0.0;
@@ -314,11 +314,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
 
             /* VdW interaction. ivdw==0 means no interaction */
-            if(ivdw!=GMX_NBKERNEL_VDW_NONE)
+            if (ivdw!=GMX_NBKERNEL_VDW_NONE)
             {
                 tj               = nti+nvdwparam*type[jnr];
 
-                switch(ivdw)
+                switch (ivdw)
                 {
                     case GMX_NBKERNEL_VDW_NONE:
                         break;
@@ -331,7 +331,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         vvdw_disp        = c6*rinvsix;
                         vvdw_rep         = c12*rinvsix*rinvsix;
                         fvdw             = (vvdw_rep-vvdw_disp)*rinvsq;
-                        if(fr->vdw_modifier==eintmodPOTSHIFT)
+                        if (fr->vdw_modifier==eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep-c12*sh_invrc6*sh_invrc6)*(1.0/12.0)-(vvdw_disp-c6*sh_invrc6)*(1.0/6.0);
                         }
@@ -352,7 +352,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         br               = cexp2*rsq*rinv;
                         vvdw_rep         = cexp1*exp(-br);
                         fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
-                        if(fr->vdw_modifier==eintmodPOTSHIFT)
+                        if (fr->vdw_modifier==eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep-cexp1*exp(-cexp2*rvdw))-(vvdw_disp-c6*sh_invrc6)/6.0;
                         }
@@ -392,7 +392,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         gmx_fatal(FARGS,"Death & horror! No generic VdW interaction for ivdw=%d.\n",ivdw);
                         break;
                 }
-                if(fr->vdw_modifier==eintmodPOTSWITCH)
+                if (fr->vdw_modifier==eintmodPOTSWITCH)
                 {
                     d                = rsq*rinv-fr->rvdw_switch;
                     d                = (d>0.0) ? d : 0.0;
@@ -403,7 +403,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                     fvdw             = fvdw*sw - rinv*vvdw*dsw;
                     vvdw            *= sw;
                 }
-                if(bExactVdwCutoff)
+                if (bExactVdwCutoff)
                 {
                     fvdw             = (rsq<=rvdw2) ? fvdw : 0.0;
                     vvdw             = (rsq<=rvdw2) ? vvdw : 0.0;

@@ -51,7 +51,7 @@ class ProgramInfo;
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
-        CommandLineModulePointer;
+CommandLineModulePointer;
 
 /*! \brief
  * Implements a wrapper command-line interface for multiple modules.

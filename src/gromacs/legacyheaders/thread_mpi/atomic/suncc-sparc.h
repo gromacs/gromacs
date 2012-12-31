@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -53,13 +53,13 @@ files.
 
 typedef struct tMPI_Atomic
 {
-    volatile uint_t value;   
+    volatile uint_t value;
 }
 tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    void* volatile value;   
+    void* volatile value;
 }
 tMPI_Atomic_ptr_t;
 
@@ -93,7 +93,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 }
 
 
-static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval, 
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval,
                                       void *newval)
 {
     /*atomic_cas_ptr always returns value stored in a, so*/
@@ -114,9 +114,9 @@ static inline unsigned long tas(volatile unsigned long *ptr)
     unsigned long result;
     __asm__ __volatile__("          \
             ldstub [%1], %0         "
-				: "=r"(result)
-                : "r"(ptr)
-                : "memory");
+                         : "=r"(result)
+                         : "r"(ptr)
+                         : "memory");
     return result;
 }
 
@@ -131,7 +131,8 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     do
     {
-    } while (tas(&(x->lock)) == 1);
+    }
+    while (tas(&(x->lock)) == 1);
 }
 
 
@@ -145,7 +146,7 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 {
     x->lock = 0;
 }
- 
+
 static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *  x)
 {
     tMPI_Atomic_memory_barrier();
@@ -156,7 +157,8 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     do
     {
-    } while (x->lock == 1);
+    }
+    while (x->lock == 1);
     tMPI_Atomic_memory_barrier();
 }
 

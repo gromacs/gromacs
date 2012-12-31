@@ -62,11 +62,12 @@ using gmx::test::CommandLine;
 
 //! Test fixture for the select analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Select>
-        SelectModuleTest;
+SelectModuleTest;
 
 TEST_F(SelectModuleTest, BasicTest)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "y < 2.5", "resname RA"
     };
@@ -80,7 +81,8 @@ TEST_F(SelectModuleTest, BasicTest)
 
 TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "resname RA RD and y < 2.5"
     };
@@ -93,7 +95,8 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
 
 TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "resname RA RD and y < 2.5"
     };
@@ -106,7 +109,8 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
 
 TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "resname RA RD and y < 2.5",
         "-pdbatoms", "maxsel"
@@ -120,7 +124,8 @@ TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
 
 TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "resname RA RD and y < 2.5",
         "-pdbatoms", "selected"
@@ -134,7 +139,8 @@ TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
 
 TEST_F(SelectModuleTest, HandlesDumpOption)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "y < 2.5",
         "-dump"
@@ -147,7 +153,8 @@ TEST_F(SelectModuleTest, HandlesDumpOption)
 
 TEST_F(SelectModuleTest, NormalizesSizes)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "y < 2.5", "resname RA and y < 2.5", "resname RA",
         "-norm"
@@ -159,7 +166,8 @@ TEST_F(SelectModuleTest, NormalizesSizes)
 
 TEST_F(SelectModuleTest, WritesResidueNumbers)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "res_com of resname RA RD"
     };
@@ -170,7 +178,8 @@ TEST_F(SelectModuleTest, WritesResidueNumbers)
 
 TEST_F(SelectModuleTest, WritesResidueIndices)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "select",
         "-select", "res_com of resname RA RD",
         "-resnr", "index"

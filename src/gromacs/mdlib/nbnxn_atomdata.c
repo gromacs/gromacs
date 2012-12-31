@@ -120,7 +120,7 @@ void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat,int n)
                        nbat->natoms*nbat->xstride*sizeof(*nbat->x),
                        n*nbat->xstride*sizeof(*nbat->x),
                        nbat->alloc,nbat->free);
-    for(t=0; t<nbat->nout; t++)
+    for (t=0; t<nbat->nout; t++)
     {
         /* Allocate one element extra for possible signaling with CUDA */
         nbnxn_realloc_void((void **)&nbat->out[t].f,
@@ -165,12 +165,12 @@ static void copy_int_to_nbat_int(const int *a,int na,int na_round,
     int i,j;
 
     j = 0;
-    for(i=0; i<na; i++)
+    for (i=0; i<na; i++)
     {
         innb[j++] = in[a[i]];
     }
     /* Complete the partially filled last cell with fill */
-    for(; i<na_round; i++)
+    for (; i<na_round; i++)
     {
         innb[j++] = fill;
     }
@@ -182,58 +182,58 @@ static void clear_nbat_real(int na,int nbatFormat,real *xnb,int a0)
 
     switch (nbatFormat)
     {
-    case nbatXYZ:
-        for(a=0; a<na; a++)
-        {
-            for(d=0; d<DIM; d++)
+        case nbatXYZ:
+            for (a=0; a<na; a++)
             {
-                xnb[(a0+a)*STRIDE_XYZ+d] = 0;
+                for (d=0; d<DIM; d++)
+                {
+                    xnb[(a0+a)*STRIDE_XYZ+d] = 0;
+                }
             }
-        }
-        break;
-    case nbatXYZQ:
-        for(a=0; a<na; a++)
-        {
-            for(d=0; d<DIM; d++)
+            break;
+        case nbatXYZQ:
+            for (a=0; a<na; a++)
             {
-                xnb[(a0+a)*STRIDE_XYZQ+d] = 0;
+                for (d=0; d<DIM; d++)
+                {
+                    xnb[(a0+a)*STRIDE_XYZQ+d] = 0;
+                }
             }
-        }
-        break;
-    case nbatX4:
-        j = X4_IND_A(a0);
-        c = a0 & (PACK_X4-1);
-        for(a=0; a<na; a++)
-        {
-            xnb[j+XX*PACK_X4] = 0;
-            xnb[j+YY*PACK_X4] = 0;
-            xnb[j+ZZ*PACK_X4] = 0;
-            j++;
-            c++;
-            if (c == PACK_X4)
+            break;
+        case nbatX4:
+            j = X4_IND_A(a0);
+            c = a0 & (PACK_X4-1);
+            for (a=0; a<na; a++)
             {
-                j += (DIM-1)*PACK_X4;
-                c  = 0;
+                xnb[j+XX*PACK_X4] = 0;
+                xnb[j+YY*PACK_X4] = 0;
+                xnb[j+ZZ*PACK_X4] = 0;
+                j++;
+                c++;
+                if (c == PACK_X4)
+                {
+                    j += (DIM-1)*PACK_X4;
+                    c  = 0;
+                }
             }
-        }
-        break;
-    case nbatX8:
-        j = X8_IND_A(a0);
-        c = a0 & (PACK_X8-1);
-        for(a=0; a<na; a++)
-        {
-            xnb[j+XX*PACK_X8] = 0;
-            xnb[j+YY*PACK_X8] = 0;
-            xnb[j+ZZ*PACK_X8] = 0;
-            j++;
-            c++;
-            if (c == PACK_X8)
+            break;
+        case nbatX8:
+            j = X8_IND_A(a0);
+            c = a0 & (PACK_X8-1);
+            for (a=0; a<na; a++)
             {
-                j += (DIM-1)*PACK_X8;
-                c  = 0;
+                xnb[j+XX*PACK_X8] = 0;
+                xnb[j+YY*PACK_X8] = 0;
+                xnb[j+ZZ*PACK_X8] = 0;
+                j++;
+                c++;
+                if (c == PACK_X8)
+                {
+                    j += (DIM-1)*PACK_X8;
+                    c  = 0;
+                }
             }
-        }
-        break;
+            break;
     }
 }
 
@@ -243,117 +243,117 @@ void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
 {
     int i,j,c;
 
-/* We might need to place filler particles to fill up the cell to na_round.
- * The coefficients (LJ and q) for such particles are zero.
- * But we might still get NaN as 0*NaN when distances are too small.
- * We hope that -107 nm is far away enough from to zero
- * to avoid accidental short distances to particles shifted down for pbc.
- */
+    /* We might need to place filler particles to fill up the cell to na_round.
+     * The coefficients (LJ and q) for such particles are zero.
+     * But we might still get NaN as 0*NaN when distances are too small.
+     * We hope that -107 nm is far away enough from to zero
+     * to avoid accidental short distances to particles shifted down for pbc.
+     */
 #define NBAT_FAR_AWAY 107
 
     switch (nbatFormat)
     {
-    case nbatXYZ:
-        j = a0*STRIDE_XYZ;
-        for(i=0; i<na; i++)
-        {
-            xnb[j++] = x[a[i]][XX];
-            xnb[j++] = x[a[i]][YY];
-            xnb[j++] = x[a[i]][ZZ];
-        }
-        /* Complete the partially filled last cell with copies of the last element.
-         * This simplifies the bounding box calculation and avoid
-         * numerical issues with atoms that are coincidentally close.
-         */
-        for(; i<na_round; i++)
-        {
-            xnb[j++] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j++] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j++] = -NBAT_FAR_AWAY*(1 + cz + i);
-        }
-        break;
-    case nbatXYZQ:
-        j = a0*STRIDE_XYZQ;
-        for(i=0; i<na; i++)
-        {
-            xnb[j++] = x[a[i]][XX];
-            xnb[j++] = x[a[i]][YY];
-            xnb[j++] = x[a[i]][ZZ];
-            j++;
-        }
-        /* Complete the partially filled last cell with particles far apart */
-        for(; i<na_round; i++)
-        {
-            xnb[j++] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j++] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j++] = -NBAT_FAR_AWAY*(1 + cz + i);
-            j++;
-        }
-        break;
-    case nbatX4:
-        j = X4_IND_A(a0);
-        c = a0 & (PACK_X4-1);
-        for(i=0; i<na; i++)
-        {
-            xnb[j+XX*PACK_X4] = x[a[i]][XX];
-            xnb[j+YY*PACK_X4] = x[a[i]][YY];
-            xnb[j+ZZ*PACK_X4] = x[a[i]][ZZ];
-            j++;
-            c++;
-            if (c == PACK_X4)
+        case nbatXYZ:
+            j = a0*STRIDE_XYZ;
+            for (i=0; i<na; i++)
             {
-                j += (DIM-1)*PACK_X4;
-                c  = 0;
+                xnb[j++] = x[a[i]][XX];
+                xnb[j++] = x[a[i]][YY];
+                xnb[j++] = x[a[i]][ZZ];
             }
-        }
-        /* Complete the partially filled last cell with particles far apart */
-        for(; i<na_round; i++)
-        {
-            xnb[j+XX*PACK_X4] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j+YY*PACK_X4] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j+ZZ*PACK_X4] = -NBAT_FAR_AWAY*(1 + cz + i);
-            j++;
-            c++;
-            if (c == PACK_X4)
+            /* Complete the partially filled last cell with copies of the last element.
+             * This simplifies the bounding box calculation and avoid
+             * numerical issues with atoms that are coincidentally close.
+             */
+            for (; i<na_round; i++)
             {
-                j += (DIM-1)*PACK_X4;
-                c  = 0;
+                xnb[j++] = -NBAT_FAR_AWAY*(1 + cx);
+                xnb[j++] = -NBAT_FAR_AWAY*(1 + cy);
+                xnb[j++] = -NBAT_FAR_AWAY*(1 + cz + i);
             }
-        }
-        break;
-    case nbatX8:
-        j = X8_IND_A(a0);
-        c = a0 & (PACK_X8 - 1);
-        for(i=0; i<na; i++)
-        {
-            xnb[j+XX*PACK_X8] = x[a[i]][XX];
-            xnb[j+YY*PACK_X8] = x[a[i]][YY];
-            xnb[j+ZZ*PACK_X8] = x[a[i]][ZZ];
-            j++;
-            c++;
-            if (c == PACK_X8)
+            break;
+        case nbatXYZQ:
+            j = a0*STRIDE_XYZQ;
+            for (i=0; i<na; i++)
             {
-                j += (DIM-1)*PACK_X8;
-                c  = 0;
+                xnb[j++] = x[a[i]][XX];
+                xnb[j++] = x[a[i]][YY];
+                xnb[j++] = x[a[i]][ZZ];
+                j++;
             }
-        }
-        /* Complete the partially filled last cell with particles far apart */
-        for(; i<na_round; i++)
-        {
-            xnb[j+XX*PACK_X8] = -NBAT_FAR_AWAY*(1 + cx);
-            xnb[j+YY*PACK_X8] = -NBAT_FAR_AWAY*(1 + cy);
-            xnb[j+ZZ*PACK_X8] = -NBAT_FAR_AWAY*(1 + cz + i);
-            j++;
-            c++;
-            if (c == PACK_X8)
+            /* Complete the partially filled last cell with particles far apart */
+            for (; i<na_round; i++)
             {
-                j += (DIM-1)*PACK_X8;
-                c  = 0;
+                xnb[j++] = -NBAT_FAR_AWAY*(1 + cx);
+                xnb[j++] = -NBAT_FAR_AWAY*(1 + cy);
+                xnb[j++] = -NBAT_FAR_AWAY*(1 + cz + i);
+                j++;
             }
-        }
-        break;
-    default:
-        gmx_incons("Unsupported stride");
+            break;
+        case nbatX4:
+            j = X4_IND_A(a0);
+            c = a0 & (PACK_X4-1);
+            for (i=0; i<na; i++)
+            {
+                xnb[j+XX*PACK_X4] = x[a[i]][XX];
+                xnb[j+YY*PACK_X4] = x[a[i]][YY];
+                xnb[j+ZZ*PACK_X4] = x[a[i]][ZZ];
+                j++;
+                c++;
+                if (c == PACK_X4)
+                {
+                    j += (DIM-1)*PACK_X4;
+                    c  = 0;
+                }
+            }
+            /* Complete the partially filled last cell with particles far apart */
+            for (; i<na_round; i++)
+            {
+                xnb[j+XX*PACK_X4] = -NBAT_FAR_AWAY*(1 + cx);
+                xnb[j+YY*PACK_X4] = -NBAT_FAR_AWAY*(1 + cy);
+                xnb[j+ZZ*PACK_X4] = -NBAT_FAR_AWAY*(1 + cz + i);
+                j++;
+                c++;
+                if (c == PACK_X4)
+                {
+                    j += (DIM-1)*PACK_X4;
+                    c  = 0;
+                }
+            }
+            break;
+        case nbatX8:
+            j = X8_IND_A(a0);
+            c = a0 & (PACK_X8 - 1);
+            for (i=0; i<na; i++)
+            {
+                xnb[j+XX*PACK_X8] = x[a[i]][XX];
+                xnb[j+YY*PACK_X8] = x[a[i]][YY];
+                xnb[j+ZZ*PACK_X8] = x[a[i]][ZZ];
+                j++;
+                c++;
+                if (c == PACK_X8)
+                {
+                    j += (DIM-1)*PACK_X8;
+                    c  = 0;
+                }
+            }
+            /* Complete the partially filled last cell with particles far apart */
+            for (; i<na_round; i++)
+            {
+                xnb[j+XX*PACK_X8] = -NBAT_FAR_AWAY*(1 + cx);
+                xnb[j+YY*PACK_X8] = -NBAT_FAR_AWAY*(1 + cy);
+                xnb[j+ZZ*PACK_X8] = -NBAT_FAR_AWAY*(1 + cz + i);
+                j++;
+                c++;
+                if (c == PACK_X8)
+                {
+                    j += (DIM-1)*PACK_X8;
+                    c  = 0;
+                }
+            }
+            break;
+        default:
+            gmx_incons("Unsupported stride");
     }
 }
 
@@ -369,54 +369,54 @@ static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
 
     switch (nbat->comb_rule)
     {
-    case  ljcrGEOM:
-        nbat->comb_rule = ljcrGEOM;
+        case  ljcrGEOM:
+            nbat->comb_rule = ljcrGEOM;
 
-        for(i=0; i<nt; i++)
-        {
-            /* Copy the diagonal from the nbfp matrix */
-            nbat->nbfp_comb[i*2  ] = sqrt(nbat->nbfp[(i*nt+i)*2  ]);
-            nbat->nbfp_comb[i*2+1] = sqrt(nbat->nbfp[(i*nt+i)*2+1]);
-        }
-        break;
-    case ljcrLB:
-        for(i=0; i<nt; i++)
-        {
-            /* Get 6*C6 and 12*C12 from the diagonal of the nbfp matrix */
-            c6  = nbat->nbfp[(i*nt+i)*2  ];
-            c12 = nbat->nbfp[(i*nt+i)*2+1];
-            if (c6 > 0 && c12 > 0)
+            for (i=0; i<nt; i++)
             {
-                /* We store 0.5*2^1/6*sigma and sqrt(4*3*eps),
-                 * so we get 6*C6 and 12*C12 after combining.
-                 */
-                nbat->nbfp_comb[i*2  ] = 0.5*pow(c12/c6,1.0/6.0);
-                nbat->nbfp_comb[i*2+1] = sqrt(c6*c6/c12);
+                /* Copy the diagonal from the nbfp matrix */
+                nbat->nbfp_comb[i*2  ] = sqrt(nbat->nbfp[(i*nt+i)*2  ]);
+                nbat->nbfp_comb[i*2+1] = sqrt(nbat->nbfp[(i*nt+i)*2+1]);
             }
-            else
+            break;
+        case ljcrLB:
+            for (i=0; i<nt; i++)
             {
-                nbat->nbfp_comb[i*2  ] = 0;
-                nbat->nbfp_comb[i*2+1] = 0;
+                /* Get 6*C6 and 12*C12 from the diagonal of the nbfp matrix */
+                c6  = nbat->nbfp[(i*nt+i)*2  ];
+                c12 = nbat->nbfp[(i*nt+i)*2+1];
+                if (c6 > 0 && c12 > 0)
+                {
+                    /* We store 0.5*2^1/6*sigma and sqrt(4*3*eps),
+                     * so we get 6*C6 and 12*C12 after combining.
+                     */
+                    nbat->nbfp_comb[i*2  ] = 0.5*pow(c12/c6,1.0/6.0);
+                    nbat->nbfp_comb[i*2+1] = sqrt(c6*c6/c12);
+                }
+                else
+                {
+                    nbat->nbfp_comb[i*2  ] = 0;
+                    nbat->nbfp_comb[i*2+1] = 0;
+                }
             }
-        }
-        break;
-    case ljcrNONE:
-        /* In nbfp_s4 we use a stride of 4 for storing two parameters */
-        nbat->alloc((void **)&nbat->nbfp_s4,nt*nt*4*sizeof(*nbat->nbfp_s4));
-        for(i=0; i<nt; i++)
-        {
-            for(j=0; j<nt; j++)
+            break;
+        case ljcrNONE:
+            /* In nbfp_s4 we use a stride of 4 for storing two parameters */
+            nbat->alloc((void **)&nbat->nbfp_s4,nt*nt*4*sizeof(*nbat->nbfp_s4));
+            for (i=0; i<nt; i++)
             {
-                nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
-                nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
-                nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
-                nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+                for (j=0; j<nt; j++)
+                {
+                    nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
+                    nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
+                    nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
+                    nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+                }
             }
-        }
-        break;
-    default:
-        gmx_incons("Unknown combination rule");
-        break;
+            break;
+        default:
+            gmx_incons("Unknown combination rule");
+            break;
     }
 }
 
@@ -479,7 +479,7 @@ void nbnxn_atomdata_init(FILE *fp,
     /* Temporarily fill nbat->nbfp_comb with sigma and epsilon
      * to check for the LB rule.
      */
-    for(i=0; i<ntype; i++)
+    for (i=0; i<ntype; i++)
     {
         c6  = nbfp[(i*ntype+i)*2  ];
         c12 = nbfp[(i*ntype+i)*2+1];
@@ -500,9 +500,9 @@ void nbnxn_atomdata_init(FILE *fp,
         }
     }
 
-    for(i=0; i<nbat->ntype; i++)
+    for (i=0; i<nbat->ntype; i++)
     {
-        for(j=0; j<nbat->ntype; j++)
+        for (j=0; j<nbat->ntype; j++)
         {
             if (i < ntype && j < ntype)
             {
@@ -515,17 +515,17 @@ void nbnxn_atomdata_init(FILE *fp,
                 nbat->nbfp[(i*nbat->ntype+j)*2+1] = c12;
                 c6  /= 6.0;
                 c12 /= 12.0;
-                
+
                 bCombGeom = bCombGeom &&
-                    gmx_within_tol(c6*c6  ,nbfp[(i*ntype+i)*2  ]*nbfp[(j*ntype+j)*2  ],tol) &&
-                    gmx_within_tol(c12*c12,nbfp[(i*ntype+i)*2+1]*nbfp[(j*ntype+j)*2+1],tol);
+                            gmx_within_tol(c6*c6  ,nbfp[(i*ntype+i)*2  ]*nbfp[(j*ntype+j)*2  ],tol) &&
+                            gmx_within_tol(c12*c12,nbfp[(i*ntype+i)*2+1]*nbfp[(j*ntype+j)*2+1],tol);
 
                 bCombLB = bCombLB &&
-                    ((c6 == 0 && c12 == 0 &&
-                      (nbat->nbfp_comb[i*2+1] == 0 || nbat->nbfp_comb[j*2+1] == 0)) ||
-                     (c6 > 0 && c12 > 0 &&
-                      gmx_within_tol(pow(c12/c6,1.0/6.0),0.5*(nbat->nbfp_comb[i*2]+nbat->nbfp_comb[j*2]),tol) &&
-                      gmx_within_tol(0.25*c6*c6/c12,sqrt(nbat->nbfp_comb[i*2+1]*nbat->nbfp_comb[j*2+1]),tol)));
+                          ((c6 == 0 && c12 == 0 &&
+                            (nbat->nbfp_comb[i*2+1] == 0 || nbat->nbfp_comb[j*2+1] == 0)) ||
+                           (c6 > 0 && c12 > 0 &&
+                            gmx_within_tol(pow(c12/c6,1.0/6.0),0.5*(nbat->nbfp_comb[i*2]+nbat->nbfp_comb[j*2]),tol) &&
+                            gmx_within_tol(0.25*c6*c6/c12,sqrt(nbat->nbfp_comb[i*2+1]*nbat->nbfp_comb[j*2+1]),tol)));
             }
             else
             {
@@ -592,19 +592,19 @@ void nbnxn_atomdata_init(FILE *fp,
     {
         switch (nb_kernel_type)
         {
-        case nbk4xN_X86_SIMD128:
-            nbat->XFormat = nbatX4;
-            break;
-        case nbk4xN_X86_SIMD256:
+            case nbk4xN_X86_SIMD128:
+                nbat->XFormat = nbatX4;
+                break;
+            case nbk4xN_X86_SIMD256:
 #ifndef GMX_DOUBLE
-            nbat->XFormat = nbatX8;
+                nbat->XFormat = nbatX8;
 #else
-            nbat->XFormat = nbatX4;
+                nbat->XFormat = nbatX4;
 #endif
-            break;
-        default:
-            nbat->XFormat = nbatXYZ;
-            break;
+                break;
+            default:
+                nbat->XFormat = nbatXYZ;
+                break;
         }
 
         nbat->FFormat = nbat->XFormat;
@@ -643,7 +643,7 @@ void nbnxn_atomdata_init(FILE *fp,
     nbat->nout    = nout;
     snew(nbat->out,nbat->nout);
     nbat->nalloc  = 0;
-    for(i=0; i<nbat->nout; i++)
+    for (i=0; i<nbat->nout; i++)
     {
         nbnxn_atomdata_output_init(&nbat->out[i],
                                    nb_kernel_type,
@@ -661,9 +661,9 @@ static void copy_lj_to_nbat_lj_comb_x4(const real *ljparam_type,
     /* The LJ params follow the combination rule:
      * copy the params for the type array to the atom array.
      */
-    for(is=0; is<na; is+=PACK_X4)
+    for (is=0; is<na; is+=PACK_X4)
     {
-        for(k=0; k<PACK_X4; k++)
+        for (k=0; k<PACK_X4; k++)
         {
             i = is + k;
             ljparam_at[is*2        +k] = ljparam_type[type[i]*2  ];
@@ -681,9 +681,9 @@ static void copy_lj_to_nbat_lj_comb_x8(const real *ljparam_type,
     /* The LJ params follow the combination rule:
      * copy the params for the type array to the atom array.
      */
-    for(is=0; is<na; is+=PACK_X8)
+    for (is=0; is<na; is+=PACK_X8)
     {
-        for(k=0; k<PACK_X8; k++)
+        for (k=0; k<PACK_X8; k++)
         {
             i = is + k;
             ljparam_at[is*2        +k] = ljparam_type[type[i]*2  ];
@@ -701,12 +701,12 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t *nbat,
     int g,i,ncz,ash;
     const nbnxn_grid_t *grid;
 
-    for(g=0; g<ngrid; g++)
+    for (g=0; g<ngrid; g++)
     {
         grid = &nbs->grid[g];
 
         /* Loop over all columns and copy and fill */
-        for(i=0; i<grid->ncx*grid->ncy; i++)
+        for (i=0; i<grid->ncx*grid->ncy; i++)
         {
             ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
             ash = (grid->cell0 + grid->cxy_ind[i])*grid->na_sc;
@@ -743,12 +743,12 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
     real *q;
     const nbnxn_grid_t *grid;
 
-    for(g=0; g<ngrid; g++)
+    for (g=0; g<ngrid; g++)
     {
         grid = &nbs->grid[g];
 
         /* Loop over all columns and copy and fill */
-        for(cxy=0; cxy<grid->ncx*grid->ncy; cxy++)
+        for (cxy=0; cxy<grid->ncx*grid->ncy; cxy++)
         {
             ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
             na  = grid->cxy_na[cxy];
@@ -757,13 +757,13 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
             if (nbat->XFormat == nbatXYZQ)
             {
                 q = nbat->x + ash*STRIDE_XYZQ + ZZ + 1;
-                for(i=0; i<na; i++)
+                for (i=0; i<na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
                     q += STRIDE_XYZQ;
                 }
                 /* Complete the partially filled last cell with zeros */
-                for(; i<na_round; i++)
+                for (; i<na_round; i++)
                 {
                     *q = 0;
                     q += STRIDE_XYZQ;
@@ -772,13 +772,13 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
             else
             {
                 q = nbat->q + ash;
-                for(i=0; i<na; i++)
+                for (i=0; i<na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
                     q++;
                 }
                 /* Complete the partially filled last cell with zeros */
-                for(; i<na_round; i++)
+                for (; i<na_round; i++)
                 {
                     *q = 0;
                     q++;
@@ -797,11 +797,11 @@ static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
     int comb;
 
     j = 0;
-    for(i=0; i<na; i+=na_c)
+    for (i=0; i<na; i+=na_c)
     {
         /* Store na_c energy group numbers into one int */
         comb = 0;
-        for(sa=0; sa<na_c; sa++)
+        for (sa=0; sa<na_c; sa++)
         {
             at = a[i+sa];
             if (at >= 0)
@@ -812,7 +812,7 @@ static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
         innb[j++] = comb;
     }
     /* Complete the partially filled last cell with fill */
-    for(; i<na_round; i+=na_c)
+    for (; i<na_round; i+=na_c)
     {
         innb[j++] = 0;
     }
@@ -827,12 +827,12 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t *nbat,
     int g,i,ncz,ash;
     const nbnxn_grid_t *grid;
 
-    for(g=0; g<ngrid; g++)
+    for (g=0; g<ngrid; g++)
     {
         grid = &nbs->grid[g];
 
         /* Loop over all columns and copy and fill */
-        for(i=0; i<grid->ncx*grid->ncy; i++)
+        for (i=0; i<grid->ncx*grid->ncy; i++)
         {
             ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
             ash = (grid->cell0 + grid->cxy_ind[i])*grid->na_sc;
@@ -874,13 +874,13 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
 
 /* Copies the shift vector array to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_shiftvec(gmx_bool bDynamicBox,
-                                   rvec *shift_vec,
-                                   nbnxn_atomdata_t *nbat)
+                                  rvec *shift_vec,
+                                  nbnxn_atomdata_t *nbat)
 {
     int i;
 
     nbat->bDynamicBox = bDynamicBox;
-    for(i=0; i<SHIFTS; i++)
+    for (i=0; i<SHIFTS; i++)
     {
         copy_rvec(shift_vec[i],nbat->shift_vec[i]);
     }
@@ -888,28 +888,28 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool bDynamicBox,
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
-                                      int locality,
-                                      gmx_bool FillLocal,
-                                      rvec *x,
-                                      nbnxn_atomdata_t *nbat)
+                                     int locality,
+                                     gmx_bool FillLocal,
+                                     rvec *x,
+                                     nbnxn_atomdata_t *nbat)
 {
     int g0=0,g1=0;
     int nth,th;
 
     switch (locality)
     {
-    case eatAll:
-        g0 = 0;
-        g1 = nbs->ngrid;
-        break;
-    case eatLocal:
-        g0 = 0;
-        g1 = 1;
-        break;
-    case eatNonlocal:
-        g0 = 1;
-        g1 = nbs->ngrid;
-        break;
+        case eatAll:
+            g0 = 0;
+            g1 = nbs->ngrid;
+            break;
+        case eatLocal:
+            g0 = 0;
+            g1 = 1;
+            break;
+        case eatNonlocal:
+            g0 = 1;
+            g1 = nbs->ngrid;
+            break;
     }
 
     if (FillLocal)
@@ -919,12 +919,12 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
 
     nth = gmx_omp_nthreads_get(emntPairsearch);
 
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for(th=0; th<nth; th++)
+    #pragma omp parallel for num_threads(nth) schedule(static)
+    for (th=0; th<nth; th++)
     {
         int g;
 
-        for(g=g0; g<g1; g++)
+        for (g=g0; g<g1; g++)
         {
             const nbnxn_grid_t *grid;
             int cxy0,cxy1,cxy;
@@ -934,7 +934,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
             cxy0 = (grid->ncx*grid->ncy* th   +nth-1)/nth;
             cxy1 = (grid->ncx*grid->ncy*(th+1)+nth-1)/nth;
 
-            for(cxy=cxy0; cxy<cxy1; cxy++)
+            for (cxy=cxy0; cxy<cxy1; cxy++)
             {
                 int na,ash,na_fill;
 
@@ -970,9 +970,9 @@ nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
 {
     int i,s;
 
-    for(i=i0; i<i1; i++)
+    for (i=i0; i<i1; i++)
     {
-        for(s=0; s<nsrc; s++)
+        for (s=0; s<nsrc; s++)
         {
             dest[i] += src[s].f[i];
         }
@@ -1002,10 +1002,10 @@ nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
         gmx_incons("bounds not a multiple of GMX_X86_SIMD_WIDTH_HERE in nbnxn_atomdata_reduce_reals_x86_simd");
     }
 
-    for(i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
+    for (i=i0; i<i1; i+=GMX_X86_SIMD_WIDTH_HERE)
     {
         dest_SSE = gmx_load_pr(dest+i);
-        for(s=0; s<nsrc; s++)
+        for (s=0; s<nsrc; s++)
         {
             src_SSE  = gmx_load_pr(src[s].f+i);
             dest_SSE = gmx_add_pr(dest_SSE,src_SSE);
@@ -1036,94 +1036,94 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
     /* Loop over all columns and copy and fill */
     switch (nbat->FFormat)
     {
-    case nbatXYZ:
-    case nbatXYZQ:
-        if (nfa == 1)
-        {
-            fnb = out[0].f;
-
-            for(a=a0; a<a1; a++)
+        case nbatXYZ:
+        case nbatXYZQ:
+            if (nfa == 1)
             {
-                i = cell[a]*nbat->fstride;
+                fnb = out[0].f;
 
-                f[a][XX] += fnb[i];
-                f[a][YY] += fnb[i+1];
-                f[a][ZZ] += fnb[i+2];
-            }
-        }
-        else
-        {
-            for(a=a0; a<a1; a++)
-            {
-                i = cell[a]*nbat->fstride;
-
-                for(fa=0; fa<nfa; fa++)
+                for (a=a0; a<a1; a++)
                 {
-                    f[a][XX] += out[fa].f[i];
-                    f[a][YY] += out[fa].f[i+1];
-                    f[a][ZZ] += out[fa].f[i+2];
+                    i = cell[a]*nbat->fstride;
+
+                    f[a][XX] += fnb[i];
+                    f[a][YY] += fnb[i+1];
+                    f[a][ZZ] += fnb[i+2];
                 }
             }
-        }
-        break;
-    case nbatX4:
-        if (nfa == 1)
-        {
-            fnb = out[0].f;
-
-            for(a=a0; a<a1; a++)
+            else
             {
-                i = X4_IND_A(cell[a]);
-
-                f[a][XX] += fnb[i+XX*PACK_X4];
-                f[a][YY] += fnb[i+YY*PACK_X4];
-                f[a][ZZ] += fnb[i+ZZ*PACK_X4];
-            }
-        }
-        else
-        {
-            for(a=a0; a<a1; a++)
-            {
-                i = X4_IND_A(cell[a]);
-                
-                for(fa=0; fa<nfa; fa++)
+                for (a=a0; a<a1; a++)
                 {
-                    f[a][XX] += out[fa].f[i+XX*PACK_X4];
-                    f[a][YY] += out[fa].f[i+YY*PACK_X4];
-                    f[a][ZZ] += out[fa].f[i+ZZ*PACK_X4];
+                    i = cell[a]*nbat->fstride;
+
+                    for (fa=0; fa<nfa; fa++)
+                    {
+                        f[a][XX] += out[fa].f[i];
+                        f[a][YY] += out[fa].f[i+1];
+                        f[a][ZZ] += out[fa].f[i+2];
+                    }
                 }
             }
-        }
-        break;
-    case nbatX8:
-        if (nfa == 1)
-        {
-            fnb = out[0].f;
-
-            for(a=a0; a<a1; a++)
+            break;
+        case nbatX4:
+            if (nfa == 1)
             {
-                i = X8_IND_A(cell[a]);
+                fnb = out[0].f;
 
-                f[a][XX] += fnb[i+XX*PACK_X8];
-                f[a][YY] += fnb[i+YY*PACK_X8];
-                f[a][ZZ] += fnb[i+ZZ*PACK_X8];
-            }
-        }
-        else
-        {
-            for(a=a0; a<a1; a++)
-            {
-                i = X8_IND_A(cell[a]);
-                
-                for(fa=0; fa<nfa; fa++)
+                for (a=a0; a<a1; a++)
                 {
-                    f[a][XX] += out[fa].f[i+XX*PACK_X8];
-                    f[a][YY] += out[fa].f[i+YY*PACK_X8];
-                    f[a][ZZ] += out[fa].f[i+ZZ*PACK_X8];
+                    i = X4_IND_A(cell[a]);
+
+                    f[a][XX] += fnb[i+XX*PACK_X4];
+                    f[a][YY] += fnb[i+YY*PACK_X4];
+                    f[a][ZZ] += fnb[i+ZZ*PACK_X4];
                 }
             }
-        }
-        break;
+            else
+            {
+                for (a=a0; a<a1; a++)
+                {
+                    i = X4_IND_A(cell[a]);
+
+                    for (fa=0; fa<nfa; fa++)
+                    {
+                        f[a][XX] += out[fa].f[i+XX*PACK_X4];
+                        f[a][YY] += out[fa].f[i+YY*PACK_X4];
+                        f[a][ZZ] += out[fa].f[i+ZZ*PACK_X4];
+                    }
+                }
+            }
+            break;
+        case nbatX8:
+            if (nfa == 1)
+            {
+                fnb = out[0].f;
+
+                for (a=a0; a<a1; a++)
+                {
+                    i = X8_IND_A(cell[a]);
+
+                    f[a][XX] += fnb[i+XX*PACK_X8];
+                    f[a][YY] += fnb[i+YY*PACK_X8];
+                    f[a][ZZ] += fnb[i+ZZ*PACK_X8];
+                }
+            }
+            else
+            {
+                for (a=a0; a<a1; a++)
+                {
+                    i = X8_IND_A(cell[a]);
+
+                    for (fa=0; fa<nfa; fa++)
+                    {
+                        f[a][XX] += out[fa].f[i+XX*PACK_X8];
+                        f[a][YY] += out[fa].f[i+YY*PACK_X8];
+                        f[a][ZZ] += out[fa].f[i+ZZ*PACK_X8];
+                    }
+                }
+            }
+            break;
     }
 }
 
@@ -1141,18 +1141,18 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
 
     switch (locality)
     {
-    case eatAll:
-        a0 = 0;
-        na = nbs->natoms_nonlocal;
-        break;
-    case eatLocal:
-        a0 = 0;
-        na = nbs->natoms_local;
-        break;
-    case eatNonlocal:
-        a0 = nbs->natoms_local;
-        na = nbs->natoms_nonlocal - nbs->natoms_local;
-        break;
+        case eatAll:
+            a0 = 0;
+            na = nbs->natoms_nonlocal;
+            break;
+        case eatLocal:
+            a0 = 0;
+            na = nbs->natoms_local;
+            break;
+        case eatNonlocal:
+            a0 = nbs->natoms_local;
+            na = nbs->natoms_nonlocal - nbs->natoms_local;
+            break;
     }
 
     nth = gmx_omp_nthreads_get(emntNonbonded);
@@ -1165,8 +1165,8 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
         /* Reduce the force thread output buffers into buffer 0, before adding
          * them to the, differently ordered, "real" force buffer.
          */
-#pragma omp parallel for num_threads(nth) schedule(static)
-        for(th=0; th<nth; th++)
+        #pragma omp parallel for num_threads(nth) schedule(static)
+        for (th=0; th<nth; th++)
         {
             int g0,g1;
             int b0,b1,nb;
@@ -1198,16 +1198,16 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
 #ifdef NBNXN_SEARCH_SSE
             nbnxn_atomdata_reduce_reals_x86_simd(
 #else
-            nbnxn_atomdata_reduce_reals(    
+            nbnxn_atomdata_reduce_reals(
 #endif
-                                        nbat->out[0].f,
-                                        nbat->out+1,nbat->nout - 1,
-                                        i0,i1);
+                nbat->out[0].f,
+                nbat->out+1,nbat->nout - 1,
+                i0,i1);
         }
     }
 
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for(th=0; th<nth; th++)
+    #pragma omp parallel for num_threads(nth) schedule(static)
+    for (th=0; th<nth; th++)
     {
         nbnxn_atomdata_add_nbat_f_to_f_part(nbs,nbat,
                                             nbat->out,
@@ -1230,11 +1230,11 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
     rvec sum;
 
     out = nbat->out;
-    
-    for(s=0; s<SHIFTS; s++)
+
+    for (s=0; s<SHIFTS; s++)
     {
         clear_rvec(sum);
-        for(th=0; th<nbat->nout; th++)
+        for (th=0; th<nbat->nout; th++)
         {
             sum[XX] += out[th].fshift[s*DIM+XX];
             sum[YY] += out[th].fshift[s*DIM+YY];

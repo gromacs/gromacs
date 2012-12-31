@@ -176,10 +176,12 @@ FileTypeRegistry::handlerForType(OptionFileType type) const
 FileTypeRegistry::FileTypeRegistry()
 {
     filetypes_.resize(eftOptionFileType_NR);
-    const char *const topExtensions[] = {
+    const char *const topExtensions[] =
+    {
         ".tpr", ".tpb", ".tpa", ".gro", ".g96", ".pdb", ".brk", ".ent"
     };
-    const char *const trajExtensions[] = {
+    const char *const trajExtensions[] =
+    {
         ".xtc", ".trr", ".trj", ".cpt", ".gro", ".g96", ".g87", ".pdb"
     };
     registerType(eftTopology,    topExtensions);

@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -45,7 +45,8 @@
 #include "gmx_fatal.h"
 #include "warninp.h"
 
-typedef struct warninp {
+typedef struct warninp
+{
     gmx_bool bAllowWarnings;
     int  nwarn_note;
     int  nwarn_warn;
@@ -95,16 +96,16 @@ const char *get_warning_file(warninp_t wi)
 
 static void low_warning(warninp_t wi,const char *wtype,int n,const char *s)
 {
-#define indent 2 
+#define indent 2
     char *temp, *temp2;
     int  i;
-    
+
     if (s == NULL)
     {
         s = "Empty error message.";
     }
     snew(temp,strlen(s)+indent+1);
-    for(i=0; i<indent; i++)
+    for (i=0; i<indent; i++)
     {
         temp[i] = ' ';
     }
@@ -122,7 +123,7 @@ static void low_warning(warninp_t wi,const char *wtype,int n,const char *s)
         {
             fprintf(stderr,"\n%s %d [file %s]:\n%s\n\n",
                     wtype,n,wi->filenm,temp2);
-        }   
+        }
     }
     else
     {
@@ -200,7 +201,7 @@ void done_warning(warninp_t wi,int f_errno,const char *file,int line)
 void _too_few(warninp_t wi,const char *fn,int line)
 {
     char buf[STRLEN];
-    
+
     sprintf(buf,
             "Too few parameters on line (source file %s, line %d)",
             fn,line);

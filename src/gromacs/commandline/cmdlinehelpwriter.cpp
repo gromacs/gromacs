@@ -277,7 +277,7 @@ OptionsConsoleFormatter::OptionsConsoleFormatter(const CommonFormatterData &comm
 }
 
 void OptionsConsoleFormatter::formatDescription(
-        const HelpWriterContext &context, const Options &section)
+    const HelpWriterContext &context, const Options &section)
 {
     if (!section.description().empty())
     {
@@ -293,7 +293,7 @@ void OptionsConsoleFormatter::formatDescription(
 }
 
 void OptionsConsoleFormatter::formatFileOption(
-        const HelpWriterContext &context, const FileNameOptionInfo &option)
+    const HelpWriterContext &context, const FileNameOptionInfo &option)
 {
     int firstShortValue = 0; // The first value after which the type fits.
     int firstLongValue = -1; // First value that overlaps description column.
@@ -383,12 +383,12 @@ void OptionsConsoleFormatter::formatFileOption(
 }
 
 void OptionsConsoleFormatter::formatOption(
-        const HelpWriterContext &context, const OptionInfo &option)
+    const HelpWriterContext &context, const OptionInfo &option)
 {
     genericOptionFormatter_.clear();
     bool bIsBool = option.isType<BooleanOptionInfo>();
     std::string name(formatString("-%s%s", bIsBool ? "[no]" : "",
-                                           option.name().c_str()));
+                                  option.name().c_str()));
     genericOptionFormatter_.addColumnLine(0, name);
     genericOptionFormatter_.addColumnLine(1, option.type());
     if (name.length() > 12U)
@@ -422,7 +422,7 @@ void OptionsConsoleFormatter::formatOption(
 }
 
 void OptionsConsoleFormatter::formatSelectionOption(
-        const HelpWriterContext &context, const OptionInfo &option)
+    const HelpWriterContext &context, const OptionInfo &option)
 {
     File &file = context.outputFile();
 
@@ -523,7 +523,7 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
             // TODO: Implement once the situation with Redmine issue #969 is
             // more clear.
             GMX_THROW(NotImplementedError(
-                        "Command-line help is not implemented for this output format"));
+                          "Command-line help is not implemented for this output format"));
     }
     OptionsFilter filter(context, formatter.get());
     filter.setShowHidden(impl_->bShowHidden_);

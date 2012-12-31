@@ -15,33 +15,37 @@
 #define _MEMTESTG80_CORE_H_
 
 #if defined (WINDOWS) || defined (WINNV)
-    #include <windows.h>
-    inline unsigned int getTimeMilliseconds(void) {
-        return GetTickCount();
-    }
-    #include <windows.h>
-	#define SLEEPMS(x) Sleep(x)
+#include <windows.h>
+inline unsigned int getTimeMilliseconds(void)
+{
+    return GetTickCount();
+}
+#include <windows.h>
+#define SLEEPMS(x) Sleep(x)
 #elif defined (LINUX) || defined (OSX)
-    #include <sys/time.h>
-    inline unsigned int getTimeMilliseconds(void) {
-        struct timeval tv;
-        gettimeofday(&tv,NULL);
-        return tv.tv_sec*1000 + tv.tv_usec/1000;
-    }
-    #include <unistd.h>
-    #define SLEEPMS(x) usleep(x*1000)
+#include <sys/time.h>
+inline unsigned int getTimeMilliseconds(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return tv.tv_sec*1000 + tv.tv_usec/1000;
+}
+#include <unistd.h>
+#define SLEEPMS(x) usleep(x*1000)
 #else
-    #error Must #define LINUX, WINDOWS, WINNV, or OSX
+#error Must #define LINUX, WINDOWS, WINNV, or OSX
 #endif
 
 // By default the driver will spinwait when blocked on a kernel call
 // Use the SOFTWAIT macro to replace this with a thread sleep and occasional poll
 // limit expresses the max time we're willing to stay in the sleep loop - default = 15sec
-inline int _pollStatus(unsigned length=1,unsigned limit=15000) {
+inline int _pollStatus(unsigned length=1,unsigned limit=15000)
+{
     //while (cudaStreamQuery(0) != cudaSuccess) {SLEEPMS(length);}
     unsigned startTime = getTimeMilliseconds();
-    while (cudaStreamQuery(0) == cudaErrorNotReady) {
-        if ((getTimeMilliseconds() - startTime) > limit) return -1;
+    while (cudaStreamQuery(0) == cudaErrorNotReady)
+    {
+        if ((getTimeMilliseconds() - startTime) > limit) { return -1; }
         SLEEPMS(length);
     }
     return 0;
@@ -62,41 +66,42 @@ inline int _pollStatus(unsigned length=1,unsigned limit=15000) {
 typedef unsigned int uint;
 
 // OO interface to MemtestG80 functions
-class memtestState {
-protected:
-	const uint nBlocks;
-	const uint nThreads;
-    uint loopIters;
-	uint megsToTest;
-    int lcgPeriod;
-	uint* devTestMem;
-	uint* devTempMem;
-	uint* hostTempMem;
-	bool allocated;
-public:
-    uint initTime;
-    memtestState() : nBlocks(1024), nThreads(512), loopIters(0), megsToTest(0), allocated(false), devTestMem(NULL),devTempMem(NULL),hostTempMem(NULL), initTime(0),lcgPeriod(1024) {};
-    ~memtestState() {deallocate();}
+class memtestState
+{
+    protected:
+        const uint nBlocks;
+        const uint nThreads;
+        uint loopIters;
+        uint megsToTest;
+        int lcgPeriod;
+        uint* devTestMem;
+        uint* devTempMem;
+        uint* hostTempMem;
+        bool allocated;
+    public:
+        uint initTime;
+        memtestState() : nBlocks(1024), nThreads(512), loopIters(0), megsToTest(0), allocated(false), devTestMem(NULL),devTempMem(NULL),hostTempMem(NULL), initTime(0),lcgPeriod(1024) {};
+        ~memtestState() {deallocate();}
 
-	uint allocate(uint mbToTest);
-	void deallocate();
-	bool isAllocated() const {return allocated;}
-	uint size() const {return megsToTest;}
-    void setLCGPeriod(int period) {lcgPeriod = period;}
-    int getLCGPeriod() const {return lcgPeriod;}
+        uint allocate(uint mbToTest);
+        void deallocate();
+        bool isAllocated() const {return allocated;}
+        uint size() const {return megsToTest;}
+        void setLCGPeriod(int period) {lcgPeriod = period;}
+        int getLCGPeriod() const {return lcgPeriod;}
 
-    bool gpuMemoryBandwidth(double& bandwidth,uint mbToTest,uint iters=5);
-	bool gpuWriteConstant(const uint constant) const;
-	bool gpuVerifyConstant(uint& errorCount,const uint constant) const;
-	bool gpuShortLCG0(uint& errorCount,const uint repeats) const;
-	bool gpuShortLCG0Shmem(uint& errorCount,const uint repeats) const;
-	bool gpuMovingInversionsOnesZeros(uint& errorCount) const;
-	bool gpuWalking8BitM86(uint& errorCount,const uint shift) const;
-	bool gpuWalking8Bit(uint& errorCount,const bool ones,const uint shift) const;
-	bool gpuMovingInversionsRandom(uint& errorCount) const;
-	bool gpuWalking32Bit(uint& errorCount,const bool ones,const uint shift) const;
-	bool gpuRandomBlocks(uint& errorCount,const uint seed) const;
-	bool gpuModuloX(uint& errorCount,const uint shift,const uint pattern,const uint modulus,const uint overwriteIters) const;
+        bool gpuMemoryBandwidth(double& bandwidth,uint mbToTest,uint iters=5);
+        bool gpuWriteConstant(const uint constant) const;
+        bool gpuVerifyConstant(uint& errorCount,const uint constant) const;
+        bool gpuShortLCG0(uint& errorCount,const uint repeats) const;
+        bool gpuShortLCG0Shmem(uint& errorCount,const uint repeats) const;
+        bool gpuMovingInversionsOnesZeros(uint& errorCount) const;
+        bool gpuWalking8BitM86(uint& errorCount,const uint shift) const;
+        bool gpuWalking8Bit(uint& errorCount,const bool ones,const uint shift) const;
+        bool gpuMovingInversionsRandom(uint& errorCount) const;
+        bool gpuWalking32Bit(uint& errorCount,const bool ones,const uint shift) const;
+        bool gpuRandomBlocks(uint& errorCount,const uint seed) const;
+        bool gpuModuloX(uint& errorCount,const uint shift,const uint pattern,const uint modulus,const uint overwriteIters) const;
 };
 
 // Utility functions

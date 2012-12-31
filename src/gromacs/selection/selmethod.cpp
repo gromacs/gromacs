@@ -107,7 +107,8 @@ extern gmx_ana_selmethod_t sm_permute;
 /*! \internal \brief
  * Helper structure for defining selection methods.
  */
-typedef struct {
+typedef struct
+{
     /*! \brief
      * Name to register the method under.
      *
@@ -120,7 +121,8 @@ typedef struct {
 } t_register_method;
 
 /** Array of selection methods defined in the library. */
-static const t_register_method smtable_def[] = {
+static const t_register_method smtable_def[] =
+{
     {NULL,         &sm_cog},
     {NULL,         &sm_com},
 

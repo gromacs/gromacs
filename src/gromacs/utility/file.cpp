@@ -127,8 +127,8 @@ void File::open(const char *filename, const char *mode)
     if (impl_->fp_ == NULL)
     {
         GMX_THROW_WITH_ERRNO(
-                FileIOError(formatString("Could not open file '%s'", filename)),
-                "fopen", errno);
+            FileIOError(formatString("Could not open file '%s'", filename)),
+            "fopen", errno);
     }
 }
 
@@ -148,7 +148,7 @@ void File::close()
     if (!bOk)
     {
         GMX_THROW_WITH_ERRNO(
-                FileIOError("Error while closing file"), "fclose", errno);
+            FileIOError("Error while closing file"), "fclose", errno);
     }
 }
 
@@ -170,11 +170,11 @@ void File::readBytes(void *buffer, size_t bytes)
         if (feof(fp))
         {
             GMX_THROW(FileIOError(
-                        formatString("Premature end of file\n"
-                                     "Attempted to read: %d bytes\n"
-                                     "Successfully read: %d bytes",
-                                     static_cast<int>(bytes),
-                                     static_cast<int>(bytesRead))));
+                          formatString("Premature end of file\n"
+                                       "Attempted to read: %d bytes\n"
+                                       "Successfully read: %d bytes",
+                                       static_cast<int>(bytes),
+                                       static_cast<int>(bytesRead))));
         }
         else
         {

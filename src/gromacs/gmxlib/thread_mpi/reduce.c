@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -58,8 +58,8 @@ files.
 #include "collective.h"
 
 
-int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
-                       tMPI_Datatype datatype, int count, tMPI_Op op, 
+int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
+                       tMPI_Datatype datatype, int count, tMPI_Op op,
                        tMPI_Comm comm)
 {
     tMPI_Op_fn fn=datatype->op_functions[op];
@@ -72,8 +72,8 @@ int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
     return TMPI_SUCCESS;
 }
 
-int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count, 
-                     tMPI_Datatype datatype, tMPI_Op op, int root, 
+int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
+                     tMPI_Datatype datatype, tMPI_Op op, int root,
                      tMPI_Comm comm)
 {
     struct tmpi_thread *cur=tMPI_Get_current();
@@ -82,16 +82,18 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     /* this function uses a binary tree-like reduction algorithm: */
     int N=tMPI_Comm_N(comm);
     int myrank_rtr=(N+myrank-root)%N; /* my rank relative to root */
-    int Nred=N; /* number of neighbours that still communicate 
+    int Nred=N; /* number of neighbours that still communicate
                    (decreases exponentially) */
-    int nbr_dist=1; /* distance between communicating neighbours 
+    int nbr_dist=1; /* distance between communicating neighbours
                        (increases exponentially) */
     int stepping=2; /* distance between non-communicating neighbours
                        (increases exponentially) */
     int iteration=0;
-  
+
     if (count==0)
+    {
         return TMPI_SUCCESS;
+    }
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -116,12 +118,12 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     while (Nred>1)
     {
         /* calculate neighbour rank (here we use the real rank) */
-        int nbr=(myrank_rtr%stepping==0) ?  
-                  (N+myrank+nbr_dist)%N : 
-                  (N+myrank-nbr_dist)%N;
+        int nbr=(myrank_rtr%stepping==0) ?
+                (N+myrank+nbr_dist)%N :
+                (N+myrank-nbr_dist)%N;
 
 #ifdef TMPI_DEBUG
-        printf("%d: iteration %d: myrank_rtr=%d, stepping=%d\n", 
+        printf("%d: iteration %d: myrank_rtr=%d, stepping=%d\n",
                myrank, iteration, myrank_rtr, stepping);
         fflush(stdout);
 #endif
@@ -131,12 +133,12 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             void *a,*b;
             int ret;
 
-            /* now wait for my neighbor's data to become ready. 
+            /* now wait for my neighbor's data to become ready.
                First check if I actually have a neighbor. */
             if (myrank_rtr+nbr_dist<N)
             {
 #ifdef TMPI_DEBUG
-                printf("%d: waiting to reduce with %d, iteration=%d\n", 
+                printf("%d: waiting to reduce with %d, iteration=%d\n",
                        myrank, nbr, iteration);
                 fflush(stdout);
 #endif
@@ -151,29 +153,31 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 #endif
 
 #ifdef TMPI_DEBUG
-                printf("%d: reducing with %d, iteration=%d\n", 
+                printf("%d: reducing with %d, iteration=%d\n",
                        myrank, nbr, iteration);
                 fflush(stdout);
 #endif
                 /* we reduce with our neighbour*/
                 if (iteration==0)
                 {
-                    /* for the first iteration, the inputs are in the 
+                    /* for the first iteration, the inputs are in the
                        sendbuf*/
                     a=sendbuf;
                     b=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_sendbuf[nbr]));
                 }
                 else
                 {
-                    /* after the first operation, they're already in 
+                    /* after the first operation, they're already in
                        the recvbuf */
                     a=recvbuf;
                     b=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[nbr]));
                 }
 
-                if ((ret=tMPI_Reduce_run_op(recvbuf, a, b, datatype, 
+                if ((ret=tMPI_Reduce_run_op(recvbuf, a, b, datatype,
                                             count, op, comm)) != TMPI_SUCCESS)
+                {
                     return ret;
+                }
 
                 /* signal to my neighbour that I'm ready. */
                 tMPI_Event_signal( &(comm->csync[nbr].events[myrank]) );
@@ -181,15 +185,17 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             else
             {
 #ifdef TMPI_DEBUG
-            printf("%d: not waiting copying buffer\n", myrank);
-            fflush(stdout);
+                printf("%d: not waiting copying buffer\n", myrank);
+                fflush(stdout);
 #endif
                 /* we still need to put things in the right buffer for the next
                    iteration. We need to check for overlapping buffers
                    here because MPI_IN_PLACE might cause recvbuf to be the
                    same as sendbuf. */
                 if (iteration==0 && (recvbuf!=sendbuf))
+                {
                     memcpy(recvbuf, sendbuf, datatype->size*count);
+                }
             }
 
         }
@@ -197,16 +203,16 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
         {
             /* the other thread is doing the reducing; we can just
                wait and break when ready */
-           /* Awake our neighbour */
+            /* Awake our neighbour */
             tMPI_Event_signal( &(comm->csync[nbr].events[myrank]) );
 
 
 #ifdef TMPI_DEBUG
-            printf("%d: signalled %d, now waiting: iteration=%d\n", 
+            printf("%d: signalled %d, now waiting: iteration=%d\n",
                    nbr, myrank,  iteration);
             fflush(stdout);
 #endif
- 
+
             /* And wait for an incoming event from out neighbour */
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
             tMPI_Profile_wait_start(cur);
@@ -218,7 +224,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 #endif
             /* now we can break because our data is reduced, and
                our neighbour goes on reducing it further. */
-            break; 
+            break;
         }
 
 #ifdef TMPI_DEBUG
@@ -236,7 +242,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 }
 
 int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
-               tMPI_Datatype datatype, tMPI_Op op, int root, tMPI_Comm comm)
+                tMPI_Datatype datatype, tMPI_Op op, int root, tMPI_Comm comm)
 {
     struct tmpi_thread *cur=tMPI_Get_current();
     int myrank=tMPI_Comm_seek_rank(comm, cur);
@@ -247,7 +253,7 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
 #endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Reduce(%p, %p, %d, %p, %p, %d, %p)",
-                       sendbuf, recvbuf, count, datatype, op, root, comm);
+                     sendbuf, recvbuf, count, datatype, op, root, comm);
 #endif
 
     if (myrank==root)
@@ -291,7 +297,9 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
                      sendbuf, recvbuf, count, datatype, op, comm);
 #endif
     if (count==0)
+    {
         return TMPI_SUCCESS;
+    }
     if (!recvbuf)
     {
         return tMPI_Error(comm, TMPI_ERR_BUF);
@@ -302,7 +310,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     }
 
     ret=tMPI_Reduce_fast(sendbuf, recvbuf, count, datatype, op, 0, comm);
-#if defined(TMPI_PROFILE) 
+#if defined(TMPI_PROFILE)
     tMPI_Profile_wait_start(cur);
 #endif
     tMPI_Barrier_wait( &(comm->barrier));
@@ -312,8 +320,8 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     /* distribute rootbuf */
     rootbuf=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[0]));
 
-    /* and now we just copy things back. We know that the root thread 
-       arrives last, so there's no point in using tMPI_Scatter with 
+    /* and now we just copy things back. We know that the root thread
+       arrives last, so there's no point in using tMPI_Scatter with
        copy buffers, etc. */
     if (myrank != 0)
     {

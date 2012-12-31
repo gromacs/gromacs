@@ -40,35 +40,35 @@
 extern "C" {
 #endif
 
-/* Abstract types */
-/* CUDA nonbonded structure */
-typedef struct nbnxn_cuda *nbnxn_cuda_ptr_t;
-/* CUDA GPU device info */
-typedef struct cuda_dev_info *cuda_dev_info_ptr_t;
+    /* Abstract types */
+    /* CUDA nonbonded structure */
+    typedef struct nbnxn_cuda *nbnxn_cuda_ptr_t;
+    /* CUDA GPU device info */
+    typedef struct cuda_dev_info *cuda_dev_info_ptr_t;
 
-/* Types defined for the structs below. */
-typedef struct wallclock_gpu wallclock_gpu_t;
-typedef struct nbnxn_cuda_ktime nbnxn_cuda_ktime_t;
+    /* Types defined for the structs below. */
+    typedef struct wallclock_gpu wallclock_gpu_t;
+    typedef struct nbnxn_cuda_ktime nbnxn_cuda_ktime_t;
 
-/* Nonbonded kernel time and call count. */
-struct nbnxn_cuda_ktime
-{
-    double  t;
-    int     c;
-}; 
+    /* Nonbonded kernel time and call count. */
+    struct nbnxn_cuda_ktime
+    {
+        double  t;
+        int     c;
+    };
 
-/* GPU timings for kernels and H2d/D2H transfers. */
-struct wallclock_gpu
-{
-    nbnxn_cuda_ktime_t ktime[2][2]; /* table containing the timings of the four 
-                                       version of the nonbonded kernels: force-only, 
+    /* GPU timings for kernels and H2d/D2H transfers. */
+    struct wallclock_gpu
+    {
+        nbnxn_cuda_ktime_t ktime[2][2]; /* table containing the timings of the four
+                                       version of the nonbonded kernels: force-only,
                                        force+energy, force+pruning, and force+energy+pruning */
-    double  nb_h2d_t;               /* host to device transfer time in nb calculation  */
-    double  nb_d2h_t;               /* device to host transfer time in nb calculation */
-    int     nb_c;                   /* total call count of the nonbonded gpu operations */
-    double  pl_h2d_t;               /* pair search step host to device transfer time */
-    int     pl_h2d_c;               /* pair search step  host to device transfer call count */
-};
+        double  nb_h2d_t;               /* host to device transfer time in nb calculation  */
+        double  nb_d2h_t;               /* device to host transfer time in nb calculation */
+        int     nb_c;                   /* total call count of the nonbonded gpu operations */
+        double  pl_h2d_t;               /* pair search step host to device transfer time */
+        int     pl_h2d_c;               /* pair search step  host to device transfer call count */
+    };
 
 #ifdef __cplusplus
 }

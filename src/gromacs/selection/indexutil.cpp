@@ -455,14 +455,14 @@ gmx_ana_index_check(gmx_ana_index_t *g, int natoms)
         if (g->index[j] >= natoms)
         {
             gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) "
-              "larger than number of atoms in trajectory (%d atoms)",
-              g->index[j], g->name, g->isize, natoms);
+                      "larger than number of atoms in trajectory (%d atoms)",
+                      g->index[j], g->name, g->isize, natoms);
         }
         else if (g->index[j] < 0)
         {
             gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) "
-              "is less than zero",
-              g->index[j], g->name, g->isize);
+                      "is less than zero",
+                      g->index[j], g->name, g->isize);
         }
     }
 }
@@ -495,8 +495,8 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
 static int
 cmp_atomid(const void *a, const void *b)
 {
-    if (*(atom_id *)a < *(atom_id *)b) return -1;
-    if (*(atom_id *)a > *(atom_id *)b) return 1;
+    if (*(atom_id *)a < *(atom_id *)b) { return -1; }
+    if (*(atom_id *)a > *(atom_id *)b) { return 1; }
     return 0;
 }
 
@@ -547,7 +547,8 @@ gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int  i, j;
 
-    for (i = j = 0; j < b->isize; ++i, ++j) {
+    for (i = j = 0; j < b->isize; ++i, ++j)
+    {
         while (i < a->isize && a->index[i] != b->index[j])
         {
             ++i;
@@ -573,7 +574,8 @@ gmx_ana_index_intersection(gmx_ana_index_t *dest,
 {
     int i, j, k;
 
-    for (i = j = k = 0; i < a->isize && j < b->isize; ++i) {
+    for (i = j = k = 0; i < a->isize && j < b->isize; ++i)
+    {
         while (j < b->isize && b->index[j] < a->index[i])
         {
             ++j;

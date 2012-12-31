@@ -40,113 +40,113 @@
 extern "C" {
 #endif
 
-/* The functions & data structures here describe writing
-   energy differences (or their histogram )for use with g_bar */
+    /* The functions & data structures here describe writing
+       energy differences (or their histogram )for use with g_bar */
 
-/* Data for one foreign lambda, or derivative. */
-typedef struct
-{
-    real *dh; /* the raw energy difference data -- actually, store more in here. */
-    float *dhf; /* raw difference data -- in floats, for storage. */
-    unsigned int ndh; /* number of data points */
-    unsigned int ndhmax; /* the maximum number of points */
+    /* Data for one foreign lambda, or derivative. */
+    typedef struct
+    {
+        real *dh; /* the raw energy difference data -- actually, store more in here. */
+        float *dhf; /* raw difference data -- in floats, for storage. */
+        unsigned int ndh; /* number of data points */
+        unsigned int ndhmax; /* the maximum number of points */
 
-    int nhist; /* the number of histograms. There can either be
+        int nhist; /* the number of histograms. There can either be
                   0 (for no histograms)
                   1 (for 'foreign lambda' histograms)
                   2 (for derivative histograms: there's
                      a 'forward' and 'backward' histogram
                      containing the minimum and maximum
                      values, respectively). */
-    int *bin[2]; /* the histogram(s) */
-    double dx; /* the histogram spacing in kJ/mol. This is the
+        int *bin[2]; /* the histogram(s) */
+        double dx; /* the histogram spacing in kJ/mol. This is the
                   same for the two histograms? */
-    unsigned int nbins; /* the number of bins in the histograms*/
-    gmx_large_int_t x0[2]; /* the starting point in units of spacing
+        unsigned int nbins; /* the number of bins in the histograms*/
+        gmx_large_int_t x0[2]; /* the starting point in units of spacing
                               of the histogram */
-    unsigned int maxbin[2]; /* highest bin number with data */
+        unsigned int maxbin[2]; /* highest bin number with data */
 
-    gmx_bool derivative; /* whether this delta_h contains derivatives */
-    double lambda; /* current lambda */
-    gmx_bool written;    /* whether this data has already been written out */
+        gmx_bool derivative; /* whether this delta_h contains derivatives */
+        double lambda; /* current lambda */
+        gmx_bool written;    /* whether this data has already been written out */
 
-    double subblock_d[4]; /* data for an mdebin subblock for I/O. */
-    gmx_large_int_t subblock_l[4]; /* data for an mdebin subblock for I/O.  */
-    int subblock_i[4]; /* data for an mdebin subblock for I/O.  */
-} t_mde_delta_h;
+        double subblock_d[4]; /* data for an mdebin subblock for I/O. */
+        gmx_large_int_t subblock_l[4]; /* data for an mdebin subblock for I/O.  */
+        int subblock_i[4]; /* data for an mdebin subblock for I/O.  */
+    } t_mde_delta_h;
 
-/* the type definition is in mdebin_bar.h */
-struct t_mde_delta_h_coll
-{
-    t_mde_delta_h *dh; /* the delta h data */
-    int ndh; /* the number of delta_h structures */
-    double start_time; /* start time of the current dh collection */
-    double delta_time; /* time difference between samples */
-    gmx_bool start_time_set; /* whether the start time has been set */
-    double start_lambda; /* starting lambda for continuous motion of state*/
-    double delta_lambda; /* delta lambda, for continuous motion of state */
-    double temperature; /* the temperature of the samples*/
-    double subblock_d[5]; /* data for writing an mdebin subblock for I/O */
-};
-
-
-
-/* initialize a collection of delta h histograms/sets
-    dhc = the collection
-    ir = the input record */
-
-void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc,
-                           const t_inputrec *ir);
-
-/* add a bunch of samples to the delta_h collection
-    dhc = the collection
-    dhdl = the hamiltonian derivatives
-    U = the array with energies: from enerd->enerpart_lambda.
-    time = the current simulation time.
-    current_lambda = current lambda values : primarily useful for continuous processes
-    fep_state = current fep_state
- */
-
-/* add a bunch of samples - note fep_state is double to allow for better data storage */
-void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
-                             double fep_state,
-                             double energy,
-                             double pV,
-                             int bExpanded,
-                             int bPrintEnergy,
-                             int bPressure,
-                             int ndhdl,
-                             int nlambda,
-                             double *dhdl,
-                             double *foreign_dU,
-                             double time);
-
-/* write the data associated with the du blocks collection as a collection
-    of mdebin blocks.
-    dhc = the collection
-    fr = the enxio frame
-    nblock = the current number of blocks */
-void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
-                                   t_enxframe *fr, int nblock);
+    /* the type definition is in mdebin_bar.h */
+    struct t_mde_delta_h_coll
+    {
+        t_mde_delta_h *dh; /* the delta h data */
+        int ndh; /* the number of delta_h structures */
+        double start_time; /* start time of the current dh collection */
+        double delta_time; /* time difference between samples */
+        gmx_bool start_time_set; /* whether the start time has been set */
+        double start_lambda; /* starting lambda for continuous motion of state*/
+        double delta_lambda; /* delta lambda, for continuous motion of state */
+        double temperature; /* the temperature of the samples*/
+        double subblock_d[5]; /* data for writing an mdebin subblock for I/O */
+    };
 
 
-/* reset the collection of delta_h buffers for a new round of
-   data gathering */
-void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc);
+
+    /* initialize a collection of delta h histograms/sets
+        dhc = the collection
+        ir = the input record */
+
+    void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc,
+                               const t_inputrec *ir);
+
+    /* add a bunch of samples to the delta_h collection
+        dhc = the collection
+        dhdl = the hamiltonian derivatives
+        U = the array with energies: from enerd->enerpart_lambda.
+        time = the current simulation time.
+        current_lambda = current lambda values : primarily useful for continuous processes
+        fep_state = current fep_state
+     */
+
+    /* add a bunch of samples - note fep_state is double to allow for better data storage */
+    void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
+                                 double fep_state,
+                                 double energy,
+                                 double pV,
+                                 int bExpanded,
+                                 int bPrintEnergy,
+                                 int bPressure,
+                                 int ndhdl,
+                                 int nlambda,
+                                 double *dhdl,
+                                 double *foreign_dU,
+                                 double time);
+
+    /* write the data associated with the du blocks collection as a collection
+        of mdebin blocks.
+        dhc = the collection
+        fr = the enxio frame
+        nblock = the current number of blocks */
+    void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
+                                       t_enxframe *fr, int nblock);
 
 
-/* set the energyhistory variables to save state */
-void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
-                                           energyhistory_t *enerhist);
+    /* reset the collection of delta_h buffers for a new round of
+       data gathering */
+    void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc);
 
-/* restore the variables from an energyhistory */
-void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
-                                            energyhistory_t *enerhist);
+
+    /* set the energyhistory variables to save state */
+    void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
+                                               energyhistory_t *enerhist);
+
+    /* restore the variables from an energyhistory */
+    void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
+                                                energyhistory_t *enerhist);
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _mdebin_bar_h */
+#endif  /* _mdebin_bar_h */
 

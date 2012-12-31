@@ -42,12 +42,12 @@
 extern "C" {
 #endif
 
-/* initialisation of membed code */
-gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
-                         t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt);
+    /* initialisation of membed code */
+    gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
+                             t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt);
 
-/* rescaling the coordinates voor de membed code */
-void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x);
+    /* rescaling the coordinates voor de membed code */
+    void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x);
 
 #ifdef __cplusplus
 }

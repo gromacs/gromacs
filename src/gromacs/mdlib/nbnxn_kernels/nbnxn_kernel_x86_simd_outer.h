@@ -43,7 +43,7 @@
 #endif
 #if defined GMX_MM256_HERE && !defined GMX_DOUBLE
 #define STRIDE     8
-#endif 
+#endif
 
 #ifdef GMX_MM128_HERE
 #ifndef GMX_DOUBLE
@@ -129,21 +129,21 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME_C
 #undef NBK_FUNC_NAME_C_LJC
-                            (const nbnxn_pairlist_t     *nbl,
-                             const nbnxn_atomdata_t     *nbat,
-                             const interaction_const_t  *ic,
-                             rvec                       *shift_vec, 
-                             real                       *f
+(const nbnxn_pairlist_t     *nbl,
+ const nbnxn_atomdata_t     *nbat,
+ const interaction_const_t  *ic,
+ rvec                       *shift_vec,
+ real                       *f
 #ifdef CALC_SHIFTFORCES
-                             ,
-                             real                       *fshift
+ ,
+ real                       *fshift
 #endif
 #ifdef CALC_ENERGIES
-                             ,
-                             real                       *Vvdw,
-                             real                       *Vc
+ ,
+ real                       *Vvdw,
+ real                       *Vc
 #endif
-                            )
+)
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
@@ -170,7 +170,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     real       *vvdwtp[UNROLLI];
     real       *vctp[UNROLLI];
 #endif
-    
+
     gmx_mm_pr  shX_SSE;
     gmx_mm_pr  shY_SSE;
     gmx_mm_pr  shZ_SSE;
@@ -406,8 +406,8 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 
 #ifdef CALC_ENERGIES
     hrc_3_SSE = gmx_set1_pr(ic->k_rf);
-    
-    moh_rc_SSE = gmx_set1_pr(-ic->c_rf); 
+
+    moh_rc_SSE = gmx_set1_pr(-ic->c_rf);
 #endif
 
 #ifdef CALC_ENERGIES
@@ -421,7 +421,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     pvdw_c6  = (real *)(((size_t)(pvdw_array+3)) & (~((size_t)15)));
     pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 
-    for(jp=0; jp<UNROLLJ; jp++)
+    for (jp=0; jp<UNROLLJ; jp++)
     {
         pvdw_c6 [0*UNROLLJ+jp] = nbat->nbfp[0*2];
         pvdw_c6 [1*UNROLLJ+jp] = nbat->nbfp[0*2];
@@ -457,14 +457,14 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
     l_cj = nbl->cj;
 
     ninner = 0;
-    for(n=0; n<nbl->nci; n++)
+    for (n=0; n<nbl->nci; n++)
     {
         nbln = &nbl->ci[n];
 
         ish              = (nbln->shift & NBNXN_CI_SHIFT);
         ish3             = ish*3;
-        cjind0           = nbln->cj_ind_start;      
-        cjind1           = nbln->cj_ind_end;    
+        cjind0           = nbln->cj_ind_start;
+        cjind1           = nbln->cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
@@ -492,7 +492,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
         {
             int ia,egp_ia;
 
-            for(ia=0; ia<UNROLLI; ia++)
+            for (ia=0; ia<UNROLLI; ia++)
             {
                 egp_ia = (egps_i >> (ia*egps_ishift)) & egps_imask;
                 vvdwtp[ia] = Vvdw + egp_ia*Vstride_i;
@@ -505,42 +505,42 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
         if (do_coul && l_cj[nbln->cj_ind_start].cj == ci_sh)
 #endif
 #if UNROLLJ == 2
-        if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh<<1))
+            if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh<<1))
 #endif
 #if UNROLLJ == 8
-        if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh>>1))
+                if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh>>1))
 #endif
-        {
-            int  ia;
-            real Vc_sub_self;
+                {
+                    int  ia;
+                    real Vc_sub_self;
 
 #ifdef CALC_COUL_RF
-            Vc_sub_self = 0.5*ic->c_rf;
+                    Vc_sub_self = 0.5*ic->c_rf;
 #endif
 #ifdef CALC_COUL_TAB
 #ifdef TAB_FDV0
-            Vc_sub_self = 0.5*tab_coul_F[2];
+                    Vc_sub_self = 0.5*tab_coul_F[2];
 #else
-            Vc_sub_self = 0.5*tab_coul_V[0];
+                    Vc_sub_self = 0.5*tab_coul_V[0];
 #endif
 #endif
 
-            for(ia=0; ia<UNROLLI; ia++)
-            {
-                real qi;
+                    for (ia=0; ia<UNROLLI; ia++)
+                    {
+                        real qi;
 
-                qi = q[sci+ia];
+                        qi = q[sci+ia];
 #ifdef ENERGY_GROUPS
-                vctp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
+                        vctp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
 #else
-                Vc[0]
+                        Vc[0]
 #endif
-                    -= facel*qi*qi*Vc_sub_self;
-            }
-        }
+                        -= facel*qi*qi*Vc_sub_self;
+                    }
+                }
 #endif
 
-		/* Load i atom data */
+        /* Load i atom data */
         sciy             = scix + STRIDE;
         sciz             = sciy + STRIDE;
         ix_SSE0          = gmx_add_pr(gmx_load1_pr(x+scix)  ,shX_SSE);
@@ -634,7 +634,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
                 cjind++;
             }
 #undef CHECK_EXCLS
-            for(; (cjind<cjind1); cjind++)
+            for (; (cjind<cjind1); cjind++)
             {
 #include "nbnxn_kernel_x86_simd_inner.h"
             }
@@ -651,7 +651,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
                 cjind++;
             }
 #undef CHECK_EXCLS
-            for(; (cjind<cjind1); cjind++)
+            for (; (cjind<cjind1); cjind++)
             {
 #include "nbnxn_kernel_x86_simd_inner.h"
             }
@@ -666,7 +666,7 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
                 cjind++;
             }
 #undef CHECK_EXCLS
-            for(; (cjind<cjind1); cjind++)
+            for (; (cjind<cjind1); cjind++)
             {
 #include "nbnxn_kernel_x86_simd_inner.h"
             }
@@ -727,20 +727,20 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
         fshift[ish3+2] += shf[0] + shf[1];
 #endif
 #endif
-		
+
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
             gmx_store_pr(tmpsum,vctotSSE);
             *Vc += SUM_SIMD(tmpsum);
         }
-		
+
         gmx_store_pr(tmpsum,VvdwtotSSE);
         *Vvdw += SUM_SIMD(tmpsum);
 #endif
-		
-		/* Outer loop uses 6 flops/iteration */
-	}
+
+        /* Outer loop uses 6 flops/iteration */
+    }
 
 #ifdef COUNT_PAIRS
     printf("atom pairs %d\n",npair);
@@ -753,8 +753,8 @@ NBK_FUNC_NAME_S128_OR_S256(nbnxn_kernel,energrp)
 
 #undef CALC_SHIFTFORCES
 
-#undef UNROLLI   
-#undef UNROLLJ   
+#undef UNROLLI
+#undef UNROLLJ
 #undef STRIDE
 #undef TAB_FDV0
 #undef NBFP_STRIDE

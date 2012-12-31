@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -72,7 +72,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <string.h>
 #include <assert.h>
 
-/* 
+/*
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
  */
 #include "external/vmd_molfile/molfile_plugin.h"
@@ -99,7 +99,8 @@ typedef int (*finifunc)(void);
 
 
 
-static int register_cb(void *v, vmdplugin_t *p) {
+static int register_cb(void *v, vmdplugin_t *p)
+{
     const char *key = p->name;
     t_gmxvmdplugin *vmdplugin = (t_gmxvmdplugin*)v;
 
@@ -110,32 +111,38 @@ static int register_cb(void *v, vmdplugin_t *p) {
     return VMDPLUGIN_SUCCESS;
 }
 
-static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdplugin) {
+static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdplugin)
+{
     /* Open the dll; try to execute the init function. */
-    void *handle, *ifunc, *registerfunc; 
+    void *handle, *ifunc, *registerfunc;
     handle = vmddlopen(fullpath);
-    if (!handle) {
-        if (debug) fprintf(debug, "\nUnable to open dynamic library %s.\n%s\n",  fullpath, vmddlerror());  /*only to debug because of stdc++ erros */
+    if (!handle)
+    {
+        if (debug) { fprintf(debug, "\nUnable to open dynamic library %s.\n%s\n",  fullpath, vmddlerror()); }  /*only to debug because of stdc++ erros */
         return 0;
     }
 
     ifunc = vmddlsym(handle, "vmdplugin_init");
-    if (!ifunc || ((initfunc)(ifunc))()) {
+    if (!ifunc || ((initfunc)(ifunc))())
+    {
         printf("\nvmdplugin_init() for %s returned an error; plugin(s) not loaded.\n", fullpath);
         vmddlclose(handle);
         return 0;
     }
 
     registerfunc = vmddlsym(handle, "vmdplugin_register");
-    if (!registerfunc) {
+    if (!registerfunc)
+    {
         printf("\nDidn't find the register function in %s; plugin(s) not loaded.\n", fullpath);
         vmddlclose(handle);
         return 0;
-    } else {
+    }
+    else
+    {
         /* Load plugins from the library.*/
         ((regfunc)registerfunc)(vmdplugin, register_cb);
-    } 
-    
+    }
+
     /* in case this library does not support the filetype, close it */
     if (vmdplugin->api == NULL)
     {
@@ -154,7 +161,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
 
 
     fr->bV = fr->vmdplugin->bV;
-        
+
 #ifdef GMX_DOUBLE
     snew(ts.coords, fr->natoms*3);
     if (fr->bV)
@@ -171,7 +178,8 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
 
     rc = fr->vmdplugin->api->read_next_timestep(fr->vmdplugin->handle, fr->natoms, &ts);
 
-    if (rc < -1) {
+    if (rc < -1)
+    {
         fprintf(stderr, "\nError reading input file (error code %d)\n", rc);
     }
     if (rc < 0)
@@ -181,7 +189,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     }
 
 #ifdef GMX_DOUBLE
-    for (i=0;i<fr->natoms;i++)
+    for (i=0; i<fr->natoms; i++)
     {
         fr->x[i][0] = .1*ts.coords[i*3];
         fr->x[i][1] = .1*ts.coords[i*3+1];
@@ -199,7 +207,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
         sfree(ts.velocities);
     }
 #else
-    for (i=0;i<fr->natoms;i++)
+    for (i=0; i<fr->natoms; i++)
     {
         svmul(.1,fr->x[i],fr->x[i]);
         if (fr->bV)
@@ -212,7 +220,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
     fr->bX = 1;
     fr->bBox = 1;
     vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
-    angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma; 
+    angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma;
     matrix_convert(fr->box,vec,angle);
     if (fr->vmdplugin->api->abiversion>10)
     {
@@ -263,7 +271,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
      * given at configure time. This last might be hard-coded to the
      * default for VMD installs. */
     pathenv = getenv("VMD_PLUGIN_PATH");
-    if (pathenv==NULL) 
+    if (pathenv==NULL)
     {
         pathenv = getenv("VMDDIR");
         if (NULL == pathenv)
@@ -291,9 +299,9 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     if (globbuf.gl_pathc == 0)
     {
         printf("\nNo VMD Plugins found\n"
-            "Set the environment variable VMD_PLUGIN_PATH to the molfile folder within the\n"
-            "VMD installation.\n"
-            "The architecture (e.g. 32bit versus 64bit) of Gromacs and VMD has to match.\n");
+               "Set the environment variable VMD_PLUGIN_PATH to the molfile folder within the\n"
+               "VMD installation.\n"
+               "The architecture (e.g. 32bit versus 64bit) of Gromacs and VMD has to match.\n");
         return 0;
     }
     for (i=0; i<globbuf.gl_pathc && vmdplugin->api == NULL; i++)
@@ -309,11 +317,11 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 #else
     strcat(pathname,"\\*.so");
     hFind = FindFirstFile(pathname, &ffd);
-    if (INVALID_HANDLE_VALUE == hFind) 
+    if (INVALID_HANDLE_VALUE == hFind)
     {
         printf("\nNo VMD Plugins found\n");
         return 0;
-    } 
+    }
     do
     {
         sprintf(filename,"%s\\%s",pathenv,ffd.cFileName);
@@ -327,7 +335,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     {
         printf("\nCould not open any VMD library.\n");
         err = vmddlerror();
-        if (!err) 
+        if (!err)
         {
             printf("Compiled with dlopen?\n");
         }
@@ -359,7 +367,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 {
     molfile_timestep_metadata_t *metadata=NULL;
-    
+
     snew(fr->vmdplugin,1);
     if (!load_vmd_library(fn,fr->vmdplugin))
     {
@@ -368,24 +376,30 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 
     fr->vmdplugin->handle = fr->vmdplugin->api->open_file_read(fn, fr->vmdplugin->filetype, &fr->natoms);
 
-    if (!fr->vmdplugin->handle) {
+    if (!fr->vmdplugin->handle)
+    {
         fprintf(stderr, "\nError: could not open file '%s' for reading.\n",
                 fn);
         return 0;
     }
 
-    if (fr->natoms == MOLFILE_NUMATOMS_UNKNOWN) {
+    if (fr->natoms == MOLFILE_NUMATOMS_UNKNOWN)
+    {
         fprintf(stderr, "\nFormat of file %s does not record number of atoms.\n", fn);
         return 0;
-    } else if (fr->natoms == MOLFILE_NUMATOMS_NONE) {
+    }
+    else if (fr->natoms == MOLFILE_NUMATOMS_NONE)
+    {
         fprintf(stderr, "\nNo atoms found by VMD plugin in file %s.\n", fn );
         return 0;
-    } else if (fr->natoms < 1) { /*should not be reached*/
+    }
+    else if (fr->natoms < 1)     /*should not be reached*/
+    {
         fprintf(stderr, "\nUnknown number of atoms %d for VMD plugin opening file %s.\n",
                 fr->natoms, fn );
         return 0;
     }
-    
+
     snew(fr->x,fr->natoms);
 
     fr->vmdplugin->bV = 0;

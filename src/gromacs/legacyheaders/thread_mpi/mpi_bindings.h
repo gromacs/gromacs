@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -41,39 +41,39 @@ files.
 /** \file
   \brief MPI bindings for thread_mpi/tmpi.h
 
-  This file contains only macros and redefinitions to expose the standard 
-  MPI API with thread_mpi calls. 
-  
-  This is different from the API exposed through thread_mpi/tmpi.h, which 
+  This file contains only macros and redefinitions to expose the standard
+  MPI API with thread_mpi calls.
+
+  This is different from the API exposed through thread_mpi/tmpi.h, which
   uses names like \a tMPI_Send() instead of \a MPI_Send()
 
-  \sa thread_mpi/tmpi.h for documentation of the available data types and 
+  \sa thread_mpi/tmpi.h for documentation of the available data types and
       functions
   \sa http://www.mpi-forum.org/docs/docs.html for MPI documentation.
 */
 
 #ifndef DOXYGEN
 #ifdef __cplusplus
-extern "C" 
-{  
+extern "C"
+{
 #endif
 
 
 
 
-/* The MPI_Comm structure contains the group of processes to communicate
-   with (defines the scope for global operations such as broadcast) */
-typedef struct tmpi_comm_ *MPI_Comm;
-/* The group part of the MPI-Comm structure */
-typedef struct tmpi_group_ *MPI_Group;
-/* Request structure for holding data about non-blocking transfers */
-typedef struct tmpi_req_ *MPI_Request;
-/* status of receives */
-typedef struct tmpi_status_ MPI_Status;
-/* data types */
-typedef struct tmpi_datatype_ *MPI_Datatype;
-/* reduce operations */
-typedef tMPI_Op MPI_Op;
+    /* The MPI_Comm structure contains the group of processes to communicate
+       with (defines the scope for global operations such as broadcast) */
+    typedef struct tmpi_comm_ *MPI_Comm;
+    /* The group part of the MPI-Comm structure */
+    typedef struct tmpi_group_ *MPI_Group;
+    /* Request structure for holding data about non-blocking transfers */
+    typedef struct tmpi_req_ *MPI_Request;
+    /* status of receives */
+    typedef struct tmpi_status_ MPI_Status;
+    /* data types */
+    typedef struct tmpi_datatype_ *MPI_Datatype;
+    /* reduce operations */
+    typedef tMPI_Op MPI_Op;
 
 
 #define MPI_CHAR                TMPI_CHAR
@@ -121,8 +121,8 @@ typedef tMPI_Op MPI_Op;
 #define MPI_ERR_UNKNOWN             TMPI_ERR_UNKNOWN
 #define N_MPI_ERR                   N_TMPI_ERR
 
-#define MPI_MAX_ERROR_STRING        TMPI_MAX_ERROR_STRING  
-#define MPI_UNDEFINED               TMPI_UNDEFINED 
+#define MPI_MAX_ERROR_STRING        TMPI_MAX_ERROR_STRING
+#define MPI_UNDEFINED               TMPI_UNDEFINED
 
 
 #define MPI_Errhandler_fn           tMPI_Errhandler_fn
@@ -132,24 +132,24 @@ typedef tMPI_Op MPI_Op;
 
 
 
-/* miscelaneous defines */
+    /* miscelaneous defines */
 #define MPI_ANY_SOURCE          TMPI_ANY_SOURCE
 #define MPI_ANY_TAG             TMPI_ANY_TAG
 
-/* comm_compare defines */
+    /* comm_compare defines */
 #define MPI_IDENT               TMPI_IDENT
 #define MPI_CONGRUENT           TMPI_CONGRUENT
 #define MPI_SIMILAR             TMPI_SIMILAR
 #define MPI_UNEQUAL             TMPI_UNEQUAL
 
 
-/* topology test defines */
+    /* topology test defines */
 #define MPI_CART                TMPI_CART
 #define MPI_GRAPH               TMPI_GRAPH
 
 
 #define MPI_COMM_WORLD          TMPI_COMM_WORLD
-#define MPI_COMM_NULL           TMPI_COMM_NULL 
+#define MPI_COMM_NULL           TMPI_COMM_NULL
 
 
 #define MPI_GROUP_NULL          TMPI_GROUP_NULL
@@ -158,7 +158,7 @@ typedef tMPI_Op MPI_Op;
 #define MPI_MAX_PROCESSOR_NAME  TMPI_MAX_PROCESSOR_NAME
 
 
-/* MPI status */
+    /* MPI status */
 #define MPI_STATUS_IGNORE       TMPI_STATUS_IGNORE
 #define MPI_STATUSES_IGNORE     TMPI_STATUSES_IGNORE
 
@@ -168,24 +168,24 @@ typedef tMPI_Op MPI_Op;
 
 #define mpi_status_             tmpi_status_
 
-#define MPI_REQUEST_NULL        TMPI_REQUEST_NULL 
+#define MPI_REQUEST_NULL        TMPI_REQUEST_NULL
 
 #define MPI_IN_PLACE            TMPI_IN_PLACE
 
 
 
-#define MPI_MAX          TMPI_MAX 
-#define MPI_MIN          TMPI_MIN 
-#define MPI_SUM          TMPI_SUM 
+#define MPI_MAX          TMPI_MAX
+#define MPI_MIN          TMPI_MIN
+#define MPI_SUM          TMPI_SUM
 #define MPI_PROD         TMPI_PROD
 #define MPI_LAND         TMPI_LAND
 #define MPI_BAND         TMPI_BAND
-#define MPI_LOR          TMPI_LOR 
-#define MPI_BOR          TMPI_BOR 
-#define MPI_LXOR         TMPI_LXOR 
+#define MPI_LOR          TMPI_LOR
+#define MPI_BOR          TMPI_BOR
+#define MPI_LXOR         TMPI_LXOR
 #define MPI_BXOR         TMPI_BXOR
 
-/* the functions: */
+    /* the functions: */
 #define MPI_Init                    tMPI_Init
 #define MPI_Finalize                tMPI_Finalize
 #define MPI_Abort                   tMPI_Abort

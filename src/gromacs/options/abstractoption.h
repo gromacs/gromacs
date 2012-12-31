@@ -67,7 +67,7 @@ class Options;
 
 //! Smart pointer for managing an AbstractOptionStorage object.
 typedef gmx_unique_ptr<AbstractOptionStorage>::type
-        AbstractOptionStoragePointer;
+AbstractOptionStoragePointer;
 
 /*! \brief
  * Abstract base class for specifying option properties.

@@ -95,37 +95,61 @@ enum { coultRF, coultTAB, coultTAB_TWIN, coultNR };
 
 
 static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_x86_simd128_rf_comb_geom_ener,
-    nbnxn_kernel_x86_simd128_rf_comb_lb_ener,
-    nbnxn_kernel_x86_simd128_rf_comb_none_ener },
-  { nbnxn_kernel_x86_simd128_tab_comb_geom_ener,
-    nbnxn_kernel_x86_simd128_tab_comb_lb_ener,
-    nbnxn_kernel_x86_simd128_tab_twin_comb_none_ener },
-  { nbnxn_kernel_x86_simd128_tab_twin_comb_geom_ener,
-    nbnxn_kernel_x86_simd128_tab_twin_comb_lb_ener,
-    nbnxn_kernel_x86_simd128_tab_twin_comb_none_ener }  };
+{
+    {
+        nbnxn_kernel_x86_simd128_rf_comb_geom_ener,
+        nbnxn_kernel_x86_simd128_rf_comb_lb_ener,
+        nbnxn_kernel_x86_simd128_rf_comb_none_ener
+    },
+    {
+        nbnxn_kernel_x86_simd128_tab_comb_geom_ener,
+        nbnxn_kernel_x86_simd128_tab_comb_lb_ener,
+        nbnxn_kernel_x86_simd128_tab_twin_comb_none_ener
+    },
+    {
+        nbnxn_kernel_x86_simd128_tab_twin_comb_geom_ener,
+        nbnxn_kernel_x86_simd128_tab_twin_comb_lb_ener,
+        nbnxn_kernel_x86_simd128_tab_twin_comb_none_ener
+    }
+};
 
 static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
-{ { nbnxn_kernel_x86_simd128_rf_comb_geom_energrp,
-    nbnxn_kernel_x86_simd128_rf_comb_lb_energrp,
-    nbnxn_kernel_x86_simd128_rf_comb_none_energrp },
-  { nbnxn_kernel_x86_simd128_tab_comb_geom_energrp,
-    nbnxn_kernel_x86_simd128_tab_comb_lb_energrp,
-    nbnxn_kernel_x86_simd128_tab_comb_none_energrp },
-  { nbnxn_kernel_x86_simd128_tab_twin_comb_geom_energrp,
-    nbnxn_kernel_x86_simd128_tab_twin_comb_lb_energrp,
-    nbnxn_kernel_x86_simd128_tab_twin_comb_none_energrp } };
+{
+    {
+        nbnxn_kernel_x86_simd128_rf_comb_geom_energrp,
+        nbnxn_kernel_x86_simd128_rf_comb_lb_energrp,
+        nbnxn_kernel_x86_simd128_rf_comb_none_energrp
+    },
+    {
+        nbnxn_kernel_x86_simd128_tab_comb_geom_energrp,
+        nbnxn_kernel_x86_simd128_tab_comb_lb_energrp,
+        nbnxn_kernel_x86_simd128_tab_comb_none_energrp
+    },
+    {
+        nbnxn_kernel_x86_simd128_tab_twin_comb_geom_energrp,
+        nbnxn_kernel_x86_simd128_tab_twin_comb_lb_energrp,
+        nbnxn_kernel_x86_simd128_tab_twin_comb_none_energrp
+    }
+};
 
 static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_x86_simd128_rf_comb_geom_noener,
-    nbnxn_kernel_x86_simd128_rf_comb_lb_noener,
-    nbnxn_kernel_x86_simd128_rf_comb_none_noener },
-  { nbnxn_kernel_x86_simd128_tab_comb_geom_noener,
-    nbnxn_kernel_x86_simd128_tab_comb_lb_noener,
-    nbnxn_kernel_x86_simd128_tab_comb_none_noener },
-  { nbnxn_kernel_x86_simd128_tab_twin_comb_geom_noener,
-    nbnxn_kernel_x86_simd128_tab_twin_comb_lb_noener,
-    nbnxn_kernel_x86_simd128_tab_twin_comb_none_noener } };
+{
+    {
+        nbnxn_kernel_x86_simd128_rf_comb_geom_noener,
+        nbnxn_kernel_x86_simd128_rf_comb_lb_noener,
+        nbnxn_kernel_x86_simd128_rf_comb_none_noener
+    },
+    {
+        nbnxn_kernel_x86_simd128_tab_comb_geom_noener,
+        nbnxn_kernel_x86_simd128_tab_comb_lb_noener,
+        nbnxn_kernel_x86_simd128_tab_comb_none_noener
+    },
+    {
+        nbnxn_kernel_x86_simd128_tab_twin_comb_geom_noener,
+        nbnxn_kernel_x86_simd128_tab_twin_comb_lb_noener,
+        nbnxn_kernel_x86_simd128_tab_twin_comb_none_noener
+    }
+};
 
 
 static void reduce_group_energies(int ng,int ng_2log,
@@ -142,20 +166,20 @@ static void reduce_group_energies(int ng,int ng_2log,
     /* The size of the x86 SIMD energy group buffer array is:
      * ng*ng*ng_p2*SIMD_WIDTH_HALF*SIMD_WIDTH
      */
-    for(i=0; i<ng; i++)
+    for (i=0; i<ng; i++)
     {
-        for(j=0; j<ng; j++)
+        for (j=0; j<ng; j++)
         {
             Vvdw[i*ng+j] = 0;
             Vc[i*ng+j]   = 0;
         }
 
-        for(j1=0; j1<ng; j1++)
+        for (j1=0; j1<ng; j1++)
         {
-            for(j0=0; j0<ng; j0++)
+            for (j0=0; j0<ng; j0++)
             {
                 c = ((i*ng + j1)*ng_p2 + j0)*SIMD_WIDTH_HALF*SIMD_WIDTH;
-                for(s=0; s<SIMD_WIDTH_HALF; s++)
+                for (s=0; s<SIMD_WIDTH_HALF; s++)
                 {
                     Vvdw[i*ng+j0] += VSvdw[c+0];
                     Vvdw[i*ng+j1] += VSvdw[c+1];
@@ -174,7 +198,7 @@ void
 nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
                          const nbnxn_atomdata_t     *nbat,
                          const interaction_const_t  *ic,
-                         rvec                       *shift_vec, 
+                         rvec                       *shift_vec,
                          int                        force_flags,
                          int                        clearF,
                          real                       *fshift,
@@ -206,8 +230,8 @@ nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
         }
     }
 
-#pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
-    for(nb=0; nb<nnbl; nb++)
+    #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
+    for (nb=0; nb<nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;
         real *fshift_p;
@@ -266,11 +290,11 @@ nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
             /* Calculate energy group contributions */
             int i;
 
-            for(i=0; i<out->nVS; i++)
+            for (i=0; i<out->nVS; i++)
             {
                 out->VSvdw[i] = 0;
             }
-            for(i=0; i<out->nVS; i++)
+            for (i=0; i<out->nVS; i++)
             {
                 out->VSc[i] = 0;
             }

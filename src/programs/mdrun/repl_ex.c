@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -114,7 +114,7 @@ static gmx_bool repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
     {
         if (qall[s] != qall[0])
         {
-            bDiff = TRUE;   
+            bDiff = TRUE;
         }
     }
 
@@ -124,7 +124,7 @@ static gmx_bool repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
         re->type = ere;
 
         snew(re->q[ere],re->nrepl);
-        for(s=0; s<ms->nsim; s++)
+        for (s=0; s<ms->nsim; s++)
         {
             re->q[ere][s] = qall[s];
         }
@@ -173,7 +173,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     check_multi_int(fplog,ms,ir->fepvals->n_lambda,"number of lambda states");
 
     re->temp = ir->opts.ref_t[0];
-    for(i=1; (i<ir->opts.ngtc); i++)
+    for (i=1; (i<ir->opts.ngtc); i++)
     {
         if (ir->opts.ref_t[i] != re->temp)
         {
@@ -192,7 +192,8 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     {
         gmx_fatal(FARGS,"The properties of the %d systems are all the same, there is nothing to exchange",re->nrepl);
     }
-    if (bLambda && bTemp) {
+    if (bLambda && bTemp)
+    {
         re->type = ereTL;
     }
 
@@ -211,7 +212,8 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
                       ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
         }
     }
-    if (bLambda) {
+    if (bLambda)
+    {
         if (ir->fepvals->delta_lambda != 0)   /* check this? */
         {
             gmx_fatal(FARGS,"delta_lambda is not zero");
@@ -228,7 +230,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         {
             pres = 0;
             j = 0;
-            for(i=0; i<DIM; i++)
+            for (i=0; i<DIM; i++)
             {
                 if (ir->compress[i][i] != 0)
                 {
@@ -246,16 +248,17 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     /* only makes sense if one or the other is varying, not both!
        if both are varying, we trust the order the person gave. */
     snew(re->ind,re->nrepl);
-    for(i=0; i<re->nrepl; i++)
+    for (i=0; i<re->nrepl; i++)
     {
         re->ind[i] = i;
     }
 
-    if (re->type<ereENDSINGLE) {
+    if (re->type<ereENDSINGLE)
+    {
 
-        for(i=0; i<re->nrepl; i++)
+        for (i=0; i<re->nrepl; i++)
         {
-            for(j=i+1; j<re->nrepl; j++)
+            for (j=i+1; j<re->nrepl; j++)
             {
                 if (re->q[re->type][re->ind[j]] < re->q[re->type][re->ind[i]])
                 {
@@ -273,54 +276,54 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     /* keep track of all the swaps, starting with the initial placement. */
     snew(re->allswaps,re->nrepl);
-    for(i=0; i<re->nrepl; i++)
+    for (i=0; i<re->nrepl; i++)
     {
         re->allswaps[i] = re->ind[i];
     }
 
     switch (re->type)
     {
-    case ereTEMP:
-        fprintf(fplog,"\nReplica exchange in temperature\n");
-        for(i=0; i<re->nrepl; i++)
-        {
-            fprintf(fplog," %5.1f",re->q[re->type][re->ind[i]]);
-        }
-        fprintf(fplog,"\n");
-        break;
-    case ereLAMBDA:
-        fprintf(fplog,"\nReplica exchange in lambda\n");
-        for(i=0; i<re->nrepl; i++)
-        {
-            fprintf(fplog," %3d",(int)re->q[re->type][re->ind[i]]);
-        }
-        fprintf(fplog,"\n");
-        break;
-    case ereTL:
-        fprintf(fplog,"\nReplica exchange in temperature and lambda state\n");
-        for(i=0; i<re->nrepl; i++)
-        {
-            fprintf(fplog," %5.1f",re->q[ereTEMP][re->ind[i]]);
-        }
-        fprintf(fplog,"\n");
-        for(i=0; i<re->nrepl; i++)
-        {
-            fprintf(fplog," %5d",(int)re->q[ereLAMBDA][re->ind[i]]);
-        }
-        fprintf(fplog,"\n");
-        break;
-    default:
-        gmx_incons("Unknown replica exchange quantity");
+        case ereTEMP:
+            fprintf(fplog,"\nReplica exchange in temperature\n");
+            for (i=0; i<re->nrepl; i++)
+            {
+                fprintf(fplog," %5.1f",re->q[re->type][re->ind[i]]);
+            }
+            fprintf(fplog,"\n");
+            break;
+        case ereLAMBDA:
+            fprintf(fplog,"\nReplica exchange in lambda\n");
+            for (i=0; i<re->nrepl; i++)
+            {
+                fprintf(fplog," %3d",(int)re->q[re->type][re->ind[i]]);
+            }
+            fprintf(fplog,"\n");
+            break;
+        case ereTL:
+            fprintf(fplog,"\nReplica exchange in temperature and lambda state\n");
+            for (i=0; i<re->nrepl; i++)
+            {
+                fprintf(fplog," %5.1f",re->q[ereTEMP][re->ind[i]]);
+            }
+            fprintf(fplog,"\n");
+            for (i=0; i<re->nrepl; i++)
+            {
+                fprintf(fplog," %5d",(int)re->q[ereLAMBDA][re->ind[i]]);
+            }
+            fprintf(fplog,"\n");
+            break;
+        default:
+            gmx_incons("Unknown replica exchange quantity");
     }
     if (re->bNPT)
     {
         fprintf(fplog,"\nRepl  p");
-        for(i=0; i<re->nrepl; i++)
+        for (i=0; i<re->nrepl; i++)
         {
             fprintf(fplog," %5.2f",re->pres[re->ind[i]]);
         }
 
-        for(i=0; i<re->nrepl; i++)
+        for (i=0; i<re->nrepl; i++)
         {
             if ((i > 0) && (re->pres[re->ind[i]] < re->pres[re->ind[i-1]]))
             {
@@ -355,7 +358,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     snew(re->prob_sum,re->nrepl);
     snew(re->nexchange,re->nrepl);
     snew(re->nmoves,re->nrepl);
-    for (i=0;i<re->nrepl;i++) 
+    for (i=0; i<re->nrepl; i++)
     {
         snew(re->nmoves[i],re->nrepl);
     }
@@ -368,7 +371,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     snew(re->tmpswap,re->nrepl);
     snew(re->cyclic,re->nrepl);
     snew(re->order,re->nrepl);
-    for (i=0;i<re->nrepl;i++)
+    for (i=0; i<re->nrepl; i++)
     {
         snew(re->cyclic[i],re->nrepl);
         snew(re->order[i],re->nrepl);
@@ -382,7 +385,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     snew(re->Vol,re->nrepl);
     snew(re->Epot,re->nrepl);
     snew(re->de,re->nrepl);
-    for (i=0;i<re->nrepl;i++)
+    for (i=0; i<re->nrepl; i++)
     {
         snew(re->de[i],re->nrepl);
     }
@@ -414,7 +417,7 @@ static void exchange_reals(const gmx_multisim_t *ms,int b,real *v,int n)
             MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
         }
 #endif
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             v[i] = buf[i];
         }
@@ -425,33 +428,34 @@ static void exchange_reals(const gmx_multisim_t *ms,int b,real *v,int n)
 
 static void exchange_ints(const gmx_multisim_t *ms,int b,int *v,int n)
 {
-  int *buf;
-  int  i;
+    int *buf;
+    int  i;
 
-  if (v) {
-    snew(buf,n);
+    if (v)
+    {
+        snew(buf,n);
 #ifdef GMX_MPI
-    /*
-    MPI_Sendrecv(v,  n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-		 buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-		 ms->mpi_comm_masters,MPI_STATUS_IGNORE);
-    */
-    {
-      MPI_Request mpi_req;
+        /*
+        MPI_Sendrecv(v,  n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+             buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+             ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+        */
+        {
+            MPI_Request mpi_req;
 
-      MPI_Isend(v,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-		ms->mpi_comm_masters,&mpi_req);
-      MPI_Recv(buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-	       ms->mpi_comm_masters,MPI_STATUS_IGNORE);
-      MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
-    }
+            MPI_Isend(v,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+                      ms->mpi_comm_masters,&mpi_req);
+            MPI_Recv(buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+                     ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+            MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
+        }
 #endif
-    for(i=0; i<n; i++) 
-    {
-        v[i] = buf[i];
+        for (i=0; i<n; i++)
+        {
+            v[i] = buf[i];
+        }
+        sfree(buf);
     }
-    sfree(buf);
-  }
 }
 
 static void exchange_doubles(const gmx_multisim_t *ms,int b,double *v,int n)
@@ -478,7 +482,7 @@ static void exchange_doubles(const gmx_multisim_t *ms,int b,double *v,int n)
             MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
         }
 #endif
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             v[i] = buf[i];
         }
@@ -490,7 +494,7 @@ static void exchange_rvecs(const gmx_multisim_t *ms,int b,rvec *v,int n)
 {
     rvec *buf;
     int  i;
-  
+
     if (v)
     {
         snew(buf,n);
@@ -510,7 +514,7 @@ static void exchange_rvecs(const gmx_multisim_t *ms,int b,rvec *v,int n)
             MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
         }
 #endif
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             copy_rvec(buf[i],v[i]);
         }
@@ -548,7 +552,7 @@ static void copy_rvecs(rvec *s,rvec *d,int n)
 
     if (d != NULL)
     {
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             copy_rvec(s[i],d[i]);
         }
@@ -561,7 +565,7 @@ static void copy_doubles(const double *s,double *d,int n)
 
     if (d != NULL)
     {
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             d[i] = s[i];
         }
@@ -574,7 +578,7 @@ static void copy_reals(const real *s,real *d,int n)
 
     if (d != NULL)
     {
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             d[i] = s[i];
         }
@@ -587,7 +591,7 @@ static void copy_ints(const int *s,int *d,int n)
 
     if (d != NULL)
     {
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             d[i] = s[i];
         }
@@ -631,7 +635,7 @@ static void scale_velocities(t_state *state,real fac)
 
     if (state->v)
     {
-        for(i=0; i<state->natoms; i++)
+        for (i=0; i<state->natoms; i++)
         {
             svmul(fac,state->v[i],state->v[i]);
         }
@@ -641,7 +645,7 @@ static void scale_velocities(t_state *state,real fac)
 static void pd_collect_state(const t_commrec *cr,t_state *state)
 {
     int shift;
-  
+
     if (debug)
     {
         fprintf(debug,"Collecting state before exchange\n");
@@ -666,23 +670,23 @@ static void print_transition_matrix(FILE *fplog,const char *leg,int n,int **nmov
     ntot = nattempt[0] + nattempt[1];
     fprintf(fplog,"\n");
     fprintf(fplog,"Repl");
-    for (i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         fprintf(fplog,"    ");  /* put the title closer to the center */
     }
     fprintf(fplog,"Empirical Transition Matrix\n");
 
     fprintf(fplog,"Repl");
-    for (i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         fprintf(fplog,"%8d",(i+1));
     }
     fprintf(fplog,"\n");
 
-    for (i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         fprintf(fplog,"Repl");
-        for (j=0;j<n;j++)
+        for (j=0; j<n; j++)
         {
             Tprint = 0.0;
             if (nmoves[i][j] > 0)
@@ -700,7 +704,7 @@ static void print_ind(FILE *fplog,const char *leg,int n,int *ind,gmx_bool *bEx)
     int i;
 
     fprintf(fplog,"Repl %2s %2d",leg,ind[0]);
-    for(i=1; i<n; i++)
+    for (i=1; i<n; i++)
     {
         fprintf(fplog," %c %2d",(bEx!=0 && bEx[i]) ? 'x' : ' ',ind[i]);
     }
@@ -711,24 +715,24 @@ static void print_allswitchind(FILE *fplog,int n,int *ind,int *pind, int *allswa
 {
     int i;
 
-    for (i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         tmpswap[i] = allswaps[i];
     }
-    for (i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         allswaps[i] = tmpswap[pind[i]];
     }
 
     fprintf(fplog,"\nAccepted Exchanges:   ");
-    for (i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         fprintf(fplog,"%d ",pind[i]);
     }
     fprintf(fplog,"\n");
 
     fprintf(fplog,"Order After Exchange: ");
-    for (i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         fprintf(fplog,"%d ",allswaps[i]);
     }
@@ -739,9 +743,9 @@ static void print_prob(FILE *fplog,const char *leg,int n,real *prob)
 {
     int  i;
     char buf[8];
-  
+
     fprintf(fplog,"Repl %2s ",leg);
-    for(i=1; i<n; i++)
+    for (i=1; i<n; i++)
     {
         if (prob[i] >= 0)
         {
@@ -761,14 +765,15 @@ static void print_count(FILE *fplog,const char *leg,int n,int *count)
     int i;
 
     fprintf(fplog,"Repl %2s ",leg);
-    for(i=1; i<n; i++)
+    for (i=1; i<n; i++)
     {
         fprintf(fplog," %4d",count[i]);
     }
     fprintf(fplog,"\n");
 }
 
-static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int a, int b, int ap, int bp) {
+static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int a, int b, int ap, int bp)
+{
 
     real ediff,dpV,delta=0;
     real *Epot = re->Epot;
@@ -781,60 +786,60 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
 
     switch (re->type)
     {
-    case ereTEMP:
-        /*
-         * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
-         */
-        ediff = Epot[b] - Epot[a];
-        delta = -(beta[bp] - beta[ap])*ediff;
-        break;
-    case ereLAMBDA:
-        /* two cases:  when we are permuted, and not.  */
-        /* non-permuted:
-           ediff =  E_new - E_old
-                 =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)]
-                 =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)]
-                 =  de[b][a] + de[a][b] */
-        /* permuted:
-           ediff =  E_new - E_old
-                 =  [H_bp(x_a) + H_ap(x_b)] - [H_bp(x_b) + H_ap(x_a)]
-                 =  [H_bp(x_a) - H_ap(x_a)] + [H_ap(x_b) - H_bp(x_b)]
-                 =  [H_bp(x_a) - H_a(x_a) + H_a(x_a) - H_ap(x_a)] + [H_ap(x_b) - H_b(x_b) + H_b(x_b) - H_bp(x_b)]
-                 =  [H_bp(x_a) - H_a(x_a)] - [H_ap(x_a) - H_a(x_a)] + [H_ap(x_b) - H_b(x_b)] - H_bp(x_b) - H_b(x_b)]
-                 =  (de[bp][a] - de[ap][a]) + (de[ap][b] - de[bp][b])    */
-        ediff = (de[bp][a] - de[ap][a]) + (de[ap][b] - de[bp][b]);
-        delta = ediff*beta[a]; /* assume all same temperature in this case */
-        break;
-    case ereTL:
-        /* not permuted:  */
-        /* delta =  reduced E_new - reduced E_old
-                 =  [beta_b H_b(x_a) + beta_a H_a(x_b)] - [beta_b H_b(x_b) + beta_a H_a(x_a)]
-                 =  [beta_b H_b(x_a) - beta_a H_a(x_a)] + [beta_a H_a(x_b) - beta_b H_b(x_b)]
-                 =  [beta_b dH_b(x_a) + beta_b H_a(x_a) - beta_a H_a(x_a)] +
-                    [beta_a dH_a(x_b) + beta_a H_b(x_b) - beta_b H_b(x_b)]
-                 =  [beta_b dH_b(x_a) + [beta_a dH_a(x_b) +
-                    beta_b (H_a(x_a) - H_b(x_b)]) - beta_a (H_a(x_a) - H_b(x_b))
-                 =  beta_b dH_b(x_a) + beta_a dH_a(x_b) - (beta_b - beta_a)(H_b(x_b) - H_a(x_a) */
-        /* delta = beta[b]*de[b][a] + beta[a]*de[a][b] - (beta[b] - beta[a])*(Epot[b] - Epot[a]; */
-        /* permuted (big breath!) */
-        /*   delta =  reduced E_new - reduced E_old
-                 =  [beta_bp H_bp(x_a) + beta_ap H_ap(x_b)] - [beta_bp H_bp(x_b) + beta_ap H_ap(x_a)]
-                 =  [beta_bp H_bp(x_a) - beta_ap H_ap(x_a)] + [beta_ap H_ap(x_b) - beta_bp H_bp(x_b)]
-                 =  [beta_bp H_bp(x_a) - beta_ap H_ap(x_a)] + [beta_ap H_ap(x_b) - beta_bp H_bp(x_b)]
-                    - beta_pb H_a(x_a) + beta_ap H_a(x_a) + beta_pb H_a(x_a) - beta_ap H_a(x_a)
-                    - beta_ap H_b(x_b) + beta_bp H_b(x_b) + beta_ap H_b(x_b) - beta_bp H_b(x_b)
-                 =  [(beta_bp H_bp(x_a) - beta_bp H_a(x_a)) - (beta_ap H_ap(x_a) - beta_ap H_a(x_a))] +
-                    [(beta_ap H_ap(x_b)  - beta_ap H_b(x_b)) - (beta_bp H_bp(x_b) - beta_bp H_b(x_b))]
-                    + beta_pb H_a(x_a) - beta_ap H_a(x_a) + beta_ap H_b(x_b) - beta_bp H_b(x_b)
-                 =  [beta_bp (H_bp(x_a) - H_a(x_a)) - beta_ap (H_ap(x_a) - H_a(x_a))] +
-                    [beta_ap (H_ap(x_b) - H_b(x_b)) - beta_bp (H_bp(x_b) - H_b(x_b))]
-                    + beta_pb (H_a(x_a) - H_b(x_b))  - beta_ap (H_a(x_a) - H_b(x_b))
-                 =  ([beta_bp de[bp][a] - beta_ap de[ap][a]) + beta_ap de[ap][b]  - beta_bp de[bp][b])
-                 + (beta_pb-beta_ap)(H_a(x_a) - H_b(x_b))  */
-        delta = beta[bp]*(de[bp][a] - de[bp][b]) + beta[ap]*(de[ap][b] - de[ap][a]) - (beta[bp]-beta[ap])*(Epot[b]-Epot[a]);
-        break;
-    default:
-        gmx_incons("Unknown replica exchange quantity");
+        case ereTEMP:
+            /*
+             * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
+             */
+            ediff = Epot[b] - Epot[a];
+            delta = -(beta[bp] - beta[ap])*ediff;
+            break;
+        case ereLAMBDA:
+            /* two cases:  when we are permuted, and not.  */
+            /* non-permuted:
+               ediff =  E_new - E_old
+                     =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)]
+                     =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)]
+                     =  de[b][a] + de[a][b] */
+            /* permuted:
+               ediff =  E_new - E_old
+                     =  [H_bp(x_a) + H_ap(x_b)] - [H_bp(x_b) + H_ap(x_a)]
+                     =  [H_bp(x_a) - H_ap(x_a)] + [H_ap(x_b) - H_bp(x_b)]
+                     =  [H_bp(x_a) - H_a(x_a) + H_a(x_a) - H_ap(x_a)] + [H_ap(x_b) - H_b(x_b) + H_b(x_b) - H_bp(x_b)]
+                     =  [H_bp(x_a) - H_a(x_a)] - [H_ap(x_a) - H_a(x_a)] + [H_ap(x_b) - H_b(x_b)] - H_bp(x_b) - H_b(x_b)]
+                     =  (de[bp][a] - de[ap][a]) + (de[ap][b] - de[bp][b])    */
+            ediff = (de[bp][a] - de[ap][a]) + (de[ap][b] - de[bp][b]);
+            delta = ediff*beta[a]; /* assume all same temperature in this case */
+            break;
+        case ereTL:
+            /* not permuted:  */
+            /* delta =  reduced E_new - reduced E_old
+                     =  [beta_b H_b(x_a) + beta_a H_a(x_b)] - [beta_b H_b(x_b) + beta_a H_a(x_a)]
+                     =  [beta_b H_b(x_a) - beta_a H_a(x_a)] + [beta_a H_a(x_b) - beta_b H_b(x_b)]
+                     =  [beta_b dH_b(x_a) + beta_b H_a(x_a) - beta_a H_a(x_a)] +
+                        [beta_a dH_a(x_b) + beta_a H_b(x_b) - beta_b H_b(x_b)]
+                     =  [beta_b dH_b(x_a) + [beta_a dH_a(x_b) +
+                        beta_b (H_a(x_a) - H_b(x_b)]) - beta_a (H_a(x_a) - H_b(x_b))
+                     =  beta_b dH_b(x_a) + beta_a dH_a(x_b) - (beta_b - beta_a)(H_b(x_b) - H_a(x_a) */
+            /* delta = beta[b]*de[b][a] + beta[a]*de[a][b] - (beta[b] - beta[a])*(Epot[b] - Epot[a]; */
+            /* permuted (big breath!) */
+            /*   delta =  reduced E_new - reduced E_old
+                     =  [beta_bp H_bp(x_a) + beta_ap H_ap(x_b)] - [beta_bp H_bp(x_b) + beta_ap H_ap(x_a)]
+                     =  [beta_bp H_bp(x_a) - beta_ap H_ap(x_a)] + [beta_ap H_ap(x_b) - beta_bp H_bp(x_b)]
+                     =  [beta_bp H_bp(x_a) - beta_ap H_ap(x_a)] + [beta_ap H_ap(x_b) - beta_bp H_bp(x_b)]
+                        - beta_pb H_a(x_a) + beta_ap H_a(x_a) + beta_pb H_a(x_a) - beta_ap H_a(x_a)
+                        - beta_ap H_b(x_b) + beta_bp H_b(x_b) + beta_ap H_b(x_b) - beta_bp H_b(x_b)
+                     =  [(beta_bp H_bp(x_a) - beta_bp H_a(x_a)) - (beta_ap H_ap(x_a) - beta_ap H_a(x_a))] +
+                        [(beta_ap H_ap(x_b)  - beta_ap H_b(x_b)) - (beta_bp H_bp(x_b) - beta_bp H_b(x_b))]
+                        + beta_pb H_a(x_a) - beta_ap H_a(x_a) + beta_ap H_b(x_b) - beta_bp H_b(x_b)
+                     =  [beta_bp (H_bp(x_a) - H_a(x_a)) - beta_ap (H_ap(x_a) - H_a(x_a))] +
+                        [beta_ap (H_ap(x_b) - H_b(x_b)) - beta_bp (H_bp(x_b) - H_b(x_b))]
+                        + beta_pb (H_a(x_a) - H_b(x_b))  - beta_ap (H_a(x_a) - H_b(x_b))
+                     =  ([beta_bp de[bp][a] - beta_ap de[ap][a]) + beta_ap de[ap][b]  - beta_bp de[bp][b])
+                     + (beta_pb-beta_ap)(H_a(x_a) - H_b(x_b))  */
+            delta = beta[bp]*(de[bp][a] - de[bp][b]) + beta[ap]*(de[ap][b] - de[ap][a]) - (beta[bp]-beta[ap])*(Epot[b]-Epot[a]);
+            break;
+        default:
+            gmx_incons("Unknown replica exchange quantity");
     }
     if (bPrint)
     {
@@ -844,7 +849,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
     {
         /* revist the calculation for 5.0.  Might be some improvements. */
         dpV = (beta[ap]*re->pres[ap]-beta[bp]*re->pres[bp])*(Vol[b]-Vol[a])/PRESFAC;
-        if (bPrint) 
+        if (bPrint)
         {
             fprintf(fplog,"  dpV = %10.3e  d = %10.3e\nb",dpV,delta + dpV);
         }
@@ -877,7 +882,7 @@ test_for_replica_exchange(FILE *fplog,
 
     if (re->bNPT)
     {
-        for (i=0;i<re->nrepl;i++)
+        for (i=0; i<re->nrepl; i++)
         {
             re->Vol[i] = 0;
         }
@@ -886,21 +891,21 @@ test_for_replica_exchange(FILE *fplog,
     }
     if ((re->type == ereTEMP || re->type == ereTL))
     {
-        for (i=0;i<re->nrepl;i++)
+        for (i=0; i<re->nrepl; i++)
         {
             re->Epot[i] = 0;
         }
         bEpot = TRUE;
         re->Epot[re->repl] = enerd->term[F_EPOT];
         /* temperatures of different states*/
-        for (i=0;i<re->nrepl;i++)
+        for (i=0; i<re->nrepl; i++)
         {
             re->beta[i] = 1.0/(re->q[ereTEMP][i]*BOLTZ);
         }
     }
     else
     {
-        for (i=0;i<re->nrepl;i++)
+        for (i=0; i<re->nrepl; i++)
         {
             re->beta[i] = 1.0/(re->temp*BOLTZ);  /* we have a single temperature */
         }
@@ -911,14 +916,14 @@ test_for_replica_exchange(FILE *fplog,
         /* lambda differences. */
         /* de[i][j] is the energy of the jth simulation in the ith Hamiltonian
            minus the energy of the jth simulation in the jth Hamiltonian */
-        for (i=0;i<re->nrepl;i++)
+        for (i=0; i<re->nrepl; i++)
         {
-            for (j=0;j<re->nrepl;j++)
+            for (j=0; j<re->nrepl; j++)
             {
                 re->de[i][j] = 0;
             }
         }
-        for (i=0;i<re->nrepl;i++)
+        for (i=0; i<re->nrepl; i++)
         {
             re->de[i][re->repl] = (enerd->enerpart_lambda[(int)re->q[ereLAMBDA][i]+1]-enerd->enerpart_lambda[0]);
         }
@@ -935,14 +940,14 @@ test_for_replica_exchange(FILE *fplog,
     }
     if (bDLambda)
     {
-        for (i=0;i<re->nrepl;i++)
+        for (i=0; i<re->nrepl; i++)
         {
             gmx_sum_sim(re->nrepl,re->de[i],ms);
         }
     }
 
     /* make a duplicate set of indices for shuffling */
-    for(i=0;i<re->nrepl;i++)
+    for (i=0; i<re->nrepl; i++)
     {
         pind[i] = re->ind[i];
     }
@@ -950,7 +955,7 @@ test_for_replica_exchange(FILE *fplog,
     if (bMultiEx)
     {
         /* multiple random switch exchange */
-        for (i=0;i<re->nex;i++)
+        for (i=0; i<re->nex; i++)
         {
             /* randomly select a pair  */
             /* find out which state it is from, and what label that state currently has */
@@ -1008,16 +1013,17 @@ test_for_replica_exchange(FILE *fplog,
     {
         /* standard nearest neighbor replica exchange */
         m = (step / re->nst) % 2;
-        for(i=1; i<re->nrepl; i++)
+        for (i=1; i<re->nrepl; i++)
         {
             a = re->ind[i-1];
             b = re->ind[i];
-            
+
             bPrint = (re->repl==a || re->repl==b);
             if (i % 2 == m)
             {
                 delta = calc_delta(fplog,bPrint,re,a,b,a,b);
-                if (delta <= 0) {
+                if (delta <= 0)
+                {
                     /* accepted */
                     prob[i] = 1;
                     bEx[i] = TRUE;
@@ -1060,7 +1066,7 @@ test_for_replica_exchange(FILE *fplog,
     }
 
     /* record which moves were made and accepted */
-    for (i=0;i<re->nrepl;i++)
+    for (i=0; i<re->nrepl; i++)
     {
         re->nmoves[re->ind[i]][pind[i]] +=1;
         re->nmoves[pind[i]][re->ind[i]] +=1;
@@ -1073,7 +1079,7 @@ static void write_debug_x(t_state *state)
 
     if (debug)
     {
-        for(i=0; i<state->natoms; i+=10)
+        for (i=0; i<state->natoms; i+=10)
         {
             fprintf(debug,"dx %5d %10.5f %10.5f %10.5f\n",i,state->x[i][XX],state->x[i][YY],state->x[i][ZZ]);
         }
@@ -1091,11 +1097,11 @@ cyclic_decomposition(FILE *fplog,
 
     int i,j,c,p;
     int maxlen = 1;
-    for (i=0;i<nrepl;i++)
+    for (i=0; i<nrepl; i++)
     {
         incycle[i] = FALSE;
     }
-    for (i=0;i<nrepl;i++)  /* one cycle for each replica */
+    for (i=0; i<nrepl; i++) /* one cycle for each replica */
     {
         if (incycle[i])
         {
@@ -1106,7 +1112,7 @@ cyclic_decomposition(FILE *fplog,
         incycle[i] = TRUE;
         c = 1;
         p = i;
-        for (j=0;j<nrepl;j++)  /* potentially all cycles are part, but we will break first */
+        for (j=0; j<nrepl; j++) /* potentially all cycles are part, but we will break first */
         {
             p = destinations[p]; /* start permuting */
             if (p==i)
@@ -1130,10 +1136,10 @@ cyclic_decomposition(FILE *fplog,
 
     if (debug)
     {
-        for (i=0;i<nrepl;i++)
+        for (i=0; i<nrepl; i++)
         {
             fprintf(debug,"Cycle %d:",i);
-            for (j=0;j<nrepl;j++)
+            for (j=0; j<nrepl; j++)
             {
                 if (cyclic[i][j] < 0)
                 {
@@ -1156,9 +1162,9 @@ compute_exchange_order(FILE *fplog,
 {
     int i,j;
 
-    for (j=0;j<maxswap;j++)
+    for (j=0; j<maxswap; j++)
     {
-        for (i=0;i<nrepl;i++)
+        for (i=0; i<nrepl; i++)
         {
             if (cyclic[i][j+1] >= 0)
             {
@@ -1166,7 +1172,7 @@ compute_exchange_order(FILE *fplog,
                 order[cyclic[i][j]][j] = cyclic[i][j+1];
             }
         }
-        for (i=0;i<nrepl;i++)
+        for (i=0; i<nrepl; i++)
         {
             if (order[i][j] < 0)
             {
@@ -1178,12 +1184,12 @@ compute_exchange_order(FILE *fplog,
     if (debug)
     {
         fprintf(fplog,"Replica Exchange Order\n");
-        for (i=0;i<nrepl;i++)
+        for (i=0; i<nrepl; i++)
         {
             fprintf(fplog,"Replica %d:",i);
-            for (j=0;j<maxswap;j++)
+            for (j=0; j<maxswap; j++)
             {
-                if (order[i][j] < 0) break;
+                if (order[i][j] < 0) { break; }
                 fprintf(debug,"%2d",order[i][j]);
             }
             fprintf(fplog,"\n");
@@ -1211,7 +1217,8 @@ prepare_to_do_exchange(FILE *fplog,
 
     for (i = 0; i < nrepl; i++)
     {
-        if (destinations[i] != i) {
+        if (destinations[i] != i)
+        {
             /* only mark as exchanged if the index has been shuffled */
             bAnyReplicaExchanged = TRUE;
             break;
@@ -1298,7 +1305,7 @@ gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re
                 pd_collect_state(cr,state);
             }
         }
-        
+
         if (MASTER(cr))
         {
             /* There will be only one swap cycle with standard replica
@@ -1332,7 +1339,7 @@ gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re
         {
             /* Copy the global state to the local state data structure */
             copy_state_nonatomdata(state,state_local);
-            
+
             if (PAR(cr))
             {
                 bcast_state(cr,state,FALSE);
@@ -1355,7 +1362,7 @@ void print_replica_exchange_statistics(FILE *fplog,struct gmx_repl_ex *re)
                 re->nattempt[0]+re->nattempt[1],re->nattempt[1],re->nattempt[0]);
 
         fprintf(fplog,"Repl  average probabilities:\n");
-        for(i=1; i<re->nrepl; i++)
+        for (i=1; i<re->nrepl; i++)
         {
             if (re->nattempt[i%2] == 0)
             {
@@ -1374,7 +1381,7 @@ void print_replica_exchange_statistics(FILE *fplog,struct gmx_repl_ex *re)
         print_count(fplog,"",re->nrepl,re->nexchange);
 
         fprintf(fplog,"Repl  average number of exchanges:\n");
-        for(i=1; i<re->nrepl; i++) 
+        for (i=1; i<re->nrepl; i++)
         {
             if (re->nattempt[i%2] == 0)
             {

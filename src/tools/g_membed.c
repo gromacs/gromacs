@@ -46,8 +46,8 @@
 int
 main(int argc, char *argv[])
 {
-  gmx_membed(argc,argv);
-  return 0;
+    gmx_membed(argc,argv);
+    return 0;
 }
 
 

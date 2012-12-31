@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team,
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -115,10 +115,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double     run_time;
     double     t,t0,lam0;
     gmx_bool       bSimAnn,
-    bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
+                   bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
     gmx_bool       bInitStep=TRUE;
     gmx_bool       do_ene,do_log, do_verbose,
-    bX,bV,bF,bCPT;
+                   bX,bV,bF,bCPT;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
     int        mdof_flags;
@@ -145,7 +145,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     matrix      lastbox;
     real        reset_counters=0,reset_counters_now=0;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    int         handled_stop_condition=gmx_stop_cond_none; 
+    int         handled_stop_condition=gmx_stop_cond_none;
 
     const char *ommOptions = NULL;
     void   *openmmData;
@@ -328,7 +328,9 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
     wallcycle_start(wcycle,ewcRUN);
     if (fplog)
+    {
         fprintf(fplog,"\n");
+    }
 
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
 
@@ -441,7 +443,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
-                    (Flags & MD_CONFOUT) && MASTER(cr))
+                (Flags & MD_CONFOUT) && MASTER(cr))
             {
                 /* x and v have been collected in write_traj,
                  * because a checkpoint file will always be written
@@ -470,17 +472,21 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 #ifdef GMX_THREAD_MPI
             && MASTER(cr)
 #endif
-            )
+           )
         {
-           /* this is just make gs.sig compatible with the hack 
-               of sending signals around by MPI_Reduce with together with
-               other floats */
+            /* this is just make gs.sig compatible with the hack
+                of sending signals around by MPI_Reduce with together with
+                other floats */
             /* NOTE: this only works for serial code. For code that allows
                MPI nodes to propagate their condition, see kernel/md.c*/
             if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
+            {
                 gs.set[eglsSTOPCOND]=1;
+            }
             if ( gmx_get_stop_condition() == gmx_stop_cond_next )
+            {
                 gs.set[eglsSTOPCOND]=1;
+            }
             /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
@@ -514,7 +520,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (MASTER(cr) && (cpt_period >= 0 &&
                            (cpt_period == 0 ||
                             run_time >= nchkpt*cpt_period*60.0)) &&
-                gs.set[eglsCHKPT] == 0)
+            gs.set[eglsCHKPT] == 0)
         {
             gs.set[eglsCHKPT] = 1;
         }
@@ -555,7 +561,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (MASTER(cr))
     {
-        if (ir->nstcalcenergy > 0) 
+        if (ir->nstcalcenergy > 0)
         {
             print_ebin(outf->fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
                        eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));

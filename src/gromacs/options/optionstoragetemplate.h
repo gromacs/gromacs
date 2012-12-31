@@ -327,7 +327,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         {
             values_->clear();
             int count = (settings.isVector() ?
-                            settings.maxValueCount_ : settings.minValueCount_);
+                         settings.maxValueCount_ : settings.minValueCount_);
             for (int i = 0; i < count; ++i)
             {
                 values_->push_back(store_[i]);

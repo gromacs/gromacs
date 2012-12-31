@@ -40,46 +40,47 @@
 extern "C" {
 #endif
 
-typedef struct {
-    /* VdW */
-    real rvdw;
-    real sh_invrc6; /* For shifting the LJ potential */
+    typedef struct
+    {
+        /* VdW */
+        real rvdw;
+        real sh_invrc6; /* For shifting the LJ potential */
 
-    /* type of electrostatics (defined in enums.h) */
-    int  eeltype;
+        /* type of electrostatics (defined in enums.h) */
+        int  eeltype;
 
-    /* Coulomb */
-    real rcoulomb;
+        /* Coulomb */
+        real rcoulomb;
 
-    /* Cut-off */
-    real rlist;
-    real rlistlong;
-    
-    /* PME/Ewald */
-    real ewaldcoeff;
-    real sh_ewald;   /* For shifting the Ewald potential */
+        /* Cut-off */
+        real rlist;
+        real rlistlong;
 
-    /* Dielectric constant resp. multiplication factor for charges */
-    real epsilon_r;
-    real epsfac;
+        /* PME/Ewald */
+        real ewaldcoeff;
+        real sh_ewald;   /* For shifting the Ewald potential */
 
-    /* Constants for reaction-field or plain cut-off */
-    real epsilon_rf;
-    real k_rf;
-    real c_rf;
+        /* Dielectric constant resp. multiplication factor for charges */
+        real epsilon_r;
+        real epsfac;
 
-    /* Force/energy interpolation tables, linear in force, quadratic in V */
-    real tabq_scale;
-    int  tabq_size;
-    /* Coulomb force table, size of array is tabq_size (when used) */
-    real *tabq_coul_F;
-    /* Coulomb energy table, size of array is tabq_size (when used) */
-    real *tabq_coul_V;
-    /* Coulomb force+energy table, size of array is tabq_size*4,
-       entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
-       this is used with single precision x86 SIMD for aligned loads */
-    real *tabq_coul_FDV0;
-} interaction_const_t;
+        /* Constants for reaction-field or plain cut-off */
+        real epsilon_rf;
+        real k_rf;
+        real c_rf;
+
+        /* Force/energy interpolation tables, linear in force, quadratic in V */
+        real tabq_scale;
+        int  tabq_size;
+        /* Coulomb force table, size of array is tabq_size (when used) */
+        real *tabq_coul_F;
+        /* Coulomb energy table, size of array is tabq_size (when used) */
+        real *tabq_coul_V;
+        /* Coulomb force+energy table, size of array is tabq_size*4,
+           entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
+           this is used with single precision x86 SIMD for aligned loads */
+        real *tabq_coul_FDV0;
+    } interaction_const_t;
 
 #ifdef __cplusplus
 }

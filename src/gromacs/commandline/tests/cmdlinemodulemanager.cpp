@@ -135,7 +135,8 @@ CommandLineModuleManagerTest::addHelpTopic(const char *name, const char *title)
 
 TEST_F(CommandLineModuleManagerTest, RunsModule)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "g_test", "module", "-flag", "yes"
     };
     CommandLine args(CommandLine::create(cmdline));
@@ -146,7 +147,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     using ::testing::Args;
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+    .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
@@ -154,7 +155,8 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "g_test", "help", "module"
     };
     CommandLine args(CommandLine::create(cmdline));
@@ -170,7 +172,8 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 
 TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "g_test", "help", "topic"
     };
     CommandLine args(CommandLine::create(cmdline));
@@ -186,7 +189,8 @@ TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "g_module", "-flag", "yes"
     };
     CommandLine args(CommandLine::create(cmdline));
@@ -197,7 +201,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
     using ::testing::Args;
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
+    .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
     ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
@@ -205,7 +209,8 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffix)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
     };
     CommandLine args(CommandLine::create(cmdline));
@@ -216,7 +221,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
     using ::testing::Args;
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
+    .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
     ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
@@ -224,7 +229,8 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
 
 TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "g_test", "test", "-flag", "yes"
     };
     CommandLine args(CommandLine::create(cmdline));
@@ -235,7 +241,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     using ::testing::Args;
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+    .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);

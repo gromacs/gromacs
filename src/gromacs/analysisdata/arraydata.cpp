@@ -66,8 +66,8 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
     std::vector<AnalysisDataValue>::const_iterator begin
         = value_.begin() + index * columnCount();
     return AnalysisDataFrameRef(
-                AnalysisDataFrameHeader(index, xvalue(index), 0.0),
-                AnalysisDataValuesRef(begin, begin + columnCount()));
+               AnalysisDataFrameHeader(index, xvalue(index), 0.0),
+               AnalysisDataValuesRef(begin, begin + columnCount()));
 }
 
 
@@ -138,8 +138,8 @@ AbstractAnalysisArrayData::valuesReady()
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         notifyFrameStart(header);
         notifyPointsAdd(AnalysisDataPointSetRef(header, 0,
-                            AnalysisDataValuesRef(valueIter,
-                                                  valueIter + columnCount())));
+                                                AnalysisDataValuesRef(valueIter,
+                                                        valueIter + columnCount())));
         notifyFrameFinish(header);
     }
     notifyDataFinish();

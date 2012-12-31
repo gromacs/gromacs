@@ -39,8 +39,8 @@
 extern "C" {
 #endif
 
-/* abstract data type for membed variables needed in do_md */
-typedef struct membed *gmx_membed_t;
+    /* abstract data type for membed variables needed in do_md */
+    typedef struct membed *gmx_membed_t;
 
 #ifdef __cplusplus
 }

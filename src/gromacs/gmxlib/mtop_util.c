@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -35,12 +35,12 @@ static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop,int maxres_renum)
 
     maxresnr = 0;
 
-    for(mt=0; mt<mtop->nmoltype; mt++)
+    for (mt=0; mt<mtop->nmoltype; mt++)
     {
         atoms = &mtop->moltype[mt].atoms;
         if (atoms->nres > maxres_renum)
         {
-            for(r=0; r<atoms->nres; r++)
+            for (r=0; r<atoms->nres; r++)
             {
                 if (atoms->resinfo[r].nr > maxresnr)
                 {
@@ -58,7 +58,7 @@ void gmx_mtop_finalize(gmx_mtop_t *mtop)
     char *env;
 
     mtop->maxres_renum = 1;
-    
+
     env = getenv("GMX_MAXRESRENUM");
     if (env != NULL)
     {
@@ -77,15 +77,15 @@ int ncg_mtop(const gmx_mtop_t *mtop)
 {
     int ncg;
     int mb;
-    
+
     ncg = 0;
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         ncg +=
             mtop->molblock[mb].nmol*
             mtop->moltype[mtop->molblock[mb].type].cgs.nr;
     }
-    
+
     return ncg;
 }
 
@@ -95,14 +95,14 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     t_block *cgs;
     int i;
 
-    for(mt=0; mt<mtop->nmoltype; mt++)
+    for (mt=0; mt<mtop->nmoltype; mt++)
     {
         cgs = &mtop->moltype[mt].cgs;
         if (cgs->nr < mtop->moltype[mt].atoms.nr)
         {
             cgs->nr = mtop->moltype[mt].atoms.nr;
             srenew(cgs->index,cgs->nr+1);
-            for(i=0; i<cgs->nr+1; i++)
+            for (i=0; i<cgs->nr+1; i++)
             {
                 cgs->index[i] = i;
             }
@@ -142,7 +142,7 @@ gmx_mtop_atomlookup_init(const gmx_mtop_t *mtop)
     snew(alook->mba,alook->nmb);
 
     a_start = 0;
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         na    = mtop->molblock[mb].nmol*mtop->molblock[mb].natoms_mol;
         a_end = a_start + na;
@@ -167,37 +167,37 @@ gmx_mtop_atomlookup_init(const gmx_mtop_t *mtop)
 gmx_mtop_atomlookup_t
 gmx_mtop_atomlookup_settle_init(const gmx_mtop_t *mtop)
 {
-     t_gmx_mtop_atomlookup *alook;
-     int mb;
-     int na,na_start=-1;
+    t_gmx_mtop_atomlookup *alook;
+    int mb;
+    int na,na_start=-1;
 
-     alook = gmx_mtop_atomlookup_init(mtop);
+    alook = gmx_mtop_atomlookup_init(mtop);
 
-     /* Check if the starting molblock has settle */
-     if (mtop->moltype[mtop->molblock[alook->mb_start].type].ilist[F_SETTLE].nr  == 0)
-     {
-         /* Search the largest molblock with settle */
-         alook->mb_start = -1;
-         for(mb=0; mb<mtop->nmolblock; mb++)
-         {
-             if (mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE].nr > 0)
-             {
-                 na = alook->mba[mb].a_end - alook->mba[mb].a_start;
-                 if (alook->mb_start == -1 || na > na_start)
-                 {
-                     alook->mb_start = mb;
-                     na_start        = na;
-                 }
-             }
-         }
+    /* Check if the starting molblock has settle */
+    if (mtop->moltype[mtop->molblock[alook->mb_start].type].ilist[F_SETTLE].nr  == 0)
+    {
+        /* Search the largest molblock with settle */
+        alook->mb_start = -1;
+        for (mb=0; mb<mtop->nmolblock; mb++)
+        {
+            if (mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE].nr > 0)
+            {
+                na = alook->mba[mb].a_end - alook->mba[mb].a_start;
+                if (alook->mb_start == -1 || na > na_start)
+                {
+                    alook->mb_start = mb;
+                    na_start        = na;
+                }
+            }
+        }
 
-         if (alook->mb_start == -1)
-         {
-             gmx_incons("gmx_mtop_atomlookup_settle_init called without settles");
-         }
-     }
+        if (alook->mb_start == -1)
+        {
+            gmx_incons("gmx_mtop_atomlookup_settle_init called without settles");
+        }
+    }
 
-     return alook;
+    return alook;
 }
 
 void
@@ -225,7 +225,7 @@ void gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
     mb0 = -1;
     mb1 = alook->nmb;
     mb  = alook->mb_start;
-        
+
     while (TRUE)
     {
         a_start = alook->mba[mb].a_start;
@@ -243,7 +243,7 @@ void gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
         }
         mb = ((mb0 + mb1 + 1)>>1);
     }
-    
+
     atnr_mol = (atnr_global - a_start) % alook->mba[mb].na_mol;
 
     *atom = &alook->mtop->moltype[alook->mtop->molblock[mb].type].atoms.atom[atnr_mol];
@@ -267,7 +267,7 @@ void gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
     mb0 = -1;
     mb1 = alook->nmb;
     mb  = alook->mb_start;
-        
+
     while (TRUE)
     {
         a_start = alook->mba[mb].a_start;
@@ -287,7 +287,7 @@ void gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
     }
 
     *ilist_mol = alook->mtop->moltype[alook->mtop->molblock[mb].type].ilist;
-    
+
     atnr_local = (atnr_global - a_start) % alook->mba[mb].na_mol;
 
     *atnr_offset = atnr_global - atnr_local;
@@ -311,7 +311,7 @@ void gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
     mb0 = -1;
     mb1 = alook->nmb;
     mb  = alook->mb_start;
-        
+
     while (TRUE)
     {
         a_start = alook->mba[mb].a_start;
@@ -341,13 +341,13 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
     int mb,a_start,a_end,maxresnr,at_loc;
     gmx_molblock_t *molb;
     t_atoms *atoms=NULL;
-    
+
     if (atnr_global < 0 || atnr_global >= mtop->natoms)
     {
         gmx_fatal(FARGS,"gmx_mtop_atominfo_global was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
                   atnr_global,0,mtop->natoms-1);
     }
-    
+
     mb = -1;
     a_end = 0;
     maxresnr = mtop->maxresnr;
@@ -418,7 +418,7 @@ static void gmx_mtop_atomloop_all_destroy(gmx_mtop_atomloop_all_t aloop)
 }
 
 gmx_bool gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
-                                int *at_global,t_atom **atom)
+                                    int *at_global,t_atom **atom)
 {
     if (aloop == NULL)
     {
@@ -507,7 +507,7 @@ static void gmx_mtop_atomloop_block_destroy(gmx_mtop_atomloop_block_t aloop)
 }
 
 gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                                  t_atom **atom,int *nmol)
+                                      t_atom **atom,int *nmol)
 {
     if (aloop == NULL)
     {
@@ -527,10 +527,10 @@ gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
         aloop->atoms = &aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type].atoms;
         aloop->at_local = 0;
     }
-    
+
     *atom = &aloop->atoms->atom[aloop->at_local];
     *nmol = aloop->mtop->molblock[aloop->mblock].nmol;
-   
+
     return TRUE;
 }
 
@@ -559,7 +559,7 @@ static void gmx_mtop_ilistloop_destroy(gmx_mtop_ilistloop_t iloop)
 }
 
 gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-                             t_ilist **ilist_mol,int *nmol)
+                                 t_ilist **ilist_mol,int *nmol)
 {
     if (iloop == NULL)
     {
@@ -609,7 +609,7 @@ static void gmx_mtop_ilistloop_all_destroy(gmx_mtop_ilistloop_all_t iloop)
 }
 
 gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
-                                 t_ilist **ilist_mol,int *atnr_offset)
+                                     t_ilist **ilist_mol,int *atnr_offset)
 {
     gmx_molblock_t *molb;
 
@@ -617,7 +617,7 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
     {
         gmx_incons("gmx_mtop_ilistloop_all_next called without calling gmx_mtop_ilistloop_all_init");
     }
-    
+
     if (iloop->mol >= 0)
     {
         iloop->a_offset += iloop->mtop->molblock[iloop->mblock].natoms_mol;
@@ -625,7 +625,8 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
 
     iloop->mol++;
 
-    if (iloop->mol >= iloop->mtop->molblock[iloop->mblock].nmol) {
+    if (iloop->mol >= iloop->mtop->molblock[iloop->mblock].nmol)
+    {
         iloop->mblock++;
         iloop->mol = 0;
         if (iloop->mblock == iloop->mtop->nmolblock)
@@ -634,7 +635,7 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
             return FALSE;
         }
     }
-    
+
     *ilist_mol =
         iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
 
@@ -666,19 +667,19 @@ t_block gmx_mtop_global_cgs(const gmx_mtop_t *mtop)
     int mb,mol,cg;
     gmx_molblock_t *molb;
     t_atoms *atoms;
-    
+
     /* In most cases this is too much, but we realloc at the end */
     snew(cgs_gl.index,mtop->natoms+1);
-    
+
     cgs_gl.nr       = 0;
     cgs_gl.index[0] = 0;
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         molb    = &mtop->molblock[mb];
         cgs_mol = &mtop->moltype[molb->type].cgs;
-        for(mol=0; mol<molb->nmol; mol++)
+        for (mol=0; mol<molb->nmol; mol++)
         {
-            for(cg=0; cg<cgs_mol->nr; cg++)
+            for (cg=0; cg<cgs_mol->nr; cg++)
             {
                 cgs_gl.index[cgs_gl.nr+1] =
                     cgs_gl.index[cgs_gl.nr] +
@@ -713,14 +714,14 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
         size=dest->nres+copies*src->nres;
         srenew(dest->resinfo,size);
     }
-    
+
     /* residue information */
     for (l=dest->nres,j=0; (j<copies); j++,l+=src->nres)
     {
         memcpy((char *) &(dest->resinfo[l]),(char *) &(src->resinfo[0]),
                (size_t)(src->nres*sizeof(src->resinfo[0])));
     }
-    
+
     for (l=destnr,j=0; (j<copies); j++,l+=srcnr)
     {
         memcpy((char *) &(dest->atomname[l]),(char *) &(src->atomname[0]),
@@ -732,7 +733,7 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
         memcpy((char *) &(dest->atom[l]),(char *) &(src->atom[0]),
                (size_t)(srcnr*sizeof(src->atom[0])));
     }
-    
+
     /* Increment residue indices */
     for (l=destnr,j=0; (j<copies); j++)
     {
@@ -740,8 +741,8 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
         {
             dest->atom[l].resind = dest->nres+j*src->nres+src->atom[i].resind;
         }
-    }    
-    
+    }
+
     if (src->nres <= maxres_renum)
     {
         /* Single residue molecule, continue counting residues */
@@ -754,7 +755,7 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
             }
         }
     }
-    
+
     dest->nres += copies*src->nres;
     dest->nr   += copies*src->nr;
 }
@@ -768,13 +769,13 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
     init_t_atoms(&atoms,0,FALSE);
 
     maxresnr = mtop->maxresnr;
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         molb = &mtop->molblock[mb];
         atomcat(&atoms,&mtop->moltype[molb->type].atoms,molb->nmol,
                 mtop->maxres_renum,&maxresnr);
     }
-    
+
     return atoms;
 }
 
@@ -783,8 +784,8 @@ void gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,
 {
     int     mb,cg;
     t_block *cgs_mol;
-    
-    for(mb=0; mb<mtop->nmolblock; mb++)
+
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         cgs_mol = &mtop->moltype[mtop->molblock[mb].type].cgs;
         if (!(bKeepSingleMolCG && cgs_mol->nr == 1))
@@ -792,7 +793,7 @@ void gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,
             cgs_mol->nr           = mtop->molblock[mb].natoms_mol;
             cgs_mol->nalloc_index = cgs_mol->nr + 1;
             srenew(cgs_mol->index,cgs_mol->nalloc_index);
-            for(cg=0; cg<cgs_mol->nr+1; cg++)
+            for (cg=0; cg<cgs_mol->nr+1; cg++)
             {
                 cgs_mol->index[cg] = cg;
             }
@@ -802,19 +803,19 @@ void gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,
 
 /*
  * The cat routines below are old code from src/kernel/topcat.c
- */ 
+ */
 
-static void blockcat(t_block *dest,t_block *src,int copies, 
+static void blockcat(t_block *dest,t_block *src,int copies,
                      int dnum,int snum)
 {
     int i,j,l,nra,size;
-    
+
     if (src->nr)
     {
         size=(dest->nr+copies*src->nr+1);
         srenew(dest->index,size);
     }
-    
+
     nra = dest->index[dest->nr];
     for (l=dest->nr,j=0; (j<copies); j++)
     {
@@ -828,13 +829,13 @@ static void blockcat(t_block *dest,t_block *src,int copies,
     dest->index[dest->nr] = nra;
 }
 
-static void blockacat(t_blocka *dest,t_blocka *src,int copies, 
+static void blockacat(t_blocka *dest,t_blocka *src,int copies,
                       int dnum,int snum)
 {
     int i,j,l,size;
     int destnr  = dest->nr;
     int destnra = dest->nra;
-    
+
     if (src->nr)
     {
         size=(dest->nr+copies*src->nr+1);
@@ -845,7 +846,7 @@ static void blockacat(t_blocka *dest,t_blocka *src,int copies,
         size=(dest->nra+copies*src->nra);
         srenew(dest->a,size);
     }
-    
+
     for (l=destnr,j=0; (j<copies); j++)
     {
         for (i=0; (i<src->nr); i++)
@@ -866,7 +867,7 @@ static void blockacat(t_blocka *dest,t_blocka *src,int copies,
     dest->index[dest->nr] = dest->nra;
 }
 
-static void ilistcat(int ftype,t_ilist *dest,t_ilist *src,int copies, 
+static void ilistcat(int ftype,t_ilist *dest,t_ilist *src,int copies,
                      int dnum,int snum)
 {
     int nral,c,i,a;
@@ -876,12 +877,12 @@ static void ilistcat(int ftype,t_ilist *dest,t_ilist *src,int copies,
     dest->nalloc = dest->nr + copies*src->nr;
     srenew(dest->iatoms,dest->nalloc);
 
-    for(c=0; c<copies; c++)
+    for (c=0; c<copies; c++)
     {
-        for(i=0; i<src->nr; )
+        for (i=0; i<src->nr; )
         {
             dest->iatoms[dest->nr++] = src->iatoms[i++];
-            for(a=0; a<nral; a++)
+            for (a=0; a<nral; a++)
             {
                 dest->iatoms[dest->nr++] = dnum + src->iatoms[i++];
             }
@@ -901,7 +902,7 @@ static void set_posres_params(t_idef *idef,gmx_molblock_t *molb,
     i1 = il->nr/2;
     idef->iparams_posres_nalloc = i1;
     srenew(idef->iparams_posres,idef->iparams_posres_nalloc);
-    for(i=i0; i<i1; i++)
+    for (i=i0; i<i1; i++)
     {
         ip = &idef->iparams_posres[i];
         /* Copy the force constants */
@@ -932,7 +933,7 @@ static void set_posres_params(t_idef *idef,gmx_molblock_t *molb,
 }
 
 static void set_fbposres_params(t_idef *idef,gmx_molblock_t *molb,
-                              int i0,int a_offset)
+                                int i0,int a_offset)
 {
     t_ilist *il;
     int i1,i,a_molb;
@@ -942,7 +943,7 @@ static void set_fbposres_params(t_idef *idef,gmx_molblock_t *molb,
     i1 = il->nr/2;
     idef->iparams_fbposres_nalloc = i1;
     srenew(idef->iparams_fbposres,idef->iparams_fbposres_nalloc);
-    for(i=i0; i<i1; i++)
+    for (i=i0; i<i1; i++)
     {
         ip = &idef->iparams_fbposres[i];
         /* Copy the force constants */
@@ -978,9 +979,9 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     t_atom *atom;
 
     top->atomtypes = mtop->atomtypes;
-    
+
     ffp = &mtop->ffparams;
-    
+
     idef = &top->idef;
     idef->ntypes   = ffp->ntypes;
     idef->atnr     = ffp->atnr;
@@ -996,7 +997,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
 
     init_block(&top->cgs);
     init_blocka(&top->excls);
-    for(ftype=0; ftype<F_NRE; ftype++)
+    for (ftype=0; ftype<F_NRE; ftype++)
     {
         idef->il[ftype].nr     = 0;
         idef->il[ftype].nalloc = 0;
@@ -1004,21 +1005,21 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     }
 
     natoms = 0;
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         molb = &mtop->molblock[mb];
         molt = &mtop->moltype[molb->type];
-        
+
         srcnr  = molt->atoms.nr;
         destnr = natoms;
-        
+
         blockcat(&top->cgs,&molt->cgs,molb->nmol,destnr,srcnr);
 
         blockacat(&top->excls,&molt->excls,molb->nmol,destnr,srcnr);
 
         nposre_old = idef->il[F_POSRES].nr;
         nfbposre_old = idef->il[F_FBPOSRES].nr;
-        for(ftype=0; ftype<F_NRE; ftype++)
+        for (ftype=0; ftype<F_NRE; ftype++)
         {
             if (bMergeConstr &&
                 ftype == F_CONSTR && molt->ilist[F_CONSTRNC].nr > 0)
@@ -1026,7 +1027,8 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
                 /* Merge all constrains into one ilist.
                  * This simplifies the constraint code.
                  */
-                for(mol=0; mol<molb->nmol; mol++) {
+                for (mol=0; mol<molb->nmol; mol++)
+                {
                     ilistcat(ftype,&idef->il[F_CONSTR],&molt->ilist[F_CONSTR],
                              1,destnr+mol*srcnr,srcnr);
                     ilistcat(ftype,&idef->il[F_CONSTR],&molt->ilist[F_CONSTRNC],
@@ -1113,13 +1115,13 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
      * Well, except for the group data, but we can't free those, because they
      * are used somewhere even after a call to this function.
      */
-    for(mt=0; mt<mtop->nmoltype; mt++)
+    for (mt=0; mt<mtop->nmoltype; mt++)
     {
         done_moltype(&mtop->moltype[mt]);
     }
     sfree(mtop->moltype);
 
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         done_molblock(&mtop->molblock[mb]);
     }

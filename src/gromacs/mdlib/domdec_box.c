@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -42,7 +42,7 @@ static void calc_cgcm_av_stddev(t_block *cgs,int n,rvec *x,rvec av,rvec stddev,
     clear_dvec(s2);
 
     cgindex = cgs->index;
-    for(cg=0; cg<n; cg++)
+    for (cg=0; cg<n; cg++)
     {
         k0      = cgindex[cg];
         k1      = cgindex[cg+1];
@@ -54,18 +54,18 @@ static void calc_cgcm_av_stddev(t_block *cgs,int n,rvec *x,rvec av,rvec stddev,
         else
         {
             inv_ncg = 1.0/nrcg;
-            
+
             clear_rvec(cg_cm);
-            for(k=k0; (k<k1); k++)
+            for (k=k0; (k<k1); k++)
             {
                 rvec_inc(cg_cm,x[k]);
             }
-            for(d=0; (d<DIM); d++)
+            for (d=0; (d<DIM); d++)
             {
                 cg_cm[d] *= inv_ncg;
             }
         }
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             s1[d] += cg_cm[d];
             s2[d] += cg_cm[d]*cg_cm[d];
@@ -74,14 +74,14 @@ static void calc_cgcm_av_stddev(t_block *cgs,int n,rvec *x,rvec av,rvec stddev,
 
     if (cr_sum != NULL)
     {
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             buf[d]     = s1[d];
             buf[DIM+d] = s2[d];
         }
         buf[6] = n;
         gmx_sumd(7,buf,cr_sum);
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             s1[d] = buf[d];
             s2[d] = buf[DIM+d];
@@ -92,7 +92,7 @@ static void calc_cgcm_av_stddev(t_block *cgs,int n,rvec *x,rvec av,rvec stddev,
     dsvmul(1.0/n,s1,s1);
     dsvmul(1.0/n,s2,s2);
 
-    for(d=0; d<DIM; d++)
+    for (d=0; d<DIM; d++)
     {
         av[d]     = s1[d];
         stddev[d] = sqrt(s2[d] - s1[d]*s1[d]);
@@ -104,13 +104,13 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
     int  npbcdim,d,i,j;
     rvec *v,*normal;
     real dep,inv_skew_fac2;
-    
+
     npbcdim = ddbox->npbcdim;
     normal  = ddbox->normal;
-    for(d=0; d<DIM; d++)
+    for (d=0; d<DIM; d++)
     {
         ddbox->tric_dir[d] = 0;
-        for(j=d+1; j<npbcdim; j++)
+        for (j=d+1; j<npbcdim; j++)
         {
             if (box[j][d] != 0)
             {
@@ -123,7 +123,7 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
                 }
             }
         }
-        
+
         /* Convert box vectors to orthogonal vectors for this dimension,
          * for use in distance calculations.
          * Set the trilinic skewing factor that translates
@@ -138,7 +138,7 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
             {
                 /* Normalize such that the "diagonal" is 1 */
                 svmul(1/box[d+1][d+1],box[d+1],v[d+1]);
-                for(i=0; i<d; i++)
+                for (i=0; i<d; i++)
                 {
                     v[d+1][i] = 0;
                 }
@@ -147,7 +147,7 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
                 {
                     /* Normalize such that the "diagonal" is 1 */
                     svmul(1/box[d+2][d+2],box[d+2],v[d+2]);
-                    for(i=0; i<d; i++)
+                    for (i=0; i<d; i++)
                     {
                         v[d+2][i] = 0;
                     }
@@ -155,12 +155,12 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
                      * this does not affect the normalization.
                      */
                     dep = iprod(v[d+1],v[d+2])/norm2(v[d+1]);
-                    for(i=0; i<DIM; i++)
+                    for (i=0; i<DIM; i++)
                     {
                         v[d+2][i] -= dep*v[d+1][i];
                     }
                     inv_skew_fac2 += sqr(v[d+2][d]);
-                    
+
                     cprod(v[d+1],v[d+2],normal[d]);
                 }
                 else
@@ -174,7 +174,7 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
                 {
                     fprintf(debug,"box[%d]  %.3f %.3f %.3f\n",
                             d,box[d][XX],box[d][YY],box[d][ZZ]);
-                    for(i=d+1; i<DIM; i++)
+                    for (i=d+1; i<DIM; i++)
                     {
                         fprintf(debug,"  v[%d]  %.3f %.3f %.3f\n",
                                 i,v[i][XX],v[i][YY],v[i][ZZ]);
@@ -196,12 +196,12 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
         else
         {
             ddbox->skew_fac[d] = 1;
-            
-            for(i=0; i<DIM; i++)
+
+            for (i=0; i<DIM; i++)
             {
                 clear_rvec(ddbox->v[d][i]);
                 ddbox->v[d][i][i] = 1;
-            }   
+            }
             clear_rvec(normal[d]);
             normal[d][d] = 1;
         }
@@ -220,7 +220,7 @@ static void low_set_ddbox(t_inputrec *ir,ivec *dd_nc,matrix box,
     ddbox->npbcdim     = ePBC2npbcdim(ir->ePBC);
     ddbox->nboundeddim = inputrec2nboundeddim(ir);
 
-    for(d=0; d<ddbox->nboundeddim; d++)
+    for (d=0; d<ddbox->nboundeddim; d++)
     {
         ddbox->box0[d]     = 0;
         ddbox->box_size[d] = box[d][d];
@@ -234,7 +234,7 @@ static void low_set_ddbox(t_inputrec *ir,ivec *dd_nc,matrix box,
          * gives a uniform load for a rectangular block of cg's.
          * For a sphere it is not a bad approximation for 4x1x1 up to 4x2x2.
          */
-        for(d=ddbox->nboundeddim; d<DIM; d++)
+        for (d=ddbox->nboundeddim; d<DIM; d++)
         {
             b0 = av[d] - GRID_STDDEV_FAC*stddev[d];
             b1 = av[d] + GRID_STDDEV_FAC*stddev[d];

@@ -81,31 +81,37 @@ void ns(FILE *fp,
         gmx_bool       bFillGrid,
         gmx_bool       bDoLongRangeNS)
 {
-  char   *ptr;
-  int    nsearch;
+    char   *ptr;
+    int    nsearch;
 
 
-  if (!fr->ns.nblist_initialized)
-  {
-      init_neighbor_list(fp, fr, md->homenr);
-  }
+    if (!fr->ns.nblist_initialized)
+    {
+        init_neighbor_list(fp, fr, md->homenr);
+    }
 
-  if (fr->bTwinRange)
-    fr->nlr=0;
+    if (fr->bTwinRange)
+    {
+        fr->nlr=0;
+    }
 
     nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
                                 lambda,dvdlambda,grppener,
                                 bFillGrid,bDoLongRangeNS);
-  if (debug)
-    fprintf(debug,"nsearch = %d\n",nsearch);
+    if (debug)
+    {
+        fprintf(debug,"nsearch = %d\n",nsearch);
+    }
 
-  /* Check whether we have to do dynamic load balancing */
-  /*if ((nsb->nstDlb > 0) && (mod(step,nsb->nstDlb) == 0))
-    count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
-    &(top->idef),opts->ngener);
-  */
-  if (fr->ns.dump_nl > 0)
-    dump_nblist(fp,cr,fr,fr->ns.dump_nl);
+    /* Check whether we have to do dynamic load balancing */
+    /*if ((nsb->nstDlb > 0) && (mod(step,nsb->nstDlb) == 0))
+      count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
+      &(top->idef),opts->ngener);
+    */
+    if (fr->ns.dump_nl > 0)
+    {
+        dump_nblist(fp,cr,fr,fr->ns.dump_nl);
+    }
 }
 
 static void reduce_thread_forces(int n,rvec *f,
@@ -117,15 +123,15 @@ static void reduce_thread_forces(int n,rvec *f,
     int t,i;
 
     /* This reduction can run over any number of threads */
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntBonded)) private(t) schedule(static)
-    for(i=0; i<n; i++)
+    #pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntBonded)) private(t) schedule(static)
+    for (i=0; i<n; i++)
     {
-        for(t=1; t<nthreads; t++)
+        for (t=1; t<nthreads; t++)
         {
             rvec_inc(f[i],f_t[t].f[i]);
         }
     }
-    for(t=1; t<nthreads; t++)
+    for (t=1; t<nthreads; t++)
     {
         *Vcorr += f_t[t].Vcorr;
         *dvdl  += f_t[t].dvdl[efpt_ind];
@@ -183,14 +189,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     set_pbc(&pbc,fr->ePBC,box);
 
     /* reset free energy components */
-    for (i=0;i<efptNR;i++)
+    for (i=0; i<efptNR; i++)
     {
         dvdl_nb[i]  = 0;
         dvdl_dum[i] = 0;
     }
 
     /* Reset box */
-    for(i=0; (i<DIM); i++)
+    for (i=0; (i<DIM); i++)
     {
         box_size[i]=box[i][i];
     }
@@ -199,7 +205,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     debug_gmx();
 
     /* do QMMM first if requested */
-    if(fr->bQMMM)
+    if (fr->bQMMM)
     {
         enerd->term[F_EQM] = calculate_QMMM(cr,x,f,fr,md);
     }
@@ -231,23 +237,23 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         enerd->dvdl_lin[efptVDW] += dvdl;
     }
 
-	/* If doing GB, reset dvda and calculate the Born radii */
-	if (ir->implicit_solvent)
-	{
+    /* If doing GB, reset dvda and calculate the Born radii */
+    if (ir->implicit_solvent)
+    {
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
 
-		for(i=0;i<born->nr;i++)
-		{
-			fr->dvda[i]=0;
-		}
+        for (i=0; i<born->nr; i++)
+        {
+            fr->dvda[i]=0;
+        }
 
-		if(bBornRadii)
-		{
-			calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md,nrnb);
-		}
+        if (bBornRadii)
+        {
+            calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md,nrnb);
+        }
 
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-	}
+    }
 
     where();
     if (flags & GMX_FORCE_NONBONDED)
@@ -271,8 +277,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
         do_nonbonded(cr,fr,x,f,f_longrange,md,excl,
-                    &enerd->grpp,box_size,nrnb,
-                    lambda,dvdl_nb,-1,-1,donb_flags);
+                     &enerd->grpp,box_size,nrnb,
+                     lambda,dvdl_nb,-1,-1,donb_flags);
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
@@ -284,9 +290,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
         init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
 
-        for(i=0; i<enerd->n_lambda; i++)
+        for (i=0; i<enerd->n_lambda; i++)
         {
-            for (j=0;j<efptNR;j++)
+            for (j=0; j<efptNR; j++)
             {
                 lam_i[j] = (i==0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
             }
@@ -303,12 +309,12 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
     where();
 
-	/* If we are doing GB, calculate bonded forces and apply corrections
-	 * to the solvation forces */
+    /* If we are doing GB, calculate bonded forces and apply corrections
+     * to the solvation forces */
     /* MRS: Eventually, many need to include free energy contribution here! */
-	if (ir->implicit_solvent)
+    if (ir->implicit_solvent)
     {
-		calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
+        calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
                        ir->gb_algorithm,ir->sa_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
         wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
@@ -345,7 +351,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     Vsr = 0;
     if (bSepDVDL)
     {
-        for(i=0; i<enerd->grpp.nener; i++)
+        for (i=0; i<enerd->grpp.nener; i++)
         {
             Vsr +=
                 (fr->bBHAM ?
@@ -417,10 +423,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             }
             init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
 
-            for(i=0; i<enerd->n_lambda; i++)
+            for (i=0; i<enerd->n_lambda; i++)
             {
                 reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
-                for (j=0;j<efptNR;j++)
+                for (j=0; j<efptNR; j++)
                 {
                     lam_i[j] = (i==0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
@@ -477,8 +483,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 }
 
                 nthreads = gmx_omp_nthreads_get(emntBonded);
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-                for(t=0; t<nthreads; t++)
+                #pragma omp parallel for num_threads(nthreads) schedule(static)
+                for (t=0; t<nthreads; t++)
                 {
                     int s,e,i;
                     rvec *fnv;
@@ -497,7 +503,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                         vir    = &fr->f_t[t].vir;
                         Vcorrt = &fr->f_t[t].Vcorr;
                         dvdlt  = &fr->f_t[t].dvdl[efptCOUL];
-                        for(i=0; i<fr->natoms_force; i++)
+                        for (i=0; i<fr->natoms_force; i++)
                         {
                             clear_rvec(fnv[i]);
                         }
@@ -543,82 +549,82 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         dvdl = 0;
         switch (fr->eeltype)
         {
-        case eelPME:
-        case eelPMESWITCH:
-        case eelPMEUSER:
-        case eelPMEUSERSWITCH:
-        case eelP3M_AD:
-            if (cr->duty & DUTY_PME)
-            {
-                assert(fr->n_tpi >= 0);
-                if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+            case eelPME:
+            case eelPMESWITCH:
+            case eelPMEUSER:
+            case eelPMEUSERSWITCH:
+            case eelP3M_AD:
+                if (cr->duty & DUTY_PME)
                 {
-                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
-                    if (flags & GMX_FORCE_FORCES)
+                    assert(fr->n_tpi >= 0);
+                    if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                     {
-                        pme_flags |= GMX_PME_CALC_F;
-                    }
-                    if (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY))
-                    {
-                        pme_flags |= GMX_PME_CALC_ENER_VIR;
+                        pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                        if (flags & GMX_FORCE_FORCES)
+                        {
+                            pme_flags |= GMX_PME_CALC_F;
+                        }
+                        if (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY))
+                        {
+                            pme_flags |= GMX_PME_CALC_ENER_VIR;
+                        }
+                        if (fr->n_tpi > 0)
+                        {
+                            /* We don't calculate f, but we do want the potential */
+                            pme_flags |= GMX_PME_CALC_POT;
+                        }
+                        wallcycle_start(wcycle,ewcPMEMESH);
+                        status = gmx_pme_do(fr->pmedata,
+                                            md->start,md->homenr - fr->n_tpi,
+                                            x,fr->f_novirsum,
+                                            md->chargeA,md->chargeB,
+                                            bSB ? boxs : box,cr,
+                                            DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
+                                            DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
+                                            nrnb,wcycle,
+                                            fr->vir_el_recip,fr->ewaldcoeff,
+                                            &Vlr,lambda[efptCOUL],&dvdl,
+                                            pme_flags);
+                        *cycles_pme = wallcycle_stop(wcycle,ewcPMEMESH);
+
+                        /* We should try to do as little computation after
+                         * this as possible, because parallel PME synchronizes
+                         * the nodes, so we want all load imbalance of the rest
+                         * of the force calculation to be before the PME call.
+                         * DD load balancing is done on the whole time of
+                         * the force call (without PME).
+                         */
                     }
                     if (fr->n_tpi > 0)
                     {
-                        /* We don't calculate f, but we do want the potential */
-                        pme_flags |= GMX_PME_CALC_POT;
+                        /* Determine the PME grid energy of the test molecule
+                         * with the PME grid potential of the other charges.
+                         */
+                        gmx_pme_calc_energy(fr->pmedata,fr->n_tpi,
+                                            x + md->homenr - fr->n_tpi,
+                                            md->chargeA + md->homenr - fr->n_tpi,
+                                            &Vlr);
                     }
-                    wallcycle_start(wcycle,ewcPMEMESH);
-                    status = gmx_pme_do(fr->pmedata,
-                                        md->start,md->homenr - fr->n_tpi,
-                                        x,fr->f_novirsum,
-                                        md->chargeA,md->chargeB,
-                                        bSB ? boxs : box,cr,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
-                                        nrnb,wcycle,
-                                        fr->vir_el_recip,fr->ewaldcoeff,
-                                        &Vlr,lambda[efptCOUL],&dvdl,
-                                        pme_flags);
-                    *cycles_pme = wallcycle_stop(wcycle,ewcPMEMESH);
-
-                    /* We should try to do as little computation after
-                     * this as possible, because parallel PME synchronizes
-                     * the nodes, so we want all load imbalance of the rest
-                     * of the force calculation to be before the PME call.
-                     * DD load balancing is done on the whole time of
-                     * the force call (without PME).
-                     */
+                    PRINT_SEPDVDL("PME mesh",Vlr,dvdl);
                 }
-                if (fr->n_tpi > 0)
-                {
-                    /* Determine the PME grid energy of the test molecule
-                     * with the PME grid potential of the other charges.
-                     */
-                    gmx_pme_calc_energy(fr->pmedata,fr->n_tpi,
-                                        x + md->homenr - fr->n_tpi,
-                                        md->chargeA + md->homenr - fr->n_tpi,
-                                        &Vlr);
-                }
-                PRINT_SEPDVDL("PME mesh",Vlr,dvdl);
-            }
-            break;
-        case eelEWALD:
-            Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_novirsum,
-                           md->chargeA,md->chargeB,
-                           box_size,cr,md->homenr,
-                           fr->vir_el_recip,fr->ewaldcoeff,
-                           lambda[efptCOUL],&dvdl,fr->ewald_table);
-            PRINT_SEPDVDL("Ewald long-range",Vlr,dvdl);
-            break;
-        default:
-            gmx_fatal(FARGS,"No such electrostatics method implemented %s",
-                      eel_names[fr->eeltype]);
+                break;
+            case eelEWALD:
+                Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_novirsum,
+                               md->chargeA,md->chargeB,
+                               box_size,cr,md->homenr,
+                               fr->vir_el_recip,fr->ewaldcoeff,
+                               lambda[efptCOUL],&dvdl,fr->ewald_table);
+                PRINT_SEPDVDL("Ewald long-range",Vlr,dvdl);
+                break;
+            default:
+                gmx_fatal(FARGS,"No such electrostatics method implemented %s",
+                          eel_names[fr->eeltype]);
         }
         if (status != 0)
         {
             gmx_fatal(FARGS,"Error %d in long range electrostatics routine %s",
                       status,EELTYPE(fr->eeltype));
-		}
+        }
         /* Note that with separate PME nodes we get the real energies later */
         enerd->dvdl_lin[efptCOUL] += dvdl;
         enerd->term[F_COUL_RECIP] = Vlr + Vcorr;
@@ -688,13 +694,14 @@ void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd)
 {
     int i,n2;
 
-    for(i=0; i<F_NRE; i++)
+    for (i=0; i<F_NRE; i++)
     {
         enerd->term[i] = 0;
     }
 
 
-    for(i=0; i<efptNR; i++) {
+    for (i=0; i<efptNR; i++)
+    {
         enerd->dvdl_lin[i]  = 0;
         enerd->dvdl_nonlin[i]  = 0;
     }
@@ -705,7 +712,7 @@ void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd)
         fprintf(debug,"Creating %d sized group matrix for energies\n",n2);
     }
     enerd->grpp.nener = n2;
-    for(i=0; (i<egNR); i++)
+    for (i=0; (i<egNR); i++)
     {
         snew(enerd->grpp.ener[i],n2);
     }
@@ -725,7 +732,7 @@ void destroy_enerdata(gmx_enerdata_t *enerd)
 {
     int i;
 
-    for(i=0; (i<egNR); i++)
+    for (i=0; (i<egNR); i++)
     {
         sfree(enerd->grpp.ener[i]);
     }
@@ -738,49 +745,51 @@ void destroy_enerdata(gmx_enerdata_t *enerd)
 
 static real sum_v(int n,real v[])
 {
-  real t;
-  int  i;
+    real t;
+    int  i;
 
-  t = 0.0;
-  for(i=0; (i<n); i++)
-    t = t + v[i];
+    t = 0.0;
+    for (i=0; (i<n); i++)
+    {
+        t = t + v[i];
+    }
 
-  return t;
+    return t;
 }
 
 void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
 {
-  gmx_grppairener_t *grpp;
-  real *epot;
-  int i;
+    gmx_grppairener_t *grpp;
+    real *epot;
+    int i;
 
-  grpp = &enerd->grpp;
-  epot = enerd->term;
+    grpp = &enerd->grpp;
+    epot = enerd->term;
 
-  /* Accumulate energies */
-  epot[F_COUL_SR]  = sum_v(grpp->nener,grpp->ener[egCOULSR]);
-  epot[F_LJ]       = sum_v(grpp->nener,grpp->ener[egLJSR]);
-  epot[F_LJ14]     = sum_v(grpp->nener,grpp->ener[egLJ14]);
-  epot[F_COUL14]   = sum_v(grpp->nener,grpp->ener[egCOUL14]);
-  epot[F_COUL_LR]  = sum_v(grpp->nener,grpp->ener[egCOULLR]);
-  epot[F_LJ_LR]    = sum_v(grpp->nener,grpp->ener[egLJLR]);
-  /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
-  epot[F_GBPOL]   += sum_v(grpp->nener,grpp->ener[egGB]);
+    /* Accumulate energies */
+    epot[F_COUL_SR]  = sum_v(grpp->nener,grpp->ener[egCOULSR]);
+    epot[F_LJ]       = sum_v(grpp->nener,grpp->ener[egLJSR]);
+    epot[F_LJ14]     = sum_v(grpp->nener,grpp->ener[egLJ14]);
+    epot[F_COUL14]   = sum_v(grpp->nener,grpp->ener[egCOUL14]);
+    epot[F_COUL_LR]  = sum_v(grpp->nener,grpp->ener[egCOULLR]);
+    epot[F_LJ_LR]    = sum_v(grpp->nener,grpp->ener[egLJLR]);
+    /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
+    epot[F_GBPOL]   += sum_v(grpp->nener,grpp->ener[egGB]);
 
-/* lattice part of LR doesnt belong to any group
- * and has been added earlier
- */
-  epot[F_BHAM]     = sum_v(grpp->nener,grpp->ener[egBHAMSR]);
-  epot[F_BHAM_LR]  = sum_v(grpp->nener,grpp->ener[egBHAMLR]);
+    /* lattice part of LR doesnt belong to any group
+     * and has been added earlier
+     */
+    epot[F_BHAM]     = sum_v(grpp->nener,grpp->ener[egBHAMSR]);
+    epot[F_BHAM_LR]  = sum_v(grpp->nener,grpp->ener[egBHAMLR]);
 
-  epot[F_EPOT] = 0;
-  for(i=0; (i<F_EPOT); i++)
-  {
-      if (i != F_DISRESVIOL && i != F_ORIRESDEV)
-      {
-          epot[F_EPOT] += epot[i];
-      }
-  }
+    epot[F_EPOT] = 0;
+    for (i=0; (i<F_EPOT); i++)
+    {
+        if (i != F_DISRESVIOL && i != F_ORIRESDEV)
+        {
+            epot[F_EPOT] += epot[i];
+        }
+    }
 }
 
 void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
@@ -790,30 +799,31 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
 
     enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];  /* include dispersion correction */
     enerd->term[F_DVDL] = 0.0;
-    for (i=0;i<efptNR;i++)
+    for (i=0; i<efptNR; i++)
     {
         if (fepvals->separate_dvdl[i])
         {
             /* could this be done more readably/compactly? */
-            switch (i) {
-            case (efptCOUL):
-                index = F_DVDL_COUL;
-                break;
-            case (efptVDW):
-                index = F_DVDL_VDW;
-                break;
-            case (efptBONDED):
-                index = F_DVDL_BONDED;
-                break;
-            case (efptRESTRAINT):
-                index = F_DVDL_RESTRAINT;
-                break;
-            case (efptMASS):
-                index = F_DKDL;
-                break;
-            default:
-                index = F_DVDL;
-                break;
+            switch (i)
+            {
+                case (efptCOUL):
+                    index = F_DVDL_COUL;
+                    break;
+                case (efptVDW):
+                    index = F_DVDL_VDW;
+                    break;
+                case (efptBONDED):
+                    index = F_DVDL_BONDED;
+                    break;
+                case (efptRESTRAINT):
+                    index = F_DVDL_RESTRAINT;
+                    break;
+                case (efptMASS):
+                    index = F_DKDL;
+                    break;
+                default:
+                    index = F_DVDL;
+                    break;
             }
             enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
             if (debug)
@@ -845,11 +855,12 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
      * (investigate how to overcome this post 4.6 - MRS)
      */
 
-    for(i=0; i<fepvals->n_lambda; i++)
-    {                                         /* note we are iterating over fepvals here!
-                                                 For the current lam, dlam = 0 automatically,
-                                                 so we don't need to add anything to the
-                                                 enerd->enerpart_lambda[0] */
+    for (i=0; i<fepvals->n_lambda; i++)
+    {
+        /* note we are iterating over fepvals here!
+           For the current lam, dlam = 0 automatically,
+           so we don't need to add anything to the
+           enerd->enerpart_lambda[0] */
 
         /* we don't need to worry about dvdl contributions to the current lambda, because
            it's automatically zero */
@@ -859,7 +870,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
 
         enerd->enerpart_lambda[i+1] += enerd->term[F_DKDL]*dlam;
 
-        for (j=0;j<efptNR;j++)
+        for (j=0; j<efptNR; j++)
         {
             if (j==efptMASS) {continue;} /* no other mass term to worry about */
 
@@ -889,20 +900,25 @@ void reset_enerdata(t_grpopts *opts,
      * terms have already been summed at the last neighbor search step.
      */
     bKeepLR = (fr->bTwinRange && !bNS);
-    for(i=0; (i<egNR); i++) {
-        if (!(bKeepLR && bMaster && (i == egCOULLR || i == egLJLR))) {
-            for(j=0; (j<enerd->grpp.nener); j++)
+    for (i=0; (i<egNR); i++)
+    {
+        if (!(bKeepLR && bMaster && (i == egCOULLR || i == egLJLR)))
+        {
+            for (j=0; (j<enerd->grpp.nener); j++)
+            {
                 enerd->grpp.ener[i][j] = 0.0;
+            }
         }
     }
-    for (i=0;i<efptNR;i++)
+    for (i=0; i<efptNR; i++)
     {
         enerd->dvdl_lin[i]    = 0.0;
         enerd->dvdl_nonlin[i] = 0.0;
     }
 
     /* Normal potential energy components */
-    for(i=0; (i<=F_EPOT); i++) {
+    for (i=0; (i<=F_EPOT); i++)
+    {
         enerd->term[i] = 0.0;
     }
     /* Initialize the dVdlambda term with the long range contribution */
@@ -915,7 +931,7 @@ void reset_enerdata(t_grpopts *opts,
     enerd->term[F_DKDL]            = 0.0;
     if (enerd->n_lambda > 0)
     {
-        for(i=0; i<enerd->n_lambda; i++)
+        for (i=0; i<enerd->n_lambda; i++)
         {
             enerd->enerpart_lambda[i] = 0.0;
         }

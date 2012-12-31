@@ -121,7 +121,7 @@ std::string TestFileManager::getTestSpecificFileName(const char *suffix)
     const ::testing::TestInfo *test_info =
         ::testing::UnitTest::GetInstance()->current_test_info();
     std::string filename = std::string(test_info->test_case_name())
-        + "_" + test_info->name();
+                           + "_" + test_info->name();
     if (suffix[0] != '.')
     {
         filename.append("_");

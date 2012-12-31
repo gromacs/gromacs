@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -49,15 +49,15 @@ extern "C" {
 
 /* output_env member functions */
 
-/* The output_env structure holds information about program name, cmd line, 
-   default times, etc. 
+/* The output_env structure holds information about program name, cmd line,
+   default times, etc.
 
-   There are still legacy functions for the program name, and the command 
+   There are still legacy functions for the program name, and the command
    line, but the output_env versions are now preferred.*/
 
-typedef enum 
-{ 
-    timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s 
+typedef enum
+{
+    timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s
 } time_unit_t;
 /* the time units. For the time being, ps means no conversion. */
 
@@ -68,9 +68,9 @@ typedef enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE } xvg_format_t;
 void output_env_init(output_env_t *oenvp,  int argc, char *argv[],
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level);
-/* initialize an output_env structure, setting the command line, 
-   the default time value a gmx_boolean view that is set to TRUE when the 
-   user requests direct viewing of graphs, 
+/* initialize an output_env structure, setting the command line,
+   the default time value a gmx_boolean view that is set to TRUE when the
+   user requests direct viewing of graphs,
    the graph formatting type, the verbosity, and debug level */
 
 void output_env_init_default(output_env_t *oenvp);

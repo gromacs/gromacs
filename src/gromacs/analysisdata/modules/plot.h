@@ -310,10 +310,10 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
 
 //! Smart pointer to manage an AnalysisDataPlotModule object.
 typedef boost::shared_ptr<AnalysisDataPlotModule>
-        AnalysisDataPlotModulePointer;
+AnalysisDataPlotModulePointer;
 //! Smart pointer to manage an AnalysisDataVectorPlotModule object.
 typedef boost::shared_ptr<AnalysisDataVectorPlotModule>
-        AnalysisDataVectorPlotModulePointer;
+AnalysisDataVectorPlotModulePointer;
 
 } // namespace gmx
 

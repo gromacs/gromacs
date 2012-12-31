@@ -134,7 +134,8 @@ struct TestHelpText
 
 const char TestHelpText::name[] = "testtopic";
 const char TestHelpText::title[] = "Topic title";
-const char *const TestHelpText::text[] = {
+const char *const TestHelpText::text[] =
+{
     "Test topic text.[PAR]",
     "Another paragraph of text."
 };
@@ -157,7 +158,7 @@ void HelpTopicFormattingTest::checkHelpFormatting()
 TEST_F(HelpTopicFormattingTest, FormatsSimpleTopic)
 {
     rootTopic_.addSubTopic(gmx::HelpTopicPointer(
-                new gmx::SimpleHelpTopic<TestHelpText>));
+                               new gmx::SimpleHelpTopic<TestHelpText>));
     checkHelpFormatting();
 }
 

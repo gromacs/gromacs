@@ -171,7 +171,7 @@ class TrajectoryAnalysisModuleData
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
 typedef gmx_unique_ptr<TrajectoryAnalysisModuleData>::type
-        TrajectoryAnalysisModuleDataPointer;
+TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
  * Base class for trajectory analysis modules.
@@ -311,8 +311,8 @@ class TrajectoryAnalysisModule
          * \see TrajectoryAnalysisModuleData
          */
         virtual TrajectoryAnalysisModuleDataPointer startFrames(
-                const AnalysisDataParallelOptions &opt,
-                const SelectionCollection &selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection &selections);
         /*! \brief
          * Analyzes a single frame.
          *
@@ -490,7 +490,7 @@ class TrajectoryAnalysisModule
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
 typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
-        TrajectoryAnalysisModulePointer;
+TrajectoryAnalysisModulePointer;
 
 } // namespace gmx
 

@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -43,7 +43,7 @@ files.
 #include <stdexcept>
 #include "thread_mpi/system_error.h"
 
-tMPI::system_error::system_error(error_code ec) 
+tMPI::system_error::system_error(error_code ec)
     : runtime_error(std::strerror(ec)), ec_(ec)
 {
 }

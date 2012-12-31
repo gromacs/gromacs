@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -45,32 +45,36 @@
 #endif
 
 int gmx_nint(real a)
-{   
-  const real half = .5;
-  int   result;
-  
-  result = (a < 0.) ? ((int)(a - half)) : ((int)(a + half));
-  return result;
+{
+    const real half = .5;
+    int   result;
+
+    result = (a < 0.) ? ((int)(a - half)) : ((int)(a + half));
+    return result;
 }
 
-real cuberoot (real x) 
+real cuberoot (real x)
 {
-  if (x < 0) 
-    { 
-      return (-pow(-x,1.0/DIM));
-    } 
-  else 
+    if (x < 0)
     {
-      return (pow(x,1.0/DIM));
+        return (-pow(-x,1.0/DIM));
+    }
+    else
+    {
+        return (pow(x,1.0/DIM));
     }
 }
 
 real sign(real x,real y)
 {
-  if (y < 0)
-    return -fabs(x);
-  else
-    return +fabs(x);
+    if (y < 0)
+    {
+        return -fabs(x);
+    }
+    else
+    {
+        return +fabs(x);
+    }
 }
 
 /* Double and single precision erf() and erfc() from
@@ -84,27 +88,27 @@ real sign(real x,real y)
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
 #if ( (defined SIZEOF_INT && SIZEOF_INT==4) || (SIZEOF_INT_MAX == 2147483647) )
-   typedef int erf_int32_t;
-   typedef unsigned int erf_u_int32_t;
+typedef int erf_int32_t;
+typedef unsigned int erf_u_int32_t;
 #elif (LONG_MAX == 2147483647L)
-   typedef long erf_int32_t;
-   typedef unsigned long erf_u_int32_t;
+typedef long erf_int32_t;
+typedef unsigned long erf_u_int32_t;
 #elif (SHRT_MAX == 2147483647)
-   typedef short erf_int32_t;
-   typedef unsigned short erf_u_int32_t;
+typedef short erf_int32_t;
+typedef unsigned short erf_u_int32_t;
 #else
 #  error ERROR: No 32 bit wide integer type found!
 #endif
 
 
 static const double
-tiny	    = 1e-300,
+tiny        = 1e-300,
 half=  5.00000000000000000000e-01, /* 0x3FE00000, 0x00000000 */
 one =  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
 two =  2.00000000000000000000e+00, /* 0x40000000, 0x00000000 */
@@ -126,7 +130,7 @@ qq3  =  5.08130628187576562776e-03, /* 0x3F74D022, 0xC4D36B0F */
 qq4  =  1.32494738004321644526e-04, /* 0x3F215DC9, 0x221C1A10 */
 qq5  = -3.96022827877536812320e-06, /* 0xBED09C43, 0x42A26120 */
 /*
- * Coefficients for approximation to  erf  in [0.84375,1.25] 
+ * Coefficients for approximation to  erf  in [0.84375,1.25]
  */
 pa0  = -2.36211856075265944077e-03, /* 0xBF6359B8, 0xBEF77538 */
 pa1  =  4.14856118683748331666e-01, /* 0x3FDA8D00, 0xAD92B34D */
@@ -180,183 +184,198 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 
 double gmx_erfd(double x)
 {
-  
-	erf_int32_t hx,ix,i;
+
+    erf_int32_t hx,ix,i;
     double R,S,P,Q,s,y,z,r;
-    
+
     union
     {
         double d;
         int    i[2];
-    } 
+    }
     conv;
-    
+
     conv.d=x;
-    
-        /* In release-4-6 and later branches, only the test for
-         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
+
+    /* In release-4-6 and later branches, only the test for
+     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
 #if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
     hx=conv.i[0];
 #else
     hx=conv.i[1];
 #endif
-	
-	ix = hx&0x7fffffff;
-	if(ix>=0x7ff00000) 
-    {
-		/* erf(nan)=nan */
-	    i = ((erf_u_int32_t)hx>>31)<<1;
-	    return (double)(1-i)+one/x;	/* erf(+-inf)=+-1 */
-	}
 
-	if(ix < 0x3feb0000) 
+    ix = hx&0x7fffffff;
+    if (ix>=0x7ff00000)
     {
-		/* |x|<0.84375 */
-	    if(ix < 0x3e300000) 
-        { 	
+        /* erf(nan)=nan */
+        i = ((erf_u_int32_t)hx>>31)<<1;
+        return (double)(1-i)+one/x; /* erf(+-inf)=+-1 */
+    }
+
+    if (ix < 0x3feb0000)
+    {
+        /* |x|<0.84375 */
+        if (ix < 0x3e300000)
+        {
             /* |x|<2**-28 */
-	        if (ix < 0x00800000)
-                return 0.125*(8.0*x+efx8*x);  /*avoid underflow */
+            if (ix < 0x00800000)
+            {
+                return 0.125*(8.0*x+efx8*x);    /*avoid underflow */
+            }
             return x + efx*x;
-	    }
-	    z = x*x;
-	    r = pp0+z*(pp1+z*(pp2+z*(pp3+z*pp4)));
-	    s = one+z*(qq1+z*(qq2+z*(qq3+z*(qq4+z*qq5))));
-	    y = r/s;
-	    return x + x*y;
-	}
-	if(ix < 0x3ff40000) 
+        }
+        z = x*x;
+        r = pp0+z*(pp1+z*(pp2+z*(pp3+z*pp4)));
+        s = one+z*(qq1+z*(qq2+z*(qq3+z*(qq4+z*qq5))));
+        y = r/s;
+        return x + x*y;
+    }
+    if (ix < 0x3ff40000)
     {
-		/* 0.84375 <= |x| < 1.25 */
-	    s = fabs(x)-one;
-	    P = pa0+s*(pa1+s*(pa2+s*(pa3+s*(pa4+s*(pa5+s*pa6)))));
-	    Q = one+s*(qa1+s*(qa2+s*(qa3+s*(qa4+s*(qa5+s*qa6)))));
-	    if(hx>=0) return erx + P/Q; else return -erx - P/Q;
-	}
-	if (ix >= 0x40180000)
-    {	
+        /* 0.84375 <= |x| < 1.25 */
+        s = fabs(x)-one;
+        P = pa0+s*(pa1+s*(pa2+s*(pa3+s*(pa4+s*(pa5+s*pa6)))));
+        Q = one+s*(qa1+s*(qa2+s*(qa3+s*(qa4+s*(qa5+s*qa6)))));
+        if (hx>=0) { return erx + P/Q; }
+        else { return -erx - P/Q; }
+    }
+    if (ix >= 0x40180000)
+    {
         /* inf>|x|>=6 */
-	    if(hx>=0) return one-tiny; else return tiny-one;
-	}
-	x = fabs(x);
- 	s = one/(x*x);
-	if(ix< 0x4006DB6E)
+        if (hx>=0) { return one-tiny; }
+        else { return tiny-one; }
+    }
+    x = fabs(x);
+    s = one/(x*x);
+    if (ix< 0x4006DB6E)
     {
         /* |x| < 1/0.35 */
-	    R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(ra5+s*(ra6+s*ra7))))));
-	    S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(sa5+s*(sa6+s*(sa7+s*sa8)))))));
-	}
-    else 
+        R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(ra5+s*(ra6+s*ra7))))));
+        S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(sa5+s*(sa6+s*(sa7+s*sa8)))))));
+    }
+    else
     {
         /* |x| >= 1/0.35 */
-	    R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(rb5+s*rb6)))));
-	    S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(sb5+s*(sb6+s*sb7))))));
-	}
+        R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(rb5+s*rb6)))));
+        S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(sb5+s*(sb6+s*sb7))))));
+    }
 
     conv.d = x;
 
-        /* In release-4-6 and later branches, only the test for
-         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
+    /* In release-4-6 and later branches, only the test for
+     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
 #if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
     conv.i[1] = 0;
 #else
     conv.i[0] = 0;
 #endif
-    
+
     z = conv.d;
 
-	r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
-	if(hx>=0) 
-        return one-r/x; 
-    else 
+    r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
+    if (hx>=0)
+    {
+        return one-r/x;
+    }
+    else
+    {
         return  r/x-one;
+    }
 }
 
 
 double gmx_erfcd(double x)
 {
-	erf_int32_t hx,ix;
-	double R,S,P,Q,s,y,z,r;
-    
+    erf_int32_t hx,ix;
+    double R,S,P,Q,s,y,z,r;
+
     union
     {
         double d;
         int    i[2];
-    } 
+    }
     conv;
-    
+
     conv.d = x;
-    
-        /* In release-4-6 and later branches, only the test for
-         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
+
+    /* In release-4-6 and later branches, only the test for
+     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
 #if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
     hx=conv.i[0];
 #else
     hx=conv.i[1];
 #endif
-    
-	ix = hx&0x7fffffff;
-	if(ix>=0x7ff00000)
-    {		
+
+    ix = hx&0x7fffffff;
+    if (ix>=0x7ff00000)
+    {
         /* erfc(nan)=nan */
         /* erfc(+-inf)=0,2 */
-	    return (double)(((erf_u_int32_t)hx>>31)<<1)+one/x;
-	}
+        return (double)(((erf_u_int32_t)hx>>31)<<1)+one/x;
+    }
 
-	if(ix < 0x3feb0000)
+    if (ix < 0x3feb0000)
     {
-		/* |x|<0.84375 */
-	    double r1,r2,s1,s2,s3,z2,z4;
-	    if(ix < 0x3c700000)  	/* |x|<2**-56 */
+        /* |x|<0.84375 */
+        double r1,r2,s1,s2,s3,z2,z4;
+        if (ix < 0x3c700000)    /* |x|<2**-56 */
+        {
             return one-x;
-	    z = x*x;
-	    r = pp0+z*(pp1+z*(pp2+z*(pp3+z*pp4)));
-	    s = one+z*(qq1+z*(qq2+z*(qq3+z*(qq4+z*qq5))));
-	    y = r/s;
-	    if(hx < 0x3fd00000) 
+        }
+        z = x*x;
+        r = pp0+z*(pp1+z*(pp2+z*(pp3+z*pp4)));
+        s = one+z*(qq1+z*(qq2+z*(qq3+z*(qq4+z*qq5))));
+        y = r/s;
+        if (hx < 0x3fd00000)
         {
             /* x<1/4 */
             return one-(x+x*y);
-	    } 
+        }
         else
         {
             r = x*y;
             r += (x-half);
-	        return half - r ;
-	    }
-	}
-    
-    if(ix < 0x3ff40000)
+            return half - r ;
+        }
+    }
+
+    if (ix < 0x3ff40000)
     {
-		/* 0.84375 <= |x| < 1.25 */
+        /* 0.84375 <= |x| < 1.25 */
         s = fabs(x)-one;
         P = pa0+s*(pa1+s*(pa2+s*(pa3+s*(pa4+s*(pa5+s*pa6)))));
         Q = one+s*(qa1+s*(qa2+s*(qa3+s*(qa4+s*(qa5+s*qa6)))));
-        if(hx>=0) {
-            z  = one-erx; return z - P/Q; 
-        } else {
+        if (hx>=0)
+        {
+            z  = one-erx; return z - P/Q;
+        }
+        else
+        {
             z = erx+P/Q; return one+z;
         }
-	}
-	if (ix < 0x403c0000)
-    {	
+    }
+    if (ix < 0x403c0000)
+    {
         /* |x|<28 */
-	    x = fabs(x);
- 	    s = one/(x*x);
-	    if(ix< 0x4006DB6D)
+        x = fabs(x);
+        s = one/(x*x);
+        if (ix< 0x4006DB6D)
         {
             /* |x| < 1/.35 ~ 2.857143*/
-	        R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(ra5+s*(ra6+s*ra7))))));
-	        S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(sa5+s*(sa6+s*(sa7+s*sa8)))))));
-	    } 
+            R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(ra5+s*(ra6+s*ra7))))));
+            S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(sa5+s*(sa6+s*(sa7+s*sa8)))))));
+        }
         else
-        {	
+        {
             /* |x| >= 1/.35 ~ 2.857143 */
-            if(hx<0&&ix>=0x40180000) 
-                return two-tiny; /* x < -6 */
-	        R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(rb5+s*rb6)))));
-	        S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(sb5+s*(sb6+s*sb7))))));
-	    }
+            if (hx<0&&ix>=0x40180000)
+            {
+                return two-tiny;    /* x < -6 */
+            }
+            R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(rb5+s*rb6)))));
+            S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(sb5+s*(sb6+s*sb7))))));
+        }
 
         conv.d = x;
 
@@ -367,23 +386,31 @@ double gmx_erfcd(double x)
 #else
         conv.i[0] = 0;
 #endif
-        
+
         z = conv.d;
-        
+
         r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
 
-        if(hx>0) 
+        if (hx>0)
+        {
             return r/x;
-        else 
+        }
+        else
+        {
             return two-r/x;
+        }
     }
     else
     {
-	    if(hx>0) 
+        if (hx>0)
+        {
             return tiny*tiny;
+        }
         else
+        {
             return two-tiny;
-	}
+        }
+    }
 }
 
 
@@ -392,7 +419,7 @@ tinyf=  1e-30,
 halff=  5.0000000000e-01, /* 0x3F000000 */
 onef =  1.0000000000e+00, /* 0x3F800000 */
 twof =  2.0000000000e+00, /* 0x40000000 */
-	/* c = (subfloat)0.84506291151 */
+/* c = (subfloat)0.84506291151 */
 erxf =  8.4506291151e-01, /* 0x3f58560b */
 /*
  * Coefficients for approximation to  erf on [0,0.84375]
@@ -410,7 +437,7 @@ qq3f =  5.0813062117e-03, /* 0x3ba68116 */
 qq4f =  1.3249473704e-04, /* 0x390aee49 */
 qq5f = -3.9602282413e-06, /* 0xb684e21a */
 /*
- * Coefficients for approximation to  erf  in [0.84375,1.25] 
+ * Coefficients for approximation to  erf  in [0.84375,1.25]
  */
 pa0f = -2.3621185683e-03, /* 0xbb1acdc6 */
 pa1f =  4.1485610604e-01, /* 0x3ed46805 */
@@ -465,181 +492,199 @@ sb7f = -2.2440952301e+01; /* 0xc1b38712 */
 
 typedef union
 {
-  float value;
-  erf_u_int32_t word;
+    float value;
+    erf_u_int32_t word;
 } ieee_float_shape_type;
 
-#define GET_FLOAT_WORD(i,d)					\
-do {								\
-  ieee_float_shape_type gf_u;					\
-  gf_u.value = (d);						\
-  (i) = gf_u.word;						\
+#define GET_FLOAT_WORD(i,d)                 \
+do {                                \
+  ieee_float_shape_type gf_u;                   \
+  gf_u.value = (d);                     \
+  (i) = gf_u.word;                      \
 } while (0)
 
 
-#define SET_FLOAT_WORD(d,i)					\
-do {								\
-  ieee_float_shape_type sf_u;					\
-  sf_u.word = (i);						\
-  (d) = sf_u.value;						\
+#define SET_FLOAT_WORD(d,i)                 \
+do {                                \
+  ieee_float_shape_type sf_u;                   \
+  sf_u.word = (i);                      \
+  (d) = sf_u.value;                     \
 } while (0)
 
 
 float gmx_erff(float x)
 {
-	erf_int32_t hx,ix,i;
-	float R,S,P,Q,s,y,z,r;
+    erf_int32_t hx,ix,i;
+    float R,S,P,Q,s,y,z,r;
 
     union
     {
         float  f;
         int    i;
-    } 
+    }
     conv;
-	
+
     conv.f=x;
     hx=conv.i;
-    
-	ix = hx&0x7fffffff;
-	if(ix>=0x7f800000) 
-    {
-		/* erf(nan)=nan */
-	    i = ((erf_u_int32_t)hx>>31)<<1;
-	    return (float)(1-i)+onef/x;	/* erf(+-inf)=+-1 */
-	}
 
-	if(ix < 0x3f580000)
+    ix = hx&0x7fffffff;
+    if (ix>=0x7f800000)
     {
-		/* |x|<0.84375 */
-	    if(ix < 0x31800000)
-        { 
+        /* erf(nan)=nan */
+        i = ((erf_u_int32_t)hx>>31)<<1;
+        return (float)(1-i)+onef/x; /* erf(+-inf)=+-1 */
+    }
+
+    if (ix < 0x3f580000)
+    {
+        /* |x|<0.84375 */
+        if (ix < 0x31800000)
+        {
             /* |x|<2**-28 */
-	        if (ix < 0x04000000) 
-                return (float)0.125*((float)8.0*x+efx8f*x); 		    /*avoid underflow */
+            if (ix < 0x04000000)
+            {
+                return (float)0.125*((float)8.0*x+efx8f*x);    /*avoid underflow */
+            }
             return x + efxf*x;
-	    }
+        }
         z = x*x;
         r = pp0f+z*(pp1f+z*(pp2f+z*(pp3f+z*pp4f)));
-	    s = onef+z*(qq1f+z*(qq2f+z*(qq3f+z*(qq4f+z*qq5f))));
-	    y = r/s;
-	    return x + x*y;
-	}
-	if(ix < 0x3fa00000) 
-    {	
+        s = onef+z*(qq1f+z*(qq2f+z*(qq3f+z*(qq4f+z*qq5f))));
+        y = r/s;
+        return x + x*y;
+    }
+    if (ix < 0x3fa00000)
+    {
         /* 0.84375 <= |x| < 1.25 */
-	    s = fabs(x)-onef;
-	    P = pa0f+s*(pa1f+s*(pa2f+s*(pa3f+s*(pa4f+s*(pa5f+s*pa6f)))));
-	    Q = onef+s*(qa1f+s*(qa2f+s*(qa3f+s*(qa4f+s*(qa5f+s*qa6f)))));
-	    if(hx>=0) return erxf + P/Q; else return -erxf - P/Q;
-	}
+        s = fabs(x)-onef;
+        P = pa0f+s*(pa1f+s*(pa2f+s*(pa3f+s*(pa4f+s*(pa5f+s*pa6f)))));
+        Q = onef+s*(qa1f+s*(qa2f+s*(qa3f+s*(qa4f+s*(qa5f+s*qa6f)))));
+        if (hx>=0) { return erxf + P/Q; }
+        else { return -erxf - P/Q; }
+    }
     if (ix >= 0x40c00000)
     {
-		/* inf>|x|>=6 */
-        if(hx>=0) return onef-tinyf; else return tinyf-onef;
-	}
-	x = fabs(x);
- 	s = onef/(x*x);
-    if(ix< 0x4036DB6E)
+        /* inf>|x|>=6 */
+        if (hx>=0) { return onef-tinyf; }
+        else { return tinyf-onef; }
+    }
+    x = fabs(x);
+    s = onef/(x*x);
+    if (ix< 0x4036DB6E)
     {
         /* |x| < 1/0.35 */
-	    R=ra0f+s*(ra1f+s*(ra2f+s*(ra3f+s*(ra4f+s*(ra5f+s*(ra6f+s*ra7f))))));
-	    S=onef+s*(sa1f+s*(sa2f+s*(sa3f+s*(sa4f+s*(sa5f+s*(sa6f+s*(sa7f+s*sa8f)))))));
-	} 
+        R=ra0f+s*(ra1f+s*(ra2f+s*(ra3f+s*(ra4f+s*(ra5f+s*(ra6f+s*ra7f))))));
+        S=onef+s*(sa1f+s*(sa2f+s*(sa3f+s*(sa4f+s*(sa5f+s*(sa6f+s*(sa7f+s*sa8f)))))));
+    }
     else
-    {	
+    {
         /* |x| >= 1/0.35 */
-	    R=rb0f+s*(rb1f+s*(rb2f+s*(rb3f+s*(rb4f+s*(rb5f+s*rb6f)))));
-	    S=onef+s*(sb1f+s*(sb2f+s*(sb3f+s*(sb4f+s*(sb5f+s*(sb6f+s*sb7f))))));
-	}
-    
+        R=rb0f+s*(rb1f+s*(rb2f+s*(rb3f+s*(rb4f+s*(rb5f+s*rb6f)))));
+        S=onef+s*(sb1f+s*(sb2f+s*(sb3f+s*(sb4f+s*(sb5f+s*(sb6f+s*sb7f))))));
+    }
+
     conv.f = x;
     conv.i = conv.i & 0xfffff000;
     z = conv.f;
 
-	r  =  exp(-z*z-(float)0.5625)*exp((z-x)*(z+x)+R/S);
-	if(hx>=0) return onef-r/x; else return  r/x-onef;
+    r  =  exp(-z*z-(float)0.5625)*exp((z-x)*(z+x)+R/S);
+    if (hx>=0) { return onef-r/x; }
+    else { return  r/x-onef; }
 }
 
 float gmx_erfcf(float x)
 {
-	erf_int32_t hx,ix;
-	float R,S,P,Q,s,y,z,r;
-    
+    erf_int32_t hx,ix;
+    float R,S,P,Q,s,y,z,r;
+
     union
     {
         float  f;
         int    i;
-    } 
+    }
     conv;
-	
+
     conv.f=x;
     hx=conv.i;
-    
-	ix = hx&0x7fffffff;
-	if(ix>=0x7f800000) 
+
+    ix = hx&0x7fffffff;
+    if (ix>=0x7f800000)
     {
         /* erfc(nan)=nan */
         /* erfc(+-inf)=0,2 */
-	    return (float)(((erf_u_int32_t)hx>>31)<<1)+onef/x;
-	}
+        return (float)(((erf_u_int32_t)hx>>31)<<1)+onef/x;
+    }
 
-	if(ix < 0x3f580000) 
+    if (ix < 0x3f580000)
     {
-		/* |x|<0.84375 */
-	    if(ix < 0x23800000)    
-            return onef-x;	/* |x|<2**-56 */
-	    z = x*x;
-	    r = pp0f+z*(pp1f+z*(pp2f+z*(pp3f+z*pp4f)));
-	    s = onef+z*(qq1f+z*(qq2f+z*(qq3f+z*(qq4f+z*qq5f))));
-	    y = r/s;
-	    if(hx < 0x3e800000)
+        /* |x|<0.84375 */
+        if (ix < 0x23800000)
+        {
+            return onef-x;    /* |x|<2**-56 */
+        }
+        z = x*x;
+        r = pp0f+z*(pp1f+z*(pp2f+z*(pp3f+z*pp4f)));
+        s = onef+z*(qq1f+z*(qq2f+z*(qq3f+z*(qq4f+z*qq5f))));
+        y = r/s;
+        if (hx < 0x3e800000)
         {
             /* x<1/4 */
             return onef-(x+x*y);
-	    } else {
+        }
+        else
+        {
             r = x*y;
             r += (x-halff);
-	        return halff - r ;
-	    }
-	}
-	if(ix < 0x3fa00000) 
-    {	
-        /* 0.84375 <= |x| < 1.25 */
-	    s = fabs(x)-onef;
-	    P = pa0f+s*(pa1f+s*(pa2f+s*(pa3f+s*(pa4f+s*(pa5f+s*pa6f)))));
-	    Q = onef+s*(qa1f+s*(qa2f+s*(qa3f+s*(qa4f+s*(qa5f+s*qa6f)))));
-	    if(hx>=0) {
-	        z  = onef-erxf; return z - P/Q; 
-	    } else {
-            z = erxf+P/Q; return onef+z;
-	    }
-	}
-	if (ix < 0x41e00000) 
+            return halff - r ;
+        }
+    }
+    if (ix < 0x3fa00000)
     {
-		/* |x|<28 */
+        /* 0.84375 <= |x| < 1.25 */
+        s = fabs(x)-onef;
+        P = pa0f+s*(pa1f+s*(pa2f+s*(pa3f+s*(pa4f+s*(pa5f+s*pa6f)))));
+        Q = onef+s*(qa1f+s*(qa2f+s*(qa3f+s*(qa4f+s*(qa5f+s*qa6f)))));
+        if (hx>=0)
+        {
+            z  = onef-erxf; return z - P/Q;
+        }
+        else
+        {
+            z = erxf+P/Q; return onef+z;
+        }
+    }
+    if (ix < 0x41e00000)
+    {
+        /* |x|<28 */
         x = fabs(x);
- 	    s = onef/(x*x);
-	    if(ix< 0x4036DB6D)
+        s = onef/(x*x);
+        if (ix< 0x4036DB6D)
         {
             /* |x| < 1/.35 ~ 2.857143*/
-                R=ra0f+s*(ra1f+s*(ra2f+s*(ra3f+s*(ra4f+s*(ra5f+s*(ra6f+s*ra7f))))));
-	        S=onef+s*(sa1f+s*(sa2f+s*(sa3f+s*(sa4f+s*(sa5f+s*(sa6f+s*(sa7f+s*sa8f)))))));
-	    } else {		
+            R=ra0f+s*(ra1f+s*(ra2f+s*(ra3f+s*(ra4f+s*(ra5f+s*(ra6f+s*ra7f))))));
+            S=onef+s*(sa1f+s*(sa2f+s*(sa3f+s*(sa4f+s*(sa5f+s*(sa6f+s*(sa7f+s*sa8f)))))));
+        }
+        else
+        {
             /* |x| >= 1/.35 ~ 2.857143 */
-            if(hx<0&&ix>=0x40c00000) return twof-tinyf;/* x < -6 */
-	        R=rb0f+s*(rb1f+s*(rb2f+s*(rb3f+s*(rb4f+s*(rb5f+s*rb6f)))));
-	        S=onef+s*(sb1f+s*(sb2f+s*(sb3f+s*(sb4f+s*(sb5f+s*(sb6f+s*sb7f))))));
-	    }
-        
+            if (hx<0&&ix>=0x40c00000) { return twof-tinyf; } /* x < -6 */
+            R=rb0f+s*(rb1f+s*(rb2f+s*(rb3f+s*(rb4f+s*(rb5f+s*rb6f)))));
+            S=onef+s*(sb1f+s*(sb2f+s*(sb3f+s*(sb4f+s*(sb5f+s*(sb6f+s*sb7f))))));
+        }
+
         conv.f = x;
         conv.i = conv.i & 0xfffff000;
         z = conv.f;
-        
-	    r  =  exp(-z*z-(float)0.5625)*exp((z-x)*(z+x)+R/S);
-	    if(hx>0) return r/x; else return twof-r/x;
-	} else {
-	    if(hx>0) return tinyf*tinyf; else return twof-tinyf;
-	}
+
+        r  =  exp(-z*z-(float)0.5625)*exp((z-x)*(z+x)+R/S);
+        if (hx>0) { return r/x; }
+        else { return twof-r/x; }
+    }
+    else
+    {
+        if (hx>0) { return tinyf*tinyf; }
+        else { return twof-tinyf; }
+    }
 }
 
 
@@ -665,22 +710,22 @@ check_int_multiply_for_overflow(gmx_large_int_t a,
                                 gmx_large_int_t *result)
 {
     gmx_large_int_t sign = 1;
-    if((0 == a) || (0 == b))
+    if ((0 == a) || (0 == b))
     {
         *result = 0;
         return TRUE;
     }
-    if(a < 0)
+    if (a < 0)
     {
         a = -a;
         sign = -sign;
     }
-    if(b < 0)
+    if (b < 0)
     {
         b = -b;
         sign = -sign;
     }
-    if(GMX_LARGE_INT_MAX / b < a)
+    if (GMX_LARGE_INT_MAX / b < a)
     {
         *result = (sign > 0) ? GMX_LARGE_INT_MAX : GMX_LARGE_INT_MIN;
         return FALSE;

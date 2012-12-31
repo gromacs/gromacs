@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -54,12 +54,12 @@ void tMPI_Wait_process_incoming(struct tmpi_thread *th);
 
 
 /* check for the completion of a single request */
-tmpi_bool tMPI_Test_single(struct tmpi_thread *cur, 
+tmpi_bool tMPI_Test_single(struct tmpi_thread *cur,
                            struct tmpi_req_ *rq);
 /* check and wait for the completion of a single request */
 void tMPI_Wait_single(struct tmpi_thread *cur, struct tmpi_req_ *rq);
 
-/* check for the completion of a NULL-delimited doubly linked list of 
+/* check for the completion of a NULL-delimited doubly linked list of
    requests */
 tmpi_bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
                           tmpi_bool *any_done);

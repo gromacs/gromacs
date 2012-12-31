@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -36,44 +36,44 @@ files.
 */
 
 
-/*! 
+/*!
   \if THREAD_MPI_MAIN
   \mainpage thread_mpi thread_mpi threading library
   \else
   \page thread_mpi thread_mpi threading library
   \endif
 
-   thread_mpi is a cross-platform threading library for applications in 
+   thread_mpi is a cross-platform threading library for applications in
    high-performance computing. It supports:
 
-   - Cross-platform thread primitives (thread creation, mutexes, spinlocks, 
+   - Cross-platform thread primitives (thread creation, mutexes, spinlocks,
      barriers, thread-local storage, etc.).
    - Cross-platform atomic operations (compare-and-swap, add-return, etc) for
      safe lock-free synchronization.
    - An implementation of (currently, much of) MPI, either as a drop-in
-     replacement, or for use in conjunction with a networked MPI      
-     implementation. 
-   - Shared-memory allocation and memory management (planned, as of now). 
+     replacement, or for use in conjunction with a networked MPI
+     implementation.
+   - Shared-memory allocation and memory management (planned, as of now).
    - Basic lock-free data structures (planned, as of now).
 
    Because it can be used as a drop-in replacement for MPI, existing codes
-   using MPI can start using thread_mpi without major changes in the 
-   source code, assuming -- and this is a big assumption -- that the code 
+   using MPI can start using thread_mpi without major changes in the
+   source code, assuming -- and this is a big assumption -- that the code
    is thread-safe.
 
-   Alternatively, networked MPI calls can be used in conjunction with    
-   thread_mpi calls (simply by using     
+   Alternatively, networked MPI calls can be used in conjunction with
+   thread_mpi calls (simply by using
     "#include <thread_mpi.h>"
-   instead of 
+   instead of
     "#include <tmpi.h>"
-   and pre-fixing all thread_mpi MPI-like calls with tMPI instead of MPI. 
+   and pre-fixing all thread_mpi MPI-like calls with tMPI instead of MPI.
 
-   The availability of both MPI calls and shared-memory constructs makes it 
-   possible to transition (relatively) seamlessly from an MPI-style code 
+   The availability of both MPI calls and shared-memory constructs makes it
+   possible to transition (relatively) seamlessly from an MPI-style code
    to code that's optimal on multicore CPUs.
 
-   Although MPI-style message passing isn't neccesarily optimal for 
-   performance on shared-memory systems, the MPI communicator concept and 
+   Although MPI-style message passing isn't neccesarily optimal for
+   performance on shared-memory systems, the MPI communicator concept and
    its emphasis on collective operations makes sense even when computing on
    one machine with multiple cores. The communicator forms the basis for
    the shared-memory allocation and lock-free data structure implementations
@@ -81,19 +81,19 @@ files.
 
    Although usable as a stand-alone library, thread_mpi is designed to
    be incorporated in the code tree, eliminating any external build
-   requirements. The BSD-style license that this library is distributed 
+   requirements. The BSD-style license that this library is distributed
    with reflects this.
 
-   Thread primitives and the atomic operations are cpu and operating system 
-   dependent - thread_mpi attempts to make them available with the same 
-   interface independently of the platform it's run on. 
+   Thread primitives and the atomic operations are cpu and operating system
+   dependent - thread_mpi attempts to make them available with the same
+   interface independently of the platform it's run on.
    Currently the thread primitives are supported on:
    - any operating system supporting POSIX threads
-   - Windows (XP and later). 
+   - Windows (XP and later).
 
    The atomic operations (such as compare-and-swap) are supported on:
    - gcc on x86, x86_64, PowerPC and Itanium.
-   - Intel compilers on x86, x86_64 and Itanium. 
+   - Intel compilers on x86, x86_64 and Itanium.
    - xlc on PowerPC.
    - (partial) HP/UX compilers on Itanium.
 
@@ -105,15 +105,15 @@ files.
 */
 
 
-/** \file 
+/** \file
  *
  * \brief Convenience header file for MPI compatibility.
- * 
+ *
  * This file includes the tMPI header file thread_mpi/tmpi.h and the true
  * MPI-style bindings of thread_mpi/mpi.h, as well as thread_mpi/threads.h and
  * thread_mpi/atomic.h header files. If you'd like to use the components
  * individually, or be able to use a networked MPI together with thread_mpi,
- * include the relevant header files directly. 
+ * include the relevant header files directly.
  */
 
 

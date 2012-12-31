@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -51,7 +51,7 @@ static const char * const gpu_detect_res_str[] =
 
 /* GPU device information -- for now with only CUDA devices.
  * The gmx_hardware_detect module initializes it. */
-typedef struct 
+typedef struct
 {
     gmx_bool            bUserSet;       /* true if the GPUs in cuda_dev_use are manually provided by the user */
 

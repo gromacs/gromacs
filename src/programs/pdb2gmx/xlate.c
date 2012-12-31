@@ -1,12 +1,12 @@
 /*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -51,7 +51,8 @@
 #include "gmx_fatal.h"
 #include "xlate.h"
 
-typedef struct {
+typedef struct
+{
     char *filebase;
     char *res;
     char *atom;
@@ -87,7 +88,7 @@ static void get_xlatoms(const char *fn,FILE *fp,
         {
             gmx_fatal(FARGS,"Expected a residue name and two atom names in file '%s', not '%s'",fn,line);
         }
-        
+
         srenew(xl,n+1);
         xl[n].filebase = strdup(filebase);
 
@@ -100,13 +101,13 @@ static void get_xlatoms(const char *fn,FILE *fp,
         {
             xl[n].res = NULL;
         }
-        
+
         /* Replace underscores in the string by spaces */
         while ((_ptr = strchr(abuf,'_')) != 0)
         {
             *_ptr = ' ';
         }
-        
+
         xl[n].atom = strdup(abuf);
         xl[n].replace = strdup(repbuf);
         n++;
@@ -119,8 +120,8 @@ static void get_xlatoms(const char *fn,FILE *fp,
 static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
 {
     int i;
-    
-    for(i=0; (i<nxlate); i++)
+
+    for (i=0; (i<nxlate); i++)
     {
         sfree(xlatom[i].filebase);
         if (xlatom[i].res != NULL)
@@ -157,7 +158,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
     else
     {
         nf = fflib_search_file_end(ffdir,".arn",FALSE,&f);
-        for(i=0; i<nf; i++)
+        for (i=0; i<nf; i++)
         {
             fp = fflib_open(f[i]);
             get_xlatoms(f[i],fp,&nxlate,&xlatom);
@@ -167,7 +168,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         sfree(f);
     }
 
-    for(a=0; (a<atoms->nr); a++)
+    for (a=0; (a<atoms->nr); a++)
     {
         resind = atoms->atom[a].resind;
         if (bResname)
@@ -178,7 +179,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         {
             rnm = *(atoms->resinfo[resind].rtp);
         }
-               
+
         strcpy(atombuf,*(atoms->atomname[a]));
         bReorderedNum = FALSE;
         if (bReorderNum)
@@ -195,7 +196,8 @@ void rename_atoms(const char *xlfile,const char *ffdir,
             }
         }
         bRenamed = FALSE;
-        for(i=0; (i<nxlate) && !bRenamed; i++) {
+        for (i=0; (i<nxlate) && !bRenamed; i++)
+        {
             /* Check if the base file name of the rtp and arn entry match */
             if (restp == NULL ||
                 gmx_strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)

@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -41,9 +41,9 @@ files.
 #include <stdint.h>
 /* This code is executed for x86 and x86-64, with these compilers:
  * GNU
- * Intel 
+ * Intel
  * Pathscale
- * All these support GCC-style inline assembly. 
+ * All these support GCC-style inline assembly.
  * We also use this section for the documentation.
  */
 
@@ -60,19 +60,19 @@ files.
 #define TMPI_SIZEOF_X86_CACHE_LINE 64
 typedef struct tMPI_Atomic
 {
-    int value; 
+    int value;
     char padding[TMPI_SIZEOF_X86_CACHE_LINE-sizeof(int)];
 } tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    void* value; 
+    void* value;
     char padding[TMPI_SIZEOF_X86_CACHE_LINE-sizeof(void*)];
 } tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
-    unsigned int lock; 
+    unsigned int lock;
     char padding[TMPI_SIZEOF_X86_CACHE_LINE-sizeof(unsigned int)];
 } tMPI_Spinlock_t;
 
@@ -82,23 +82,23 @@ typedef struct tMPI_Spinlock
 
 
 /* these are guaranteed to be  atomic on x86 and x86_64 */
-#define tMPI_Atomic_get(a)  ((a)->value) 
+#define tMPI_Atomic_get(a)  ((a)->value)
 #define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
-#define tMPI_Atomic_ptr_get(a)  ((a)->value) 
+#define tMPI_Atomic_ptr_get(a)  ((a)->value)
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-/* do the intrinsics. 
-   
-   We disable this for 32-bit builds because the target may be 80386, 
-   which didn't have cmpxchg, etc (they were introduced as only as 'recently' 
-   as the 486, and gcc on some Linux versions still target 80386 by default). 
-  
+/* do the intrinsics.
+
+   We disable this for 32-bit builds because the target may be 80386,
+   which didn't have cmpxchg, etc (they were introduced as only as 'recently'
+   as the 486, and gcc on some Linux versions still target 80386 by default).
+
    We also specifically check for icc, because intrinsics are not always
    supported there. */
 #if ( (TMPI_GCC_VERSION >= 40100) && defined(__x86_64__) &&  \
-     !defined(__INTEL_COMPILER) ) 
+     !defined(__INTEL_COMPILER) )
 #include "gcc_intrinsics.h"
 
 #else
@@ -106,16 +106,16 @@ typedef struct tMPI_Spinlock
 
 
 #define tMPI_Atomic_memory_barrier() __asm__ __volatile__("sfence;": : :"memory")
- 
+
 static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
     int __i;
-    
+
     __i = i;
     __asm__ __volatile__("lock ; xaddl %0, %1;"
                          :"=r"(i) :"m"(a->value), "0"(i) : "memory");
     return i + __i;
-}  
+}
 
 static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
@@ -127,26 +127,26 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
     int prev;
-    
+
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a"(prev)
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
-    
+
     return prev==oldval;
 }
 
-static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                                       void *oldval,
                                       void *newval)
 {
     void* prev;
-#ifndef __x86_64__ 
+#ifndef __x86_64__
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a"(prev)
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
-#else 
+#else
     __asm__ __volatile__("lock ; cmpxchgq %1,%2"
                          : "=a"(prev)
                          : "q"(newval), "m"(a->value), "0"(oldval)
@@ -162,9 +162,9 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
 static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
     volatile int ret=b;
-    __asm__ __volatile__("\txchgl %0, %1;" 
+    __asm__ __volatile__("\txchgl %0, %1;"
                          :"+r"(ret), "+m"(a->value)
-                         : 
+                         :
                          :"memory");
     return (int)ret;
 }
@@ -172,19 +172,19 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *volatile *ret=(void* volatile*)b;
-#ifndef __x86_64__ 
-/*    __asm__ __volatile__("\txchgl %0, %1;" 
-                         :"=m"(a->value),"=q"(b) 
-                         :"q"(b)
-                         :"memory");
-*/
-    __asm__ __volatile__("\txchgl %0, %1;" 
+#ifndef __x86_64__
+    /*    __asm__ __volatile__("\txchgl %0, %1;"
+                             :"=m"(a->value),"=q"(b)
+                             :"q"(b)
+                             :"memory");
+    */
+    __asm__ __volatile__("\txchgl %0, %1;"
                          :"+r"(ret), "+m"(a->value)
                          :
                          :"memory");
 
 #else
-    __asm__ __volatile__("\txchgq %0, %1;" 
+    __asm__ __volatile__("\txchgq %0, %1;"
                          :"+r"(ret), "+m"(a->value)
                          :
                          :"memory");
@@ -206,7 +206,7 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     /* this is a spinlock with a double loop, as recommended by Intel
-       it pauses in the outer loop (the one that just checks for the 
+       it pauses in the outer loop (the one that just checks for the
        availability of the lock), and thereby reduces bus contention and
        prevents the pipeline from flushing. */
     __asm__ __volatile__("1:\tcmpl $0, %0\n"      /* check the lock */
@@ -214,18 +214,18 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
                                                      free by jumping forward */
                          "\tpause\n"              /* otherwise: small pause
                                                      as recommended by Intel */
-                         "\tjmp 1b\n"             /* and jump back */  
+                         "\tjmp 1b\n"             /* and jump back */
 
                          "2:\tmovl $1, %%eax\n"   /* set eax to 1, the locked
                                                      value of the lock */
-                         "\txchgl %%eax, %0\n"    /* atomically exchange 
+                         "\txchgl %%eax, %0\n"    /* atomically exchange
                                                      eax with the lock value */
                          "\tcmpl $0, %%eax\n"     /* compare the exchanged
                                                      value with 0 */
                          "\tjne 1b"               /* jump backward if we didn't
                                                      just lock */
                          : "+m" (x->lock)         /* input & output var */
-                         : 
+                         :
                          : "%eax", "memory"/* we changed memory */
                         );
 }
@@ -236,8 +236,8 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 {
     /* this is apparently all that is needed for unlocking a lock */
     __asm__ __volatile__(
-                     "\n\tmovl $0, %0\n"
-                     : "=m"(x->lock) : : "memory" );
+        "\n\tmovl $0, %0\n"
+        : "=m"(x->lock) : : "memory" );
 }
 
 
@@ -245,10 +245,10 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
     int old_value=1;
-        
+
     __asm__ __volatile__("\tmovl %2, %0\n"     /* set eax to 1, the locked
                                                   value of the lock */
-                         "\txchgl %0, %1\n"    /* atomically exchange 
+                         "\txchgl %0, %1\n"    /* atomically exchange
                                                   eax with the address in
                                                   rdx. */
                          : "+r"(old_value), "+m" (x->lock)
@@ -257,7 +257,7 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
     return (old_value);
 }
 
- 
+
 
 static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
@@ -273,19 +273,19 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
                                                      free by jumping forward */
                          "\tpause\n"              /* otherwise: small pause
                                                      as recommended by Intel */
-                         "\tjmp 1b\n"             /* and jump back */  
-                         "2:\tnop\n"              /* jump target for end 
+                         "\tjmp 1b\n"             /* and jump back */
+                         "2:\tnop\n"              /* jump target for end
                                                      of wait */
                          : "+m"(x->lock)         /* input & output var */
-                         : 
+                         :
                          : "memory"/* we changed memory */
                         );
 #if 0
-    do 
+    do
     {
-        tMPI_Atomic_memory_barrier(); 
-    } 
-    while(tMPI_Spinlock_islocked(x));
+        tMPI_Atomic_memory_barrier();
+    }
+    while (tMPI_Spinlock_islocked(x));
 #endif
 }
 

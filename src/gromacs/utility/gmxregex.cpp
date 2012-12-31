@@ -103,7 +103,7 @@ class Regex::Impl
             {
                 // TODO: Better error messages.
                 GMX_THROW(InvalidInputError(formatString(
-                                "Error in regular expression \"%s\"", value)));
+                                                "Error in regular expression \"%s\"", value)));
             }
         }
 
@@ -114,24 +114,24 @@ class Regex::Impl
 {
     public:
         explicit Impl(const char *value)
-        try : regex_(value, std::regex::nosubs | std::regex::extended)
+    try : regex_(value, std::regex::nosubs | std::regex::extended)
         {
         }
         catch (const std::regex_error &)
         {
             // TODO: Better error messages.
             GMX_THROW(InvalidInputError(formatString(
-                            "Error in regular expression \"%s\"", value)));
+                                            "Error in regular expression \"%s\"", value)));
         }
         explicit Impl(const std::string &value)
-        try : regex_(value, std::regex::nosubs | std::regex::extended)
+    try : regex_(value, std::regex::nosubs | std::regex::extended)
         {
         }
         catch (const std::regex_error &)
         {
             // TODO: Better error messages.
             GMX_THROW(InvalidInputError(formatString(
-                            "Error in regular expression \"%s\"", value)));
+                                            "Error in regular expression \"%s\"", value)));
         }
 
         bool match(const char *value) const
@@ -157,19 +157,19 @@ class Regex::Impl
         explicit Impl(const char * /*value*/)
         {
             GMX_THROW(NotImplementedError(
-                        "Gromacs is compiled without regular expression support"));
+                          "Gromacs is compiled without regular expression support"));
         }
         explicit Impl(const std::string & /*value*/)
         {
             GMX_THROW(NotImplementedError(
-                        "Gromacs is compiled without regular expression support"));
+                          "Gromacs is compiled without regular expression support"));
         }
 
         bool match(const char * /*value*/) const
         {
             // Should never be reached.
             GMX_THROW(NotImplementedError(
-                        "Gromacs is compiled without regular expression support"));
+                          "Gromacs is compiled without regular expression support"));
         }
 };
 #endif

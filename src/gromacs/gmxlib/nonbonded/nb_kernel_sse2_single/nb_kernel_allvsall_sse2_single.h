@@ -12,7 +12,7 @@
 void
 nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
                                t_mdatoms *            mdatoms,
-                               t_blocka *             excl,    
+                               t_blocka *             excl,
                                real *                 x,
                                real *                 f,
                                real *                 Vc,

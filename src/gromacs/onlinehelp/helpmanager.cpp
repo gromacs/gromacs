@@ -125,8 +125,8 @@ void HelpManager::enterTopic(const char *name)
     if (!topic.hasSubTopics())
     {
         GMX_THROW(InvalidInputError(
-                    formatString("Help topic '%s' has no subtopics",
-                                 impl_->currentTopicAsString().c_str())));
+                      formatString("Help topic '%s' has no subtopics",
+                                   impl_->currentTopicAsString().c_str())));
     }
     const HelpTopicInterface *newTopic = topic.findSubTopic(name);
     if (newTopic == NULL)
@@ -134,13 +134,13 @@ void HelpManager::enterTopic(const char *name)
         if (impl_->isAtRootTopic())
         {
             GMX_THROW(InvalidInputError(
-                        formatString("No help available for '%s'", name)));
+                          formatString("No help available for '%s'", name)));
         }
         else
         {
             GMX_THROW(InvalidInputError(
-                        formatString("Help topic '%s' has no subtopic '%s'",
-                                     impl_->currentTopicAsString().c_str(), name)));
+                          formatString("Help topic '%s' has no subtopic '%s'",
+                                       impl_->currentTopicAsString().c_str(), name)));
         }
     }
     impl_->topicStack_.push_back(newTopic);

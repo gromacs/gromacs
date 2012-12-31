@@ -46,7 +46,7 @@
 /** Defines the value type of a different selection objects. */
 typedef enum
 {
-    NO_VALUE,           /**< No value; either an error condition or an boolean 
+    NO_VALUE,           /**< No value; either an error condition or an boolean
                              parameter. */
     INT_VALUE,          /**< One or more integer values. */
     REAL_VALUE,         /**< One or more real values. */
@@ -74,7 +74,8 @@ typedef struct gmx_ana_selvalue_t
      */
     int                         nr;
     /** Pointer to the value. */
-    union {
+    union
+    {
         /*! \brief
          * Generic pointer for operations that do not need type information.
          *

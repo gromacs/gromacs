@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -60,7 +60,7 @@ files.
 
 
 int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
-                 void* recvbuf, int recvcount, tMPI_Datatype recvtype, 
+                 void* recvbuf, int recvcount, tMPI_Datatype recvtype,
                  int root, tMPI_Comm comm)
 {
     int synct;
@@ -70,11 +70,11 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
+    tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Scatter(%p, %d, %p, %p, %d, %p, %d, %p)", 
-                     sendbuf, sendcount, sendtype, 
+    tMPI_Trace_print("tMPI_Scatter(%p, %d, %p, %p, %d, %p, %d, %p)",
+                     sendbuf, sendcount, sendtype,
                      recvbuf, recvcount, recvtype, root, comm);
 #endif
     if (!comm)
@@ -105,21 +105,21 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         cev->met[myrank].datatype=sendtype;
         tMPI_Atomic_memory_barrier_rel();
         tMPI_Atomic_set( &(cev->met[myrank].n_remaining), cev->N-1 );
-        for(i=0;i<comm->grp.N;i++)
-        {        
+        for (i=0; i<comm->grp.N; i++)
+        {
             total_send_size += sendtype->size*sendcount;
             cev->met[myrank].bufsize[i]=sendsize;
             cev->met[myrank].buf[i]=(char*)sendbuf+sendsize*i;
         }
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        /* we must copy our own data too, unfortunately (otherwise there's 
+        /* we must copy our own data too, unfortunately (otherwise there's
            a hole) */
         using_cb=(total_send_size < (size_t)((cev->N)*COPY_BUFFER_SIZE));
         cev->met[myrank].using_cb=using_cb;
         if (using_cb)
         {
             /* we set cpbuf stuff to NULL initially */
-            for(i=0;i<cev->N;i++)
+            for (i=0; i<cev->N; i++)
             {
                 /*cev->met[myrank].cpbuf[i]=NULL;*/
                 tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[i]), NULL);
@@ -129,10 +129,12 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 #endif
 
         /* post availability */
-        for(i=0;i<cev->N;i++)
+        for (i=0; i<cev->N; i++)
         {
             if (i != myrank)
+            {
                 tMPI_Event_signal( &(cev->met[i].recv_ev) );
+            }
         }
 
 
@@ -154,12 +156,12 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             memcpy(cev->met[myrank].cb->buf, sendbuf, total_send_size);
 
             /* post the new buf */
-            for(i=0;i<cev->N;i++)
+            for (i=0; i<cev->N; i++)
             {
                 tMPI_Atomic_memory_barrier_rel();
                 tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[i]),
                                     (char*)cev->met[myrank].cb->buf+sendsize*i);
-                /*cev->met[myrank].cpbuf[i] = (char*)cev->met[myrank].cb->buf + 
+                /*cev->met[myrank].cpbuf[i] = (char*)cev->met[myrank].cb->buf +
                                             sendsize*i ;*/
             }
         }
@@ -169,8 +171,8 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         if (recvbuf!=TMPI_IN_PLACE)
         {
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
-                                sendsize, recvtype->size*recvcount, 
-                                (char*)sendbuf+sendsize*myrank, 
+                                sendsize, recvtype->size*recvcount,
+                                (char*)sendbuf+sendsize*myrank,
                                 recvbuf, &ret);
         }
 
@@ -183,11 +185,11 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         size_t bufsize=recvcount*recvtype->size;
         /* wait until root becomes available */
         tMPI_Wait_for_data(cur, cev, myrank);
-        tMPI_Mult_recv(comm, cev, root, myrank,TMPI_SCATTER_TAG, recvtype, 
+        tMPI_Mult_recv(comm, cev, root, myrank,TMPI_SCATTER_TAG, recvtype,
                        bufsize, recvbuf, &ret);
     }
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur, TMPIFN_Scatter); 
+    tMPI_Profile_count_stop(cur, TMPIFN_Scatter);
 #endif
     return ret;
 }
@@ -195,8 +197,8 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
 
 int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
-                 tMPI_Datatype sendtype, void* recvbuf, int recvcount,
-                 tMPI_Datatype recvtype, int root, tMPI_Comm comm)
+                  tMPI_Datatype sendtype, void* recvbuf, int recvcount,
+                  tMPI_Datatype recvtype, int root, tMPI_Comm comm)
 {
     int synct;
     struct coll_env *cev;
@@ -205,12 +207,12 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Scatterv(%p, %p, %p, %p, %p, %d, %p, %d, %p)", 
+    tMPI_Trace_print("tMPI_Scatterv(%p, %p, %p, %p, %p, %d, %p, %d, %p)",
                      sendbuf, sendcounts, displs, sendtype, recvbuf,
                      recvcount, recvtype, root, comm);
 #endif
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
+    tMPI_Profile_count_start(cur);
 #endif
 
 
@@ -241,21 +243,21 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         cev->met[myrank].datatype=sendtype;
         tMPI_Atomic_memory_barrier_rel();
         tMPI_Atomic_set( &(cev->met[myrank].n_remaining), cev->N-1 );
-        for(i=0;i<cev->N;i++)
-        {        
+        for (i=0; i<cev->N; i++)
+        {
             total_send_size += sendtype->size*sendcounts[i];
             cev->met[myrank].bufsize[i]=sendtype->size*sendcounts[i];
             cev->met[myrank].buf[i]=(char*)sendbuf+sendtype->size*displs[i];
         }
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        /* we must copy our own data too, unfortunately (otherwise there's 
+        /* we must copy our own data too, unfortunately (otherwise there's
            a hole) */
         using_cb=(total_send_size < (size_t)((cev->N)*COPY_BUFFER_SIZE));
         cev->met[myrank].using_cb=using_cb;
         if (using_cb)
         {
             /* we set cpbuf stuff to NULL initially */
-            for(i=0;i<cev->N;i++)
+            for (i=0; i<cev->N; i++)
             {
                 /*cev->met[myrank].cpbuf[i]=NULL;*/
                 tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[i]), NULL);
@@ -265,10 +267,12 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 #endif
 
         /* post availability */
-        for(i=0;i<cev->N;i++)
+        for (i=0; i<cev->N; i++)
         {
             if (i != myrank)
+            {
                 tMPI_Event_signal( &(cev->met[i].recv_ev) );
+            }
         }
 
 
@@ -288,13 +292,13 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
             /* copy to the new buf */
             memcpy(cev->met[myrank].cb->buf, sendbuf, total_send_size);
             /* post the new buf */
-            for(i=0;i<cev->N;i++)
+            for (i=0; i<cev->N; i++)
             {
                 tMPI_Atomic_memory_barrier_rel();
                 tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[i]),
-                                    (char*)cev->met[myrank].cb->buf + 
+                                    (char*)cev->met[myrank].cb->buf +
                                     sendtype->size*displs[i]);
-                /*cev->met[myrank].cpbuf[i]=(char*)cev->met[myrank].cb->buf + 
+                /*cev->met[myrank].cpbuf[i]=(char*)cev->met[myrank].cb->buf +
                           sendtype->size*displs[i];*/
             }
         }
@@ -304,9 +308,9 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         if (recvbuf!=TMPI_IN_PLACE)
         {
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
-                                sendtype->size*sendcounts[myrank], 
-                                recvtype->size*recvcount, 
-                                (char*)sendbuf+sendtype->size*displs[myrank], 
+                                sendtype->size*sendcounts[myrank],
+                                recvtype->size*recvcount,
+                                (char*)sendbuf+sendtype->size*displs[myrank],
                                 recvbuf,
                                 &ret);
         }
@@ -320,11 +324,11 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         size_t bufsize=recvcount*recvtype->size;
         /* wait until root becomes available */
         tMPI_Wait_for_data(cur, cev, myrank);
-        tMPI_Mult_recv(comm, cev, root, myrank, TMPI_SCATTERV_TAG, 
+        tMPI_Mult_recv(comm, cev, root, myrank, TMPI_SCATTERV_TAG,
                        recvtype, bufsize, recvbuf, &ret);
     }
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur, TMPIFN_Scatterv); 
+    tMPI_Profile_count_stop(cur, TMPIFN_Scatterv);
 #endif
     return ret;
 }

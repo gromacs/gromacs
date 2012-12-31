@@ -103,7 +103,7 @@ TEST(TimeUnitManagerTest, DoesNotScaleDefaultValues)
     using gmx::DoubleOption;
     ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
     ASSERT_NO_THROW(options.addOption(DoubleOption("q").store(&value2).timeValue()
-                        .defaultValueIfSet(2.5)));
+                                      .defaultValueIfSet(2.5)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());

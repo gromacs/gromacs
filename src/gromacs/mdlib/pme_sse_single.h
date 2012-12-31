@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 4.5
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -24,12 +24,12 @@
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -58,7 +58,7 @@
 
     tz_SSE  = _mm_loadu_ps(thz);
 
-    for(ithx=0; (ithx<4); ithx++)
+    for (ithx=0; (ithx<4); ithx++)
     {
         index_x = (i0+ithx)*pny*pnz;
         valx    = qn*thx[ithx];
@@ -111,13 +111,13 @@
     tz_SSE  = _mm_loadu_ps(thz);
     dz_SSE  = _mm_loadu_ps(dthz);
 
-    for(ithx=0; (ithx<4); ithx++)
+    for (ithx=0; (ithx<4); ithx++)
     {
         index_x = (i0+ithx)*pny*pnz;
         tx_SSE   = _mm_load1_ps(thx+ithx);
         dx_SSE   = _mm_load1_ps(dthx+ithx);
 
-        for(ithy=0; (ithy<4); ithy++)
+        for (ithy=0; (ithy<4); ithy++)
         {
             index_xy = index_x+(j0+ithy)*pnz;
             ty_SSE   = _mm_load1_ps(thy+ithy);
@@ -155,86 +155,86 @@
     int offset;
     int index;
     __m128 ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3,ty_SSE4;
-    __m128 tz_SSE0;                                  
-    __m128 tz_SSE1;                                  
-    __m128 vx_SSE;                                   
-    __m128 vx_tz_SSE0;                               
-    __m128 vx_tz_SSE1;                               
-    __m128 sum_SSE00,sum_SSE01,sum_SSE02,sum_SSE03,sum_SSE04; 
-    __m128 sum_SSE10,sum_SSE11,sum_SSE12,sum_SSE13,sum_SSE14; 
-    __m128 gri_SSE00,gri_SSE01,gri_SSE02,gri_SSE03,gri_SSE04; 
-    __m128 gri_SSE10,gri_SSE11,gri_SSE12,gri_SSE13,gri_SSE14; 
-                                                     
-    offset = k0 & 3;                                 
-                                                     
-    ty_SSE0 = _mm_load1_ps(&thy[0]);                 
-    ty_SSE1 = _mm_load1_ps(&thy[1]);                 
-    ty_SSE2 = _mm_load1_ps(&thy[2]);                 
-    ty_SSE3 = _mm_load1_ps(&thy[3]);                 
-#if PME_ORDER == 5                                       
-    ty_SSE4 = _mm_load1_ps(&thy[4]);                 
-#endif                                               
-                                                     
-    tz_SSE0 = _mm_loadu_ps(thz-offset);              
-    tz_SSE1 = _mm_loadu_ps(thz-offset+4);            
-    tz_SSE0 = _mm_and_ps(tz_SSE0,work->mask_SSE0[offset]); 
-    tz_SSE1 = _mm_and_ps(tz_SSE1,work->mask_SSE1[offset]); 
+    __m128 tz_SSE0;
+    __m128 tz_SSE1;
+    __m128 vx_SSE;
+    __m128 vx_tz_SSE0;
+    __m128 vx_tz_SSE1;
+    __m128 sum_SSE00,sum_SSE01,sum_SSE02,sum_SSE03,sum_SSE04;
+    __m128 sum_SSE10,sum_SSE11,sum_SSE12,sum_SSE13,sum_SSE14;
+    __m128 gri_SSE00,gri_SSE01,gri_SSE02,gri_SSE03,gri_SSE04;
+    __m128 gri_SSE10,gri_SSE11,gri_SSE12,gri_SSE13,gri_SSE14;
 
-    for(ithx=0; (ithx<PME_ORDER); ithx++)                
-    {                                                
-        index = (i0+ithx)*pny*pnz + j0*pnz + k0 - offset;  
-        valx  = qn*thx[ithx];                        
-                                                     
-        vx_SSE   = _mm_load1_ps(&valx);              
-                                                     
-        vx_tz_SSE0 = _mm_mul_ps(vx_SSE,tz_SSE0);     
-        vx_tz_SSE1 = _mm_mul_ps(vx_SSE,tz_SSE1);     
-                                                     
-        gri_SSE00 = _mm_load_ps(grid+index+0*pnz);   
-        gri_SSE01 = _mm_load_ps(grid+index+1*pnz);   
-        gri_SSE02 = _mm_load_ps(grid+index+2*pnz);   
-        gri_SSE03 = _mm_load_ps(grid+index+3*pnz);   
+    offset = k0 & 3;
+
+    ty_SSE0 = _mm_load1_ps(&thy[0]);
+    ty_SSE1 = _mm_load1_ps(&thy[1]);
+    ty_SSE2 = _mm_load1_ps(&thy[2]);
+    ty_SSE3 = _mm_load1_ps(&thy[3]);
 #if PME_ORDER == 5
-        gri_SSE04 = _mm_load_ps(grid+index+4*pnz);   
-#endif                                               
-        gri_SSE10 = _mm_load_ps(grid+index+0*pnz+4); 
-        gri_SSE11 = _mm_load_ps(grid+index+1*pnz+4); 
-        gri_SSE12 = _mm_load_ps(grid+index+2*pnz+4); 
-        gri_SSE13 = _mm_load_ps(grid+index+3*pnz+4); 
-#if PME_ORDER == 5
-        gri_SSE14 = _mm_load_ps(grid+index+4*pnz+4); 
-#endif                                               
-                                                     
-        sum_SSE00 = _mm_add_ps(gri_SSE00,_mm_mul_ps(vx_tz_SSE0,ty_SSE0)); 
-        sum_SSE01 = _mm_add_ps(gri_SSE01,_mm_mul_ps(vx_tz_SSE0,ty_SSE1)); 
-        sum_SSE02 = _mm_add_ps(gri_SSE02,_mm_mul_ps(vx_tz_SSE0,ty_SSE2)); 
-        sum_SSE03 = _mm_add_ps(gri_SSE03,_mm_mul_ps(vx_tz_SSE0,ty_SSE3)); 
-#if PME_ORDER == 5
-        sum_SSE04 = _mm_add_ps(gri_SSE04,_mm_mul_ps(vx_tz_SSE0,ty_SSE4)); 
-#endif                                                                  
-        sum_SSE10 = _mm_add_ps(gri_SSE10,_mm_mul_ps(vx_tz_SSE1,ty_SSE0)); 
-        sum_SSE11 = _mm_add_ps(gri_SSE11,_mm_mul_ps(vx_tz_SSE1,ty_SSE1)); 
-        sum_SSE12 = _mm_add_ps(gri_SSE12,_mm_mul_ps(vx_tz_SSE1,ty_SSE2)); 
-        sum_SSE13 = _mm_add_ps(gri_SSE13,_mm_mul_ps(vx_tz_SSE1,ty_SSE3)); 
-#if PME_ORDER == 5
-        sum_SSE14 = _mm_add_ps(gri_SSE14,_mm_mul_ps(vx_tz_SSE1,ty_SSE4)); 
-#endif      
-                                                     
-        _mm_store_ps(grid+index+0*pnz,sum_SSE00);    
-        _mm_store_ps(grid+index+1*pnz,sum_SSE01);    
-        _mm_store_ps(grid+index+2*pnz,sum_SSE02);    
-        _mm_store_ps(grid+index+3*pnz,sum_SSE03);    
-#if PME_ORDER == 5
-        _mm_store_ps(grid+index+4*pnz,sum_SSE04);    
-#endif    
-        _mm_store_ps(grid+index+0*pnz+4,sum_SSE10);  
-        _mm_store_ps(grid+index+1*pnz+4,sum_SSE11);  
-        _mm_store_ps(grid+index+2*pnz+4,sum_SSE12);  
-        _mm_store_ps(grid+index+3*pnz+4,sum_SSE13);  
-#if PME_ORDER == 5
-        _mm_store_ps(grid+index+4*pnz+4,sum_SSE14);  
+    ty_SSE4 = _mm_load1_ps(&thy[4]);
 #endif
-    }                                            
+
+    tz_SSE0 = _mm_loadu_ps(thz-offset);
+    tz_SSE1 = _mm_loadu_ps(thz-offset+4);
+    tz_SSE0 = _mm_and_ps(tz_SSE0,work->mask_SSE0[offset]);
+    tz_SSE1 = _mm_and_ps(tz_SSE1,work->mask_SSE1[offset]);
+
+    for (ithx=0; (ithx<PME_ORDER); ithx++)
+    {
+        index = (i0+ithx)*pny*pnz + j0*pnz + k0 - offset;
+        valx  = qn*thx[ithx];
+
+        vx_SSE   = _mm_load1_ps(&valx);
+
+        vx_tz_SSE0 = _mm_mul_ps(vx_SSE,tz_SSE0);
+        vx_tz_SSE1 = _mm_mul_ps(vx_SSE,tz_SSE1);
+
+        gri_SSE00 = _mm_load_ps(grid+index+0*pnz);
+        gri_SSE01 = _mm_load_ps(grid+index+1*pnz);
+        gri_SSE02 = _mm_load_ps(grid+index+2*pnz);
+        gri_SSE03 = _mm_load_ps(grid+index+3*pnz);
+#if PME_ORDER == 5
+        gri_SSE04 = _mm_load_ps(grid+index+4*pnz);
+#endif
+        gri_SSE10 = _mm_load_ps(grid+index+0*pnz+4);
+        gri_SSE11 = _mm_load_ps(grid+index+1*pnz+4);
+        gri_SSE12 = _mm_load_ps(grid+index+2*pnz+4);
+        gri_SSE13 = _mm_load_ps(grid+index+3*pnz+4);
+#if PME_ORDER == 5
+        gri_SSE14 = _mm_load_ps(grid+index+4*pnz+4);
+#endif
+
+        sum_SSE00 = _mm_add_ps(gri_SSE00,_mm_mul_ps(vx_tz_SSE0,ty_SSE0));
+        sum_SSE01 = _mm_add_ps(gri_SSE01,_mm_mul_ps(vx_tz_SSE0,ty_SSE1));
+        sum_SSE02 = _mm_add_ps(gri_SSE02,_mm_mul_ps(vx_tz_SSE0,ty_SSE2));
+        sum_SSE03 = _mm_add_ps(gri_SSE03,_mm_mul_ps(vx_tz_SSE0,ty_SSE3));
+#if PME_ORDER == 5
+        sum_SSE04 = _mm_add_ps(gri_SSE04,_mm_mul_ps(vx_tz_SSE0,ty_SSE4));
+#endif
+        sum_SSE10 = _mm_add_ps(gri_SSE10,_mm_mul_ps(vx_tz_SSE1,ty_SSE0));
+        sum_SSE11 = _mm_add_ps(gri_SSE11,_mm_mul_ps(vx_tz_SSE1,ty_SSE1));
+        sum_SSE12 = _mm_add_ps(gri_SSE12,_mm_mul_ps(vx_tz_SSE1,ty_SSE2));
+        sum_SSE13 = _mm_add_ps(gri_SSE13,_mm_mul_ps(vx_tz_SSE1,ty_SSE3));
+#if PME_ORDER == 5
+        sum_SSE14 = _mm_add_ps(gri_SSE14,_mm_mul_ps(vx_tz_SSE1,ty_SSE4));
+#endif
+
+        _mm_store_ps(grid+index+0*pnz,sum_SSE00);
+        _mm_store_ps(grid+index+1*pnz,sum_SSE01);
+        _mm_store_ps(grid+index+2*pnz,sum_SSE02);
+        _mm_store_ps(grid+index+3*pnz,sum_SSE03);
+#if PME_ORDER == 5
+        _mm_store_ps(grid+index+4*pnz,sum_SSE04);
+#endif
+        _mm_store_ps(grid+index+0*pnz+4,sum_SSE10);
+        _mm_store_ps(grid+index+1*pnz+4,sum_SSE11);
+        _mm_store_ps(grid+index+2*pnz+4,sum_SSE12);
+        _mm_store_ps(grid+index+3*pnz+4,sum_SSE13);
+#if PME_ORDER == 5
+        _mm_store_ps(grid+index+4*pnz+4,sum_SSE14);
+#endif
+    }
 }
 #undef PME_ORDER
 #undef PME_SPREAD_SSE_ALIGNED
@@ -281,13 +281,13 @@
     tz_SSE1 = _mm_and_ps(tz_SSE1,work->mask_SSE1[offset]);
     dz_SSE1 = _mm_and_ps(dz_SSE1,work->mask_SSE1[offset]);
 
-    for(ithx=0; (ithx<PME_ORDER); ithx++)
+    for (ithx=0; (ithx<PME_ORDER); ithx++)
     {
         index_x = (i0+ithx)*pny*pnz;
         tx_SSE   = _mm_load1_ps(thx+ithx);
         dx_SSE   = _mm_load1_ps(dthx+ithx);
 
-        for(ithy=0; (ithy<PME_ORDER); ithy++)
+        for (ithy=0; (ithy<PME_ORDER); ithy++)
         {
             index_xy = index_x+(j0+ithy)*pnz;
             ty_SSE   = _mm_load1_ps(thy+ithy);

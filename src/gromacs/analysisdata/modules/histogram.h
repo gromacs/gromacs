@@ -179,7 +179,7 @@ inline AnalysisHistogramSettingsInitializer
 histogramFromBins(real start, int nbins, real binwidth)
 {
     return AnalysisHistogramSettingsInitializer()
-        .start(start).binCount(nbins).binWidth(binwidth);
+           .start(start).binCount(nbins).binWidth(binwidth);
 }
 
 
@@ -243,7 +243,7 @@ class AbstractAverageHistogram;
 
 //! Smart pointer to manage an AbstractAverageHistogram object.
 typedef gmx_unique_ptr<AbstractAverageHistogram>::type
-        AverageHistogramPointer;
+AverageHistogramPointer;
 
 /*! \brief
  * Base class for representing histograms averaged over frames.
@@ -335,7 +335,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * \ingroup module_analysisdata
  */
 class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
-                                          public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         /*! \brief
@@ -400,7 +400,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
-                                            public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
@@ -453,7 +453,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
-                                     public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
@@ -484,13 +484,13 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
 
 //! Smart pointer to manage an AnalysisDataSimpleHistogramModule object.
 typedef boost::shared_ptr<AnalysisDataSimpleHistogramModule>
-        AnalysisDataSimpleHistogramModulePointer;
+AnalysisDataSimpleHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataWeightedHistogramModule object.
 typedef boost::shared_ptr<AnalysisDataWeightedHistogramModule>
-        AnalysisDataWeightedHistogramModulePointer;
+AnalysisDataWeightedHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataBinAverageModule object.
 typedef boost::shared_ptr<AnalysisDataBinAverageModule>
-        AnalysisDataBinAverageModulePointer;
+AnalysisDataBinAverageModulePointer;
 
 } // namespace gmx
 

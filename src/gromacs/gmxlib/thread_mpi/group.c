@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -66,10 +66,12 @@ tmpi_bool tMPI_In_group(tMPI_Group group)
     struct tmpi_thread *cur;
 
     cur=tMPI_Get_current();
-    for(i=0;i<group->N;i++)
+    for (i=0; i<group->N; i++)
     {
         if (group->peers[i] == cur)
+        {
             return TRUE;
+        }
     }
     return FALSE;
 }
@@ -81,14 +83,18 @@ int tMPI_Group_size(tMPI_Group group, int *size)
 #endif
 
     if (group)
+    {
         *size = group->N;
+    }
     else
+    {
         *size = 0;
+    }
     return TMPI_SUCCESS;
 }
 
 int tMPI_Group_rank(tMPI_Group group, int *rank)
-{    
+{
     int i;
     struct tmpi_thread *cur;
 
@@ -96,11 +102,13 @@ int tMPI_Group_rank(tMPI_Group group, int *rank)
     tMPI_Trace_print("tMPI_Group_rank(%p, %p)", group, rank);
 #endif
     if (!group)
+    {
         return TMPI_UNDEFINED;
+    }
 
     /* search for my id in the list of peers */
     cur=tMPI_Get_current();
-    for(i=0;i<group->N;i++)
+    for (i=0; i<group->N; i++)
     {
         if (group->peers[i] == cur)
         {
@@ -119,7 +127,7 @@ tMPI_Group tMPI_Group_alloc(void)
 
     ret=(struct tmpi_group_*)tMPI_Malloc(sizeof(struct tmpi_group_));
     ret->peers=(struct tmpi_thread**)tMPI_Malloc(
-                                sizeof(struct tmpi_thread*)*Nthreads);
+                   sizeof(struct tmpi_thread*)*Nthreads);
     ret->N=0;
 #if 0
     ret->Nrefs=1;
@@ -150,7 +158,7 @@ int tMPI_Comm_group(tMPI_Comm comm, tMPI_Group *group)
     tMPI_Trace_print("tMPI_Comm_group(%p, %p)", comm, group);
 #endif
     ret->N=comm->grp.N;
-    for(i=0;i<comm->grp.N;i++)
+    for (i=0; i<comm->grp.N; i++)
     {
         ret->peers[i]=comm->grp.peers[i];
     }
@@ -176,13 +184,13 @@ int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup)
     tMPI_Group ng;
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Group_incl(%p, %d, %p, %p, %p)", group, n, ranks, 
-                       newgroup);
+    tMPI_Trace_print("tMPI_Group_incl(%p, %d, %p, %p, %p)", group, n, ranks,
+                     newgroup);
 #endif
     /* just allocate and copy */
     ng=tMPI_Group_alloc();
     ng->N=n;
-    for(i=0;i<n;i++)
+    for (i=0; i<n; i++)
     {
         if (ranks[i] < 0 || !group || ranks[i] >= group->N)
         {

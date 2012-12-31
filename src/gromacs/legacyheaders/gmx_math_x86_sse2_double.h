@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -62,10 +62,10 @@ gmx_mm_invsqrt_pair_pd(__m128d x1, __m128d x2, __m128d *invsqrt1, __m128d *invsq
     const __m128d three  = _mm_set1_pd(3.0);
     const __m128  halff  = _mm_set1_ps(0.5f);
     const __m128  threef = _mm_set1_ps(3.0f);
-    
+
     __m128 xf,luf;
     __m128d lu1,lu2;
-    
+
     /* Do first N-R step in float for 2x throughput */
     xf  = _mm_shuffle_ps(_mm_cvtpd_ps(x1),_mm_cvtpd_ps(x2),_MM_SHUFFLE(1,0,1,0));
     luf = _mm_rsqrt_ps(xf);
@@ -73,7 +73,7 @@ gmx_mm_invsqrt_pair_pd(__m128d x1, __m128d x2, __m128d *invsqrt1, __m128d *invsq
 
     lu2 = _mm_cvtps_pd(_mm_shuffle_ps(luf,luf,_MM_SHUFFLE(3,2,3,2)));
     lu1 = _mm_cvtps_pd(luf);
-    
+
     *invsqrt1 = _mm_mul_pd(half,_mm_mul_pd(_mm_sub_pd(three,_mm_mul_pd(_mm_mul_pd(lu1,lu1),x1)),lu1));
     *invsqrt2 = _mm_mul_pd(half,_mm_mul_pd(_mm_sub_pd(three,_mm_mul_pd(_mm_mul_pd(lu2,lu2),x2)),lu2));
 }
@@ -778,12 +778,12 @@ gmx_mm_erfc_pd(__m128d x)
 /* Calculate the force correction due to PME analytically.
  *
  * This routine is meant to enable analytical evaluation of the
- * direct-space PME electrostatic force to avoid tables. 
+ * direct-space PME electrostatic force to avoid tables.
  *
  * The direct-space potential should be Erfc(beta*r)/r, but there
- * are some problems evaluating that: 
+ * are some problems evaluating that:
  *
- * First, the error function is difficult (read: expensive) to 
+ * First, the error function is difficult (read: expensive) to
  * approxmiate accurately for intermediate to large arguments, and
  * this happens already in ranges of beta*r that occur in simulations.
  * Second, we now try to avoid calculating potentials in Gromacs but
@@ -795,20 +795,20 @@ gmx_mm_erfc_pd(__m128d x)
  * V= 1/r - Erf(beta*r)/r
  *
  * The first term we already have from the inverse square root, so
- * that we can leave out of this routine. 
+ * that we can leave out of this routine.
  *
  * For pme tolerances of 1e-3 to 1e-8 and cutoffs of 0.5nm to 1.8nm,
- * the argument beta*r will be in the range 0.15 to ~4. Use your 
+ * the argument beta*r will be in the range 0.15 to ~4. Use your
  * favorite plotting program to realize how well-behaved Erf(z)/z is
- * in this range! 
+ * in this range!
  *
- * We approximate f(z)=erf(z)/z with a rational minimax polynomial. 
+ * We approximate f(z)=erf(z)/z with a rational minimax polynomial.
  * However, it turns out it is more efficient to approximate f(z)/z and
  * then only use even powers. This is another minor optimization, since
  * we actually WANT f(z)/z, because it is going to be multiplied by
- * the vector between the two atoms to get the vectorial force. The 
+ * the vector between the two atoms to get the vectorial force. The
  * fastest flops are the ones we can avoid calculating!
- * 
+ *
  * So, here's how it should be used:
  *
  * 1. Calculate r^2.
@@ -816,17 +816,17 @@ gmx_mm_erfc_pd(__m128d x)
  * 3. Evaluate this routine with z^2 as the argument.
  * 4. The return value is the expression:
  *
- *  
+ *
  *       2*exp(-z^2)     erf(z)
  *       ------------ - --------
  *       sqrt(Pi)*z^2      z^3
- * 
+ *
  * 5. Multiply the entire expression by beta^3. This will get you
  *
  *       beta^3*2*exp(-z^2)     beta^3*erf(z)
  *       ------------------  - ---------------
  *          sqrt(Pi)*z^2            z^3
- * 
+ *
  *    or, switching back to r (z=r*beta):
  *
  *       2*beta*exp(-r^2*beta^2)   erf(r*beta)
@@ -857,19 +857,19 @@ gmx_mm_pmecorrF_pd(__m128d z2)
     const __m128d  FN2      = _mm_set1_pd(-0.031750380176100813405);
     const __m128d  FN1      = _mm_set1_pd(0.13884101728898463426);
     const __m128d  FN0      = _mm_set1_pd(-0.75225277815249618847);
-    
+
     const __m128d  FD5      = _mm_set1_pd(0.000016009278224355026701);
     const __m128d  FD4      = _mm_set1_pd(0.00051055686934806966046);
     const __m128d  FD3      = _mm_set1_pd(0.0081803507497974289008);
     const __m128d  FD2      = _mm_set1_pd(0.077181146026670287235);
     const __m128d  FD1      = _mm_set1_pd(0.41543303143712535988);
     const __m128d  FD0      = _mm_set1_pd(1.0);
-    
+
     __m128d z4;
     __m128d polyFN0,polyFN1,polyFD0,polyFD1;
-    
+
     z4             = _mm_mul_pd(z2,z2);
-    
+
     polyFD1        = _mm_mul_pd(FD5,z4);
     polyFD0        = _mm_mul_pd(FD4,z4);
     polyFD1        = _mm_add_pd(polyFD1,FD3);
@@ -880,9 +880,9 @@ gmx_mm_pmecorrF_pd(__m128d z2)
     polyFD0        = _mm_add_pd(polyFD0,FD0);
     polyFD1        = _mm_mul_pd(polyFD1,z2);
     polyFD0        = _mm_add_pd(polyFD0,polyFD1);
-    
+
     polyFD0        = gmx_mm_inv_pd(polyFD0);
-    
+
     polyFN0        = _mm_mul_pd(FN10,z4);
     polyFN1        = _mm_mul_pd(FN9,z4);
     polyFN0        = _mm_add_pd(polyFN0,FN8);
@@ -903,7 +903,7 @@ gmx_mm_pmecorrF_pd(__m128d z2)
     polyFN1        = _mm_mul_pd(polyFN1,z2);
     polyFN0        = _mm_add_pd(polyFN0,FN0);
     polyFN0        = _mm_add_pd(polyFN0,polyFN1);
-    
+
     return   _mm_mul_pd(polyFN0,polyFD0);
 }
 
@@ -924,16 +924,16 @@ gmx_mm_pmecorrF_pd(__m128d z2)
  * 3. Evaluate this routine with z^2 as the argument.
  * 4. The return value is the expression:
  *
- *  
+ *
  *        erf(z)
  *       --------
  *          z
- * 
+ *
  * 5. Multiply the entire expression by beta and switching back to r (z=r*beta):
  *
  *       erf(r*beta)
  *       -----------
- *           r 
+ *           r
  *
  * 6. Add the result to 1/r, multiply by the product of the charges,
  *    and you have your potential.
@@ -952,19 +952,19 @@ gmx_mm_pmecorrV_pd(__m128d z2)
     const __m128d  VN2      = _mm_set1_pd(0.045247661136833092885);
     const __m128d  VN1      = _mm_set1_pd(0.11643931522926034421);
     const __m128d  VN0      = _mm_set1_pd(1.1283791671726767970);
-    
+
     const __m128d  VD5      = _mm_set1_pd(0.000021784709867336150342);
     const __m128d  VD4      = _mm_set1_pd(0.00064293662010911388448);
     const __m128d  VD3      = _mm_set1_pd(0.0096311444822588683504);
     const __m128d  VD2      = _mm_set1_pd(0.085608012351550627051);
     const __m128d  VD1      = _mm_set1_pd(0.43652499166614811084);
     const __m128d  VD0      = _mm_set1_pd(1.0);
-    
+
     __m128d z4;
     __m128d polyVN0,polyVN1,polyVD0,polyVD1;
-    
+
     z4             = _mm_mul_pd(z2,z2);
-    
+
     polyVD1        = _mm_mul_pd(VD5,z4);
     polyVD0        = _mm_mul_pd(VD4,z4);
     polyVD1        = _mm_add_pd(polyVD1,VD3);
@@ -975,9 +975,9 @@ gmx_mm_pmecorrV_pd(__m128d z2)
     polyVD0        = _mm_add_pd(polyVD0,VD0);
     polyVD1        = _mm_mul_pd(polyVD1,z2);
     polyVD0        = _mm_add_pd(polyVD0,polyVD1);
-    
+
     polyVD0        = gmx_mm_inv_pd(polyVD0);
-    
+
     polyVN1        = _mm_mul_pd(VN9,z4);
     polyVN0        = _mm_mul_pd(VN8,z4);
     polyVN1        = _mm_add_pd(polyVN1,VN7);
@@ -996,7 +996,7 @@ gmx_mm_pmecorrV_pd(__m128d z2)
     polyVN0        = _mm_add_pd(polyVN0,VN0);
     polyVN1        = _mm_mul_pd(polyVN1,z2);
     polyVN0        = _mm_add_pd(polyVN0,polyVN1);
-    
+
     return   _mm_mul_pd(polyVN0,polyVD0);
 }
 

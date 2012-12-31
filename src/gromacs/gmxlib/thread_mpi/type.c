@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -112,7 +112,7 @@ files.
 #define INTTYPE 1
 #include "tmpi_ops.h"
 
-#define TYPE unsigned 
+#define TYPE unsigned
 #define TYPENM UNSIGNED
 #define INTTYPE 1
 #include "tmpi_ops.h"
@@ -153,27 +153,27 @@ files.
 
 
 /* These are the fundamental data types. They exist as global variables */
-tmpi_dt tmpi_char    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
-tmpi_dt tmpi_short   ={sizeof(short),             oplist_SHORT,    0,NULL,TRUE};
-tmpi_dt tmpi_int     ={sizeof(int),               oplist_INT,      0,NULL,TRUE};
-tmpi_dt tmpi_long    ={sizeof(long),              oplist_LONG,     0,NULL,TRUE};
+tmpi_dt tmpi_char    = {sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
+tmpi_dt tmpi_short   = {sizeof(short),             oplist_SHORT,    0,NULL,TRUE};
+tmpi_dt tmpi_int     = {sizeof(int),               oplist_INT,      0,NULL,TRUE};
+tmpi_dt tmpi_long    = {sizeof(long),              oplist_LONG,     0,NULL,TRUE};
 #ifdef SIZEOF_LONG_LONG_INT
-tmpi_dt tmpi_l_long  ={sizeof(long long),         oplist_L_LONG,   0,NULL,TRUE};
-tmpi_dt tmpi_l_l_int ={sizeof(long long int),     oplist_L_L_INT,  0,NULL,TRUE};
+tmpi_dt tmpi_l_long  = {sizeof(long long),         oplist_L_LONG,   0,NULL,TRUE};
+tmpi_dt tmpi_l_l_int = {sizeof(long long int),     oplist_L_L_INT,  0,NULL,TRUE};
 #endif
-tmpi_dt tmpi_s_char  ={sizeof(signed char),       oplist_S_CHAR,   0,NULL,TRUE};
-tmpi_dt tmpi_u_char  ={sizeof(unsigned char),     oplist_U_CHAR,   0,NULL,TRUE};
-tmpi_dt tmpi_u_short ={sizeof(unsigned short),    oplist_U_SHORT,  0,NULL,TRUE};
-tmpi_dt tmpi_unsigned={sizeof(unsigned),          oplist_UNSIGNED, 0,NULL,TRUE};
-tmpi_dt tmpi_u_long  ={sizeof(unsigned long),     oplist_U_LONG,   0,NULL,TRUE};
+tmpi_dt tmpi_s_char  = {sizeof(signed char),       oplist_S_CHAR,   0,NULL,TRUE};
+tmpi_dt tmpi_u_char  = {sizeof(unsigned char),     oplist_U_CHAR,   0,NULL,TRUE};
+tmpi_dt tmpi_u_short = {sizeof(unsigned short),    oplist_U_SHORT,  0,NULL,TRUE};
+tmpi_dt tmpi_unsigned= {sizeof(unsigned),          oplist_UNSIGNED, 0,NULL,TRUE};
+tmpi_dt tmpi_u_long  = {sizeof(unsigned long),     oplist_U_LONG,   0,NULL,TRUE};
 #ifdef SIZEOF_LONG_LONG_INT
-tmpi_dt tmpi_u_l_long={sizeof(unsigned long long),oplist_U_L_LONG, 0,NULL,TRUE};
+tmpi_dt tmpi_u_l_long= {sizeof(unsigned long long),oplist_U_L_LONG, 0,NULL,TRUE};
 #endif
-tmpi_dt tmpi_float   ={sizeof(float),             oplist_FLOAT,    0,NULL,TRUE};
-tmpi_dt tmpi_double  ={sizeof(double),            oplist_DOUBLE,   0,NULL,TRUE};
-tmpi_dt tmpi_l_double={sizeof(long double),       oplist_L_DOUBLE, 0,NULL,TRUE};
-tmpi_dt tmpi_byte    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
-tmpi_dt tmpi_pointer ={sizeof(void*),             NULL,            0,NULL,TRUE};
+tmpi_dt tmpi_float   = {sizeof(float),             oplist_FLOAT,    0,NULL,TRUE};
+tmpi_dt tmpi_double  = {sizeof(double),            oplist_DOUBLE,   0,NULL,TRUE};
+tmpi_dt tmpi_l_double= {sizeof(long double),       oplist_L_DOUBLE, 0,NULL,TRUE};
+tmpi_dt tmpi_byte    = {sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
+tmpi_dt tmpi_pointer = {sizeof(void*),             NULL,            0,NULL,TRUE};
 
 
 
@@ -209,14 +209,14 @@ const tMPI_Datatype TMPI_POINTER            = &tmpi_pointer;
 
 
 
-int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype, 
+int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
                          tMPI_Datatype *newtype)
 {
     struct tmpi_datatype_ *ntp;
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Type_contiguous(%d, %p, %p)", count, oldtype, 
-                       newtype);
+    tMPI_Trace_print("tMPI_Type_contiguous(%d, %p, %p)", count, oldtype,
+                     newtype);
 #endif
     ntp=(struct tmpi_datatype_*)tMPI_Malloc(sizeof(struct tmpi_datatype_));
     ntp->size=count*oldtype->size;
@@ -225,7 +225,7 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
     /* establish components */
     ntp->N_comp=1;
     ntp->comps=(struct tmpi_datatype_component*)tMPI_Malloc(
-                        sizeof(struct tmpi_datatype_component)*1);
+                   sizeof(struct tmpi_datatype_component)*1);
     ntp->comps[0].type=oldtype;
     ntp->comps[0].count=1;
     ntp->committed=FALSE;
@@ -238,10 +238,10 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
         /* make space */
         tmpi_global->Nalloc_usertypes=Nthreads*(tmpi_global->N_usertypes) + 1;
         tmpi_global->usertypes=(struct tmpi_datatype_**)
-                                    tMPI_Realloc(tmpi_global->usertypes, 
-                                        (sizeof(struct tmpi_datatype_ *)*
-                                         tmpi_global->Nalloc_usertypes)
-                                    );
+                               tMPI_Realloc(tmpi_global->usertypes,
+                                            (sizeof(struct tmpi_datatype_ *)*
+                                             tmpi_global->Nalloc_usertypes)
+                                           );
 
     }
     /* add to the list */
@@ -263,20 +263,22 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
     tMPI_Trace_print("tMPI_Type_commit(%p)", datatype);
 #endif
     if (dt->committed)
+    {
         return TMPI_SUCCESS;
+    }
 
     /* search the list for a matching committed type, because if there's
-       already a committed type that has the same composition, we just 
-       make the datatype pointer point to it, ensuring we share datatype 
+       already a committed type that has the same composition, we just
+       make the datatype pointer point to it, ensuring we share datatype
        information across threads. */
     tMPI_Spinlock_lock(&(tmpi_global->datatype_lock));
-    for(i=0;i<tmpi_global->N_usertypes;i++)
+    for (i=0; i<tmpi_global->N_usertypes; i++)
     {
         struct tmpi_datatype_ *lt=tmpi_global->usertypes[i];
         if (lt->committed && lt->N_comp==dt->N_comp)
         {
             tmpi_bool found=TRUE;
-            for(j=0;j<lt->N_comp;j++)
+            for (j=0; j<lt->N_comp; j++)
             {
                 if ( (lt->comps[j].type  != dt->comps[j].type) ||
                      (lt->comps[j].count != dt->comps[j].count) )
@@ -295,7 +297,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
     {
         tmpi_bool found=FALSE;
         /* we remove the old one from the list */
-        for(i=0;i<tmpi_global->N_usertypes;i++)
+        for (i=0; i<tmpi_global->N_usertypes; i++)
         {
             if (tmpi_global->usertypes[i]==*datatype)
             {
@@ -307,7 +309,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
         {
             /* we put the last one in the list in our slot */
             tmpi_global->usertypes[i]=tmpi_global->
-                usertypes[tmpi_global->N_usertypes-1];
+                                      usertypes[tmpi_global->N_usertypes-1];
             tmpi_global->N_usertypes--;
         }
         free( (*datatype)->comps);

@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -26,16 +26,16 @@
 extern "C" {
 #endif
 
-struct gmxvmdplugin
-{
-    molfile_plugin_t *api;
-    const char* filetype;
-    void* handle;
-    gmx_bool bV;
-};
-    
-int read_first_vmd_frame(int  *status,const char *fn, struct trxframe *fr,int flags);
-gmx_bool read_next_vmd_frame(int status,struct trxframe *fr);
+    struct gmxvmdplugin
+    {
+        molfile_plugin_t *api;
+        const char* filetype;
+        void* handle;
+        gmx_bool bV;
+    };
+
+    int read_first_vmd_frame(int  *status,const char *fn, struct trxframe *fr,int flags);
+    gmx_bool read_next_vmd_frame(int status,struct trxframe *fr);
 
 #ifdef __cplusplus
 }

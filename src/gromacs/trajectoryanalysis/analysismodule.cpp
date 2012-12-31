@@ -100,7 +100,7 @@ class TrajectoryAnalysisModuleData::Impl
     public:
         //! Container that associates a data handle to its AnalysisData object.
         typedef std::map<const AnalysisData *, AnalysisDataHandle>
-                HandleContainer;
+        HandleContainer;
 
         //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
         Impl(TrajectoryAnalysisModule *module,
@@ -114,9 +114,9 @@ class TrajectoryAnalysisModuleData::Impl
 };
 
 TrajectoryAnalysisModuleData::Impl::Impl(
-        TrajectoryAnalysisModule *module,
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+    TrajectoryAnalysisModule *module,
+    const AnalysisDataParallelOptions &opt,
+    const SelectionCollection &selections)
     : selections_(selections)
 {
     TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
@@ -133,9 +133,9 @@ TrajectoryAnalysisModuleData::Impl::Impl(
  */
 
 TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
-        TrajectoryAnalysisModule *module,
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+    TrajectoryAnalysisModule *module,
+    const AnalysisDataParallelOptions &opt,
+    const SelectionCollection &selections)
     : impl_(new Impl(module, opt, selections))
 {
 }
@@ -223,9 +223,9 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
 };
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
-        TrajectoryAnalysisModule *module,
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+    TrajectoryAnalysisModule *module,
+    const AnalysisDataParallelOptions &opt,
+    const SelectionCollection &selections)
     : TrajectoryAnalysisModuleData(module, opt, selections)
 {
 }
@@ -257,8 +257,8 @@ TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 
 
 void TrajectoryAnalysisModule::optionsFinished(
-        Options * /*options*/,
-        TrajectoryAnalysisSettings * /*settings*/)
+    Options * /*options*/,
+    TrajectoryAnalysisSettings * /*settings*/)
 {
 }
 
@@ -273,7 +273,7 @@ TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
                                       const SelectionCollection &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
-            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
+               new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
 }
 
 

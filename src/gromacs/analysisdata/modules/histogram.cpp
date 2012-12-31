@@ -86,7 +86,7 @@ AnalysisHistogramSettings::AnalysisHistogramSettings()
 
 
 AnalysisHistogramSettings::AnalysisHistogramSettings(
-        const AnalysisHistogramSettingsInitializer &settings)
+    const AnalysisHistogramSettingsInitializer &settings)
 {
     GMX_RELEASE_ASSERT(isDefined(settings.min_),
                        "Histogram start value must be defined");
@@ -218,7 +218,7 @@ StaticAverageHistogram::StaticAverageHistogram()
 
 
 StaticAverageHistogram::StaticAverageHistogram(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : AbstractAverageHistogram(settings)
 {
 }
@@ -236,7 +236,7 @@ AbstractAverageHistogram::AbstractAverageHistogram()
 
 
 AbstractAverageHistogram::AbstractAverageHistogram(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : settings_(settings)
 {
     setRowCount(settings.binCount());
@@ -276,7 +276,7 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
     AverageHistogramPointer dest(
         new StaticAverageHistogram(
             histogramFromBins(xstart(), nbins, 2*xstep())
-                .integerBins(bIntegerBins)));
+            .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
 
@@ -381,7 +381,7 @@ namespace internal
  * \ingroup module_analysisdata
  */
 class BasicAverageHistogramModule : public AbstractAverageHistogram,
-                                    public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         BasicAverageHistogramModule();
@@ -413,7 +413,7 @@ BasicAverageHistogramModule::BasicAverageHistogramModule()
 
 
 BasicAverageHistogramModule::BasicAverageHistogramModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : AbstractAverageHistogram(settings), frameCount_(0)
 {
     setColumnCount(2);
@@ -490,7 +490,7 @@ class BasicHistogramImpl
     public:
         //! Smart pointer to manage an BasicAverageHistogramModule object.
         typedef boost::shared_ptr<BasicAverageHistogramModule>
-                BasicAverageHistogramModulePointer;
+        BasicAverageHistogramModulePointer;
 
         BasicHistogramImpl();
         //! Creates an histogram impl with defined bin parameters.
@@ -561,7 +561,7 @@ AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
 
 
 AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : impl_(new internal::BasicHistogramImpl(settings))
 {
 }
@@ -672,7 +672,7 @@ AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule()
 
 
 AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : impl_(new internal::BasicHistogramImpl(settings))
 {
 }
@@ -787,7 +787,7 @@ AnalysisDataBinAverageModule::AnalysisDataBinAverageModule()
 
 
 AnalysisDataBinAverageModule::AnalysisDataBinAverageModule(
-        const AnalysisHistogramSettings &settings)
+    const AnalysisHistogramSettings &settings)
     : settings_(settings)
 {
     setColumnCount(3);

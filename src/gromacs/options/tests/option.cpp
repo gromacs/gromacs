@@ -56,7 +56,7 @@ TEST(OptionsTest, FailsOnNonsafeStorage)
     int value = -1;
     using gmx::IntegerOption;
     ASSERT_THROW(options.addOption(IntegerOption("name").store(&value)
-                                       .multiValue()),
+                                   .multiValue()),
                  gmx::APIError);
 }
 
@@ -67,8 +67,8 @@ TEST(OptionsTest, FailsOnIncorrectEnumDefaultValue)
     const char * const          allowed[] = { "none", "test", "value", NULL };
     using gmx::StringOption;
     ASSERT_THROW(options.addOption(StringOption("name").store(&value)
-                                       .enumValue(allowed)
-                                       .defaultValue("unknown")),
+                                   .enumValue(allowed)
+                                   .defaultValue("unknown")),
                  gmx::APIError);
 }
 

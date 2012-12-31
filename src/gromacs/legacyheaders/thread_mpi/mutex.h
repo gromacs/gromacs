@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -37,7 +37,7 @@ files.
 
 /** \file
   *
-  * \brief mutex objects with C++11 API compatibility. 
+  * \brief mutex objects with C++11 API compatibility.
   *
   * This header contains classes mutex and lock_guard, used in C++ mutex
   * implementations safe for exceptions.
@@ -54,28 +54,28 @@ files.
 
 namespace tMPI
 {
-    /*! \brief A lock guard class that allows for the simple management of
-               mutexes. C++11 compatible.
+/*! \brief A lock guard class that allows for the simple management of
+           mutexes. C++11 compatible.
 
-        In C++, mutexes would normally have to be unlocked with explicit
-        exception handlers and unlock statements. This class automates that
-        by handling the mutex unlock in a destructor. The constructor locks
-        the mutex.
+    In C++, mutexes would normally have to be unlocked with explicit
+    exception handlers and unlock statements. This class automates that
+    by handling the mutex unlock in a destructor. The constructor locks
+    the mutex.
 
-        Usage example:
-        tMPI::mutex mtx;
-        void do_count()
-        {
-            tMPI::lock_guard<tMPI::mutex> lock(mtx);
-            count += 1;
-        }
-    */
-    template <class Mutex> class lock_guard 
+    Usage example:
+    tMPI::mutex mtx;
+    void do_count()
     {
+        tMPI::lock_guard<tMPI::mutex> lock(mtx);
+        count += 1;
+    }
+*/
+template <class Mutex> class lock_guard
+{
     public:
         typedef Mutex mutex_type;
-        /*! \brief The constructor, which locks the mutex.  
-        
+        /*! \brief The constructor, which locks the mutex.
+
             \param m The exisiting (globally accessible) mutex to lock. */
         explicit lock_guard(mutex_type &m) : m_(m)
         {
@@ -94,11 +94,11 @@ namespace tMPI
         lock_guard& operator=(const lock_guard &l);
 
         mutex_type &m_;
-    };
+};
 
-    /*! \brief A basic mutex class with C++11 compatibility.  */
-    class mutex
-    {
+/*! \brief A basic mutex class with C++11 compatibility.  */
+class mutex
+{
     public:
         typedef tMPI_Thread_mutex_t* native_handle_type;
 
@@ -109,7 +109,9 @@ namespace tMPI
         {
             int ret=tMPI_Thread_mutex_init(&handle_);
             if (ret)
+            {
                 throw system_error(ret);
+            }
         }
 
         /*! \brief The destructor.*/
@@ -119,34 +121,40 @@ namespace tMPI
         }
 
         /*! \brief The lock function.
-       
+
         Throws a tMPI::system_error exception upon failure. */
         void lock()
         {
             int ret=tMPI_Thread_mutex_lock(&handle_);
             if (ret)
+            {
                 throw system_error(ret);
+            }
         }
 
         /*! \brief The try_lock function.
 
-        Throws a tMPI::system_error exception upon failure. 
+        Throws a tMPI::system_error exception upon failure.
         \return true if the lock was locked successfully, false if not*/
         bool try_lock()
         {
             if (tMPI_Thread_mutex_trylock(&handle_))
+            {
                 return false;
+            }
             return true;
         }
 
         /*! \brief The unlock function.
-       
+
         Throws a tMPI::system_error exception upon failure. */
         void unlock()
         {
             int ret=tMPI_Thread_mutex_unlock(&handle_);
             if (ret)
+            {
                 throw system_error(ret);
+            }
         }
 
         native_handle_type native_handle() { return &handle_; }
@@ -156,7 +164,7 @@ namespace tMPI
         mutex& operator=(const mutex &m);
 
         tMPI_Thread_mutex_t handle_;
-    };
+};
 }
 
 #endif /* __cplusplus */

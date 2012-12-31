@@ -54,11 +54,12 @@ using gmx::test::CommandLine;
 
 //! Test fixture for the angle analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Angle>
-        AngleModuleTest;
+AngleModuleTest;
 
 TEST_F(AngleModuleTest, ComputesSimpleAngles)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "angle",
         "-g1", "angle", "-group1", "resname RA1 RA2 and name A1 A2 A3"
     };
@@ -68,7 +69,8 @@ TEST_F(AngleModuleTest, ComputesSimpleAngles)
 
 TEST_F(AngleModuleTest, ComputesDihedrals)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "angle",
         "-g1", "dihedral", "-group1", "resname RD1 RD2 RD3 and name A1 A2 A3 A4"
     };
@@ -78,7 +80,8 @@ TEST_F(AngleModuleTest, ComputesDihedrals)
 
 TEST_F(AngleModuleTest, ComputesVectorPairAngles)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "angle",
         "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
         "-g2", "vector", "-group2", "resname RV3 RV4 and name A1 A2"
@@ -89,7 +92,8 @@ TEST_F(AngleModuleTest, ComputesVectorPairAngles)
 
 TEST_F(AngleModuleTest, ComputesVectorPlanePairAngles)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "angle",
         "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
         "-g2", "plane",  "-group2", "resname RP1 RP2 and name A1 A2 A3"
@@ -100,7 +104,8 @@ TEST_F(AngleModuleTest, ComputesVectorPlanePairAngles)
 
 TEST_F(AngleModuleTest, ComputesPlaneZAxisAngles)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "angle",
         "-g1", "plane", "-group1", "resname RP1 RP2 and name A1 A2 A3",
         "-g2", "z"
@@ -111,7 +116,8 @@ TEST_F(AngleModuleTest, ComputesPlaneZAxisAngles)
 
 TEST_F(AngleModuleTest, ComputesVectorSphereNormalZAxisAngles)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "angle",
         "-g1", "vector",  "-group1", "resname RV1 RV2 and name A1 A2",
         "-g2", "sphnorm", "-group2", "cog of resname RS"
@@ -122,7 +128,8 @@ TEST_F(AngleModuleTest, ComputesVectorSphereNormalZAxisAngles)
 
 TEST_F(AngleModuleTest, ComputesVectorTimeZeroAngles)
 {
-    const char *const cmdline[] = {
+    const char *const cmdline[] =
+    {
         "angle",
         "-g1", "vector", "-group1", "resname RV1 RV2 RV3 RV4 and name A1 A2",
         "-g2", "t0"

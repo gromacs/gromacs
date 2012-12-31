@@ -47,11 +47,11 @@ static void icell_set_x_x86_simd256
 "error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
 #endif
 #endif
-                                   (int ci,
-                                    real shx,real shy,real shz,
-                                    int na_c,
-                                    int stride,const real *x,
-                                    nbnxn_list_work_t *work)
+(int ci,
+ real shx,real shy,real shz,
+ int na_c,
+ int stride,const real *x,
+ nbnxn_list_work_t *work)
 {
     int  ia;
 #ifdef GMX_MM128_HERE
@@ -96,13 +96,13 @@ static void make_cluster_list_x86_simd256
 "error: GMX_MM128_HERE or GMX_MM256_HERE not defined"
 #endif
 #endif
-                                         (const nbnxn_grid_t *gridj,
-                                          nbnxn_pairlist_t *nbl,
-                                          int ci,int cjf,int cjl,
-                                          gmx_bool remove_sub_diag,
-                                          const real *x_j,
-                                          real rl2,float rbb2,
-                                          int *ndistc)
+(const nbnxn_grid_t *gridj,
+ nbnxn_pairlist_t *nbl,
+ int ci,int cjf,int cjl,
+ gmx_bool remove_sub_diag,
+ const real *x_j,
+ real rl2,float rbb2,
+ int *ndistc)
 {
 #ifdef GMX_MM128_HERE
     const nbnxn_x_ci_x86_simd128_t *work;
@@ -129,7 +129,7 @@ static void make_cluster_list_x86_simd256
     gmx_mm_pr  wco_SSE2;
     gmx_mm_pr  wco_SSE3;
     gmx_mm_pr  wco_any_SSE01,wco_any_SSE23,wco_any_SSE;
-    
+
     gmx_mm_pr  rc2_SSE;
 
     gmx_bool   InRange;
@@ -157,7 +157,7 @@ static void make_cluster_list_x86_simd256
     {
         d2 = subc_bb_dist2_sse(4,0,bb_ci,cjf,gridj->bbj);
         *ndistc += 2;
-        
+
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
          * or within the cut-off and there is at least one atom pair
@@ -178,7 +178,7 @@ static void make_cluster_list_x86_simd256
             jy_SSE  = gmx_load_pr(x_j+xind_f+1*STRIDE_S);
             jz_SSE  = gmx_load_pr(x_j+xind_f+2*STRIDE_S);
 
-            
+
             /* Calculate distance */
             dx_SSE0            = gmx_sub_pr(work->ix_SSE0,jx_SSE);
             dy_SSE0            = gmx_sub_pr(work->iy_SSE0,jy_SSE);
@@ -192,22 +192,22 @@ static void make_cluster_list_x86_simd256
             dx_SSE3            = gmx_sub_pr(work->ix_SSE3,jx_SSE);
             dy_SSE3            = gmx_sub_pr(work->iy_SSE3,jy_SSE);
             dz_SSE3            = gmx_sub_pr(work->iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_calc_rsq_pr(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             wco_SSE0           = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
             wco_SSE1           = gmx_cmplt_pr(rsq_SSE1,rc2_SSE);
             wco_SSE2           = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
             wco_SSE3           = gmx_cmplt_pr(rsq_SSE3,rc2_SSE);
-            
+
             wco_any_SSE01      = gmx_or_pr(wco_SSE0,wco_SSE1);
             wco_any_SSE23      = gmx_or_pr(wco_SSE2,wco_SSE3);
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01,wco_any_SSE23);
-            
+
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
             *ndistc += 4*GMX_X86_SIMD_WIDTH_HERE;
@@ -227,7 +227,7 @@ static void make_cluster_list_x86_simd256
     {
         d2 = subc_bb_dist2_sse(4,0,bb_ci,cjl,gridj->bbj);
         *ndistc += 2;
-        
+
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
          * or within the cut-off and there is at least one atom pair
@@ -247,7 +247,7 @@ static void make_cluster_list_x86_simd256
             jx_SSE  = gmx_load_pr(x_j+xind_l+0*STRIDE_S);
             jy_SSE  = gmx_load_pr(x_j+xind_l+1*STRIDE_S);
             jz_SSE  = gmx_load_pr(x_j+xind_l+2*STRIDE_S);
-            
+
             /* Calculate distance */
             dx_SSE0            = gmx_sub_pr(work->ix_SSE0,jx_SSE);
             dy_SSE0            = gmx_sub_pr(work->iy_SSE0,jy_SSE);
@@ -261,22 +261,22 @@ static void make_cluster_list_x86_simd256
             dx_SSE3            = gmx_sub_pr(work->ix_SSE3,jx_SSE);
             dy_SSE3            = gmx_sub_pr(work->iy_SSE3,jy_SSE);
             dz_SSE3            = gmx_sub_pr(work->iz_SSE3,jz_SSE);
-            
+
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
             rsq_SSE1           = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);
             rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
             rsq_SSE3           = gmx_calc_rsq_pr(dx_SSE3,dy_SSE3,dz_SSE3);
-            
+
             wco_SSE0           = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
             wco_SSE1           = gmx_cmplt_pr(rsq_SSE1,rc2_SSE);
             wco_SSE2           = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
             wco_SSE3           = gmx_cmplt_pr(rsq_SSE3,rc2_SSE);
-            
+
             wco_any_SSE01      = gmx_or_pr(wco_SSE0,wco_SSE1);
             wco_any_SSE23      = gmx_or_pr(wco_SSE2,wco_SSE3);
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01,wco_any_SSE23);
-            
+
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
             *ndistc += 4*GMX_X86_SIMD_WIDTH_HERE;
@@ -289,7 +289,7 @@ static void make_cluster_list_x86_simd256
 
     if (cjf <= cjl)
     {
-        for(cj=cjf; cj<=cjl; cj++)
+        for (cj=cjf; cj<=cjl; cj++)
         {
             /* Store cj and the interaction mask */
 #ifdef GMX_MM128_HERE

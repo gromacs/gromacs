@@ -165,7 +165,7 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-            SelectionOption("sel").storeVector(&sel).multiValue());
+                                         SelectionOption("sel").storeVector(&sel).multiValue());
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -185,7 +185,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
     gmx::Selection sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-            SelectionOption("sel").store(&sel));
+                                         SelectionOption("sel").store(&sel));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -204,7 +204,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-            SelectionOption("sel").storeVector(&sel).multiValue());
+                                         SelectionOption("sel").storeVector(&sel).multiValue());
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -224,7 +224,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-            SelectionOption("sel").storeVector(&sel).multiValue());
+                                         SelectionOption("sel").storeVector(&sel).multiValue());
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -261,7 +261,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel").store(sel).required()
-                            .valueCount(2)));
+                        .valueCount(2)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -295,7 +295,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-            SelectionOption("sel").storeVector(&sel).valueCount(3));
+                                         SelectionOption("sel").storeVector(&sel).valueCount(3));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -334,7 +334,7 @@ TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
                         SelectionOption("sel").storeVector(&sel).multiValue()));
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("reqsel").storeVector(&reqsel)
-                            .multiValue().required()));
+                        .multiValue().required()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -431,10 +431,10 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFile)
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel").storeVector(&sel)
-                            .multiValue().required()));
+                        .multiValue().required()));
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("optsel").storeVector(&optsel)
-                            .multiValue()));
+                        .multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
@@ -465,10 +465,10 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFileWithOtherOptionSet)
     using gmx::SelectionOption;
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel1").storeVector(&sel1)
-                            .multiValue().required()));
+                        .multiValue().required()));
     ASSERT_NO_THROW(options_.addOption(
                         SelectionOption("sel2").storeVector(&sel2)
-                            .multiValue().required()));
+                        .multiValue().required()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);

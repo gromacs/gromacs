@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -73,17 +73,17 @@ static void *tMPI_Reduce_req_allocator(void *arg)
 tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm)
 {
     tMPI_Reduce_req *ret;
-    ret=(tMPI_Reduce_req*)tMPI_Once_wait(comm, tMPI_Reduce_req_allocator, 
+    ret=(tMPI_Reduce_req*)tMPI_Once_wait(comm, tMPI_Reduce_req_allocator,
                                          comm, NULL);
     return ret;
 }
 
 #if 0
-void tMPI_Reduce_async(tMPI_Reduce_req *req, 
-                       void (*function)(int, void*, void*, void *), 
+void tMPI_Reduce_async(tMPI_Reduce_req *req,
+                       void (*function)(int, void*, void*, void *),
                        size_t n, void *input, void *res)
 {
-    
+
 }
 
 #endif

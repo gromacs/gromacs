@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -64,7 +64,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     gmx_mtop_ilistloop_t iloop;
     t_ilist      *il;
     char         *ptr;
-    
+
     dd = &(fcd->disres);
 
     if (gmx_mtop_ftype_count(mtop,F_DISRES) == 0)
@@ -73,12 +73,12 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
 
         return;
     }
-    
+
     if (fplog)
     {
         fprintf(fplog,"Initializing the distance restraints\n");
     }
-    
+
 
     if (ir->eDisre == edrEnsemble)
     {
@@ -106,15 +106,16 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         dd->ETerm = exp(-(ir->delta_t/ir->dr_tau));
     }
     dd->ETerm1        = 1.0 - dd->ETerm;
-    
+
     ip = mtop->ffparams.iparams;
 
     dd->nres  = 0;
     dd->npair = 0;
     iloop = gmx_mtop_ilistloop_init(mtop);
-    while (gmx_mtop_ilistloop_next(iloop,&il,&nmol)) {
+    while (gmx_mtop_ilistloop_next(iloop,&il,&nmol))
+    {
         np = 0;
-        for(fa=0; fa<il[F_DISRES].nr; fa+=3)
+        for (fa=0; fa<il[F_DISRES].nr; fa+=3)
         {
             np++;
             npair = mtop->ffparams.iparams[il[F_DISRES].iatoms[fa]].disres.npair;
@@ -131,11 +132,15 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     {
         /* Temporary check, will be removed when disre is implemented with DD */
         const char *notestr="NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
-        
+
         if (MASTER(cr))
+        {
             fprintf(stderr,"\n%s\n\n",notestr);
+        }
         if (fplog)
+        {
             fprintf(fplog,"%s\n",notestr);
+        }
 
         if (dd->dr_tau != 0 || ir->eDisre == edrEnsemble || cr->ms != NULL ||
             dd->nres != dd->npair)
@@ -157,7 +162,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     }
 
     snew(dd->rt,dd->npair);
-    
+
     if (dd->dr_tau != 0.0)
     {
         hist = &state->hist;
@@ -204,13 +209,13 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         if (fplog)
         {
             fprintf(fplog,"Our ensemble consists of systems:");
-            for(i=0; i<dd->nsystems; i++)
+            for (i=0; i<dd->nsystems; i++)
             {
                 fprintf(fplog," %d",
                         (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
             }
             fprintf(fplog,"\n");
-            }
+        }
         snew(dd->Rtl_6,dd->nres);
 #endif
     }
@@ -219,10 +224,11 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         dd->nsystems = 1;
         dd->Rtl_6 = dd->Rt_6;
     }
-    
+
     if (dd->npair > 0)
     {
-        if (fplog) {
+        if (fplog)
+        {
             fprintf(fplog,"There are %d distance restraints involving %d atom pairs\n",dd->nres,dd->npair);
         }
         if (cr && cr->ms)
@@ -260,22 +266,22 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
     Rtl_6        = dd->Rtl_6;
     Rt_6         = dd->Rt_6;
     Rtav_6       = dd->Rtav_6;
-    
+
     if (bTav)
     {
         /* scaling factor to smoothly turn on the restraint forces *
          * when using time averaging                               */
         dd->exp_min_t_tau = hist->disre_initf*ETerm;
-        
+
         cf1 = dd->exp_min_t_tau;
         cf2 = 1.0/(1.0 - dd->exp_min_t_tau);
     }
-    
+
     if (dd->nsystems > 1)
     {
         invn = 1.0/dd->nsystems;
     }
-    
+
     /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
      * the total number of atoms pairs is nfa/3                          */
     res = 0;
@@ -284,10 +290,10 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
     {
         type  = forceatoms[fa];
         npair = ip[type].disres.npair;
-        
+
         Rtav_6[res] = 0.0;
         Rt_6[res]   = 0.0;
-        
+
         /* Loop over the atom pairs of 'this' restraint */
         np = 0;
         while (fa < nfa && np < npair)
@@ -295,7 +301,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
             pair = fa/3;
             ai   = forceatoms[fa+1];
             aj   = forceatoms[fa+2];
-            
+
             if (pbc)
             {
                 pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
@@ -307,7 +313,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
             rt2  = iprod(dx,dx);
             rt_1 = gmx_invsqrt(rt2);
             rt_3 = rt_1*rt_1*rt_1;
-            
+
             rt[pair]         = sqrt(rt2);
             if (bTav)
             {
@@ -339,7 +345,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 
         res++;
     }
-    
+
 #ifdef GMX_MPI
     if (dd->nsystems > 1)
     {
@@ -357,7 +363,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 {
     const real sixth=1.0/6.0;
     const real seven_three=7.0/3.0;
-    
+
     atom_id     ai,aj;
     int         fa,res,npair,p,pair,ki=CENTRAL,m;
     int         type;
@@ -373,7 +379,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     t_disresdata *dd;
     int         dr_weighting;
     gmx_bool        dr_bMixed;
-    
+
     dd = &(fcd->disres);
     dr_weighting = dd->dr_weighting;
     dr_bMixed    = dd->dr_bMixed;
@@ -388,12 +394,12 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     {
         /* scaling factor to smoothly turn on the restraint forces *
          * when using time averaging                               */
-        smooth_fc *= (1.0 - dd->exp_min_t_tau); 
+        smooth_fc *= (1.0 - dd->exp_min_t_tau);
     }
-    
+
     violtot = 0;
     vtot    = 0;
-    
+
     /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
      * the total number of atoms pairs is nfa/3                          */
     res  = 0;
@@ -407,7 +413,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
         up2   = ip[type].disres.up2;
         low   = ip[type].disres.low;
         k0    = smooth_fc*ip[type].disres.kfac;
-        
+
         /* save some flops when there is only one pair */
         if (ip[type].disres.type != 2)
         {
@@ -424,7 +430,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
             Rt   = pow(Rtl_6[res],-sixth);
             Rtav = Rt;
         }
-        
+
         if (Rtav > up1)
         {
             bViolation = TRUE;
@@ -439,7 +445,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
         {
             bViolation = FALSE;
         }
-        
+
         if (bViolation)
         {
             /* NOTE:
@@ -514,17 +520,17 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
             {
                 f_scal /= (real)npair;
                 f_scal  = max(f_scal,fmax_scal);
-            }    
-            
+            }
+
             /* Exert the force ... */
-            
+
             /* Loop over the atom pairs of 'this' restraint */
-            for(p=0; p<npair; p++)
+            for (p=0; p<npair; p++)
             {
                 pair = fa/3;
                 ai   = forceatoms[fa+1];
                 aj   = forceatoms[fa+2];
-                
+
                 if (pbc)
                 {
                     ki = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
@@ -534,9 +540,9 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
                     rvec_sub(x[ai],x[aj],dx);
                 }
                 rt2 = iprod(dx,dx);
-                
+
                 weight_rt_1 = gmx_invsqrt(rt2);
-                
+
                 if (bConservative)
                 {
                     if (!dr_bMixed)
@@ -546,22 +552,22 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
                     else
                     {
                         weight_rt_1 *= tav_viol_Rtav7*pow(dd->rm3tav[pair],seven_three)+
-                            instant_viol_Rtav7*pow(dd->rt[pair],-7);
+                                       instant_viol_Rtav7*pow(dd->rt[pair],-7);
                     }
                 }
-                
+
                 fk_scal  = f_scal*weight_rt_1;
-                
+
                 if (g)
                 {
                     ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
                     ki=IVEC2IS(dt);
                 }
-                
-                for(m=0; m<DIM; m++)
+
+                for (m=0; m<DIM; m++)
                 {
                     fij            = fk_scal*dx[m];
-                    
+
                     f[ai][m]      += fij;
                     f[aj][m]      -= fij;
                     fshift[ki][m] += fij;
@@ -577,9 +583,9 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
         }
         res++;
     }
-    
+
     dd->sumviol = violtot;
-    
+
     /* Return energy */
     return vtot;
 }
@@ -588,7 +594,7 @@ void update_disres_history(t_fcdata *fcd,history_t *hist)
 {
     t_disresdata *dd;
     int pair;
-    
+
     dd = &(fcd->disres);
     if (dd->dr_tau != 0)
     {
@@ -596,7 +602,7 @@ void update_disres_history(t_fcdata *fcd,history_t *hist)
          * in calc_disres_R_6.
          */
         hist->disre_initf = dd->exp_min_t_tau;
-        for(pair=0; pair<dd->npair; pair++)
+        for (pair=0; pair<dd->npair; pair++)
         {
             hist->disre_rm3tav[pair] = dd->rm3tav[pair];
         }

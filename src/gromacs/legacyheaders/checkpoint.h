@@ -44,64 +44,64 @@
 extern "C" {
 #endif
 
-/* the name of the environment variable to disable fsync failure checks with */
+    /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
 
-/* Write a checkpoint to <fn>.cpt
- * Appends the _step<step>.cpt with bNumberAndKeep,
- * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
- */
-void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
-		      FILE *fplog,t_commrec *cr,
-		      int eIntegrator, int simulation_part,
-		      gmx_bool bExpanded, int elamstats,
-		      gmx_large_int_t step,double t,
-		      t_state *state);
+    /* Write a checkpoint to <fn>.cpt
+     * Appends the _step<step>.cpt with bNumberAndKeep,
+     * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
+     */
+    void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
+                          FILE *fplog,t_commrec *cr,
+                          int eIntegrator, int simulation_part,
+                          gmx_bool bExpanded, int elamstats,
+                          gmx_large_int_t step,double t,
+                          t_state *state);
 
-/* Loads a checkpoint from fn for run continuation.
- * Generates a fatal error on system size mismatch.
- * The master node reads the file
- * and communicates all the modified number of steps and the parallel setup,
- * but not the state itself.
- * When bAppend is set, lock the log file and truncate the existing output
- * files so they can be appended.
- * With bAppend and bForceAppend: truncate anyhow if the system does not
- * support file locking.
- */
-void load_checkpoint(const char *fn,FILE **fplog,
-		     t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
-		     t_inputrec *ir,t_state *state,gmx_bool *bReadRNG,
-             gmx_bool *bReadEkin,gmx_bool bAppend,gmx_bool bForceAppend);
+    /* Loads a checkpoint from fn for run continuation.
+     * Generates a fatal error on system size mismatch.
+     * The master node reads the file
+     * and communicates all the modified number of steps and the parallel setup,
+     * but not the state itself.
+     * When bAppend is set, lock the log file and truncate the existing output
+     * files so they can be appended.
+     * With bAppend and bForceAppend: truncate anyhow if the system does not
+     * support file locking.
+     */
+    void load_checkpoint(const char *fn,FILE **fplog,
+                         t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
+                         t_inputrec *ir,t_state *state,gmx_bool *bReadRNG,
+                         gmx_bool *bReadEkin,gmx_bool bAppend,gmx_bool bForceAppend);
 
-/* Read the state from checkpoint file.
- * Arrays in state that are NULL are allocated.
- * If bReadRNG=TRUE a RNG state compatible with the current
- * number of nodes was read.
- */
-void read_checkpoint_state(const char *fn,int *simulation_part,
-				  gmx_large_int_t *step,double *t,t_state *state);
+    /* Read the state from checkpoint file.
+     * Arrays in state that are NULL are allocated.
+     * If bReadRNG=TRUE a RNG state compatible with the current
+     * number of nodes was read.
+     */
+    void read_checkpoint_state(const char *fn,int *simulation_part,
+                               gmx_large_int_t *step,double *t,t_state *state);
 
-/* Read everything that can be stored in t_trxframe from a checkpoint file */
-void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr);
+    /* Read everything that can be stored in t_trxframe from a checkpoint file */
+    void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr);
 
-/* Print the complete contents of checkpoint file fn to out */
-void list_checkpoint(const char *fn,FILE *out);
+    /* Print the complete contents of checkpoint file fn to out */
+    void list_checkpoint(const char *fn,FILE *out);
 
-/* Read just the simulation 'generation' and with bAppendReq check files.
- * This is necessary already at the beginning of mdrun,
- * to be able to rename the logfile correctly.
- * When file appending is requested, checks which output files are present:
- * all present: return TRUE,
- * none present: return FALSE,
- * part present: fatal error.
- * When TRUE is returned, bAddPart will tell whether the simulation part
- * needs to be added to the output file name.
- */
-gmx_bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
-                                     gmx_large_int_t *step,t_commrec *cr,
-                                     gmx_bool bAppendReq,
-                                     int nfile,const t_filenm fnm[],
-                                     const char *part_suffix,gmx_bool *bAddPart);
+    /* Read just the simulation 'generation' and with bAppendReq check files.
+     * This is necessary already at the beginning of mdrun,
+     * to be able to rename the logfile correctly.
+     * When file appending is requested, checks which output files are present:
+     * all present: return TRUE,
+     * none present: return FALSE,
+     * part present: fatal error.
+     * When TRUE is returned, bAddPart will tell whether the simulation part
+     * needs to be added to the output file name.
+     */
+    gmx_bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
+                                             gmx_large_int_t *step,t_commrec *cr,
+                                             gmx_bool bAppendReq,
+                                             int nfile,const t_filenm fnm[],
+                                             const char *part_suffix,gmx_bool *bAddPart);
 
 #ifdef __cplusplus
 }

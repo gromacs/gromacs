@@ -64,8 +64,8 @@ AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, real x, real dx)
  */
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataFrameHeader &header, int firstColumn,
-        const AnalysisDataValuesRef &values)
+    const AnalysisDataFrameHeader &header, int firstColumn,
+    const AnalysisDataValuesRef &values)
     : header_(header), firstColumn_(firstColumn), values_(values)
 {
     GMX_ASSERT(header_.isValid(),
@@ -75,8 +75,8 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
 
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataFrameHeader &header,
-        const std::vector<AnalysisDataValue> &values)
+    const AnalysisDataFrameHeader &header,
+    const std::vector<AnalysisDataValue> &values)
     : header_(header), firstColumn_(0), values_(values.begin(), values.end())
 {
     GMX_ASSERT(header_.isValid(),
@@ -85,7 +85,7 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
 
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataPointSetRef &points, int firstColumn, int columnCount)
+    const AnalysisDataPointSetRef &points, int firstColumn, int columnCount)
     : header_(points.header()), firstColumn_(0)
 {
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
@@ -143,23 +143,23 @@ AnalysisDataFrameRef::AnalysisDataFrameRef()
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader &header,
-        const AnalysisDataValuesRef &values)
+    const AnalysisDataFrameHeader &header,
+    const AnalysisDataValuesRef &values)
     : header_(header), values_(values)
 {
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader &header,
-        const std::vector<AnalysisDataValue> &values)
+    const AnalysisDataFrameHeader &header,
+    const std::vector<AnalysisDataValue> &values)
     : header_(header), values_(values.begin(), values.end())
 {
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameRef &frame, int firstColumn, int columnCount)
+    const AnalysisDataFrameRef &frame, int firstColumn, int columnCount)
     : header_(frame.header()), values_(columnCount, &frame.values_[firstColumn])
 {
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
